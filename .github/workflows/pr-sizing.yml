@@ -31,6 +31,12 @@ jobs:
   size-label:
     runs-on: ubuntu-latest
     steps:
-      - uses: pascalgn/size-label-action@v0
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
+          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+
+      - uses: pascalgn/size-label-action@v0.5.2
         env:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"

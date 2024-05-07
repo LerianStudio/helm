@@ -37,7 +37,7 @@ jobs:
           app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
 
-      - name: size-label
-        uses: "pascalgn/size-label-action@v0.5.2"
-        env:
-          GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
+      # - name: size-label
+      #   uses: "pascalgn/size-label-action@v0.5.2"
+      #   env:
+      #     GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"

@@ -27,10 +27,3 @@ jobs:
           configuration-path: ".github/configs/labeler.yaml"
           repo-token: "${{ steps.app-token.outputs.token }}"
           sync-labels: true
-
-  size-label:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: pascalgn/size-label-action@v0
-        env:
-          GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"

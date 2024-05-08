@@ -79,5 +79,5 @@ jobs:
             if [ -z "${pkg:-}" ]; then
               break
             fi
-            helm push "${pkg}" oci://ghcr.io/${{ github.repository }}
+            helm push "${pkg}" oci://ghcr.io/lerianstudio/midaz-helm
           done

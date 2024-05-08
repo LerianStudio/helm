@@ -3,6 +3,16 @@ entries:
   midaz-ledger:
   - apiVersion: v2
     appVersion: 0.0.0
+    created: "2024-05-08T17:38:35.774569113Z"
+    description: A Helm chart for Kubernetes
+    digest: 55fdbc5598800652a655694233ce0aedd268a6e6be138d78c3ddc7fb948b6073
+    name: midaz-ledger
+    type: application
+    urls:
+    - https://github.com/LerianStudio/midaz-helm/releases/download/midaz-ledger-0.0.1/midaz-ledger-0.0.1.tgz
+    version: 0.0.1
+  - apiVersion: v2
+    appVersion: 0.0.0
     created: "2024-05-07T17:37:31.021515553Z"
     description: A Helm chart for Kubernetes
     digest: 7e701fa58a659ba19a414aae9d699ec8d3fc213a7a403f42a2a7b5b0802c9db8
@@ -11,4 +21,4 @@ entries:
     urls:
     - https://github.com/LerianStudio/midaz-helm/releases/download/midaz-ledger-0.0.0/midaz-ledger-0.0.0.tgz
     version: 0.0.0
-generated: "2024-05-07T17:37:31.021520422Z"
+generated: "2024-05-08T17:38:35.774577929Z"

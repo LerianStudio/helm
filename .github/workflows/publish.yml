@@ -7,12 +7,13 @@ on:
     paths:
       - "charts/**"
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   publish:
     if: github.repository == 'LerianStudio/midaz-helm'
-    permissions:
-      contents: write
-      packages: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -58,7 +59,7 @@ jobs:
           charts_dir: charts
           config: "./.github/configs/cr.yaml"
         env:
-          CR_TOKEN: "${{ steps.app-token.outputs.token }}"
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           # CR_KEYRING:
           # CR_PASSPHRASE_FILE: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
 
@@ -67,7 +68,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ steps.app-token.outputs.token }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push chart to GHCR
         run: |

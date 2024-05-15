@@ -44,12 +44,15 @@ plugins:
       }
     ],
     [
-      "@qiwi/semantic-release-gh-pages-plugin",
+      '@qiwi/semrel-metabranch',
       {
-        "msg": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
-        "src": "/home/runner/work/midaz-helm/midaz-helm/*.tgz",
-        "dst": ".",
-        "branch": "gh-pages"
+        publish: {
+          action: 'push',
+          branch: 'gh-pages',
+          from: '/home/runner/work/midaz-helm/midaz-helm/*.tgz',
+          to: './',
+          message: 'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
+        }
       }
     ],
     [

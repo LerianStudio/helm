@@ -64,4 +64,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: /home/runner/work/midaz-helm/midaz-helm/*.tgz
+          publish_dir: ./*.tgz

@@ -43,15 +43,15 @@ plugins:
         registry: 'oci://ghcr.io/lerianstudio/midaz-helm'
       }
     ],
-    [
-      "@qiwi/semantic-release-gh-pages-plugin",
-      {
-        "msg": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
-        "src": "/home/runner/work/midaz-helm/midaz-helm/*.tgz",
-        "dst": ".",
-        "branch": "gh-pages"
-      }
-    ],
+    # [
+    #   "@qiwi/semantic-release-gh-pages-plugin",
+    #   {
+    #     "msg": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
+    #     "src": "/home/runner/work/midaz-helm/midaz-helm/*.tgz",
+    #     "dst": ".",
+    #     "branch": "gh-pages"
+    #   }
+    # ],
     [
       "@semantic-release/changelog",
       {

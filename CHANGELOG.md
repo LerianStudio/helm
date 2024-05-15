@@ -1,3 +1,10 @@
+## [1.3.0](https://github.com/LerianStudio/midaz-helm/compare/v1.2.0...v1.3.0) (2024-05-15)
+
+
+### Features
+
+* add index to semantic-release versioning ([4c98cf1](https://github.com/LerianStudio/midaz-helm/commit/4c98cf120e280bcdb252fed83aab285f1fa0f5e8))
+
 ## [1.2.0](https://github.com/LerianStudio/midaz-helm/compare/v1.1.0...v1.2.0) (2024-05-15)
 
 

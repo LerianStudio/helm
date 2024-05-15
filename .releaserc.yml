@@ -40,7 +40,7 @@ plugins:
         onlyUpdateVersion: true,
         populateChangelog: true,
         chartPath: './chart',
-        crConfigPath: './.github/configs/cr.yaml',
+        crConfigPath: '.github/configs/cr.yaml',
         registry: 'oci://ghcr.io/lerianstudio/midaz-helm'
       }
     ],
@@ -54,7 +54,7 @@ plugins:
       "@semantic-release/git",
       {
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
-        "assets": ["CHANGELOG.md"]
+        "assets": ["CHANGELOG.md", "chart/Chart.yaml"]
       }
     ],
     [

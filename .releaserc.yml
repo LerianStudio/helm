@@ -44,7 +44,7 @@ plugins:
       }
     ],
     [
-      '@qiwi/semrel-  ',
+      '@qiwi/semrel-metabranch',
       {
         publish: {
           action: 'push',

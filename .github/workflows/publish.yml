@@ -49,7 +49,7 @@ jobs:
           ci: false
           semantic_version: 23.0.8
           extra_plugins: |
-            conventional-changelog-conventionalcommits
+            conventional-changelog-conventionalcommits@v7.0.2
             @saithodev/semantic-release-backmerge
             semantic-release-helm3
         env:

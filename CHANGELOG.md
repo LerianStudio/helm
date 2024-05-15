@@ -1,3 +1,10 @@
+## [1.7.0](https://github.com/LerianStudio/midaz-helm/compare/v1.6.0...v1.7.0) (2024-05-15)
+
+
+### Features
+
+* add step to update gh-pages ([bd762c7](https://github.com/LerianStudio/midaz-helm/commit/bd762c72ead853758a349d52913a63b45ed40a5c))
+
 ## [1.6.0](https://github.com/LerianStudio/midaz-helm/compare/v1.5.0...v1.6.0) (2024-05-15)
 
 

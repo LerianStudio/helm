@@ -52,6 +52,7 @@ jobs:
           extra_plugins: |
             conventional-changelog-conventionalcommits@v7.0.2
             @saithodev/semantic-release-backmerge
+            @qiwi/semantic-release-gh-pages-plugin
             semantic-release-helm3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

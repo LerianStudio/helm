@@ -38,7 +38,6 @@ plugins:
       {
         crPublish: true,
         onlyUpdateVersion: true,
-        populateChangelog: true,
         chartPath: './chart',
         crConfigPath: '.github/configs/cr.yaml',
         registry: 'oci://ghcr.io/lerianstudio/midaz-helm'

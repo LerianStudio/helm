@@ -53,7 +53,7 @@ plugins:
       "@semantic-release/git",
       {
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
-        "assets": ["CHANGELOG.md", "chart/Chart.yaml"]
+        "assets": ["CHANGELOG.md", "index.yaml","chart/Chart.yaml"]
       }
     ],
     [

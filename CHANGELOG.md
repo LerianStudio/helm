@@ -1,3 +1,11 @@
+## [1.5.0](https://github.com/LerianStudio/midaz-helm/compare/v1.4.0...v1.5.0) (2024-05-15)
+
+
+### Features
+
+* add plugin to semantic-release ([a26017e](https://github.com/LerianStudio/midaz-helm/commit/a26017e363c87530e30e96e9b5fdc2581c19bb49))
+* add plugin to semantic-release ([b001de0](https://github.com/LerianStudio/midaz-helm/commit/b001de0f2fad2b2b1cf05b5c0db9f48aa1af5265))
+
 ## [1.4.0](https://github.com/LerianStudio/midaz-helm/compare/v1.3.0...v1.4.0) (2024-05-15)
 
 

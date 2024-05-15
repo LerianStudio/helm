@@ -1,3 +1,12 @@
+## [1.6.0](https://github.com/LerianStudio/midaz-helm/compare/v1.5.0...v1.6.0) (2024-05-15)
+
+
+### Features
+
+* add plugin to semantic-release ([4ec01d8](https://github.com/LerianStudio/midaz-helm/commit/4ec01d8aceef35145239ae5b513977531798b329))
+* add plugin to semantic-release ([d102c52](https://github.com/LerianStudio/midaz-helm/commit/d102c52039f5c1262f9dc00eb07728d226e656ef))
+* add step to update gh-pages ([ddffd1b](https://github.com/LerianStudio/midaz-helm/commit/ddffd1b3dfbd179e26958361965f93a62273af07))
+
 ## [1.5.0](https://github.com/LerianStudio/midaz-helm/compare/v1.4.0...v1.5.0) (2024-05-15)
 
 

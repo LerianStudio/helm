@@ -36,22 +36,10 @@ plugins:
     [
       "semantic-release-helm3",
       {
-        crPublish: true,
         onlyUpdateVersion: true,
         chartPath: './chart',
-        crConfigPath: '.github/configs/cr.yaml',
-        registry: 'oci://ghcr.io/lerianstudio/midaz-helm'
       }
     ],
-    # [
-    #   "@qiwi/semantic-release-gh-pages-plugin",
-    #   {
-    #     "msg": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
-    #     "src": "/home/runner/work/midaz-helm/midaz-helm/*.tgz",
-    #     "dst": ".",
-    #     "branch": "gh-pages"
-    #   }
-    # ],
     [
       "@semantic-release/changelog",
       {
@@ -62,7 +50,7 @@ plugins:
       "@semantic-release/git",
       {
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
-        "assets": ["CHANGELOG.md", "index.yaml", "chart/Chart.yaml", "chart/index.yaml"]
+        "assets": ["CHANGELOG.md", "chart/Chart.yaml"]
       }
     ],
     [

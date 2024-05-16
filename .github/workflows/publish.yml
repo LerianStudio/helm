@@ -52,7 +52,6 @@ jobs:
           extra_plugins: |
             conventional-changelog-conventionalcommits@v7.0.2
             @saithodev/semantic-release-backmerge
-            semantic-release-helm3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
@@ -60,13 +59,20 @@ jobs:
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
 
-      # - name: Main
-      #   run: |
-      #     ls -lah
-      #     find / -name *.tgz
-
-      - name: Deploy Github Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./midaz-*.tgz
+          charts_dir: chart
+          config: .github/configs/cr.yaml
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Push chart to GHCR
+        run: |
+          shopt -s nullglob
+          for pkg in .cr-release-packages/*.tgz; do
+            if [ -z "${pkg:-}" ]; then
+              break
+            fi
+            helm push "${pkg}" oci://ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          done

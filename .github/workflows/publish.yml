@@ -62,8 +62,8 @@ jobs:
 
       - name: Main
         run: |
-          - ls
-          - find / -name *.tgz
+          ls -lah
+          find / -name *.tgz
 
       - name: Deploy Github Pages
         uses: peaceiris/actions-gh-pages@v4

@@ -65,6 +65,8 @@ jobs:
         with:
           charts_dir: ./chart
           config: .github/configs/cr.yaml
+          packages_with_index: true
+          pages_branch: "gh-pages"
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 

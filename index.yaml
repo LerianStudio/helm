@@ -3,6 +3,16 @@ entries:
   midaz:
   - apiVersion: v2
     appVersion: 0.0.0
+    created: "2024-05-20T13:27:25.306444819Z"
+    description: A Helm chart for Kubernetes
+    digest: 8d5627b52889e6471ad498a870a78ec0ae0986ab89852671871a93b1c2f0c882
+    name: midaz
+    type: application
+    urls:
+    - midaz-1.7.10.tgz
+    version: 1.7.10
+  - apiVersion: v2
+    appVersion: 0.0.0
     created: "2024-05-20T12:38:46.332151254Z"
     description: A Helm chart for Kubernetes
     digest: eeedf89d0a20e15491856309eeeecac69dce222ac4829075b74101c90ce1cf83
@@ -41,4 +51,4 @@ entries:
     urls:
     - midaz-1.7.4.tgz
     version: 1.7.4
-generated: "2024-05-20T12:38:46.332167775Z"
+generated: "2024-05-20T13:27:25.306464115Z"

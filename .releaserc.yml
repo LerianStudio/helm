@@ -52,13 +52,6 @@ plugins:
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
         "assets": ["CHANGELOG.md", "charts/midaz/Chart.yaml"]
       }
-    ],
-    [
-      "@saithodev/semantic-release-backmerge",
-      {
-        "backmergeBranches": [{"from": "main", "to": "develop"}],
-        "message": "chore(release): Preparations for next release [skip ci]"
-      }
     ]
   ]
 

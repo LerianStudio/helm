@@ -22,18 +22,6 @@ plugins:
       }
     ],
     [
-      "@semantic-release/release-notes-generator",
-      {
-        "preset": "conventionalcommits",
-        "parserOpts": {
-          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING"]
-        },
-        "writerOpts": {
-          "commitsSort": ["subject", "scope"]
-        }
-      }
-    ],
-    [
       "semantic-release-helm3",
       {
         onlyUpdateVersion: true,
@@ -52,9 +40,6 @@ plugins:
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
         "assets": ["CHANGELOG.md", "charts/midaz/Chart.yaml"]
       }
-    ],
-    [
-      "@semantic-release/github"
     ],
     [
       "@saithodev/semantic-release-backmerge",

@@ -1,0 +1,34 @@
+apiVersion: 1.1
+
+storage:
+  name: midaz-compose
+
+releases:
+  midaz:
+    chart: midaz-ledger/midaz
+    chartVersion: 1.7.12 # Update to latest version
+    createNamespace: true
+    namespace: midaz
+    valueFiles: charts/midaz/values.yml
+  mongo:
+    chart: bitnami/mongodb
+    chartVersion: 15.4.5
+    createNamespace: true
+    namespace: midaz
+    valueFiles: charts/mongodb/values.yml
+  redis:
+    chart: bitnami/redis
+    chartVersion: 19.3.4
+    createNamespace: true
+    namespace: midaz
+    valueFiles: charts/redis/values.yml
+  postgres:
+    chart: bitnami/postgresql
+    chartVersion: 15.3.3
+    namespace: midaz
+    createNamespace: true
+    valueFiles: charts/postgresql/values.yml
+
+repositories:
+  bitnami: https://charts.bitnami.com/bitnami
+  midaz-ledger: https://lerianstudio.github.io/midaz-helm/

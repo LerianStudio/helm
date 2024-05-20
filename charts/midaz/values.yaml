@@ -5,10 +5,10 @@
 replicaCount: 2
 
 image:
-  repository: nginx
-  pullPolicy: IfNotPresent
+  repository: lerianstudio/midaz-ledger
+  pullPolicy: always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -62,8 +62,8 @@ resources: {}
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
+  #   cpu: 200m
+  #   memory: 256Mi
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
@@ -80,3 +80,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+karpenter:
+  enabled: false
+  instance_types: ["c7a.large", "m7a.large", "c7a.xlarge", "m7a.xlarge"]
+  cluster:
+    name: ""
+    iam_role_name: ""

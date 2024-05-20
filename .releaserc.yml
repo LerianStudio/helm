@@ -33,13 +33,13 @@ plugins:
         }
       }
     ],
-    # [
-    #   "semantic-release-helm3",
-    #   {
-    #     onlyUpdateVersion: true,
-    #     chartPath: './chart',
-    #   }
-    # ],
+    [
+      "semantic-release-helm3",
+      {
+        onlyUpdateVersion: true,
+        chartPath: './chart',
+      }
+    ],
     [
       "@semantic-release/changelog",
       {

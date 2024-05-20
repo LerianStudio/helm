@@ -1,3 +1,10 @@
+## [1.8.0](https://github.com/LerianStudio/midaz-helm/compare/v1.7.11...v1.8.0) (2024-05-20)
+
+
+### Features
+
+* add helm-compose config and karpenter node ([9a52467](https://github.com/LerianStudio/midaz-helm/commit/9a52467339718fd820e76355e97113cb6104fc2c))
+
 ## [1.7.11](https://github.com/LerianStudio/midaz-helm/compare/v1.7.10...v1.7.11) (2024-05-20)
 
 ## [1.7.10](https://github.com/LerianStudio/midaz-helm/compare/v1.7.9...v1.7.10) (2024-05-20)

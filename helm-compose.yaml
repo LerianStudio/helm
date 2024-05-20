@@ -2,11 +2,12 @@ apiVersion: 1.1
 
 storage:
   name: midaz-compose
+  type: kubernetes
+  numberOfRevisions: 5
 
 releases:
   midaz:
     chart: midaz-ledger/midaz
-    chartVersion: 1.7.12 # Update to latest version
     createNamespace: true
     namespace: midaz
     valueFiles: charts/midaz/values.yml
@@ -25,8 +26,8 @@ releases:
   postgres:
     chart: bitnami/postgresql
     chartVersion: 15.3.3
-    namespace: midaz
     createNamespace: true
+    namespace: midaz
     valueFiles: charts/postgresql/values.yml
 
 repositories:

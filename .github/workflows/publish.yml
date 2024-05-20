@@ -70,12 +70,12 @@ jobs:
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Push chart to GHCR
-        run: |
-          shopt -s nullglob
-          for pkg in .cr-release-packages/*.tgz; do
-            if [ -z "${pkg:-}" ]; then
-              break
-            fi
-            helm push "${pkg}" oci://ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          done
+      # - name: Push chart to GHCR
+      #   run: |
+      #     shopt -s nullglob
+      #     for pkg in .cr-release-packages/*.tgz; do
+      #       if [ -z "${pkg:-}" ]; then
+      #         break
+      #       fi
+      #       helm push "${pkg}" oci://ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+      #     done

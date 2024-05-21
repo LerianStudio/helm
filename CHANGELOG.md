@@ -1,3 +1,5 @@
+## [1.8.1](https://github.com/LerianStudio/midaz-helm/compare/v1.8.0...v1.8.1) (2024-05-20)
+
 ## [1.8.0](https://github.com/LerianStudio/midaz-helm/compare/v1.7.11...v1.8.0) (2024-05-20)
 
 

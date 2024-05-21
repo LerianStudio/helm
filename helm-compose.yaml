@@ -10,25 +10,26 @@ releases:
     chart: midaz-ledger/midaz
     createNamespace: true
     namespace: midaz
-    valueFiles: charts/midaz/values.yml
+    valueFiles:
+      - compose/midaz/values.yaml
   mongo:
     chart: bitnami/mongodb
     chartVersion: 15.4.5
-    createNamespace: true
     namespace: midaz
-    valueFiles: charts/mongodb/values.yml
+    valueFiles:
+      - compose/mongodb/values.yaml
   redis:
     chart: bitnami/redis
     chartVersion: 19.3.4
-    createNamespace: true
     namespace: midaz
-    valueFiles: charts/redis/values.yml
+    valueFiles:
+     - compose/redis/values.yaml
   postgres:
     chart: bitnami/postgresql
     chartVersion: 15.3.3
-    createNamespace: true
     namespace: midaz
-    valueFiles: charts/postgresql/values.yml
+    valueFiles:
+     - compose/postgresql/values.yaml
 
 repositories:
   bitnami: https://charts.bitnami.com/bitnami

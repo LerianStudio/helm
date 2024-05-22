@@ -6,13 +6,6 @@ storage:
   numberOfRevisions: 5
 
 releases:
-  midaz:
-    chart: midaz-ledger/midaz
-    createNamespace: true
-    namespace: midaz
-    wait: true
-    valueFiles:
-      - compose/midaz/values.yaml
   mongo:
     chart: bitnami/mongodb
     chartVersion: 15.4.5
@@ -31,6 +24,13 @@ releases:
     namespace: midaz
     valueFiles:
      - compose/postgresql/values.yaml
+  midaz:
+    chart: midaz-ledger/midaz
+    createNamespace: true
+    namespace: midaz
+    wait: true
+    valueFiles:
+      - compose/midaz/values.yaml
 
 repositories:
   bitnami: https://charts.bitnami.com/bitnami

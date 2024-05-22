@@ -1,3 +1,5 @@
+## [1.8.4](https://github.com/LerianStudio/midaz-helm/compare/v1.8.3...v1.8.4) (2024-05-22)
+
 ## [1.8.3](https://github.com/LerianStudio/midaz-helm/compare/v1.8.2...v1.8.3) (2024-05-22)
 
 ## [1.8.2](https://github.com/LerianStudio/midaz-helm/compare/v1.8.1...v1.8.2) (2024-05-21)

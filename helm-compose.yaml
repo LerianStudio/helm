@@ -10,6 +10,7 @@ releases:
     chart: midaz-ledger/midaz
     createNamespace: true
     namespace: midaz
+    wait: true
     valueFiles:
       - compose/midaz/values.yaml
   mongo:

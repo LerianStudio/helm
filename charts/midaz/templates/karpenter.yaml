@@ -23,8 +23,10 @@ spec:
     memory: 2000Gi
   disruption:
     consolidationPolicy: WhenUnderutilized
-    expireAfter: 720h # 30 * 24h = 720h
-
+    expireAfter: 720h
+  taints:
+    - key: midaz.io/midaz
+      effect: NoSchedule
 ---
 
 apiVersion: karpenter.k8s.aws/v1beta1
@@ -32,14 +34,14 @@ kind: EC2NodeClass
 metadata:
   name: {{ include "midaz-ledger.fullname" . }}
 spec:
-  amiFamily: AL2 # Amazon Linux 2
-  role: {{ .Values.karpenter.cluster.iam_role_name }} # Replace with your cluster name
+  amiFamily: AL2
+  role: {{ .Values.karpenter.cluster.iam_role_name }}
   subnetSelectorTerms:
     - tags:
-        karpenter.sh/discovery: {{ .Values.karpenter.cluster.name }} # Replace with your cluster name
+        karpenter.sh/discovery: {{ .Values.karpenter.cluster.name }}
   securityGroupSelectorTerms:
     - tags:
-        karpenter.sh/discovery: {{ .Values.karpenter.cluster.name }} # Replace with your cluster name
+        karpenter.sh/discovery: {{ .Values.karpenter.cluster.name }}
   tags:
     Name: {{ include "midaz-ledger.fullname" . }}
     Manager: "karpenter"

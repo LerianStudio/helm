@@ -1,3 +1,10 @@
+## [1.11.0](https://github.com/LerianStudio/midaz-helm/compare/v1.10.2...v1.11.0) (2024-05-23)
+
+
+### Bug Fixes
+
+* fix ([8e3d5ad](https://github.com/LerianStudio/midaz-helm/commit/8e3d5ad6deff4dc6a84d7f0c343d5e605428686f))
+
 ## [1.10.2](https://github.com/LerianStudio/midaz-helm/compare/v1.10.1...v1.10.2) (2024-05-23)
 
 ## [1.10.1](https://github.com/LerianStudio/midaz-helm/compare/v1.10.0...v1.10.1) (2024-05-23)

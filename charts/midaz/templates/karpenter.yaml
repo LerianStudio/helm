@@ -8,7 +8,7 @@ spec:
     metadata:
       labels:
         type: {{ include "midaz-ledger.fullname" . }}
-      annotation:
+      annotations:
         midaz.io/owner: {{ include "midaz-ledger.fullname" . }}
     spec:
       taints:

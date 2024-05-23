@@ -76,15 +76,15 @@ tolerations:
     operator: "Equal"
     effect: "NoSchedule"
 
-affinity:
-  nodeAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: midaz.io/owner
-          operator: In
-          values:
-          - midaz
+affinity: {}
+  # nodeAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #     nodeSelectorTerms:
+  #     - matchExpressions:
+  #       - key: midaz.io/owner
+  #         operator: In
+  #         values:
+  #         - midaz
 
 configmap:
   ENV_NAME: "local"

@@ -81,7 +81,7 @@ affinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: type
+        - key: midaz.io/owner
           operator: In
           values:
           - midaz

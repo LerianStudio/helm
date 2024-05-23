@@ -1,3 +1,10 @@
+## [1.9.0](https://github.com/LerianStudio/midaz-helm/compare/v1.8.6...v1.9.0) (2024-05-23)
+
+
+### Features
+
+* enable karpenter node ([02b029d](https://github.com/LerianStudio/midaz-helm/commit/02b029d1a18e462be5c5c11c5d0c5f0cceee6122))
+
 ## [1.8.6](https://github.com/LerianStudio/midaz-helm/compare/v1.8.5...v1.8.6) (2024-05-22)
 
 ## [1.8.5](https://github.com/LerianStudio/midaz-helm/compare/v1.8.4...v1.8.5) (2024-05-22)

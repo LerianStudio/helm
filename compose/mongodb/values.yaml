@@ -19,7 +19,7 @@ global:
   ##   - myRegistryKeySecretName
   ##
   imagePullSecrets: []
-  storageClass: ""
+  storageClass: "ebs-sc"
   namespaceOverride: ""
   ## Compatibility adaptations for Kubernetes platforms
   ##
@@ -1195,7 +1195,7 @@ persistence:
   ## If undefined (the default) or set to null, no storageClassName spec is
   ## set, choosing the default provisioner.
   ##
-  storageClass: "gp2"
+  storageClass: "ebs-sc"
   ## @param persistence.accessModes PV Access Mode
   ##
   accessModes:
@@ -1333,7 +1333,7 @@ backup:
       ## If undefined (the default) or set to null, no storageClassName spec is
       ## set, choosing the default provisioner.
       ##
-      storageClass: ""
+      storageClass: "ebs-sc"
       ## @param backup.cronjob.storage.accessModes PV Access Mode
       ##
       accessModes:
@@ -2203,7 +2203,7 @@ hidden:
     ## If undefined (the default) or set to null, no storageClassName spec is
     ## set, choosing the default provisioner.
     ##
-    storageClass: ""
+    storageClass: "ebs-sc"
     ## @param hidden.persistence.accessModes PV Access Mode
     ##
     accessModes:

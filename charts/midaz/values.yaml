@@ -87,3 +87,45 @@ karpenter:
   cluster:
     name: ""
     iam_role_name: ""
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  architecture: standalone
+
+externalRedis:
+  enabled: false
+  host: ""
+  port: ""
+
+mongodb:
+  enabled: true
+  auth:
+    enabled: true
+  authRootPassword: ""
+  authUsername: ""
+  authPassword: ""
+  authDatabase: ""
+
+externalMongodb:
+  enabled: false
+  host: ""
+  port: ""
+  username: ""
+  password: ""
+
+postgresql:
+  enabled: true
+  auth:
+    postgresqlPassword: ""
+    postgresqlUsername: ""
+    postgresqlDatabase: ""
+
+externalPostgresql:
+  enabled: false
+  host: ""
+  port: ""
+  username: ""
+  password: ""
+  database: ""

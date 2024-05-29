@@ -19,7 +19,7 @@ global:
   ##   - myRegistryKeySecretName
   ##
   imagePullSecrets: []
-  storageClass: ""
+  storageClass: "ebs-sc"
   redis:
     password: ""
   ## Compatibility adaptations for Kubernetes platforms
@@ -501,7 +501,7 @@ master:
     ## If set to "-", storageClassName: "", which disables dynamic provisioning
     ## If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner
     ##
-    storageClass: "gp2"
+    storageClass: "ebs-sc"
     ## @param master.persistence.accessModes Persistent Volume access modes
     ##
     accessModes:
@@ -967,7 +967,7 @@ replica:
     ## If set to "-", storageClassName: "", which disables dynamic provisioning
     ## If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner
     ##
-    storageClass: ""
+    storageClass: "ebs-sc"
     ## @param replica.persistence.accessModes Persistent Volume access modes
     ##
     accessModes:
@@ -1277,7 +1277,7 @@ sentinel:
     ## If set to "-", storageClassName: "", which disables dynamic provisioning
     ## If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner
     ##
-    storageClass: ""
+    storageClass: "ebs-sc"
     ## @param sentinel.persistence.accessModes Persistent Volume access modes
     ##
     accessModes:

@@ -3,6 +3,29 @@ entries:
   midaz:
   - apiVersion: v2
     appVersion: 0.0.0
+    created: "2024-06-03T16:51:24.033858151Z"
+    dependencies:
+    - condition: redis.enabled
+      name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: "19.3"
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: "15.3"
+    - condition: mongodb.enabled
+      name: mongodb
+      repository: https://charts.bitnami.com/bitnami
+      version: "15.4"
+    description: A Helm chart for Kubernetes
+    digest: 1e3b09009a5a39fcb15fab2ddc37b61a4a1280056cd9b6c6fe59e7c8214a596e
+    name: midaz
+    type: application
+    urls:
+    - midaz-1.12.3.tgz
+    version: 1.12.3
+  - apiVersion: v2
+    appVersion: 0.0.0
     created: "2024-06-03T16:38:33.528019533Z"
     dependencies:
     - condition: redis.enabled
@@ -224,4 +247,4 @@ entries:
     urls:
     - midaz-1.7.4.tgz
     version: 1.7.4
-generated: "2024-06-03T16:38:33.528188359Z"
+generated: "2024-06-03T16:51:24.034144484Z"

@@ -44,6 +44,12 @@ jobs:
           username: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Add Helm repo
+        run: helm repo add bitnami https://charts.bitnami.com/bitnami
+
+      - name: Update Helm dependencies
+        run: helm dependency update charts/midaz
+
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
         with:

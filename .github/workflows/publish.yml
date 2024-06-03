@@ -48,9 +48,9 @@ jobs:
         uses: cycjimmy/semantic-release-action@v4
         with:
           ci: false
-          semantic_version: 23.0.8
+          semantic_version: 24
           extra_plugins: |
-            conventional-changelog-conventionalcommits@v7.0.2
+            conventional-changelog-conventionalcommits
             @saithodev/semantic-release-backmerge
             semantic-release-helm3
         env:

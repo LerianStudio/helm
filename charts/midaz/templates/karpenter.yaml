@@ -28,29 +28,29 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
       nodeClassRef:
-        name: {{ include "midaz-ledger.fullname" . }}
+        name: ebs-sc
   limits:
     cpu: 1000
     memory: 2000Gi
   disruption:
     consolidationPolicy: WhenUnderutilized
     expireAfter: 720h
----
+# ---
 
-apiVersion: karpenter.k8s.aws/v1beta1
-kind: EC2NodeClass
-metadata:
-  name: {{ include "midaz-ledger.fullname" . }}
-spec:
-  amiFamily: AL2
-  role: {{ .Values.karpenter.cluster.iam_role_name }}
-  subnetSelectorTerms:
-    - tags:
-        karpenter.sh/discovery: {{ .Values.karpenter.cluster.name }}
-  securityGroupSelectorTerms:
-    - tags:
-        karpenter.sh/discovery: {{ .Values.karpenter.cluster.name }}
-  tags:
-    Name: {{ include "midaz-ledger.fullname" . }}
-    Manager: "karpenter"
+# apiVersion: karpenter.k8s.aws/v1beta1
+# kind: EC2NodeClass
+# metadata:
+#   name: {{ include "midaz-ledger.fullname" . }}
+# spec:
+#   amiFamily: AL2
+#   role: {{ .Values.karpenter.cluster.iam_role_name }}
+#   subnetSelectorTerms:
+#     - tags:
+#         karpenter.sh/discovery: {{ .Values.karpenter.cluster.name }}
+#   securityGroupSelectorTerms:
+#     - tags:
+#         karpenter.sh/discovery: {{ .Values.karpenter.cluster.name }}
+#   tags:
+#     Name: {{ include "midaz-ledger.fullname" . }}
+#     Manager: "karpenter"
 {{- end }}

@@ -11,12 +11,12 @@ spec:
       annotations:
         midaz.io/owner: {{ include "midaz-ledger.fullname" . }}
     spec:
-      startupTaints:
-        - key: ebs.csi.aws.com/agent-not-ready
-          effect: NoExecute
-      taints:
-        - key: midaz.io/midaz
-          effect: NoSchedule
+      # startupTaints:
+      #   - key: ebs.csi.aws.com/agent-not-ready
+      #     effect: NoExecute
+      # taints:
+      #   - key: midaz.io/midaz
+      #     effect: NoSchedule
       requirements:
         - key: karpenter.sh/capacity-type
           operator: In

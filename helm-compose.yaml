@@ -8,19 +8,19 @@ storage:
 releases:
   mongo:
     chart: bitnami/mongodb
-    chartVersion: 15.4.5
+    chartVersion: 15.4
     namespace: midaz
     valueFiles:
       - compose/mongodb/values.yaml
   redis:
     chart: bitnami/redis
-    chartVersion: 19.3.4
+    chartVersion: 19.3
     namespace: midaz
     valueFiles:
      - compose/redis/values.yaml
   postgres:
     chart: bitnami/postgresql
-    chartVersion: 15.3.3
+    chartVersion: 15.3
     namespace: midaz
     valueFiles:
      - compose/postgresql/values.yaml

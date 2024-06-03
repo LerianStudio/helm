@@ -1,3 +1,10 @@
+## [1.12.0](https://github.com/LerianStudio/midaz-helm/compare/v1.11.1...v1.12.0) (2024-06-03)
+
+
+### Features
+
+* add dependencies to midaz helm ([e1e4095](https://github.com/LerianStudio/midaz-helm/commit/e1e4095c7e9fc48c69738c0610ee7ad4bd56c12a))
+
 ## [1.11.1](https://github.com/LerianStudio/midaz-helm/compare/v1.11.0...v1.11.1) (2024-05-23)
 
 ## [1.11.0](https://github.com/LerianStudio/midaz-helm/compare/v1.10.2...v1.11.0) (2024-05-23)

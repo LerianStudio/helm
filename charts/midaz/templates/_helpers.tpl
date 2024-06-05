@@ -60,3 +60,28 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Enable internal dependencies
+*/}}
+{{- define "mongodb.enabled" -}}
+{{- if not .Values.mongodb.external -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+{{- define "redis.enabled" -}}
+{{- if not .Values.redis.external -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+{{- define "postgresql.enabled" -}}
+{{- if not .Values.postgresql.external -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}

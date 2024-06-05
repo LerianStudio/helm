@@ -1,3 +1,5 @@
+## [1.12.7](https://github.com/LerianStudio/midaz-helm/compare/v1.12.6...v1.12.7) (2024-06-05)
+
 ## [1.12.6](https://github.com/LerianStudio/midaz-helm/compare/v1.12.5...v1.12.6) (2024-06-03)
 
 ## [1.12.5](https://github.com/LerianStudio/midaz-helm/compare/v1.12.4...v1.12.5) (2024-06-03)

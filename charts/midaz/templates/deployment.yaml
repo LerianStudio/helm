@@ -34,8 +34,8 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
-          # - secretRef:
-          #     name: {{ include "midaz-ledger.fullname" . }}
+          - secretRef:
+              name: {{ include "midaz-ledger.fullname" . }}
           - configMapRef:
               name: {{ include "midaz-ledger.fullname" . }}
           ports:

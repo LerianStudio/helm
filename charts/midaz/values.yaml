@@ -104,14 +104,12 @@ configmap: {}
 secrets: {}
 
 redis:
-  enabled: true
   external: false
   architecture: standalone
   auth:
     enabled: false
 
 postgresql:
-  enabled: true
   external: false
   auth:
     enablePostgresUser: false
@@ -122,7 +120,6 @@ postgresql:
     replicationPassword: "lerian"
 
 mongodb:
-  enabled: true
   external: false
   auth:
     enabled: true

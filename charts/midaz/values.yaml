@@ -1,107 +1,326 @@
 # Default values for midaz-ledger.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-
-replicaCount: 2
-
-image:
-  repository: lerianstudio/midaz-ledger
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
-
-imagePullSecrets: []
-nameOverride: ""
+nameOverride: "midaz"
 fullnameOverride: ""
 
-serviceAccount:
+ledger:
+  name: ledger
+  replicaCount: 2
+
+  image:
+    repository: lerianstudio/midaz-ledger
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  podAnnotations: {}
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: chart-example.local
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations:
+    - key: "midaz.io/midaz"
+      operator: "Equal"
+      effect: "NoSchedule"
+
+  affinity: {}
+    # nodeAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #     nodeSelectorTerms:
+    #     - matchExpressions:
+    #       - key: midaz.io/owner
+    #         operator: In
+    #         values:
+    #         - midaz
+
+  configmap: {}
+
+  secrets: {}
+
+  serviceAccount:
   # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
 
-podAnnotations: {}
+audit:
+  name: audit
+  replicaCount: 1
 
-podSecurityContext: {}
-  # fsGroup: 2000
+  image:
+    repository: lerianstudio/midaz-audit
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "1.44.0"
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
 
-service:
-  type: ClusterIP
-  port: 80
+  podAnnotations: {}
 
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+  podSecurityContext: {}
+    # fsGroup: 2000
 
-resources:
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  limits:
-    cpu: 200m
-    memory: 256Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
 
-autoscaling:
-  enabled: true
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  service:
+    type: ClusterIP
+    port: 3005
+    server:
+      grpcPort: 8082
+      httpPort: 8083
+    signer:
+      httpPort: 8084
 
-nodeSelector: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: chart-example.local
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
 
-tolerations:
-  - key: "midaz.io/midaz"
-    operator: "Equal"
-    effect: "NoSchedule"
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  server:
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  
+  signer:
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
 
-affinity: {}
-  # nodeAffinity:
-  #   requiredDuringSchedulingIgnoredDuringExecution:
-  #     nodeSelectorTerms:
-  #     - matchExpressions:
-  #       - key: midaz.io/owner
-  #         operator: In
-  #         values:
-  #         - midaz
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations:
+    - key: "midaz.io/midaz"
+      operator: "Equal"
+      effect: "NoSchedule"
+
+  affinity: {}
+    # nodeAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #     nodeSelectorTerms:
+    #     - matchExpressions:
+    #       - key: midaz.io/owner
+    #         operator: In
+    #         values:
+    #         - midaz
+
+  configmap: {}
+
+  secrets: {}
+
+  serviceAccount:
+  # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+
+transaction:
+  name: transaction
+  replicaCount: 1
+
+  image:
+    repository: lerianstudio/midaz-transaction
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "1.44.0"
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  podAnnotations: {}
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  service:
+    type: ClusterIP
+    port: 3002
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: chart-example.local
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations:
+    - key: "midaz.io/midaz"
+      operator: "Equal"
+      effect: "NoSchedule"
+
+  affinity: {}
+    # nodeAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #     nodeSelectorTerms:
+    #     - matchExpressions:
+    #       - key: midaz.io/owner
+    #         operator: In
+    #         values:
+    #         - midaz
+
+  configmap: {}
+
+  secrets: {}
+
+  serviceAccount:
+  # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
 
 karpenter:
-  enabled: true
+  enabled: false
   instance_types: ["c7a.large", "m7a.large", "c7a.xlarge", "m7a.xlarge"]
   cluster:
     name: "midaz-eks-control-plane-dev"
     iam_role_name: "midaz-eks-control-plane-dev"
-
-configmap: {}
-
-secrets: {}
 
 redis:
   external: false
@@ -112,38 +331,269 @@ redis:
 postgresql:
   external: false
   auth:
+    enabled: true
     enablePostgresUser: false
     username: "midaz"
     password: "lerian"
     database: "ledger"
-    replicationUsername: replicator
-    replicationPassword: "lerian"
+  primary:
+    extraVolumes:
+    - name: init-script
+      configMap:
+        name: midaz-init-sql
+        items:
+          - key: init.sql
+            path: init.sql
+    extraVolumeMounts:
+    - name: init-script
+      mountPath: /docker-entrypoint-initdb.d/init.sql
+      subPath: init.sql
 
-mongodb:
+mongodb: 
   external: false
   auth:
     enabled: true
-    username: midaz
-    password: lerian
-    database: ledger
+    rootUser: midaz
+    rootPassword: "lerian"
 
-# externalRedis:
-#   enabled: false
-#   architecture: standalone
-#   auth:
+# documentdb:
 #     enabled: false
+#     username: "midaz"
+#     password: "lerian"
+#     database: "ledger"
 
-# externalPostgresql:
-#   enabled: false
-#   global:
-#     postgresql:
-#       postgresqlPassword: mypassword
+  # externalRedis:
+  #   enabled: false
+  #   architecture: standalone
+  #   auth:
+  #     enabled: false
 
-# externalMongodb:
-#   enabled: false
-#   auth:
-#     enabled: true
-#     rootPassword: rootpassword
-#     username: myuser
-#     password: mypassword
-#     database: mydatabase
+  # externalPostgresql:
+  #   enabled: false
+  #   global:
+  #     postgresql:
+  #       postgresqlPassword: mypassword
+
+  # externalMongodb:
+  #   enabled: false
+  #   auth:
+  #     enabled: true
+  #     rootPassword: rootpassword
+  #     username: myuser
+  #     password: mypassword
+  #     database: mydatabase
+
+rabbitmq:
+  external: false
+  image:
+    debug: true
+  auth:
+    enabled: true
+    username: "midaz"
+    password: "lerian"
+  extraSecrets:
+    load-definition: 
+      load_definition.json: |
+        {
+          "users": [
+            {
+              "name":"ledger",
+              "password": "lerian",
+              "tags":"administrator"
+            },
+            {
+              "name":"transaction",
+              "password":"lerian",
+              "tags":"administrator"
+            },
+            {
+              "name":"audit",
+              "password":"lerian",
+              "tags":"administrator"
+            },
+            {
+              "name":"midaz",
+              "password":"lerian",
+              "tags":"administrator"
+            },
+            {
+              "name":"ledger",
+              "password": "lerian",
+              "tags":"administrator"
+            },
+            {
+              "name":"transaction",
+              "password":"lerian",
+              "tags":"administrator"
+            },
+            {
+              "name":"audit",
+              "password":"lerian",
+              "tags":"administrator"
+            }
+          ],
+          "vhosts": [
+            {
+              "name": "/"
+            }
+          ],
+          "permissions": [
+            {
+              "user": "midaz",
+              "vhost": "/",
+              "configure": ".*",
+              "write": ".*",
+              "read": ".*"
+            },
+            {
+              "user": "ledger",
+              "vhost": "/",
+              "configure": ".*",
+              "write": ".*",
+              "read": ".*"
+            },
+            {
+              "user": "transaction",
+              "vhost": "/",
+              "configure": ".*",
+              "write": ".*",
+              "read": ".*"
+            },
+            {
+              "user": "audit",
+              "vhost": "/",
+              "configure": ".*",
+              "write": ".*",
+              "read": ".*"
+            }
+          ],
+          "queues": [
+            {
+              "name": "audit_queue",
+              "vhost": "/",
+              "durable": true
+            },
+            {
+              "name": "transaction_operations_queue",
+              "vhost": "/",
+              "durable": true
+            },
+            {
+              "name": "ledger_accounts_queue",
+              "vhost": "/",
+              "durable": true
+            }
+          ],
+          "exchanges": [
+            {
+              "name": "audit_exchange",
+              "vhost": "/",
+              "type": "direct",
+              "durable": true
+            },
+            {
+              "name": "transaction_operations_exchange",
+              "vhost": "/",
+              "type": "direct",
+              "durable": true
+            },
+            {
+              "name": "ledger_accounts_exchange",
+              "vhost": "/",
+              "type": "direct",
+              "durable": true
+            }
+          ],
+          "bindings": [
+            {
+              "source": "audit_exchange",
+              "vhost": "/",
+              "destination": "audit_queue",
+              "destination_type": "queue",
+              "routing_key": "audit_key"
+            },
+            {
+              "source": "transaction_operations_exchange",
+              "vhost": "/",
+              "destination": "transaction_operations_queue",
+              "destination_type": "queue",
+              "routing_key": "transaction_operations_key"
+            },
+            {
+              "source": "ledger_accounts_exchange",
+              "vhost": "/",
+              "destination": "ledger_accounts_queue",
+              "destination_type": "queue",
+              "routing_key": "ledger_accounts_key"
+            }
+          ]
+        }
+  loadDefinition:
+    enabled: true
+    existingSecret: load-definition
+  extraConfiguration: |
+    load_definitions = /app/load_definition.json
+  
+casdoor-helm-charts:
+  database:
+    driver: postgres
+    user: "casdoor"
+    password: "lerian"
+    host: "midaz-postgresql-casdoor.midaz-saas.svc.cluster.local"
+    port: "5432"
+    databaseName: "casdoor"
+
+  extraVolumeMounts:
+    - name: init-data-volume
+      mountPath: /init_data.json
+
+  extraVolumes:
+    - name: init-data-volume
+      source:
+      - configMap:
+          name: casdoor-init-config
+          items:
+            - key: init_data.json
+              path: init_data.json
+
+postgresql-casdoor:
+  external: false
+  auth:
+    enabled: true
+    enablePostgresUser: false
+    username: "casdoor"
+    password: "lerian"
+    database: "casdoor"
+  primary:
+    extraVolumes:
+    - name: init-script-volume
+      configMap:
+        name: casdoor-init-script
+        items:
+          - key: 00_init.sql
+            path: 00_init.sql
+    extraVolumeMounts:
+    - name: init-script-volume
+      mountPath: /docker-entrypoint-initdb.d/00_init.sql
+      subPath: 00_init.sql
+
+mariadb:
+  auth:
+    enabled: true
+    username: midaz
+    rootPassword: "lerian"
+    password: "lerian"
+    database: "audit-db"
+  primary:
+    extraVolumes:
+    - name: init-sql-volume
+      configMap:
+        name: mariadb-init-sql
+        items:
+          - key: init.sql
+            path: init.sql
+    extraVolumeMounts:
+    - name: init-sql-volume
+      mountPath: /docker-entrypoint-initdb.d/init.sql
+      subPath: init.sql
+    

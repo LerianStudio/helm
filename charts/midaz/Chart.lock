@@ -4,9 +4,21 @@ dependencies:
   version: 19.3.4
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
-  version: 15.3.5
+  version: 16.3.5
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.3.5
 - name: mongodb
   repository: https://charts.bitnami.com/bitnami
   version: 15.4.5
-digest: sha256:c79d2777e5e4704cf422c730f03bc2e74f0252f0f36a7b6815193d46cdc745d2
-generated: "2024-06-03T09:10:38.246377694-03:00"
+- name: rabbitmq
+  repository: https://charts.bitnami.com/bitnami
+  version: 15.2.2
+- name: casdoor-helm-charts
+  repository: oci://registry-1.docker.io/casbin
+  version: v1.787.0
+- name: mariadb
+  repository: https://charts.bitnami.com/bitnami
+  version: 20.2.1
+digest: sha256:88fe22674282ba92615fe4ad6968a99b10643f51dd821248920c4a97a2909e17
+generated: "2025-01-14T13:49:01.293326-03:00"

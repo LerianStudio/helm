@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "midaz-transaction.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.transaction.name "name" .Values.transaction.name ) | nindent 4 }}
+spec:
+  {{- if not .Values.transaction.autoscaling.enabled }}
+  replicas: {{ .Values.transaction.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.transaction.name ) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.transaction.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "midaz.labels" (dict "context" . "component" .Values.transaction.name "name" .Values.transaction.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.transaction.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.transaction.serviceAccount.name }}
+      securityContext:
+        {{- toYaml .Values.transaction.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "midaz-transaction.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.transaction.securityContext | nindent 12 }}
+          image: "{{ .Values.transaction.image.repository }}:{{ .Values.transaction.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.transaction.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ include "midaz-transaction.fullname" . }}
+          - configMapRef:
+              name: {{ include "midaz-transaction.fullname" . }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            {{- toYaml .Values.transaction.resources | nindent 12 }}
+      {{- with .Values.transaction.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.transaction.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.transaction.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

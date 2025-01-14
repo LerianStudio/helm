@@ -1,0 +1,70 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "midaz-ledger.fullname" . }}
+data:
+  # CASDOOR
+  CASDOOR_PORT: {{ .Values.ledger.configmap.CASDOOR_PORT | default "8000" | quote }}
+  CASDOOR_ADDRESS: {{ .Values.ledger.configmap.CASDOOR_ADDRESS | default "http://midaz-casdoor.midaz-saas.svc.cluster.local:8000" | quote }}
+  CASDOOR_CLIENT_ID: {{ .Values.ledger.configmap.CASDOOR_CLIENT_ID | default "9670e0ca55a29a466d31" | quote }}
+  CASDOOR_CLIENT_SECRET: {{ .Values.ledger.configmap.CASDOOR_CLIENT_SECRET | default "dd03f916cacf4a98c6a413d9c38ba102dce436a9" | quote }}
+  CASDOOR_ORGANIZATION_NAME: {{ .Values.ledger.configmap.CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}
+  CASDOOR_APPLICATION_NAME: {{ .Values.ledger.configmap.CASDOOR_APPLICATION_NAME | default "casdoor" | quote }}
+  CASDOOR_ENFORCER_NAME: {{ .Values.ledger.configmap.CASDOOR_ENFORCER_NAME | default "lerian-enforcer" | quote }}
+  CASDOOR_JWK_ADDRESS: {{ .Values.ledger.configmap.CASDOOR_JWK_ADDRESS | default "http://midaz-casdoor.midaz-saas.svc.cluster.local:8000/.well-known/jwks" | quote }}
+  # OPEN TELEMETRY
+  OTEAL_RESOURCE_SERVICE_NAME: {{ .Values.ledger.configmap.OTEAL_RESOURCE_SERVICE_NAME | default "ledger" | quote }}
+  OTEAL_LIBRARY_NAME: {{ .Values.ledger.configmap.OTEAL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/ledger" | quote }}
+  OTEAL_RESOURCE_SERVICE_VERSION: {{ include "ledger.versionLabelValue" . }}
+  OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "local" | quote }}
+  OTEAL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.ledger.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEAL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT | default "midaz-otel-lgtm:4317" | quote }}
+  # RABBITMQ
+  RABBITMQ_HOST: {{ .Values.ledger.configmap.RABBITMQ_HOST | default "midaz-rabbitmq.midaz-saas.svc.cluster.local" | quote }}
+  RABBITMQ_PORT_HOST: {{ .Values.ledger.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
+  RABBITMQ_PORT_AMPQ: {{ .Values.ledger.configmap.RABBITMQ_PORT_AMPQ | default "15672" | quote }}
+  RABBITMQ_DEFAULT_USER: {{ .Values.ledger.configmap.RABBITMQ_DEFAULT_USER | default "ledger" | quote }}
+  RABBITMQ_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_EXCHANGE | default "transaction_operations_exchange" | quote }}
+  RABBITMQ_KEY: {{ .Values.ledger.configmap.RABBITMQ_KEY | default "transaction_operations_key" | quote }}
+  RAABBITMQ_QUEUE: {{ .Values.ledger.configmap.RABBITMQ_QUEUE | default "ledger_accounts_queue" | quote }}
+  # SWAGGER
+  SWAGGER_TITLE: {{ .Values.ledger.configmap.SWAGGER_TITLE | default "Ledger API" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.ledger.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz Ledger API" | quote }}
+  SWAGGER_VERSION: {{ include "ledger.versionLabelValue" . }}
+  SWAGGER_HOST: {{ .Values.ledger.configmap.SWAGGER_HOST | default .Values.ledger.configmap.SERVER_ADDRESS | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.ledger.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.ledger.configmap.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_RIGHT_DELIMITER: {{ .Values.ledger.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
+  SWAGGER_LEFT_DELIMITER: {{ .Values.ledger.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
+  # PAGINATION
+  MAX_PAGINATION_LIMIT: {{ .Values.ledger.configmap.MAX_PAGINATION_LIMIT | default "100" | quote }}
+  MAX_PAGINATION_MONTH_DATE_RANGE: {{ .Values.ledger.configmap.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
+  #APP
+  VERSION: "v1.44.0"
+  LOG_LEVEL: {{ .Values.ledger.configmap.LOG_LEVEL | default "debug" | quote }}
+  # ENV_NAME: {{ .Values.ledger.configmap.ENV_NAME | default "local" | quote }}
+  SERVER_PORT: {{ .Values.ledger.configmap.SERVER_PORT | default "3000" | quote }}
+  SERVER_ADDRESS: {{ .Values.ledger.configmap.SERVER_ADDRESS | default ":3000" | quote }}
+  #MONGO
+  MONGO_HOST: {{ .Values.ledger.configmap.MONGO_HOST | default "midaz-mongodb.midaz-saas.svc.cluster.local" | quote }}
+  MONGO_NAME: {{ .Values.ledger.configmap.MONGO_NAME | default "admin" | quote }}
+  MONGO_USER: {{ .Values.ledger.configmap.MONGO_USER | default "midaz" | quote }}
+  MONGO_PORT: {{ .Values.ledger.configmap.MONGO_PORT | default "27017" | quote }}
+  #REDIS
+  REDIS_HOST: {{ .Values.ledger.configmap.REDIS_HOST | default "midaz-redis-headless.midaz-saas.svc.cluster.local" | quote }}
+  REDIS_PORT: {{ .Values.ledger.configmap.REDIS_PORT | default "6379" | quote }}
+  REDIS_USER: {{ .Values.ledger.configmap.REDIS_USER | default "midaz" | quote }}
+  #POSTGRESS
+  DB_HOST: {{ .Values.ledger.configmap.DB_HOST | default "midaz-postgresql.midaz-saas.svc.cluster.local" | quote }}                                                         
+  DB_USER: {{ .Values.ledger.configmap.DB_USER | default "midaz" | quote }}
+  DB_NAME: {{ .Values.ledger.configmap.DB_NAME | default "ledger" | quote }}
+  DB_PORT: {{ .Values.ledger.configmap.DB_PORT | default "5432" | quote }}
+  #POSTGRESS REPLICATION
+  DB_REPLICA_HOST: {{ .Values.ledger.configmap.DB_REPLICA_HOST | default "midaz-postgresql.midaz-saas.svc.cluster.local" | quote }}
+  DB_REPLICA_USER: {{ .Values.ledger.configmap.DB_REPLICA_USER | default "midaz" | quote }}
+  DB_REPLICA_NAME: {{ .Values.ledger.configmap.DB_REPLICA_NAME | default "ledger" | quote }}
+  DB_REPLICA_PORT: {{ .Values.ledger.configmap.DB_REPLICA_PORT | default "5432" | quote }}
+  #PROTBUF
+  PROTO_URL: {{ .Values.ledger.configmap.PROTO_URL | default "localhost" | quote }}
+  PROTO_PORT: {{ .Values.ledger.configmap.PROTO_PORT | default "3001" | quote }}
+  PROTO_ADDRESS: {{ .Values.ledger.configmap.PROTO_ADDRESS | default ":3001" | quote }}

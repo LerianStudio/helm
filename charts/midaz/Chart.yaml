@@ -15,10 +15,10 @@ dependencies:
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
   - name: postgresql
-    alias: postgresql-casdoor
+    alias: casdoordb
     version: "16.3"
     repository: "https://charts.bitnami.com/bitnami"
-    condition: postgresql-casdoor.enabled
+    condition: casdoordb.enabled
   - name: mongodb
     version: "15.4"
     repository: "https://charts.bitnami.com/bitnami"
@@ -28,7 +28,8 @@ dependencies:
     repository: "https://charts.bitnami.com/bitnami"
     condition: rabbitmq.enabled
   - name: casdoor-helm-charts
-    version: "v1.787.0"
+    alias: casdoor
+    version: "v1.799.0"
     repository: "oci://registry-1.docker.io/casbin"
     condition: casdoor.enabled
   - name: mariadb

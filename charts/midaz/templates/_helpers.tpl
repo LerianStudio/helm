@@ -28,6 +28,15 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
+{{- define "midaz-console.fullname" -}}
+{{- printf "%s-%s" (include "midaz.name" .) .Values.console.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
 {{- define "midaz-transaction.fullname" -}}
 {{- printf "%s-%s" (include "midaz.name" .) .Values.transaction.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -102,6 +111,17 @@ Create the name of the service account to use
 {{/*
 Create the name of the service account to use
 */}}
+{{- define "midaz-console.serviceAccountName" -}}
+{{- if .Values.console.serviceAccount.create }}
+{{- default (include "midaz-console.fullname" .) .Values.console.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.console.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Create the name of the service account to use
+*/}}
 {{- define "midaz-transaction.serviceAccountName" -}}
 {{- if .Values.transaction.serviceAccount.create }}
 {{- default (include "midaz-transaction.fullname" .) .Values.transaction.serviceAccount.name }}
@@ -136,6 +156,27 @@ false
 {{- end -}}
 {{- define "postgresql.enabled" -}}
 {{- if not .Values.postgresql.external -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+{{- define "casdoordb.enabled" -}}
+{{- if not .Values.casdoordb.external -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+{{- define "mariadb.enabled" -}}
+{{- if not .Values.mariadb.external -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+{{- define "casdoor.enabled" -}}
+{{- if not .Values.casdoor.external -}}
 true
 {{- else -}}
 false

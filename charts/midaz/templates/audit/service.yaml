@@ -11,17 +11,21 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-    - port: {{ .Values.audit.service.server.grpcPort }}
-      targetPort: {{  .Values.audit.service.server.grpcPort }}
+    - port: {{ .Values.audit.server.service.grpcPort }}
+      targetPort: {{  .Values.audit.server.service.grpcPort }}
       protocol: TCP
-      name: grpc
-    - port: {{ .Values.audit.service.server.httpPort }}
-      targetPort: {{  .Values.audit.service.server.httpPort }}
+      name: rpc
+    - port: {{ .Values.audit.server.service.httpPort }}
+      targetPort: {{  .Values.audit.server.service.grpcPort }}
       protocol: TCP
-      name: http-server
-    - port: {{ .Values.audit.service.signer.httpPort }}
-      targetPort: {{  .Values.audit.service.signer.httpPort }}
+      name: metrics
+    - port: {{ .Values.audit.signer.service.httpPort }}
+      targetPort: {{  .Values.audit.server.service.httpPort }}
       protocol: TCP
       name: http-signer
+    - port: {{ .Values.audit.signer.service.grpcPort }}
+      targetPort: {{  .Values.audit.signer.service.grpcPort }}
+      protocol: TCP
+      name: rpc-signer
   selector:
     {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.audit.name) | nindent 4 }}

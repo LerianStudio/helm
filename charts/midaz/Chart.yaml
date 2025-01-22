@@ -36,20 +36,3 @@ dependencies:
     version: "20.2"
     repository: "https://charts.bitnami.com/bitnami"
     condition: mariadb.enabled
-  #saas
-  # - name: elasticache
-  #   version: "19.3"
-  #   repository: 
-  #   condition: elasticache.enabled
-  # - name: rds
-  #   version: 
-  #   repository: 
-  #   condition: rds.enabled
-  # - name: documentdb
-  #   version: 
-  #   repository: 
-  #   condition: documentdb.enabled
-  # - name: amazonmq
-  #   version: 
-  #   repository: 
-  #   condition: amazonmq.enabled

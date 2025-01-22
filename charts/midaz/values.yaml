@@ -14,39 +14,18 @@ console:
     # Overrides the image tag whose default is the chart appVersion.
     tag: "1.2.0"
 
-  imagePullSecrets: []
-  nameOverride: ""
-  fullnameOverride: ""
-
   podAnnotations: {}
-
-  podSecurityContext: {}
-    # fsGroup: 2000
-
-  securityContext: {}
-    # capabilities:
-    #   drop:
-    #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
 
   service:
     type: ClusterIP
     port: 8081
 
   ingress:
-    enabled: true
-    className: "alb"
-    annotations:
-      alb.ingress.kubernetes.io/backend-protocol: HTTP
-      alb.ingress.kubernetes.io/group.name: services-alb
-      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-      alb.ingress.kubernetes.io/scheme: internal
-      alb.ingress.kubernetes.io/target-type: ip
-      alb.ingress.kubernetes.io/healthcheck-path: "/api/admin/health/ready"
+    enabled: false
+    className: ""
+    annotations: {}
     hosts:
-      - host: midaz-console.private.gen-int-dev.midaz.io
+      - host: ""
         paths:
           - path: /
             pathType: Prefix
@@ -76,10 +55,7 @@ console:
 
   nodeSelector: {}
 
-  tolerations:
-    - key: "midaz.io/midaz"
-      operator: "Equal"
-      effect: "NoSchedule"
+  tolerations: {}
 
   affinity: {}
     # nodeAffinity:
@@ -176,10 +152,7 @@ ledger:
 
   nodeSelector: {}
 
-  tolerations:
-    - key: "midaz.io/midaz"
-      operator: "Equal"
-      effect: "NoSchedule"
+  tolerations: {}
 
   affinity: {}
     # nodeAffinity:
@@ -234,11 +207,6 @@ audit:
   service:
     type: ClusterIP
     port: 3005
-    server:
-      grpcPort: 8082
-      httpPort: 8083
-    signer:
-      httpPort: 8084
 
   ingress:
     enabled: false
@@ -269,6 +237,11 @@ audit:
       memory: 128Mi
   
   server:
+    image: 
+      repository: gcr.io/trillian-opensource-ci/log_server
+    service:
+      httpPort: 8091
+      grpcPort: 8090
     resources:
       limits:
         cpu: 200m
@@ -278,6 +251,11 @@ audit:
         memory: 128Mi
   
   signer:
+    image: 
+      repository: gcr.io/trillian-opensource-ci/log_signer
+    service:
+      httpPort: 8092
+      grpcPort: 8093
     resources:
       limits:
         cpu: 200m
@@ -295,10 +273,7 @@ audit:
 
   nodeSelector: {}
 
-  tolerations:
-    - key: "midaz.io/midaz"
-      operator: "Equal"
-      effect: "NoSchedule"
+  tolerations: {}
 
   affinity: {}
     # nodeAffinity:
@@ -333,22 +308,7 @@ transaction:
     # Overrides the image tag whose default is the chart appVersion.
     tag: "1.44.0"
 
-  imagePullSecrets: []
-  nameOverride: ""
-  fullnameOverride: ""
-
   podAnnotations: {}
-
-  podSecurityContext: {}
-    # fsGroup: 2000
-
-  securityContext: {}
-    # capabilities:
-    #   drop:
-    #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
 
   service:
     type: ClusterIP
@@ -361,7 +321,7 @@ transaction:
       # kubernetes.io/ingress.class: nginx
       # kubernetes.io/tls-acme: "true"
     hosts:
-      - host: chart-example.local
+      - host: ""
         paths:
           - path: /
             pathType: ImplementationSpecific
@@ -391,10 +351,7 @@ transaction:
 
   nodeSelector: {}
 
-  tolerations:
-    - key: "midaz.io/midaz"
-      operator: "Equal"
-      effect: "NoSchedule"
+  tolerations: {}
 
   affinity: {}
     # nodeAffinity:
@@ -418,13 +375,6 @@ transaction:
     # The name of the service account to use.
     # If not set and create is true, a name is generated using the fullname template
     name: ""
-
-karpenter:
-  enabled: false
-  instance_types: ["c7a.large", "m7a.large", "c7a.xlarge", "m7a.xlarge"]
-  cluster:
-    name: "midaz-eks-control-plane-dev"
-    iam_role_name: "midaz-eks-control-plane-dev"
 
 redis:
   external: false

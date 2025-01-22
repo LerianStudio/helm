@@ -45,7 +45,7 @@ spec:
           resources:
             {{- toYaml .Values.audit.resources | nindent 12 }}
         - name: {{ include "midaz-audit.fullname" . }}{{ "-server" }}
-          image: gcr.io/trillian-opensource-ci/log_server
+          image: {{ .Values.audit.server.image.repository }}
           imagePullPolicy: IfNotPresent
           args: 
             - "--storage_system=mysql"
@@ -104,7 +104,7 @@ spec:
           resources:
             {{- toYaml .Values.audit.server.resources | nindent 12 }}
         - name: {{ include "midaz-audit.fullname" . }}{{ "-signer" }}
-          image: gcr.io/trillian-opensource-ci/log_signer
+          image: {{ .Values.audit.signer.image.repository }}
           imagePullPolicy: IfNotPresent
           args: 
             - "--storage_system=mysql"

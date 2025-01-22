@@ -41,5 +41,5 @@ jobs:
           helm package .
           PKG_NAME=$(ls *.tgz)
           helm repo index . --url $REGISTRY --merge index.yaml
-          helm push $PKG_NAME $REGISTRY
+          helm push $PKG_NAME-helm $REGISTRY
           rm $PKG_NAME

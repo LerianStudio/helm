@@ -36,7 +36,7 @@ jobs:
 
       - name: Release Helm Chart
         run: |
-          REGISTRY=oci://registry-1.docker.io/lerianstudio/midaz-helm
+          REGISTRY=oci://registry-1.docker.io/lerianstudio
           cd charts/midaz
           helm package .
           PKG_NAME=$(ls *.tgz)

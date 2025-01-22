@@ -1,0 +1,32 @@
+{{- if .Values.transaction.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "midaz-transaction.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.transaction.name "name" .Values.transaction.name ) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "midaz-transaction.fullname" . }}
+  minReplicas: {{ .Values.transaction.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.transaction.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.transaction.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.transaction.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.transaction.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.transaction.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

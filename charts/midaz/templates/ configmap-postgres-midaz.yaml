@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: midaz-init-sql
+data:
+  init.sql: |
+{{ (.Files.Get "files/midaz/init.sql") | indent 4 }}

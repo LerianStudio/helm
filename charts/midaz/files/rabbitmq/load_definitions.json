@@ -1,0 +1,134 @@
+{
+    "users": [
+    {
+        "name":"ledger",
+        "password": "lerian",
+        "tags":"administrator"
+    },
+    {
+        "name":"transaction",
+        "password":"lerian",
+        "tags":"administrator"
+    },
+    {
+        "name":"audit",
+        "password":"lerian",
+        "tags":"administrator"
+    },
+    {
+        "name":"midaz",
+        "password":"lerian",
+        "tags":"administrator"
+    },
+    {
+        "name":"ledger",
+        "password": "lerian",
+        "tags":"administrator"
+    },
+    {
+        "name":"transaction",
+        "password":"lerian",
+        "tags":"administrator"
+    },
+    {
+        "name":"audit",
+        "password":"lerian",
+        "tags":"administrator"
+    }
+    ],
+    "vhosts": [
+    {
+        "name": "/"
+    }
+    ],
+    "permissions": [
+    {
+        "user": "midaz",
+        "vhost": "/",
+        "configure": ".*",
+        "write": ".*",
+        "read": ".*"
+    },
+    {
+        "user": "ledger",
+        "vhost": "/",
+        "configure": ".*",
+        "write": ".*",
+        "read": ".*"
+    },
+    {
+        "user": "transaction",
+        "vhost": "/",
+        "configure": ".*",
+        "write": ".*",
+        "read": ".*"
+    },
+    {
+        "user": "audit",
+        "vhost": "/",
+        "configure": ".*",
+        "write": ".*",
+        "read": ".*"
+    }
+    ],
+    "queues": [
+    {
+        "name": "audit_queue",
+        "vhost": "/",
+        "durable": true
+    },
+    {
+        "name": "transaction_operations_queue",
+        "vhost": "/",
+        "durable": true
+    },
+    {
+        "name": "ledger_accounts_queue",
+        "vhost": "/",
+        "durable": true
+    }
+    ],
+    "exchanges": [
+    {
+        "name": "audit_exchange",
+        "vhost": "/",
+        "type": "direct",
+        "durable": true
+    },
+    {
+        "name": "transaction_operations_exchange",
+        "vhost": "/",
+        "type": "direct",
+        "durable": true
+    },
+    {
+        "name": "ledger_accounts_exchange",
+        "vhost": "/",
+        "type": "direct",
+        "durable": true
+    }
+    ],
+    "bindings": [
+    {
+        "source": "audit_exchange",
+        "vhost": "/",
+        "destination": "audit_queue",
+        "destination_type": "queue",
+        "routing_key": "audit_key"
+    },
+    {
+        "source": "transaction_operations_exchange",
+        "vhost": "/",
+        "destination": "transaction_operations_queue",
+        "destination_type": "queue",
+        "routing_key": "transaction_operations_key"
+    },
+    {
+        "source": "ledger_accounts_exchange",
+        "vhost": "/",
+        "destination": "ledger_accounts_queue",
+        "destination_type": "queue",
+        "routing_key": "ledger_accounts_key"
+    }
+    ]
+}

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "midaz-console.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.console.name "name" .Values.console.name ) | nindent 4 }}
+spec:
+  {{- if not .Values.console.autoscaling.enabled }}
+  replicas: {{ .Values.console.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.console.name ) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.console.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "midaz.labels" (dict "context" . "component" .Values.console.name "name" .Values.console.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.console.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.console.serviceAccount.name }}
+      securityContext:
+        {{- toYaml .Values.console.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "midaz-console.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.console.securityContext | nindent 12 }}
+          image: "{{ .Values.console.image.repository }}:{{ .Values.console.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.console.image.pullPolicy }}
+          envFrom:
+          # - secretRef:
+          #     name: {{ include "midaz-console.fullname" . }}
+          - configMapRef:
+              name: {{ include "midaz-console.fullname" . }}
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.console.resources | nindent 12 }}
+      {{- with .Values.console.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

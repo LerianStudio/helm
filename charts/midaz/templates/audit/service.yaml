@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "midaz-audit.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.audit.name "name" .Values.audit.name ) | nindent 4 }}
+spec:
+  type: {{ .Values.audit.service.type }}
+  ports:
+    - port: {{ .Values.audit.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.audit.server.service.grpcPort }}
+      targetPort: {{  .Values.audit.server.service.grpcPort }}
+      protocol: TCP
+      name: rpc
+    - port: {{ .Values.audit.server.service.httpPort }}
+      targetPort: {{  .Values.audit.server.service.grpcPort }}
+      protocol: TCP
+      name: metrics
+    - port: {{ .Values.audit.signer.service.httpPort }}
+      targetPort: {{  .Values.audit.server.service.httpPort }}
+      protocol: TCP
+      name: http-signer
+    - port: {{ .Values.audit.signer.service.grpcPort }}
+      targetPort: {{  .Values.audit.signer.service.grpcPort }}
+      protocol: TCP
+      name: rpc-signer
+  selector:
+    {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.audit.name) | nindent 4 }}

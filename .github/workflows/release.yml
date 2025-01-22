@@ -24,6 +24,9 @@ jobs:
         run: |
           helm plugin install https://github.com/helm-unittest/helm-unittest.git
           helm unittest charts/midaz
+      
+      - name: Helm Dependency Update
+        run: helm dependency update charts/midaz
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3

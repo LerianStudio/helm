@@ -36,10 +36,10 @@ jobs:
 
       - name: Release Helm Chart
         run: |
-          REGISTRY=oci://registry-1.docker.io/lerianstudio
+          REGISTRY=oci://registry-1.docker.io/lerianstudio/midaz-helm
           cd charts/midaz
           helm package .
           PKG_NAME=$(ls *.tgz)
           helm repo index . --url $REGISTRY --merge index.yaml
-          helm push $PKG_NAME-helm $REGISTRY
+          helm push $PKG_NAME $REGISTRY
           rm $PKG_NAME

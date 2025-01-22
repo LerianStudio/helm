@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 nameOverride: "midaz"
 fullnameOverride: ""
+namespaceOverride: "midaz"
 
 console:
   name: console
@@ -113,16 +114,10 @@ ledger:
 
   ingress:
     enabled: false
-    className: "alb"
-    annotations:
-      alb.ingress.kubernetes.io/backend-protocol: HTTP
-      alb.ingress.kubernetes.io/group.name: services-alb
-      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-      alb.ingress.kubernetes.io/scheme: internal
-      alb.ingress.kubernetes.io/target-type: instance
-      alb.ingress.kubernetes.io/healthcheck-path: "/health"
+    className: ""
+    annotations: {}
     hosts:
-      - host: midaz-open-source.private.gen-int-dev.midaz.io
+      - host: ""
         paths:
           - path: /
             pathType: Prefix

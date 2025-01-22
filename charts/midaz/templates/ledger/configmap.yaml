@@ -5,7 +5,7 @@ metadata:
 data:
   # CASDOOR
   CASDOOR_PORT: {{ .Values.ledger.configmap.CASDOOR_PORT | default "8000" | quote }}
-  CASDOOR_ADDRESS: {{ .Values.ledger.configmap.CASDOOR_ADDRESS | default "http://midaz-casdoor.midaz-open-source.svc.cluster.local:8000" | quote }}
+  CASDOOR_ADDRESS: {{ .Values.ledger.configmap.CASDOOR_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local:8000" .Release.Namespace) | quote }}
   CASDOOR_CLIENT_ID: {{ .Values.ledger.configmap.CASDOOR_CLIENT_ID | default "9670e0ca55a29a466d31" | quote }}
   CASDOOR_CLIENT_SECRET: {{ .Values.ledger.configmap.CASDOOR_CLIENT_SECRET | default "dd03f916cacf4a98c6a413d9c38ba102dce436a9" | quote }}
   CASDOOR_ORGANIZATION_NAME: {{ .Values.ledger.configmap.CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}

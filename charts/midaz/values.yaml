@@ -379,12 +379,16 @@ redis:
 
 postgresql:
   external: false
+  architeture: replication
   auth:
     enabled: true
     enablePostgresUser: false
     username: "midaz"
     password: "lerian"
     database: "ledger"
+    replicationUsername: "midaz"
+    replicationPassword: "lerian"
+
   primary:
     extraVolumes:
     - name: init-script
@@ -397,6 +401,20 @@ postgresql:
     - name: init-script
       mountPath: /docker-entrypoint-initdb.d/init.sql
       subPath: init.sql
+  
+  readReplicas:
+    extraVolumes:
+    - name: init-script
+      configMap:
+        name: midaz-init-sql
+        items:
+          - key: init.sql
+            path: init.sql
+    extraVolumeMounts:
+    - name: init-script
+      mountPath: /docker-entrypoint-initdb.d/init.sql
+      subPath: init.sql
+
 
 mongodb: 
   external: false

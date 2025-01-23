@@ -4,6 +4,9 @@ metadata:
   name: {{ include "midaz-transaction.fullname" . }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.transaction.name "name" .Values.transaction.name ) | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
 spec:
   {{- if not .Values.transaction.autoscaling.enabled }}
   replicas: {{ .Values.transaction.replicaCount }}

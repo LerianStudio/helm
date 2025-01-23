@@ -60,10 +60,12 @@ data:
   DB_NAME: {{ .Values.transaction.configmap.DB_NAME | default "transaction" | quote }}
   DB_PORT: {{ .Values.transaction.configmap.DB_PORT | default "5432" | quote }}
   #POSTGRESS REPLICATION
-  DB_REPLICA_HOST: {{ .Values.transaction.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-read.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_HOST: {{ .Values.transaction.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-replication.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DB_REPLICA_USER: {{ .Values.transaction.configmap.DB_REPLICA_USER | default "midaz" | quote }}
   DB_REPLICA_NAME: {{ .Values.transaction.configmap.DB_REPLICA_NAME | default "transaction" | quote }}
   DB_REPLICA_PORT: {{ .Values.transaction.configmap.DB_REPLICA_PORT | default "5432" | quote }}
+  REPLICATION_USER: {{ .Values.transaction.configmap.REPLICATION_USER | default "replicator" | quote }}
+  REPLICATION_PASSWORD: {{ .Values.transaction.configmap.REPLICATION_PASSWORD | default "replicator_password" | quote }}
   #PROTBUF
   PROTO_URL: {{ .Values.transaction.configmap.PROTO_URL | default "localhost" | quote }}
   PROTO_PORT: {{ .Values.transaction.configmap.PROTO_PORT | default "3001" | quote }}

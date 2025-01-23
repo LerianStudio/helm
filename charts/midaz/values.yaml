@@ -14,8 +14,24 @@ console:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: "1.2.0"
+  
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
 
   podAnnotations: {}
+
+  podSecurityContext: {}
+  # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
 
   service:
     type: ClusterIP
@@ -95,7 +111,9 @@ ledger:
   nameOverride: ""
   fullnameOverride: ""
 
-  podAnnotations: {}
+  podAnnotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
 
   podSecurityContext: {}
     # fsGroup: 2000
@@ -186,7 +204,9 @@ audit:
   nameOverride: ""
   fullnameOverride: ""
 
-  podAnnotations: {}
+  podAnnotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
 
   podSecurityContext: {}
     # fsGroup: 2000
@@ -303,7 +323,24 @@ transaction:
     # Overrides the image tag whose default is the chart appVersion.
     tag: "1.44.0"
 
-  podAnnotations: {}
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  podAnnotations:
+      "helm.sh/hook": post-install
+      "helm.sh/hook-weight": "5"
+
+  podSecurityContext: {}
+  # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
 
   service:
     type: ClusterIP
@@ -391,8 +428,8 @@ postgresql:
     username: "midaz"
     password: "lerian"
     database: "ledger"
-    replicationUsername: "midaz"
-    replicationPassword: "lerian"
+    replicationUsername: "replicator"
+    replicationPassword: "replicator_password"
 
   primary:
     extraVolumes:
@@ -411,19 +448,8 @@ postgresql:
       size: 8Gi
   
   readReplicas:
+    name: replication
     replicaCount: 1
-    extraVolumes:
-    - name: init-script
-      configMap:
-        name: midaz-init-sql
-        items:
-          - key: init.sql
-            path: init.sql
-    extraVolumeMounts:
-    - name: init-script
-      mountPath: /docker-entrypoint-initdb.d/init.sql
-      subPath: init.sql
-
     persistence:
       size: 8Gi
 

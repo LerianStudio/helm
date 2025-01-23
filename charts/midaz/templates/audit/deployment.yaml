@@ -4,6 +4,9 @@ metadata:
   name: {{ include "midaz-audit.fullname" . }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.audit.name "name" .Values.audit.name ) | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
 spec:
   {{- if not .Values.audit.autoscaling.enabled }}
   replicas: {{ .Values.audit.replicaCount }}

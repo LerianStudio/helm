@@ -55,12 +55,12 @@ data:
   REDIS_PORT: {{ .Values.ledger.configmap.REDIS_PORT | default "6379" | quote }}
   REDIS_USER: {{ .Values.ledger.configmap.REDIS_USER | default "midaz" | quote }}
   #POSTGRESS
-  DB_HOST: {{ .Values.ledger.configmap.DB_HOST | default (printf "midaz-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}                                                         
+  DB_HOST: {{ .Values.ledger.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local" .Release.Namespace) | quote }}                                                         
   DB_USER: {{ .Values.ledger.configmap.DB_USER | default "midaz" | quote }}
   DB_NAME: {{ .Values.ledger.configmap.DB_NAME | default "ledger" | quote }}
   DB_PORT: {{ .Values.ledger.configmap.DB_PORT | default "5432" | quote }}
   #POSTGRESS REPLICATION
-  DB_REPLICA_HOST: {{ .Values.ledger.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_HOST: {{ .Values.ledger.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-read.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DB_REPLICA_USER: {{ .Values.ledger.configmap.DB_REPLICA_USER | default "midaz" | quote }}
   DB_REPLICA_NAME: {{ .Values.ledger.configmap.DB_REPLICA_NAME | default "ledger" | quote }}
   DB_REPLICA_PORT: {{ .Values.ledger.configmap.DB_REPLICA_PORT | default "5432" | quote }}

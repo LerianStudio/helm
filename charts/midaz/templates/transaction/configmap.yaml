@@ -55,12 +55,12 @@ data:
   REDIS_PORT: {{ .Values.transaction.configmap.REDIS_PORT | default "6379" | quote }}
   REDIS_USER: {{ .Values.transaction.configmap.REDIS_USER | default "midaz" | quote }}
   #POSTGRESS
-  DB_HOST: {{ .Values.transaction.configmap.DB_HOST | default (printf "midaz-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_HOST: {{ .Values.transaction.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DB_USER: {{ .Values.transaction.configmap.DB_USER | default "midaz" | quote }}
   DB_NAME: {{ .Values.transaction.configmap.DB_NAME | default "transaction" | quote }}
   DB_PORT: {{ .Values.transaction.configmap.DB_PORT | default "5432" | quote }}
   #POSTGRESS REPLICATION
-  DB_REPLICA_HOST: {{ .Values.transaction.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_HOST: {{ .Values.transaction.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-read.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DB_REPLICA_USER: {{ .Values.transaction.configmap.DB_REPLICA_USER | default "midaz" | quote }}
   DB_REPLICA_NAME: {{ .Values.transaction.configmap.DB_REPLICA_NAME | default "transaction" | quote }}
   DB_REPLICA_PORT: {{ .Values.transaction.configmap.DB_REPLICA_PORT | default "5432" | quote }}

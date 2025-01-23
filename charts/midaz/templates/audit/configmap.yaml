@@ -46,12 +46,12 @@ data:
   MONGO_USER: {{ .Values.audit.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_PORT: {{ .Values.audit.configmap.MONGO_PORT | default "27017" | quote }}
   #POSTGRESS
-  DB_HOST: {{ .Values.audit.configmap.DB_HOST | default (printf "midaz-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_HOST: {{ .Values.audit.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DB_USER: {{ .Values.audit.configmap.DB_USER | default "midaz" | quote }}
   DB_NAME: {{ .Values.audit.configmap.DB_NAME | default "audit" | quote }}
   DB_PORT: {{ .Values.audit.configmap.DB_PORT | default "5432" | quote }}
   #POSTGRESS REPLICATION
-  DB_REPLICA_HOST: {{ .Values.audit.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_HOST: {{ .Values.audit.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-read.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DB_REPLICA_USER: {{ .Values.audit.configmap.DB_REPLICA_USER | default "midaz" | quote }}
   DB_REPLICA_NAME: {{ .Values.audit.configmap.DB_REPLICA_NAME | default "audit" | quote }}
   DB_REPLICA_PORT: {{ .Values.audit.configmap.DB_REPLICA_PORT | default "5432" | quote }}

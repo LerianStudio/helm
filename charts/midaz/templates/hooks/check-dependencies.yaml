@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: midaz-wait-for-dependencies
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: check-dependencies
+          image: busybox
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in midaz-casdoordb:5432 midaz-mariadb:3306 midaz-mongodb:27017 
+              midaz-postgresql-primary:5432 midaz-postgresql-replication:5432 midaz-rabbitmq:5672 
+              midaz-redis-master:6379;
+              do
+                echo "Checking $svc...";
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done;

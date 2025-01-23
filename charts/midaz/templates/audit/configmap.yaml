@@ -4,14 +4,14 @@ metadata:
   name: {{ include "midaz-audit.fullname" . }}
 data:
   # CASDOOR
-  CASDOOR_PORT: {{ .Values.ledger.configmap.CASDOOR_PORT | default "8000" | quote }}
-  CASDOOR_ADDRESS: {{ .Values.ledger.configmap.CASDOOR_ADDRESS | default "http://midaz-casdoor.midaz-open-source.svc.cluster.local:8000" | quote }}
-  CASDOOR_CLIENT_ID: {{ .Values.ledger.configmap.CASDOOR_CLIENT_ID | default "9670e0ca55a29a466d31" | quote }}
-  CASDOOR_CLIENT_SECRET: {{ .Values.ledger.configmap.CASDOOR_CLIENT_SECRET | default "dd03f916cacf4a98c6a413d9c38ba102dce436a9" | quote }}
-  CASDOOR_ORGANIZATION_NAME: {{ .Values.ledger.configmap.CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}
-  CASDOOR_APPLICATION_NAME: {{ .Values.ledger.configmap.CASDOOR_APPLICATION_NAME | default "app-midaz" | quote }}
-  CASDOOR_MODEL_NAME: {{ .Values.ledger.configmap.CASDOOR_MODEL_NAME | default "api-model" | quote }}
-  CASDOOR_JWK_ADDRESS: {{ .Values.ledger.configmap.CASDOOR_JWK_ADDRESS | default "http://midaz-casdoor.midaz-open-source.svc.cluster.local:8000/.well-known/jwks" | quote }}
+  CASDOOR_PORT: {{ .Values.audit.configmap.CASDOOR_PORT | default "8000" | quote }}
+  CASDOOR_ADDRESS: {{ .Values.audit.configmap.CASDOOR_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local:8000" .Release.Namespace) | quote }}
+  CASDOOR_CLIENT_ID: {{ .Values.audit.configmap.CASDOOR_CLIENT_ID | default "9670e0ca55a29a466d31" | quote }}
+  CASDOOR_CLIENT_SECRET: {{ .Values.audit.configmap.CASDOOR_CLIENT_SECRET | default "dd03f916cacf4a98c6a413d9c38ba102dce436a9" | quote }}
+  CASDOOR_ORGANIZATION_NAME: {{ .Values.audit.configmap.CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}
+  CASDOOR_APPLICATION_NAME: {{ .Values.audit.configmap.CASDOOR_APPLICATION_NAME | default "app-midaz" | quote }}
+  CASDOOR_MODEL_NAME: {{ .Values.audit.configmap.CASDOOR_MODEL_NAME | default "api-model" | quote }}
+  CASDOOR_JWK_ADDRESS: {{ .Values.audit.configmap.CASDOOR_JWK_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local:8000/.well-known/jwks" .Release.Namespace) | quote }}
   # OPEN TELEMETRY
   OTEAL_RESOURCE_SERVICE_NAME: {{ .Values.audit.configmap.OTEAL_RESOURCE_SERVICE_NAME | default "audit" | quote }}
   OTEAL_LIBRARY_NAME: {{ .Values.audit.configmap.OTEAL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/audit" | quote }}
@@ -20,9 +20,9 @@ data:
   OTEAL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.audit.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEAL_EXPORTER_OTLP_ENDPOINT: {{ .Values.audit.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT | default "midaz-otel-lgtm:4317" | quote }}
   # RABBITMQ
-  RABBITMQ_HOST: {{ .Values.ledger.configmap.RABBITMQ_HOST | default "midaz-rabbitmq.midaz-open-source.svc.cluster.local" | quote }}
-  RABBITMQ_PORT_HOST: {{ .Values.ledger.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
-  RABBITMQ_PORT_AMPQ: {{ .Values.ledger.configmap.RABBITMQ_PORT_AMPQ | default "15672" | quote }}
+  RABBITMQ_HOST: {{ .Values.audit.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  RABBITMQ_PORT_HOST: {{ .Values.audit.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
+  RABBITMQ_PORT_AMPQ: {{ .Values.audit.configmap.RABBITMQ_PORT_AMPQ | default "15672" | quote }}
   RABBITMQ_DEFAULT_USER: {{ .Values.audit.configmap.RABBITMQ_DEFAULT_USER | default "audit" | quote }}
   RAABBITMQ_QUEUE: {{ .Values.audit.configmap.RABBITMQ_QUEUE | default "audit_queue" | quote }}
   # SWAGGER
@@ -41,17 +41,17 @@ data:
   SERVER_PORT: {{ .Values.audit.configmap.SERVER_PORT | default "3005" | quote }}
   SERVER_ADDRESS: {{ .Values.audit.configmap.SERVER_ADDRESS | default ":3000" | quote }}
   #MONGO
-  MONGO_HOST: {{ .Values.audit.configmap.MONGO_HOST | default "midaz-mongodb.midaz-open-source.svc.cluster.local" | quote }}
+  MONGO_HOST: {{ .Values.audit.configmap.MONGO_HOST | default (printf "midaz-mongodb.%s.svc.cluster.local" .Release.Namespace)| quote }}
   MONGO_NAME: {{ .Values.audit.configmap.MONGO_NAME | default "audit" | quote }}
   MONGO_USER: {{ .Values.audit.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_PORT: {{ .Values.audit.configmap.MONGO_PORT | default "27017" | quote }}
   #POSTGRESS
-  DB_HOST: {{ .Values.audit.configmap.DB_HOST | default "midaz-postgresql.midaz-open-source.svc.cluster.local" | quote }}
+  DB_HOST: {{ .Values.audit.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DB_USER: {{ .Values.audit.configmap.DB_USER | default "midaz" | quote }}
   DB_NAME: {{ .Values.audit.configmap.DB_NAME | default "audit" | quote }}
   DB_PORT: {{ .Values.audit.configmap.DB_PORT | default "5432" | quote }}
   #POSTGRESS REPLICATION
-  DB_REPLICA_HOST: {{ .Values.audit.configmap.DB_REPLICA_HOST | default "midaz-postgresql.midaz-open-source.svc.cluster.local" | quote }}
+  DB_REPLICA_HOST: {{ .Values.audit.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-read.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DB_REPLICA_USER: {{ .Values.audit.configmap.DB_REPLICA_USER | default "midaz" | quote }}
   DB_REPLICA_NAME: {{ .Values.audit.configmap.DB_REPLICA_NAME | default "audit" | quote }}
   DB_REPLICA_PORT: {{ .Values.audit.configmap.DB_REPLICA_PORT | default "5432" | quote }}
@@ -69,4 +69,4 @@ data:
   TRILLIAN_SIGNER_HTTP_PORT: {{ .Values.audit.configmap.TRILLIAN_HTTP_PORT | default "8092" | quote }}
   TRILLIAN_GRPC_ADDRESS: {{ .Values.audit.configmap.TRILLIAN_GRPC_ADDRESS | default "localhost:8090" | quote }}
   TRILLIAN_HTTP_ADDRESS: {{ .Values.audit.configmap.TRILLIAN_HTTP_ADDRESS | default "http://localhost:8091" | quote }}
-  TRILLIAN_DATABASE_HOST: {{ .Values.audit.configmap.TRILLIAN_DATABASE_HOST | default "midaz-mariadb.midaz-open-source.svc.cluster.local" | quote }}
+  TRILLIAN_DATABASE_HOST: {{ .Values.audit.configmap.TRILLIAN_DATABASE_HOST | default (printf "midaz-mariadb.%s.svc.cluster.local" .Release.Namespace) | quote }}

@@ -2,7 +2,7 @@
 Expand the name of the chart.
 */}}
 {{- define "midaz.name" -}}
-{{- default (default "" .Values.nameOverride) .Chart.Name | trunc 63 | trimSuffix "-" }}
+{{- default (default "midaz" .Values.nameOverride) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -128,6 +128,14 @@ Create the name of the service account to use
 {{- else }}
 {{- default "default" .Values.transaction.serviceAccount.name }}
 {{- end }}
+{{- end }}
+
+{{/*
+Expand the namespace of the release.
+Allows overriding it for multi-namespace deployments in combined charts.
+*/}}
+{{- define "global.namespace" -}}
+{{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{/*

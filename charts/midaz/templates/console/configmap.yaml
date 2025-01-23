@@ -17,16 +17,16 @@ data:
   NEXTAUTH_SECRET: {{ .Values.console.configmap.NEXTAUTH_SECRET | default "testSecret" | quote }}
   NEXTAUTH_CASDOOR_CLIENT_ID: {{ .Values.console.configmap.NEXTAUTH_CASDOOR_CLIENT_ID | default "9670e0ca55a29a466d31" | quote }}
   NEXTAUTH_CASDOOR_CLIENT_SECRET: {{ .Values.console.configmap.NEXTAUTH_CASDOOR_CLIENT_SECRET | default "dd03f916cacf4a98c6a413d9c38ba102dce436a9" | quote }}
-  NEXTAUTH_CASDOOR_AUTH_HOST: {{ .Values.console.configmap.NEXTAUTH_CASDOOR_AUTH_HOST | default "http://midaz-casdoor.midaz-open-source.svc.cluster.local" | quote }}
+  NEXTAUTH_CASDOOR_AUTH_HOST: {{ .Values.console.configmap.NEXTAUTH_CASDOOR_AUTH_HOST | default (printf "http://midaz-casdoor.%s.svc.cluster.local" .Release.Namespace) | quote }}
   NEXTAUTH_CASDOOR_AUTH_PORT: {{ .Values.console.configmap.NEXTAUTH_CASDOOR_AUTH_PORT | default "8000" | quote }}
   NEXTAUTH_CASDOOR_AUTH_URL: {{ .Values.console.configmap.NEXTAUTH_CASDOOR_AUTH_URL | default "http://${NEXTAUTH_CASDOOR_AUTH_HOST}:${NEXTAUTH_CASDOOR_AUTH_PORT}" | quote }}
   NEXTAUTH_CASDOOR_ORGANIZATION_NAME: {{ .Values.console.configmap.NEXTAUTH_CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}
   NEXTAUTH_CASDOOR_APPLICATION_NAME: {{ .Values.console.configmap.NEXTAUTH_CASDOOR_APPLICATION_NAME | default "app-midaz" | quote }}
   # Midaz API Configuration
-  MIDAZ_API_HOST: {{ .Values.console.configmap.MIDAZ_API_HOST | default "midaz-ledger.midaz-open-source.svc.cluster.local" | quote }}
+  MIDAZ_API_HOST: {{ .Values.console.configmap.MIDAZ_API_HOST | default (printf "midaz-ledger.%s.svc.cluster.local" .Release.Namespace) | quote }}
   MIDAZ_API_PORT: {{ .Values.console.configmap.MIDAZ_API_PORT | default "3000" | quote }}
-  MIDAZ_BASE_PATH: {{ .Values.console.configmap.MIDAZ_BASE_PATH | default "http://${MIDAZ_API_HOST}:${MIDAZ_API_PORT}/v1" | quote }}
-  MIDAZ_TRANSACTION_BASE_HOST: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_HOST | default "midaz-transaction.midaz-open-source.svc.cluster.local" | quote }}
+  MIDAZ_BASE_PATH: {{ .Values.console.configmap.MIDAZ_BASE_PATH | default "http://${MIDAZ_API_HOST}:${MIDAZ_API_PORT}/v1"  | quote }}
+  MIDAZ_TRANSACTION_BASE_HOST: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_HOST | default (printf "midaz-transaction.%s.svc.cluster.local" .Release.Namespace) | quote }}
   MIDAZ_TRANSACTION_BASE_PORT: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PORT | default "3002" | quote }}
   MIDAZ_TRANSACTION_BASE_PATH: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PATH | default "http://${MIDAZ_API_HOST}:${MIDAZ_TRANSACTION_BASE_PORT}/v1" | quote }}
 

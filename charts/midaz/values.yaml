@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 nameOverride: "midaz"
 fullnameOverride: ""
+namespaceOverride: "midaz"
 
 console:
   name: console
@@ -113,16 +114,10 @@ ledger:
 
   ingress:
     enabled: false
-    className: "alb"
-    annotations:
-      alb.ingress.kubernetes.io/backend-protocol: HTTP
-      alb.ingress.kubernetes.io/group.name: services-alb
-      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-      alb.ingress.kubernetes.io/scheme: internal
-      alb.ingress.kubernetes.io/target-type: instance
-      alb.ingress.kubernetes.io/healthcheck-path: "/health"
+    className: ""
+    annotations: {}
     hosts:
-      - host: midaz-open-source.private.gen-int-dev.midaz.io
+      - host: ""
         paths:
           - path: /
             pathType: Prefix
@@ -381,15 +376,24 @@ redis:
   architecture: standalone
   auth:
     enabled: false
+  master:
+    persistence:
+      size: 8Gi
 
 postgresql:
   external: false
+  architecture: replication
+  replication:
+    numSynchronousReplicas: 1
   auth:
     enabled: true
     enablePostgresUser: false
     username: "midaz"
     password: "lerian"
     database: "ledger"
+    replicationUsername: "midaz"
+    replicationPassword: "lerian"
+
   primary:
     extraVolumes:
     - name: init-script
@@ -402,6 +406,26 @@ postgresql:
     - name: init-script
       mountPath: /docker-entrypoint-initdb.d/init.sql
       subPath: init.sql
+    
+    persistence:
+      size: 8Gi
+  
+  readReplicas:
+    replicaCount: 1
+    extraVolumes:
+    - name: init-script
+      configMap:
+        name: midaz-init-sql
+        items:
+          - key: init.sql
+            path: init.sql
+    extraVolumeMounts:
+    - name: init-script
+      mountPath: /docker-entrypoint-initdb.d/init.sql
+      subPath: init.sql
+
+    persistence:
+      size: 8Gi
 
 mongodb: 
   external: false
@@ -409,6 +433,8 @@ mongodb:
     enabled: true
     rootUser: midaz
     rootPassword: "lerian"
+  persistence:
+    size: 8Gi
 
 rabbitmq:
   external: false
@@ -423,6 +449,9 @@ rabbitmq:
     existingSecret: load-definition
   extraConfiguration: |
     load_definitions = /app/load_definition.json
+  
+  persistence:
+    size: 8Gi
   
 casdoor:
   enabled: true
@@ -500,6 +529,9 @@ casdoordb:
     - name: init-script-volume
       mountPath: /docker-entrypoint-initdb.d/00_init.sql
       subPath: 00_init.sql
+    
+    persistence:
+      size: 8Gi
 
 mariadb:
   auth:
@@ -520,3 +552,6 @@ mariadb:
     - name: init-sql-volume
       mountPath: /docker-entrypoint-initdb.d/init.sql
       subPath: init.sql
+
+    persistence:
+      size: 8Gi

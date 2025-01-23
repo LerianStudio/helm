@@ -376,10 +376,15 @@ redis:
   architecture: standalone
   auth:
     enabled: false
+  master:
+    persistence:
+      size: 8Gi
 
 postgresql:
   external: false
-  architeture: replication
+  architecture: replication
+  replication:
+    numSynchronousReplicas: 1
   auth:
     enabled: true
     enablePostgresUser: false
@@ -401,8 +406,12 @@ postgresql:
     - name: init-script
       mountPath: /docker-entrypoint-initdb.d/init.sql
       subPath: init.sql
+    
+    persistence:
+      size: 8Gi
   
   readReplicas:
+    replicaCount: 1
     extraVolumes:
     - name: init-script
       configMap:
@@ -415,6 +424,8 @@ postgresql:
       mountPath: /docker-entrypoint-initdb.d/init.sql
       subPath: init.sql
 
+    persistence:
+      size: 8Gi
 
 mongodb: 
   external: false
@@ -422,6 +433,8 @@ mongodb:
     enabled: true
     rootUser: midaz
     rootPassword: "lerian"
+  persistence:
+    size: 8Gi
 
 rabbitmq:
   external: false
@@ -436,6 +449,9 @@ rabbitmq:
     existingSecret: load-definition
   extraConfiguration: |
     load_definitions = /app/load_definition.json
+  
+  persistence:
+    size: 8Gi
   
 casdoor:
   enabled: true
@@ -513,6 +529,9 @@ casdoordb:
     - name: init-script-volume
       mountPath: /docker-entrypoint-initdb.d/00_init.sql
       subPath: 00_init.sql
+    
+    persistence:
+      size: 8Gi
 
 mariadb:
   auth:
@@ -533,3 +552,6 @@ mariadb:
     - name: init-sql-volume
       mountPath: /docker-entrypoint-initdb.d/init.sql
       subPath: init.sql
+
+    persistence:
+      size: 8Gi

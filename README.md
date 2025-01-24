@@ -52,7 +52,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | **ledger.serviceAccount.annotations**        | Annotations for the service account.                                                         | `{}`                                           |
 | **ledger.serviceAccount.name**               | Service account name. If not defined, it will be generated automatically.                    | `""`                                           |
 
-### Transaction
+### Transaction:
 
 | Parameter                                    | Description                                                                                     | Default Value                                   |
 |---------------------------------------------|---------------------------------------------------------------------------------------------|------------------------------------------------|
@@ -86,7 +86,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | **transaction.serviceAccount.annotations**   | Annotations for the service account.                                                         | `{}`                                           |
 | **transaction.serviceAccount.name**          | Service account name. If not defined, it will be generated automatically.                    | `""`                                           |
 
-### Audit
+### Audit:
 | Parameter                                    | Description                                                                 | Default Value                                  |
 |----------------------------------------------|---------------------------------------------------------------------------|----------------------------------------------|
 | `audit.name`                                 | Application deployment name.                                          | `"audit"`                                     |
@@ -138,8 +138,44 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `audit.serviceAccount.annotations`           | Annotations for the ServiceAccount.                                          | `{}`                                          |
 | `audit.serviceAccount.name`                  | ServiceAccount name.                                                   | `""`                                          |
 
-### Console
+### Console:
 
+| Parameter                                     | Description                                                                                     | Default Value                                   |
+|----------------------------------------------|---------------------------------------------------------------------------------------------|------------------------------------------------|
+| `console.name`                                | Resource name.                                                                      | `"console"`                                   |
+| `console.replicaCount`                        | Number of replicas.                                                              | `1`                                            |
+| `console.image.repository`                    | Docker image repository for Console.                                                     | `"lerianstudio/midaz-console"`                |
+| `console.image.pullPolicy`                    | Docker image pull policy.                                                          | `"IfNotPresent"`                              |
+| `console.image.tag`                           | Docker image tag.                                                                        | `"1.2.0"`                                     |
+| `console.imagePullSecrets`                    | Secrets for pulling Docker images.                                                        | `[]`                                           |
+| `console.nameOverride`                        | Overrides the resource name.                                                              | `""`                                          |
+| `console.fullnameOverride`                    | Overrides the full resource name.                                                         | `""`                                          |
+| `console.podAnnotations`                      | Annotations for the pods.                                                                     | `{}`                                           |
+| `console.podSecurityContext`                  | Security context for the pod level.                                                        | `{}`                                           |
+| `console.securityContext`                     | Security context for the container level.                                                  | `{}`                                           |
+| `console.service.type`                        | Service type.                                                                             | `"ClusterIP"`                                 |
+| `console.service.port`                        | Service port.                                                                            | `8081`                                         |
+| `console.ingress.enabled`                     | Specifies whether Ingress is enabled.                                                        | `false`                                        |
+| `console.ingress.className`                   | Ingress class.                                                                           | `""`                                         |
+| `console.ingress.annotations`                 | Annotations for Ingress, including ALB configurations.                                    |  `[]`                                          |
+| `console.ingress.hosts`                       | Configured hosts for Ingress and associated paths.                                     | `[{"host": "", "paths": [{"path": "/", "pathType": "Prefix"}]}]` |
+| `console.ingress.tls`                         | TLS configurations for Ingress.                                                           | `[]`                                           |
+| `console.resources.limits.cpu`                | CPU limit allocated for the pods.                                                         | `"200m"`                                     |
+| `console.resources.limits.memory`             | Memory limit allocated for the pods.                                                     | `"256Mi"`                                    |
+| `console.resources.requests.cpu`              | Minimum CPU request for the pods.                                                      | `"100m"`                                     |
+| `console.resources.requests.memory`           | Minimum memory request for the pods.                                                  | `"128Mi"`                                    |
+| `console.autoscaling.enabled`                 | Specifies whether autoscaling is enabled.                                                    | `true`                                         |
+| `console.autoscaling.minReplicas`             | Minimum number of replicas for autoscaling.                                                 | `1`                                            |
+| `console.autoscaling.maxReplicas`             | Maximum number of replicas for autoscaling.                                                 | `3`                                            |
+| `console.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling.                                      | `80`                                           |
+| `console.nodeSelector`                        | Node selectors for pod scheduling.                                     | `{}`                                           |
+| `console.tolerations`                         | Tolerations for pod scheduling.                                                     |      `{}`                                     |
+| `console.affinity`                            | Affinity rules for pod scheduling.                                              | `{}`                                           |
+| `console.configmap`                           | Additional configurations in ConfigMap.                                                     | `{ "NEXTAUTH_URL": "http://localhost:8081" }` |
+| `console.secrets`                             | Additional secrets for the service.                                                        | `{}`                                           |
+| `console.serviceAccount.create`               | Specifies whether the service account should be created.                                               | `true`                                         |
+| `console.serviceAccount.annotations`          | Annotations for the service account.                                                         | `{}`                                           |
+| `console.serviceAccount.name`                 | Service account name. If not defined, it will be generated automatically.                    | `""`                                          |
 ## Dependencies:
 
 This Chart has the following dependencies for the project's default installation:
@@ -171,7 +207,7 @@ This Chart has the following dependencies for the project's default installation
 
 ### RabbitMQ
 
-- **Version:** 15.2.0
+- **Version:** 16.0.0
 - **Repository:** https://charts.bitnami.com/bitnami
 
 ### Casdoor Helm Charts

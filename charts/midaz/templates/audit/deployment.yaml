@@ -4,9 +4,6 @@ metadata:
   name: {{ include "midaz-audit.fullname" . }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.audit.name "name" .Values.audit.name ) | nindent 4 }}
-  annotations:
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "5"
 spec:
   {{- if not .Values.audit.autoscaling.enabled }}
   replicas: {{ .Values.audit.replicaCount }}
@@ -30,6 +27,25 @@ spec:
       serviceAccountName: {{ .Values.audit.serviceAccount.name }}
       securityContext:
         {{- toYaml .Values.audit.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "midaz-audit.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$DB_HOST:$DB_PORT" "$DB_REPLICA_HOST:$DB_REPLICA_PORT" "$RABBITMQ_HOST:$RABBITMQ_PORT_HOST" "$MONGO_HOST:$MONGO_PORT" "$TRILLIAN_DATABASE_HOST:$TRILLIAN_DATABASE_PORT";
+              do
+                echo "Checking $svc...";
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done;  
       containers:
         - name: {{ include "midaz-audit.fullname" . }}
           securityContext:

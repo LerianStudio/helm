@@ -72,3 +72,7 @@ data:
   PROTO_ADDRESS: {{ .Values.transaction.configmap.PROTO_ADDRESS | default ":3001" | quote }}
   # AUDIT
   AUDIT_LOG_ENABLED: {{ .Values.transaction.configmap.AUDIT_LOG_ENABLED | default "true" | quote }}
+  # LEDGER gRPC
+  LEDGER_GRPC_ADDR: {{ .Values.transaction.configmap.LEDGER_GRPC_ADDR | default (printf "midaz-ledger.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  LEDGER_GRPC_PORT: {{ .Values.transaction.configmap.LEDGER_GRPC_PORT | default "3001" | quote }}
+

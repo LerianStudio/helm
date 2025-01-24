@@ -4,9 +4,6 @@ metadata:
   name: {{ include "midaz-transaction.fullname" . }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.transaction.name "name" .Values.transaction.name ) | nindent 4 }}
-  annotations:
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "5"
 spec:
   {{- if not .Values.transaction.autoscaling.enabled }}
   replicas: {{ .Values.transaction.replicaCount }}
@@ -30,6 +27,25 @@ spec:
       serviceAccountName: {{ .Values.transaction.serviceAccount.name }}
       securityContext:
         {{- toYaml .Values.transaction.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "midaz-transaction.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$DB_HOST:$DB_PORT" "$DB_REPLICA_HOST:$DB_REPLICA_PORT" "$RABBITMQ_HOST:$RABBITMQ_PORT_HOST" "$MONGO_HOST:$MONGO_PORT" "$REDIS_HOST:$REDIS_PORT";
+              do
+                echo "Checking $svc...";
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done; 
       containers:
         - name: {{ include "midaz-transaction.fullname" . }}
           securityContext:

@@ -23,10 +23,12 @@ Steps
     
     kubectl port-forward svc/midaz-transaction 3002:3002
     
-    This will forward port 3002 on your local machine to port 3002 on the `midaz-transaction` service.
+    This will forward port 3002 on your local machine to port 3002 on the `midaz-transaction` service
 
 Accessing the Services
 Once the port-forwarding is set up, you can access the services in your web browser or via API calls using the following URLs:
 - `midaz-console`: http://localhost:8081
 - `midaz-ledger`: http://localhost:3000
 - `midaz-transaction`: http://localhost:3002
+
+

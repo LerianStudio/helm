@@ -16,9 +16,9 @@ data:
   OTEAL_RESOURCE_SERVICE_NAME: {{ .Values.ledger.configmap.OTEAL_RESOURCE_SERVICE_NAME | default "ledger" | quote }}
   OTEAL_LIBRARY_NAME: {{ .Values.ledger.configmap.OTEAL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/ledger" | quote }}
   OTEAL_RESOURCE_SERVICE_VERSION: {{ include "ledger.versionLabelValue" . }}
-  OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "local" | quote }}
+  OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEAL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.ledger.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEAL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT | default "midaz-otel-lgtm:4317" | quote }}
+  OTEAL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT | default "lgtm:4317" | quote }}
   # RABBITMQ
   RABBITMQ_HOST: {{ .Values.ledger.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local" .Release.Namespace) | quote }}
   RABBITMQ_PORT_HOST: {{ .Values.ledger.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}

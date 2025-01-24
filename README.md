@@ -33,7 +33,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | **ledger.ingress.enabled**                   | Specifies whether Ingress is enabled.                                                        | `false`                                         |
 | **ledger.ingress.className**                 | Ingress class.                                                                           | `{}`                                        |
 | **ledger.ingress.annotations**               | Annotations for Ingress, including ALB configurations.                                    |  `{}`       |
-| **ledger.ingress.hosts**                     | Configured hosts for Ingress and associated paths.                                     | `{}`                  |
+| **ledger.ingress.hosts**                     | Configured hosts for Ingress and associated paths.                                     | `""`                  |
 | **ledger.ingress.tls**                       | TLS configurations for Ingress.                                                           | `[]`                                           |
 | **ledger.resources.limits.cpu**              | CPU limit allocated for the pods.                                                         | `"200m"`                                       |
 | **ledger.resources.limits.memory**           | Memory limit allocated for the pods.                                                     | `"256Mi"`                                      |
@@ -67,7 +67,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | **transaction.ingress.enabled**              | Specifies whether Ingress is enabled.                                                        | `false`                                        |
 | **transaction.ingress.className**            | Ingress class.                                                                           | `""`                                           |
 | **transaction.ingress.annotations**          | Annotations for Ingress.                                                                   | `{}`                                           |
-| **transaction.ingress.hosts**                | Configured hosts for Ingress and associated paths.                                     |     `{}`              |
+| **transaction.ingress.hosts**                | Configured hosts for Ingress and associated paths.                                     |     `""`              |
 | **transaction.ingress.tls**                  | TLS configurations for Ingress.                                                           | `[]`                                           |
 | **transaction.resources.limits.cpu**         | CPU limit allocated for the pods.                                                         | `"200m"`                                       |
 | **transaction.resources.limits.memory**      | Memory limit allocated for the pods.                                                     | `"256Mi"`                                      |
@@ -105,7 +105,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `audit.ingress.enabled`                      | Enable or disable Ingress.                                         | `false`                                       |
 | `audit.ingress.className`                    | Ingress class.                                                        | `""`                                          |
 | `audit.ingress.annotations`                  | Additional annotations for Ingress.                                      | `{}`                                          |
-| `audit.ingress.hosts`                        | List of configured hosts for Ingress.                               | `{}`        |
+| `audit.ingress.hosts`                        | List of configured hosts for Ingress.                               | `""`        |
 | `audit.ingress.tls`                          | TLS configuration for Ingress.                                       | `[]`                                          |
 | `audit.resources.limits.cpu`                 | CPU limit for the main container.                                 | `"200m"`                                      |
 | `audit.resources.limits.memory`              | Memory limit for the main container.                             | `"256Mi"`                                     |
@@ -130,7 +130,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `audit.autoscaling.maxReplicas`              | Maximum number of replicas for autoscaling.                             | `3`                                           |
 | `audit.autoscaling.targetCPUUtilizationPercentage` | CPU utilization percentage for autoscaling.                   | `80`                                          |
 | `audit.nodeSelector`                         | Node selector for pod scheduling.                               | `{}`                                          |
-| `audit.tolerations`                          | Tolerations for pod scheduling.                                  | `[{"key": "midaz.io/midaz", "operator": "Equal", "effect": "NoSchedule"}]` |
+| `audit.tolerations`                          | Tolerations for pod scheduling.                                  | `{}` |
 | `audit.affinity`                             | Affinity configuration for pod scheduling.                    | `{}`                                          |
 | `audit.configmap`                            | Additional configurations for ConfigMap.                                | `{}`                                          |
 | `audit.secrets`                              | Additional configurations for Secrets.                                 | `{}`                                          |
@@ -158,7 +158,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `console.ingress.enabled`                     | Specifies whether Ingress is enabled.                                                        | `false`                                        |
 | `console.ingress.className`                   | Ingress class.                                                                           | `""`                                         |
 | `console.ingress.annotations`                 | Annotations for Ingress, including ALB configurations.                                    |  `[]`                                          |
-| `console.ingress.hosts`                       | Configured hosts for Ingress and associated paths.                                     | `[{"host": "", "paths": [{"path": "/", "pathType": "Prefix"}]}]` |
+| `console.ingress.hosts`                       | Configured hosts for Ingress and associated paths.                                     | `""` |
 | `console.ingress.tls`                         | TLS configurations for Ingress.                                                           | `[]`                                           |
 | `console.resources.limits.cpu`                | CPU limit allocated for the pods.                                                         | `"200m"`                                     |
 | `console.resources.limits.memory`             | Memory limit allocated for the pods.                                                     | `"256Mi"`                                    |

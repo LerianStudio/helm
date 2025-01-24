@@ -32,7 +32,6 @@ console:
     # runAsNonRoot: true
     # runAsUser: 1000
 
-
   service:
     type: ClusterIP
     port: 8081
@@ -40,7 +39,7 @@ console:
   ingress:
     enabled: false
     className: ""
-    annotations: {}
+    annotations: []
     hosts:
       - host: ""
         paths:
@@ -84,7 +83,8 @@ console:
     #         values:
     #         - midaz
 
-  configmap: {}
+  configmap: 
+    NEXTAUTH_URL: "http://localhost:8081" ## This is the URL of the NextAuth service  
 
   secrets: {}
 
@@ -105,15 +105,13 @@ ledger:
     repository: lerianstudio/midaz-ledger
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "latest"
+    tag: "1.45.0"
 
   imagePullSecrets: []
   nameOverride: ""
   fullnameOverride: ""
 
-  podAnnotations:
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "5"
+  podAnnotations: []
 
   podSecurityContext: {}
     # fsGroup: 2000
@@ -129,11 +127,12 @@ ledger:
   service:
     type: ClusterIP
     port: 3000
+    grpcPort: 3001
 
   ingress:
     enabled: false
     className: ""
-    annotations: {}
+    annotations: []
     hosts:
       - host: ""
         paths:
@@ -198,15 +197,13 @@ audit:
     repository: lerianstudio/midaz-audit
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "1.44.0"
+    tag: "1.45.0"
 
   imagePullSecrets: []
   nameOverride: ""
   fullnameOverride: ""
 
-  podAnnotations:
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "5"
+  podAnnotations: []
 
   podSecurityContext: {}
     # fsGroup: 2000
@@ -222,6 +219,8 @@ audit:
   service:
     type: ClusterIP
     port: 3005
+ 
+
 
   ingress:
     enabled: false
@@ -321,15 +320,13 @@ transaction:
     repository: lerianstudio/midaz-transaction
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "1.44.0"
+    tag: "1.45.0"
 
   imagePullSecrets: []
   nameOverride: ""
   fullnameOverride: ""
 
-  podAnnotations:
-      "helm.sh/hook": post-install
-      "helm.sh/hook-weight": "5"
+  podAnnotations: []
 
   podSecurityContext: {}
   # fsGroup: 2000
@@ -349,17 +346,15 @@ transaction:
   ingress:
     enabled: false
     className: ""
-    annotations: {}
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
+    annotations: []
     hosts:
       - host: ""
         paths:
           - path: /
-            pathType: ImplementationSpecific
+            pathType: Prefix
     tls: []
     #  - secretName: chart-example-tls
-    #    hosts:
+    #  hosts:
     #      - chart-example.local
 
   resources:
@@ -489,7 +484,7 @@ casdoor:
     SessionOn=true
     copyrequestbody = true
     driverName=postgres
-    dataSourceName="user=midaz password=lerian host=midaz-casdoordb.midaz-open-source.svc.cluster.local port=5432 sslmode=disable dbname=casdoor"
+    dataSourceName="user=midaz password=lerian host=midaz-casdoordb.midaz.svc.cluster.local port=5432 sslmode=disable dbname=casdoor"
     redisEndpoint=
     dbName=casdoor
     showSql=false
@@ -534,6 +529,22 @@ casdoor:
         items:
           - key: init_data.json
             path: init_data.json
+  
+  ingress:
+    enabled: true
+    className: "alb"
+    annotations:
+      alb.ingress.kubernetes.io/backend-protocol: HTTP
+      alb.ingress.kubernetes.io/group.name: services-alb
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/scheme: internal
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/healthcheck-path: "/"
+    hosts:
+      - host: midaz-casdoor.private.gen-int-dev.midaz.io
+        paths:
+          - path: /
+            pathType: Prefix
 
 casdoordb:
   external: false

@@ -10,7 +10,7 @@ The default installation is similar to the one provided in the [Midaz repo](http
 ## Install:
 
 ```console
-$ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 1.0.0 -n midaz --create-namespace
+$ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm-standalone --version 1.0.0 -n midaz --create-namespace
 ```
 
 ---

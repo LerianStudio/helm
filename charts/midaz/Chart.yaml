@@ -20,7 +20,7 @@ dependencies:
     repository: "https://charts.bitnami.com/bitnami"
     condition: casdoordb.enabled
   - name: mongodb
-    version: "15.4"
+    version: "16.4.0"
     repository: "https://charts.bitnami.com/bitnami"
     condition: mongodb.enabled
   - name: rabbitmq

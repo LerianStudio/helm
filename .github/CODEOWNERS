@@ -1,7 +1,6 @@
 # Default owners for the entire repository
-*                    @LerianStudio/Dev @LerianStudio/Devops
+*                    @LerianStudio/G_Github_Devops
 
 # Owners for specific directories and files
-.github/*            @LerianStudio/Devops
-.githooks/*          @LerianStudio/Devops
-components/*         @LerianStudio/Dev
+.github/*            @LerianStudio/G_Github_Devops
+.githooks/*          @LerianStudio/G_Github_Devops

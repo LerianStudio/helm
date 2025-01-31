@@ -1,0 +1,24 @@
+{{- if .Values.otel.enabled }}
+{{- $fullName := include "midaz-otel.fullname" . -}}
+# this is intended for demo / testing purposes only, not for production usage
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}
+spec:
+  selector:
+    app: {{ $fullName }}
+  ports:
+    - name: grafana
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
+    - name: otel-grpc
+      protocol: TCP
+      port: 4317
+      targetPort: 4317
+    - name: otel-http
+      protocol: TCP
+      port: 4318
+      targetPort: 4318
+{{- end }}

@@ -13,12 +13,12 @@ data:
   CASDOOR_ENFORCER_NAME: {{ .Values.transaction.configmap.CASDOOR_ENFORCER_NAME | default "lerian-enforcer" | quote }}
   CASDOOR_JWK_ADDRESS: {{ .Values.ledger.configmap.CASDOOR_JWK_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local:8000/.well-known/jwks" .Release.Namespace) | quote }}
   # OPEN TELEMETRY
-  OTEAL_RESOURCE_SERVICE_NAME: {{ .Values.transaction.configmap.OTEAL_RESOURCE_SERVICE_NAME | default "transaction" | quote }}
-  OTEAL_LIBRARY_NAME: {{ .Values.transaction.configmap.OTEAL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/transaction" | quote }}
-  OTEAL_RESOURCE_SERVICE_VERSION: {{ include "ledger.versionLabelValue" . }}
-  OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.transaction.configmap.OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "local" | quote }}
-  OTEAL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.transaction.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEAL_EXPORTER_OTLP_ENDPOINT: {{ .Values.transaction.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT | default "midaz-otel-lgtm:4317" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.transaction.configmap.OTEL_RESOURCE_SERVICE_NAME | default "transaction" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.transaction.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/transaction" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ include "ledger.versionLabelValue" . }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.transaction.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "local" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-otel.%s.svc.cluster.local:4317" .Release.Namespace) | quote }}
   # RABBITMQ
   RABBITMQ_HOST: {{ .Values.transaction.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local" .Release.Namespace) | quote }}
   RABBITMQ_PORT_HOST: {{ .Values.transaction.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}

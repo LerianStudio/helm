@@ -6,7 +6,7 @@ data:
   # OPEN TELEMETRY
   OTEL_RECEIVER_HTTP_PORT: {{ .Values.console.configmap.OTEL_RECEIVER_HTTP_PORT | default "4318" | quote }}
   OTEL_HOST: {{ .Values.console.configmap.OTEL_HOST | default "localhost" | quote }}
-  OTEL_URL: {{ .Values.console.configmap.OTEL_URL | default "http://lgtm:4318/v1/metrics" | quote }}
+  OTEL_URL: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-otel.%s.svc.cluster.local:4318/v1/metrics" .Release.Namespace) | quote }}
   # Midaz Console
   MIDAZ_CONSOLE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_PORT | default "8081" | quote }}
   MIDAZ_CONSOLE_SERVICE_HOST: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_HOST | default "localhost" | quote }}

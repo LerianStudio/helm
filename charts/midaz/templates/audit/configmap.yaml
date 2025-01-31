@@ -13,12 +13,12 @@ data:
   CASDOOR_MODEL_NAME: {{ .Values.audit.configmap.CASDOOR_MODEL_NAME | default "api-model" | quote }}
   CASDOOR_JWK_ADDRESS: {{ .Values.audit.configmap.CASDOOR_JWK_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local:8000/.well-known/jwks" .Release.Namespace) | quote }}
   # OPEN TELEMETRY
-  OTEAL_RESOURCE_SERVICE_NAME: {{ .Values.audit.configmap.OTEAL_RESOURCE_SERVICE_NAME | default "audit" | quote }}
-  OTEAL_LIBRARY_NAME: {{ .Values.audit.configmap.OTEAL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/audit" | quote }}
-  OTEAL_RESOURCE_SERVICE_VERSION: {{ include "ledger.versionLabelValue" . }}
-  OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.audit.configmap.OTEAL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "local" | quote }}
-  OTEAL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.audit.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEAL_EXPORTER_OTLP_ENDPOINT: {{ .Values.audit.configmap.OTEAL_EXPORTER_OTLP_ENDPOINT | default "midaz-otel-lgtm:4317" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.audit.configmap.OTEL_RESOURCE_SERVICE_NAME | default "audit" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.audit.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/audit" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ include "ledger.versionLabelValue" . }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.audit.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "local" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.audit.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.audit.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-otel.%s.svc.cluster.local:4317" .Release.Namespace) | quote }}
   # RABBITMQ
   RABBITMQ_HOST: {{ .Values.audit.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local" .Release.Namespace) | quote }}
   RABBITMQ_PORT_HOST: {{ .Values.audit.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}

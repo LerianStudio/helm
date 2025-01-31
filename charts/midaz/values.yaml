@@ -403,7 +403,28 @@ transaction:
     # If not set and create is true, a name is generated using the fullname template
     name: ""
 
+otel:
+  enabled: true
+
+  name: otel
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: []
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    #  - secretName: chart-example-tls
+    #  hosts:
+    #      - chart-example.local
+  
 redis:
+  enabled: true
+
   external: false
   architecture: standalone
   auth:
@@ -413,6 +434,8 @@ redis:
       size: 8Gi
 
 postgresql:
+  enabled: true
+
   external: false
   architecture: replication
   replication:
@@ -449,6 +472,8 @@ postgresql:
       size: 8Gi
 
 mongodb: 
+  enabled: true
+
   external: false
   auth:
     enabled: true
@@ -458,6 +483,8 @@ mongodb:
     size: 8Gi
 
 rabbitmq:
+  enabled: true
+
   external: false
   image:
     debug: true
@@ -547,6 +574,8 @@ casdoor:
             pathType: Prefix
 
 casdoordb:
+  enabled: true
+
   external: false
   auth:
     enabled: true
@@ -571,6 +600,8 @@ casdoordb:
       size: 8Gi
 
 mariadb:
+  enabled: true
+
   auth:
     enabled: true
     username: midaz

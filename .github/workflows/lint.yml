@@ -1,14 +1,12 @@
 name: Helm Lint 
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - 'README.md'
-      - '.github/workflows/**'
-      - '.github/configs/workflows/**'
-      - '.gitignore'
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
 
 jobs:
   release-helm-chart:

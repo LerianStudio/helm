@@ -37,9 +37,11 @@ To use the **NGINX Ingress Controller**, configure the `values.yaml` as follows:
 ingress:
   enabled: true
   className: "nginx"
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # Ensure this issuer exists in your cluster
-    nginx.ingress.kubernetes.io/rewrite-target: /
+  // The `annotations` field is used to add custom metadata to the Nginx resource.
+  // Annotations are key-value pairs that can be used to attach arbitrary non-identifying metadata to objects.
+  // These annotations can be used by various tools and libraries to augment the behavior of the Nginx resource.
+  // See more https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
+  annotations: {} 
   hosts:
     - host: midaz.example.com
       paths:

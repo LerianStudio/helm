@@ -40,7 +40,7 @@ console:
   ingress:
     enabled: false
     className: ""
-    annotations: []
+    annotations: {}
     hosts:
       - host: ""
         paths:
@@ -112,7 +112,7 @@ ledger:
   nameOverride: ""
   fullnameOverride: ""
 
-  podAnnotations: []
+  podAnnotations: {}
 
   podSecurityContext: {}
     # fsGroup: 2000
@@ -134,7 +134,7 @@ ledger:
   ingress:
     enabled: false
     className: ""
-    annotations: []
+    annotations: {}
     hosts:
       - host: ""
         paths:
@@ -205,7 +205,7 @@ audit:
   nameOverride: ""
   fullnameOverride: ""
 
-  podAnnotations: []
+  podAnnotations: {}
 
   podSecurityContext: {}
     # fsGroup: 2000
@@ -223,8 +223,6 @@ audit:
     type: ClusterIP
     port: 3005
  
-
-
   ingress:
     enabled: false
     className: ""
@@ -329,7 +327,7 @@ transaction:
   nameOverride: ""
   fullnameOverride: ""
 
-  podAnnotations: []
+  podAnnotations: {}
 
   podSecurityContext: {}
   # fsGroup: 2000
@@ -350,7 +348,7 @@ transaction:
   ingress:
     enabled: false
     className: ""
-    annotations: []
+    annotations: {}
     hosts:
       - host: ""
         paths:
@@ -415,7 +413,7 @@ otel:
   ingress:
     enabled: false
     className: ""
-    annotations: []
+    annotations: {}
     hosts:
       - host: ""
         paths:
@@ -562,17 +560,11 @@ casdoor:
             path: init_data.json
   
   ingress:
-    enabled: true
+    enabled: false
     className: "alb"
-    annotations:
-      alb.ingress.kubernetes.io/backend-protocol: HTTP
-      alb.ingress.kubernetes.io/group.name: services-alb
-      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-      alb.ingress.kubernetes.io/scheme: internal
-      alb.ingress.kubernetes.io/target-type: ip
-      alb.ingress.kubernetes.io/healthcheck-path: "/"
+    annotations: {}
     hosts:
-      - host: midaz-casdoor.private.gen-int-dev.midaz.io
+      - host: 
         paths:
           - path: /
             pathType: Prefix

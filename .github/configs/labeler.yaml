@@ -1,0 +1,35 @@
+ledger:
+  - changed-files:
+      - any-glob-to-any-file: charts/midaz/templates/ledger/**
+
+trasaction:
+  - changed-files:
+      - any-glob-to-any-file: charts/midaz/templates/trasaction/**
+
+console:
+  - changed-files:
+      - any-glob-to-any-file: charts/midaz/templates/console/**
+
+autit:
+  - changed-files:
+      - any-glob-to-any-file: charts/midaz/templates/audit/**
+
+auth:
+  - changed-files:
+      - any-glob-to-any-file: charts/midaz/**
+
+dependenicies:
+  - changed-files:
+      - any-glob-to-any-file: charts/midaz/**
+
+values:
+  - changed-files:
+      - any-glob-to-any-file: charts/midaz/**
+
+pipe:
+  - changed-files:
+      - any-glob-to-any-file: .github/workflows/**
+
+doc:
+  - changed-files:
+      - any-glob-to-any-file: README.md

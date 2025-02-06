@@ -30,7 +30,12 @@ jobs:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
         with:
           scopes: |
-            midaz-ledger
-            deps
+            ledger
+            trasaction
+            console
+            audit
+            auth
+            depencencies
+            values
             github
           requireScope: true

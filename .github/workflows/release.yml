@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'README.md'
+      - '.github/workflows/**'
+      - '.github/configs/workflows/**'
+      - '.gitignore'
 
 jobs:
   release-helm-chart:

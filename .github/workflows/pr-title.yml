@@ -35,7 +35,7 @@ jobs:
             console
             audit
             auth
-            depencencies
+            dependencies
             values
             pipe
             doc

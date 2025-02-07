@@ -10,7 +10,7 @@ console:
   - changed-files:
       - any-glob-to-any-file: charts/midaz/templates/console/**
 
-autit:
+audit:
   - changed-files:
       - any-glob-to-any-file: charts/midaz/templates/audit/**
 

@@ -3,7 +3,7 @@ name: midaz-helm-standalone
 description: A Helm chart for Kubernetes
 type: application
 version: 1.0.0
-appVersion: "1.0.0"
+appVersion: "1.46.0"
 
 dependencies:
   - name: redis

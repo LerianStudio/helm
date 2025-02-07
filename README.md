@@ -112,7 +112,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `ledger.replicaCount`                         | Number of replicas.                                                                       | `2`                                            |
 | `ledger.image.repository`                     | Docker image repository for Ledger.                                                       | `"lerianstudio/midaz-ledger"`                 |
 | `ledger.image.pullPolicy`                     | Docker image pull policy.                                                                 | `"IfNotPresent"`                               |
-| `ledger.image.tag`                            | Docker image tag. Overrides the chart appVersion.                                         | `"1.45.0"`                                     |
+| `ledger.image.tag`                            | Docker image tag. Overrides the chart appVersion.                                         | `"1.46.0"`                                     |
 | `ledger.imagePullSecrets`                     | Secrets for pulling images from private registries.                                       | `[]`                                           |
 | `ledger.nameOverride`                         | Overrides the name of the release.                                                        | `""`                                           |
 | `ledger.fullnameOverride`                     | Overrides the full name of the release.                                                   | `""`                                           |
@@ -152,7 +152,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `transaction.replicaCount`                 | Number of service replicas.                                                              | `1`                                            |
 | `transaction.image.repository`             | Docker image repository for Transaction.                                                | `"lerianstudio/midaz-transaction"`            |
 | `transaction.image.pullPolicy`             | Docker image pull policy.                                                          | `"IfNotPresent"`                               |
-| `transaction.image.tag`                    | Docker image tag.                                                                        | `"1.45.0"`                                     |
+| `transaction.image.tag`                    | Docker image tag.                                                                        | `"1.46.0"`                                     |
 | `transaction.podAnnotations`               | Annotations for the pods.                                                                     | `{}`                                           |
 | `transaction.service.type`                 | Service type.                                                                             | `"ClusterIP"`                                  |
 | `transaction.service.port`                 | Service port.                                                                            | `3002`                                         |
@@ -186,7 +186,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `audit.replicaCount`                         | Number of application replicas.                                          | `1`                                           |
 | `audit.image.repository`                     | Docker image repository for the application.                                | `"lerianstudio/midaz-audit"`                 |
 | `audit.image.pullPolicy`                     | Docker image pull policy.                                        | `"IfNotPresent"`                              |
-| `audit.image.tag`                            | Docker image tag.                                                     | `"1.45.0"`                                    |
+| `audit.image.tag`                            | Docker image tag.                                                     | `"1.46.0"`                                    |
 | `audit.imagePullSecrets`                     | Image pull secrets.                                             | `[]`                                          |
 | `audit.nameOverride`                         | Application name override.                                        | `""`                                          |
 | `audit.fullnameOverride`                     | Full application name override.                               | `""`                                          |

@@ -106,7 +106,7 @@ ledger:
     repository: lerianstudio/midaz-ledger
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "1.45.0"
+    tag: "1.46.0"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -199,7 +199,7 @@ audit:
     repository: lerianstudio/midaz-audit
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "1.45.0"
+    tag: "1.46.0"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -321,7 +321,7 @@ transaction:
     repository: lerianstudio/midaz-transaction
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "1.45.0"
+    tag: "1.46.0"
 
   imagePullSecrets: []
   nameOverride: ""

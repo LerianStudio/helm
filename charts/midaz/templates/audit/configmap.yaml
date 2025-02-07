@@ -20,6 +20,7 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.audit.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.audit.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-otel.%s.svc.cluster.local:4317" .Release.Namespace) | quote }}
   # RABBITMQ
+  RABBITMQ_URI: {{ .Values.audit.configmap.RABBITMQ_URI | default "amqp" | quote }}
   RABBITMQ_HOST: {{ .Values.audit.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local" .Release.Namespace) | quote }}
   RABBITMQ_PORT_HOST: {{ .Values.audit.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
   RABBITMQ_PORT_AMPQ: {{ .Values.audit.configmap.RABBITMQ_PORT_AMPQ | default "15672" | quote }}
@@ -41,6 +42,7 @@ data:
   SERVER_PORT: {{ .Values.audit.configmap.SERVER_PORT | default "3005" | quote }}
   SERVER_ADDRESS: {{ .Values.audit.configmap.SERVER_ADDRESS | default ":3000" | quote }}
   #MONGO
+  MONGO_URI:  {{ .Values.ledger.configmap.MONGO_URI | default "mongodb" | quote }} ## or mongodb+srv
   MONGO_HOST: {{ .Values.audit.configmap.MONGO_HOST | default (printf "midaz-mongodb.%s.svc.cluster.local" .Release.Namespace)| quote }}
   MONGO_NAME: {{ .Values.audit.configmap.MONGO_NAME | default "audit" | quote }}
   MONGO_USER: {{ .Values.audit.configmap.MONGO_USER | default "midaz" | quote }}

@@ -37,7 +37,7 @@ spec:
             - /bin/sh
             - -c
             - >
-              for svc in "$DB_HOST:$DB_PORT" "$DB_REPLICA_HOST:$DB_REPLICA_PORT" "$RABBITMQ_HOST:$RABBITMQ_PORT_HOST" "$MONGO_HOST:$MONGO_PORT" "$TRILLIAN_DATABASE_HOST:$TRILLIAN_DATABASE_PORT";
+              for svc in "$RABBITMQ_HOST:$RABBITMQ_PORT_HOST" "$TRILLIAN_DATABASE_HOST:$TRILLIAN_DATABASE_PORT";
               do
                 echo "Checking $svc...";
                 while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do

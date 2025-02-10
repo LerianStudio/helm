@@ -47,30 +47,14 @@ data:
   MONGO_NAME: {{ .Values.audit.configmap.MONGO_NAME | default "audit" | quote }}
   MONGO_USER: {{ .Values.audit.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_PORT: {{ .Values.audit.configmap.MONGO_PORT | default "27017" | quote }}
-  #POSTGRESS
-  DB_HOST: {{ .Values.audit.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local" .Release.Namespace) | quote }}
-  DB_USER: {{ .Values.audit.configmap.DB_USER | default "midaz" | quote }}
-  DB_NAME: {{ .Values.audit.configmap.DB_NAME | default "audit" | quote }}
-  DB_PORT: {{ .Values.audit.configmap.DB_PORT | default "5432" | quote }}
-  #POSTGRESS REPLICATION
-  DB_REPLICA_HOST: {{ .Values.audit.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-replication.%s.svc.cluster.local" .Release.Namespace) | quote }}
-  DB_REPLICA_USER: {{ .Values.audit.configmap.DB_REPLICA_USER | default "midaz" | quote }}
-  DB_REPLICA_NAME: {{ .Values.audit.configmap.DB_REPLICA_NAME | default "audit" | quote }}
-  DB_REPLICA_PORT: {{ .Values.audit.configmap.DB_REPLICA_PORT | default "5432" | quote }}
-  REPLICATION_USER: {{ .Values.audit.configmap.REPLICATION_USER | default "replicator" | quote }}
-  REPLICATION_PASSWORD: {{ .Values.audit.configmap.REPLICATION_PASSWORD | default "replicator_password" | quote }}
-  #PROTBUF
-  PROTO_URL: {{ .Values.audit.configmap.PROTO_URL | default "localhost" | quote }}
-  PROTO_PORT: {{ .Values.audit.configmap.PROTO_PORT | default "3001" | quote }}
-  PROTO_ADDRESS: {{ .Values.audit.configmap.PROTO_ADDRESS | default ":3001" | quote }}
   # TRILLIAN
   TRILLIAN_DATABASE_NAME: {{ .Values.audit.configmap.TRILLIAN_DATABASE_NAME | default "audit-db" | quote }}
   TRILLIAN_DATABASE_USER: {{ .Values.audit.configmap.TRILLIAN_DATABASE_USER | default "midaz" | quote }}
   TRILLIAN_DATABASE_PORT: {{ .Values.audit.configmap.TRILLIAN_DATABASE_PORT | default "3306" | quote }}
   TRILLIAN_GRPC_PORT: {{ .Values.audit.configmap.TRILLIAN_GRPC_PORT | default "8090" | quote }}
   TRILLIAN_HTTP_PORT: {{ .Values.audit.configmap.TRILLIAN_HTTP_PORT | default "8091" | quote }}
-  TRILLIAN_SIGNER_GRPC_PORT: {{ .Values.audit.configmap.TRILLIAN_GRPC_PORT | default "8093" | quote }}
-  TRILLIAN_SIGNER_HTTP_PORT: {{ .Values.audit.configmap.TRILLIAN_HTTP_PORT | default "8092" | quote }}
+  TRILLIAN_SIGNER_GRPC_PORT: {{ .Values.audit.configmap.TRILLIAN_SIGNER_GRPC_PORT | default "8093" | quote }}
+  TRILLIAN_SIGNER_HTTP_PORT: {{ .Values.audit.configmap.TRILLIAN_SIGNER_HTTP_PORT | default "8092" | quote }}
   TRILLIAN_GRPC_ADDRESS: {{ .Values.audit.configmap.TRILLIAN_GRPC_ADDRESS | default "localhost:8090" | quote }}
   TRILLIAN_HTTP_ADDRESS: {{ .Values.audit.configmap.TRILLIAN_HTTP_ADDRESS | default "http://localhost:8091" | quote }}
   TRILLIAN_DATABASE_HOST: {{ .Values.audit.configmap.TRILLIAN_DATABASE_HOST | default (printf "midaz-mariadb.%s.svc.cluster.local" .Release.Namespace) | quote }}

@@ -3,6 +3,7 @@
 ## Pull Request Type
 [//]: # (Check the appropriate box for the type of pull request.)
 
+- [ ] Chart
 - [ ] Auth 
 - [ ] Ledger
 - [ ] Transaction

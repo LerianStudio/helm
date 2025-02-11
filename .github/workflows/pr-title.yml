@@ -30,6 +30,7 @@ jobs:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
         with:
           scopes: |
+            chart
             ledger
             trasaction
             console

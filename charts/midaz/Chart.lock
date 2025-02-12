@@ -13,12 +13,12 @@ dependencies:
   version: 16.4.0
 - name: rabbitmq
   repository: https://charts.bitnami.com/bitnami
-  version: 15.2.3
+  version: 15.2.5
 - name: casdoor-helm-charts
   repository: oci://registry-1.docker.io/casbin
-  version: v1.799.0
+  version: v1.835.0
 - name: mariadb
   repository: https://charts.bitnami.com/bitnami
   version: 20.2.2
-digest: sha256:11a30f81ce6f9b44343691d28becd415634b34420e2e68bfa1208b468f7d8309
-generated: "2025-01-24T15:17:15.516478-03:00"
+digest: sha256:77541a22e56263035441887c88ab0df3a7e7b70e19c4893d73ae3d191f9acd0d
+generated: "2025-02-12T14:44:03.961627-03:00"

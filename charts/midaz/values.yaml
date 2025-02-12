@@ -700,6 +700,26 @@ casdoor:
     databasename: casdoor
     sslMode: disable
 
+  initContainersEnabled: true
+  initContainers: |
+    - name: wait-for-dependencies
+      image: busybox
+      env:
+        - name: DB_HOST
+          value: "{{ .Values.database.host }}"
+        - name: DB_PORT
+          value: "{{ .Values.database.port }}"
+      command:
+        - /bin/sh
+        - -c
+        - >
+          echo "Checking $DB_HOST:$DB_PORT...";
+          while ! nc -z $DB_HOST $DB_PORT; do
+            echo "$DB_HOST:$DB_PORT is not ready yet, waiting...";
+            sleep 5;
+          done;
+          echo "$DB_HOST:$DB_PORT is ready!";
+    
   resources: 
     limits:
       cpu: 256m

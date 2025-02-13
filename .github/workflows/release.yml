@@ -3,7 +3,7 @@ name: Helm Release
 on:
   push:
     branches:
-      - main
+      - changelog
     paths-ignore:
       - 'README.md'
       - '.github/workflows/**'

@@ -57,7 +57,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Garante acesso ao histórico completo do repositório
+          fetch-depth: 0
 
       - name: Generate GitHub App Token
         id: app-token

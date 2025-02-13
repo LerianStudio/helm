@@ -1,3 +1,47 @@
+## [1.13.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.12.8...v1.13.0) (2025-02-13)
+
+
+### Features
+
+* add doc ([5593a96](https://github.com/LerianStudio/midaz-helm-standalone/commit/5593a96ff02c3b968c4a703a5a7ccc2afa53be04))
+* add doc ([97daf1e](https://github.com/LerianStudio/midaz-helm-standalone/commit/97daf1ecb4c2a51415c58cf0bc815a36d1e52cc3))
+* add doc ([2f02d2e](https://github.com/LerianStudio/midaz-helm-standalone/commit/2f02d2ef0fad7ad80fe131253a8e232b66499430))
+* add doc ([6e20f92](https://github.com/LerianStudio/midaz-helm-standalone/commit/6e20f92c1c31fa26560edfa77fec348783564de2))
+* add init container in casdoor to check if the database is ready ([#48](https://github.com/LerianStudio/midaz-helm-standalone/issues/48)) ([8337771](https://github.com/LerianStudio/midaz-helm-standalone/commit/833777165ff6ed1d4183cc48757acd2d8b7ddd83))
+* **dependencies:** add new parameters to chart file ([#44](https://github.com/LerianStudio/midaz-helm-standalone/issues/44)) ([4796070](https://github.com/LerianStudio/midaz-helm-standalone/commit/4796070cb5ad4c32d28bbb7ffc085b5fb3aeb495))
+* **pipe:** Add semantic changelog ([8c65e59](https://github.com/LerianStudio/midaz-helm-standalone/commit/8c65e5970101edc9ac621ec30b783bbc4fc3225c))
+* **pipe:** Add semantic changelog ([452b6e7](https://github.com/LerianStudio/midaz-helm-standalone/commit/452b6e78b97a10aa4cd94daf5c95cd1545dc8222))
+* **pipe:** Add semantic changelog ([c54115e](https://github.com/LerianStudio/midaz-helm-standalone/commit/c54115ebf8bd43a0dc8d41233d1100ac136ba8c3))
+* **pipe:** Add semantic changelog ([d9befbb](https://github.com/LerianStudio/midaz-helm-standalone/commit/d9befbb65561716987a9825587f5ac0c9b63be3b))
+* create chart midaz opensource ([afeadcf](https://github.com/LerianStudio/midaz-helm-standalone/commit/afeadcf46aef60af8b74055695a55fc00131f029))
+* dependency update ([18bd991](https://github.com/LerianStudio/midaz-helm-standalone/commit/18bd9910348f05785a975b38d8b11068f1069407))
+* dependency update ([b56d142](https://github.com/LerianStudio/midaz-helm-standalone/commit/b56d1421e7251dc932d4b025cc6be4be31ee3c42))
+* dependency update ([55eb548](https://github.com/LerianStudio/midaz-helm-standalone/commit/55eb5489f192d16508b7ecfd93bddcf71aa42feb))
+* helm doc ([#26](https://github.com/LerianStudio/midaz-helm-standalone/issues/26)) ([ccb3021](https://github.com/LerianStudio/midaz-helm-standalone/commit/ccb30211fbd9ab5b1ff5e3151f1f9361d25e3cff))
+* midaz helm chart ([8768a8e](https://github.com/LerianStudio/midaz-helm-standalone/commit/8768a8e1f97dbe82d0cb96b899c3865e7b9c95c3))
+* midaz helm chart ([94b2a6e](https://github.com/LerianStudio/midaz-helm-standalone/commit/94b2a6eab897bb6c1cd6f336fc9cf12f642ad697))
+* postgres replication ([fa57f99](https://github.com/LerianStudio/midaz-helm-standalone/commit/fa57f99ed9d8dc8a157b776c65a02beb6f3453b4))
+* **values:** update midaz version ([#36](https://github.com/LerianStudio/midaz-helm-standalone/issues/36)) ([af4b898](https://github.com/LerianStudio/midaz-helm-standalone/commit/af4b898e7ed4e431ab853320a3275b9d219630f7))
+
+
+### Bug Fixes
+
+* **values:** add comments in values ([#43](https://github.com/LerianStudio/midaz-helm-standalone/issues/43)) ([03a5842](https://github.com/LerianStudio/midaz-helm-standalone/commit/03a5842787db8dc1b4d954038b36a343ad7180c1))
+* chart ([81f1126](https://github.com/LerianStudio/midaz-helm-standalone/commit/81f112612a3327fffc69da8720b2222122df44a4))
+* chart ([f6e6446](https://github.com/LerianStudio/midaz-helm-standalone/commit/f6e644662db2f641b0e71e3cccd518fa4fe715dc))
+* chart name ([6db8350](https://github.com/LerianStudio/midaz-helm-standalone/commit/6db83502f0f75b59a5345c27eeade292b31078a9))
+* chart name ([1f78da5](https://github.com/LerianStudio/midaz-helm-standalone/commit/1f78da504538d1a518f503e69b21b1696a893313))
+* codeowners groups ([#23](https://github.com/LerianStudio/midaz-helm-standalone/issues/23)) ([b51ff0c](https://github.com/LerianStudio/midaz-helm-standalone/commit/b51ff0ce5f7d838c2f01565340d91a79cd9c772f))
+* **audit:** fix audit configmap ([#41](https://github.com/LerianStudio/midaz-helm-standalone/issues/41)) ([429fdef](https://github.com/LerianStudio/midaz-helm-standalone/commit/429fdef691c87dc5b4a7e44c236b2550f548c20d))
+* **pipe:** fix pr title workflow ([#34](https://github.com/LerianStudio/midaz-helm-standalone/issues/34)) ([5134118](https://github.com/LerianStudio/midaz-helm-standalone/commit/51341186dfd7f643e3be1d598c51d3909748a3dd))
+* helm chart ([9b6552f](https://github.com/LerianStudio/midaz-helm-standalone/commit/9b6552f37d039bb5187c92319bcc3787d1c4ddcc))
+* remove hook ([aa92d78](https://github.com/LerianStudio/midaz-helm-standalone/commit/aa92d78f74000f6f4f2c7fc22db35cc0010916ca))
+* setup otel in template ([#24](https://github.com/LerianStudio/midaz-helm-standalone/issues/24)) ([837fd03](https://github.com/LerianStudio/midaz-helm-standalone/commit/837fd03c642b14387299b9b4a50fe00dc22e2f29))
+* templates ([bc18fc3](https://github.com/LerianStudio/midaz-helm-standalone/commit/bc18fc3fddd8736d8694f3be401d1a85fc781039))
+* update mongodb ([858c934](https://github.com/LerianStudio/midaz-helm-standalone/commit/858c93496a5e45fcb84389614536d63ca6b84a02))
+* **doc:** update nginx ingress config ([#35](https://github.com/LerianStudio/midaz-helm-standalone/issues/35)) ([d9763ea](https://github.com/LerianStudio/midaz-helm-standalone/commit/d9763ea4c2139c7d5f020d71422a634f37e15172))
+* values ([b1dc8f7](https://github.com/LerianStudio/midaz-helm-standalone/commit/b1dc8f7105ab3aa0bbed2549525f013875087b7d))
+
 ## [1.13.0-changelog.1](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.12.8...v1.13.0-changelog.1) (2025-02-13)
 
 

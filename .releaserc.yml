@@ -60,8 +60,6 @@ plugins:
 
 branches:
   - main
-  - name: changelog
-    prerelease: "changelog"
   - name: develop
     prerelease: "beta"
   - name: hotfix/*

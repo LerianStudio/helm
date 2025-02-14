@@ -3,10 +3,10 @@ name: Helm Release
 on:
   push:
     branches:
-      - feat/MDZ-40
+      - main
     paths-ignore:
       - 'README.md'
-      #- '.github/workflows/**'
+      - '.github/workflows/**'
       - '.github/configs/**'
       - '.gitignore'
 
@@ -57,7 +57,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 1  # Apenas o commit mais recente
+          fetch-depth: 1  # Apenas os commits mais recentes
 
       - name: Generate GitHub App Token
         id: app-token

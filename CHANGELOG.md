@@ -1,3 +1,10 @@
+## [1.15.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.14.0...v1.15.0) (2025-02-14)
+
+
+### Features
+
+* **ci:** Add Semantic Release changelog ([6537310](https://github.com/LerianStudio/midaz-helm-standalone/commit/6537310682b459b7f9fd48ed3c18dd739a816b0f))
+
 ## [1.14.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.13.0...v1.14.0) (2025-02-14)
 
 

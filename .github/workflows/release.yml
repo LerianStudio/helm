@@ -54,10 +54,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: release-helm-chart
     steps:
-      #- name: Checkout code
-      #  uses: actions/checkout@v3
-      #  with:
-      #    fetch-depth: 1  # Apenas o commit mais recente
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1  # Apenas o commit mais recente
 
       - name: Generate GitHub App Token
         id: app-token

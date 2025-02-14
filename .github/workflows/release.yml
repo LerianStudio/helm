@@ -3,7 +3,7 @@ name: Helm Release
 on:
   push:
     branches:
-      - main
+      - feat/MDZ-40
     paths-ignore:
       - 'README.md'
       #- '.github/workflows/**'

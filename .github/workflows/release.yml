@@ -6,7 +6,7 @@ on:
       - main
     paths-ignore:
       - 'README.md'
-      #- '.github/workflows/**'
+      - '.github/workflows/**'
       - '.github/configs/**'
       - '.gitignore'
 
@@ -57,7 +57,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1  # Apenas os commits mais recentes
 
       - name: Generate GitHub App Token
         id: app-token

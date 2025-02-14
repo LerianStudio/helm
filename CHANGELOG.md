@@ -1,3 +1,15 @@
+## [1.14.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.13.0...v1.14.0) (2025-02-14)
+
+
+### Features
+
+* **pipe:** remove step commit history ([b0fd599](https://github.com/LerianStudio/midaz-helm-standalone/commit/b0fd5993ef1eecb84d34759552871d9f1447b7a3))
+* **pipe:** remove step commit history ([e42b665](https://github.com/LerianStudio/midaz-helm-standalone/commit/e42b665d1bda4e9461e08b855e120fcb596c6521))
+* **pipe:** remove step commit history ([ed1ec98](https://github.com/LerianStudio/midaz-helm-standalone/commit/ed1ec98c8132bd84ee4c344cd70ac9da355bf9af))
+* **pipe:** remove step commit history ([b8b256d](https://github.com/LerianStudio/midaz-helm-standalone/commit/b8b256d997e838caea71ced0ed190e24aa73896a))
+* **pipe:** remove step commit history ([a56f7c6](https://github.com/LerianStudio/midaz-helm-standalone/commit/a56f7c6027fe4e5c90f08231b2cab83e1dc4cc30))
+* **pipe:** remove step commit history ([323b43a](https://github.com/LerianStudio/midaz-helm-standalone/commit/323b43aa1b8b73d103cdaba3b692d2bde73ff772))
+
 ## [1.13.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.12.8...v1.13.0) (2025-02-13)
 
 

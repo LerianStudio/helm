@@ -1,5 +1,5 @@
-{{- if .Values.otel.enabled }}
-{{- $fullName := include "midaz-otel.fullname" . -}}
+{{- if .Values.grafana.enabled }}
+{{- $fullName := include "midaz-grafana.fullname" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

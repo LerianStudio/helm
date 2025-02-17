@@ -1,8 +1,8 @@
-{{- if .Values.otel.ingress.enabled -}}
-{{- $fullName := include "midaz-otel.fullname" . -}}
-{{- if and .Values.otel.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.otel.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.otel.ingress.annotations "kubernetes.io/ingress.class" .Values.otel.ingress.className}}
+{{- if .Values.grafana.ingress.enabled -}}
+{{- $fullName := include "midaz-grafana.fullname" . -}}
+{{- if and .Values.grafana.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.grafana.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.grafana.ingress.annotations "kubernetes.io/ingress.class" .Values.grafana.ingress.className}}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -16,18 +16,18 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "midaz.labels" (dict "context" . "component" .Values.otel.name "name" .Values.otel.name ) | nindent 4 }}
-  {{- with .Values.otel.ingress.annotations }}
+    {{- include "midaz.labels" (dict "context" . "component" .Values.grafana.name "name" .Values.grafana.name ) | nindent 4 }}
+  {{- with .Values.grafana.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.otel.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.otel.ingress.className }}
+  {{- if and .Values.grafana.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.grafana.ingress.className }}
   {{- end }}
-  {{- if .Values.otel.ingress.tls }}
+  {{- if .Values.grafana.ingress.tls }}
   tls:
-    {{- range .Values.otel.ingress.tls }}
+    {{- range .Values.grafana.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -36,7 +36,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.otel.ingress.hosts }}
+    {{- range .Values.grafana.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:

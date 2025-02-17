@@ -1,5 +1,5 @@
-{{- if .Values.otel.enabled }}
-{{- $fullName := include "midaz-otel.fullname" . -}}
+{{- if .Values.grafana.enabled }}
+{{- $fullName := include "midaz-grafana.fullname" . -}}
 # this is intended for demo / testing purposes only, not for production usage
 apiVersion: v1
 kind: Service

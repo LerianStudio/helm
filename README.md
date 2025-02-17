@@ -279,19 +279,19 @@ You can access the observability dashboard in two ways:
 1. To access the observability dashboard, forward the Grafana port:
 
 ```console
-$ kubectl port-forward svc/midaz-otel 3000:3000 -n midaz
+$ kubectl port-forward svc/midaz-grafana 3000:3000 -n midaz
 ```
 
 Then, open your browser and navigate to http://localhost:3000.
 
 2. Configuring Internal or External Ingress with Custom DNS
 
-If you want to access the observability dashboard internally using a custom DNS (e.g., within your Kubernetes cluster or private network), you can enable and configure the Ingress for the otel component in the values.yaml file. Here's an example configuration for an internal Ingress:
+If you want to access the observability dashboard internally using a custom DNS (e.g., within your Kubernetes cluster or private network), you can enable and configure the Ingress for the grafana component in the values.yaml file. Here's an example configuration for an internal Ingress:
 
 ```yaml
-otel:
+grafana:
   enabled: true
-  name: otel
+  name: grafana
 
   ingress:
     enabled: true
@@ -311,7 +311,7 @@ otel:
 If necessary, the deployment of this component can be disabled by setting `otel.enabled` to `false` in the values file.
 
 ```yaml
-otel:
+grafana:
   enabled: false
 ```
 

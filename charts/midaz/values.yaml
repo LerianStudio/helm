@@ -542,7 +542,7 @@ transaction:
     # @default -- `midaz-transaction.fullname`
     name: ""
 
-otel:
+grafana:
   # OpenTelemetry (OTel) dependency for observability.
   # This component is responsible for collecting and exporting telemetry data
   # such as traces and metrics, enhancing the monitoring of the application.
@@ -550,7 +550,7 @@ otel:
   # https://docs.lerian.studio/docs/observability-in-midaz#midaz-observability-stack
   enabled: true
 
-  name: otel
+  name: grafana
 
   # -- Configure the ingress for Access Grafana Dashboard
   ingress:

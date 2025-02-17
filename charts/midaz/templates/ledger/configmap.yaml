@@ -18,7 +18,7 @@ data:
   OTEL_RESOURCE_SERVICE_VERSION: {{ include "ledger.versionLabelValue" . }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-otel.%s.svc.cluster.local:4317" .Release.Namespace) | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local:4317" .Release.Namespace) | quote }}
   # RABBITMQ
   RABBITMQ_URI: {{ .Values.audit.configmap.RABBITMQ_URI | default "amqp" | quote }}
   RABBITMQ_HOST: {{ .Values.ledger.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local" .Release.Namespace) | quote }}

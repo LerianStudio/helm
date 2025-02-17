@@ -1,3 +1,10 @@
+## [1.16.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.15.0...v1.16.0) (2025-02-17)
+
+
+### Bug Fixes
+
+* **dependencies:** rename otel to grafana ([#57](https://github.com/LerianStudio/midaz-helm-standalone/issues/57)) ([974c47f](https://github.com/LerianStudio/midaz-helm-standalone/commit/974c47f6974d42804e5210d530829efa0394d734))
+
 ## [1.15.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.14.0...v1.15.0) (2025-02-14)
 
 

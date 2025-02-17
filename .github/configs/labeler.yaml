@@ -18,7 +18,7 @@ auth:
   - changed-files:
       - any-glob-to-any-file: charts/midaz/**
 
-dependenicies:
+dependencies:
   - changed-files:
       - any-glob-to-any-file: charts/midaz/**
 

@@ -89,8 +89,9 @@ plugins:
     [
       "semantic-release-helm", 
       {
-        "chartPath": "charts/midaz",
-        "registry": "oci://registry-1.docker.io/lerianstudio"
+        "chartPath": "./charts/midaz",
+        "registry": "oci://registry-1.docker.io/lerianstudio",
+        "onlyUpdateVersion": true
       }
     ]
   ]

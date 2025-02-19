@@ -6,7 +6,7 @@ on:
       - ci/MDZ-39
     paths-ignore:
       - 'README.md'
-      - '.github/workflows/**'
+      #- '.github/workflows/**'
       - '.github/configs/**'
       - '.gitignore'
 

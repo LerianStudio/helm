@@ -13,7 +13,6 @@ on:
 jobs:
   release-helm-chart:
     name: Release Helm Chart
-    needs: semantic-release-helm
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

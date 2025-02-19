@@ -58,7 +58,7 @@ jobs:
           ci: false
           semantic_version: 23.0.8
           extra_plugins: |
-            conventional-changelog-conventionalcommits@v7.0.2
+            conventional-changelog-conventionalcommits
             @kroonprins/semantic-release-helm
             @semantic-release/git
         env:

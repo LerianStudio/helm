@@ -47,7 +47,7 @@ jobs:
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
 
       - name: Run Semantic Release
-        id: semantic
+        id: semantic_helm
         uses: cycjimmy/semantic-release-action@v4
         with:
           ci: false
@@ -65,7 +65,7 @@ jobs:
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
-        id: semantic
+        id: semantic_changelog
         with:
           ci: false
           semantic_version: 23.0.8

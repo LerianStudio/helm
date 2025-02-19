@@ -87,12 +87,10 @@ plugins:
       }
     ],
     [
-      "@kroonprins/semantic-release-helm", 
+      "semantic-release-helm", 
       {
-        "chartDirectory": "charts/midaz",
-        "ociRegistry": "oci://registry-1.docker.io/lerianstudio",
-        "chartName": "midaz",
-        "helmPackage": true
+        "chartPath": "charts/midaz",
+        "registry": "oci://registry-1.docker.io/lerianstudio"
       }
     ]    
   ]

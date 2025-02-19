@@ -36,19 +36,19 @@ plugins:
         "preset": "conventionalcommits",
         "parserOpts":
           { "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES"] },
-        #"releaseRules":
-        #  [
-        #    { "type": "feat", "release": "minor" },
-        #    { "type": "perf", "release": "minor" },
-        #    { "type": "build", "release": "minor" },
-        #    { "type": "chore", "release": "patch" },
-        #    { "type": "ci", "release": "patch" },
-        #    { "type": "test", "release": "patch" },
-        #    { "type": "fix", "release": "minor" },
-        #    { "type": "refactor", "release": "minor" },
-        #    { "type": "docs", "release": "patch" },
-        #    { "breaking": true, "release": "major" }
-        #  ]
+        "releaseRules":
+          [
+            { "type": "feat", "release": "minor" },
+            { "type": "perf", "release": "minor" },
+            { "type": "build", "release": "minor" },
+            { "type": "chore", "release": "patch" },
+            { "type": "ci", "release": "patch" },
+            { "type": "test", "release": "patch" },
+            { "type": "fix", "release": "minor" },
+            { "type": "refactor", "release": "minor" },
+            { "type": "docs", "release": "patch" },
+            { "breaking": true, "release": "major" }
+          ]
       }
     ],
     [

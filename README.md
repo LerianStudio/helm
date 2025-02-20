@@ -26,7 +26,7 @@ $ helm list -n midaz
 ---
 ## Configuring Ingress for Different Controllers
 
-The Midaz Helm Chart optionally supports different Ingress Controllers for exposing services when necessary. It is possible to enable Ingress for the following services: Transaction, Ledger, and Console. Below are the configurations for commonly used controllers.
+The Midaz Helm Chart optionally supports different Ingress Controllers for exposing services when necessary. It is possible to enable Ingress for the following services: Transaction, Onboarding and Console. Below are the configurations for commonly used controllers.
 
 - **Note:** Before configuring Ingress, ensure that you have an Ingress Controller installed in your cluster. The Ingress Controller is responsible for managing external access to the services. Examples of popular Ingress Controllers include NGINX, AWS ALB, and Traefik.
 
@@ -104,45 +104,45 @@ ingress:
 
 The Midaz system runs on four distinct layers that work together, distributed in segregated workloads:
 
-### Ledger:
+### Onboarding:
 
 | Parameter                                      | Description                                                                                | Default Value                                   |
 |-----------------------------------------------|-------------------------------------------------------------------------------------------|------------------------------------------------|
-| `ledger.name`                                 | Resource name.                                                                            | `"ledger"`                                     |
-| `ledger.replicaCount`                         | Number of replicas.                                                                       | `2`                                            |
-| `ledger.image.repository`                     | Docker image repository for Ledger.                                                       | `"lerianstudio/midaz-ledger"`                 |
-| `ledger.image.pullPolicy`                     | Docker image pull policy.                                                                 | `"IfNotPresent"`                               |
-| `ledger.image.tag`                            | Docker image tag. Overrides the chart appVersion.                                         | `"1.46.0"`                                     |
-| `ledger.imagePullSecrets`                     | Secrets for pulling images from private registries.                                       | `[]`                                           |
-| `ledger.nameOverride`                         | Overrides the name of the release.                                                        | `""`                                           |
-| `ledger.fullnameOverride`                     | Overrides the full name of the release.                                                   | `""`                                           |
-| `ledger.podAnnotations`                       | Annotations for the pods.                                                                 | `[]`                                           |
-| `ledger.podSecurityContext`                   | Security context applied at the pod level.                                                | `{}`                                           |
-| `ledger.securityContext`                      | Security context applied at the container level.                                          | `{}`                                           |
-| `ledger.service.type`                         | Service type.                                                                             | `"ClusterIP"`                                  |
-| `ledger.service.port`                         | Service port.                                                                             | `3000`                                         |
-| `ledger.service.grpcPort`                     | gRPC service port.                                                                        | `3001`                                         |
-| `ledger.ingress.enabled`                      | Specifies whether Ingress is enabled.                                                     | `false`                                        |
-| `ledger.ingress.className`                    | Ingress class.                                                                            | `""`                                           |
-| `ledger.ingress.annotations`                  | Annotations for Ingress, including ALB configurations.                                    | `[]`                                           |
-| `ledger.ingress.hosts`                        | Configured hosts for Ingress and associated paths.                                        | `""`                                           |
-| `ledger.ingress.tls`                          | TLS configurations for Ingress.                                                           | `[]`                                           |
-| `ledger.resources.limits.cpu`                 | CPU limit allocated for the pods.                                                         | `"200m"`                                       |
-| `ledger.resources.limits.memory`              | Memory limit allocated for the pods.                                                      | `"256Mi"`                                      |
-| `ledger.resources.requests.cpu`               | Minimum CPU request for the pods.                                                         | `"100m"`                                       |
-| `ledger.resources.requests.memory`            | Minimum memory request for the pods.                                                      | `"128Mi"`                                      |
-| `ledger.autoscaling.enabled`                  | Specifies whether autoscaling is enabled.                                                 | `true`                                         |
-| `ledger.autoscaling.minReplicas`              | Minimum number of replicas for autoscaling.                                               | `1`                                            |
-| `ledger.autoscaling.maxReplicas`              | Maximum number of replicas for autoscaling.                                               | `3`                                            |
-| `ledger.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling.                                        | `80`                                           |
-| `ledger.nodeSelector`                         | Node selectors for pod scheduling.                                                        | `{}`                                           |
-| `ledger.tolerations`                          | Tolerations for pod scheduling.                                                           | `{}`                                           |
-| `ledger.affinity`                             | Affinity rules for pod scheduling.                                                        | `{}`                                           |
-| `ledger.configmap`                            | Additional configurations in ConfigMap.                                                   | `{}`                                           |
-| `ledger.secrets`                              | Additional secrets for the service.                                                       | `{}`                                           |
-| `ledger.serviceAccount.create`                | Specifies whether the service account should be created.                                  | `true`                                         |
-| `ledger.serviceAccount.annotations`           | Annotations for the service account.                                                      | `{}`                                           |
-| `ledger.serviceAccount.name`                  | Service account name. If not defined, it will be generated automatically.                 | `""`                                           |
+| `onboarding.name`                                 | Resource name.                                                                            | `"onboarding"`                                     |
+| `onboarding.replicaCount`                         | Number of replicas.                                                                       | `2`                                            |
+| `onboarding.image.repository`                     | Docker image repository for onboarding.                                                       | `"lerianstudio/midaz-onboarding"`                 |
+| `onboarding.image.pullPolicy`                     | Docker image pull policy.                                                                 | `"IfNotPresent"`                               |
+| `onboarding.image.tag`                            | Docker image tag. Overrides the chart appVersion.                                         | `"1.46.0"`                                     |
+| `onboarding.imagePullSecrets`                     | Secrets for pulling images from private registries.                                       | `[]`                                           |
+| `onboarding.nameOverride`                         | Overrides the name of the release.                                                        | `""`                                           |
+| `onboarding.fullnameOverride`                     | Overrides the full name of the release.                                                   | `""`                                           |
+| `onboarding.podAnnotations`                       | Annotations for the pods.                                                                 | `[]`                                           |
+| `onboarding.podSecurityContext`                   | Security context applied at the pod level.                                                | `{}`                                           |
+| `onboarding.securityContext`                      | Security context applied at the container level.                                          | `{}`                                           |
+| `onboarding.service.type`                         | Service type.                                                                             | `"ClusterIP"`                                  |
+| `onboarding.service.port`                         | Service port.                                                                             | `3000`                                         |
+| `onboarding.service.grpcPort`                     | gRPC service port.                                                                        | `3001`                                         |
+| `onboarding.ingress.enabled`                      | Specifies whether Ingress is enabled.                                                     | `false`                                        |
+| `onboarding.ingress.className`                    | Ingress class.                                                                            | `""`                                           |
+| `onboarding.ingress.annotations`                  | Annotations for Ingress, including ALB configurations.                                    | `[]`                                           |
+| `onboarding.ingress.hosts`                        | Configured hosts for Ingress and associated paths.                                        | `""`                                           |
+| `onboarding.ingress.tls`                          | TLS configurations for Ingress.                                                           | `[]`                                           |
+| `onboarding.resources.limits.cpu`                 | CPU limit allocated for the pods.                                                         | `"200m"`                                       |
+| `onboarding.resources.limits.memory`              | Memory limit allocated for the pods.                                                      | `"256Mi"`                                      |
+| `onboarding.resources.requests.cpu`               | Minimum CPU request for the pods.                                                         | `"100m"`                                       |
+| `onboarding.resources.requests.memory`            | Minimum memory request for the pods.                                                      | `"128Mi"`                                      |
+| `onboarding.autoscaling.enabled`                  | Specifies whether autoscaling is enabled.                                                 | `true`                                         |
+| `onboarding.autoscaling.minReplicas`              | Minimum number of replicas for autoscaling.                                               | `1`                                            |
+| `onboarding.autoscaling.maxReplicas`              | Maximum number of replicas for autoscaling.                                               | `3`                                            |
+| `onboarding.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling.                                        | `80`                                           |
+| `onboarding.nodeSelector`                         | Node selectors for pod scheduling.                                                        | `{}`                                           |
+| `onboarding.tolerations`                          | Tolerations for pod scheduling.                                                           | `{}`                                           |
+| `onboarding.affinity`                             | Affinity rules for pod scheduling.                                                        | `{}`                                           |
+| `onboarding.configmap`                            | Additional configurations in ConfigMap.                                                   | `{}`                                           |
+| `onboarding.secrets`                              | Additional secrets for the service.                                                       | `{}`                                           |
+| `onboarding.serviceAccount.create`                | Specifies whether the service account should be created.                                  | `true`                                         |
+| `onboarding.serviceAccount.annotations`           | Annotations for the service account.                                                      | `{}`                                           |
+| `onboarding.serviceAccount.name`                  | Service account name. If not defined, it will be generated automatically.                 | `""`                                           |
 
 ### Transaction:
 
@@ -155,7 +155,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `transaction.image.tag`                    | Docker image tag.                                                                        | `"1.46.0"`                                     |
 | `transaction.podAnnotations`               | Annotations for the pods.                                                                     | `{}`                                           |
 | `transaction.service.type`                 | Service type.                                                                             | `"ClusterIP"`                                  |
-| `transaction.service.port`                 | Service port.                                                                            | `3002`                                         |
+| `transaction.service.port`                 | Service port.                                                                            | `3001`                                         |
 | `transaction.ingress.enabled`              | Specifies whether Ingress is enabled.                                                        | `false`                                        |
 | `transaction.ingress.className`            | Ingress class.                                                                           | `""`                                           |
 | `transaction.ingress.annotations`          | Annotations for Ingress.                                                                   | `{}`                                           |
@@ -194,7 +194,7 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `audit.podSecurityContext`                   | Security context for the pods.                                       | `{}`                                          |
 | `audit.securityContext`                      | Security context for the container.                                   | `{}`                                          |
 | `audit.service.type`                         | Kubernetes service type.                                               | `"ClusterIP"`                                 |
-| `audit.service.port`                         | HTTP service port.                                               | `3005`                                        |
+| `audit.service.port`                         | HTTP service port.                                               | `3002`                                        |
 | `audit.ingress.enabled`                      | Enable or disable Ingress.                                         | `false`                                       |
 | `audit.ingress.className`                    | Ingress class.                                                        | `""`                                          |
 | `audit.ingress.annotations`                  | Additional annotations for Ingress.                                      | `{}`                                          |

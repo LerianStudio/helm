@@ -10,8 +10,8 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "midaz-ledger.fullname" -}}
-{{- printf "%s-%s" (include "midaz.name" .) .Values.ledger.name | trunc 63 | trimSuffix "-" }}
+{{- define "midaz-onboarding.fullname" -}}
+{{- printf "%s-%s" (include "midaz.name" .) .Values.onboarding.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -58,17 +58,17 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Create Ledger app version
+Create Onboarding app version
 */}}
-{{- define "ledger.defaultTag" -}}
-{{- default .Chart.AppVersion .Values.ledger.image.tag }}
+{{- define "onboarding.defaultTag" -}}
+{{- default .Chart.AppVersion .Values.onboarding.image.tag }}
 {{- end -}}
 
 {{/*
-Return valid Ledger version label
+Return valid Onboarding version label
 */}}
-{{- define "ledger.versionLabelValue" -}}
-{{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "ledger.defaultTag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}
+{{- define "onboarding.versionLabelValue" -}}
+{{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "onboarding.defaultTag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}
 {{- end -}}
 
 {{/*
@@ -77,7 +77,7 @@ Common labels
 {{- define "midaz.labels" -}}
 helm.sh/chart: {{ include "midaz.chart" .context }}
 {{ include "midaz.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
-app.kubernetes.io/version: {{ include "ledger.versionLabelValue" .context }}
+app.kubernetes.io/version: {{ include "onboarding.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
@@ -98,11 +98,11 @@ app.kubernetes.io/component: {{ .component }}
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "midaz-ledger.serviceAccountName" -}}
-{{- if .Values.ledger.serviceAccount.create }}
-{{- default (include "midaz-ledger.fullname" .) .Values.ledger.serviceAccount.name }}
+{{- define "midaz-onboarding.serviceAccountName" -}}
+{{- if .Values.onboarding.serviceAccount.create }}
+{{- default (include "midaz-onboarding.fullname" .) .Values.onboarding.serviceAccount.name }}
 {{- else }}
-{{- default "default" .Values.ledger.serviceAccount.name }}
+{{- default "default" .Values.onboarding.serviceAccount.name }}
 {{- end }}
 {{- end }}
 

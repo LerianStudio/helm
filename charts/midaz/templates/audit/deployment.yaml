@@ -59,7 +59,7 @@ spec:
               name: {{ include "midaz-audit.fullname" . }}
           ports:
             - name: http
-              containerPort: 3005
+              containerPort: 3002
               protocol: TCP
           resources:
             {{- toYaml .Values.audit.resources | nindent 12 }}

@@ -15,7 +15,7 @@ data:
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.audit.configmap.OTEL_RESOURCE_SERVICE_NAME | default "audit" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.audit.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/audit" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ include "ledger.versionLabelValue" . }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ include "onboarding.versionLabelValue" . }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.audit.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "local" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.audit.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.audit.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local:4317" .Release.Namespace) | quote }}
@@ -25,24 +25,24 @@ data:
   RABBITMQ_PORT_HOST: {{ .Values.audit.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
   RABBITMQ_PORT_AMPQ: {{ .Values.audit.configmap.RABBITMQ_PORT_AMPQ | default "15672" | quote }}
   RABBITMQ_DEFAULT_USER: {{ .Values.audit.configmap.RABBITMQ_DEFAULT_USER | default "audit" | quote }}
-  RAABBITMQ_QUEUE: {{ .Values.audit.configmap.RABBITMQ_QUEUE | default "audit_queue" | quote }}
+  RAABBITMQ_QUEUE: {{ .Values.audit.configmap.RABBITMQ_QUEUE | default "audit.append_log.queue" | quote }}
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.audit.configmap.SWAGGER_TITLE | default "audit API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.audit.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz audit API" | quote }}
-  SWAGGER_VERSION: {{ include "ledger.versionLabelValue" . }}
+  SWAGGER_VERSION: {{ include "onboarding.versionLabelValue" . }}
   SWAGGER_HOST: {{ .Values.audit.configmap.SWAGGER_HOST | default .Values.audit.configmap.SERVER_ADDRESS | quote }}
   SWAGGER_BASE_PATH: {{ .Values.audit.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.audit.configmap.SWAGGER_SCHEMES | default "http" | quote }}
   SWAGGER_RIGHT_DELIMITER: {{ .Values.audit.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
   SWAGGER_LEFT_DELIMITER: {{ .Values.audit.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
   #APP
-  VERSION: {{ include "ledger.versionLabelValue" . }}
+  VERSION: {{ include "onboarding.versionLabelValue" . }}
   LOG_LEVEL: {{ .Values.audit.configmap.LOG_LEVEL | default "debug" | quote }}
   # ENV_NAME: {{ .Values.audit.configmap.ENV_NAME | default "local" | quote }}
-  SERVER_PORT: {{ .Values.audit.configmap.SERVER_PORT | default "3005" | quote }}
+  SERVER_PORT: {{ .Values.audit.configmap.SERVER_PORT | default "3002" | quote }}
   SERVER_ADDRESS: {{ .Values.audit.configmap.SERVER_ADDRESS | default ":3000" | quote }}
   #MONGO
-  MONGO_URI:  {{ .Values.ledger.configmap.MONGO_URI | default "mongodb" | quote }} ## or mongodb+srv
+  MONGO_URI:  {{ .Values.audit.configmap.MONGO_URI | default "mongodb" | quote }} ## or mongodb+srv
   MONGO_HOST: {{ .Values.audit.configmap.MONGO_HOST | default (printf "midaz-mongodb.%s.svc.cluster.local" .Release.Namespace)| quote }}
   MONGO_NAME: {{ .Values.audit.configmap.MONGO_NAME | default "audit" | quote }}
   MONGO_USER: {{ .Values.audit.configmap.MONGO_USER | default "midaz" | quote }}

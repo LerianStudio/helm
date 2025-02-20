@@ -1,0 +1,32 @@
+{{- if .Values.onboarding.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "midaz-onboarding.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "midaz-onboarding.fullname" . }}
+  minReplicas: {{ .Values.onboarding.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.onboarding.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.onboarding.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.onboarding.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.onboarding.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.onboarding.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

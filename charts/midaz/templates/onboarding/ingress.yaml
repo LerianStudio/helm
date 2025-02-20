@@ -1,9 +1,9 @@
-{{- if .Values.ledger.ingress.enabled -}}
-{{- $fullName := include "midaz-ledger.fullname" . -}}
-{{- $svcPort := .Values.ledger.service.port -}}
-{{- if and .Values.ledger.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.ledger.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.ledger.ingress.annotations "kubernetes.io/ingress.class" .Values.ledger.ingress.className}}
+{{- if .Values.onboarding.ingress.enabled -}}
+{{- $fullName := include "midaz-onboarding.fullname" . -}}
+{{- $svcPort := .Values.onboarding.service.port -}}
+{{- if and .Values.onboarding.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.onboarding.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.onboarding.ingress.annotations "kubernetes.io/ingress.class" .Values.onboarding.ingress.className}}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -17,18 +17,18 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
-  {{- with .Values.ledger.ingress.annotations }}
+    {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 4 }}
+  {{- with .Values.onboarding.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.ledger.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.ledger.ingress.className }}
+  {{- if and .Values.onboarding.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.onboarding.ingress.className }}
   {{- end }}
-  {{- if .Values.ledger.ingress.tls }}
+  {{- if .Values.onboarding.ingress.tls }}
   tls:
-    {{- range .Values.ledger.ingress.tls }}
+    {{- range .Values.onboarding.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -37,7 +37,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.ledger.ingress.hosts }}
+    {{- range .Values.onboarding.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:

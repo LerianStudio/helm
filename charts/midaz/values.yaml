@@ -1,4 +1,4 @@
-# Default values for midaz-ledger.
+# Default values for midaz components.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 nameOverride: "midaz"
@@ -13,7 +13,7 @@ console:
   replicaCount: 1
 
   image:
-    # -- Repository for the ledger service container image
+    # -- Repository for the console service container image
     repository: lerianstudio/midaz-console
     # -- Image pull policy
     pullPolicy: IfNotPresent
@@ -128,20 +128,20 @@ console:
     # @default -- `midaz-console.fullname`
     name: ""
 
-ledger:
+onboarding:
   # -- Service name
-  name: ledger
+  name: onboarding
 
-  # -- Number of replicas for the ledger service
+  # -- Number of replicas for the onboarding service
   replicaCount: 2
 
   image:
-    # -- Repository for the ledger service container image
-    repository: lerianstudio/midaz-ledger
+    # -- Repository for the onboarding service container image
+    repository: lerianstudio/midaz-onboarding
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.46.0"
+    tag: "1.48.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -236,11 +236,11 @@ ledger:
     #         - midaz
 
   # -- ConfigMap for environment variables and configurations
-  # @default -- templates/ledger/configmap.yaml
+  # @default -- templates/onboarding/configmap.yaml
   configmap: {}
 
   # -- Secrets for storing sensitive data
-  # @default -- templates/ledger/secrets.yaml
+  # @default -- templates/onboarding/secrets.yaml
   secrets: {}
 
   serviceAccount:
@@ -249,7 +249,7 @@ ledger:
     # -- Annotations for the ServiceAccount
     annotations: {}
     # -- Name of the service account
-    # @default -- `midaz-ledger.fullname`
+    # @default -- `midaz-onboarding.fullname`
     name: ""
 
 audit:
@@ -265,7 +265,7 @@ audit:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.46.0"
+    tag: "1.48.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -298,7 +298,7 @@ audit:
     # -- Kubernetes service type
     type: ClusterIP
     # -- Port for the HTTP API
-    port: 3005
+    port: 3002
 
   ingress:
     # -- Enable or disable ingress
@@ -433,7 +433,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.46.0"
+    tag: "1.48.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -466,7 +466,7 @@ transaction:
     # -- Kubernetes service type
     type: ClusterIP
     # -- Port for the HTTP API
-    port: 3002
+    port: 3001
 
   ingress:
     # -- Enable or disable ingress
@@ -500,9 +500,9 @@ transaction:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
     # -- Minimum number of replicas
-    minReplicas: 1
+    minReplicas: 3
     # -- Maximum number of replicas
-    maxReplicas: 3
+    maxReplicas: 9
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
@@ -598,7 +598,7 @@ postgresql:
     enablePostgresUser: false
     username: "midaz"
     password: "lerian"
-    database: "ledger"
+    database: "onboarding"
     replicationUsername: "replicator"
     replicationPassword: "replicator_password"
 
@@ -743,7 +743,7 @@ casdoor:
             path: init_data.json
   
   ingress:
-    enabled: false
+    enabled: true
     className: "alb"
     annotations: {}
     hosts:

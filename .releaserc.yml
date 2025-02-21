@@ -87,11 +87,11 @@ plugins:
       }
     ],
     [
-      "semantic-release-helm", 
+      "semantic-release-helm3", 
       {
-        "chartPath": "./charts/midaz",
+        "chartPath": "charts/midaz",
         "registry": "oci://registry-1.docker.io/lerianstudio",
-        "onlyUpdateVersion": true
+        "increment": false
       }
     ]
   ]

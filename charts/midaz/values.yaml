@@ -175,8 +175,6 @@ onboarding:
     type: ClusterIP
     # -- Port for the HTTP API
     port: 3000
-    # -- Port for gRPC communication
-    grpcPort: 3001
 
   ingress:
     # -- Enable or disable ingress

@@ -5,7 +5,9 @@
 
 - [ ] Chart
 - [ ] Auth 
-- [ ] Ledger
+- [ ] Onboarding
+- [ ] Grafana
+- [ ] PGbouncer
 - [ ] Transaction
 - [ ] Audit
 - [ ] Console

@@ -1,6 +1,6 @@
-Accessing midaz-console, midaz-ledger, and midaz-transaction using port-forward in Helm
+Accessing midaz-console, midaz-onboarding, and midaz-transaction using port-forward in Helm
 
-This documentation provides instructions on how to access the `midaz-console`, `midaz-ledger`, and `midaz-transaction` services using port-forwarding in a Helm-managed Kubernetes environment.
+This documentation provides instructions on how to access the `midaz-console`, `midaz-onboarding`, and `midaz-transaction` services using port-forwarding in a Helm-managed Kubernetes environment.
 
 Steps
 
@@ -11,12 +11,12 @@ Steps
 
     This will forward port 8081 on your local machine to port 8081 on the `midaz-console` service.
 
-2. Port-Forward to midaz-ledger:
-    Use the following command to port-forward to the `midaz-ledger` service.
+2. Port-Forward to midaz-onboarding:
+    Use the following command to port-forward to the `midaz-onboarding` service.
     
-    kubectl port-forward svc/midaz-ledger 3000:3000
+    kubectl port-forward svc/midaz-onboarding 3000:3000
     
-    This will forward port 3000 on your local machine to port 3000 on the `midaz-ledger` service.
+    This will forward port 3000 on your local machine to port 3000 on the `midaz-onboarding` service.
 
 3. Port-Forward to midaz-transaction:
     Use the following command to port-forward to the `midaz-transaction` service.
@@ -28,7 +28,7 @@ Steps
 Accessing the Services
 Once the port-forwarding is set up, you can access the services in your web browser or via API calls using the following URLs:
 - `midaz-console`: http://localhost:8081
-- `midaz-ledger`: http://localhost:3000
-- `midaz-transaction`: http://localhost:3002
+- `midaz-onboarding`: http://localhost:3000
+- `midaz-transaction`: http://localhost:3001
 
 

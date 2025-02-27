@@ -7,7 +7,6 @@
 - [ ] Auth 
 - [ ] Onboarding
 - [ ] Grafana
-- [ ] PGbouncer
 - [ ] Transaction
 - [ ] Audit
 - [ ] Console

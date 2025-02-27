@@ -208,9 +208,9 @@ onboarding:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
     # -- Minimum number of replicas
-    minReplicas: 1
+    minReplicas: 2
     # -- Maximum number of replicas
-    maxReplicas: 3
+    maxReplicas: 5
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
@@ -502,7 +502,7 @@ transaction:
     # -- Maximum number of replicas
     maxReplicas: 9
     # -- Target CPU utilization percentage for autoscaling
-    targetCPUUtilizationPercentage: 80
+    targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
   # -- Node selector for scheduling pods on specific nodes

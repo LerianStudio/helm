@@ -741,7 +741,7 @@ casdoor:
             path: init_data.json
   
   ingress:
-    enabled: true
+    enabled: false
     className: "alb"
     annotations: {}
     hosts:

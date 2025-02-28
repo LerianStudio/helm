@@ -1,3 +1,36 @@
+## [1.17.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.16.0...v1.17.0) (2025-02-28)
+
+
+### Features
+
+* **doc:** add new version ([f864ad2](https://github.com/LerianStudio/midaz-helm-standalone/commit/f864ad20353a26f7dbe525332ef3b54f6af6fb74))
+* **console:** enforce absolute DNS resolution ([8e519fe](https://github.com/LerianStudio/midaz-helm-standalone/commit/8e519fe25255119d50ecfef91ca8ab5a01df5f78))
+* **onboarding:** enforce absolute DNS resolution ([c471521](https://github.com/LerianStudio/midaz-helm-standalone/commit/c471521eb53ce2e100f080247c2ff25bc1255650))
+* **transaction:** enforce absolute DNS resolution ([1759a5b](https://github.com/LerianStudio/midaz-helm-standalone/commit/1759a5b1ce44339302482bd5ccabed5056c33a2f))
+* **github:** remove pgbouncer reference ([49924e8](https://github.com/LerianStudio/midaz-helm-standalone/commit/49924e811d918e8ed136e878bb480da51096d98a))
+* **console:** update console image ([0cf1135](https://github.com/LerianStudio/midaz-helm-standalone/commit/0cf11350d345410c751d99cf8c5347793219b469))
+* **console:** update console image ([4da311d](https://github.com/LerianStudio/midaz-helm-standalone/commit/4da311d8968411a29d129ef02e133b3ddd0bb25e))
+
+
+### Bug Fixes
+
+* **auth:** disable auth ingress ([4e08d7a](https://github.com/LerianStudio/midaz-helm-standalone/commit/4e08d7af33f67b9500b459a40ad93473cf82007f))
+* **values:** fix autoscaling parameters ([69585b6](https://github.com/LerianStudio/midaz-helm-standalone/commit/69585b6743736edad8d393c5e50eddc9e4ff114d))
+* **transaction:** fix default value of rabbitmq secret ([71afd7a](https://github.com/LerianStudio/midaz-helm-standalone/commit/71afd7a7067ee4b1cf429669e4a44c58479af037))
+* **doc:** fix midaz transaction container port ([bab48e6](https://github.com/LerianStudio/midaz-helm-standalone/commit/bab48e600b179abf07bbc207982803102ea1d704))
+* **transaction:** fix transaction container port ([cb4ec59](https://github.com/LerianStudio/midaz-helm-standalone/commit/cb4ec592c2c47036bee2b519d795ca08336904dc))
+* **components:** init file for auth app ([4939e82](https://github.com/LerianStudio/midaz-helm-standalone/commit/4939e823f60cdbc0965281f496b058178bf70a00))
+* **components:** load definitions for rabbitmq ([167c80a](https://github.com/LerianStudio/midaz-helm-standalone/commit/167c80a8e156fb653e2e365f155c4c35e2785fca))
+* **onboarding:** remove grpc port from container ([3bd9621](https://github.com/LerianStudio/midaz-helm-standalone/commit/3bd96218a95decae1c58cc29078c8bbfd71736a9))
+* **audit:** rename env vars and update container port ([9796046](https://github.com/LerianStudio/midaz-helm-standalone/commit/979604649c30ce6b8788acb3c1f67dff1a765f63))
+* **transaction:** rename env vars and update container port ([4052bc5](https://github.com/LerianStudio/midaz-helm-standalone/commit/4052bc51634b989fba34c2245319db767aa02275))
+* **chart:** rename ledger component to onboarding ([47dd9d0](https://github.com/LerianStudio/midaz-helm-standalone/commit/47dd9d01c491f30669c3f4ec6271bae1c8d0de75))
+* **chart:** rename ledger component to onboarding ([e04404b](https://github.com/LerianStudio/midaz-helm-standalone/commit/e04404b79c78396a6cb1227cafa5bad10b51d3ee))
+* **doc:** rename ledger component to onboarding ([0aa6e34](https://github.com/LerianStudio/midaz-helm-standalone/commit/0aa6e34ed38d68308cec31b5280b17c017c3d277))
+* **components:** rename ledger db for onboarding ([40e49b8](https://github.com/LerianStudio/midaz-helm-standalone/commit/40e49b8cb2dcf6b169ea4a9c32b5c516f0d06b57))
+* **pipe:** rename ledger to onboarding ([448ce90](https://github.com/LerianStudio/midaz-helm-standalone/commit/448ce9015baee8d553a81f6253d77d76bb96c3ba))
+* **components:** sql init for auth app ([9824943](https://github.com/LerianStudio/midaz-helm-standalone/commit/9824943ab8a6d2e038cd55448259c27149c50546))
+
 ## [1.16.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.15.0...v1.16.0) (2025-02-17)
 
 

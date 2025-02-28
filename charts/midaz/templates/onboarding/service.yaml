@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "midaz-onboarding.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 4 }}
+spec:
+  type: {{ .Values.onboarding.service.type }}
+  ports:
+    - port: {{ .Values.onboarding.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.onboarding.name) | nindent 4 }}

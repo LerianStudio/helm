@@ -5,7 +5,8 @@
 
 - [ ] Chart
 - [ ] Auth 
-- [ ] Ledger
+- [ ] Onboarding
+- [ ] Grafana
 - [ ] Transaction
 - [ ] Audit
 - [ ] Console

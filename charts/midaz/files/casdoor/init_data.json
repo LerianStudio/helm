@@ -814,9 +814,10 @@
         "ledger",
         "organization",
         "portfolio",
-        "product",
+        "segment",
         "transaction",
         "operation",
+        "balance",
         "asset-rate"
       ],
       "actions": [
@@ -879,9 +880,10 @@
         "ledger",
         "organization",
         "portfolio",
-        "product",
+        "segment",
         "transaction",
         "operation",
+        "balance",
         "asset-rate"
       ],
       "actions": [

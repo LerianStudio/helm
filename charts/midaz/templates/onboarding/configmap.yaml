@@ -1,0 +1,71 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "midaz-onboarding.fullname" . }}
+data:
+  # CASDOOR
+  CASDOOR_PORT: {{ .Values.onboarding.configmap.CASDOOR_PORT | default "8000" | quote }}
+  CASDOOR_ADDRESS: {{ .Values.onboarding.configmap.CASDOOR_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local.:8000" .Release.Namespace) | quote }}
+  CASDOOR_CLIENT_ID: {{ .Values.onboarding.configmap.CASDOOR_CLIENT_ID | default "9670e0ca55a29a466d31" | quote }}
+  CASDOOR_CLIENT_SECRET: {{ .Values.onboarding.configmap.CASDOOR_CLIENT_SECRET | default "dd03f916cacf4a98c6a413d9c38ba102dce436a9" | quote }}
+  CASDOOR_ORGANIZATION_NAME: {{ .Values.onboarding.configmap.CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}
+  CASDOOR_APPLICATION_NAME: {{ .Values.onboarding.configmap.CASDOOR_APPLICATION_NAME | default "app-midaz" | quote }}
+  CASDOOR_ENFORCER_NAME: {{ .Values.onboarding.configmap.CASDOOR_ENFORCER_NAME | default "lerian-enforcer" | quote }}
+  CASDOOR_JWK_ADDRESS: {{ .Values.onboarding.configmap.CASDOOR_JWK_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local.:8000/.well-known/jwks" .Release.Namespace) | quote }}
+  # OPEN TELEMETRY
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.onboarding.configmap.OTEL_RESOURCE_SERVICE_NAME | default "onboarding" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.onboarding.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/onboarding" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ include "onboarding.versionLabelValue" . }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.onboarding.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.onboarding.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.onboarding.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local.:4317" .Release.Namespace) | quote }}
+  # RABBITMQ
+  RABBITMQ_URI: {{ .Values.onboarding.configmap.RABBITMQ_URI | default "amqp" | quote }}
+  RABBITMQ_HOST: {{ .Values.onboarding.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  RABBITMQ_PORT_HOST: {{ .Values.onboarding.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
+  RABBITMQ_PORT_AMPQ: {{ .Values.onboarding.configmap.RABBITMQ_PORT_AMPQ | default "15672" | quote }}
+  RABBITMQ_DEFAULT_USER: {{ .Values.onboarding.configmap.RABBITMQ_DEFAULT_USER | default "onboarding" | quote }}
+  RABBITMQ_EXCHANGE: {{ .Values.onboarding.configmap.RABBITMQ_EXCHANGE | default "transaction.balance_create.exchange" | quote }}
+  RABBITMQ_KEY: {{ .Values.onboarding.configmap.RABBITMQ_KEY | default "transaction.balance_create.key" | quote }}
+  # SWAGGER
+  SWAGGER_TITLE: {{ .Values.onboarding.configmap.SWAGGER_TITLE | default "Onboarding API" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.onboarding.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz Onboarding API" | quote }}
+  SWAGGER_VERSION: {{ include "onboarding.versionLabelValue" . }}
+  SWAGGER_HOST: {{ .Values.onboarding.configmap.SWAGGER_HOST | default .Values.onboarding.configmap.SERVER_ADDRESS | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.onboarding.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.onboarding.configmap.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_RIGHT_DELIMITER: {{ .Values.onboarding.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
+  SWAGGER_LEFT_DELIMITER: {{ .Values.onboarding.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
+  # PAGINATION
+  MAX_PAGINATION_LIMIT: {{ .Values.onboarding.configmap.MAX_PAGINATION_LIMIT | default "100" | quote }}
+  MAX_PAGINATION_MONTH_DATE_RANGE: {{ .Values.onboarding.configmap.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
+  #APP
+  VERSION: {{ include "onboarding.versionLabelValue" . }}
+  LOG_LEVEL: {{ .Values.onboarding.configmap.LOG_LEVEL | default "debug" | quote }}
+  # ENV_NAME: {{ .Values.onboarding.configmap.ENV_NAME | default "local" | quote }}
+  SERVER_PORT: {{ .Values.onboarding.configmap.SERVER_PORT | default "3000" | quote }}
+  SERVER_ADDRESS: {{ .Values.onboarding.configmap.SERVER_ADDRESS | default ":3000" | quote }}
+  #MONGO
+  MONGO_URI:  {{ .Values.onboarding.configmap.MONGO_URI | default "mongodb" | quote }} ## or mongodb+srv
+  MONGO_HOST: {{ .Values.onboarding.configmap.MONGO_HOST | default (printf "midaz-mongodb.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  MONGO_NAME: {{ .Values.onboarding.configmap.MONGO_NAME | default "onboarding" | quote }}
+  MONGO_USER: {{ .Values.onboarding.configmap.MONGO_USER | default "midaz" | quote }}
+  MONGO_PORT: {{ .Values.onboarding.configmap.MONGO_PORT | default "27017" | quote }}
+  #REDIS
+  REDIS_HOST: {{ .Values.onboarding.configmap.REDIS_HOST | default (printf "midaz-redis-headless.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  REDIS_PORT: {{ .Values.onboarding.configmap.REDIS_PORT | default "6379" | quote }}
+  REDIS_USER: {{ .Values.onboarding.configmap.REDIS_USER | default "midaz" | quote }}
+  #POSTGRESS
+  DB_HOST: {{ .Values.onboarding.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}                                                         
+  DB_USER: {{ .Values.onboarding.configmap.DB_USER | default "midaz" | quote }}
+  DB_NAME: {{ .Values.onboarding.configmap.DB_NAME | default "onboarding" | quote }}
+  DB_PORT: {{ .Values.onboarding.configmap.DB_PORT | default "5432" | quote }}
+  DB_MAX_OPEN_CONNS: {{ .Values.onboarding.configmap.DB_MAX_OPEN_CONNS | default "500" | quote }}
+  DB_MAX_IDLE_CONNS: {{ .Values.onboarding.configmap.DB_MAX_IDLE_CONNS | default "500" | quote }}
+  #POSTGRESS REPLICATION
+  DB_REPLICA_HOST: {{ .Values.onboarding.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-replication.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  DB_REPLICA_USER: {{ .Values.onboarding.configmap.DB_REPLICA_USER | default "midaz" | quote }}
+  DB_REPLICA_NAME: {{ .Values.onboarding.configmap.DB_REPLICA_NAME | default "onboarding" | quote }}
+  DB_REPLICA_PORT: {{ .Values.onboarding.configmap.DB_REPLICA_PORT | default "5432" | quote }}
+  REPLICATION_USER: {{ .Values.onboarding.configmap.REPLICATION_USER | default "replicator" | quote }}
+  REPLICATION_PASSWORD: {{ .Values.onboarding.configmap.REPLICATION_PASSWORD | default "replicator_password" | quote }}

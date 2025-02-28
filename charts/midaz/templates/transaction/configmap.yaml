@@ -5,33 +5,36 @@ metadata:
 data:
   # CASDOOR
   CASDOOR_PORT: {{ .Values.transaction.configmap.CASDOOR_PORT | default "8000" | quote }}
-  CASDOOR_ADDRESS: {{ .Values.transaction.configmap.CASDOOR_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local:8000" .Release.Namespace) | quote }}
+  CASDOOR_ADDRESS: {{ .Values.transaction.configmap.CASDOOR_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local.:8000" .Release.Namespace) | quote }}
   CASDOOR_CLIENT_ID: {{ .Values.transaction.configmap.CASDOOR_CLIENT_ID | default "9670e0ca55a29a466d31" | quote }}
   CASDOOR_CLIENT_SECRET: {{ .Values.transaction.configmap.CASDOOR_CLIENT_SECRET | default "dd03f916cacf4a98c6a413d9c38ba102dce436a9" | quote }}
   CASDOOR_ORGANIZATION_NAME: {{ .Values.transaction.configmap.CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}
   CASDOOR_APPLICATION_NAME: {{ .Values.transaction.configmap.CASDOOR_APPLICATION_NAME | default "app-midaz" | quote }}
   CASDOOR_ENFORCER_NAME: {{ .Values.transaction.configmap.CASDOOR_ENFORCER_NAME | default "lerian-enforcer" | quote }}
-  CASDOOR_JWK_ADDRESS: {{ .Values.ledger.configmap.CASDOOR_JWK_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local:8000/.well-known/jwks" .Release.Namespace) | quote }}
+  CASDOOR_JWK_ADDRESS: {{ .Values.transaction.configmap.CASDOOR_JWK_ADDRESS | default (printf "http://midaz-casdoor.%s.svc.cluster.local.:8000/.well-known/jwks" .Release.Namespace) | quote }}
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.transaction.configmap.OTEL_RESOURCE_SERVICE_NAME | default "transaction" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.transaction.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/transaction" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ include "ledger.versionLabelValue" . }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.transaction.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "local" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ include "onboarding.versionLabelValue" . }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.transaction.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local:4317" .Release.Namespace) | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local.:4317" .Release.Namespace) | quote }}
   # RABBITMQ
-  RABBITMQ_URI: {{ .Values.audit.configmap.RABBITMQ_URI | default "amqp" | quote }}
-  RABBITMQ_HOST: {{ .Values.transaction.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  RABBITMQ_URI: {{ .Values.transaction.configmap.RABBITMQ_URI | default "amqp" | quote }}
+  RABBITMQ_HOST: {{ .Values.transaction.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." .Release.Namespace) | quote }}
   RABBITMQ_PORT_HOST: {{ .Values.transaction.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
   RABBITMQ_PORT_AMPQ: {{ .Values.transaction.configmap.RABBITMQ_PORT_AMPQ | default "15672" | quote }}
   RABBITMQ_DEFAULT_USER: {{ .Values.transaction.configmap.RABBITMQ_DEFAULT_USER | default "transaction" | quote }}
-  RABBITMQ_EXCHANGE: {{ .Values.transaction.configmap.RABBITMQ_EXCHANGE | default "audit_exchange" | quote }}
-  RABBITMQ_KEY: {{ .Values.transaction.configmap.RABBITMQ_KEY | default "ledger_accounts_key" | quote }}
-  RAABBITMQ_QUEUE: {{ .Values.transaction.configmap.RABBITMQ_QUEUE | default "transaction_operations_queue" | quote }}
+  RABBITMQ_AUDIT_EXCHANGE: {{ .Values.transaction.configmap.RABBITMQ_EXCHANGE | default "audit.append_log.exchange" | quote }}
+  RABBITMQ_AUDIT_KEY: {{ .Values.transaction.configmap.RABBITMQ_KEY | default "audit.append_log.key" | quote }}
+  RABBITMQ_BALANCE_CREATE_QUEUE: {{ .Values.transaction.configmap.RABBITMQ_BALANCE_CREATE_QUEUE | default "transaction.balance_create.queue" | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE | default "transaction.transaction_balance_operation.exchange" | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY | default "transaction.transaction_balance_operation.key" | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE | default "transaction.transaction_balance_operation.queue" | quote }}
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.transaction.configmap.SWAGGER_TITLE | default "transaction API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.transaction.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz transaction API" | quote }}
-  SWAGGER_VERSION: {{ include "ledger.versionLabelValue" . }}
+  SWAGGER_VERSION: {{ include "onboarding.versionLabelValue" . }}
   SWAGGER_HOST: {{ .Values.transaction.configmap.SWAGGER_HOST | default .Values.transaction.configmap.SERVER_ADDRESS | quote }}
   SWAGGER_BASE_PATH: {{ .Values.transaction.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.transaction.configmap.SWAGGER_SCHEMES | default "http" | quote }}
@@ -41,28 +44,30 @@ data:
   MAX_PAGINATION_LIMIT: {{ .Values.transaction.configmap.MAX_PAGINATION_LIMIT | default "100" | quote }}
   MAX_PAGINATION_MONTH_DATE_RANGE: {{ .Values.transaction.configmap.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
   #APP
-  VERSION: {{ include "ledger.versionLabelValue" . }}
+  VERSION: {{ include "onboarding.versionLabelValue" . }}
   LOG_LEVEL: {{ .Values.transaction.configmap.LOG_LEVEL | default "debug" | quote }}
   # ENV_NAME: {{ .Values.transaction.configmap.ENV_NAME | default "local" | quote }}
-  SERVER_PORT: {{ .Values.transaction.configmap.SERVER_PORT | default "3002" | quote }}
-  SERVER_ADDRESS: {{ .Values.transaction.configmap.SERVER_ADDRESS | default ":3002" | quote }}
+  SERVER_PORT: {{ .Values.transaction.configmap.SERVER_PORT | default "3001" | quote }}
+  SERVER_ADDRESS: {{ .Values.transaction.configmap.SERVER_ADDRESS | default ":3001" | quote }}
   #MONGO
-  MONGO_URI:  {{ .Values.ledger.configmap.MONGO_URI | default "mongodb" | quote }} ## or mongodb+srv
-  MONGO_HOST: {{ .Values.transaction.configmap.MONGO_HOST | default (printf "midaz-mongodb.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  MONGO_URI:  {{ .Values.transaction.configmap.MONGO_URI | default "mongodb" | quote }} ## or mongodb+srv
+  MONGO_HOST: {{ .Values.transaction.configmap.MONGO_HOST | default (printf "midaz-mongodb.%s.svc.cluster.local." .Release.Namespace) | quote }}
   MONGO_NAME: {{ .Values.transaction.configmap.MONGO_NAME | default "admin" | quote }}
   MONGO_USER: {{ .Values.transaction.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_PORT: {{ .Values.transaction.configmap.MONGO_PORT | default "27017" | quote }}
   #REDIS
-  REDIS_HOST: {{ .Values.transaction.configmap.REDIS_HOST | default (printf "midaz-redis-headless.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  REDIS_HOST: {{ .Values.transaction.configmap.REDIS_HOST | default (printf "midaz-redis-headless.%s.svc.cluster.local." .Release.Namespace) | quote }}
   REDIS_PORT: {{ .Values.transaction.configmap.REDIS_PORT | default "6379" | quote }}
   REDIS_USER: {{ .Values.transaction.configmap.REDIS_USER | default "midaz" | quote }}
   #POSTGRESS
-  DB_HOST: {{ .Values.transaction.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_HOST: {{ .Values.transaction.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}
   DB_USER: {{ .Values.transaction.configmap.DB_USER | default "midaz" | quote }}
   DB_NAME: {{ .Values.transaction.configmap.DB_NAME | default "transaction" | quote }}
   DB_PORT: {{ .Values.transaction.configmap.DB_PORT | default "5432" | quote }}
+  DB_MAX_OPEN_CONNS: {{ .Values.transaction.configmap.DB_MAX_OPEN_CONNS | default "500" | quote }}
+  DB_MAX_IDLE_CONNS: {{ .Values.transaction.configmap.DB_MAX_IDLE_CONNS | default "500" | quote }}
   #POSTGRESS REPLICATION
-  DB_REPLICA_HOST: {{ .Values.transaction.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-replication.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_HOST: {{ .Values.transaction.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-replication.%s.svc.cluster.local." .Release.Namespace) | quote }}
   DB_REPLICA_USER: {{ .Values.transaction.configmap.DB_REPLICA_USER | default "midaz" | quote }}
   DB_REPLICA_NAME: {{ .Values.transaction.configmap.DB_REPLICA_NAME | default "transaction" | quote }}
   DB_REPLICA_PORT: {{ .Values.transaction.configmap.DB_REPLICA_PORT | default "5432" | quote }}
@@ -73,8 +78,4 @@ data:
   PROTO_PORT: {{ .Values.transaction.configmap.PROTO_PORT | default "3001" | quote }}
   PROTO_ADDRESS: {{ .Values.transaction.configmap.PROTO_ADDRESS | default ":3001" | quote }}
   # AUDIT
-  AUDIT_LOG_ENABLED: {{ .Values.transaction.configmap.AUDIT_LOG_ENABLED | default "true" | quote }}
-  # LEDGER gRPC
-  LEDGER_GRPC_ADDR: {{ .Values.transaction.configmap.LEDGER_GRPC_ADDR | default (printf "midaz-ledger.%s.svc.cluster.local" .Release.Namespace) | quote }}
-  LEDGER_GRPC_PORT: {{ .Values.transaction.configmap.LEDGER_GRPC_PORT | default "3001" | quote }}
-
+  AUDIT_LOG_ENABLED: {{ .Values.transaction.configmap.AUDIT_LOG_ENABLED | default "false" | quote }}

@@ -31,7 +31,7 @@ jobs:
         with:
           scopes: |
             chart
-            ledger
+            onboarding
             trasaction
             console
             audit

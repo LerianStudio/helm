@@ -1,6 +1,5 @@
 branches:
   - main
-  - name: ci/MDZ-39
   - name: develop
     prerelease: "beta"
   - name: hotfix/*
@@ -58,14 +57,14 @@ plugins:
       "@semantic-release/git",
       {
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
-        "assets":
-          ["CHANGELOG.md", "charts/midaz/Chart.yaml"]
+        "assets": 
+          [
+            "CHANGELOG.md",
+            "charts/midaz/Chart.yaml"
+          ]
       }
     ],
     [
-      "@semantic-release/github"
-    ],    
-    [ 
       "@saithodev/semantic-release-backmerge",
       {
         "backmergeBranches": [{"from": "main", "to": "develop"}],

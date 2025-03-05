@@ -1,3 +1,4 @@
+## [1.49.3](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.49.2...v1.49.3) (2025-03-05)
 
 ### Features
 

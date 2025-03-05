@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 1  # Apenas os commits mais recentes        
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
@@ -56,7 +58,7 @@ jobs:
             conventional-changelog-conventionalcommits@v7.0.2
             @semantic-release/changelog
             semantic-release-helm3
-            @semantic-release/git            
+            @semantic-release/git
             @saithodev/semantic-release-backmerge
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

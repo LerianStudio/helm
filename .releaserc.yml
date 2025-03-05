@@ -44,7 +44,7 @@ plugins:
     [
       "semantic-release-helm3", 
       {
-        "chartPath": "./charts/midaz",
+        "chartPath": "charts/midaz",
         "registry": "oci://registry-1.docker.io/lerianstudio"
       }
     ],
@@ -62,6 +62,9 @@ plugins:
           ["CHANGELOG.md", "charts/midaz/Chart.yaml"]
       }
     ],
+    [
+      "@semantic-release/github"
+    ],    
     [ 
       "@saithodev/semantic-release-backmerge",
       {

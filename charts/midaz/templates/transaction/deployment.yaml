@@ -59,7 +59,7 @@ spec:
               name: {{ include "midaz-transaction.fullname" . }}
           ports:
             - name: http
-              containerPort: 3002
+              containerPort: 3001
               protocol: TCP
           livenessProbe:
             httpGet:

@@ -1,6 +1,6 @@
-ledger:
+onboarding:
   - changed-files:
-      - any-glob-to-any-file: charts/midaz/templates/ledger/**
+      - any-glob-to-any-file: charts/midaz/templates/onboarding/**
 
 trasaction:
   - changed-files:

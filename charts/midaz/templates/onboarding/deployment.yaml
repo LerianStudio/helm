@@ -1,38 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "midaz-ledger.fullname" . }}
+  name: {{ include "midaz-onboarding.fullname" . }}
   labels:
-    {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
+    {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 4 }}
 spec:
-  {{- if not .Values.ledger.autoscaling.enabled }}
-  replicas: {{ .Values.ledger.replicaCount }}
+  {{- if not .Values.onboarding.autoscaling.enabled }}
+  replicas: {{ .Values.onboarding.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.ledger.name ) | nindent 6 }}
+      {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.onboarding.name ) | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.ledger.podAnnotations }}
+      {{- with .Values.onboarding.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 8 }}
+        {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 8 }}
     spec:
-      {{- with .Values.ledger.imagePullSecrets }}
+      {{- with .Values.onboarding.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ .Values.ledger.serviceAccount.name }}
+      serviceAccountName: {{ .Values.onboarding.serviceAccount.name }}
       securityContext:
-        {{- toYaml .Values.ledger.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.onboarding.podSecurityContext | nindent 8 }}
       initContainers:
         - name: wait-for-dependencies
           image: busybox
           envFrom:
           - configMapRef:
-              name: {{ include "midaz-ledger.fullname" . }}
+              name: {{ include "midaz-onboarding.fullname" . }}
           command:
             - /bin/sh
             - -c
@@ -47,22 +47,19 @@ spec:
                 echo "$svc is ready!";
               done; 
       containers:
-        - name: {{ include "midaz-ledger.fullname" . }}
+        - name: {{ include "midaz-onboarding.fullname" . }}
           securityContext:
-            {{- toYaml .Values.ledger.securityContext | nindent 12 }}
-          image: "{{ .Values.ledger.image.repository }}:{{ .Values.ledger.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.ledger.image.pullPolicy }}
+            {{- toYaml .Values.onboarding.securityContext | nindent 12 }}
+          image: "{{ .Values.onboarding.image.repository }}:{{ .Values.onboarding.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.onboarding.image.pullPolicy }}
           envFrom:
           - secretRef:
-              name: {{ include "midaz-ledger.fullname" . }}
+              name: {{ include "midaz-onboarding.fullname" . }}
           - configMapRef:
-              name: {{ include "midaz-ledger.fullname" . }}
+              name: {{ include "midaz-onboarding.fullname" . }}
           ports:
             - name: http
               containerPort: 3000
-              protocol: TCP
-            - name: grpc
-              containerPort: 3001
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -73,16 +70,16 @@ spec:
               path: /health
               port: http
           resources:
-            {{- toYaml .Values.ledger.resources | nindent 12 }}
-      {{- with .Values.ledger.nodeSelector }}
+            {{- toYaml .Values.onboarding.resources | nindent 12 }}
+      {{- with .Values.onboarding.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.ledger.affinity }}
+      {{- with .Values.onboarding.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.ledger.tolerations }}
+      {{- with .Values.onboarding.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

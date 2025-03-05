@@ -42,18 +42,18 @@ plugins:
       }
     ],
     [
-      "@semantic-release/changelog",
-      {
-        "changelogFile": "CHANGELOG.md"
-      }
-    ],
-    [
       "semantic-release-helm3", 
       {
         "chartPath": "./charts/midaz",
         "registry": "oci://registry-1.docker.io/lerianstudio"
       }
     ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],    
     [
       "@semantic-release/git",
       {

@@ -59,10 +59,7 @@ plugins:
       {
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
         "assets":
-          [
-            "CHANGELOG.md",
-            "charts/midaz/Chart.yaml"
-          ]
+          ["CHANGELOG.md", "charts/midaz/Chart.yaml"]
       }
     ],
     [ 

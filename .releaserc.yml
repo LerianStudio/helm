@@ -1,3 +1,10 @@
+branches:
+  - main
+  - name: develop
+    prerelease: "beta"
+  - name: hotfix/*
+    prerelease: "hf"
+
 plugins:
   [
     [
@@ -34,20 +41,28 @@ plugins:
       }
     ],
     [
+      "semantic-release-helm3", 
+      {
+        "chartPath": "charts/midaz",
+        "registry": "oci://registry-1.docker.io/lerianstudio"
+      }
+    ],
+    [
       "@semantic-release/changelog",
       {
         "changelogFile": "CHANGELOG.md"
       }
-    ],
+    ],    
     [
       "@semantic-release/git",
       {
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
-        "assets": ["CHANGELOG.md"]
+        "assets": 
+          [
+            "CHANGELOG.md",
+            "charts/midaz/Chart.yaml"
+          ]
       }
-    ],
-    [
-      "@semantic-release/github"
     ],
     [
       "@saithodev/semantic-release-backmerge",
@@ -55,12 +70,5 @@ plugins:
         "backmergeBranches": [{"from": "main", "to": "develop"}],
         "message": "chore(release): Preparations for next release [skip ci]"
       }
-    ]
+    ],    
   ]
-
-branches:
-  - main
-  - name: develop
-    prerelease: "beta"
-  - name: hotfix/*
-    prerelease: "hf"

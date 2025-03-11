@@ -1,3 +1,15 @@
+## [1.50.0-beta.1](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.49.5...v1.50.0-beta.1) (2025-03-11)
+
+
+### Features
+
+* **pipe:** add branch develop to generate beta release ([2990c0e](https://github.com/LerianStudio/midaz-helm-standalone/commit/2990c0e71d5b6773321b67c986b0a5a32b970cd3))
+* **chart:** update version ([40d723d](https://github.com/LerianStudio/midaz-helm-standalone/commit/40d723d6159d78f2a198cdfa9c7c969d07219289))
+* **chart:** update version ([22e2930](https://github.com/LerianStudio/midaz-helm-standalone/commit/22e2930ce80b8e33926bb6db7a5f70ca6faa4fa5))
+* **chart:** update version ([8031ceb](https://github.com/LerianStudio/midaz-helm-standalone/commit/8031cebf57f599fda19f74224cd17a746bfe1e21))
+* **chart:** update version ([a8af389](https://github.com/LerianStudio/midaz-helm-standalone/commit/a8af389aa9135313e2e534e4fd0af358a3b8fcf2))
+* **chart:** update version ([412e782](https://github.com/LerianStudio/midaz-helm-standalone/commit/412e782cff316594cb5b6ea0410a7c5d66ebf6a1))
+
 ## [1.49.5](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.49.4...v1.49.5) (2025-03-06)
 
 ## [1.48.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.16.0...v1.49.0) (2025-02-28)

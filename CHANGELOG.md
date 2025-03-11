@@ -1,11 +1,6 @@
-## [1.49.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.48.0...v1.49.0) (2025-02-28)
+## [1.49.5](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.49.4...v1.49.5) (2025-03-06)
 
-
-### Features
-
-* **chart:** update version ([4a42b13](https://github.com/LerianStudio/midaz-helm-standalone/commit/4a42b1367e2ac41654210610641c44fcb7f8b463))
-
-## [1.17.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.16.0...v1.17.0) (2025-02-28)
+## [1.48.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.16.0...v1.49.0) (2025-02-28)
 
 
 ### Features

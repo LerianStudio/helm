@@ -70,3 +70,6 @@ data:
   DB_REPLICA_PORT: {{ .Values.onboarding.configmap.DB_REPLICA_PORT | default "5432" | quote }}
   REPLICATION_USER: {{ .Values.onboarding.configmap.REPLICATION_USER | default "replicator" | quote }}
   REPLICATION_PASSWORD: {{ .Values.onboarding.configmap.REPLICATION_PASSWORD | default "replicator_password" | quote }}
+  #AUTH CONFIGS
+  PLUGIN_AUTH_ENABLED: {{ .Values.onboarding.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.onboarding.configmap.PLUGIN_AUTH_HOST | default (printf "" .Release.Namespace) | quote }}

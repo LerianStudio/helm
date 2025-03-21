@@ -1,3 +1,25 @@
+## [1.50.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.49.5...v1.50.0) (2025-03-21)
+
+
+### Features
+
+* **onboarding:** add auth config ([8a055cb](https://github.com/LerianStudio/midaz-helm-standalone/commit/8a055cb83b9f6a9d9c76ca3343ab6a61c1d1c00c))
+* **transaction:** add auth config ([a7ede5b](https://github.com/LerianStudio/midaz-helm-standalone/commit/a7ede5b29f6c69752cffad6970d5d73bd21062cb))
+* **pipe:** add branch develop to generate beta release ([2990c0e](https://github.com/LerianStudio/midaz-helm-standalone/commit/2990c0e71d5b6773321b67c986b0a5a32b970cd3))
+* **console:** add new console env vars ([cf974b8](https://github.com/LerianStudio/midaz-helm-standalone/commit/cf974b8d696f9eb89e951fd144632d0e5817291f))
+* **console:** add new env vars ([8b8d76f](https://github.com/LerianStudio/midaz-helm-standalone/commit/8b8d76f525a96f36c1d694c65db51ed7280a68a5))
+* **grafana:** disable grafana ([423a6f5](https://github.com/LerianStudio/midaz-helm-standalone/commit/423a6f5495c50c4ccae86c5391cb52841af300e8))
+* **doc:** remove old components ([954dd09](https://github.com/LerianStudio/midaz-helm-standalone/commit/954dd097b1be74841efa6022a94d807e228c6ec4))
+* **values:** update extra env vars for postgres ([9852143](https://github.com/LerianStudio/midaz-helm-standalone/commit/9852143eff1ca1bbc3e6c33660d80ec4bb337d6d))
+* **values:** update resources limits ([04ccb18](https://github.com/LerianStudio/midaz-helm-standalone/commit/04ccb184cd7393e5c1f60fa5945fd89d0b5289d2))
+* **values:** update values file ([db9b3db](https://github.com/LerianStudio/midaz-helm-standalone/commit/db9b3db3961bea039663a7dba0f548601e3c146b))
+* **values:** update values file ([cc698a0](https://github.com/LerianStudio/midaz-helm-standalone/commit/cc698a0a76b24e97b4ff890605535e9ad128e886))
+* **chart:** update version ([40d723d](https://github.com/LerianStudio/midaz-helm-standalone/commit/40d723d6159d78f2a198cdfa9c7c969d07219289))
+* **chart:** update version ([22e2930](https://github.com/LerianStudio/midaz-helm-standalone/commit/22e2930ce80b8e33926bb6db7a5f70ca6faa4fa5))
+* **chart:** update version ([8031ceb](https://github.com/LerianStudio/midaz-helm-standalone/commit/8031cebf57f599fda19f74224cd17a746bfe1e21))
+* **chart:** update version ([a8af389](https://github.com/LerianStudio/midaz-helm-standalone/commit/a8af389aa9135313e2e534e4fd0af358a3b8fcf2))
+* **chart:** update version ([412e782](https://github.com/LerianStudio/midaz-helm-standalone/commit/412e782cff316594cb5b6ea0410a7c5d66ebf6a1))
+
 ## [1.50.0-beta.4](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0-beta.3...v1.50.0-beta.4) (2025-03-21)
 
 

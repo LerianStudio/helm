@@ -1,3 +1,14 @@
+## [1.50.0-beta.2](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0-beta.1...v1.50.0-beta.2) (2025-03-21)
+
+
+### Features
+
+* **onboarding:** add auth config ([8a055cb](https://github.com/LerianStudio/midaz-helm-standalone/commit/8a055cb83b9f6a9d9c76ca3343ab6a61c1d1c00c))
+* **transaction:** add auth config ([a7ede5b](https://github.com/LerianStudio/midaz-helm-standalone/commit/a7ede5b29f6c69752cffad6970d5d73bd21062cb))
+* **console:** add new env vars ([8b8d76f](https://github.com/LerianStudio/midaz-helm-standalone/commit/8b8d76f525a96f36c1d694c65db51ed7280a68a5))
+* **grafana:** disable grafana ([423a6f5](https://github.com/LerianStudio/midaz-helm-standalone/commit/423a6f5495c50c4ccae86c5391cb52841af300e8))
+* **doc:** remove old components ([954dd09](https://github.com/LerianStudio/midaz-helm-standalone/commit/954dd097b1be74841efa6022a94d807e228c6ec4))
+
 ## [1.50.0-beta.1](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.49.5...v1.50.0-beta.1) (2025-03-11)
 
 

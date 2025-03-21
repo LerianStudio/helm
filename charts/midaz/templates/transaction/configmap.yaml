@@ -19,6 +19,7 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.transaction.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local.:4317" .Release.Namespace) | quote }}
+  ENABLE_TELEMETRY: {{ .Values.transaction.configmap.ENABLE_TELEMETRY | default "false" | quote }}
   # RABBITMQ
   RABBITMQ_URI: {{ .Values.transaction.configmap.RABBITMQ_URI | default "amqp" | quote }}
   RABBITMQ_HOST: {{ .Values.transaction.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." .Release.Namespace) | quote }}
@@ -31,6 +32,7 @@ data:
   RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE | default "transaction.transaction_balance_operation.exchange" | quote }}
   RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY | default "transaction.transaction_balance_operation.key" | quote }}
   RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE | default "transaction.transaction_balance_operation.queue" | quote }}
+  RABBITMQ_NUMBERS_OF_WORKERS: {{ .Values.transaction.configmap.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.transaction.configmap.SWAGGER_TITLE | default "transaction API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.transaction.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz transaction API" | quote }}
@@ -79,3 +81,6 @@ data:
   PROTO_ADDRESS: {{ .Values.transaction.configmap.PROTO_ADDRESS | default ":3001" | quote }}
   # AUDIT
   AUDIT_LOG_ENABLED: {{ .Values.transaction.configmap.AUDIT_LOG_ENABLED | default "false" | quote }}
+  #AUTH CONFIGS
+  PLUGIN_AUTH_ENABLED: {{ .Values.transaction.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.transaction.configmap.PLUGIN_AUTH_HOST | default (printf "" .Release.Namespace) | quote }}

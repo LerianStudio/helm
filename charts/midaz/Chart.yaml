@@ -16,10 +16,10 @@ maintainers:
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 1.49.5
+version: 1.50.0-beta.4
 
 # This is the version number of the application being deployed. 
-appVersion: "1.49.5"
+appVersion: "1.50.0-beta.4"
 
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
@@ -42,11 +42,6 @@ dependencies:
     version: "16.3"
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
-  - name: postgresql
-    alias: casdoordb
-    version: "16.3"
-    repository: "https://charts.bitnami.com/bitnami"
-    condition: casdoordb.enabled
   - name: mongodb
     version: "16.4.0"
     repository: "https://charts.bitnami.com/bitnami"
@@ -55,12 +50,3 @@ dependencies:
     version: "15.2"
     repository: "https://charts.bitnami.com/bitnami"
     condition: rabbitmq.enabled
-  - name: casdoor-helm-charts
-    alias: casdoor
-    version: "v1.835.0"
-    repository: "oci://registry-1.docker.io/casbin"
-    condition: casdoor.enabled
-  - name: mariadb
-    version: "20.2"
-    repository: "https://charts.bitnami.com/bitnami"
-    condition: mariadb.enabled

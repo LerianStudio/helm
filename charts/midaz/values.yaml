@@ -70,7 +70,7 @@ console:
     #  - secretName: chart-example-tls
     #  hosts:
     #      - chart-example.local
-
+      
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -141,7 +141,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.48.0"
+    tag: "1.49.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -546,7 +546,7 @@ grafana:
   # such as traces and metrics, enhancing the monitoring of the application.
   # For more details, refer to the documentation:
   # https://docs.lerian.studio/docs/observability-in-midaz#midaz-observability-stack
-  enabled: true
+  enabled: false
 
   name: grafana
 

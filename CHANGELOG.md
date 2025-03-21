@@ -1,3 +1,11 @@
+## [1.50.0-beta.3](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0-beta.2...v1.50.0-beta.3) (2025-03-21)
+
+
+### Features
+
+* **values:** update resources limits ([04ccb18](https://github.com/LerianStudio/midaz-helm-standalone/commit/04ccb184cd7393e5c1f60fa5945fd89d0b5289d2))
+* **values:** update values file ([cc698a0](https://github.com/LerianStudio/midaz-helm-standalone/commit/cc698a0a76b24e97b4ff890605535e9ad128e886))
+
 ## [1.50.0-beta.2](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0-beta.1...v1.50.0-beta.2) (2025-03-21)
 
 

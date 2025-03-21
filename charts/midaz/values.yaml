@@ -379,7 +379,7 @@ grafana:
   # such as traces and metrics, enhancing the monitoring of the application.
   # For more details, refer to the documentation:
   # https://docs.lerian.studio/docs/observability-in-midaz#midaz-observability-stack
-  enabled: false
+  enabled: enable
 
   name: grafana
 
@@ -467,7 +467,7 @@ postgresql:
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
         value: "5"    
       - name: POSTGRESQL_MAX_REPLICATION_SLOTS
-        values: "10"
+        value: "10"
 
   readReplicas:
     name: replication
@@ -490,7 +490,7 @@ postgresql:
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
         value: "5"    
       - name: POSTGRESQL_MAX_REPLICATION_SLOTS
-        values: "10"
+        value: "10"
 
 mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.

@@ -198,12 +198,12 @@ onboarding:
   resources:
     # -- CPU and memory limits for pods
     limits:
-      cpu: 200m
-      memory: 256Mi
+      cpu: 1500m
+      memory: 512Gi
     # -- Minimum CPU and memory requests
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 768m
+      memory: 256Mi
 
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
@@ -320,12 +320,12 @@ transaction:
   resources:
     # -- CPU and memory limits for pods
     limits:
-      cpu: 200m
-      memory: 256Mi
+      cpu: 2000m
+      memory: 512Gi
     # -- Minimum CPU and memory requests
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 768m
+      memory: 256Mi
 
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling

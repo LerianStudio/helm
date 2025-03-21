@@ -379,7 +379,7 @@ grafana:
   # such as traces and metrics, enhancing the monitoring of the application.
   # For more details, refer to the documentation:
   # https://docs.lerian.studio/docs/observability-in-midaz#midaz-observability-stack
-  enabled: false
+  enabled: enable
 
   name: grafana
 

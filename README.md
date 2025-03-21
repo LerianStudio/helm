@@ -178,58 +178,6 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `transaction.serviceAccount.annotations`   | Annotations for the service account.                                                         | `{}`                                           |
 | `transaction.serviceAccount.name`          | Service account name. If not defined, it will be generated automatically.                    | `""`                                           |                                    |
 
-### Audit:
-
-| Parameter                                    | Description                                                                 | Default Value                                  |
-|----------------------------------------------|---------------------------------------------------------------------------|----------------------------------------------|
-| `audit.name`                                 | Application deployment name.                                          | `"audit"`                                     |
-| `audit.replicaCount`                         | Number of application replicas.                                          | `1`                                           |
-| `audit.image.repository`                     | Docker image repository for the application.                                | `"lerianstudio/midaz-audit"`                 |
-| `audit.image.pullPolicy`                     | Docker image pull policy.                                        | `"IfNotPresent"`                              |
-| `audit.image.tag`                            | Docker image tag.                                                     | `"1.46.0"`                                    |
-| `audit.imagePullSecrets`                     | Image pull secrets.                                             | `[]`                                          |
-| `audit.nameOverride`                         | Application name override.                                        | `""`                                          |
-| `audit.fullnameOverride`                     | Full application name override.                               | `""`                                          |
-| `audit.podAnnotations`                       | Additional annotations for the pods.                                        | `[]`                                          |
-| `audit.podSecurityContext`                   | Security context for the pods.                                       | `{}`                                          |
-| `audit.securityContext`                      | Security context for the container.                                   | `{}`                                          |
-| `audit.service.type`                         | Kubernetes service type.                                               | `"ClusterIP"`                                 |
-| `audit.service.port`                         | HTTP service port.                                               | `3002`                                        |
-| `audit.ingress.enabled`                      | Enable or disable Ingress.                                         | `false`                                       |
-| `audit.ingress.className`                    | Ingress class.                                                        | `""`                                          |
-| `audit.ingress.annotations`                  | Additional annotations for Ingress.                                      | `{}`                                          |
-| `audit.ingress.hosts`                        | List of configured hosts for Ingress.                               | `"chart-example.local"`                       |
-| `audit.ingress.tls`                          | TLS configuration for Ingress.                                       | `[]`                                          |
-| `audit.resources.limits.cpu`                 | CPU limit for the main container.                                 | `"200m"`                                      |
-| `audit.resources.limits.memory`              | Memory limit for the main container.                             | `"256Mi"`                                     |
-| `audit.resources.requests.cpu`               | CPU request for the main container.                             | `"100m"`                                      |
-| `audit.resources.requests.memory`            | Memory request for the main container.                         | `"128Mi"`                                     |
-| `audit.server.image.repository`              | Trillian Log Server image repository.                             | `"gcr.io/trillian-opensource-ci/log_server"` |
-| `audit.server.service.httpPort`              | Server HTTP port.                                                   | `8091`                                        |
-| `audit.server.service.grpcPort`              | Server gRPC port.                                                   | `8090`                                        |
-| `audit.server.resources.limits.cpu`          | CPU limit for the server.                                            | `"200m"`                                      |
-| `audit.server.resources.limits.memory`       | Memory limit for the server.                                        | `"256Mi"`                                     |
-| `audit.server.resources.requests.cpu`        | CPU request for the server.                                        | `"100m"`                                      |
-| `audit.server.resources.requests.memory`     | Memory request for the server.                                    | `"128Mi"`                                     |
-| `audit.signer.image.repository`              | Trillian Log Signer image repository.                             | `"gcr.io/trillian-opensource-ci/log_signer"` |
-| `audit.signer.service.httpPort`              | Signer HTTP port.                                                     | `8092`                                        |
-| `audit.signer.service.grpcPort`              | Signer gRPC port.                                                     | `8093`                                        |
-| `audit.signer.resources.limits.cpu`          | CPU limit for the signer.                                              | `"200m"`                                      |
-| `audit.signer.resources.limits.memory`       | Memory limit for the signer.                                          | `"256Mi"`                                     |
-| `audit.signer.resources.requests.cpu`        | CPU request for the signer.                                          | `"100m"`                                      |
-| `audit.signer.resources.requests.memory`     | Memory request for the signer.                                      | `"128Mi"`                                     |
-| `audit.autoscaling.enabled`                  | Enable horizontal autoscaling.                                        | `true`                                        |
-| `audit.autoscaling.minReplicas`              | Minimum number of replicas for autoscaling.                             | `1`                                           |
-| `audit.autoscaling.maxReplicas`              | Maximum number of replicas for autoscaling.                             | `3`                                           |
-| `audit.autoscaling.targetCPUUtilizationPercentage` | CPU utilization percentage for autoscaling.                   | `80`                                          |
-| `audit.nodeSelector`                         | Node selector for pod scheduling.                               | `{}`                                          |
-| `audit.tolerations`                          | Tolerations for pod scheduling.                                  | `{}`                                          |
-| `audit.affinity`                             | Affinity configuration for pod scheduling.                    | `{}`                                          |
-| `audit.configmap`                            | Additional configurations for ConfigMap.                                | `{}`                                          |
-| `audit.secrets`                              | Additional configurations for Secrets.                                 | `{}`                                          |
-| `audit.serviceAccount.create`                | Create a ServiceAccount for the pods.                               | `true`                                        |
-| `audit.serviceAccount.annotations`           | Annotations for the ServiceAccount.                                          | `{}`                                          |
-| `audit.serviceAccount.name`                  | ServiceAccount name.                                                   | `""`                                          |
 
 ### Console:
 
@@ -333,26 +281,12 @@ This Chart has the following dependencies for the project's default installation
 - **How to disable:** Set `postgresql.enabled` to `false` in the values file.
 - **Note:** If you have an existing PostgreSQL instance, you can disable this dependency and configure Midaz Components to use your external PostgreSQL.
 
-### PostgreSQL (Alias: casdoordb)
-
-- **Version:** 16.3.0
-- **Repository:** https://charts.bitnami.com/bitnami
-- **How to disable:** Set `casdoordb.enabled` to `false` in the values file.
-- **Note:** If you have an existing PostgresSQL instance, you can disable this dependency and configure Casdoor to use your external PostgresSQL.
-
 ### MongoDB
 
 - **Version:** 15.4.5
 - **Repository:** https://charts.bitnami.com/bitnami
 - **How to disable:** Set `mongodb.enabled` to `false` in the values file.
 - **Note:** If you have an existing MongoDB instance, you can disable this dependency and configure Midaz Components to use your external MongoDB.
-
-### MariaDB
-
-- **Version:** 20.2
-- **Repository:** https://charts.bitnami.com/bitnami
-- **How to disable:** Set `mariadb.enabled` to `false` in the values file.
-- **Note:** If you have an existing MariaDB instance, you can disable this dependency and configure Midaz Components to use your external MariaDB.
 
 ### RabbitMQ
 
@@ -361,8 +295,3 @@ This Chart has the following dependencies for the project's default installation
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
 - **Note:** If you have an existing RabbitMQ instance, you can disable this dependency and configure Midaz Components to use your external RabbitMQ.
 
-### Casdoor Helm Charts
-
-- **Version:** v1.799.0
-- **Repository:** oci://registry-1.docker.io/casbin
-- **Note:** See More [Midaz Security](https://docs.lerian.studio/docs/midaz-security)

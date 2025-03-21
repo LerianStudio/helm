@@ -1,3 +1,12 @@
+## [1.50.0-beta.4](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0-beta.3...v1.50.0-beta.4) (2025-03-21)
+
+
+### Features
+
+* **console:** add new console env vars ([cf974b8](https://github.com/LerianStudio/midaz-helm-standalone/commit/cf974b8d696f9eb89e951fd144632d0e5817291f))
+* **values:** update extra env vars for postgres ([9852143](https://github.com/LerianStudio/midaz-helm-standalone/commit/9852143eff1ca1bbc3e6c33660d80ec4bb337d6d))
+* **values:** update values file ([db9b3db](https://github.com/LerianStudio/midaz-helm-standalone/commit/db9b3db3961bea039663a7dba0f548601e3c146b))
+
 ## [1.50.0-beta.3](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0-beta.2...v1.50.0-beta.3) (2025-03-21)
 
 

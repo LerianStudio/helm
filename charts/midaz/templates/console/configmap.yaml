@@ -12,6 +12,7 @@ data:
   MIDAZ_CONSOLE_SERVICE_HOST: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_HOST | default "midaz-console" | quote }}
   MIDAZ_CONSOLE_SERVICE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_PORT | default "8081" | quote }}
   MIDAZ_CONSOLE_BASE_PATH: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
+  MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMATS: {{ .Values.console.configmap.MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMATS | default "jpeg,jpg,png,svg" | quote }}
   # NextAuth Configuration
   NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
   NEXTAUTH_SECRET: {{ .Values.console.configmap.NEXTAUTH_SECRET | default "testSecret" | quote }}
@@ -31,4 +32,5 @@ data:
   MIDAZ_TRANSACTION_BASE_PATH: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PATH | default (printf "http://midaz-transaction.%s.svc.cluster.local.:3001/v1" .Release.Namespace) | quote }}
   # Midaz Console Configuration
   ENABLE_DEBUG: {{ .Values.console.configmap.ENABLE_DEBUG | default "true" | quote }}
+  NODE_ENV: {{ .Values.console.configmap.NODE_ENV | default "development" | quote }}
 

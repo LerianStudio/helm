@@ -19,7 +19,7 @@ maintainers:
 version: 1.51.0
 
 # This is the version number of the application being deployed. 
-appVersion: "1.51.0"
+appVersion: "1.50.0"
 
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:

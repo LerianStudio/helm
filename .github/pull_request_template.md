@@ -4,11 +4,9 @@
 [//]: # (Check the appropriate box for the type of pull request.)
 
 - [ ] Chart
-- [ ] Auth 
 - [ ] Onboarding
 - [ ] Grafana
 - [ ] Transaction
-- [ ] Audit
 - [ ] Console
 - [ ] Pipeline
 - [ ] Documentation

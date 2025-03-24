@@ -28,6 +28,7 @@ data:
   RABBITMQ_DEFAULT_USER: {{ .Values.onboarding.configmap.RABBITMQ_DEFAULT_USER | default "onboarding" | quote }}
   RABBITMQ_EXCHANGE: {{ .Values.onboarding.configmap.RABBITMQ_EXCHANGE | default "transaction.balance_create.exchange" | quote }}
   RABBITMQ_KEY: {{ .Values.onboarding.configmap.RABBITMQ_KEY | default "transaction.balance_create.key" | quote }}
+  RABBITMQ_NUMBERS_OF_PREFETCH: {{ .Values.transaction.configmap.RABBITMQ_NUMBERS_OF_PREFETCH | default "10" | quote }}
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.onboarding.configmap.SWAGGER_TITLE | default "Onboarding API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.onboarding.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz Onboarding API" | quote }}

@@ -10,14 +10,6 @@ console:
   - changed-files:
       - any-glob-to-any-file: charts/midaz/templates/console/**
 
-audit:
-  - changed-files:
-      - any-glob-to-any-file: charts/midaz/templates/audit/**
-
-auth:
-  - changed-files:
-      - any-glob-to-any-file: charts/midaz/**
-
 dependencies:
   - changed-files:
       - any-glob-to-any-file: charts/midaz/**

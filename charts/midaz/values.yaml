@@ -398,17 +398,18 @@ grafana:
     #  hosts:
     #      - chart-example.local
   
-redis:
-  # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
+valkey:
+  # Valkey is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
 
   external: false
   architecture: standalone
+
   auth:
-    enabled: false
+    enabled: true
+    password: lerian
+    
   master:
     persistence:
       size: 8Gi

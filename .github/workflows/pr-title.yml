@@ -34,8 +34,6 @@ jobs:
             onboarding
             trasaction
             console
-            audit
-            auth
             dependencies
             values
             pipe

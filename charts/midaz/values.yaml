@@ -7,6 +7,9 @@ fullnameOverride: ""
 namespaceOverride: "midaz"
 
 console:
+  # -- Enable or disable the console service
+  enabled: false
+
   # -- Service name
   name: console
 

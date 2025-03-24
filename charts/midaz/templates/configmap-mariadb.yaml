@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: mariadb-init-sql
-data:
-  init.sql: |
-{{ (.Files.Get "files/audit/init.sql") | indent 4 }}

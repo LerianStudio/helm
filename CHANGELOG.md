@@ -1,3 +1,10 @@
+## [1.51.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0...v1.51.0) (2025-03-24)
+
+
+### Features
+
+* **doc:** add new version ([39c0a71](https://github.com/LerianStudio/midaz-helm-standalone/commit/39c0a71dacbe9c80aa095a580c5d42d153b0947b))
+
 ## [1.50.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.49.5...v1.50.0) (2025-03-21)
 
 

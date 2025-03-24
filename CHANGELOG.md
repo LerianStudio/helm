@@ -1,13 +1,21 @@
+<<<<<<< HEAD
 ## [1.51.0-beta.1](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0...v1.51.0-beta.1) (2025-03-24)
+=======
+## [1.51.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0...v1.51.0) (2025-03-24)
+>>>>>>> ec40ebc (chore(release): 1.51.0)
 
 
 ### Features
 
+<<<<<<< HEAD
 * **console:** add feature flag to console ([bca7178](https://github.com/LerianStudio/midaz-helm-standalone/commit/bca717843222743cb5faf88058acfd75cf7aa3ae))
 * **doc:** add new version ([39c0a71](https://github.com/LerianStudio/midaz-helm-standalone/commit/39c0a71dacbe9c80aa095a580c5d42d153b0947b))
 * **dependencies:** remove old dependency ([3e68ced](https://github.com/LerianStudio/midaz-helm-standalone/commit/3e68cedd6723109498165f3c02b4124253e9cc18))
 * **dependencies:** remove old dependency ([8947606](https://github.com/LerianStudio/midaz-helm-standalone/commit/89476064778302bea60f2bafd574cc4b342e8897))
 * **dependencies:** remove old dependency ([813bbde](https://github.com/LerianStudio/midaz-helm-standalone/commit/813bbde992c6fb19a23ddf74a491d0d0747aba82))
+=======
+* **doc:** add new version ([39c0a71](https://github.com/LerianStudio/midaz-helm-standalone/commit/39c0a71dacbe9c80aa095a580c5d42d153b0947b))
+>>>>>>> ec40ebc (chore(release): 1.51.0)
 
 ## [1.50.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.49.5...v1.50.0) (2025-03-21)
 

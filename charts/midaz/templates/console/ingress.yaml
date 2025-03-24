@@ -1,3 +1,4 @@
+{{- if .Values.console.enabled }}
 {{- if .Values.console.ingress.enabled -}}
 {{- $fullName := include "midaz-console.fullname" . -}}
 {{- $svcPort := .Values.console.service.port -}}
@@ -58,4 +59,5 @@ spec:
               {{- end }}
           {{- end }}
     {{- end }}
+{{- end }}
 {{- end }}

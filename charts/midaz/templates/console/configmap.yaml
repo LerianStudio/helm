@@ -1,3 +1,4 @@
+{{- if .Values.console.enabled }}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -41,3 +42,4 @@ data:
   PLUGIN_IDENTITY_HOST: {{ .Values.console.configmap.PLUGIN_IDENTITY_HOST | default (printf "midaz-plugin-identity.%s.svc.cluster.local." .Release.Namespace) | quote }}
   PLUGIN_IDENTITY_PORT: {{ .Values.console.configmap.PLUGIN_IDENTITY_PORT | default "4001" | quote }}
   PLUGIN_IDENTITY_BASE_PATH: {{ .Values.console.configmap.PLUGIN_IDENTITY_BASE_PATH | default (printf "http://midaz-plugin-identity.%s.svc.cluster.local.:4001/v1" .Release.Namespace) | quote }}
+{{- end }}

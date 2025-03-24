@@ -267,31 +267,128 @@ grafana:
 
 This Chart has the following dependencies for the project's default installation. All dependencies are enabled by default.
 
-### Redis
+### Valkey
 
-- **Version:** 19.3.4
+- **Version:** 2.4.7
 - **Repository:** https://charts.bitnami.com/bitnami
-- **How to disable:** Set `redis.enabled` to `false` in the values file.
-- **Note:** If you have an existing Redis instance, you can disable this dependency and configure Midaz Components to use your external Redis.
+- **How to disable:** Set `valkey.enabled` to `false` in the values file.
+- **Note:** If you have an existing Valkey or Redis instance, you can disable this dependency and configure Midaz Components to use your external instance, like this:
+
+  ```yaml
+  onboarding:
+    configmap:
+      REDIS_HOST: { your-host }
+      REDIS_PORT: { your-host-port }
+      REDIS_USER: { your-host-user }
+
+    secrets:
+      REDIS_PASSWORD: { your-host-pass }
+
+  transaction:
+    configmap:
+      REDIS_HOST: { your-host }
+      REDIS_PORT: { your-host-port }
+      REDIS_USER: { your-host-user }
+
+    secrets:
+      REDIS_PASSWORD: { your-host-pass }
+  ```
   
 ### PostgreSQL
 
 - **Version:** 16.3.0
 - **Repository:** https://charts.bitnami.com/bitnami
 - **How to disable:** Set `postgresql.enabled` to `false` in the values file.
-- **Note:** If you have an existing PostgreSQL instance, you can disable this dependency and configure Midaz Components to use your external PostgreSQL.
+- **Note:** If you have an existing PostgreSQL instance, you can disable this dependency and configure Midaz Components to use your external PostgreSQL, like this:
+
+  ```yaml
+  onboarding:
+    configmap:
+      DB_HOST: { your-host }
+      DB_USER: { your-host-user }
+      DB_PORT: { your-host-port }
+      ## DB Replication
+      DB_REPLICA_HOST: { your-replication-host }
+      DB_REPLICA_USER: { your-replication-host-user }
+      DB_REPLICA_PORT: { your-replication-host-port}
+    
+    secrets:
+      DB_PASSWORD: { your-host-pass }
+      DB_REPLICA_PASSWORD: { your-replication-host-pass }
+
+  transaction:
+    configmap:
+      DB_HOST: { your-host }
+      DB_USER: { your-host-user }
+      DB_PORT: { your-host-port }
+      ## DB Replication
+      DB_REPLICA_HOST: { your-replication-host }
+      DB_REPLICA_USER: { your-replication-host-user }
+      DB_REPLICA_PORT: { your-replication-host-port}
+    
+    secrets:
+      DB_PASSWORD: { your-host-pass }
+      DB_REPLICA_PASSWORD: { your-replication-host-pass }
+  ```
 
 ### MongoDB
 
 - **Version:** 15.4.5
 - **Repository:** https://charts.bitnami.com/bitnami
 - **How to disable:** Set `mongodb.enabled` to `false` in the values file.
-- **Note:** If you have an existing MongoDB instance, you can disable this dependency and configure Midaz Components to use your external MongoDB.
+- **Note:** If you have an existing MongoDB instance, you can disable this dependency and configure Midaz Components to use your external MongoDB, like this:
+
+  ```yaml
+  onboarding:
+    configmap:
+      MONGO_HOST: { your-host }
+      MONGO_NAME: { your-host-name }
+      MONGO_USER: { your-host-user }
+      MONGO_PORT: { your-host-port }
+    
+    secrets:
+      MONGO_PASSWORD: { your-host-pass }
+
+  transaction:
+    configmap:
+      MONGO_HOST: { your-host }
+      MONGO_NAME: { your-host-name }
+      MONGO_USER: { your-host-user }
+      MONGO_PORT: { your-host-port }
+    
+    secrets:
+      MONGO_PASSWORD: { your-host-pass }
+
+  ```
+
 
 ### RabbitMQ
 
 - **Version:** 16.0.0
 - **Repository:** https://charts.bitnami.com/bitnami
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
-- **Note:** If you have an existing RabbitMQ instance, you can disable this dependency and configure Midaz Components to use your external RabbitMQ.
+- **Note:** If you have an existing RabbitMQ instance, you can disable this dependency and configure Midaz Components to use your external RabbitMQ, like this:
+  
+- **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm-standalone/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
 
+  ```yaml
+  onboarding:
+    configmap:
+      RABBITMQ_HOST: { your-host }
+      RABBITMQ_DEFAULT_USER: { your-host-user }
+      RABBITMQ_PORT_HOST: { your-host-port }
+      RABBITMQ_PORT_AMPQ: { your-host-ampq-port }
+      
+    secrets:
+      RABBITMQ_DEFAULT_PASS: { your-host-pass }
+
+  transaction:
+    configmap:
+      RABBITMQ_HOST: { your-host }
+      RABBITMQ_DEFAULT_USER: { your-host-user }
+      RABBITMQ_PORT_HOST: { your-host-port }
+      RABBITMQ_PORT_AMPQ: { your-host-ampq-port }
+      
+    secrets:
+      RABBITMQ_DEFAULT_PASS: { your-host-pass }
+  ```

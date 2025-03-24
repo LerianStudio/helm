@@ -164,8 +164,8 @@ true
 false
 {{- end -}}
 {{- end -}}
-{{- define "redis.enabled" -}}
-{{- if not .Values.redis.external -}}
+{{- define "valkey.enabled" -}}
+{{- if not .Values.valkey.external -}}
 true
 {{- else -}}
 false

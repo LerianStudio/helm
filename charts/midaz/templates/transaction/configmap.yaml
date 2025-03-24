@@ -58,7 +58,7 @@ data:
   MONGO_USER: {{ .Values.transaction.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_PORT: {{ .Values.transaction.configmap.MONGO_PORT | default "27017" | quote }}
   #REDIS
-  REDIS_HOST: {{ .Values.transaction.configmap.REDIS_HOST | default (printf "midaz-redis-headless.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  REDIS_HOST: {{ .Values.transaction.configmap.REDIS_HOST | default (printf "midaz-valkey-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}
   REDIS_PORT: {{ .Values.transaction.configmap.REDIS_PORT | default "6379" | quote }}
   REDIS_USER: {{ .Values.transaction.configmap.REDIS_USER | default "midaz" | quote }}
   #POSTGRESS

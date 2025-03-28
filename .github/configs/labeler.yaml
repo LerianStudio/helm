@@ -2,9 +2,9 @@ onboarding:
   - changed-files:
       - any-glob-to-any-file: charts/midaz/templates/onboarding/**
 
-trasaction:
+transaction:
   - changed-files:
-      - any-glob-to-any-file: charts/midaz/templates/trasaction/**
+      - any-glob-to-any-file: charts/midaz/templates/transaction/**
 
 console:
   - changed-files:

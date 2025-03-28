@@ -10,6 +10,9 @@ console:
   # -- Service name
   name: console
 
+  # -- Enable or disable the console service
+  enabled: true
+
   # -- Number of replicas for the deployment
   replicaCount: 1
 
@@ -379,7 +382,7 @@ grafana:
   # such as traces and metrics, enhancing the monitoring of the application.
   # For more details, refer to the documentation:
   # https://docs.lerian.studio/docs/observability-in-midaz#midaz-observability-stack
-  enabled: enable
+  enabled: true
 
   name: grafana
 
@@ -456,9 +459,15 @@ postgresql:
 
     extendedConfiguration: |
       shared_buffers = 2GB
-      max_wal_senders = 10
+      max_wal_senders = 20
+      wal_keep_size = 512MB
+      max_replication_slots = 20
 
     extraEnvVars:
+      - name: POSTGRESQL_WAL_LEVEL
+        value: "logical"
+      - name: POSTGRESQL_HOST_STANDBY
+        value: "on"
       - name: POSTGRESQL_MAX_CONNECTIONS
         value: "500"
       - name: POSTGRESQL_TCP_KEEPALIVES_IDLE
@@ -467,8 +476,6 @@ postgresql:
         value: "10"
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
         value: "5"    
-      - name: POSTGRESQL_MAX_REPLICATION_SLOTS
-        value: "10"
 
   readReplicas:
     name: replication
@@ -480,8 +487,15 @@ postgresql:
 
     extendedConfiguration: |
       shared_buffers = 2GB
-    
+      max_wal_senders = 20
+      max_replication_slots = 20
+      wal_keep_size = 512MB
+
     extraEnvVars:
+      - name: POSTGRESQL_WAL_LEVEL
+        value: "logical"
+      - name: POSTGRESQL_HOST_STANDBY
+        value: "on"
       - name: POSTGRESQL_MAX_CONNECTIONS
         value: "500"
       - name: POSTGRESQL_TCP_KEEPALIVES_IDLE
@@ -489,9 +503,7 @@ postgresql:
       - name: POSTGRESQL_TCP_KEEPALIVES_INTERVAL
         value: "10"
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
-        value: "5"    
-      - name: POSTGRESQL_MAX_REPLICATION_SLOTS
-        value: "10"
+        value: "5"  
 
 mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.

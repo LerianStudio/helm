@@ -1,3 +1,7 @@
+## [1.51.2-beta.2](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.51.2-beta.1...v1.51.2-beta.2) (2025-03-28)
+
+## [1.51.2-beta.1](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.51.1...v1.51.2-beta.1) (2025-03-24)
+
 ## [1.51.1](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.51.0...v1.51.1) (2025-03-24)
 
 ## [1.51.0](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.50.0...v1.51.0) (2025-03-24)

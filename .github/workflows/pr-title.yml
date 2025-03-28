@@ -32,10 +32,8 @@ jobs:
           scopes: |
             chart
             onboarding
-            trasaction
+            transaction
             console
-            audit
-            auth
             dependencies
             values
             pipe

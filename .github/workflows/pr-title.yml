@@ -32,7 +32,7 @@ jobs:
           scopes: |
             chart
             onboarding
-            trasaction
+            transaction
             console
             dependencies
             values

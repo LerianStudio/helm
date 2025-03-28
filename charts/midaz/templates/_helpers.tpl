@@ -19,15 +19,6 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "midaz-audit.fullname" -}}
-{{- printf "%s-%s" (include "midaz.name" .) .Values.audit.name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
 {{- define "midaz-console.fullname" -}}
 {{- printf "%s-%s" (include "midaz.name" .) .Values.console.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -103,17 +94,6 @@ Create the name of the service account to use
 {{- default (include "midaz-onboarding.fullname" .) .Values.onboarding.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.onboarding.serviceAccount.name }}
-{{- end }}
-{{- end }}
-
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "midaz-audit.serviceAccountName" -}}
-{{- if .Values.audit.serviceAccount.create }}
-{{- default (include "midaz-audit.fullname" .) .Values.audit.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.audit.serviceAccount.name }}
 {{- end }}
 {{- end }}
 

@@ -1,3 +1,13 @@
+## [1.52.0-beta.1](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.51.2...v1.52.0-beta.1) (2025-04-01)
+
+
+### Features
+
+* **values:** add deployment strategy definitions ([dd93837](https://github.com/LerianStudio/midaz-helm-standalone/commit/dd9383729db20e4f88265edde5900d35c7dbbafa))
+* **console:** add deployment strategy ([0000ab0](https://github.com/LerianStudio/midaz-helm-standalone/commit/0000ab0a6c088e2eca167f396bff859638b478e4))
+* **onboarding:** add deployment strategy ([220274b](https://github.com/LerianStudio/midaz-helm-standalone/commit/220274beb453eb54ec6e9c3a6020016cf8a7be91))
+* **transaction:** add deployment strategy ([65076f4](https://github.com/LerianStudio/midaz-helm-standalone/commit/65076f421904b98f46329ff40cb31f7cf409476b))
+
 ## [1.51.2](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.51.1...v1.51.2) (2025-03-28)
 
 ## [1.51.2-beta.2](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.51.2-beta.1...v1.51.2-beta.2) (2025-03-28)

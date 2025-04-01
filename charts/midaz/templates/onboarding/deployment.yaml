@@ -5,6 +5,13 @@ metadata:
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 4 }}
 spec:
+  strategy:
+    type: {{ .Values.onboarding.deploymentUpdate.type }}
+    {{- if eq .Values.onboarding.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.onboarding.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.onboarding.deploymentUpdate.maxUnavailable }}
+    {{- end }}
   {{- if not .Values.onboarding.autoscaling.enabled }}
   replicas: {{ .Values.onboarding.replicaCount }}
   {{- end }}

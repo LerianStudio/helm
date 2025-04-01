@@ -51,6 +51,17 @@ console:
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
 
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: false
+    # -- Minimum number of available pods
+    minAvailable: 1
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+
   # -- Deployment update strategy
   deploymentUpdate:
     # -- Type of deployment strategy
@@ -183,6 +194,17 @@ onboarding:
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
   
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: true
+    # -- Minimum number of available pods
+    minAvailable: 1
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+  
   # -- Deployment update strategy
   deploymentUpdate:
     # -- Type of deployment strategy
@@ -313,6 +335,17 @@ transaction:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: true
+    # -- Minimum number of available pods
+    minAvailable: 2
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
 
   # -- Deployment update strategy
   deploymentUpdate:

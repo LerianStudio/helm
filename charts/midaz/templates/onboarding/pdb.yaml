@@ -1,0 +1,23 @@
+{{- if .Values.onboarding.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "midaz-onboarding.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 4 }}
+  {{- with .Values.onboarding.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.onboarding.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.onboarding.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.onboarding.name ) | nindent 6 }}
+{{- end }}

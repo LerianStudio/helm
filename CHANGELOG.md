@@ -1,3 +1,13 @@
+## [1.52.0-beta.2](https://github.com/LerianStudio/helm/compare/v1.52.0-beta.1...v1.52.0-beta.2) (2025-04-07)
+
+
+### Features
+
+* **values:** create pdb definitions ([fe34974](https://github.com/LerianStudio/helm/commit/fe34974aaa497979e0d13b610b77b4d1d7895f2f))
+* **console:** create pdb template ([102c56a](https://github.com/LerianStudio/helm/commit/102c56a6e697623317585b8808f09f3cb7458882))
+* **onboarding:** create pdb template ([8bc0d48](https://github.com/LerianStudio/helm/commit/8bc0d489407c8c5181a20f2c731e5abc7946b8b6))
+* **transaction:** create pdb template ([738f5d3](https://github.com/LerianStudio/helm/commit/738f5d3ff33cc62f155186af1514340fa3133503))
+
 ## [1.52.0-beta.1](https://github.com/LerianStudio/midaz-helm-standalone/compare/v1.51.2...v1.52.0-beta.1) (2025-04-01)
 
 

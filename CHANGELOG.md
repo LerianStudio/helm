@@ -1,3 +1,5 @@
+## [1.53.0](https://github.com/LerianStudio/helm/compare/v1.52.0...v1.53.0) (2025-04-08)
+
 ## [1.52.0](https://github.com/LerianStudio/helm/compare/v1.51.2...v1.52.0) (2025-04-08)
 
 

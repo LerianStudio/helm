@@ -1,0 +1,1414 @@
+{
+    "organizations": [
+      {
+        "owner": "admin",
+        "name": "lerian",
+        "displayName": "Lerian",
+        "websiteUrl": "https://lerian.studio/",
+        "logo": "https://tinyurl.com/lerian-logo",
+        "favicon": "https://framerusercontent.com/images/YIgCZu3L9aPWs8t9TOdUfHaRC0Q.svg",
+        "passwordType": "bcrypt",
+        "passwordSalt": "BjXSuMnkJNCzOyo09DX133mIYR9kE0MDtsfoGUX2mNQDWhpfCItNxMBZV5dm5/+N\nncwh0vZtCLYRlMxzI1f71A==",
+        "passwordOptions": [
+          "AtLeast6",
+          "Aa123",
+          "SpecialChar",
+          "NoRepeat"
+        ],
+        "countryCodes": [
+          "US",
+          "GB",
+          "ES",
+          "FR",
+          "DE",
+          "CN",
+          "JP",
+          "KR",
+          "VN",
+          "ID",
+          "SG",
+          "IN",
+          "IT",
+          "MY",
+          "TR",
+          "DZ",
+          "IL",
+          "PH",
+          "NL",
+          "PL",
+          "FI",
+          "SE",
+          "UA",
+          "KZ",
+          "CZ",
+          "SK"
+        ],
+        "defaultAvatar": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToK_-LT9HmxfBNTsC0A8wfvjtfxKh3GjexbQ&s",
+        "defaultApplication": "app-midaz",
+        "tags": [],
+        "languages": [
+          "en",
+          "zh",
+          "es",
+          "fr",
+          "de",
+          "id",
+          "ja",
+          "ko",
+          "ru",
+          "vi",
+          "it",
+          "ms",
+          "tr",
+          "ar",
+          "he",
+          "nl",
+          "pl",
+          "fi",
+          "sv",
+          "uk",
+          "kk",
+          "fa",
+          "cs",
+          "sk"
+        ],
+        "masterPassword": "",
+        "defaultPassword": "",
+        "masterVerificationCode": "000000",
+        "initScore": 2000,
+        "enableSoftDeletion": false,
+        "isProfilePublic": true,
+        "mfaItems": [
+          {
+            "name": "email",
+            "rule": "Optional"
+          }
+        ],
+        "accountItems": [
+          {
+            "name": "ID",
+            "visible": true,
+            "viewRule": "Admin",
+            "modifyRule": "Immutable"
+          },
+          {
+            "name": "Display name",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self"
+          },
+          {
+            "name": "Organization",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self"
+          },
+          {
+            "name": "Roles",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self"
+          },
+          {
+            "name": "Permissions",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self"
+          },
+          {
+            "name": "User type",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Admin",
+            "regex": ""
+          },
+          {
+            "name": "Email",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "Phone",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "Country code",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "Country/Region",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "Location",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "Address",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "Homepage",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "Tag",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Admin",
+            "regex": ""
+          },
+          {
+            "name": "Signup application",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Admin",
+            "regex": ""
+          },
+          {
+            "name": "API key",
+            "visible": false,
+            "viewRule": "",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "Groups",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Admin",
+            "regex": ""
+          },
+          {
+            "name": "Roles",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Immutable",
+            "regex": ""
+          },
+          {
+            "name": "Permissions",
+            "visible": true,
+            "viewRule": "Public",
+            "modifyRule": "Immutable",
+            "regex": ""
+          },
+          {
+            "name": "3rd-party logins",
+            "visible": true,
+            "viewRule": "Self",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+  
+          {
+            "name": "Is admin",
+            "visible": true,
+            "viewRule": "Admin",
+            "modifyRule": "Admin",
+            "regex": ""
+          },
+          {
+            "name": "Is forbidden",
+            "visible": true,
+            "viewRule": "Admin",
+            "modifyRule": "Admin",
+            "regex": ""
+          },
+          {
+            "name": "Is deleted",
+            "visible": true,
+            "viewRule": "Admin",
+            "modifyRule": "Admin",
+            "regex": ""
+          },
+          {
+            "name": "Multi-factor authentication",
+            "visible": true,
+            "viewRule": "Self",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "WebAuthn credentials",
+            "visible": true,
+            "viewRule": "Self",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "Managed accounts",
+            "visible": true,
+            "viewRule": "Self",
+            "modifyRule": "Self",
+            "regex": ""
+          },
+          {
+            "name": "MFA accounts",
+            "visible": true,
+            "viewRule": "Self",
+            "modifyRule": "Self",
+            "regex": ""
+          }
+        ]
+      }
+    ],
+    "applications": [
+      {
+        "owner": "admin",
+        "name": "app-login",
+        "displayName": "Login",
+        "logo": "https://tinyurl.com/lerian-logo",
+        "homepageUrl": "https://lerian.studio/midaz",
+        "organization": "lerian",
+        "cert": "cert-built-in",
+        "enablePassword": true,
+        "enableSignUp": true,
+        "clientId": "ac56c81d4d6d95c0ac12",
+        "clientSecret": "6add4bc64f394456a77fa85708ad8c9b67e39e4c",
+        "providers": [
+          {
+            "owner": "",
+            "name": "provider_captcha_default",
+            "canSignUp": false,
+            "canSignIn": false,
+            "canUnlink": false,
+            "countryCodes": null,
+            "prompted": false,
+            "signupGroup": "",
+            "rule": "",
+            "provider": {
+              "owner": "admin",
+              "name": "provider_captcha_default",
+              "displayName": "Captcha Default",
+              "category": "Captcha",
+              "type": "Default",
+              "subType": "",
+              "method": "",
+              "clientId": "",
+              "clientSecret": "",
+              "clientId2": "",
+              "clientSecret2": "",
+              "cert": "",
+              "customAuthUrl": "",
+              "customTokenUrl": "",
+              "customUserInfoUrl": "",
+              "customLogo": "",
+              "scopes": "",
+              "userMapping": null,
+              "host": "",
+              "port": 0,
+              "disableSsl": false,
+              "title": "",
+              "content": "",
+              "receiver": "",
+              "regionId": "",
+              "signName": "",
+              "templateCode": "",
+              "appId": "",
+              "endpoint": "",
+              "intranetEndpoint": "",
+              "domain": "",
+              "bucket": "",
+              "pathPrefix": "",
+              "metadata": "",
+              "idP": "",
+              "issuerUrl": "",
+              "enableSignAuthnRequest": false,
+              "providerUrl": ""
+            }
+          },
+          {
+            "name": "sendgrid_provider",
+            "canSignUp": true,
+            "canSignIn": true,
+            "canUnlink": true,
+            "prompted": false,
+            "signupGroup": "",
+            "rule": "signup",
+            "provider": {
+              "owner": "lerian",
+              "name": "sendgrid_provider",
+              "displayName": "SendGrid Provider",
+              "category": "Email",
+              "type": "SendGrid",
+              "subType": "",
+              "method": "",
+              "clientId": "",
+              "clientSecret": "",
+              "clientId2": "",
+              "clientSecret2": "",
+              "cert": "",
+              "customAuthUrl": "",
+              "customTokenUrl": "",
+              "customUserInfoUrl": "",
+              "customLogo": "",
+              "scopes": "",
+              "userMapping": {
+                "avatarUrl": "avatarUrl",
+                "displayName": "displayName",
+                "email": "email",
+                "id": "id",
+                "username": "username"
+              },
+              "host": "",
+              "port": 0,
+              "disableSsl": false,
+              "title": "Here is your code",
+              "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Verification Code Email</title>\n<style>\n    body { font-family: Arial, sans-serif; }\n    .email-container { width: 600px; margin: 0 auto; }\n    .header { text-align: center; }\n    .code { font-size: 24px; margin: 20px 0; text-align: center; }\n    .footer { font-size: 12px; text-align: center; margin-top: 50px; }\n    .footer a { color: #000; text-decoration: none; }\n</style>\n</head>\n<body>\n<div class=\"email-container\">\n  <div class=\"header\">\n        <h3>Casbin Organization</h3>\n        <img src=\"https://cdn.casbin.org/img/casdoor-logo_1185x256.png\" alt=\"Casdoor Logo\" width=\"300\">\n    </div>\n    <p><strong>%{user.friendlyName}</strong>, here is your verification code</p>\n    <p>Use this code for your transaction. It's valid for 5 minutes</p>\n    <div class=\"code\">\n        %s\n    </div>\n    <p>Thanks</p>\n    <p>Casbin Team</p>\n    <hr>\n    <div class=\"footer\">\n        <p>Casdoor is a brand operated by Casbin organization. For more info please refer to <a href=\"https://casdoor.org\">https://casdoor.org</a></p>\n    </div>\n</div>\n</body>\n</html>",
+              "receiver": "",
+              "regionId": "",
+              "signName": "",
+              "templateCode": "",
+              "appId": "",
+              "endpoint": "",
+              "intranetEndpoint": "",
+              "domain": "",
+              "bucket": "",
+              "pathPrefix": "",
+              "metadata": "",
+              "idP": "",
+              "issuerUrl": "",
+              "enableSignAuthnRequest": false,
+              "providerUrl": ""
+            }
+          }
+        ],
+        "signinMethods": [
+          {
+            "name": "Password",
+            "displayName": "Password",
+            "rule": "All"
+          },
+          {
+            "name": "Verification code",
+            "displayName": "Verification code",
+            "rule": "All"
+          },
+          {
+            "name": "WebAuthn",
+            "displayName": "WebAuthn",
+            "rule": "None"
+          }
+        ],
+        "signupItems": [
+          {
+            "name": "ID",
+            "visible": false,
+            "required": true,
+            "prompted": false,
+            "type": "",
+            "customCss": "",
+            "label": "",
+            "placeholder": "",
+            "options": null,
+            "regex": "",
+            "rule": "Random"
+          },
+          {
+            "name": "Username",
+            "visible": true,
+            "required": true,
+            "prompted": false,
+            "type": "",
+            "customCss": "",
+            "label": "",
+            "placeholder": "",
+            "options": null,
+            "regex": "",
+            "rule": "None"
+          },
+          {
+            "name": "Display name",
+            "visible": true,
+            "required": true,
+            "prompted": false,
+            "type": "",
+            "customCss": "",
+            "label": "",
+            "placeholder": "",
+            "options": null,
+            "regex": "",
+            "rule": "None"
+          },
+          {
+            "name": "Password",
+            "visible": true,
+            "required": true,
+            "prompted": false,
+            "type": "",
+            "customCss": "",
+            "label": "",
+            "placeholder": "",
+            "options": null,
+            "regex": "",
+            "rule": "None"
+          },
+          {
+            "name": "Confirm password",
+            "visible": true,
+            "required": true,
+            "prompted": false,
+            "type": "",
+            "customCss": "",
+            "label": "",
+            "placeholder": "",
+            "options": null,
+            "regex": "",
+            "rule": "None"
+          },
+          {
+            "name": "Email",
+            "visible": true,
+            "required": true,
+            "prompted": false,
+            "type": "",
+            "customCss": "",
+            "label": "",
+            "placeholder": "",
+            "options": null,
+            "regex": "",
+            "rule": "No verification"
+          },
+          {
+            "name": "Agreement",
+            "visible": true,
+            "required": true,
+            "prompted": false,
+            "type": "",
+            "customCss": "",
+            "label": "",
+            "placeholder": "",
+            "options": null,
+            "regex": "",
+            "rule": "None"
+          },
+          {
+            "name": "Signup button",
+            "visible": true,
+            "required": true,
+            "prompted": false,
+            "type": "",
+            "customCss": "",
+            "label": "",
+            "placeholder": "",
+            "options": null,
+            "regex": "",
+            "rule": "None"
+          },
+          {
+            "name": "Providers",
+            "visible": true,
+            "required": true,
+            "prompted": false,
+            "type": "",
+            "customCss": ".provider-img {\n width: 30px;\n margin: 5px;\n }\n .provider-big-img {\n margin-bottom: 10px;\n }\n ",
+            "label": "",
+            "placeholder": "",
+            "options": null,
+            "regex": "",
+            "rule": "small"
+          }
+        ],
+        "grantTypes": [
+          "authorization_code",
+          "password",
+          "client_credentials",
+          "refresh_token"
+        ],
+        "redirectUris": [
+          "http://localhost:9000/callback"
+        ],
+        "tokenFormat": "JWT-Custom",
+        "tokenFields": [
+          "Owner",
+          "Type",
+          "Name",
+          "DisplayName"
+        ],
+        "expireInHours": 1,
+        "refreshExpireInHours": 24,
+        "failedSigninLimit": 5,
+        "failedSigninFrozenTime": 15
+      },
+      {
+        "owner": "admin",
+        "name": "app-midaz",
+        "displayName": "Midaz",
+        "logo": "https://tinyurl.com/lerian-logo",
+        "homepageUrl": "https://lerian.studio/midaz",
+        "organization": "lerian",
+        "cert": "cert-built-in",
+        "enablePassword": true,
+        "enableSignUp": true,
+        "clientId": "9670e0ca55a29a466d31",
+        "clientSecret": "dd03f916cacf4a98c6a413d9c38ba102dce436a9",
+        "providers": [],
+        "signinMethods": [],
+        "grantTypes": [
+          "client_credentials"
+        ],
+        "tokenFormat": "JWT-Custom",
+        "tokenFields": [
+          "Owner",
+          "Type",
+          "Name",
+          "DisplayName"
+        ],
+        "expireInHours": 1,
+        "refreshExpireInHours": 24
+      }
+    ],
+    "users": [
+      {
+        "owner": "lerian",
+        "name": "admin",
+        "type": "normal-user",
+        "password": "Lerian@123",
+        "displayName": "Admin",
+        "avatar": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToK_-LT9HmxfBNTsC0A8wfvjtfxKh3GjexbQ&s",
+        "email": "admin@casdoor.com",
+        "phone": "",
+        "countryCode": "US",
+        "address": [],
+        "affiliation": "",
+        "tag": "",
+        "score": 2000,
+        "ranking": 1,
+        "isAdmin": true,
+        "isForbidden": false,
+        "isDeleted": false,
+        "signupApplication": "app-login",
+        "createdIp": "",
+        "groups": [
+          "lerian/admin-group"
+        ]
+      }
+    ],
+    "providers": [
+      {
+        "owner": "lerian",
+        "name": "sendgrid_provider",
+        "displayName": "SendGrid Provider",
+        "category": "Email",
+        "type": "SendGrid",
+        "subType": "",
+        "method": "",
+        "clientId": "",
+        "clientSecret": "***",
+        "clientId2": "",
+        "clientSecret2": "",
+        "cert": "",
+        "customAuthUrl": "",
+        "customTokenUrl": "",
+        "customUserInfoUrl": "",
+        "customLogo": "",
+        "scopes": "",
+        "userMapping": {
+          "avatarUrl": "avatarUrl",
+          "displayName": "displayName",
+          "email": "email",
+          "id": "id",
+          "username": "username"
+        },
+        "host": "",
+        "port": 0,
+        "disableSsl": false,
+        "title": "Here is your code",
+        "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Verification Code Email</title>\n<style>\n    body { font-family: Arial, sans-serif; }\n    .email-container { width: 600px; margin: 0 auto; }\n    .header { text-align: center; }\n    .code { font-size: 24px; margin: 20px 0; text-align: center; }\n    .footer { font-size: 12px; text-align: center; margin-top: 50px; }\n    .footer a { color: #000; text-decoration: none; }\n</style>\n</head>\n<body>\n<div class=\"email-container\">\n  <div class=\"header\">\n        <h3>Casbin Organization</h3>\n        <img src=\"https://cdn.casbin.org/img/casdoor-logo_1185x256.png\" alt=\"Casdoor Logo\" width=\"300\">\n    </div>\n    <p><strong>%{user.friendlyName}</strong>, here is your verification code</p>\n    <p>Use this code for your transaction. It's valid for 5 minutes</p>\n    <div class=\"code\">\n        %s\n    </div>\n    <p>Thanks</p>\n    <p>Casbin Team</p>\n    <hr>\n    <div class=\"footer\">\n        <p>Casdoor is a brand operated by Casbin organization. For more info please refer to <a href=\"https://casdoor.org\">https://casdoor.org</a></p>\n    </div>\n</div>\n</body>\n</html>",
+        "receiver": "",
+        "regionId": "",
+        "signName": "",
+        "templateCode": "",
+        "appId": "",
+        "endpoint": "",
+        "intranetEndpoint": "",
+        "domain": "",
+        "bucket": "",
+        "pathPrefix": "",
+        "metadata": "",
+        "idP": "",
+        "issuerUrl": "",
+        "enableSignAuthnRequest": false,
+        "providerUrl": ""
+      }
+    ],
+    "certs": [
+      {
+        "owner": "admin",
+        "name": "cert-built-in",
+        "displayName": "Built-in Cert",
+        "scope": "JWT",
+        "type": "x509",
+        "cryptoAlgorithm": "RS256",
+        "bitSize": 4096,
+        "expireInYears": 20,
+        "certificate": "",
+        "privateKey": ""
+      }
+    ],
+    "models": [
+      {
+        "owner": "lerian",
+        "name": "api-model",
+        "modelText": "[request_definition]\nr = sub, obj, act\n\n[policy_definition]\np = sub, obj, act\n\n[role_definition]\ng = _, _\n\n[policy_effect]\ne = some(where (p.eft == allow))\n\n[matchers]\nm = g(r.sub, p.sub) && ( r.obj == p.obj || p.obj == '*' ) && (r.act == p.act || p.act == '*')",
+        "displayName": "API Model"
+      }
+    ],
+    "permissions": [
+      {
+        "owner": "lerian",
+        "name": "identity-editor-permission",
+        "displayName": "Identity Editor Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "users": [],
+        "roles": [
+          "lerian/identity-editor-role"
+        ],
+        "resourceType": "Custom",
+        "resources": [
+          "applications",
+          "groups",
+          "users",
+          "users/update-password",
+          "users/reset-password"
+        ],
+        "actions": [
+          "get",
+          "post",
+          "patch",
+          "delete"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "identity-default-permission",
+        "displayName": "Identity Default Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "users": [],
+        "roles": [
+          "lerian/user-default-role"
+        ],
+        "resourceType": "Custom",
+        "resources": [
+          "users/update-password"
+        ],
+        "actions": [
+          "patch"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "midaz-editor-permission",
+        "displayName": "Midaz Editor Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "roles": [
+          "lerian/admin-role",
+          "lerian/midaz-editor-role"
+        ],
+        "users": [],
+        "resourceType": "Custom",
+        "resources": [
+          "accounts",
+          "organizations",
+          "ledgers",
+          "assets",
+          "asset-rates",
+          "portfolios",
+          "segments",
+          "balances",
+          "transactions",
+          "operations"
+        ],
+        "actions": [
+          "get",
+          "post",
+          "patch",
+          "delete"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "midaz-editor-permission",
+        "displayName": "Midaz Editor Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "roles": [
+          "lerian/admin-role",
+          "lerian/midaz-editor-role"
+        ],
+        "users": [],
+        "resourceType": "Custom",
+        "resources": [
+          "accounts",
+          "organizations",
+          "ledgers",
+          "assets",
+          "asset-rates",
+          "portfolios",
+          "segments",
+          "balances",
+          "transactions",
+          "operations"
+        ],
+        "actions": [
+          "get",
+          "post",
+          "patch",
+          "delete"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "midaz-viewer-permission",
+        "displayName": "Midaz Viewer Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "roles": [
+          "lerian/midaz-viewer-role"
+        ],
+        "users": [],
+        "resourceType": "Custom",
+        "resources": [
+          "accounts",
+          "organizations",
+          "ledgers",
+          "assets",
+          "asset-rates",
+          "portfolios",
+          "segments",
+          "balances",
+          "transactions",
+          "operations"
+        ],
+        "actions": [
+          "get"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "midaz-m2m-permission",
+        "displayName": "Midaz M2M Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-m2m-adapter",
+        "model": "api-model",
+        "roles": ["lerian/midaz-editor-role"],
+        "users": [],
+        "resourceType": "Application",
+        "resources": [
+        ],
+        "actions": [
+          "get",
+          "post",
+          "patch",
+          "delete"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "fees-m2m-permission",
+        "displayName": "Fees M2M Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-m2m-adapter",
+        "model": "api-model",
+        "roles": ["lerian/fees-editor-role"],
+        "users": [],
+        "resourceType": "Application",
+        "resources": [
+        ],
+        "actions": [
+          "get",
+          "post",
+          "patch",
+          "delete"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-crm-viewer-permission",
+        "displayName": "Plugin CRM Viewer Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "roles": [
+          "lerian/plugin-crm-viewer-role"
+        ],
+        "users": [],
+        "resourceType": "Custom",
+        "resources": [
+          "holders",
+          "accounts"
+        ],
+        "actions": [
+          "get"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-crm-contributor-permission",
+        "displayName": "Plugin CRM Contributor Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "roles": [
+          "lerian/plugin-crm-contributor-role"
+        ],
+        "users": [],
+        "resourceType": "Custom",
+        "resources": [
+          "holders",
+          "accounts"
+        ],
+        "actions": [
+          "get",
+          "post",
+          "patch"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-crm-editor-permission",
+        "displayName": "Plugin CRM Editor Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "roles": [
+          "lerian/plugin-crm-editor-role"
+        ],
+        "users": [],
+        "resourceType": "Custom",
+        "resources": [
+          "holders",
+          "accounts"
+        ],
+        "actions": [
+          "get",
+          "post",
+          "patch",
+          "delete"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-fees-viewer-permission",
+        "displayName": "Plugin Fees Viewer Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "roles": [
+          "lerian/plugin-fees-viewer-role"
+        ],
+        "users": [],
+        "resourceType": "Custom",
+        "resources": [
+          "package",
+          "fee"
+        ],
+        "actions": [
+          "get"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-fees-contributor-permission",
+        "displayName": "Plugin Fees Contributor Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "roles": [
+          "lerian/plugin-fees-contributor-role"
+        ],
+        "users": [],
+        "resourceType": "Custom",
+        "resources": [
+          "package",
+          "fee"
+        ],
+        "actions": [
+          "get",
+          "post",
+          "patch"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-fees-editor-permission",
+        "displayName": "Plugin Fees Editor Permission",
+        "isEnabled": true,
+        "adapter" : "lerian-user-adapter",
+        "model": "api-model",
+        "roles": [
+          "lerian/plugin-fees-editor-role"
+        ],
+        "users": [],
+        "resourceType": "Custom",
+        "resources": [
+          "package",
+          "fee"
+        ],
+        "actions": [
+          "get",
+          "post",
+          "patch",
+          "delete"
+        ],
+        "domains": [],
+        "effect": "Allow",
+        "submitter": "admin",
+        "approver": "admin",
+        "approveTime": "2024-01-01T22:51:35+08:00",
+        "state": "Approved"
+      }
+    ],
+    "resources": [],
+    "roles": [
+      {
+        "displayName": "Identity Editor Role",
+        "isEnabled": true,
+        "name": "identity-editor-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/admin-group"
+        ]
+      },
+      {
+        "displayName": "User Default Role",
+        "isEnabled": true,
+        "name": "user-default-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/user-default-group"
+        ]
+      },
+      {
+        "displayName": "Midaz Editor Role",
+        "isEnabled": true,
+        "name": "midaz-editor-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/admin-group",
+          "lerian/midaz-editor-group"
+        ]
+      },
+      {
+        "displayName": "Midaz Contributor Role",
+        "isEnabled": true,
+        "name": "midaz-contributor-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/midaz-contributor-group"
+        ]
+      },
+      {
+        "displayName": "Midaz Viewer Role",
+        "isEnabled": true,
+        "name": "midaz-viewer-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/midaz-viewer-group"
+        ]
+      },
+      {
+        "displayName": "Fees Editor Role",
+        "isEnabled": true,
+        "name": "fees-editor-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/admin-group",
+          "lerian/fees-editor-group"
+        ]
+      },
+      {
+        "displayName": "Plugin CRM Viewer Role",
+        "isEnabled": true,
+        "name": "plugin-crm-viewer-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/plugin-crm-viewer-group"
+        ]
+      },
+      {
+        "displayName": "Plugin CRM Contributor Role",
+        "isEnabled": true,
+        "name": "plugin-crm-contributor-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/plugin-crm-contributor-group"
+        ]
+      },
+      {
+        "displayName": "Plugin CRM Editor Role",
+        "isEnabled": true,
+        "name": "plugin-crm-editor-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/admin-group",
+          "lerian/plugin-crm-editor-group"
+        ]
+      },
+      {
+        "displayName": "Fees Viewer Role",
+        "isEnabled": true,
+        "name": "plugin-fees-viewer-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/plugin-fees-viewer-role"
+        ]
+      },
+      {
+        "displayName": "Fees Editor Role",
+        "isEnabled": true,
+        "name": "plugin-fees-editor-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/admin-group",
+          "lerian/plugin-fees-editor-role"
+        ]
+      },
+      {
+        "displayName": "Fees Contributor Role",
+        "isEnabled": true,
+        "name": "plugin-fees-contributor-role",
+        "owner": "lerian",
+        "roles": [],
+        "users": [],
+        "groups": [
+          "lerian/plugin-fees-contributor-role"
+        ]
+      }
+    ],
+    "syncers": [],
+    "tokens": [],
+    "groups": [
+      {
+        "owner": "lerian",
+        "name": "admin-group",
+        "displayName": "Admin",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": true,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-fees-viewer-group",
+        "displayName": "Fees Viewer Group",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-fees-editor-group",
+        "displayName": "Fees Editor Group",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-fees-contributor-group",
+        "displayName": "Fees Contributor Group",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "user-default-group",
+        "displayName": "User Default Group",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": true,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "midaz-editor-group",
+        "displayName": "Midaz Editor",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "midaz-contributor-group",
+        "displayName": "Midaz Contributor",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "midaz-viewer-group",
+        "displayName": "Midaz Viewer",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "fees-viewer-group",
+        "displayName": "Fees Viewer",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-crm-viewer-group",
+        "displayName": "Plugin CRM Viewer",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-crm-contributor-group",
+        "displayName": "Plugin CRM Contributor",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      },
+      {
+        "owner": "lerian",
+        "name": "plugin-crm-editor-group",
+        "displayName": "Plugin CRM Editor",
+        "manager": "",
+        "contactEmail": "",
+        "type": "",
+        "parent_id": "",
+        "isTopGroup": false,
+        "title": "",
+        "key": "",
+        "children": [],
+        "isEnabled": true
+      }
+    ],
+    "adapters": [
+      {
+        "owner": "lerian",
+        "name": "lerian-user-adapter",
+        "table": "lerian_user_enforcer_casbin_rule",
+        "useSameDb": true
+      },
+      {
+        "owner": "lerian",
+        "name": "lerian-m2m-adapter",
+        "table": "lerian_m2m_enforcer_casbin_rule",
+        "useSameDb": true
+      }
+    ],
+    "enforcers": [
+      {
+        "owner": "lerian",
+        "name": "lerian-user-enforcer",
+        "displayName": "Lerian User Enforcer",
+        "description": "",
+        "model": "lerian/api-model",
+        "adapter": "lerian/lerian-user-adapter",
+        "modelCfg": {
+          "g": "_, _",
+          "p": "sub, obj, act"
+        }
+      },
+      {
+        "owner": "lerian",
+        "name": "lerian-m2m-enforcer",
+        "displayName": "Lerian M2M Enforcer",
+        "description": "",
+        "model": "lerian/api-model",
+        "adapter": "lerian/lerian-m2m-adapter",
+        "modelCfg": {
+          "g": "_, _",
+          "p": "sub, obj, act"
+        }
+      }
+    ]
+  }

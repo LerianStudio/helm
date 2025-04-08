@@ -1,0 +1,23 @@
+{{- if .Values.console.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "midaz-console.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.console.name "name" .Values.console.name ) | nindent 4 }}
+  {{- with .Values.console.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.console.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.console.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.console.name ) | nindent 6 }}
+{{- end }}

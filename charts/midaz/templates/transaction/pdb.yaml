@@ -1,0 +1,23 @@
+{{- if .Values.transaction.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "midaz-transaction.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.transaction.name "name" .Values.transaction.name ) | nindent 4 }}
+  {{- with .Values.transaction.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.transaction.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.transaction.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.transaction.name ) | nindent 6 }}
+{{- end }}

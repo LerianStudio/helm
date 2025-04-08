@@ -51,6 +51,26 @@ console:
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
 
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: false
+    # -- Minimum number of available pods
+    minAvailable: 1
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+
+  # -- Deployment update strategy
+  deploymentUpdate:
+    # -- Type of deployment strategy
+    type: RollingUpdate
+    # -- Maximum number of pods that can be created over the desired number of pods
+    maxSurge: 100%
+    # -- Maximum number of pods that can be unavailable during the update
+    maxUnavailable: 0
+
   service:
     # -- Kubernetes service type
     type: ClusterIP
@@ -145,7 +165,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.50.0"
+    tag: "2.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -173,6 +193,26 @@ onboarding:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+  
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: true
+    # -- Minimum number of available pods
+    minAvailable: 1
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+  
+  # -- Deployment update strategy
+  deploymentUpdate:
+    # -- Type of deployment strategy
+    type: RollingUpdate
+    # -- Maximum number of pods that can be created over the desired number of pods
+    maxSurge: 100%
+    # -- Maximum number of pods that can be unavailable during the update
+    maxUnavailable: 0
 
   service:
     # -- Kubernetes service type
@@ -267,7 +307,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.50.0"
+    tag: "2.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -296,6 +336,26 @@ transaction:
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
 
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: true
+    # -- Minimum number of available pods
+    minAvailable: 2
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+
+  # -- Deployment update strategy
+  deploymentUpdate:
+    # -- Type of deployment strategy
+    type: RollingUpdate
+    # -- Maximum number of pods that can be created over the desired number of pods
+    maxSurge: 100%
+    # -- Maximum number of pods that can be unavailable during the update
+    maxUnavailable: 0
+  
   service:
     # -- Kubernetes service type
     type: ClusterIP

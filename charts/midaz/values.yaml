@@ -165,7 +165,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.50.0"
+    tag: "2.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -307,7 +307,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.50.0"
+    tag: "2.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

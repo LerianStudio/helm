@@ -1,3 +1,26 @@
+## [1.52.0](https://github.com/LerianStudio/helm/compare/v1.51.2...v1.52.0) (2025-04-08)
+
+
+### Features
+
+* **values:** add deployment strategy definitions ([dd93837](https://github.com/LerianStudio/helm/commit/dd9383729db20e4f88265edde5900d35c7dbbafa))
+* **console:** add deployment strategy ([0000ab0](https://github.com/LerianStudio/helm/commit/0000ab0a6c088e2eca167f396bff859638b478e4))
+* **onboarding:** add deployment strategy ([220274b](https://github.com/LerianStudio/helm/commit/220274beb453eb54ec6e9c3a6020016cf8a7be91))
+* **transaction:** add deployment strategy ([65076f4](https://github.com/LerianStudio/helm/commit/65076f421904b98f46329ff40cb31f7cf409476b))
+* **values:** create pdb definitions ([fe34974](https://github.com/LerianStudio/helm/commit/fe34974aaa497979e0d13b610b77b4d1d7895f2f))
+* **console:** create pdb template ([102c56a](https://github.com/LerianStudio/helm/commit/102c56a6e697623317585b8808f09f3cb7458882))
+* **onboarding:** create pdb template ([8bc0d48](https://github.com/LerianStudio/helm/commit/8bc0d489407c8c5181a20f2c731e5abc7946b8b6))
+* **transaction:** create pdb template ([738f5d3](https://github.com/LerianStudio/helm/commit/738f5d3ff33cc62f155186af1514340fa3133503))
+* **chart:** update app version ([6f40285](https://github.com/LerianStudio/helm/commit/6f402851add6d9898c04e263d5706644645cacb2))
+* **values:** update app version ([598ed6d](https://github.com/LerianStudio/helm/commit/598ed6d478240d26ee9baa9560d73db1912ba05d))
+
+
+### Bug Fixes
+
+* **docs:** rabbitmq mispelling name ([cefee91](https://github.com/LerianStudio/helm/commit/cefee916b39020938945ce97f442dbdbf3ba6d63))
+* **onboarding:** rabbitmq mispelling name ([bf8de0c](https://github.com/LerianStudio/helm/commit/bf8de0cf79e4a40a3fa0bb7581a7f11b9458de76))
+* **transaction:** rabbitmq mispelling name ([8e05032](https://github.com/LerianStudio/helm/commit/8e050329da399b563d2ce6f5fa70edcf2291cccd))
+
 ## [1.52.0-beta.3](https://github.com/LerianStudio/helm/compare/v1.52.0-beta.2...v1.52.0-beta.3) (2025-04-08)
 
 

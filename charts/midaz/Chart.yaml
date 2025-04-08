@@ -1,12 +1,12 @@
 apiVersion: v2
-name: midaz-helm-standalone
+name: midaz-helm
 description: A Helm chart for Kubernetes
 type: application
 
-home: https://github.com/LerianStudio/midaz-helm-standalone
+home: https://github.com/LerianStudio/midaz-helm
 
 sources:
-  - https://github.com/LerianStudio/midaz-helm-standalone/tree/main/charts/midaz
+  - https://github.com/LerianStudio/midaz-helm/tree/main/charts/midaz
   - https://github.com/LerianStudio/midaz
 
 # A list of maintainers who are responsible for the chart

@@ -12,7 +12,7 @@ The default installation is similar to the one provided in the [Midaz repo](http
 To install Midaz using Helm, run the following command:
 
 ```console
-$ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm-standalone --version 1.51.0 -n midaz --create-namespace
+$ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 1.51.0 -n midaz --create-namespace
 ```
 
 This will create a new namespace called midaz if it doesn't already exist and deploy the Midaz Helm chart.
@@ -369,7 +369,7 @@ This Chart has the following dependencies for the project's default installation
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
 - **Note:** If you have an existing RabbitMQ instance, you can disable this dependency and configure Midaz Components to use your external RabbitMQ, like this:
   
-- **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm-standalone/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
+- **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
 
   ```yaml
   onboarding:

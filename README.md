@@ -377,7 +377,7 @@ This Chart has the following dependencies for the project's default installation
       RABBITMQ_HOST: { your-host }
       RABBITMQ_DEFAULT_USER: { your-host-user }
       RABBITMQ_PORT_HOST: { your-host-port }
-      RABBITMQ_PORT_AMPQ: { your-host-ampq-port }
+      RABBITMQ_PORT_AMQP: { your-host-amqp-port }
       
     secrets:
       RABBITMQ_DEFAULT_PASS: { your-host-pass }
@@ -387,7 +387,7 @@ This Chart has the following dependencies for the project's default installation
       RABBITMQ_HOST: { your-host }
       RABBITMQ_DEFAULT_USER: { your-host-user }
       RABBITMQ_PORT_HOST: { your-host-port }
-      RABBITMQ_PORT_AMPQ: { your-host-ampq-port }
+      RABBITMQ_PORT_AMQP: { your-host-amqp-port }
       
     secrets:
       RABBITMQ_DEFAULT_PASS: { your-host-pass }

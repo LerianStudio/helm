@@ -1,0 +1,9 @@
+dependencies:
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.3.5
+- name: valkey
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 2.4.6
+digest: sha256:0c5cb35e25f3b205b3c1dd0743e5d023c50904d604d5b5936e18294b1952664b
+generated: "2025-04-07T16:11:16.128254-03:00"

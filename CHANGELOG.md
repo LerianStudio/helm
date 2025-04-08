@@ -1,3 +1,18 @@
+## [1.52.0-beta.3](https://github.com/LerianStudio/helm/compare/v1.52.0-beta.2...v1.52.0-beta.3) (2025-04-08)
+
+
+### Features
+
+* **chart:** update app version ([6f40285](https://github.com/LerianStudio/helm/commit/6f402851add6d9898c04e263d5706644645cacb2))
+* **values:** update app version ([598ed6d](https://github.com/LerianStudio/helm/commit/598ed6d478240d26ee9baa9560d73db1912ba05d))
+
+
+### Bug Fixes
+
+* **docs:** rabbitmq mispelling name ([cefee91](https://github.com/LerianStudio/helm/commit/cefee916b39020938945ce97f442dbdbf3ba6d63))
+* **onboarding:** rabbitmq mispelling name ([bf8de0c](https://github.com/LerianStudio/helm/commit/bf8de0cf79e4a40a3fa0bb7581a7f11b9458de76))
+* **transaction:** rabbitmq mispelling name ([8e05032](https://github.com/LerianStudio/helm/commit/8e050329da399b563d2ce6f5fa70edcf2291cccd))
+
 ## [1.52.0-beta.2](https://github.com/LerianStudio/helm/compare/v1.52.0-beta.1...v1.52.0-beta.2) (2025-04-07)
 
 

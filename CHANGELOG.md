@@ -1,3 +1,24 @@
+## [1.54.0-beta.1](https://github.com/LerianStudio/helm/compare/v1.53.0...v1.54.0-beta.1) (2025-04-10)
+
+
+### Features
+
+* **values:** add app new version and reference default config ([b972952](https://github.com/LerianStudio/helm/commit/b97295261b87645884b197bbbf8aeea8dd78e452))
+* **values:** add app new version and reference default secret ([ef8069c](https://github.com/LerianStudio/helm/commit/ef8069c403b3e7878571ddb3b92ee6f8be2f251f))
+* **doc:** add general readme and moving midaz readme ([41f11fe](https://github.com/LerianStudio/helm/commit/41f11fe167c213be99413d4b0b82a9becbe482f6))
+* **doc:** add lerian banner ([35b904a](https://github.com/LerianStudio/helm/commit/35b904afb9d910e51b1508693aa7c3ce06ea9a75))
+* **console:** add new env vars ([a228e39](https://github.com/LerianStudio/helm/commit/a228e39c856f9f4b561d55949edcaa051d5b9af9))
+* **console:** add secrets ([ad89e3b](https://github.com/LerianStudio/helm/commit/ad89e3ba7bd1713686bc0546be1e6b11341b10da))
+
+
+### Bug Fixes
+
+* **onboarding:** auth endpoint and remove old env var ([de370da](https://github.com/LerianStudio/helm/commit/de370daa57563a194d5273888587f0aa95262a0b))
+* **transaction:** auth endpoint ([12d8f6d](https://github.com/LerianStudio/helm/commit/12d8f6d3c9d52bff108f220f297d0d4f1db6ca78))
+* **values:** auth env vars ([23b34a1](https://github.com/LerianStudio/helm/commit/23b34a13ea547a1587d71689b30adfe02f580dc0))
+* **onboarding:** remove old secrets ([0c7966f](https://github.com/LerianStudio/helm/commit/0c7966f91207c688b0e014bab463dac40846f56e))
+* **trasaction:** remove old secrets ([1a2a10c](https://github.com/LerianStudio/helm/commit/1a2a10c9a165c0767f45b7909276c287d5c4d3a3))
+
 ## [1.53.0](https://github.com/LerianStudio/helm/compare/v1.52.0...v1.53.0) (2025-04-08)
 
 ## [1.52.0](https://github.com/LerianStudio/helm/compare/v1.51.2...v1.52.0) (2025-04-08)

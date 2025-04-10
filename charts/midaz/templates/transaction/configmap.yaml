@@ -46,7 +46,7 @@ data:
   #MONGO
   MONGO_URI:  {{ .Values.transaction.configmap.MONGO_URI | default "mongodb" | quote }} ## or mongodb+srv
   MONGO_HOST: {{ .Values.transaction.configmap.MONGO_HOST | default (printf "midaz-mongodb.%s.svc.cluster.local." .Release.Namespace) | quote }}
-  MONGO_NAME: {{ .Values.transaction.configmap.MONGO_NAME | default "admin" | quote }}
+  MONGO_NAME: {{ .Values.transaction.configmap.MONGO_NAME | default "transaction" | quote }}
   MONGO_USER: {{ .Values.transaction.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_PORT: {{ .Values.transaction.configmap.MONGO_PORT | default "27017" | quote }}
   #REDIS
@@ -75,4 +75,4 @@ data:
   AUDIT_LOG_ENABLED: {{ .Values.transaction.configmap.AUDIT_LOG_ENABLED | default "false" | quote }}
   #AUTH CONFIGS
   PLUGIN_AUTH_ENABLED: {{ .Values.transaction.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_HOST: {{ .Values.transaction.configmap.PLUGIN_AUTH_HOST | default (printf "" .Release.Namespace) | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.transaction.configmap.PLUGIN_AUTH_HOST | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000" | quote }}

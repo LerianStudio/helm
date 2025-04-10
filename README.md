@@ -9,8 +9,6 @@
 
 </div>
 
-# Lerian Studio Helm Chart
-
 ### Midaz Helm Chart Versions Matrix
 
 | Chart Version | Onboarding Version | Transaction Version        | Console Version   | Notes                      |

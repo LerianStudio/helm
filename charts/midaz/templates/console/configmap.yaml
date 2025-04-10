@@ -15,10 +15,9 @@ data:
   MIDAZ_CONSOLE_SERVICE_HOST: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_HOST | default "midaz-console" | quote }}
   MIDAZ_CONSOLE_SERVICE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_PORT | default "8081" | quote }}
   MIDAZ_CONSOLE_BASE_PATH: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
+  MIDAZ_CONSOLE_ENABLE_DEBUG: {{ .Values.console.configmap.MIDAZ_CONSOLE_ENABLE_DEBUG | default "true" | quote }}
   MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMATS: {{ .Values.console.configmap.MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMATS | default "jpeg,jpg,png,svg" | quote }}
-  # NextAuth Configuration
-  NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
-  NEXTAUTH_SECRET: {{ .Values.console.configmap.NEXTAUTH_SECRET | default "testSecret" | quote }}
+  NODE_ENV: {{ .Values.console.configmap.NODE_ENV | default "development" | quote }}
 
   # Midaz API Configuration
   MIDAZ_API_HOST: {{ .Values.console.configmap.MIDAZ_API_HOST | default (printf "midaz-onboarding.%s.svc.cluster.local." .Release.Namespace) | quote }}
@@ -27,19 +26,19 @@ data:
   MIDAZ_TRANSACTION_BASE_HOST: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_HOST | default (printf "midaz-transaction.%s.svc.cluster.local." .Release.Namespace) | quote }}
   MIDAZ_TRANSACTION_BASE_PORT: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PORT | default "3001" | quote }}
   MIDAZ_TRANSACTION_BASE_PATH: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PATH | default (printf "http://midaz-transaction.%s.svc.cluster.local.:3001/v1" .Release.Namespace) | quote }}
-  # Midaz Console Configuration
-  ENABLE_DEBUG: {{ .Values.console.configmap.ENABLE_DEBUG | default "true" | quote }}
-  NODE_ENV: {{ .Values.console.configmap.NODE_ENV | default "development" | quote }}
+  
+  # NextAuth Configuration
+  NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
+
   # Plugin Auth
-  PLUGIN_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_CLIENT_ID: {{ .Values.console.configmap.PLUGIN_AUTH_CLIENT_ID | default "9670e0ca55a29a466d31" | quote }}
-  PLUGIN_AUTH_CLIENT_SECRET: {{ .Values.console.configmap.PLUGIN_AUTH_CLIENT_SECRET | default "dd03f916cacf4a98c6a413d9c38ba102dce436a9" | quote }}
-  PLUGIN_AUTH_HOST: {{ .Values.console.configmap.PLUGIN_AUTH_HOST | default (printf "" .Release.Namespace) | quote }}
+  PLUGIN_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "true" | quote }}
+  PLUGIN_AUTH_CLIENT_ID: {{ .Values.console.configmap.PLUGIN_AUTH_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.console.configmap.PLUGIN_AUTH_HOST | default "plugins-auth.midaz-plugins" | quote }}
   PLUGIN_AUTH_PORT: {{ .Values.console.configmap.PLUGIN_AUTH_PORT | default "4000" | quote }}
-  PLUGIN_AUTH_BASE_PATH: {{ .Values.console.configmap.PLUGIN_AUTH_BASE_PATH | default (printf "http://midaz-plugin-auth.%s.svc.cluster.local.:4000" .Release.Namespace) | quote }}
-  PLUGIN_AUTH_BASE_URL: {{ .Values.console.configmap.PLUGIN_AUTH_BASE_URL | default (printf "http://midaz-plugin-auth.%s.svc.cluster.local.:4000/v1" .Release.Namespace) | quote }}
+  PLUGIN_AUTH_BASE_PATH: {{ .Values.console.configmap.PLUGIN_AUTH_BASE_PATH | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000/v1" | quote }}
+
   # Plugin Identity Configuration
-  PLUGIN_IDENTITY_HOST: {{ .Values.console.configmap.PLUGIN_IDENTITY_HOST | default (printf "midaz-plugin-identity.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  PLUGIN_IDENTITY_HOST: {{ .Values.console.configmap.PLUGIN_IDENTITY_HOST | default "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  | quote }}
   PLUGIN_IDENTITY_PORT: {{ .Values.console.configmap.PLUGIN_IDENTITY_PORT | default "4001" | quote }}
-  PLUGIN_IDENTITY_BASE_PATH: {{ .Values.console.configmap.PLUGIN_IDENTITY_BASE_PATH | default (printf "http://midaz-plugin-identity.%s.svc.cluster.local.:4001/v1" .Release.Namespace) | quote }}
+  PLUGIN_IDENTITY_BASE_PATH: {{ .Values.console.configmap.PLUGIN_IDENTITY_BASE_PATH | default "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1" | quote }}
 {{- end }}

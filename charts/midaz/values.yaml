@@ -156,7 +156,8 @@ console:
 
   # -- Secrets for storing sensitive data
   # @default -- templates/console/secrets.yaml
-  secrets: {}
+  secrets: 
+    PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
 
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created

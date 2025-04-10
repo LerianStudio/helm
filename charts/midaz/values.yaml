@@ -144,8 +144,8 @@ console:
     # -- https://docs.lerian.studio/docs/auth-identity#technical-specs
     # -- Default configuration for the Auth Plugin
     # -- This configuration is used to connect the console to the Auth and Identity Plugin
-    PLUGIN_AUTH_ENABLED: false
-    PLUGIN_AUTH_CLIENT_ID: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_CLIENT_ID: "ac56c81d4d6d95c0ac12"
     PLUGIN_AUTH_HOST: "plugin-access-manager-auth"
     PLUGIN_AUTH_PORT: "4000"
     PLUGIN_AUTH_BASE_PATH: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000/v1" 
@@ -327,7 +327,7 @@ onboarding:
     # -- https://docs.lerian.studio/docs/auth-identity#technical-specs
     # -- Default configuration for the Auth Plugin
     # -- This configuration is used to connect the onboarding to the Auth Plugin
-    PLUGIN_AUTH_ENABLED: false
+    PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
 
   # -- Secrets for storing sensitive data
@@ -512,7 +512,7 @@ transaction:
     # -- https://docs.lerian.studio/docs/auth-identity#technical-specs
     # -- Default configuration for the Auth Plugin
     # -- This configuration is used to connect the transaction to the Auth Plugin
-    PLUGIN_AUTH_ENABLED: false
+    PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
 
   # -- Secrets for storing sensitive data

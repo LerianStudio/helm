@@ -22,7 +22,7 @@ console:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.22.0"
+    tag: "1.25.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -138,6 +138,21 @@ console:
   configmap:
     # -- URL of the NextAuth service
     NEXTAUTH_URL: "http://localhost:8081" # If a custom DNS is configured for the console, this value must be updated accordingly.
+    
+    # -- The Auth Plugin is a centralized service that provides authentication and authorization capabilities for Lerian Studio's applications.
+    # -- For more details, refer to the documentation:
+    # -- https://docs.lerian.studio/docs/auth-identity#technical-specs
+    # -- Default configuration for the Auth Plugin
+    # -- This configuration is used to connect the console to the Auth and Identity Plugin
+    PLUGIN_AUTH_ENABLED: false
+    PLUGIN_AUTH_CLIENT_ID: ""
+    PLUGIN_AUTH_HOST: "plugin-access-manager-auth"
+    PLUGIN_AUTH_PORT: "4000"
+    PLUGIN_AUTH_BASE_PATH: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000/v1" 
+    PLUGIN_IDENTITY_HOST:  "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  
+    PLUGIN_IDENTITY_PORT: "4001"
+    PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1"
+
 
   # -- Secrets for storing sensitive data
   # @default -- templates/console/secrets.yaml
@@ -165,7 +180,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.0.0"
+    tag: "2.1.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -279,11 +294,54 @@ onboarding:
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/onboarding/configmap.yaml
-  configmap: {}
+  configmap: 
+    # -- Rabbitmq default configuration
+    RABBITMQ_URI: "amqp"
+    RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
+    RABBITMQ_PORT_HOST: "5672"
+    RABBITMQ_PORT_AMQP: "15672" 
+    RABBITMQ_DEFAULT_USER: "onboarding"
+    # -- MongoDB default configuration
+    MONGO_URI: "mongodb"
+    MONGO_HOST: "midaz-mongodb.midaz.svc.cluster.local."
+    MONGO_NAME: "onboarding"
+    MONGO_USER: "midaz"
+    MONGO_PORT: "27017"
+    # -- Redis default configuration
+    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local."
+    REDIS_PORT: "6379"
+    REDIS_USER: "midaz"
+    # -- PostgreSQL default configuration
+    DB_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
+    DB_USER: "midaz"
+    DB_NAME: "onboarding"
+    DB_PORT: "5432"
+    # -- PostgreSQL replication default configuration
+    DB_REPLICA_HOST: "midaz-postgresql-replication.midaz.svc.cluster.local."
+    DB_REPLICA_USER: "midaz"
+    DB_REPLICA_NAME: "onboarding"
+    DB_REPLICA_PORT: "5432"
+    # -- The Auth Plugin is a centralized service that provides authentication and authorization capabilities for Lerian Studio's applications.
+    # -- For more details, refer to the documentation:
+    # -- https://docs.lerian.studio/docs/auth-identity#technical-specs
+    # -- Default configuration for the Auth Plugin
+    # -- This configuration is used to connect the onboarding to the Auth Plugin
+    PLUGIN_AUTH_ENABLED: false
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
 
   # -- Secrets for storing sensitive data
   # @default -- templates/onboarding/secrets.yaml
-  secrets: {}
+  secrets: 
+    # -- MongoDB default password
+    MONGO_PASSWORD: "lerian"
+    # -- PostgreSQL default password
+    DB_PASSWORD: "lerian"
+    # -- PostgreSQL replication default password
+    DB_REPLICA_PASSWORD: "lerian"
+    # -- RabbitMQ default password
+    RABBITMQ_DEFAULT_PASS: "lerian"
+    # -- Redis default password
+    REDIS_PASSWORD: "lerian"
 
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
@@ -307,7 +365,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.0.0"
+    tag: "2.1.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -421,11 +479,54 @@ transaction:
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/transaction/configmap.yaml
-  configmap: {}
+  configmap: 
+    # -- Rabbitmq default configuration
+    RABBITMQ_URI: "amqp"
+    RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
+    RABBITMQ_PORT_HOST: "5672"
+    RABBITMQ_PORT_AMQP: "15672" 
+    RABBITMQ_DEFAULT_USER: "transaction"
+    # -- MongoDB default configuration
+    MONGO_URI: "mongodb"
+    MONGO_HOST: "midaz-mongodb.midaz.svc.cluster.local."
+    MONGO_NAME: "transaction"
+    MONGO_USER: "midaz"
+    MONGO_PORT: "27017"
+    # -- Redis default configuration
+    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local."
+    REDIS_PORT: "6379"
+    REDIS_USER: "midaz"
+    # -- PostgreSQL default configuration
+    DB_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
+    DB_USER: "midaz"
+    DB_NAME: "transaction"
+    DB_PORT: "5432"
+    # -- PostgreSQL replication default configuration
+    DB_REPLICA_HOST: "midaz-postgresql-replication.midaz.svc.cluster.local."
+    DB_REPLICA_USER: "midaz"
+    DB_REPLICA_NAME: "transaction"
+    DB_REPLICA_PORT: "5432"
+    # -- The Auth Plugin is a centralized service that provides authentication and authorization capabilities for Lerian Studio's applications.
+    # -- For more details, refer to the documentation:
+    # -- https://docs.lerian.studio/docs/auth-identity#technical-specs
+    # -- Default configuration for the Auth Plugin
+    # -- This configuration is used to connect the transaction to the Auth Plugin
+    PLUGIN_AUTH_ENABLED: false
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
 
   # -- Secrets for storing sensitive data
   # @default -- templates/transaction/secrets.yaml
-  secrets: {}
+  secrets: 
+    # -- MongoDB default password
+    MONGO_PASSWORD: "lerian"
+    # -- PostgreSQL default password
+    DB_PASSWORD: "lerian"
+    # -- PostgreSQL replication default password
+    DB_REPLICA_PASSWORD: "lerian"
+    # -- RabbitMQ default password
+    RABBITMQ_DEFAULT_PASS: "lerian"
+    # -- Redis default password
+    REDIS_PASSWORD: "lerian"
 
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
@@ -442,7 +543,7 @@ grafana:
   # such as traces and metrics, enhancing the monitoring of the application.
   # For more details, refer to the documentation:
   # https://docs.lerian.studio/docs/observability-in-midaz#midaz-observability-stack
-  enabled: true
+  enabled: false
 
   name: grafana
 

@@ -2,6 +2,7 @@ output
 .vscode
 .DS_Store
 .idea
+Chart.lock
 **/*.tgz
 **/charts/*/charts
 **/charts/*/lerian-values*

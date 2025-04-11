@@ -15,7 +15,7 @@ data:
   VERSION: "v{{ include "plugin.version" . }}"
 
   # CASDOOR
-  CASDOOR_ADDRESS: {{ .Values.identity.configmap.CASDOOR_ADDRESS | default (printf "http://plugin-auth.%s.svc.cluster.local:8000" .Release.Namespace) | quote }}
+  CASDOOR_ADDRESS: {{ .Values.identity.configmap.CASDOOR_ADDRESS | default (printf "http://plugin-access-manager-auth.%s.svc.cluster.local:8000" .Release.Namespace) | quote }}
   CASDOOR_CLIENT_ID: {{ .Values.identity.configmap.CASDOOR_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
   CASDOOR_CLIENT_SECRET: {{ .Values.identity.configmap.CASDOOR_CLIENT_SECRET | default "6add4bc64f394456a77fa85708ad8c9b67e39e4c" | quote }}
   CASDOOR_ORGANIZATION_NAME: {{ .Values.identity.configmap.CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}
@@ -24,7 +24,7 @@ data:
   # AUTH
   AUTH_ENABLED: {{ .Values.identity.configmap.AUTH_ENABLED | default "true" | quote }}
   AUTH_PORT: {{ .Values.identity.configmap.AUTH_PORT | default "4000" | quote }}
-  AUTH_ADDRESS: {{ .Values.identity.configmap.AUTH_ADDRESS | default (printf "http://plugin-auth.%s.svc.cluster.local:4000" .Release.Namespace) | quote }}
+  AUTH_ADDRESS: {{ .Values.identity.configmap.AUTH_ADDRESS | default (printf "http://plugin-access-manager-auth.%s.svc.cluster.local:4000" .Release.Namespace) | quote }}
 
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.identity.configmap.SWAGGER_TITLE | default "Plugin Identity API" | quote }}
@@ -46,4 +46,3 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.identity.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }} 
-

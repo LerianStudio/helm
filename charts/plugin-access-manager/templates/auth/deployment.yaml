@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-auth.fullname" . }}
+  labels:
+    {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 4 }} 
+spec:
+  strategy:
+    {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.auth.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-auth.selectorLabels" (dict "context" . "name" .Values.auth.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 8 }}
+    spec:
+    {{- with .Values.auth.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "plugin-auth.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$DB_HOST:$CASDOOR_DB_PORT" "$REDIS_HOST:$REDIS_PORT";
+              do
+                echo "Checking $svc...";
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done; 
+      containers:
+        - name: plugin-auth-casdoor-backend
+          image: casbin/casdoor:v1.787.0
+          imagePullPolicy: Always
+          ports:
+            - name: http-backend
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+          - configMapRef:
+              name: {{ include "plugin-auth.fullname" . }}-backend-config
+          volumeMounts:
+            - name: backend-init-data
+              mountPath: /init_data.json
+              subPath: init_data.json
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            initialDelaySeconds: 20
+            httpGet:
+              path: /api/health
+              port: 8000
+        - name: {{ include "plugin-auth.fullname" . }}
+          image: {{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag | default (include "plugin.version" .) }}
+          imagePullPolicy: {{ .Values.auth.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.auth.service.port }}
+              protocol: TCP
+          envFrom:
+          - secretRef:
+              name: {{ include "plugin-auth.fullname" . }}
+          - configMapRef:
+              name: {{ include "plugin-auth.fullname" . }}
+          resources:
+            {{- toYaml .Values.auth.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.auth.service.port }}
+            initialDelaySeconds: 25
+            periodSeconds: 5
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            httpGet:
+              path: /health
+              port: {{ .Values.auth.service.port }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              #!/bin/bash
+              until wget --spider -q http://localhost:8000/api/health; do
+                echo "Wait for backend...";
+                sleep 5;
+              done;
+              /app
+      volumes:
+        - name: backend-init-data
+          configMap:
+            name: {{ include "plugin-auth.fullname" . }}-backend-init-data
+            items:
+              - key: init_data.json
+                path: init_data.json       
+      {{- with .Values.auth.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

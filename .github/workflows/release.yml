@@ -96,7 +96,7 @@ jobs:
           extends: .releaserc.${{ matrix.chart.name}}.json
           extra_plugins: |
             conventional-changelog-conventionalcommits@v7.0.2
-            semantic-release-helm3z`
+            semantic-release-helm3
             @semantic-release/changelog
             @semantic-release/git
         env:

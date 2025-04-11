@@ -38,6 +38,7 @@ jobs:
     if: needs.get-changed-paths.outputs.matrix != '[]'
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       matrix:
         chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     steps:

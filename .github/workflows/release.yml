@@ -12,29 +12,57 @@ on:
       - '.gitignore'
 
 jobs:
-  release-helm-chart:
-    name: Release Helm Chart
+  get-changed-paths:
+    name: Get Changed Paths
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.changed-paths.outputs.matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+
+      - name: Get changed paths
+        id: changed-paths
+        uses: LerianStudio/github-actions-changed-paths@main
+        with:
+          filter_paths: charts/
+          get_app_name: true
+          path_level: 2
+    
+  release-helm-chart:
+    needs: get-changed-paths
+    name: Release Helm Chart
+    if: needs.get-changed-paths.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Update Last Changes
+        run: git pull origin ${{ github.ref_name }}
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
 
       - name: Helm Lint
-        run: helm lint charts/midaz
+        run: helm lint ${{ matrix.chart.working_dir }}
 
       - name: Run helm unittest
         id: unittest
         run: |
           helm plugin install https://github.com/helm-unittest/helm-unittest.git
-          helm unittest charts/midaz
+          helm unittest ${{ matrix.chart.working_dir }}
       
       - name: Helm Dependency Update
-        run: helm dependency update charts/midaz
+        run: helm dependency update ${{ matrix.chart.working_dir }}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -48,6 +76,19 @@ jobs:
         with:
           app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+
+      - name: Generate .releaserc file
+        run: |
+          CHART_NAME="${{ matrix.chart.name }}"
+          CHART_PATH="${{ matrix.chart.working_dir }}"  
+      
+          jq \
+            --arg chartPath "$CHART_PATH" \
+            --arg tagFormat "$CHART_NAME-v\${version}" \
+            '.plugins[2][1].chartPath = $chartPath |
+              .plugins[4][1].assets[1] = ($chartPath + "/Chart.yaml") |
+              .tagFormat = $tagFormat' \
+            .github/configs/.releaserc.json > .releaserc
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
@@ -66,3 +107,5 @@ jobs:
           GIT_AUTHOR_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
+
+

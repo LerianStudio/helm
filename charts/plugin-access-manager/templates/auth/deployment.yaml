@@ -40,7 +40,7 @@ spec:
                 echo "$svc is ready!";
               done; 
       containers:
-        - name: plugin-auth-backend
+        - name: plugin-auth-casdoor-backend
           image: casbin/casdoor:v1.787.0
           imagePullPolicy: Always
           ports:
@@ -58,9 +58,10 @@ spec:
             httpGet:
               path: /api/health
               port: 8000
-            initialDelaySeconds: 20
-            periodSeconds: 2
+            initialDelaySeconds: 15
+            periodSeconds: 5
           livenessProbe:
+            initialDelaySeconds: 20
             httpGet:
               path: /api/health
               port: 8000
@@ -82,12 +83,24 @@ spec:
             httpGet:
               path: /health
               port: {{ .Values.auth.service.port }}
-            initialDelaySeconds: 20
-            periodSeconds: 2
+            initialDelaySeconds: 25
+            periodSeconds: 5
           livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
             httpGet:
               path: /health
               port: {{ .Values.auth.service.port }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              #!/bin/bash
+              until wget --spider -q http://localhost:8000/api/health; do
+                echo "Wait for backend...";
+                sleep 5;
+              done;
+              /app
       volumes:
         - name: backend-init-data
           configMap:

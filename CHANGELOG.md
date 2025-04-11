@@ -1,3 +1,11 @@
+## [1.0.0-HELM-94.2](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v1.0.0-HELM-94.1...plugin-access-manager-v1.0.0-HELM-94.2) (2025-04-11)
+
+
+### Features
+
+* **pipe:** trigger new pipe ([3c7ae28](https://github.com/LerianStudio/helm/commit/3c7ae28ae8bdb46c587cd12a881cb16e2463de78))
+* **pipe:** trigger new pipe ([e93496d](https://github.com/LerianStudio/helm/commit/e93496d24e81421c4dd30c36cb16f87adc6bf35e))
+
 ## 1.0.0-HELM-94.1 (2025-04-11)
 
 

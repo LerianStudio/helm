@@ -11,7 +11,7 @@
       },
       {
         "name": "feat/*",
-        "prerelease": "feat"
+        "prerelease": true
       }
     ],
     "plugins": [

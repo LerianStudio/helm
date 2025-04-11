@@ -1,3 +1,5 @@
+# Midaz Helm Chart
+
 Source code can be found here:
 * https://github.com/LerianStudio/midaz-helm/tree/main/charts/midaz
 * https://github.com/LerianStudio/midaz
@@ -8,15 +10,7 @@ The default installation is similar to the one provided in the [Midaz repo](http
 
 ---
 
-###  Chart Version Matrix
-
-| Chart Version | Onboarding Version | Transaction Version        | Console Version   | Notes                      |
-|---------------|--------------------|----------------------------|-------------------|----------------------------|
-| `1.53.0`      | `2.0.0`            |  `2.0.0`                   | `1.22.0`          | App major version bump     |
-| `1.52.0`      | `1.50.0`           |  `1.50.0`                  | `1.22.0`          | Older release              |
-| `1.50.0`      | `1.50.0`           |  `1.50.0`                  | `1.22.0`          | Older release              |
-
-## Install:
+## Install Midaz Helm Chart:
 
 To install Midaz using Helm, run the following command:
 

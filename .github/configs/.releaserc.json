@@ -10,8 +10,8 @@
         "prerelease": "hf"
       },
       {
-        "name": "feat/*",
-        "prerelease": true
+        "name": "feat/HELM-94",
+        "prerelease": "HELM-94"
       }
     ],
     "plugins": [

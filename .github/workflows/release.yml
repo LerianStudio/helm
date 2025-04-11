@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        path: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
+        chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -50,16 +50,16 @@ jobs:
         uses: azure/setup-helm@v3
 
       - name: Helm Lint
-        run: helm lint ${{ matrix.path }}
+        run: helm lint ${{ matrix.chart.working_dir }}
 
       - name: Run helm unittest
         id: unittest
         run: |
           helm plugin install https://github.com/helm-unittest/helm-unittest.git
-          helm unittest ${{ matrix.p }}
+          helm unittest ${{ matrix.chart.working_dir }}
       
       - name: Helm Dependency Update
-        run: helm dependency update ${{ matrix.path }}
+        run: helm dependency update ${{ matrix.chart.working_dir }}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -76,8 +76,8 @@ jobs:
 
       - name: Generate .releaserc file
         run: |
-          CHART_NAME=$(basename ${{ matrix.path }}) 
-          CHART_PATH="${{ matrix.path }}"            
+          CHART_NAME="${{ matrix.chart.name }}"
+          CHART_PATH="${{ matrix.chart.working_dir }}"            
       
           jq \
             --arg chartPath "$CHART_PATH" \
@@ -93,7 +93,7 @@ jobs:
         with:
           ci: false
           semantic_version: 23.0.8
-          extends: .releaserc.$(basename ${{ matrix.path }}.json
+          extends: .releaserc.${{ matrix.chart.name}}.json
           extra_plugins: |
             conventional-changelog-conventionalcommits@v7.0.2
             semantic-release-helm3z`

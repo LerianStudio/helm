@@ -41,7 +41,7 @@
           },
           "writerOpts": {
             "commitsSort": ["subject", "scope"],
-            "headerPartial": "## {{~options.tagName~}} ({{datetime 'YYYY-MM-DD'}})\n"
+            "headerPartial": "## {{gitTag}} ({{date}})\n"
           }
         }
       ],

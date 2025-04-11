@@ -43,7 +43,7 @@ plugins:
     [
       "semantic-release-helm3", 
       {
-        "chartPath": "charts/midaz",
+        "chartPath": "charts/chart-name",
         "registry": "oci://registry-1.docker.io/lerianstudio",
         "onlyUpdateVersion": true,
       }
@@ -61,7 +61,7 @@ plugins:
         "assets": 
           [
             "CHANGELOG.md",
-            "charts/midaz/Chart.yaml"
+            "charts/chart-name/Chart.yaml"
           ]
       }
     ],    

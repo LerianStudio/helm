@@ -77,7 +77,7 @@ jobs:
       - name: Generate .releaserc file
         run: |
           CHART_NAME="${{ matrix.chart.name }}"
-          CHART_PATH="${{ matrix.chart.working_dir }}"            
+          CHART_PATH="${{ matrix.chart.working_dir }}"  
       
           jq \
             --arg chartPath "$CHART_PATH" \
@@ -85,7 +85,7 @@ jobs:
             '.plugins[2][1].chartPath = $chartPath |
               .plugins[4][1].assets[1] = ($chartPath + "/Chart.yaml") |
               .tagFormat = $tagFormat' \
-            .releaserc.json > .releaserc.$CHART_NAME.json
+            .github/configs/.releaserc.json > .releaserc
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
@@ -93,7 +93,6 @@ jobs:
         with:
           ci: false
           semantic_version: 23.0.8
-          extends: .releaserc.${{ matrix.chart.name}}.json
           extra_plugins: |
             conventional-changelog-conventionalcommits@v7.0.2
             semantic-release-helm3

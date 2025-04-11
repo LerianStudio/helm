@@ -1,3 +1,10 @@
+## [1.0.0-HELM-94.3](https://github.com/LerianStudio/helm/compare/midaz-v1.0.0-HELM-94.2...midaz-v1.0.0-HELM-94.3) (2025-04-11)
+
+
+### Features
+
+* **pipe:** trigger new pipe ([af32884](https://github.com/LerianStudio/helm/commit/af3288412ba489338d5477b4deead07799323436))
+
 ## [1.0.0-HELM-94.2](https://github.com/LerianStudio/helm/compare/midaz-v1.0.0-HELM-94.1...midaz-v1.0.0-HELM-94.2) (2025-04-11)
 
 

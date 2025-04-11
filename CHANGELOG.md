@@ -1,3 +1,13 @@
+## [1.0.0-HELM-94.3](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v1.0.0-HELM-94.2...plugin-access-manager-v1.0.0-HELM-94.3) (2025-04-11)
+
+
+### Features
+
+* **pipe:** trigger new pipe ([e99bacb](https://github.com/LerianStudio/helm/commit/e99bacbc7134dfd05151327a236643e171f4a388))
+* **pipe:** trigger new pipe ([af32884](https://github.com/LerianStudio/helm/commit/af3288412ba489338d5477b4deead07799323436))
+* **pipe:** trigger new pipe ([cfb64d6](https://github.com/LerianStudio/helm/commit/cfb64d69ec3eea13720e7c362b1cc0e9455404a2))
+* **pipe:** trigger new pipe ([93a4e52](https://github.com/LerianStudio/helm/commit/93a4e5227bac10deab17eb6a589d6c34107ae9cf))
+
 ## [1.0.0-HELM-94.4](https://github.com/LerianStudio/helm/compare/midaz-v1.0.0-HELM-94.3...midaz-v1.0.0-HELM-94.4) (2025-04-11)
 
 

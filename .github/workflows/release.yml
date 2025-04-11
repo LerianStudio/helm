@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - feat/HELM-94
     paths-ignore:
       - 'README.md'
       - '.github/workflows/**'
@@ -49,20 +50,45 @@ jobs:
           app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
 
-      - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
-        id: semantic_changelog
-        with:
-          ci: false
-          semantic_version: 23.0.8
-          extra_plugins: |
-            conventional-changelog-conventionalcommits@v7.0.2
-            semantic-release-helm3
-            @semantic-release/changelog
-            @semantic-release/git
+      # - name: Semantic Release
+      #   uses: cycjimmy/semantic-release-action@v4
+      #   id: semantic_changelog
+      #   with:
+      #     ci: false
+      #     semantic_version: 23.0.8
+      #     extra_plugins: |
+      #       conventional-changelog-conventionalcommits@v7.0.2
+      #       semantic-release-helm3
+      #       @semantic-release/changelog
+      #       @semantic-release/git
+      #   env:
+      #     GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      #     GIT_AUTHOR_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
+      #     GIT_AUTHOR_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
+      #     GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
+      #     GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
+
+      - name: Run Semantic Release for each chart
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GIT_AUTHOR_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_AUTHOR_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
+        run: |
+          CHARTS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^charts/.*/Chart.yaml' | cut -d/ -f2 | sort -u)
+
+          for chart in $CHARTS; do
+            echo "Processing chart: $chart"
+
+            jq \
+              --arg chartPath "charts/$chart" \
+              --arg tagFormat "$chart-v\${version}"
+              '.plugins[2][1].chartPath = $chartPath |
+              .plugins[4][1].assets[1] = ($chartPath + "/Chart.yaml")' \
+              .releaserc.json > .releaserc.$chart.json
+
+            npx semantic-release --extends .releaserc.$chart.json
+          done
+
+

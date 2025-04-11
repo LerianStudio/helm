@@ -44,5 +44,3 @@ dependencies:
     repository: "oci://registry-1.docker.io/bitnamicharts"
     condition: valkey.enabled
     
-
-    

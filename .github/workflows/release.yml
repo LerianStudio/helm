@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - feat/HELM-95
     paths-ignore:
       - 'README.md'
       - '.github/workflows/**'

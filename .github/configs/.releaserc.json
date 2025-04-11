@@ -8,6 +8,10 @@
       {
         "name": "hotfix/*",
         "prerelease": "hf"
+      },
+      {
+        "name": "feat/HELM-95",
+        "prerelease": "alpha"
       }
     ],
     "plugins": [
@@ -41,7 +45,7 @@
           },
           "writerOpts": {
             "commitsSort": ["subject", "scope"],
-            "headerPartial": "## {{gitTag}} ({{date}})\n"
+            "headerPartial": "## {{tagName}} ({{date}})\n"
           }
         }
       ],

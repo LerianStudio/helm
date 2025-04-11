@@ -4,7 +4,7 @@ metadata:
   name: {{ include "plugin-auth.fullname" . }}-backend-config
 data:
   appname: plugin-auth-casdoor
-  rundmode: dev
+  runmode: dev
   httpport: "8000"
   SessionOn: "true"
   copyrequestbody: "true"

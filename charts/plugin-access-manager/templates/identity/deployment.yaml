@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-identity.fullname" . }}
+  labels:
+    {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 4 }} 
+spec:
+  strategy:
+    {{- toYaml .Values.identity.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.identity.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-identity.selectorLabels" (dict "context" . "name" .Values.identity.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+       {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 8 }} 
+    spec:
+    {{- with .Values.identity.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "plugin-identity.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$AUTH_ADDRESS";
+              do
+                echo "Checking $svc...";
+                hostport=$(echo "$svc" | sed 's|http://||');
+                host=$(echo "$hostport" | cut -d: -f1);
+                port=$(echo "$hostport" | cut -d: -f2);
+                while ! nc -z "$host" "$port"; do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done;
+      containers:
+        - name: {{ include "plugin-identity.fullname" . }}
+          image: {{ .Values.identity.image.repository }}:{{ .Values.identity.image.tag | default (include "plugin.version" .) }}
+          imagePullPolicy: {{ .Values.identity.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.identity.service.port }}
+              protocol: TCP
+          envFrom:
+          - secretRef:
+              name: {{ include "plugin-identity.fullname" . }}
+          - configMapRef:
+              name: {{ include "plugin-identity.fullname" . }}
+          resources:
+            {{- toYaml .Values.identity.resources | nindent 12 }}
+      {{- with .Values.identity.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.identity.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.identity.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

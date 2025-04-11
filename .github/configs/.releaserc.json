@@ -8,6 +8,10 @@
       {
         "name": "hotfix/*",
         "prerelease": "hf"
+      },
+      {
+        "name": "feat/*",
+        "prerelease": "feat"
       }
     ],
     "plugins": [

@@ -41,7 +41,7 @@ spec:
               done; 
       containers:
         - name: plugin-auth-casdoor-backend
-          image: casbin/casdoor:v1.787.0
+          image: casbin/casdoor:v1.887.0
           imagePullPolicy: Always
           ports:
             - name: http-backend

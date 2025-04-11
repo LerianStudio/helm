@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-auth.fullname" . }}
+  labels:
+    {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 4 }} 
+data:
+  # -- Default Environment variables for the plugin-auth 
+  APPLICATION_NAME: {{ .Values.auth.configmap.APPLICATION_NAME | default "plugin-auth" | quote }}
+  ENV_NAME: {{ .Values.auth.configmap.ENV_NAME | default "development" | quote }}
+
+  # APP 
+  SERVER_PORT: {{ .Values.auth.configmap.SERVER_PORT | default "4000" | quote }}
+  SERVER_ADDRESS: {{ .Values.auth.configmap.SERVER_ADDRESS | default ":4000" | quote }}
+  VERSION: "v{{ include "plugin.version" . }}"
+
+  # REDIS
+  REDIS_HOST: {{ .Values.auth.configmap.REDIS_HOST | default (printf "plugin-access-manager-valkey-primary.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  REDIS_PORT: {{ .Values.auth.configmap.REDIS_PORT | default "6379" | quote }}
+  REDIS_USER: {{ .Values.auth.configmap.REDIS_USER | default "auth" | quote }}
+  
+
+  # SWAGGER
+  SWAGGER_TITLE: {{ .Values.auth.configmap.SWAGGER_TITLE | default "Plugin Auth API" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.auth.configmap.SWAGGER_DESCRIPTION | default "This is a swagger documentation for the Plugin Auth API" | quote }}
+  SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
+  SWAGGER_HOST: {{ .Values.auth.configmap.SWAGGER_HOST | default (printf "plugin-auth.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.auth.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.auth.configmap.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_LEFT_DELIMITER: {{ .Values.auth.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIMITER: {{ .Values.auth.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
+
+  # LOG LEVEL
+  LOG_LEVEL: {{ .Values.auth.configmap.LOG_LEVEL | default "debug" | quote }}
+
+  # OPEN TELEMETRY
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.auth.configmap.OTEL_RESOURCE_SERVICE_NAME | default "auth" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.auth.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/auth" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: "v{{ include "plugin.version" . }}"
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.auth.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.auth.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+
+  # CASDOOR
+  RUNNING_IN_DOCKER: {{ .Values.auth.configmap.RUNNING_IN_DOCKER | default "true" | quote }}
+  CASDOOR_PORT: {{ .Values.auth.configmap.CASDOOR_PORT | default "8000" | quote }}
+  CASDOOR_ADDRESS: {{ .Values.auth.configmap.CASDOOR_ADDRESS | default "http://localhost:8000" | quote }}
+  CASDOOR_CLIENT_ID: {{ .Values.auth.configmap.CASDOOR_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
+  CASDOOR_ORGANIZATION_NAME: {{ .Values.auth.configmap.CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}
+  CASDOOR_APPLICATION_NAME: {{ .Values.auth.configmap.CASDOOR_APPLICATION_NAME | default "app-auth" | quote }}
+  CASDOOR_MODEL_NAME: {{ .Values.auth.configmap.CASDOOR_MODEL_NAME | default "api-model" | quote }}
+  CASDOOR_JWK_ADDRESS: {{ .Values.auth.configmap.CASDOOR_JWK_ADDRESS | default "http://localhost:8000/.well-known/jwks" | quote }}
+
+  # CADOOR DB
+  DB_HOST: {{ .Values.auth.configmap.DB_HOST | default (printf "plugin-access-manager-authdb.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  CASDOOR_DB_USER: {{ .Values.auth.configmap.CASDOOR_DB_USER | default "auth" | quote }}
+  CASDOOR_DB_NAME: {{ .Values.auth.configmap.CASDOOR_DB_NAME | default "casdoor" | quote }}
+  CASDOOR_DB_PORT: {{ .Values.auth.configmap.CASDOOR_DB_PORT | default "5432" | quote }}
+  USER_EXECUTE_COMMAND: {{ .Values.auth.configmap.USER_EXECUTE_COMMAND | default "postgres" | quote }}

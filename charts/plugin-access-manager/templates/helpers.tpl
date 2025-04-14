@@ -12,19 +12,33 @@ Expand the name of the chart and plugin auth.
 {{- default (default .Values.auth.name) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{/*
+Expand the name of the chart and plugin auth.
+*/}}
+{{- define "plugin-auth-backend.name" -}}
+{{- default (default .Values.auth.backend.name) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 
 {{/*
 Create chart name and version as used by the chart label for plugin identity.
 */}}
 {{- define "plugin-identity.chart" -}}
-{{- printf "%s-%s" .Values.identity.name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create chart name and version as used by the chart label for plugin auth.
 */}}
 {{- define "plugin-auth.chart" -}}
-{{- printf "%s-%s" .Values.auth.name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create chart name and version as used by the chart label for plugin auth.
+*/}}
+{{- define "plugin-auth-backend.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -46,6 +60,15 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
+Create a default fully qualified app name auth.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "plugin-auth-backend.fullname" -}}
+{{- default (default .Values.auth.backend.name) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create app version.
 */}}
 {{- define "plugin.version" -}}
@@ -57,7 +80,7 @@ Identity Selector labels
 */}}
 {{- define "plugin-identity.selectorLabels" -}}
 {{- if .name -}}
-app.kubernetes.io/name: {{ include "plugin-identity.name" .context }}-{{ .name }}
+app.kubernetes.io/name: {{ include "plugin-identity.name" .context }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
@@ -67,7 +90,17 @@ Auth Selector labels
 */}}
 {{- define "plugin-auth.selectorLabels" -}}
 {{- if .name -}}
-app.kubernetes.io/name: {{ include "plugin-auth.name" .context }}-{{ .name }}
+app.kubernetes.io/name: {{ include "plugin-auth.name" .context }}
+{{- end }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
+{{/*
+Auth Selector labels
+*/}}
+{{- define "plugin-auth-backend.selectorLabels" -}}
+{{- if .name -}}
+app.kubernetes.io/name: {{ include "plugin-auth-backend.name" .context }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
@@ -93,10 +126,20 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
 {{/*
+Auth Backend Common labels
+*/}}
+{{- define "plugin-auth-backend.labels" -}}
+helm.sh/chart: {{ include "plugin-auth-backend.chart" .context }}
+{{ include "plugin-auth-backend.selectorLabels" (dict "context" .context "name" .name) }}
+app.kubernetes.io/version: {{ include "plugin.version" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
 Auth dataSourceName
 */}}
-{{- define "plugin-auth.dataSourceName" -}}
-"user={{ .Values.auth.configmap.CASDOOR_DB_USER }} password={{ .Values.auth.secrets.DB_PASSWORD }} host={{ .Values.auth.configmap.DB_HOST }} port={{ .Values.auth.configmap.CASDOOR_DB_PORT }} sslmode=disable dbname={{ .Values.auth.configmap.CASDOOR_DB_NAME }}"
+{{- define "plugin-auth-backend.dataSourceName" -}}
+"user={{ .Values.auth.configmap.DB_USER }} password={{ .Values.auth.secrets.DB_PASSWORD }} host={{ .Values.auth.configmap.DB_HOST }} port={{ .Values.auth.configmap.DB_PORT }} sslmode=disable dbname={{ .Values.auth.configmap.DB_NAME }}"
 {{- end }}
 
 {{/*

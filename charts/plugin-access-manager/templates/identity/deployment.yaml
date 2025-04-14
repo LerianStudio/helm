@@ -20,6 +20,8 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+      securityContext:
+        {{- toYaml .Values.identity.podSecurityContext | nindent 8 }}
       initContainers:
         - name: wait-for-dependencies
           image: busybox
@@ -46,6 +48,8 @@ spec:
         - name: {{ include "plugin-identity.fullname" . }}
           image: {{ .Values.identity.image.repository }}:{{ .Values.identity.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.identity.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.identity.securityContext | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.identity.service.port }}

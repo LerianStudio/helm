@@ -20,6 +20,8 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+      securityContext:
+        {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
       initContainers:
         - name: wait-for-dependencies
           image: busybox
@@ -29,42 +31,14 @@ spec:
           command:
             - /bin/sh
             - -c
-            - >
-              for svc in "$DB_HOST:$CASDOOR_DB_PORT" "$REDIS_HOST:$REDIS_PORT";
-              do
-                echo "Checking $svc...";
-                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
-                  echo "$svc is not ready yet, waiting...";
-                  sleep 5;
-                done;
-                echo "$svc is ready!";
-              done; 
+            - |
+              #!/bin/bash
+              until wget --spider -q "$AUTHORIZER_ADDRESS/api/health"; do
+                echo "Wait for backend...";
+                sleep 5;
+              done;
+              echo "Backend is up!";
       containers:
-        - name: plugin-auth-casdoor-backend
-          image: casbin/casdoor:v1.887.0
-          imagePullPolicy: Always
-          ports:
-            - name: http-backend
-              containerPort: 8000
-              protocol: TCP
-          envFrom:
-          - configMapRef:
-              name: {{ include "plugin-auth.fullname" . }}-backend-config
-          volumeMounts:
-            - name: backend-init-data
-              mountPath: /init_data.json
-              subPath: init_data.json
-          readinessProbe:
-            httpGet:
-              path: /api/health
-              port: 8000
-            initialDelaySeconds: 15
-            periodSeconds: 5
-          livenessProbe:
-            initialDelaySeconds: 20
-            httpGet:
-              path: /api/health
-              port: 8000
         - name: {{ include "plugin-auth.fullname" . }}
           image: {{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.auth.image.pullPolicy }}
@@ -91,16 +65,6 @@ spec:
             httpGet:
               path: /health
               port: {{ .Values.auth.service.port }}
-          command:
-            - /bin/sh
-            - -c
-            - |
-              #!/bin/bash
-              until wget --spider -q http://localhost:8000/api/health; do
-                echo "Wait for backend...";
-                sleep 5;
-              done;
-              /app
       volumes:
         - name: backend-init-data
           configMap:

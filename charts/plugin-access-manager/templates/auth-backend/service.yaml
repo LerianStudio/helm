@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plugin-auth-backend.fullname" . }}
+  labels:
+    {{- include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name ) | nindent 4 }} 
+spec:
+  type: {{ .Values.auth.service.type }}
+  ports:
+    - port: 8000
+      targetPort: http-backend
+      protocol: TCP
+      name: http-backend
+  selector:
+    {{- include "plugin-auth-backend.selectorLabels" (dict "context" . "name" .Values.auth.backend.name) | nindent 4 }}

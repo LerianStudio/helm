@@ -14,12 +14,11 @@ data:
   SERVER_ADDRESS: {{ .Values.identity.configmap.SERVER_ADDRESS | default ":4001" | quote }} 
   VERSION: "v{{ include "plugin.version" . }}"
 
-  # CASDOOR
-  CASDOOR_ADDRESS: {{ .Values.identity.configmap.CASDOOR_ADDRESS | default (printf "http://plugin-access-manager-auth.%s.svc.cluster.local:8000" .Release.Namespace) | quote }}
-  CASDOOR_CLIENT_ID: {{ .Values.identity.configmap.CASDOOR_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
-  CASDOOR_CLIENT_SECRET: {{ .Values.identity.configmap.CASDOOR_CLIENT_SECRET | default "6add4bc64f394456a77fa85708ad8c9b67e39e4c" | quote }}
-  CASDOOR_ORGANIZATION_NAME: {{ .Values.identity.configmap.CASDOOR_ORGANIZATION_NAME | default "lerian" | quote }}
-  CASDOOR_APPLICATION_NAME: {{ .Values.identity.configmap.CASDOOR_APPLICATION_NAME | default "app-login" | quote }}
+  # AUTHORIZER
+  AUTHORIZER_ADDRESS: {{ .Values.identity.configmap.AUTHORIZER_ADDRESS | default (printf "http://plugin-access-manager-auth-backend.%s.svc.cluster.local:8000" .Release.Namespace) | quote }}
+  AUTHORIZER_CLIENT_ID: {{ .Values.identity.configmap.AUTHORIZER_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
+  AUTHORIZER_ORGANIZATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_ORGANIZATION_NAME | default "lerian" | quote }}
+  AUTHORIZER_APPLICATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_APPLICATION_NAME | default "app-auth" | quote }}
 
   # AUTH
   AUTH_ENABLED: {{ .Values.identity.configmap.AUTH_ENABLED | default "true" | quote }}

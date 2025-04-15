@@ -14,7 +14,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.0.0"
+    tag: "1.1.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -36,6 +36,22 @@ identity:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext:
+    # -- Defines the group ID for the user running the process inside the container
+    runAsGroup: 1000
+    # -- Defines the user ID for the process running inside the container
+    runAsUser: 1000
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
 
   pdb:
     # -- Enable or disable PodDisruptionBudget
@@ -92,18 +108,20 @@ identity:
 
   # -- ConfigMap for environment variables and configurations
   # -- All environment variables are declared in the templates/configmap.yaml
-  # @default -- templates/configmap.yaml
+  # @default -- templates/identity/configmap.yaml
   configmap: 
     # -- Default Environment
     ENV_NAME: "development"
     AUTH_ENABLED: "true"
     AUTH_PORT: "4000"
     AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
+    AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
-  # @default -- templates/secrets.yaml
-  secrets: {}
+  # @default -- templates/identity/secrets.yaml
+  secrets:
+    AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
 
 auth:
   # Default values
@@ -119,7 +137,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.0.0"
+    tag: "1.1.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -143,6 +161,22 @@ auth:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
+  
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # # -- Defines the group ID for the user running the process inside the container
+    # runAsGroup: 1000
+    # # -- Defines the user ID for the process running inside the container
+    # runAsUser: 1000
+    # # -- Ensures the process does not run as root
+    # runAsNonRoot: true
+    # capabilities:
+    #   drop:
+    #     - ALL
+    # # -- Defines the root filesystem as read-only
+    # readOnlyRootFilesystem: false
 
   pdb:
     # -- Enable or disable PodDisruptionBudget
@@ -198,13 +232,13 @@ auth:
     #     topologyKey: kubernetes.io/hostname
 
   # -- ConfigMap for environment variables and configurations
-  # @default -- templates/console/configmap.yaml
+  # @default -- templates/auth/configmap.yaml
   configmap:
     # -- Default Environment variables for the postgres
-    CASDOOR_DB_USER: "midaz"
+    DB_USER: "midaz"
     DB_HOST: "plugin-access-manager-auth-database.midaz-plugins.svc.cluster.local"
-    CASDOOR_DB_PORT: 5432
-    CASDOOR_DB_NAME: "casdoor"
+    DB_PORT: 5432
+    DB_NAME: "casdoor"
     # -- Default Environment 
     ENV_NAME: "development"
     # -- Default Redis Settings
@@ -213,11 +247,25 @@ auth:
     REDIS_USER: "auth"
 
   # -- Secrets for storing sensitive data
-  # @default -- templates/console/secrets.yaml
+  # @default -- templates/auth/secrets.yaml
   secrets: 
-    CASDOOR_DB_PASSWORD: "lerian"
-    CASDOOR_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    DB_PASSWORD: "lerian"
+    AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     REDIS_PASSWORD: "lerian"
+
+  backend:
+    replicaCount: 1
+    name: "plugin-access-manager-auth-backend"
+    autoscaling:
+      # -- Enable or disable horizontal pod autoscaling
+      enabled: true
+      # -- Minimum number of replicas
+      minReplicas: 1
+      # -- Maximum number of replicas
+      maxReplicas: 3
+      # -- Target CPU utilization percentage for autoscaling
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
 
 auth-database:
   # Database dependency for identity and access management.

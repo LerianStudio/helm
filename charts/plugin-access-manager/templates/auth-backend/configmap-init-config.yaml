@@ -1,7 +1,7 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ include "plugin-auth.fullname" . }}-backend-init-data
+  name: {{ include "plugin-auth-backend.fullname" . }}-init-data
 data:
   init_data.json: |
     {{ .Files.Get "files/init_data.json" | nindent 4 }}

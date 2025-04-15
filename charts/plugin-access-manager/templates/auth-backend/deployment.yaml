@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-auth-backend.fullname" . }}
+  labels:
+    {{- include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name ) | nindent 4 }} 
+spec:
+  strategy:
+    {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.auth.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-auth-backend.selectorLabels" (dict "context" . "name" .Values.auth.backend.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name ) | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "plugin-auth.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$DB_HOST:$DB_PORT" "$REDIS_HOST:$REDIS_PORT";
+              do
+                echo "Checking $svc...";
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done; 
+      containers: 
+        - name: {{ include "plugin-auth-backend.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
+          image: casbin/casdoor:v1.887.0
+          imagePullPolicy: Always
+          ports:
+            - name: http-backend
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+          - configMapRef:
+              name: {{ include "plugin-auth-backend.fullname" . }}
+          volumeMounts:
+            - name: backend-init-data
+              mountPath: /init_data.json
+              subPath: init_data.json
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            initialDelaySeconds: 20
+            httpGet:
+              path: /api/health
+              port: 8000
+      volumes:
+        - name: backend-init-data
+          configMap:
+            name: {{ include "plugin-auth-backend.fullname" . }}-init-data
+            items:
+              - key: init_data.json
+                path: init_data.json       
+      {{- with .Values.auth.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

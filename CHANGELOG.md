@@ -1,3 +1,13 @@
+##  (2025-04-14)
+
+
+### Features
+
+* **chart:** add auth backend helpers functions ([7248963](https://github.com/LerianStudio/helm/commit/72489636dfd8d57191e4d61da0369d6267b277df))
+* **chart:** add auth backend templates ([57fb163](https://github.com/LerianStudio/helm/commit/57fb163b2c7cca15b1006ef493e3ee43b7cc616c))
+* **chart:** add security context to plugin identity ([47b48fc](https://github.com/LerianStudio/helm/commit/47b48fc9ec49f706519fceb4a7007c0179f62317))
+* **values:** update apps version and add backend config ([7cb17c2](https://github.com/LerianStudio/helm/commit/7cb17c2225d0863ee655b6ea5fc5532421ffa93d))
+
 ##  (2025-04-11)
 
 ##  (2025-04-11)

@@ -1,5 +1,7 @@
 ##  (2025-04-15)
 
+##  (2025-04-15)
+
 
 ### Features
 
@@ -19,6 +21,8 @@
 * **chart:** add security context to plugin identity ([47b48fc](https://github.com/LerianStudio/helm/commit/47b48fc9ec49f706519fceb4a7007c0179f62317))
 * **chart:** configure pdb to auth backend ([112bc47](https://github.com/LerianStudio/helm/commit/112bc47d72db94b57e81138297d973cb31d4ddf6))
 * **values:** update apps version and add backend config ([7cb17c2](https://github.com/LerianStudio/helm/commit/7cb17c2225d0863ee655b6ea5fc5532421ffa93d))
+
+##  (2025-04-15)
 
 ##  (2025-04-15)
 

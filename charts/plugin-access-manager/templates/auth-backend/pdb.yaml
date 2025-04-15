@@ -2,9 +2,9 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "plugin-auth.fullname" . }}
+  name: {{ include "plugin-auth-backend.fullname" . }}
   labels:
-    {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 4 }} 
+    {{- include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name ) | nindent 4 }} 
   {{- with .Values.auth.pdb.annotations }}
   annotations:
     {{- range $key, $value := . }}
@@ -19,5 +19,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "plugin-auth.selectorLabels" (dict "context" . "name" .Values.auth.name) | nindent 6 }}
+      {{- include "plugin-auth-backend.selectorLabels" (dict "context" . "name" .Values.auth.backend.name) | nindent 6 }}
 {{- end }}

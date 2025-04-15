@@ -1,3 +1,10 @@
+##  (2025-04-15)
+
+
+### Features
+
+* **chart:** configure pdb to auth backend ([112bc47](https://github.com/LerianStudio/helm/commit/112bc47d72db94b57e81138297d973cb31d4ddf6))
+
 ##  (2025-04-14)
 
 

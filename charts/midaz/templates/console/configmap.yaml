@@ -5,19 +5,23 @@ metadata:
   name: {{ include "midaz-console.fullname" . }}
 data:
   # OPEN TELEMETRY
+  ENABLE_TELEMETRY: {{ .Values.console.configmap.ENABLE_TELEMETRY | default "false" | quote }}
   OTEL_RECEIVER_HTTP_PORT: {{ .Values.console.configmap.OTEL_RECEIVER_HTTP_PORT | default "4318" | quote }}
   OTEL_HOST: {{ .Values.console.configmap.OTEL_HOST | default "midaz-grafana.%s" | quote }}
   OTEL_URL_METRICS: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/metrics" .Release.Namespace) | quote }}
   OTEL_URL_TRACES: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/traces" .Release.Namespace) | quote }}
   OTEL_URL_LOGS: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/logs" .Release.Namespace) | quote }}
+  
   # Midaz Console
   MIDAZ_CONSOLE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_PORT | default "8081" | quote }}
   MIDAZ_CONSOLE_SERVICE_HOST: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_HOST | default "midaz-console" | quote }}
   MIDAZ_CONSOLE_SERVICE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_PORT | default "8081" | quote }}
   MIDAZ_CONSOLE_BASE_PATH: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
   MIDAZ_CONSOLE_ENABLE_DEBUG: {{ .Values.console.configmap.MIDAZ_CONSOLE_ENABLE_DEBUG | default "true" | quote }}
-  MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMATS: {{ .Values.console.configmap.MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMATS | default "jpeg,jpg,png,svg" | quote }}
   NODE_ENV: {{ .Values.console.configmap.NODE_ENV | default "development" | quote }}
+
+  # Midaz Console NextJS Public Configuration
+  NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
 
   # Midaz API Configuration
   MIDAZ_API_HOST: {{ .Values.console.configmap.MIDAZ_API_HOST | default (printf "midaz-onboarding.%s.svc.cluster.local." .Release.Namespace) | quote }}
@@ -31,7 +35,7 @@ data:
   NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
 
   # Plugin Auth
-  PLUGIN_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "true" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
   PLUGIN_AUTH_CLIENT_ID: {{ .Values.console.configmap.PLUGIN_AUTH_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
   PLUGIN_AUTH_HOST: {{ .Values.console.configmap.PLUGIN_AUTH_HOST | default "plugins-auth.midaz-plugins" | quote }}
   PLUGIN_AUTH_PORT: {{ .Values.console.configmap.PLUGIN_AUTH_PORT | default "4000" | quote }}

@@ -14,6 +14,14 @@
 * **console:** adds new env vars ([473cf5a](https://github.com/LerianStudio/helm/commit/473cf5a8d681e42c9ad8318b42b08dbea1e3e045))
 * **values:** update console version ([778eea0](https://github.com/LerianStudio/helm/commit/778eea0d86f62b9257f4f94892ef2b340df945da))
 
+##  (2025-04-16)
+
+
+### Features
+
+* **console:** adds new env vars ([473cf5a](https://github.com/LerianStudio/helm/commit/473cf5a8d681e42c9ad8318b42b08dbea1e3e045))
+* **values:** update console version ([778eea0](https://github.com/LerianStudio/helm/commit/778eea0d86f62b9257f4f94892ef2b340df945da))
+
 ##  (2025-04-15)
 
 ##  (2025-04-15)

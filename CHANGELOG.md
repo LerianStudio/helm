@@ -34,6 +34,18 @@
 * **chart:** update identity templates ([f8def52](https://github.com/LerianStudio/helm/commit/f8def529a453cf4c2db448df07ba167ff14d6c83))
 * **chart:** update plugin access manager values ([e4221eb](https://github.com/LerianStudio/helm/commit/e4221ebc5da46a51c5d71ef0755bba35e3313584))
 
+##  (2025-04-17)
+
+
+### Features
+
+* **dependencies:** update auth backend init file ([be72215](https://github.com/LerianStudio/helm/commit/be72215937655d4adb136ae9802d68ade6a279b9))
+* **chart:** update auth backend templates ([8659b67](https://github.com/LerianStudio/helm/commit/8659b6758e533c9a0922d481107ba59656d3f0a5))
+* **chart:** update auth templates ([a6221e4](https://github.com/LerianStudio/helm/commit/a6221e4b89edec63f40b80bd31574588d9204a5b))
+* **chart:** update auth templates ([c5bcb23](https://github.com/LerianStudio/helm/commit/c5bcb23959466580106b98f7e3312195f7f42f35))
+* **chart:** update identity templates ([f8def52](https://github.com/LerianStudio/helm/commit/f8def529a453cf4c2db448df07ba167ff14d6c83))
+* **chart:** update plugin access manager values ([e4221eb](https://github.com/LerianStudio/helm/commit/e4221ebc5da46a51c5d71ef0755bba35e3313584))
+
 ##  (2025-04-16)
 
 ##  (2025-04-16)

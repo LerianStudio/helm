@@ -27,7 +27,7 @@
 
 | Chart Version | Auth Version | Identity Version           |  Notes    |
 |---------------|--------------|----------------------------|-----------|
-| `1.0.0`      | `1.0.0`       |  `1.0.0`                   | Latest    |          
+| `1.4.0`      | `1.0.0`       |  `1.0.0`                   | Latest    |          
 
 📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/auth-identity).
 

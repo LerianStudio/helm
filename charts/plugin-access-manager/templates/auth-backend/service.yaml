@@ -8,8 +8,8 @@ spec:
   type: {{ .Values.auth.service.type }}
   ports:
     - port: 8000
-      targetPort: http-backend
+      targetPort: http
       protocol: TCP
-      name: http-backend
+      name: http
   selector:
     {{- include "plugin-auth-backend.selectorLabels" (dict "context" . "name" .Values.auth.backend.name) | nindent 4 }}

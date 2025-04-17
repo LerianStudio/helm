@@ -39,31 +39,6 @@ spec:
               done;
               echo "Backend is up!";
       containers:
-        # - name: plugin-auth-casdoor-backend
-        #   image: casbin/casdoor:v1.887.0
-        #   imagePullPolicy: Always
-        #   ports:
-        #     - name: http-backend
-        #       containerPort: 8000
-        #       protocol: TCP
-        #   envFrom:
-        #   - configMapRef:
-        #       name: {{ include "plugin-auth.fullname" . }}-casdoor
-        #   volumeMounts:
-        #     - name: backend-init-data
-        #       mountPath: /init_data.json
-        #       subPath: init_data.json
-        #   readinessProbe:
-        #     httpGet:
-        #       path: /api/health
-        #       port: 8000
-        #     initialDelaySeconds: 15
-        #     periodSeconds: 5
-        #   livenessProbe:
-        #     initialDelaySeconds: 20
-        #     httpGet:
-        #       path: /api/health
-        #       port: 8000
         - name: {{ include "plugin-auth.fullname" . }}
           image: {{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.auth.image.pullPolicy }}

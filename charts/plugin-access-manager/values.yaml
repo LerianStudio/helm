@@ -1,3 +1,4 @@
+
 identity:
   # Default valueshttps://versus.com/br/hyperx-cloud-iii-vs-logitech-pro-x-gaming
   # This is a YAML-formatted file.
@@ -14,7 +15,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.1.0"
+    tag: "1.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -137,7 +138,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.1.0"
+    tag: "1.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -202,9 +203,9 @@ auth:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
     # -- Minimum number of replicas
-    minReplicas: 1
+    minReplicas: 3
     # -- Maximum number of replicas
-    maxReplicas: 3
+    maxReplicas: 9
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
@@ -235,7 +236,7 @@ auth:
   # @default -- templates/auth/configmap.yaml
   configmap:
     # -- Default Environment variables for the postgres
-    DB_USER: "midaz"
+    DB_USER: "auth"
     DB_HOST: "plugin-access-manager-auth-database.midaz-plugins.svc.cluster.local"
     DB_PORT: 5432
     DB_NAME: "casdoor"
@@ -245,6 +246,7 @@ auth:
     REDIS_HOST: "plugin-access-manager-valkey-primary.midaz-plugins.svc.cluster.local"
     REDIS_PORT: 6379
     REDIS_USER: "auth"
+    AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
   # -- Secrets for storing sensitive data
   # @default -- templates/auth/secrets.yaml
@@ -276,7 +278,7 @@ auth-database:
   auth:
     enabled: true
     enablePostgresUser: false
-    username: "midaz"
+    username: "auth"
     password: "lerian"
     database: "casdoor"
   primary:

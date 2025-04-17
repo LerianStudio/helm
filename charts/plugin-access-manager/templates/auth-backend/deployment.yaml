@@ -44,7 +44,7 @@ spec:
           image: casbin/casdoor:v1.887.0
           imagePullPolicy: Always
           ports:
-            - name: http-backend
+            - name: http
               containerPort: 8000
               protocol: TCP
           envFrom:

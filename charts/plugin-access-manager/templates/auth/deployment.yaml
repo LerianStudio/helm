@@ -68,7 +68,7 @@ spec:
       volumes:
         - name: backend-init-data
           configMap:
-            name: {{ include "plugin-auth.fullname" . }}-backend-init-data
+            name: {{ include "plugin-auth.fullname" . }}-init-data
             items:
               - key: init_data.json
                 path: init_data.json       

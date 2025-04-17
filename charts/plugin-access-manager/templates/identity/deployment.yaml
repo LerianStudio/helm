@@ -32,7 +32,7 @@ spec:
             - /bin/sh
             - -c
             - >
-              for svc in "$AUTH_ADDRESS";
+              for svc in "$PLUGIN_AUTH_ADDRESS";
               do
                 echo "Checking $svc...";
                 hostport=$(echo "$svc" | sed 's|http://||');

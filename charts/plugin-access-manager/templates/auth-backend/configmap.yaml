@@ -3,25 +3,22 @@ apiVersion: v1
 metadata:
   name: {{ include "plugin-auth-backend.fullname" . }}
 data:
-  appname: plugin-auth-casdoor
+  appname: plugin-auth-casdoor-backend
   runmode: dev
   httpport: "8000"
-  SessionOn: "true"
-  copyrequestbody: "true"
   driverName: "postgres"
   dataSourceName: {{ include "plugin-auth-backend.dataSourceName" . }}
   dbName: casdoor
   showSql: "false"
-  authState: "lerian"
+  authState: "casdoor"
+  socks5Proxy: "127.0.0.1:10808"
   verificationCodeTimeout: "10"
   logPostOnly: "true"
   isUsernameLowered: "false"
+  origin: 
   batchSize: "100"
   enableErrorMask: "false"
   enableGzip: "true"
   quota: '{"organization": -1, "user": -1, "application": -1, "provider": -1}'
-  logConfig: '{"filename": "logs/authorizer.log", "maxdays": 99999, "perm": "0770"}'
+  logConfig: '{"filename": "logs/casdoor.log", "maxdays": 99999, "perm": "0770"}'
   initDataFile: "./init_data.json"
-  isCloudIntranet: "false"
-  initScore: "0"
-  ldapServerPort: "10389"

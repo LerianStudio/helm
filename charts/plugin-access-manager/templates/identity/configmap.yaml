@@ -15,19 +15,20 @@ data:
   VERSION: "v{{ include "plugin.version" . }}"
 
   # AUTHORIZER
-  AUTHORIZER_ADDRESS: {{ .Values.identity.configmap.AUTHORIZER_ADDRESS | default (printf "http://plugin-access-manager-auth-backend.%s.svc.cluster.local:8000" .Release.Namespace) | quote }}
+  AUTHORIZER_PORT: {{ .Values.identity.configmap.AUTHORIZER_PORT | default "8000" | quote }}
+  AUTHORIZER_ADDRESS: {{ .Values.identity.configmap.AUTHORIZER_ADDRESS | default "http://plugin-access-manager-auth-backend:8000" | quote }}
   AUTHORIZER_CLIENT_ID: {{ .Values.identity.configmap.AUTHORIZER_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
   AUTHORIZER_ORGANIZATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_ORGANIZATION_NAME | default "lerian" | quote }}
-  AUTHORIZER_APPLICATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_APPLICATION_NAME | default "app-auth" | quote }}
+  AUTHORIZER_APPLICATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_APPLICATION_NAME | default "app-lerian" | quote }}
 
   # AUTH
-  AUTH_ENABLED: {{ .Values.identity.configmap.AUTH_ENABLED | default "true" | quote }}
-  AUTH_PORT: {{ .Values.identity.configmap.AUTH_PORT | default "4000" | quote }}
-  AUTH_ADDRESS: {{ .Values.identity.configmap.AUTH_ADDRESS | default (printf "http://plugin-access-manager-auth.%s.svc.cluster.local:4000" .Release.Namespace) | quote }}
+  PLUGIN_AUTH_ENABLED: {{ .Values.identity.configmap.AUTH_ENABLED | default "true" | quote }}
+  PLUGIN_AUTH_PORT: {{ .Values.identity.configmap.AUTH_PORT | default "4000" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.identity.configmap.AUTH_ADDRESS | default (printf "http://plugin-access-manager-auth.%s.svc.cluster.local:4000" .Release.Namespace) | quote }}
 
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.identity.configmap.SWAGGER_TITLE | default "Plugin Identity API" | quote }}
-  SWAGGER_DESCRIPTION: {{ .Values.identity.configmap.SWAGGER_DESCRIPTION | default "This is a swagger documentation for the Plugin Identity API" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.identity.configmap.SWAGGER_DESCRIPTION | default "The Identity API provides a set of endpoints for managing users and client credentials." | quote }}
   SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
   SWAGGER_HOST: {{ .Values.identity.configmap.SWAGGER_HOST | default (printf "plugin-identity.%s.svc.cluster.local:4001" .Release.Namespace) | quote }}
   SWAGGER_BASE_PATH: {{ .Values.identity.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
@@ -37,6 +38,7 @@ data:
 
   # LOG LEVEL
   LOG_LEVEL: {{ .Values.identity.configmap.LOG_LEVEL | default "debug" | quote }}
+  SECURE_LOG_FIELDS: {{ .Values.identity.configmap.SECURE_LOG_FIELDS | default "password,clientSecret" | quote }}
 
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.identity.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-identity" | quote }}
@@ -45,3 +47,4 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.identity.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }} 
+  ENABLE_TELEMETRY: {{ .Values.identity.configmap.ENABLE_TELEMETRY | default "false" | quote }}

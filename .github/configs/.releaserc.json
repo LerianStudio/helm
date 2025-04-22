@@ -8,6 +8,10 @@
       {
         "name": "hotfix/*",
         "prerelease": "hf"
+      },
+      {
+        "name": "feat/ghcr",
+        "prerelease": "feat/ghcr"
       }
     ],
     "plugins": [
@@ -67,6 +71,12 @@
             "CHANGELOG.md",
             "charts/chart-name/Chart.yaml"
           ]
+        }
+      ],
+      [
+        "@semantic-release/exec", 
+        {
+          "successCmd": "helm push charts/chart-name oci://ghcr.io/lerianstudio --version ${nextRelease.version} "
         }
       ]
     ]

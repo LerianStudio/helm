@@ -1,3 +1,16 @@
+##  (2025-04-22)
+
+
+### Features
+
+* **chart:** update app version ([348b0cc](https://github.com/LerianStudio/helm/commit/348b0ccb5fea5042fe08da2af81cbd0b323a7aca))
+* **console:** update console version ([d789c7d](https://github.com/LerianStudio/helm/commit/d789c7dc7596e65c90c0e18072687b2ea828b295))
+
+
+### Bug Fixes
+
+* **chart:** add new env var to enable auth plugin ([53b8ffb](https://github.com/LerianStudio/helm/commit/53b8ffb5ef5beaf77756b45e815b946b106c9320))
+
 ##  (2025-04-17)
 
 ##  (2025-04-17)

@@ -20,9 +20,6 @@ data:
   MIDAZ_CONSOLE_ENABLE_DEBUG: {{ .Values.console.configmap.MIDAZ_CONSOLE_ENABLE_DEBUG | default "true" | quote }}
   NODE_ENV: {{ .Values.console.configmap.NODE_ENV | default "development" | quote }}
 
-  # Midaz Console NextJS Public Configuration
-  NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
-
   # Midaz API Configuration
   MIDAZ_API_HOST: {{ .Values.console.configmap.MIDAZ_API_HOST | default (printf "midaz-onboarding.%s.svc.cluster.local." .Release.Namespace) | quote }}
   MIDAZ_API_PORT: {{ .Values.console.configmap.MIDAZ_API_PORT | default "3000" | quote }}
@@ -45,4 +42,9 @@ data:
   PLUGIN_IDENTITY_HOST: {{ .Values.console.configmap.PLUGIN_IDENTITY_HOST | default "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  | quote }}
   PLUGIN_IDENTITY_PORT: {{ .Values.console.configmap.PLUGIN_IDENTITY_PORT | default "4001" | quote }}
   PLUGIN_IDENTITY_BASE_PATH: {{ .Values.console.configmap.PLUGIN_IDENTITY_BASE_PATH | default "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1" | quote }}
+
+  # Midaz Console NextJS Public Configuration
+  NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
+  NEXT_PUBLIC_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
 {{- end }}
+

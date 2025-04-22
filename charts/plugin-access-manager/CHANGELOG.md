@@ -3,6 +3,31 @@
 
 ### Features
 
+* **pipe:** push releae to ghcr ([2197e21](https://github.com/LerianStudio/helm/commit/2197e210e26a404c329ea23df6f3d17d5dfde795))
+* **pipe:** push releae to ghcr ([e81dc03](https://github.com/LerianStudio/helm/commit/e81dc03d4ea6482bd19ebdda45eb11772dbdb537))
+* **pipe:** push releae to ghcr ([b21797d](https://github.com/LerianStudio/helm/commit/b21797da48805058e23fb420f13e85be638f1574))
+* **pipe:** push releae to ghcr ([4e1e0c8](https://github.com/LerianStudio/helm/commit/4e1e0c82af02c5aebbf74d6d33d0b37fa8b56346))
+* **pipe:** push releae to ghcr ([5a6bd54](https://github.com/LerianStudio/helm/commit/5a6bd547f0050833e022ca472af3408387505158))
+* **pipe:** push releae to ghcr ([c4af21c](https://github.com/LerianStudio/helm/commit/c4af21c890dbb0b9e839eb72b097448888ae60c7))
+* **pipe:** push releae to ghcr ([b1de281](https://github.com/LerianStudio/helm/commit/b1de281b39a0fd426bb839dab9a107a486ac7a4d))
+* **pipe:** push releae to ghcr ([921029a](https://github.com/LerianStudio/helm/commit/921029a617720736fc705fc1537dbd1259620af2))
+* **pipe:** push releae to ghcr ([a1a4c9f](https://github.com/LerianStudio/helm/commit/a1a4c9f716e419eaa31d36f5c040c6e3069c7d53))
+* **pipe:** push releae to ghcr ([fb86d06](https://github.com/LerianStudio/helm/commit/fb86d067e4b22d6f229bdcd2aa13c0cebbcc437a))
+* **pipe:** push releae to ghcr ([9b2b097](https://github.com/LerianStudio/helm/commit/9b2b09782884179ca25ff67d86c9f9fd2e317511))
+* **pipe:** push releae to ghcr ([5985df1](https://github.com/LerianStudio/helm/commit/5985df1fbc458c43d5d94572ec0b5bf3e28c9d61))
+* **pipe:** push releae to ghcr ([636a9fa](https://github.com/LerianStudio/helm/commit/636a9fa375c868af2a27174335cbfa630125ae95))
+* **pipe:** push releae to ghcr ([7278fac](https://github.com/LerianStudio/helm/commit/7278fac3f11e1291a2108c31f95b309efeaaf2c6))
+
+
+### Bug Fixes
+
+* generate multiples CHANGELOG's ([3f60787](https://github.com/LerianStudio/helm/commit/3f607875b618db474e4055c44a2cffd8216f4261))
+
+##  (2025-04-22)
+
+
+### Features
+
 * **pipe:** push releae to ghcr ([5a6bd54](https://github.com/LerianStudio/helm/commit/5a6bd547f0050833e022ca472af3408387505158))
 
 ##  (2025-04-22)

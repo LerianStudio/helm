@@ -43,8 +43,5 @@ dependencies:
   - name: valkey
     version: "2.4.6"
     repository: "oci://registry-1.docker.io/bitnamicharts"
-<<<<<<< Updated upstream
     condition: valkey.enabled
-=======
-    condition: valkey.enabled
->>>>>>> Stashed changes
+

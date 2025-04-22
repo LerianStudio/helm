@@ -86,7 +86,7 @@ jobs:
           jq \
             --arg chartPath "$CHART_PATH" \
             --arg changelogPath "$CHART_PATH/CHANGELOG.md" \
-            --arg successCmd "helm push $CHART_PATH oci://ghcr.io/lerianstudio" \
+            --arg successCmd "helm package $CHART_PATH && helm push $CHART_PATH-\${nextRelease.version}.tgz oci://ghcr.io/lerianstudio" \
             '.plugins[2][1].chartPath = $chartPath |
               .plugins[3][1].changelogFile = $changelogPath |
               .plugins[4][1].assets[0] = $changelogPath |

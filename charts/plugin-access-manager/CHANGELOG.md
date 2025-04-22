@@ -3,6 +3,13 @@
 
 ### Features
 
+* **pipe:** push releae to ghcr ([c4af21c](https://github.com/LerianStudio/helm/commit/c4af21c890dbb0b9e839eb72b097448888ae60c7))
+
+##  (2025-04-22)
+
+
+### Features
+
 * **pipe:** push releae to ghcr ([b1de281](https://github.com/LerianStudio/helm/commit/b1de281b39a0fd426bb839dab9a107a486ac7a4d))
 
 ##  (2025-04-22)

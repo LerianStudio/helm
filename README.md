@@ -14,7 +14,7 @@
 | Chart Version       | Onboarding Version | Transaction Version        | Console Version   | Notes                      |
 |---------------------|--------------------|----------------------------|-------------------|----------------------------|
 | `1.59.0`            | `2.1.0`            |  `2.1.0`                   | `2.1.0`           | Console app minor version bump   |
-| `1.57.0`            | `2.1.0`            |  `2.1.0`                   | `2.0.0`           | Console app major version bump   |
+| `1.57.0 - 1.58.0`   | `2.1.0`            |  `2.1.0`                   | `2.0.0`           | Console app major version bump   |
 | `1.54.0 - 1.56.0`   | `2.1.0`            |  `2.1.0`                   | `1.25.0`          | Internal Helm chart improvements only |
 | `1.53.0`            | `2.0.0`            |  `2.0.0`                   | `1.25.0`          | Older release      |
 

@@ -3,6 +3,13 @@
 
 ### Features
 
+* **pipe:** push releae to ghcr ([921029a](https://github.com/LerianStudio/helm/commit/921029a617720736fc705fc1537dbd1259620af2))
+
+##  (2025-04-22)
+
+
+### Features
+
 * **chart:** add auth backend helpers functions ([7248963](https://github.com/LerianStudio/helm/commit/72489636dfd8d57191e4d61da0369d6267b277df))
 * **chart:** add auth backend templates ([57fb163](https://github.com/LerianStudio/helm/commit/57fb163b2c7cca15b1006ef493e3ee43b7cc616c))
 * **chart:** add security context to plugin identity ([47b48fc](https://github.com/LerianStudio/helm/commit/47b48fc9ec49f706519fceb4a7007c0179f62317))

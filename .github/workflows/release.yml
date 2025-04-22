@@ -95,7 +95,7 @@ jobs:
               .plugins[3][1].changelogFile = $changelogPath |
               .plugins[4][1].assets[0] = $changelogPath |
               .plugins[4][1].assets[1] = ($chartPath + "/Chart.yaml") |
-              .tagFormat = $tagFormat \
+              .tagFormat = $tagFormat |
               .plugins[5][1].successCmd = $successCmd' \
             .github/configs/.releaserc.json > .releaserc
 

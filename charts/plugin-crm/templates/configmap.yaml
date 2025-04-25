@@ -38,7 +38,7 @@ data:
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-crm" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-crm" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: "v{{ include "plugin.version" . }}"
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.configmap.ENV_NAME | default "devevelopment" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.configmap.ENV_NAME | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }}
   ENABLE_TELEMETRY: {{ .Values.configmap.ENABLE_TELEMETRY | default "false" | quote }}

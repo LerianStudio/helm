@@ -70,6 +70,9 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u lerianstudio --password-stdin
+
       - name: Generate GitHub App Token
         id: app-token
         uses: actions/create-github-app-token@v1
@@ -86,11 +89,13 @@ jobs:
             --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
             --arg changelogPath "$CHART_PATH/CHANGELOG.md" \
+            --arg successCmd "helm package $CHART_PATH && helm push $CHART_NAME-\${nextRelease.version}.tgz oci://ghcr.io/lerianstudio" \
             '.plugins[2][1].chartPath = $chartPath |
               .plugins[3][1].changelogFile = $changelogPath |
               .plugins[4][1].assets[0] = $changelogPath |
               .plugins[4][1].assets[1] = ($chartPath + "/Chart.yaml") |
-              .tagFormat = $tagFormat' \
+              .tagFormat = $tagFormat |
+              .plugins[5][1].successCmd = $successCmd' \
             .github/configs/.releaserc.json > .releaserc
 
       - name: Semantic Release
@@ -104,6 +109,7 @@ jobs:
             semantic-release-helm3
             @semantic-release/changelog
             @semantic-release/git
+            @semantic-release/exec@6.0.3
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GIT_AUTHOR_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}

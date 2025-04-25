@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-fees.fullname" . }}
+  labels:
+    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.name ) | nindent 4 }} 
+data:
+  # -- Default Environment variables for the plugin-fees 
+  ENV_NAME: {{ .Values.configmap.ENV_NAME | default "development" | quote }}
+
+  # APP 
+  SERVER_PORT: {{ .Values.configmap.SERVER_PORT | default "4002" | quote }}
+  SERVER_ADDRESS: {{ .Values.configmap.SERVER_ADDRESS | default ":4002" | quote }}
+  VERSION: "v{{ include "plugin.version" . }}"
+
+  # Mongo DB
+  MONGO_URI: {{ .Values.configmap.MONGO_URI | default "mongodb" | quote }}
+  MONGO_HOST: {{ .Values.configmap.MONGO_HOST | default (printf "plugin-fees-mongodb.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  MONGO_PORT: {{ .Values.configmap.MONGO_PORT | default "27017" | quote }}
+  MONGO_NAME: {{ .Values.configmap.MONGO_NAME | default "plugin-fees-db" | quote }}
+  MONGO_USER: {{ .Values.configmap.MONGO_USER | default "plugin-fees" | quote }}
+  MONGO_MAX_POOL_SIZE: {{ .Values.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+  
+  # SWAGGER
+  SWAGGER_TITLE: {{ .Values.configmap.SWAGGER_TITLE | default "Plugin Fees" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.configmap.SWAGGER_DESCRIPTION | default "The Fees API provides a set of endpoints for managing holder data, including information related to their ledger accounts." | quote }}
+  SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
+  SWAGGER_HOST: {{ .Values.configmap.SWAGGER_HOST | default (printf "plugin-fees.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.configmap.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_LEFT_DELIMITER: {{ .Values.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIMITER: {{ .Values.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
+
+  # LOG LEVEL
+  LOG_LEVEL: {{ .Values.configmap.LOG_LEVEL | default "debug" | quote }}
+
+  # OPEN TELEMETRY
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-fees" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-fees" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: "v{{ include "plugin.version" . }}"
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.configmap.ENV_NAME | default "devevelopment" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+
+  # AUTH
+  PLUGIN_AUTH_ADDRESS: {{ .Values.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-auth" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ .Values.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+
+  # MIDAZ COMMUNICATION
+  CLIENT_ID: {{ .Values.configmap.CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
+  MIDAZ_ONBOARDING_URL: {{ .Values.configmap.MIDAZ_ONBOARDING_URL | default "http://midaz-onboarding.midaz.svc.cluster.local:3000/v1" | quote }}

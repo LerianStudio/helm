@@ -23,7 +23,7 @@ data:
   
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.configmap.SWAGGER_TITLE | default "Plugin Fees" | quote }}
-  SWAGGER_DESCRIPTION: {{ .Values.configmap.SWAGGER_DESCRIPTION | default "The Fees API provides a set of endpoints for managing holder data, including information related to their ledger accounts." | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.configmap.SWAGGER_DESCRIPTION | default "Documentation for the plugins fees" | quote }}
   SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
   SWAGGER_HOST: {{ .Values.configmap.SWAGGER_HOST | default (printf "plugin-fees.%s.svc.cluster.local" .Release.Namespace) | quote }}
   SWAGGER_BASE_PATH: {{ .Values.configmap.SWAGGER_BASE_PATH | default "/" | quote }}

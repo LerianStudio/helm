@@ -1,6 +1,6 @@
 
 identity:
-  # Default valueshttps://versus.com/br/hyperx-cloud-iii-vs-logitech-pro-x-gaming
+  # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
 
@@ -11,7 +11,7 @@ identity:
 
   image:
     # -- Repository for the container image
-    repository: lerianstudio/plugin-identity
+    repository: ghcr.io/lerianstudio/plugin-identity
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
@@ -134,7 +134,7 @@ auth:
 
   image:
     # -- Repository for the console service container image
-    repository: lerianstudio/plugin-auth
+    repository: ghcr.io/lerianstudio/plugin-auth
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment

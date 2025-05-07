@@ -29,7 +29,7 @@
 |---------------|--------------|----------------------------|-----------|
 | `1.6.0`      | `1.0.0`       |  `1.0.0`                   | Migrate app images to GHCR   |  
 | `1.5.0`      | `1.0.0`       |  `1.0.0`                   | Only chart improvements   |    
-| `1.4.0`      | `1.0.0`       |  `1.0.0`                   | Latest    |          
+| `1.4.0`      | `1.0.0`       |  `1.0.0`                   | Older release    |          
 
 📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/auth-identity).
 

@@ -13,10 +13,10 @@
 
 | Chart Version       | Onboarding Version | Transaction Version        | Console Version   | Notes                      |
 |---------------------|--------------------|----------------------------|-------------------|----------------------------|
+| `1.60.0`            | `2.1.0`            |  `2.1.0`                   | `2.1.0`           | Only chart improvements  |
 | `1.59.0`            | `2.1.0`            |  `2.1.0`                   | `2.1.0`           | Console app minor version bump   |
 | `1.57.0 - 1.58.0`   | `2.1.0`            |  `2.1.0`                   | `2.0.0`           | Console app major version bump   |
-| `1.54.0 - 1.56.0`   | `2.1.0`            |  `2.1.0`                   | `1.25.0`          | Internal Helm chart improvements only |
-| `1.53.0`            | `2.0.0`            |  `2.0.0`                   | `1.25.0`          | Older release      |
+| `1.54.0 - 1.56.0`   | `2.1.0`            |  `2.1.0`                   | `1.25.0`          | Older release  |
 
 📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/deploy-midaz-using-helm).
 
@@ -27,7 +27,9 @@
 
 | Chart Version | Auth Version | Identity Version           |  Notes    |
 |---------------|--------------|----------------------------|-----------|
-| `1.4.0`      | `1.0.0`       |  `1.0.0`                   | Latest    |          
+| `1.6.0`      | `1.0.0`       |  `1.0.0`                   | Migrate app images to GHCR   |  
+| `1.5.0`      | `1.0.0`       |  `1.0.0`                   | Only chart improvements   |    
+| `1.4.0`      | `1.0.0`       |  `1.0.0`                   | Older release    |          
 
 📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/auth-identity).
 

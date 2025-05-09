@@ -9,7 +9,7 @@ This helm chart installs [Plugin Acess Manager](https://docs.lerian.studio/docs/
 To install Plugin Access Manager using Helm, run the following command:
 
 ```console
-$ helm install plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 1.4.0 -n midaz-plugins --create-namespace
+$ helm install plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version <> -n midaz-plugins --create-namespace
 ```
 
 This will create a new namespace called midaz-plugins if it doesn't already exist and deploy the Plugin Access Manager Helm chart.

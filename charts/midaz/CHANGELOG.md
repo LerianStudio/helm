@@ -1,3 +1,10 @@
+##  (2025-05-12)
+
+
+### Bug Fixes
+
+* **chart:** resources limits in onboarding and transaction values ([9d788f5](https://github.com/LerianStudio/helm/commit/9d788f5dc9639cb97bf285332c31033fedb0545a))
+
 ##  (2025-05-09)
 
 

@@ -262,7 +262,7 @@ onboarding:
     # -- Minimum CPU and memory requests
     requests:
       cpu: 1500m
-      memory: 512Gi
+      memory: 512Mi
 
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
@@ -583,10 +583,10 @@ valkey:
       enabled: false
     
     extraFlags:
-      - "--maxmemory 384mb"              # Controla o limite de uso e define um teto de uso de memória (nunca deixe sem isso, para evitar OOM).
-      - "--maxmemory-policy allkeys-lru" # Política de remoção quando bater o limite (LRU funciona bem em cache). Estratégia de eviction inteligente para cache rotativo
-      - "--hz 100"                       # Melhora a responsividade dos eventos internos e aumenta a frequência de tarefas internas, como liberação de memória, verificações de expiração, etc.
-      - "--maxclients 10000"             # Suporte a muitas conexões simultâneas
+      - "--maxmemory 640mb"              # Controls the memory usage limit to prevent OOM (never leave this unset).
+      - "--maxmemory-policy allkeys-lru" # Eviction policy when memory limit is reached (LRU works well for caching). Smart eviction strategy for rotating cache.
+      - "--hz 100"                       # Improves responsiveness of internal events and increases the frequency of internal tasks such as memory cleanup, key expiration checks, etc.
+      - "--maxclients 10000"             # Supports a large number of simultaneous connections
 
 postgresql:
   # PostgreSQL is the backbone of Midaz for managing structured data that demands transactional reliability and consistency.

@@ -261,8 +261,8 @@ onboarding:
       memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
-      cpu: 768m
-      memory: 256Mi
+      cpu: 1500m
+      memory: 512Mi
 
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
@@ -446,8 +446,8 @@ transaction:
       memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
-      cpu: 768m
-      memory: 256Mi
+      cpu: 2000m
+      memory: 512Mi
 
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
@@ -457,7 +457,7 @@ transaction:
     # -- Maximum number of replicas
     maxReplicas: 9
     # -- Target CPU utilization percentage for autoscaling
-    targetCPUUtilizationPercentage: 70
+    targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
 
   # -- Node selector for scheduling pods on specific nodes
@@ -574,12 +574,19 @@ valkey:
   auth:
     enabled: true
     password: lerian
+    username: midaz
+  
+  primary:
+    resourcesPreset: "medium"
     
-  master:
     persistence:
-      size: 8Gi
-
-    resourcesPreset: "large"
+      enabled: false
+    
+    extraFlags:
+      - "--maxmemory 640mb"              # Controls the memory usage limit to prevent OOM (never leave this unset).
+      - "--maxmemory-policy allkeys-lru" # Eviction policy when memory limit is reached (LRU works well for caching). Smart eviction strategy for rotating cache.
+      - "--hz 100"                       # Improves responsiveness of internal events and increases the frequency of internal tasks such as memory cleanup, key expiration checks, etc.
+      - "--maxclients 10000"             # Supports a large number of simultaneous connections
 
 postgresql:
   # PostgreSQL is the backbone of Midaz for managing structured data that demands transactional reliability and consistency.
@@ -669,8 +676,6 @@ postgresql:
 
 mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-mongodb
   enabled: true
 
   external: false
@@ -678,6 +683,9 @@ mongodb:
     enabled: true
     rootUser: midaz
     rootPassword: "lerian"
+  
+  resourcesPreset: "medium"
+
   persistence:
     size: 8Gi
 

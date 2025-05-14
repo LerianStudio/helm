@@ -1,7 +1,7 @@
 dependencies:
-- name: redis
-  repository: https://charts.bitnami.com/bitnami
-  version: 19.3.4
+- name: valkey
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 2.4.7
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 16.3.5
@@ -11,5 +11,5 @@ dependencies:
 - name: rabbitmq
   repository: https://charts.bitnami.com/bitnami
   version: 15.2.5
-digest: sha256:f5d42dbb64357e406a9d4df9b41bf9f57164ad6a2ce1e9806bcdb70738d13725
-generated: "2025-03-07T15:29:47.720594-03:00"
+digest: sha256:b8562e8343824327c9382058503611d75ce38deaf618a682ac8a2bba8875becf
+generated: "2025-05-12T17:26:21.979915005-03:00"

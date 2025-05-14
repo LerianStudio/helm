@@ -258,7 +258,7 @@ onboarding:
     # -- CPU and memory limits for pods
     limits:
       cpu: 1500m
-      memory: 512Gi
+      memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
       cpu: 1500m
@@ -443,7 +443,7 @@ transaction:
     # -- CPU and memory limits for pods
     limits:
       cpu: 2000m
-      memory: 512Gi
+      memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
       cpu: 2000m

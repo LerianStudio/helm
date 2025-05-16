@@ -1,5 +1,5 @@
 apiVersion: v2
-name: plugin-crm
+name: plugin-crm-helm
 description: A Helm chart for Kubernetes
 type: application
 

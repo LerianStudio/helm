@@ -1,3 +1,11 @@
+##  (2025-05-16)
+
+
+### Performance Improvements
+
+* Update resources ([b5f07f0](https://github.com/LerianStudio/helm/commit/b5f07f0fd2319f2bbe3155fd075c1ae7874cf59c))
+* Update resources ([9ffc743](https://github.com/LerianStudio/helm/commit/9ffc7430951db115934fb10223f0d9287adfcf60))
+
 ##  (2025-05-14)
 
 

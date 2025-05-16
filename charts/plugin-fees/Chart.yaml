@@ -1,5 +1,5 @@
 apiVersion: v2
-name: plugin-fees
+name: plugin-fees-helm
 description: A Helm chart for Kubernetes
 type: application
 

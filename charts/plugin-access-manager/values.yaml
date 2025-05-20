@@ -317,19 +317,9 @@ auth-database:
     username: "auth"
     password: "lerian"
     database: "casdoor"
-  primary:
-    extraVolumes:
-    - name: init-script-volume
-      configMap:
-        name: casdoor-init-script
-        items:
-          - key: 00_init.sql
-            path: 00_init.sql
-    extraVolumeMounts:
-    - name: init-script-volume
-      mountPath: /docker-entrypoint-initdb.d/00_init.sql
-      subPath: 00_init.sql
     
+  primary:
+
     persistence:
       size: 8Gi
 

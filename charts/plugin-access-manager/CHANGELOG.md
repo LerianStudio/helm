@@ -1,3 +1,11 @@
+##  (2025-05-29)
+
+
+### Bug Fixes
+
+* update casdoor backend images ([ea9e82b](https://github.com/LerianStudio/helm/commit/ea9e82bfce3259bf88fb13b0b39b0a2f6280c7a1))
+* update casdoor backend images ([8c1741d](https://github.com/LerianStudio/helm/commit/8c1741dcd6e3c7df86ed6f5f59d07309792754ba))
+
 ##  (2025-05-20)
 
 

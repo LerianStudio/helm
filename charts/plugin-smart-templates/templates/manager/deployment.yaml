@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-manager.fullname" . }}
+  labels:
+    {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 4 }}
+  {{- with .Values.manager.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }} 
+spec:
+  strategy:
+    {{- toYaml .Values.manager.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.manager.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-manager.selectorLabels" (dict "context" . "name" .Values.manager.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+       {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 8 }}
+      {{- with .Values.manager.podAnnotations }}
+      annotations:
+        {{- range $key, $value := . }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }} 
+    spec:
+      {{- with .Values.manager.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}    
+      {{- end }}
+      serviceAccountName: {{ include "plugin-manager.fullname" . }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "plugin-manager.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$RABBITMQ_HOST:$RABBITMQ_PORT_HOST" "$MONGO_HOST:$MONGO_PORT";
+              do
+                echo "Checking $svc...";
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done; 
+      containers:
+        - name: {{ include "plugin-manager.fullname" . }}
+          image: {{ .Values.manager.image.repository }}:{{ .Values.manager.image.tag | default (include "plugin.version" .) }}
+          imagePullPolicy: {{ .Values.manager.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.manager.service.port }}
+              protocol: TCP
+          envFrom:
+          - secretRef:
+              name: {{ include "plugin-manager.fullname" . }}
+          - configMapRef:
+              name: {{ include "plugin-manager.fullname" . }}
+          resources:
+            {{- toYaml .Values.manager.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.manager.service.port }}
+            initialDelaySeconds: {{ .Values.manager.readinessProbe.initialDelaySeconds | default 25 }}
+            periodSeconds: {{ .Values.manager.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.manager.readinessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ .Values.manager.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.manager.readinessProbe.failureThreshold | default 3 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.manager.service.port }}            
+            initialDelaySeconds: {{ .Values.manager.livenessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.manager.livenessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.manager.livenessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ .Values.manager.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.manager.livenessProbe.failureThreshold | default 3 }}            
+      {{- with .Values.manager.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.manager.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.manager.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

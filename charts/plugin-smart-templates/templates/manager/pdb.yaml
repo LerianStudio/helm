@@ -1,0 +1,23 @@
+{{- if .Values.manager.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "plugin-manager.fullname" . }}
+  labels:
+    {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 4 }} 
+  {{- with .Values.manager.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.manager.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.manager.pdb.minAvailable | default 0 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-manager.selectorLabels" (dict "context" . "name" .Values.manager.name) | nindent 6 }}
+{{- end }}

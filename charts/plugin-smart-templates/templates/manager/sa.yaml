@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "plugin-manager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 4 }}

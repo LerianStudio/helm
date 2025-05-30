@@ -1,6 +1,17 @@
 ##  (2025-05-30)
 
 
+### ⚠ BREAKING CHANGES
+
+* **valkey:** Valkey no longer uses StatefulSet. Persistent volume claims from StatefulSet will not be reused automatically.
+
+### Features
+
+* **valkey:** migrate from StatefulSet to Deployment ([3854dfe](https://github.com/LerianStudio/helm/commit/3854dfe3430eaf7f4d99e39d032103eca4ff10fd))
+
+##  (2025-05-30)
+
+
 ### Features
 
 * **dependencies:** add job to apply default definitions to external rabbitmq host ([c91db90](https://github.com/LerianStudio/helm/commit/c91db90f8311960f818d7f0b0046bc9eda1a4e6b))

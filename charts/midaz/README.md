@@ -411,12 +411,38 @@ This Chart has the following dependencies for the project's default installation
 - **Version:** 16.0.0
 - **Repository:** https://charts.bitnami.com/bitnami
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
-- **Note:** If you have an existing RabbitMQ instance, you can disable this dependency and configure Midaz Components to use your external RabbitMQ, like this:
   
 - **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
 
-  ```yaml
-  onboarding:
+- **You have two options to load the definitions:**
+
+1. **Automatically:**
+Enable the flag below in your values.yaml to automatically create a Kubernetes Job that applies the default RabbitMQ definitions to your external RabbitMQ instance:
+
+      ```yaml
+      global:
+        # -- Enable or disable loading of default RabbitMQ definitions to external host
+        externalRabbitmqDefinitions:
+          enabled: true
+      ```
+    ⚠️ **Note:** This Job runs only on the first installation of the chart because it uses a Helm post-install hook. It will not run during upgrades or re-installs unless the release is deleted and installed again. Use this option for initial setup only.
+
+2. **Manually:**
+You can also manually apply the definitions using RabbitMQ’s HTTP API with the following command:
+
+    ```console
+    curl -u { your-host-user }: { your-host-pass } -X POST -H "Content-Type: application/json" -d @load_definitions.json http://{ your-host }: { your-host-port }/api/definitions
+    ```
+    The load_definitions.json file is located at:
+
+    ```console
+    charts/midaz/files/rabbitmq/load_definitions.json
+    ```
+  
+- **Note:** If you have an existing RabbitMQ instance, you can disable this dependency and configure Midaz Components to use your external RabbitMQ, like this:
+
+    ```yaml
+    onboarding:
     configmap:
       RABBITMQ_HOST: { your-host }
       RABBITMQ_DEFAULT_USER: { your-host-user }

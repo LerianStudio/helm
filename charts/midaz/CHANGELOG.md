@@ -1,6 +1,13 @@
 ##  (2025-05-30)
 
 
+### Features
+
+* **docs:** update readme file ([314da0e](https://github.com/LerianStudio/helm/commit/314da0e538e7534a79cbea9423d2d6b5c08c3a8e))
+
+##  (2025-05-30)
+
+
 ### ⚠ BREAKING CHANGES
 
 * **valkey:** Valkey no longer uses StatefulSet. Persistent volume claims from StatefulSet will not be reused automatically.

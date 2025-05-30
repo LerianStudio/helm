@@ -152,7 +152,7 @@ console:
     PLUGIN_IDENTITY_HOST:  "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  
     PLUGIN_IDENTITY_PORT: "4001"
     PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1"
-    MONGODB_URI: "mongodb://midaz-mongodb.midaz.svc.cluster.local."
+    MONGODB_URI: "mongodb://midaz-mongodb.midaz.svc.cluster.local.:5703/?directConnection=true"
     MONGODB_DB_NAME: "midaz-console"
     MONGODB_USER: "midaz"
     

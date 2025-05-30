@@ -161,7 +161,7 @@ console:
   # @default -- templates/console/secrets.yaml
   secrets: 
     PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
-    MONGODB_PASSWORD: "lerian"
+    MONGODB_PASS: "lerian"
 
 
   serviceAccount:

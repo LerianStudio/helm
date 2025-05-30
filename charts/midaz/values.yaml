@@ -22,7 +22,7 @@ console:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.0"
+    tag: "2.2.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -152,12 +152,17 @@ console:
     PLUGIN_IDENTITY_HOST:  "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  
     PLUGIN_IDENTITY_PORT: "4001"
     PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1"
-
+    MONGODB_URI: "mongodb://midaz-mongodb.midaz.svc.cluster.local:5703/?directConnection=true"
+    MONGODB_DB_NAME: "midaz-console"
+    MONGODB_USER: "midaz"
+    
 
   # -- Secrets for storing sensitive data
   # @default -- templates/console/secrets.yaml
   secrets: 
     PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    MONGODB_PASSWORD: "lerian"
+
 
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
@@ -181,7 +186,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.0"
+    tag: "2.2.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -366,7 +371,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.0"
+    tag: "2.2.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

@@ -587,6 +587,7 @@ valkey:
     username: midaz
   
   primary:
+    kind: Deployment
     resourcesPreset: "medium"
     
     persistence:

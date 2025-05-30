@@ -12,6 +12,9 @@ data:
   OTEL_URL_TRACES: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/traces" .Release.Namespace) | quote }}
   OTEL_URL_LOGS: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/logs" .Release.Namespace) | quote }}
   
+  # APP
+  VERSION: {{ .Values.console.image.tag | quote }}
+
   # Midaz Console
   MIDAZ_CONSOLE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_PORT | default "8081" | quote }}
   MIDAZ_CONSOLE_SERVICE_HOST: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_HOST | default "midaz-console" | quote }}
@@ -43,8 +46,17 @@ data:
   PLUGIN_IDENTITY_PORT: {{ .Values.console.configmap.PLUGIN_IDENTITY_PORT | default "4001" | quote }}
   PLUGIN_IDENTITY_BASE_PATH: {{ .Values.console.configmap.PLUGIN_IDENTITY_BASE_PATH | default "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1" | quote }}
 
+  # MongoDB Configuration
+  MONGODB_URI: {{ .Values.console.configmap.MONGODB_URI | default "mongodb://midaz-mongodb.midaz.svc.cluster.local." | quote }}
+  MONGODB_DB_NAME: {{ .Values.console.configmap.MONGODB_DB_NAME | default "midaz-console" | quote }}
+  MONGODB_USER: {{ .Values.console.configmap.MONGODB_USER | default "midaz" | quote }}
+
   # Midaz Console NextJS Public Configuration
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
-  NEXT_PUBLIC_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS | default "midaz,plugin-fees,plugin-crm,plugin-smart-templates" | quote }}
+  NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+
+  NEXT_PUBLIC_MIDAZ_VERSION: {{ .Values.console.image.tag | quote }}
+
 {{- end }}
 

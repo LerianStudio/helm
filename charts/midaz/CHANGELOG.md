@@ -3,6 +3,13 @@
 
 ### Features
 
+* **docs:** update rabbitmq documentation ([cae5467](https://github.com/LerianStudio/helm/commit/cae54677bcf8a2a26949ed341df9caea50cea762))
+
+##  (2025-05-30)
+
+
+### Features
+
 * **docs:** update readme file ([314da0e](https://github.com/LerianStudio/helm/commit/314da0e538e7534a79cbea9423d2d6b5c08c3a8e))
 
 ##  (2025-05-30)

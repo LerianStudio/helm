@@ -1,0 +1,76 @@
+{{- if .Values.global.externalRabbitmqDefinitions.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: midaz-external-rabbitmq-definitions
+  namespace: {{ .Release.Namespace }}
+data:
+  load_definitions.json: |
+{{ .Files.Get "files/rabbitmq/load_definitions.json" | indent 4 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: midaz-rabbitmq-apply-definitions
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "midaz-onboarding.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$RABBITMQ_HOST:$RABBITMQ_PORT_HOST";
+              do
+                echo "Checking $svc...";
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done; 
+      containers:
+        - name: apply-definitions
+          image: curlimages/curl:8.7.1
+          command:
+            - sh
+            - -c
+            - |
+              curl -v -u "$RABBITMQ_USER:$RABBITMQ_PASS" \
+                -H "content-type: application/json" \
+                -X POST \
+                --data-binary @/definitions/load_definitions.json \
+                "http://$RABBITMQ_HOST:$RABBITMQ_PORT/api/definitions"
+          env:
+            - name: RABBITMQ_HOST
+              value: {{ .Values.onboarding.configmap.RABBITMQ_HOST | quote }}
+            - name: RABBITMQ_USER
+              value: {{ .Values.onboarding.configmap.RABBITMQ_DEFAULT_USER | quote }}
+            - name: RABBITMQ_PORT
+              value: {{ .Values.onboarding.configmap.RABBITMQ_PORT_AMQP | quote }}
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "midaz-onboarding.fullname" . }}
+                  key: RABBITMQ_DEFAULT_PASS
+          volumeMounts:
+            - name: definitions
+              mountPath: /definitions
+      volumes:
+        - name: definitions
+          configMap:
+            name: midaz-external-rabbitmq-definitions
+            items:
+              - key: load_definitions.json
+                path: load_definitions.json
+{{- end }}

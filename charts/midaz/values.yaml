@@ -6,6 +6,11 @@ nameOverride: "midaz"
 fullnameOverride: ""
 namespaceOverride: "midaz"
 
+global:
+  # -- Enable or disable loading of default RabbitMQ definitions to external host
+  externalRabbitmqDefinitions:
+    enabled: false
+
 console:
   # -- Service name
   name: console

@@ -1,6 +1,13 @@
 ##  (2025-06-02)
 
 
+### Features
+
+* **values:** test next release ([8417a6c](https://github.com/LerianStudio/helm/commit/8417a6c5af3b3b917db8d7491331b071adb2d440))
+
+##  (2025-06-02)
+
+
 ### ⚠ BREAKING CHANGES
 
 * **valkey:** Valkey no longer uses StatefulSet. Persistent volume claims from StatefulSet will not be reused automatically.

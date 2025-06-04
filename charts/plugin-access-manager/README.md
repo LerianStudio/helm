@@ -190,7 +190,7 @@ ingress:
       CASDOOR_DB_PORT: { your-host-port }
     
     secrets:
-      CASDOOR_DB_PASSWORD: { your-host-pass }
+      DB_PASSWORD: { your-host-pass }
 
   ```
 

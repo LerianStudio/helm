@@ -41,8 +41,8 @@ spec:
           image: "{{ .Values.console.image.repository }}:{{ .Values.console.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.console.image.pullPolicy }}
           envFrom:
-          # - secretRef:
-          #     name: {{ include "midaz-console.fullname" . }}
+          - secretRef:
+              name: {{ include "midaz-console.fullname" . }}
           - configMapRef:
               name: {{ include "midaz-console.fullname" . }}
           ports:

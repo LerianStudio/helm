@@ -1,3 +1,11 @@
+##  (2025-06-04)
+
+
+### Bug Fixes
+
+* **chart:** fix set secret ref to console deployment ([34b4885](https://github.com/LerianStudio/helm/commit/34b488597985e744a4108eda086a9e14eddac702))
+* **chart:** fix typo in environment variable name ([2f57d53](https://github.com/LerianStudio/helm/commit/2f57d53b1b47b8ef0829729a37d819949efd03c4))
+
 ##  (2025-06-03)
 
 

@@ -138,7 +138,7 @@ jobs:
         uses: LerianStudio/github-actions-lifecycle-management@main
         with:
           chart_name: "${{ matrix.chart.name }}"
-          version: "${{ steps.semantic_changelog.outputs.version }}"
+          version: "${{ steps.semantic_changelog.outputs.new_release_version }}"
           application_ids: ${{ vars.APPLICATION_IDS }}
           lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
           

@@ -134,11 +134,25 @@ jobs:
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
       
+      - name: Get Release Version
+        id: get_release_version
+        run: |
+          NEW_VERSION="${{ steps.semantic_changelog.outputs.new_release_version }}"
+          LAST_VERSION="${{ steps.semantic_changelog.outputs.last_release_version }}"
+      
+          if [ -z "$NEW_VERSION" ]; then
+            echo "No new release. Using last release version: $LAST_VERSION"
+            echo "release_version=$LAST_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "New release found: $NEW_VERSION"
+            echo "release_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Publish Release in Plugin Lifecycle Management
         uses: LerianStudio/github-actions-lifecycle-management@main
         with:
           chart_name: "${{ matrix.chart.name }}"
-          version: "${{ steps.semantic_changelog.outputs.new_release_version }}"
+          version: "${{ steps.get_release_version.outputs.release_version }}"
           application_ids: ${{ vars.APPLICATION_IDS }}
           lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
           

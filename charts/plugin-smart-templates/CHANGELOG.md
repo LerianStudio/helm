@@ -1,3 +1,75 @@
+##  (2025-06-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **valkey:** Valkey no longer uses StatefulSet. Persistent volume claims from StatefulSet will not be reused automatically.
+
+### Features
+
+* **dependencies:** add job to apply default definitions to external rabbitmq host ([c91db90](https://github.com/LerianStudio/helm/commit/c91db90f8311960f818d7f0b0046bc9eda1a4e6b))
+* **console:** add mongodb environments ([256757e](https://github.com/LerianStudio/helm/commit/256757eb38cff41510d114572f4d18d92569fd6f))
+* **console:** add mongodb environments ([88db3ba](https://github.com/LerianStudio/helm/commit/88db3bad7e8f2ec4fe5056980cbb7e41cdd02c38))
+* **console:** add mongodb environments ([7c86ca0](https://github.com/LerianStudio/helm/commit/7c86ca00a65680a99b642d976ac36578c39c31f9))
+* **console:** add mongodb port ([73ec8e2](https://github.com/LerianStudio/helm/commit/73ec8e27a619c333a6f2cfe60fcc0c8d49fd8295))
+* **valkey:** migrate from StatefulSet to Deployment ([3854dfe](https://github.com/LerianStudio/helm/commit/3854dfe3430eaf7f4d99e39d032103eca4ff10fd))
+* **helm:** update app version ([fb2f841](https://github.com/LerianStudio/helm/commit/fb2f84162e5951495e2ab12296f6855edb09fce7))
+* **values:** update auth version ([b549735](https://github.com/LerianStudio/helm/commit/b54973599235c3f52058e68dcd499c8c21c8dac7))
+* **values:** update identity version ([f8ee875](https://github.com/LerianStudio/helm/commit/f8ee875bb51ac52300d683e366f976aa903077b2))
+* **docs:** update rabbitmq documentation ([cae5467](https://github.com/LerianStudio/helm/commit/cae54677bcf8a2a26949ed341df9caea50cea762))
+* **docs:** update readme file ([314da0e](https://github.com/LerianStudio/helm/commit/314da0e538e7534a79cbea9423d2d6b5c08c3a8e))
+
+
+### Bug Fixes
+
+* add inputs to workflow ([2199faf](https://github.com/LerianStudio/helm/commit/2199faf661b3a426cd18cbc7699dbea535625870))
+* add permissions to workflow ([8e7fc74](https://github.com/LerianStudio/helm/commit/8e7fc740c666d43bcf455542e2ec988694ed49df))
+* **console:** bump image tag to 2.2.1 ([9dfde6e](https://github.com/LerianStudio/helm/commit/9dfde6ee7deb61ef67376dd84d3396845f88fe9f))
+* **chart:** fix set secret ref to console deployment ([34b4885](https://github.com/LerianStudio/helm/commit/34b488597985e744a4108eda086a9e14eddac702))
+* **chart:** fix typo in environment variable name ([2f57d53](https://github.com/LerianStudio/helm/commit/2f57d53b1b47b8ef0829729a37d819949efd03c4))
+* standardize the helm chart name ([68d68b0](https://github.com/LerianStudio/helm/commit/68d68b0b645698b4b7caf67c42358befcd0da4e6))
+* standardize the helm chart name ([577c0e3](https://github.com/LerianStudio/helm/commit/577c0e3a0b1692dc6dc856bc2fe4d79588b9efd3))
+* standardize the helm chart name ([f1afa99](https://github.com/LerianStudio/helm/commit/f1afa9915ccece10d2ed44af9ba14ac4ef0223c1))
+* standardize the helm chart name ([4fd554a](https://github.com/LerianStudio/helm/commit/4fd554a576b746752355781f68d7af69098a7fb0))
+* **console:** update mongodb default port ([fd58b09](https://github.com/LerianStudio/helm/commit/fd58b09788b9f7ccc03937ac5e950060110cedf3))
+* workflow input ([e9fb41e](https://github.com/LerianStudio/helm/commit/e9fb41e34412d562e2cf3a9364b16ed1d6a3aaa8))
+* workflow permissions ([153d780](https://github.com/LerianStudio/helm/commit/153d780e313c2940c62f91c753f7349c3126ebc1))
+
+##  (2025-06-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **valkey:** Valkey no longer uses StatefulSet. Persistent volume claims from StatefulSet will not be reused automatically.
+
+### Features
+
+* **dependencies:** add job to apply default definitions to external rabbitmq host ([c91db90](https://github.com/LerianStudio/helm/commit/c91db90f8311960f818d7f0b0046bc9eda1a4e6b))
+* **console:** add mongodb environments ([256757e](https://github.com/LerianStudio/helm/commit/256757eb38cff41510d114572f4d18d92569fd6f))
+* **console:** add mongodb environments ([88db3ba](https://github.com/LerianStudio/helm/commit/88db3bad7e8f2ec4fe5056980cbb7e41cdd02c38))
+* **console:** add mongodb environments ([7c86ca0](https://github.com/LerianStudio/helm/commit/7c86ca00a65680a99b642d976ac36578c39c31f9))
+* **console:** add mongodb port ([73ec8e2](https://github.com/LerianStudio/helm/commit/73ec8e27a619c333a6f2cfe60fcc0c8d49fd8295))
+* **valkey:** migrate from StatefulSet to Deployment ([3854dfe](https://github.com/LerianStudio/helm/commit/3854dfe3430eaf7f4d99e39d032103eca4ff10fd))
+* **helm:** update app version ([fb2f841](https://github.com/LerianStudio/helm/commit/fb2f84162e5951495e2ab12296f6855edb09fce7))
+* **values:** update auth version ([b549735](https://github.com/LerianStudio/helm/commit/b54973599235c3f52058e68dcd499c8c21c8dac7))
+* **values:** update identity version ([f8ee875](https://github.com/LerianStudio/helm/commit/f8ee875bb51ac52300d683e366f976aa903077b2))
+* **docs:** update rabbitmq documentation ([cae5467](https://github.com/LerianStudio/helm/commit/cae54677bcf8a2a26949ed341df9caea50cea762))
+* **docs:** update readme file ([314da0e](https://github.com/LerianStudio/helm/commit/314da0e538e7534a79cbea9423d2d6b5c08c3a8e))
+
+
+### Bug Fixes
+
+* add inputs to workflow ([2199faf](https://github.com/LerianStudio/helm/commit/2199faf661b3a426cd18cbc7699dbea535625870))
+* add permissions to workflow ([8e7fc74](https://github.com/LerianStudio/helm/commit/8e7fc740c666d43bcf455542e2ec988694ed49df))
+* **console:** bump image tag to 2.2.1 ([9dfde6e](https://github.com/LerianStudio/helm/commit/9dfde6ee7deb61ef67376dd84d3396845f88fe9f))
+* **chart:** fix set secret ref to console deployment ([34b4885](https://github.com/LerianStudio/helm/commit/34b488597985e744a4108eda086a9e14eddac702))
+* **chart:** fix typo in environment variable name ([2f57d53](https://github.com/LerianStudio/helm/commit/2f57d53b1b47b8ef0829729a37d819949efd03c4))
+* standardize the helm chart name ([577c0e3](https://github.com/LerianStudio/helm/commit/577c0e3a0b1692dc6dc856bc2fe4d79588b9efd3))
+* standardize the helm chart name ([f1afa99](https://github.com/LerianStudio/helm/commit/f1afa9915ccece10d2ed44af9ba14ac4ef0223c1))
+* standardize the helm chart name ([4fd554a](https://github.com/LerianStudio/helm/commit/4fd554a576b746752355781f68d7af69098a7fb0))
+* **console:** update mongodb default port ([fd58b09](https://github.com/LerianStudio/helm/commit/fd58b09788b9f7ccc03937ac5e950060110cedf3))
+* workflow permissions ([153d780](https://github.com/LerianStudio/helm/commit/153d780e313c2940c62f91c753f7349c3126ebc1))
+
 ##  (2025-05-29)
 
 

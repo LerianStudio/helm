@@ -1,6 +1,13 @@
 ##  (2025-06-05)
 
 
+### Bug Fixes
+
+* standardize the helm chart name ([29801b2](https://github.com/LerianStudio/helm/commit/29801b20dc550fbf33ad7dddf7bbb48706657946))
+
+##  (2025-06-05)
+
+
 ### ⚠ BREAKING CHANGES
 
 * **valkey:** Valkey no longer uses StatefulSet. Persistent volume claims from StatefulSet will not be reused automatically.

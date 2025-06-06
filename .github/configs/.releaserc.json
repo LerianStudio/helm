@@ -54,9 +54,9 @@
         }
       ],
       [
-        "@semantic-release/changelog",
+        "@semantic-release/exec", 
         {
-          "changelogFile": "CHANGELOG.md"
+          "successCmd": "helm push charts/chart-name oci://ghcr.io/lerianstudio"
         }
       ],
       [
@@ -68,12 +68,12 @@
             "charts/chart-name/Chart.yaml"
           ]
         }
+      ],
+      [
+        "@semantic-release/changelog",
+        {
+          "changelogFile": "CHANGELOG.md"
+        }
       ]
-      // [
-      //   "@semantic-release/exec", 
-      //   {
-      //     "successCmd": "helm push charts/chart-name oci://ghcr.io/lerianstudio"
-      //   }
-      // ]
     ]
   }

@@ -29,6 +29,7 @@ jobs:
           path_level: 2
 
   release-helm-chart:
+    if: needs.get-changed-paths.outputs.matrix != '[]'
     name: Release Helm Chart
     runs-on: ubuntu-latest
     steps:

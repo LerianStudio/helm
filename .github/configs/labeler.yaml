@@ -1,22 +1,22 @@
-onboarding:
-  - changed-files:
-      - any-glob-to-any-file: charts/midaz/templates/onboarding/**
-
-transaction:
-  - changed-files:
-      - any-glob-to-any-file: charts/midaz/templates/transaction/**
-
-console:
-  - changed-files:
-      - any-glob-to-any-file: charts/midaz/templates/console/**
-
-dependencies:
+midaz:
   - changed-files:
       - any-glob-to-any-file: charts/midaz/**
 
-values:
+plugin-access-manager:
   - changed-files:
-      - any-glob-to-any-file: charts/midaz/**
+      - any-glob-to-any-file: charts/plugin-access-manager/**
+
+plugin-smart-templates:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-smart-templates/**
+
+plugin-crm:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-crm/**
+
+plugin-fees:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-fees/**
 
 pipe:
   - changed-files:

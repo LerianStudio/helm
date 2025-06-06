@@ -1,6 +1,17 @@
 ##  (2025-06-06)
 
 
+### Bug Fixes
+
+* add matrix to changelo with gpt step ([38fcd74](https://github.com/LerianStudio/helm/commit/38fcd74ad4ded6d0f37331557d1edc064a08cbfc))
+* lint workflow add all charts ([4cb4d78](https://github.com/LerianStudio/helm/commit/4cb4d78157b59711229b3fdc5cf430540a6b39ac))
+* lint workflow add all charts ([e90688f](https://github.com/LerianStudio/helm/commit/e90688f0bf1229ddb6b9aa453d7931edd8d9652f))
+* remove lint workflow ([044fc82](https://github.com/LerianStudio/helm/commit/044fc82cacae08dccdf11944e0bc04620b3bc47c))
+* standardize the helm chart name ([3bc4430](https://github.com/LerianStudio/helm/commit/3bc44304cda84b05b11b87155173fb4876c830bf))
+
+##  (2025-06-06)
+
+
 ### ⚠ BREAKING CHANGES
 
 * **valkey:** Valkey no longer uses StatefulSet. Persistent volume claims from StatefulSet will not be reused automatically.

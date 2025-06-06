@@ -142,9 +142,12 @@ jobs:
           lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
 
   generate_changelog:
+    needs:
+      - get-changed-paths
+      - release-helm-chart
     name: 📝 Generate AI-powered Changelog
+    if: needs.get-changed-paths.outputs.matrix != '[]'
     runs-on: ubuntu-22.04
-    needs: release-helm-chart
     strategy:
       max-parallel: 1
       matrix:

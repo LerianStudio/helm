@@ -9,6 +9,25 @@ on:
 
 
 jobs:
+  get-changed-paths:
+    name: Get Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.changed-paths.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get changed paths
+        id: changed-paths
+        uses: LerianStudio/github-actions-changed-paths@main
+        with:
+          filter_paths: charts/
+          get_app_name: true
+          path_level: 2
+
   release-helm-chart:
     name: Release Helm Chart
     runs-on: ubuntu-latest
@@ -20,10 +39,10 @@ jobs:
         uses: azure/setup-helm@v3
 
       - name: Helm Lint
-        run: helm lint charts/midaz
+        run: helm lint ${{ matrix.chart.working_dir }}
 
       - name: Run Helm Unittest
         id: unittest
         run: |
           helm plugin install https://github.com/helm-unittest/helm-unittest.git
-          helm unittest charts/midaz
+          helm unittest ${{ matrix.chart.working_dir }}

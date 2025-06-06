@@ -3,11 +3,11 @@
 ## Pull Request Type
 [//]: # (Check the appropriate box for the type of pull request.)
 
-- [ ] Chart
-- [ ] Onboarding
-- [ ] Grafana
-- [ ] Transaction
-- [ ] Console
+- [ ] Midaz
+- [ ] Plugin Access Manager
+- [ ] Plugin CRM
+- [ ] Plugin Smart Templates
+- [ ] Plugin Fees
 - [ ] Pipeline
 - [ ] Documentation
 

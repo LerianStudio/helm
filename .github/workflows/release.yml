@@ -154,7 +154,7 @@ jobs:
 
       - uses: LerianStudio/github-actions-gptchangelog@chart
         with:
-          CHECKOUT_DIR: ${{ matrix.chart.working_dir }}
+          WORK_DIR: ${{ matrix.chart.working_dir }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

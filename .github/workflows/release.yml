@@ -11,6 +11,11 @@ on:
       - '.github/configs/**'
       - '.gitignore'
 
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
 jobs:
   get-changed-paths:
     name: Get Changed Paths
@@ -129,4 +134,34 @@ jobs:
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
 
+      - name: Publish Release in Plugin Lifecycle Management
+        uses: LerianStudio/github-actions-lifecycle-management@main
+        with:
+          chart_name: "${{ matrix.chart.name }}"
+          application_ids: ${{ vars.APPLICATION_IDS }}
+          lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
+
+  generate_changelog:
+    name: 📝 Generate AI-powered Changelog
+    runs-on: ubuntu-22.04
+    needs: release-helm-chart
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
+          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+
+      - uses: LerianStudio/github-actions-gptchangelog@chart
+        with:
+          WORK_DIR: ${{ matrix.chart.working_dir }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LERIAN_CI_CD_USER_GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
+          LERIAN_CI_CD_USER_GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
+          LERIAN_CI_CD_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
+          LERIAN_CI_CD_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
+          LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
+          LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
 

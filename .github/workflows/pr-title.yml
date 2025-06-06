@@ -30,13 +30,11 @@ jobs:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
         with:
           scopes: |
-            chart
-            onboarding
-            transaction
-            console
-            dependencies
-            values
+            midaz
+            plugin-access-manager
+            plugin-crm
+            plugin-smart-templates
+            plugin-fees
             pipe
             doc
-            github
           requireScope: true

@@ -136,6 +136,7 @@ jobs:
 
 
       - name: Publish Release in Plugin Lifecycle Management
+        if: github.ref == 'refs/heads/main'
         uses: LerianStudio/github-actions-lifecycle-management@main
         with:
           chart_name: "${{ matrix.chart.name }}"

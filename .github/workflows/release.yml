@@ -145,6 +145,10 @@ jobs:
     name: 📝 Generate AI-powered Changelog
     runs-on: ubuntu-22.04
     needs: release-helm-chart
+    strategy:
+      max-parallel: 1
+      matrix:
+        chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     steps:
       - uses: actions/create-github-app-token@v1
         id: app-token

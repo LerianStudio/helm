@@ -159,7 +159,7 @@ jobs:
           app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
 
-      - uses: LerianStudio/github-actions-gptchangelog@chart
+      - uses: LerianStudio/github-actions-gptchangelog/changelog-helm@chart
         with:
           WORK_DIR: ${{ matrix.chart.working_dir }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

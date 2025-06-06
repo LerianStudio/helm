@@ -1,5 +1,5 @@
 apiVersion: v2
-name: midaz-plugin-smart-templates
+name: plugin-smart-templates-helm
 description: A Helm chart for deploying Golang applications
 type: application
 

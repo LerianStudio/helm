@@ -142,6 +142,7 @@ jobs:
           chart_name: "${{ matrix.chart.name }}"
           application_ids: ${{ vars.APPLICATION_IDS }}
           lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
+          working_directory: ${{ matrix.chart.working_dir }}
 
   generate_changelog:
     needs:

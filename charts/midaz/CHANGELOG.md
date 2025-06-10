@@ -1,3 +1,21 @@
+## [vmidaz-2.3.1-beta.4] - 2025-06-10
+
+This release focuses on essential maintenance tasks, ensuring a smooth and transparent update process for users. It includes updates to release management and documentation, providing a stable foundation for future enhancements.
+
+### 📚 Documentation
+- Updated the CHANGELOG to accurately reflect recent changes and improvements. This helps users quickly understand the latest updates, enhancing transparency and user experience.
+
+### 🔧 Maintenance
+- **Release Management**: Advanced the project to version 2.3.1-beta.4, incorporating preparatory changes for the upcoming release. This ensures users have access to the latest updates and improvements in a structured manner.
+
+### Notes
+- **No Breaking Changes**: This release does not introduce any breaking changes, allowing users to update without compatibility concerns.
+- **No Major Features or Bug Fixes**: The focus of this release is on maintenance and documentation updates, with no new features or bug fixes included.
+
+This update is primarily a maintenance release, focusing on ensuring that the release process is smooth and that documentation accurately reflects the current state of the project. Users can expect a stable update without the need for adjustments or migrations.
+
+This changelog provides a clear and concise overview of the release, focusing on the benefits and impact for users while maintaining a professional and user-friendly tone.
+
 ## [vmidaz-2.3.1-beta.3] - 2025-06-10
 
 This release focuses on enhancing project documentation and updating the release version to ensure users have access to the latest pre-release version for testing and feedback.

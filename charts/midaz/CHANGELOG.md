@@ -1,3 +1,14 @@
+## [vmidaz-2.3.1-beta.9] - 2025-06-10
+
+This release focuses on essential maintenance updates to keep the project well-documented and aligned with user needs. While no new features or bug fixes are included, these changes ensure continued stability and clarity for users.
+
+### 📚 Documentation
+- **Updated Changelog**: The changelog has been refreshed to accurately reflect the latest updates and improvements. This ensures users can easily track changes and plan for updates, enhancing transparency and understanding of the software's development path.
+
+### 🔧 Maintenance
+- **Release Management Update**: The project has been updated to version 2.3.1-beta.9. Regular updates like this help maintain software stability and ensure users have access to the latest improvements, even in the absence of new features or bug fixes.
+
+
 ## [vmidaz-2.3.1-beta.8] - 2025-06-10
 
 This release focuses on enhancing the project's version tracking and improving user documentation for better clarity and usability.

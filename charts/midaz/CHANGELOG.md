@@ -1,3 +1,18 @@
+## [midaz-2.3.1-beta.4] - 2025-06-10
+
+This release focuses on enhancing documentation clarity and improving the build process, ensuring a smoother experience for developers and users interacting with the Helm project.
+
+### 📚 Documentation
+- **Improved Configuration Guidance**: Updated the values example in the Midaz documentation to provide clearer guidance on configuration options. This helps users better understand how to set up and customize their deployments effectively.
+- **Updated Changelog**: Enhanced the Midaz chart's CHANGELOG to include recent updates, ensuring users have access to the latest information about changes and improvements in the chart.
+
+### 🔧 Maintenance
+- **Release Management**: Published version 2.3.1-beta.4, marking the latest beta release. This version includes the latest updates and improvements, preparing for the next stable release.
+- **Continuous Integration**: Updated the pipeline configuration to block triggers from bots. This change prevents automated systems from inadvertently initiating builds, ensuring that only intentional changes by developers trigger the CI process. This maintains clean and efficient build processes.
+
+These updates collectively improve the documentation clarity and maintain the integrity of the build process, ensuring a smoother experience for developers and users interacting with the Helm project.
+
+
 ## [vmidaz-2.3.1-beta.3] - 2025-06-10
 
 This release focuses on enhancing the documentation to improve user understanding and ease of use, alongside essential maintenance updates to keep the project versioning current.

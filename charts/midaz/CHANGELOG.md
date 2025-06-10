@@ -1,3 +1,15 @@
+## [vmidaz-2.3.1-beta.12] - 2025-06-10
+
+This maintenance release focuses on keeping the Helm project aligned with its development roadmap and ensuring accurate documentation for users.
+
+### 📚 Documentation
+- **Changelog Update**: The changelog has been updated to reflect recent changes and improvements. This ensures users have clear and accurate information about modifications in the latest release, enhancing transparency and user awareness.
+
+### 🔧 Maintenance
+- **Release Management**: The project has been updated to version 2.3.1-beta.12 as part of the ongoing release cycle. This update provides users with early access to upcoming features and fixes, supporting testing and feedback in alignment with the project's development roadmap.
+
+This changelog provides a concise overview of the key maintenance updates in version 2.3.1, focusing on the benefits of keeping documentation current and maintaining alignment with the project's release cycle.
+
 ## [vmidaz-2.3.1-beta.11] - 2025-06-10
 
 This release focuses on maintaining the project's momentum with essential updates to the release management and documentation, ensuring users have access to the latest information and improvements.

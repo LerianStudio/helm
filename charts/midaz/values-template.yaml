@@ -134,5 +134,4 @@ mongodb:
   enabled: true
 
 rabbitmq:
-  enabled: 
-  
+  enabled: true

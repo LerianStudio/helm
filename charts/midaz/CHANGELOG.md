@@ -1,3 +1,15 @@
+## [vmidaz-2.3.1-beta.3] - 2025-06-10
+
+This release focuses on enhancing project documentation and updating the release version to ensure users have access to the latest pre-release version for testing and feedback.
+
+### 📚 Documentation
+- Enhanced the CHANGELOG to provide a clear and concise history of changes. This helps users understand the evolution of the project and the context of current features and fixes.
+
+### 🔧 Maintenance
+- **Release Management**: Updated the project to version 2.3.1-beta.3. This ensures users have access to the latest pre-release version, which is crucial for testing and providing feedback for further development.
+
+These updates focus on keeping the project well-documented and ensuring users are informed about the latest version available for testing.
+
 ##  (2025-06-04)
 
 

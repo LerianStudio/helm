@@ -1,3 +1,14 @@
+## [vmidaz-2.3.1-beta.3] - 2025-06-10
+
+This release focuses on enhancing the reliability of the software and ensuring users have access to the most up-to-date information through improved documentation. No new features or bug fixes are included in this update.
+
+### 📚 Documentation
+- The changelog has been updated to reflect recent changes and improvements, ensuring users can easily track the software's evolution and stay informed about updates.
+
+### 🔧 Maintenance
+- The software version has been updated to 2.3.1-beta.3. This update is part of our ongoing commitment to maintaining the stability and reliability of the software, ensuring that the latest improvements and fixes are available for testing.
+
+
 ## [3.0.0] - 2025-06-10
 
 This release of Helm introduces significant architectural changes and new features aimed at enhancing scalability, security, and user experience. Users are encouraged to review the breaking changes and new features to fully leverage the improvements.

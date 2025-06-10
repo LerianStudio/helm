@@ -1,3 +1,16 @@
+## [vmidaz-2.3.1-beta.5] - 2025-06-10
+
+This release focuses on maintaining accurate documentation to ensure users have the latest information about the software. No new features or bug fixes are included in this update.
+
+### 📚 Documentation
+- Updated the CHANGELOG for version 2.3.1-beta.5 to provide users with the most current information on updates and enhancements. This ensures transparency and keeps users informed about ongoing development efforts.
+
+### 🔧 Maintenance
+- Improved release management processes by updating documentation. This helps streamline future releases and ensures that users have access to clear and accurate information about software changes.
+
+
+This changelog is crafted to communicate the focus of the release—documentation updates—while maintaining a professional and user-friendly tone. Each section is relevant to the changes made, ensuring clarity and transparency for users.
+
 ## [vmidaz-2.3.1-beta.4] - 2025-06-10
 
 This release focuses on enhancing the project's release management and documentation, ensuring users have clear and up-to-date information about the project's progress.

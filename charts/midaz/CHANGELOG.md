@@ -1,3 +1,33 @@
+## [3.0.0] - 2025-06-10
+
+This major release of Helm introduces significant enhancements and improvements across multiple components, focusing on modularity, configurability, and database support.
+
+### ⚠️ Breaking Changes
+- **Authentication Overhaul**: Major updates to authentication processes require users to review and update their configurations. Please refer to the migration guide for detailed steps.
+- **Deployment Strategy Update**: Transition from StatefulSet to Deployment for Valkey. Users must adjust their deployment configurations to align with the new strategy.
+- **Auth Backend Changes**: Removal of the auth backend from plugin auth templates necessitates updates to custom templates. Follow the provided migration documentation for guidance.
+
+### ✨ Features
+- **Plugin Access Manager Templates**: Introduces enhanced modularity for managing access controls, allowing for easier customization and scalability.
+- **Pre-configured Chart Templates**: New templates for plugin CRM and Fees streamline deployment and integration, reducing setup time.
+- **MongoDB Support**: Console now supports MongoDB environments, expanding database compatibility and offering more flexibility in database management.
+
+### 🐛 Bug Fixes
+- **Configuration Corrections**: Fixed environment variable typo and default MongoDB port settings, ensuring proper deployment and connectivity.
+- **Documentation Accuracy**: Resolved rabbitmq misspelling, enhancing clarity for RabbitMQ setup instructions.
+
+### ⚡ Performance
+- **PostgreSQL Replication Enhancements**: Updated configurations improve database reliability and performance, particularly in high-availability setups.
+
+### 📚 Documentation
+- **Comprehensive Updates**: New and updated readme files and charts documentation provide clearer guidance and support, ensuring users have the information they need to leverage new features effectively.
+
+### 🔧 Maintenance
+- **Dependency Cleanup**: Removal of outdated dependencies and scripts reduces potential security vulnerabilities and streamlines the codebase.
+- **Semantic Release Improvements**: Enhanced workflows ensure smoother release processes and better version management.
+
+This release focuses on delivering a more robust and flexible platform, with particular attention to improving user experience and expanding capabilities. Users are encouraged to review the breaking changes and new features sections to fully leverage the improvements in this version.
+
 ##  (2025-06-04)
 
 

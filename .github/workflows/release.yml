@@ -105,12 +105,9 @@ jobs:
           jq \
             --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
-            --arg changelogPath "$CHART_PATH/CHANGELOG.md" \
             --arg successCmd "helm package $CHART_PATH && helm push $CHART_NAME-helm-\${nextRelease.version}.tgz oci://ghcr.io/lerianstudio" \
             '.plugins[2][1].chartPath = $chartPath |
-              .plugins[5][1].changelogFile = $changelogPath |
-              .plugins[4][1].assets[0] = $changelogPath |
-              .plugins[4][1].assets[1] = ($chartPath + "/Chart.yaml") |
+              .plugins[4][1].assets[0] = ($chartPath + "/Chart.yaml") |
               .tagFormat = $tagFormat |
               .plugins[3][1].successCmd = $successCmd' \
             .github/configs/.releaserc.json > .releaserc
@@ -125,7 +122,6 @@ jobs:
             conventional-changelog-conventionalcommits@v7.0.2
             semantic-release-helm3
             @semantic-release/exec@6.0.3
-            @semantic-release/changelog
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

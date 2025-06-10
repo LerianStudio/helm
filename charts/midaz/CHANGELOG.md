@@ -18,7 +18,20 @@ This changelog provides a clear and concise overview of the release, focusing on
 
 ## [vmidaz-2.3.1-beta.3] - 2025-06-10
 
-This release focuses on enhancing project documentation and updating the release version to ensure users have access to the latest pre-release version for testing and feedback.
+This release focuses on enhancing the clarity and accessibility of our documentation, ensuring users can seamlessly integrate the latest updates into their workflows.
+
+### 📚 Documentation
+- Improved the CHANGELOG to provide a clearer and more comprehensive overview of recent updates. This enhancement helps users quickly understand changes, facilitating easier adoption and integration into their workflows.
+
+### 🔧 Maintenance
+- Updated the project to version 2.3.1-beta.3 as part of our ongoing commitment to maintaining software stability and reliability. This ensures users have access to the latest features and improvements without disruption.
+
+
+This changelog captures the essence of the release, focusing on documentation improvements and maintenance updates that enhance user experience and ensure continued software reliability.
+
+## [vmidaz-2.3.1-beta.3] - 2025-06-10
+
+This release focuses on enhancing the reliability of the software and ensuring users have access to the most up-to-date information through improved documentation. No new features or bug fixes are included in this update.
 
 ### 📚 Documentation
 - Enhanced the CHANGELOG to provide a clear and concise history of changes. This helps users understand the evolution of the project and the context of current features and fixes.

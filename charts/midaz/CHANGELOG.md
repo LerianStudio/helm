@@ -1,80 +1,14 @@
 ## [vmidaz-2.3.1-beta.3] - 2025-06-10
 
-This release focuses on enhancing the reliability of the software and ensuring users have access to the most up-to-date information through improved documentation. No new features or bug fixes are included in this update.
+This release focuses on enhancing project documentation and updating the release version to ensure users have access to the latest pre-release version for testing and feedback.
 
 ### 📚 Documentation
-- The changelog has been updated to reflect recent changes and improvements, ensuring users can easily track the software's evolution and stay informed about updates.
+- Enhanced the CHANGELOG to provide a clear and concise history of changes. This helps users understand the evolution of the project and the context of current features and fixes.
 
 ### 🔧 Maintenance
-- The software version has been updated to 2.3.1-beta.3. This update is part of our ongoing commitment to maintaining the stability and reliability of the software, ensuring that the latest improvements and fixes are available for testing.
+- **Release Management**: Updated the project to version 2.3.1-beta.3. This ensures users have access to the latest pre-release version, which is crucial for testing and providing feedback for further development.
 
-
-## [3.0.0] - 2025-06-10
-
-This release of Helm introduces significant architectural changes and new features aimed at enhancing scalability, security, and user experience. Users are encouraged to review the breaking changes and new features to fully leverage the improvements.
-
-### ⚠️ Breaking Changes
-- **Authentication & Deployment**: Migrated from StatefulSet to Deployment. This change improves scalability and resource management. Users need to update deployment configurations and scripts. Refer to the migration guide for detailed steps.
-- **Auth & Build**: Major version update to 2.0.0 across several components. Significant architectural changes require users to adapt to new configurations. Review the provided migration guides for assistance.
-- **Build & Config**: Removed outdated dependencies and scripts related to Casdoor. Update your configurations to align with the new setup.
-- **Auth & Config**: Refactored sensitive environment variable names for plugins. Update deployment scripts and environment configurations accordingly.
-- **Database & Config**: Replaced Redis with Valkey, affecting data handling and caching strategies. Ensure compatibility with the new setup.
-
-### ✨ Features
-- **Plugin Management**: New chart templates and values files for plugin-fees and plugin-crm enhance modularity and ease of integration.
-- **Console & Database**: Added MongoDB environment configurations, offering more flexible database setups and improved data handling.
-- **Deployment Strategy**: Introduced deployment strategy definitions, providing better control over application deployment and scaling.
-- **Security & Access**: Enhanced security context configurations for plugins, improving compliance and security posture.
-
-### 🐛 Bug Fixes
-- **Console & Database**: Corrected default MongoDB port settings and image tags, resolving connectivity issues and ensuring proper deployment.
-- **Auth & Config**: Fixed environment variable typos and secret references, enhancing reliability and reducing configuration errors.
-- **Transaction & Onboarding**: Addressed misconfigured ports and removed deprecated secrets, improving system stability and security.
-
-### ⚡ Performance
-- **Resource Optimization**: Optimized resource limits and deployment strategies, resulting in improved performance and resource utilization.
-
-### 📚 Documentation
-- **Comprehensive Updates**: Updated documentation, including new readme files and charts documentation, to improve user guidance and onboarding.
-
-### 🔧 Maintenance
-- **Dependencies**: Regular updates and removal of outdated dependencies ensure the system remains secure and up-to-date.
-- **Code Quality**: Refactored codebase to remove redundant components, improving maintainability and facilitating future updates.
-- **CI/CD**: Enhanced CI pipelines with semantic release integration, streamlining development and deployment processes.
-
----
-
-This changelog provides a comprehensive overview of recent updates to the Helm project, focusing on user impact and system improvements. Users are encouraged to review the breaking changes and major features to ensure smooth transitions and leverage new capabilities.
-
-## [3.0.0] - 2025-06-10
-
-This major release of Helm introduces significant enhancements and improvements across multiple components, focusing on modularity, configurability, and database support.
-
-### ⚠️ Breaking Changes
-- **Authentication Overhaul**: Major updates to authentication processes require users to review and update their configurations. Please refer to the migration guide for detailed steps.
-- **Deployment Strategy Update**: Transition from StatefulSet to Deployment for Valkey. Users must adjust their deployment configurations to align with the new strategy.
-- **Auth Backend Changes**: Removal of the auth backend from plugin auth templates necessitates updates to custom templates. Follow the provided migration documentation for guidance.
-
-### ✨ Features
-- **Plugin Access Manager Templates**: Introduces enhanced modularity for managing access controls, allowing for easier customization and scalability.
-- **Pre-configured Chart Templates**: New templates for plugin CRM and Fees streamline deployment and integration, reducing setup time.
-- **MongoDB Support**: Console now supports MongoDB environments, expanding database compatibility and offering more flexibility in database management.
-
-### 🐛 Bug Fixes
-- **Configuration Corrections**: Fixed environment variable typo and default MongoDB port settings, ensuring proper deployment and connectivity.
-- **Documentation Accuracy**: Resolved rabbitmq misspelling, enhancing clarity for RabbitMQ setup instructions.
-
-### ⚡ Performance
-- **PostgreSQL Replication Enhancements**: Updated configurations improve database reliability and performance, particularly in high-availability setups.
-
-### 📚 Documentation
-- **Comprehensive Updates**: New and updated readme files and charts documentation provide clearer guidance and support, ensuring users have the information they need to leverage new features effectively.
-
-### 🔧 Maintenance
-- **Dependency Cleanup**: Removal of outdated dependencies and scripts reduces potential security vulnerabilities and streamlines the codebase.
-- **Semantic Release Improvements**: Enhanced workflows ensure smoother release processes and better version management.
-
-This release focuses on delivering a more robust and flexible platform, with particular attention to improving user experience and expanding capabilities. Users are encouraged to review the breaking changes and new features sections to fully leverage the improvements in this version.
+These updates focus on keeping the project well-documented and ensuring users are informed about the latest version available for testing.
 
 ##  (2025-06-04)
 

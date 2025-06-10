@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   get-changed-paths:
+    if: github.actor != 'lerian-studio-midaz-push-bot[bot]' 
     name: Get Changed Paths
     runs-on: ubuntu-latest
     outputs:
@@ -105,12 +106,9 @@ jobs:
           jq \
             --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
-            --arg changelogPath "$CHART_PATH/CHANGELOG.md" \
             --arg successCmd "helm package $CHART_PATH && helm push $CHART_NAME-helm-\${nextRelease.version}.tgz oci://ghcr.io/lerianstudio" \
             '.plugins[2][1].chartPath = $chartPath |
-              .plugins[5][1].changelogFile = $changelogPath |
-              .plugins[4][1].assets[0] = $changelogPath |
-              .plugins[4][1].assets[1] = ($chartPath + "/Chart.yaml") |
+              .plugins[4][1].assets[0] = ($chartPath + "/Chart.yaml") |
               .tagFormat = $tagFormat |
               .plugins[3][1].successCmd = $successCmd' \
             .github/configs/.releaserc.json > .releaserc
@@ -125,7 +123,6 @@ jobs:
             conventional-changelog-conventionalcommits@v7.0.2
             semantic-release-helm3
             @semantic-release/exec@6.0.3
-            @semantic-release/changelog
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -136,8 +133,41 @@ jobs:
 
 
       - name: Publish Release in Plugin Lifecycle Management
+        if: github.ref == 'refs/heads/main'
         uses: LerianStudio/github-actions-lifecycle-management@main
         with:
           chart_name: "${{ matrix.chart.name }}"
           application_ids: ${{ vars.APPLICATION_IDS }}
           lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
+          working_directory: ${{ matrix.chart.working_dir }}
+
+  generate_changelog:
+    needs:
+      - get-changed-paths
+      - release-helm-chart
+    name: 📝 Generate AI-powered Changelog
+    if: needs.get-changed-paths.outputs.matrix != '[]'
+    runs-on: ubuntu-22.04
+    strategy:
+      max-parallel: 1
+      matrix:
+        chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
+          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+
+      - uses: LerianStudio/github-actions-gptchangelog/helm-repo@chart
+        with:
+          WORK_DIR: ${{ matrix.chart.working_dir }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LERIAN_CI_CD_USER_GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
+          LERIAN_CI_CD_USER_GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
+          LERIAN_CI_CD_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
+          LERIAN_CI_CD_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
+          LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
+          LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}

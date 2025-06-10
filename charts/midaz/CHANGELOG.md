@@ -1,3 +1,30 @@
+## [midaz-2.3.1-beta.4] - 2025-06-10
+
+This release focuses on enhancing documentation clarity and improving the build process, ensuring a smoother experience for developers and users interacting with the Helm project.
+
+### 📚 Documentation
+- **Improved Configuration Guidance**: Updated the values example in the Midaz documentation to provide clearer guidance on configuration options. This helps users better understand how to set up and customize their deployments effectively.
+- **Updated Changelog**: Enhanced the Midaz chart's CHANGELOG to include recent updates, ensuring users have access to the latest information about changes and improvements in the chart.
+
+### 🔧 Maintenance
+- **Release Management**: Published version 2.3.1-beta.4, marking the latest beta release. This version includes the latest updates and improvements, preparing for the next stable release.
+- **Continuous Integration**: Updated the pipeline configuration to block triggers from bots. This change prevents automated systems from inadvertently initiating builds, ensuring that only intentional changes by developers trigger the CI process. This maintains clean and efficient build processes.
+
+These updates collectively improve the documentation clarity and maintain the integrity of the build process, ensuring a smoother experience for developers and users interacting with the Helm project.
+
+
+## [vmidaz-2.3.1-beta.3] - 2025-06-10
+
+This release focuses on enhancing the documentation to improve user understanding and ease of use, alongside essential maintenance updates to keep the project versioning current.
+
+### 📚 Documentation
+- **Improved Example for 'Values' Template**: A new example has been added to the Midaz documentation, illustrating the use of the 'values' template. This enhancement helps users better understand and implement this feature, making the documentation more accessible and practical. [#242]
+
+### 🔧 Maintenance
+- **Version Update**: The project has been updated to version 2.3.1-beta.3. This update ensures accurate version tracking, aiding developers and users in managing releases effectively.
+
+In this release, the key focus is on improving documentation to help users better understand and utilize the software's features, along with routine maintenance to ensure smooth version management. No new features, bug fixes, or breaking changes were introduced.
+
 ##  (2025-06-04)
 
 

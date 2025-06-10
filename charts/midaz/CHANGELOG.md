@@ -1,3 +1,15 @@
+## [vmidaz-2.3.1-beta.3] - 2025-06-10
+
+This release focuses on enhancing the documentation to improve user understanding and ease of use, alongside essential maintenance updates to keep the project versioning current.
+
+### 📚 Documentation
+- **Improved Example for 'Values' Template**: A new example has been added to the Midaz documentation, illustrating the use of the 'values' template. This enhancement helps users better understand and implement this feature, making the documentation more accessible and practical. [#242]
+
+### 🔧 Maintenance
+- **Version Update**: The project has been updated to version 2.3.1-beta.3. This update ensures accurate version tracking, aiding developers and users in managing releases effectively.
+
+In this release, the key focus is on improving documentation to help users better understand and utilize the software's features, along with routine maintenance to ensure smooth version management. No new features, bug fixes, or breaking changes were introduced.
+
 ##  (2025-06-04)
 
 

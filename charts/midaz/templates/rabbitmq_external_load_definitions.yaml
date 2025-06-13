@@ -46,22 +46,44 @@ spec:
             - sh
             - -c
             - |
-              curl -v -u "$RABBITMQ_USER:$RABBITMQ_PASS" \
+              echo "Applying RabbitMQ definitions from file"
+              curl -sf -u "midaz_admin:$RABBITMQ_PASS" \
                 -H "content-type: application/json" \
                 -X POST \
                 --data-binary @/definitions/load_definitions.json \
-                "http://$RABBITMQ_HOST:$RABBITMQ_PORT/api/definitions"
+                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT/api/definitions"
+              
+              echo "Updating RabbitMQ user: onboarding"
+              curl -sf -u "midaz_admin:$RABBITMQ_PASS" \
+                -H "content-type: application/json" \
+                -X PUT \
+                --data "{\"password\":\"$RABBITMQ_ONBOARDING_PASS\",\"tags\":\"administrator\"}" \
+                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT/api/users/onboarding"
+
+              echo "Updating RabbitMQ user: transaction"
+              curl -sf -u "midaz_admin:$RABBITMQ_PASS" \
+                -H "content-type: application/json" \
+                -X PUT \
+                --data "{\"password\":\"$RABBITMQ_TRANSACTION_PASS\",\"tags\":\"administrator\"}" \
+                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT/api/users/transaction"
+              
+              echo "RabbitMQ definitions applied successfully."
           env:
+            - name: RABBITMQ_PROTOCOL
+              value: {{ .Values.onboarding.configmap.RABBITMQ_PROTOCOL | quote }}
             - name: RABBITMQ_HOST
               value: {{ .Values.onboarding.configmap.RABBITMQ_HOST | quote }}
-            - name: RABBITMQ_USER
-              value: {{ .Values.onboarding.configmap.RABBITMQ_DEFAULT_USER | quote }}
             - name: RABBITMQ_PORT
               value: {{ .Values.onboarding.configmap.RABBITMQ_PORT_AMQP | quote }}
-            - name: RABBITMQ_PASS
+            - name: RABBITMQ_ONBOARDING_PASS
               valueFrom:
                 secretKeyRef:
                   name: {{ include "midaz-onboarding.fullname" . }}
+                  key: RABBITMQ_DEFAULT_PASS
+            - name: RABBITMQ_TRANSACTION_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "midaz-transaction.fullname" . }}
                   key: RABBITMQ_DEFAULT_PASS
           volumeMounts:
             - name: definitions

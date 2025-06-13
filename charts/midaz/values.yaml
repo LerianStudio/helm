@@ -307,6 +307,7 @@ onboarding:
   # @default -- templates/onboarding/configmap.yaml
   configmap: 
     # -- Rabbitmq default configuration
+    RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"
     RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
     RABBITMQ_PORT_HOST: "5672"

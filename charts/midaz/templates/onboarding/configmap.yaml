@@ -1,7 +1,15 @@
 {{- $releaseNs := .Release.Namespace }}
 {{- $rabbitHost := .Values.onboarding.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." $releaseNs) }}
 {{- $rabbitProtocol := .Values.onboarding.configmap.RABBITMQ_PROTOCOL | default "http" }}
-{{- $rabbitHealthCheckURL := printf "%s://%s" $rabbitProtocol $rabbitHost }}
+{{- $rabbitAmqpPort := .Values.onboarding.configmap.RABBITMQ_PORT_AMQP | default "15672" }}
+
+{{- $rabbitHealthCheckURL := "" }}
+
+{{- if eq $rabbitProtocol "http" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s:%s" $rabbitProtocol $rabbitHost $rabbitAmqpPort }}
+{{- else if eq $rabbitProtocol "https" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s" $rabbitProtocol $rabbitHost }}
+{{- end }}
 
 kind: ConfigMap
 apiVersion: v1
@@ -17,7 +25,7 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.onboarding.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local.:4317" .Release.Namespace) | quote }}
   ENABLE_TELEMETRY: {{ .Values.onboarding.configmap.ENABLE_TELEMETRY | default "false" | quote }}
   # RABBITMQ
-  RABBITMQ_HEALTH_CHECK_URL: {{ $rabbitHealthCheckURL | quote }}
+  RABBITMQ_HEALTH_CHECK_URL: {{ .Values.onboarding.configmap.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
   RABBITMQ_URI: {{ .Values.onboarding.configmap.RABBITMQ_URI | default "amqp" | quote }}
   RABBITMQ_HOST: {{ .Values.onboarding.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." .Release.Namespace) | quote }}
   RABBITMQ_PORT_HOST: {{ .Values.onboarding.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}

@@ -1,3 +1,15 @@
+## [midaz-2.4.0-beta.2] - 2025-06-16
+
+This release focuses on enhancing the organization and clarity of our documentation, ensuring users have access to the latest software versions and information. While there are no new features or bug fixes, this update emphasizes stability and user guidance.
+
+### 📚 Documentation
+- **Improved Changelog for `charts/midaz`:** We've updated the CHANGELOG to provide clearer insights into recent changes. This enhancement helps users track the software's evolution and understand any new features or fixes included in the latest releases.
+
+### 🔧 Maintenance
+- **Release Version Updates:** We've updated the release versions to 2.4.0-beta.2 and 2.3.1. This ensures users are accessing the most recent features and improvements while maintaining compatibility with existing setups.
+
+These updates are part of our ongoing commitment to providing a stable and user-friendly experience. While this release does not introduce new features or fixes, it lays the groundwork for future enhancements by keeping our documentation and versioning up-to-date.
+
 ## [midaz-2.4.0-beta.1] - 2025-06-16
 
 This release introduces enhanced configurability with RabbitMQ protocol settings, improves system reliability with critical bug fixes, and strengthens build security. Users will experience a more adaptable and stable platform.

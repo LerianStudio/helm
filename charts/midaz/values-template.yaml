@@ -47,6 +47,7 @@ onboarding:
 
   configmap: 
     RABBITMQ_URI: "amqp"
+    RABBITMQ_PROTOCOL: "http"
     RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
     RABBITMQ_PORT_HOST: "5672"
     RABBITMQ_PORT_AMQP: "15672" 
@@ -91,6 +92,7 @@ transaction:
 
   configmap: 
     RABBITMQ_URI: "amqp"
+    RABBITMQ_PROTOCOL: "http"
     RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
     RABBITMQ_PORT_HOST: "5672"
     RABBITMQ_PORT_AMQP: "15672" 

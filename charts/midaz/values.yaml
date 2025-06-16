@@ -191,7 +191,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.2.0"
+    tag: "2.2.2"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

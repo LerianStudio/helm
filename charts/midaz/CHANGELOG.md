@@ -18,6 +18,20 @@ These updates collectively enhance the platform's configurability, reliability, 
 
 ## [midaz-2.3.1-beta.4] - 2025-06-10
 
+This release focuses on improving user guidance and streamlining the build process, providing clearer documentation and enhancing CI efficiency.
+
+### 📚 Documentation
+- **Improved Configuration Guidance**: The values example for the Midaz chart has been updated to offer clearer instructions on configuration options, helping users customize their deployments more effectively.
+- **Up-to-Date CHANGELOG**: The Midaz chart's CHANGELOG has been enhanced to include the latest updates, ensuring users are well-informed about recent changes and improvements.
+
+### 🔧 Maintenance
+- **Release Management**: Prepared the versioning update to 2.3.1-beta.4, allowing users to track and test the latest beta features and fixes.
+- **CI Pipeline Optimization**: Implemented a block on triggers from automated bots within the CI pipeline. This prevents unnecessary builds, reduces resource usage, and maintains clean build logs, enhancing overall efficiency.
+
+This changelog provides a concise overview of the changes in version 2.3.1, highlighting the benefits to users and ensuring clarity and accessibility.
+
+## [midaz-2.3.1-beta.4] - 2025-06-10
+
 This release focuses on enhancing documentation clarity and improving the build process, ensuring a smoother experience for developers and users interacting with the Helm project.
 
 ### 📚 Documentation

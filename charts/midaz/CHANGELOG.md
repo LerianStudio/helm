@@ -1,3 +1,21 @@
+## [midaz-2.4.0-beta.1] - 2025-06-16
+
+This release introduces enhanced configurability with RabbitMQ protocol settings, improves system reliability with critical bug fixes, and strengthens build security. Users will experience a more adaptable and stable platform.
+
+### ✨ Features  
+- **RabbitMQ Configuration Enhancements**: Users can now customize RabbitMQ protocol settings for transaction and onboarding processes. This feature enhances integration flexibility, allowing for more tailored and efficient message handling across various environments.
+
+### 🐛 Bug Fixes
+- **Initialization Stability**: Fixed issues with initialization containers for transaction and onboarding components, ensuring smoother deployment and reducing startup failures.
+- **RabbitMQ Configuration Application**: Corrected a job responsible for applying RabbitMQ definitions, preventing disruptions in message handling and ensuring configurations are consistently applied.
+
+### 🔧 Maintenance
+- **Database Preparation**: Released database version 2.4.0-beta.1, incorporating several under-the-hood improvements to prepare for future features and enhancements.
+- **CI Pipeline Security**: Updated the CI pipeline to block triggers from bots, enhancing the security and integrity of the build process by preventing unauthorized executions.
+- **Changelog Documentation**: Updated the CHANGELOG for charts/midaz, providing users with a clear and concise record of changes, facilitating easier tracking of updates and modifications.
+
+These updates collectively enhance the platform's configurability, reliability, and security, offering users a more robust and adaptable experience.
+
 ## [midaz-2.3.1-beta.4] - 2025-06-10
 
 This release focuses on enhancing documentation clarity and improving the build process, ensuring a smoother experience for developers and users interacting with the Helm project.

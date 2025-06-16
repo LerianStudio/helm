@@ -44,6 +44,7 @@ spec:
             - /bin/sh
             - -c
             - >
+              MONGO_PORT=$(echo "$MONGO_PORT" | sed 's/[^0-9].*//');
               for svc in "$DB_HOST:$DB_PORT" "$DB_REPLICA_HOST:$DB_REPLICA_PORT" "$RABBITMQ_HOST:$RABBITMQ_PORT_HOST" "$MONGO_HOST:$MONGO_PORT" "$REDIS_HOST:$REDIS_PORT";
               do
                 echo "Checking $svc...";

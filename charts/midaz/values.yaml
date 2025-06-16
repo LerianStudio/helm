@@ -191,7 +191,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.2.0"
+    tag: "2.2.2"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -307,6 +307,7 @@ onboarding:
   # @default -- templates/onboarding/configmap.yaml
   configmap: 
     # -- Rabbitmq default configuration
+    RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"
     RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
     RABBITMQ_PORT_HOST: "5672"
@@ -376,7 +377,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.2.1"
+    tag: "2.2.2"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -492,6 +493,7 @@ transaction:
   # @default -- templates/transaction/configmap.yaml
   configmap: 
     # -- Rabbitmq default configuration
+    RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"
     RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
     RABBITMQ_PORT_HOST: "5672"

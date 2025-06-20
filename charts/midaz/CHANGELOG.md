@@ -20,6 +20,19 @@ These updates collectively enhance the reliability and usability of the system, 
 
 ## [midaz-2.4.0-beta.2] - 2025-06-16
 
+This release focuses on essential maintenance updates and documentation enhancements, ensuring stability and clarity for users as we prepare for future features.
+
+### 📚 Documentation
+- Updated the CHANGELOG for the `charts/midaz` component. This ensures users have access to the latest information about changes, improvements, and bug fixes, facilitating better understanding and usage of the software.
+
+### 🔧 Maintenance
+- **Release Management**: Updated the project to version 2.4.0-beta.2 and 2.3.1. These updates include various under-the-hood improvements that enhance system stability and security, ensuring users have access to the latest updates and bug fixes.
+
+In this release cycle, the focus was on maintaining the project with version updates and ensuring that the documentation accurately reflects the current state of the software. Users can expect a stable experience with the latest updates applied.
+
+
+## [midaz-2.4.0-beta.2] - 2025-06-16
+
 This release focuses on enhancing the organization and clarity of our documentation, ensuring users have access to the latest software versions and information. While there are no new features or bug fixes, this update emphasizes stability and user guidance.
 
 ### 📚 Documentation

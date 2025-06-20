@@ -33,23 +33,16 @@ The Smart Templates plugin provides a flexible document templating system that e
 
 ## Installing the Chart
 
-### Add the Lerian Helm repository
-
-```bash
-helm repo add lerian https://charts.lerian.io/
-helm repo update
-```
-
 ### Install the chart
 
 ```bash
-helm install plugin-smart-templates lerian/plugin-smart-templates -n midaz-plugins --create-namespace
+helm install plugin-smart-templates oci://registry-1.docker.io/lerianstudio/plugin-smart-templates-helm --version <> -n midaz-plugins --create-namespace
 ```
 
 To install the chart with a custom values file:
 
 ```bash
-helm install plugin-smart-templates lerian/plugin-smart-templates -n midaz-plugins -f my-values.yaml
+helm install plugin-smart-templates oci://registry-1.docker.io/lerianstudio/plugin-smart-templates-helm --version <> -n midaz-plugins -f my-values.yaml
 ```
 
 ## Uninstalling the Chart

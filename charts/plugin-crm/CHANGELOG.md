@@ -1,5 +1,25 @@
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
+This major release introduces significant updates to the authentication and backend components, enhancing flexibility and improving configuration processes. Users should review the changes carefully to ensure seamless integration.
+
+### ⚠️ Breaking Changes
+- **Authentication & Backend Overhaul**: This update requires changes to existing integrations and configurations. Users must consult the updated migration guides to adapt their systems accordingly. Key steps include revisiting authentication workflows and updating backend configurations to align with the new standards.
+
+### 🐛 Bug Fixes
+- **Image Repository Correction**: Resolved an issue with incorrect image versions being deployed, ensuring that deployments now pull the correct images. This fix enhances reliability and reduces deployment errors.
+- **Configuration Initialization**: Fixed a bug affecting the default configuration setting, ensuring the application initializes correctly across various environments. This improves the robustness of the startup process.
+
+### ⚡ Performance
+- **Configuration & Database Efficiency**: Streamlined configuration and database interactions for improved performance. Users will experience a more efficient setup process and faster database operations, contributing to overall system responsiveness.
+
+### 🔧 Maintenance
+- **Version Updates**: Updated application version numbers to reflect the latest release, ensuring accurate version tracking and alignment with the current state of the application.
+- **Dependencies & Documentation**: Updated dependencies and documentation to support the latest changes, ensuring compatibility and providing comprehensive guidance for users navigating the new version.
+
+This release focuses on enhancing the backend infrastructure and addressing critical bugs to improve user experience and system reliability. Users are encouraged to review the updated documentation for a smooth transition.
+
+## [plugin-crm-1.3.0-beta.1] - 2025-06-20
+
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.
 
 ### ⚠️ Breaking Changes

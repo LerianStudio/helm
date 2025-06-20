@@ -1,3 +1,31 @@
+## [plugin-fees-2.0.0-beta.1] - 2025-06-20
+
+This major release of Helm introduces significant enhancements for scalability, configuration flexibility, and integration capabilities, alongside crucial bug fixes and documentation improvements.
+
+### ⚠️ Breaking Changes
+- **Deployment Configuration**: Migrated from StatefulSet to Deployment. This change enhances scalability and management but requires users to update their deployment configurations. Please refer to the migration guide for detailed instructions.
+- **Configuration & Database**: Major updates to configuration settings and database schema. Users must update their configurations and perform database migrations to ensure compatibility.
+- **Auth/Backend Adjustments**: Removed certain scripts and volumes related to migrations and casdoor. Users should update their workflows to accommodate these changes.
+
+### ✨ Features
+- **Enhanced Messaging Configuration**: Introduced RabbitMQ protocol variables for transaction and onboarding processes, providing greater flexibility in message broker configurations.
+- **Streamlined Database Management**: Added MongoDB environment configurations and port settings, simplifying database connectivity and management.
+- **Improved Integration**: A new job now applies default definitions to external RabbitMQ hosts, facilitating easier integration and setup.
+
+### 🐛 Bug Fixes
+- **Initialization Stability**: Resolved issues with init containers for transaction and onboarding, ensuring proper initialization and execution.
+- **Database Compatibility**: Fixed MongoDB default port settings and updated image tags, enhancing compatibility and stability.
+- **Configuration Accuracy**: Corrected environment variable names and image repository paths, preventing deployment errors and misconfigurations.
+
+### 📚 Documentation
+- **Comprehensive Updates**: Enhanced RabbitMQ documentation and README files, providing clearer guidance and improved user onboarding.
+
+### 🔧 Maintenance
+- **Dependency Updates**: Regular updates and removal of obsolete scripts, maintaining code quality and security.
+- **Documentation Consistency**: Updated changelogs and values examples for better documentation consistency and user reference.
+
+Users are encouraged to review the detailed migration guide to ensure a smooth transition to version 2.0.0. This release focuses on enhancing user experience through improved scalability, configuration flexibility, and integration capabilities.
+
 ##  (2025-05-16)
 
 

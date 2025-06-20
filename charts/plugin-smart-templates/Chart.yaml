@@ -1,5 +1,5 @@
 apiVersion: v2
-name: midaz-plugin-smart-templates
+name: plugin-smart-templates-helm
 description: A Helm chart for deploying Golang applications
 type: application
 
@@ -18,7 +18,7 @@ maintainers:
 version: 1.0.0
 
 # This is the version number of the application being deployed. 
-appVersion: "0.1.0"
+appVersion: "1.0.0"
 
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:

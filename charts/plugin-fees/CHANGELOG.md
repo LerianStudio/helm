@@ -1,5 +1,23 @@
 ## [plugin-fees-1.3.0-beta.2] - 2025-06-20
 
+This release focuses on enhancing configuration reliability and improving documentation to streamline user setup and reduce errors.
+
+### 🐛 Bug Fixes
+- **Configuration**: Corrected the default value for the Swagger hot environment variable. This fix prevents potential misconfigurations, enhancing system stability and ensuring consistent application behavior.
+
+### 🔄 Changes
+- **Configuration**: Updated the default value for the Swagger environment variable to reflect best practices. This update enhances predictability and reduces configuration errors, leading to a more reliable system setup.
+
+### 📚 Documentation
+- **Values Template Added**: Introduced a new template file in the documentation to guide users through configuration setups. This addition simplifies the process for new users, reducing setup time and minimizing potential errors.
+
+### 🔧 Maintenance
+- **Release Management**: Prepared configuration and database components for the upcoming 1.3.0-beta.2 release. This ensures a smooth release process and alignment with the latest versioning standards.
+
+This changelog is designed to clearly communicate the improvements and fixes in version 1.3.0 of the helm project, focusing on user benefits and ease of understanding.
+
+## [plugin-fees-1.3.0-beta.2] - 2025-06-20
+
 This release focuses on enhancing configuration reliability and improving documentation, ensuring a smoother setup and deployment experience for users.
 
 ### 🐛 Bug Fixes

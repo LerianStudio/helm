@@ -1,3 +1,19 @@
+## [plugin-smart-templates-1.2.0-beta.3] - 2025-06-20
+
+This release introduces a major enhancement to chart configuration flexibility and ensures users have the latest documentation and a smooth release process.
+
+### ✨ Features  
+- **Values Template File**: A new values template file has been introduced, allowing for more dynamic and reusable configurations. This enhancement streamlines the deployment process, reducing manual setup time and offering greater customization capabilities. Users can now define chart values with increased flexibility, improving workflow efficiency.
+
+### 📚 Documentation
+- **Changelog Update for Plugin-Smart-Templates**: The changelog has been updated for version 1.2.0-beta.2, providing users with clear and up-to-date information on recent changes. This ensures better understanding and adoption of new features, supporting users in leveraging the latest improvements.
+
+### 🔧 Maintenance
+- **Release Preparation**: Preparations have been made for the upcoming release of version 1.2.0-beta.3. This ensures a smooth release process and aligns all components with the latest updates, maintaining system stability and reliability for users.
+
+
+This changelog focuses on the key changes and benefits introduced in version 1.3.0, providing users with a clear understanding of the improvements and how they enhance their experience.
+
 ## [plugin-smart-templates-1.2.0-beta.2] - 2025-06-20
 
 This release introduces a new configuration management feature, enhancing the flexibility and customization of Helm charts, along with important maintenance updates.

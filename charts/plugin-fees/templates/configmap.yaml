@@ -25,7 +25,7 @@ data:
   SWAGGER_TITLE: {{ .Values.configmap.SWAGGER_TITLE | default "Plugin Fees" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.configmap.SWAGGER_DESCRIPTION | default "Documentation for the plugins fees" | quote }}
   SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
-  SWAGGER_HOST: {{ .Values.configmap.SWAGGER_HOST | default (printf "plugin-fees.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  SWAGGER_HOST: {{ .Values.configmap.SWAGGER_HOST | default ":4002" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.configmap.SWAGGER_SCHEMES | default "http" | quote }}
   SWAGGER_LEFT_DELIMITER: {{ .Values.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}

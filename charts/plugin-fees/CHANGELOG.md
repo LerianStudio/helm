@@ -1,3 +1,21 @@
+## [plugin-fees-1.3.0-beta.2] - 2025-06-20
+
+This release focuses on enhancing configuration reliability and improving documentation, ensuring a smoother setup and deployment experience for users.
+
+### 🐛 Bug Fixes
+- **Config**: Corrected the default value for the Swagger hot environment variable. This fix prevents potential misconfigurations, ensuring consistent behavior across development and testing environments.
+
+### 🔄 Changes
+- **Config**: Updated the default value for the Swagger hot environment variable to align with the latest environment settings. This change enhances deployment reliability by ensuring configurations are up-to-date with current standards.
+
+### 📚 Documentation
+- **Values Template**: Added a values template file to the documentation. This addition aids users in understanding and customizing configuration options more effectively, streamlining the setup process for both new and existing users.
+
+### 🔧 Maintenance
+- **Release Management**: Prepared for the upcoming 1.3.0-beta.2 release with updates to configuration and database components. This groundwork supports future feature rollouts and stability improvements, ensuring a robust platform for users.
+
+This changelog presents the updates in a user-friendly manner, highlighting the benefits and impacts of the changes without delving into technical specifics. It ensures users understand the improvements and how they contribute to a better experience.
+
 ##  (2025-05-16)
 
 

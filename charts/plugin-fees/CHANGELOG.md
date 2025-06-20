@@ -1,3 +1,31 @@
+## [plugin-fees-1.3.0-beta.1] - 2025-06-20
+
+This release marks a significant update with major improvements in authentication and configuration flexibility, alongside critical bug fixes and performance enhancements.
+
+### ⚠️ Breaking Changes
+- **Authentication Overhaul**: The authentication and backend systems have been significantly restructured. Users must update configurations and may need to adjust integrations to maintain compatibility. Please refer to the updated [migration guide](#) for detailed steps.
+  
+### ✨ Features
+- **RabbitMQ Configuration**: Users can now directly configure RabbitMQ protocol variables for transaction and onboarding processes, offering enhanced control over message queuing and processing.
+
+### 🐛 Bug Fixes
+- **Container Initialization**: Resolved deployment failures by fixing container initialization issues in onboarding and transaction modules, ensuring smoother and more reliable deployments.
+- **Environment Variables**: Corrected the default value settings for environment variables to align with operational standards, reducing runtime errors.
+- **Version Consistency**: Fixed discrepancies in image repository paths and chart app versions, preventing versioning conflicts and ensuring consistent deployments.
+
+### ⚡ Performance
+- **Container Startup**: Improved the initialization process for containers, resulting in faster startup times and more reliable deployments.
+
+### 📚 Documentation
+- **Changelog Updates**: Comprehensive updates to the CHANGELOG across various components, providing users with the latest information on changes and updates.
+- **Application Versioning**: Added a values-template file and updated application version documentation to assist users in configuring their environments accurately.
+
+### 🔧 Maintenance
+- **Version Alignment**: Updated multiple components, including config and database, to align with the latest release standards, ensuring system integrity.
+- **Routine Updates**: Regular updates to app versions in chart and values files, keeping all components current with the latest release cycles.
+
+This release focuses on enhancing user experience through improved configuration options, reliability, and performance. Users are encouraged to review the updated documentation for migration guidance and to take full advantage of the new features.
+
 ##  (2025-05-16)
 
 

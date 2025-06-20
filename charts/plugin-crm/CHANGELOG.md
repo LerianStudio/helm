@@ -1,3 +1,20 @@
+## [plugin-crm-2.0.0-beta.1] - 2025-06-20
+
+This release introduces significant updates to authentication and configuration components, enhancing flexibility and reliability. Users should review breaking changes for necessary migration steps.
+
+### ⚠️ Breaking Changes
+- **Authentication & Configuration Overhaul**: This update requires users to adjust their configurations to align with the new setup. Migration steps include reviewing the updated backend processes and dependencies. Ensure you update your configuration files to maintain seamless integration.
+
+### 🐛 Bug Fixes
+- **Deployment Reliability**: Fixed an issue with the image repository, ensuring the correct images are used during deployment. This resolves previous problems with outdated images, improving deployment reliability.
+- **Configuration Consistency**: Corrected a critical environment variable's default value, preventing potential misconfigurations that could lead to runtime errors. This fix ensures consistent application behavior across environments.
+
+### 🔧 Maintenance
+- **Version Management**: Updated the application version in chart and values files to reflect the new beta release, ensuring consistent version tracking and management.
+- **Documentation & Dependencies Update**: Enhanced documentation and updated dependencies to provide users with the latest information and ensure compatibility with current libraries and tools.
+
+Each change in this release has been carefully reviewed to enhance user experience, whether through improved reliability, configurability, or maintenance practices. Users are encouraged to review the breaking changes section to understand any necessary actions required for migration to the new beta version.
+
 ##  (2025-05-16)
 
 

@@ -1,3 +1,17 @@
+## [midaz-2.5.0] - 2025-06-20
+
+This release focuses on maintaining the stability and clarity of the Helm project by updating configuration components and enhancing documentation. Users benefit from improved system reliability and easier access to change history.
+
+### 📚 Documentation
+- **CHANGELOG Update**: The CHANGELOG for the `charts/midaz` component has been updated. This enhancement provides users with a clearer and more concise history of changes, making it easier to track updates and understand the evolution of the component.
+
+### 🔧 Maintenance
+- **Configuration Updates**: Released version 2.5.0 includes updates to the configuration components. These updates ensure the system aligns with the latest standards, enhancing overall stability and maintainability. Users can continue to rely on a robust and up-to-date system without any required actions.
+
+No breaking changes or new features are included in this release, ensuring a seamless experience for users.
+
+This changelog provides a concise and user-focused summary of the updates, emphasizing the benefits and impact on users without delving into technical specifics.
+
 ## [midaz-2.5.0-beta.1] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, setting the stage for future improvements and ensuring that users have access to the latest documentation updates.

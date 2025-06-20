@@ -1,3 +1,18 @@
+## [plugin-fees-1.3.0] - 2025-06-20
+
+This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.
+
+### ✨ Improvements
+- **Configuration & Database Enhancements**: The latest updates to the configuration and database components simplify setup and boost system performance. These improvements ensure a smoother and more dependable user experience, reducing the time and effort required for configuration.
+
+### 📚 Documentation
+- **Changelog Updates**: The changelog files for 'plugin-fees' and 'midaz' have been updated to reflect the latest changes in versions v1.3.0-beta.2 and v2.5.0. This ensures users have the most current information on software updates, aiding in better understanding and utilization.
+
+### 🔧 Maintenance
+- **Routine Updates**: Regular maintenance updates for the configuration and database components ensure continued system stability and incorporate minor improvements. These updates help maintain a robust and up-to-date infrastructure, indirectly benefiting users by enhancing overall system reliability.
+
+This changelog provides a user-focused overview of the key changes in version 1.3.0, highlighting improvements that enhance user experience and system performance. The documentation updates ensure users have access to the latest information, supporting better software utilization.
+
 ## [plugin-fees-1.3.0-beta.2] - 2025-06-20
 
 This release focuses on enhancing configuration reliability and improving documentation, ensuring a smoother setup and deployment experience for users.

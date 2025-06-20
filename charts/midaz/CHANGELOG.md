@@ -1,3 +1,39 @@
+## [midaz-2.5.0-beta.1] - 2025-06-20
+
+This release focuses on enhancing the configuration and database components, setting the stage for future improvements and ensuring that users have access to the latest documentation updates.
+
+### ✨ Improvements
+- **Configuration Enhancements**: The configuration component has been updated to version 2.5.0-beta.1, introducing enhancements that prepare the system for upcoming features. This ensures smoother integration with future releases, offering users a more robust and adaptable configuration experience.
+- **Database Optimization**: The database component has been upgraded to version 2.4.0, significantly improving data handling and processing efficiency. Users will benefit from optimized performance, leading to faster and more reliable data storage and retrieval.
+
+### 📚 Documentation
+- **Changelog Updates**: The CHANGELOG for the 'charts/midaz' component has been updated to reflect the latest changes and improvements. This ensures users have access to up-to-date information, enhancing transparency and understanding of the project's development.
+
+### 🔧 Maintenance
+- **General Maintenance**: Routine updates and code maintenance have been performed to ensure the system remains stable and efficient, laying a solid foundation for future enhancements.
+
+This release does not introduce any breaking changes, new features, or bug fixes, but focuses on preparing the system for future developments and ensuring documentation accuracy.
+
+## [midaz-2.4.0-beta.3] - 2025-06-20
+
+This release focuses on enhancing system reliability and user experience through improved configuration settings and documentation updates.
+
+### ✨ Improvements
+- **Configuration Enhancements**: Default environment variable settings for onboarding and transaction processes have been improved. This change simplifies setup and ensures more reliable default behavior, minimizing the need for manual adjustments.
+
+### 🐛 Bug Fixes
+- **Chart Metadata Correction**: Fixed the application version in chart metadata, ensuring accurate version tracking and consistency across deployments. This resolves potential discrepancies and enhances deployment reliability.
+- **Configuration Adjustments**: Default values for environment variables related to onboarding and transaction components have been corrected. This fix addresses potential misconfigurations, leading to improved system stability and user experience.
+
+### 📚 Documentation
+- **Version Details Added**: Documentation now includes detailed application version information, offering users clearer insights into the current state and capabilities of the application.
+- **Changelog Updates**: The `charts/midaz` component changelog has been updated, providing users with the latest information on changes and updates, which facilitates better understanding and tracking of modifications.
+
+### 🔧 Maintenance
+- **Release Preparation**: Updated to version 2.4.0-beta.3 to prepare the system for upcoming features and improvements, ensuring a smoother transition to future releases.
+
+These updates collectively enhance the reliability and usability of the system, ensuring smoother operation and a better user experience.
+
 ## [midaz-2.4.0-beta.2] - 2025-06-16
 
 This release focuses on essential maintenance updates and documentation enhancements, ensuring stability and clarity for users as we prepare for future features.

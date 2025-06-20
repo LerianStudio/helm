@@ -43,7 +43,7 @@ data:
   SWAGGER_TITLE: {{ .Values.transaction.configmap.SWAGGER_TITLE | default "transaction API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.transaction.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz transaction API" | quote }}
   SWAGGER_VERSION: {{ include "onboarding.versionLabelValue" . }}
-  SWAGGER_HOST: {{ .Values.transaction.configmap.SWAGGER_HOST | default .Values.transaction.configmap.SERVER_ADDRESS | quote }}
+  SWAGGER_HOST: {{ .Values.transaction.configmap.SWAGGER_HOST | default ":3001" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.transaction.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.transaction.configmap.SWAGGER_SCHEMES | default "http" | quote }}
   SWAGGER_RIGHT_DELIMITER: {{ .Values.transaction.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}

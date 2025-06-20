@@ -38,7 +38,7 @@ data:
   SWAGGER_TITLE: {{ .Values.onboarding.configmap.SWAGGER_TITLE | default "Onboarding API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.onboarding.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz Onboarding API" | quote }}
   SWAGGER_VERSION: {{ include "onboarding.versionLabelValue" . }}
-  SWAGGER_HOST: {{ .Values.onboarding.configmap.SWAGGER_HOST | default .Values.onboarding.configmap.SERVER_ADDRESS | quote }}
+  SWAGGER_HOST: {{ .Values.onboarding.configmap.SWAGGER_HOST | default ":3000" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.onboarding.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.onboarding.configmap.SWAGGER_SCHEMES | default "http" | quote }}
   SWAGGER_RIGHT_DELIMITER: {{ .Values.onboarding.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}

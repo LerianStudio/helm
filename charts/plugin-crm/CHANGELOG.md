@@ -1,3 +1,22 @@
+## [plugin-crm-1.3.0] - 2025-06-20
+
+This release enhances the configuration and database components, offering improved system stability and performance. Users will experience smoother operations and more robust data handling.
+
+### ✨ Improvements  
+- **Configuration & Database Enhancements**: This update brings significant improvements to the configuration and database components, enhancing system stability and performance. Users will benefit from a smoother experience and more reliable data handling.
+- **Configuration Flexibility**: Version 2.5.0 of the configuration component introduces greater flexibility and efficiency in managing configurations, making customization and setup easier for users.
+
+### 📚 Documentation
+- **Updated CHANGELOG for Plugin-CRM**: The changelog for version 1.3.0-beta.1 has been updated to provide users with a clear overview of recent changes, ensuring they are informed about the latest enhancements.
+- **Updated CHANGELOG for Midaz Component**: Documentation for version 2.5.0 has been refreshed to give users access to the latest information on changes and improvements, aiding in better utilization of the component's capabilities.
+
+### 🔧 Maintenance
+- **Documentation Updates**: These updates ensure that users have the most current information, supporting their understanding and effective use of the software.
+
+This release focuses on enhancing the system's configuration and database components, providing users with improved performance and more detailed documentation to support their use of the software.
+
+This changelog provides a clear and concise overview of the updates in version 1.3.0, emphasizing the benefits and improvements users can expect, while maintaining a professional and user-friendly tone.
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

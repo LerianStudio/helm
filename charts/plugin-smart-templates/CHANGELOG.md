@@ -1,3 +1,30 @@
+## [plugin-smart-templates-1.2.0-beta.1] - 2025-06-20
+
+This major release introduces significant enhancements to security, messaging capabilities, and deployment efficiency, while addressing critical bugs for improved system reliability.
+
+### ⚠️ Breaking Changes
+- **Authentication & Configuration**: This update requires changes to your authentication setups to comply with new security protocols. These changes enhance security but necessitate manual updates to your configurations. Please review the updated authentication documentation and adjust your settings accordingly to ensure continued system access.
+
+### ✨ Features  
+- **RabbitMQ Protocol Variables**: New configuration options for RabbitMQ enhance the flexibility and reliability of message handling, particularly for transaction and onboarding processes. This allows for more scalable and robust messaging configurations.
+
+### 🐛 Bug Fixes
+- **Environment Variables**: Corrected default values for Swagger and RabbitMQ environment variables, reducing configuration errors and aligning defaults with expected operational parameters.
+- **Deployment Reliability**: Resolved inconsistencies with chart names and app versions, ensuring more predictable and reliable deployments.
+- **Image Repositories**: Updated references to image repositories to prevent deployment issues related to outdated or incorrect images.
+
+### ⚡ Performance
+- **Container Initialization**: Improved the startup process for transaction and onboarding containers, resulting in faster startup times and reduced resource consumption during deployments.
+
+### 📚 Documentation
+- **Version Mapping and Changelogs**: Comprehensive updates to documentation across multiple plugins, including CRM and Midaz, provide clearer guidance and ensure access to the latest information on version changes and feature updates.
+
+### 🔧 Maintenance
+- **Release Management**: Routine updates to maintain compatibility with the latest security patches and dependencies, enhancing overall system stability and security.
+- **Configuration Documentation**: Enhanced clarity and usability of configuration documentation with updated values template files, aiding users in effective environment setup and maintenance.
+
+This release focuses on delivering a more secure, efficient, and user-friendly experience. Users are encouraged to review the documentation and update their configurations to take full advantage of the improvements.
+
 ##  (2025-05-29)
 
 

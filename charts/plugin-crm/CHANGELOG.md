@@ -1,3 +1,22 @@
+## [plugin-crm-1.3.0] - 2025-06-20
+
+This release focuses on enhancing the reliability and performance of the system, with significant updates to the configuration and database components. Users will benefit from improved stability and easier configuration management.
+
+### ✨ Features
+- **Configuration Enhancements**: Updated to version 2.5.0, this release streamlines configuration processes, making it simpler for users to manage and deploy configurations efficiently. This enhancement aims to reduce setup time and improve overall user experience.
+
+### ⚡ Performance
+- **System Stability and Performance Improvements**: The updates to the configuration and database components are designed to enhance system stability and performance. Users can expect more reliable operations, contributing to a smoother and more efficient experience.
+
+### 📚 Documentation
+- **CRM Plugin Changelog Update**: The changelog for the plugin-crm has been updated to version 1.3.0-beta.1, ensuring users have access to the latest changes and improvements, which facilitates better understanding and utilization of new features.
+- **Midaz Component Changelog Update**: Updated to version 2.5.0, this documentation provides users with clear insights into recent changes and enhancements, aiding in smoother transitions and better feature adoption.
+
+### 🔧 Maintenance
+- **Documentation Updates**: Continued efforts to update documentation ensure that users are well-informed about the latest changes, supporting better feature adoption and utilization.
+
+These updates are part of our ongoing commitment to enhancing user experience by providing clearer documentation and improving system components for better performance and reliability. Users are encouraged to review the updated changelogs to fully understand the benefits and changes introduced in this release.
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

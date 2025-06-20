@@ -1,3 +1,19 @@
+## [midaz-2.5.0-beta.1] - 2025-06-20
+
+This release focuses on enhancing the configuration and database components, setting the stage for future improvements and ensuring that users have access to the latest documentation updates.
+
+### ✨ Improvements
+- **Configuration Enhancements**: The configuration component has been updated to version 2.5.0-beta.1, introducing enhancements that prepare the system for upcoming features. This ensures smoother integration with future releases, offering users a more robust and adaptable configuration experience.
+- **Database Optimization**: The database component has been upgraded to version 2.4.0, significantly improving data handling and processing efficiency. Users will benefit from optimized performance, leading to faster and more reliable data storage and retrieval.
+
+### 📚 Documentation
+- **Changelog Updates**: The CHANGELOG for the 'charts/midaz' component has been updated to reflect the latest changes and improvements. This ensures users have access to up-to-date information, enhancing transparency and understanding of the project's development.
+
+### 🔧 Maintenance
+- **General Maintenance**: Routine updates and code maintenance have been performed to ensure the system remains stable and efficient, laying a solid foundation for future enhancements.
+
+This release does not introduce any breaking changes, new features, or bug fixes, but focuses on preparing the system for future developments and ensuring documentation accuracy.
+
 ## [midaz-2.4.0-beta.3] - 2025-06-20
 
 This release focuses on enhancing system reliability and user experience through improved configuration settings and documentation updates.

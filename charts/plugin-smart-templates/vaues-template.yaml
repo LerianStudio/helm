@@ -1,0 +1,109 @@
+# Default values
+
+common:
+  configmap:
+    
+    # WORKER
+    ENV_NAME: development
+    
+    # RABBITMQ
+    RABBITMQ_URI: amqp
+    RABBITMQ_PORT_HOST: 15672
+    RABBITMQ_HOST: plugin-smart-templates-rabbitmq.midaz-plugins.svc.cluster.local
+    RABBITMQ_PORT_AMQP: 5672
+    RABBITMQ_NUMBERS_OF_WORKERS: 5
+    RABBITMQ_EXCHANGE: "smart-templates.generate-report.exchange"
+    RABBITMQ_GENERATE_REPORT_QUEUE: "smart-templates.generate-report.queue"
+    RABBITMQ_GENERATE_REPORT_KEY: "smart-templates.generate-report.key"
+    
+    # MINIO
+    MINIO_API_HOST: plugin-smart-templates-minio.midaz-plugins.svc.cluster.local
+    MINIO_API_PORT: 9000
+    MINIO_SSL_ENABLED: false
+    MINIO_APP_USER: lerian
+
+    # MONGO DB
+    #MONGO_URI=mongo+srv
+    MONGO_URI: mongodb
+    MONGO_HOST: plugin-smart-templates-mongodb.midaz-plugins.svc.cluster.local
+    MONGO_NAME: plugin-smart-templates-db
+    MONGO_USER: plugin-smart-templates
+    MONGO_PORT: 27017
+    MONGO_MAX_POOL_SIZE: 1000
+
+    # OPEN TELEMETRY
+    OTEL_LIBRARY_NAME: github.com/LerianStudio/plugin-template-engine
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: development
+    OTEL_EXPORTER_OTLP_ENDPOINT_PORT: 4317
+    OTEL_EXPORTER_OTLP_ENDPOINT: otlp://midaz-otel-lgtm:4317
+    ENABLE_TELEMETRY: false
+
+    # MIDAZ ONBOARDING
+    DATASOURCE_ONBOARDING_CONFIG_NAME: midaz_onboarding
+    DATASOURCE_ONBOARDING_HOST: midaz-postgresql-replication.midaz.svc.cluster.local
+    DATASOURCE_ONBOARDING_PORT: 5432
+    DATASOURCE_ONBOARDING_USER: midaz
+    DATASOURCE_ONBOARDING_DATABASE: onboarding
+    DATASOURCE_ONBOARDING_TYPE: postgresql
+    DATASOURCE_ONBOARDING_SSLMODE: disable
+    
+    # MIDAZ TRANSACTION
+    DATASOURCE_TRANSACTION_CONFIG_NAME: midaz_transaction
+    DATASOURCE_TRANSACTION_HOST: midaz-postgresql-replication.midaz.svc.cluster.local
+    DATASOURCE_TRANSACTION_PORT: 5432
+    DATASOURCE_TRANSACTION_USER: midaz
+    DATASOURCE_TRANSACTION_DATABASE: transaction
+    DATASOURCE_TRANSACTION_TYPE: postgresql
+    DATASOURCE_TRANSACTION_SSLMODE: disable
+    
+    # MIDAZ ONBOARDING METADATA
+    DATASOURCE_ONBOARDING_METADATA_CONFIG_NAME: "midaz_onboarding_metadata"
+    DATASOURCE_ONBOARDING_METADATA_URI: "mongodb"
+    DATASOURCE_ONBOARDING_METADATA_HOST: "midaz-mongodb"
+    DATASOURCE_ONBOARDING_METADATA_DATABASE: "onboarding"
+    DATASOURCE_ONBOARDING_METADATA_USER: "midaz"
+    DATASOURCE_ONBOARDING_METADATA_PORT: 27017
+    DATASOURCE_ONBOARDING_METADATA_MAX_POOL_SIZE: 1000
+    DATASOURCE_ONBOARDING_METADATA_TYPE: "mongodb"
+    
+    # MIDAZ TRANSACTION METADATA
+    DATASOURCE_TRANSACTION_METADATA_CONFIG_NAME: "midaz_transaction_metadata"
+    DATASOURCE_TRANSACTION_METADATA_URI: "mongodb"
+    DATASOURCE_TRANSACTION_METADATA_HOST: "midaz-mongodb"
+    DATASOURCE_TRANSACTION_METADATA_DATABASE: "transaction"
+    DATASOURCE_TRANSACTION_METADATA_USER: "midaz"
+    DATASOURCE_TRANSACTION_METADATA_PORT: 27017
+    DATASOURCE_TRANSACTION_METADATA_MAX_POOL_SIZE: 1000
+    DATASOURCE_TRANSACTION_METADATA_TYPE: "mongodb"
+    
+    # PLUGIN FEES
+    DATASOURCE_FEES_CONFIG_NAME: "plugin_fees"
+    DATASOURCE_FEES_URI: "mongodb"
+    DATASOURCE_FEES_HOST: "plugin-fees-mongodb"
+    DATASOURCE_FEES_DATABASE: "plugin-fees-db"
+    DATASOURCE_FEES_USER: "plugin-fees"
+    DATASOURCE_FEES_PORT: 5800
+    DATASOURCE_FEES_TYPE: "mongodb"
+
+secrets:
+  MONGO_PASSWORD: lerian
+  RABBITMQ_DEFAULT_USER: plugin
+  RABBITMQ_DEFAULT_PASS: Lerian@123
+  MINIO_APP_PASSWORD: Lerian@123
+  DATASOURCE_FEES_PASSWORD: plugin-fees
+  DATASOURCE_TRANSACTION_METADATA_PASSWORD: lerian
+  DATASOURCE_ONBOARDING_METADATA_PASSWORD: lerian
+  DATASOURCE_TRANSACTION_PASSWORD: lerian
+  DATASOURCE_ONBOARDING_PASSWORD: lerian
+    
+observability:
+  enabled: false
+
+keda:
+  enabled: true      
+
+mongodb:
+  enabled: true
+
+rabbitmq:
+  enabled: true

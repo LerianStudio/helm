@@ -26,17 +26,16 @@ jobs:
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
 
       - uses: amannn/action-semantic-pull-request@v5
+        if: github.actor != 'lerian-studio-midaz-push-bot[bot]'
         env:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
         with:
           scopes: |
-            chart
-            onboarding
-            transaction
-            console
-            dependencies
-            values
+            midaz
+            plugin-access-manager
+            plugin-crm
+            plugin-smart-templates
+            plugin-fees
             pipe
             doc
-            github
           requireScope: true

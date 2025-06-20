@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "plugin-auth-backend.fullname" . }}-migrations
+  annotations:
+    helm.sh/hook: pre-upgrade, post-install
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  template:
+    spec:
+    {{- with .Values.auth.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox
+        envFrom:
+        - configMapRef:
+            name: {{ include "plugin-auth.fullname" . }}
+        command:
+          - /bin/sh
+          - -c
+          - >
+            for svc in "$DB_HOST:$DB_PORT" "$REDIS_HOST:$REDIS_PORT";
+            do
+              echo "Checking $svc...";
+              while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                echo "$svc is not ready yet, waiting...";
+                sleep 5;
+              done;
+              echo "$svc is ready!";
+            done;
+      containers:
+        - name: migrate
+          image: ghcr.io/lerianstudio/casdoor-migrations:1.1.0
+          imagePullPolicy: Always
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_PASSWORD
+      restartPolicy: OnFailure

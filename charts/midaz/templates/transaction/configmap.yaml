@@ -1,3 +1,16 @@
+{{- $releaseNs := .Release.Namespace }}
+{{- $rabbitHost := .Values.onboarding.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." $releaseNs) }}
+{{- $rabbitProtocol := .Values.onboarding.configmap.RABBITMQ_PROTOCOL | default "http" }}
+{{- $rabbitAmqpPort := .Values.onboarding.configmap.RABBITMQ_PORT_AMQP | default "15672" }}
+
+{{- $rabbitHealthCheckURL := "" }}
+
+{{- if eq $rabbitProtocol "http" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s:%s" $rabbitProtocol $rabbitHost $rabbitAmqpPort }}
+{{- else if eq $rabbitProtocol "https" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s" $rabbitProtocol $rabbitHost }}
+{{- end }}
+
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -12,6 +25,7 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local.:4317" .Release.Namespace) | quote }}
   ENABLE_TELEMETRY: {{ .Values.transaction.configmap.ENABLE_TELEMETRY | default "false" | quote }}
   # RABBITMQ
+  RABBITMQ_HEALTH_CHECK_URL: {{ .Values.transaction.configmap.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
   RABBITMQ_URI: {{ .Values.transaction.configmap.RABBITMQ_URI | default "amqp" | quote }}
   RABBITMQ_HOST: {{ .Values.transaction.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." .Release.Namespace) | quote }}
   RABBITMQ_PORT_HOST: {{ .Values.transaction.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
@@ -29,7 +43,7 @@ data:
   SWAGGER_TITLE: {{ .Values.transaction.configmap.SWAGGER_TITLE | default "transaction API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.transaction.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz transaction API" | quote }}
   SWAGGER_VERSION: {{ include "onboarding.versionLabelValue" . }}
-  SWAGGER_HOST: {{ .Values.transaction.configmap.SWAGGER_HOST | default .Values.transaction.configmap.SERVER_ADDRESS | quote }}
+  SWAGGER_HOST: {{ .Values.transaction.configmap.SWAGGER_HOST | default ":3001" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.transaction.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.transaction.configmap.SWAGGER_SCHEMES | default "http" | quote }}
   SWAGGER_RIGHT_DELIMITER: {{ .Values.transaction.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}

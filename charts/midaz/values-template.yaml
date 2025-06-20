@@ -1,0 +1,139 @@
+global:
+  externalRabbitmqDefinitions:
+    enabled: false
+
+console:
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    NEXTAUTH_URL: "http://localhost:8081"
+
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_CLIENT_ID: "ac56c81d4d6d95c0ac12"
+    PLUGIN_AUTH_HOST: "plugin-access-manager-auth"
+    PLUGIN_AUTH_PORT: "4000"
+    PLUGIN_AUTH_BASE_PATH: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000/v1" 
+    PLUGIN_IDENTITY_HOST:  "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  
+    PLUGIN_IDENTITY_PORT: "4001"
+    PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1"
+    MONGODB_URI: "mongodb://midaz-mongodb.midaz.svc.cluster.local:27017/?directConnection=true"
+    MONGODB_DB_NAME: "midaz-console"
+    MONGODB_USER: "midaz"
+    
+  secrets: 
+    PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    MONGODB_PASS: "lerian"
+
+onboarding:
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap: 
+    RABBITMQ_URI: "amqp"
+    RABBITMQ_PROTOCOL: "http"
+    RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
+    RABBITMQ_PORT_HOST: "5672"
+    RABBITMQ_PORT_AMQP: "15672" 
+    RABBITMQ_DEFAULT_USER: "onboarding"
+    MONGO_URI: "mongodb"
+    MONGO_HOST: "midaz-mongodb.midaz.svc.cluster.local."
+    MONGO_NAME: "onboarding"
+    MONGO_USER: "midaz"
+    MONGO_PORT: "27017"
+    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local."
+    REDIS_PORT: "6379"
+    REDIS_USER: "midaz"
+    DB_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
+    DB_USER: "midaz"
+    DB_NAME: "onboarding"
+    DB_PORT: "5432"
+    DB_REPLICA_HOST: "midaz-postgresql-replication.midaz.svc.cluster.local."
+    DB_REPLICA_USER: "midaz"
+    DB_REPLICA_NAME: "onboarding"
+    DB_REPLICA_PORT: "5432"
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+
+  secrets: 
+    MONGO_PASSWORD: "lerian"
+    DB_PASSWORD: "lerian"
+    DB_REPLICA_PASSWORD: "lerian"
+    RABBITMQ_DEFAULT_PASS: "lerian"
+    REDIS_PASSWORD: "lerian"
+
+transaction:
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap: 
+    RABBITMQ_URI: "amqp"
+    RABBITMQ_PROTOCOL: "http"
+    RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
+    RABBITMQ_PORT_HOST: "5672"
+    RABBITMQ_PORT_AMQP: "15672" 
+    RABBITMQ_DEFAULT_USER: "transaction"
+    MONGO_URI: "mongodb"
+    MONGO_HOST: "midaz-mongodb.midaz.svc.cluster.local."
+    MONGO_NAME: "transaction"
+    MONGO_USER: "midaz"
+    MONGO_PORT: "27017"
+    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local."
+    REDIS_PORT: "6379"
+    REDIS_USER: "midaz"
+    DB_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
+    DB_USER: "midaz"
+    DB_NAME: "transaction"
+    DB_PORT: "5432"
+    DB_REPLICA_HOST: "midaz-postgresql-replication.midaz.svc.cluster.local."
+    DB_REPLICA_USER: "midaz"
+    DB_REPLICA_NAME: "transaction"
+    DB_REPLICA_PORT: "5432"
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+
+  secrets: 
+    MONGO_PASSWORD: "lerian"
+    DB_PASSWORD: "lerian"
+    DB_REPLICA_PASSWORD: "lerian"
+    RABBITMQ_DEFAULT_PASS: "lerian"
+    REDIS_PASSWORD: "lerian"
+
+grafana:
+  enabled: false
+
+valkey:
+  enabled: true
+
+postgresql:
+  enabled: true
+
+mongodb:
+  enabled: true
+
+rabbitmq:
+  enabled: true

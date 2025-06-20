@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: casdoor-init-script
-data:
-  00_init.sql: |
-{{ (.Files.Get "files/00_init.sql") | indent 4 }}

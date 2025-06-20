@@ -6,6 +6,11 @@ nameOverride: "midaz"
 fullnameOverride: ""
 namespaceOverride: "midaz"
 
+global:
+  # -- Enable or disable loading of default RabbitMQ definitions to external host
+  externalRabbitmqDefinitions:
+    enabled: false
+
 console:
   # -- Service name
   name: console
@@ -22,7 +27,7 @@ console:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.0"
+    tag: "2.2.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -152,12 +157,17 @@ console:
     PLUGIN_IDENTITY_HOST:  "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  
     PLUGIN_IDENTITY_PORT: "4001"
     PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1"
-
+    MONGODB_URI: "mongodb://midaz-mongodb.midaz.svc.cluster.local:27017/?directConnection=true"
+    MONGODB_DB_NAME: "midaz-console"
+    MONGODB_USER: "midaz"
+    
 
   # -- Secrets for storing sensitive data
   # @default -- templates/console/secrets.yaml
   secrets: 
     PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    MONGODB_PASS: "lerian"
+
 
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
@@ -181,7 +191,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.0"
+    tag: "2.2.2"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -258,11 +268,11 @@ onboarding:
     # -- CPU and memory limits for pods
     limits:
       cpu: 1500m
-      memory: 512Gi
+      memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
-      cpu: 768m
-      memory: 256Mi
+      cpu: 1500m
+      memory: 512Mi
 
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
@@ -297,6 +307,7 @@ onboarding:
   # @default -- templates/onboarding/configmap.yaml
   configmap: 
     # -- Rabbitmq default configuration
+    RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"
     RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
     RABBITMQ_PORT_HOST: "5672"
@@ -366,7 +377,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.0"
+    tag: "2.2.2"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -443,11 +454,11 @@ transaction:
     # -- CPU and memory limits for pods
     limits:
       cpu: 2000m
-      memory: 512Gi
+      memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
-      cpu: 768m
-      memory: 256Mi
+      cpu: 2000m
+      memory: 512Mi
 
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
@@ -457,7 +468,7 @@ transaction:
     # -- Maximum number of replicas
     maxReplicas: 9
     # -- Target CPU utilization percentage for autoscaling
-    targetCPUUtilizationPercentage: 70
+    targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
 
   # -- Node selector for scheduling pods on specific nodes
@@ -482,6 +493,7 @@ transaction:
   # @default -- templates/transaction/configmap.yaml
   configmap: 
     # -- Rabbitmq default configuration
+    RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"
     RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
     RABBITMQ_PORT_HOST: "5672"
@@ -574,12 +586,20 @@ valkey:
   auth:
     enabled: true
     password: lerian
+    username: midaz
+  
+  primary:
+    kind: Deployment
+    resourcesPreset: "medium"
     
-  master:
     persistence:
-      size: 8Gi
-
-    resourcesPreset: "large"
+      enabled: false
+    
+    extraFlags:
+      - "--maxmemory 640mb"              # Controls the memory usage limit to prevent OOM (never leave this unset).
+      - "--maxmemory-policy allkeys-lru" # Eviction policy when memory limit is reached (LRU works well for caching). Smart eviction strategy for rotating cache.
+      - "--hz 100"                       # Improves responsiveness of internal events and increases the frequency of internal tasks such as memory cleanup, key expiration checks, etc.
+      - "--maxclients 10000"             # Supports a large number of simultaneous connections
 
 postgresql:
   # PostgreSQL is the backbone of Midaz for managing structured data that demands transactional reliability and consistency.
@@ -669,8 +689,6 @@ postgresql:
 
 mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-mongodb
   enabled: true
 
   external: false
@@ -678,6 +696,9 @@ mongodb:
     enabled: true
     rootUser: midaz
     rootPassword: "lerian"
+  
+  resourcesPreset: "medium"
+
   persistence:
     size: 8Gi
 

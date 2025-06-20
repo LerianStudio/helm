@@ -1,0 +1,55 @@
+# Plugin Smart Templates
+
+Thank you for installing {{ .Chart.Name }} v{{ .Chart.Version }}!
+
+## Deployment Status
+
+{{ if .Release.IsUpgrade }}
+The chart has been UPGRADED to version {{ .Chart.Version }}.
+{{ else }}
+The chart has been INSTALLED with version {{ .Chart.Version }}.
+{{ end }}
+
+## Components Deployed
+
+1. Manager API ({{ .Values.manager.replicaCount }} replica(s))
+   - Serving template management and report generation requests
+   - Accessible at: http://{{ include "plugin-manager.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.manager.service.port }}
+
+2. Worker (scaled via KEDA based on RabbitMQ queue length)
+   - Processing report generation jobs asynchronously
+
+## Dependencies
+
+The following dependencies have been deployed:
+
+1. RabbitMQ
+   - Host: {{ .Values.common.configmap.RABBITMQ_HOST }}
+   - AMQP Port: {{ .Values.common.configmap.RABBITMQ_PORT_AMQP }}
+   - Management Port: {{ .Values.common.configmap.RABBITMQ_PORT_HOST }}
+
+2. MongoDB
+   - Host: {{ .Values.common.configmap.MONGO_HOST }}
+   - Port: {{ .Values.common.configmap.MONGO_PORT }}
+
+3. MinIO
+   - API Host: {{ .Values.common.configmap.MINIO_API_HOST }}
+   - API Port: {{ .Values.common.configmap.MINIO_API_PORT }}
+
+## Accessing the API
+
+{{ if contains "NodePort" .Values.manager.service.type }}
+You can access the API via NodePort at:
+  http://<node-ip>:{{ .Values.manager.service.nodePort }}
+{{ else if contains "LoadBalancer" .Values.manager.service.type }}
+You can access the API via LoadBalancer at:
+  http://<external-ip>:{{ .Values.manager.service.port }}
+
+To get the external IP:
+  kubectl get svc {{ include "plugin-manager.fullname" . }} -n {{ .Release.Namespace }}
+{{ else if contains "ClusterIP" .Values.manager.service.type }}
+You can access the API via port-forwarding:
+  kubectl port-forward svc/{{ include "plugin-manager.fullname" . }} {{ .Values.manager.service.port }}:{{ .Values.manager.service.port }} -n {{ .Release.Namespace }}
+
+Then access: http://localhost:{{ .Values.manager.service.port }}
+{{ end }}

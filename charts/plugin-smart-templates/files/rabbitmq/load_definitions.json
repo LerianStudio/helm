@@ -1,0 +1,47 @@
+{
+  "users": [
+    {
+      "name":"plugin",
+      "tags":"administrator",
+      "password":"Lerian@123"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "plugin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "queues": [
+    {
+      "name": "smart-templates.generate-report.queue",
+      "vhost": "/",
+      "durable": true
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "smart-templates.generate-report.exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true
+    }
+  ],
+  "bindings": [
+    {
+      "source": "smart-templates.generate-report.exchange",
+      "vhost": "/",
+      "destination": "smart-templates.generate-report.queue",
+      "destination_type": "queue",
+      "routing_key": "smart-templates.generate-report.key"
+    }
+  ]
+}

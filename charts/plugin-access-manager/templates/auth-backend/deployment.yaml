@@ -16,6 +16,10 @@ spec:
       labels:
         {{- include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name ) | nindent 8 }}
     spec:
+      {{- with .Values.auth.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
       securityContext:
         {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
       initContainers:
@@ -36,13 +40,13 @@ spec:
                   sleep 5;
                 done;
                 echo "$svc is ready!";
-              done; 
+              done;
       containers: 
         - name: {{ include "plugin-auth-backend.fullname" . }}
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: casbin/casdoor:v1.887.0
-          imagePullPolicy: Always
+          image: ghcr.io/lerianstudio/casdoor:1.1.0
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 8000
@@ -50,28 +54,17 @@ spec:
           envFrom:
           - configMapRef:
               name: {{ include "plugin-auth-backend.fullname" . }}
-          volumeMounts:
-            - name: backend-init-data
-              mountPath: /init_data.json
-              subPath: init_data.json
           readinessProbe:
             httpGet:
               path: /api/health
               port: 8000
             initialDelaySeconds: 15
             periodSeconds: 5
-          livenessProbe:
+          livenessProbe: 
             initialDelaySeconds: 20
             httpGet:
               path: /api/health
-              port: 8000
-      volumes:
-        - name: backend-init-data
-          configMap:
-            name: {{ include "plugin-auth-backend.fullname" . }}-init-data
-            items:
-              - key: init_data.json
-                path: init_data.json       
+              port: 8000     
       {{- with .Values.auth.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

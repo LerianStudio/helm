@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plugin-manager.fullname" . }}
+  labels:
+    {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 4 }}
+  {{- with .Values.manager.service.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }} 
+spec:
+  type: {{ .Values.manager.service.type }}
+  ports:
+    - port: {{ .Values.manager.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "plugin-manager.selectorLabels" (dict "context" . "name" .Values.manager.name) | nindent 4 }}

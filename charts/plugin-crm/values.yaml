@@ -9,7 +9,7 @@ description: "Plugin CRM for Midaz"
 
 image:
   # -- Repository for the container image
-  repository: lerianstudio/plugin-crm
+  repository: ghcr.io/lerianstudio/plugin-crm
   # -- Image pull policy
   pullPolicy: Always
   # -- Image tag used for deployment

@@ -9,11 +9,11 @@ description: "Plugin CRM for Midaz"
 
 image:
   # -- Repository for the container image
-  repository: lerianstudio/plugin-crm
+  repository: ghcr.io/lerianstudio/plugin-crm
   # -- Image pull policy
   pullPolicy: Always
   # -- Image tag used for deployment
-  tag: "1.0.0"
+  tag: "1.3.0"
 
 # -- Secrets for pulling images from a private registry
 imagePullSecrets:

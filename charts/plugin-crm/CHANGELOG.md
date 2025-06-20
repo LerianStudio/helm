@@ -1,3 +1,20 @@
+## [plugin-crm-1.3.0-beta.1] - 2025-06-20
+
+This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.
+
+### ⚠️ Breaking Changes
+- **Authentication and Configuration Overhaul**: This release includes a comprehensive update to the authentication and configuration systems. Users must update their configurations to align with the new architecture. Please refer to the updated documentation for detailed migration steps and compatibility guidelines.
+
+### 🐛 Bug Fixes
+- **Backend Docker Image Consistency**: Resolved issues with Docker image retrieval, ensuring the correct images are used in deployments. This fix enhances deployment reliability and consistency.
+- **Configuration Reliability**: Corrected a misconfiguration in default settings, improving application behavior predictability and setup reliability.
+
+### 🔧 Maintenance
+- **System Stability Enhancements**: Released version 1.3.0-beta.1 with behind-the-scenes updates to the configuration and database components, laying the groundwork for future improvements and enhancing overall system stability.
+- **Version Consistency**: Updated application version references across chart and values files to ensure alignment with the latest release, facilitating a smoother upgrade process.
+
+These updates collectively improve the application's robustness, providing users with a more reliable and efficient deployment experience. Users are encouraged to test their configurations in a staging environment before production deployment.
+
 ##  (2025-05-16)
 
 

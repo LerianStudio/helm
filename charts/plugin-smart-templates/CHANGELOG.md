@@ -1,3 +1,21 @@
+## [plugin-smart-templates-1.2.0] - 2025-06-20
+
+This release enhances the stability and performance of the Helm configuration and database components, ensuring smoother operations and better resource management.
+
+### ⚡ Performance
+- **Config/Database Enhancements**: Upgraded components to improve system stability and performance. Users will experience smoother operations and more efficient resource management.
+
+### 🔄 Changes
+- **Configuration Flexibility**: Improved configuration settings enhance user experience and system efficiency. Users benefit from increased flexibility and scalability, making it easier to tailor the system to their needs.
+
+### 📚 Documentation
+- **Changelog Updates**: Updated documentation for plugin-fees and midaz components to reflect recent changes. This ensures users have access to the latest information, improving their understanding of component updates.
+
+### 🔧 Maintenance
+- **Release Management Improvements**: Streamlined the release process for versions 1.2.0, 1.3.0, and 2.5.0 across configuration and database components. This consistency facilitates easier deployment and integration for users.
+
+This update focuses on backend improvements that enhance the overall performance and reliability of the system, with no immediate action required by users. All changes are backward-compatible, providing a seamless transition to the new version.
+
 ## [plugin-smart-templates-1.2.0-beta.2] - 2025-06-20
 
 This release introduces a new configuration management feature, enhancing the flexibility and customization of Helm charts, along with important maintenance updates.

@@ -9,7 +9,7 @@ description: "Plugin Fees for Midaz"
 
 image:
   # -- Repository for the container image
-  repository: lerianstudio/plugin-fees
+  repository: ghcr.io/lerianstudio/plugin-fees
   # -- Image pull policy
   pullPolicy: Always
   # -- Image tag used for deployment

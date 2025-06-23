@@ -1,3 +1,28 @@
+## [plugin-access-manager-2.2.0-beta.1] - 2025-06-23
+
+This major release of Helm introduces significant enhancements, including improved authentication, configuration flexibility, and critical bug fixes to enhance user experience and system reliability.
+
+### ⚠️ Breaking Changes
+- **Major Version Upgrade**: The upgrade to version 2.0.0-beta.1 introduces breaking changes across authentication, build, config, database, and dependencies. Users must review and update configurations and dependencies to ensure compatibility. Please refer to the migration guide for detailed steps on updating authentication workflows and database connections.
+
+### ✨ Features
+- **Enhanced Authentication**: Updated Casdoor and plugin authentication versions enhance security and introduce new authentication methods. This provides more robust user authentication options and better integration with backend services.
+- **Flexible Configuration**: New RabbitMQ protocol variables for transaction and onboarding processes allow for customizable message queue configurations, enabling users to tailor settings to their specific needs.
+
+### 🐛 Bug Fixes
+- **Configuration Corrections**: Fixed default environment variable values for Swagger and onboarding processes, ensuring accurate configurations and preventing potential runtime errors.
+- **Build Stability**: Resolved issues with init containers for transaction and onboarding processes, improving application startup reliability.
+
+### 📚 Documentation
+- **Comprehensive Updates**: Revised values template files and application version mappings, offering clearer guidance for configuring and deploying applications.
+- **Up-to-date Information**: Updated application image tags and values examples to reflect the latest versions, ensuring users have accurate deployment information.
+
+### 🔧 Maintenance
+- **CI Pipeline Enhancements**: Improved CI pipeline configurations to refine release management and automate versioning processes, enhancing deployment reliability.
+- **Routine Updates**: Regular version updates and maintenance releases ensure system components remain current and secure, providing a stable foundation for development and deployment activities.
+
+These updates collectively improve system functionality, security, and user experience. Users are encouraged to review the detailed changelog and migration guides to ensure a smooth transition.
+
 ##  (2025-06-04)
 
 

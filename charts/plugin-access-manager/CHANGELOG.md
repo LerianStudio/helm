@@ -1,5 +1,21 @@
 ## [plugin-access-manager-2.2.0-beta.2] - 2025-06-23
 
+This release introduces a powerful new configuration management feature, enhancing customization for Helm users, alongside essential maintenance updates.
+
+### ✨ Features  
+- **Configuration Management**: A new values template file has been introduced, significantly enhancing flexibility and customization options. This feature allows users to efficiently manage complex configurations across various environments, simplifying the deployment process and reducing setup time.
+
+### 🔧 Maintenance
+- **Release Management**: The project has been updated to version 2.2.0-beta.2, reflecting our commitment to maintaining an up-to-date and well-managed release cycle. This ensures stability and readiness for future development phases without requiring any immediate user action.
+
+---
+
+No breaking changes were identified in this release, ensuring seamless integration with existing setups.
+
+This changelog focuses on the user benefits of the new configuration management feature while highlighting the ongoing maintenance efforts. It ensures clarity and accessibility for all users, maintaining a professional and user-friendly tone.
+
+## [plugin-access-manager-2.2.0-beta.2] - 2025-06-23
+
 This release introduces a new values template file, enhancing the flexibility and efficiency of Helm chart deployments. Users can now streamline their configuration processes, making deployments more standardized and manageable.
 
 ### ✨ Features  

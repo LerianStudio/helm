@@ -1,3 +1,15 @@
+## [plugin-access-manager-2.2.0-beta.2] - 2025-06-23
+
+This release introduces a new values template file, enhancing the flexibility and efficiency of Helm chart deployments. Users can now streamline their configuration processes, making deployments more standardized and manageable.
+
+### ✨ Features  
+- **Values Template File**: A new values template file has been added, allowing users to define default values in a structured and reusable manner. This enhancement simplifies configuration management, reducing setup time and increasing deployment consistency across environments.
+
+### 🔧 Maintenance
+- **Release Update**: The project has been updated to version 2.2.0-beta.2, ensuring users have access to the latest features and improvements. This update supports ongoing development and enhances stability for future releases.
+
+This changelog highlights the key feature introduced in this release, focusing on its benefits for users. The maintenance section notes the version update, underscoring the project's commitment to continuous improvement.
+
 ##  (2025-06-04)
 
 

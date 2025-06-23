@@ -1,3 +1,18 @@
+## [plugin-access-manager-2.2.0-beta.3] - 2025-06-23
+
+This release focuses on enhancing system reliability and ensuring up-to-date documentation, providing a more stable and user-friendly experience.
+
+### 🐛 Bug Fixes
+- **Authentication & Backend**: Fixed an issue where an uninitialized variable was causing erratic behavior during user authentication and backend operations. This improvement ensures smoother and more reliable login experiences, reducing unexpected errors and enhancing overall system stability.
+
+### 📚 Documentation
+- **Changelog Update**: The CHANGELOG for the plugin-access-manager has been updated to include the latest changes from version 2.2.0-beta.2. This update provides users with clear and accurate information about recent enhancements and fixes, improving transparency and understanding of the plugin's development.
+
+### 🔧 Maintenance
+- **Database Preparation**: The database component has been prepared for the upcoming version 2.2.0-beta.3 release. This maintenance task aligns the database with the latest standards, ensuring smoother future updates and easier maintenance.
+
+These updates collectively enhance the reliability of the system and keep users informed with the latest documentation, contributing to a more seamless and transparent user experience.
+
 ## [plugin-access-manager-2.2.0-beta.2] - 2025-06-23
 
 This release introduces a new values template file, enhancing the flexibility and efficiency of Helm chart deployments. Users can now streamline their configuration processes, making deployments more standardized and manageable.

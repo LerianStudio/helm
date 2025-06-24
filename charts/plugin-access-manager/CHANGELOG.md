@@ -1,3 +1,21 @@
+## [plugin-access-manager-2.2.0] - 2025-06-24
+
+This release focuses on enhancing the efficiency and security of the authentication and build processes, alongside improvements in configuration and database stability. Users will experience smoother workflows and a more reliable system overall.
+
+### ✨ Improvements  
+- **Authentication & Build Enhancements**: This update improves system efficiency and security, ensuring smoother integration and deployment workflows. Users will benefit from a more streamlined process, reducing potential errors and downtime.
+- **Configuration & Database Optimization**: Consolidated updates improve system stability and reduce configuration errors, providing users with a more reliable and consistent experience.
+
+### 📚 Documentation
+- **Plugin Access Manager**: Updated documentation for version 2.2.0-beta.3, providing clear insights into recent updates and improvements.
+- **Plugin Fees**: Enhanced documentation for version 1.3.0, ensuring users have the latest information on fee-related changes.
+- **Midaz**: Documented updates for version 2.5.0, highlighting recent enhancements and fixes to guide users effectively.
+
+### 🔧 Maintenance
+- **Configuration Maintenance**: Released version 2.5.0 focusing on internal improvements to maintain code quality and ensure future scalability. These updates indirectly benefit users by supporting a robust and scalable system architecture.
+
+This changelog provides a user-focused overview of the latest release, highlighting key improvements and documentation updates that enhance the overall user experience. The maintenance section underscores the ongoing commitment to system integrity and future readiness.
+
 ## [plugin-access-manager-2.2.0-beta.3] - 2025-06-23
 
 This release focuses on enhancing system reliability and ensuring up-to-date documentation, providing a more stable and user-friendly experience.

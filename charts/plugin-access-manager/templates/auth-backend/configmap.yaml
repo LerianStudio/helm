@@ -15,7 +15,6 @@ data:
   verificationCodeTimeout: "10"
   logPostOnly: "true"
   isUsernameLowered: "false"
-  origin: 
   batchSize: "100"
   enableErrorMask: "false"
   enableGzip: "true"

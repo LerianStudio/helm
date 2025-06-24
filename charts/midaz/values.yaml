@@ -142,7 +142,7 @@ console:
    # @default -- templates/console/configmap.yaml
   configmap:
     # -- URL of the NextAuth service
-    NEXTAUTH_URL: "https://console.lerian.net" # If a custom DNS is configured for the console, this value must be updated accordingly.
+    NEXTAUTH_URL: "http://localhost:8081" # If a custom DNS is configured for the console, this value must be updated accordingly.
     
     # -- The Auth Plugin is a centralized service that provides authentication and authorization capabilities for Lerian Studio's applications.
     # -- For more details, refer to the documentation:

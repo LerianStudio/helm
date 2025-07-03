@@ -1,0 +1,115 @@
+# Default values
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+name: "cert-provider"
+description: "Plugin Pix for Midaz"
+
+image:
+  # -- Repository for the container image
+  repository: lerianstudio/cert-provider
+  # -- Image pull policy
+  pullPolicy: Always
+  # -- Image tag used for deployment
+  tag: "latest"
+
+# -- Secrets for pulling images from a private registry
+imagePullSecrets: []
+
+podSecurityContext: {}
+# fsGroup: 2000
+
+ingress:
+  enabled: true
+  className: "alb"
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/group.name: cert-provider
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-port: "4009"
+    alb.ingress.kubernetes.io/success-codes: "200" 
+  hosts:
+    - host: "devops.lerian.studio"
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: cert-provider
+              port:
+                number: 80
+  tls: []
+
+service:
+  # -- Kubernetes service type
+  type: ClusterIP
+  # -- Service port
+  port: 4009
+
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 1
+
+autoscaling:
+  # -- Enable or disable horizontal pod autoscaling
+  enabled: true
+  # -- Minimum number of replicas
+  minReplicas: 1
+  # -- Maximum number of replicas
+  maxReplicas: 9
+  # -- Target CPU utilization percentage for autoscaling
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+pdb:
+  # -- Enable or disable PodDisruptionBudget
+  enabled: true
+  # -- Maximum number of unavailable pods
+  maxUnavailable: 1
+  # -- Minimum number of available pods
+  minAvailable: 0
+  # -- Annotations for PodDisruptionBudget
+  annotations: {}
+
+resources:
+  # -- CPU and memory limits for pods
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  # -- Minimum CPU and memory requests
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# -- Secrets for storing sensitive data
+# -- All secrets are declared in the templates/secrets.yaml
+# @default -- templates/secrets.yaml
+useExistingSecret: true
+existingSecretName: "cert-provider"
+
+# -- Node selector for scheduling pods on specific nodes
+nodeSelector: {}
+
+  # -- Tolerations for scheduling on tainted nodes
+tolerations: {}
+
+# -- Affinity rules for pod scheduling
+affinity: {}
+  # nodeAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #     nodeSelectorTerms:
+  #     - matchExpressions:
+  #       - key: midaz.io/owner
+  #         operator: In
+  #         values:
+  #         - midaz
+
+  # -- ConfigMap for environment variables and configurations
+  # @default -- templates/console/configmap.yaml

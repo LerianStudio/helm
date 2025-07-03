@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cert-provider.fullname" . }}
+  labels:
+    {{- include "cert-provider.labels" (dict "context" . "name" .Values.name ) | nindent 4 }} 
+spec:
+  strategy:
+    {{- toYaml .Values.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cert-provider.selectorLabels" (dict "context" . "name" .Values.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cert-provider.labels" (dict "context" . "name" .Values.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "cert-provider.fullname" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default (include "plugin.version" .) }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ if .Values.useExistingSecret }}{{ .Values.existingSecretName }}{{ else }}{{ include "cert-provider.fullname" . }}{{ end }}
+            - configMapRef:
+                name: {{ include "cert-provider.fullname" . }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

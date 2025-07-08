@@ -1,3 +1,24 @@
+## [plugin-smart-templates-1.3.0] - 2025-07-08
+
+This release focuses on enhancing configuration defaults, improving build stability, and resolving key plugin issues, ensuring a smoother and more reliable user experience.
+
+### 🐛 Bug Fixes
+- **Plugin Management**: Addressed compatibility issues by rolling back the version of the plugin-access-manager, restoring reliable plugin execution.
+- **Midaz Plugin**: Resolved performance disruptions by reverting the midaz plugin to a stable version, ensuring consistent service.
+
+### 🔄 Changes
+- **Configuration**: Updated `values.yaml` to better align default settings with common use cases, simplifying the initial setup for new users.
+- **Build System**: Enhanced build processes across multiple releases, improving stability and reducing build times, which streamlines the development workflow.
+
+### 📚 Documentation
+- **Changelog Updates**: Revised changelogs for plugins such as plugin-smart-templates and midaz, providing users with clear and accurate version histories.
+
+### 🔧 Maintenance
+- **Environment Configuration**: Rolled back an environment variable to prevent potential misconfigurations, ensuring consistent application behavior.
+- **Release Management**: Organized version release chores across components to maintain a clear and structured release history, aiding in version tracking and dependency management.
+
+These updates collectively enhance the system's stability, usability, and maintainability, offering a more seamless experience for developers and end-users alike.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

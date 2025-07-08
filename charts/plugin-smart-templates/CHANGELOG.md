@@ -1,5 +1,28 @@
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
+This release introduces significant enhancements in security and deployment flexibility, with new features that streamline secret management and ingress configuration.
+
+### ✨ Features  
+- **External Secrets Support**: Manage your secrets externally with our new comprehensive support across various components. This enhancement boosts security and flexibility, allowing you to integrate seamlessly with external secret management systems.
+  
+- **Ingress Template Addition**: Simplify the setup of external access to your services with our new ingress template. This feature makes configuring and managing ingress resources more efficient, saving you time and effort.
+
+### 🐛 Bug Fixes
+- **Configuration Management**: Fixed an issue causing configuration inconsistencies due to an empty variable. This resolves previous reliability concerns, ensuring your configurations are applied correctly across deployments.
+
+### 🔧 Maintenance
+- **Authentication and Backend Updates**: Upgraded Casdoor and plugin authentication versions to enhance security and ensure compatibility with the latest standards. These updates facilitate smoother integration and improved authentication processes.
+  
+- **Build Process Enhancement**: Introduced a values template file to the build component, streamlining configuration and reducing setup time for new deployments.
+
+- **Release Management**: Updated beta release processes to keep the project aligned with the latest development cycles and dependencies, ensuring smooth transitions between versions.
+
+- **Documentation Updates**: Revised the changelog for the plugin-access-manager to include recent changes, providing users with up-to-date information and tracking capabilities.
+
+Overall, this release focuses on enhancing security, improving configuration management, and streamlining deployment processes, offering a more robust and flexible system for users. There are no breaking changes, ensuring a seamless upgrade experience.
+
+## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
+
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.
 
 ### ✨ Features  

@@ -62,7 +62,7 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ include "plugin-manager.fullname" . }}
+              name: {{ if .Values.manager.useExistingSecret }}{{ .Values.manager.existingSecretName }}{{ else }}{{ include "plugin-manager.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-manager.fullname" . }}
           resources:

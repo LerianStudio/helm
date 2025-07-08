@@ -1,3 +1,21 @@
+## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
+
+This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.
+
+### ✨ Features  
+- **External Secret Support**: Securely manage configurations by integrating with external secret management systems. This update enhances security and flexibility across various components, including worker values and deployments.
+- **Ingress Management Template**: Simplify and secure network traffic management with the new ingress template, enhancing application accessibility and scalability.
+- **Authentication Upgrades**: Enjoy improved security and compatibility with the latest Casdoor and plugin authentication versions, ensuring seamless integration with modern protocols.
+
+### 🐛 Bug Fixes
+- **Configuration Reliability**: Fixed an issue causing configuration errors due to empty variables, improving system stability and preventing deployment failures.
+
+### 🔧 Maintenance
+- **Release Management**: Systematic integration and testing of new features and fixes through multiple beta releases, ensuring a stable and reliable user experience.
+- **Documentation Updates**: Enhanced changelogs for plugin-access-manager versions 2.2.0-beta.2 and 2.2.0-beta.3, keeping you informed of recent changes and improvements.
+
+Each update in this release is designed to enhance your experience by improving security, reliability, and ease of use. The focus on modern infrastructure management practices reflects our commitment to providing a robust and user-friendly environment.
+
 ## [plugin-smart-templates-1.2.0-beta.2] - 2025-06-20
 
 This release introduces a new configuration management feature, enhancing the flexibility and customization of Helm charts, along with important maintenance updates.

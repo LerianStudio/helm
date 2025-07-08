@@ -35,7 +35,7 @@ spec:
             - configMapRef:
                 name: {{ include "plugin-worker.fullname" . }}
             - secretRef:
-                name: {{ include "plugin-worker.fullname" . }}
+                name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "plugin-worker.fullname" . }}{{ end }}
           resources:
             limits:
               cpu: {{ .Values.worker.resources.limits.cpu }}

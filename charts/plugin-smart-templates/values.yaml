@@ -236,6 +236,9 @@ worker:
     #       matchExpressions: []
     #     topologyKey: kubernetes.io/hostname
 
+  useExistingSecret: false
+  existingSecretName: ""
+  
   configmap:
     # -- Annotations for the configmap
     annotations: {}

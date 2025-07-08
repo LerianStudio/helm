@@ -121,6 +121,9 @@ manager:
     # -- Annotations for PodDisruptionBudget
     annotations: {}
 
+  useExistingSecret: false
+  existingSecretName: ""
+
   configmap:
     # APP'
     VERSION: "v1.0.0"
@@ -233,6 +236,9 @@ worker:
     #       matchExpressions: []
     #     topologyKey: kubernetes.io/hostname
 
+  useExistingSecret: false
+  existingSecretName: ""
+  
   configmap:
     # -- Annotations for the configmap
     annotations: {}

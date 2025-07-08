@@ -121,6 +121,9 @@ manager:
     # -- Annotations for PodDisruptionBudget
     annotations: {}
 
+  useExistingSecret: false
+  existingSecretName: ""
+
   configmap:
     # APP'
     VERSION: "v1.0.0"

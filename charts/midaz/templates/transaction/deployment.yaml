@@ -13,7 +13,7 @@ spec:
       maxUnavailable: {{ .Values.transaction.deploymentUpdate.maxUnavailable }}
     {{- end }}
   {{- if not .Values.transaction.autoscaling.enabled }}
-  replicas: {{ .Values..replicaCount }}
+  replicas: {{ .Values.transaction.replicaCount }}
   {{- end }}
   selector:
     matchLabels:

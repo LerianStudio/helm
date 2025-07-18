@@ -1,3 +1,18 @@
+## [midaz-2.6.0-beta.2] - 2025-07-18
+
+This release focuses on enhancing system reliability and ensuring seamless plugin operations by addressing key issues and optimizing the build process.
+
+### 🐛 Bug Fixes
+- **Midaz Component**: Fixed an issue with RabbitMQ job configuration to ensure default definitions are correctly applied. This enhances the reliability of message queue setups, preventing potential misconfigurations that could disrupt service operations.
+- **Plugin Management**: Rolled back the version of the plugin-access-manager to resolve compatibility issues affecting plugin functionality. This rollback ensures stable integration with existing systems, maintaining seamless plugin operations.
+- **Midaz Component**: Reverted to a previous version of Midaz to address issues introduced in the latest update. This rollback restores expected system behavior and prevents disruptions caused by recent changes.
+
+### 🔧 Maintenance
+- **Build System**: Updated the build process for the 2.6.0-beta.2 release, including optimizations and refinements to the build pipeline. These updates ensure more efficient and reliable build operations.
+- **Build System**: Prepared for the 2.3.0-beta.1 release with updates to the build components, streamlining the release process and improving overall build consistency.
+
+This changelog provides a concise overview of the key updates in this release, focusing on the user impact and system reliability improvements. Each entry is crafted to ensure users understand the significance of the changes without delving into technical specifics.
+
 ## [midaz-2.5.0] - 2025-06-20
 
 This release focuses on maintaining the stability and clarity of the Helm project by updating configuration components and enhancing documentation. Users benefit from improved system reliability and easier access to change history.

@@ -62,7 +62,7 @@ spec:
           imagePullPolicy: {{ .Values.onboarding.image.pullPolicy }}
           envFrom:
           - secretRef:
-              name: {{ include "midaz-onboarding.fullname" . }}
+              name: {{ if .Values.onboarding.useExistingSecret }}{{ .Values.onboarding.existingSecretName }}{{ else }}{{ include "midaz-onboarding.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "midaz-onboarding.fullname" . }}
           ports:

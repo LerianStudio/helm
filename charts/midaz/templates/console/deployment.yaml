@@ -42,7 +42,7 @@ spec:
           imagePullPolicy: {{ .Values.console.image.pullPolicy }}
           envFrom:
           - secretRef:
-              name: {{ include "midaz-console.fullname" . }}
+              name: {{ if .Values.console.useExistingSecret }}{{ .Values.console.existingSecretName }}{{ else }}{{ include "midaz-console.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "midaz-console.fullname" . }}
           ports:

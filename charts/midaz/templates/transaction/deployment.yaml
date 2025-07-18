@@ -13,7 +13,7 @@ spec:
       maxUnavailable: {{ .Values.transaction.deploymentUpdate.maxUnavailable }}
     {{- end }}
   {{- if not .Values.transaction.autoscaling.enabled }}
-  replicas: {{ .Values.transaction.replicaCount }}
+  replicas: {{ .Values..replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -62,7 +62,7 @@ spec:
           imagePullPolicy: {{ .Values.transaction.image.pullPolicy }}
           envFrom:
           - secretRef:
-              name: {{ include "midaz-transaction.fullname" . }}
+              name: {{ if .Values.transaction.useExistingSecret }}{{ .Values.transaction.existingSecretName }}{{ else }}{{ include "midaz-transaction.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "midaz-transaction.fullname" . }}
           ports:

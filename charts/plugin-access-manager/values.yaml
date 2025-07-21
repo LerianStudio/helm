@@ -287,6 +287,9 @@ auth:
     REDIS_USER: "auth"
     AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
+  # -- Extra environment variables
+  extraEnvVars: {}
+
   # -- Secrets for storing sensitive data
   # @default -- templates/auth/secrets.yaml
   secrets: 

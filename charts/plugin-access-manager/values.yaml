@@ -135,6 +135,9 @@ identity:
     AUTH_PORT: "4000"
     AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
     AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
+  
+  # -- Extra environment variables
+  extraEnvVars: {}
 
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml

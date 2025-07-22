@@ -539,3 +539,14 @@ rabbitmq:
     ports:
       amqp: 5672
       management: 15672
+
+valkey:
+  # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
+  # This component is responsible for providing an in-memory data store
+  # For more details, refer to the documentation:
+  # https://docs.lerian.studio/docs/midaz-components#why-redis
+  enabled: true
+
+  architecture: standalone
+  auth:
+    enabled: false

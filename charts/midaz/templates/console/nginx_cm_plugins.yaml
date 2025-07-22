@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "midaz-console.fullname" . }}-nginx-config-plugins
+data:
+  plugins.conf: |-
+{{- if eq .Chart.Name "midaz-helm" }}
+{{- range .Values.console.pluginsConsole }}
+{{ tpl (include "nginx.pluginServerBlock" .) $ | indent 4 }}
+{{- end }}
+{{- end }}

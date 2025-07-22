@@ -1,3 +1,37 @@
+## [plugin-crm-1.4.0-beta.1] - 2025-07-22
+
+This major release of Helm introduces significant enhancements to authentication, configuration management, and deployment processes, improving security, scalability, and user experience.
+
+### ⚠️ Breaking Changes
+- **Authentication & Configuration Overhaul**: The authentication and configuration systems have been revamped. Users must update their setups to align with new protocols and formats. Please refer to the updated [migration guide](#) for detailed steps.
+- **Deployment & Build Restructuring**: Changes to the build scripts and deployment configurations enhance scalability and performance. Verify your CI/CD pipelines against the new structure to ensure compatibility.
+
+### ✨ Features  
+- **External Secrets Support**: Manage sensitive data securely across environments with new support for external secrets, integrating seamlessly with secret management tools.
+- **Ingress Management Template**: Simplify network routing and traffic management with the new ingress template, enhancing application accessibility.
+- **Plugin Enhancements**: Enjoy improved performance and capabilities with significant updates to the authentication and identity plugins.
+
+### 🐛 Bug Fixes
+- **Deployment Template Corrections**: Fixed issues causing incorrect configurations, ensuring consistent and reliable deployments.
+- **Configuration Error Resolutions**: Addressed bugs leading to incorrect application behavior, enhancing system stability.
+- **Version Rollback Fixes**: Resolved rollback issues, allowing safe reversion to previous plugin versions.
+
+### ⚡ Performance
+- **Backend Optimizations**: Experience faster application performance with improved response times and reduced resource consumption.
+
+### 🔄 Changes
+- **Configuration Templates Update**: Enhanced templates now support additional environment variables, offering greater deployment customization flexibility.
+
+### 📚 Documentation
+- **Comprehensive Updates**: Access the latest information and best practices with updated documentation, including new templates and detailed changelogs.
+
+### 🔧 Maintenance
+- **Codebase Cleanup**: Improved code readability and removed deprecated functions, contributing to long-term code health.
+- **Dependency Updates**: Updated dependencies to the latest versions for enhanced security and compatibility.
+- **CI Pipeline Fixes**: Improved build processes for smoother and more reliable development workflows.
+
+This changelog provides a user-friendly overview of the key changes, highlighting the benefits and impacts for users, and offering guidance on necessary actions.
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

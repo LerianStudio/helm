@@ -1,3 +1,20 @@
+## [plugin-smart-templates-1.3.0-beta.1] - 2025-07-22
+
+This release enhances configurability and security, addresses critical bugs, and maintains system health. Users will experience improved flexibility in environment management and more reliable application behavior.
+
+### ✨ Features
+- **Configuration Management**: You can now add extra environment variables across multiple plugins like Smart Templates, CRM, and Fees. This allows for greater customization and flexibility, making it easier to tailor deployments to specific needs.
+- **Midaz Integration**: Enhanced integration with RabbitMQ by adding user consumer configuration, supporting more robust messaging capabilities and improving scalability.
+
+### 🐛 Bug Fixes
+- **Plugin Access Manager**: Resolved issues with environment variable configurations in identity and auth configmap templates, ensuring configurations are correctly applied and improving authentication reliability.
+- **Midaz**: Fixed transaction deployment template and RabbitMQ job defaults, enhancing deployment stability and reducing errors.
+
+### 🔧 Maintenance
+- **Build and CI**: Streamlined the continuous integration process to ensure automated tests and deployments run more reliably.
+- **Documentation**: Updated changelogs for components like Plugin Access Manager and Midaz, providing users with up-to-date information about system capabilities and modifications.
+
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

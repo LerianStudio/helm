@@ -1,3 +1,35 @@
+## [plugin-fees-1.4.0-beta.1] - 2025-07-22
+
+This major release introduces significant updates across multiple components, enhancing security, flexibility, and performance. Users are encouraged to review the changes carefully to ensure a smooth transition.
+
+### ⚠️ Breaking Changes
+- **Authentication & Configuration Overhaul**: This update modifies authentication protocols and configuration management. Users must review the updated documentation and follow the migration guide to ensure compatibility. Key steps include updating authentication settings and verifying new configuration templates.
+
+### ✨ Features
+- **Enhanced Configuration Management**: Users can now add extra environment variables to the configmap template, offering greater flexibility in plugin-fee configurations.
+- **Secure Build Process**: Support for external secrets in the build process enhances the security of sensitive information during deployments.
+- **Updated Authentication Standards**: The latest versions of Casdoor and plugin authentication improve security and ensure compatibility with current standards.
+
+### 🐛 Bug Fixes
+- **Configmap Template Stability**: Resolved issues with identity and auth configmap templates in the plugin-access-manager, ensuring correct environment variable handling.
+- **Deployment Reliability**: Fixed a transaction deployment template issue in midaz, which enhances deployment stability.
+- **Configuration Consistency**: Removed an empty variable causing configuration errors, leading to improved system stability.
+- **Chart Naming Accuracy**: Corrected naming inconsistencies to prevent deployment errors.
+
+### ⚡ Performance
+- **RabbitMQ Integration**: Streamlined user consumer configuration in RabbitMQ, improving message handling efficiency and overall system performance.
+
+### 🔄 Changes
+- **Ingress Template Addition**: An ingress template has been added to simplify network routing, enhancing deployment capabilities.
+
+### 📚 Documentation
+- **Updated Guides and Changelogs**: Documentation has been revised to reflect the latest changes and version mappings, aiding users in understanding new features and migration steps.
+
+### 🔧 Maintenance
+- **Continuous Integration Improvements**: Fixed CI processes to ensure smooth and reliable build operations, supporting ongoing development efforts.
+
+This changelog provides a comprehensive overview of the latest updates, focusing on user impact and ensuring users can easily understand the benefits and necessary actions associated with each change.
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

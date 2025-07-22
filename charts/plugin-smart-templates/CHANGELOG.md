@@ -1,3 +1,15 @@
+## [plugin-smart-templates-1.3.0-beta.2] - 2025-07-22
+
+This release introduces a significant enhancement to configuration management, empowering users with new capabilities for better resource organization and integration within Kubernetes environments.
+
+### ✨ Features  
+- **ConfigMap Annotations**: With the new `plugin-smart-templates` feature, users can now add annotations to ConfigMaps. This enhancement allows for improved metadata management, aiding in the automation and streamlining of deployment processes. Annotations enhance resource management and integration with other Kubernetes components, offering a more efficient and organized approach to handling configuration data.
+
+### 🔧 Maintenance
+- **Configuration Stability Improvements**: Released version 1.3.0-beta.2, focusing on stability and laying the groundwork for future enhancements. This update ensures a more robust and reliable configuration management experience, supporting upcoming features and optimizations.
+
+This changelog highlights the key updates and improvements, emphasizing the practical benefits and enhanced capabilities available to users in this release.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

@@ -137,6 +137,8 @@ configmap:
   MONGO_USER: "plugin-fees"
   CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
+extraEnvVars: {}
+
 # -- Secrets for storing sensitive data
 # -- All secrets are declared in the templates/secrets.yaml
 # @default -- templates/secrets.yaml

@@ -152,6 +152,9 @@ manager:
     SWAGGER_LEFT_DELIMITER: "{{"
     SWAGGER_RIGHT_DELIMITER: "}}"
 
+  # Extra Env Vars
+  extraEnvVars: {}
+
   keda:
     scaledObject:
       minReplicaCount: 1
@@ -252,6 +255,9 @@ worker:
     # OPEN TELEMETRY
     OTEL_RESOURCE_SERVICE_NAME: plugin-template-engine-worker
     OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0"
+
+  # Extra Env Vars
+  extraEnvVars: {}
 
   # -- KEDA configuration for worker auto-scaling
   keda:

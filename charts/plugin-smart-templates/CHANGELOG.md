@@ -1,3 +1,17 @@
+## [plugin-smart-templates-1.3.0-beta.3] - 2025-07-22
+
+This release introduces enhanced customization capabilities with the new Smart Templates feature, allowing for more dynamic and flexible Helm chart deployments. Additionally, the release management update ensures users have the latest improvements without any disruption.
+
+### ✨ Features  
+- **Smart Templates Enhancement**: We've added `valkey` to the smart templates chart. This feature empowers users to create more dynamic and customizable templates, enhancing the flexibility of your Helm chart deployments. This improvement helps streamline the deployment process, making it easier to adapt charts to specific needs.
+
+### 🔧 Maintenance
+- **Release Management Update**: The project has been updated to version 1.3.0-beta.3, ensuring you have access to the latest features and enhancements. This update is part of our commitment to providing a robust and up-to-date software environment.
+
+---
+
+This release focuses on expanding the capabilities of smart templates, providing users with more tools to customize their deployments. With no breaking changes, users can upgrade seamlessly to benefit from the latest features and improvements.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

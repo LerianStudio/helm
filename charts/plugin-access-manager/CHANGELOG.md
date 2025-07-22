@@ -1,3 +1,23 @@
+## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
+
+This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.
+
+### ✨ Features  
+- **User Consumer Configuration for RabbitMQ**: Now you can configure RabbitMQ more flexibly, allowing for tailored message handling setups that enhance integration with other systems. This feature improves your ability to manage messaging workflows effectively.
+- **Support for External Secrets**: Securely manage and deploy secrets across different environments with the new support for external secrets. This enhancement ensures that sensitive information is handled more securely and is easier to manage.
+
+### 🐛 Bug Fixes
+- **Transaction Deployment Template**: Fixed an issue that could cause incorrect deployment configurations, reducing potential errors and ensuring smoother deployments.
+- **RabbitMQ Job Defaults**: Resolved a problem where default definitions were not being applied, ensuring consistent and reliable execution of RabbitMQ jobs.
+- **Plugin-Access-Manager and Midaz Stability**: Rolled back versions to address stability issues, enhancing overall system reliability and preventing potential disruptions.
+
+### 🔧 Maintenance
+- **Release Version Updates**: Updated release versions to maintain consistency and ensure proper version tracking across components.
+- **CI Pipeline Enhancements**: Fixed issues in the continuous integration pipeline, improving the reliability and efficiency of build processes.
+- **Documentation Updates**: Enhanced the CHANGELOG for midaz-v2.6.0-beta.3, providing users with detailed insights into recent changes and improvements.
+
+This release focuses on improving integration capabilities and security management while addressing critical bugs to enhance overall system stability and user experience.
+
 ## [plugin-access-manager-2.2.0-beta.3] - 2025-06-23
 
 This release focuses on enhancing system reliability and ensuring up-to-date documentation, providing a more stable and user-friendly experience.

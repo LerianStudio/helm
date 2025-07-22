@@ -125,6 +125,9 @@ manager:
   existingSecretName: ""
 
   configmap:
+    # -- Annotations for the configmap
+    annotations: {}
+    
     # APP'
     VERSION: "v1.0.0"
     APP_CONTEXT: "/manager/v1"

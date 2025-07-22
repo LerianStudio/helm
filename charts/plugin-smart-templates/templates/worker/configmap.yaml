@@ -19,3 +19,7 @@ data:
   {{- range $key, $value := .Values.worker.configmap }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  # Extra Env Vars
+  {{- with .Values.worker.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

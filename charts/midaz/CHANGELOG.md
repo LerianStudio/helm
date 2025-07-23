@@ -1,3 +1,15 @@
+## [midaz-2.6.0-beta.11] - 2025-07-23
+
+This release introduces enhanced configuration options for nginx within the midaz-console, providing users with more flexibility and control over their deployment settings.
+
+### ✨ Features  
+- **Configurable Nginx Parameters**: We've added new parameters to the nginx configuration in the midaz-console. This allows you to customize your deployment settings more precisely, optimizing performance and security to better fit your specific needs. Whether you're aiming to enhance speed or bolster security measures, these new options provide the flexibility to tailor your environment accordingly.
+
+### 🔧 Maintenance
+- **Version Update**: The project has been updated to version 2.6.0-beta.11 in preparation for this release. This ensures that all the latest features and improvements are included, keeping your deployments current and efficient.
+
+This changelog focuses on the key feature added in this release, emphasizing its benefits and practical applications for users. The maintenance section highlights the version update, ensuring users are aware of the project's progression.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

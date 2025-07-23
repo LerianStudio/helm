@@ -162,7 +162,7 @@ console:
     MONGODB_USER: "midaz"
   
   # Plugins UIs
-  plugins-ui:
+  pluginsUi:
     enabled: true
     plugin-smart-templates-frontend:
       enabled: true

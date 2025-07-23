@@ -1,3 +1,15 @@
+## [midaz-2.6.0-beta.14] - 2025-07-23
+
+This release focuses on enhancing the stability and reliability of server configurations, ensuring a smoother and more dependable user experience.
+
+### 🐛 Bug Fixes
+- **Backend**: Fixed a configuration issue with the nginx server that previously led to potential misconfigurations. This fix enhances the stability of server setups, ensuring they operate as expected and reducing the risk of unexpected downtime.
+
+### 🔧 Maintenance
+- **Backend**: Updated the project to version 2.6.0-beta.14. This update includes routine optimizations and aligns the system with the latest standards, facilitating a smoother development and deployment process.
+
+This changelog provides a concise summary of the key changes in version 2.6.0, emphasizing the impact on user experience and system reliability. The bug fix section highlights the resolution of a critical issue, while the maintenance section notes important updates that support ongoing project stability.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

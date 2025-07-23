@@ -1,3 +1,24 @@
+## [midaz-2.6.0-beta.5] - 2025-07-23
+
+This release introduces significant updates across multiple components, including a major upgrade to authentication protocols and backend architecture. Users should review the breaking changes to ensure seamless integration with the new system.
+
+### ⚠️ Breaking Changes
+- **Transition to Version 1.0.0-beta.1**: This update involves foundational changes in authentication, backend, build processes, and configurations. Users must update their configurations and dependencies to maintain compatibility. Key areas affected include authentication protocols and backend architecture, which may impact existing integrations. Please refer to the migration guide for detailed steps on updating your system.
+
+### ✨ Features
+- **Midaz Configuration Enhancement**: A new internal collector for Midaz has been introduced, significantly improving data aggregation and processing capabilities. This feature provides users with enhanced insights and analytics, making data operations more efficient. A dedicated Helm chart simplifies deployment and management, streamlining the setup process.
+
+### ⚡ Performance
+- **Configuration Optimization**: Updates to the internal collector configurations in Midaz streamline setup and enhance performance. Users will experience faster and more reliable data operations, optimizing system resource usage.
+
+### 📚 Documentation
+- **Changelog Update**: The CHANGELOG for Midaz has been updated to reflect all changes in version 2.6.0-beta.4, ensuring users have access to the latest information on system updates and improvements. This aids in understanding recent changes and their impact on your workflows.
+
+### 🔧 Maintenance
+- **Release Management**: Version 2.6.0-beta.5 focuses on maintaining and stabilizing the configuration component, ensuring that the latest features and improvements are integrated and tested thoroughly. This provides a stable foundation for future enhancements and user experience improvements.
+
+Users are encouraged to review these changes carefully and prepare for necessary adjustments in their systems to fully leverage the benefits of this release.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

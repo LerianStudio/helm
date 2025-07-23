@@ -1,0 +1,41 @@
+apiVersion: v2
+name: otel-collector-lerian
+description: A Helm chart for Kubernetes
+type: application
+
+home: https://github.com/LerianStudio/otel-collector-lerian
+
+sources:
+  - https://github.com/LerianStudio/otel-collector-lerian/tree/main/charts/otel-collector-lerian
+
+# A list of maintainers who are responsible for the chart
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+
+version: 0.1.0
+
+# This is the version number of the application being deployed. 
+appVersion: "0.1.0"
+
+# A list of keywords about the chart. This helps others discover the chart.
+keywords:
+  - midaz
+  - otel-collector
+  - observability
+  - lerian
+  - ledger
+
+# The URL to an icon file for this chart. Or the icon data.
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+# This Helm chart includes multiple dependencies required for the application. 
+# To understand the purpose and configuration of each dependency, visit:
+# https://docs.lerian.studio/docs/midaz-components  
+dependencies:
+  - name: opentelemetry-collector
+    version: 0.129.0
+    repository: "https://open-telemetry.github.io/opentelemetry-helm-charts"

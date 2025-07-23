@@ -761,3 +761,19 @@ otel-collector-lerian:
 
     prometheus/local: # Expose metrics for Client Prometheus
       endpoint: 0.0.0.0:8889
+
+nginx:
+  enabled: true
+
+  existingServerBlockConfigmap: "midaz-console-nginx-config"
+
+  # Mount the plugins configmap as a volume
+  extraVolumes:
+    - name: nginx-plugins-config
+      configMap:
+        name: midaz-console-nginx-config-plugins
+
+  # Mount the volume into the nginx container
+  extraVolumeMounts:
+    - name: nginx-plugins-config
+      mountPath: /opt/bitnami/nginx/conf/plugins_blocks

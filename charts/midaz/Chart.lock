@@ -11,5 +11,11 @@ dependencies:
 - name: rabbitmq
   repository: https://charts.bitnami.com/bitnami
   version: 15.2.5
-digest: sha256:b8562e8343824327c9382058503611d75ce38deaf618a682ac8a2bba8875becf
-generated: "2025-05-12T17:26:21.979915005-03:00"
+- name: nginx
+  repository: https://charts.bitnami.com/bitnami
+  version: 21.0.3
+- name: otel-collector-lerian
+  repository: oci://registry-1.docker.io/lerianstudio
+  version: 1.0.0-beta.1
+digest: sha256:baf0916ca7ce2d28a4727e3cd4ff8b870d05dcc3b3c0680c082ec8224bedb648
+generated: "2025-07-23T11:00:37.07639-03:00"

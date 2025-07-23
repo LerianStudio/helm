@@ -164,9 +164,9 @@ console:
   # Plugins UIs
   plugins-ui:
     enabled: true
-    plugin-smart-templates:
+    plugin-smart-templates-frontend:
       enabled: true
-      port: 4005
+      port: 8083
 
   # -- Secrets for storing sensitive data
   # @default -- templates/console/secrets.yaml

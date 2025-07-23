@@ -1,3 +1,28 @@
+## [midaz-2.6.0-beta.4] - 2025-07-22
+
+This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.
+
+### ✨ Features  
+- **Smart Templates**: You can now add valkey to smart templates charts, offering enhanced customization and flexibility for your templates.
+- **Midaz Console**: New nginx configuration templates and dependency improve deployment options and performance, making your Midaz console setups more efficient.
+
+### 🐛 Bug Fixes
+- **Plugin Access Manager**: Fixed issues with the configuration of extra environment variables in identity and auth configmap templates, ensuring consistent and reliable behavior across deployments.
+
+### 🔄 Changes
+- **Configuration Management**: Expanded support for extra environment variables across multiple plugins (smart-templates, crm, fees), allowing for greater customization and integration flexibility.
+- **Plugin Fees**: You can now configure extra environment variables in both the configmap template and values YAML, providing more control over your setup.
+- **Plugin Access Manager**: Improved configuration flexibility by enabling extra environment variables in identity and auth configmap templates, enhancing integration capabilities.
+
+### 📚 Documentation
+- Updated changelogs for plugin-access-manager and Midaz, providing clear insights into recent changes and updates.
+
+### 🔧 Maintenance
+- **Release Management**: Multiple updates for beta releases across various components (auth, config, database, deps) ensure the project remains on track with its release schedule.
+- **Dependencies**: Added nginx as a dependency for the Midaz console, ensuring compatibility and performance improvements.
+
+This changelog is designed to help users quickly understand the new features, improvements, and fixes in this release, focusing on how these changes can benefit their use of the software.
+
 ## [midaz-2.6.0-beta.3] - 2025-07-18
 
 This release introduces significant enhancements to configuration flexibility and security, alongside critical bug fixes to improve deployment reliability.

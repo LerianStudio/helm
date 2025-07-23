@@ -1,3 +1,19 @@
+## [plugin-smart-templates-1.3.0-beta.6] - 2025-07-23
+
+This release introduces significant enhancements to plugin management and configuration flexibility, ensuring a more streamlined and customizable user experience.
+
+### ✨ Features  
+- **UI Support for Plugins**: Users can now integrate and manage plugins directly from the console, enhancing extensibility and customization options for both developers and administrators. This feature simplifies the process of adding new functionalities and tailoring the system to specific needs.
+
+### 🔧 Maintenance
+- **Environment Configuration Enhancements**: New configurations for fee metadata and Redis have been added, simplifying the setup process and enhancing the system's flexibility and scalability. This update ensures smoother deployment and integration processes, providing clearer configuration options for developers.
+  
+- **Version Updates**: Database and frontend components have been updated to versions 1.3.0-beta.6 and 2.6.0-beta.8, respectively. These updates include various under-the-hood improvements and optimizations, keeping the system aligned with the latest standards and performance enhancements.
+
+---
+
+This changelog highlights the user-centric improvements and system optimizations in this release. Users can look forward to a more flexible and efficient experience with the new plugin management capabilities and enhanced configuration options.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

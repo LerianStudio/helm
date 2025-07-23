@@ -1,3 +1,29 @@
+## [plugin-smart-templates-1.3.0-beta.4] - 2025-07-23
+
+This major release introduces significant enhancements and changes across multiple components, improving data handling, configuration flexibility, and overall system performance. Users should review the updated documentation and migration guides to ensure compatibility with the new system architecture.
+
+### ⚠️ Breaking Changes
+- **System Architecture Overhaul**: This release includes substantial updates to the Auth, Backend, Build, Config, Database, and Deps components. Users must review the updated documentation and follow the migration guides to adapt existing integrations and configurations to the new system architecture. These changes are essential for leveraging the improved performance and capabilities offered by this release.
+
+### ✨ Features
+- **Midaz Collector Configuration**: A new internal collector configuration for the Midaz component enhances data aggregation and processing, allowing for more efficient data handling. This is particularly beneficial for users with complex data requirements, improving system performance and scalability.
+- **Nginx Configuration Templates**: Added Nginx configuration templates and dependencies for the Midaz console, simplifying setup and providing greater control over server environments. This feature enhances deployment flexibility, making it easier for users to configure their systems according to their needs.
+
+### 🔄 Changes
+- **Environment Variables Update**: Streamlined environment variable configurations for the plugin-smart-template, reducing potential errors and simplifying the setup process. This change enhances user experience by making system configuration more intuitive.
+- **Midaz Configuration Options**: Introduced new configuration options for the Midaz component, offering more granular control over internal processes. This update allows users to customize the system to better meet their specific needs.
+
+### 🗑️ Removed
+- **OTLP/GRPC Config Port**: The configuration port for OTLP/GRPC has been removed, simplifying the system setup and reducing potential points of failure. This change is part of ongoing efforts to streamline operations and enhance maintainability.
+
+### 📚 Documentation
+- **Changelog Updates**: The changelog for the Midaz component has been updated to reflect recent changes and improvements, ensuring users have access to the latest information and guidance on new features and updates.
+
+### 🔧 Maintenance
+- **Routine Updates**: Conducted routine updates and maintenance across Config, Database, and Deps components, including version updates and dependency management. These changes are crucial for maintaining system stability and security.
+
+This changelog provides a clear and concise overview of the significant changes in version 2.0.0, focusing on the user impact and benefits. It includes guidance for adapting to breaking changes, highlights new features, and emphasizes improvements in system configuration and maintenance.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

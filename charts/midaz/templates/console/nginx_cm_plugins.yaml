@@ -4,9 +4,9 @@ metadata:
   name: {{ include "midaz-console.fullname" . }}-nginx-config-plugins
 data:
   plugins.conf: |-
-{{- if eq .Chart.Name "midaz-helm" }}
-{{- range $name, $plugin := .Values.console.pluginsUi }}
-{{- if and (kindIs "map" $plugin) $plugin.enabled }}
+{{- if and .Values.console.pluginsUi.enabled .Values.console.pluginsUi.plugins }}
+{{- range $name, $plugin := .Values.console.pluginsUi.plugins }}
+{{- if $plugin.enabled }}
 {{-   $context := dict "name" $name "port" $plugin.port }}
 {{ tpl (include "nginx.pluginServerBlock" $context) $ | indent 4 }}
 {{- end }}

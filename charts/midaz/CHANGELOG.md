@@ -1,3 +1,22 @@
+## [midaz-2.6.0-beta.9] - 2025-07-23
+
+This release introduces significant enhancements to user interaction and system configuration, ensuring a smoother and more flexible experience. Enjoy the new plugin UI support and improved configuration management without any breaking changes.
+
+### ✨ Features  
+- **Plugin UI Support**: The console now supports plugin integration, allowing you to customize and manage plugins directly from the interface. This enhancement boosts user interaction and system flexibility, making it easier to tailor the environment to your needs.
+
+### 🔄 Changes
+- **Configuration Enhancements**: We've added new environment variables for fee metadata and configured Redis settings. These changes simplify the setup process and enhance system reliability and performance, making it easier for administrators to manage operational parameters.
+
+### 🔧 Maintenance
+- **Frontend Update**: Released version 2.6.0-beta.9 with foundational updates to prepare for future enhancements. This ensures compatibility and stability as we roll out new features.
+  
+- **Database and Frontend Update**: Version 1.3.0-beta.6 includes minor updates across database and frontend components, improving system robustness and paving the way for upcoming features.
+
+### Note
+There are no breaking changes in this release. All updates are backward compatible, and no immediate user action is required.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

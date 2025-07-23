@@ -164,15 +164,9 @@ console:
   # Plugins UIs
   plugins-ui:
     enabled: true
-    smart-templates:
+    plugin-smart-templates:
       enabled: true
       port: 4005
-    crm:
-      enabled: true
-      port: 4006
-    fees:
-      enabled: true
-      port: 4007
 
   # -- Secrets for storing sensitive data
   # @default -- templates/console/secrets.yaml

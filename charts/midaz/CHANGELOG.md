@@ -1,3 +1,21 @@
+## [midaz-2.6.0-beta.6] - 2025-07-23
+
+This release focuses on enhancing the reliability and maintainability of the configuration component, ensuring users have a smoother experience with version management and system setup.
+
+### 🔄 Changes
+- **Config Version Tracking**: We've improved the version collector to provide more accurate version tracking and reporting. This enhancement helps users gain clearer insights into the software version they are using, ensuring they are always informed about their current setup.
+
+### 🗑️ Removed
+- **Configuration Port for OTLP/gRPC**: We have removed the configuration port for OTLP/gRPC. This simplification reduces potential misconfigurations, making it easier for users to manage their setups and improving overall system maintainability.
+
+### 📚 Documentation
+- **Release Notes Update**: The release notes now include versions 2.6.0-beta.6 and 1.0.0-beta.2. This update ensures users have access to the latest information about beta releases, facilitating better testing and feedback collection.
+
+### 🔧 Maintenance
+- **Configuration Cleanup**: By streamlining configuration options, we have made the system easier to maintain and less prone to errors, indirectly enhancing user experience by reducing the likelihood of setup issues.
+
+These changes collectively aim to provide a more stable and user-friendly system without introducing any breaking changes or major new features.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

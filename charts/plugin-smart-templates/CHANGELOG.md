@@ -1,3 +1,18 @@
+## [plugin-smart-templates-1.3.0-beta.5] - 2025-07-23
+
+This release introduces a powerful new feature for template management and enhances the overall system reliability with comprehensive improvements across various components.
+
+### ✨ Features  
+- **Plugin-Smart-Templates UI**: Experience a new level of productivity with the plugin-smart-templates UI. This feature allows you to manage and customize templates directly from the user interface, enabling seamless creation of secrets, definition of values, and utilization of functions. This enhancement simplifies template management, making it more intuitive and efficient.
+
+### 🔄 Improvements
+- **Comprehensive Helm Templates**: We've integrated helm templates across the backend, build, config, database, and frontend. This ensures a more robust and flexible deployment process, improving deployment consistency and reducing configuration errors. Users will notice enhanced system reliability and maintainability.
+
+### 🔧 Maintenance
+- **Version Update**: The project has been updated to version 1.3.0-beta.5, aligning all components with the latest release standards. This update includes various under-the-hood improvements that enhance system stability and prepare the platform for future feature expansions.
+
+These changes collectively enhance the user experience by introducing significant new features and improving the reliability and maintainability of the system. The focus on the plugin-smart-templates UI highlights the project's commitment to providing powerful, user-friendly tools for template management.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

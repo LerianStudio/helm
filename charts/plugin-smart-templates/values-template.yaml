@@ -88,6 +88,8 @@ common:
     DATASOURCE_FEES_USER: "plugin-fees"
     DATASOURCE_FEES_PORT: 5800
     DATASOURCE_FEES_TYPE: "mongodb"
+    DATASOURCE_FEES_SSL: false
+    DATASOURCE_FEES_OPTIONS: "replicaSet=rs0&authSource=admin&directConnection=true"
 
 secrets:
   MONGO_PASSWORD: lerian

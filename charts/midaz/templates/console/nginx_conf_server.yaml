@@ -1,13 +1,13 @@
 {{- define "nginx.serverBlockConfig" -}}
-server {
-  listen 8081;
+  server {
+    listen 8081;
 
-  location / {
-    proxy_pass http://midaz-console.midaz.svc.cluster.local:{{ get (get .Values.console "service" | default dict) "port" | default 8081 }};
+    location / {
+      proxy_pass http://midaz-console.midaz.svc.cluster.local:{{ get (get .Values.console "service" | default dict) "port" | default 8081 }};
+    }
+
+    include /opt/bitnami/nginx/conf/plugins_blocks/plugins.conf;
   }
-
-  include /opt/bitnami/nginx/conf/plugins_blocks/plugins.conf;
-}
 {{- end }}
 
 {{- define "nginx.pluginServerBlock" -}}

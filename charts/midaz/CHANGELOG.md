@@ -1,3 +1,15 @@
+## [midaz-2.6.0-beta.10] - 2025-07-23
+
+This release introduces significant enhancements to the user interface, allowing seamless plugin management directly from the console. It also includes foundational improvements to ensure a stable and future-ready frontend experience.
+
+### ✨ Features  
+- **UI Support for Plugins**: Users can now manage and interact with plugins directly through the console interface. This feature enhances user flexibility and control, streamlining the plugin management process and improving overall user experience.
+
+### 🔧 Maintenance
+- **Frontend Preparations**: Released version 2.6.0-beta.10, which includes various behind-the-scenes improvements. These updates ensure the frontend remains stable and ready for future enhancements, contributing to a smoother user experience and easier maintenance.
+
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

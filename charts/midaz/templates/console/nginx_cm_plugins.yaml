@@ -5,7 +5,7 @@ metadata:
 data:
   plugins.conf: |-
 {{- if eq .Chart.Name "midaz-helm" }}
-{{- range .Values.console.plugins-ui }}
+{{- range .Values.console.pluginsUi }}
 {{ tpl (include "nginx.pluginServerBlock" .) $ | indent 4 }}
 {{- end }}
 {{- end }}

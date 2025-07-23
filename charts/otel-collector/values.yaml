@@ -10,12 +10,12 @@ opentelemetry-collector:
 
   # Expose the OTLP gRPC port on the host network to allow applications
   # on the same node to connect directly via the node's IP.
-  ports:
-    otlp-grpc:
-      enabled: true
-      containerPort: 4317
-      hostPort: 4317
-      protocol: TCP
+  #ports:
+  #  otlp-grpc:
+  #    enabled: true
+  #    containerPort: 4317
+  #    hostPort: 4317
+  #    protocol: TCP
 
   # Contrib image is needed for k8scluster, k8sattributes, transform, and loki exporter.
   image:

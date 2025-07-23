@@ -1,24 +1,9 @@
 {{- define "nginx.serverBlockConfig" -}}
 server {
-  listen 8080;
+  listen 8081;
 
   location / {
     proxy_pass http://midaz-console.midaz.svc.cluster.local:{{ get (get .Values.console "service" | default dict) "port" | default 8081 }};
-  }
-
-  location /grafana/ {
-    proxy_pass http://grafana.opentelemetry.svc.cluster.local:80/;
-    proxy_set_header Host $host;
-  }
-
-  location /transaction/ {
-    proxy_pass http://midaz-transaction.midaz.svc.cluster.local:{{ get (get .Values.transaction "service" | default dict) "port" | default 3001 }}/;
-    proxy_set_header Host $host;
-  }
-
-  location /onboarding/ {
-    proxy_pass http://midaz-onboarding.midaz.svc.cluster.local:{{ get (get .Values.onboarding "service" | default dict) "port" | default 3000 }}/;
-    proxy_set_header Host $host;
   }
 
   include /opt/bitnami/nginx/conf/plugins_blocks/plugins.conf;
@@ -26,40 +11,7 @@ server {
 {{- end }}
 
 {{- define "nginx.pluginServerBlock" -}}
-  location = /{{ .name }} {
-    add_header Cache-Control "no-cache, no-store, must-revalidate";
-    add_header Pragma "no-cache";
-    add_header Expires "0";
-    add_header X-Debug-Path "{{ .name }}-root";
-
-    sub_filter '"/_next/' '"/{{ .name }}/_next/';
-    sub_filter "'/_next/" "'/{{ .name }}/_next/";
-    sub_filter_once off;
-
-    proxy_pass http://{{ .name }}.midaz-plugins.svc.cluster.local:{{ .port }};
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Prefix "/{{ .name }}";
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_read_timeout 600s;
-    proxy_set_header Accept-Encoding "";
-  }
-
   location /{{ .name }}/ {
-    add_header Cache-Control "no-cache, no-store, must-revalidate";
-    add_header Pragma "no-cache";
-    add_header Expires "0";
-    add_header X-Debug-Path "{{ .name }}-main";
-
-    sub_filter '"/_next/' '"/{{ .name }}/_next/';
-    sub_filter "'/_next/" "'/{{ .name }}/_next/";
-    sub_filter_once off;
-    sub_filter_types text/html;
-
     proxy_pass http://{{ .name }}.midaz-plugins.svc.cluster.local:{{ .port }};
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -70,65 +22,6 @@ server {
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
     proxy_read_timeout 600s;
-    proxy_set_header Accept-Encoding "";
-  }
-
-  location ~* ^/{{ .name }}//{{ .name }}/_next/(.*) {
-    return 301 /{{ .name }}/_next/$1;
-  }
-
-  location ~* ^/{{ .name }}/_next/static/(.*) {
-    proxy_pass http://{{ .name }}.midaz-plugins.svc.cluster.local:{{ .port }}/_next/static/$1;
-    add_header X-Debug-Path "{{ .name }}-static";
-    add_header Cache-Control "public, max-age=31536000, immutable";
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_buffering on;
-    proxy_buffer_size 128k;
-    proxy_buffers 4 256k;
-    proxy_busy_buffers_size 256k;
-  }
-
-  location ~* ^/{{ .name }}/_next/data/(.*) {
-    proxy_pass http://{{ .name }}.midaz-plugins.svc.cluster.local:{{ .port }}/_next/data/$1;
-    add_header X-Debug-Path "{{ .name }}-data";
-    add_header Cache-Control "public, max-age=3600";
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Prefix "/{{ .name }}";
-  }
-
-  location ~* ^/{{ .name }}/_next/(.*) {
-    proxy_pass http://{{ .name }}.midaz-plugins.svc.cluster.local:{{ .port }}/_next/$1;
-    add_header X-Debug-Path "{{ .name }}-next";
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Prefix "/{{ .name }}";
-  }
-
-  location ~* ^/{{ .name }}/(customers|organizations|settings|profile|.*) {
-    add_header X-Debug-Path "{{ .name }}-routes";
-    add_header Cache-Control "no-cache, no-store, must-revalidate";
-
-    sub_filter '"/_next/' '"/{{ .name }}/_next/';
-    sub_filter "'/_next/" "'/{{ .name }}/_next/";
-    sub_filter_once off;
-
-    proxy_pass http://{{ .name }}.midaz-plugins.svc.cluster.local:{{ .port }}/$1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Prefix "/{{ .name }}";
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_set_header Accept-Encoding "";
+    proxy_connect_timeout 60s;
   }
 {{- end }}

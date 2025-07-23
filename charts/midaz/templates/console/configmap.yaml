@@ -23,6 +23,11 @@ data:
   MIDAZ_CONSOLE_ENABLE_DEBUG: {{ .Values.console.configmap.MIDAZ_CONSOLE_ENABLE_DEBUG | default "true" | quote }}
   NODE_ENV: {{ .Values.console.configmap.NODE_ENV | default "development" | quote }}
 
+  # Nginx Configuration
+  NGINX_PORT: {{ .Values.console.configmap.NGINX_PORT | default "80" | quote }}
+  NGINX_HOST: {{ .Values.console.configmap.NGINX_HOST | default "midaz-nginx" | quote }}
+  NGINX_BASE_PATH: {{ .Values.console.configmap.NGINX_BASE_PATH | default "http://midaz-nginx.svc.cluster.local:80" | quote }}
+
   # Midaz API Configuration
   MIDAZ_API_HOST: {{ .Values.console.configmap.MIDAZ_API_HOST | default (printf "midaz-onboarding.%s.svc.cluster.local." .Release.Namespace) | quote }}
   MIDAZ_API_PORT: {{ .Values.console.configmap.MIDAZ_API_PORT | default "3000" | quote }}
@@ -33,7 +38,7 @@ data:
   
   # NextAuth Configuration
   NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
-
+  
   # Plugin Auth
   PLUGIN_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
   PLUGIN_AUTH_CLIENT_ID: {{ .Values.console.configmap.PLUGIN_AUTH_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}

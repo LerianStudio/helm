@@ -1,3 +1,21 @@
+## [midaz-2.6.0-beta.8] - 2025-07-23
+
+This release introduces significant enhancements to the plugin management experience, with new features and improvements that elevate user interaction and operational efficiency.
+
+### ✨ Features  
+- **Comprehensive Plugins UI**: Now manage and utilize plugins directly from the console with our new UI support. This enhancement simplifies plugin interaction, allowing for greater customization and improved workflow efficiency.
+- **Plugin-Smart-Templates UI**: Experience a robust interface for managing plugin-smart-templates, including secret creation and value definitions. This feature streamlines template deployment and management, making it easier to configure and implement templates.
+
+### 🔄 Changes
+- **UI Enhancements**: Improved the user interface for plugin-smart-templates, offering a more intuitive and user-friendly experience. These changes make navigating and using template features smoother and more efficient.
+- **Seamless Plugin Integration**: Extended support for plugins UI across both frontend and backend components, ensuring a cohesive and reliable plugin management experience throughout the application.
+
+### 🔧 Maintenance
+- **Configuration Updates**: Introduced new environment variables for plugin-smart-templates, enhancing configuration management and providing flexibility for future updates.
+- **System Stability**: Regular updates to the database and frontend components to maintain system stability and incorporate the latest features and improvements, ensuring the application remains up-to-date and secure.
+
+These updates focus on enhancing user capabilities, improving the user interface, and ensuring the system remains robust and adaptable to future needs. The release prioritizes user experience and operational efficiency, providing significant value to end-users.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

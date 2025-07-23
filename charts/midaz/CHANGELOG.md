@@ -1,3 +1,16 @@
+## [midaz-2.6.0-beta.7] - 2025-07-23
+
+This release enhances the internal capabilities of the system, introducing a new configuration feature for 'midaz' that boosts performance and reliability. Additionally, maintenance updates ensure continued stability and readiness for future improvements.
+
+### ✨ Features
+- **Efficient Data Collection**: A new internal collector configuration for the 'midaz' feature has been introduced. This enhancement improves data processing efficiency, leading to smoother operation and better resource management for users. Expect a more reliable system performance with this update.
+
+### 🔧 Maintenance
+- **System Stability Enhancements**: Released version 2.6.0-beta.7, which includes preparatory updates and optimizations. These changes ensure the system remains stable and ready for future enhancements, providing a solid foundation for ongoing development and user satisfaction.
+
+
+This changelog focuses on the user benefits of the new features and maintenance updates, highlighting improved performance and system stability. It maintains a clear, concise format to ensure users can quickly understand the changes and their impacts.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

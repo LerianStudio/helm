@@ -11,6 +11,9 @@
 {{- end }}
 
 {{- define "nginx.pluginServerBlock" -}}
+  location = /{{ .name }} {
+    return 301 /{{ .name }}/;
+  }
   location /{{ .name }}/ {
     proxy_pass http://{{ .name }}.midaz-plugins.svc.cluster.local:{{ .port }};
     proxy_set_header Host $host;

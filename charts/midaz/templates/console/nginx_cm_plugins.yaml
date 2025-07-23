@@ -5,7 +5,10 @@ metadata:
 data:
   plugins.conf: |-
 {{- if eq .Chart.Name "midaz-helm" }}
-{{- range .Values.console.pluginsUi }}
-{{ tpl (include "nginx.pluginServerBlock" .) $ | indent 4 }}
+{{- range $name, $plugin := .Values.console.pluginsUi }}
+{{- if and (kindIs "map" $plugin) $plugin.enabled }}
+{{-   $context := dict "name" $name "port" $plugin.port }}
+{{ tpl (include "nginx.pluginServerBlock" $context) $ | indent 4 }}
+{{- end }}
 {{- end }}
 {{- end }}

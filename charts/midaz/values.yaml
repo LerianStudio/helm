@@ -81,6 +81,7 @@ console:
     type: ClusterIP
     # -- Service port
     port: 8081
+    annotations: {}
 
   ingress:
     # -- Enable or disable ingress
@@ -245,6 +246,7 @@ onboarding:
     type: ClusterIP
     # -- Port for the HTTP API
     port: 3000
+    annotations: {}
 
   ingress:
     # -- Enable or disable ingress
@@ -431,6 +433,7 @@ transaction:
     type: ClusterIP
     # -- Port for the HTTP API
     port: 3001
+    annotations: {}
 
   ingress:
     # -- Enable or disable ingress

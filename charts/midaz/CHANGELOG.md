@@ -1,3 +1,20 @@
+## [midaz-2.6.0-beta.15] - 2025-07-24
+
+This release introduces enhanced customization capabilities and streamlined configurations, focusing on improving user flexibility and reducing complexity.
+
+### ✨ Features  
+- **Backend Annotations**: You can now add annotations in the service block of `values.yaml`, allowing for greater customization of console, onboarding, and transaction services. This feature enhances integration flexibility and deployment configurations, empowering users to define additional metadata easily.
+
+### 🔄 Changes
+- **Template Updates**: The templates for console, onboarding, and transaction services have been updated to accept annotations from `values.yaml`. This change simplifies the configuration process, making it easier to manage service-specific settings and metadata.
+- **Config Simplification**: Unused environment variables have been removed from the worker secret in the plugin-smart-templates. This reduces configuration complexity and minimizes potential security risks by eliminating unnecessary data exposure.
+
+### 🔧 Maintenance
+- **Release Management**: Multiple releases were prepared, including `2.6.0-beta.15`, `1.3.0-beta.7`, and `1.3.0`, ensuring the software remains up-to-date with the latest features and improvements. These updates reflect ongoing efforts to enhance system stability and performance.
+- **Build Updates**: General updates and maintenance were performed to support the latest release cycles, ensuring compatibility and smooth operation across different environments.
+
+This changelog highlights the key enhancements and maintenance efforts aimed at improving user experience and maintaining software health.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

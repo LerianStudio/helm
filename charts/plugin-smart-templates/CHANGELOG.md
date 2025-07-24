@@ -1,3 +1,22 @@
+## [plugin-smart-templates-1.3.0-beta.7] - 2025-07-24
+
+This release enhances the user interface with new plugin management capabilities and improves server management flexibility, ensuring a more reliable and efficient platform.
+
+### ✨ Features  
+- **Plugin UI Support**: The console now includes integrated plugin management features, significantly enhancing user interaction. This addition simplifies plugin handling and provides a seamless user experience for managing extensions directly from the interface.
+
+### 🐛 Bug Fixes
+- **Nginx Server Configuration**: Resolved issues in the Nginx server definitions within the midaz component. This fix ensures stable server operations, reducing the risk of misconfigurations and potential downtime.
+
+### 🔄 Changes
+- **Nginx Configuration Enhancements**: Added new parameters to the midaz-console configuration, offering administrators more control over server settings. This change can lead to improved performance and reliability by allowing for more tailored server configurations.
+
+### 🔧 Maintenance
+- **Version Updates**: Updated multiple backend and frontend components to the latest beta versions, preparing the system for future enhancements and ensuring stability with the latest improvements.
+- **Configuration Cleanup**: Removed unused environment variables from the worker secret in the plugin-smart-templates configuration, streamlining the setup process and minimizing potential configuration errors.
+
+These updates collectively improve the system's functionality, reliability, and user experience, providing a more robust and user-friendly platform.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

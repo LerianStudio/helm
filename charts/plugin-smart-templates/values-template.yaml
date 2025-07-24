@@ -2,10 +2,10 @@
 
 common:
   configmap:
-    
+
     # WORKER
     ENV_NAME: development
-    
+
     # RABBITMQ
     RABBITMQ_URI: amqp
     RABBITMQ_PORT_HOST: 15672
@@ -15,7 +15,7 @@ common:
     RABBITMQ_EXCHANGE: "smart-templates.generate-report.exchange"
     RABBITMQ_GENERATE_REPORT_QUEUE: "smart-templates.generate-report.queue"
     RABBITMQ_GENERATE_REPORT_KEY: "smart-templates.generate-report.key"
-    
+
     # MINIO
     MINIO_API_HOST: plugin-smart-templates-minio.midaz-plugins.svc.cluster.local
     MINIO_API_PORT: 9000
@@ -46,7 +46,7 @@ common:
     DATASOURCE_ONBOARDING_DATABASE: onboarding
     DATASOURCE_ONBOARDING_TYPE: postgresql
     DATASOURCE_ONBOARDING_SSLMODE: disable
-    
+
     # MIDAZ TRANSACTION
     DATASOURCE_TRANSACTION_CONFIG_NAME: midaz_transaction
     DATASOURCE_TRANSACTION_HOST: midaz-postgresql-replication.midaz.svc.cluster.local
@@ -55,7 +55,7 @@ common:
     DATASOURCE_TRANSACTION_DATABASE: transaction
     DATASOURCE_TRANSACTION_TYPE: postgresql
     DATASOURCE_TRANSACTION_SSLMODE: disable
-    
+
     # MIDAZ ONBOARDING METADATA
     DATASOURCE_ONBOARDING_METADATA_CONFIG_NAME: "midaz_onboarding_metadata"
     DATASOURCE_ONBOARDING_METADATA_URI: "mongodb"
@@ -65,7 +65,9 @@ common:
     DATASOURCE_ONBOARDING_METADATA_PORT: 27017
     DATASOURCE_ONBOARDING_METADATA_MAX_POOL_SIZE: 1000
     DATASOURCE_ONBOARDING_METADATA_TYPE: "mongodb"
-    
+    DATASOURCE_ONBOARDING_METADATA_SSL: false
+    DATASOURCE_ONBOARDING_METADATA_OPTIONS: "replicaSet=rs0&authSource=admin&directConnection=true"
+
     # MIDAZ TRANSACTION METADATA
     DATASOURCE_TRANSACTION_METADATA_CONFIG_NAME: "midaz_transaction_metadata"
     DATASOURCE_TRANSACTION_METADATA_URI: "mongodb"
@@ -75,7 +77,9 @@ common:
     DATASOURCE_TRANSACTION_METADATA_PORT: 27017
     DATASOURCE_TRANSACTION_METADATA_MAX_POOL_SIZE: 1000
     DATASOURCE_TRANSACTION_METADATA_TYPE: "mongodb"
-    
+    DATASOURCE_TRANSACTION_METADATA_SSL: false
+    DATASOURCE_TRANSACTION_METADATA_OPTIONS: "replicaSet=rs0&authSource=admin&directConnection=true"
+
     # PLUGIN FEES
     DATASOURCE_FEES_CONFIG_NAME: "plugin_fees"
     DATASOURCE_FEES_URI: "mongodb"
@@ -84,6 +88,8 @@ common:
     DATASOURCE_FEES_USER: "plugin-fees"
     DATASOURCE_FEES_PORT: 5800
     DATASOURCE_FEES_TYPE: "mongodb"
+    DATASOURCE_FEES_SSL: false
+    DATASOURCE_FEES_OPTIONS: "replicaSet=rs0&authSource=admin&directConnection=true"
 
 secrets:
   MONGO_PASSWORD: lerian
@@ -95,12 +101,12 @@ secrets:
   DATASOURCE_ONBOARDING_METADATA_PASSWORD: lerian
   DATASOURCE_TRANSACTION_PASSWORD: lerian
   DATASOURCE_ONBOARDING_PASSWORD: lerian
-    
+
 observability:
   enabled: false
 
 keda:
-  enabled: true      
+  enabled: true
 
 mongodb:
   enabled: true

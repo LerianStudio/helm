@@ -46,3 +46,8 @@ data:
   # AUTH
   PLUGIN_AUTH_ADDRESS: {{ .Values.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-auth" | quote }}
   PLUGIN_AUTH_ENABLED: {{ .Values.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

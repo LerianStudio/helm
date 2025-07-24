@@ -1,0 +1,41 @@
+{{- if .Values.frontend.enabled -}}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "plugin-frontend.fullname" . }}
+data:
+  NODE_ENV: {{ .Values.frontend.configmap.NODE_ENV | default "production" | quote }}
+
+  # OpenTelemetry
+  ENABLE_TELEMETRY: {{ .Values.frontend.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  OTEL_RECEIVER_HTTP_PORT: {{ .Values.frontend.configmap.OTEL_RECEIVER_HTTP_PORT | default "4318" | quote }}
+  OTEL_HOST: {{ .Values.frontend.configmap.OTEL_HOST | default "midaz-grafana.midaz.svc.cluster.local" | quote }}
+  OTEL_URL_METRICS: {{ .Values.frontend.configmap.OTEL_URL_METRICS | default "midaz-grafana.midaz.svc.cluster.local:4318/v1/metrics" | quote }}
+  OTEL_URL_TRACES: {{ .Values.frontend.configmap.OTEL_URL_TRACES | default "midaz-grafana.midaz.svc.cluster.local:4318/v1/traces" | quote }}
+  OTEL_URL_LOGS: {{ .Values.frontend.configmap.OTEL_URL_LOGS | default "midaz-grafana.midaz.svc.cluster.local:4318/v1/logs" | quote }}
+
+  # CRM Plugin UI Config
+  ENABLE_DEBUG: {{ .Values.frontend.configmap.ENABLE_DEBUG | default "false" | quote }}
+  NEXT_PUBLIC_PLUGIN_UI_BASE_PATH: {{ .Values.frontend.configmap.NEXT_PUBLIC_PLUGIN_UI_BASE_PATH | default "" | quote }}
+
+  # Console Leyout Config
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console.midaz.svc.cluster.local:8081" | quote }}
+  NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_AUTH_ENABLED | default "false" | quote }}
+
+  # NextAuth Configuration
+  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console.midaz.svc.cluster.local:8081" | quote }}
+  NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console.midaz.svc.cluster.local:8081" | quote }}
+  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console.midaz.svc.cluster.local:8081" | quote }}
+
+  # Plugin Smart Templates Configuration
+  PLUGIN_SMART_TEMPLATES_HOST: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_HOST | default "http://plugin-smart-templates-manager.midaz-plugins.svc.cluster.local" | quote }}
+  PLUGIN_SMART_TEMPLATES_PORT: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_PORT | default "4005" | quote }}
+  PLUGIN_SMART_TEMPLATES_BASE_PATH: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_BASE_PATH | default "http://plugin-smart-templates-manager.midaz-plugins.svc.cluster.local:4005" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.frontend.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+
+{{- end }}
+

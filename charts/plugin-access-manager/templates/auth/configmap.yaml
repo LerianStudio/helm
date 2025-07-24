@@ -58,3 +58,8 @@ data:
   DB_NAME: {{ .Values.auth.configmap.DB_NAME | default "casdoor" | quote }}
   DB_PORT: {{ .Values.auth.configmap.DB_PORT | default "5432" | quote }}
   USER_EXECUTE_COMMAND: {{ .Values.auth.configmap.USER_EXECUTE_COMMAND | default "postgres" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.auth.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

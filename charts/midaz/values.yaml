@@ -161,7 +161,14 @@ console:
     MONGODB_URI: "mongodb://midaz-mongodb.midaz.svc.cluster.local:27017/?directConnection=true"
     MONGODB_DB_NAME: "midaz-console"
     MONGODB_USER: "midaz"
-    
+  
+  # Plugins UIs
+  pluginsUi:
+    enabled: true
+    plugins:
+      plugin-smart-templates-frontend:
+        enabled: true
+        port: 8083
 
   # -- Secrets for storing sensitive data
   # @default -- templates/console/secrets.yaml
@@ -731,3 +738,45 @@ rabbitmq:
   
   persistence:
     size: 8Gi
+
+otel-collector-lerian:
+  enabled: false
+
+  # Adds the client ID for multi-tenancy, as requested.
+  resource/add_client_id:
+    attributes:
+      - key: client.id
+        value: "Lerian"
+        action: upsert
+
+  extraEnvs:
+  - name: OTEL_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: otel-api-key
+        key: api-key
+
+  exporters:
+    otlphttp/server:
+      endpoint: "https://telemetry.lerian.io:443" # Send traces to Lerian Telemetry
+      headers:
+        x-api-key: "${OTEL_API_KEY}"
+
+    prometheus/local: # Expose metrics for Client Prometheus
+      endpoint: 0.0.0.0:8889
+
+nginx:
+  enabled: true
+
+  existingServerBlockConfigmap: "midaz-console-nginx-config"
+
+  # Mount the plugins configmap as a volume
+  extraVolumes:
+    - name: nginx-plugins-config
+      configMap:
+        name: midaz-console-nginx-config-plugins
+
+  # Mount the volume into the nginx container
+  extraVolumeMounts:
+    - name: nginx-plugins-config
+      mountPath: /opt/bitnami/nginx/conf/plugins_blocks

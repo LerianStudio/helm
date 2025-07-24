@@ -48,3 +48,8 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }} 
   ENABLE_TELEMETRY: {{ .Values.identity.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.identity.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

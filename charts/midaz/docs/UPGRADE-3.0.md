@@ -1,5 +1,19 @@
 # Helm Upgrade from v2.x to v3.x
 
+# Topics  
+
+- ***[Breaking Changes](#breaking-changes)***
+    - [1. Consolidation of REDIS_PORT into REDIS_HOST](#1-consolidation-of-redis_port-into-redis_host)
+    - [2. App Bump Version](#2-app-bump-version)
+- ***[Additions](#additions)***
+    - [1. Onboarding: New Environment Variable ACCOUNT_TYPE_VALIDATION](#1-onboarding-new-environment-variable-account_type_validation)
+    - [2. Transaction: New Environment Variable TRANSACTION_ROUTE_VALIDATION](#2-transaction-new-environment-variable-transaction_route_validation)
+    - [3. Redis: New Environment Variables](#3-redis-new-environment-variables)
+    - [4. Enterprise: A Gateway with NGINX Proxy for Plugins UIs](#4-enterprise-a-gateway-with-nginx-proxy-for-plugins-uis)
+    - [5. Enterprise: OTEL Collector](#5-enterprise-otel-collector)
+    - [6. External Secrets Support](#6-external-secrets-support)
+- ***[Command to upgrade](#command-to-upgrade)***
+
 ## Breaking Changes
 
 ### 1. Consolidation of REDIS_PORT into REDIS_HOST
@@ -199,6 +213,34 @@ otel-collector-lerian:
       endpoint: "http://<customer-prometheus-endpoint>:9090"
 ```
 ***Note:*** See the [otel-collector-lerian section in values](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/values.yaml#L38-L46) for more details.
+
+### 6. External Secrets Support
+
+Now you can use external secrets to store sensitive data.
+
+```yaml
+console:
+    useExistingSecrets: true
+    existingSecretName: <existing-secret-name>
+```
+
+***Note:*** See the [console secrets template](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/templates/console/secrets.yaml) for get the secrets names.
+
+```yaml
+onboarding:
+    useExistingSecrets: true
+    existingSecretName: <existing-secret-name>
+```
+
+***Note:*** See the [onboarding secrets template](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/templates/onboarding/secrets.yaml) for get the secrets names.
+
+```yaml
+transaction:
+    useExistingSecrets: true
+    existingSecretName: <existing-secret-name>
+```
+
+***Note:*** See the [transaction secrets template](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/templates/transaction/secrets.yaml) for get the secrets names.
 
 ## Command to upgrade
 

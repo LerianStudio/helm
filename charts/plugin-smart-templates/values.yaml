@@ -710,3 +710,6 @@ valkey:
   architecture: standalone
   auth:
     enabled: false
+
+otel-collector-lerian:
+  enabled: true

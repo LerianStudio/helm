@@ -1,3 +1,35 @@
+## [plugin-fees-1.4.0-beta.2] - 2025-07-25
+
+This release introduces significant enhancements to the Helm platform, including major UI improvements, new features for service integration, and critical bug fixes. Users should review the breaking changes to ensure a smooth transition.
+
+### ⚠️ Breaking Changes
+- **Configuration Overhaul**: This release includes substantial changes to the configuration across multiple components such as authentication, backend, and database. Users must update their configurations to align with the new requirements. Detailed migration guidance is available in the documentation. Failure to update may disrupt existing workflows and integrations.
+
+### ✨ Features
+- **Enhanced UI for Plugins and CRM**: The frontend now supports comprehensive UI enhancements for plugin fees and CRM, offering a more intuitive user experience with new templates and functions. This facilitates easier management and interaction with plugins.
+- **Service Discovery for Plugins**: A new service discovery job capability has been added to the plugins UI, improving the integration and management of services within the application ecosystem.
+- **Midaz Console Support**: Plugins UI now supports the console, enhancing user interface and interaction capabilities for Midaz users.
+
+### 🐛 Bug Fixes
+- **Stable Server Operations**: Resolved issues with Midaz nginx proxy configurations and server definitions, ensuring reliable server operations and reducing downtime.
+- **CRM UI Port Fixes**: Addressed port assignment issues in the CRM UI, improving accessibility and preventing connection errors.
+
+### ⚡ Performance
+- **Optimized Data Collection**: Internal collector configurations for Midaz have been enhanced, leading to more efficient data processing and reduced system load.
+
+### 🔄 Changes
+- **Configuration Flexibility**: Updated default values.yaml to include new field annotations in the service block, allowing for greater customization in console, onboarding, and transaction services.
+- **Environment Variable Support**: Added support for extra environment variables in plugin-smart-templates and plugin-crm, providing users with more options for customization.
+
+### 🗑️ Removed
+- **Unused Environment Variables**: Cleaned up worker secrets by removing unused environment variables, simplifying configuration and reducing potential errors.
+
+### 🔧 Maintenance
+- **Code Quality Enhancements**: Regular updates to dependencies and code quality improvements across backend, build, and database components, ensuring continued stability and performance.
+- **Refactored Frontend Naming**: Aligned naming conventions by refactoring plugin smart templates frontend to UI, improving code organization and maintainability.
+
+Users are encouraged to update to this version to take advantage of the latest features and improvements. Please review the breaking changes and follow the migration guidance to ensure a seamless upgrade experience.
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

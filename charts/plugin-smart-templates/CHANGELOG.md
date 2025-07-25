@@ -1,3 +1,22 @@
+## [plugin-smart-templates-1.4.0-beta.4] - 2025-07-25
+
+This release introduces significant enhancements to the plugin fees management interface, along with improvements in spam filtering and documentation updates for a smoother user experience.
+
+### ✨ Features  
+- **Enhanced Plugin Fees UI**: Experience a more intuitive and streamlined interface for managing plugin fees, making it easier to navigate and manage your settings effectively.
+- **Integrated UI Templates**: Benefit from a cohesive approach to plugin fees management across the platform, ensuring consistency and ease of use.
+
+### 🔄 Changes
+- **Spam Filtering Enhancement**: A new parameter has been added to filter spam attributes, providing better control over content and enhancing the overall user experience by reducing irrelevant information.
+
+### 📚 Documentation
+- **Upgrade Guides**: Comprehensive 3.0 upgrade guides for 'midaz' and 'plugin-access-manager' components are now available, offering detailed instructions to ensure a seamless transition to the latest version.
+
+### 🔧 Maintenance
+- **System Updates**: Various chore updates, including version releases and parameter adjustments, have been implemented to maintain system stability and compatibility across components.
+
+Each update in this release has been crafted to enhance usability, maintain high standards of performance, and ensure a smooth transition to new features. Enjoy the improved functionality and documentation support in version 1.5.0.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

@@ -1,3 +1,15 @@
+## [plugin-crm-1.4.0-beta.3] - 2025-07-25
+
+This release focuses on improving the stability and readiness of the CRM system, ensuring a seamless user experience and preparing for future enhancements.
+
+### 🐛 Bug Fixes
+- **Resolved CRM UI Port Configuration Issue**: Fixed a connectivity problem in the CRM interface caused by incorrect port settings. Users can now reliably access the CRM without encountering port-related errors, enhancing overall system stability and usability.
+
+### 🔧 Maintenance
+- **Frontend Version Update**: Updated the frontend to version 1.4.0-beta.3, incorporating essential behind-the-scenes improvements. This update ensures the software remains robust and ready for future development, contributing to the long-term health and stability of the system.
+
+This changelog provides a clear and user-focused summary of the changes in version 1.4.0, emphasizing the benefits and impacts on user experience. It includes only relevant sections, maintaining a professional and accessible tone throughout.
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

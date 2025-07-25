@@ -1,3 +1,18 @@
+## [plugin-access-manager-2.3.0-beta.5] - 2025-07-25
+
+This release enhances data management and optimizes system performance, providing users with improved data filtering capabilities and more efficient operations.
+
+### ✨ Features  
+- **Enhanced Data Filtering**: A new `filter spam attribute` parameter has been introduced in the backend configuration. This feature empowers users to efficiently filter out spam data, ensuring higher data integrity and a smoother user experience.
+
+### ⚡ Performance
+- **Optimized Resource Utilization**: The default setting for the `collector-lerian` parameter has been updated to `false`. This change reduces unnecessary data collection, leading to improved system performance and more efficient use of resources.
+
+### 🔧 Maintenance
+- **Version Alignment**: Completed updates for versions `2.3.0-beta.5` and `1.0.0-beta.3`, ensuring all components (backend, config, database, frontend) are up-to-date with the latest standards. These updates include minor adjustments and optimizations to maintain system stability and compatibility.
+
+This release is focused on enhancing the user experience through better data management and system performance improvements. Users can expect a more streamlined and efficient operation.
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

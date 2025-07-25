@@ -48,7 +48,7 @@ spec:
               name: {{ include "plugin-frontend.fullname" . }}
           ports:
             - name: http
-              containerPort: 8081
+              containerPort: 8082
               protocol: TCP
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}

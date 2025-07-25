@@ -1,3 +1,20 @@
+## [midaz-2.6.0-beta.16] - 2025-07-25
+
+This release introduces a powerful new service discovery feature in the plugins UI, enhancing service management capabilities. Alongside this, various improvements and maintenance updates ensure a smoother and more efficient user experience.
+
+### ✨ Features
+- **Service Discovery in Plugins UI**: A new feature has been added to the plugins UI, allowing users to dynamically locate and manage services within their applications. This enhancement simplifies the management of complex environments, making it easier to maintain operational efficiency.
+
+### ⚡ Improvements
+- **Metrics Export Simplification**: A default parameter has been introduced for the export metrics endpoint, making it easier to configure and export performance data. This change aids in better monitoring and analysis of system performance.
+- **Frontend & Backend Enhancements**: Updates have been made to both the frontend and backend components to support the new service discovery feature, ensuring seamless integration and an improved user experience.
+
+### 🔧 Maintenance
+- **Component Synchronization**: Regular updates have been applied to synchronize components such as auth, build, config, and dependencies, maintaining system integrity and compatibility across different modules.
+- **Code Quality Enhancements**: Minor code changes and optimizations have been implemented to improve overall code quality and maintainability, contributing to long-term system stability.
+
+This release focuses on introducing significant new capabilities while ensuring system reliability and performance through various maintenance updates. Users will benefit from enhanced service management and a more streamlined operational experience.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

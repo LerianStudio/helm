@@ -1,3 +1,34 @@
+## [plugin-access-manager-2.3.0-beta.3] - 2025-07-25
+
+This release introduces significant enhancements to the Helm project, including improved configuration management, new features for the Midaz console, and several critical bug fixes. Users are advised to review the breaking changes and update their configurations to ensure a seamless transition.
+
+### ⚠️ Breaking Changes
+- **Configuration Overhaul**: The configuration management system has been restructured, impacting environment variables and service templates. Users must update their configuration files to match the new format. This change affects service initialization and may require migration steps for existing setups. Please refer to the updated configuration guidelines for detailed instructions.
+
+### ✨ Features  
+- **Plugin UI Support**: The Midaz console now supports plugin UI integration, allowing users to manage plugins directly from the console. This feature enhances user interaction and customization, streamlining workflows.
+- **Internal Data Collector**: Introduced a new data aggregation and monitoring feature within Midaz, providing enhanced analytics and system insights. This addition supports performance tuning and system health checks.
+
+### 🐛 Bug Fixes
+- **Nginx Server Configuration**: Fixed issues with the nginx server definition in the Midaz component, ensuring proper server configuration and stability. This resolves previous errors that could lead to server misbehavior or downtime.
+
+### ⚡ Performance
+- **Enhanced Configuration Options**: New environment variables for plugins, including smart templates and CRM, provide greater flexibility and customization in deployment setups.
+
+### 🔄 Changes
+- **Service Block Annotations**: Updated `values.yaml` with improved service block annotations, enhancing the clarity and manageability of service configurations.
+
+### 🗑️ Removed
+- **Deprecated Configurations**: Removed unused environment variables and deprecated configurations to streamline the codebase and reduce potential errors.
+
+### 📚 Documentation
+- **Changelog Updates**: Updated changelogs for Midaz and plugin-access-manager, ensuring users have clear and concise records of changes and updates.
+
+### 🔧 Maintenance
+- **Dependency and Build Updates**: Regular updates to dependencies and build scripts have been performed to ensure compatibility and security, maintaining system stability and leveraging improvements in third-party libraries.
+
+This changelog provides a comprehensive overview of the latest release, focusing on user impact and system enhancements. Users are encouraged to review the breaking changes and update their configurations accordingly to ensure a smooth transition.
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

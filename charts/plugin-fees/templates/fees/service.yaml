@@ -3,11 +3,11 @@ kind: Service
 metadata:
   name: {{ include "plugin-fees.fullname" . }}
   labels:
-    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.name ) | nindent 4 }} 
+    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 4 }} 
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.fees.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ .Values.fees.service.port }}
       targetPort: http
       protocol: TCP
       name: http

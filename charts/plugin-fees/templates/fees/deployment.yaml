@@ -6,58 +6,58 @@ metadata:
     {{- include "plugin-fees.labels" (dict "context" . "name" .Values.name ) | nindent 4 }} 
 spec:
   strategy:
-    {{- toYaml .Values.deploymentStrategy | nindent 4 }}
-  replicas: {{ .Values.replicaCount }}
+    {{- toYaml .Values.fees.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.fees.replicaCount }}
   selector:
     matchLabels:
-      {{- include "plugin-fees.selectorLabels" (dict "context" . "name" .Values.name) | nindent 6 }}
+      {{- include "plugin-fees.selectorLabels" (dict "context" . "name" .Values.fees.name) | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "plugin-fees.labels" (dict "context" . "name" .Values.name ) | nindent 8 }}
+        {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with .Values.fees.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.fees.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "plugin-fees.fullname" . }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default (include "plugin.version" .) }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.fees.image.repository }}:{{ .Values.fees.image.tag | default (include "plugin.version" .) }}"
+          imagePullPolicy: {{ .Values.fees.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ .Values.fees.service.port }}
               protocol: TCP
           envFrom:
             - secretRef:
-                name: {{ if .Values.useExistingSecret }}{{ .Values.existingSecretName }}{{ else }}{{ include "plugin-fees.fullname" . }}{{ end }}
+                name: {{ if .Values.fees.useExistingSecret }}{{ .Values.fees.existingSecretName }}{{ else }}{{ include "plugin-fees.fullname" . }}{{ end }}
             - configMapRef:
                 name: {{ include "plugin-fees.fullname" . }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.fees.resources | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /health
-              port: {{ .Values.service.port }}
+              port: {{ .Values.fees.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /health
-              port: {{ .Values.service.port }}   
+              port: {{ .Values.fees.service.port }}   
             initialDelaySeconds: 5
             periodSeconds: 5
-      {{- with .Values.nodeSelector }}
+      {{- with .Values.fees.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.fees.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with .Values.fees.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

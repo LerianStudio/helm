@@ -151,7 +151,7 @@ crm:
 # Frontend configuration
 frontend:
   # -- Service name
-  name: plugin-crm-frontend
+  name: plugin-crm-ui
 
   # -- Enable or disable the frontend service
   enabled: true

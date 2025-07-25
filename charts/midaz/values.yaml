@@ -164,11 +164,17 @@ console:
   
   # Plugins UIs
   pluginsUi:
-    enabled: true
+    enabled: false
     plugins:
-      plugin-smart-templates-frontend:
-        enabled: true
+      plugin-smart-templates-ui:
+        enabled: false
         port: 8083
+      plugin-crm-ui:
+        enabled: false
+        port: 8084
+      plugin-fees-ui:
+        enabled: false
+        port: 808
 
   # -- Secrets for storing sensitive data
   # @default -- templates/console/secrets.yaml
@@ -766,7 +772,12 @@ otel-collector-lerian:
       endpoint: 0.0.0.0:8889
 
 nginx:
-  enabled: true
+  enabled: false
+
+  service:
+    type: ClusterIP
+    ports:
+      http: 8080
 
   existingServerBlockConfigmap: "midaz-console-nginx-config"
 
@@ -780,3 +791,11 @@ nginx:
   extraVolumeMounts:
     - name: nginx-plugins-config
       mountPath: /opt/bitnami/nginx/conf/plugins_blocks
+  
+  ingress:
+    enabled: false
+    pathType: Prefix
+    hostname: ""
+    path: /
+    annotations: {}
+    ingressClassName: ""

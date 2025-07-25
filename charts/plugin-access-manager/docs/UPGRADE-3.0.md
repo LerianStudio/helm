@@ -1,5 +1,14 @@
 # Helm Upgrade from v2.x to v3.x
 
+# Topics  
+
+- ***[Breaking Changes](#breaking-changes)***
+    - [1. License Key](#1-license-key)
+    - [2. Consolidation of REDIS_PORT into REDIS_HOST](#2-consolidation-of-redis_port-into-redis_host)
+- ***[Additions](#additions)***
+    - [1. External Secrets Support](#1-external-secrets-support)
+- ***[Command to upgrade](#command-to-upgrade)***
+
 ## Breaking Changes
 
 

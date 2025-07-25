@@ -54,6 +54,15 @@ spec:
           envFrom:
           - configMapRef:
               name: {{ include "plugin-auth-backend.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}                   
           readinessProbe:
             httpGet:
               path: /api/health

@@ -51,6 +51,15 @@ spec:
               name: {{ include "plugin-auth.fullname" . }}
           - configMapRef:
               name: {{ include "plugin-auth.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}              
           resources:
             {{- toYaml .Values.auth.resources | nindent 12 }}
           readinessProbe:

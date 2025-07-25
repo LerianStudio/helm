@@ -2,14 +2,21 @@
 Expand the name of the chart and plugin crm.
 */}}
 {{- define "plugin-crm.name" -}}
-{{- default (default .Values.name) | trunc 63 | trimSuffix "-" }}
+{{- default (default .Values.crm.name) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Expand the name of the chart and plugin crm frontend.
+*/}}
+{{- define "plugin-frontend.name" -}}
+{{- default (default .Values.frontend.name) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Expand the name of the chart and plugin crm.
 */}}
 {{- define "plugin-crm-backend.name" -}}
-{{- default (default .Values.backend.name) | trunc 63 | trimSuffix "-" }}
+{{- default (default .Values.crm.backend.name) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -27,12 +34,19 @@ Create chart name and version as used by the chart label for plugin crm.
 {{- end }}
 
 {{/*
+Create chart name and version as used by the chart label for plugin crm.
+*/}}
+{{- define "plugin-frontend.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name crm.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-crm.fullname" -}}
-{{- default .Values.name | trunc 63 | trimSuffix "-" }}
+{{- default .Values.crm.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -41,7 +55,16 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-crm-backend.fullname" -}}
-{{- default (default .Values.backend.name) | trunc 63 | trimSuffix "-" }}
+{{- default (default .Values.crm.backend.name) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create a default fully qualified app name frontend.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "plugin-frontend.fullname" -}}
+{{- default (default .Values.frontend.name) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -71,6 +94,16 @@ app.kubernetes.io/name: {{ include "plugin-crm-backend.name" .context }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
+{{/*
+crm Selector labels
+*/}}
+{{- define "plugin-frontend.selectorLabels" -}}
+{{- if .name -}}
+app.kubernetes.io/name: {{ include "plugin-frontend.name" .context }}
+{{- end }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
 
 {{/*
 crm Common labels
@@ -93,20 +126,30 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
 {{/*
+crm Frontend Common labels
+*/}}
+{{- define "plugin-frontend.labels" -}}
+helm.sh/chart: {{ include "plugin-frontend.chart" .context }}
+{{ include "plugin-frontend.selectorLabels" (dict "context" .context "name" .name) }}
+app.kubernetes.io/version: {{ include "plugin.version" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
 crm dataSourceName
 */}}
 {{- define "plugin-crm-backend.dataSourceName" -}}
-"user={{ .Values.configmap.DB_USER }} password={{ .Values.secrets.DB_PASSWORD }} host={{ .Values.configmap.DB_HOST }} port={{ .Values.configmap.DB_PORT }} sslmode=disable dbname={{ .Values.configmap.DB_NAME }}"
+"user={{ .Values.crm.configmap.DB_USER }} password={{ .Values.crm.secrets.DB_PASSWORD }} host={{ .Values.crm.configmap.DB_HOST }} port={{ .Values.crm.configmap.DB_PORT }} sslmode=disable dbname={{ .Values.crm.configmap.DB_NAME }}"
 {{- end }}
 
 {{/*
 Create the name of the crm service account to use
 */}}
 {{- define "plugin-crm.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "plugin-crm.fullname" .) .Values.serviceAccount.name }}
+{{- if .Values.crm.serviceAccount.create }}
+{{- default (include "plugin-crm.fullname" .) .Values.crm.serviceAccount.name }}
 {{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- default "default" .Values.crm.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -115,7 +158,7 @@ Expand the namespace of the release.
 Allows overriding it for multi-namespace deployments in combined charts.
 */}}
 {{- define "global.namespace" -}}
-{{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
+{{- default .Release.Namespace .Values.crm.namespaceOverride | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 
@@ -123,7 +166,7 @@ Allows overriding it for multi-namespace deployments in combined charts.
 Enable dependencies
 */}}
 {{- define "mongodb.enabled" -}}
-{{- if not .Values.mongodob.external -}}
+{{- if not .Values.crm.mongodob.external -}}
 true
 {{- else -}}
 false

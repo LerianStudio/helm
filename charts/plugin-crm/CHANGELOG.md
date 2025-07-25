@@ -1,3 +1,30 @@
+## [plugin-crm-1.4.0-beta.2] - 2025-07-25
+
+This release of Helm introduces significant enhancements to the user interface and configuration management, alongside critical backend stability improvements. Users will experience a more intuitive and powerful platform with expanded customization options.
+
+### ⚠️ Breaking Changes
+- **Configuration Overhaul**: This release introduces major updates to authentication, backend, build, and database configurations. Users must review the updated configuration requirements and follow the provided migration guides to ensure compatibility with existing setups. This change affects system setups and might require adjustments to environment variables and templates. Please refer to the migration documentation for detailed steps.
+
+### ✨ Features
+- **Enhanced UI Templates**: New CRM UI templates and functions have been added, improving user interaction and data management capabilities. This update supports new service discovery jobs and plugin integration, offering users greater flexibility and customization.
+- **Plugins UI Support**: The console now includes plugins UI support, allowing users to customize their dashboards and workflows more effectively, enhancing overall user experience and system extensibility.
+- **Secure Configuration Management**: New Helm templates and secret management for UI components have been introduced, providing more secure and flexible configuration options.
+
+### 🐛 Bug Fixes
+- **Nginx Server Stability**: Resolved configuration issues with nginx server definitions in Midaz, ensuring stable and correct server operations to prevent service disruptions.
+
+### ⚡ Performance
+- **Data Collection Efficiency**: Internal collector configurations for Midaz have been enhanced, improving data collection efficiency and system monitoring capabilities. Users will notice faster data processing and reduced system load.
+
+### 🔄 Changes
+- **Streamlined Configuration**: Updated default values.yaml with new field annotations, simplifying the configuration process and enhancing deployment flexibility.
+
+### 🔧 Maintenance
+- **Code Quality Improvements**: Refactored CRM plugin templates to improve code maintainability, reducing technical debt and ensuring a cleaner codebase.
+- **Release Management Enhancements**: Multiple beta releases were conducted across various components to ensure continuous integration and deployment improvements, leading to a more robust and reliable system.
+
+This release focuses on delivering a more powerful and user-friendly platform, with significant improvements in customization, security, and performance. Users are encouraged to explore the new features and review the breaking changes to fully leverage the system's capabilities.
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

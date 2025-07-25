@@ -1,0 +1,31 @@
+{{- if .Values.console.pluginsUi.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: midaz-console-service-discovery
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: midaz-console-service-discovery
+        image: curlimages/curl:7.84.0
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          {{- range $name, $plugin := .Values.console.pluginsUi.plugins }}
+          {{- if $plugin.enabled }}
+          echo "Registering plugin: {{ $name }}"
+          curl -s -X POST \
+            http://midaz-nginx.midaz.svc.cluster.local:8080/api/plugin/manifest/register \
+            -H "Content-Type: application/json" \
+            -d '{"host": "{{ $name }}"}'
+          {{- end }}
+          {{- end }}
+      restartPolicy: OnFailure
+  backoffLimit: 4
+{{- end }}
+
+

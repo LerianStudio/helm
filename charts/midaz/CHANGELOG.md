@@ -1,3 +1,23 @@
+## [midaz-2.6.0-beta.17] - 2025-07-25
+
+This release introduces significant enhancements to the CRM user interface, providing a more intuitive and customizable experience. It also includes critical bug fixes and maintenance updates to improve system reliability and performance.
+
+### ✨ Features  
+- **Enhanced CRM UI Templates and Functions**: The user interface for CRM has been revamped with new templates and functions, making it more user-friendly and efficient. This update enhances user interaction and supports better customer relationship management.
+
+### 🐛 Bug Fixes
+- **Nginx Proxy Configuration**: Fixed a configuration issue with the Midaz Nginx proxy, ensuring stable backend operations and preventing potential downtime.
+- **CRM UI Port Configuration**: Resolved access issues related to the CRM UI port, ensuring uninterrupted access to the CRM interface for all users.
+
+### 🔧 Maintenance
+- **System Version Update**: Upgraded to version 2.6.0-beta.17, including various dependency updates and internal optimizations. These changes enhance system stability and prepare the platform for future enhancements.
+- **Frontend Component Updates**: Released versions 1.4.0-beta.3 and 1.4.0-beta.2, incorporating minor updates and improvements to refine the user experience and ensure compatibility with backend changes.
+- **Comprehensive Release Updates**: Aligned all components with the latest standards and practices, supporting overall system health and reliability.
+
+---
+
+This changelog focuses on the user-centric benefits of the latest release, ensuring you have a clear understanding of how these updates enhance your experience and system performance. For detailed technical information, please refer to the documentation linked in the issue references.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-crm.fullname" . }}
+  labels:
+    {{- include "plugin-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }} 
+data:
+  # -- Default Environment variables for the plugin-crm 
+  ENV_NAME: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
+
+  # APP 
+  SERVER_PORT: {{ .Values.crm.configmap.SERVER_PORT | default "4003" | quote }}
+  SERVER_ADDRESS: {{ .Values.crm.configmap.SERVER_ADDRESS | default ":4003" | quote }}
+  VERSION: "v{{ include "plugin.version" . }}"
+
+  # Mongo DB
+  MONGO_URI: {{ .Values.crm.configmap.MONGO_URI | default "mongodb" | quote }}
+  MONGO_HOST: {{ .Values.crm.configmap.MONGO_HOST | default (printf "plugin-crm-mongodb.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  MONGO_PORT: {{ .Values.crm.configmap.MONGO_PORT | default "27017" | quote }}
+  MONGO_NAME: {{ .Values.crm.configmap.MONGO_NAME | default "plugin-crm-db" | quote }}
+  MONGO_USER: {{ .Values.crm.configmap.MONGO_USER | default "plugin-crm" | quote }}
+  MONGO_MAX_POOL_SIZE: {{ .Values.crm.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+  
+  # SWAGGER
+  SWAGGER_TITLE: {{ .Values.crm.configmap.SWAGGER_TITLE | default "Plugin CRM" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.crm.configmap.SWAGGER_DESCRIPTION | default "The CRM API provides a set of endpoints for managing holder data, including information related to their ledger accounts." | quote }}
+  SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
+  SWAGGER_HOST: {{ .Values.crm.configmap.SWAGGER_HOST | default ":4003" | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.crm.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.crm.configmap.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_LEFT_DELIMITER: {{ .Values.crm.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIMITER: {{ .Values.crm.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
+
+  # LOG LEVEL
+  LOG_LEVEL: {{ .Values.crm.configmap.LOG_LEVEL | default "debug" | quote }}
+
+  # OPEN TELEMETRY
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.crm.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-crm" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.crm.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-crm" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: "v{{ include "plugin.version" . }}"
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.crm.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.crm.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.crm.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+
+  # AUTH
+  PLUGIN_AUTH_ADDRESS: {{ .Values.crm.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-auth" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ .Values.crm.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.crm.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

@@ -1,0 +1,25 @@
+{{- if .Values.frontend.enabled }}
+{{- if .Values.frontend.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "plugin-frontend.fullname" . }}
+  labels:
+    {{- include "plugin-frontend.labels" (dict "context" . "name" .Values.frontend.name ) | nindent 4 }}
+  {{- with .Values.frontend.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.frontend.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.frontend.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-frontend.selectorLabels" (dict "context" . "name" .Values.frontend.name ) | nindent 6 }}
+{{- end }}
+{{- end }}

@@ -3,32 +3,32 @@ kind: Deployment
 metadata:
   name: {{ include "plugin-crm.fullname" . }}
   labels:
-    {{- include "plugin-crm.labels" (dict "context" . "name" .Values.name ) | nindent 4 }} 
+    {{- include "plugin-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }} 
 spec:
   strategy:
-    {{- toYaml .Values.deploymentStrategy | nindent 4 }}
-  replicas: {{ .Values.replicaCount }}
+    {{- toYaml .Values.crm.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.crm.replicaCount }}
   selector:
     matchLabels:
-      {{- include "plugin-crm.selectorLabels" (dict "context" . "name" .Values.name) | nindent 6 }}
+      {{- include "plugin-crm.selectorLabels" (dict "context" . "name" .Values.crm.name) | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "plugin-crm.labels" (dict "context" . "name" .Values.name ) | nindent 8 }}
+        {{- include "plugin-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 8 }}
     spec:
-    {{- with .Values.imagePullSecrets }}
+    {{- with .Values.crm.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.crm.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "plugin-crm.fullname" . }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default (include "plugin.version" .) }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: {{ .Values.crm.image.repository }}:{{ .Values.crm.image.tag | default (include "plugin.version" .) }}
+          imagePullPolicy: {{ .Values.crm.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ .Values.crm.service.port }}
               protocol: TCP
           envFrom:
           - secretRef:
@@ -36,11 +36,11 @@ spec:
           - configMapRef:
               name: {{ include "plugin-crm.fullname" . }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.crm.resources | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /health
-              port: {{ .Values.service.port }}
+              port: {{ .Values.crm.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 5
           livenessProbe:
@@ -48,16 +48,16 @@ spec:
             periodSeconds: 5
             httpGet:
               path: /health
-              port: {{ .Values.service.port }}   
-      {{- with .Values.nodeSelector }}
+              port: {{ .Values.crm.service.port }}   
+      {{- with .Values.crm.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.crm.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with .Values.crm.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

@@ -128,14 +128,14 @@ identity:
   # -- ConfigMap for environment variables and configurations
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/identity/configmap.yaml
-  configmap: 
+  configmap:
     # -- Default Environment
     ENV_NAME: "development"
     AUTH_ENABLED: "true"
     AUTH_PORT: "4000"
     AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
     AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
-  
+
   # -- Extra environment variables
   extraEnvVars: {}
 
@@ -144,6 +144,8 @@ identity:
   # @default -- templates/identity/secrets.yaml
   secrets:
     AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
 
 auth:
   # Default values
@@ -201,7 +203,7 @@ auth:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-  
+
   podSecurityContext: {}
     # fsGroup: 2000
 
@@ -279,7 +281,7 @@ auth:
     DB_HOST: "plugin-access-manager-auth-database.midaz-plugins.svc.cluster.local"
     DB_PORT: 5432
     DB_NAME: "casdoor"
-    # -- Default Environment 
+    # -- Default Environment
     ENV_NAME: "development"
     # -- Default Redis Settings
     REDIS_HOST: "plugin-access-manager-valkey-primary.midaz-plugins.svc.cluster.local"
@@ -292,10 +294,12 @@ auth:
 
   # -- Secrets for storing sensitive data
   # @default -- templates/auth/secrets.yaml
-  secrets: 
+  secrets:
     DB_PASSWORD: "lerian"
     AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     REDIS_PASSWORD: "lerian"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
 
   backend:
     replicaCount: 1
@@ -323,7 +327,7 @@ auth-database:
     username: "auth"
     password: "lerian"
     database: "casdoor"
-    
+
   primary:
 
     persistence:
@@ -349,7 +353,7 @@ auth-database:
       - name: POSTGRESQL_TCP_KEEPALIVES_INTERVAL
         value: "10"
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
-        value: "5"    
+        value: "5"
 
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.

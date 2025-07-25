@@ -1,3 +1,15 @@
+## [plugin-smart-templates-1.4.0-beta.3] - 2025-07-25
+
+This release focuses on enhancing user experience by simplifying UI terminology and ensuring system stability through regular maintenance updates.
+
+### 🔄 Changes
+- **UI Terminology Update**: The "plugin smart templates frontend" has been renamed to "UI" for greater clarity and consistency. This change aims to make the interface more intuitive, helping users to navigate and understand the application more easily.
+
+### 🔧 Maintenance
+- **Build System Update**: Released version 1.4.0-beta.3 as part of our ongoing maintenance efforts. This update ensures that the system remains robust and up-to-date, providing a stable foundation for future enhancements. Users can upgrade seamlessly as there are no breaking changes in this release.
+
+This changelog highlights the main changes and maintenance updates in a user-friendly manner, focusing on the benefits and impact of the release.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

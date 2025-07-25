@@ -1,0 +1,67 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-frontend.fullname" . }}
+  labels:
+    {{- include "plugin-frontend.labels" (dict "context" . "name" .Values.frontend.name ) | nindent 4 }}
+spec:
+  strategy:
+    type: {{ .Values.frontend.deploymentUpdate.type }}
+    {{- if eq .Values.frontend.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.frontend.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.frontend.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not .Values.frontend.autoscaling.enabled }}
+  replicas: {{ .Values.frontend.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-frontend.selectorLabels" (dict "context" . "name" .Values.frontend.name ) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.frontend.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "plugin-frontend.labels" (dict "context" . "name" .Values.frontend.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.frontend.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.frontend.serviceAccount.name }}
+      securityContext:
+        {{- toYaml .Values.frontend.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "plugin-frontend.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.frontend.securityContext | nindent 12 }}
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.frontend.useExistingSecret }}{{ .Values.frontend.existingSecretName }}{{ else }}{{ include "plugin-frontend.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "plugin-frontend.fullname" . }}
+          ports:
+            - name: http
+              containerPort: 8084
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+      {{- with .Values.frontend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontend.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontend.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

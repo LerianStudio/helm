@@ -1,0 +1,36 @@
+{{- if .Values.frontend.enabled }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "plugin-frontend.fullname" . }}
+data:
+
+  NEXT_PUBLIC_PLUGIN_UI_BASE_PATH: {{ .Values.frontend.configmap.NEXT_PUBLIC_PLUGIN_UI_BASE_PATH | default "/plugin-fees-ui" | quote }}
+
+  # Plugin Fees Backend Service
+  PLUGIN_FEES_HOST: {{ .Values.frontend.configmap.PLUGIN_FEES_HOST | default "plugin-fees.midaz-plugins" | quote }}
+  PLUGIN_FEES_PORT: {{ .Values.frontend.configmap.PLUGIN_FEES_PORT | default "4002" | quote }}
+  PLUGIN_FEES_BASE_PATH: {{ .Values.frontend.configmap.PLUGIN_FEES_BASE_PATH | default "http://plugin-fees.midaz-plugins.svc.cluster.local.:4002" | quote }}
+
+  # Node Env
+  NODE_ENV: {{ .Values.frontend.configmap.NODE_ENV | default "production" | quote }}
+
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}  
+  NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_NEXTAUTH_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}  
+  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.NEXTAUTH_URL_INTERNAL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
+  NEXTAUTH_SECRET: {{ .Values.frontend.configmap.NEXTAUTH_SECRET | default "SECRET" | quote }}
+
+  PLUGIN_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+
+  MIDAZ_API_HOST: {{ .Values.frontend.configmap.MIDAZ_API_HOST | default "midaz-onboarding.midaz.svc.cluster.local." | quote }}
+  MIDAZ_API_PORT: {{ .Values.frontend.configmap.MIDAZ_API_PORT | default "3000" | quote }}
+  MIDAZ_BASE_PATH: {{ .Values.frontend.configmap.MIDAZ_BASE_PATH | default "http://midaz-onboarding.midaz.svc.cluster.local.:3000" | quote }}
+  
+  # Extra Env Vars
+  {{- with .Values.frontend.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  
+{{- end }}
+

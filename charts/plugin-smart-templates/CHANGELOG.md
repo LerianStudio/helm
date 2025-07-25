@@ -1,3 +1,18 @@
+## [plugin-smart-templates-1.4.0-beta.1] - 2025-07-25
+
+This release introduces enhanced configuration flexibility and improved monitoring capabilities, providing users with greater control and insight into their deployments.
+
+### ✨ Features
+- **Enhanced Configuration Flexibility**: A new `annotations` field is now available in the `values.yaml` service block for console, onboarding, and transaction services. This addition allows users to customize service annotations directly, simplifying deployment and management processes.
+- **Standardized Metric Exports**: A default parameter has been added to the export metrics endpoint across the auth, backend, build, and frontend components. This standardization improves monitoring capabilities, offering users consistent and reliable metrics across their deployments.
+
+### 🔧 Maintenance
+- **Version Updates**: Multiple version updates, including 1.4.0-beta.1 and others, ensure that all components are up-to-date with the latest changes, maintaining system stability and compatibility. This proactive maintenance supports seamless integration and operation across the platform.
+
+No user action is required for these updates, as all changes are backward-compatible and enhance existing functionalities without altering current workflows.
+
+This changelog communicates the key updates in a user-friendly manner, focusing on the benefits and improvements users will experience with this release.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

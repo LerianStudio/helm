@@ -1,3 +1,21 @@
+## [plugin-smart-templates-1.4.0-beta.2] - 2025-07-25
+
+This release of Helm enhances the CRM user interface, introduces customizable plugin features, and resolves key issues to improve system reliability and user experience.
+
+### ✨ Features
+- **CRM UI Enhancements**: Experience a refreshed and more intuitive CRM interface with new templates and functions, making CRM management more seamless and efficient. These enhancements include service discovery jobs for better integration within the CRM ecosystem.
+- **Plugins UI Support**: Customize your CRM environment with new support for CRM UI values in plugins, offering greater flexibility and dynamic configuration options.
+
+### 🐛 Bug Fixes
+- **Backend Proxy Configuration**: Fixed an issue with the Midaz Nginx proxy configuration, enhancing the stability and reliability of backend connections.
+- **CRM UI Port Configuration**: Resolved a port configuration issue that ensures the CRM user interface loads correctly, eliminating previous connectivity problems.
+
+### 🔧 Maintenance
+- **Release Version Updates**: Updated release versions to 1.4.0-beta.2, 1.4.0-beta.3, 2.6.0-beta.16, and 2.6.0-beta.17 across various components, keeping the system aligned with the latest features and improvements.
+- **Code Refactoring**: Conducted a comprehensive refactor of the backend, build, config, and database components, improving code quality and maintainability for smoother future updates.
+
+This update focuses on enhancing user experience and maintaining system robustness, ensuring a more user-friendly and efficient environment.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

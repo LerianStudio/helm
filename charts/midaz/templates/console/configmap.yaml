@@ -59,7 +59,7 @@ data:
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
   NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS | default "midaz,plugin-fees,plugin-crm,plugin-smart-templates" | quote }}
   NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console:8081" | quote }}
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console:8081" | quote }}
   NEXT_PUBLIC_MIDAZ_VERSION: {{ .Values.console.image.tag | quote }}
 
   # Extra Env Variables

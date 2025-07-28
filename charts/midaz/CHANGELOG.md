@@ -1,3 +1,22 @@
+## [midaz-3.0.0-beta.2] - 2025-07-28
+
+This major release introduces significant improvements to the Helm software, enhancing user customization, system performance, and overall experience. Users should be aware of breaking changes that may require adjustments to their current setups.
+
+### ⚠️ Breaking Changes
+- **Config, Database, Frontend**: This update includes breaking changes that may affect existing configurations and database schemas. Users are advised to consult the migration guide to ensure compatibility and update any dependent systems accordingly.
+
+### ✨ Features
+- **CRM Plugin UI Customization**: New environment variables have been introduced to the CRM plugin UI, allowing for enhanced customization and flexibility. Users can now tailor UI settings to better fit their operational needs, significantly improving the user experience.
+
+### ⚡ Performance
+- **System Optimization**: This release includes various enhancements across the frontend, configuration, and database components, optimizing system performance and ensuring a more robust and responsive application.
+
+### 🔧 Maintenance
+- **Dependency Updates**: Routine maintenance updates include dependency updates and code quality enhancements, ensuring the system remains secure and efficient.
+- **OpenTelemetry Collector Update**: The version of the OpenTelemetry Collector has been updated. Users should verify compatibility with their current observability stack to maintain seamless monitoring capabilities.
+
+This release focuses on delivering a more customizable and efficient experience, while ensuring users are prepared for necessary transitions due to breaking changes.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

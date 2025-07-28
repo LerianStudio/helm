@@ -1,3 +1,21 @@
+## [midaz-3.0.0-beta.1] - 2025-07-28
+
+This release introduces significant configuration updates, enhancing flexibility and simplifying deployment processes. Users must review and adjust their setups due to breaking changes to ensure seamless operation.
+
+### ⚠️ Breaking Changes
+- **Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users should now specify the port directly within the `REDIS_HOST` variable. This change streamlines configuration management. **Action Required**: Update your environment settings to include the port number in `REDIS_HOST` to maintain connectivity.
+- **Version Update**: The release of version 3.0.0-beta.1 includes major updates to the configuration component. Users are advised to review the new configuration requirements and adjust their setups to prevent disruptions.
+
+### ✨ Features
+- **Enhanced Configurability**: The values file has been updated to allow greater customization of application settings. This enhancement makes it easier to tailor deployments to specific needs, providing users with increased flexibility in managing their environments.
+
+### 🔧 Maintenance
+- **Code Cleanup**: General maintenance and cleanup have been performed on the configuration component, improving code quality and maintainability. This includes the removal of deprecated environment variables and the introduction of a more streamlined configuration process.
+
+---
+
+This changelog focuses on the key changes and their impacts, ensuring users understand the necessary actions and benefits of the new release. Users are encouraged to review the breaking changes to ensure a smooth transition.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

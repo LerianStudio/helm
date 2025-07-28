@@ -1,3 +1,28 @@
+## [plugin-fees-2.0.0-beta.1] - 2025-07-28
+
+This release introduces significant improvements to configuration flexibility and user interface customization, along with essential bug fixes and performance enhancements.
+
+### ⚠️ Breaking Changes
+- **Configuration Update**: The `REDIS_PORT` environment variable is now removed. Users must specify the port within the `REDIS_HOST` variable. This change simplifies connection settings but requires updating your environment variables to maintain connectivity. Ensure your configurations are updated accordingly to avoid disruptions.
+
+### ✨ Features  
+- **UI Customization**: New environment variables for the CRM plugin have been introduced, allowing for enhanced user interface customization. This enables users to tailor their CRM experience to better suit their business needs.
+- **Config Enhancements**: Updated configmaps for the Midaz component (transaction, onboarding, console) offer more robust configuration options, streamlining setup and expanding feature availability.
+
+### 🐛 Bug Fixes
+- **Midaz Console Stability**: Fixed an issue with the Midaz console configmap that could cause configuration errors, improving stability and ensuring consistent performance across different environments.
+
+### 📚 Documentation
+- **Upgrade Guides**: Comprehensive upgrade guides and README updates for version 3.0 are now available. These documents provide clear instructions and insights into new features and changes, facilitating a smooth transition to the latest version.
+
+### 🔧 Maintenance
+- **Beta Releases**: Multiple beta versions (e.g., 2.0.0-beta.1, 3.0.0-beta.3) have been prepared, focusing on refining the release process and ensuring component compatibility. These efforts are part of ongoing improvements to stabilize future major releases.
+- **Security Enhancements**: Security has been bolstered by adding a container `securityContext`, enhancing the application's overall security posture.
+- **Monitoring Tools Update**: Updated the OpenTelemetry collector versions and adjusted parameters to optimize performance and compatibility with monitoring tools.
+
+This release is designed to enhance user experience through improved customization options, increased stability, and comprehensive documentation to guide users through the changes.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

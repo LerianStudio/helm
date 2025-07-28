@@ -1,3 +1,16 @@
+## [midaz-3.0.0-beta.3] - 2025-07-28
+
+This release focuses on enhancing system reliability with a crucial bug fix and prepares the software for future developments with updated version management.
+
+### 🐛 Bug Fixes
+- **Configuration Reliability**: Resolved an issue with the Midaz console configuration map. This fix ensures that configuration settings are applied correctly, preventing potential disruptions in user operations and enhancing overall system stability.
+
+### 🔧 Maintenance
+- **Version Update**: The project version has been updated to 3.0.0-beta.3. This is a preparatory step for the next phase of testing and development, ensuring that the system aligns with the latest project standards and dependencies, paving the way for future enhancements.
+
+
+This changelog is designed to be concise and user-focused, highlighting the most impactful changes in this release. It emphasizes the benefits of the bug fix for users and outlines the importance of the version update in the maintenance section.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

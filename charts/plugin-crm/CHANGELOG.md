@@ -1,3 +1,33 @@
+## [plugin-crm-2.0.0-beta.1] - 2025-07-28
+
+This release brings significant improvements to the Helm platform, enhancing user experience with new features, improved performance, and streamlined configurations. Please review the breaking changes and upgrade guides to ensure a smooth transition.
+
+### ⚠️ Breaking Changes
+- **Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now specify the port within the `REDIS_HOST` variable. This change simplifies configuration but requires you to update your environment settings. [Migration Guide](#)
+- **Release Management**: Major architecture changes in beta versions (2.0.0-beta.1, 3.0.0-beta.1) necessitate thorough testing before production deployment. Review the upgrade guides for detailed instructions. [Upgrade Guide](#)
+
+### ✨ Features
+- **Enhanced Frontend UI**: New functions and templates for the plugin fees module improve user interaction, offering a more intuitive interface for fee management.
+- **Backend and Database Improvements**: Refactored plugin fees templates enhance code organization, making future enhancements easier and reducing integration complexity.
+
+### 🐛 Bug Fixes
+- **Backend Connectivity**: Fixed an issue with the Midaz Nginx proxy configuration that was causing connectivity problems, ensuring more reliable service communication.
+
+### ⚡ Performance
+- **Configuration Management**: Updated configmaps for transaction, onboarding, and console processes, reducing setup time and minimizing configuration errors.
+
+### 🔄 Changes
+- **UI Customization**: Enhanced environment variables for the plugin CRM, allowing greater customization of user interfaces to suit various deployment scenarios.
+
+### 📚 Documentation
+- **Upgrade Guides**: Comprehensive guides for version 3.0 have been created, providing step-by-step instructions to facilitate a smooth upgrade process. [Documentation](#)
+
+### 🔧 Maintenance
+- **Release Management**: Ongoing beta releases (1.4.0-beta.2 to 2.6.0-beta.19) include numerous under-the-hood improvements and dependency updates, contributing to overall system stability.
+- **Frontend Improvements**: Renamed plugin smart templates from 'frontend' to 'UI' for better clarity and code readability.
+
+Each change in this release is designed to enhance your experience with Helm, making it more robust and adaptable to your needs. We encourage you to test the new features in a controlled environment and consult the documentation for any questions.
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

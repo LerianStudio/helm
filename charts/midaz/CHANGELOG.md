@@ -1,3 +1,27 @@
+## [midaz-2.6.0-beta.19] - 2025-07-28
+
+This release brings significant enhancements to configuration management, documentation updates, and prepares the system for future expansions. Users are advised to review the breaking change to ensure continuity in service.
+
+### ⚠️ Breaking Changes
+- **Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now specify the port within the `REDIS_HOST` variable. This change simplifies the setup but requires updating existing configuration files to maintain Redis connectivity.  
+  **Migration Guidance**: Update your configuration files to include the port number directly in the `REDIS_HOST`. Example: `REDIS_HOST=localhost:6379`.
+
+### ✨ Features  
+- **Enhanced Configuration Management**: New updates to transaction, onboarding, and console configmaps allow for greater flexibility and control over application settings, enabling more tailored deployments.
+
+### 🔄 Changes
+- **Streamlined Configuration**: Revised values file and templates improve the ease of managing and deploying configurations consistently across different environments.
+- **Spam Filtering**: A new parameter, `filter spam attribute`, has been introduced to enhance data management by providing better control over unwanted data or interactions.
+
+### 📚 Documentation
+- **Updated README**: A new README for version 3.0 has been created, offering comprehensive guidance and updated information to support users in navigating the latest version.
+
+### 🔧 Maintenance
+- **Configuration Defaults**: The default value for `collector-lerian` is now set to `false`, ensuring a more secure and controlled default configuration.
+- **Release Management**: Updates across various components (config, frontend, backend, database) ensure version consistency and readiness for future enhancements.
+
+Please ensure your configurations are updated as per the breaking change to avoid any disruptions. This release sets the stage for future improvements and feature rollouts.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

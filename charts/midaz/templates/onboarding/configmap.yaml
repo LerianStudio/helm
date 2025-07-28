@@ -33,7 +33,6 @@ data:
   RABBITMQ_DEFAULT_USER: {{ .Values.onboarding.configmap.RABBITMQ_DEFAULT_USER | default "onboarding" | quote }}
   RABBITMQ_EXCHANGE: {{ .Values.onboarding.configmap.RABBITMQ_EXCHANGE | default "transaction.balance_create.exchange" | quote }}
   RABBITMQ_KEY: {{ .Values.onboarding.configmap.RABBITMQ_KEY | default "transaction.balance_create.key" | quote }}
-  RABBITMQ_NUMBERS_OF_PREFETCH: {{ .Values.transaction.configmap.RABBITMQ_NUMBERS_OF_PREFETCH | default "10" | quote }}
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.onboarding.configmap.SWAGGER_TITLE | default "Onboarding API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.onboarding.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz Onboarding API" | quote }}
@@ -49,7 +48,7 @@ data:
   #APP
   VERSION: {{ include "onboarding.versionLabelValue" . }}
   LOG_LEVEL: {{ .Values.onboarding.configmap.LOG_LEVEL | default "debug" | quote }}
-  # ENV_NAME: {{ .Values.onboarding.configmap.ENV_NAME | default "local" | quote }}
+  ENV_NAME: {{ .Values.onboarding.configmap.ENV_NAME | default "production" | quote }}
   SERVER_PORT: {{ .Values.onboarding.configmap.SERVER_PORT | default "3000" | quote }}
   SERVER_ADDRESS: {{ .Values.onboarding.configmap.SERVER_ADDRESS | default ":3000" | quote }}
   #MONGO
@@ -58,9 +57,29 @@ data:
   MONGO_NAME: {{ .Values.onboarding.configmap.MONGO_NAME | default "onboarding" | quote }}
   MONGO_USER: {{ .Values.onboarding.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_PORT: {{ .Values.onboarding.configmap.MONGO_PORT | default "27017" | quote }}
+  MONGO_MAX_POOL_SIZE: {{ .Values.onboarding.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
   #REDIS
   REDIS_HOST: {{ .Values.onboarding.configmap.REDIS_HOST | default (printf "midaz-valkey-primary.%s.svc.cluster.local.:6379" .Release.Namespace) | quote }}
   REDIS_USER: {{ .Values.onboarding.configmap.REDIS_USER | default "midaz" | quote }}
+  REDIS_MASTER_NAME: {{ .Values.onboarding.configmap.REDIS_MASTER_NAME | default "" | quote }}
+  REDIS_TLS: {{ .Values.onboarding.configmap.REDIS_TLS | default "false" | quote }}
+  REDIS_CA_CERT: {{ .Values.onboarding.configmap.REDIS_CA_CERT | default "" | quote }}
+  REDIS_USE_GCP_IAM: {{ .Values.onboarding.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
+  REDIS_SERVICE_ACCOUNT: {{ .Values.onboarding.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+  GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.onboarding.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}  
+  REDIS_TOKEN_LIFETIME: {{ .Values.onboarding.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
+  REDIS_TOKEN_REFRESH_DURATION: {{ .Values.onboarding.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
+  REDIS_DB: {{ .Values.onboarding.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ .Values.onboarding.configmap.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_POOL_SIZE: {{ .Values.onboarding.configmap.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ .Values.onboarding.configmap.REDIS_MIN_IDLE_CONNS | default "0" | quote }}
+  REDIS_READ_TIMEOUT: {{ .Values.onboarding.configmap.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ .Values.onboarding.configmap.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ .Values.onboarding.configmap.REDIS_DIAL_TIMEOUT | default "3" | quote }}
+  REDIS_POOL_TIMEOUT: {{ .Values.onboarding.configmap.REDIS_POOL_TIMEOUT | default "3" | quote }}
+  REDIS_MAX_RETRIES: {{ .Values.onboarding.configmap.REDIS_MAX_RETRIES | default "3" | quote }}
+  REDIS_MIN_RETRY_BACKOFF: {{ .Values.onboarding.configmap.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
+  REDIS_MAX_RETRY_BACKOFF: {{ .Values.onboarding.configmap.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
   #POSTGRESS
   DB_HOST: {{ .Values.onboarding.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}                                                         
   DB_USER: {{ .Values.onboarding.configmap.DB_USER | default "midaz" | quote }}
@@ -76,3 +95,11 @@ data:
   #AUTH CONFIGS
   PLUGIN_AUTH_ENABLED: {{ .Values.onboarding.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
   PLUGIN_AUTH_HOST: {{ .Values.onboarding.configmap.PLUGIN_AUTH_HOST | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000" | quote }}
+  # ACCOUNTING CONFIG
+  # List of <organization-id>:<ledger-id> separated by comma
+  ACCOUNT_TYPE_VALIDATION: {{ .Values.onboarding.configmap.ACCOUNT_TYPE_VALIDATION | default "" | quote }}
+
+  # Extra Env Variables
+  {{- range $key, $value := .Values.onboarding.extraEnvVars }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}  

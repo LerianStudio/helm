@@ -59,8 +59,7 @@ data:
   MONGO_USER: {{ .Values.onboarding.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_PORT: {{ .Values.onboarding.configmap.MONGO_PORT | default "27017" | quote }}
   #REDIS
-  REDIS_HOST: {{ .Values.onboarding.configmap.REDIS_HOST | default (printf "midaz-valkey-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}
-  REDIS_PORT: {{ .Values.onboarding.configmap.REDIS_PORT | default "6379" | quote }}
+  REDIS_HOST: {{ .Values.onboarding.configmap.REDIS_HOST | default (printf "midaz-valkey-primary.%s.svc.cluster.local.:6379" .Release.Namespace) | quote }}
   REDIS_USER: {{ .Values.onboarding.configmap.REDIS_USER | default "midaz" | quote }}
   #POSTGRESS
   DB_HOST: {{ .Values.onboarding.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}                                                         

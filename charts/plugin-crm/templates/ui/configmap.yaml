@@ -4,59 +4,32 @@ apiVersion: v1
 metadata:
   name: {{ include "plugin-frontend.fullname" . }}
 data:
-  # OPEN TELEMETRY
-  ENABLE_TELEMETRY: {{ .Values.frontend.configmap.ENABLE_TELEMETRY | default "false" | quote }}
-  OTEL_RECEIVER_HTTP_PORT: {{ .Values.frontend.configmap.OTEL_RECEIVER_HTTP_PORT | default "4318" | quote }}
-  OTEL_HOST: {{ .Values.frontend.configmap.OTEL_HOST | default "midaz-grafana.%s" | quote }}
-  OTEL_URL_METRICS: {{ .Values.frontend.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/metrics" .Release.Namespace) | quote }}
-  OTEL_URL_TRACES: {{ .Values.frontend.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/traces" .Release.Namespace) | quote }}
-  OTEL_URL_LOGS: {{ .Values.frontend.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/logs" .Release.Namespace) | quote }}
+  # CRM
+  PORT: {{ .Values.frontend.configmap.PORT | default "4003" | quote }}
+  SERVICE_HOST: {{ .Values.frontend.configmap.SERVICE_HOST | default (printf "plugin-crm.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  SERVICE_PORT: {{ .Values.frontend.configmap.SERVICE_PORT | default "4003" | quote }}
+  BASE_PATH: {{ .Values.frontend.configmap.BASE_PATH | default (printf "http://plugin-crm.%s.svc.cluster.local.:4003" .Release.Namespace) | quote }}
+  CRM_BACKEND_BASE_URL: {{ .Values.frontend.configmap.CRM_BACKEND_BASE_URL | default (printf "http://plugin-crm.%s.svc.cluster.local.:4003" .Release.Namespace) | quote }}
+
+  # CRM UI
+  PLUGIN_CRM_UI_PORT: {{ .Values.frontend.configmap.PLUGIN_CRM_UI_PORT | default "8082" | quote }}
+  PLUGIN_CRM_UI_HOST: {{ .Values.frontend.configmap.PLUGIN_CRM_UI_HOST | default (printf "plugin-crm-ui.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  PLUGIN_CRM_UI_BASE_URL: {{ .Values.frontend.configmap.PLUGIN_CRM_UI_BASE_URL | default (printf "http://plugin-crm-ui.%s.svc.cluster.local.:8082" .Release.Namespace) | quote }}
+  ENABLE_DEBUG: {{ .Values.frontend.configmap.ENABLE_DEBUG | default "false" | quote }}
+  NEXT_PUBLIC_PLUGIN_UI_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_PLUGIN_UI_BASE_URL | default "/plugin-crm-ui" | quote }}
   
-  # APP
-  VERSION: {{ .Values.frontend.image.tag | quote }}
-
-  # Midaz frontend
-  MIDAZ_frontend_PORT: {{ .Values.frontend.configmap.MIDAZ_frontend_PORT | default "8081" | quote }}
-  MIDAZ_frontend_SERVICE_HOST: {{ .Values.frontend.configmap.MIDAZ_frontend_SERVICE_HOST | default "midaz-frontend" | quote }}
-  MIDAZ_frontend_SERVICE_PORT: {{ .Values.frontend.configmap.MIDAZ_frontend_SERVICE_PORT | default "8081" | quote }}
-  MIDAZ_frontend_BASE_PATH: {{ .Values.frontend.configmap.MIDAZ_frontend_BASE_PATH | default "http://midaz-frontend:8081" | quote }}
-  MIDAZ_frontend_ENABLE_DEBUG: {{ .Values.frontend.configmap.MIDAZ_frontend_ENABLE_DEBUG | default "true" | quote }}
-  NODE_ENV: {{ .Values.frontend.configmap.NODE_ENV | default "development" | quote }}
-
-  # Midaz API Configuration
-  MIDAZ_API_HOST: {{ .Values.frontend.configmap.MIDAZ_API_HOST | default (printf "midaz-onboarding.%s.svc.cluster.local." .Release.Namespace) | quote }}
-  MIDAZ_API_PORT: {{ .Values.frontend.configmap.MIDAZ_API_PORT | default "3000" | quote }}
-  MIDAZ_BASE_PATH: {{ .Values.frontend.configmap.MIDAZ_BASE_PATH | default (printf "http://midaz-onboarding.%s.svc.cluster.local.:3000/v1" .Release.Namespace)  | quote }}
-  MIDAZ_TRANSACTION_BASE_HOST: {{ .Values.frontend.configmap.MIDAZ_TRANSACTION_BASE_HOST | default (printf "midaz-transaction.%s.svc.cluster.local." .Release.Namespace) | quote }}
-  MIDAZ_TRANSACTION_BASE_PORT: {{ .Values.frontend.configmap.MIDAZ_TRANSACTION_BASE_PORT | default "3001" | quote }}
-  MIDAZ_TRANSACTION_BASE_PATH: {{ .Values.frontend.configmap.MIDAZ_TRANSACTION_BASE_PATH | default (printf "http://midaz-transaction.%s.svc.cluster.local.:3001/v1" .Release.Namespace) | quote }}
-  
-  # NextAuth Configuration
-  NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXTAUTH_URL | default "http://midaz-frontend:8081" | quote }}
-
-  # Plugin Auth
+  # AUTH
   PLUGIN_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_CLIENT_ID: {{ .Values.frontend.configmap.PLUGIN_AUTH_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
-  PLUGIN_AUTH_HOST: {{ .Values.frontend.configmap.PLUGIN_AUTH_HOST | default "plugins-auth.midaz-plugins" | quote }}
-  PLUGIN_AUTH_PORT: {{ .Values.frontend.configmap.PLUGIN_AUTH_PORT | default "4000" | quote }}
-  PLUGIN_AUTH_BASE_PATH: {{ .Values.frontend.configmap.PLUGIN_AUTH_BASE_PATH | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000/v1" | quote }}
 
-  # Plugin Identity Configuration
-  PLUGIN_IDENTITY_HOST: {{ .Values.frontend.configmap.PLUGIN_IDENTITY_HOST | default "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  | quote }}
-  PLUGIN_IDENTITY_PORT: {{ .Values.frontend.configmap.PLUGIN_IDENTITY_PORT | default "4001" | quote }}
-  PLUGIN_IDENTITY_BASE_PATH: {{ .Values.frontend.configmap.PLUGIN_IDENTITY_BASE_PATH | default "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1" | quote }}
-
-  # MongoDB Configuration
-  MONGODB_URI: {{ .Values.frontend.configmap.MONGODB_URI | default "mongodb://midaz-mongodb.midaz.svc.cluster.local." | quote }}
-  MONGODB_DB_NAME: {{ .Values.frontend.configmap.MONGODB_DB_NAME | default "midaz-frontend" | quote }}
-  MONGODB_USER: {{ .Values.frontend.configmap.MONGODB_USER | default "midaz" | quote }}
-
-  # Midaz frontend NextJS Public Configuration
-  NEXT_PUBLIC_MIDAZ_frontend_AVATAR_ALLOWED_FORMAT: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_frontend_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
-  NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS | default "midaz,plugin-fees,plugin-crm,plugin-smart-templates" | quote }}
+  # Console Layout
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
   NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
 
-  NEXT_PUBLIC_MIDAZ_VERSION: {{ .Values.frontend.image.tag | quote }}
+  # NextAuth Configuration
+  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
+  NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
+  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
+  NEXTAUTH_SECRET: {{ .Values.frontend.configmap.NEXTAUTH_SECRET | default "SECRET" | quote }}
 
   # Extra Env Vars
   {{- with .Values.frontend.extraEnvVars }}

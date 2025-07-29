@@ -1,3 +1,18 @@
+## [plugin-fees-2.0.0-beta.3] - 2025-07-29
+
+This release introduces significant changes that may affect your current setup, particularly in configuration and database interactions. Users are advised to review and test their systems to ensure compatibility.
+
+### ⚠️ Breaking Changes
+- **Configuration and Database Interactions**: This update introduces changes that may disrupt existing configurations and database operations. Users should carefully review their setup and test thoroughly before upgrading. Ensure that all configuration settings align with the new standards to maintain functionality.
+
+### 🔄 Changes
+- **Config and Frontend Enhancements**: The configmap for plugin fees has been updated to enhance flexibility and accuracy in fee calculations. This improvement makes managing fee-related configurations more intuitive, enhancing the overall user experience.
+
+### 🔧 Maintenance
+- **Release Management**: This version includes preparatory changes for upcoming stable releases, focusing on refining the release process. These behind-the-scenes improvements ensure a smoother transition to future versions.
+
+Please ensure all configurations and integrations are reviewed and tested to align with these updates for optimal performance and compatibility.
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

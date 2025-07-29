@@ -1,3 +1,30 @@
+## [plugin-smart-templates-2.0.0-beta.1] - 2025-07-29
+
+This major release introduces significant improvements in user interface customization, security, and configuration management, along with crucial breaking changes that require user attention.
+
+### ⚠️ Breaking Changes
+- **Redis Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now specify the port directly in the `REDIS_HOST` variable. Ensure your configuration files are updated to prevent connection issues.
+- **Version Transition**: Moving to version 2.0.0-beta.1 and 3.0.0-beta.1 involves breaking changes in configuration, database, and frontend components. Review the release notes for detailed migration instructions.
+
+### ✨ Features  
+- **UI Customization for CRM Plugin**: Enhanced environment variables for the CRM plugin allow for greater flexibility in user interface customization, improving the overall user experience.
+- **Improved Configuration Management**: Updates to transaction, onboarding, and console configmaps in the midaz component enhance deployment consistency and ease of configuration.
+
+### 🐛 Bug Fixes
+- **Configuration Reliability**: Fixed an issue in the midaz console configmap that caused incorrect settings, ensuring more reliable application behavior.
+
+### 🔄 Changes
+- **Security Enhancements**: Added container `securityContext` settings across authentication, configuration, and frontend components, strengthening the security posture.
+
+### 📚 Documentation
+- **Comprehensive README for Version 3.0**: A new README provides clear guidance on the latest features and changes, assisting users in navigating the updates effectively.
+
+### 🔧 Maintenance
+- **Beta Releases for Stability**: Ongoing beta releases (2.0.0-beta.2, 3.0.0-beta.3) ensure stability and integration of new features across key components.
+- **OpenTelemetry Update**: Updated the OpenTelemetry collector version to align with the latest monitoring and tracing standards, enhancing compatibility and performance.
+
+Users are encouraged to carefully review the breaking changes and update their configurations to maintain system stability and functionality.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

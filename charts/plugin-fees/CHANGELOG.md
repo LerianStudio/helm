@@ -1,3 +1,15 @@
+## [plugin-fees-2.0.0-beta.2] - 2025-07-29
+
+This release focuses on improving the integration between configuration and frontend components, enhancing user experience by simplifying the management of settings and preferences.
+
+### 🔄 Changes
+- **Config/Frontend Integration**: The configuration map has been updated to better integrate with frontend components. This enhancement makes it easier for users to manage their settings, reducing the likelihood of errors and increasing the reliability of the system. Users will find the configuration process more intuitive, resulting in a smoother overall experience.
+
+### 🔧 Maintenance
+- **Release Preparation**: The system has been updated to version 2.0.0-beta.2, aligning with the latest development milestones. This ensures a stable foundation for future updates and feature rollouts, providing users with a more robust and up-to-date system.
+
+This changelog provides a clear and concise overview of the key changes in version 2.0.0. It highlights the benefits of the updated configuration map and the preparatory steps taken for the release, ensuring users understand the improvements and their impact on the user experience.
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

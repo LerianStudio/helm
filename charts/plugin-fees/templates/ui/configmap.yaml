@@ -21,6 +21,7 @@ data:
   NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
   NEXTAUTH_SECRET: {{ .Values.frontend.configmap.NEXTAUTH_SECRET | default "SECRET" | quote }}
 
+  PLUGIN_FEES_UI_HOST: {{ .Values.frontend.configmap.PLUGIN_FEES_UI_HOST | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
   PLUGIN_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
 
   MIDAZ_API_HOST: {{ .Values.frontend.configmap.MIDAZ_API_HOST | default "midaz-onboarding.midaz.svc.cluster.local." | quote }}

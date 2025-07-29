@@ -19,19 +19,21 @@ data:
   NEXT_PUBLIC_PLUGIN_UI_BASE_PATH: {{ .Values.frontend.configmap.NEXT_PUBLIC_PLUGIN_UI_BASE_PATH | default "" | quote }}
 
   # Console Leyout Config
-  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console.midaz.svc.cluster.local:8081" | quote }}
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
   NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_AUTH_ENABLED | default "false" | quote }}
 
   # NextAuth Configuration
-  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console.midaz.svc.cluster.local:8081" | quote }}
-  NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console.midaz.svc.cluster.local:8081" | quote }}
-  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console.midaz.svc.cluster.local:8081" | quote }}
+  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
 
   # Plugin Smart Templates Configuration
   PLUGIN_SMART_TEMPLATES_HOST: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_HOST | default "http://plugin-smart-templates-manager.midaz-plugins.svc.cluster.local" | quote }}
   PLUGIN_SMART_TEMPLATES_PORT: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_PORT | default "4005" | quote }}
   PLUGIN_SMART_TEMPLATES_BASE_PATH: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_BASE_PATH | default "http://plugin-smart-templates-manager.midaz-plugins.svc.cluster.local:4005" | quote }}
 
+  PLUGIN_SMART_TEMPLATES_UI_HOST: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_UI_HOST | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  
   # Extra Env Vars
   {{- with .Values.frontend.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -1,3 +1,30 @@
+## [plugin-access-manager-3.0.0-beta.1] - 2025-07-30
+
+This major release introduces significant updates across multiple components, enhancing user experience and system security while addressing critical configuration changes.
+
+### ⚠️ Breaking Changes
+- **Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now specify the port directly in the `REDIS_HOST` variable. This change simplifies configuration management but requires updates to existing deployment scripts. Please update your configurations accordingly to avoid disruptions.
+- **Release Management**: Multiple breaking changes from beta versions (2.0.0-beta.1, 3.0.0-beta.1) affect components like config, database, and frontend. Review the specific migration instructions in the release notes to ensure compatibility.
+
+### ✨ Features  
+- **Frontend Enhancement**: The UI configuration for the CRM plugin now supports updated environment variables, allowing for more flexible and dynamic customization. This improvement enhances user experience by adapting more seamlessly to different environments.
+
+### 🐛 Bug Fixes
+- **Configuration Reliability**: Fixed an issue with the midaz console configmap that caused misconfigurations. This resolution ensures the console operates smoothly without requiring manual adjustments.
+
+### 🔄 Changes
+- **Configuration Management**: Updated configmaps for components such as transaction, onboarding, and console to streamline management and improve deployment consistency.
+- **Frontend Clarity**: Enhanced the values file and template for the midaz component, simplifying setup and improving configuration clarity.
+
+### 📚 Documentation
+- **Version 3.0 Guide**: A new README has been created for version 3.0, providing comprehensive guidance and updated information for users transitioning to this latest version. This documentation ensures a smoother upgrade process and better understanding of new features.
+
+### 🔧 Maintenance
+- **Security Enhancements**: Added container `securityContext` settings to improve overall system security posture.
+- **Migration Support**: Updated migration scripts for new database configurations, ensuring seamless transitions during updates and reducing potential downtime.
+
+This release focuses on improving configuration management, enhancing user experience, and strengthening security, ensuring a more robust and user-friendly application.
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

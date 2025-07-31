@@ -17,10 +17,14 @@ data:
 
   NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}  
   NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_NEXTAUTH_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}  
-  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.NEXTAUTH_URL_INTERNAL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
+  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}  
+  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
   NEXTAUTH_SECRET: {{ .Values.frontend.configmap.NEXTAUTH_SECRET | default "SECRET" | quote }}
 
+  # Plugin Fees UI Config
+  PLUGIN_FEES_UI_HOST: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL| default "http://midaz-nginx.midaz.svc.cluster.local.:8084" | quote }}
+  PLUGIN_FEES_UI_PORT: {{ .Values.frontend.configmap.PLUGIN_FEES_UI_PORT | default "8084" | quote }}
+  PLUGIN_FEES_UI_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL| default "http://midaz-nginx.midaz.svc.cluster.local.:8084" | quote }}
   PLUGIN_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
 
   MIDAZ_API_HOST: {{ .Values.frontend.configmap.MIDAZ_API_HOST | default "midaz-onboarding.midaz.svc.cluster.local." | quote }}

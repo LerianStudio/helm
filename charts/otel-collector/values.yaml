@@ -1,21 +1,6 @@
 opentelemetry-collector:
 
-  # Configuration rebuilt based on user request:
-  # - Mode: daemonset (for kubeletstats)
-  # - Receivers: OTLP, k8scluster, kubeletstats
-  # - Processors: k8sattributes, transform/uuid, resource/client_id
-  # - Exporters: OTLP/HTTP
-
-  mode: daemonset # Changed from deployment to daemonset for kubeletstats
-
-  # Expose the OTLP gRPC port on the host network to allow applications
-  # on the same node to connect directly via the node's IP.
-  #ports:
-  #  otlp-grpc:
-  #    enabled: true
-  #    containerPort: 4317
-  #    hostPort: 4317
-  #    protocol: TCP
+  mode: daemonset
 
   # Contrib image is needed for k8scluster, k8sattributes, transform, and loki exporter.
   image:
@@ -85,7 +70,6 @@ opentelemetry-collector:
 
   config:
     receivers:
-      # Receives traces, logs, and metrics from instrumented applications.
       otlp:
         protocols:
           grpc:
@@ -115,12 +99,14 @@ opentelemetry-collector:
         spike_limit_percentage: 15
 
       # This processor removes sensitive data from spans before they are processed further.
-      attributes/remove_payloads:
-        actions:
-          - key: http.request.body
-            action: delete
-          - key: http.response.body
-            action: delete
+      transform/remove_sensitive_attributes:
+        trace_statements:
+          - context: span
+            statements:
+              - delete_key(attributes, "http.request.body")
+              - delete_key(attributes, "http.response.body")
+              - delete_key(attributes, "payload")
+              - delete_key(attributes, "app.request.payload")
 
       # This processor performs tail-based sampling. It buffers all spans for a trace
       # and makes a sampling decision only after the trace is complete.
@@ -164,7 +150,7 @@ opentelemetry-collector:
             - k8s.pod.name
             - k8s.deployment.name
             - k8s.namespace.name
-            - k8s.node.name # Node name is useful for DaemonSet context
+            - k8s.node.name
 
       # Adds the client ID for multi-tenancy, as requested.
       resource/add_client_id:
@@ -179,15 +165,6 @@ opentelemetry-collector:
           - context: log
             statements:
               - set(body, "")
-
-      # Parses UUID from log body, as requested. (DISABLED)
-      # transform/parse_log_uuid:
-      #   log_statements:
-      #     - context: log
-      #       statements:
-      #         - set(log.attributes["uuid"], ParseJSON(log.body)["uuid"]) where IsString(log.body) == true and IsMatch(log.body, ".*uuid.*") == true
-      #         - set(log.body, ParseJSON(log.body)) where IsString(log.body) == true and IsMatch(log.body, ".*uuid.*") == true
-      #         - keep_keys(log.body, ["uuid"]) where IsMap(log.body) == true
 
     exporters:
       otlphttp/server:

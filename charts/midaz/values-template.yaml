@@ -16,7 +16,6 @@ console:
 
   configmap:
     NEXTAUTH_URL: "http://localhost:8081"
-
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_CLIENT_ID: "ac56c81d4d6d95c0ac12"
     PLUGIN_AUTH_HOST: "plugin-access-manager-auth"
@@ -25,13 +24,27 @@ console:
     PLUGIN_IDENTITY_HOST:  "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  
     PLUGIN_IDENTITY_PORT: "4001"
     PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1"
-    MONGODB_URI: "mongodb://midaz-mongodb.midaz.svc.cluster.local:27017/?directConnection=true"
+    MONGODB_URI: "mongodb:/midaz:lerian@midaz-mongodb.midaz.svc.cluster.local:27017/?directConnection=true"
     MONGODB_DB_NAME: "midaz-console"
     MONGODB_USER: "midaz"
-    
+    ACCOUNT_TYPE_VALIDATION: ""
   secrets: 
     PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     MONGODB_PASS: "lerian"
+  
+  # Plugins UIs
+  pluginsUi:
+    enabled: false
+    plugins:
+      plugin-crm-ui:
+        enabled: false
+        port: 8082
+      plugin-smart-templates-ui:
+        enabled: false
+        port: 8083
+      plugin-fees-ui:
+        enabled: false
+        port: 8084
 
 onboarding:
   ingress:
@@ -57,9 +70,7 @@ onboarding:
     MONGO_NAME: "onboarding"
     MONGO_USER: "midaz"
     MONGO_PORT: "27017"
-    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local."
-    REDIS_PORT: "6379"
-    REDIS_USER: "midaz"
+    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local.:6379"
     DB_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
     DB_USER: "midaz"
     DB_NAME: "onboarding"
@@ -70,6 +81,7 @@ onboarding:
     DB_REPLICA_PORT: "5432"
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    ACCOUNT_TYPE_VALIDATION: ""
 
   secrets: 
     MONGO_PASSWORD: "lerian"
@@ -102,9 +114,7 @@ transaction:
     MONGO_NAME: "transaction"
     MONGO_USER: "midaz"
     MONGO_PORT: "27017"
-    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local."
-    REDIS_PORT: "6379"
-    REDIS_USER: "midaz"
+    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local.:6379"
     DB_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
     DB_USER: "midaz"
     DB_NAME: "transaction"
@@ -115,6 +125,8 @@ transaction:
     DB_REPLICA_PORT: "5432"
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    AUDIT_LOG_ENABLED: "false"
+    TRANSACTION_ROUTE_VALIDATION: ""
 
   secrets: 
     MONGO_PASSWORD: "lerian"
@@ -137,3 +149,28 @@ mongodb:
 
 rabbitmq:
   enabled: true
+
+nginx:
+  enabled: false
+
+  ingress:
+    enabled: false
+    pathType: Prefix
+    hostname: ""
+    path: /
+    annotations: {}
+    ingressClassName: ""
+
+otel-collector-lerian:
+  enabled: false
+
+  extraEnvs:
+  - name: OTEL_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: otel-api-key
+        key: api-key
+
+  exporters:
+    prometheus/local: # Expose metrics for Client Prometheus
+      endpoint: 0.0.0.0:8889

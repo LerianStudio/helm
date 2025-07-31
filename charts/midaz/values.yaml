@@ -144,7 +144,7 @@ console:
   configmap:
     # -- URL of the NextAuth service
     NEXTAUTH_URL: "http://localhost:8081" # If a custom DNS is configured for the console, this value must be updated accordingly.
-    
+    NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: "http://localhost:8081" # If a custom DNS is configured for the console, this value must be updated accordingly.
     # -- The Auth Plugin is a centralized service that provides authentication and authorization capabilities for Lerian Studio's applications.
     # -- For more details, refer to the documentation:
     # -- https://docs.lerian.studio/docs/auth-identity#technical-specs
@@ -162,19 +162,21 @@ console:
     MONGODB_DB_NAME: "midaz-console"
     MONGODB_USER: "midaz"
   
+  extraEnvVars: []
+  
   # Plugins UIs
   pluginsUi:
     enabled: false
     plugins:
+      plugin-crm-ui:
+        enabled: false
+        port: 8082
       plugin-smart-templates-ui:
         enabled: false
         port: 8083
-      plugin-crm-ui:
-        enabled: false
-        port: 8084
       plugin-fees-ui:
         enabled: false
-        port: 808
+        port: 8084
 
   # -- Secrets for storing sensitive data
   # @default -- templates/console/secrets.yaml
@@ -182,7 +184,10 @@ console:
     PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     MONGODB_PASS: "lerian"
 
-
+  # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
+  
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
     create: true
@@ -335,9 +340,7 @@ onboarding:
     MONGO_USER: "midaz"
     MONGO_PORT: "27017"
     # -- Redis default configuration
-    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local."
-    REDIS_PORT: "6379"
-    REDIS_USER: "midaz"
+    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local.:6379"
     # -- PostgreSQL default configuration
     DB_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
     DB_USER: "midaz"
@@ -355,6 +358,9 @@ onboarding:
     # -- This configuration is used to connect the onboarding to the Auth Plugin
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    # -- This configuration is used to validate the account type
+    # -- List of <organization-id>:<ledger-id> separated by comma
+    ACCOUNT_TYPE_VALIDATION: ""
 
   # -- Secrets for storing sensitive data
   # @default -- templates/onboarding/secrets.yaml
@@ -369,6 +375,13 @@ onboarding:
     RABBITMQ_DEFAULT_PASS: "lerian"
     # -- Redis default password
     REDIS_PASSWORD: "lerian"
+
+  # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
+  
+  # -- Extra environment variables
+  extraEnvVars: []
 
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
@@ -522,9 +535,7 @@ transaction:
     MONGO_USER: "midaz"
     MONGO_PORT: "27017"
     # -- Redis default configuration
-    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local."
-    REDIS_PORT: "6379"
-    REDIS_USER: "midaz"
+    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local.:6379"
     # -- PostgreSQL default configuration
     DB_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
     DB_USER: "midaz"
@@ -542,6 +553,18 @@ transaction:
     # -- This configuration is used to connect the transaction to the Auth Plugin
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    # -- Audit 
+    AUDIT_LOG_ENABLED: "false"
+    # -- Transaction Route Validation
+    # -- List of <organization-id>:<ledger-id> separated by comma
+    TRANSACTION_ROUTE_VALIDATION: ""
+
+  # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
+
+  # -- Extra environment variables
+  extraEnvVars: []
 
   # -- Secrets for storing sensitive data
   # @default -- templates/transaction/secrets.yaml

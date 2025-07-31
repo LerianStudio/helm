@@ -714,4 +714,4 @@ valkey:
     enabled: false
 
 otel-collector-lerian:
-  enabled: true
+  enabled: false

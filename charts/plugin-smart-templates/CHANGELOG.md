@@ -1,3 +1,25 @@
+## [plugin-smart-templates-2.0.0-beta.2] - 2025-07-31
+
+This release introduces significant updates to configuration management, database schemas, and frontend interactions, enhancing flexibility and security across the platform. Users are advised to review and adjust their setups to ensure smooth transitions.
+
+### ⚠️ Breaking Changes
+- **Configuration, Database, Frontend**: This update requires users to review and update configuration settings and database schemas. Manual adjustments may be necessary to maintain compatibility and prevent service disruptions. Please consult the updated configuration files and migration scripts for guidance.
+
+### 🔄 Changes
+- **Configuration & Frontend**: Enhanced configuration management now offers improved flexibility and seamless integration with frontend components, simplifying the process of managing settings across various environments.
+- **Authentication & Configuration**: Introduced the setup of license environment variables within secrets for all plugins, enhancing security and simplifying license management.
+
+### 🔧 Maintenance
+- **Configuration & Database**: Prepared multiple releases to ensure ongoing compatibility and stability. These updates include minor adjustments that improve the reliability of configuration and database components.
+- **Authentication, Backend, Database**: Updated migration scripts to streamline the upgrade process, reducing potential downtime and errors during transitions.
+- **Plugin-Fees**: Updated the configmap to align with recent configuration changes, ensuring accurate management and reporting of plugin fees.
+
+**User Action Required:**
+- Review and adjust configurations and database setups as per the breaking changes.
+- Test updated migration scripts in a staging environment before applying them to production systems to avoid potential disruptions.
+
+This changelog provides a concise overview of the changes in version 3.0.0, focusing on user impact and necessary actions to ensure a smooth transition.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

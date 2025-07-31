@@ -1,3 +1,22 @@
+## [plugin-fees-2.0.0-beta.4] - 2025-07-31
+
+This release of Helm brings significant updates to configuration and database handling, enhancing security and performance. Users should review breaking changes to ensure seamless transition.
+
+### ⚠️ Breaking Changes
+- **Configuration and Database Schema Updates**: This release introduces major changes in configuration handling and database schema. Users must update their configurations to align with the new schema. Please refer to the updated documentation for migration steps to ensure compatibility with existing integrations and custom setups.
+
+### ⚡ Performance
+- **Configuration and Database Enhancements**: Improved configuration management and optimized database performance lead to a more efficient setup process and a robust user experience. These changes enhance system reliability and speed.
+
+### 🔄 Changes
+- **License Management**: License environment variables are now managed through secrets for all plugins, improving security and simplifying the management of licenses across different environments.
+
+### 🔧 Maintenance
+- **Release Management Updates**: Multiple updates to beta versions ensure a consistent release cycle, providing users with the latest features and fixes.
+- **Migration Script Updates**: Updated migration scripts support the latest database changes, facilitating smooth transitions between versions and minimizing potential downtime during updates.
+
+By focusing on these updates, users can better prepare their systems for the new release, ensuring continued efficiency and security.
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

@@ -9,7 +9,7 @@ ingress:
           pathType: Prefix
   tls: []
 
-configmap: 
+configmap:
   ENV_NAME: "development"
   PLUGIN_AUTH_ENABLED: "false"
   PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
@@ -22,6 +22,8 @@ secrets:
   LCRYPTO_HASH_SECRET_KEY: "8e079fde826ead63b72611324f48e4153868ec5400a8937d74567109fc62b7b3"
   LCRYPTO_ENCRYPT_SECRET_KEY: "f81d58bc177a003126d2e2f733a4ceca9dda0ccc4b122574471c8ae886cbeeda"
   MONGO_PASSWORD: "lerian"
+  LICENSE_KEY: ""
+  ORGANIZATION_IDS: ""
 
 mongodb:
   enabled: true

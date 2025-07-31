@@ -371,7 +371,7 @@ frontend:
     #  - secretName: chart-example-tls
     #  hosts:
     #      - chart-example.local
-      
+
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -541,6 +541,8 @@ secrets:
   DATASOURCE_ONBOARDING_METADATA_PASSWORD: lerian
   DATASOURCE_TRANSACTION_PASSWORD: lerian
   DATASOURCE_ONBOARDING_PASSWORD: lerian
+  LICENSE_KEY: ""
+  ORGANIZATION_IDS: ""
 
 # Minio configuration
 minio:

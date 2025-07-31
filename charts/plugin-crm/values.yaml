@@ -280,7 +280,9 @@ frontend:
 
    # -- ConfigMap for environment variables and configurations
    # @default -- templates/frontend/configmap.yaml
-  configmap: {}
+  configmap: 
+  # Nginx Console Base URL
+    NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: "http://midaz-nginx.midaz.svc.cluster.local.:8080" # @default -- "http://midaz-nginx.midaz.svc.cluster.local.:8080" if ingress is enabled with ingress set the ingress.hostname value     
 
   # Extra Env Vars
   extraEnvVars: {}

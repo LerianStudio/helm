@@ -1,3 +1,14 @@
+## [plugin-access-manager-3.0.0-beta.3] - 2025-07-31
+
+This release focuses on enhancing the configuration and database components, ensuring improved compatibility and preparing the system for future enhancements. Users will experience a more streamlined configuration process and better database integration.
+
+### 🔄 Changes
+- **Config/Database Update**: Upgraded to version 3.0.0-beta.3, aligning with the latest beta standards. This update enhances compatibility, ensuring a smoother configuration process and more efficient database operations. Users will benefit from a more robust backend, paving the way for future features.
+
+### 🔧 Maintenance
+- **Routine Maintenance**: Minor code adjustments (+2/-2 lines) have been made to refine backend operations, ensuring ongoing stability and performance. These changes are part of our commitment to maintaining a reliable infrastructure, indirectly benefiting users by keeping the system robust and ready for future updates.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

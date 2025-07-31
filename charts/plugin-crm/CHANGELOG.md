@@ -1,3 +1,12 @@
+## [plugin-crm-2.0.0-beta.3] - 2025-07-31
+
+This release marks a significant milestone in our journey towards stable releases, with updates to our versioning system that keep you aligned with the latest beta features and improvements.
+
+### 🔧 Maintenance
+- **Versioning Updates**: The project has been updated to version 2.0.0-beta.3 and 3.0.0-beta.3. These updates are part of our ongoing release management strategy, ensuring you have access to the latest developments as we progress towards stable releases. While there are no immediate changes to functionality, staying updated with these versions prepares you for future enhancements and ensures compatibility with upcoming features.
+
+This changelog focuses on the maintenance updates related to versioning, which are the key changes in this release. It informs users about the significance of these updates in the context of ongoing development and future readiness.
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

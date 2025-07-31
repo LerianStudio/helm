@@ -126,7 +126,7 @@ fees:
   # -- ConfigMap for environment variables and configurations
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
-  configmap: 
+  configmap:
     # -- Default Environment
     ENV_NAME: "development"
     PLUGIN_AUTH_ENABLED: "false"
@@ -148,6 +148,8 @@ fees:
   secrets:
     MONGO_PASSWORD: "lerian"
     CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
 
 frontend:
   # -- Service name
@@ -237,7 +239,7 @@ frontend:
     #  - secretName: chart-example-tls
     #  hosts:
     #      - chart-example.local
-      
+
   resources:
     # -- CPU and memory limits for pods
     limits:

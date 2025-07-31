@@ -127,7 +127,7 @@ crm:
   # -- ConfigMap for environment variables and configurations
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
-  configmap: 
+  configmap:
     # -- Default Environment
     ENV_NAME: "development"
     PLUGIN_AUTH_ENABLED: "false"
@@ -147,6 +147,8 @@ crm:
     LCRYPTO_HASH_SECRET_KEY: "8e079fde826ead63b72611324f48e4153868ec5400a8937d74567109fc62b7b3"
     LCRYPTO_ENCRYPT_SECRET_KEY: "f81d58bc177a003126d2e2f733a4ceca9dda0ccc4b122574471c8ae886cbeeda"
     MONGO_PASSWORD: "lerian"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
 
 # Frontend configuration
 frontend:
@@ -161,7 +163,7 @@ frontend:
 
   image:
     # -- Repository for the frontend service container image
-    repository: 
+    repository:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
@@ -237,7 +239,7 @@ frontend:
     #  - secretName: chart-example-tls
     #  hosts:
     #      - chart-example.local
-      
+
   resources:
     # -- CPU and memory limits for pods
     limits:

@@ -5,6 +5,9 @@
 manager:
   name: "plugin-smart-templates-manager"
 
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
   # -- Annotations for the manager deployment resource
   annotations: {}
 
@@ -289,6 +292,9 @@ frontend:
 
   # -- Enable or disable the frontend service
   enabled: true
+
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
 
   # -- Number of replicas for the deployment
   replicaCount: 1

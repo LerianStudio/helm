@@ -1,4 +1,4 @@
-# Default valueshttps://versus.com/br/hyperx-cloud-iii-vs-logitech-pro-x-gaming
+# Default values
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -7,6 +7,9 @@ crm:
 
   name: "plugin-crm"
   description: "Plugin CRM for Midaz"
+
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
 
   image:
     # -- Repository for the container image
@@ -157,6 +160,9 @@ frontend:
 
   # -- Enable or disable the frontend service
   enabled: true
+
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
 
   # -- Number of replicas for the deployment
   replicaCount: 1

@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 4 }} 
 spec:
+  revisionHistoryLimit: {{ .Values.identity.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.identity.deploymentStrategy | nindent 4 }}
   replicas: {{ .Values.identity.replicaCount }}

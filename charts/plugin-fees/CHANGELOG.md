@@ -1,3 +1,19 @@
+## [plugin-fees-2.0.0-beta.5] - 2025-08-01
+
+This release of Helm focuses on enhancing system usability and performance, offering a more intuitive user interface and faster backend operations.
+
+### ⚡ Performance
+- **Improved Data Retrieval**: The fee service selector has been optimized, resulting in more efficient data processing. Users will experience faster response times, enhancing overall system performance.
+
+### 🔄 Changes
+- **Fee Template Clarity**: Labels in fee templates have been updated to improve clarity. This change makes fee-related information more intuitive, enhancing user experience by simplifying navigation and understanding.
+
+### 🔧 Maintenance
+- **Plugin Management Enhancement**: A new plugins scope has been added to streamline integration and management of additional functionalities. This update allows for more flexible system customization and extension, benefiting developers with easier plugin management.
+- **Version Updates**: Released version updates to 2.0.0-beta.5 and 2.0.0-beta.2, ensuring the system remains up-to-date with the latest pre-release improvements. These updates are part of ongoing efforts to maintain system stability and prepare for future enhancements.
+
+Each of these changes is designed to improve the overall user experience, system performance, and maintainability, ensuring a smoother experience for both users and developers.
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

@@ -1,29 +1,39 @@
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts:
+
+crm:
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
     - host: ""
       paths:
         - path: /
           pathType: Prefix
   tls: []
 
-configmap:
-  ENV_NAME: "development"
-  PLUGIN_AUTH_ENABLED: "false"
-  PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-  MONGO_HOST: "plugin-crm-mongodb.midaz-plugins.svc.cluster.local"
-  MONGO_NAME: "plugin-crm-db"
-  MONGO_PORT: "27017"
-  MONGO_USER: "plugin-crm"
+  configmap:
+    ENV_NAME: "development"
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
+    MONGO_HOST: "plugin-crm-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_NAME: "plugin-crm-db"
+    MONGO_PORT: "27017"
+    MONGO_USER: "plugin-crm"
 
-secrets:
-  LCRYPTO_HASH_SECRET_KEY: "8e079fde826ead63b72611324f48e4153868ec5400a8937d74567109fc62b7b3"
-  LCRYPTO_ENCRYPT_SECRET_KEY: "f81d58bc177a003126d2e2f733a4ceca9dda0ccc4b122574471c8ae886cbeeda"
-  MONGO_PASSWORD: "lerian"
-  LICENSE_KEY: ""
-  ORGANIZATION_IDS: ""
+  secrets:
+    LCRYPTO_HASH_SECRET_KEY: "8e079fde826ead63b72611324f48e4153868ec5400a8937d74567109fc62b7b3"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "f81d58bc177a003126d2e2f733a4ceca9dda0ccc4b122574471c8ae886cbeeda"
+    MONGO_PASSWORD: "lerian"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+frontend:
+  enabled: false
+  configmap:
+    NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: "http://midaz-nginx.midaz.svc.cluster.local.:8080" # @default -- "http://midaz-nginx.midaz.svc.cluster.local.:8080" if ingress is enabled set the ingress.hostname value
 
 mongodb:
   enabled: true

@@ -48,7 +48,7 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ include "plugin-auth.fullname" . }}
+              name: {{ if .Values.auth.useExistingSecret }}{{ .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-auth.fullname" . }}
           {{ if (index .Values "otel-collector-lerian").enabled }}

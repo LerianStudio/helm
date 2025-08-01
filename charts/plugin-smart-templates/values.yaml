@@ -440,11 +440,6 @@ common:
     # WORKER
     ENV_NAME: development
 
-    # VALKEY
-    REDIS_HOST: "plugin-smart-templates-valkey-primary.midaz-plugins.svc.cluster.local:6379"
-    REDIS_USER: "manager"
-    REDIS_SCAN_COUNT: "500"
-
     # RABBITMQ
     RABBITMQ_URI: amqp
     RABBITMQ_PORT_HOST: 15672
@@ -454,6 +449,18 @@ common:
     RABBITMQ_EXCHANGE: "smart-templates.generate-report.exchange"
     RABBITMQ_GENERATE_REPORT_QUEUE: "smart-templates.generate-report.queue"
     RABBITMQ_GENERATE_REPORT_KEY: "smart-templates.generate-report.key"
+    RABBITMQ_HEALTH_CHECK_URL: "http://plugin-smart-templates-rabbitmq.midaz-plugins.svc.cluster.local:15672"
+
+    # Redis Configs
+    REDIS_MASTER_NAME: ""
+    REDIS_HOST: plugin-smart-templates-valkey-primary.midaz-plugins.svc.cluster.local
+    REDIS_PORT: 6379
+    REDIS_DB: 0
+    REDIS_PROTOCOL: "3"
+    REDIS_TLS: "false"
+    REDIS_CA_CERT: ""
+    GOOGLE_APPLICATION_CREDENTIALS: ""
+    REDIS_SERVICE_ACCOUNT: ""
 
     # MINIO
     MINIO_API_HOST: plugin-smart-templates-minio.midaz-plugins.svc.cluster.local
@@ -485,6 +492,7 @@ common:
     DATASOURCE_ONBOARDING_DATABASE: onboarding
     DATASOURCE_ONBOARDING_TYPE: postgresql
     DATASOURCE_ONBOARDING_SSLMODE: disable
+    DATASOURCE_ONBOARDING_SSLROOTCERT: ""
 
     # MIDAZ TRANSACTION
     DATASOURCE_TRANSACTION_CONFIG_NAME: midaz_transaction
@@ -494,6 +502,7 @@ common:
     DATASOURCE_TRANSACTION_DATABASE: transaction
     DATASOURCE_TRANSACTION_TYPE: postgresql
     DATASOURCE_TRANSACTION_SSLMODE: disable
+    DATASOURCE_TRANSACTION_SSLROOTCERT: ""
 
     # MIDAZ ONBOARDING METADATA
     DATASOURCE_ONBOARDING_METADATA_CONFIG_NAME: "midaz_onboarding_metadata"
@@ -506,6 +515,7 @@ common:
     DATASOURCE_ONBOARDING_METADATA_TYPE: "mongodb"
     DATASOURCE_ONBOARDING_METADATA_SSL: false
     DATASOURCE_ONBOARDING_METADATA_OPTIONS: "replicaSet=rs0&authSource=admin&directConnection=true"
+    DATASOURCE_ONBOARDING_METADATA_SSLCA: ""
 
     # MIDAZ TRANSACTION METADATA
     DATASOURCE_TRANSACTION_METADATA_CONFIG_NAME: "midaz_transaction_metadata"
@@ -518,6 +528,7 @@ common:
     DATASOURCE_TRANSACTION_METADATA_TYPE: "mongodb"
     DATASOURCE_TRANSACTION_METADATA_SSL: false
     DATASOURCE_TRANSACTION_METADATA_OPTIONS: "replicaSet=rs0&authSource=admin&directConnection=true"
+    DATASOURCE_TRANSACTION_METADATA_SSLCA: ""
 
     # PLUGIN FEES
     DATASOURCE_FEES_CONFIG_NAME: "plugin_fees"
@@ -529,6 +540,7 @@ common:
     DATASOURCE_FEES_TYPE: "mongodb"
     DATASOURCE_FEES_SSL: false
     DATASOURCE_FEES_OPTIONS: "replicaSet=rs0&authSource=admin&directConnection=true"
+    DATASOURCE_FEES_SSLCA: ""
 
 secrets:
   MONGO_PASSWORD: lerian

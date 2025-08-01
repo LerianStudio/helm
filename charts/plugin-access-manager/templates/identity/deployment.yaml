@@ -56,7 +56,7 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ include "plugin-identity.fullname" . }}
+              name: {{ if .Values.identity.useExistingSecret }}{{ .Values.identity.existingSecretName }}{{ else }}{{ include "plugin-identity.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-identity.fullname" . }}
           resources:

@@ -81,6 +81,8 @@ The following table lists the configurable parameters and their default values.
 | `manager.service.port` | Service HTTP port | `80` |
 | `manager.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
 | `manager.keda.scaledObject` | KEDA ScaledObject configuration | See `values.yaml` |
+| `manager.useExistingSecrets` | Use an existing secret instead of creating a new one | `false` |
+| `manager.existingSecretName` | The name of the existing secret to use | `""` |
 
 ### Worker Settings
 
@@ -92,6 +94,33 @@ The following table lists the configurable parameters and their default values.
 | `worker.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
 | `worker.keda.scaledJob` | KEDA ScaledJob configuration | See `values.yaml` |
 
+### Frontend Settings
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `frontend.enabled` | Enable or disable the frontend service | `true` |
+| `frontend.replicaCount` | Number of replicas for the deployment | `1` |
+| `frontend.image.repository` | Repository for the frontend service container image | `ghcr.io/lerianstudio/plugin-smart-templates-frontend` |
+| `frontend.image.pullPolicy` | Image pull policy | `IfNotPresent` |
+| `frontend.image.tag` | Image tag used for deployment | `2.0.0-beta.3` |
+| `frontend.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
+| `frontend.podAnnotations` | Annotations to be added to the Pod | `{}` |
+| `frontend.securityContext` | Defines security settings for the container | See `values.yaml` |
+| `frontend.pdb` | PodDisruptionBudget configuration | See `values.yaml` |
+| `frontend.deploymentUpdate` | Deployment update strategy | See `values.yaml` |
+| `frontend.service.type` | Kubernetes service type | `ClusterIP` |
+| `frontend.service.port` | Service port | `8083` |
+| `frontend.ingress.enabled` | Enable or disable ingress | `false` |
+| `frontend.resources` | CPU and memory limits for pods | See `values.yaml` |
+| `frontend.autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `false` |
+| `frontend.nodeSelector` | Node selector for scheduling pods on specific nodes | `{}` |
+| `frontend.tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
+| `frontend.configmap` | ConfigMap for environment variables | `{}` |
+| `frontend.extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
+| `frontend.secrets` | Secrets for storing sensitive data | `{}` |
+| `frontend.serviceAccount.create` | Specifies whether a ServiceAccount should be created | `true` |
+| `frontend.serviceAccount.name` | Name of the service account | `""` |
+
 ### Dependency Settings
 
 | Parameter | Description | Default |
@@ -99,6 +128,7 @@ The following table lists the configurable parameters and their default values.
 | `mongodb` | MongoDB configuration | See `values.yaml` |
 | `rabbitmq` | RabbitMQ configuration | See `values.yaml` |
 | `minio` | MinIO configuration | See `values.yaml` |
+| `redis` | Redis configuration | See `values.yaml` |
 
 ## KEDA Integration
 

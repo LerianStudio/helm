@@ -1,5 +1,11 @@
 # Default values
 
+manager:
+  configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+  useExistingSecret: false
+  existingSecretName: ""
+
 common:
   configmap:
 
@@ -90,6 +96,11 @@ common:
     DATASOURCE_FEES_TYPE: "mongodb"
     DATASOURCE_FEES_SSL: false
     DATASOURCE_FEES_OPTIONS: "replicaSet=rs0&authSource=admin&directConnection=true"
+
+frontend:
+  enabled: false
+  configmap:
+    NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: "http://midaz-nginx.midaz.svc.cluster.local.:8080" # @default -- "http://midaz-nginx.midaz.svc.cluster.local.:8080" if ingress is enabled set the ingress.hostname value
 
 secrets:
   MONGO_PASSWORD: lerian

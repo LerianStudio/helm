@@ -4,13 +4,12 @@
 
 - ***[Breaking Changes](#breaking-changes)***
     - [1. License Key](#1-license-key)
-    - [2. Consolidation of REDIS_PORT into REDIS_HOST](#2-consolidation-of-redis_port-into-redis_host)
 - ***[Additions](#additions)***
     - [1. External Secrets Support](#1-external-secrets-support)
+    - [2. Redis Configuration for Auth Service](#2-redis-configuration-for-auth-service)
 - ***[Command to upgrade](#command-to-upgrade)***
 
-## Breaking Changes
-
+# Breaking Changes
 
 ### 1. License Key
 
@@ -35,53 +34,45 @@ identity:
 ```
 ***Note:*** See the [auth secrets](https://github.com/LerianStudio/helm/blob/main/charts/plugin-access-manager/templates/auth/secrets.yaml) and [identity secrets](https://github.com/LerianStudio/helm/blob/main/charts/plugin-access-manager/templates/identity/secrets.yaml) templates for more details.
 
-### 2. Consolidation of REDIS_PORT into REDIS_HOST
-
-The REDIS_PORT environment variable has been removed. Its value must now be included directly in the REDIS_HOST variable as <host>:<port>. For example:
-
-This change affects the following components:
-- `auth`
-
-#### Old configuration
-```yaml
-    REDIS_HOST=redis_host
-    REDIS_PORT=redis_port 
-```
-
-#### New configuration
-```yaml
-    REDIS_HOST=redis_host:redis_port
-```
-
-***Note:*** See the [auth configmap](https://github.com/LerianStudio/helm/blob/main/charts/plugin-access-manager/templates/auth/configmap.yaml) template for more details.
-
-
-⚠️ Make sure to remove REDIS_PORT from your environment and update REDIS_HOST accordingly to avoid connectivity issues.
-
-
-## Additions
+# Additions
 
 ### 1. External Secrets Support
 
 Now you can use external secrets to store sensitive data.
 
+You must provide it in the values.yaml file or as a [external secrets](#1-external-secrets-support).
+
 ```yaml
 auth:
     useExistingSecrets: true
     existingSecretName: <existing-secret-name>
-```
 
-***Note:*** See the [auth secrets template](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/plugin-access-manager/templates/auth/secrets.yaml) for get the secrets names.
-
-```yaml
 identity:
     useExistingSecrets: true
     existingSecretName: <existing-secret-name>
 ```
 
-***Note:*** See the [identity secrets template](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/plugin-access-manager/templates/identity/secrets.yaml) for get the secrets names.
+***Note:*** See the [auth secrets template](https://github.com/LerianStudio/helm/blob/main/charts/plugin-access-manager/templates/auth/secrets.yaml) and [identity secrets template](https://github.com/LerianStudio/helm/blob/main/charts/plugin-access-manager/templates/identity/secrets.yaml) for get the secrets keys.
 
-## Command to upgrade
+### 2. Redis Configuration for Auth Service
+The following environment variables have been introduced to the auth service:
+
+```yaml
+REDIS_MASTER_NAME: <your-redis-master-name>
+REDIS_TLS: <your-redis-tls>
+REDIS_CA_CERT: <your-redis-ca-cert>
+REDIS_USE_GCP_IAM: <your-redis-use-gcp-iam>
+GOOGLE_APPLICATION_CREDENTIALS: <your-google-application-credentials>
+REDIS_SERVICE_ACCOUNT: <your-redis-service-account>
+REDIS_TOKEN_LIFETIME: <your-redis-token-lifetime>
+REDIS_TOKEN_REFRESH_DURATION: <your-redis-token-refresh-duration>
+REDIS_DB: <your-redis-db>
+REDIS_PROTOCOL: <your-redis-protocol>
+```
+
+***Note:*** You can keep the default values or modify them as needed. See the [auth configmap](https://github.com/LerianStudio/helm/blob/main/charts/plugin-access-manager/templates/auth/configmap.yaml) template for more details.
+
+# Command to upgrade
 
 ```bash
 $ helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 3.0.0 -n midaz-plugins

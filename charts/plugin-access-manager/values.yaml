@@ -147,6 +147,9 @@ identity:
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
 
+  useExistingSecret: false
+  existingSecretName: ""
+
 auth:
   # Default values
   # This is a YAML-formatted file.
@@ -300,6 +303,9 @@ auth:
     REDIS_PASSWORD: "lerian"
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
 
   backend:
     replicaCount: 1

@@ -46,8 +46,6 @@ This change affects the following components:
 
 For more details, refer to the [app changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
 
-
-
 ## Additions
 
 ### 1. Onboarding: New Environment Variable ACCOUNT_TYPE_VALIDATION
@@ -78,7 +76,7 @@ TRANSACTION_ROUTE_VALIDATION=
 
 Use this to define which ledgers are allowed per organization for transaction routing validation.
 
-### 3. Redis: New Environment Variables
+### 3. Redis: New Environment Variables For Onboarding and Transaction
 
 The following environment variables have been introduced to the onboarding and transaction services:
 
@@ -161,7 +159,7 @@ console:
         port: 8082
   ...
 ```
-***Note:*** See the [console section in values](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/values.yaml#L14-L22) for more details.
+***Note:*** See the [console section in values](https://github.com/LerianStudio/helm/blob/main/charts/midaz/values.yaml#L14-L22) for more details.
 
 ```yaml
 nginx:
@@ -193,7 +191,7 @@ nginx:
     annotations: {}
     ingressClassName: ""
 ``` 
-***Note:*** See the [nginx section in values](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/values.yaml#L24-L36) for more details.
+***Note:*** See the [nginx section in values](https://github.com/LerianStudio/helm/blob/main/charts/midaz/values.yaml#L24-L36) for more details.
 
 ### 5. Enterprise: OTEL Collector
 
@@ -212,7 +210,7 @@ otel-collector-lerian:
     prometheus/local:
       endpoint: "http://<customer-prometheus-endpoint>:9090"
 ```
-***Note:*** See the [otel-collector-lerian section in values](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/values.yaml#L38-L46) for more details.
+***Note:*** See the [otel-collector-lerian section in values](https://github.com/LerianStudio/helm/blob/main/charts/midaz/values.yaml#L38-L46) for more details.
 
 ### 6. External Secrets Support
 
@@ -224,7 +222,7 @@ console:
     existingSecretName: <existing-secret-name>
 ```
 
-***Note:*** See the [console secrets template](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/templates/console/secrets.yaml) for get the secrets names.
+***Note:*** See the [console secrets template](https://github.com/LerianStudio/helm/blob/main/charts/midaz/templates/console/secrets.yaml) for get the secrets keys.
 
 ```yaml
 onboarding:
@@ -232,7 +230,7 @@ onboarding:
     existingSecretName: <existing-secret-name>
 ```
 
-***Note:*** See the [onboarding secrets template](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/templates/onboarding/secrets.yaml) for get the secrets names.
+***Note:*** See the [onboarding secrets template](https://github.com/LerianStudio/helm/blob/main/charts/midaz/templates/onboarding/secrets.yaml) for get the secrets keys.
 
 ```yaml
 transaction:
@@ -240,7 +238,7 @@ transaction:
     existingSecretName: <existing-secret-name>
 ```
 
-***Note:*** See the [transaction secrets template](https://github.com/LerianStudio/helm/blob/189e1124d61a03bd72a958aba923453039b3f409/charts/midaz/templates/transaction/secrets.yaml) for get the secrets names.
+***Note:*** See the [transaction secrets template](https://github.com/LerianStudio/helm/blob/main/charts/midaz/templates/transaction/secrets.yaml) for get the secrets keys.
 
 ## Command to upgrade
 

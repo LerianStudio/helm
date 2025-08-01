@@ -32,7 +32,7 @@ data:
   RABBITMQ_PORT_AMQP: {{ .Values.transaction.configmap.RABBITMQ_PORT_AMQP | default "15672" | quote }}
   RABBITMQ_DEFAULT_USER: {{ .Values.transaction.configmap.RABBITMQ_DEFAULT_USER | default "transaction" | quote }}
   RABBITMQ_CONSUMER_USER: {{ .Values.transaction.configmap.RABBITMQ_CONSUMER_USER | default "consumer" | quote }}
-  RABBITMQ_TRANSACTION_ASYNC: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_ASYNC | default "false" | quote }}
+  RABBITMQ_TRANSACTION_ASYNC: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_ASYNC | default "true" | quote }}
   RABBITMQ_BALANCE_CREATE_QUEUE: {{ .Values.transaction.configmap.RABBITMQ_BALANCE_CREATE_QUEUE | default "transaction.balance_create.queue" | quote }}
   RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE | default "transaction.transaction_balance_operation.exchange" | quote }}
   RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY | default "transaction.transaction_balance_operation.key" | quote }}

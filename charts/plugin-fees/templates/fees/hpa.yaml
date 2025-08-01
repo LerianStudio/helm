@@ -4,7 +4,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "plugin-fees.fullname" . }}
   labels:
-    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.name ) | nindent 4 }} 
+    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

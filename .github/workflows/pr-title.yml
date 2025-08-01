@@ -36,6 +36,7 @@ jobs:
             plugin-crm
             plugin-smart-templates
             plugin-fees
+            plugins
             pipe
             doc
           requireScope: true

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "plugin-fees.fullname" . }}
   labels:
-    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.name ) | nindent 4 }} 
+    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 4 }}
 spec:
   strategy:
     {{- toYaml .Values.fees.deploymentStrategy | nindent 4 }}
@@ -46,7 +46,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: {{ .Values.fees.service.port }}   
+              port: {{ .Values.fees.service.port }}
             initialDelaySeconds: 5
             periodSeconds: 5
       {{- with .Values.fees.nodeSelector }}

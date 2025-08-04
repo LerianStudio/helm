@@ -1,3 +1,28 @@
+## [plugin-smart-templates-2.0.0-beta.3] - 2025-08-04
+
+This release introduces significant enhancements to plugin management, performance optimizations, and user interface improvements, ensuring a more flexible and efficient experience.
+
+### ✨ Features  
+- **New Plugin Structure with External Secrets**: Enhance your system's flexibility and security with our new plugin structure that supports external secrets. This feature simplifies secret management and integration, providing a seamless upgrade path with detailed guidance in our documentation.
+
+### 🐛 Bug Fixes
+- **Build Process Corrections**: Resolved misconfigurations in fee templates and selectors, ensuring accurate deployment and service discovery. This fix eliminates previous deployment issues, providing a more reliable build process.
+
+### ⚡ Performance
+- **Optimized Backend Performance**: Updated Nginx buffer settings to handle large payloads more efficiently, reducing latency and enhancing user experience with faster response times.
+
+### 🔄 Changes
+- **Config Template Enhancements**: The console environment template now supports more dynamic and customizable configurations, simplifying deployment and management tasks for administrators.
+
+### 📚 Documentation
+- **Improved User Guides**: Updated documentation to enhance clarity and accessibility, making it easier for users to navigate and utilize the software effectively.
+
+### 🔧 Maintenance
+- **Authentication and Security Updates**: Upgraded the authentication backend to align with the latest security standards, boosting overall system reliability and security.
+- **Streamlined Build Pipeline**: Enhanced the release pipeline with added plugin scope, improving codebase modularity and maintainability.
+
+These updates collectively enhance the system's performance, usability, and maintainability, providing a more robust and user-friendly experience.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

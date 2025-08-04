@@ -149,6 +149,9 @@ crm:
     MONGO_PASSWORD: "lerian"
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
+  
+  useExistingSecrets: false
+  existingSecretName: ""
 
 # Frontend configuration
 frontend:

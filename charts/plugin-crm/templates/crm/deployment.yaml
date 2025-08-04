@@ -32,7 +32,7 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ include "plugin-crm.fullname" . }}
+              name: {{ if .Values.crm.useExistingSecret }}{{ .Values.crm.existingSecretName }}{{ else }}{{ include "plugin-crm.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-crm.fullname" . }}
           resources:

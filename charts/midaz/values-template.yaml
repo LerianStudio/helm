@@ -3,17 +3,6 @@ global:
     enabled: false
 
 console:
-  ingress:
-    enabled: false
-    className: ""
-    annotations: {}
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-
   configmap:
     NEXTAUTH_URL: "http://localhost:8081"
     PLUGIN_AUTH_ENABLED: "false"
@@ -27,7 +16,6 @@ console:
     MONGODB_URI: "mongodb:/midaz:lerian@midaz-mongodb.midaz.svc.cluster.local:27017/?directConnection=true"
     MONGODB_DB_NAME: "midaz-console"
     MONGODB_USER: "midaz"
-    ACCOUNT_TYPE_VALIDATION: ""
   secrets: 
     PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     MONGODB_PASS: "lerian"

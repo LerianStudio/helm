@@ -103,6 +103,7 @@ jobs:
           CHART_NAME="${{ matrix.chart.name }}"
           CHART_PATH="${{ matrix.chart.working_dir }}"
 
+
           if [ "$CHART_NAME" == "plugin-access-manager" ]; then
             PUSH_FILE="$CHART_NAME-\${nextRelease.version}.tgz"
           else

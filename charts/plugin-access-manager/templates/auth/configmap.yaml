@@ -19,6 +19,16 @@ data:
   REDIS_PORT: {{ .Values.auth.configmap.REDIS_PORT | default "6379" | quote }}
   REDIS_USER: {{ .Values.auth.configmap.REDIS_USER | default "auth" | quote }}
   REDIS_SCAN_COUNT: {{ .Values.auth.configmap.REDIS_SCAN_COUNT | default "500" | quote }}
+  REDIS_MASTER_NAME: {{ .Values.auth.configmap.REDIS_MASTER_NAME | default "" | quote }}
+  REDIS_TLS: {{ .Values.auth.configmap.REDIS_TLS | default "false" | quote }}
+  REDIS_CA_CERT: {{ .Values.auth.configmap.REDIS_CA_CERT | default "" | quote }}
+  REDIS_USE_GCP_IAM: {{ .Values.auth.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
+  REDIS_SERVICE_ACCOUNT: {{ .Values.auth.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+  GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.auth.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+  REDIS_TOKEN_LIFETIME: {{ .Values.auth.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
+  REDIS_TOKEN_REFRESH_DURATION: {{ .Values.auth.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
+  REDIS_DB: {{ .Values.auth.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ .Values.auth.configmap.REDIS_PROTOCOL | default "3" | quote }}
   
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.auth.configmap.SWAGGER_TITLE | default "Plugin Auth API" | quote }}

@@ -1,3 +1,18 @@
+## [plugin-crm-2.0.0-beta.6] - 2025-08-04
+
+This release focuses on enhancing configuration flexibility and server performance, ensuring smoother operations and improved user experiences without introducing any breaking changes or new features.
+
+### ⚡ Performance
+- **Nginx Configuration Optimization**: We've refined the Nginx settings to boost server performance and reliability. These adjustments aim to reduce server load and improve response times, enhancing the overall user experience.
+
+### 🔄 Changes
+- **Environment Variables Update**: Updated environment variables for the CRM plugin in both the config and frontend components. This change simplifies the setup process for developers, making it easier to integrate with existing systems and streamline deployment processes.
+
+### 🔧 Maintenance
+- **Routine Version Updates**: Conducted routine updates to version 2.0.0-beta.6 and 3.0.0-beta.9. These updates include minor tweaks and preparations for upcoming feature releases, ensuring the system remains current and aligned with development goals.
+
+This changelog is designed to clearly communicate the benefits and impacts of the changes in this release, focusing on performance improvements and configuration updates that enhance user experience.
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

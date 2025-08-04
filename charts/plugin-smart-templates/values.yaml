@@ -453,8 +453,7 @@ common:
 
     # Redis Configs
     REDIS_MASTER_NAME: ""
-    REDIS_HOST: plugin-smart-templates-valkey-primary.midaz-plugins.svc.cluster.local
-    REDIS_PORT: 6379
+    REDIS_HOST: plugin-smart-templates-valkey-primary.midaz-plugins.svc.cluster.local:6379
     REDIS_DB: 0
     REDIS_PROTOCOL: "3"
     REDIS_TLS: "false"

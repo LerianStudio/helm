@@ -16,7 +16,7 @@ data:
   PLUGIN_CRM_UI_HOST: {{ .Values.frontend.configmap.PLUGIN_CRM_UI_HOST | default (printf "plugin-crm-ui.%s.svc.cluster.local." .Release.Namespace) | quote }}
   PLUGIN_CRM_UI_BASE_URL: {{ .Values.frontend.configmap.PLUGIN_CRM_UI_BASE_URL | default (printf "http://plugin-crm-ui.%s.svc.cluster.local.:8082" .Release.Namespace) | quote }}
   ENABLE_DEBUG: {{ .Values.frontend.configmap.ENABLE_DEBUG | default "false" | quote }}
-  NEXT_PUBLIC_PLUGIN_UI_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_PLUGIN_UI_BASE_URL | default "/plugin-crm-ui" | quote }}
+  NEXT_PUBLIC_PLUGIN_UI_BASE_PATH: {{ .Values.frontend.configmap.NEXT_PUBLIC_PLUGIN_UI_BASE_PATH | default "/plugin-crm-ui" | quote }}
   
   # AUTH
   PLUGIN_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}

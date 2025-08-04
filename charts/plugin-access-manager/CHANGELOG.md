@@ -1,3 +1,24 @@
+## [plugin-access-manager-3.0.0-beta.4] - 2025-08-04
+
+This release focuses on enhancing security, performance, and ease of configuration, providing a more seamless and efficient user experience.
+
+### ✨ Features  
+- **Authentication & Backend Security**: The authentication backend has been updated to support the latest security protocols. This ensures enhanced protection for user data and smoother integration with modern authentication systems.
+
+### ⚡ Performance
+- **Backend Optimization**: Server response times have been improved by updating nginx buffer settings. Users will experience faster load times and a more responsive interface, enhancing overall productivity.
+
+### 🔄 Changes
+- **Configuration Management**: The console extra environment template has been updated, simplifying the setup process for new environments. This reduces configuration errors, making it easier for users to deploy and manage their setups.
+- **Service Discovery**: Adjustments to the selector in the fee service enhance service discovery and reliability, ensuring consistent and robust performance.
+
+### 🔧 Maintenance
+- **Build Process Enhancements**: Labels in fee templates have been updated to align with the latest naming conventions, improving clarity and maintainability.
+- **Plugin Management**: A new plugins scope has been added, streamlining the management and updating of third-party integrations for easier maintenance.
+- **Release Preparations**: Various updates to beta versions have been conducted, ensuring stability and readiness for future enhancements.
+
+Each of these changes contributes to a more stable, secure, and efficient system, enhancing the overall user experience.
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

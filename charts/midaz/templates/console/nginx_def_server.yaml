@@ -33,16 +33,3 @@
     proxy_connect_timeout 60s;
   }
 {{- end }}
-
-
-atualização dos templates dos helm para fechamento do ciclo
-testes dos micro frontends no k8s (aguardando release de fix em dev do console)
-documentação de guia de upgrade dos helm charts (plugin-crm, plugin-fees, plugin-smart-templates)
-
-
-done:
-Helm release das correções das UIs dos plugins
-Teste das UIs dos plugins
-Suporte de external secrets para todos os helm charts
-Atualização/Revisão de todos os helms charts para o fechamento do ciclo com base nas releases das apps na develop
-Documentação de guia de upgrade de todos os helms para a nova versão no fechamento do ciclo

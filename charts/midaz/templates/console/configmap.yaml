@@ -11,7 +11,7 @@ data:
   OTEL_URL_METRICS: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/metrics" .Release.Namespace) | quote }}
   OTEL_URL_TRACES: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/traces" .Release.Namespace) | quote }}
   OTEL_URL_LOGS: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/logs" .Release.Namespace) | quote }}
-  
+
   # APP
   VERSION: {{ .Values.console.image.tag | quote }}
 
@@ -34,10 +34,10 @@ data:
   MIDAZ_TRANSACTION_BASE_HOST: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_HOST | default (printf "midaz-transaction.%s.svc.cluster.local." .Release.Namespace) | quote }}
   MIDAZ_TRANSACTION_BASE_PORT: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PORT | default "3001" | quote }}
   MIDAZ_TRANSACTION_BASE_PATH: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PATH | default (printf "http://midaz-transaction.%s.svc.cluster.local.:3001/v1" .Release.Namespace) | quote }}
-  
+
   # NextAuth Configuration
   NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
-  
+
   # Plugin Auth
   PLUGIN_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
   PLUGIN_AUTH_CLIENT_ID: {{ .Values.console.configmap.PLUGIN_AUTH_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
@@ -62,9 +62,9 @@ data:
   NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console:8081" | quote }}
   NEXT_PUBLIC_MIDAZ_VERSION: {{ .Values.console.image.tag | quote }}
 
-  # Extra Env Variables
-  {{- range $key, $value := .Values.console.extraEnvVars }}
-    {{ $key }}: {{ $value | quote }}
+  # Extra Env Vars
+  {{- with .Values.console.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
   {{- end }}
 
 {{- end }}

@@ -4,6 +4,10 @@
 
     location / {
       proxy_pass http://midaz-console.midaz.svc.cluster.local:{{ get (get .Values.console "service" | default dict) "port" | default 8081 }};
+
+      proxy_buffers 8 256k;
+      proxy_buffer_size 256k;
+      proxy_busy_buffers_size 256k;
     }
 
     include /opt/bitnami/nginx/conf/plugins_blocks/plugins.conf;

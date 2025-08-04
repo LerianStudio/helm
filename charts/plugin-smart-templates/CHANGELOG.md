@@ -1,3 +1,22 @@
+## [plugin-smart-templates-2.0.0-beta.4] - 2025-08-04
+
+This release focuses on enhancing configuration flexibility and improving server performance, ensuring a smoother and more reliable user experience.
+
+### ⚡ Performance
+- **Backend/Config**: Optimized NGINX configuration to boost server response times and stability. Users will experience faster load times and more reliable service, enhancing overall satisfaction.
+
+### 🔄 Changes
+- **Config/Frontend**: Updated environment variables for `plugin-smart-templates-ui` and `plugin-crm`, making them more intuitive and easier to manage. This change simplifies the setup process, allowing users to configure their environments with greater ease.
+  
+### 🗑️ Removed
+- **Config/Frontend**: Cleaned up outdated environment variables from `plugin-crm`, reducing clutter and minimizing the risk of misconfigurations. This helps maintain a cleaner and more efficient configuration environment.
+
+### 🔧 Maintenance
+- **Release Management**: Conducted multiple release version updates to ensure the software is aligned with the latest enhancements and fixes. This routine maintenance keeps the project up-to-date and running smoothly.
+- **Backend/Config**: Made several updates to the NGINX configuration to adhere to best practices, ensuring high-quality server configurations for ongoing reliability.
+
+This release is designed to improve user experience by optimizing performance and simplifying configuration management. Users are encouraged to update to this version to take advantage of these enhancements.
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

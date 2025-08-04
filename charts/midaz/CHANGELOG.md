@@ -1,3 +1,24 @@
+## [midaz-3.0.0-beta.4] - 2025-08-04
+
+This major release of Helm introduces significant updates across configuration, database, and frontend components, enhancing security, flexibility, and overall system performance. Users are advised to review the breaking changes and new features to optimize their setup and take full advantage of the improvements.
+
+### ⚠️ Breaking Changes
+- **Configuration, Database, Frontend**: This update introduces major changes to the configuration files, database schema, and frontend interfaces. Users must update their configuration files and apply the new database migration scripts. Manual intervention may be required to align with the new schema and settings. Ensure you have backups before proceeding with the upgrade.
+  
+### ✨ Features
+- **Auth & Config**: Environment variable setup for plugin licenses is now available, streamlining the management of plugin credentials and enhancing security. This feature simplifies the process of configuring plugin licenses, making it easier to manage and secure your environment.
+
+### 🔄 Changes
+- **Configuration**: The console extra environment template has been updated, providing greater flexibility for customizing console environments. This change allows for more tailored deployments suited to specific use cases.
+- **Build**: Revised labels in fee templates and selectors in the fee service enhance clarity and efficiency in build processes, reducing potential errors during deployment.
+- **Frontend & Config**: The plugin-fees configuration map has been enhanced, improving the integration and management of fee-related plugins for a more intuitive setup process.
+
+### 🔧 Maintenance
+- **Auth, Config, Frontend**: Added container securityContext settings to enforce stricter security policies within containerized environments, improving the overall security posture of the application.
+- **General**: Various release preparations and version updates, including multiple beta releases, ensure stability and readiness for upcoming major releases, maintaining the software's health and reliability.
+
+Users are encouraged to review these changes and update their systems accordingly to benefit from the enhanced features and improvements. For detailed guidance, please refer to the official documentation and migration guides.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

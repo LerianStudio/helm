@@ -62,11 +62,6 @@ data:
   NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console:8081" | quote }}
   NEXT_PUBLIC_MIDAZ_VERSION: {{ .Values.console.image.tag | quote }}
 
-  # Extra Env Variables
-  {{- range $key, $value := .Values.console.extraEnvVars }}
-    {{ $key }}: {{ $value | quote }}
-  {{- end }}
-
   # Extra Env Vars
   {{- with .Values.console.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

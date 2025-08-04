@@ -1,3 +1,18 @@
+## [midaz-3.0.0-beta.8] - 2025-08-04
+
+This release focuses on enhancing server performance and updating documentation to align with the latest beta releases, ensuring a smoother and more informed user experience.
+
+### ⚡ Performance
+- **Backend/Config**: Optimized Nginx configuration to enhance server performance and reliability. This update improves request handling and load balancing, resulting in a smoother user experience during high traffic periods.
+
+### 📚 Documentation
+- **Docs/Frontend**: Updated documentation and frontend components to reflect the latest beta releases. These updates ensure users have access to the most current information and interface improvements, facilitating better understanding and interaction with the software.
+
+### 🔧 Maintenance
+- **Release Management**: Multiple version updates for beta releases, including 3.0.0-beta.8, 2.0.0-beta.3, 2.0.0-beta.4, 2.0.0-beta.5, and 2.0.0-beta.6. These updates include minor adjustments and preparation for future stable releases, keeping the project aligned with its development roadmap.
+
+Each change in this release is designed to maintain system stability and prepare for future enhancements, ensuring users can rely on the software's performance and documentation accuracy.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

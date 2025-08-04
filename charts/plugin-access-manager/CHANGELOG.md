@@ -1,3 +1,19 @@
+## [plugin-access-manager-3.0.0-beta.5] - 2025-08-04
+
+This release introduces a new plugin structure enhancing frontend capabilities and external secrets support, alongside significant documentation updates and maintenance improvements.
+
+### ✨ Features  
+- **Enhanced Plugin Structure**: The new plugin framework improves frontend capabilities by supporting external secrets. This allows for more secure and flexible configuration management, making it easier to manage sensitive information. Users can refer to the comprehensive guide for smooth upgrading and maximizing these enhancements.
+
+### 📚 Documentation
+- **Release Notes Updates**: Improved clarity and guidance in the release notes for versions 3.0.0-beta.5 and 3.0.0-beta.7. These updates ensure users have access to the latest information, enhancing their understanding and utilization of new features.
+
+### 🔧 Maintenance
+- **Dependency Updates**: The release pipeline has been updated to align with the latest dependencies, improving build reliability and efficiency. This ensures smoother deployments and reduces potential build issues.
+- **Code Quality Improvements**: Removal of trailing spaces across the codebase contributes to cleaner and more maintainable code, enhancing overall quality and readability.
+
+This release focuses on enhancing user experience through improved frontend capabilities and documentation, while also ensuring a stable and efficient development process.
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

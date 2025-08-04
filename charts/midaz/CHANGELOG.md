@@ -1,3 +1,22 @@
+## [midaz-3.0.0-beta.7] - 2025-08-04
+
+This release introduces a new plugin structure for enhanced security and flexibility, along with several documentation and backend improvements to streamline your experience.
+
+### ✨ Features  
+- **New Plugin Structure for Frontend**: We've revamped the plugin system to support external secrets, making it easier to integrate with external secret management systems. This change enhances security and flexibility in managing your workflows. Check out our [upgrade guide](#) for more details on setting up your environment.
+
+### 📚 Documentation
+- **Updated to Align with Latest Release**: Our documentation now reflects the latest changes and improvements, ensuring you have access to the most current information. This update helps reduce the learning curve for new features and enhances overall usability.
+
+### 🔧 Maintenance
+- **Dependency Updates**: We've streamlined the build process by updating our release pipeline and ensuring compatibility with the latest dependencies. This behind-the-scenes work enhances system stability and reduces potential integration issues.
+- **Authentication Backend Enhancements**: The authentication backend has been updated for improved performance and security, offering a more robust and secure user experience.
+- **Code Quality Improvements**: Minor adjustments, such as removing trailing spaces, have been made across the codebase to maintain consistency and facilitate easier maintenance.
+
+> **Note:** There are no breaking changes in this release, ensuring a smooth upgrade path for users transitioning to this version.
+
+This changelog provides a clear, user-focused overview of the latest updates, emphasizing the benefits and improvements users can expect from this release.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

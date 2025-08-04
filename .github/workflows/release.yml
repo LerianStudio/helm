@@ -103,10 +103,16 @@ jobs:
           CHART_NAME="${{ matrix.chart.name }}"
           CHART_PATH="${{ matrix.chart.working_dir }}"
 
+          if [ "$CHART_NAME" == "plugin-access-manager" ]; then
+            PUSH_FILE="$CHART_NAME-\${nextRelease.version}.tgz"
+          else
+            PUSH_FILE="$CHART_NAME-helm-\${nextRelease.version}.tgz"
+          fi
+
           jq \
             --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
-            --arg successCmd "helm package $CHART_PATH && helm push $CHART_NAME-helm-\${nextRelease.version}.tgz oci://ghcr.io/lerianstudio" \
+            --arg successCmd "helm package $CHART_PATH && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
             '.plugins[2][1].chartPath = $chartPath |
               .plugins[4][1].assets[0] = ($chartPath + "/Chart.yaml") |
               .tagFormat = $tagFormat |

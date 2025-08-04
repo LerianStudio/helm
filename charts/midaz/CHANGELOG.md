@@ -1,3 +1,18 @@
+## [midaz-3.0.0-beta.9] - 2025-08-04
+
+This release focuses on enhancing server performance and simplifying configuration management, ensuring a smoother and more efficient user experience.
+
+### ⚡ Performance
+- **Config/Backend**: Updated Nginx configuration to boost server performance and reliability. Users may notice improved load times and more efficient resource management, enhancing overall system responsiveness.
+
+### 🔄 Changes
+- **Config/Frontend**: Removed deprecated environment variables related to the plugin-crm component. This streamlines the setup process, reducing the risk of misconfigurations and simplifying environment management for users.
+
+### 🔧 Maintenance
+- **Release Management**: Published version 3.0.0-beta.9 and 2.0.0-beta.5, incorporating the latest updates and optimizations. These releases ensure users have access to the most current features and improvements, supporting ongoing project stability and progression.
+
+This changelog communicates the key updates in version 3.0.0, focusing on performance improvements and configuration changes that enhance user experience. The release management section highlights the project's commitment to providing up-to-date and stable software.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

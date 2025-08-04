@@ -1,3 +1,25 @@
+## [plugin-fees-2.0.0-beta.6] - 2025-08-04
+
+This release introduces significant enhancements to the plugin architecture, improving security and flexibility. It also includes various performance optimizations and documentation updates to enhance user experience.
+
+### ✨ Features  
+- **Enhanced Plugin Architecture**: The new plugin structure now supports external secrets, providing increased security and flexibility. This change allows for more secure handling of sensitive information, making integrations safer and more robust. Check the [upgrade guide](#) for detailed instructions on transitioning to this new setup.
+
+### ⚡ Performance
+- **Backend Optimization**: Updated nginx buffer settings to improve data handling, resulting in faster server response times and a smoother user experience.
+
+### 🔄 Changes
+- **Configuration Simplification**: The console extra environment template has been updated to streamline configuration processes, reducing setup complexity and minimizing the potential for errors.
+
+### 📚 Documentation
+- **Improved Clarity**: Multiple updates to the user interface documentation ensure easier access to information and improved clarity, helping users navigate the system more effectively.
+
+### 🔧 Maintenance
+- **Auth & Backend Updates**: The auth backend version has been updated within the plugin-access-manager, ensuring compatibility with the latest security protocols and backend improvements.
+- **Build & Dependencies**: Streamlined the release pipeline and updated dependencies to maintain system stability and ensure compatibility with future updates.
+
+Each of these changes contributes to a more robust, user-friendly, and efficient system, ensuring that users can leverage new features and improvements with minimal disruption.
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

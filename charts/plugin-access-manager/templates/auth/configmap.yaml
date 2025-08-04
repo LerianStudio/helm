@@ -15,7 +15,7 @@ data:
   VERSION: "v{{ include "plugin.version" . }}"
 
   # REDIS
-  REDIS_HOST: {{ .Values.auth.configmap.REDIS_HOST | default (printf "plugin-access-manager-valkey-primary.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  REDIS_HOST: {{ printf "%s:%s" (.Values.auth.configmap.REDIS_HOST | default (printf "plugin-access-manager-valkey-primary.%s.svc.cluster.local" .Release.Namespace)) (.Values.auth.configmap.REDIS_PORT | default "6379" | toString) | quote }}
   REDIS_PORT: {{ .Values.auth.configmap.REDIS_PORT | default "6379" | quote }}
   REDIS_USER: {{ .Values.auth.configmap.REDIS_USER | default "auth" | quote }}
   REDIS_SCAN_COUNT: {{ .Values.auth.configmap.REDIS_SCAN_COUNT | default "500" | quote }}

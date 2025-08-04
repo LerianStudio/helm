@@ -1,3 +1,23 @@
+## [plugin-access-manager-3.0.0-beta.6] - 2025-08-04
+
+This release focuses on enhancing configuration management and backend performance, ensuring a more stable and efficient experience for users.
+
+### ⚡ Performance
+- **Backend Optimization:** Improved Nginx configuration enhances server performance, resulting in quicker response times and better load management for backend services.
+
+### 🔄 Changes
+- **Configuration Management:** Standardized environment variables for Redis across `auth`, `frontend`, and `config` components. This streamlines the setup process, reducing errors and improving deployment reliability.
+- **Frontend Simplification:** Removed outdated environment variables from the CRM plugin, making configuration simpler and reducing the risk of misconfiguration.
+
+### 📚 Documentation
+- **Frontend Updates:** Revised documentation to reflect recent changes in frontend components, ensuring that users and developers have access to the latest information for easier onboarding and troubleshooting.
+
+### 🔧 Maintenance
+- **Release Management:** Conducted multiple beta releases focusing on stability and incremental improvements, ensuring the software is robust and production-ready.
+- **General Maintenance:** Updated configuration files across components to align with best practices, enhancing maintainability and overall system performance.
+
+These updates contribute to a more reliable and efficient system, providing users with a smoother experience and developers with a more maintainable codebase.
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

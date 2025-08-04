@@ -41,11 +41,11 @@ spec:
                 done;
                 echo "$svc is ready!";
               done;
-      containers: 
+      containers:
         - name: {{ include "plugin-auth-backend.fullname" . }}
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: ghcr.io/lerianstudio/casdoor:1.2.0
+          image: ghcr.io/lerianstudio/casdoor:1.3.0-beta.15
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -62,18 +62,18 @@ spec:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
-          {{ end }}                   
+          {{ end }}
           readinessProbe:
             httpGet:
               path: /api/health
               port: 8000
             initialDelaySeconds: 15
             periodSeconds: 5
-          livenessProbe: 
+          livenessProbe:
             initialDelaySeconds: 20
             httpGet:
               path: /api/health
-              port: 8000     
+              port: 8000
       {{- with .Values.auth.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

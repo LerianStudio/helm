@@ -1,3 +1,15 @@
+## [midaz-3.0.0-beta.5] - 2025-08-04
+
+This release marks the introduction of version 3.0.0-beta.5, focusing on enhancing configuration reliability and preparing for future improvements. Users can expect a more streamlined setup process with this update.
+
+### ✨ Features  
+- **Beta Release Introduction**: We've launched version 3.0.0-beta.5, a significant step in our development cycle. This beta version is stable and introduces internal updates that lay the groundwork for upcoming features. While using this version, users may encounter minor issues that we aim to resolve in subsequent releases.
+
+### 🔧 Maintenance
+- **Configuration Update**: The console extra environment template has been updated to enhance consistency and maintainability. This change simplifies the configuration process, reducing potential errors and aligning with current standards. No user action is required, but this update improves the reliability of environment configurations.
+
+For any questions or feedback, please refer to our [issue tracker](#) or contact our support team.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

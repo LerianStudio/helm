@@ -1,3 +1,27 @@
+## [plugin-crm-2.0.0-beta.4] - 2025-08-04
+
+This release introduces a new plugin architecture, enhances security and performance, and improves documentation for a better user experience.
+
+### ✨ Features
+- **New Plugin Structure**: Enjoy enhanced flexibility and security with our revamped plugin system, now supporting external secrets. A comprehensive upgrade guide is available to help you transition smoothly.
+  
+### ⚡ Performance
+- **Backend Optimization**: Updated Nginx buffer settings to improve server performance, resulting in reduced latency for a faster user experience.
+
+### 🔄 Changes
+- **Authentication Update**: Upgraded the authentication backend to enhance security and ensure compatibility with newer systems.
+- **Config Simplification**: Refined console environment templates to streamline configuration management, reducing setup time and potential errors.
+- **Build Process Enhancements**: Updated labels and selectors in fee templates and services to improve build consistency and deployment efficiency.
+
+### 📚 Documentation
+- **Version Alignment**: Updated documentation to align with the latest release cycles, ensuring clarity and accuracy for users navigating new features and changes.
+
+### 🔧 Maintenance
+- **Plugin Modularity**: Improved build system modularity with scoped plugin enhancements, facilitating easier integration and management.
+- **Code Quality**: Minor improvements, such as removing trailing spaces, to maintain a clean and readable codebase.
+
+No user actions are required for these updates, but exploring the new plugin structure and reviewing the upgrade guide is encouraged to maximize the benefits of this release.
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

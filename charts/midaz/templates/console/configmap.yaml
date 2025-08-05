@@ -25,7 +25,7 @@ data:
   # Nginx Configuration
   NGINX_PORT: {{ .Values.console.configmap.NGINX_PORT | default "8080" | quote }}
   NGINX_HOST: {{ .Values.console.configmap.NGINX_HOST | default "midaz-nginx" | quote }}
-  NGINX_BASE_PATH: {{ .Values.console.configmap.NGINX_BASE_PATH | default "http://midaz-nginx.svc.cluster.local:8080" | quote }}
+  NGINX_BASE_PATH: {{ .Values.console.configmap.NGINX_BASE_PATH | default (printf "http://midaz-nginx.%s.svc.cluster.local:8080" .Release.Namespace) | quote }}
 
   # Midaz API Configuration
   MIDAZ_API_HOST: {{ .Values.console.configmap.MIDAZ_API_HOST | default (printf "midaz-onboarding.%s.svc.cluster.local." .Release.Namespace) | quote }}

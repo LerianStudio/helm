@@ -1,6 +1,6 @@
 # Helm Upgrade from v2.x to v3.x
 
-# Topics  
+# Topics
 
 - ***[Breaking Changes](#breaking-changes)***
     - [1. Consolidation of REDIS_PORT into REDIS_HOST](#1-consolidation-of-redis_port-into-redis_host)

@@ -182,7 +182,7 @@ nginx:
   extraVolumeMounts:
     - name: nginx-plugins-config
       mountPath: /opt/bitnami/nginx/conf/plugins_blocks
-  
+
   ingress:
     enabled: false
     pathType: Prefix
@@ -190,7 +190,7 @@ nginx:
     path: /
     annotations: {}
     ingressClassName: ""
-``` 
+```
 ***Note:*** See the [nginx section in values](https://github.com/LerianStudio/helm/blob/main/charts/midaz/values.yaml#L24-L36) for more details.
 
 ### 5. Enterprise: OTEL Collector

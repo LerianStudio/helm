@@ -1,6 +1,6 @@
 # Helm Upgrade from v2.x to v3.x
 
-# Topics  
+# Topics
 
 - ***[Breaking Changes](#breaking-changes)***
     - [1. Consolidation of REDIS_PORT into REDIS_HOST](#1-consolidation-of-redis_port-into-redis_host)
@@ -182,7 +182,7 @@ nginx:
   extraVolumeMounts:
     - name: nginx-plugins-config
       mountPath: /opt/bitnami/nginx/conf/plugins_blocks
-  
+
   ingress:
     enabled: false
     pathType: Prefix
@@ -190,7 +190,7 @@ nginx:
     path: /
     annotations: {}
     ingressClassName: ""
-``` 
+```
 ***Note:*** See the [nginx section in values](https://github.com/LerianStudio/helm/blob/main/charts/midaz/values.yaml#L24-L36) for more details.
 
 ### 5. Enterprise: OTEL Collector

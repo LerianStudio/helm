@@ -1,3 +1,20 @@
+## [midaz-3.0.0-beta.10] - 2025-08-05
+
+This release focuses on enhancing system configurability and documentation accuracy, ensuring seamless integration and up-to-date information for users.
+
+### 🔄 Changes
+- **Configuration & Frontend**: Enhanced environment variables for Redis configuration, offering greater flexibility and compatibility with diverse deployment environments. Users can now easily customize Redis host and port settings, improving integration with existing infrastructure.
+- **Authentication & Configuration**: Adjusted environment variables for the plugin-access-manager to maintain robust and adaptable authentication processes across different configurations.
+
+### 📚 Documentation
+- Updated application version details to provide users with the latest information on versioning, aiding in better tracking of updates and features.
+
+### 🔧 Maintenance
+- **Release Management**: Incremental updates to beta versions (3.0.0-beta.10, 3.0.0-beta.6, 2.0.0-beta.4, 2.0.0-beta.6) ensure stability and readiness for upcoming major releases, with minor adjustments preparing the system for future enhancements.
+- **Configuration & Frontend**: General updates to configuration management within the plugin-smart-templates-ui, ensuring the system remains adaptable and easy to configure for various user needs.
+
+These updates enhance the configurability and documentation of the system, ensuring users can efficiently manage and deploy their environments with the latest configurations and information.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

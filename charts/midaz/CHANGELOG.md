@@ -1,3 +1,19 @@
+## [midaz-2.6.0] - 2025-08-05
+
+This release focuses on maintaining a streamlined configuration process and enhancing system stability, with a critical update to configuration management that requires user action.
+
+### ⚠️ Breaking Changes
+- **Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now specify the port number within the `REDIS_HOST` variable. This change simplifies the configuration process by consolidating connection details into a single variable. **Action Required**: Update your environment settings to include the port in `REDIS_HOST` to maintain connectivity.
+
+### 📚 Documentation
+- **Updated Guides**: Documentation has been refreshed to reflect the latest configuration changes and improvements across the system. This ensures users have access to accurate and up-to-date information for optimal system use.
+
+### 🔧 Maintenance
+- **Configuration Synchronization**: Merged updates from the develop branch to the main branch, ensuring consistent application of the latest configurations and settings. This helps maintain a uniform environment and prepares the system for future enhancements.
+- **Codebase Consolidation**: Integrated changes from the develop branch into the main branch, enhancing code consistency and cleanliness. This sets a solid foundation for future development and feature integration.
+
+This release ensures a more robust and user-friendly system setup, paving the way for smoother future updates and enhancements.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

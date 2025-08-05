@@ -1,3 +1,45 @@
+## [midaz-2.6.0-beta.4] - 2025-07-22
+
+This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.
+
+### ✨ Features  
+- **Smart Templates**: You can now add valkey to smart templates charts, offering enhanced customization and flexibility for your templates.
+- **Midaz Console**: New nginx configuration templates and dependency improve deployment options and performance, making your Midaz console setups more efficient.
+
+### 🐛 Bug Fixes
+- **Plugin Access Manager**: Fixed issues with the configuration of extra environment variables in identity and auth configmap templates, ensuring consistent and reliable behavior across deployments.
+
+### 🔄 Changes
+- **Configuration Management**: Expanded support for extra environment variables across multiple plugins (smart-templates, crm, fees), allowing for greater customization and integration flexibility.
+- **Plugin Fees**: You can now configure extra environment variables in both the configmap template and values YAML, providing more control over your setup.
+- **Plugin Access Manager**: Improved configuration flexibility by enabling extra environment variables in identity and auth configmap templates, enhancing integration capabilities.
+
+### 📚 Documentation
+- Updated changelogs for plugin-access-manager and Midaz, providing clear insights into recent changes and updates.
+
+### 🔧 Maintenance
+- **Release Management**: Multiple updates for beta releases across various components (auth, config, database, deps) ensure the project remains on track with its release schedule.
+- **Dependencies**: Added nginx as a dependency for the Midaz console, ensuring compatibility and performance improvements.
+
+This changelog is designed to help users quickly understand the new features, improvements, and fixes in this release, focusing on how these changes can benefit their use of the software.
+
+## [midaz-2.6.0-beta.3] - 2025-07-18
+
+This release introduces significant enhancements to configuration flexibility and security, alongside critical bug fixes to improve deployment reliability.
+
+### ✨ Features
+- **User Consumer Configuration for RabbitMQ**: Gain more control over message queue interactions with new user-specific configuration options. This feature allows you to tailor RabbitMQ settings to better fit your operational needs, enhancing both flexibility and efficiency.
+- **Support for External Secrets**: Securely manage sensitive information across deployments with the new external secrets feature. By keeping secrets outside the application codebase, this enhancement strengthens security practices and simplifies secret management.
+
+### 🐛 Bug Fixes
+- **Transaction Deployment Template**: Resolved a critical issue affecting deployment accuracy. This fix ensures more reliable deployment processes, reducing the risk of errors and improving overall system stability.
+
+### 🔧 Maintenance
+- **Version Update**: Upgraded to version 2.6.0-beta.3, incorporating various under-the-hood improvements that enhance system performance and prepare for future stable releases.
+- **Continuous Integration Enhancements**: Improved CI processes to boost build reliability and efficiency, resulting in smoother development workflows and faster feedback loops for developers.
+
+This update focuses on empowering users with enhanced configuration options and bolstering security measures, while also ensuring a stable and efficient deployment experience.
+
 ## [midaz-2.5.0] - 2025-06-20
 
 This release focuses on maintaining the stability and clarity of the Helm project by updating configuration components and enhancing documentation. Users benefit from improved system reliability and easier access to change history.

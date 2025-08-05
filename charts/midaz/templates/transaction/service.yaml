@@ -4,6 +4,10 @@ metadata:
   name: {{ include "midaz-transaction.fullname" . }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.transaction.name "name" .Values.transaction.name ) | nindent 4 }}
+  {{- with .Values.transaction.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.transaction.service.type }}
   ports:

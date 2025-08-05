@@ -4,6 +4,10 @@ metadata:
   name: {{ include "midaz-onboarding.fullname" . }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 4 }}
+  {{- with .Values.onboarding.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.onboarding.service.type }}
   ports:

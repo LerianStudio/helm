@@ -5,6 +5,10 @@ metadata:
   name: {{ include "midaz-console.fullname" . }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.console.name "name" .Values.console.name ) | nindent 4 }}
+  {{- with .Values.console.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.console.service.type }}
   ports:

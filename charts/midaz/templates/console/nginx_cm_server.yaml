@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "midaz-console.fullname" . }}-nginx-config
+data:
+  server-block.conf: |-
+{{ tpl (include "nginx.serverBlockConfig" .) . | indent 4 }}

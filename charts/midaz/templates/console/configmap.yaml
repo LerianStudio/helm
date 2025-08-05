@@ -11,7 +11,7 @@ data:
   OTEL_URL_METRICS: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/metrics" .Release.Namespace) | quote }}
   OTEL_URL_TRACES: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/traces" .Release.Namespace) | quote }}
   OTEL_URL_LOGS: {{ .Values.console.configmap.OTEL_URL | default (printf "midaz-grafana.%s.svc.cluster.local.:4318/v1/logs" .Release.Namespace) | quote }}
-  
+
   # APP
   VERSION: {{ .Values.console.image.tag | quote }}
 
@@ -21,7 +21,11 @@ data:
   MIDAZ_CONSOLE_SERVICE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_PORT | default "8081" | quote }}
   MIDAZ_CONSOLE_BASE_PATH: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
   MIDAZ_CONSOLE_ENABLE_DEBUG: {{ .Values.console.configmap.MIDAZ_CONSOLE_ENABLE_DEBUG | default "true" | quote }}
-  NODE_ENV: {{ .Values.console.configmap.NODE_ENV | default "development" | quote }}
+
+  # Nginx Configuration
+  NGINX_PORT: {{ .Values.console.configmap.NGINX_PORT | default "8080" | quote }}
+  NGINX_HOST: {{ .Values.console.configmap.NGINX_HOST | default "midaz-nginx" | quote }}
+  NGINX_BASE_PATH: {{ .Values.console.configmap.NGINX_BASE_PATH | default "http://midaz-nginx.svc.cluster.local:8080" | quote }}
 
   # Midaz API Configuration
   MIDAZ_API_HOST: {{ .Values.console.configmap.MIDAZ_API_HOST | default (printf "midaz-onboarding.%s.svc.cluster.local." .Release.Namespace) | quote }}
@@ -30,7 +34,7 @@ data:
   MIDAZ_TRANSACTION_BASE_HOST: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_HOST | default (printf "midaz-transaction.%s.svc.cluster.local." .Release.Namespace) | quote }}
   MIDAZ_TRANSACTION_BASE_PORT: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PORT | default "3001" | quote }}
   MIDAZ_TRANSACTION_BASE_PATH: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PATH | default (printf "http://midaz-transaction.%s.svc.cluster.local.:3001/v1" .Release.Namespace) | quote }}
-  
+
   # NextAuth Configuration
   NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
 
@@ -55,8 +59,13 @@ data:
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
   NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS | default "midaz,plugin-fees,plugin-crm,plugin-smart-templates" | quote }}
   NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console:8081" | quote }}
   NEXT_PUBLIC_MIDAZ_VERSION: {{ .Values.console.image.tag | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.console.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
 
 {{- end }}
 

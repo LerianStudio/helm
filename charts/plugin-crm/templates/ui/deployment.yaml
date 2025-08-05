@@ -46,6 +46,15 @@ spec:
               name: {{ if .Values.frontend.useExistingSecret }}{{ .Values.frontend.existingSecretName }}{{ else }}{{ include "plugin-frontend.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-frontend.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "http://$(HOST_IP):4317"
+          {{ end }}
           ports:
             - name: http
               containerPort: 8082

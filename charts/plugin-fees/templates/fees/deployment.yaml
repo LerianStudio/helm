@@ -35,6 +35,15 @@ spec:
                 name: {{ if .Values.fees.useExistingSecret }}{{ .Values.fees.existingSecretName }}{{ else }}{{ include "plugin-fees.fullname" . }}{{ end }}
             - configMapRef:
                 name: {{ include "plugin-fees.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "http://$(HOST_IP):4317"
+          {{ end }}
           resources:
             {{- toYaml .Values.fees.resources | nindent 12 }}
           readinessProbe:

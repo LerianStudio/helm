@@ -1,3 +1,15 @@
+## [midaz-3.0.0-beta.11] - 2025-08-05
+
+This release marks the introduction of Helm version 3.0.0, focusing on maintaining consistency and preparing for future enhancements. It includes a new beta release and routine updates to ensure the system's alignment with the latest development cycle.
+
+### 🔧 Maintenance
+- **Version Update**: The application version has been updated to align with the latest release cycle. This change ensures consistency across deployments, making it easier for users to track and manage versioning effectively. Keeping the system up-to-date is crucial for future enhancements and stability.
+  
+- **Beta Release**: Version 3.0.0-beta.11 has been released as part of our ongoing effort to stabilize the upcoming major version. This beta release offers users early access to new features and improvements, allowing for valuable testing and feedback. Engaging with this beta version helps users prepare for the final release and provides an opportunity to influence the development process.
+
+
+This changelog is designed to communicate the key maintenance updates in this release, focusing on the benefits of version consistency and early access to new features through the beta release.
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

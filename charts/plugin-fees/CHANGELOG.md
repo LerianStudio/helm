@@ -1,3 +1,28 @@
+## [plugin-fees-2.0.0-beta.7] - 2025-08-06
+
+This release introduces new configuration options and performance enhancements, improving user experience and system reliability across various components.
+
+### ✨ Features  
+- **Enhanced Fee Configuration**: A new environment variable has been added to the Fees UI, allowing users to easily configure and manage fee settings. This enhances customization and improves the user experience in the plugin-fees component.
+
+### 🐛 Bug Fixes
+- **Configuration Cleanup**: Removed outdated environment variables from the plugin-crm, resolving previous configuration conflicts and reducing potential deployment issues. This update enhances system reliability.
+
+### ⚡ Performance
+- **Optimized Backend Performance**: The Nginx configuration has been refined to optimize server performance, resulting in a more stable and responsive backend environment. Users will experience improved load handling and overall system efficiency.
+
+### 🔄 Changes
+- **Redis Configuration Updates**: Improved the setup of Redis host and port environment variables in the plugin-access-manager and plugin-smart-templates-ui. These changes ensure better configuration management and compatibility with various deployment environments.
+
+### 📚 Documentation
+- **Updated Documentation**: The documentation has been updated to reflect recent changes in application versions and configurations, providing users with the latest information for setup and troubleshooting.
+
+### 🔧 Maintenance
+- **Configuration Management Enhancements**: Multiple updates to the configuration management in the plugin-smart-templates-ui streamline deployment processes and improve maintainability.
+- **Version Alignment**: Conducted regular version updates across components like midaz and plugin-crm to ensure consistency with the latest release cycles.
+
+These updates collectively enhance the system's configurability, performance, and reliability, ensuring a better experience for both developers and end-users.
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

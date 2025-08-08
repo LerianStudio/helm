@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name ) | nindent 4 }} 
 spec:
+  revisionHistoryLimit: {{ .Values.auth.backend.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
   replicas: {{ .Values.auth.backend.replicaCount }}

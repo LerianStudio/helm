@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.console.name "name" .Values.console.name ) | nindent 4 }}
 spec:
+  revisionHistoryLimit: {{ .Values.console.revisionHistoryLimit | default 10 }}
   strategy:
     type: {{ .Values.console.deploymentUpdate.type }}
     {{- if eq .Values.console.deploymentUpdate.type "RollingUpdate" }}

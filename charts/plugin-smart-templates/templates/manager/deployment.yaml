@@ -11,6 +11,7 @@ metadata:
     {{- end }}
   {{- end }} 
 spec:
+  revisionHistoryLimit: {{ .Values.manager.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.manager.deploymentStrategy | nindent 4 }}
   replicas: {{ .Values.manager.replicaCount }}

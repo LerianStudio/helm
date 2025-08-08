@@ -21,6 +21,9 @@ console:
   # -- Number of replicas for the deployment
   replicaCount: 1
 
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
   image:
     # -- Repository for the console service container image
     repository: lerianstudio/midaz-console
@@ -203,6 +206,9 @@ onboarding:
 
   # -- Number of replicas for the onboarding service
   replicaCount: 2
+
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
 
   image:
     # -- Repository for the onboarding service container image
@@ -395,6 +401,9 @@ onboarding:
 transaction:
   # -- Service name
   name: transaction
+
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
 
   # -- Number of replicas for the transaction service
   replicaCount: 1

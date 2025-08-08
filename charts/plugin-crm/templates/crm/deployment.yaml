@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "plugin-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }} 
 spec:
+  revisionHistoryLimit: {{ .Values.crm.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.crm.deploymentStrategy | nindent 4 }}
   replicas: {{ .Values.crm.replicaCount }}

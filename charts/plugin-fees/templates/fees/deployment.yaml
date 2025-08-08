@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 4 }}
 spec:
+  revisionHistoryLimit: {{ .Values.fees.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.fees.deploymentStrategy | nindent 4 }}
   replicas: {{ .Values.fees.replicaCount }}

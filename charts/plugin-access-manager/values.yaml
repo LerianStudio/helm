@@ -1,10 +1,18 @@
 
+# Common configuration shared between components
+common:
+  # Common secrets and configurations
+  authorizer:
+    clientId: "ac56c81d4d6d95c0ac12"
+    clientSecret: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+
 identity:
   # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
 
   replicaCount: 1
+  revisionHistoryLimit: 10
 
   name: "plugin-access-manager-identity"
   description: "Identity plugin for Midaz"
@@ -134,7 +142,7 @@ identity:
     AUTH_ENABLED: "true"
     AUTH_PORT: "4000"
     AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
+    AUTHORIZER_CLIENT_ID: "{{ .Values.common.authorizer.clientId }}"
 
   # -- Extra environment variables
   extraEnvVars: {}
@@ -143,7 +151,7 @@ identity:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/identity/secrets.yaml
   secrets:
-    AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    AUTHORIZER_CLIENT_SECRET: "{{ .Values.common.authorizer.clientSecret }}"
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
 
@@ -155,6 +163,7 @@ auth:
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
   replicaCount: 3
+  revisionHistoryLimit: 10
 
   name: "plugin-access-manager-auth"
 
@@ -309,6 +318,7 @@ auth:
 
   backend:
     replicaCount: 1
+    revisionHistoryLimit: 10
     name: "plugin-access-manager-auth-backend"
     autoscaling:
       # -- Enable or disable horizontal pod autoscaling

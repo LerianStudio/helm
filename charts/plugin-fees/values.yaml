@@ -7,6 +7,9 @@ fees:
   name: "plugin-fees"
   description: "Plugin Fees for Midaz"
 
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
   image:
     # -- Repository for the container image
     repository: ghcr.io/lerianstudio/plugin-fees
@@ -158,6 +161,9 @@ frontend:
   # -- Enable or disable the frontend service
   enabled: true
 
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
   # -- Number of replicas for the deployment
   replicaCount: 1
 
@@ -185,16 +191,16 @@ frontend:
 
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
-    runAsGroup: 0
+    runAsGroup: 1000
     # -- Defines the user ID for the process running inside the container
-    runAsUser: 0
+    runAsUser: 1000
     # -- Ensures the process does not run as root
-    runAsNonRoot: false
+    runAsNonRoot: true
     capabilities:
       drop:
         - ALL
     # -- Defines the root filesystem as read-only
-    readOnlyRootFilesystem: false
+    readOnlyRootFilesystem: true
 
   # -- PodDisruptionBudget configuration
   pdb:

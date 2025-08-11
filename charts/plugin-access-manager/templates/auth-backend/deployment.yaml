@@ -45,7 +45,7 @@ spec:
         - name: {{ include "plugin-auth-backend.fullname" . }}
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: ghcr.io/lerianstudio/casdoor:1.3.0-beta.15
+          image: ghcr.io/lerianstudio/casdoor:2.0.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

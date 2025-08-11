@@ -15,7 +15,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.0"
+    tag: "2.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -164,7 +164,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.0"
+    tag: "2.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:

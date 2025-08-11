@@ -1,3 +1,18 @@
+## [midaz-3.0.0-beta.13] - 2025-08-11
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.0.0-beta.12...midaz-v3.0.0-beta.13)
+Contributors: Gabriel Ferreira, lerian-studio
+
+### ✨ Features
+- **Streamlined Configuration and Frontend Enhancements**: Experience a more intuitive setup process and improved interface responsiveness due to multiple updates in the configuration and frontend components. These enhancements are designed to optimize user interaction and system performance, ensuring a smoother user experience.
+
+### 🔄 Changes
+- **Deployment Stability with Revision History Limit**: All deployments now have a configured revisionHistoryLimit, which enhances stability by managing resource usage and minimizing errors during rollbacks. This change ensures more reliable and efficient deployment processes.
+
+### 🔧 Maintenance
+- **Release Management Improvements**: Updates were made to streamline the release process for various beta versions, ensuring that all changes are well-documented and the release process remains smooth and efficient. This behind-the-scenes work supports a more stable application environment.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

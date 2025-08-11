@@ -27,7 +27,11 @@ This change affects the following components:
 #### Old configuration
 ```yaml
     REDIS_HOST=redis_host
+<<<<<<< HEAD
     REDIS_PORT=redis_port 
+=======
+    REDIS_PORT=redis_port
+>>>>>>> origin/main
 ```
 
 #### New configuration

@@ -43,9 +43,12 @@ data:
   RABBITMQ_TRANSACTION_EVENTS_EXCHANGE: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_EVENTS_EXCHANGE | default "transaction.transaction_events.exchange" | quote }}
   RABBITMQ_AUDIT_EXCHANGE: {{ .Values.transaction.configmap.RABBITMQ_AUDIT_EXCHANGE | default "transaction.audit.exchange" | quote }}
   RABBITMQ_AUDIT_KEY: {{ .Values.transaction.configmap.RABBITMQ_AUDIT_KEY | default "transaction.audit.key" | quote }}
+<<<<<<< HEAD
   # Audit
   AUDIT_ENABLED: {{ .Values.transaction.configmap.AUDIT_ENABLED | default "false" | quote }}
 
+=======
+>>>>>>> origin/main
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.transaction.configmap.SWAGGER_TITLE | default "transaction API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.transaction.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz transaction API" | quote }}
@@ -92,7 +95,10 @@ data:
   REDIS_MIN_RETRY_BACKOFF: {{ .Values.transaction.configmap.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
   REDIS_MAX_RETRY_BACKOFF: {{ .Values.transaction.configmap.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
   GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.transaction.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+<<<<<<< HEAD
   REDIS_USER: {{ .Values.transaction.configmap.REDIS_USER | default "midaz" | quote }}
+=======
+>>>>>>> origin/main
   #POSTGRESS
   DB_HOST: {{ .Values.transaction.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}
   DB_USER: {{ .Values.transaction.configmap.DB_USER | default "midaz" | quote }}

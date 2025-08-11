@@ -19,7 +19,11 @@ spec:
           {{- if $plugin.enabled }}
           echo "Registering plugin: {{ $name }}"
           curl -s -X POST \
+<<<<<<< HEAD
             http://midaz-nginx.midaz.svc.cluster.local:8080/api/plugin/manifest/register/ \
+=======
+            http://midaz-nginx.midaz.svc.cluster.local:8080/api/plugin/manifest/register \
+>>>>>>> origin/main
             -H "Content-Type: application/json" \
             -d '{"host": "{{ $name }}"}'
           {{- end }}

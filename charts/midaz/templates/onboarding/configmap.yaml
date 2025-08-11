@@ -60,7 +60,10 @@ data:
   MONGO_MAX_POOL_SIZE: {{ .Values.onboarding.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
   #REDIS
   REDIS_HOST: {{ .Values.onboarding.configmap.REDIS_HOST | default (printf "midaz-valkey-primary.%s.svc.cluster.local.:6379" .Release.Namespace) | quote }}
+<<<<<<< HEAD
   REDIS_USER: {{ .Values.onboarding.configmap.REDIS_USER | default "midaz" | quote }}
+=======
+>>>>>>> origin/main
   REDIS_MASTER_NAME: {{ .Values.onboarding.configmap.REDIS_MASTER_NAME | default "" | quote }}
   REDIS_TLS: {{ .Values.onboarding.configmap.REDIS_TLS | default "false" | quote }}
   REDIS_CA_CERT: {{ .Values.onboarding.configmap.REDIS_CA_CERT | default "" | quote }}

@@ -385,7 +385,11 @@ onboarding:
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> origin/main
   # -- Extra environment variables
   extraEnvVars: []
 

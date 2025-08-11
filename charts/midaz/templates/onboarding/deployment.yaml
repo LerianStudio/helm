@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 4 }}
 spec:
+  revisionHistoryLimit: {{ .Values.onboarding.revisionHistoryLimit | default 10 }}
   strategy:
     type: {{ .Values.onboarding.deploymentUpdate.type }}
     {{- if eq .Values.onboarding.deploymentUpdate.type "RollingUpdate" }}

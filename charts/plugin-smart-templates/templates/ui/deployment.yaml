@@ -6,6 +6,7 @@ metadata:
   labels:
     {{- include "plugin-frontend.labels" (dict "context" . "name" .Values.frontend.name ) | nindent 4 }}
 spec:
+  revisionHistoryLimit: {{ .Values.frontend.revisionHistoryLimit | default 10 }}
   strategy:
     type: {{ .Values.frontend.deploymentUpdate.type }}
     {{- if eq .Values.frontend.deploymentUpdate.type "RollingUpdate" }}

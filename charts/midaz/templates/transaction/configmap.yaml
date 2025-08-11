@@ -95,10 +95,6 @@ data:
   REDIS_MIN_RETRY_BACKOFF: {{ .Values.transaction.configmap.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
   REDIS_MAX_RETRY_BACKOFF: {{ .Values.transaction.configmap.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
   GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.transaction.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
-<<<<<<< HEAD
-  REDIS_USER: {{ .Values.transaction.configmap.REDIS_USER | default "midaz" | quote }}
-=======
->>>>>>> origin/main
   #POSTGRESS
   DB_HOST: {{ .Values.transaction.configmap.DB_HOST | default (printf "midaz-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}
   DB_USER: {{ .Values.transaction.configmap.DB_USER | default "midaz" | quote }}

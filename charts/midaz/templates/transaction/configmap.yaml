@@ -43,7 +43,6 @@ data:
   RABBITMQ_TRANSACTION_EVENTS_EXCHANGE: {{ .Values.transaction.configmap.RABBITMQ_TRANSACTION_EVENTS_EXCHANGE | default "transaction.transaction_events.exchange" | quote }}
   RABBITMQ_AUDIT_EXCHANGE: {{ .Values.transaction.configmap.RABBITMQ_AUDIT_EXCHANGE | default "transaction.audit.exchange" | quote }}
   RABBITMQ_AUDIT_KEY: {{ .Values.transaction.configmap.RABBITMQ_AUDIT_KEY | default "transaction.audit.key" | quote }}
-
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.transaction.configmap.SWAGGER_TITLE | default "transaction API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.transaction.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz transaction API" | quote }}

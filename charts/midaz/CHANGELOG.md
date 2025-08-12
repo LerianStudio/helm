@@ -1,3 +1,24 @@
+## [midaz-4.0.0-beta.1] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.0.0-beta.13...midaz-v4.0.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now include the port value directly within the `REDIS_HOST` variable. Ensure your deployment scripts and environment settings are updated accordingly to prevent configuration errors.
+- **Release Management Overhaul**: Transitioning to version 4.0.0-beta.1 involves major updates across various components. Users are advised to consult the release notes for detailed migration instructions to accommodate these changes.
+- **Chart Version Bump**: The new chart version requires updates to your deployment configurations to align with the latest specifications. Review your deployment setups to ensure compatibility.
+
+### ✨ Features
+- **Enhanced Chart Management**: The introduction of a new chart version significantly boosts deployment flexibility and scalability, allowing for more efficient resource management and improved performance in large-scale environments.
+
+### 📚 Documentation
+- **Updated Configuration Guidance**: Documentation has been revised to reflect the removal of the `REDIS_PORT` variable, providing clear instructions on the new configuration practices. Users are encouraged to consult the updated guides for seamless deployment.
+
+### 🔧 Maintenance
+- **Branch Synchronization**: The main and develop branches have been synchronized to ensure consistency and reduce potential merge conflicts in future development cycles.
+- **Build System Enhancements**: Improvements to the build process have been implemented to streamline deployments and reduce build times, enhancing overall developer productivity.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

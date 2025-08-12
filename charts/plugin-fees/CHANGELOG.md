@@ -1,3 +1,20 @@
+## [plugin-fees-2.0.1-beta.1] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.0.0...plugin-fees-v2.0.1-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication and Configuration Overhaul**: This update introduces new authentication mechanisms and configuration formats. Users need to update their integration scripts and deployment configurations to align with these changes. Migration steps include reviewing the new configuration documentation and adapting scripts accordingly.
+- **Database Schema Adjustments**: Changes in the database schema may affect existing queries and integrations. Users should review the updated schema documentation and adjust their database interactions as needed.
+
+### 📚 Documentation
+- **Plugin Documentation Updates**: The plugin documentation has been revised to reflect the latest application versions, ensuring users have access to current and accurate information for smoother integration and usage.
+
+### 🔧 Maintenance
+- **Release Management**: A series of beta releases (1.0.1-beta.1 to 3.0.1-beta.3) were conducted to ensure thorough testing and improved stability before this final release.
+- **Dependencies Update**: Routine updates to dependencies enhance compatibility and security, contributing to the overall health and performance of the system.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

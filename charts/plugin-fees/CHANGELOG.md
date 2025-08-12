@@ -1,3 +1,28 @@
+## [plugin-fees-2.0.0] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.0.0-beta.9...plugin-fees-v2.0.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now specify the port number directly within the `REDIS_HOST` variable. This change requires updating your environment configurations to maintain connectivity.
+
+### ✨ Features
+- **Enhanced Authentication**: The plugin-access-manager now supports the latest authentication protocols, enhancing security and compatibility with modern identity providers. This update ensures robust access control and seamless integration with third-party services.
+
+### 🐛 Bug Fixes
+- **Navigation Fixes**: Resolved issues that prevented users from accessing certain settings. This fix improves the user interface, offering a more intuitive and accessible experience.
+
+### ⚡ Performance
+- **Backend Optimization**: Performance improvements have been implemented, resulting in faster data processing and reduced server load. Users will experience quicker response times, enhancing overall system efficiency.
+
+### 📚 Documentation
+- **Comprehensive Updates**: Documentation has been thoroughly updated to provide clearer guidance on configuration changes and new features. This helps users understand and implement updates effectively, reducing setup time and potential errors.
+
+### 🔧 Maintenance
+- **Build System Updates**: Regular updates to dependencies and build configurations ensure compatibility with the latest software standards and security practices, maintaining system stability and security.
+- **Branch Synchronization**: Merged main into develop branches to ensure all environments reflect the most recent changes, supporting consistent development workflows.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

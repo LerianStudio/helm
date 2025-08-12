@@ -1,3 +1,12 @@
+## [plugin-access-manager-3.0.1] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.0.1-beta.2...plugin-access-manager-v3.0.1)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Version Consistency Updates**: We've aligned versioning across multiple components, including Helm 3.0.1, Helm 2.0.1-beta.1, and Helm 1.0.1. This ensures a more consistent and reliable experience as we prepare for future updates. These changes do not introduce any breaking changes, allowing for seamless integration into your current setup.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

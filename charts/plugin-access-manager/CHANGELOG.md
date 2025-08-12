@@ -1,3 +1,29 @@
+## [plugin-access-manager-3.0.0-beta.9] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.0.0-beta.8...plugin-access-manager-v3.0.0-beta.9)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Redis Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now include the port within the `REDIS_HOST` variable. Please update your environment configurations to ensure continued connectivity. [Migration Guide](#)
+- **Version Transition**: As we move to version 4.0.0, several components (`auth`, `backend`, `build`, `config`) have undergone breaking changes. Users should review the detailed [migration notes](#) to ensure compatibility and smooth transition.
+
+### ✨ Features
+- **Enhanced Authentication**: The `plugin-access-manager` now offers improved security protocols and broader compatibility with newer backend systems, providing a more robust access management experience. This enhancement ensures better protection and integration capabilities.
+
+### 🐛 Bug Fixes
+- **Branch Synchronization**: Resolved synchronization issues between the main and develop branches, ensuring consistent configuration management and reducing potential deployment errors.
+
+### ⚡ Performance
+- **Build Efficiency**: Improvements in the build process have reduced build times, streamlining the development workflow and enhancing overall system performance. Users can expect faster deployment cycles.
+
+### 📚 Documentation
+- **Comprehensive Updates**: The documentation has been thoroughly updated to reflect configuration changes and new feature implementations, including detailed migration instructions for breaking changes. This ensures users have all necessary information for a seamless transition.
+
+### 🔧 Maintenance
+- **Regular Updates**: Ongoing updates and version bumps (e.g., 2.0.0-beta.6 to 2.0.0-beta.9) keep the system aligned with the latest dependencies and security patches, contributing to system stability and security.
+- **Code Quality Enhancements**: Merges and updates across multiple components (`auth`, `backend`, `build`, `config`, `docs`) improve code quality and maintainability, facilitating future development and reducing technical debt.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

@@ -29,7 +29,7 @@
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `2.1.0` | `1.1.0` | `1.1.0` |
+| `3.0.1` | `2.1.1` | `2.0.0` |
 
 -----------------
 
@@ -41,9 +41,9 @@
 
 #### Application Version Mapping
 
-| Chart Version | CRM Version |
-| :---: | :---: |
-| `1.3.0` | `1.3.0` |
+| Chart Version | CRM Version | UI Version |
+| :---: | :---: | :---: |
+| `2.0.1` | `2.0.0` | `2.0.0` |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -54,9 +54,9 @@
 
 #### Application Version Mapping
 
-| Chart Version | Fees Version |
-| :---: | :---: |
-| `1.3.0` | `1.0.0` |
+| Chart Version | Fees Version | UI Version |
+| :---: | :---: | :---: |
+| `2.0.1` | `2.0.0` | `2.0.0` |
 -----------------
 
 ### Plugin Smart Templates
@@ -67,8 +67,8 @@
 
 #### Application Version Mapping
 
-| Chart Version | Manager Version | Worker Version |
-| :---: | :---: | :---: |
-| `1.0.0` | `1.0.0` | `1.0.0` |
+| Chart Version | Manager Version | Worker Version | UI Version |
+| :---: | :---: | :---: | :---: |
+| `2.0.1` | `2.0.0` | `2.0.0` | `2.0.0` |
 -----------------
 

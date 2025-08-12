@@ -1,3 +1,29 @@
+## [plugin-crm-2.0.0] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v2.0.0-beta.8...plugin-crm-v2.0.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Configuration Management**: The `REDIS_PORT` environment variable has been removed. Users must now specify the port within the `REDIS_HOST` variable. This change simplifies configuration but requires updates to your environment settings. Please refer to the migration guide for detailed steps.
+- **Version Updates**: With multiple major version releases, significant updates have been made across components. Users should review the release notes for each version to ensure compatibility and understand necessary migration steps.
+
+### ✨ Features
+- **Enhanced Authentication**: The plugin-access-manager now supports the latest authentication protocols, providing improved security and compatibility. Users should verify system compatibility to benefit from these enhancements.
+
+### 🐛 Bug Fixes
+- **Configuration Stability**: Resolved inconsistencies in environment variable management, ensuring reliable configuration handling across deployments. This fix enhances system stability and reduces configuration errors.
+
+### ⚡ Performance
+- **Backend Optimization**: Performance improvements in backend processing lead to faster load times and more efficient data handling, enhancing user experience with quicker response times.
+
+### 📚 Documentation
+- **Comprehensive Updates**: Documentation has been significantly updated to provide clearer guidance on system configuration and usage, particularly regarding environment variable changes. This ensures users have access to accurate and helpful information.
+
+### 🔧 Maintenance
+- **Build System Updates**: Routine updates to the build and deployment scripts ensure compatibility with the latest toolchains, improving the development workflow and maintaining codebase integrity.
+- **Dependency Upgrades**: Various dependencies have been updated to their latest versions, addressing security vulnerabilities and enhancing overall system stability.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

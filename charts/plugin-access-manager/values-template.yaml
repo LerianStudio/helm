@@ -23,6 +23,8 @@ identity:
 
   secrets:
     AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
 
 auth:
   imagePullSecrets:

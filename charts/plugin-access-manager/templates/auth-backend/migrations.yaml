@@ -33,7 +33,7 @@ spec:
             done;
       containers:
         - name: migrate
-          image: ghcr.io/lerianstudio/casdoor-migrations:1.1.0
+          image: ghcr.io/lerianstudio/casdoor-migrations:2.1.0
           imagePullPolicy: Always
           env:
             - name: DB_HOST

@@ -1,0 +1,208 @@
+opentelemetry-collector:
+
+  mode: daemonset
+
+  # Contrib image is needed for k8scluster, k8sattributes, transform, and loki exporter.
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: 0.128.0
+
+  # RBAC is required for k8sattributes, k8scluster, and kubeletstats receivers.
+  clusterRole:
+    create: true
+    rules:
+      - apiGroups: [""]
+        resources:
+          - "events"
+          - "namespaces"
+          - "nodes"
+          - "pods"
+          - "replicationcontrollers"
+          - "services"
+          - "resourcequotas"
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["apps"]
+        resources:
+          - "daemonsets"
+          - "deployments"
+          - "replicasets"
+          - "statefulsets"
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["batch"]
+        resources:
+          - "jobs"
+          - "cronjobs"
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["autoscaling"]
+        resources:
+          - "horizontalpodautoscalers"
+        verbs: ["get", "list", "watch"]
+      # Added for kubeletstats receiver
+      - apiGroups: [""]
+        resources:
+          - "nodes/proxy"
+          - "nodes/stats"
+          - "nodes/metrics"
+        verbs: ["get", "list", "watch"]
+
+  # Basic resource limits for stability.
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  # The API key for authenticating with the central collector.
+  # The 'extraEnvs' key is the correct way to define environment variables for the pod.
+  extraEnvs:
+    - name: OTEL_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: otel-api-key
+          key: api-key
+    # K8S_NODE_NAME is used by the kubeletstats receiver to find the local kubelet.
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
+
+      # Collects cluster-level state information, like pod status.
+      k8s_cluster:
+        collection_interval: 60s
+
+      # Collects pod/container performance metrics (CPU, memory) from the node's Kubelet.
+      kubeletstats:
+        collection_interval: 10s
+        auth_type: "serviceAccount"
+        endpoint: "${env:K8S_NODE_NAME}:10250"
+        insecure_skip_verify: true
+        metric_groups:
+          - "pod"
+          - "container"
+
+    processors:
+      batch: {}
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+
+      # This processor removes sensitive data from spans before they are processed further.
+      transform/remove_sensitive_attributes:
+        trace_statements:
+          - context: span
+            statements:
+              - delete_key(attributes, "http.request.body")
+              - delete_key(attributes, "http.response.body")
+              - delete_key(attributes, "payload")
+              - delete_key(attributes, "app.request.payload")
+
+      # This processor performs tail-based sampling. It buffers all spans for a trace
+      # and makes a sampling decision only after the trace is complete.
+      # We will only keep traces that have at least one span with a 5xx status code.
+      #tail_sampling:
+      #  decision_wait: 10s # How long to wait for all spans in a trace.
+      #  num_traces: 10000 # Max number of traces to keep in memory.
+      #  policies:
+      #    # This policy uses a regex to match any 5xx status code.
+      #    - name: http_server_errors_regex
+      #      type: string_attribute
+      #      string_attribute:
+      #        key: http.status_code # The semantic attribute for HTTP status code.
+      #        values: ["5\\d{2}"]      # Regex to match any 3-digit number starting with 5.
+      #        enabled_regex_matching: true
+
+      # Drops all node-level metrics using a regex filter.
+      filter/drop_node_metrics:
+        metrics:
+          exclude:
+            match_type: regexp
+            metric_names:
+              - ^k8s\.node\..*$
+
+      # Filters metrics to include the 'midaz' and 'midaz-plugins' namespaces.
+      # This uses a regex include rule to match multiple namespaces.
+      filter/include_midaz_namespaces:
+        metrics:
+          include:
+            match_type: regexp
+            resource_attributes:
+              - key: k8s.namespace.name
+                value: '^(midaz|midaz-plugins)$'
+
+      # Enriches all telemetry with Kubernetes metadata (pod name, namespace, etc.).
+      k8sattributes:
+        auth_type: "serviceAccount"
+        passthrough: false
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.deployment.name
+            - k8s.namespace.name
+            - k8s.node.name
+
+      # Adds the client ID for multi-tenancy, as requested.
+      resource/add_client_id:
+        attributes:
+          - key: client.id
+            value: "Firmino"
+            action: upsert
+
+      # Deletes the entire log body to prevent sensitive data leakage.
+      transform/remove_log_body:
+        log_statements:
+          - context: log
+            statements:
+              - set(body, "")
+
+    exporters:
+      otlphttp/server:
+        endpoint: "https://telemetry.lerian.io:443"
+        headers:
+          x-api-key: "${OTEL_API_KEY}"
+
+      prometheus/local:
+        endpoint: 0.0.0.0:8889
+
+      debug:
+        verbosity: detailed
+
+    service:
+      extensions:
+        - health_check
+      telemetry:
+        logs:
+          level: "info"
+        metrics:
+          address: "0.0.0.0:8887"
+          level: "Basic"
+      pipelines:
+        traces:
+          # The order of processors is critical for correct data handling:
+          # 1. Enrich with K8s metadata.
+          # 2. Add the client ID for multi-tenancy.
+          # 3. Sanitize by removing sensitive payloads.
+          # 4. Sample traces, keeping only those with 5xx errors.
+          # 5. Batch the final set of traces for efficient export.      
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, resource/add_client_id, batch]
+          exporters: [otlphttp/server, debug]
+        metrics:
+          receivers: [otlp, k8s_cluster, kubeletstats] # Added kubeletstats
+          processors: [memory_limiter, k8sattributes, filter/include_midaz_namespaces, filter/drop_node_metrics, resource/add_client_id, batch]
+          exporters: [otlphttp/server, prometheus/local, debug]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, resource/add_client_id, transform/remove_log_body, batch]
+          exporters: [otlphttp/server, debug]

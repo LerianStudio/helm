@@ -21,13 +21,16 @@ console:
   # -- Number of replicas for the deployment
   replicaCount: 1
 
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
   image:
     # -- Repository for the console service container image
     repository: lerianstudio/midaz-console
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.2.1"
+    tag: "3.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -100,7 +103,7 @@ console:
     #  - secretName: chart-example-tls
     #  hosts:
     #      - chart-example.local
-      
+
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -204,13 +207,16 @@ onboarding:
   # -- Number of replicas for the onboarding service
   replicaCount: 2
 
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
   image:
     # -- Repository for the onboarding service container image
     repository: lerianstudio/midaz-onboarding
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.2.2"
+    tag: "3.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -325,13 +331,13 @@ onboarding:
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/onboarding/configmap.yaml
-  configmap: 
+  configmap:
     # -- Rabbitmq default configuration
     RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"
     RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
     RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672" 
+    RABBITMQ_PORT_AMQP: "15672"
     RABBITMQ_DEFAULT_USER: "onboarding"
     # -- MongoDB default configuration
     MONGO_URI: "mongodb"
@@ -364,7 +370,7 @@ onboarding:
 
   # -- Secrets for storing sensitive data
   # @default -- templates/onboarding/secrets.yaml
-  secrets: 
+  secrets:
     # -- MongoDB default password
     MONGO_PASSWORD: "lerian"
     # -- PostgreSQL default password
@@ -379,7 +385,7 @@ onboarding:
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
-  
+
   # -- Extra environment variables
   extraEnvVars: []
 
@@ -396,6 +402,9 @@ transaction:
   # -- Service name
   name: transaction
 
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
   # -- Number of replicas for the transaction service
   replicaCount: 1
 
@@ -405,7 +414,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.2.2"
+    tag: "3.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -759,12 +768,12 @@ rabbitmq:
     existingSecret: load-definition
   extraConfiguration: |
     load_definitions = /app/load_definition.json
-  
+
   persistence:
     size: 8Gi
 
   resourcesPreset: "medium"
-  
+
   persistence:
     size: 8Gi
 

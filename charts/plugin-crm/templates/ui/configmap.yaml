@@ -1,0 +1,39 @@
+{{- if .Values.frontend.enabled }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "plugin-frontend.fullname" . }}
+data:
+  # CRM
+  PORT: {{ .Values.frontend.configmap.PORT | default "4003" | quote }}
+  SERVICE_HOST: {{ .Values.frontend.configmap.SERVICE_HOST | default (printf "plugin-crm.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  SERVICE_PORT: {{ .Values.frontend.configmap.SERVICE_PORT | default "4003" | quote }}
+  BASE_PATH: {{ .Values.frontend.configmap.BASE_PATH | default (printf "http://plugin-crm.%s.svc.cluster.local.:4003" .Release.Namespace) | quote }}
+  CRM_BACKEND_BASE_URL: {{ .Values.frontend.configmap.CRM_BACKEND_BASE_URL | default (printf "http://plugin-crm.%s.svc.cluster.local.:4003" .Release.Namespace) | quote }}
+
+  # CRM UI
+  PLUGIN_CRM_UI_PORT: {{ .Values.frontend.configmap.PLUGIN_CRM_UI_PORT | default "8082" | quote }}
+  PLUGIN_CRM_UI_HOST: {{ .Values.frontend.configmap.PLUGIN_CRM_UI_HOST | default (printf "plugin-crm-ui.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  PLUGIN_CRM_UI_BASE_URL: {{ .Values.frontend.configmap.PLUGIN_CRM_UI_BASE_URL | default (printf "http://plugin-crm-ui.%s.svc.cluster.local.:8082" .Release.Namespace) | quote }}
+  ENABLE_DEBUG: {{ .Values.frontend.configmap.ENABLE_DEBUG | default "false" | quote }}
+  NEXT_PUBLIC_PLUGIN_UI_BASE_PATH: {{ .Values.frontend.configmap.NEXT_PUBLIC_PLUGIN_UI_BASE_PATH | default "/plugin-crm-ui" | quote }}
+  
+  # AUTH
+  PLUGIN_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+
+  # Console Layout
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
+  NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+
+  # NextAuth Configuration
+  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
+  NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local.:8080" | quote }}
+  NEXTAUTH_SECRET: {{ .Values.frontend.configmap.NEXTAUTH_SECRET | default "SECRET" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.frontend.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  
+{{- end }}
+

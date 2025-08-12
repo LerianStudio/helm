@@ -1,10 +1,18 @@
 
+# Common configuration shared between components
+common:
+  # Common secrets and configurations
+  authorizer:
+    clientId: "ac56c81d4d6d95c0ac12"
+    clientSecret: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+
 identity:
   # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
 
   replicaCount: 1
+  revisionHistoryLimit: 10
 
   name: "plugin-access-manager-identity"
   description: "Identity plugin for Midaz"
@@ -15,7 +23,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.0"
+    tag: "2.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -128,25 +136,34 @@ identity:
   # -- ConfigMap for environment variables and configurations
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/identity/configmap.yaml
-  configmap: 
+  configmap:
     # -- Default Environment
     ENV_NAME: "development"
     AUTH_ENABLED: "true"
     AUTH_PORT: "4000"
     AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
+    AUTHORIZER_CLIENT_ID: "{{ .Values.common.authorizer.clientId }}"
+
+  # -- Extra environment variables
+  extraEnvVars: {}
 
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/identity/secrets.yaml
   secrets:
-    AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    AUTHORIZER_CLIENT_SECRET: "{{ .Values.common.authorizer.clientSecret }}"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
 
 auth:
   # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
   replicaCount: 3
+  revisionHistoryLimit: 10
 
   name: "plugin-access-manager-auth"
 
@@ -156,7 +173,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.0"
+    tag: "2.1.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -198,7 +215,7 @@ auth:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-  
+
   podSecurityContext: {}
     # fsGroup: 2000
 
@@ -276,7 +293,7 @@ auth:
     DB_HOST: "plugin-access-manager-auth-database.midaz-plugins.svc.cluster.local"
     DB_PORT: 5432
     DB_NAME: "casdoor"
-    # -- Default Environment 
+    # -- Default Environment
     ENV_NAME: "development"
     # -- Default Redis Settings
     REDIS_HOST: "plugin-access-manager-valkey-primary.midaz-plugins.svc.cluster.local"
@@ -284,15 +301,24 @@ auth:
     REDIS_USER: "auth"
     AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
+  # -- Extra environment variables
+  extraEnvVars: {}
+
   # -- Secrets for storing sensitive data
   # @default -- templates/auth/secrets.yaml
-  secrets: 
+  secrets:
     DB_PASSWORD: "lerian"
     AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     REDIS_PASSWORD: "lerian"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
 
   backend:
     replicaCount: 1
+    revisionHistoryLimit: 10
     name: "plugin-access-manager-auth-backend"
     autoscaling:
       # -- Enable or disable horizontal pod autoscaling
@@ -317,7 +343,7 @@ auth-database:
     username: "auth"
     password: "lerian"
     database: "casdoor"
-    
+
   primary:
 
     persistence:
@@ -343,7 +369,7 @@ auth-database:
       - name: POSTGRESQL_TCP_KEEPALIVES_INTERVAL
         value: "10"
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
-        value: "5"    
+        value: "5"
 
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
@@ -355,3 +381,6 @@ valkey:
   architecture: standalone
   auth:
     enabled: false
+
+otel-collector-lerian:
+  enabled: false

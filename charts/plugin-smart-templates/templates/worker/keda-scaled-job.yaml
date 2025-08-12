@@ -36,6 +36,15 @@ spec:
                 name: {{ include "plugin-worker.fullname" . }}
             - secretRef:
                 name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "plugin-worker.fullname" . }}{{ end }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}          
           resources:
             limits:
               cpu: {{ .Values.worker.resources.limits.cpu }}

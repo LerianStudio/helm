@@ -14,7 +14,7 @@ identity:
             pathType: Prefix
     tls: []
 
-  configmap: 
+  configmap:
     ENV_NAME: "development"
     AUTH_ENABLED: "true"
     AUTH_PORT: "4000"
@@ -23,6 +23,8 @@ identity:
 
   secrets:
     AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
 
 auth:
   imagePullSecrets:
@@ -50,10 +52,12 @@ auth:
     REDIS_USER: "auth"
     AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
-  secrets: 
+  secrets:
     DB_PASSWORD: "lerian"
     AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     REDIS_PASSWORD: "lerian"
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
 
 auth-database:
   enabled: true

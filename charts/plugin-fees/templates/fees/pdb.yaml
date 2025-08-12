@@ -1,0 +1,23 @@
+{{- if .Values.fees.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "plugin-fees.fullname" . }}
+  labels:
+    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 4 }} 
+  {{- with .Values.fees.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.fees.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.fees.pdb.minAvailable | default 0 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-fees.selectorLabels" (dict "context" . "name" .Values.fees.name) | nindent 6 }}
+{{- end }}

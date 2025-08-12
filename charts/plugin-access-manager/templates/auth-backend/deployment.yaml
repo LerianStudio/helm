@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name ) | nindent 4 }} 
 spec:
+  revisionHistoryLimit: {{ .Values.auth.backend.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
   replicas: {{ .Values.auth.backend.replicaCount }}
@@ -41,11 +42,11 @@ spec:
                 done;
                 echo "$svc is ready!";
               done;
-      containers: 
+      containers:
         - name: {{ include "plugin-auth-backend.fullname" . }}
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: ghcr.io/lerianstudio/casdoor:1.2.0
+          image: ghcr.io/lerianstudio/casdoor:2.1.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -54,17 +55,26 @@ spec:
           envFrom:
           - configMapRef:
               name: {{ include "plugin-auth-backend.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}
           readinessProbe:
             httpGet:
               path: /api/health
               port: 8000
             initialDelaySeconds: 15
             periodSeconds: 5
-          livenessProbe: 
+          livenessProbe:
             initialDelaySeconds: 20
             httpGet:
               path: /api/health
-              port: 8000     
+              port: 8000
       {{- with .Values.auth.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

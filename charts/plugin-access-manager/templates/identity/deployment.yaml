@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 4 }} 
 spec:
+  revisionHistoryLimit: {{ .Values.identity.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.identity.deploymentStrategy | nindent 4 }}
   replicas: {{ .Values.identity.replicaCount }}
@@ -56,11 +57,20 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ include "plugin-identity.fullname" . }}
+              name: {{ if .Values.identity.useExistingSecret }}{{ .Values.identity.existingSecretName }}{{ else }}{{ include "plugin-identity.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-identity.fullname" . }}
           resources:
             {{- toYaml .Values.identity.resources | nindent 12 }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}            
       {{- with .Values.identity.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

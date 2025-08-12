@@ -1,3 +1,33 @@
+## [plugin-smart-templates-2.0.0] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-smart-templates-v2.0.0-beta.6...plugin-smart-templates-v2.0.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Redis Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now include the port value directly in the `REDIS_HOST` variable. Ensure your configuration files are updated to maintain Redis connectivity. Migration steps:
+- **Major Version Releases**: This update includes multiple major version releases (2.0.0, 3.0.0, 4.0.0-beta.1). Users should review the release notes for each version to understand specific changes and required migration steps.
+
+### ✨ Features
+- **Enhanced Authentication**: The auth version in the plugin-access-manager has been updated, providing enhanced security and compatibility with modern authentication protocols. This ensures better integration and support for secure access management.
+- **New Configuration Chart**: A new chart version for Midaz has been introduced, aligning with the latest infrastructure standards and improving deployment efficiency.
+
+### 🐛 Bug Fixes
+- **Documentation Updates**: Documentation has been updated to accurately reflect recent changes, resolving discrepancies that could lead to configuration errors. Users now have access to clearer and more precise setup instructions.
+
+### ⚡ Performance
+- **Backend Optimization**: Backend processes have been optimized, resulting in improved system performance and reliability. Users will experience reduced latency and faster data processing.
+- **Streamlined Build System**: Build configurations have been updated to streamline the deployment process, reducing build times and enhancing deployment consistency.
+
+### 🔄 Changes
+- **Branch Management**: Merged main into develop to synchronize branches, ensuring all development work is aligned with the latest production-ready code.
+
+### 📚 Documentation
+- **Clarified Instructions**: Documentation improvements provide clearer guidance on configuration and usage, supporting successful implementation and reducing setup errors.
+
+### 🔧 Maintenance
+- **Dependency Updates**: Regular updates to dependencies across components such as auth, backend, and build ensure compatibility with the latest security patches and performance enhancements.
+
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

@@ -1,3 +1,30 @@
+## [plugin-access-manager-3.0.0] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.0.0-beta.9...plugin-access-manager-v3.0.0)
+Contributors: lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication & Configuration**: The authentication module has been overhauled, necessitating updates to configuration files. Users must review and update their authentication settings to ensure compatibility. This change strengthens security protocols. [Migration guide](#)
+- **Build & Deployment**: The build process has been restructured. Users need to update deployment scripts and CI/CD pipelines to align with the new system requirements, enhancing efficiency and streamlining operations. [Migration guide](#)
+- **Database**: Schema changes require users to perform a migration to maintain data integrity and performance improvements. [Migration guide](#)
+
+### ✨ Features
+- **New Authentication Framework**: Experience enhanced security with support for modern authentication protocols, improving user authentication processes and compliance. [Learn more](#)
+
+### 🐛 Bug Fixes
+- **Configuration Parsing**: Fixed issues causing errors during startup due to configuration file parsing, ensuring smoother initialization and reducing errors.
+
+### ⚡ Performance
+- **Backend Optimizations**: Enjoy faster response times and more efficient resource utilization due to optimizations across backend components.
+
+### 📚 Documentation
+- **Comprehensive Updates**: Documentation has been thoroughly updated to reflect new configuration and usage changes, providing clear guidance for users.
+
+### 🔧 Maintenance
+- **Dependencies Update**: Various dependencies have been updated to their latest versions, ensuring security and compatibility.
+- **Code Quality Improvements**: Refactoring across multiple components enhances code readability and maintainability without affecting functionality.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

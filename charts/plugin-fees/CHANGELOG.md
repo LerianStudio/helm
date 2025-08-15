@@ -1,3 +1,18 @@
+## [plugin-fees-2.0.2-beta.1] - 2025-08-15
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.0.1...plugin-fees-v2.0.2-beta.1)
+Contributors: Gabriel Ferreira, lerian-studio
+
+### 🔄 Changes
+- **Configuration Update**: The default value for `DATASOURCE_FEES_PORT` in the smart templates plugin has been updated. This change aligns with standard port configurations, reducing the need for manual adjustments and enhancing out-of-the-box compatibility.
+
+### 📚 Documentation
+- **Midaz Helm Chart**: The update document for the Midaz Helm chart has been revised for clarity. This enhancement provides users with clearer guidance on utilizing the Helm chart effectively, minimizing potential setup errors and improving overall user experience.
+
+### 🔧 Maintenance
+- **Release Management**: Routine version updates have been applied, including `2.0.2-beta.1`, `3.0.2-beta.1`, and `1.0.2-beta.1`. These updates are part of ongoing efforts to maintain software stability and ensure consistency across versions.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

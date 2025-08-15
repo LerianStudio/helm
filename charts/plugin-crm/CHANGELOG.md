@@ -1,3 +1,18 @@
+## [plugin-crm-2.0.2-beta.1] - 2025-08-15
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v2.0.1...plugin-crm-v2.0.2-beta.1)
+Contributors: Gabriel Ferreira, lerian-studio
+
+### 🔄 Changes
+- Updated the default value for `DATASOURCE_FEES_PORT` within the smart templates plugin. This change enhances configuration flexibility, allowing users to tailor the setup to better meet their specific needs.
+
+### 📚 Documentation
+- The Midaz Helm chart documentation has been improved, offering clearer guidance for users. This update simplifies the setup and maintenance process, making it easier for users to configure and deploy their applications effectively.
+
+### 🔧 Maintenance
+- Multiple version updates have been applied, including releases for versions 1.0.2-beta.1, 2.0.1, 2.0.2-beta.1, and 3.0.2-beta.1. These updates ensure the project remains current and stable, incorporating the latest changes and improvements to maintain system reliability.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

@@ -48,15 +48,23 @@ console:
 
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
+    # -- When nginx.enabled is true, set to 0
+    # -- When nginx.enabled is false, set to 1000
     runAsGroup: 1000
     # -- Defines the user ID for the process running inside the container
+    # -- When nginx.enabled is true, set to 0
+    # -- When nginx.enabled is false, set to 1000
     runAsUser: 1000
     # -- Ensures the process does not run as root
+    # -- When nginx.enabled is true, set to false
+    # -- When nginx.enabled is false, set to true
     runAsNonRoot: true
     capabilities:
       drop:
         - ALL
     # -- Defines the root filesystem as read-only
+    # -- When nginx.enabled is true, set to false
+    # -- When nginx.enabled is false, set to true
     readOnlyRootFilesystem: true
 
   # -- PodDisruptionBudget configuration

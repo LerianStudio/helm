@@ -127,6 +127,10 @@ A new optional NGINX component has been introduced to serve as a gateway/proxy f
     •	By default, this dependency is disabled.
     •	It can be enabled per customer based on the plugins they have access to.
     •	This gateway simplifies the routing and mounting of plugin frontends under the midaz-console domain.
+    •	When enabled, the console's security context will require root access:
+        - runAsGroup and runAsUser will be set to 0
+        - runAsNonRoot will be set to false
+        - readOnlyRootFilesystem will be set to false
 
 New environment variables have been added to the midaz-console to support this feature:
 
@@ -162,6 +166,34 @@ console:
 ***Note:*** See the [console section in values](https://github.com/LerianStudio/helm/blob/main/charts/midaz/values.yaml#L14-L22) for more details.
 
 ```yaml
+# Security Context Configuration
+# The console's security context changes based on nginx.enabled:
+
+# Default configuration (nginx.enabled: false)
+console:
+  securityContext:
+    # Non-root user configuration
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+# NGINX configuration (nginx.enabled: true)
+console:
+  securityContext:
+    # Root access required for NGINX
+    runAsGroup: 0
+    runAsUser: 0
+    runAsNonRoot: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+
+# NGINX Configuration
 nginx:
   enabled: false
 

@@ -1,3 +1,18 @@
+## [plugin-access-manager-3.0.2-beta.1] - 2025-08-15
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.0.1...plugin-access-manager-v3.0.2-beta.1)
+Contributors: Gabriel Ferreira, lerian-studio
+
+### 🔄 Changes
+- **Configuration Update**: The default value for `DATASOURCE_FEES_PORT` in the smart templates plugin has been updated. This change aligns with standard configurations, reducing manual setup efforts and streamlining the initial configuration process for users.
+
+### 📚 Documentation
+- **Midaz Helm Chart Guide**: The update document for the Midaz Helm chart has been enhanced, offering clearer instructions and guidance. This improvement helps users to more easily understand and implement the Helm chart configurations, reducing potential setup errors and saving time.
+
+### 🔧 Maintenance
+- **Release Management**: Routine updates for version releases, including `3.0.2-beta.1`, `1.0.2-beta.1`, and `2.0.1`, have been completed. These updates ensure consistency across environments and align the project with the latest development milestones.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

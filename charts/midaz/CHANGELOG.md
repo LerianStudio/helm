@@ -1,3 +1,18 @@
+## [midaz-3.0.2-beta.1] - 2025-08-15
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.0.1...midaz-v3.0.2-beta.1)
+Contributors: Gabriel Ferreira, lerian-studio
+
+### 🔄 Changes
+- **Configuration Adjustment**: The default value for `DATASOURCE_FEES_PORT` in the smart templates plugin has been updated. This change aligns default settings with current standards, simplifying initial setup and minimizing configuration issues for new users.
+
+### 📚 Documentation
+- **Updated Helm Chart Documentation**: The Midaz Helm chart documentation has been refreshed to provide clearer and more comprehensive guidance. This update ensures users have access to the latest best practices and configuration instructions, reducing setup time and potential errors.
+
+### 🔧 Maintenance
+- **Release Management Enhancements**: Streamlined versioning with multiple release commits (1.0.1, 2.0.1, 3.0.1, 3.0.2-beta.1) to maintain a consistent release cadence. This ensures users have timely access to the latest stable and beta versions, supporting ongoing development and testing efforts.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

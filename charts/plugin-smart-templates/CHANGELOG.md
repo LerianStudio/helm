@@ -1,3 +1,18 @@
+## [plugin-smart-templates-2.0.2-beta.1] - 2025-08-15
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-smart-templates-v2.0.1...plugin-smart-templates-v2.0.2-beta.1)
+Contributors: Gabriel Ferreira, lerian-studio
+
+### 📚 Documentation
+- **Midaz Helm Chart**: The update documentation has been enhanced to provide clearer guidance on implementing updates. This improvement helps users navigate the upgrade process more effectively, minimizing potential errors and ensuring a smoother transition.
+
+### 🔧 Maintenance
+- **Release Management**: Chore updates have been made to prepare for beta releases across various versions (1.0.2-beta.1, 2.0.2-beta.1, 3.0.2-beta.1). These updates ensure each version is properly packaged and documented, facilitating testing and feedback.
+
+### ✨ Improvements
+- **Config**: The default value for `DATASOURCE_FEES_PORT` in the smart templates plugin has been updated. This change aligns with standard configurations, reducing the need for manual adjustments and improving out-of-the-box usability for a more seamless setup experience.
+
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

@@ -1,3 +1,18 @@
+## [plugin-access-manager-3.1.0] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.1.0-beta.1...plugin-access-manager-v3.1.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication & Backend Overhaul**: This update introduces major changes to the authentication and backend systems, potentially altering existing API behaviors. Users must review the updated API documentation and test their integrations to ensure compatibility. Migration steps include updating client integrations and verifying API interactions. This change addresses multiple security and performance issues.
+
+### 📚 Documentation
+- **Plugin-Access-Manager Update**: The documentation for the plugin-access-manager has been updated to reflect the latest chart version, ensuring users have access to accurate and up-to-date information for easier implementation and troubleshooting.
+
+### 🔧 Maintenance
+- **System Stability Enhancements**: Various maintenance tasks were performed across components such as build, database, dependencies, and frontend. These updates improve overall system stability and prepare the groundwork for future enhancements.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

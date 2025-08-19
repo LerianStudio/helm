@@ -1,3 +1,23 @@
+## [plugin-access-manager-3.1.0-beta.1] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.0.2...plugin-access-manager-v3.1.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- The release of version 1.0.0-beta.1 introduces breaking changes across multiple components, including Auth, Backend, and Config. Users need to update their integrations and deployments to align with the new architecture. Please refer to the migration guide for detailed steps on updating your setup.
+
+### ✨ Features
+- **Auth: Plugin-Access Manager**
+- **Config: Enhanced Monitoring with OpenTelemetry**
+
+### 📚 Documentation
+- Updated documentation to reflect the latest chart and application versions. This ensures users have access to the most current information for setup and usage, simplifying the onboarding process for new users.
+
+### 🔧 Maintenance
+- **Build Process Improvements**
+- **Config Updates**
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

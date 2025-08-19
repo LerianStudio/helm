@@ -13,9 +13,9 @@ maintainers:
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 
-version: 3.0.2-beta.1
+version: 3.0.2-beta.2
 
-# This is the version number of the application being deployed. 
+# This is the version number of the application being deployed.
 appVersion: "2.0.0"
 
 # A list of keywords about the chart. This helps others discover the chart.
@@ -31,9 +31,9 @@ keywords:
 # The URL to an icon file for this chart. Or the icon data.
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 
-# This Helm chart includes multiple dependencies required for the application. 
+# This Helm chart includes multiple dependencies required for the application.
 # To understand the purpose and configuration of each dependency, visit:
-# https://docs.lerian.studio/docs/midaz-components  
+# https://docs.lerian.studio/docs/midaz-components
 dependencies:
   - name: postgresql
     alias: auth-database

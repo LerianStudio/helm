@@ -44,7 +44,7 @@ ingress:
   // Annotations are key-value pairs that can be used to attach arbitrary non-identifying metadata to objects.
   // These annotations can be used by various tools and libraries to augment the behavior of the Nginx resource.
   // See more https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
-  annotations: {} 
+  annotations: {}
   hosts:
     - host: midaz.example.com
       paths:

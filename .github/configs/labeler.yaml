@@ -2,6 +2,10 @@ midaz:
   - changed-files:
       - any-glob-to-any-file: charts/midaz/**
 
+otel-collector:
+  - changed-files:
+      - any-glob-to-any-file: charts/otel-collector-lerian/**
+
 plugin-access-manager:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-access-manager/**

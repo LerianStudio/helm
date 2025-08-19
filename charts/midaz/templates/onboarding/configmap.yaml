@@ -18,7 +18,7 @@ metadata:
 data:
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.onboarding.configmap.OTEL_RESOURCE_SERVICE_NAME | default "onboarding" | quote }}
-  OTEL_LIBRARY_NAME: {{ .Values.onboarding.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/components/onboarding" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.onboarding.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v3/components/onboarding" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ include "onboarding.versionLabelValue" . }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.onboarding.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.onboarding.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}

@@ -1,3 +1,12 @@
+## [plugin-fees-2.0.2] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.0.2-beta.2...plugin-fees-v2.0.2)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Version Consistency Updates**: We've aligned versioning across multiple components, including updates to versions 1.0.2, 2.0.2, 2.0.2-beta.2, and 3.0.2. This ensures that all components reflect the latest stable and beta releases, improving dependency management and integration for users.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

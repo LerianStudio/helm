@@ -1,3 +1,26 @@
+## [midaz-3.1.0-beta.1] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.0.2...midaz-v3.1.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Transition to Version 1.0.0-beta.1**: This update introduces major changes across multiple components such as Config, Auth, and Database. Users need to adjust configurations and dependencies to align with the new interfaces and workflows. Please review the updated API documentation and migration guides to ensure a smooth transition.
+
+### ✨ Features
+- **OpenTelemetry Enhancements**: New environment variable configurations for OpenTelemetry have been introduced, allowing for improved transaction monitoring and real-time observability. This empowers users to better track application performance and quickly diagnose issues.
+
+### 🔄 Changes
+- **Versioning Update**: The application versioning has been updated to reflect new features and enhancements, ensuring users can access the latest capabilities seamlessly.
+- **Refactored Collector Path Naming**: The OpenTelemetry collector path naming has been clarified for consistency, making configuration management easier and reducing setup errors.
+
+### 📚 Documentation
+- **Updated Guides**: Documentation has been revised to reflect the latest changes, providing users with accurate guidance on new features and configurations, ensuring a smoother user experience.
+
+### 🔧 Maintenance
+- **Dependency Updates**: All dependencies have been updated to their latest versions, enhancing security and performance while reducing potential vulnerabilities.
+- **Helm Chart Compatibility**: Routine updates to `Chart.yaml` ensure compatibility with the latest Helm chart standards, maintaining stability and performance throughout development and deployment processes.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

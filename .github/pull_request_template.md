@@ -8,6 +8,7 @@
 - [ ] Plugin CRM
 - [ ] Plugin Smart Templates
 - [ ] Plugin Fees
+- [ ] Otel Collector
 - [ ] Pipeline
 - [ ] Documentation
 

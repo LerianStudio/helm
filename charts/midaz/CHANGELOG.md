@@ -1,3 +1,15 @@
+## [midaz-3.1.0-beta.2] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.1.0-beta.1...midaz-v3.1.0-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Telemetry Configuration**: Introduced a new environment variable for OpenTelemetry (OTel) in transaction monitoring. This enhancement allows users to better manage telemetry data, improving system observability and diagnostics. Users leveraging OpenTelemetry for performance monitoring and tracing will find this particularly beneficial.
+
+### 🔧 Maintenance
+- **Version Update**: Updated the project version to 3.1.0-beta.2 to align with the latest development milestones. This change is crucial for maintaining the project's release cycle and version tracking, ensuring readiness for further testing and feedback.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

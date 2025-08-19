@@ -1,3 +1,19 @@
+## [plugin-crm-2.0.2-beta.2] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v2.0.2-beta.1...plugin-crm-v2.0.2-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **Build System Improvements**: The release workflow has been updated to streamline the build process, reducing the potential for errors and enhancing the overall stability of deployments. This change ensures a more consistent and reliable experience for users during software updates.
+
+### 📚 Documentation
+- **Plugin Documentation Updates**: Minor updates have been made to the documentation related to plugin releases. These improvements enhance clarity and ensure users have access to the most accurate and up-to-date information.
+
+### 🔧 Maintenance
+- **Version Updates**: Multiple components have been updated to their latest beta versions, including 1.0.2-beta.2, 1.0.2-beta.3, 2.0.2-beta.1, 2.0.2-beta.2, and 3.0.2-beta.2. These updates are part of ongoing efforts to provide a stable and consistent user experience by incorporating the latest features and fixes.
+- **Plugin Releases**: Triggered releases for plugins to ensure compatibility with the latest system updates. This maintenance step is crucial for maintaining the functionality and performance of plugins, giving users access to recent enhancements and fixes.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

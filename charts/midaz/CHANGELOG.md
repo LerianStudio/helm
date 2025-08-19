@@ -1,3 +1,24 @@
+## [midaz-3.1.0-beta.1] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.0.2...midaz-v3.1.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Configuration and Backend Updates**: This release includes extensive changes to configuration settings and backend integrations. Users must review and update their deployment scripts and environment settings to maintain compatibility. Ensure that you adjust any custom configurations to align with the new setup. Refer to the migration guide in the documentation for detailed steps.
+
+### ✨ Features
+- **OpenTelemetry Environment Variables**: New environment variables for OpenTelemetry (Otel) have been introduced, providing enhanced transaction monitoring and observability. This update allows users to gain deeper insights into application performance, aiding in proactive system management. Ensure your configurations are updated to leverage these new capabilities.
+
+### 🔄 Changes
+- **OpenTelemetry Collector Path Naming**: The path naming for the OpenTelemetry collector has been refactored for improved organization and clarity, simplifying the configuration process for users managing telemetry data.
+
+### 📚 Documentation
+- **Chart.yaml Updates**: Multiple updates have been made to the Chart.yaml files, ensuring consistency and accuracy in deployment configurations. These changes are crucial for maintaining deployment stability and reliability.
+
+### 🔧 Maintenance
+- **Release Management Enhancements**: Various updates across releases (2.0.2, 3.0.2, 1.0.2) have been implemented to streamline versioning and ensure proper release tracking. These improvements help maintain a clear version history and facilitate smoother upgrade paths for users.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

@@ -1,3 +1,20 @@
+## [plugin-smart-templates-2.0.2-beta.2] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-smart-templates-v2.0.2-beta.1...plugin-smart-templates-v2.0.2-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **Release Process Improvements**: We've streamlined the release workflow to make the deployment of new versions more efficient and reliable. This update enhances the speed and dependability of our release cycle, benefiting users with quicker access to new features and fixes.
+
+### 📚 Documentation
+- **Updated Release Process Documentation**: Minor updates have been made to our documentation to reflect the latest changes in the release process. This ensures that users and developers have access to the most current and accurate information, facilitating easier navigation and understanding of our release procedures.
+
+### 🔧 Maintenance
+- **Version Management**: Updated release versions including `2.0.2-beta.2`, `3.0.2-beta.2`, and `1.0.2-beta.3` to maintain versioning consistency and prepare for future stable releases. This helps in keeping the project organized and ready for upcoming enhancements.
+- **Plugin Synchronization**: Triggered plugin releases to align with the latest updates, ensuring all plugins remain compatible and functional. This maintenance step supports seamless integration and operation across the system.
+- **Continuous Integration Enhancements**: Updated the CI/CD pipeline to improve build processes, enhancing the reliability and efficiency of automated testing and deployment. This ensures smoother integration and delivery of code changes, contributing to a more robust development environment.
+
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

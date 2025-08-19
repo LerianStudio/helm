@@ -1,3 +1,15 @@
+## [midaz-3.1.0-beta.3] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.1.0-beta.2...midaz-v3.1.0-beta.3)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 📚 Documentation
+- Updated documentation to reflect the latest chart and application versions, ensuring users have access to accurate and current deployment and usage information. This is part of our commitment to providing clear and comprehensive user guides and reference materials.
+
+### 🔧 Maintenance
+- **Release Management**: Advanced the release to version 3.1.0-beta.3, streamlining the release process to provide users with timely access to new features and improvements. This ensures a smoother experience and better alignment with our development goals.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

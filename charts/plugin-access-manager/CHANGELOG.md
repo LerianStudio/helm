@@ -1,3 +1,19 @@
+## [plugin-access-manager-3.0.2-beta.2] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.0.2-beta.1...plugin-access-manager-v3.0.2-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **Build System**: The release workflow has been updated to streamline the build process. This change ensures more reliable and efficient deployment cycles, reducing potential downtime and enhancing the overall release experience for developers and users.
+
+### 📚 Documentation
+- **Plugin System**: Minor updates have been made to the documentation related to plugin releases. These changes provide clearer guidance for developers, improving the usability and accessibility of the plugin system documentation.
+
+### 🔧 Maintenance
+- **Release Management**: Updated beta release versions across various components to maintain version consistency and prepare for future stable releases. This ensures the software remains aligned with the latest development standards.
+- **Plugins**: Triggered plugin releases to ensure compatibility with the latest system updates, maintaining a robust and functional plugin ecosystem for users integrating additional functionalities.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

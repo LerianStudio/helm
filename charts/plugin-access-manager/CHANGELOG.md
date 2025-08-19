@@ -1,3 +1,12 @@
+## [plugin-access-manager-3.0.2] - 2025-08-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.0.2-beta.2...plugin-access-manager-v3.0.2)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Version Consistency**: Updated versioning for components to 3.0.2, 2.0.2-beta.2, and 1.0.2. This ensures that users can easily track and access the most current stable and beta versions, supporting a streamlined update process and reducing confusion over available releases.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

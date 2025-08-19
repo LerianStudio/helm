@@ -173,7 +173,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.1.1"
+    tag: "2.2.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:

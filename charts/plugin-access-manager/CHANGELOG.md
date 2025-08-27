@@ -1,3 +1,15 @@
+## [plugin-access-manager-3.1.0-beta.2] - 2025-08-27
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.1.0...plugin-access-manager-v3.1.0-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Backend Image Customization**: Users can now override the backend image through configuration values. This enhancement allows teams to deploy custom backend images tailored to specific needs or environments without altering the core Helm chart. This change ensures a cohesive update across the `auth`, `backend`, `build`, and `database` components, offering greater deployment flexibility.
+
+### 🔧 Maintenance
+- **Release Management Update**: Updated to version 3.1.0-beta.2. This update is part of our ongoing efforts to maintain project stability and prepare for future enhancements. Although this version increment does not introduce new features, it sets the groundwork for upcoming improvements.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

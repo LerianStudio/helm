@@ -1,3 +1,22 @@
+## [midaz-3.2.0-beta.1] - 2025-08-27
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.1.0...midaz-v3.2.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Authentication Module**: The authentication system has been upgraded, offering improved security and compatibility with external identity providers. This update ensures seamless integration and strengthens overall system resilience, providing users with a more secure environment.
+
+### 🔄 Changes
+- **Backend Customization**: Users can now override the backend image through configuration values, allowing for greater flexibility in deployment environments. This change empowers users to tailor their backend setup to better align with their specific infrastructure needs.
+
+### 📚 Documentation
+- **Plugin Access Manager Update**: The documentation for the plugin-access-manager has been updated to reflect the latest chart version. This ensures users have access to the most current setup and configuration information, simplifying the deployment process.
+
+### 🔧 Maintenance
+- **Version Release Management**: Routine updates have been made to maintain version consistency across components, including updates for 3.2.0-beta.1, 3.1.0-beta.2, 3.1.0, and 3.1.0-beta.1. These updates help keep the project on track with its release schedule.
+- **Configuration Alignment**: Regular updates to configuration settings have been implemented to ensure compatibility and stability across different environments, aligning with the latest release standards.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

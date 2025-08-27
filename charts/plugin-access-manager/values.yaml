@@ -320,6 +320,7 @@ auth:
     replicaCount: 1
     revisionHistoryLimit: 10
     name: "plugin-access-manager-auth-backend"
+    image: ""
     autoscaling:
       # -- Enable or disable horizontal pod autoscaling
       enabled: true
@@ -330,6 +331,8 @@ auth:
       # -- Target CPU utilization percentage for autoscaling
       targetCPUUtilizationPercentage: 80
       targetMemoryUtilizationPercentage: 80
+    migrations:
+      image: ""
 
 auth-database:
   # Database dependency for identity and access management.

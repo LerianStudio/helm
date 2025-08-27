@@ -1,3 +1,16 @@
+## [midaz-3.2.0] - 2025-08-27
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.2.0-beta.1...midaz-v3.2.0)
+Contributors: lerian-studio
+
+### ✨ Features
+- **Enhanced Authentication Security**: The authentication module has been upgraded to provide a more secure and reliable user login experience. This improvement helps protect user data and enhances overall system security.
+- **Flexible Configuration Options**: New enhancements in the configuration component allow for more customizable setups. Users can now tailor their configurations more easily, resulting in a more streamlined and efficient setup process.
+
+### 🔧 Maintenance
+- **System Stability Enhancements**: Released version 3.1.1-beta.1 includes minor updates and optimizations aimed at maintaining system stability and performance. While these changes are not directly visible to users, they contribute to the overall health and efficiency of the system.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

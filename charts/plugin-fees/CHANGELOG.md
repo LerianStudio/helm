@@ -1,3 +1,29 @@
+## [plugin-fees-2.1.0-beta.1] - 2025-08-28
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.0.2...plugin-fees-v2.1.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, gauchito91, lerian-studio
+
+### ⚠️ Breaking Changes
+- **System Architecture Overhaul**: This update introduces major changes to the system's architecture, affecting components like auth, backend, and frontend. Users must update deployment scripts and configurations to align with the new structure. Please consult the migration guide for detailed steps.
+
+### ✨ Features
+- **Enhanced Build & Frontend Management**: A new version collector has been added to streamline the build process and improve frontend version management, ensuring users receive the latest updates efficiently.
+
+### 🐛 Bug Fixes
+- **Frontend Navigation**: Fixed issues that previously prevented access to account settings, restoring full functionality and enhancing the user interface experience.
+
+### 🔄 Changes
+- **Authentication Enhancements**: Updated to a new authentication version, offering improved security and compatibility with modern protocols, enhancing integration with third-party identity providers.
+- **Configuration Updates**: Improved OpenTelemetry (OTEL) environment variables for better observability and performance tracking.
+
+### 📚 Documentation
+- **Updated Guides**: Documentation has been revised to reflect changes in chart and app versions, providing users with accurate and up-to-date installation and configuration information.
+
+### 🔧 Maintenance
+- **Backend & Build Flexibility**: Enabled overriding of backend images via values, allowing for greater customization in deployment environments.
+- **Chart.yaml Routine Updates**: Regular updates ensure alignment with the latest deployment standards, maintaining system integrity and compatibility.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

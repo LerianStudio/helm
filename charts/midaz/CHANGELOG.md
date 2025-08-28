@@ -1,3 +1,19 @@
+## [midaz-3.2.1-beta.1] - 2025-08-28
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.2.0...midaz-v3.2.1-beta.1)
+Contributors: gauchito91, lerian-studio
+
+### ✨ Features
+- **Version Collector in Build/Frontend**: A new version collector feature has been added, streamlining the build process and enhancing the frontend's ability to display version information. This provides users with clearer insights into the software version they are using, making version management more intuitive.
+
+### 🔧 Maintenance
+- **Release Management Updates**: Routine updates to versions 3.2.1-beta.1 and 3.1.1 have been completed, including minor tweaks and optimizations to maintain system stability and compatibility with the latest standards.
+- **Codebase Optimization**: Across 11 files, code refactoring and optimization have been performed, enhancing code quality and maintainability without altering existing functionalities.
+
+### 🔄 Improvements
+- **Authentication and Configuration Enhancements**: Upgraded to version 1.1.0, the authentication and configuration components now offer improved security protocols and greater flexibility. These updates ensure a more secure and adaptable user experience, allowing for easier configuration adjustments.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

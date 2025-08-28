@@ -1,3 +1,28 @@
+## [plugin-crm-2.1.0-beta.1] - 2025-08-28
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v2.0.2...plugin-crm-v2.1.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, gauchito91, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication & Configuration Overhaul**: This release includes major updates to authentication and configuration components, which may impact existing integrations. Users must update their systems to maintain compatibility. Please refer to the [migration guide](#) for detailed steps and examples.
+
+### ✨ Features
+- **Enhanced Build & Frontend Version Tracking**: A new version collector has been introduced, improving the build process and providing comprehensive version tracking for frontend components. This enhancement simplifies deployment and ensures consistent version management, boosting system reliability.
+
+### ⚡ Performance
+- **Improved Observability with OpenTelemetry**: Updates to OpenTelemetry environment variables enhance real-time monitoring and issue diagnosis capabilities, allowing users to track system performance more effectively.
+
+### 🔄 Changes
+- **Standardized OTel Collector Path**: The refactoring of the OTel collector path name simplifies configuration management, reducing setup complexity and minimizing potential errors.
+
+### 📚 Documentation
+- **Updated Setup and Configuration Guides**: Documentation has been revised to reflect the latest chart and application versions, ensuring users have access to accurate and current information for setup and configuration.
+
+### 🔧 Maintenance
+- **Dependency and Security Updates**: Routine version releases and updates across various components, including auth, config, and build, ensure the system remains secure and up-to-date with the latest dependencies.
+- **Backend Flexibility**: Added functionality to override backend images via values, offering more flexibility in deployment configurations and facilitating custom setups for different environments.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

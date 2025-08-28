@@ -808,7 +808,7 @@ otel-collector-lerian:
       headers:
         x-api-key: "${OTEL_API_KEY}"
 
-    prometheus/local: # Expose metrics for Client Prometheus
+    prometheus/local: # Expose metrics for your Client Prometheus
       endpoint: 0.0.0.0:8889
 
 nginx:

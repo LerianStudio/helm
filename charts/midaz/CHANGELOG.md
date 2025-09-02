@@ -1,3 +1,16 @@
+## [midaz-3.2.1] - 2025-09-02
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.2.1-beta.1...midaz-v3.2.1)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **System Stability and Performance**: This release includes minor code adjustments and optimizations aimed at maintaining system stability and ensuring consistent performance. These changes help keep the platform reliable and ready for future enhancements.
+- **Version Management Updates**: Routine updates have been made to align with the latest development standards, ensuring the system remains current with minimal disruption. This proactive maintenance supports ongoing reliability and user satisfaction.
+
+### ✨ Improvements
+- **Authentication & Configuration Enhancements**: We've introduced updates to the authentication and configuration components, making it easier to integrate and configure your systems. This enhancement ensures a more robust and flexible setup, allowing for smoother operations and better adaptability to various environments.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

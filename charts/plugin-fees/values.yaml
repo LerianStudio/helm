@@ -317,3 +317,6 @@ mongodb:
     size: 8Gi
 
   resourcesPreset: "medium"
+
+otel-collector-lerian:
+  enabled: false

@@ -16,7 +16,7 @@ maintainers:
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 
-version: 1.1.0
+version: 1.1.1-beta.1
 
 # This is the version number of the application being deployed.
 appVersion: "0.1.0"
@@ -37,5 +37,5 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # https://docs.lerian.studio/docs/midaz-components
 dependencies:
   - name: opentelemetry-collector
-    version: 0.129.0
+    version: 0.131.0
     repository: "https://open-telemetry.github.io/opentelemetry-helm-charts"

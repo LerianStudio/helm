@@ -36,6 +36,15 @@ spec:
               name: {{ if .Values.crm.useExistingSecret }}{{ .Values.crm.existingSecretName }}{{ else }}{{ include "plugin-crm.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-crm.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}              
           resources:
             {{- toYaml .Values.crm.resources | nindent 12 }}
           readinessProbe:

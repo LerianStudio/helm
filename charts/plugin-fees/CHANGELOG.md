@@ -1,3 +1,17 @@
+## [plugin-fees-2.1.1-beta.1] - 2025-09-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.1.0...plugin-fees-v2.1.1-beta.1)
+Contributors: gauchito91, lerian-studio
+
+### ⚡ Performance
+- **Enhanced Query Performance**: Enjoy faster response times thanks to optimizations in query handling. This update provides a smoother and more efficient user experience, especially for high-demand operations.
+- **Improved Tracing and Metrics**: Gain better insights into system operations with refined tracing capabilities and adjusted span metrics. These changes enhance monitoring accuracy, allowing for more precise system diagnostics and performance analysis.
+
+### 🔧 Maintenance
+- **Version Updates for Release Readiness**: Updated several components to beta versions (2.1.1-beta.1, 3.1.3-beta.1, 1.1.2-beta.1, 3.2.2-beta.1) as part of our ongoing commitment to align with the latest development cycles. These updates ensure the software is prepared for future testing and deployment phases.
+- **Code Quality Enhancements**: Undertook general maintenance and optimization efforts to improve the overall codebase quality. These behind-the-scenes improvements contribute to a more stable and maintainable software environment, indirectly benefiting all users.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

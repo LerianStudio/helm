@@ -1,3 +1,16 @@
+## [plugin-access-manager-3.1.3-beta.1] - 2025-09-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.1.2...plugin-access-manager-v3.1.3-beta.1)
+Contributors: gauchito91, lerian-studio
+
+### 🔧 Maintenance
+- **Beta Releases Preparation**: Several beta versions (3.1.3-beta.1, 1.1.2-beta.1, 3.2.2-beta.1) have been prepared to ensure system stability and readiness for future feature rollouts. These efforts contribute to a robust and future-proof software environment.
+- **Performance Optimization in Midaz**: Backend queries and traces have been optimized, and span metrics adjusted to enhance system performance. Users can expect faster processing times and improved resource utilization, leading to a more responsive application experience.
+
+### ✨ Improvements
+- **Authentication & Configuration Enhancements**: The authentication and configuration components have been optimized in version 2.1.0. These improvements streamline user authentication and enhance configuration management, resulting in a more efficient and reliable user experience.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

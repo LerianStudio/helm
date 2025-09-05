@@ -1,3 +1,18 @@
+## [midaz-3.2.2-beta.1] - 2025-09-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.2.1...midaz-v3.2.2-beta.1)
+Contributors: gauchito91, lerian-studio
+
+### ⚡ Performance
+- **Optimized Query Performance**: We've implemented query optimizations and enhanced tracing capabilities, which improve system performance by reducing latency. Users will experience faster load times and more efficient data processing, leading to a smoother and more responsive application experience.
+
+### 🔧 Maintenance
+- **Version Releases**: We've conducted multiple version releases (3.2.2-beta.1, 3.1.2, 1.1.1) to ensure the system remains up-to-date with the latest improvements and fixes. These updates focus on maintaining system stability and enhancing application reliability.
+
+### ✨ Improvements
+- **Authentication & Configuration Enhancements**: We've upgraded the authentication and configuration components to version 2.1.0. This update enhances security and flexibility, providing a more robust user authentication experience and streamlined configuration management. Users will find the system more reliable and easier to configure.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

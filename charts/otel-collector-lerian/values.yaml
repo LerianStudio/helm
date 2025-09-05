@@ -52,10 +52,10 @@ clusterRole:
 # Basic resource limits for stability.
 resources:
   limits:
-    cpu: 300m
+    cpu: 650m
     memory: 512Mi
   requests:
-    cpu: 150m
+    cpu: 250m
     memory: 256Mi
 
 # The API key for authenticating with the central collector.
@@ -67,7 +67,7 @@ extraEnvs:
         name: otel-api-key
         key: api-key
   # K8S_NODE_NAME is used by the kubeletstats receiver to find the local kubelet.
-  - name: KUBE_NODE_NAME
+  - name: K8S_NODE_NAME
     valueFrom:
       fieldRef:
         fieldPath: spec.nodeName
@@ -93,7 +93,7 @@ config:
     kubeletstats:
       collection_interval: 10s
       auth_type: "serviceAccount"
-      endpoint: "${env:KUBE_NODE_NAME}:10250"
+      endpoint: "${env:K8S_NODE_NAME}:10250"
       insecure_skip_verify: true
       k8s_api_config:
         auth_type: serviceAccount
@@ -122,13 +122,6 @@ config:
             # Step 4: Clean up the temporary attribute.
             - delete_key(attributes, "temp.request_id") where attributes["temp.request_id"] != nil
 
-    # Copies the resource-level client.id to each span so spanmetrics can see it.
-    transform/copy_client_id_to_spans:
-      trace_statements:
-        - context: span
-          statements:
-            - set(attributes["client.id"], resource.attributes["client.id"]) where resource.attributes["client.id"] != nil
-
     # Deletes the entire log body to prevent sensitive data leakage.
     transform/remove_log_body:
       log_statements:
@@ -142,13 +135,19 @@ config:
     #  decision_wait: 10s # How long to wait for all spans in a trace.
     #  num_traces: 10000 # Max number of traces to keep in memory.
     #  policies:
-    #    # Temporarily allow all traces for debugging spanmetrics.
-    #    # Policy 1: Keep all traces from the client 'Firmino'.
-    #    - name: keep_firmino_traces_policy
-    #      type: string_attribute
-    #      string_attribute:
-    #        key: client.id
-    #        values: ["Firmino"]
+        # Temporarily allow all traces for debugging spanmetrics.
+        # Policy 1: Keep all traces from the client 'Firmino'.
+        #- name: keep_firmino_traces_policy
+        #  type: string_attribute
+        #  string_attribute:
+        #    key: client.id
+        #    values: ["Firmino"]
+
+        # Policy 2: Keep all traces with errors.
+        #- name: errors_policy
+        #  type: status_code
+        #  status_code:
+        #    status_codes: [ERROR] 
 
         # Policy 2: Keep all traces with server errors (HTTP status 5xx).
         #- name: http_server_errors_policy
@@ -185,16 +184,11 @@ config:
     k8sattributes:
       auth_type: "serviceAccount"
       passthrough: false
-      pod_association:
-        - sources:
-            - from: resource_attribute
-              name: net.host.ip
       extract:
         metadata:
           - k8s.pod.name
           - k8s.deployment.name
           - k8s.namespace.name
-          - k8s.node.name
 
     # Adds the client ID for multi-tenancy, as requested.
     resource/add_client_id:
@@ -217,11 +211,9 @@ config:
         - name: k8s.container.name
         - name: k8s.container.ready
         - name: k8s.container.uptime
-        - name: http.host
         - name: http.method
         - name: http.route
         - name: http.status_code
-        - name: http.url
 
   exporters:
     nop: null
@@ -252,7 +244,7 @@ config:
         # 4. Sample traces, keeping only those with 5xx errors.
         # 5. Batch the final set of traces for efficient export.      
         receivers: [otlp]
-        processors: [memory_limiter, batch, k8sattributes, resource/add_client_id, transform/copy_client_id_to_spans, transform/remove_sensitive_attributes]
+        processors: [memory_limiter, batch, k8sattributes, resource/add_client_id, transform/remove_sensitive_attributes]
         exporters: [spanmetrics, otlphttp/server, debug]
       
       # Pipeline for span-derived metrics, exposed locally to Prometheus.

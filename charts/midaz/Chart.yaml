@@ -56,6 +56,6 @@ dependencies:
     repository: "https://charts.bitnami.com/bitnami"
     condition: nginx.enabled
   - name: otel-collector-lerian
-    version: 1.1.2-beta.1
+    version: 1.1.2-beta.2
     repository: "oci://registry-1.docker.io/lerianstudio"
     condition: otel-collector-lerian.enabled

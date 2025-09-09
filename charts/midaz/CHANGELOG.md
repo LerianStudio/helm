@@ -1,3 +1,15 @@
+## [midaz-3.2.2-beta.3] - 2025-09-09
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.2.2-beta.2...midaz-v3.2.2-beta.3)
+Contributors: gauchito91, lerian-studio
+
+### ✨ Features
+- **Configuration Management**: A new parameter indentation feature has been added, making configuration files more organized and easier to read. This enhancement is particularly useful for users managing complex deployments, as it helps maintain clarity and reduces the likelihood of errors.
+
+### 🔧 Maintenance
+- **Release Management**: Updated the version collector and released new beta versions (3.2.2-beta.3 and 1.1.2-beta.2). These updates provide users with access to the latest features and improvements in a structured manner, ensuring easier transitions between versions.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

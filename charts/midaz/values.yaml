@@ -340,6 +340,8 @@ onboarding:
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/onboarding/configmap.yaml
   configmap:
+    # -- Otel default configuration
+    ENABLE_TELEMETRY: "true"  
     # -- Rabbitmq default configuration
     RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"
@@ -537,7 +539,9 @@ transaction:
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/transaction/configmap.yaml
-  configmap: 
+  configmap:
+    # -- Otel default configuration
+    ENABLE_TELEMETRY: "true"  
     # -- Rabbitmq default configuration
     RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"
@@ -782,18 +786,18 @@ rabbitmq:
 
   resourcesPreset: "medium"
 
-  persistence:
-    size: 8Gi
-
 otel-collector-lerian:
-  enabled: false
+  enabled: true
 
-  # Adds the client ID for multi-tenancy, as requested.
-  resource/add_client_id:
-    attributes:
-      - key: client.id
-        value: "Lerian"
-        action: upsert
+  opentelemetry-collector:
+    config:
+      processors:
+        # Adds the client ID.
+        resource/add_client_id:
+          attributes:
+            - key: client.id
+              value: "Lerian" # Add your company name here
+              action: upsert
 
   extraEnvs:
   - name: OTEL_API_KEY
@@ -807,9 +811,6 @@ otel-collector-lerian:
       endpoint: "https://telemetry.lerian.io:443" # Send traces to Lerian Telemetry
       headers:
         x-api-key: "${OTEL_API_KEY}"
-
-    prometheus/local: # Expose metrics for your Client Prometheus
-      endpoint: 0.0.0.0:8889
 
 nginx:
   enabled: false

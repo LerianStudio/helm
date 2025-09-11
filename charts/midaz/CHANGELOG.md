@@ -1,3 +1,16 @@
+## [midaz-3.2.2-beta.4] - 2025-09-11
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.2.2-beta.3...midaz-v3.2.2-beta.4)
+Contributors: gauchito91, lerian-studio
+
+### ✨ Features
+- **Telemetry Configuration Enhancement**: The default telemetry collector is now enabled in the Midaz component. This improvement allows for better performance monitoring and operational insights, helping users proactively address potential issues and optimize system performance.
+
+### 🔧 Maintenance
+- **Release Management Update**: The project has been updated to version 3.2.2-beta.4, incorporating foundational changes that prepare for upcoming features and ensure smoother future updates.
+- **Codebase Refinement**: Minor adjustments were made to the codebase, with a net change of +16 additions and -15 deletions across two files. These refinements contribute to maintaining code quality and system efficiency.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

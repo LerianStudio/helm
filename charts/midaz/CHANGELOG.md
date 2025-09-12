@@ -1,3 +1,12 @@
+## [midaz-3.2.2] - 2025-09-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.2.2-beta.4...midaz-v3.2.2)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Version Update**: The project version has been updated to 3.2.2. This is a routine update to ensure that the version metadata accurately reflects the latest release. Users can continue to enjoy the same functionality and stability without any changes to the software's behavior.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

@@ -4,269 +4,262 @@
 # - Processors: k8sattributes, transform/uuid, resource/client_id
 # - Exporters: OTLP/HTTP
 
-mode: daemonset # Changed from deployment to daemonset for kubeletstats
+opentelemetry-collector:
+  mode: daemonset # Changed from deployment to daemonset for kubeletstats
 
-# Contrib image is needed for k8scluster, k8sattributes, transform, and loki exporter.
-image:
-  repository: otel/opentelemetry-collector-contrib
-  tag: 0.131.0
+  # Contrib image is needed for k8scluster, k8sattributes, transform, and loki exporter.
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: 0.131.0
 
-# RBAC is required for k8sattributes, k8scluster, and kubeletstats receivers.
-clusterRole:
-  create: true
-  rules:
-    - apiGroups: [""]
-      resources:
-        - "events"
-        - "namespaces"
-        - "nodes"
-        - "pods"
-        - "replicationcontrollers"
-        - "services"
-        - "resourcequotas"
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["apps"]
-      resources:
-        - "daemonsets"
-        - "deployments"
-        - "replicasets"
-        - "statefulsets"
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["batch"]
-      resources:
-        - "jobs"
-        - "cronjobs"
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["autoscaling"]
-      resources:
-        - "horizontalpodautoscalers"
-      verbs: ["get", "list", "watch"]
-    # Added for kubeletstats receiver
-    - apiGroups: [""]
-      resources:
-        - "nodes/proxy"
-        - "nodes/stats"
-        - "nodes/metrics"
-      verbs: ["get", "list", "watch"]
+  # RBAC is required for k8sattributes, k8scluster, and kubeletstats receivers.
+  clusterRole:
+    create: true
+    rules:
+      - apiGroups: [""]
+        resources:
+          - "events"
+          - "namespaces"
+          - "nodes"
+          - "pods"
+          - "replicationcontrollers"
+          - "services"
+          - "resourcequotas"
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["apps"]
+        resources:
+          - "daemonsets"
+          - "deployments"
+          - "replicasets"
+          - "statefulsets"
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["batch"]
+        resources:
+          - "jobs"
+          - "cronjobs"
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["autoscaling"]
+        resources:
+          - "horizontalpodautoscalers"
+        verbs: ["get", "list", "watch"]
+      # Added for kubeletstats receiver
+      - apiGroups: [""]
+        resources:
+          - "nodes/proxy"
+          - "nodes/stats"
+          - "nodes/metrics"
+        verbs: ["get", "list", "watch"]
 
-# Basic resource limits for stability.
-resources:
-  limits:
-    cpu: 300m
-    memory: 512Mi
-  requests:
-    cpu: 150m
-    memory: 256Mi
+  # Basic resource limits for stability.
+  resources:
+    limits:
+      cpu: 650m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
 
-# The API key for authenticating with the central collector.
-# The 'extraEnvs' key is the correct way to define environment variables for the pod.
-extraEnvs:
-  - name: OTEL_API_KEY
-    valueFrom:
-      secretKeyRef:
-        name: otel-api-key
-        key: api-key
-  # K8S_NODE_NAME is used by the kubeletstats receiver to find the local kubelet.
-  - name: KUBE_NODE_NAME
-    valueFrom:
-      fieldRef:
-        fieldPath: spec.nodeName
+  # The API key for authenticating with the central collector.
+  # The 'extraEnvs' key is the correct way to define environment variables for the pod.
+  extraEnvs:
+    - name: OTEL_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: otel-api-key
+          key: api-key
+    # K8S_NODE_NAME is used by the kubeletstats receiver to find the local kubelet.
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
 
-config:
-  receivers:
-    # Receives traces, logs, and metrics from instrumented applications.
-    otlp:
-      protocols:
-        grpc:
-          endpoint: "0.0.0.0:4317"
-        http:
-          endpoint: "0.0.0.0:4318"
+  config:
+    receivers:
+      # Receives traces, logs, and metrics from instrumented applications.
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
 
-    # Collects cluster-level state information, like pod status.
-    k8s_cluster:
-      collection_interval: 60s
-      metrics:
-        k8s.pod.status_reason:
-          enabled: true
+      # Collects cluster-level state information, like pod status.
+      k8s_cluster:
+        collection_interval: 60s
+        metrics:
+          k8s.pod.status_reason:
+            enabled: true
 
-    # Collects pod/container performance metrics (CPU, memory) from the node's Kubelet.
-    kubeletstats:
-      collection_interval: 10s
-      auth_type: "serviceAccount"
-      endpoint: "${env:KUBE_NODE_NAME}:10250"
-      insecure_skip_verify: true
-      k8s_api_config:
-        auth_type: serviceAccount
-      metric_groups:
-        - "pod"
-        - "container"
+      # Collects pod/container performance metrics (CPU, memory) from the node's Kubelet.
+      kubeletstats:
+        collection_interval: 10s
+        auth_type: "serviceAccount"
+        endpoint: "${env:K8S_NODE_NAME}:10250"
+        insecure_skip_verify: true
+        k8s_api_config:
+          auth_type: serviceAccount
+        metric_groups:
+          - "pod"
+          - "container"
 
-  processors:
-    batch: {}
-    memory_limiter:
-      check_interval: 1s
-      limit_percentage: 75
-      spike_limit_percentage: 15
+    processors:
+      batch: {}
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
 
-    # This processor uses OTTL to explicitly delete sensitive attributes from spans.
-    transform/remove_sensitive_attributes:
-      trace_statements:
-        - context: span
-          statements:
-            # Step 1: Save the request_id to a temporary attribute if it exists.
-            - set(attributes["temp.request_id"], attributes["app.request.request_id"]) where attributes["app.request.request_id"] != nil
-            # Step 2: Delete all attributes matching the broad 'app.request.*' pattern.
-            - delete_matching_keys(attributes, "^app\\.request\\..*")
-            # Step 3: Restore the request_id from the temporary attribute.
-            - set(attributes["app.request.request_id"], attributes["temp.request_id"]) where attributes["temp.request_id"] != nil
-            # Step 4: Clean up the temporary attribute.
-            - delete_key(attributes, "temp.request_id") where attributes["temp.request_id"] != nil
+      # This processor uses OTTL to explicitly delete sensitive attributes from spans.
+      transform/remove_sensitive_attributes:
+        trace_statements:
+          - context: span
+            statements:
+              # Step 1: Save the request_id to a temporary attribute if it exists.
+              - set(attributes["temp.request_id"], attributes["app.request.request_id"]) where attributes["app.request.request_id"] != nil
+              # Step 2: Delete all attributes matching the broad 'app.request.*' pattern.
+              - delete_matching_keys(attributes, "^app\\.request\\..*")
+              # Step 3: Restore the request_id from the temporary attribute.
+              - set(attributes["app.request.request_id"], attributes["temp.request_id"]) where attributes["temp.request_id"] != nil
+              # Step 4: Clean up the temporary attribute.
+              - delete_key(attributes, "temp.request_id") where attributes["temp.request_id"] != nil
 
-    # Copies the resource-level client.id to each span so spanmetrics can see it.
-    transform/copy_client_id_to_spans:
-      trace_statements:
-        - context: span
-          statements:
-            - set(attributes["client.id"], resource.attributes["client.id"]) where resource.attributes["client.id"] != nil
+      # Deletes the entire log body to prevent sensitive data leakage.
+      transform/remove_log_body:
+        log_statements:
+          - context: log
+            statements:
+              - set(body, "")
 
-    # Deletes the entire log body to prevent sensitive data leakage.
-    transform/remove_log_body:
-      log_statements:
-        - context: log
-          statements:
-            - set(body, "")
+      # This processor performs tail-based sampling. It buffers all spans for a trace
+      # and makes a sampling decision only after the trace is complete.
+      #tail_sampling:
+      #  decision_wait: 10s # How long to wait for all spans in a trace.
+      #  num_traces: 10000 # Max number of traces to keep in memory.
+      #  policies:
+          # Temporarily allow all traces for debugging spanmetrics.
+          # Policy 1: Keep all traces from the client 'Firmino'.
+          #- name: keep_firmino_traces_policy
+          #  type: string_attribute
+          #  string_attribute:
+          #    key: client.id
+          #    values: ["Firmino"]
 
-    # This processor performs tail-based sampling. It buffers all spans for a trace
-    # and makes a sampling decision only after the trace is complete.
-    #tail_sampling:
-    #  decision_wait: 10s # How long to wait for all spans in a trace.
-    #  num_traces: 10000 # Max number of traces to keep in memory.
-    #  policies:
-    #    # Temporarily allow all traces for debugging spanmetrics.
-    #    # Policy 1: Keep all traces from the client 'Firmino'.
-    #    - name: keep_firmino_traces_policy
-    #      type: string_attribute
-    #      string_attribute:
-    #        key: client.id
-    #        values: ["Firmino"]
+          # Policy 2: Keep all traces with errors.
+          #- name: errors_policy
+          #  type: status_code
+          #  status_code:
+          #    status_codes: [ERROR] 
 
-        # Policy 2: Keep all traces with server errors (HTTP status 5xx).
-        #- name: http_server_errors_policy
-        #  type: numeric_attribute
-        #  numeric_attribute:
-        #    key: http.status_code
-        #    min_value: 400
-        #    max_value: 599
+          # Policy 2: Keep all traces with server errors (HTTP status 5xx).
+          #- name: http_server_errors_policy
+          #  type: numeric_attribute
+          #  numeric_attribute:
+          #    key: http.status_code
+          #    min_value: 400
+          #    max_value: 599
 
-        # Policy 3: Drop all other traces.
-        #- name: drop_all_other_traces_policy
-        #  type: rate_limiting
-        #  rate_limiting:
-        #    spans_per_second: 0
+          # Policy 3: Drop all other traces.
+          #- name: drop_all_other_traces_policy
+          #  type: rate_limiting
+          #  rate_limiting:
+          #    spans_per_second: 0
 
-    # Drops all node-level metrics using a regex filter.
-    filter/drop_node_metrics:
-      metrics:
-        exclude:
-          match_type: regexp
-          metric_names:
-            - ^k8s\.node\..*$
+      # Drops all node-level metrics using a regex filter.
+      filter/drop_node_metrics:
+        metrics:
+          exclude:
+            match_type: regexp
+            metric_names:
+              - ^k8s\.node\..*$
 
-    # Filters metrics to include the 'midaz' and 'midaz-plugins' namespaces.
-    filter/include_midaz_namespaces:
-      metrics:
-        include:
-          match_type: regexp
-          resource_attributes:
-            - key: k8s.namespace.name
-              value: '^(midaz|midaz-plugins)$'
+      # Filters metrics to include the 'midaz' and 'midaz-plugins' namespaces.
+      filter/include_midaz_namespaces:
+        metrics:
+          include:
+            match_type: regexp
+            resource_attributes:
+              - key: k8s.namespace.name
+                value: '^(midaz|midaz-plugins)$'
 
-    # Enriches all telemetry with Kubernetes metadata (pod name, namespace, etc.).
-    k8sattributes:
-      auth_type: "serviceAccount"
-      passthrough: false
-      pod_association:
-        - sources:
-            - from: resource_attribute
-              name: net.host.ip
-      extract:
-        metadata:
-          - k8s.pod.name
-          - k8s.deployment.name
-          - k8s.namespace.name
-          - k8s.node.name
+      # Enriches all telemetry with Kubernetes metadata (pod name, namespace, etc.).
+      k8sattributes:
+        auth_type: "serviceAccount"
+        passthrough: false
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.deployment.name
+            - k8s.namespace.name
 
-    # Adds the client ID for multi-tenancy, as requested.
-    resource/add_client_id:
-      attributes:
-        - key: client.id
-          value: "Firmino"
-          action: upsert
+      # Adds the client ID for multi-tenancy, as requested.
+      resource/add_client_id:
+        attributes:
+          - key: client.id
+            value: "Firmino"
+            action: upsert
 
-  connectors:
-    spanmetrics:
-      histogram:
-        explicit:
-          buckets: [10ms, 50ms, 100ms, 200ms, 500ms, 1s, 5s, 10s]
-      namespace: ""
-      aggregation_temporality: CUMULATIVE
-      dimensions:
-        - name: k8s.namespace.name
-        - name: k8s.deployment.name
-        - name: k8s.pod.name
-        - name: k8s.container.name
-        - name: k8s.container.ready
-        - name: k8s.container.uptime
-        - name: http.host
-        - name: http.method
-        - name: http.route
-        - name: http.status_code
-        - name: http.url
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [10ms, 50ms, 100ms, 200ms, 500ms, 1s, 5s, 10s]
+        namespace: ""
+        aggregation_temporality: CUMULATIVE
+        dimensions:
+          - name: k8s.namespace.name
+          - name: k8s.deployment.name
+          - name: k8s.pod.name
+          - name: k8s.container.name
+          - name: k8s.container.ready
+          - name: k8s.container.uptime
+          - name: http.method
+          - name: http.route
+          - name: http.status_code
 
-  exporters:
-    nop: null
-    otlphttp/server:
-      endpoint: "https://telemetry.lerian.io:443"
-      headers:
-        x-api-key: "${OTEL_API_KEY}"
-    prometheus/local:
-      endpoint: 0.0.0.0:8889
-    debug:
-      verbosity: detailed
+    exporters:
+      nop: null
+      otlphttp/server:
+        endpoint: "https://telemetry.lerian.io:443"
+        headers:
+          x-api-key: "${OTEL_API_KEY}"
+      prometheus/local:
+        endpoint: 0.0.0.0:8889
+      debug:
+        verbosity: detailed
 
-  service:
-    extensions:
-      - health_check
-    telemetry:
-      logs:
-        level: "info"
-      metrics:
-        address: "0.0.0.0:8887"
-        level: "Basic"
-    pipelines:
-      traces:
-        # The order of processors is critical for correct data handling:
-        # 1. Enrich with K8s metadata.
-        # 2. Add the client ID for multi-tenancy.
-        # 3. Sanitize by removing sensitive payloads.
-        # 4. Sample traces, keeping only those with 5xx errors.
-        # 5. Batch the final set of traces for efficient export.      
-        receivers: [otlp]
-        processors: [memory_limiter, batch, k8sattributes, resource/add_client_id, transform/copy_client_id_to_spans, transform/remove_sensitive_attributes]
-        exporters: [spanmetrics, otlphttp/server, debug]
-      
-      # Pipeline for span-derived metrics, exposed locally to Prometheus.
-      metrics/spanmetrics:
-        receivers: [spanmetrics]
-        processors: [memory_limiter, batch, k8sattributes, resource/add_client_id]
-        exporters: [otlphttp/server, prometheus/local]
+    service:
+      extensions:
+        - health_check
+      telemetry:
+        logs:
+          level: "info"
+        metrics:
+          address: "0.0.0.0:8887"
+          level: "Basic"
+      pipelines:
+        traces:
+          # The order of processors is critical for correct data handling:
+          # 1. Enrich with K8s metadata.
+          # 2. Add the client ID for multi-tenancy.
+          # 3. Sanitize by removing sensitive payloads.
+          # 4. Sample traces, keeping only those with 5xx errors.
+          # 5. Batch the final set of traces for efficient export.      
+          receivers: [otlp]
+          processors: [memory_limiter, batch, k8sattributes, resource/add_client_id, transform/remove_sensitive_attributes]
+          exporters: [spanmetrics, otlphttp/server, debug]
 
-      # Pipeline for cluster and application metrics, sent to the central backend.
-      metrics/cluster:
-        receivers: [otlp, k8s_cluster, kubeletstats]
-        processors: [memory_limiter, batch, resource/add_client_id, k8sattributes, filter/include_midaz_namespaces, filter/drop_node_metrics]
-        exporters: [otlphttp/server, debug]
-      logs:
-        receivers: [otlp]
-        processors: [memory_limiter, k8sattributes, resource/add_client_id, transform/remove_log_body, batch]
-        exporters: [otlphttp/server, debug]
+        # Pipeline for span-derived metrics, exposed locally to Prometheus.
+        metrics/spanmetrics:
+          receivers: [spanmetrics]
+          processors: [memory_limiter, batch, k8sattributes, resource/add_client_id]
+          exporters: [otlphttp/server, prometheus/local]
+
+        # Pipeline for cluster and application metrics, sent to the central backend.
+        metrics/cluster:
+          receivers: [otlp, k8s_cluster, kubeletstats]
+          processors: [memory_limiter, batch, resource/add_client_id, k8sattributes, filter/include_midaz_namespaces, filter/drop_node_metrics]
+          exporters: [otlphttp/server, debug]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, resource/add_client_id, transform/remove_log_body, batch]
+          exporters: [otlphttp/server, debug]

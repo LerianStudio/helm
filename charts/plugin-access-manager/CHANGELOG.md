@@ -1,3 +1,20 @@
+## [plugin-access-manager-3.1.3] - 2025-09-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.1.3-beta.1...plugin-access-manager-v3.1.3)
+Contributors: gauchito91, lerian-studio
+
+### ✨ Features
+- **Configuration Management**: Introduced parameter indentation support, making configuration files more readable and organized. This change helps users maintain cleaner files, reducing errors and improving manageability.
+
+### 🔄 Changes
+- **Data Collection**: The collector is now enabled by default, simplifying the setup process and ensuring consistent data monitoring without additional configuration. This change guarantees that users have reliable data collection out of the box.
+- **Version Management**: Updated the version collector to enhance accuracy and reduce errors, ensuring that version tracking across releases is more reliable and streamlined.
+
+### 🔧 Maintenance
+- **Release Management**: Documented multiple version releases, including stable (3.1.3, 1.1.2, 3.2.2) and beta versions, ensuring users have access to the latest features and fixes. This practice maintains the software's reliability and performance.
+- **Code Quality**: Minor updates and refinements were made to the codebase, contributing to overall stability and maintainability. These changes align the project with best practices and help reduce technical debt over time.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

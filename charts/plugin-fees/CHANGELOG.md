@@ -1,3 +1,20 @@
+## [plugin-fees-2.1.1] - 2025-09-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.1.1-beta.1...plugin-fees-v2.1.1)
+Contributors: gauchito91, lerian-studio
+
+### ✨ Features
+- **Configuration Indentation**: Configuration files now support parameter indentation, making them easier to read and maintain. This improvement helps users manage complex configurations more effectively, enhancing clarity and reducing errors.
+
+### 🔄 Changes
+- **Collector Configuration**: The default settings now enable the collector by default, simplifying initial setup and ensuring data collection is active without requiring manual intervention.
+- **Version Management**: Enhanced versioning consistency across components, ensuring alignment with release standards. This provides users with clear insights into software progression and stability.
+
+### 🔧 Maintenance
+- **Release Management**: Updated release processes to ensure users have access to the latest stable and beta versions, improving overall software reliability.
+- **Code Quality Enhancements**: Improved internal version tracking mechanisms, boosting the accuracy and reliability of version management.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

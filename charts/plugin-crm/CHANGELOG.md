@@ -1,3 +1,20 @@
+## [plugin-crm-2.1.1] - 2025-09-12
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v2.1.1-beta.1...plugin-crm-v2.1.1)
+Contributors: gauchito91, lerian-studio
+
+### ✨ Features
+- **Configuration Management**: Enjoy improved readability and maintainability of your configuration files with the new parameter indentation support. This enhancement allows for better organization of complex setups, making it easier to manage and understand your configurations.
+
+### 🔄 Changes
+- **Collector Configuration**: The collector is now enabled by default, simplifying the initial setup for new users. This ensures that data collection is active immediately, enhancing the out-of-the-box experience and reducing the steps needed to get started.
+
+### 🔧 Maintenance
+- **Release Management**: We've updated multiple version branches (1.1.2, 2.1.1, 3.1.3, 3.2.2) to incorporate the latest improvements and bug fixes, ensuring stability across different release tracks.
+- **Versioning Consistency**: The version collector has been updated to maintain accurate version tracking, aiding in troubleshooting and support by providing a clear history of changes.
+- **Midaz Component**: Adjustments to version collector settings and default configurations have been made to enhance the reliability and predictability of the Midaz component, contributing to overall system stability.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

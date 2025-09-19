@@ -1,3 +1,16 @@
+## [midaz-3.3.0-beta.1] - 2025-09-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.2.2...midaz-v3.3.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Database Security**: Introduced SSL mode configurations for database connections. This update ensures encrypted communication, enhancing the security of data transactions and protecting sensitive information. Users handling confidential data will benefit from improved data integrity and confidentiality.
+
+### 🔧 Maintenance
+- **Version Upgrade to 3.3.0**: The application has been upgraded to version 3.3.0, incorporating various under-the-hood improvements. This prepares the system for future enhancements, ensuring a more robust and scalable application environment.
+- **Release Preparation for 3.3.0-beta.1**: Updates to configuration and database components were made to ensure readiness for the next phase of development and testing. This maintenance task helps maintain a smooth release cycle and minimizes potential disruptions.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

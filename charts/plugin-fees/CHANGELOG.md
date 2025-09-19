@@ -1,3 +1,16 @@
+## [plugin-fees-2.2.0-beta.1] - 2025-09-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.1.1...plugin-fees-v2.2.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **SSL Mode for Database Connections**: We've added SSL mode configurations to database connections, significantly boosting security by encrypting data transmission. This is especially beneficial for users focused on data protection and compliance with security standards.
+
+### 🔧 Maintenance
+- **Version Upgrades**: We've upgraded the application version to 3.3.0, incorporating various behind-the-scenes enhancements that lay the groundwork for future features and improvements. This ensures users benefit from the latest stability and performance optimizations.
+- **Release Process Optimization**: Streamlined multiple release versions (2.2.0-beta.1, 3.2.0-beta.1, 1.2.0-beta.1, 3.3.0-beta.1) to enhance our deployment pipeline's efficiency and reliability, minimizing potential downtime and improving overall workflow.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

@@ -1,3 +1,15 @@
+## [plugin-crm-2.2.0-beta.1] - 2025-09-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v2.1.1...plugin-crm-v2.2.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Secure Database Connections**: Added SSL mode configurations for database connections, ensuring encrypted data transmission. This upgrade enhances data security and privacy, crucial for users handling sensitive information.
+
+### 🔧 Maintenance
+- **System Health Updates**: Routine updates were applied to maintain system compatibility and performance. These include minor code adjustments and dependency alignments, ensuring the software remains robust and up-to-date with the latest standards.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

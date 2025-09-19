@@ -1,3 +1,21 @@
+## [plugin-access-manager-3.2.0-beta.1] - 2025-09-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.1.3...plugin-access-manager-v3.2.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Secure Database Connections**: The application now supports SSL mode configurations for database connections. This upgrade enhances security by encrypting data in transit, safeguarding sensitive information, and aligning with industry security standards.
+
+### 📚 Documentation
+- **Configuration Guides**: Updated documentation to include new SSL configuration options, helping users easily set up secure connections.
+
+### 🔧 Maintenance
+- **Version Updates**: Routine version updates and minor adjustments have been implemented to maintain system reliability and prepare for future enhancements. These changes ensure continued performance and compatibility across different environments.
+
+### ⚠️ Note
+- No breaking changes are included in this release. All updates are backward-compatible, requiring no immediate action from users.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

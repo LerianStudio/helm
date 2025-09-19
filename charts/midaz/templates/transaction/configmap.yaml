@@ -96,11 +96,13 @@ data:
   DB_PORT: {{ .Values.transaction.configmap.DB_PORT | default "5432" | quote }}
   DB_MAX_OPEN_CONNS: {{ .Values.transaction.configmap.DB_MAX_OPEN_CONNS | default "500" | quote }}
   DB_MAX_IDLE_CONNS: {{ .Values.transaction.configmap.DB_MAX_IDLE_CONNS | default "500" | quote }}
+  DB_SSLMODE: {{ .Values.transaction.configmap.DB_SSLMODE | default "disable" | quote }}
   #POSTGRESS REPLICATION
   DB_REPLICA_HOST: {{ .Values.transaction.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-replication.%s.svc.cluster.local." .Release.Namespace) | quote }}
   DB_REPLICA_USER: {{ .Values.transaction.configmap.DB_REPLICA_USER | default "midaz" | quote }}
   DB_REPLICA_NAME: {{ .Values.transaction.configmap.DB_REPLICA_NAME | default "transaction" | quote }}
   DB_REPLICA_PORT: {{ .Values.transaction.configmap.DB_REPLICA_PORT | default "5432" | quote }}
+  DB_REPLICA_SSLMODE: {{ .Values.transaction.configmap.DB_REPLICA_SSLMODE | default "disable" | quote }}
   # AUDIT
   AUDIT_LOG_ENABLED: {{ .Values.transaction.configmap.AUDIT_LOG_ENABLED | default "false" | quote }}
   #AUTH CONFIGS

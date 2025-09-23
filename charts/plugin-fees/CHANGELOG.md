@@ -1,3 +1,18 @@
+## [plugin-fees-2.2.0] - 2025-09-23
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.2.0-beta.1...plugin-fees-v2.2.0)
+Contributors: lerian-studio
+
+### ⚡ Performance
+- **Configuration Management & Database Interactions**: We've streamlined backend processes to boost system performance and reliability. Users will experience faster data processing and reduced latency, enhancing overall application responsiveness.
+
+### 📚 Documentation
+- **Updated System Requirements**: Our documentation now reflects the latest system compatibility updates, helping users ensure their environments are optimized for the best performance.
+
+### 🔧 Maintenance
+- **Routine Updates**: We've performed essential maintenance to align with the latest system requirements. These updates ensure continued stability and security, providing a robust foundation for future enhancements.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

@@ -86,11 +86,13 @@ data:
   DB_PORT: {{ .Values.onboarding.configmap.DB_PORT | default "5432" | quote }}
   DB_MAX_OPEN_CONNS: {{ .Values.onboarding.configmap.DB_MAX_OPEN_CONNS | default "500" | quote }}
   DB_MAX_IDLE_CONNS: {{ .Values.onboarding.configmap.DB_MAX_IDLE_CONNS | default "500" | quote }}
+  DB_SSLMODE: {{ .Values.onboarding.configmap.DB_SSLMODE | default "disable" | quote }}
   #POSTGRESS REPLICATION
   DB_REPLICA_HOST: {{ .Values.onboarding.configmap.DB_REPLICA_HOST | default (printf "midaz-postgresql-replication.%s.svc.cluster.local." .Release.Namespace) | quote }}
   DB_REPLICA_USER: {{ .Values.onboarding.configmap.DB_REPLICA_USER | default "midaz" | quote }}
   DB_REPLICA_NAME: {{ .Values.onboarding.configmap.DB_REPLICA_NAME | default "onboarding" | quote }}
   DB_REPLICA_PORT: {{ .Values.onboarding.configmap.DB_REPLICA_PORT | default "5432" | quote }}
+  DB_REPLICA_SSLMODE: {{ .Values.onboarding.configmap.DB_REPLICA_SSLMODE | default "disable" | quote }}
   #AUTH CONFIGS
   PLUGIN_AUTH_ENABLED: {{ .Values.onboarding.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
   PLUGIN_AUTH_HOST: {{ .Values.onboarding.configmap.PLUGIN_AUTH_HOST | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000" | quote }}

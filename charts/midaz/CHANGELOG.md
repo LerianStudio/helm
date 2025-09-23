@@ -1,3 +1,18 @@
+## [midaz-3.3.0] - 2025-09-23
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.3.0-beta.1...midaz-v3.3.0)
+Contributors: lerian-studio
+
+### 🐛 Bug Fixes
+- **General Stability Improvements**: Resolved minor bugs to enhance overall system stability. Users will experience fewer disruptions and a more consistent performance.
+
+### 🔧 Maintenance
+- **Code Quality and Dependencies**: Routine updates to improve code quality and update dependencies. These behind-the-scenes improvements ensure a robust architecture, indirectly benefiting users by maintaining system reliability and security.
+
+### ✨ Improvements
+- **Configuration & Database Enhancements**: Streamlined configuration processes and optimized database interactions, making it easier for users to set up and manage their environments efficiently. Users will notice improved data handling speed and reliability.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

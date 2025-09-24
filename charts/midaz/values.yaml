@@ -869,6 +869,10 @@ nginx:
 
   imagePullSecrets: []
 
+  podSecurityContext: {}
+
+  containerSecurityContext: {}
+
   service:
     type: ClusterIP
     ports:

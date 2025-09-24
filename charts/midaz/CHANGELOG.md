@@ -1,3 +1,15 @@
+## [midaz-3.3.0-beta.4] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.3.0-beta.3...midaz-v3.3.0-beta.4)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Nginx Deployment Configuration**: We've added support for `imagePullSecrets` and resource limits. This allows you to securely pull container images from private registries and effectively manage resource allocation, enhancing deployment flexibility and control over resource usage.
+
+### 🔧 Maintenance
+- **Build and Database Updates**: Upgraded to version 3.3.0-beta.4, incorporating various behind-the-scenes improvements. These updates bolster the stability and performance of the build and database components, ensuring a robust foundation for upcoming enhancements.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

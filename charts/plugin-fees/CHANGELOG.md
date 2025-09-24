@@ -1,3 +1,26 @@
+## [plugin-fees-3.0.0] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.0.0-beta.1...plugin-fees-v3.0.0)
+Contributors: lerian-studio
+
+### ⚠️ Breaking Changes
+- **System Overhaul**: This release includes comprehensive updates to authentication protocols, backend data handling, build processes, configuration management, and database schemas. Users must adapt their current setups to ensure compatibility. Detailed migration guides are available to assist with this transition.
+
+### ✨ Features
+- **Advanced Authentication Framework**: A new authentication system supports multi-factor authentication and advanced security protocols, enhancing account protection and access control. Users will benefit from improved security measures and can configure these features through the updated settings panel.
+
+### 🐛 Bug Fixes
+- **Configuration Stability**: Resolved inconsistencies in configuration files that previously caused deployment errors, ensuring stable and predictable application behavior across environments.
+
+### ⚡ Performance
+- **Backend Optimization**: Enhanced data handling efficiency reduces server load, resulting in faster response times and improved scalability, benefiting users with quicker application interactions.
+- **Streamlined Build Processes**: Reduced build times and improved deployment efficiency make the build pipeline more robust and easier to manage, enhancing overall development productivity.
+
+### 🔧 Maintenance
+- **Database Schema Updates**: Updated schemas to support new data models, improving data integrity and laying the groundwork for future feature expansions.
+- **Build Environment Improvements**: Routine updates ensure compatibility with the latest development tools, maintaining stability and security of the build environment.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

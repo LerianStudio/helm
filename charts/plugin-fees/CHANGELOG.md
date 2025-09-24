@@ -1,3 +1,33 @@
+## [plugin-fees-3.0.0-beta.1] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v2.2.0...plugin-fees-v3.0.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **RabbitMQ Chart Migration**: The transition from the Bitnami chart to the groundhog2k chart requires users to update their configurations. Please refer to the upgrade guide for detailed migration steps.
+- **Authentication Update**: The RabbitMQ authentication field has changed from 'username' to 'user'. Ensure your configurations reflect this change to maintain compatibility.
+
+### ✨ Features
+- **Enhanced Nginx Deployment**: Security contexts, service accounts, and resource limits have been added to the Nginx deployment, providing users with enhanced security and control over resource allocation.
+- **Custom Configmap Names**: Users can now specify custom Nginx configmap names, allowing for more tailored configuration management.
+
+### 🐛 Bug Fixes
+- **RabbitMQ Authentication**: Resolved issues with RabbitMQ authentication format to ensure compatibility with the latest Helm chart specifications, preventing potential authentication failures.
+
+### ⚡ Performance
+- **Backend Improvements**: Updated RabbitMQ configuration and service tags enhance system reliability and performance, ensuring smoother operations.
+
+### 🔄 Changes
+- **Nginx Ingress Configuration**: The refactored structure simplifies future updates and enhances maintainability, reducing potential configuration errors.
+
+### 📚 Documentation
+- **Upgrade Guide for v4.0**: A comprehensive guide detailing breaking changes and migration steps has been added to assist users in transitioning smoothly to the latest version.
+
+### 🔧 Maintenance
+- **Dependency Updates**: Various version bumps and dependency updates ensure the system remains secure and up-to-date with the latest features and security patches.
+- **Build Optimization**: Refactored redundant configurations in the Helm chart to enhance code quality and reduce complexity.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

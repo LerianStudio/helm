@@ -1,3 +1,23 @@
+## [midaz-4.0.0] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.0.0-beta.1...midaz-v4.0.0)
+Contributors: lerian-studio
+
+### ⚠️ Breaking Changes
+- **Transition to Version 4.0.0**: This update affects authentication, backend processes, build configurations, and database management. Users must review the migration guide to ensure compatibility with existing systems. Key changes include new APIs and deprecated older ones. Test your applications in a staging environment to adapt to these updates.
+- **Configuration and Database Updates**: The configuration schemas and database interactions have been modified. Update your configuration files to align with the new standards to prevent disruptions.
+
+### ✨ Features
+- **Enhanced Security Protocols**: New security measures in the authentication and backend components offer improved data protection, ensuring safer user interactions and data handling.
+- **Backend Optimizations**: Performance enhancements in the backend processing lead to faster response times and more efficient resource usage, benefiting overall system performance.
+
+### ⚡ Performance
+- **Configuration and Database Optimizations**: Experience faster load times and improved resource efficiency with the latest updates to configuration management and database performance.
+
+### 🔧 Maintenance
+- **Routine Updates**: Regular maintenance tasks have been performed on the build system, configuration files, and database schemas to enhance stability and prepare for future feature rollouts.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

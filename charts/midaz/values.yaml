@@ -30,7 +30,7 @@ console:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.3.0"
+    tag: "3.3.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -224,7 +224,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.3.0"
+    tag: "3.3.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -424,7 +424,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.3.0"
+    tag: "3.3.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -780,13 +780,14 @@ mongodb:
     enabled: true
     rootUser: midaz
     rootPassword: "lerian"
-  
+
   resourcesPreset: "medium"
 
   persistence:
     size: 8Gi
 
 rabbitmq:
+  enabled: true
   image:
     tag: "3.13.6"
 
@@ -819,19 +820,12 @@ rabbitmq:
     password:
       value: "lerian"
 
-  extraVolumes:
-    - name: load-definition
-      secret:
-        secretName: load-definition
-    - name: etc-rabbitmq
-      emptyDir: {}
+  extraSecrets:
+    - name: "midaz-rabbitmq-load-definition"
+      mountPath: /etc/rabbitmq/definitions
 
-  extraVolumeMounts:
-    - name: load-definition
-      mountPath: /app
-      readOnly: true
-    - name: etc-rabbitmq
-      mountPath: /etc/rabbitmq
+  customConfig: |
+    management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
 
 otel-collector-lerian:
   enabled: true
@@ -892,9 +886,7 @@ nginx:
   ingress:
     enabled: false
     className: ""
-    pathType: Prefix
     annotations: {}
-    ingressClassName: ""
     tls: []
     hosts:
       - host: ""

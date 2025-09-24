@@ -873,6 +873,9 @@ nginx:
 
   containerSecurityContext: {}
 
+  serviceAccount:
+    name: "midaz-nginx"
+
   service:
     type: ClusterIP
     ports:

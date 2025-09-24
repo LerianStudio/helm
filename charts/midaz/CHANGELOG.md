@@ -1,3 +1,16 @@
+## [midaz-3.3.0-beta.6] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.3.0-beta.5...midaz-v3.3.0-beta.6)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Custom Nginx Configmap Names**: You can now specify custom names for nginx configmaps, providing greater flexibility in configuration management. This feature is particularly beneficial for users who need to customize their nginx configurations to fit unique deployment scenarios.
+- **Updated Plugins Configuration Path**: The path for `plugins.conf` has been moved to the snippets directory. This change helps organize configuration files more efficiently, simplifying the management of your setup.
+
+### 🔧 Maintenance
+- **New Beta Release**: Version 3.3.0-beta.6 has been released, including the latest features and improvements. This beta version allows users to test new functionalities in a pre-release environment, ensuring they have access to the most recent updates.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

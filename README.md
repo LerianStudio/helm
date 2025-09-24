@@ -6,7 +6,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-Lerian%20Studio-%237289da.svg?logo=discord)](https://discord.gg/DnhqKwkGv3)
 
-### Midaz Helm Chart 
+### Midaz Helm Chart
 
 📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/deploy-midaz-using-helm).
 
@@ -16,10 +16,10 @@
 
 | Chart Version | Console Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: |
-| `3.1.0` | `3.2.0` | `3.2.0` | `3.2.0` |
+| `4.0.0` | `3.3.1` | `3.3.1` | `3.3.1` |
 -----------------
 
-### Plugin Access Manager Helm Chart    
+### Plugin Access Manager Helm Chart
 
 📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/auth-identity).
 

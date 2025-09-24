@@ -814,7 +814,7 @@ rabbitmq:
     capabilities: { drop: ["ALL"] }
 
   authentication:
-    username: midaz
+    user: midaz
     password: "lerian"
 
   extraVolumes:

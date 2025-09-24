@@ -1,3 +1,15 @@
+## [midaz-3.3.0-beta.3] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.3.0-beta.2...midaz-v3.3.0-beta.3)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **Streamlined Configuration**: Removed redundant Nginx volume mount settings in Helm chart configurations. This change simplifies the setup process, reducing the risk of configuration errors and making deployments more straightforward for users.
+
+### 🔧 Maintenance
+- **Version Update**: Updated project version to 3.3.0-beta.3. This ensures that users and developers are aligned with the latest versioning, facilitating better version tracking and release management.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

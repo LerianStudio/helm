@@ -1,3 +1,19 @@
+## [midaz-3.3.0-beta.5] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.3.0-beta.4...midaz-v3.3.0-beta.5)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Security for Nginx Deployment**: We've introduced a security context and service account for Nginx deployments. This enhancement ensures that Nginx operates with the appropriate permissions, significantly reducing the risk of unauthorized access and enhancing overall security. Users can now enjoy a more secure environment with minimal configuration changes.
+
+### 🔧 Maintenance
+- **Version Update to 3.3.0-beta.5**: The project has been updated to this version, incorporating various under-the-hood improvements. These updates are part of our ongoing efforts to keep the system stable and ready for future enhancements, ensuring continued reliability and performance.
+
+### Notes
+- No breaking changes were introduced in this release, allowing for a seamless upgrade process.
+- Users with custom configurations should review their settings to ensure compatibility with the new security context and service account features.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

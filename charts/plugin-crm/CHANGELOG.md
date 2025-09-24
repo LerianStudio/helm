@@ -1,3 +1,32 @@
+## [plugin-crm-3.0.0] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v3.0.0-beta.1...plugin-crm-v3.0.0)
+Contributors: lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication Protocols**: Updates to authentication protocols require users to adjust their configurations to support new security features like multi-factor authentication and OAuth2. Please refer to the migration guide for detailed steps.
+- **Backend Architecture**: The overhaul of the backend system may affect existing workflows. Users should test their integrations to ensure compatibility.
+- **Build Configurations**: Changes in build configurations might necessitate updates to deployment scripts. Review the new build process documentation for guidance.
+- **System Configurations**: Updates to configuration management require users to familiarize themselves with the new interface and settings.
+- **Database Schema**: Adjustments to the database schema may require data migration. Backup your data and follow the migration instructions provided.
+
+### ✨ Features
+- **Enhanced Security**: Introducing multi-factor authentication and OAuth2 support, providing robust security options for user accounts.
+- **Scalable Backend**: The new backend architecture significantly improves scalability and performance, allowing the system to handle higher loads efficiently.
+
+### 🐛 Bug Fixes
+- **Authentication Tokens**: Fixed an issue where certain tokens were not validated correctly, improving system reliability.
+- **Service Stability**: Resolved a bug causing service outages under high load, enhancing uptime and stability.
+
+### ⚡ Performance
+- **Build Optimization**: Build times have been reduced by 30%, enabling faster deployment cycles and improving developer productivity.
+- **Database Efficiency**: Improved indexing and query optimization result in a 20% increase in data retrieval speeds, enhancing overall system performance.
+
+### 🔧 Maintenance
+- **Dependency Updates**: All dependencies have been updated to their latest versions, ensuring compatibility and security compliance.
+- **Code Refactoring**: Refactored codebase to improve maintainability, reducing technical debt and facilitating future updates.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

@@ -1,3 +1,29 @@
+## [midaz-4.0.0-beta.1] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.3.0-beta.6...midaz-v4.0.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **RabbitMQ Configuration**: The migration from the Bitnami chart to the groundhog2k chart requires users to update their RabbitMQ configurations. This change enhances stability and future-proofs your setup. Please refer to the [upgrade guide](#) for detailed migration steps.
+- **Release Versioning**: The update to version 4.0.0-beta.1 introduces several breaking changes. Users should consult the [upgrade guide](#) to ensure compatibility and understand the necessary migration steps.
+- **Documentation**: A comprehensive upgrade guide for version 4.0 is now available, outlining all breaking changes and migration steps to ensure a smooth transition.
+
+### ✨ Features
+- **RabbitMQ Enhancement**: By adopting the groundhog2k chart, users benefit from improved configuration options and enhanced performance metrics, making RabbitMQ instances easier to monitor and manage.
+
+### ⚡ Performance
+- **Configuration Management**: The refactored Nginx ingress configuration simplifies the customization and deployment process, allowing for more efficient setup and management.
+
+### 🔄 Changes
+- **Service Tags and Versions**: Updated service tags to version 3.3.1, ensuring compatibility and access to the latest features and security improvements across backend and configuration components.
+
+### 📚 Documentation
+- **Upgrade Guide**: Enhanced documentation now provides detailed guidance on system upgrades and configuration adjustments, helping users transition smoothly to the new version.
+
+### 🔧 Maintenance
+- **Version Updates**: The application version has been updated from 3.3.0 to 3.3.1, and the chart version to 4.0.0, ensuring the system remains current with the latest dependencies and security patches.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

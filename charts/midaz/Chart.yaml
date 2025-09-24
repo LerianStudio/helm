@@ -48,7 +48,7 @@ dependencies:
     repository: "https://charts.bitnami.com/bitnami"
     condition: mongodb.enabled
   - name: rabbitmq
-    version: "15.2"
+    version: "2.1.11"
     repository: "https://groundhog2k.github.io/helm-charts"
     condition: rabbitmq.enabled
   - name: otel-collector-lerian

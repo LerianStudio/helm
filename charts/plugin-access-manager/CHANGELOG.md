@@ -1,3 +1,27 @@
+## [plugin-access-manager-4.0.0-beta.1] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v3.2.0...plugin-access-manager-v4.0.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **RabbitMQ Chart Migration**: We've switched from the Bitnami chart to the groundhog2k chart, enhancing security and maintainability. Users need to update configurations to align with the new chart structure. Please refer to the upgrade guide for detailed migration steps.
+- **Release Management Transition**: With the move to version 4.0.0-beta.1, several components such as auth, backend, build, config, and database have undergone breaking changes. Users must consult the upgrade guide for necessary migration actions.
+- **Nginx Configuration Update**: The structure of the nginx ingress configuration in the values template has been updated. Users should adjust their existing configurations accordingly.
+- **RabbitMQ Authentication Format**: The authentication format now uses the 'value' field, and the username field is updated to 'user'. Users need to modify their configurations to accommodate these changes.
+
+### ✨ Features
+- **Custom Nginx Configmap Support**: Users can now specify custom nginx configmap names, enhancing configuration management flexibility. The plugins.conf path has been updated to the snippets directory.
+- **Enhanced Security for Nginx**: Added security context and service account to nginx deployments, improving security posture and compliance with best practices.
+- **Improved Resource Management**: Implemented imagePullSecrets and resource limits for nginx deployments, optimizing resource use and enhancing deployment security.
+
+### 🐛 Bug Fixes
+- **RabbitMQ Authentication Correction**: Resolved issues with the authentication setup by correcting the format and username field, improving system reliability.
+
+### 🔧 Maintenance
+- **Dependency and Release Updates**: Various updates to align component versions, including migrating dependencies from Bitnami to more secure alternatives. This enhances overall system integrity and reduces dependency risks.
+- **Streamlined Nginx Configuration**: Removed redundant nginx volume mount configurations in the helm chart, simplifying setup and reducing complexity.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

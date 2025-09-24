@@ -1,0 +1,67 @@
+{{- if .Values.nginx.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "midaz-console.fullname" . }}-nginx
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "midaz-console.fullname" . }}-nginx
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: console-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "midaz-console.fullname" . }}-nginx
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "midaz-console.fullname" . }}-nginx
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: console-nginx
+    spec:
+      containers:
+        - name: nginx
+          image: {{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}
+          imagePullPolicy: {{ .Values.nginx.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          {{- with .Values.nginx.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: nginx-server-config
+              mountPath: /etc/nginx/conf.d/server.conf
+              subPath: server-block.conf
+            - name: nginx-plugins-config
+              mountPath: /etc/nginx/conf.d/plugins.conf
+              subPath: plugins.conf
+            {{- with .Values.nginx.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: nginx-server-config
+          configMap:
+            name: {{ include "midaz-console.fullname" . }}-nginx-config
+        - name: nginx-plugins-config
+          configMap:
+            name: {{ include "midaz-console.fullname" . }}-nginx-config-plugins
+        {{- with .Values.nginx.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+{{- end }}

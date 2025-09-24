@@ -10,7 +10,7 @@
       proxy_busy_buffers_size 256k;
     }
 
-    include /opt/bitnami/nginx/conf/plugins_blocks/plugins.conf;
+    include /etc/nginx/conf.d/plugins.conf;
   }
 {{- end }}
 

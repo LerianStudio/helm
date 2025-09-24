@@ -17,10 +17,10 @@ maintainers:
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 
-version: 3.3.0
+version: 4.0.0-beta.1
 
 # This is the version number of the application being deployed.
-appVersion: "3.3.0"
+appVersion: "3.3.1"
 
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
@@ -31,9 +31,9 @@ keywords:
 # The URL to an icon file for this chart. Or the icon data.
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 
-# This Helm chart includes multiple dependencies required for the application. 
+# This Helm chart includes multiple dependencies required for the application.
 # To understand the purpose and configuration of each dependency, visit:
-# https://docs.lerian.studio/docs/midaz-components  
+# https://docs.lerian.studio/docs/midaz-components
 dependencies:
   - name: valkey
     version: "2.4.7"
@@ -48,13 +48,9 @@ dependencies:
     repository: "https://charts.bitnami.com/bitnami"
     condition: mongodb.enabled
   - name: rabbitmq
-    version: "15.2"
-    repository: "https://charts.bitnami.com/bitnami"
+    version: "2.1.11"
+    repository: "https://groundhog2k.github.io/helm-charts"
     condition: rabbitmq.enabled
-  - name: nginx
-    version: "21.0.3"
-    repository: "https://charts.bitnami.com/bitnami"
-    condition: nginx.enabled
   - name: otel-collector-lerian
     version: 1.1.2-beta.2
     repository: "oci://registry-1.docker.io/lerianstudio"

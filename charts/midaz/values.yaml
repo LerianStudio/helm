@@ -30,7 +30,7 @@ console:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.3.0"
+    tag: "3.3.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -224,7 +224,7 @@ onboarding:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.3.0"
+    tag: "3.3.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -424,7 +424,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.3.0"
+    tag: "3.3.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -634,11 +634,19 @@ grafana:
     #  - secretName: chart-example-tls
     #  hosts:
     #      - chart-example.local
-  
+
 valkey:
   # Valkey is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
   enabled: true
+
+  global:
+    security:
+      allowInsecureImages: true
+
+  image:
+    repository: bitnamisecure/valkey
+    tag: "latest"
 
   external: false
   architecture: standalone
@@ -647,14 +655,14 @@ valkey:
     enabled: true
     password: lerian
     username: midaz
-  
+
   primary:
     kind: Deployment
     resourcesPreset: "medium"
-    
+
     persistence:
       enabled: false
-    
+
     extraFlags:
       - "--maxmemory 640mb"              # Controls the memory usage limit to prevent OOM (never leave this unset).
       - "--maxmemory-policy allkeys-lru" # Eviction policy when memory limit is reached (LRU works well for caching). Smart eviction strategy for rotating cache.
@@ -667,6 +675,14 @@ postgresql:
   # For more details, refer to the documentation:
   # https://docs.lerian.studio/docs/midaz-components#why-postgresql
   enabled: true
+
+  global:
+    security:
+      allowInsecureImages: true
+
+  image:
+    repository: bitnamisecure/postgresql
+    tag: "latest"
 
   external: false
   architecture: replication
@@ -693,10 +709,10 @@ postgresql:
     - name: init-script
       mountPath: /docker-entrypoint-initdb.d/init.sql
       subPath: init.sql
-    
+
     persistence:
       size: 8Gi
-    
+
     resourcesPreset: large
 
     extendedConfiguration: |
@@ -751,40 +767,65 @@ mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.
   enabled: true
 
+  global:
+    security:
+      allowInsecureImages: true
+
+  image:
+    repository: bitnamisecure/mongodb
+    tag: "latest"
+
   external: false
   auth:
     enabled: true
     rootUser: midaz
     rootPassword: "lerian"
-  
+
   resourcesPreset: "medium"
 
   persistence:
     size: 8Gi
 
 rabbitmq:
-  # RabbitMQ dependency for message brokering.
-  # This component is responsible for providing a message queue system
-  # to enable communication between different parts of the application.
   enabled: true
-
-  external: false
   image:
-    debug: true
-  auth:
-    enabled: true
-    username: "midaz"
-    password: "lerian"
-  loadDefinition:
-    enabled: true
-    existingSecret: load-definition
-  extraConfiguration: |
-    load_definitions = /app/load_definition.json
+    tag: "3.13.6"
 
   persistence:
     size: 8Gi
 
-  resourcesPreset: "medium"
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  podSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile: { type: RuntimeDefault }
+
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: { drop: ["ALL"] }
+
+  authentication:
+    user:
+      value: "midaz"
+    password:
+      value: "lerian"
+
+  extraSecrets:
+    - name: "midaz-rabbitmq-load-definition"
+      mountPath: /etc/rabbitmq/definitions
+
+  customConfig: |
+    management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
 
 otel-collector-lerian:
   enabled: true
@@ -815,28 +856,40 @@ otel-collector-lerian:
 nginx:
   enabled: false
 
+  image:
+    repository: nginx
+    tag: 1.27-alpine
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+
+  podSecurityContext: {}
+
+  containerSecurityContext: {}
+
+  serviceAccount:
+    name: "midaz-nginx"
+
   service:
     type: ClusterIP
     ports:
       http: 8080
 
-  existingServerBlockConfigmap: "midaz-console-nginx-config"
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
 
-  # Mount the plugins configmap as a volume
-  extraVolumes:
-    - name: nginx-plugins-config
-      configMap:
-        name: midaz-console-nginx-config-plugins
-
-  # Mount the volume into the nginx container
-  extraVolumeMounts:
-    - name: nginx-plugins-config
-      mountPath: /opt/bitnami/nginx/conf/plugins_blocks
-  
   ingress:
     enabled: false
-    pathType: Prefix
-    hostname: ""
-    path: /
+    className: ""
     annotations: {}
-    ingressClassName: ""
+    tls: []
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix

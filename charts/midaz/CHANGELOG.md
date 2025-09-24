@@ -1,3 +1,19 @@
+## [midaz-3.3.0-beta.2] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v3.3.0...midaz-v3.3.0-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Improved Authentication Reliability**: Resolved an issue with RabbitMQ authentication by standardizing the username field to 'user'. This fix aligns with industry standards, preventing potential login issues and enhancing the overall reliability of user authentication processes.
+
+### 🔄 Changes
+- **Secure Dependency Management**: Migrated dependencies from Bitnami to more secure alternatives, updating image sources to the bitnamisecure repository. This change ensures that all components, including backend, build, and test, utilize the latest and most secure versions, enhancing overall system security.
+- **Enhanced Helm Chart Management**: Updated the RabbitMQ Helm chart to version 2.1.11, incorporating a more secure authentication format. This update supports more standardized configuration management, improving security for RabbitMQ deployments.
+
+### 🔧 Maintenance
+- **Release Preparation**: Comprehensive preparations for the 3.3.0-beta.2 release were made, focusing on authentication and database components. This ensures that updates are thoroughly integrated and tested, maintaining system stability and reliability.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

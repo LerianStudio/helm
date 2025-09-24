@@ -10,7 +10,7 @@
       proxy_busy_buffers_size 256k;
     }
 
-    include /etc/nginx/conf.d/plugins.conf;
+    include /etc/nginx/snippets/plugins.conf;
   }
 {{- end }}
 

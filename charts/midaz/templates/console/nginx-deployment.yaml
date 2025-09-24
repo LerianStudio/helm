@@ -56,13 +56,13 @@ spec:
               mountPath: /etc/nginx/conf.d/server.conf
               subPath: server-block.conf
             - name: nginx-plugins-config
-              mountPath: /etc/nginx/conf.d/plugins.conf
+              mountPath: /etc/nginx/snippets/plugins.conf
               subPath: plugins.conf
       volumes:
         - name: nginx-server-config
           configMap:
-            name: {{ include "midaz-console.fullname" . }}-nginx-config
+            name: {{ if .Values.nginx.configmap.server.name }}{{ .Values.nginx.configmap.server.name }}{{ else }}{{ include "midaz-console.fullname" . }}-nginx-config{{ end }}
         - name: nginx-plugins-config
           configMap:
-            name: {{ include "midaz-console.fullname" . }}-nginx-config-plugins
+            name: {{ if .Values.nginx.configmap.plugins.name }}{{ .Values.nginx.configmap.plugins.name }}{{ else }}{{ include "midaz-console.fullname" . }}-nginx-config-plugins{{ end }}
 {{- end }}

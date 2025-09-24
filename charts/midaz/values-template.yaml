@@ -16,10 +16,10 @@ console:
     MONGODB_URI: "mongodb:/midaz:lerian@midaz-mongodb.midaz.svc.cluster.local:27017/?directConnection=true"
     MONGODB_DB_NAME: "midaz-console"
     MONGODB_USER: "midaz"
-  secrets: 
+  secrets:
     PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     MONGODB_PASS: "lerian"
-  
+
   # Plugins UIs
   pluginsUi:
     enabled: false
@@ -143,11 +143,14 @@ nginx:
 
   ingress:
     enabled: false
-    pathType: Prefix
-    hostname: ""
-    path: /
+    className: ""
     annotations: {}
-    ingressClassName: ""
+    tls: []
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
 
 otel-collector-lerian:
   enabled: false

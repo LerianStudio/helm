@@ -873,23 +873,10 @@ nginx:
 
   existingServerBlockConfigmap: "midaz-console-nginx-config"
 
-  # Mount the plugins configmap as a volume
-  extraVolumes:
-    - name: nginx-plugins-config
-      configMap:
-        name: midaz-console-nginx-config-plugins
-
-  # Mount the volume into the nginx container
-  extraVolumeMounts:
-    - name: nginx-plugins-config
-      # For official nginx image, plugins are included via /etc/nginx/conf.d/plugins.conf
-      mountPath: /etc/nginx/conf.d
-
   ingress:
     enabled: false
     className: ""
     pathType: Prefix
-    hostname: ""
     annotations: {}
     ingressClassName: ""
     tls: []

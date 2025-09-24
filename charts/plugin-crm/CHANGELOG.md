@@ -1,3 +1,27 @@
+## [plugin-crm-3.0.0-beta.1] - 2025-09-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v2.2.0...plugin-crm-v3.0.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **RabbitMQ Chart Migration**: We have transitioned from the Bitnami chart to the groundhog2k chart. This change requires users to update their RabbitMQ configurations to align with the new chart structure. Please refer to the migration guide for detailed steps.
+- **Release Management Overhaul**: Significant updates across multiple beta versions have resulted in breaking changes to components such as auth, backend, and database. Users must review and adapt their configurations to ensure compatibility.
+
+### ✨ Features
+- **Enhanced Nginx Security**: Introduced security contexts and service accounts for Nginx deployments, allowing users to define more granular security policies and improve compliance.
+- **Flexible Nginx Configuration**: Added support for custom nginx configmap names and updated the plugins.conf path to the snippets directory, providing more flexibility in configuration management.
+
+### 🐛 Bug Fixes
+- **RabbitMQ Authentication**: Fixed authentication issues by updating the username field to 'user', ensuring consistent and expected behavior across deployments.
+
+### ⚡ Performance
+- **Resource Management for Nginx**: Implemented imagePullSecrets and resource limits, enabling better resource allocation and secure image pulls from private registries.
+
+### 🔧 Maintenance
+- **Service Tag Updates**: Refactored RabbitMQ configuration and updated service tags to align with version 3.3.1, enhancing security and reliability.
+- **Nginx Configuration Streamlining**: Simplified the ingress configuration structure and removed redundant volume mount configurations, reducing potential setup errors.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

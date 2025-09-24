@@ -21,6 +21,10 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: console-nginx
     spec:
+      {{- with .Values.nginx.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: nginx
           image: {{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}

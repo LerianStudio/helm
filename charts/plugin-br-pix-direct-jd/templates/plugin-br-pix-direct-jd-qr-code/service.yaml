@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plugin-br-pix-direct-jd-qr-code.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-direct-jd-qr-code.labels" (dict "context" . "name" .Values.qrcode.name ) | nindent 4 }}
+spec:
+  type: {{ .Values.qrcode.service.type }}
+  ports:
+    - port: {{ .Values.qrcode.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "plugin-br-pix-direct-jd-qr-code.selectorLabels" (dict "context" . "name" .Values.qrcode.name) | nindent 4 }} 

@@ -36,6 +36,9 @@ jobs:
             plugin-crm
             plugin-smart-templates
             plugin-fees
+            plugin-br-pix-direct-jd
+            templates
+            dependencies
             otel-collector
             plugins
             pipe

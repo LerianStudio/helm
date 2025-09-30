@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "plugin-br-pix-direct-jd-job.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-direct-jd-job.labels" (dict "context" . "name" .Values.job.name ) | nindent 4 }} 
+spec:
+  schedule: {{ .Values.job.configmap.JOBS_CRON | default "*/1 * * * *" | quote }}
+  successfulJobsHistoryLimit: {{ .Values.job.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ .Values.job.failedJobsHistoryLimit | default 1 }}
+  concurrencyPolicy: {{ .Values.job.concurrencyPolicy | default "Forbid" }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.job.backoffLimit | default 0 }}
+      template:
+        metadata:
+          labels:
+            {{- include "plugin-br-pix-direct-jd-job.labels" (dict "context" . "name" .Values.job.name ) | nindent 12 }}
+        spec:
+        {{- with .Values.job.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+          securityContext:
+            {{- toYaml .Values.job.podSecurityContext | nindent 12 }}
+          restartPolicy: OnFailure
+          containers:
+            - name: {{ include "plugin-br-pix-direct-jd-job.fullname" . }}
+              image: {{ .Values.job.image.repository }}:{{ .Values.job.image.tag | default (include "plugin.version" .) }}
+              imagePullPolicy: {{ .Values.job.image.pullPolicy }}
+              envFrom:
+              - secretRef:
+                  name: {{ if .Values.job.useExistingSecret }}{{ .Values.job.existingSecretName }}{{ else }}{{ include "plugin-br-pix-direct-jd-job.fullname" . }}{{ end }}
+              - configMapRef:
+                  name: {{ include "plugin-br-pix-direct-jd-job.fullname" . }}
+              resources:
+                {{- toYaml .Values.job.resources | nindent 16 }}
+          {{- with .Values.job.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.job.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.job.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}

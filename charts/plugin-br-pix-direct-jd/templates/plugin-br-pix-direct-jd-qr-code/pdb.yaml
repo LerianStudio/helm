@@ -1,0 +1,23 @@
+{{- if .Values.qrcode.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "plugin-br-pix-direct-jd-qr-code.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-direct-jd-qr-code.labels" (dict "context" . "name" .Values.qrcode.name ) | nindent 4 }} 
+  {{- with .Values.qrcode.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.qrcode.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.qrcode.pdb.minAvailable | default 0 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-pix-direct-jd-qr-code.selectorLabels" (dict "context" . "name" .Values.qrcode.name) | nindent 6 }}
+{{- end }}

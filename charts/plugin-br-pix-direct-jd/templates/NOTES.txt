@@ -1,0 +1,92 @@
+Plugin BR Pix Direct JD - Installation Notes
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Chart: {{ .Chart.Name }} {{ .Chart.Version }}
+AppVersion: {{ .Chart.AppVersion }}
+
+---
+Main API (pix)
+- Name: {{ include "plugin-br-pix-direct-jd.fullname" . }}
+- Service: ClusterIP on port {{ .Values.pix.service.port }}
+- In-cluster access:
+  kubectl -n {{ .Release.Namespace }} run tmp-{{ include "plugin-br-pix-direct-jd.fullname" . }} --rm -it --image=curlimages/curl --restart=Never -- \ 
+  curl -sS http://{{ include "plugin-br-pix-direct-jd.fullname" . }}:{{ .Values.pix.service.port }}/v1/health
+
+{{- if .Values.pix.ingress.enabled }}
+Ingress (pix)
+{{- $tls := (and .Values.pix.ingress.tls (gt (len .Values.pix.ingress.tls) 0)) }}
+{{- range .Values.pix.ingress.hosts }}
+- URL: http{{ if $tls }}s{{ end }}://{{ .host }}{{- if and .paths (gt (len .paths) 0) -}}{{ (index .paths 0).path }}{{- end }}
+{{- end }}
+{{- else }}
+Ingress (pix) is disabled. Set `pix.ingress.enabled=true` to expose externally.
+{{- end }}
+
+---
+QR Code Service
+- Name: {{ include "plugin-br-pix-direct-jd-qr-code.fullname" . }}
+- Service: ClusterIP on port {{ .Values.qrcode.service.port }}
+{{- if .Values.qrcode.ingress.enabled }}
+Ingress (qrcode)
+{{- $qtls := (and .Values.qrcode.ingress.tls (gt (len .Values.qrcode.ingress.tls) 0)) }}
+{{- range .Values.qrcode.ingress.hosts }}
+- URL: http{{ if $qtls }}s{{ end }}://{{ .host }}{{- if and .paths (gt (len .paths) 0) -}}{{ (index .paths 0).path }}{{- end }}
+{{- end }}
+{{- else }}
+Ingress (qrcode) is disabled. Set `qrcode.ingress.enabled=true` to expose externally.
+{{- end }}
+
+---
+Background CronJob (job)
+- Name: {{ include "plugin-br-pix-direct-jd-job.fullname" . }}
+- Schedule: {{ .Values.job.configmap.JOBS_CRON | default "*/1 * * * *" }}
+- Image: {{ .Values.job.image.repository }}:{{ .Values.job.image.tag | default (include "plugin.version" .) }}
+- Service Port: {{ .Values.job.service.port }} (ClusterIP)
+
+To trigger a job run manually:
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "plugin-br-pix-direct-jd-job.fullname" . }} onetime-{{ randAlphaNum 5 | lower }}
+
+---
+Autoscaling and Availability
+{{- if .Values.pix.autoscaling.enabled }}
+- HPA (pix): enabled, min={{ .Values.pix.autoscaling.minReplicas }}, max={{ .Values.pix.autoscaling.maxReplicas }}, CPU={{ .Values.pix.autoscaling.targetCPUUtilizationPercentage }}%, Mem={{ .Values.pix.autoscaling.targetMemoryUtilizationPercentage }}%
+{{- else }}
+- HPA (pix): disabled. Set `pix.autoscaling.enabled=true` to enable.
+{{- end }}
+{{- if .Values.pix.pdb.enabled }}
+- PDB (pix): enabled
+{{- else }}
+- PDB (pix): disabled. Set `pix.pdb.enabled=true` to enable.
+{{- end }}
+
+---
+Secrets and Config
+- ConfigMap (pix): {{ include "plugin-br-pix-direct-jd.fullname" . }}
+- Secret (pix): {{ if .Values.pix.useExistingSecret }}Using existing `{{ .Values.pix.existingSecretName }}`{{ else }}{{ include "plugin-br-pix-direct-jd.fullname" . }}{{ end }}
+- ConfigMap (job): {{ include "plugin-br-pix-direct-jd-job.fullname" . }}
+- Secret (job): {{ if .Values.job.useExistingSecret }}Using existing `{{ .Values.job.existingSecretName }}`{{ else }}{{ include "plugin-br-pix-direct-jd-job.fullname" . }}{{ end }}
+
+Ensure sensitive values are set in `values.yaml` under `pix.secrets` and `job.secrets` or provide existing secrets via `useExistingSecret` flags.
+
+---
+PostgreSQL (Bitnami subchart)
+- Enabled: {{ .Values.postgresql.enabled | default false }}
+ - IMPORTANT: The Bitnami PostgreSQL subchart is not intended for production use. Use an external/managed PostgreSQL and set `postgresql.enabled=false` in production.
+{{- if .Values.postgresql.enabled }}
+- DB: {{ .Values.postgresql.auth.database }}
+- User: {{ .Values.postgresql.auth.username }}
+- Host (in-cluster): {{ include "plugin-br-pix-direct-jd.fullname" . }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local
+- Default port: 5432
+{{- else }}
+External or no database. Ensure `pix.configmap.DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME` are set accordingly.
+{{- end }}
+
+---
+Common kubectl commands
+- Get resources: kubectl -n {{ .Release.Namespace }} get all -l app.kubernetes.io/instance={{ .Release.Name }}
+- Check pods: kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+- Logs (pix): kubectl -n {{ .Release.Namespace }} logs deploy/{{ include "plugin-br-pix-direct-jd.fullname" . }} -f
+- Describe svc: kubectl -n {{ .Release.Namespace }} describe svc/{{ include "plugin-br-pix-direct-jd.fullname" . }}
+
+

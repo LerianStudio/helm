@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-pix-direct-jd.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-direct-jd.labels" (dict "context" . "name" .Values.pix.name ) | nindent 4 }} 
+data:
+  # -- Default Environment variables for the plugin-br-pix-direct-jd
+  NODE_ENV: {{ .Values.pix.configmap.NODE_ENV | default "development" | quote }}
+  DEBUG: {{ .Values.pix.configmap.DEBUG | default "false" | quote }}
+
+  # APP
+  APPLICATION_NAME: {{ .Values.pix.configmap.APPLICATION_NAME | default "plugin-br-pix-direct-jd" | quote }}
+  APPLICATION_BASE_URL: {{ .Values.pix.configmap.APPLICATION_BASE_URL | default "http://plugin-br-pix-direct-jd:4011" | quote }}
+  API_VERSION: {{ .Values.pix.configmap.API_VERSION | default "1.0.0" | quote }}
+  API_PORT: {{ .Values.pix.configmap.API_PORT | default "4011" | quote }}
+  API_RATE_CRITICAL_MAX: {{ .Values.pix.configmap.API_RATE_CRITICAL_MAX | default "5" | quote }}
+  API_RATE_CRITICAL_WINDOW: {{ .Values.pix.configmap.API_RATE_CRITICAL_WINDOW | default "1" | quote }}
+  API_RATE_ENABLED: {{ .Values.pix.configmap.API_RATE_ENABLED | default "false" | quote }}
+  API_RATE_GENERAL_MAX: {{ .Values.pix.configmap.API_RATE_GENERAL_MAX | default "20" | quote }}
+  API_RATE_GENERAL_WINDOW: {{ .Values.pix.configmap.API_RATE_GENERAL_WINDOW | default "1" | quote }}
+  API_RATE_ONBOARD_MAX: {{ .Values.pix.configmap.API_RATE_ONBOARD_MAX | default "10" | quote }}
+  API_RATE_ONBOARD_WINDOW: {{ .Values.pix.configmap.API_RATE_ONBOARD_WINDOW | default "1" | quote }}
+
+  # JOBS
+  JOBS_CRON_TRANSACTIONS: {{ .Values.pix.configmap.JOBS_CRON_TRANSACTIONS | default "*/10 * * * *" | quote }}
+  JOBS_CRON: {{ .Values.pix.configmap.JOBS_CRON | default "*/10 * * * *" | quote }}
+  JOBS_CRON_PROCESS_CSM: {{ .Values.pix.configmap.JOBS_CRON_PROCESS_CSM | default "*/1 * * * *" | quote }}
+  JOBS_CRON_TRASACTION_NON_PRIORITY: {{ .Values.pix.configmap.JOBS_CRON_TRASACTION_NON_PRIORITY | default "*/1 * * * *" | quote }}
+
+  # Integration
+  CORE_BANK_SERVER: {{ .Values.pix.configmap.CORE_BANK_SERVER | default "midaz" | quote }}
+  CORE_PIX_SERVER: {{ .Values.pix.configmap.CORE_PIX_SERVER | default "jd" | quote }}
+
+  # JD Pix Integration Configuration
+  JD_BASE_URL: {{ .Values.pix.configmap.JD_BASE_URL | default "" | quote }}
+  JD_GRANT_TYPE: {{ .Values.pix.configmap.JD_GRANT_TYPE | default "client_credentials" | quote }}
+  JD_BANK_ID: {{ .Values.pix.configmap.JD_BANK_ID | default "37040044" | quote }}
+
+  # Database
+  DATABASE_ACQUIRE: {{ .Values.pix.configmap.DATABASE_ACQUIRE | default "10000" | quote }}
+  DATABASE_HOST: {{ .Values.pix.configmap.DATABASE_HOST | default "plugin-br-pix-direct-jd-postgresql.midaz-plugins.svc.cluster.local" | quote }}
+  DATABASE_IDLE: {{ .Values.pix.configmap.DATABASE_IDLE | default "20000" | quote }}
+  DATABASE_USER: {{ .Values.pix.configmap.DATABASE_USER | default "pix" | quote }}
+  DATABASE_NAME: {{ .Values.pix.configmap.DATABASE_NAME | default "pix" | quote }}
+  DATABASE_POOL_MAX: {{ .Values.pix.configmap.DATABASE_POOL_MAX | default "10" | quote }}
+  DATABASE_POOL_MIN: {{ .Values.pix.configmap.DATABASE_POOL_MIN | default "1" | quote }}
+  DATABASE_PORT: {{ .Values.pix.configmap.DATABASE_PORT | default "5432" | quote }}
+
+  # AUTH CONFIGS - Access Manager (OAuth2)
+  PLUGIN_AUTH_ENABLED: {{ .Values.pix.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.pix.configmap.PLUGIN_AUTH_HOST | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+
+  # Midaz
+  MIDAZ_ORGANIZATION_ID: {{ .Values.pix.configmap.MIDAZ_ORGANIZATION_ID | default "" | quote }}
+  MIDAZ_LEDGER_ID: {{ .Values.pix.configmap.MIDAZ_LEDGER_ID | default "" | quote }}
+  MIDAZ_ASSET_ID: {{ .Values.pix.configmap.MIDAZ_ASSET_ID | default "1" | quote }}
+  MIDAZ_EXTERNAL_ID: {{ .Values.pix.configmap.MIDAZ_EXTERNAL_ID | default "" | quote }}
+  MIDAZ_TIMEOUT: {{ .Values.pix.configmap.MIDAZ_TIMEOUT | default "30000" | quote }}
+  MIDAZ_URL_ONBOARDING: {{ .Values.pix.configmap.MIDAZ_URL_ONBOARDING | default "http://midaz-onboarding.midaz.svc.cluster.local:3000" | quote }}
+  MIDAZ_URL_TRANSACTION: {{ .Values.pix.configmap.MIDAZ_URL_TRANSACTION | default "http://midaz-transaction.midaz.svc.cluster.local:3001" | quote }}
+
+  # CRM
+  CRM_URL: {{ .Values.pix.configmap.CRM_URL | default "http://plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
+
+  # OpenTelemetry - Shared Midaz LGTM Infrastructure
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.pix.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-pix-direct-jd" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.pix.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "1.0.0" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-otel-lgtm:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.pix.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+
+  # Twilio Configuration
+  TWILIO_PHONE_NUMBER: {{ .Values.pix.configmap.TWILIO_PHONE_NUMBER | default "your-twilio-phone-number" | quote }}
+  TWILIO_EMAIL_FROM: {{ .Values.pix.configmap.TWILIO_EMAIL_FROM | default "your-twilio-email-from" | quote }}
+  TWILIO_SMS_TEMPLATE_VERIFICATION: {{ .Values.pix.configmap.TWILIO_SMS_TEMPLATE_VERIFICATION | default "Your verification code is: {code}" | quote }}
+
+  # SendGrid Configuration
+  SENDGRID_FROM_EMAIL: {{ .Values.pix.configmap.SENDGRID_FROM_EMAIL | default "noreply@yourcompany.com" | quote }}
+  SENDGRID_FROM_TEMPLATE: {{ .Values.pix.configmap.SENDGRID_FROM_TEMPLATE | default "your-template-id" | quote }}
+  MOCK_TOKEN: {{ .Values.pix.configmap.MOCK_TOKEN | default "false" | quote }}
+
+  #CASH IN
+  TRANSACTION_ROUTE_CASHIN: {{ .Values.pix.configmap.TRANSACTION_ROUTE_CASHIN | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_CREDIT: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_CREDIT | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_DEBIT_EXTERNAL: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_DEBIT_EXTERNAL | default "" | quote }}
+
+  #CASH IN REVERSAL
+  TRANSACTION_ROUTE_CASHIN_REVERSAL: {{ .Values.pix.configmap.TRANSACTION_ROUTE_CASHIN_REVERSAL | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_CREDIT_REVERSAL: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_CREDIT_REVERSAL | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_DEBIT_REVERSAL_EXTERNAL: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_DEBIT_REVERSAL_EXTERNAL | default "" | quote }}
+
+  #CASH OUT
+  TRANSACTION_ROUTE_CASHOUT: {{ .Values.pix.configmap.TRANSACTION_ROUTE_CASHOUT | default "" | quote }}
+  OPERATION_ROUTE_CASHOUT_CREDIT_EXTERNAL: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHOUT_CREDIT_EXTERNAL | default "" | quote }}
+  OPERATION_ROUTE_CASHOUT_DEBIT: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHOUT_DEBIT | default "" | quote }}
+
+  #CASHOUT REVERSAL
+  TRANSACTION_ROUTE_CASHOUT_REVERSAL: {{ .Values.pix.configmap.TRANSACTION_ROUTE_CASHOUT_REVERSAL | default "" | quote }}
+  OPERATION_ROUTE_CASHOUT_CREDIT_REVERSAL: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHOUT_CREDIT_REVERSAL | default "" | quote }}
+  OPERATION_ROUTE_CASHOUT_DEBIT_REVERSAL_EXTERNAL: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHOUT_DEBIT_REVERSAL_EXTERNAL | default "" | quote }}
+
+  #CASH IN QRCODE
+  TRANSACTION_ROUTE_CASHIN_QRCODE: {{ .Values.pix.configmap.TRANSACTION_ROUTE_CASHIN_QRCODE | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_CREDIT_QRCODE: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_CREDIT_QRCODE | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_DEBIT_QRCODE_EXTERNAL: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_DEBIT_QRCODE_EXTERNAL | default "" | quote }}
+
+  #INTERNO
+  TRANSACTION_ROUTE_INTRAPSP: {{ .Values.pix.configmap.TRANSACTION_ROUTE_INTRAPSP | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_CREDIT: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_CREDIT | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_DEBIT: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_DEBIT | default "" | quote }}
+
+  #INTERNO REVERSAL
+  TRANSACTION_ROUTE_INTRAPSP_REVERSAL: {{ .Values.pix.configmap.TRANSACTION_ROUTE_INTRAPSP_REVERSAL | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_REVERSAL_CREDIT: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_REVERSAL_CREDIT | default "" | quote }}
+  OPERATION_ROUTE_CASHIN_REVERSAL_DEBIT: {{ .Values.pix.configmap.OPERATION_ROUTE_CASHIN_REVERSAL_DEBIT | default "" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.pix.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

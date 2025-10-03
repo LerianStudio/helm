@@ -39,7 +39,7 @@ data:
 
   # NextAuth Configuration
   NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
-  NEXTAUTH_URL_INTERNAL: {{ .Values.console.configmap.NEXTAUTH_URL_INTERNAL | default (printf "http://midaz-console:8081" .Release.Namespace) | quote }}
+  NEXTAUTH_URL_INTERNAL: {{ .Values.console.configmap.NEXTAUTH_URL_INTERNAL | default "http://midaz-console:8081" | quote }}
 
   # Plugin Auth
   PLUGIN_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}

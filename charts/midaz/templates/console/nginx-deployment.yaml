@@ -25,7 +25,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ .Values.nginx.serviceAccount.name }}
+      serviceAccountName: {{ .Values.console.serviceAccount.name }}
       securityContext:
         {{- toYaml .Values.nginx.podSecurityContext | nindent 8 }}
       containers:
@@ -58,11 +58,13 @@ spec:
             - name: nginx-plugins-config
               mountPath: /etc/nginx/snippets/plugins.conf
               subPath: plugins.conf
+      {{- $serverCMName := (dig "configmap" "server" "name" "" .Values.nginx) }}
+      {{- $pluginsCMName := (dig "configmap" "plugins" "name" "" .Values.nginx) }}
       volumes:
         - name: nginx-server-config
           configMap:
-            name: {{ if .Values.nginx.configmap.server.name }}{{ .Values.nginx.configmap.server.name }}{{ else }}{{ include "midaz-console.fullname" . }}-nginx-config{{ end }}
+            name: {{ $serverCMName | default (printf "%s-nginx-config" (include "midaz-console.fullname" .)) }}
         - name: nginx-plugins-config
           configMap:
-            name: {{ if .Values.nginx.configmap.plugins.name }}{{ .Values.nginx.configmap.plugins.name }}{{ else }}{{ include "midaz-console.fullname" . }}-nginx-config-plugins{{ end }}
+            name: {{ $pluginsCMName | default (printf "%s-nginx-config-plugins" (include "midaz-console.fullname" .)) }}
 {{- end }}

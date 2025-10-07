@@ -38,7 +38,7 @@ spec:
                   sleep 5;
                 done;
                 echo "$svc is ready!";
-              done; 
+              done;
       containers:
         - name: apply-definitions
           image: curlimages/curl:8.7.1
@@ -52,7 +52,7 @@ spec:
                 -X POST \
                 --data-binary @/definitions/load_definitions.json \
                 "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST/api/definitions"
-              
+
               echo "Updating RabbitMQ user: onboarding"
               curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
@@ -66,7 +66,7 @@ spec:
                 -X PUT \
                 --data "{\"password\":\"$RABBITMQ_TRANSACTION_PASS\",\"tags\":\"administrator\"}" \
                 "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST/api/users/transaction"
-              
+
               echo "RabbitMQ definitions applied successfully."
           env:
             - name: RABBITMQ_PROTOCOL
@@ -86,16 +86,23 @@ spec:
                   name: {{ include "midaz-transaction.fullname" . }}
                   key: RABBITMQ_DEFAULT_PASS
             - name: RABBITMQ_ADMIN_PASS
-              {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.externalSecret.enabled }}
+              {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.externalSecret.secretName }}
-                  key: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.externalSecret.secretKey }}
+                  name: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
+                  key: RABBITMQ_ADMIN_PASS
               {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.password }}
+              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.password | quote }}
               {{- end }}
             - name: RABBITMQ_ADMIN_USER
-              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.username }}
+              {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
+                  key: RABBITMQ_ADMIN_USER
+              {{- else }}
+              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.username | quote }}
+              {{- end }}
           volumeMounts:
             - name: definitions
               mountPath: /definitions

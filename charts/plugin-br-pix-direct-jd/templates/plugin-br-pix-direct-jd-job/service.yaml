@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plugin-br-pix-direct-jd-job.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-direct-jd-job.labels" (dict "context" . "name" .Values.job.name ) | nindent 4 }} 
+spec:
+  type: {{ .Values.job.service.type }}
+  ports:
+    - port: {{ .Values.job.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "plugin-br-pix-direct-jd-job.selectorLabels" (dict "context" . "name" .Values.job.name) | nindent 4 }}

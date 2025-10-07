@@ -1,3 +1,28 @@
+## [midaz-4.2.0-beta.1] - 2025-10-07
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.1.0...midaz-v4.2.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Release Management**: This version introduces breaking changes across several components, including auth, backend, build, config, database, and frontend. Users must review and update configurations and dependencies to ensure compatibility. Migration steps may be necessary for custom integrations. [#34, #57, #48, #35, #23, #24, #43, #41, #26, #44, #36]
+
+### ✨ Features
+- **Database**: Now supports external secrets management for RabbitMQ admin credentials, enhancing security and flexibility in credential handling.
+- **Database**: Added support for logical replication slots and improved SQL formatting, facilitating better data replication and management strategies.
+- **Backend/Build/Config**: Deployed Kubernetes manifests for the PIX QR code service, enabling streamlined deployment and scaling.
+- **Backend/Build/Config/Database**: Released a new Helm chart for the BR PIX Direct JD plugin with PostgreSQL dependency management, simplifying the deployment process.
+
+### 🐛 Bug Fixes
+- **Backend**: Resolved a naming issue in the QR code secrets template by renaming `PRIVATE_KEY` to `KEY`, ensuring consistency and preventing configuration errors.
+
+### 📚 Documentation
+- Updated component version documentation to reflect the latest updates, aiding users in understanding the current system state and dependencies.
+
+### 🔧 Maintenance
+- **Release Management**: Updated the chart version to 4.2.0 and appVersion to 3.3.5, ensuring users have access to the latest features and improvements.
+- Enhanced the PR template by adding the BR PIX Direct JD plugin to title validation, improving the consistency and clarity of pull requests.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

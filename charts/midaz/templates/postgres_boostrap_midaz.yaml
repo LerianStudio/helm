@@ -1,0 +1,120 @@
+{{- if .Values.global.externalPostgresDefinitions.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: midaz-postgres-bootstrap
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox
+        envFrom:
+        - configMapRef:
+            name: {{ include "midaz-onboarding.fullname" . }}
+        command:
+        - /bin/sh
+        - -c
+        - >
+          for svc in "$DB_HOST:$DB_PORT";
+          do
+            echo "Checking $svc...";
+            while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+              echo "$svc is not ready yet, waiting...";
+              sleep 5;
+            done;
+            echo "$svc is ready!";
+          done;
+      containers:
+      - name: psql
+        image: postgres:16
+        env:
+        - name: DB_HOST
+          value: {{ .Values.onboarding.configmap.DB_HOST | quote }}
+        - name: DB_PORT
+          value: {{ .Values.onboarding.configmap.DB_PORT | quote }}
+        - name: DB_USER_ADMIN
+          {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name | quote }}
+              key: DB_USER_ADMIN
+          {{- else }}
+          value: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.username | quote }}
+          {{- end }}
+        - name: DB_PASSWORD_MIDAZ
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "midaz-onboarding.fullname" . }}
+              key: DB_PASSWORD
+        - name: DB_ADMIN_PASSWORD
+          {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name | quote }}
+              key: DB_ADMIN_PASSWORD
+          {{- else }}
+          value: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.password | quote }}
+          {{- end }}
+        - name: DB_DATABASE
+          value: postgres
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -euo pipefail
+          echo "Checking existing Postgres objects..."
+          ONB_EXISTS=0
+          TRX_EXISTS=0
+          ROLE_EXISTS=0
+
+          if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_database WHERE datname='onboarding'" | grep -q 1; then
+            ONB_EXISTS=1
+          fi
+          if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_database WHERE datname='transaction'" | grep -q 1; then
+            TRX_EXISTS=1
+          fi
+          if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_roles WHERE rolname='midaz'" | grep -q 1; then
+            ROLE_EXISTS=1
+          fi
+
+          if [ "$ONB_EXISTS" = "1" ] && [ "$TRX_EXISTS" = "1" ] && [ "$ROLE_EXISTS" = "1" ]; then
+            echo "Postgres bootstrap config already exists (databases 'onboarding' and 'transaction' and role 'midaz'). Skipping."
+            exit 0
+          fi
+
+          # Databases
+          if [ "$ONB_EXISTS" = "1" ]; then
+            echo "Database 'onboarding' already exists. Skipping creation."
+          else
+            echo "Creating database 'onboarding'..."
+            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE onboarding"
+          fi
+
+          if [ "$TRX_EXISTS" = "1" ]; then
+            echo "Database 'transaction' already exists. Skipping creation."
+          else
+            echo "Creating database 'transaction'..."
+            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE transaction"
+          fi
+
+          # Role
+          if [ "$ROLE_EXISTS" = "1" ]; then
+            echo "Role 'midaz' already exists. Skipping creation."
+          else
+            echo "Creating role 'midaz'..."
+            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE midaz LOGIN PASSWORD '$DB_PASSWORD_MIDAZ'"
+          fi
+
+          # Privileges (safe to run repeatedly)
+          echo "Ensuring privileges and schema permissions..."
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE onboarding TO midaz"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE transaction TO midaz"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d onboarding -c "GRANT ALL ON SCHEMA public TO midaz"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d transaction -c "GRANT ALL ON SCHEMA public TO midaz"
+{{- end }}

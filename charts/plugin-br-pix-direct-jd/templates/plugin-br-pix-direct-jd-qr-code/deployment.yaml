@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-br-pix-direct-jd-qr-code.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-direct-jd-qr-code.labels" (dict "context" . "name" .Values.qrcode.name ) | nindent 4 }}
+spec:
+  strategy:
+    {{- toYaml .Values.qrcode.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.qrcode.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-pix-direct-jd-qr-code.selectorLabels" (dict "context" . "name" .Values.qrcode.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-br-pix-direct-jd-qr-code.labels" (dict "context" . "name" .Values.qrcode.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.qrcode.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.qrcode.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "plugin-br-pix-direct-jd-qr-code.fullname" . }}
+          image: "{{ .Values.qrcode.image.repository }}:{{ .Values.qrcode.image.tag | default (include "plugin.version" .) }}"
+          imagePullPolicy: {{ .Values.qrcode.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.qrcode.service.port }}
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ if .Values.qrcode.useExistingSecret }}{{ .Values.qrcode.existingSecretName }}{{ else }}{{ include "plugin-br-pix-direct-jd-qr-code.fullname" . }}{{ end }}
+            - configMapRef:
+                name: {{ include "plugin-br-pix-direct-jd-qr-code.fullname" . }}
+          resources:
+            {{- toYaml .Values.qrcode.resources | nindent 12 }}
+      {{- with .Values.qrcode.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.qrcode.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.qrcode.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

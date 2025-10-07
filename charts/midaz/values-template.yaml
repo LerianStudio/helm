@@ -1,6 +1,20 @@
 global:
+  # -- Enable or disable loading of default RabbitMQ definitions to external host
   externalRabbitmqDefinitions:
     enabled: false
+    rabbitmqAdminLogin:
+      useExistingSecret:
+        name: ""
+      username: ""
+      password: ""
+
+  externalPostgresDefinitions:
+    enabled: false
+    postgresAdminLogin:
+      useExistingSecret:
+        name: ""
+      username: ""
+      password: ""
 
 console:
   configmap:
@@ -19,6 +33,10 @@ console:
   secrets:
     PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     MONGODB_PASS: "lerian"
+
+ # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
 
   # Plugins UIs
   pluginsUi:
@@ -71,12 +89,16 @@ onboarding:
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
     ACCOUNT_TYPE_VALIDATION: ""
 
-  secrets: 
+  secrets:
     MONGO_PASSWORD: "lerian"
     DB_PASSWORD: "lerian"
     DB_REPLICA_PASSWORD: "lerian"
     RABBITMQ_DEFAULT_PASS: "lerian"
     REDIS_PASSWORD: "lerian"
+
+ # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
 
 transaction:
   ingress:
@@ -90,12 +112,12 @@ transaction:
             pathType: Prefix
     tls: []
 
-  configmap: 
+  configmap:
     RABBITMQ_URI: "amqp"
     RABBITMQ_PROTOCOL: "http"
     RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
     RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672" 
+    RABBITMQ_PORT_AMQP: "15672"
     RABBITMQ_DEFAULT_USER: "transaction"
     MONGO_URI: "mongodb"
     MONGO_HOST: "midaz-mongodb.midaz.svc.cluster.local."
@@ -116,12 +138,16 @@ transaction:
     AUDIT_LOG_ENABLED: "false"
     TRANSACTION_ROUTE_VALIDATION: ""
 
-  secrets: 
+  secrets:
     MONGO_PASSWORD: "lerian"
     DB_PASSWORD: "lerian"
     DB_REPLICA_PASSWORD: "lerian"
     RABBITMQ_DEFAULT_PASS: "lerian"
     REDIS_PASSWORD: "lerian"
+
+ # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
 
 grafana:
   enabled: false

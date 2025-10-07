@@ -1,0 +1,32 @@
+{{- if .Values.pix.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "plugin-br-pix-direct-jd.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-direct-jd.labels" (dict "context" . "name" .Values.pix.name ) | nindent 4 }} 
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "plugin-br-pix-direct-jd.fullname" . }}
+  minReplicas: {{ .Values.pix.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.pix.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.pix.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.pix.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.pix.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.pix.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

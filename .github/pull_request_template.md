@@ -8,6 +8,7 @@
 - [ ] Plugin CRM
 - [ ] Plugin Smart Templates
 - [ ] Plugin Fees
+- [ ] Plugin BR PIX Direct JD
 - [ ] Otel Collector
 - [ ] Pipeline
 - [ ] Documentation

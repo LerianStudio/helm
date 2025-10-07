@@ -1,0 +1,23 @@
+{{- if .Values.pix.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "plugin-br-pix-direct-jd.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-direct-jd.labels" (dict "context" . "name" .Values.pix.name ) | nindent 4 }} 
+  {{- with .Values.pix.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.pix.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.pix.pdb.minAvailable | default 0 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-pix-direct-jd.selectorLabels" (dict "context" . "name" .Values.pix.name) | nindent 6 }}
+{{- end }}

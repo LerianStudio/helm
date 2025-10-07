@@ -1,0 +1,144 @@
+pix:
+  replicaCount: 1
+
+  name: "plugin-br-pix-direct-jd"
+  description: "Plugin pix for Midaz"
+
+  image:
+    # -- Repository for the container image
+    repository: ghcr.io/lerianstudio/plugin-br-pix-direct-jd
+    # -- Image pull policy
+    pullPolicy: Always
+    # -- Image tag used for deployment
+    tag: ""
+
+  ingress:
+    # -- Enable or disable ingress
+    enabled: false
+    # -- Ingress class name
+    className: ""
+    # -- Additional ingress annotations
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    # -- Default Environment
+    #MIDAZ Variables
+    MIDAZ_ORGANIZATION_ID: ""
+    MIDAZ_LEDGER_ID: ""
+    MIDAZ_ASSET_ID: ""
+    MIDAZ_EXTERNAL_ID: ""
+    MIDAZ_TIMEOUT: ""
+    MIDAZ_URL_ONBOARDING: ""
+    MIDAZ_URL_TRANSACTION: ""
+
+    # CRM Configuration
+    CRM_URL: ""
+
+    # Auth Configuration
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_ADDRESS: ""
+
+    TWILIO_PHONE_NUMBER: ""
+    SENDGRID_FROM_EMAIL: ""
+    SENDGRID_FROM_TEMPLATE: ""
+    JD_BASE_URL: ""
+    DATABASE_HOST: ""
+
+  extraEnvVars: {}
+
+  secrets: {}
+
+  useExistingSecrets: false
+  existingSecretName: ""
+
+qrcode:
+  replicaCount: 1
+
+  name: "plugin-br-pix-direct-jd-qrcode"
+  description: "Plugin Pix for Midaz"
+
+  image:
+    # -- Repository for the container image
+    repository: lerianstudio/cert-provider
+    # -- Image pull policy
+    pullPolicy: Always
+    # -- Image tag used for deployment
+    tag: ""
+
+  ingress:
+    # -- Enable or disable ingress
+    enabled: false
+    # -- Ingress class name
+    className: ""
+    # -- Additional ingress annotations
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap: {}
+
+  secrets: {}
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+job:
+  name: "plugin-br-pix-direct-jd-job"
+  description: "Plugin pix for Midaz"
+
+  replicaCount: 1
+
+  image:
+    # -- Repository for the container image
+    repository: ghcr.io/lerianstudio/plugin-br-pix-direct-jd-job
+    # -- Image pull policy
+    pullPolicy: Always
+    # -- Image tag used for deployment
+    tag: ""
+
+  configmap:
+    JOBS_CRON: "*/1 * * * *"
+    # -- Default Environment
+    #MIDAZ Variables
+    MIDAZ_ORGANIZATION_ID: ""
+    MIDAZ_LEDGER_ID: ""
+    MIDAZ_ASSET_ID: ""
+    MIDAZ_EXTERNAL_ID: ""
+    MIDAZ_TIMEOUT: ""
+    MIDAZ_URL_ONBOARDING: ""
+    MIDAZ_URL_TRANSACTION: ""
+
+    # CRM Configuration
+    CRM_URL: ""
+
+    # Auth Configuration
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_ADDRESS: ""
+
+    TWILIO_PHONE_NUMBER: ""
+    SENDGRID_FROM_EMAIL: ""
+    SENDGRID_FROM_TEMPLATE: ""
+    JD_BASE_URL: ""
+    DATABASE_HOST: ""
+
+  # -- Extra environment variables
+  extraEnvVars: {}
+
+  # -- Secrets for storing sensitive data
+  # -- All secrets are declared in the templates/secrets.yaml
+  # @default -- templates/secrets.yaml
+  secrets: {}
+
+
+postgresql:
+  enabled: true

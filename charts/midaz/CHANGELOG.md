@@ -1,3 +1,18 @@
+## [midaz-4.2.0-beta.2] - 2025-10-07
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.2.0-beta.1...midaz-v4.2.0-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication, Backend, Database, and More**: This update includes several breaking changes that may impact authentication processes, backend logic, and database schemas. Users must review their configurations and integrations to ensure compatibility. Please refer to the updated documentation and migration guides for detailed steps on transitioning smoothly.
+
+### ✨ Features
+- **Telemetry Support in Backend**: We have introduced telemetry for onboarding and transaction services, enabling enhanced monitoring and analytics. This feature provides valuable insights into user interactions and system performance, helping optimize user experience and operational efficiency.
+
+### 🔧 Maintenance
+- **Backend Updates**: Released version 4.2.0-beta.2, focusing on routine updates and maintenance tasks. These changes are designed to enhance system stability and performance, supporting ongoing development efforts.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

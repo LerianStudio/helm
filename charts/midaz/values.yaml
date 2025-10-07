@@ -354,7 +354,7 @@ onboarding:
   # @default -- templates/onboarding/configmap.yaml
   configmap:
     # -- Otel default configuration
-    ENABLE_TELEMETRY: "false"
+    ENABLE_TELEMETRY: "true"
     # -- Rabbitmq default configuration
     RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"
@@ -554,7 +554,7 @@ transaction:
   # @default -- templates/transaction/configmap.yaml
   configmap:
     # -- Otel default configuration
-    ENABLE_TELEMETRY: "false"  
+    ENABLE_TELEMETRY: "true"  
     # -- Rabbitmq default configuration
     RABBITMQ_PROTOCOL: "http"
     RABBITMQ_URI: "amqp"

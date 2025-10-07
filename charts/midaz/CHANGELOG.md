@@ -1,3 +1,24 @@
+## [midaz-4.1.0] - 2025-10-07
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.0.0...midaz-v4.1.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication and Backend Interfaces**: Major upgrades require users to update their configurations to align with new authentication protocols and backend service interfaces. Please review the migration guide for detailed steps to adapt your systems.
+- **Build Process Updates**: Changes in the build process may affect existing scripts and automation. Users should verify compatibility and adjust their build configurations accordingly.
+- **Configuration Management**: New configmap naming conventions and service account handling require updates to existing deployments. Follow the migration instructions to ensure seamless transitions.
+
+### ✨ Features
+- **Enhanced Deployment Flexibility**: New configuration options in the backend and build processes provide greater flexibility, allowing users to tailor deployments to specific needs more effectively.
+- **Streamlined Build Processes**: Improvements in build workflows reduce setup complexity and enhance deployment speed, making it easier to manage complex environments.
+
+### 🐛 Bug Fixes
+- **Nginx Deployment Reliability**: Fixed an issue where incorrect service account references caused deployment failures. This update ensures more reliable and consistent deployments, reducing downtime.
+
+### 🔧 Maintenance
+- **Dependency Updates and Code Refactoring**: Routine updates and optimizations enhance system performance and stability. While not directly visible to users, these changes improve overall system efficiency and maintainability.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

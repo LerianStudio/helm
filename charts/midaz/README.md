@@ -153,6 +153,28 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `onboarding.serviceAccount.annotations` | Annotations for the service account. | `{}` |
 | `onboarding.serviceAccount.name` | Service account name. If not defined, it will be generated automatically. | `""` |
 
+#### Creating Onboarding Secret Manually
+
+If you want to use an existing Kubernetes Secret for the onboarding service, you can create it manually with the following command:
+
+```console
+kubectl create secret generic midaz-onboarding \
+  --from-literal=MONGO_PASSWORD='<your-mongo-password>' \
+  --from-literal=DB_PASSWORD='<your-db-password>' \
+  --from-literal=DB_REPLICA_PASSWORD='<your-db-replica-password>' \
+  --from-literal=RABBITMQ_DEFAULT_PASS='<your-rabbitmq-password>' \
+  --from-literal=REDIS_PASSWORD='<your-redis-password>' \
+  -n midaz
+```
+
+Then configure the onboarding service to use this existing secret:
+
+```yaml
+onboarding:
+  useExistingSecret: true
+  existingSecretName: "midaz-onboarding"
+```
+
 ### Transaction Configuration
 
 | Parameter | Description | Default Value |
@@ -199,6 +221,30 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `transaction.serviceAccount.annotations` | Annotations for the ServiceAccount. | `{}` |
 | `transaction.serviceAccount.name` | Name of the service account. | `""` |
 
+#### Creating Transaction Secret Manually
+
+If you want to use an existing Kubernetes Secret for the transaction service, you can create it manually with the following command:
+
+```console
+kubectl create secret generic midaz-transaction \
+  --from-literal=MONGO_PASSWORD='<your-mongo-password>' \
+  --from-literal=DB_PASSWORD='<your-db-password>' \
+  --from-literal=DB_REPLICA_PASSWORD='<your-db-replica-password>' \
+  --from-literal=RABBITMQ_DEFAULT_PASS='<your-rabbitmq-password>' \
+  --from-literal=RABBITMQ_CONSUMER_PASS='<your-rabbitmq-consumer-password>' \
+  --from-literal=REDIS_PASSWORD='<your-redis-password>' \
+  -n midaz
+```
+
+**Note:** The transaction service requires an additional secret key `RABBITMQ_CONSUMER_PASS` compared to onboarding.
+
+Then configure the transaction service to use this existing secret:
+
+```yaml
+transaction:
+  useExistingSecret: true
+  existingSecretName: "midaz-transaction"
+```
 
 ### Console:
 
@@ -248,6 +294,28 @@ The Midaz system runs on four distinct layers that work together, distributed in
 | `console.serviceAccount.create` | Specifies whether the service account should be created. | `true` |
 | `console.serviceAccount.annotations` | Annotations for the service account. | `{}` |
 | `console.serviceAccount.name` | Service account name. If not defined, it will be generated automatically. | `""` |
+
+#### Creating Console Secret Manually
+
+If you want to use an existing Kubernetes Secret for the console service, you can create it manually with the following command:
+
+```console
+kubectl create secret generic midaz-console \
+  --from-literal=PLUGIN_AUTH_CLIENT_SECRET='<your-plugin-auth-client-secret>' \
+  --from-literal=NEXTAUTH_SECRET='<your-nextauth-secret>' \
+  --from-literal=MONGODB_PASS='<your-mongodb-password>' \
+  -n midaz
+```
+
+**Note:** The console service has different secret keys compared to onboarding and transaction services.
+
+Then configure the console service to use this existing secret:
+
+```yaml
+console:
+  useExistingSecret: true
+  existingSecretName: "midaz-console"
+```
 
 ## Observability
 

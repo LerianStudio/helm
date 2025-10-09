@@ -1,3 +1,18 @@
+## [midaz-4.2.1-beta.1] - 2025-10-09
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.2.0...midaz-v4.2.1-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Transition to Version 1.0.0**: This update introduces breaking changes across multiple components, including authentication, backend, build processes, configuration, database, dependencies, documentation, and frontend. Users are advised to review the updated configuration and API changes to ensure compatibility with existing systems. Migration may require adjustments to your current setup. Please consult the migration guide for detailed steps.
+
+### 📚 Documentation
+- **Enhanced Backend Guidance**: We've added detailed instructions on manually creating service secrets in Kubernetes. This improvement aids developers in securely managing service credentials, ensuring smoother deployment processes and better security practices. [Components: backend, docs]
+
+### 🔧 Maintenance
+- **Release Management Preparation**: We've made minor adjustments and dependency updates in preparation for version 4.2.1-beta.1. These changes focus on stabilizing the codebase and ensuring readiness for upcoming feature releases, supporting ongoing development efforts and maintaining system reliability.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

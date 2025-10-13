@@ -226,7 +226,7 @@ frontend:
     # -- Kubernetes service type
     type: ClusterIP
     # -- Service port
-    port: 8081
+    port: 8084
 
   ingress:
     # -- Enable or disable ingress

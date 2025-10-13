@@ -1,3 +1,32 @@
+## [plugin-smart-templates-3.0.0-beta.1] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-smart-templates-v2.0.2...plugin-smart-templates-v3.0.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, gauchito91, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication, Backend, Build, Config, Database**: Major updates require users to adapt to new configurations and API endpoints. Review the v4.0 upgrade guide for detailed migration steps to ensure compatibility with updated security protocols.
+- **Database**: Changes in database configurations may affect existing deployments. Users need to update their setups to align with new logical replication slots and SQL formatting.
+
+### ✨ Features
+- **Backend**: Introduced telemetry for onboarding and transaction services, enhancing monitoring and analytics capabilities, allowing for better service insights.
+- **Database**: Added support for external secrets for RabbitMQ admin credentials, significantly improving security and management ease.
+- **Deployment**: Deployed Kubernetes manifests for PIX QR code service and BR PIX direct JD plugin, expanding deployment options and service integration.
+
+### 🐛 Bug Fixes
+- **Backend**: Corrected plugin registration URL to ensure proper routing and access, resolving previous access issues.
+- **Database**: Updated Helm hooks to pre-install for Postgres and RabbitMQ, preventing installation errors and streamlining the setup process.
+
+### ⚡ Performance
+- **Config, Database**: Upgraded app version to 3.3.0 with SSL mode configurations, enhancing data security and connection reliability.
+
+### 🔄 Changes
+- **Backend, Build, Config**: Enhanced NGINX deployment with custom configmap names and security contexts, providing greater flexibility and improved security.
+
+### 🔧 Maintenance
+- **Dependencies**: Migrated from Bitnami to alternative solutions, ensuring up-to-date security and performance with the latest image tags.
+- **Config**: Refactored nginx ingress configuration for simplified management and improved clarity.
+
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

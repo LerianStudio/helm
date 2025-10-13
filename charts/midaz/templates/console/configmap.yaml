@@ -19,7 +19,7 @@ data:
   MIDAZ_CONSOLE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_PORT | default "8081" | quote }}
   MIDAZ_CONSOLE_SERVICE_HOST: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_HOST | default "midaz-console" | quote }}
   MIDAZ_CONSOLE_SERVICE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_PORT | default "8081" | quote }}
-  MIDAZ_CONSOLE_BASE_PATH: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
+  MIDAZ_CONSOLE_BASE_PATH: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH| default "http://midaz-console:8081" | quote }}
   MIDAZ_CONSOLE_ENABLE_DEBUG: {{ .Values.console.configmap.MIDAZ_CONSOLE_ENABLE_DEBUG | default "true" | quote }}
   MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: {{ .Values.console.configmap.MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED | default "false" | quote }}
   MIDAZ_ACCOUNT_TYPE_VALIDATION: {{ .Values.console.configmap.MIDAZ_ACCOUNT_TYPE_VALIDATION | default "" | quote }}
@@ -38,7 +38,7 @@ data:
   MIDAZ_TRANSACTION_BASE_PATH: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PATH | default (printf "http://midaz-transaction.%s.svc.cluster.local.:3001/v1" .Release.Namespace) | quote }}
 
   # NextAuth Configuration
-  NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
+  NEXTAUTH_URL: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
   NEXTAUTH_URL_INTERNAL: {{ .Values.console.configmap.NEXTAUTH_URL_INTERNAL | default "http://midaz-console:8081" | quote }}
 
   # Plugin Auth
@@ -62,7 +62,7 @@ data:
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
   NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS | default "midaz,plugin-fees,plugin-crm,plugin-smart-templates" | quote }}
   NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console:8081" | quote }}
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
   NEXT_PUBLIC_MIDAZ_VERSION: {{ .Values.console.image.tag | quote }}
 
   # Extra Env Vars
@@ -72,3 +72,6 @@ data:
 
 {{- end }}
 
+NEXTAUTH_URL: "http://localhost:8080"
+    NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: "http://localhost:8080"
+    MIDAZ_CONSOLE_BASE_PATH: "http://localhost:8080"

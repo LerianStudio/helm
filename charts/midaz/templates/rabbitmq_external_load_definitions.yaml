@@ -5,6 +5,9 @@ kind: ConfigMap
 metadata:
   name: midaz-external-rabbitmq-definitions
   namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
 data:
   load_definitions.json: |
 {{ .Files.Get "files/rabbitmq/load_definitions.json" | indent 4 }}
@@ -16,6 +19,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
     spec:

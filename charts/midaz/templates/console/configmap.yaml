@@ -71,7 +71,3 @@ data:
   {{- end }}
 
 {{- end }}
-
-NEXTAUTH_URL: "http://localhost:8080"
-    NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: "http://localhost:8080"
-    MIDAZ_CONSOLE_BASE_PATH: "http://localhost:8080"

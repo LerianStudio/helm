@@ -15,7 +15,7 @@ metadata:
   name: midaz-rabbitmq-apply-definitions
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": pre-install
 spec:
   template:
     spec:

@@ -1,3 +1,22 @@
+## [midaz-4.3.0-beta.2] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.0-beta.1...midaz-v4.3.0-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **System Configuration Update**: The release 3.0.0-beta.1 introduces breaking changes across the auth, backend, build, config, and database components. Users must update their deployment scripts and environment configurations to align with the new system requirements. It is crucial to test these changes in a staging environment before production deployment to ensure compatibility and stability.
+
+### ✨ Features
+- **Enhanced Configuration Management**: Added Helm hooks to onboarding and transaction ConfigMaps for pre-install/upgrade ordering. This ensures configuration changes are applied in the correct sequence, enhancing deployment reliability.
+- **Resource Management Control**: Introduced helm hook weights and delete policies for Postgres and RabbitMQ resources. This provides better orchestration and cleanup of database resources, improving deployment efficiency.
+
+### 🔄 Changes
+- **Secure Data Handling**: Added pre-install and pre-upgrade hooks to onboarding and transaction secrets, ensuring sensitive data is managed securely during deployments.
+
+### 🔧 Maintenance
+- **Streamlined Deployment Process**: Removed outdated Helm hooks from secret templates and updated dependencies to the latest versions. These changes reduce maintenance overhead and improve system stability.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

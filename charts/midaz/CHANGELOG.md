@@ -1,3 +1,16 @@
+## [midaz-4.3.0-beta.4] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.0-beta.3...midaz-v4.3.0-beta.4)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Role-Based Access Control (RBAC)**: Enhance your security management with more granular access control. This feature allows you to define roles and permissions, ensuring that users have access only to the resources they need.
+- **Automatic nginx Restart**: Increase system reliability with automatic nginx restarts. This feature minimizes downtime and reduces the need for manual intervention, ensuring continuous service availability.
+
+### 🔧 Maintenance
+- **Backend, Database Improvements**: This update includes various under-the-hood enhancements to both backend and database components. These changes prepare the system for future updates and maintain overall stability and performance. Users can adopt this release without any modifications to existing setups.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

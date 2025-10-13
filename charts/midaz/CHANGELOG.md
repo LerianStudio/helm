@@ -1,3 +1,20 @@
+## [midaz-4.3.0-beta.1] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.2.1...midaz-v4.3.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Backend**: Corrected the plugin registration URL to use the `midaz-console-nginx` hostname. This fix ensures plugins are registered correctly, improving functionality and reducing routing issues.
+
+### 🔄 Changes
+- **Backend/Config**: Updated the default NGINX_BASE_PATH to `midaz-console-nginx`. This change aligns configurations with the new service architecture, enhancing deployment consistency and reducing setup errors.
+- **Database**: Modified Helm hooks from post-install to pre-install for Postgres and RabbitMQ. This adjustment ensures immediate availability of these services after deployment, minimizing downtime and improving setup reliability.
+
+### 🔧 Maintenance
+- **Release Management**: Prepared for the upcoming 4.3.0-beta.1 release, ensuring backend and database components are updated and documented. This step keeps the project on track for future enhancements.
+- **Security/Frontend**: Enabled root access and writable filesystem for frontend containers in plugins, addressing permission issues and ensuring seamless plugin operation while maintaining system integrity.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

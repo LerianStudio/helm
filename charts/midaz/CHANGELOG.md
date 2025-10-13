@@ -1,3 +1,19 @@
+## [midaz-4.3.0-beta.7] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.0-beta.6...midaz-v4.3.0-beta.7)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Standardized Configuration Management**: The configuration of base URLs is now streamlined using `MIDAZ_CONSOLE_BASE_PATH` as the single source of truth. This enhancement simplifies setup across different environments, reducing the risk of errors and making configuration management more efficient.
+
+### 🐛 Bug Fixes
+- **Flexible Deployment Configurations**: Removed hardcoded localhost URLs from the console configmap. This fix allows for seamless configuration across various deployment environments, enhancing reliability and flexibility.
+- **Template Parsing Improvement**: Fixed a formatting issue by adding a missing space in the `MIDAZ_CONSOLE_BASE_PATH` template expression. This resolves potential parsing errors, ensuring smoother configuration processing.
+
+### 🔧 Maintenance
+- **Version Update**: Updated the project version to 4.3.0-beta.7 as part of the release management process. This ensures that the versioning reflects the latest improvements and changes, maintaining consistency and clarity in the project's development lifecycle.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

@@ -1,3 +1,13 @@
+## [midaz-4.3.0-beta.3] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.0-beta.2...midaz-v4.3.0-beta.3)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔧 Maintenance
+- **Release Management**: The project version has been updated to 4.3.0-beta.3. This beta release allows users to test the latest features and improvements, providing feedback to ensure a robust final release.
+- **Containerization**: The transaction image tag has been updated from version 3.3.4 to 3.3.6. This update includes minor enhancements and bug fixes, resulting in improved stability and performance for the transaction processing component. Users benefit from running the application with the latest security patches and optimizations.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

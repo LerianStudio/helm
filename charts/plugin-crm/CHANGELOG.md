@@ -1,3 +1,34 @@
+## [plugin-crm-3.1.0-beta.1] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v3.0.0...plugin-crm-v3.1.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication & Backend Services**: This release updates authentication protocols and backend service interfaces. Users must follow the migration guide to update their systems for compatibility. Ensure you review the updated authentication methods and backend service calls to prevent disruptions.
+- **Database Schema**: Changes to the database schema require users to migrate their existing databases. Follow the provided migration scripts to update your database without data loss.
+- **Build Configurations**: The build process has been overhauled. Update your build scripts according to the new guidelines to ensure successful deployments.
+
+### ✨ Features
+- **Enhanced Telemetry**: Telemetry is now available for onboarding and transaction services, providing deeper insights into service performance and user interactions.
+- **Secure Credential Management**: Support for external secrets in RabbitMQ admin credentials enhances security and simplifies credential management.
+- **Improved Database Replication**: New logical replication slots and better SQL formatting improve database replication and query readability, facilitating more robust data management.
+
+### 🐛 Bug Fixes
+- **Service Connectivity**: The plugin registration URL now correctly uses the midaz-console-nginx hostname, resolving previous connectivity issues.
+- **Routing Accuracy**: Corrected the default NGINX_BASE_PATH to ensure accurate service routing, improving access reliability.
+- **Deployment Stability**: Adjusted Helm hooks from post-install to pre-install for Postgres and RabbitMQ, preventing setup errors during initialization.
+
+### ⚡ Performance
+- **Deployment Efficiency**: Kubernetes manifests for PIX QR code service and plugin deployments streamline processes, reducing deployment time and improving orchestration.
+
+### 📚 Documentation
+- **Service Secrets Guide**: Added comprehensive instructions for creating service secrets in Kubernetes, aiding in secure and efficient configuration management.
+- **Version Updates**: Documentation now reflects the latest component versions, ensuring users have access to accurate and up-to-date information.
+
+### 🔧 Maintenance
+- **Regular Updates**: Ongoing updates and version bumps ensure compatibility with the latest security patches and feature enhancements.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

@@ -15,9 +15,6 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: {{ include "midaz-onboarding.fullname" . }}
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-5"
 data:
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.onboarding.configmap.OTEL_RESOURCE_SERVICE_NAME | default "onboarding" | quote }}

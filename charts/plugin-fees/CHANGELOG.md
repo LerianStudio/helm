@@ -1,3 +1,26 @@
+## [plugin-fees-3.1.0-beta.2] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.1.0-beta.1...plugin-fees-v3.1.0-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication, Backend, Build, Config, Database, Dependencies**: This release introduces major updates that may require user intervention. Users should review and update their configurations and dependencies to ensure compatibility. Detailed migration steps are available in the release notes.
+
+### ✨ Features
+- **Extended RBAC Permissions**: The backend now supports extended RBAC permissions for the discovery service, allowing access to replicasets and enabling deployment management. This enhances resource monitoring and operational control.
+- **Service Discovery Enhancements**: The service discovery job now includes RBAC and the ability to restart nginx, providing greater flexibility in managing services.
+- **Helm Hooks for ConfigMaps**: New Helm hooks have been added to onboarding and transaction ConfigMaps, ensuring a more reliable deployment process by controlling pre-install/upgrade order.
+
+### 🐛 Bug Fixes
+- **Configuration Flexibility**: Resolved issues with hardcoded localhost URLs in the console configmap, allowing for more flexible and accurate deployments.
+- **Template Correction**: Fixed a template expression in the MIDAZ_CONSOLE_BASE_PATH, ensuring proper parsing and configuration consistency.
+- **Compatibility Update**: Updated the Alpine kubectl container to use /bin/sh, enhancing compatibility and reducing potential runtime errors.
+
+### 🔧 Maintenance
+- **Dependency Updates**: Various dependencies have been updated across components, ensuring the latest features and security patches are included.
+- **Simplified Deployment**: Removed unnecessary Helm hooks from secret templates and configmaps, streamlining the deployment process.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

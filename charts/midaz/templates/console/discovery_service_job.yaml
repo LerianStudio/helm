@@ -52,7 +52,7 @@ spec:
         - -c
         - |
           kubectl rollout restart deployment/{{ include "midaz-console.fullname" . }}-nginx -n {{ .Release.Namespace }}
-          kubectl rollout status deployment/{{ include "midaz-console.fullname" . }}-nginx -n {{ .Release.Namespace }} --timeout=5m
+          kubectl rollout status deployment/{{ include "midaz-console.fullname" . }}-nginx -n {{ .Release.Namespace }} --timeout=2m
       containers:
       - name: midaz-console-service-discovery
         image: curlimages/curl:7.84.0
@@ -71,5 +71,3 @@ spec:
       restartPolicy: OnFailure
   backoffLimit: 4
 {{- end }}
-
-

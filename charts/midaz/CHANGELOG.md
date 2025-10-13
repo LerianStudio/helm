@@ -1,3 +1,15 @@
+## [midaz-4.3.0-beta.5] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.0-beta.4...midaz-v4.3.0-beta.5)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Backend**: Updated the shell in the Alpine kubectl container from `/bin/bash` to `/bin/sh`. This change enhances compatibility across different systems, particularly those where `/bin/bash` is not available, ensuring reliable operation in environments using the Alpine image.
+
+### 🔧 Maintenance
+- **Release Management**: Prepared for the upcoming release with version 4.3.0-beta.5. This update aligns the project with the latest release processes, promoting a more organized and predictable release cycle.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

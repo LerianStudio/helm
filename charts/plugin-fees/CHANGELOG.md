@@ -1,3 +1,35 @@
+## [plugin-fees-3.1.0-beta.1] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.0.0...plugin-fees-v3.1.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication & Backend Protocols**: Updates to authentication protocols and backend interfaces require users to follow the migration guide to ensure compatibility with existing integrations. Review the [migration guide](#) for detailed steps.
+- **Configuration Structures**: Changes in configuration structures necessitate updates in deployment scripts. Please consult the updated documentation for guidance.
+- **Database Schemas**: Schema changes in the database may affect data integrity and access. Ensure backups are in place before proceeding with the upgrade.
+
+### ✨ Features
+- **Telemetry for Backend Services**: New telemetry features for onboarding and transaction services provide enhanced monitoring, allowing for improved performance tracking and service insights.
+- **External Secrets Management**: Support for managing RabbitMQ and PostgreSQL credentials externally enhances security by keeping sensitive information out of the application environment.
+- **Kubernetes Deployment for PIX QR Code Service**: New Kubernetes manifests streamline the deployment and management of the PIX QR code service, simplifying integration into Kubernetes environments.
+- **Helm Chart for BR PIX Direct JD Plugin**: The introduction of a Helm chart with PostgreSQL dependency support simplifies the deployment process of this plugin, enhancing integration capabilities.
+
+### 🐛 Bug Fixes
+- **Corrected Plugin Registration URL**: Fixed the URL to use the correct hostname, ensuring proper routing and access to backend services.
+- **NGINX Configuration Update**: Adjusted the default NGINX_BASE_PATH to resolve service misrouting issues, enhancing reliability.
+- **Pre-Install Hooks for Database Initialization**: Changed Helm hooks to pre-install for Postgres and RabbitMQ, ensuring a proper setup sequence and reducing deployment errors.
+
+### ⚡ Performance
+- **SQL Formatting and Replication**: Enhanced SQL formatting and added logical replication slot support, improving database performance and replication capabilities.
+
+### 📚 Documentation
+- **Service Secrets Management**: Added comprehensive instructions for manually creating service secrets in Kubernetes, aiding users in managing sensitive information securely.
+
+### 🔧 Maintenance
+- **Chart and Dependency Updates**: Regular updates to chart versions and component dependencies ensure compatibility and leverage the latest features and security patches.
+- **Security Enhancements**: Adjustments to allow root access and writable filesystems for frontend containers in plugins address specific use cases while maintaining security controls.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

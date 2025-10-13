@@ -5,9 +5,6 @@ kind: ConfigMap
 metadata:
   name: midaz-external-rabbitmq-definitions
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "-5"
 data:
   load_definitions.json: |
 {{ .Files.Get "files/rabbitmq/load_definitions.json" | indent 4 }}
@@ -17,11 +14,11 @@ kind: Job
 metadata:
   name: midaz-rabbitmq-apply-definitions
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "0"
-    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
+  ttlSecondsAfterFinished: 300
+  completions: 1
+  parallelism: 1
+  backoffLimit: 3
   template:
     spec:
       restartPolicy: OnFailure
@@ -51,6 +48,24 @@ spec:
             - sh
             - -c
             - |
+              set -e
+              echo "Checking if RabbitMQ users already exist..."
+
+              # Check if key users exist (onboarding, transaction, consumer)
+              ONBOARDING_EXISTS=$(curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST/api/users/onboarding" 2>/dev/null || echo "not_found")
+              TRANSACTION_EXISTS=$(curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST/api/users/transaction" 2>/dev/null || echo "not_found")
+              CONSUMER_EXISTS=$(curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST/api/users/consumer" 2>/dev/null || echo "not_found")
+
+              if echo "$ONBOARDING_EXISTS" | grep -q "onboarding" && \
+                 echo "$TRANSACTION_EXISTS" | grep -q "transaction" && \
+                 echo "$CONSUMER_EXISTS" | grep -q "consumer"; then
+                echo "RabbitMQ definitions already applied (users onboarding, transaction, and consumer exist). Skipping."
+                exit 0
+              fi
+
               echo "Applying RabbitMQ definitions from file"
               curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \

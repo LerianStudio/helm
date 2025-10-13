@@ -19,7 +19,7 @@ data:
   MIDAZ_CONSOLE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_PORT | default "8081" | quote }}
   MIDAZ_CONSOLE_SERVICE_HOST: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_HOST | default "midaz-console" | quote }}
   MIDAZ_CONSOLE_SERVICE_PORT: {{ .Values.console.configmap.MIDAZ_CONSOLE_SERVICE_PORT | default "8081" | quote }}
-  MIDAZ_CONSOLE_BASE_PATH: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH| default "http://midaz-console:8081" | quote }}
+  MIDAZ_CONSOLE_BASE_PATH: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
   MIDAZ_CONSOLE_ENABLE_DEBUG: {{ .Values.console.configmap.MIDAZ_CONSOLE_ENABLE_DEBUG | default "true" | quote }}
   MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: {{ .Values.console.configmap.MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED | default "false" | quote }}
   MIDAZ_ACCOUNT_TYPE_VALIDATION: {{ .Values.console.configmap.MIDAZ_ACCOUNT_TYPE_VALIDATION | default "" | quote }}

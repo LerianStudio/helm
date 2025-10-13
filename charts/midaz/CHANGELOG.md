@@ -1,3 +1,15 @@
+## [midaz-4.3.0-beta.6] - 2025-10-13
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.0-beta.5...midaz-v4.3.0-beta.6)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Service Discovery**: The discovery service now has extended RBAC permissions to access replicasets and list/watch deployments. This improvement offers users greater visibility and control over their deployment environments, facilitating better resource management and operational efficiency.
+
+### 🔧 Maintenance
+- **Version 4.3.0-beta.6 Release**: This update includes various behind-the-scenes improvements that ensure the platform remains stable and ready for future enhancements. While there are no immediate user-facing changes, these updates contribute to the overall robustness and reliability of the system.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

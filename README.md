@@ -16,7 +16,7 @@
 
 | Chart Version | Console Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: |
-| `4.2.0` | `3.3.5` | `3.3.4` | `3.3.4` |
+| `4.3.0` | `3.3.5` | `3.3.4` | `3.3.6` |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -29,7 +29,7 @@
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `3.1.0` | `2.2.0` | `2.0.0` |
+| `4.0.0` | `2.2.0` | `2.0.0` |
 
 -----------------
 
@@ -43,7 +43,7 @@
 
 | Chart Version | CRM Version | UI Version |
 | :---: | :---: | :---: |
-| `2.0.1` | `2.0.0` | `2.0.0` |
+| `3.1.0` | `2.0.0` | `2.0.0` |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -56,7 +56,7 @@
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `2.0.1` | `2.0.0` | `2.0.0` |
+| `3.1.0` | `2.0.0` | `2.0.0` |
 -----------------
 
 ### Plugin Smart Templates

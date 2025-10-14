@@ -1,3 +1,22 @@
+## [plugin-crm-3.1.1-beta.1] - 2025-10-14
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v3.1.0...plugin-crm-v3.1.1-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication, Backend, Build, Config, Database, Dependencies**: Major updates may affect existing integrations and workflows. Users must review the updated configuration and API changes. Migration steps are necessary to adapt to the new architecture. Please refer to the migration guide for detailed instructions.
+
+### ⚡ Performance
+- **Build, Config, Database, Auth**: Enhanced build processes, refined configuration management, and improved database interactions lead to a more efficient and responsive system. Users will experience faster load times and smoother operations.
+
+### 🔄 Changes
+- **Dependencies**: Updated plugin-fees to version 2.1.1, ensuring compatibility with the latest features and security enhancements. This update provides improved stability and performance for fee calculations.
+
+### 🔧 Maintenance
+- **Release Management**: Prepared multiple releases, including 3.1.1-beta.1, 4.3.1-beta.1, and 3.1.0-beta.3, to streamline the deployment process and ensure smooth transitions between versions. These releases focus on maintaining code quality and preparing for future feature rollouts.
+- **Dependencies, Config**: Routine updates and maintenance tasks were performed to keep the codebase up-to-date with the latest standards and practices, ensuring long-term maintainability and reducing technical debt.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

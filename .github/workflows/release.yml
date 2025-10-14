@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - hotfix/midaz-v4.5.1
     paths-ignore:
       - 'README.md'
       - '.github/workflows/**'

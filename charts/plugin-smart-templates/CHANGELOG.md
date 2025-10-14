@@ -1,3 +1,35 @@
+## [plugin-smart-templates-3.0.0] - 2025-10-14
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-smart-templates-v3.0.0-beta.1...plugin-smart-templates-v3.0.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication and Configuration Updates**: This release includes updates to authentication protocols and backend configurations. Users must review and adapt their integrations to ensure compatibility. Please refer to the migration guide for detailed steps on updating your setup.
+
+### ✨ Features
+- **Extended RBAC Permissions**: The discovery service now supports extended RBAC permissions, allowing access to replicasets and enabling list/watch capabilities for deployments. This enhancement provides greater flexibility and control over deployment management.
+- **Service Discovery Enhancements**: Introduced RBAC and nginx restart capabilities to the service discovery job, improving robustness and reliability in managing services.
+- **Improved Config Management**: Added Helm hooks for onboarding and transaction ConfigMaps, ensuring proper pre-install and upgrade ordering, which enhances deployment consistency and reduces configuration errors.
+
+### 🐛 Bug Fixes
+- **Configuration Flexibility**: Resolved hardcoded localhost URLs in the console configmap, improving deployment portability and flexibility.
+- **Template Correction**: Fixed a template expression in MIDAZ_CONSOLE_BASE_PATH, ensuring accurate path configuration and consistency across deployments.
+- **Container Compatibility**: Updated the Alpine kubectl container to use /bin/sh instead of /bin/bash, ensuring compatibility and reducing image size.
+
+### ⚡ Performance
+- **Optimized Database Jobs**: Refactored bootstrap jobs to include TTL, parallelism, and user existence checks, optimizing job execution and resource utilization.
+
+### 🔄 Changes
+- **Service Port Update**: Updated frontend service port from 8081 to 8084 in the plugin-fees chart, aligning with new network policies and improving service accessibility.
+
+### 📚 Documentation
+- **Chart Version Updates**: Updated chart versions for access-manager, fees, CRM, and transaction components, ensuring documentation alignment with the latest updates and dependencies.
+
+### 🔧 Maintenance
+- **Streamlined Configuration**: Removed pre-install/upgrade Helm hooks from onboarding and transaction configmaps, simplifying the configuration process and reducing potential errors.
+- **Release Preparations**: Conducted multiple release preparations for upcoming versions 3.1.0 and 4.3.0, including beta releases, to ensure smooth transitions and thorough testing before stable releases.
+
+
 ## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

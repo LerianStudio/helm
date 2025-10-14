@@ -4,10 +4,11 @@ kind: Job
 metadata:
   name: midaz-postgres-bootstrap
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": post-install
 spec:
-  backoffLimit: 1
+  ttlSecondsAfterFinished: 300
+  completions: 1
+  parallelism: 1
+  backoffLimit: 3
   template:
     spec:
       restartPolicy: Never

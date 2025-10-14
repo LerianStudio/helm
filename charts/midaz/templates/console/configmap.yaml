@@ -27,7 +27,7 @@ data:
   # Nginx Configuration
   NGINX_PORT: {{ .Values.console.configmap.NGINX_PORT | default "8080" | quote }}
   NGINX_HOST: {{ .Values.console.configmap.NGINX_HOST | default "midaz-nginx" | quote }}
-  NGINX_BASE_PATH: {{ .Values.console.configmap.NGINX_BASE_PATH | default (printf "http://midaz-nginx.%s.svc.cluster.local:8080" .Release.Namespace) | quote }}
+  NGINX_BASE_PATH: {{ .Values.console.configmap.NGINX_BASE_PATH | default (printf "http://midaz-console-nginx.%s.svc.cluster.local:8080" .Release.Namespace) | quote }}
 
   # Midaz API Configuration
   MIDAZ_API_HOST: {{ .Values.console.configmap.MIDAZ_API_HOST | default (printf "midaz-onboarding.%s.svc.cluster.local." .Release.Namespace) | quote }}
@@ -38,7 +38,7 @@ data:
   MIDAZ_TRANSACTION_BASE_PATH: {{ .Values.console.configmap.MIDAZ_TRANSACTION_BASE_PATH | default (printf "http://midaz-transaction.%s.svc.cluster.local.:3001/v1" .Release.Namespace) | quote }}
 
   # NextAuth Configuration
-  NEXTAUTH_URL: {{ .Values.console.configmap.NEXTAUTH_URL | default "http://midaz-console:8081" | quote }}
+  NEXTAUTH_URL: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
   NEXTAUTH_URL_INTERNAL: {{ .Values.console.configmap.NEXTAUTH_URL_INTERNAL | default "http://midaz-console:8081" | quote }}
 
   # Plugin Auth
@@ -62,7 +62,7 @@ data:
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
   NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS | default "midaz,plugin-fees,plugin-crm,plugin-smart-templates" | quote }}
   NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.console.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.console.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-console:8081" | quote }}
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.console.configmap.MIDAZ_CONSOLE_BASE_PATH | default "http://midaz-console:8081" | quote }}
   NEXT_PUBLIC_MIDAZ_VERSION: {{ .Values.console.image.tag | quote }}
 
   # Extra Env Vars
@@ -71,4 +71,3 @@ data:
   {{- end }}
 
 {{- end }}
-

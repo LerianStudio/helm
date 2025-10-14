@@ -1,3 +1,21 @@
+## [plugin-fees-3.1.0] - 2025-10-14
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.1.0-beta.2...plugin-fees-v3.1.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚡ Performance
+- **Backend, Build, Config, Database**: Upgraded to version 4.3.0, enhancing system stability and performance. Users will notice improved resource management and smoother operations, contributing to a more robust infrastructure.
+
+### 🔄 Changes
+- **Auth, Backend, Build, Config, Database**: Updated to version 3.1.0, focusing on optimizing existing functionalities. These routine updates prepare the groundwork for future enhancements and ensure continued reliability.
+
+### 📚 Documentation
+- **Docs**: Updated chart versions for access-manager, fees, CRM, and transaction components. This ensures that documentation is consistent with the latest configurations, aiding developers in maintaining deployment accuracy.
+
+### 🔧 Maintenance
+- **General Release**: Version 4.2.1 includes minor updates and maintenance tasks that bolster system stability and performance, ensuring all components operate optimally.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

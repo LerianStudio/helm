@@ -1,3 +1,34 @@
+## [plugin-crm-3.1.0] - 2025-10-14
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v3.1.0-beta.1...plugin-crm-v3.1.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Configuration Overhaul**: Version 4.0.0 introduces comprehensive changes to the configuration settings. Users must review and update their configurations according to the new requirements to ensure compatibility. Migration steps are detailed in the [migration guide](#).
+
+### ✨ Features
+- **Enhanced RBAC for Discovery Service**: The discovery service now supports extended RBAC permissions, allowing access to replicasets and the ability to list/watch deployments. This enhancement significantly improves resource management capabilities.
+- **Service Control Flexibility**: Added the ability to restart nginx within the service discovery job, providing greater operational control and flexibility.
+- **Helm Hooks for ConfigMaps**: New Helm hooks for onboarding and transaction ConfigMaps improve deployment process management, ensuring better pre-install and upgrade ordering.
+
+### 🐛 Bug Fixes
+- **Connectivity Fixes**: Resolved issues with hardcoded localhost URLs in the console configmap, enhancing deployment flexibility and connectivity.
+- **Template Correction**: Fixed a template expression error in MIDAZ_CONSOLE_BASE_PATH, ensuring accurate path resolutions and improving deployment consistency.
+
+### ⚡ Performance
+- **Database Job Efficiency**: Refactored database bootstrap jobs to include TTL, parallelism, and user existence checks, leading to more efficient and reliable job execution.
+
+### 🔄 Changes
+- **Frontend Service Port Update**: The frontend service port has been updated from 8081 to 8084, aligning with new network configurations and improving service routing.
+
+### 📚 Documentation
+- **Chart Version Updates**: Updated documentation to reflect the latest chart versions for access-manager, fees, CRM, and transaction components, ensuring users have access to the most current information.
+
+### 🔧 Maintenance
+- **Simplified Deployment Scripts**: Removed pre-install/upgrade Helm hooks from secret templates and configmaps, streamlining deployment scripts and reducing potential errors.
+- **Shell Compatibility**: Changed the shell in the alpine kubectl container to /bin/sh for better compatibility with alpine-based images.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

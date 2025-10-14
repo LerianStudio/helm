@@ -1,3 +1,19 @@
+## [midaz-4.3.0] - 2025-10-14
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.0-beta.7...midaz-v4.3.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 📚 Documentation
+- **Docs**: Updated chart versions for access-manager, fees, CRM, and transaction components. This ensures users have access to the latest information and can confidently deploy the most recent versions of these components.
+
+### 🔧 Maintenance
+- **Release Management**: Released version 4.2.1 with minor updates and maintenance improvements, focusing on stability and reliability without introducing new features.
+
+### ✨ Improvements
+- **Backend, Build, Config, Database**: Version 4.3.0 introduces enhancements that improve integration and performance consistency. Users will experience more reliable operations across backend processes, build systems, configuration management, and database operations, leading to a more seamless experience.
+- **Frontend**: Updated the service port for the plugin-fees chart from 8081 to 8084. This change helps prevent port conflicts, ensuring smoother operation in environments where port 8081 is already in use.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

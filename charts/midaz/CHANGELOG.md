@@ -1,3 +1,20 @@
+## [midaz-4.3.1-beta.1] - 2025-10-14
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.0...midaz-v4.3.1-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication & Backend Overhaul**: The update to version 3.0.0 involves significant changes to the authentication and backend systems. This may affect existing configurations and integrations. Users must review the [migration guide](#) to update their configurations and ensure compatibility with the new API and database interactions.
+
+### ⚡ Performance
+- **Build System Enhancements**: The build process has been optimized across multiple components, including auth, backend, and database. This results in faster build times and a more efficient development workflow, accelerating release cycles and improving deployment efficiency.
+
+### 🔧 Maintenance
+- **Dependencies Update**: Upgraded the plugin-fees dependency to version 2.1.1. This update ensures compatibility with the latest features and security patches, enhancing the system's stability and performance.
+- **Release Management Improvements**: Conducted several chore updates to streamline the release process, including preparing beta versions 4.3.1-beta.1 and 3.1.0-beta.3. These steps ensure a smooth release process and thorough testing of new versions before final deployment.
+- **Configuration and Dependencies Maintenance**: Routine updates to configuration files and dependencies were carried out to maintain system integrity and compatibility with third-party tools, preventing potential issues from outdated configurations.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

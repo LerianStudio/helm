@@ -49,7 +49,7 @@ data:
 
   # MIDAZ COMMUNICATION
   CLIENT_ID: {{ .Values.fees.configmap.CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
-  MIDAZ_ONBOARDING_URL: {{ .Values.fees.configmap.MIDAZ_ONBOARDING_URL | default "http://midaz-onboarding.midaz.svc.cluster.local:3000/v1" | quote }}
+  MIDAZ_ONBOARDING_URL: {{ .Values.fees.configmap.MIDAZ_ONBOARDING_URL | default "http://midaz-onboarding.midaz.svc.cluster.local:3000/v1/" | quote }}
 
   # Extra Env Vars
   {{- with .Values.fees.extraEnvVars }}

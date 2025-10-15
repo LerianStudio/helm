@@ -4,6 +4,11 @@
     {
       "name": "develop",
       "prerelease": "beta"
+    },
+    {
+      "name": "hotfix/midaz-v4.5.1",
+      "range": "4.5.x",
+      "channel": "4.5.x"
     }
   ],
   "plugins": [

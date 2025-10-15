@@ -72,36 +72,48 @@ jobs:
           echo "DEBUG: HEADER_LINE=$HEADER_LINE"
           echo "DEBUG: DATA_LINE=$DATA_LINE"
 
-          # Build ASCII table with box drawing characters
-          TABLE_ASCII=$(echo "{\"header\": \"$HEADER_LINE\", \"data\": \"$DATA_LINE\"}" | jq -r '
-            # Parse columns
-            (.header | split("|") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != ""))) as $headers |
-            (.data | split("|") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != ""))) as $values |
+          # Get the latest release tag for this chart
+          LATEST_TAG=$(git tag -l "${CHART_NAME_RAW}-v*" --sort=-v:refname | head -1)
+          CHART_VERSION=$(echo "$LATEST_TAG" | sed "s/${CHART_NAME_RAW}-v//")
+          RELEASE_URL="${{ github.server_url }}/${{ github.repository }}/releases/tag/${LATEST_TAG}"
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
 
-            # Calculate widths
-            [range(0; $headers | length)] | map(
-              [($headers[.] | length), ($values[.] | length)] | max
-            ) as $widths |
+          # Build README anchor URL (e.g., #midaz-helm-chart, #reporter)
+          # Extract anchor from the README heading we found
+          README_ANCHOR=$(echo "$CHART_SECTION" | head -1 | sed 's/^### //' | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+          README_URL="${{ github.server_url }}/${{ github.repository }}?tab=readme-ov-file#${README_ANCHOR}"
 
-            # Build separator line
-            def separator(left; mid; right):
-              left + ([$widths[] | "─" * (. + 2)] | join(mid)) + right;
+          echo "DEBUG: LATEST_TAG=$LATEST_TAG"
+          echo "DEBUG: CHART_VERSION=$CHART_VERSION"
+          echo "DEBUG: README_ANCHOR=$README_ANCHOR"
 
-            # Build data row
-            def row(data):
-              "│" + ([range(0; data | length)] | map(
-                " " + data[.] + (" " * ($widths[.] - (data[.] | length) + 1))
-              ) | join("│")) + "│";
+          # Build native Slack table block for components (horizontal layout)
+          # Uses the new table block type (introduced Aug 2025)
+          # Chart Version as first column, then components
+          TABLE_BLOCK=$(echo "{\"header\": \"$HEADER_LINE\", \"data\": \"$DATA_LINE\"}" | jq -c '
+            # Parse columns - remove backticks and "Version" suffix from headers
+            (.header | split("|") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != "")) | map(gsub(" Version$"; ""))) as $headers |
+            (.data | split("|") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != "")) | map(gsub("`"; ""))) as $values |
 
-            # Combine all
-            [
-              separator("┌"; "┬"; "┐"),
-              row($headers),
-              separator("├"; "┼"; "┤"),
-              row($values),
-              separator("└"; "┴"; "┘")
-            ] | join("\n")
+            # Build horizontal table with ALL columns (including Chart)
+            # Header row: all column names
+            $headers | map({type: "raw_text", text: .}) as $header_row |
+
+            # Data row: all version values
+            $values | map({type: "raw_text", text: .}) as $data_row |
+
+            # Build column settings (center align for all)
+            $headers | map({align: "center", is_wrapped: false}) as $col_settings |
+
+            # Build table block
+            {
+              type: "table",
+              column_settings: $col_settings,
+              rows: [$header_row, $data_row]
+            }
           ')
+
+          echo "DEBUG: TABLE_BLOCK=$TABLE_BLOCK"
 
           # Get mention group ID and build context
           MENTION_GROUP="${{ secrets.SLACK_GROUP_TECH_SUPPORT }}"
@@ -115,40 +127,32 @@ jobs:
             CONTEXT_TEXT=":clock1: ${TIMESTAMP} | Workflow: <${WORKFLOW_URL}|#${WORKFLOW_NUM}>"
           fi
 
-          # Build Slack payload with green color bar
+          # Build Slack payload with blocks at root level (avoids "show more" collapse)
+          # Use attachment only for the color bar indicator
           SLACK_PAYLOAD=$(jq -n \
             --arg channel "${{ secrets.SLACK_CHANNEL_DEVOPS }}" \
             --arg chart_name "$CHART_NAME" \
-            --arg table "$TABLE_ASCII" \
+            --arg chart_version "$CHART_VERSION" \
+            --arg release_url "$RELEASE_URL" \
+            --arg commit_url "$COMMIT_URL" \
+            --arg readme_url "$README_URL" \
+            --argjson table_block "$TABLE_BLOCK" \
             --arg context "$CONTEXT_TEXT" \
             '{
               channel: $channel,
+              blocks: [
+                {type: "header", text: {type: "plain_text", text: ("New Release: " + $chart_name + " Helm Chart :rocket:"), emoji: true}},
+                $table_block,
+                {type: "actions", elements: [
+                  {type: "button", text: {type: "plain_text", text: "View Release", emoji: true}, url: $release_url, style: "primary"},
+                  {type: "button", text: {type: "plain_text", text: "View Versions", emoji: true}, url: $readme_url},
+                  {type: "button", text: {type: "plain_text", text: "View Commit", emoji: true}, url: $commit_url}
+                ]},
+                {type: "context", elements: [{type: "mrkdwn", text: $context}]}
+              ],
               attachments: [{
                 color: "#36a64f",
-                blocks: [
-                  {
-                    type: "header",
-                    text: {
-                      type: "plain_text",
-                      text: ("New Release: " + $chart_name + " Helm Chart :rocket:"),
-                      emoji: true
-                    }
-                  },
-                  {type: "divider"},
-                  {
-                    type: "rich_text",
-                    elements: [
-                      {
-                        type: "rich_text_preformatted",
-                        elements: [
-                          {type: "text", text: $table}
-                        ]
-                      }
-                    ]
-                  },
-                  {type: "divider"},
-                  {type: "context", elements: [{type: "mrkdwn", text: $context}]}
-                ]
+                blocks: []
               }]
             }')
 

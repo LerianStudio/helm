@@ -1,3 +1,15 @@
+## [plugin-fees-3.2.0-beta.1] - 2025-10-15
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.1.1...plugin-fees-v3.2.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Config**: Corrected the MIDAZ_ONBOARDING_URL in the fees configmap by ensuring a trailing slash is included. This fix prevents potential issues with URL resolution, enhancing the reliability of configuration setups and ensuring consistent URL functionality.
+
+### 🔧 Maintenance
+- **Config**: Released version 3.2.0-beta.1, incorporating the latest updates and fixes. This release lays the groundwork for upcoming features, ensuring system stability and readiness for future enhancements.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

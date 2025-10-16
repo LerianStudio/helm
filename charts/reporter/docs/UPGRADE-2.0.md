@@ -42,7 +42,7 @@ common:
     configmap:
         # Redis Configs
         REDIS_MASTER_NAME: ""
-        REDIS_HOST: plugin-smart-templates-valkey-primary.midaz-plugins.svc.cluster.local
+        REDIS_HOST: reporter-valkey-primary.reporter.svc.cluster.local
         REDIS_PORT: 6379
         REDIS_DB: 0
         REDIS_PROTOCOL: "3"
@@ -52,7 +52,7 @@ common:
         REDIS_SERVICE_ACCOUNT: ""
 ```
 
-***Note:*** See the [common configmap section in values.yaml](https://github.com/LerianStudio/helm/blob/main/charts/plugin-smart-templates/values.yaml) templates for more details.
+***Note:*** See the [common configmap section in values.yaml](https://github.com/LerianStudio/helm/blob/main/charts/reporter/values.yaml) templates for more details.
 
 # Additions
 
@@ -89,10 +89,10 @@ manager:
     useExistingSecret: true
     existingSecretName: <your-secret-name>
 ```
-***Note:*** See the [secrets section in values.yaml](https://github.com/LerianStudio/helm/blob/main/charts/plugin-smart-templates/values.yaml) for get the secrets keys.
+***Note:*** See the [secrets section in values.yaml](https://github.com/LerianStudio/helm/blob/main/charts/reporter/values.yaml) for get the secrets keys.
 
 # Command to upgrade
 
 ```bash
-$ helm upgrade plugin-smart-templates oci://registry-1.docker.io/lerianstudio/plugin-smart-templates --version 2.0.0 -n midaz-plugins
+$ helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter --version 2.0.0 -n midaz-plugins
 ```

@@ -200,8 +200,8 @@ true
 false
 {{- end -}}
 {{- end -}}
-{{- define "minio.enabled" -}}
-{{- if not .Values.minio.external -}}
+{{- define "seaweedfs.enabled" -}}
+{{- if not .Values.seaweedfs.external -}}
 true
 {{- else -}}
 false

@@ -51,15 +51,13 @@ manager:
 
   ingress:
     # -- Enable or disable ingress
-    enabled: true
+    enabled: false
     # -- Ingress class name
     className: "nginx"
     # -- Additional ingress annotations
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
-      nginx.ingress.kubernetes.io/proxy-response-buffer-size: 16k
+    annotations: {}
     hosts:
-      - host: "reporter.dev.lerian.net"
+      - host: ""
         paths:
           - path: /
             pathType: Prefix
@@ -158,6 +156,9 @@ manager:
     SWAGGER_SCHEMES: http
     SWAGGER_LEFT_DELIMITER: "{{"
     SWAGGER_RIGHT_DELIMITER: "}}"
+
+    PDF_POOL_WORKERS: "3"
+    PDF_TIMEOUT_SECONDS: "60"
 
   # Extra Env Vars
   extraEnvVars: {}

@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 manager:
-  name: "plugin-smart-templates-manager"
+  name: "reporter-manager"
 
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
@@ -38,7 +38,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.0.0"
+    tag: "3.1.0-beta.2"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -51,14 +51,15 @@ manager:
 
   ingress:
     # -- Enable or disable ingress
-    enabled: false
+    enabled: true
     # -- Ingress class name
-
-    className: ""
+    className: "nginx"
     # -- Additional ingress annotations
-    annotations: {}
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
+      nginx.ingress.kubernetes.io/proxy-response-buffer-size: 16k
     hosts:
-      - host: ""
+      - host: "reporter.dev.lerian.net"
         paths:
           - path: /
             pathType: Prefix
@@ -145,7 +146,7 @@ manager:
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth:4000"
 
     # OPEN TELEMETRY
-    OTEL_RESOURCE_SERVICE_NAME: plugin-smart-templates-manager
+    OTEL_RESOURCE_SERVICE_NAME: reporter-manager
     OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0" #"{{ .Values.manager.configmap.VERSION }}"
 
     # SWAGGER
@@ -172,16 +173,16 @@ manager:
           metricType: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           metadata:
             value: "80"
-            containerName: "plugin-smart-templates-manager"
+            containerName: "reporter-manager"
         - type: memory
           metricType: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           metadata:
             value: "80"
-            containerName: "plugin-smart-templates-manager"
+            containerName: "reporter-manager"
 
 # Worker configuration
 worker:
-  name: "plugin-smart-templates-worker"
+  name: "reporter-worker"
 
   # -- Annotations for worker job resources
   annotations: {}
@@ -194,7 +195,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.0.0"
+    tag: "3.1.0-beta.2"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -268,7 +269,7 @@ worker:
   # -- KEDA configuration for worker auto-scaling
   keda:
     scaledJob:
-      name: "plugin-smart-templates-worker-scaler"
+      name: "reporter-worker-scaler"
       pollingInterval: 10
       minReplicaCount: 0
       backoffLimit: 3
@@ -288,7 +289,7 @@ worker:
 # Frontend configuration
 frontend:
   # -- Service name
-  name: plugin-smart-templates-frontend
+  name: reporter-frontend
 
   # -- Enable or disable the frontend service
   enabled: true
@@ -305,7 +306,7 @@ frontend:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.0.0"
+    tag: "3.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -433,7 +434,7 @@ frontend:
     # -- Annotations for the ServiceAccount
     annotations: {}
     # -- Name of the service account
-    # @default -- `plugin-smart-templates-frontend.fullname`
+    # @default -- `reporter-frontend.fullname`
     name: ""
 # -- ConfigMap for environment variables and configurations
 # -- All environment variables are declared in the templates/configmap.yaml
@@ -449,17 +450,17 @@ common:
     # RABBITMQ
     RABBITMQ_URI: amqp
     RABBITMQ_PORT_HOST: 15672
-    RABBITMQ_HOST: plugin-smart-templates-rabbitmq.midaz-plugins.svc.cluster.local
+    RABBITMQ_HOST: reporter-rabbitmq.midaz-plugins.svc.cluster.local
     RABBITMQ_PORT_AMQP: 5672
     RABBITMQ_NUMBERS_OF_WORKERS: 5
     RABBITMQ_EXCHANGE: "smart-templates.generate-report.exchange"
     RABBITMQ_GENERATE_REPORT_QUEUE: "smart-templates.generate-report.queue"
     RABBITMQ_GENERATE_REPORT_KEY: "smart-templates.generate-report.key"
-    RABBITMQ_HEALTH_CHECK_URL: "http://plugin-smart-templates-rabbitmq.midaz-plugins.svc.cluster.local:15672"
+    RABBITMQ_HEALTH_CHECK_URL: "http://reporter-rabbitmq.midaz-plugins.svc.cluster.local:15672"
 
     # Redis Configs
     REDIS_MASTER_NAME: ""
-    REDIS_HOST: plugin-smart-templates-valkey-primary.midaz-plugins.svc.cluster.local:6379
+    REDIS_HOST: reporter-valkey.midaz-plugins.svc.cluster.local:6379
     REDIS_DB: 0
     REDIS_PROTOCOL: "3"
     REDIS_TLS: "false"
@@ -467,18 +468,17 @@ common:
     GOOGLE_APPLICATION_CREDENTIALS: ""
     REDIS_SERVICE_ACCOUNT: ""
 
-    # MINIO
-    MINIO_API_HOST: plugin-smart-templates-minio.midaz-plugins.svc.cluster.local
-    MINIO_API_PORT: 9000
-    MINIO_SSL_ENABLED: false
-    MINIO_APP_USER: lerian
+    # SEAWEEEDFS
+    SEAWEEDFS_HOST: seaweedfs-filer.midaz-plugins.svc.cluster.local
+    SEAWEEDFS_FILER_PORT: 9000
+    SEAWEEDFS_TTL: 6M
 
     # MONGO DB
     #MONGO_URI=mongo+srv
     MONGO_URI: mongodb
-    MONGO_HOST: plugin-smart-templates-mongodb.midaz-plugins.svc.cluster.local
-    MONGO_NAME: plugin-smart-templates-db
-    MONGO_USER: plugin-smart-templates
+    MONGO_HOST: reporter-mongodb.midaz-plugins.svc.cluster.local
+    MONGO_NAME: reporter-db
+    MONGO_USER: reporter
     MONGO_PORT: 27017
     MONGO_MAX_POOL_SIZE: 1000
 
@@ -512,7 +512,7 @@ common:
     # MIDAZ ONBOARDING METADATA
     DATASOURCE_ONBOARDING_METADATA_CONFIG_NAME: "midaz_onboarding_metadata"
     DATASOURCE_ONBOARDING_METADATA_URI: "mongodb"
-    DATASOURCE_ONBOARDING_METADATA_HOST: "midaz-mongodb"
+    DATASOURCE_ONBOARDING_METADATA_HOST: "midaz-mongodb.midaz.svc.cluster.local"
     DATASOURCE_ONBOARDING_METADATA_DATABASE: "onboarding"
     DATASOURCE_ONBOARDING_METADATA_USER: "midaz"
     DATASOURCE_ONBOARDING_METADATA_PORT: 27017
@@ -525,7 +525,7 @@ common:
     # MIDAZ TRANSACTION METADATA
     DATASOURCE_TRANSACTION_METADATA_CONFIG_NAME: "midaz_transaction_metadata"
     DATASOURCE_TRANSACTION_METADATA_URI: "mongodb"
-    DATASOURCE_TRANSACTION_METADATA_HOST: "midaz-mongodb"
+    DATASOURCE_TRANSACTION_METADATA_HOST: "midaz-mongodb.midaz.svc.cluster.local"
     DATASOURCE_TRANSACTION_METADATA_DATABASE: "transaction"
     DATASOURCE_TRANSACTION_METADATA_USER: "midaz"
     DATASOURCE_TRANSACTION_METADATA_PORT: 27017
@@ -538,7 +538,7 @@ common:
     # PLUGIN FEES
     DATASOURCE_FEES_CONFIG_NAME: "plugin_fees"
     DATASOURCE_FEES_URI: "mongodb"
-    DATASOURCE_FEES_HOST: "plugin-fees-mongodb"
+    DATASOURCE_FEES_HOST: "plugin-fees-mongodb.plugin-fees.svc.cluster.local"
     DATASOURCE_FEES_DATABASE: "plugin-fees-db"
     DATASOURCE_FEES_USER: "plugin-fees"
     DATASOURCE_FEES_PORT: 27017
@@ -552,7 +552,6 @@ secrets:
   REDIS_PASSWORD: "lerian"
   RABBITMQ_DEFAULT_USER: plugin
   RABBITMQ_DEFAULT_PASS: Lerian@123
-  MINIO_APP_PASSWORD: Lerian@123
   DATASOURCE_FEES_PASSWORD: plugin-fees
   DATASOURCE_TRANSACTION_METADATA_PASSWORD: lerian
   DATASOURCE_ONBOARDING_METADATA_PASSWORD: lerian
@@ -561,60 +560,63 @@ secrets:
   LICENSE_KEY: ""
   ORGANIZATION_IDS: ""
 
-# Minio configuration
-minio:
-  debug: true
-  mode: standalone
-  auth:
-    rootUser: admin
-    rootPassword: lerianminio
-  persistence:
+seaweedfs:
+  enabled: true
+  # image:
+  #   repository: docker.io/
+  #   tag: "3.97"
+
+  master:
     enabled: true
-    size: 10Gi
-  service:
-    type: ClusterIP
-    ports:
-      api: 9000
-      console: 9001
-  resources:
-    limits:
-      cpu: 150m
-      ephemeral-storage: 2Gi
-      memory: 512Mi
-    requests:
-      cpu: 100m
-      ephemeral-storage: 50Mi
-      memory: 256Mi
-  provisioning:
-    enabled: true
-    buckets:
-      - name: templates
-        policy: none
-      - name: reports
-        policy: none
-    # Referencing the secret we created to store user credentials
-    usersExistingSecrets:
-      - "plugin-smart-templates-minio-users"
-    # Policy with correct format
-    policies:
-      - name: readwrite
-        statements:
-          - effect: Allow
-            resources:
-              - 'arn:aws:s3:::templates/*'
-              - 'arn:aws:s3:::templates'
-              - 'arn:aws:s3:::reports/*'
-              - 'arn:aws:s3:::reports'
-            actions:
-              - 's3:ListBucket'
-              - 's3:GetObject'
-              - 's3:PutObject'
-    # Configuration additional
-    resourcesPreset: small
-    wait:
+    extraArgs:
+      - "master"
+      - "-port=9333"
+      - "-mdir=/data"
+    service:
+      ports:
+        http: 9333
+        ui: 9334
+    persistence:
       enabled: true
-      timeout: 30s
-    sleepTime: 60
+      size: 5Gi
+
+  volume:
+    enabled: true
+    extraArgs:
+      - "volume"
+      - "-port=9080"
+      - "-mserver=seaweedfs-master:9333"
+      - "-dir=/data"
+      - "-max=0"
+    service:
+      ports:
+        http: 9080
+    persistence:
+      enabled: true
+      size: 10Gi
+
+  filer:
+    enabled: true
+    extraArgs:
+      - "filer"
+      - "-port=8888"
+      - "-master=seaweedfs-master:9333"
+    service:
+      ports:
+        http: 8888
+    persistence:
+      enabled: true
+      size: 5Gi
+
+  s3:
+    enabled: false
+    extraArgs:
+      - "s3"
+      - "-port=8333"
+      - "-filer=seaweedfs-filer:8888"
+    service:
+      ports:
+        http: 8333
 
 # -- Observability configuration for both manager and worker
 observability:
@@ -633,7 +635,7 @@ observability:
 
 # KEDA configuration
 keda:
-  enabled: true
+  enabled: false
   crds:
     install: true
   webhookCerts:
@@ -675,10 +677,17 @@ keda:
 mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.
   enabled: true
+
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/mongodb
+    tag: "latest"
   external: false
   auth:
     enabled: true
-    rootUser: plugin-smart-templates
+    rootUser: reporter
     rootPassword: lerian
   persistence:
     size: 8Gi
@@ -695,29 +704,47 @@ mongodb:
     port: 27017
 
 rabbitmq:
-  # RabbitMQ dependency for message brokering.
-  # This component is responsible for providing a message queue system
-  # to enable communication between different parts of the application.
   enabled: true
-  external: false
   image:
-    debug: true
-  auth:
-    enabled: true
-    username: plugin
-    password: Lerian@123
-  loadDefinition:
-    enabled: true
-    existingSecret: load-definitions
-    secretKey: load_definition.json
+    tag: "3.13.6"
+
   persistence:
     size: 8Gi
-  resourcesPreset: micro
-  service:
-    type: ClusterIP
-    ports:
-      amqp: 5672
-      management: 15672
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  podSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile: { type: RuntimeDefault }
+
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: { drop: ["ALL"] }
+
+  authentication:
+    user:
+      value: "midaz"
+    password:
+      value: "lerian"
+    erlangCookie:
+      value: "b2a717550ac09676c545fe9d986c7651f7237b2691292961"
+
+  extraSecrets:
+    - name: "reporter-manager-load-definitions"
+      mountPath: /etc/rabbitmq/definitions
+
+  customConfig: |
+    management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
 
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
@@ -726,7 +753,6 @@ valkey:
   # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
 
-  architecture: standalone
   auth:
     enabled: false
 

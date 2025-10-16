@@ -32,9 +32,10 @@ The following dependencies have been deployed:
    - Host: {{ .Values.common.configmap.MONGO_HOST }}
    - Port: {{ .Values.common.configmap.MONGO_PORT }}
 
-3. MinIO
-   - API Host: {{ .Values.common.configmap.MINIO_API_HOST }}
-   - API Port: {{ .Values.common.configmap.MINIO_API_PORT }}
+3. SeaweedFS
+   - API Host: {{ .Values.common.configmap.SEAWEEDFS_HOST }}
+   - API Port: {{ .Values.common.configmap.SEAWEEDFS_FILER_PORT }}
+   - TTL: {{ .Values.common.configmap.SEAWEEDFS_TTL }}
 
 ## Accessing the API
 

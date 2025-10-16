@@ -1,3 +1,39 @@
+## [reporter-1.0.0-beta.1] - 2025-10-16
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/425775a5297a03a3a14e03cf9fac02924798098c...reporter-v1.0.0-beta.1)
+Contributors: Cayo Hollanda, Gabriel Ferreira, Guilherme Moreira, Guilherme Moreira Rodrigues, Henrique, Henrique Melo, Henrique melo, LF Barrile, fellipe26, gauchito91
+
+### ⚠️ Breaking Changes
+- **Configuration Update**: The `REDIS_PORT` environment variable has been removed. Users must now specify the port within the `REDIS_HOST` variable. Update your deployment scripts and environment settings to prevent connection issues.
+- **RabbitMQ Chart Migration**: Transitioned from Bitnami to the groundhog2k chart. Update your Helm charts and values files to maintain compatibility.
+- **Deployment Adjustment**: The `valkey` component is now a Deployment instead of a StatefulSet. Modify your Kubernetes manifests to ensure deployment stability.
+
+### ✨ Features
+- **Service Discovery Enhancements**: Added RBAC permissions and enabled Nginx restarts for service discovery jobs, improving deployment flexibility and scalability.
+- **External Secrets Support**: Introduced external secrets for RabbitMQ and Postgres configurations, enhancing security by managing sensitive data outside application files.
+- **BR PIX Direct JD Plugin**: New Helm chart with PostgreSQL support for seamless setup and deployment of the BR PIX Direct JD plugin.
+
+### 🐛 Bug Fixes
+- **URL Configuration**: Standardized base URL handling with `MIDAZ_CONSOLE_BASE_PATH`, resolving inconsistencies across environments.
+- **Nginx Configuration Fixes**: Corrected service accounts and simplified configmap names, improving service routing and access control.
+- **Authentication Correction**: Fixed RabbitMQ authentication fields in Helm charts to ensure proper credential usage during deployments.
+
+### ⚡ Performance
+- **Telemetry Enhancements**: Enabled telemetry for onboarding and transaction services, offering better insights into application performance and user behavior.
+
+### 🔄 Changes
+- **Security Contexts**: Added security contexts and service accounts to Nginx deployments, enhancing security by restricting permissions and isolating processes.
+- **Postgres and RabbitMQ Initialization**: Improved Helm hook configurations for better ordering during pre-install and upgrade phases, reducing deployment errors.
+
+### 🗑️ Removed
+- **MinIO Replacement**: MinIO has been replaced with SeaweedFS, streamlining storage solutions and improving system efficiency.
+
+### 🔧 Maintenance
+- **Dependency Updates**: Migrated from Bitnami dependencies to alternative solutions, ensuring continued support and security updates.
+- **Code Refactoring**: Renamed `plugin-smart-templates` to `reporter`, aligning with new functionality and improving clarity.
+- **Semantic Release Integration**: Implemented semantic-release for automated versioning and changelog generation, enhancing the release process.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

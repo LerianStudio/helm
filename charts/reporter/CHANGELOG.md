@@ -1,3 +1,18 @@
+## [reporter-1.0.0-beta.2] - 2025-10-16
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.0.0-beta.1...reporter-v1.0.0-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **CRM Data Source Secrets**: Added support for securely managing CRM data source secrets. This feature allows users to effortlessly integrate CRM data, enhancing data accessibility and integration capabilities. Users can now connect to CRM systems with increased security and ease.
+
+### 🔄 Changes
+- **Ingress Configuration**: The default settings now disable ingress by default. This change simplifies the initial setup for users who do not require ingress, reducing potential exposure to external traffic and enhancing overall security for new deployments.
+
+### 🔧 Maintenance
+- **Release Management**: Updated the project to version 1.0.0-beta.2, including minor code adjustments and preparations for the upcoming stable release. These changes ensure ongoing stability and readiness for future enhancements.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

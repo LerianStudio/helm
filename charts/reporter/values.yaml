@@ -34,7 +34,7 @@ manager:
 
   image:
     # -- Repository for the console service container image
-    repository: ghcr.io/lerianstudio/plugin-smart-templates-manager
+    repository: ghcr.io/lerianstudio/reporter-manager
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
@@ -191,7 +191,7 @@ worker:
 
   image:
     # -- Repository for the console service container image
-    repository: ghcr.io/lerianstudio/plugin-smart-templates-worker
+    repository: ghcr.io/lerianstudio/reporter-worker
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
@@ -302,7 +302,7 @@ frontend:
 
   image:
     # -- Repository for the frontend service container image
-    repository: ghcr.io/lerianstudio/plugin-smart-templates-frontend
+    repository: ghcr.io/lerianstudio/reporter-frontend
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment

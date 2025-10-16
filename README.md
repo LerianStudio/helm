@@ -63,7 +63,7 @@
 
 📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/smart-templates).
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/plugin-smart-templates).
+🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/reporter).
 
 #### Application Version Mapping
 

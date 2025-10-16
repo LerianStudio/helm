@@ -34,7 +34,7 @@ jobs:
             midaz
             plugin-access-manager
             plugin-crm
-            plugin-smart-templates
+            reporter
             plugin-fees
             plugin-br-pix-direct-jd
             templates

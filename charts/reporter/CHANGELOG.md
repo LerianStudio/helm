@@ -1,3 +1,18 @@
+## [reporter-1.0.0-beta.3] - 2025-10-21
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.0.0-beta.2...reporter-v1.0.0-beta.3)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Config/Frontend:** Resolved configuration inconsistencies within the reporter component. This fix enhances the stability and reliability of the frontend interface, ensuring users experience fewer errors and smoother operation.
+
+### 🔧 Maintenance
+- **Release Management:** Updated the project version to `1.0.0-beta.3`. This version bump is part of our ongoing release management process, helping users track progress towards the final release.
+
+### ✨ Improvements
+- **Frontend/Backend:** The frontend service has been renamed from `reporter-frontend` to `reporter-ui`. This change enhances clarity by better reflecting the service's purpose, making it easier for users to identify and interact with the UI component.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

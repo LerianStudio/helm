@@ -22,7 +22,7 @@ data:
   NEXT_PUBLIC_PLUGIN_UI_BASE_PATH: {{ .Values.frontend.configmap.NEXT_PUBLIC_PLUGIN_UI_BASE_PATH | default "/reporter-ui" | quote }}
   PLUGIN_SMART_TEMPLATES_UI_HOST: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_UI_HOST | default (printf "reporter-ui.%s.svc.cluster.local." .Release.Namespace) | quote }}
   PLUGIN_SMART_TEMPLATES_UI_PORT: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_UI_PORT | default "8083" | quote }}
-  PLUGIN_SMART_TEMPLATES_UI_BASE_URL: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_UI_BASE_URL | default (printf "http://reporter-ui.%s.svc.cluster.local.:8083" .Release.Namespace) | quote }}
+  PLUGIN_SMART_TEMPLATES_UI_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default (printf "http://reporter-ui.%s.svc.cluster.local.:8083" .Release.Namespace) | quote }}
 
   # Console Leyout Config
   NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}

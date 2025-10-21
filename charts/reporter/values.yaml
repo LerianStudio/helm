@@ -290,7 +290,7 @@ worker:
 # Frontend configuration
 frontend:
   # -- Service name
-  name: reporter-frontend
+  name: reporter-ui
 
   # -- Enable or disable the frontend service
   enabled: true

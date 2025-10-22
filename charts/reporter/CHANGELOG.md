@@ -1,4 +1,4 @@
-## [plugin-smart-templates-1.2.0-beta.4] - 2025-07-08
+## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.
 
@@ -16,7 +16,7 @@ This release introduces significant enhancements to security and configuration m
 
 Each update in this release is designed to enhance your experience by improving security, reliability, and ease of use. The focus on modern infrastructure management practices reflects our commitment to providing a robust and user-friendly environment.
 
-## [plugin-smart-templates-1.2.0-beta.2] - 2025-06-20
+## [reporter-1.2.0-beta.2] - 2025-06-20
 
 This release introduces a new configuration management feature, enhancing the flexibility and customization of Helm charts, along with important maintenance updates.
 

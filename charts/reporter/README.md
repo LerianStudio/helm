@@ -19,7 +19,7 @@ The Smart Templates plugin provides a flexible document templating system that e
         v                                               v
 +-------+--------+                              +-------+--------+
 |                |                              |                |
-|    MongoDB     |                              |     MinIO      |
+|    MongoDB     |                              |    SeaweedFS   |
 |                |                              |                |
 +----------------+                              +----------------+
 ```
@@ -29,26 +29,26 @@ The Smart Templates plugin provides a flexible document templating system that e
 - Kubernetes 1.19+
 - Helm 3.2.0+
 - KEDA 2.0+ installed in the cluster
-- PV provisioner support in the underlying infrastructure (for MongoDB, MinIO, and RabbitMQ persistence)
+- PV provisioner support in the underlying infrastructure (for MongoDB, SeaweedFS, and RabbitMQ persistence)
 
 ## Installing the Chart
 
-### Install the chart
+### Install the charts
 
 ```bash
-helm install plugin-smart-templates oci://registry-1.docker.io/lerianstudio/plugin-smart-templates-helm --version <> -n midaz-plugins --create-namespace
+helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version <> -n midaz-plugins --create-namespace
 ```
 
 To install the chart with a custom values file:
 
 ```bash
-helm install plugin-smart-templates oci://registry-1.docker.io/lerianstudio/plugin-smart-templates-helm --version <> -n midaz-plugins -f my-values.yaml
+helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version <> -n midaz-plugins -f my-values.yaml
 ```
 
 ## Uninstalling the Chart
 
 ```bash
-helm uninstall plugin-smart-templates -n midaz-plugins
+helm uninstall reporter -n midaz-plugins
 ```
 
 ## Configuration
@@ -74,7 +74,7 @@ The following table lists the configurable parameters and their default values.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `manager.replicaCount` | Number of manager replicas | `1` |
-| `manager.image.repository` | Manager image repository | `ghcr.io/lerianstudio/plugin-smart-templates/manager` |
+| `manager.image.repository` | Manager image repository | `ghcr.io/lerianstudio/reporter/manager` |
 | `manager.image.tag` | Manager image tag | `latest` |
 | `manager.image.pullPolicy` | Manager image pull policy | `Always` |
 | `manager.service.type` | Kubernetes Service type | `ClusterIP` |
@@ -88,7 +88,7 @@ The following table lists the configurable parameters and their default values.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `worker.image.repository` | Worker image repository | `ghcr.io/lerianstudio/plugin-smart-templates/worker` |
+| `worker.image.repository` | Worker image repository | `ghcr.io/lerianstudio/reporter/worker` |
 | `worker.image.tag` | Worker image tag | `latest` |
 | `worker.image.pullPolicy` | Worker image pull policy | `Always` |
 | `worker.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
@@ -100,7 +100,7 @@ The following table lists the configurable parameters and their default values.
 |-----------|-------------|---------|
 | `frontend.enabled` | Enable or disable the frontend service | `true` |
 | `frontend.replicaCount` | Number of replicas for the deployment | `1` |
-| `frontend.image.repository` | Repository for the frontend service container image | `ghcr.io/lerianstudio/plugin-smart-templates-frontend` |
+| `frontend.image.repository` | Repository for the frontend service container image | `ghcr.io/lerianstudio/reporter-frontend` |
 | `frontend.image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `frontend.image.tag` | Image tag used for deployment | `2.0.0-beta.3` |
 | `frontend.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
@@ -127,7 +127,7 @@ The following table lists the configurable parameters and their default values.
 |-----------|-------------|---------|
 | `mongodb` | MongoDB configuration | See `values.yaml` |
 | `rabbitmq` | RabbitMQ configuration | See `values.yaml` |
-| `minio` | MinIO configuration | See `values.yaml` |
+| `seaweedfs` | SeaweedFS configuration | See `values.yaml` |
 | `redis` | Redis configuration | See `values.yaml` |
 
 ## KEDA Integration
@@ -145,13 +145,13 @@ The following KEDA resources are created:
 After deploying the chart, you can access the manager API using the following endpoint (within the cluster):
 
 ```
-http://plugin-smart-templates-manager.midaz-plugins.svc.cluster.local:80
+http://reporter-manager.reporter.svc.cluster.local:80
 ```
 
 For external access, you can use port-forwarding:
 
 ```bash
-kubectl port-forward svc/plugin-smart-templates-manager 8080:80 -n midaz-plugins
+kubectl port-forward svc/reporter-manager 8080:80 -n midaz-plugins
 ```
 
 Then access: http://localhost:8080

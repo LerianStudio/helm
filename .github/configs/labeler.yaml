@@ -10,9 +10,9 @@ plugin-access-manager:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-access-manager/**
 
-plugin-smart-templates:
+reporter:
   - changed-files:
-      - any-glob-to-any-file: charts/plugin-smart-templates/**
+      - any-glob-to-any-file: charts/reporter/**
 
 plugin-crm:
   - changed-files:

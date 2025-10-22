@@ -9,7 +9,7 @@
       "Effect": "Allow",
       "Resource": [
         "arn:aws:s3:::templates/*",
-        "arn:aws:s3:::reports/*"
+        "arn:aws:s3:::reporter/*"
       ]
     }
   ]

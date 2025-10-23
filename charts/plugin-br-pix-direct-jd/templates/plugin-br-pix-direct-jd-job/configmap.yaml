@@ -23,8 +23,8 @@ data:
   API_RATE_ONBOARD_WINDOW: {{ .Values.job.configmap.API_RATE_ONBOARD_WINDOW | default "1" | quote }}
 
   # JOBS
-  JOBS_CRON_TRANSACTIONS: {{ .Values.job.configmap.JOBS_CRON_TRANSACTIONS | default "*/10 * * * * *" | quote }}
-  JOBS_CRON: {{ .Values.job.configmap.JOBS_CRON | default "*/10 * * * * *" | quote }}
+  JOBS_CRON_TRANSACTIONS: {{ .Values.job.configmap.JOBS_CRON_TRANSACTIONS | default "*/10 * * * *" | quote }}
+  JOBS_CRON: {{ .Values.job.configmap.JOBS_CRON | default "*/10 * * * *" | quote }}
   JOBS_CRON_PROCESS_CSM: {{ .Values.job.configmap.JOBS_CRON_PROCESS_CSM | default "*/1 * * * *" | quote }}
   JOBS_CRON_TRANSACTIONS_NON_PRIORITY: {{ .Values.job.configmap.JOBS_CRON_TRANSACTIONS_NON_PRIORITY | default "*/1 * * * *" | quote }}
 

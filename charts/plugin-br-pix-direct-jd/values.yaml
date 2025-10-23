@@ -159,8 +159,8 @@ pix:
     POSTGRES_PORT: "5432"
 
     # CRON Jobs Configuration
-    JOBS_CRON_TRANSACTIONS: "*/10 * * * * *"
-    JOBS_CRON: "*/10 * * * * *"
+    JOBS_CRON_TRANSACTIONS: "*/10 * * * *"
+    JOBS_CRON: "*/10 * * * *"
     JOBS_CRON_TRANSACTIONS_NON_PRIORITY: "*/1 * * * *"
 
   # -- Extra environment variables

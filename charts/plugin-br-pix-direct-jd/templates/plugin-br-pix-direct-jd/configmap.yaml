@@ -23,10 +23,10 @@ data:
   API_RATE_ONBOARD_WINDOW: {{ .Values.pix.configmap.API_RATE_ONBOARD_WINDOW | default "1" | quote }}
 
   # JOBS
-  JOBS_CRON_TRANSACTIONS: {{ .Values.pix.configmap.JOBS_CRON_TRANSACTIONS | default "*/10 * * * *" | quote }}
-  JOBS_CRON: {{ .Values.pix.configmap.JOBS_CRON | default "*/10 * * * *" | quote }}
+  JOBS_CRON_TRANSACTIONS: {{ .Values.pix.configmap.JOBS_CRON_TRANSACTIONS | default "*/10 * * * * *" | quote }}
+  JOBS_CRON: {{ .Values.pix.configmap.JOBS_CRON | default "*/10 * * * * *" | quote }}
   JOBS_CRON_PROCESS_CSM: {{ .Values.pix.configmap.JOBS_CRON_PROCESS_CSM | default "*/1 * * * *" | quote }}
-  JOBS_CRON_TRASACTION_NON_PRIORITY: {{ .Values.pix.configmap.JOBS_CRON_TRASACTION_NON_PRIORITY | default "*/1 * * * *" | quote }}
+  JOBS_CRON_TRANSACTIONS_NON_PRIORITY: {{ .Values.pix.configmap.JOBS_CRON_TRANSACTIONS_NON_PRIORITY | default "*/1 * * * *" | quote }}
 
   # Integration
   CORE_BANK_SERVER: {{ .Values.pix.configmap.CORE_BANK_SERVER | default "midaz" | quote }}
@@ -79,6 +79,14 @@ data:
   SENDGRID_FROM_EMAIL: {{ .Values.pix.configmap.SENDGRID_FROM_EMAIL | default "noreply@yourcompany.com" | quote }}
   SENDGRID_FROM_TEMPLATE: {{ .Values.pix.configmap.SENDGRID_FROM_TEMPLATE | default "your-template-id" | quote }}
   MOCK_TOKEN: {{ .Values.pix.configmap.MOCK_TOKEN | default "false" | quote }}
+
+  # License Configuration
+  ORGANIZATION_IDS: {{ .Values.pix.configmap.ORGANIZATION_IDS | default "" | quote }}
+
+  # PostgreSQL Service Variables (for docker-compose compatibility)
+  POSTGRES_USER: {{ .Values.pix.configmap.POSTGRES_USER | default "pix" | quote }}
+  POSTGRES_DB: {{ .Values.pix.configmap.POSTGRES_DB | default "pix" | quote }}
+  POSTGRES_PORT: {{ .Values.pix.configmap.POSTGRES_PORT | default "5432" | quote }}
 
   #CASH IN
   TRANSACTION_ROUTE_CASHIN: {{ .Values.pix.configmap.TRANSACTION_ROUTE_CASHIN | default "" | quote }}

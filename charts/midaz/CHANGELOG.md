@@ -1,3 +1,32 @@
+## [midaz-4.4.0-beta.1] - 2025-10-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.1...midaz-v4.4.0-beta.1)
+Contributors: Fellipe Benoni, Gabriel Ferreira, Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Configuration & Deployment**: This update introduces breaking changes in authentication, backend, and database configurations. Users must review and update their deployment scripts and configurations to align with the new system architecture. Migration steps may be necessary to ensure compatibility. [#43, #26, #36]
+
+### ✨ Features
+- **CRM Data Source Integration**: A new feature allows users to manage CRM secrets directly within the platform, simplifying CRM data management and enhancing security by disabling ingress by default. This change reduces unnecessary exposure of services, improving the default security posture.
+
+### 🐛 Bug Fixes
+- **Frontend Display**: Resolved an issue affecting the frontend display due to reporter configuration errors. This fix ensures that configuration changes are accurately reflected in the user interface, enhancing reliability and user experience.
+
+### ⚡ Performance
+- **Console Resource Optimization**: Adjustments have been made to optimize resource utilization within the console, resulting in improved performance and responsiveness, especially during high-load scenarios.
+
+### 🔄 Changes
+- **Configuration Consistency**: The default MIDAZ_ONBOARDING_URL in the fees configmap now includes a trailing slash, ensuring consistent URL handling and preventing potential misconfigurations.
+
+### 📚 Documentation
+- **Updated Guides**: Documentation has been updated to reflect the latest changes, providing users with accurate guidance for system usage and configuration.
+
+### 🔧 Maintenance
+- **Codebase Refactoring**: The renaming of plugin-smart-templates to reporter and the replacement of MinIO with SeaweedFS streamline the codebase, enhancing compatibility and maintainability.
+- **Service Naming**: Updated the frontend service name to reporter-ui for improved clarity and consistency in service naming conventions.
+- **Secret Management**: Removed the deprecated MINIO_APP_PASSWORD secret from the manager secrets template, reducing security risks associated with unused secrets.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

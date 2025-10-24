@@ -1,3 +1,32 @@
+## [plugin-fees-3.3.0-beta.1] - 2025-10-24
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.2.0...plugin-fees-v3.3.0-beta.1)
+Contributors: Fellipe Benoni, Gabriel Ferreira, Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **System Configuration Overhaul**: This update affects authentication, backend, build, and database components. Users will need to adjust their configurations to ensure compatibility. Please review the updated [migration guide](#) for detailed steps.
+
+### ✨ Features
+- **New CRM Data Source**: Integrate CRM data with enhanced security through secrets management and default disabled ingress. This feature expands data integration capabilities, providing a more secure and flexible environment for plugin users.
+
+### 🐛 Bug Fixes
+- **Improved Frontend Reliability**: Resolved an issue with reporter configuration management, enhancing the stability and reliability of frontend operations.
+
+### ⚡ Performance
+- **Console Resource Optimization**: Experience more efficient performance with improved resource management, resulting in reduced resource consumption and faster operations.
+- **Storage Backend Upgrade**: Transition from MinIO to SeaweedFS boosts scalability and performance for backend processes, enhancing overall system efficiency.
+
+### 🔄 Changes
+- **Service Naming Update**: The service name has been changed from `reporter-frontend` to `reporter-ui`, improving clarity and consistency across the platform.
+
+### 🗑️ Removed
+- **Deprecated Plugin Removal**: The `plugin-smart-templates` helm chart has been removed, streamlining the plugin ecosystem and reducing maintenance overhead.
+
+### 🔧 Maintenance
+- **Secrets Management Enhancement**: Removed the unused `MINIO_APP_PASSWORD` secret, improving security by eliminating unnecessary credentials.
+- **Release Management Updates**: Continuous integration and deployment processes have been updated with multiple chore updates for beta version releases, ensuring a smooth development workflow.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

@@ -1,3 +1,20 @@
+## [reporter-1.0.0-beta.4] - 2025-10-29
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.0.0-beta.3...reporter-v1.0.0-beta.4)
+Contributors: Fellipe Benoni, Gabriel Ferreira, Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Console Resource Management**: Enhancements have been made to optimize resource allocation within the console, leading to improved performance and a more responsive user interface.
+
+### 🔄 Changes
+- **Environment Configuration Standardization**: We have standardized the naming of environment variables and updated service URLs across the backend, frontend, and config components. This change reduces configuration errors and simplifies environment management for developers.
+- **Config and Frontend Enhancements**: Updated plugin configurations and environment settings for better integration and performance, ensuring a seamless experience when interacting with the frontend.
+
+### 🔧 Maintenance
+- **Release Management Updates**: Routine updates to manage version releases, including updates to beta versions across various components such as config, backend, and database, ensuring the system stays current with the latest improvements.
+- **Build System Enhancements**: Updated build configurations to support new releases, maintaining build integrity and compatibility across different environments.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

@@ -1,3 +1,18 @@
+## [reporter-1.0.0-beta.5] - 2025-10-29
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.0.0-beta.4...reporter-v1.0.0-beta.5)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Build/Configuration**: Updated Helm setup to version 3.5, resolving compatibility issues and incorporating the latest security patches. This ensures a more stable build process, enhancing overall system reliability.
+- **Plugins/Frontend**: Standardized the configuration of the MIDAZ console URL, ensuring consistent access across different environments and reducing the likelihood of configuration errors.
+- **Authentication/Frontend**: Aligned NextAuth URLs with the reporter UI base URL, resolving mismatches that previously caused authentication issues. This fix provides a seamless login experience for users.
+
+### 🔧 Maintenance
+- **Configuration/Frontend**: Improved code readability by addressing style issues in configmap templates, such as fixing missing and trailing newlines. These changes support ongoing development and debugging efforts.
+- **Release Preparation**: Prepared for the 1.0.0-beta.5 release, integrating updates across multiple components including auth, build, config, and frontend. This ensures all recent changes are bundled and documented for user awareness and testing.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

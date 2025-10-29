@@ -25,13 +25,16 @@ data:
   REPORTER_UI_BASE_URL: {{ .Values.frontend.configmap.REPORTER_UI_BASE_URL | default (printf "http://reporter-ui.%s.svc.cluster.local.:8083" .Release.Namespace) | quote }}
 
   # Console Leyout Config
-  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.REPORTER_UI_BASE_URL | default "http://midaz-console-nginx.midaz.svc.cluster.local:8080" | quote }}
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL| default "http://midaz-console-nginx.midaz.svc.cluster.local:8080" | quote }}
   NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
 
+  # MIAZ Console URL
+  MIDAZ_CONSOLE_URL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL | default "http://midaz-console-nginx.midaz.svc.cluster.local:8080" | quote }}
+
   # NextAuth Configuration
-  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.REPORTER_UI_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
-  NEXTAUTH_URL: {{ .Values.frontend.configmap.REPORTER_UI_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
-  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.REPORTER_UI_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL| default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  NEXTAUTH_URL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
 
   # Plugin Smart Templates Configuration
   REPORTER_HOST: {{ .Values.frontend.configmap.REPORTER_HOST | default "reporter-manager.midaz-plugins.svc.cluster.local" | quote }}

@@ -128,12 +128,12 @@ console:
   resources:
     # -- CPU and memory limits for pods
     limits:
-      cpu: 200m
-      memory: 256Mi
+      cpu: 1
+      memory: 1024Mi
     # -- Minimum CPU and memory requests
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 512m
+      memory: 512Mi
 
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
@@ -846,7 +846,6 @@ otel-collector-lerian:
   opentelemetry-collector:
     config:
       processors:
-        # Adds the client ID.
         resource/add_client_id:
           attributes:
             - key: client.id

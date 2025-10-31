@@ -20,23 +20,26 @@ data:
   # CRM Plugin UI Config
   ENABLE_DEBUG: {{ .Values.frontend.configmap.ENABLE_DEBUG | default "false" | quote }}
   NEXT_PUBLIC_PLUGIN_UI_BASE_PATH: {{ .Values.frontend.configmap.NEXT_PUBLIC_PLUGIN_UI_BASE_PATH | default "/reporter-ui" | quote }}
-  PLUGIN_SMART_TEMPLATES_UI_HOST: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_UI_HOST | default (printf "reporter-ui.%s.svc.cluster.local." .Release.Namespace) | quote }}
-  PLUGIN_SMART_TEMPLATES_UI_PORT: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_UI_PORT | default "8083" | quote }}
-  PLUGIN_SMART_TEMPLATES_UI_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default (printf "http://reporter-ui.%s.svc.cluster.local.:8083" .Release.Namespace) | quote }}
+  REPORTER_UI_HOST: {{ .Values.frontend.configmap.REPORTER_UI_HOST | default (printf "reporter-ui.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  REPORTER_UI_PORT: {{ .Values.frontend.configmap.REPORTER_UI_PORT | default "8083" | quote }}
+  REPORTER_UI_BASE_URL: {{ .Values.frontend.configmap.REPORTER_UI_BASE_URL | default (printf "http://reporter-ui.%s.svc.cluster.local.:8083" .Release.Namespace) | quote }}
 
   # Console Leyout Config
-  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL| default "http://midaz-console-nginx.midaz.svc.cluster.local:8080" | quote }}
   NEXT_PUBLIC_MIDAZ_AUTH_ENABLED: {{ .Values.frontend.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
 
-  # NextAuth Configuration
-  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
-  NEXTAUTH_URL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
-  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  # MIAZ Console URL
+  MIDAZ_CONSOLE_URL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL | default "http://midaz-console-nginx.midaz.svc.cluster.local:8080" | quote }}
 
-  # Plugin Smart Templates Configuration
-  PLUGIN_SMART_TEMPLATES_HOST: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_HOST | default "http://reporter-manager.reporter.svc.cluster.local" | quote }}
-  PLUGIN_SMART_TEMPLATES_PORT: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_PORT | default "4005" | quote }}
-  PLUGIN_SMART_TEMPLATES_BASE_PATH: {{ .Values.frontend.configmap.PLUGIN_SMART_TEMPLATES_BASE_PATH | default "http://reporter-manager.reporter.svc.cluster.local:4005" | quote }}
+  # NextAuth Configuration
+  NEXT_PUBLIC_NEXTAUTH_URL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL| default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  NEXTAUTH_URL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+  NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
+
+  # Reporter Backend Configuration
+  REPORTER_HOST: {{ .Values.frontend.configmap.REPORTER_HOST | default "reporter-manager.midaz-plugins.svc.cluster.local" | quote }}
+  REPORTER_PORT: {{ .Values.frontend.configmap.REPORTER_PORT | default "4005" | quote }}
+  REPORTER_BASE_PATH: {{ .Values.frontend.configmap.REPORTER_BASE_PATH | default "http://reporter-manager.midaz-plugins.svc.cluster.local:4005" | quote }}
 
   # Extra Env Vars
   {{- with .Values.frontend.extraEnvVars }}
@@ -44,4 +47,3 @@ data:
   {{- end }}
 
 {{- end }}
-

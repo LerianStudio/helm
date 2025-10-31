@@ -1,4 +1,4 @@
-# Plugin Smart Templates
+# Reporter
 
 Thank you for installing {{ .Chart.Name }} v{{ .Chart.Version }}!
 

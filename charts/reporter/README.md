@@ -1,8 +1,8 @@
-# Plugin Smart Templates Helm Chart
+# Reporter Helm Chart
 
 ## Overview
 
-The Smart Templates plugin provides a flexible document templating system that enables dynamic report generation based on predefined templates. This plugin consists of two main components:
+The Reporter plugin provides a flexible document templating system that enables dynamic report generation based on predefined templates. This plugin consists of two main components:
 
 - **Manager**: API service that handles template management and orchestrates report generation
 - **Worker**: Background processor that handles asynchronous report generation tasks

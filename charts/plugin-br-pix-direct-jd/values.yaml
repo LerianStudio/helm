@@ -150,13 +150,53 @@ pix:
     JD_BASE_URL: ""
     DATABASE_HOST: ""
 
+    # License Configuration
+    ORGANIZATION_IDS: ""
+
+    # PostgreSQL Service Variables (for docker-compose compatibility)
+    POSTGRES_USER: "pix"
+    POSTGRES_DB: "pix"
+    POSTGRES_PORT: "5432"
+
+    # CRON Jobs Configuration
+    JOBS_CRON_TRANSACTIONS: "*/10 * * * *"
+    JOBS_CRON: "*/10 * * * *"
+    JOBS_CRON_TRANSACTIONS_NON_PRIORITY: "*/1 * * * *"
+
   # -- Extra environment variables
   extraEnvVars: {}
 
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
-  secrets: {}
+  secrets:
+    # License Configuration
+    LICENSE_KEY: ""
+    
+    # Midaz Configuration
+    MIDAZ_CLIENT_ID: ""
+    MIDAZ_CLIENT_SECRET: ""
+    
+    # CRM Configuration
+    CRM_CLIENT_ID: ""
+    CRM_CLIENT_SECRET: ""
+    
+    # JD PIX Configuration
+    JD_CLIENT_ID: ""
+    JD_SECRET: ""
+    JD_PIX_CLIENT_ID: ""
+    JD_PIX_CLIENT_SECRET: ""
+    
+    # Database Configuration
+    DATABASE_PASSWORD: ""
+    POSTGRES_PASSWORD: ""
+    
+    # Twilio Configuration
+    TWILIO_ACCOUNT_SID: ""
+    TWILIO_AUTH_TOKEN: ""
+    
+    # SendGrid Configuration
+    SENDGRID_API_KEY: ""
 
   useExistingSecrets: false
   existingSecretName: ""

@@ -1,3 +1,23 @@
+## [reporter-1.0.0-beta.6] - 2025-10-31
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.0.0-beta.5...reporter-v1.0.0-beta.6)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Renamed "Smart Templates" to "Reporter"**: This change enhances clarity and consistency in naming conventions, making it easier for users to understand and manage reporting features.
+- **Enhanced RabbitMQ Configuration**: Streamlined RabbitMQ setup for improved integration with messaging services, simplifying the configuration process for users.
+
+### 📚 Documentation
+- **RabbitMQ Consumer Configuration**: Added detailed guidance in the UPGRADE GUIDE for configuring RabbitMQ with the transaction service, ensuring a smoother upgrade process and better integration.
+
+### 🔧 Maintenance
+- **Version Updates**: Upgraded to version 1.0.0-beta.6 for the configuration component and 4.4.0-beta.2 for components including auth, build, config, and frontend. These updates align with the latest development practices, enhancing system stability and performance.
+
+### Notes
+- No breaking changes were introduced in this release. All updates are backward-compatible, ensuring seamless continuity for existing workflows.
+- Users are encouraged to review the updated UPGRADE GUIDE for detailed instructions on implementing the new RabbitMQ configurations.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

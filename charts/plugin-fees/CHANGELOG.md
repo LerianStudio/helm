@@ -1,3 +1,22 @@
+## [plugin-fees-3.3.0] - 2025-10-31
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.3.0-beta.1...plugin-fees-v3.3.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Security and Flexibility**: You can now use existing secrets in Helm charts, providing more secure and flexible deployment options.
+- **Streamlined Configuration**: The "Smart Templates" feature has been renamed to "Reporter," with improved RabbitMQ configuration, making setup easier and enhancing integration capabilities.
+
+### 🐛 Bug Fixes
+- **Compatibility Improvements**: Updated the Helm setup action to v3.5 in the release workflow, resolving previous compatibility issues and ensuring up-to-date deployment processes.
+- **Consistent User Experience**: Aligned NextAuth URLs with the Reporter UI base URL, fixing navigation issues and providing a seamless user experience.
+
+### 🔧 Maintenance
+- **Build Reliability**: Pinned GitHub Actions to specific commit hashes, ensuring consistent build environments and enhancing security.
+- **Code Consistency**: Addressed style issues in configmap templates by fixing missing and trailing newlines, improving code readability and consistency.
+- **User Guidance**: Added RabbitMQ consumer configuration details to the UPGRADE GUIDE, helping users transition smoothly to the new setup.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

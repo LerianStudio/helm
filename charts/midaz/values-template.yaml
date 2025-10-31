@@ -119,6 +119,7 @@ transaction:
     RABBITMQ_PORT_HOST: "5672"
     RABBITMQ_PORT_AMQP: "15672"
     RABBITMQ_DEFAULT_USER: "transaction"
+    RABBITMQ_CONSUMER_USER: "consumer"
     MONGO_URI: "mongodb"
     MONGO_HOST: "midaz-mongodb.midaz.svc.cluster.local."
     MONGO_NAME: "transaction"
@@ -143,6 +144,7 @@ transaction:
     DB_PASSWORD: "lerian"
     DB_REPLICA_PASSWORD: "lerian"
     RABBITMQ_DEFAULT_PASS: "lerian"
+    RABBITMQ_CONSUMER_PASS: "lerian"
     REDIS_PASSWORD: "lerian"
 
  # -- Existing secrets name

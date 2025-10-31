@@ -12,6 +12,7 @@
     - [4. Enterprise: A Gateway with NGINX Proxy for Plugins UIs](#4-enterprise-a-gateway-with-nginx-proxy-for-plugins-uis)
     - [5. Enterprise: OTEL Collector](#5-enterprise-otel-collector)
     - [6. External Secrets Support](#6-external-secrets-support)
+    - [7. Transaction: New RabbitMQ Consumer Configuration](#7-transaction-new-rabbitmq-consumer-configuration)
 - ***[Command to upgrade](#command-to-upgrade)***
 
 ## Breaking Changes
@@ -271,6 +272,60 @@ transaction:
 ```
 
 ***Note:*** See the [transaction secrets template](https://github.com/LerianStudio/helm/blob/main/charts/midaz/templates/transaction/secrets.yaml) for get the secrets keys.
+
+### 7. Transaction: New RabbitMQ Consumer Configuration
+
+New RabbitMQ consumer functionality has been introduced to the transaction service with dedicated user credentials and event exchange.
+
+#### New Environment Variables
+
+A new environment variable has been added to the transaction service:
+
+```yaml
+# RABBITMQ CONSUMER CONFIGURATION
+RABBITMQ_CONSUMER_USER=consumer
+```
+
+***Note:*** See the [transaction configmap](https://github.com/LerianStudio/helm/blob/main/charts/midaz/templates/transaction/configmap.yaml) template for more details.
+
+#### New Secret
+
+A new secret has been added for the RabbitMQ consumer authentication:
+
+```yaml
+# RABBITMQ CONSUMER PASSWORD
+RABBITMQ_CONSUMER_PASS=<consumer-password>
+```
+
+***Note:*** See the [transaction secrets template](https://github.com/LerianStudio/helm/blob/main/charts/midaz/templates/transaction/secrets.yaml) template for more details.
+
+#### RabbitMQ Definitions Updates
+
+The RabbitMQ configuration has been updated with new definitions:
+
+**New Consumer User:**
+```json
+{
+  "name": "consumer",
+  "password_hash": "/xSX/E+2TzPfqRPYnPIdviUpNiXnoQWnAdQR7TS47cJc6GuM",
+  "hashing_algorithm": "rabbit_password_hashing_sha256",
+  "tags": "administrator"
+}
+```
+
+**New Transaction Events Exchange:**
+```json
+{
+  "name": "transaction.transaction_events.exchange",
+  "vhost": "/",
+  "type": "topic",
+  "durable": true
+}
+```
+
+***Note:*** See the complete RabbitMQ definitions in [load_definitions.json](https://github.com/LerianStudio/helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) for all exchanges, queues, and bindings configuration.
+
+This new consumer configuration enables the transaction service to consume events from the dedicated transaction events exchange with its own authentication credentials, providing better security isolation and event processing capabilities.
 
 ## Command to upgrade
 

@@ -36,7 +36,7 @@ data:
   NEXTAUTH_URL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
   NEXTAUTH_URL_INTERNAL: {{ .Values.frontend.configmap.MIDAZ_CONSOLE_URL | default "http://midaz-nginx.midaz.svc.cluster.local:8080" | quote }}
 
-  # Plugin Smart Templates Configuration
+  # Reporter Backend Configuration
   REPORTER_HOST: {{ .Values.frontend.configmap.REPORTER_HOST | default "reporter-manager.midaz-plugins.svc.cluster.local" | quote }}
   REPORTER_PORT: {{ .Values.frontend.configmap.REPORTER_PORT | default "4005" | quote }}
   REPORTER_BASE_PATH: {{ .Values.frontend.configmap.REPORTER_BASE_PATH | default "http://reporter-manager.midaz-plugins.svc.cluster.local:4005" | quote }}

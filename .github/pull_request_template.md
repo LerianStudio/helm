@@ -6,7 +6,7 @@
 - [ ] Midaz
 - [ ] Plugin Access Manager
 - [ ] Plugin CRM
-- [ ] Plugin Smart Templates
+- [ ] Reporter
 - [ ] Plugin Fees
 - [ ] Plugin BR PIX Direct JD
 - [ ] Otel Collector

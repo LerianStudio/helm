@@ -1,3 +1,20 @@
+## [midaz-4.4.0-beta.3] - 2025-10-31
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.2...midaz-v4.4.0-beta.3)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Security with Existing Secrets**: You can now use pre-existing secrets within Helm charts, enhancing deployment security and reducing redundancy in managing sensitive data.
+- **Simplified RabbitMQ Integrations**: New configuration options for RabbitMQ consumer credentials are available in the `values-template`, streamlining setup and deployment processes.
+- **Renaming and Enhancements**: "Smart Templates" have been renamed to "Reporter," with improved RabbitMQ configuration capabilities, providing a more intuitive and efficient setup experience.
+
+### 📚 Documentation
+- **Updated Terminology**: Documentation has been updated to reflect the renaming of "Smart Templates" to "Reporter," ensuring clarity and consistency across all user guides and interfaces.
+
+### 🔧 Maintenance
+- **Version Updates**: Released updates to versions 4.4.0-beta.3 and 1.0.0-beta.6, ensuring the system remains robust and up-to-date with the latest enhancements and fixes.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

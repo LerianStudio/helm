@@ -1,3 +1,15 @@
+## [midaz-4.4.0] - 2025-10-31
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.3...midaz-v4.4.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔧 Maintenance
+- **Build, Test**: GitHub Actions workflows have been updated to pin dependencies to specific commit hashes. This change ensures consistency across different environments, reducing the risk of unexpected issues due to dependency updates, and maintaining a stable development and deployment pipeline.
+
+### ⚡ Improvements
+- **Authentication, Build, Config, Frontend**: The latest updates provide improved stability and performance. Users will notice a more seamless interaction with the application, thanks to enhancements in authentication processes, build efficiency, configuration management, and frontend responsiveness.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

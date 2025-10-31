@@ -65,12 +65,12 @@ jobs:
 
       - name: Set up Helm
         continue-on-error: true
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
 
       - name: Set up Homebrew
         id: setup-homebrew
         if: ${{ steps.setup-helm.outcome == 'failure' }}
-        uses: Homebrew/actions/setup-homebrew@main
+        uses: Homebrew/actions/setup-homebrew@f119db709c0cd61731df77f0dd22c87511ee9b6a
 
       - name: Install Helm
         id: install-helm

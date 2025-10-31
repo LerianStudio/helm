@@ -1,3 +1,22 @@
+## [reporter-1.0.0] - 2025-10-31
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.0.0-beta.6...reporter-v1.0.0)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **System Architecture Overhaul**: This release includes breaking changes across multiple components such as auth, backend, build, config, database, and frontend. Users will need to update their configurations and integrations to align with the new architecture. Please refer to the migration guide for detailed steps on adapting your setup to this version.
+
+### ✨ Features
+- **Enhanced Secret Management**: Users can now leverage existing secrets within Helm charts, enhancing security and reducing redundant secret management. This feature is particularly beneficial for complex deployments involving sensitive data.
+- **RabbitMQ Integration Simplification**: Added support for configuring RabbitMQ consumer credentials directly in the values-template, streamlining the setup process for messaging configurations.
+
+### ⚡ Performance
+- **CI/CD Stability**: GitHub Actions are now pinned to specific commit hashes, ensuring a more stable and predictable CI/CD pipeline. This change minimizes the risk of unexpected failures due to upstream changes, enhancing overall build reliability.
+
+### 🔧 Maintenance
+- **Component Updates**: Routine maintenance was performed across auth, backend, build, config, database, and frontend components to ensure the system remains up-to-date with the latest standards and dependencies, improving code quality and maintainability.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

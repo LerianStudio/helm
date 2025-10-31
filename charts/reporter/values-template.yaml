@@ -18,9 +18,9 @@ common:
     RABBITMQ_HOST: reporter-rabbitmq.reporter.svc.cluster.local
     RABBITMQ_PORT_AMQP: 5672
     RABBITMQ_NUMBERS_OF_WORKERS: 5
-    RABBITMQ_EXCHANGE: "smart-templates.generate-report.exchange"
-    RABBITMQ_GENERATE_REPORT_QUEUE: "smart-templates.generate-report.queue"
-    RABBITMQ_GENERATE_REPORT_KEY: "smart-templates.generate-report.key"
+    RABBITMQ_EXCHANGE: "reporter.generate-report.exchange"
+    RABBITMQ_GENERATE_REPORT_QUEUE: "reporter.generate-report.queue"
+    RABBITMQ_GENERATE_REPORT_KEY: "reporter.generate-report.key"
 
     # SEAWEEEDFS
     SEAWEEDFS_HOST: seaweedfs-filer.reporter.svc.cluster.local

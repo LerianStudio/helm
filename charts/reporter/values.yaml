@@ -85,11 +85,11 @@ manager:
     # -- CPU and memory limits for pods
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 1000Mi
     # -- Minimum CPU and memory requests
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
 
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
@@ -454,9 +454,9 @@ common:
     RABBITMQ_HOST: reporter-rabbitmq.midaz-plugins.svc.cluster.local
     RABBITMQ_PORT_AMQP: 5672
     RABBITMQ_NUMBERS_OF_WORKERS: 5
-    RABBITMQ_EXCHANGE: "smart-templates.generate-report.exchange"
-    RABBITMQ_GENERATE_REPORT_QUEUE: "smart-templates.generate-report.queue"
-    RABBITMQ_GENERATE_REPORT_KEY: "smart-templates.generate-report.key"
+    RABBITMQ_EXCHANGE: "reporter.generate-report.exchange"
+    RABBITMQ_GENERATE_REPORT_QUEUE: "reporter.generate-report.queue"
+    RABBITMQ_GENERATE_REPORT_KEY: "reporter.generate-report.key"
     RABBITMQ_HEALTH_CHECK_URL: "http://reporter-rabbitmq.midaz-plugins.svc.cluster.local:15672"
 
     # Redis Configs
@@ -636,7 +636,7 @@ observability:
 
 # KEDA configuration
 keda:
-  enabled: false
+  enabled: true
   crds:
     install: true
   webhookCerts:

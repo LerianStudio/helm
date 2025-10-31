@@ -2,8 +2,9 @@
   "users": [
     {
       "name":"plugin",
-      "tags":"administrator",
-      "password":"Lerian@123"
+      "password_hash":"Pexngh1ls20Hs8hMsMFNJSwQuDPSybD+/ZrrnFM+SUM6Dcsx",
+      "hashing_algorithm":"rabbit_password_hashing_sha256",
+      "tags":"administrator"
     }
   ],
   "vhosts": [
@@ -22,14 +23,33 @@
   ],
   "queues": [
     {
-      "name": "smart-templates.generate-report.queue",
+      "name": "reporter.generate-report.queue",
       "vhost": "/",
-      "durable": true
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "reporter.dlx",
+        "x-dead-letter-routing-key": "reporter.dlq.key"
+      }
+    },
+    {
+      "name": "reporter.dlq",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-message-ttl": 604800000,
+        "x-max-length": 10000
+      }
     }
   ],
   "exchanges": [
     {
-      "name": "smart-templates.generate-report.exchange",
+      "name": "reporter.generate-report.exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true
+    },
+    {
+      "name": "reporter.dlx",
       "vhost": "/",
       "type": "direct",
       "durable": true
@@ -37,11 +57,18 @@
   ],
   "bindings": [
     {
-      "source": "smart-templates.generate-report.exchange",
+      "source": "reporter.generate-report.exchange",
       "vhost": "/",
-      "destination": "smart-templates.generate-report.queue",
+      "destination": "reporter.generate-report.queue",
       "destination_type": "queue",
-      "routing_key": "smart-templates.generate-report.key"
+      "routing_key": "reporter.generate-report.key"
+    },
+    {
+      "source": "reporter.dlx",
+      "vhost": "/",
+      "destination": "reporter.dlq",
+      "destination_type": "queue",
+      "routing_key": "reporter.dlq.key"
     }
   ]
 }

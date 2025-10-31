@@ -59,9 +59,9 @@
 | `3.2.0` | `2.1.1` | `2.1.1` |
 -----------------
 
-### Plugin Smart Templates
+### Reporter
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/smart-templates).
+📚 For more details, check out the [official documentation](https://docs.lerian.studio/en/reporter#reporter).
 
 🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/reporter).
 

@@ -1,3 +1,26 @@
+## [midaz-4.4.0-beta.2] - 2025-10-31
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.1...midaz-v4.4.0-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Deployment Reliability**: The Helm setup process within the release workflow has been fortified, reducing potential setup failures and ensuring smoother deployments, especially for users managing complex release processes.
+
+### 🐛 Bug Fixes
+- **CI Pipeline Stability**: Fixed issues with the Helm setup action in the CI pipeline, ensuring more reliable and consistent continuous integration processes.
+- **Improved Navigation**: Resolved frontend navigation issues related to URL configurations, enhancing user accessibility and interface consistency.
+
+### 🔄 Changes
+- **Standardized Configurations**: Unified the MIDAZ console URL configuration and standardized environment variable naming, simplifying setup and reducing potential errors during deployment.
+- **Authentication Alignment**: Aligned NextAuth URLs with the reporter UI base URL, improving the integration and user experience for authentication processes.
+
+### 📚 Documentation
+- **Upgrade Guidance**: Added RabbitMQ consumer configuration details for the transaction service in the UPGRADE GUIDE, providing clearer guidance for users upgrading their systems.
+
+### 🔧 Maintenance
+- **Code Readability**: Addressed minor styling issues in configmap templates by fixing missing and trailing newlines, improving code readability and consistency.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

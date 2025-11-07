@@ -100,7 +100,7 @@ data:
   # List of <organization-id>:<ledger-id> separated by comma
   ACCOUNT_TYPE_VALIDATION: {{ .Values.onboarding.configmap.ACCOUNT_TYPE_VALIDATION | default "" | quote }}
 
-  # Extra Env Variables
-  {{- range $key, $value := .Values.onboarding.extraEnvVars }}
-    {{ $key }}: {{ $value | quote }}
-  {{- end }}  
+  # Extra Env Vars
+  {{- with .Values.onboarding.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

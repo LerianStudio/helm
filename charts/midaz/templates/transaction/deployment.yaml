@@ -79,6 +79,9 @@ spec:
             - name: http
               containerPort: 3001
               protocol: TCP
+            - name: grpc
+              containerPort: 3011
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /health

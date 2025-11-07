@@ -1,3 +1,15 @@
+## [midaz-4.4.0-beta.7] - 2025-11-07
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.6...midaz-v4.4.0-beta.7)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Customizable gRPC Port Configuration**: Users can now set custom gRPC port settings for the transaction service. This enhancement provides greater flexibility in network setups, making it easier to integrate with other services and tailor configurations to specific environments.
+
+### 🔧 Maintenance
+- **System Stability and Preparation**: This update includes various under-the-hood improvements that ensure system stability and prepare the platform for future enhancements. Users will benefit from a more robust and up-to-date system without any required actions on their part.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

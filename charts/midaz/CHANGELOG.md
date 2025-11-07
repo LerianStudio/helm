@@ -1,3 +1,15 @@
+## [midaz-4.4.0-beta.4] - 2025-11-07
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0...midaz-v4.4.0-beta.4)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Improved Environment Variable Management**: The handling of `extraEnvVars` in the onboarding ConfigMap has been refined. This makes it easier for users to configure complex environment setups, reducing the likelihood of errors and simplifying the customization process for deployments.
+
+### 🔧 Maintenance
+- **Release Preparation**: Updated version numbers and configurations in anticipation of the upcoming 4.4.0-beta.4 release. This ensures a seamless transition for future updates, maintaining the integrity of the release cycle.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

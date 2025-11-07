@@ -491,6 +491,7 @@ transaction:
     type: ClusterIP
     # -- Port for the HTTP API
     port: 3001
+    grpcPort: 3011
     annotations: {}
 
   ingress:

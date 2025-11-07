@@ -1,3 +1,15 @@
+## [midaz-4.4.0-beta.5] - 2025-11-07
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.4...midaz-v4.4.0-beta.5)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Improved RabbitMQ Configuration**: Resolved an issue with the RabbitMQ configuration path in the transaction service. This fix ensures that the application connects reliably to RabbitMQ, preventing potential disruptions in message queuing and enhancing the overall stability of transaction processing.
+
+### 🔧 Maintenance
+- **Backend and Configuration Updates**: Released version 4.4.0-beta.5, which includes essential updates to the backend and configuration components. These updates lay the groundwork for upcoming features, ensuring a stable and robust platform for future enhancements.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

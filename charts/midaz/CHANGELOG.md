@@ -1,3 +1,15 @@
+## [midaz-4.4.0-beta.6] - 2025-11-07
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.5...midaz-v4.4.0-beta.6)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Improved Deployment Stability**: Removed the RabbitMQ health check from the onboarding deployment. This fix resolves issues with unnecessary deployment failures, enhancing the reliability of the onboarding process.
+
+### 🔧 Maintenance
+- **Version Update**: Released version 4.4.0-beta.6, incorporating essential internal updates. This maintenance ensures that the build process remains efficient and aligned with the latest development practices, paving the way for a more refined and stable upcoming release.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

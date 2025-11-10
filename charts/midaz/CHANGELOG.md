@@ -1,3 +1,18 @@
+## [midaz-4.4.0] - 2025-11-10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.10...midaz-v4.4.0)
+Contributors: lerian-studio
+
+### ✨ Features
+- **Multi-Component Enhancements**: Version 4.4.0 brings improvements to the Auth, Backend, Build, Config, and Frontend components, enhancing overall system integration and performance. Users will notice smoother operations and a more cohesive experience across the platform.
+
+### ⚡ Performance
+- **Backend and Build Optimization**: The latest beta releases (1.1.0-beta.1, 3.4.0-beta.1, 1.2.0-beta.1) introduce backend processing and build process optimizations. These updates enhance efficiency, providing smoother operations and better resource management for developers testing new capabilities.
+
+### 🔧 Maintenance
+- **System Stability Enhancements**: Regular maintenance updates in the beta versions ensure ongoing stability and reliability. These updates focus on improving code quality and managing dependencies, indirectly benefiting users with a more stable system.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

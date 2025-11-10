@@ -1,3 +1,16 @@
+## [reporter-1.1.0] - 2025-11-10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.0-beta.1...reporter-v1.1.0)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Compatibility Updates**: Routine updates to backend, build, and configuration scripts maintain compatibility with the latest development tools and libraries. These updates are essential for keeping the project healthy and ensuring developers have access to up-to-date resources.
+
+### ✨ Improvements
+- **Streamlined Deployment Processes**: Updates to the backend, build, and configuration processes ensure more reliable and efficient deployments. These changes reduce system downtime and enhance overall stability, benefiting users with a more consistent experience.
+- **Enhanced Component Integration**: Improved integration between the authentication module, frontend interface, and backend systems creates a more seamless user experience. This update simplifies user credential management and session handling, making interactions smoother and more intuitive.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

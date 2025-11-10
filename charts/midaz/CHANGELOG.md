@@ -1,3 +1,15 @@
+## [midaz-4.4.0-beta.9] - 2025-11-10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.8...midaz-v4.4.0-beta.9)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 📚 Documentation
+- **Updated Component Versions**: The README file now reflects the latest component versions. This update ensures users have access to the most accurate and up-to-date information, reducing confusion and enhancing the reliability of the documentation.
+
+### 🔧 Maintenance
+- **Release Preparation**: Version 4.4.0-beta.9 has been marked in preparation for the upcoming release. This step is essential for maintaining a clear versioning strategy, allowing users to track changes effectively and participate in testing and feedback during the beta phase.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

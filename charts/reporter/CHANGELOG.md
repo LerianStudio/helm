@@ -1,3 +1,20 @@
+## [reporter-1.1.0-beta.1] - 2025-11-10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.0.0...reporter-v1.1.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Communication with gRPC**: We've implemented gRPC configuration for transaction services, enabling more efficient and scalable service interactions. This update provides greater flexibility in managing service communications, particularly beneficial for high-traffic environments.
+
+### 🐛 Bug Fixes
+- **Reliable RabbitMQ Connectivity**: Fixed the configuration path for RabbitMQ in the transaction service, resolving previous connectivity issues. This fix ensures stable and reliable message handling, enhancing overall service performance.
+- **Streamlined Deployment**: Removed an unnecessary RabbitMQ health check from the onboarding deployment, reducing delays and preventing false alarms. This change speeds up deployment times and minimizes unnecessary alerts.
+
+### 🔧 Maintenance
+- **Updated Documentation**: The README file now reflects the latest component versions, ensuring users have accurate and up-to-date information for setup and configuration.
+- **Release Management Updates**: We've made several chore updates across beta releases, ensuring the latest features and fixes are accurately versioned and documented for testing and feedback.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

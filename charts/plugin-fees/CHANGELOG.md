@@ -1,3 +1,26 @@
+## [plugin-fees-3.4.0-beta.1] - 2025-11-10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.3.0...plugin-fees-v3.4.0-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication & Configuration Overhaul**: This update introduces new authentication protocols and configuration requirements. Users must update their configurations and authentication setups to maintain compatibility. Review the updated documentation for detailed migration steps.
+
+### ✨ Features
+- **gRPC Configuration for Transaction Services**: Now supports gRPC for transaction services, enabling more scalable and efficient communication. This allows for better integration and management of services, enhancing system interoperability.
+
+### 🐛 Bug Fixes
+- **Reliable Service Discovery**: Fixed DNS name issues for transaction services, ensuring consistent connectivity and reducing the risk of service disruptions.
+- **Stable Onboarding**: Removed unnecessary RabbitMQ health checks, resolving deployment issues and enhancing onboarding process stability.
+- **Correct Configuration Path**: Adjusted RabbitMQ configuration path in transaction services to prevent potential service disruptions.
+
+### 📚 Documentation
+- **Updated Component Versions**: The README now reflects the latest component versions, providing users with up-to-date setup and configuration guidance.
+
+### 🔧 Maintenance
+- **Release Management Enhancements**: Improved tracking and management of beta releases across backend, build, and config components, ensuring smoother release processes and better access to new features for testing.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

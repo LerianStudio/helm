@@ -1,3 +1,18 @@
+## [midaz-4.4.0-beta.8] - 2025-11-10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.7...midaz-v4.4.0-beta.8)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Improved Service Communication**: We've integrated gRPC configuration for transaction services, which significantly enhances the scalability and efficiency of service communications. This upgrade ensures that all services are operating with the latest versions, offering improved compatibility and performance.
+
+### 🔄 Changes
+- **Enhanced Service Connectivity**: The DNS name for the transaction service within the onboarding configuration has been updated. This change boosts the reliability and accuracy of service connections, reducing potential downtime and ensuring a smoother onboarding process for users.
+
+### 🔧 Maintenance
+- **System Stability Enhancements**: Released version 4.4.0-beta.8, incorporating the latest updates and configurations. This release includes internal optimizations that align all components with the latest development standards, ensuring ongoing system stability and preparing for future enhancements.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

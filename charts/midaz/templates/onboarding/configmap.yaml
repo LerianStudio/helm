@@ -24,15 +24,6 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.onboarding.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.onboarding.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local.:4317" .Release.Namespace) | quote }}
   ENABLE_TELEMETRY: {{ .Values.onboarding.configmap.ENABLE_TELEMETRY | default "false" | quote }}
-  # RABBITMQ
-  RABBITMQ_HEALTH_CHECK_URL: {{ .Values.onboarding.configmap.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
-  RABBITMQ_URI: {{ .Values.onboarding.configmap.RABBITMQ_URI | default "amqp" | quote }}
-  RABBITMQ_HOST: {{ .Values.onboarding.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." .Release.Namespace) | quote }}
-  RABBITMQ_PORT_HOST: {{ .Values.onboarding.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
-  RABBITMQ_PORT_AMQP: {{ .Values.onboarding.configmap.RABBITMQ_PORT_AMQP | default "15672" | quote }}
-  RABBITMQ_DEFAULT_USER: {{ .Values.onboarding.configmap.RABBITMQ_DEFAULT_USER | default "onboarding" | quote }}
-  RABBITMQ_EXCHANGE: {{ .Values.onboarding.configmap.RABBITMQ_EXCHANGE | default "transaction.balance_create.exchange" | quote }}
-  RABBITMQ_KEY: {{ .Values.onboarding.configmap.RABBITMQ_KEY | default "transaction.balance_create.key" | quote }}
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.onboarding.configmap.SWAGGER_TITLE | default "Onboarding API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.onboarding.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz Onboarding API" | quote }}
@@ -99,8 +90,11 @@ data:
   # ACCOUNTING CONFIG
   # List of <organization-id>:<ledger-id> separated by comma
   ACCOUNT_TYPE_VALIDATION: {{ .Values.onboarding.configmap.ACCOUNT_TYPE_VALIDATION | default "" | quote }}
+  # TRANSACTION CONFIG
+  TRANSACTION_GRPC_ADDRESS: {{ .Values.onboarding.configmap.TRANSACTION_GRPC_ADDRESS | default (printf "midaz-transaction.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  TRANSACTION_GRPC_PORT: {{ .Values.onboarding.configmap.TRANSACTION_GRPC_PORT | default "3011" | quote }}
 
-  # Extra Env Variables
-  {{- range $key, $value := .Values.onboarding.extraEnvVars }}
-    {{ $key }}: {{ $value | quote }}
-  {{- end }}  
+  # Extra Env Vars
+  {{- with .Values.onboarding.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

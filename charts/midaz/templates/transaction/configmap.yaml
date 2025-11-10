@@ -111,9 +111,10 @@ data:
   # ACCOUNTING CONFIG
   # List of <organization-id>:<ledger-id> separated by comma
   TRANSACTION_ROUTE_VALIDATION: {{ .Values.transaction.configmap.TRANSACTION_ROUTE_VALIDATION | default "" | quote }}
+  # Proto
+  PROTO_ADDRESS: {{ .Values.transaction.configmap.PROTO_ADDRESS | default ":3011" | quote }}
 
   # Extra Env Vars
   {{- with .Values.transaction.extraEnvVars }}
   {{- toYaml . | nindent 2 }}
   {{- end }}
-  

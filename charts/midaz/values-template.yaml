@@ -64,13 +64,7 @@ onboarding:
             pathType: Prefix
     tls: []
 
-  configmap: 
-    RABBITMQ_URI: "amqp"
-    RABBITMQ_PROTOCOL: "http"
-    RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
-    RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672" 
-    RABBITMQ_DEFAULT_USER: "onboarding"
+  configmap:
     MONGO_URI: "mongodb"
     MONGO_HOST: "midaz-mongodb.midaz.svc.cluster.local."
     MONGO_NAME: "onboarding"

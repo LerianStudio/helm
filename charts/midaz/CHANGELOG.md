@@ -1,3 +1,31 @@
+## [midaz-4.4.0-beta.10] - 2025-11-10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.9...midaz-v4.4.0-beta.10)
+Contributors: lerian-studio
+
+### ⚠️ Breaking Changes
+- **Transition to Version 1.0.0**: This update includes breaking changes across `auth`, `backend`, `build`, `config`, and other components. Users must review the migration guides to adjust their setups and ensure compatibility with the new API and configurations.
+
+### ✨ Features
+- **Authentication Enhancements**: Introduces new security protocols and authentication methods, providing safer user interactions and aligning with modern security standards. This update significantly boosts the application's security posture.
+
+### 🐛 Bug Fixes
+- **Backend Synchronization**: Fixed data synchronization issues that caused inconsistencies in user data. This fix ensures data integrity and reliability, enhancing overall user trust.
+- **Login Reliability**: Resolved a bug preventing user logins under specific conditions, improving the reliability and user experience of the authentication process.
+
+### ⚡ Performance
+- **Build System Optimization**: Streamlined build processes reduce deployment times, leading to faster iteration cycles and improved developer productivity.
+
+### 🔄 Changes
+- **Configuration Simplification**: Simplified configuration management for easier customization and deployment across environments, reducing setup complexity and the potential for errors.
+
+### 📚 Documentation
+- **Enhanced Documentation**: Updated and expanded documentation to guide users through new features and changes, reducing support queries and improving user onboarding.
+
+### 🔧 Maintenance
+- **Dependency Updates**: Updated various dependencies to their latest versions, ensuring system stability and security.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

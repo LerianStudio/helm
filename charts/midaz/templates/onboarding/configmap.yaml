@@ -91,7 +91,7 @@ data:
   # List of <organization-id>:<ledger-id> separated by comma
   ACCOUNT_TYPE_VALIDATION: {{ .Values.onboarding.configmap.ACCOUNT_TYPE_VALIDATION | default "" | quote }}
   # TRANSACTION CONFIG
-  TRANSACTION_GRPC_ADDRESS: {{ .Values.onboarding.configmap.TRANSACTION_GRPC_ADDRESS | default (printf "transaction.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  TRANSACTION_GRPC_ADDRESS: {{ .Values.onboarding.configmap.TRANSACTION_GRPC_ADDRESS | default (printf "midaz-transaction.%s.svc.cluster.local." .Release.Namespace) | quote }}
   TRANSACTION_GRPC_PORT: {{ .Values.onboarding.configmap.TRANSACTION_GRPC_PORT | default "3011" | quote }}
 
   # Extra Env Vars

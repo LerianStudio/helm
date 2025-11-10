@@ -20,7 +20,7 @@ maintainers:
 version: 4.4.0-beta.9
 
 # This is the version number of the application being deployed.
-appVersion: "3.3.5"
+appVersion: "3.4.0"
 
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:

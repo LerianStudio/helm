@@ -1,3 +1,27 @@
+## [midaz-4.4.0-beta.11] - 2025-11-14
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.1-docfix...midaz-v4.4.0-beta.11)
+Contributors: Fellipe Benoni, Gabriel Ferreira, Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Configuration/Deployment**: The `plugin-smart-templates` has been renamed to `Reporter`, and `MinIO` has been replaced with `SeaweedFS`. This requires updates to configuration files and deployment scripts. Ensure all references to the old plugin name and storage backend are updated.
+
+### ✨ Features
+- **Backend/Configuration**: Introduced gRPC configuration for the transaction service, enhancing communication capabilities and service interoperability. This allows for more robust service integration and easier scaling.
+- **Configuration**: Added support for using existing secrets within the Helm chart, simplifying sensitive data management and boosting security by reusing pre-existing credentials.
+
+### 🐛 Bug Fixes
+- **Backend/Configuration**: Corrected the DNS name for the transaction service in the onboarding configuration, ensuring proper service discovery and connectivity.
+- **Build**: Removed the RabbitMQ health check from the onboarding deployment, resolving deployment issues and enhancing service stability.
+- **Frontend/Configuration**: Aligned NextAuth URLs with the Reporter UI base URL, ensuring seamless authentication flows.
+- **Configuration**: Added a trailing slash to the default `MIDAZ_ONBOARDING_URL` in the fees configmap, fixing URL formatting issues that could lead to incorrect routing.
+
+### 🔧 Maintenance
+- **Build/Testing**: Pinned GitHub Actions to specific commit hashes, enhancing build stability and ensuring consistent test environments.
+- **Configuration/Docs**: Updated component versions in the README file to reflect the latest releases, ensuring documentation accuracy.
+- **Build/Dependencies**: Updated chart and dependency versions, keeping the project up-to-date with the latest improvements and security patches.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

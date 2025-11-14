@@ -1,3 +1,17 @@
+## [reporter-1.1.1-beta.1] - 2025-11-14
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.0...reporter-v1.1.1-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 📚 Documentation
+- **Updated Component Versions**: The documentation now reflects component versions updated to 3.4.1, ensuring users have access to the latest enhancements and fixes. This update helps users stay informed about the most recent changes and improvements.
+
+### 🔧 Maintenance
+- **Version Synchronization**: Various components have been updated to new beta versions (1.1.1-beta.1, 3.4.1-beta.1, 1.2.1-beta.1, and 4.4.0-beta.11) to align with the latest development milestones. This ensures consistency and compatibility across the project components.
+- **Chart Version Update**: The chart version is now 4.4.1, maintaining consistency with application updates and ensuring seamless integration across different parts of the project.
+- **Application Version Update**: The application version has been updated to 3.4.1, reflecting ongoing development efforts and preparing for future stable releases.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

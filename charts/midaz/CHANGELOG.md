@@ -1,3 +1,21 @@
+## [midaz-4.4.1] - 2025-11-17
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.0-beta.11...midaz-v4.4.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Authentication and Frontend Enhancements**: Experience improved security and responsiveness with updates to the authentication process and user interface. These changes ensure a more seamless and secure interaction with the system.
+
+### ⚡ Performance
+- **Backend and Build Optimizations**: Enjoy a more reliable and efficient system with enhancements to backend processing and build processes. These updates contribute to faster load times and smoother operations.
+
+### 📚 Documentation
+- **Version Update**: Documentation has been updated to reflect the latest chart version 4.4.1, ensuring users have access to the most current information about the software's capabilities.
+
+### 🔧 Maintenance
+- **Release Management**: Various versioning updates and pre-release preparations have been made to ensure consistency and reliability in our release cycles. This includes updates to beta versions, enhancing the overall deployment process.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

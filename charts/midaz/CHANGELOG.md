@@ -1,3 +1,18 @@
+## [midaz-4.4.1-beta.1] - 2025-11-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.1...midaz-v4.4.1-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚡ Performance
+- **Transaction Service Update**: The transaction service has been upgraded to version 3.4.2, bringing performance enhancements that result in faster processing and improved reliability. Users will experience smoother operations across both backend and frontend components, contributing to a more seamless workflow.
+
+### 📚 Documentation
+- **Updated Transaction Service Information**: The documentation has been refreshed to include the latest capabilities of the transaction service. This ensures users have access to up-to-date information, aiding in better understanding and utilization of the service.
+
+### 🔧 Maintenance
+- **Release Management for 4.4.1-beta.1**: Preparations for the upcoming beta release are complete, ensuring a streamlined process for users to test new features and improvements in a controlled environment.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

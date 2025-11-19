@@ -7,8 +7,8 @@
     },
     {
       "name": "hotfix/midaz-v4.3.2",
-      "range": "midaz-v4.3.x",
-      "channel": "midaz-v4.3.x"
+      "range": "4.3.x",
+      "channel": "4.3.x"
     }
   ],
   "plugins": [

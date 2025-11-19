@@ -1,3 +1,15 @@
+## [reporter-1.1.2-beta.1] - 2025-11-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.1...reporter-v1.1.2-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **Transaction Service Update**: The transaction service image has been updated to version 3.4.2. This ensures compatibility with the latest features and security patches, providing a more reliable and secure service environment for users.
+
+### 🔧 Maintenance
+- **Version Updates**: Routine version updates for beta releases, including 1.1.2-beta.1, 1.2.2-beta.1, 3.4.2-beta.1, 4.4.1-beta.1, and 4.4.2-beta.1. These updates are part of our ongoing efforts to keep the software aligned with the latest development cycles and testing phases, ensuring users have access to the most current and stable software versions.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

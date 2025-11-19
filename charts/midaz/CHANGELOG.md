@@ -1,3 +1,12 @@
+## [midaz-4.4.2] - 2025-11-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.2-beta.1...midaz-v4.4.2)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Version Alignment**: Updated versioning for multiple components to maintain consistency and prepare for future releases. This includes:
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

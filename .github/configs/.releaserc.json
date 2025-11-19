@@ -6,8 +6,9 @@
       "prerelease": "beta"
     },
     {
-      "name": "hotfix/*",
-      "prerelease": "hf"
+      "name": "hotfix/midaz-v4.3.2",
+      "range": "midaz-v4.3.x",
+      "channel": "midaz-v4.3.x"
     }
   ],
   "plugins": [

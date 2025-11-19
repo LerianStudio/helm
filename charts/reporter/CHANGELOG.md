@@ -1,3 +1,12 @@
+## [reporter-1.1.2] - 2025-11-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.2-beta.1...reporter-v1.1.2)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Release Management**: We've updated our versioning system to improve release tracking and consistency. This change helps maintain a clear and organized release history, which is crucial for better dependency management and version control. While these updates do not introduce new features or bug fixes, they play a vital role in preserving the project's integrity and reliability over time.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

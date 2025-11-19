@@ -1,3 +1,13 @@
+## [plugin-fees-3.4.2-beta.1] - 2025-11-19
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.4.1...plugin-fees-v3.4.2-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔧 Maintenance
+- **Version Updates for Beta Releases**: We have updated multiple versions to align with our upcoming beta release cycle. This ensures that the system is stable and ready for new features, maintaining compatibility and consistency across all components.
+- **Transaction Service Image Update**: The transaction service image tag has been updated to version 3.4.2 across backend, config, docs, and frontend components. This update includes minor enhancements and bug fixes, ensuring all components leverage the latest improvements and maintain consistency across the system.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

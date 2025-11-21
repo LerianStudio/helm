@@ -7,7 +7,7 @@
     },
     {
       "name": "hotfix/*",
-      "prerelease": "hf"
+      "prerelease": true
     }
   ],
   "plugins": [

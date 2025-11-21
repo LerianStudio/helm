@@ -1,3 +1,36 @@
+## [midaz-4.4.2-beta.2] - 2025-11-21
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.2...midaz-v4.4.2-beta.2)
+Contributors: Fellipe Benoni, Gabriel Ferreira, Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Authentication and Configuration Overhaul**: This release features a comprehensive update to authentication processes and configuration management. Users must update their configurations according to the new schema outlined in the migration guide to ensure continued service functionality.
+- **Service Interoperability Changes**: The introduction of gRPC for transaction services requires users to update service integrations. Please refer to the migration guide for detailed steps on transitioning to the new communication protocol.
+
+### ✨ Features
+- **Enhanced Transaction Services with gRPC**: The backend now supports gRPC, significantly boosting communication efficiency and interoperability between services. This change allows for faster data exchange and improved service scalability.
+- **Flexible Secret Management**: Users can now leverage existing secrets within Helm charts, simplifying the management of sensitive information and enhancing security practices.
+- **Improved Template Clarity**: "Smart Templates" have been renamed to "Reporter" with enhanced RabbitMQ configuration, providing clearer integration pathways and better template management.
+
+### 🐛 Bug Fixes
+- **Release Workflow Reliability**: Resolved issues with hotfix branch configurations, ensuring smoother and more reliable release processes.
+- **RabbitMQ Connectivity**: Corrected configuration paths in transaction services to fix previous connectivity issues, enhancing message queue reliability.
+- **Authentication Consistency**: Aligned NextAuth URLs with the reporter UI base URL, resolving inconsistencies and improving user authentication experiences.
+
+### ⚡ Performance
+- **Deployment Efficiency**: Improved Helm setup reliability in release workflows, reducing deployment time and minimizing setup errors.
+
+### 🔄 Changes
+- **Standardized Configuration**: Environment variable naming and service URLs have been standardized, reducing configuration errors and enhancing consistency across deployments.
+
+### 📚 Documentation
+- **Updated Component Versions**: Documentation now reflects the latest component versions, ensuring users have accurate and up-to-date information.
+
+### 🔧 Maintenance
+- **Build Stability**: Pinned GitHub Actions to specific commit hashes, increasing build stability and reproducibility.
+- **Dependency Updates**: Chart and dependency versions have been updated to maintain compatibility and leverage new features.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

@@ -4,10 +4,6 @@
     {
       "name": "develop",
       "prerelease": "beta"
-    },
-    {
-      "name": "hotfix/*",
-      "prerelease": true
     }
   ],
   "plugins": [

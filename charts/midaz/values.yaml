@@ -906,3 +906,4 @@ nginx:
         paths:
           - path: /
             pathType: Prefix
+

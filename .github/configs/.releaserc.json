@@ -6,8 +6,9 @@
       "prerelease": "beta"
     },
     {
-      "name": "hotfix/*",
-      "prerelease": "hf"
+      "name": "hotfix/console-v3.4.3",
+      "range": "4.4.x",
+      "channel": "4.4.x"
     }
   ],
   "plugins": [

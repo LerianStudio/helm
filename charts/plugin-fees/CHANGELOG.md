@@ -1,3 +1,12 @@
+## [plugin-fees-3.4.3] - 2025-11-21
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.4.3-beta.1...plugin-fees-v3.4.3)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Configuration Updates**: Routine updates have been applied to the configuration component to ensure compatibility with the latest software standards. These updates help maintain system stability and performance, ensuring users benefit from the latest improvements and security patches. No user action is required as these changes are internal and do not affect user-facing features.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

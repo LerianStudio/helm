@@ -1,3 +1,18 @@
+## [plugin-fees-3.4.3-beta.1] - 2025-11-21
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.4.2...plugin-fees-v3.4.3-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Release Process Reliability**: Removed the hotfix branch from the release configuration to prevent unintended releases, ensuring only stable branches are deployed. This fix enhances the stability and predictability of software releases.
+- **Documentation Accuracy**: Updated the documentation to reflect the latest chart and console versions (4.4.3 and 3.4.3, respectively), providing users with the most current information on software versions.
+- **File Formatting Consistency**: Added a newline at the end of the `values.yaml` file to adhere to standard formatting practices, improving compatibility with various tools and preventing potential file processing issues.
+
+### 🔧 Maintenance
+- **Version Management Updates**: Routine updates to release versions, including 3.4.3-beta.1, 1.2.3-beta.1, 4.4.3-beta.1, and 4.4.2-beta.2, to keep the software aligned with development milestones and ensure ongoing stability.
+- **General Version Bump**: Increased the version to 1.1.2, reflecting ongoing maintenance efforts and stability improvements across the project.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

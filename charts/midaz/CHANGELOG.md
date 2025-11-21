@@ -1,3 +1,12 @@
+## [midaz-4.4.3] - 2025-11-21
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.3-beta.1...midaz-v4.4.3)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Release Version Updates**: The configuration component has been updated to include the latest release versions: 4.4.3, 1.1.3-beta.1, 3.4.3-beta.1, and 1.2.3-beta.1. These updates are part of our regular maintenance efforts to keep the system current with the latest improvements and optimizations, enhancing overall system reliability and performance.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

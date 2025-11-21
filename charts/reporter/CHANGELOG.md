@@ -1,3 +1,17 @@
+## [reporter-1.1.3-beta.1] - 2025-11-21
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.2...reporter-v1.1.3-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Config/Frontend**: Corrected branch targeting issues by removing the hotfix branch from the release configuration. This fix prevents accidental deployments from unintended branches, ensuring a more reliable release process.
+- **Docs**: Updated documentation to reflect the latest software versions, ensuring users have access to the most current and accurate information. This update aligns the documentation with the actual software state, improving user guidance.
+- **Config**: Added a newline at the end of the `values.yaml` file to adhere to standard formatting practices, enhancing compatibility with tools that require this format.
+
+### 🔧 Maintenance
+- **Config**: Updated release versions to maintain consistency and improve tracking of changes. This ensures that versioning remains up-to-date, facilitating better management of software updates and improvements over time.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

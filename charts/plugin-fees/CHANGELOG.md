@@ -1,3 +1,18 @@
+## [plugin-fees-3.4.3-beta.2] - 2025-11-21
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.4.3...plugin-fees-v3.4.3-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Documentation Update**: The plugin-fees chart has been updated to version 3.4.4, ensuring users have the most accurate and up-to-date information. This improvement helps users better understand and utilize the chart functionalities without confusion.
+
+### 📚 Documentation
+- **Improved Guidance**: The documentation now accurately reflects the latest changes and improvements in the plugin-fees chart. Users will benefit from clearer instructions and a more reliable reference, enhancing their overall experience and reducing potential errors in implementation.
+
+### 🔧 Maintenance
+- **Database Stability**: Released version 3.4.3-beta.2 includes routine updates and optimizations to maintain the system's stability and performance. While this update does not introduce new features, it ensures that the database component remains efficient and reliable, indirectly benefiting users by reducing downtime and improving performance consistency.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

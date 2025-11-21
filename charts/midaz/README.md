@@ -15,7 +15,7 @@ The default installation is similar to the one provided in the [Midaz repo](http
 To install Midaz using Helm, run the following command:
 
 ```console
-$ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 4.4.0 -n midaz --create-namespace
+$ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 4.4.3 -n midaz --create-namespace
 ```
 
 This will create a new namespace called midaz if it doesn't already exist and deploy the Midaz Helm chart.

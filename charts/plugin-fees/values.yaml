@@ -16,7 +16,7 @@ fees:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.1.1"
+    tag: "3.0.2"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -173,7 +173,7 @@ frontend:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.1"
+    tag: "3.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

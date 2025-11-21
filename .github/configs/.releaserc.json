@@ -6,7 +6,7 @@
       "prerelease": "beta"
     },
     {
-      "name": "hotfix/midaz-v4.4.2",
+      "name": "hotfix/midaz-v4.4.x-clean",
       "range": "4.4.x",
       "channel": "4.4.x"
     }

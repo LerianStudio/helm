@@ -1,3 +1,12 @@
+## [reporter-1.1.3] - 2025-11-21
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.3-beta.1...reporter-v1.1.3)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Config Versioning Updates**: The configuration components have been updated to versions 1.1.3, 1.2.3, 3.4.3, and 4.4.3. These updates ensure alignment with the latest release standards, providing users with the most current and stable configurations. This proactive maintenance helps prevent potential issues and supports system reliability.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

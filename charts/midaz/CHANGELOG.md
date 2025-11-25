@@ -1,3 +1,13 @@
+## [midaz-4.4.4] - 2025-11-25
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.4-beta.1...midaz-v4.4.4)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔧 Maintenance
+- **Database Stability Enhancements**: We've implemented routine updates and optimizations to the database component. These changes ensure ongoing stability and performance, helping maintain the reliability of your deployments.
+- **Simplified Testing Setup**: An unnecessary verify flag has been removed from the Helm unittest plugin installation process. This change reduces complexity, making it easier for developers to set up and maintain tests without additional configuration steps.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

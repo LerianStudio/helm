@@ -1,3 +1,24 @@
+## [midaz-4.4.4-beta.1] - 2025-11-25
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.3...midaz-v4.4.4-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Documentation Accuracy**: Updated the plugin-fees chart to version 3.4.4, correcting discrepancies to provide users with precise and reliable information for plugin configuration and deployment.
+
+### 🔄 Changes
+- **Continuous Integration Improvement**: Disabled Helm plugin signature verification in CI environments, reducing potential interruptions and streamlining automated build processes for developers.
+
+### 📚 Documentation
+- **Updated Guidelines**: Enhanced onboarding and transaction documentation to version 3.4.4, offering users the most current setup and transaction processes for a smoother experience.
+
+### 🔧 Maintenance
+- **Database Stability**: Released versions 4.4.4-beta.1, 3.4.4, 3.4.4-beta.1, and 3.4.3-beta.2, featuring internal updates to maintain database stability and performance.
+- **Configuration Updates**: Released configuration versions 1.1.3 and 1.2.3, incorporating minor updates to enhance system compatibility and reduce configuration errors.
+- **Code Consistency**: Added a newline at the end of the values.yaml file to adhere to file formatting standards, improving code readability and consistency.
+- **Version Alignment**: Bumped the plugin-fees application version to 3.0.2, ensuring alignment with the latest application standards and dependencies.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

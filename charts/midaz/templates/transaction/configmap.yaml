@@ -68,6 +68,7 @@ data:
   MONGO_USER: {{ .Values.transaction.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_PORT: {{ .Values.transaction.configmap.MONGO_PORT | default "27017" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.transaction.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_PARAMETERS: {{ .Values.transaction.configmap.MONGO_PARAMETERS | default "" | quote }}
   #REDIS
   REDIS_HOST: {{ .Values.transaction.configmap.REDIS_HOST | default (printf "midaz-valkey-primary.%s.svc.cluster.local.:6379" .Release.Namespace) | quote }}
   REDIS_MASTER_NAME: {{ .Values.transaction.configmap.REDIS_MASTER_NAME | default "" | quote }}

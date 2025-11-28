@@ -1,3 +1,22 @@
+## [midaz-4.4.5-beta.1] - 2025-11-28
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.4...midaz-v4.4.5-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **Configuration Update**: The SeaweedFS configuration now uses port 8888 instead of 9000, aligning with default network settings to minimize conflicts and improve compatibility.
+- **Credential Management**: Removed the default `regcred` from `imagePullSecrets`, encouraging explicit credential management for enhanced security and simplified setup.
+
+### 📚 Documentation
+- **README Updates**: Revised the README to reflect the latest chart and component versions, providing users with accurate and up-to-date deployment and configuration information.
+
+### 🔧 Maintenance
+- **Release Management**: Conducted multiple version updates, including pre-release versions, to ensure the system remains stable and up-to-date.
+- **Reporter Component Alignment**: Updated the `appVersion` to 4.0.0 and adjusted SeaweedFS configurations to meet the latest system requirements.
+- **Release Workflow Improvement**: Disabled Helm plugin signature verification to streamline the release process and reduce deployment friction.
+- **Code Quality**: Added a newline at the end of the `values.yaml` file, adhering to best practices for file formatting and improving compatibility with version control systems.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

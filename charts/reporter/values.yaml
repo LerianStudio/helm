@@ -38,7 +38,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.1.0-beta.2"
+    tag: "4.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -145,12 +145,12 @@ manager:
 
     # OPEN TELEMETRY
     OTEL_RESOURCE_SERVICE_NAME: reporter-manager
-    OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0" #"{{ .Values.manager.configmap.VERSION }}"
+    OTEL_RESOURCE_SERVICE_VERSION: "v4.0.0" #"{{ .Values.manager.configmap.VERSION }}"
 
     # SWAGGER
-    SWAGGER_TITLE: 'Plugin Template Engine'
-    SWAGGER_DESCRIPTION: 'Documentation for plugin template engine'
-    SWAGGER_VERSION: "v1.0.0" #"{{ .Values.manager.configmap.VERSION }}"
+    SWAGGER_TITLE: 'Reporter'
+    SWAGGER_DESCRIPTION: 'Documentation for reporter'
+    SWAGGER_VERSION: "v4.0.0" #"{{ .Values.manager.configmap.VERSION }}"
     SWAGGER_HOST: ":4005" #"{{ .Values.manager.configmap.SERVER_ADDRESS }}"
     SWAGGER_BASE_PATH: /
     SWAGGER_SCHEMES: http
@@ -196,7 +196,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.1.0-beta.2"
+    tag: "4.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -261,8 +261,10 @@ worker:
     LOG_LEVEL: debug
 
     # OPEN TELEMETRY
-    OTEL_RESOURCE_SERVICE_NAME: plugin-template-engine-worker
-    OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0"
+    OTEL_RESOURCE_SERVICE_NAME: reporter-worker
+    OTEL_RESOURCE_SERVICE_VERSION: "v4.0.0"
+    PDF_POOL_WORKERS: "5"
+    PDF_TIMEOUT_SECONDS: "30"
 
   # Extra Env Vars
   extraEnvVars: {}
@@ -307,7 +309,7 @@ frontend:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.0.0"
+    tag: "4.0.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -484,7 +486,7 @@ common:
     MONGO_MAX_POOL_SIZE: 1000
 
     # OPEN TELEMETRY
-    OTEL_LIBRARY_NAME: github.com/LerianStudio/plugin-template-engine
+    OTEL_LIBRARY_NAME: github.com/LerianStudio/reporter
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: development
     OTEL_EXPORTER_OTLP_ENDPOINT_PORT: 4317
     OTEL_EXPORTER_OTLP_ENDPOINT: otlp://midaz-otel-lgtm:4317
@@ -563,61 +565,70 @@ secrets:
 
 seaweedfs:
   enabled: true
-  # image:
-  #   repository: docker.io/
-  #   tag: "3.97"
 
   master:
     enabled: true
+    replicas: 1
+
     extraArgs:
       - "master"
       - "-port=9333"
       - "-mdir=/data"
+
     service:
+      type: ClusterIP
       ports:
         http: 9333
         ui: 9334
-    persistence:
-      enabled: true
-      size: 5Gi
+
+    # Persistent storage for the master node
+    data:
+      type: "persistentVolumeClaim"
+      size: "5Gi"
+      storageClass: null  # Use cluster default or set a specific StorageClass
 
   volume:
     enabled: true
+    replicas: 1
+
     extraArgs:
       - "volume"
       - "-port=9080"
       - "-mserver=seaweedfs-master:9333"
       - "-dir=/data"
       - "-max=0"
+
     service:
+      type: ClusterIP
       ports:
         http: 9080
-    persistence:
-      enabled: true
-      size: 10Gi
+
+    # Persistent storage for volume servers
+    dataDirs:
+      - name: data
+        type: "persistentVolumeClaim"
+        size: "10Gi"
+        storageClass: null   # Use default or specify your StorageClass
+        maxVolumes: 0        # 0 = let SeaweedFS decide, or set a limit
 
   filer:
     enabled: true
+
     extraArgs:
       - "filer"
       - "-port=8888"
       - "-master=seaweedfs-master:9333"
+
     service:
+      type: ClusterIP
       ports:
         http: 8888
-    persistence:
-      enabled: true
-      size: 5Gi
 
-  s3:
-    enabled: false
-    extraArgs:
-      - "s3"
-      - "-port=8333"
-      - "-filer=seaweedfs-filer:8888"
-    service:
-      ports:
-        http: 8333
+    # Persistent storage for filer
+    data:
+      type: "persistentVolumeClaim"
+      size: "25Gi"
+      storageClass: null
 
 # -- Observability configuration for both manager and worker
 observability:

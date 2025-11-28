@@ -1,3 +1,18 @@
+## [reporter-1.1.4] - 2025-11-28
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.4-beta.1...reporter-v1.1.4)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 📚 Documentation
+- **README Update**: The documentation now accurately reflects the current versions of charts and components, providing users with clear and up-to-date guidance. This change helps reduce confusion and supports a smoother onboarding process for new users.
+
+### 🔧 Maintenance
+- **General Updates**: Routine maintenance has been performed to ensure ongoing project robustness and accuracy, benefiting users with a more reliable experience.
+
+### ⚡ Improvements
+- **Database Compatibility**: Updated to versions 1.1.4 and 4.4.4, enhancing performance and reliability. Users can expect smoother database operations with improved stability and security.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

@@ -473,7 +473,7 @@ common:
 
     # SEAWEEEDFS
     SEAWEEDFS_HOST: seaweedfs-filer.midaz-plugins.svc.cluster.local
-    SEAWEEDFS_FILER_PORT: 9000
+    SEAWEEDFS_FILER_PORT: 8888
     SEAWEEDFS_TTL: 6M
 
     # MONGO DB

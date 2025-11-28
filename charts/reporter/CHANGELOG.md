@@ -1,3 +1,15 @@
+## [reporter-1.1.4-beta.2] - 2025-11-28
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.4...reporter-v1.1.4-beta.2)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **Configuration Update**: Removed the default `regcred` from `imagePullSecrets`. This change gives users more control over their image pull secrets, reducing potential security risks associated with default credentials. Users now have the flexibility to configure their own credentials, enhancing security and customization.
+
+### 🔧 Maintenance
+- **Version Update**: Upgraded to version `1.1.4-beta.2`. This update includes minor maintenance improvements to ensure system stability and alignment with current development practices. While no new features are introduced, this is part of our commitment to maintaining software quality and reliability.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

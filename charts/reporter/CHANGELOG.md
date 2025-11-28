@@ -1,3 +1,24 @@
+## [reporter-1.1.4-beta.1] - 2025-11-28
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.3...reporter-v1.1.4-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Documentation Accuracy**: Corrected the versioning of the plugin-fees chart to 3.4.4. This fix ensures that users have the correct version information, preventing potential confusion and errors in deployment.
+
+### 🔄 Changes
+- **Configuration Update**: The SeaweedFS configuration has been updated by changing the filer port from 9000 to 8888 and bumping the appVersion to 4.0.0. This change aligns with the latest SeaweedFS updates, ensuring seamless integration and improved configuration consistency.
+- **Build Process Improvement**: Disabled Helm plugin signature verification in both the release workflow and CI processes. This streamlines the build process, reducing interruptions and enhancing workflow efficiency.
+
+### 📚 Documentation
+- **Version Updates**: Updated onboarding and transaction documentation to reflect version 3.4.4, ensuring that all documentation aligns with the current software state and supports accurate user guidance.
+
+### 🔧 Maintenance
+- **Database Updates**: Multiple version bumps for database components, including releases 1.1.4-beta.1, 4.4.4-beta.1, 3.4.4, 3.4.4-beta.1, and 3.4.3-beta.2. These updates ensure that database components are current with the latest enhancements and security patches.
+- **Testing Simplification**: Removed the unnecessary verify flag from the Helm unittest plugin installation, simplifying the test setup process and reducing potential configuration errors.
+- **Code Quality**: Added newlines at the end of the `values.yaml` file to adhere to best practices in file formatting, enhancing code readability and maintainability.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

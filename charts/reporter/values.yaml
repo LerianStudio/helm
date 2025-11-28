@@ -41,8 +41,7 @@ manager:
     tag: "4.0.0"
 
   # -- Secrets for pulling images from a private registry
-  imagePullSecrets:
-    - name: regcred
+  imagePullSecrets: []
 
   # -- Overrides the default generated name by Helm
   nameOverride: ""
@@ -199,8 +198,7 @@ worker:
     tag: "4.0.0"
 
   # -- Secrets for pulling images from a private registry
-  imagePullSecrets:
-    - name: regcred
+  imagePullSecrets: []
 
   # -- Overrides the default generated name by Helm
   nameOverride: ""

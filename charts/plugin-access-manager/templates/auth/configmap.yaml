@@ -51,7 +51,7 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.auth.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.auth.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.auth.configmap.ENABLE_TELEMETRY | default "true" | quote }}
 
   # AUTHORIZER
   RUNNING_IN_DOCKER: {{ .Values.auth.configmap.RUNNING_IN_DOCKER | default "true" | quote }}

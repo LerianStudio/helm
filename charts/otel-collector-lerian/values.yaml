@@ -6,12 +6,12 @@
 
 opentelemetry-collector:
   mode: daemonset # Changed from deployment to daemonset for kubeletstats
-  
+
   # Contrib image is needed for k8scluster, k8sattributes, transform, and loki exporter.
   image:
     repository: otel/opentelemetry-collector-contrib
     tag: 0.131.0
-  
+
   # RBAC is required for k8sattributes, k8scluster, and kubeletstats receivers.
   clusterRole:
     create: true
@@ -49,7 +49,7 @@ opentelemetry-collector:
           - "nodes/stats"
           - "nodes/metrics"
         verbs: ["get", "list", "watch"]
-  
+
   # Basic resource limits for stability.
   resources:
     limits:
@@ -58,7 +58,7 @@ opentelemetry-collector:
     requests:
       cpu: 250m
       memory: 256Mi
-  
+
   # The API key for authenticating with the central collector.
   # The 'extraEnvs' key is the correct way to define environment variables for the pod.
   extraEnvs:
@@ -67,7 +67,7 @@ opentelemetry-collector:
         secretKeyRef:
           name: otel-api-key
           key: api-key
-  
+
     # K8S_NODE_NAME is used by the kubeletstats receiver to find the local kubelet.
     - name: K8S_NODE_NAME
       valueFrom:
@@ -79,7 +79,7 @@ opentelemetry-collector:
       value: "80"
     - name: GOMAXPROCS
       value: "2"
-  
+
   config:
     receivers:
       # Receives traces, logs, and metrics from instrumented applications.
@@ -89,14 +89,14 @@ opentelemetry-collector:
             endpoint: "0.0.0.0:4317"
           http:
             endpoint: "0.0.0.0:4318"
-  
+
       # Collects cluster-level state information, like pod status.
       k8s_cluster:
         collection_interval: 60s
         metrics:
           k8s.pod.status_reason:
             enabled: true
-  
+
       # Collects pod/container performance metrics (CPU, memory) from the node's Kubelet.
       kubeletstats:
         collection_interval: 10s
@@ -108,7 +108,7 @@ opentelemetry-collector:
         metric_groups:
           - "pod"
           - "container"
-  
+
     processors:
       memory_limiter:
         check_interval: 500ms
@@ -118,7 +118,7 @@ opentelemetry-collector:
         timeout: 200ms
         send_batch_size: 512
         send_batch_max_size: 1024
-  
+
       # This processor uses OTTL to explicitly delete sensitive attributes from spans.
       transform/remove_sensitive_attributes:
         trace_statements:
@@ -132,7 +132,7 @@ opentelemetry-collector:
               - set(attributes["app.request.request_id"], attributes["temp.request_id"]) where attributes["temp.request_id"] != nil
               # Step 4: Clean up the temporary attribute.
               - delete_key(attributes, "temp.request_id") where attributes["temp.request_id"] != nil
-  
+
       transform/mask_body_sensitive_data:
         error_mode: ignore
         log_statements:
@@ -150,7 +150,7 @@ opentelemetry-collector:
           - replace_pattern(body, "\"([^\"]*(?:dict|pix|key|value)[^\"]*)\":\"(\\+55\\d{3})\\d{6,}\"", "\"$$1\":\"$$2******\"")
           - replace_pattern(body, "\"(evp|evpid|evp_key|keyevp|pix|pixkey|pix_key|keypix|key_pix|dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict)\":\"([a-f0-9]{8})-([a-f0-9]{4})-([a-f0-9]{4})-([a-f0-9]{4})-([a-f0-9]{12})\"", "\"$$1\":\"$$2-****-****-****-$$6\"")
           - replace_pattern(body, "\"(dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict|pixkey|pix_key|keypix|key_pix|keyvalue|key_value|valuekey|value_key)\":\"([a-zA-Z0-9]{8})-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}\"", "\"$$1\":\"$$2******\"")
-  
+
       transform/mask_documents:
         error_mode: ignore
         log_statements:
@@ -159,7 +159,7 @@ opentelemetry-collector:
           - IsMatch(body, "\"(document|taxid|national|cpf|cnpj)")
           statements:
           - replace_pattern(body, "\"(document(?:id|_id|number|_number)?|(?:sender|recipient|receiver)_?document|document_?(?:sender|recipient|receiver)|tax_?id|pix_?tax_?id|national_?registration(?:_?(?:number|id))?|cpf|cnpj)\":\"(\\d{6})\\d{5,}\"", "\"$$1\":\"$$2******\"")
-  
+
       transform/mask_names:
         error_mode: ignore
         log_statements:
@@ -169,7 +169,7 @@ opentelemetry-collector:
           statements:
           - replace_pattern(body, "\"((?:customer|sender|recipient|receiver|client|name)_?(?:name)?|name_?(?:customer|sender|recipient|receiver|client))\":\"(\\S+)[^\"]*\\s+(\\S+)\"", "\"$$1\":\"$$2 ********** $$3\"")
           - replace_pattern(body, "\"([^\"]*(?:customer|sender|recipient|receiver|client|name)[^\"]*)\":\"(\\S+)[^\"]*\\s+(\\S+)\"", "\"$$1\":\"$$2 ********** $$3\"")
-  
+
       transform/mask_emails:
         error_mode: ignore
         log_statements:
@@ -178,7 +178,7 @@ opentelemetry-collector:
           - IsMatch(body, "@")
           statements:
           - replace_pattern(body, "\"([^\"]*(?:email|mail|dict|pix|key|value)[^\"]*)\":\"([^\"@]+)@[^\"]+\\.([^\"]+)\"", "\"$$1\":\"$$2@****.$$3\"")
-  
+
       transform/mask_phones:
         error_mode: ignore
         log_statements:
@@ -188,7 +188,7 @@ opentelemetry-collector:
           statements:
           - replace_pattern(body, "\"([^\"]*(?:cell|phone|mobile|telephone|contact)[^\"]*)\":\"(\\+55\\d{3})\\d{6,}\"", "\"$$1\":\"$$2******\"")
           - replace_pattern(body, "\"([^\"]*(?:dict|pix|key|value)[^\"]*)\":\"(\\+55\\d{3})\\d{6,}\"", "\"$$1\":\"$$2******\"")
-  
+
       # Drops all node-level metrics using a regex filter.
       filter/drop_node_metrics:
         metrics:
@@ -196,7 +196,7 @@ opentelemetry-collector:
             match_type: regexp
             metric_names:
               - ^k8s\.node\..*$
-  
+
       # Filters metrics to include the 'midaz' and 'midaz-plugins' namespaces.
       filter/include_midaz_namespaces:
         metrics:
@@ -204,8 +204,8 @@ opentelemetry-collector:
             match_type: regexp
             resource_attributes:
               - key: k8s.namespace.name
-                value: '^(midaz-stg|midaz-plugins-stg)$'
-  
+                value: '^(midaz|midaz-plugins)$'
+
       # Enriches all telemetry with Kubernetes metadata (pod name, namespace, etc.).
       k8sattributes:
         auth_type: "serviceAccount"
@@ -215,14 +215,14 @@ opentelemetry-collector:
             - k8s.pod.name
             - k8s.deployment.name
             - k8s.namespace.name
-  
+
       # Adds the client ID for multi-tenancy, as requested.
       resource/add_client_id:
         attributes:
           - key: client.id
             value: "Firmino"
             action: upsert
-  
+
     connectors:
       spanmetrics:
         histogram:
@@ -240,7 +240,7 @@ opentelemetry-collector:
           - name: http.method
           - name: http.route
           - name: http.status_code
-  
+
       # Service Graph Connector: Gera métricas baseadas em TRACES completos (1 trace = 1 request)
       # Métricas geradas:
       #   - traces_service_graph_request_total: Total de requests entre serviços
@@ -256,7 +256,7 @@ opentelemetry-collector:
         store:
           ttl: 2s  # Tempo para aguardar spans do mesmo trace
           max_items: 10000  # Máximo de traces em memória
-  
+
     exporters:
       nop: null
       otlphttp/server:
@@ -265,7 +265,7 @@ opentelemetry-collector:
           x-api-key: "${OTEL_API_KEY}"
       #debug:
       # verbosity: detailed
-  
+
     service:
       extensions:
         - health_check
@@ -291,7 +291,7 @@ opentelemetry-collector:
               - resource/add_client_id
               - transform/remove_sensitive_attributes
           exporters: [spanmetrics, servicegraph, otlphttp/server]
-  
+
         # Pipeline for span-derived metrics, sent to central backend.
         metrics/spanmetrics:
           receivers: [spanmetrics]
@@ -301,7 +301,7 @@ opentelemetry-collector:
             - k8sattributes
             - resource/add_client_id
           exporters: [otlphttp/server]
-  
+
         # Pipeline for service graph metrics (trace-based), sent to central backend.
         metrics/servicegraph:
           receivers: [servicegraph]
@@ -309,7 +309,7 @@ opentelemetry-collector:
             - memory_limiter
             - batch
           exporters: [otlphttp/server]
-  
+
         # Pipeline for cluster and application metrics, sent to the central backend.
         metrics/cluster:
           receivers: [otlp, k8s_cluster, kubeletstats]

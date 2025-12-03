@@ -241,22 +241,6 @@ opentelemetry-collector:
           - name: http.route
           - name: http.status_code
 
-      # Service Graph Connector: Gera métricas baseadas em TRACES completos (1 trace = 1 request)
-      # Métricas geradas:
-      #   - traces_service_graph_request_total: Total de requests entre serviços
-      #   - traces_service_graph_request_failed_total: Requests com erro (4xx, 5xx)
-      #   - traces_service_graph_request_server_seconds: Latência dos requests
-      servicegraph:
-        latency_histogram_buckets: [10ms, 50ms, 100ms, 200ms, 500ms, 1s, 5s, 10s]
-        dimensions:
-          - client_id
-          - http.method
-          - service.name
-          - http.status_code
-        store:
-          ttl: 2s  # Tempo para aguardar spans do mesmo trace
-          max_items: 10000  # Máximo de traces em memória
-
     exporters:
       nop: null
       otlphttp/server:

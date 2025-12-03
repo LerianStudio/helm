@@ -99,7 +99,7 @@ common:
 frontend:
   enabled: false
   configmap:
-    NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: "http://midaz-nginx.midaz.svc.cluster.local.:8080" # @default -- "http://midaz-nginx.midaz.svc.cluster.local.:8080" if ingress is enabled set the ingress.hostname value
+    MIDAZ_CONSOLE_URL: "http://midaz-nginx.midaz.svc.cluster.local.:8080" # @default -- "http://midaz-nginx.midaz.svc.cluster.local.:8080" if ingress is enabled set the ingress.hostname value
 
 secrets:
   MONGO_PASSWORD: lerian
@@ -115,6 +115,70 @@ secrets:
 
 seaweedfs:
   enabled: true
+
+  master:
+    enabled: true
+    replicas: 1
+
+    extraArgs:
+      - "master"
+      - "-port=9333"
+      - "-mdir=/data"
+
+    service:
+      type: ClusterIP
+      ports:
+        http: 9333
+        ui: 9334
+
+    # Persistent storage for the master node
+    data:
+      type: "persistentVolumeClaim"
+      size: "5Gi"
+      storageClass: null  # Use cluster default or set a specific StorageClass
+
+  volume:
+    enabled: true
+    replicas: 1
+
+    extraArgs:
+      - "volume"
+      - "-port=9080"
+      - "-mserver=seaweedfs-master:9333"
+      - "-dir=/data"
+      - "-max=0"
+
+    service:
+      type: ClusterIP
+      ports:
+        http: 9080
+
+    # Persistent storage for volume servers
+    dataDirs:
+      - name: data
+        type: "persistentVolumeClaim"
+        size: "10Gi"
+        storageClass: null   # Use default or specify your StorageClass
+        maxVolumes: 0        # 0 = let SeaweedFS decide, or set a limit
+
+  filer:
+    enabled: true
+
+    extraArgs:
+      - "filer"
+      - "-port=8888"
+      - "-master=seaweedfs-master:9333"
+
+    service:
+      type: ClusterIP
+      ports:
+        http: 8888
+
+    # Persistent storage for filer
+    data:
+      type: "persistentVolumeClaim"
+      size: "25Gi"
+      storageClass: null
 
 observability:
   enabled: false

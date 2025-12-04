@@ -274,7 +274,7 @@ opentelemetry-collector:
               - k8sattributes
               - resource/add_client_id
               - transform/remove_sensitive_attributes
-          exporters: [spanmetrics, servicegraph, otlphttp/server]
+          exporters: [spanmetrics, otlphttp/server]
 
         # Pipeline for span-derived metrics, sent to central backend.
         metrics/spanmetrics:
@@ -284,14 +284,6 @@ opentelemetry-collector:
             - batch
             - k8sattributes
             - resource/add_client_id
-          exporters: [otlphttp/server]
-
-        # Pipeline for service graph metrics (trace-based), sent to central backend.
-        metrics/servicegraph:
-          receivers: [servicegraph]
-          processors:
-            - memory_limiter
-            - batch
           exporters: [otlphttp/server]
 
         # Pipeline for cluster and application metrics, sent to the central backend.

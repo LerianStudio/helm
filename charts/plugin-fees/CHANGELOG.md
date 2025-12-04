@@ -1,3 +1,25 @@
+## [plugin-fees-3.4.5-beta.1] - 2025-12-04
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.4.4...plugin-fees-v3.4.5-beta.1)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **Frontend**: Renamed `plugin-smart-templates-ui` to `reporter-ui` in `values-template.yaml`. This change simplifies the naming convention, making it easier for users to manage UI components without confusion.
+- **Config**: Updated SeaweedFS filer port from 9000 to 8888. This aligns with standard port usage, improving compatibility with other services and reducing potential conflicts.
+- **Config**: Increased `appVersion` to 4.0.0 to reflect significant updates in SeaweedFS configuration, enhancing performance and reliability.
+
+### 📚 Documentation
+- **README Update**: The version table has been updated to reflect the latest chart and component versions, ensuring users have accurate and up-to-date information for deployment and configuration.
+
+### 🔧 Maintenance
+- **Release Management**: Multiple release versions have been updated, ensuring the system remains current with the latest features and security patches.
+- **Config**: Removed default `regcred` from `imagePullSecrets`, simplifying the setup process and reducing potential security risks associated with default credentials.
+- **Test**: Removed an unnecessary verify flag from the Helm unittest plugin installation, streamlining the testing process and reducing potential errors during setup.
+- **Build**: Disabled Helm plugin signature verification in the CI workflow, simplifying the build process and reducing potential interruptions due to signature issues.
+- **Docs**: Updated the `reporter` chart version from 1.1.4 to 1.1.5 in the version table, ensuring documentation accuracy and aiding in version tracking.
+- **General**: Added newlines at the end of `values.yaml` files to adhere to best practices in file formatting, improving compatibility with text editors and version control systems.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

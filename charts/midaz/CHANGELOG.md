@@ -1,3 +1,36 @@
+## [midaz-4.4.6-beta.1] - 2025-12-04
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.3...midaz-v4.4.6-beta.1)
+Contributors: Fellipe Benoni, Gabriel Ferreira, Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Configuration Overhaul**: The update to version 1.0.0 includes major changes in configuration components. Users must adjust their settings to accommodate the renaming of the plugin-smart-templates to Reporter and the switch from MinIO to SeaweedFS. This change affects authentication and backend services. Please consult the migration guide for detailed steps.
+- **Service Renaming**: The frontend service has been renamed from `reporter-frontend` to `reporter-ui`. Update any scripts or configurations that reference the old service name to ensure continued functionality.
+
+### ✨ Features
+- **gRPC Configuration for Transactions**: Introducing gRPC support for transaction services enhances backend communication, providing more efficient and scalable processing capabilities.
+- **RabbitMQ Credentials Configuration**: New configuration options for RabbitMQ consumer credentials enhance security and flexibility in message handling, allowing users to tailor setups to their needs.
+
+### 🐛 Bug Fixes
+- **RabbitMQ Path Correction**: Fixed the configuration path for RabbitMQ in the transaction service, resolving message processing issues and ensuring reliable operations.
+- **Authentication URL Alignment**: Adjusted NextAuth URLs to align with the new Reporter UI base URL, improving login reliability and user experience.
+
+### ⚡ Performance
+- **Improved Deployment Workflow**: Enhanced Helm setup reliability in the release workflow reduces errors and streamlines deployment processes, ensuring a smoother release experience.
+
+### 🔄 Changes
+- **Environment Variable Standardization**: Updated and standardized environment variable naming conventions and service URLs, improving maintainability and reducing the likelihood of configuration errors.
+
+### 🗑️ Removed
+- **Deprecated Plugin Removal**: The legacy plugin-smart-templates helm chart has been removed, simplifying the system and reducing maintenance overhead.
+
+### 📚 Documentation
+- **Component Version Updates**: The README file now reflects the latest component versions, providing users with accurate and up-to-date information for better system understanding.
+
+### 🔧 Maintenance
+- **GitHub Actions Stability**: Pinned GitHub Actions to specific commit hashes to enhance build stability and security, preventing unexpected changes from affecting CI/CD pipelines.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

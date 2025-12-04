@@ -45,7 +45,7 @@ console:
       plugin-crm-ui:
         enabled: false
         port: 8082
-      plugin-smart-templates-ui:
+      reporter-ui:
         enabled: false
         port: 8083
       plugin-fees-ui:

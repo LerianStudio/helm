@@ -43,7 +43,7 @@ console:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.3.5"
+    tag: "3.3.8"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

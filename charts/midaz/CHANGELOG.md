@@ -1,3 +1,18 @@
+## [midaz-4.3.3] - 2025-12-04
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.5...midaz-v4.3.3)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🔧 Maintenance
+- **Release Configuration**: Updated release configuration and improved file formatting to streamline the release process, reducing potential errors during deployment.
+- **Hotfix Support**: Added support for hotfix branches in the release workflow, allowing for quicker deployment of critical fixes and minimizing downtime.
+- **Documentation Cleanup**: Removed trailing newlines from `values.yaml` to improve code readability and maintain file integrity.
+
+### ✨ Improvements
+- **Midaz Chart Update**: The Midaz chart has been updated to version 4.3.3, incorporating Console version 3.3.8. This ensures users benefit from the latest features and enhancements, improving overall system performance and reliability.
+- **Transaction Processing**: The Midaz chart now includes Transaction version 3.3.7, providing users with enhanced transaction processing capabilities for a more efficient and seamless experience.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

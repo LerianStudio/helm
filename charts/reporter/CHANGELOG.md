@@ -1,3 +1,16 @@
+## [reporter-1.1.7-beta.1] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.6...reporter-v1.1.7-beta.1)
+Contributors: Fellipe Benoni, lerian-studio
+
+### 📚 Documentation
+- No specific documentation changes in this release, but users can expect updated guides and resources in upcoming releases as new features are introduced.
+
+### 🔧 Maintenance
+- **Version Updates for Beta Releases**: We've updated version numbers across various components to prepare for upcoming beta releases. This ensures the system is aligned with the latest development milestones and is ready for further testing and feedback from beta users.
+- **OpenTelemetry Version Update**: The OpenTelemetry (otel) version has been updated to maintain compatibility with the latest standards. This change enhances system observability and performance monitoring, crucial for diagnosing and optimizing application behavior.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

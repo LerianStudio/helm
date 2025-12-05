@@ -336,7 +336,6 @@ opentelemetry-collector:
             - batch
             - k8sattributes
             - resource/add_client_id
-            - transform/add_service_names
             - transform/mask_body_sensitive_data_replace_1
             - transform/mask_body_sensitive_data_replace_2
             - transform/mask_body_sensitive_data_replace_3

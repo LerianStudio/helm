@@ -1,3 +1,24 @@
+## [plugin-fees-3.4.6-beta.1] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.4.5...plugin-fees-v3.4.6-beta.1)
+Contributors: Fellipe Benoni, lerian-studio
+
+### ✨ Features
+- **Improved Logging**: A new logging feature has been introduced, offering enhanced monitoring and debugging capabilities. This allows users to gain better insights into application processes, aiding in quicker issue resolution and system analysis.
+
+### ⚡ Performance
+- **Telemetry Enhancements**: The update to the OpenTelemetry (otel) version across key components like auth, build, and config improves system observability and performance monitoring. Users will benefit from more effective tracking of application metrics, leading to better diagnostics and system reliability.
+
+### 🔄 Changes
+- **Backend Simplification**: The removal of the service graph component streamlines backend operations, reducing complexity and improving maintainability. This change aims to enhance system performance and ease of management.
+
+### 🗑️ Removed
+- **Processor Log**: The processor log has been removed to declutter logging outputs, ensuring that logged information is clearer and more relevant to users.
+
+### 🔧 Maintenance
+- **Release Management**: Preparations for multiple beta releases, including versions 3.4.6-beta.1 and others, ensure all components are aligned with the latest standards and ready for deployment. This ongoing maintenance supports consistent and reliable software updates.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

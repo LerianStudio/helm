@@ -1,3 +1,16 @@
+## [plugin-access-manager-4.1.1-beta.1] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v4.1.0...plugin-access-manager-v4.1.1-beta.1)
+Contributors: Fellipe Benoni, lerian-studio
+
+### ⚡ Performance
+- **Database Stability and Performance**: We've enhanced the database to improve data handling and response times, ensuring a faster and more reliable experience when accessing and managing data.
+
+### 🔧 Maintenance
+- **Version Updates**: We've updated multiple components, including `otel` and other dependencies, to maintain compatibility and security. These updates help keep the system secure and performing optimally.
+- **Release Management**: Incremental version releases (e.g., 4.1.1-beta.1, 2.1.1-beta.1) ensure that ongoing improvements and bug fixes are systematically integrated and tested, providing a stable and reliable software experience.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

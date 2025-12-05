@@ -1,3 +1,36 @@
+## [plugin-crm-3.2.0-beta.1] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v3.1.1...plugin-crm-v3.2.0-beta.1)
+Contributors: Fellipe Benoni, Gabriel Ferreira, Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Storage Solution Update**: MinIO has been replaced with SeaweedFS. Users must migrate their storage configurations to ensure compatibility. Refer to the upgrade guide for detailed migration steps.
+- **Component Renaming**: Several components have been renamed for clarity. Ensure to update your configurations and scripts to match the new naming conventions.
+
+### ✨ Features
+- **gRPC Port Configuration**: New gRPC port configuration for the transaction service enhances integration flexibility, allowing seamless communication with other services.
+- **RabbitMQ Security**: Added configuration options for RabbitMQ consumer credentials, enabling more secure and customizable message queue setups.
+
+### 🐛 Bug Fixes
+- **RabbitMQ Path Correction**: Resolved issues with message processing by correcting the RabbitMQ configuration path in the transaction service, improving reliability.
+- **Authentication Flow**: Aligned NextAuth URLs with the Reporter UI base URL, ensuring consistent authentication flows and reducing login errors.
+
+### ⚡ Performance
+- **Helm Setup Reliability**: Improved the Helm setup process in the release workflow, reducing setup errors and ensuring smoother deployments.
+
+### 🔄 Changes
+- **Frontend Naming Update**: The frontend service name has been updated from "reporter-frontend" to "reporter-ui" for better alignment with UI components and naming conventions.
+
+### 🗑️ Removed
+- **Service Graph**: Removed the service graph from the backend, simplifying the architecture and reducing unnecessary complexity.
+
+### 📚 Documentation
+- **Component Version Updates**: Updated component versions in the README to reflect the current state of the system, aiding in version tracking and user understanding.
+
+### 🔧 Maintenance
+- **GitHub Actions Stability**: Pinned GitHub Actions to specific commit hashes, enhancing build reliability and security by preventing unexpected changes from upstream updates.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

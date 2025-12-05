@@ -132,63 +132,95 @@ opentelemetry-collector:
               - set(attributes["app.request.request_id"], attributes["temp.request_id"]) where attributes["temp.request_id"] != nil
               # Step 4: Clean up the temporary attribute.
               - delete_key(attributes, "temp.request_id") where attributes["temp.request_id"] != nil
-
-      transform/mask_body_sensitive_data:
+        
+      transform/mask_body_sensitive_data_replace_1:
         error_mode: ignore
         log_statements:
-        - context: log
-          statements:
-          - set(body, ToLowerCase(body))
-          - replace_pattern(body, "\\\\", "")
-          - replace_pattern(body, "\"(document|documentid|document_id|iddocument|id_document|documentnumber|document_number|numberdocument|number_document|senderdocument|sender_document|documentsender|document_sender|recipientdocument|recipient_document|documentrecipient|document_recipient|receiverdocument|receiver_document|documentreceiver|document_receiver|taxid|tax_id|nationalregistration|national_registration|national_registration_number|national_registration_id|nationalregistrationid|nationalregistrationnumber|nationalregistrationnumberid|national_registration_number_id|pix_taxid|pixtaxid|pix_tax_id|cpf|cnpj)\":\"(\\d{6})\\d{5,}\"", "\"$$1\":\"$$2******\"")
-          - replace_pattern(body, "\"(name|customername|customer_name|namecustomer|name_customer|sendername|sender_name|namesender|name_sender|recipientname|recipient_name|namerecipient|name_recipient|receivername|receiver_name|namereceiver|name_receiver|clientname|client_name|nameclient|name_client)\":\"(\\S+)[^\"]*\\s+(\\S+)\"", "\"$$1\":\"$$2 ********** $$3\"")
-          - replace_pattern(body, "\"([^\"]*(?:customer|sender|recipient|receiver|client|name)[^\"]*)\":\"(\\S+)[^\"]*\\s+(\\S+)\"", "\"$$1\":\"$$2 ********** $$3\"")
-          - replace_pattern(body, "\"(email|clientemail|clientmail|emailclient|mailclient|client_email|client_mail|email_client|mail_client|senderemail|sendermail|emailsender|mailsender|sender_email|sender_mail|email_sender|mail_sender|recipientemail|recipientmail|emailrecipient|mailrecipient|recipient_email|recipient_mail|email_recipient|mail_recipient|customeremail|customermail|emailcustomer|mailcustomer|customer_email|customer_mail|email_customer|mail_customer|dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict|pixkey|pix_key|keypix|key_pix|keyvalue|key_value|valuekey|value_key)\":\"([^\"@]+)@[^\"]+\\.([^\"]+)\"", "\"$$1\":\"$$2@****.$$3\"")
-          - replace_pattern(body, "\"(address|address1|address2|addressline|addressline1|addressline2|address_line1|address_line2|street|street1|streetaddress|street_address|streetname|street_name|shippingaddress|billingaddress|residentialaddress|residenceaddress)\":\"(\\S+)\\s+(\\S+)[^\"]*(\\d{3})\"", "\"$$1\":\"$$2 $$3******$$4\"")
-          - replace_pattern(body, "\"(address|address1|address2|addressline|addressline1|addressline2|address_line1|address_line2|street|street1|streetaddress|street_address|streetname|street_name|shippingaddress|billingaddress|residentialaddress|residenceaddress)\":\"([^\"\\*0-9]+?)\\s*[^\"\\*]*(\\d{3})\"", "\"$$1\":\"$$2**************$$3\"")
-          - replace_pattern(body, "\"([^\"]*(?:cell|phone|mobile|telephone|contact)[^\"]*)\":\"(\\+55\\d{3})\\d{6,}\"", "\"$$1\":\"$$2******\"")
-          - replace_pattern(body, "\"([^\"]*(?:dict|pix|key|value)[^\"]*)\":\"(\\+55\\d{3})\\d{6,}\"", "\"$$1\":\"$$2******\"")
-          - replace_pattern(body, "\"(evp|evpid|evp_key|keyevp|pix|pixkey|pix_key|keypix|key_pix|dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict)\":\"([a-f0-9]{8})-([a-f0-9]{4})-([a-f0-9]{4})-([a-f0-9]{4})-([a-f0-9]{12})\"", "\"$$1\":\"$$2-****-****-****-$$6\"")
-          - replace_pattern(body, "\"(dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict|pixkey|pix_key|keypix|key_pix|keyvalue|key_value|valuekey|value_key)\":\"([a-zA-Z0-9]{8})-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}\"", "\"$$1\":\"$$2******\"")
+          - context: log
+            statements:
+              - replace_pattern(body, "\\\\", "")
 
-      transform/mask_documents:
+      transform/mask_body_sensitive_data_replace_2:
         error_mode: ignore
         log_statements:
-        - context: log
-          conditions:
-          - IsMatch(body, "\"(document|taxid|national|cpf|cnpj)")
-          statements:
-          - replace_pattern(body, "\"(document(?:id|_id|number|_number)?|(?:sender|recipient|receiver)_?document|document_?(?:sender|recipient|receiver)|tax_?id|pix_?tax_?id|national_?registration(?:_?(?:number|id))?|cpf|cnpj)\":\"(\\d{6})\\d{5,}\"", "\"$$1\":\"$$2******\"")
+          - context: log
+            conditions:
+              - IsMatch(body, "\"(document|documentid|document_id|iddocument|id_document|documentnumber|document_number|numberdocument|number_document|senderdocument|sender_document|documentsender|document_sender|recipientdocument|recipient_document|documentrecipient|document_recipient|receiverdocument|receiver_document|documentreceiver|document_receiver|taxid|tax_id|nationalregistration|national_registration|national_registration_number|national_registration_id|nationalregistrationid|nationalregistrationnumber|nationalregistrationnumberid|national_registration_number_id|pix_taxid|pixtaxid|pix_tax_id|cpf|cnpj)\"")
+            statements:
+              - replace_pattern(body, "\"(document|documentid|document_id|iddocument|id_document|documentnumber|document_number|numberdocument|number_document|senderdocument|sender_document|documentsender|document_sender|recipientdocument|recipient_document|documentrecipient|document_recipient|receiverdocument|receiver_document|documentreceiver|document_receiver|taxid|tax_id|nationalregistration|national_registration|national_registration_number|national_registration_id|nationalregistrationid|nationalregistrationnumber|nationalregistrationnumberid|national_registration_number_id|pix_taxid|pixtaxid|pix_tax_id|cpf|cnpj)\":\"(\\d{6})\\d{5,}\"", "\"$$1\":\"$$2******\"")
 
-      transform/mask_names:
+      transform/mask_body_sensitive_data_replace_3:
         error_mode: ignore
         log_statements:
-        - context: log
-          conditions:
-          - IsMatch(body, "\"(name|customer|sender|recipient|client)")
-          statements:
-          - replace_pattern(body, "\"((?:customer|sender|recipient|receiver|client|name)_?(?:name)?|name_?(?:customer|sender|recipient|receiver|client))\":\"(\\S+)[^\"]*\\s+(\\S+)\"", "\"$$1\":\"$$2 ********** $$3\"")
-          - replace_pattern(body, "\"([^\"]*(?:customer|sender|recipient|receiver|client|name)[^\"]*)\":\"(\\S+)[^\"]*\\s+(\\S+)\"", "\"$$1\":\"$$2 ********** $$3\"")
+          - context: log
+            conditions:
+              - IsMatch(body, "\"(name|customername|customer_name|namecustomer|name_customer|sendername|sender_name|namesender|name_sender|recipientname|recipient_name|namerecipient|name_recipient|receivername|receiver_name|namereceiver|name_receiver|clientname|client_name|nameclient|name_client)\"")
+            statements:
+              - replace_pattern(body, "\"(name|customername|customer_name|namecustomer|name_customer|sendername|sender_name|namesender|name_sender|recipientname|recipient_name|namerecipient|name_recipient|receivername|receiver_name|namereceiver|name_receiver|clientname|client_name|nameclient|name_client)\":\"(\\S+)[^\"]*\\s+(\\S+)\"", "\"$$1\":\"$$2 ********** $$3\"")
 
-      transform/mask_emails:
+      transform/mask_body_sensitive_data_replace_4:
         error_mode: ignore
         log_statements:
-        - context: log
-          conditions:
-          - IsMatch(body, "@")
-          statements:
-          - replace_pattern(body, "\"([^\"]*(?:email|mail|dict|pix|key|value)[^\"]*)\":\"([^\"@]+)@[^\"]+\\.([^\"]+)\"", "\"$$1\":\"$$2@****.$$3\"")
+          - context: log
+            conditions:
+              - IsMatch(body, "\"([^\"]*(customer|sender|recipient|receiver|client|name)[^\"]*)\"")
+            statements:
+              - replace_pattern(body, "\"([^\"]*(?:customer|sender|recipient|receiver|client|name)[^\"]*)\":\"(\\S+)[^\"]*\\s+(\\S+)\"", "\"$$1\":\"$$2 ********** $$3\"")
 
-      transform/mask_phones:
+      transform/mask_body_sensitive_data_replace_5:
         error_mode: ignore
         log_statements:
-        - context: log
-          conditions:
-          - IsMatch(body, "\\+55")
-          statements:
-          - replace_pattern(body, "\"([^\"]*(?:cell|phone|mobile|telephone|contact)[^\"]*)\":\"(\\+55\\d{3})\\d{6,}\"", "\"$$1\":\"$$2******\"")
-          - replace_pattern(body, "\"([^\"]*(?:dict|pix|key|value)[^\"]*)\":\"(\\+55\\d{3})\\d{6,}\"", "\"$$1\":\"$$2******\"")
+          - context: log
+            conditions:
+              - IsMatch(body, "\"(email|clientemail|clientmail|emailclient|mailclient|client_email|client_mail|email_client|mail_client|senderemail|sendermail|emailsender|mailsender|sender_email|sender_mail|email_sender|mail_sender|recipientemail|recipientmail|emailrecipient|mailrecipient|recipient_email|recipient_mail|email_recipient|mail_recipient|customeremail|customermail|emailcustomer|mailcustomer|customer_email|customer_mail|email_customer|mail_customer|dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict|pixkey|pix_key|keypix|key_pix|keyvalue|key_value|valuekey|value_key)\"")
+            statements:
+              - replace_pattern(body, "\"(email|clientemail|clientmail|emailclient|mailclient|client_email|client_mail|email_client|mail_client|senderemail|sendermail|emailsender|mailsender|sender_email|sender_mail|email_sender|mail_sender|recipientemail|recipientmail|emailrecipient|mailrecipient|recipient_email|recipient_mail|email_recipient|mail_recipient|customeremail|customermail|emailcustomer|mailcustomer|customer_email|customer_mail|email_customer|mail_customer|dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict|pixkey|pix_key|keypix|key_pix|keyvalue|key_value|valuekey|value_key)\":\"([^\"@]+)@[^\"]+\\.([^\"]+)\"", "\"$$1\":\"$$2@****.$$3\"")
 
+      transform/mask_body_sensitive_data_replace_6:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - IsMatch(body, "\"(address|address1|address2|addressline|addressline1|addressline2|address_line1|address_line2|street|street1|streetaddress|street_address|streetname|street_name|shippingaddress|billingaddress|residentialaddress|residenceaddress)\"")
+            statements:
+              - replace_pattern(body, "\"(address|address1|address2|addressline|addressline1|addressline2|address_line1|address_line2|street|street1|streetaddress|street_address|streetname|street_name|shippingaddress|billingaddress|residentialaddress|residenceaddress)\":\"(\\S+)\\s+(\\S+)[^\"]*(\\d{3})\"", "\"$$1\":\"$$2 $$3******$$4\"")
+              - replace_pattern(body, "\"(address|address1|address2|addressline|addressline1|addressline2|address_line1|address_line2|street|street1|streetaddress|street_address|streetname|street_name|shippingaddress|billingaddress|residentialaddress|residenceaddress)\":\"([^\"\\*0-9]+?)\\s*[^\"\\*]*(\\d{3})\"", "\"$$1\":\"$$2**************$$3\"")
+
+      transform/mask_body_sensitive_data_replace_7:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - IsMatch(body, "\"([^\"]*(cell|phone|mobile|telephone|contact)[^\"]*)\"")
+            statements:
+              - replace_pattern(body, "\"([^\"]*(?:cell|phone|mobile|telephone|contact)[^\"]*)\":\"(\\+55\\d{3})\\d{6,}\"", "\"$$1\":\"$$2******\"")
+
+      transform/mask_body_sensitive_data_replace_8:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - IsMatch(body, "\"([^\"]*(dict|pix|key|value)[^\"]*)\"")
+            statements:
+              - replace_pattern(body, "\"([^\"]*(?:dict|pix|key|value)[^\"]*)\":\"(\\+55\\d{3})\\d{6,}\"", "\"$$1\":\"$$2******\"")
+
+      transform/mask_body_sensitive_data_replace_09:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - IsMatch(body, "\"(evp|evpid|evp_key|keyevp|pix|pixkey|pix_key|keypix|key_pix|dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict)\"")
+            statements:
+              - replace_pattern(body, "\"(evp|evpid|evp_key|keyevp|pix|pixkey|pix_key|keypix|key_pix|dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict)\":\"([a-f0-9]{8})-([a-f0-9]{4})-([a-f0-9]{4})-([a-f0-9]{4})-([a-f0-9]{12})\"", "\"$$1\":\"$$2-****-****-****-$$6\"")
+
+      transform/mask_body_sensitive_data_replace_10:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - replace_pattern(body, "\"(dict|dictpix|dict_pix|pixdict|pix_dict|dictvalue|dict_value|valuedict|value_dict|pixkey|pix_key|keypix|key_pix|keyvalue|key_value|valuekey|value_key)\":\"([a-zA-Z0-9]{8})-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}\"", "\"$$1\":\"$$2******\"")
+
+      # Masks sensitive data in log bodies using regex replacements.
       # Drops all node-level metrics using a regex filter.
       filter/drop_node_metrics:
         metrics:
@@ -304,8 +336,15 @@ opentelemetry-collector:
             - batch
             - k8sattributes
             - resource/add_client_id
-            - transform/mask_documents
-            - transform/mask_names
-            - transform/mask_emails
-            - transform/mask_phones
+            - transform/add_service_names
+            - transform/mask_body_sensitive_data_replace_1
+            - transform/mask_body_sensitive_data_replace_2
+            - transform/mask_body_sensitive_data_replace_3
+            - transform/mask_body_sensitive_data_replace_4
+            - transform/mask_body_sensitive_data_replace_5
+            - transform/mask_body_sensitive_data_replace_6
+            - transform/mask_body_sensitive_data_replace_7
+            - transform/mask_body_sensitive_data_replace_8
+            - transform/mask_body_sensitive_data_replace_09
+            - transform/mask_body_sensitive_data_replace_10
           exporters: [otlphttp/server]

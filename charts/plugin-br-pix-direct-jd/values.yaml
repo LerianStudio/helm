@@ -454,3 +454,6 @@ postgresql:
         value: "10"
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
         value: "5"
+
+otel-collector-lerian:
+  enabled: true

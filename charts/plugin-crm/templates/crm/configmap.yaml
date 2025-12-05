@@ -41,7 +41,7 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.crm.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.crm.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.crm.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.crm.configmap.ENABLE_TELEMETRY | default "true" | quote }}
 
   # AUTH
   PLUGIN_AUTH_ADDRESS: {{ .Values.crm.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-auth" | quote }}

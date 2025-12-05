@@ -321,6 +321,15 @@ auth:
     revisionHistoryLimit: 10
     name: "plugin-access-manager-auth-backend"
     image: ""
+
+    resources:
+      limits:
+        cpu: 512m
+        memory: 2048Mi
+      requests:
+        cpu: 256m
+        memory: 1024Mi
+
     autoscaling:
       # -- Enable or disable horizontal pod autoscaling
       enabled: true
@@ -386,4 +395,4 @@ valkey:
     enabled: false
 
 otel-collector-lerian:
-  enabled: false
+  enabled: true

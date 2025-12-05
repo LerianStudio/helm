@@ -1,3 +1,29 @@
+## [reporter-1.1.6-beta.1] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.5...reporter-v1.1.6-beta.1)
+Contributors: Fellipe Benoni, Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Logging with "masc log"**: Gain deeper insights into system operations with our new logging feature. This enhancement simplifies issue tracking and resolution, providing more detailed monitoring capabilities.
+
+### 🐛 Bug Fixes
+- **Backend Efficiency**: Removed the "service graph" component, resolving performance bottlenecks. Users will experience improved backend responsiveness and reduced system load.
+
+### ⚡ Performance
+- **Telemetry Upgrades**: Updated OpenTelemetry version and enabled telemetry plugins, enhancing system observability and performance monitoring for better diagnostics and insights.
+
+### 🔄 Changes
+- **UI Component Renaming**: The "plugin-smart-templates-ui" is now "reporter-ui" in `values-template.yaml`, clarifying its purpose and improving user navigation.
+
+### 📚 Documentation
+- **Version Updates**: Documentation now reflects updates, including the console version upgrade from 3.4.3 to 3.4.6, ensuring you have access to the latest information and guidance.
+
+### 🔧 Maintenance
+- **Release Management**: Managed multiple beta and stable releases, ensuring access to the latest features and improvements.
+- **Version Updates**: Incremental updates to component versions, such as transaction and fees versions, include minor enhancements and bug fixes for improved stability.
+- **Code Quality**: Streamlined the codebase by removing redundant components, enhancing maintainability.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

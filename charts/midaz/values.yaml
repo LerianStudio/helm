@@ -43,7 +43,7 @@ console:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.4.3"
+    tag: "3.4.6"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -195,7 +195,7 @@ console:
       plugin-crm-ui:
         enabled: false
         port: 8082
-      plugin-smart-templates-ui:
+      reporter-ui:
         enabled: false
         port: 8083
       plugin-fees-ui:

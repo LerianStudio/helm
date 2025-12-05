@@ -1,3 +1,38 @@
+## [plugin-access-manager-4.1.0-beta.1] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v4.0.0...plugin-access-manager-v4.1.0-beta.1)
+Contributors: Fellipe Benoni, Gabriel Ferreira, Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Config/Database**: Initialization hooks for Postgres and RabbitMQ have been changed from post-install to pre-install. This requires updating deployment scripts to ensure proper deployment order.
+- **Frontend**: The service name has been updated from `reporter-frontend` to `reporter-ui`. Update any scripts or configurations referencing the old service name.
+- **Backend/Config**: The `plugin-smart-templates` configuration is now renamed to `reporter`. Adjust integrations that rely on the previous naming convention.
+
+### ✨ Features
+- **Backend/Config**: Introduced gRPC port configuration for the transaction service, enhancing communication capabilities and interoperability.
+- **Database**: Added support for external secrets for RabbitMQ and Postgres, offering improved security and flexibility in managing credentials.
+- **Backend/Build/Config**: Deployed Kubernetes manifests for the PIX QR code service and BR PIX direct JD plugin, expanding service offerings and integration capabilities.
+
+### 🐛 Bug Fixes
+- **Config/Frontend**: Resolved hotfix branch configuration issues, ensuring correct release management and deployment stability.
+- **Backend/Config**: Fixed the RabbitMQ configuration path in the transaction service, improving connectivity and service reliability.
+- **Auth/Config/Frontend**: Aligned NextAuth URLs with the reporter UI base URL, resolving authentication issues and enhancing user login experience.
+
+### ⚡ Performance
+- **Build/Database**: Improved Helm setup reliability in the release workflow, ensuring smoother deployments and reduced downtime.
+
+### 🔄 Changes
+- **Config**: Enhanced RBAC permissions for the discovery service, allowing access to replicasets and deployment lists for better operational visibility.
+- **Backend/Frontend**: Standardized environment variable naming and updated service URLs for consistency and easier configuration management.
+
+### 📚 Documentation
+- **Docs**: Updated documentation to reflect current chart and component versions, providing accurate and up-to-date information for users and developers.
+
+### 🔧 Maintenance
+- **Build/Deps**: Updated component versions and dependencies, ensuring compatibility and leveraging the latest features and security patches.
+- **Backend/Config**: Removed deprecated Helm hooks from onboarding and transaction configmaps, simplifying deployment processes and reducing maintenance overhead.
+
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.

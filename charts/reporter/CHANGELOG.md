@@ -1,3 +1,16 @@
+## [reporter-1.1.6] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.6-beta.1...reporter-v1.1.6)
+Contributors: lerian-studio
+
+### ⚡ Performance
+- **System Optimization**: This update includes optimizations across the authentication, backend, build, config, database, and frontend components, resulting in improved system stability and performance. Users can expect faster load times and more efficient resource management.
+
+### 🔧 Maintenance
+- **Database Maintenance**: Version 1.2.4 introduces minor updates and optimizations to the database, enhancing data integrity and performance. This ensures that the system remains robust and reliable.
+- **Routine System Updates**: Regular updates have been applied to keep the system aligned with the latest standards and practices, improving overall software health and efficiency.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

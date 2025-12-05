@@ -1,3 +1,13 @@
+## [plugin-crm-3.2.1-beta.1] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v3.2.0...plugin-crm-v3.2.1-beta.1)
+Contributors: Fellipe Benoni, lerian-studio
+
+### 🔧 Maintenance
+- **Version Updates**: We've released several beta and stable versions to keep the software aligned with the latest standards and dependencies. This ensures ongoing compatibility and access to the newest features and security enhancements.
+- **Dependency Update**: Updated OpenTelemetry (otel) to the latest version. This update enhances the reliability and performance of telemetry data collection, ensuring your monitoring and tracing systems remain robust and up-to-date.
+
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.

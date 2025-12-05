@@ -1,3 +1,13 @@
+## [plugin-fees-3.4.7-beta.1] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v3.4.6...plugin-fees-v3.4.7-beta.1)
+Contributors: Fellipe Benoni, lerian-studio
+
+### 🔧 Maintenance
+- **Version Updates Across Components**: Multiple components have received version updates, including `3.4.7-beta.1`, `3.2.1-beta.1`, `1.2.5-beta.1`, `4.1.1-beta.1`, `2.1.1-beta.1`, `4.4.7-beta.1`, and `1.1.6`. These updates prepare the system for future releases, ensuring all parts are aligned with the latest development standards.
+- **OpenTelemetry Dependency Update**: The OpenTelemetry (otel) version has been updated to maintain compatibility with the latest telemetry standards. This ensures that performance monitoring and tracing capabilities remain robust and up-to-date, providing users with reliable insights into system performance.
+
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.

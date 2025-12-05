@@ -1,3 +1,24 @@
+## [midaz-4.4.7-beta.1] - 2025-12-05
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.6...midaz-v4.4.7-beta.1)
+Contributors: Fellipe Benoni, Guilherme Moreira Rodrigues, lerian-studio
+
+### ✨ Features
+- **New Logging System**: The "masc log" feature has been added to enhance system event tracking and monitoring, providing users with better diagnostics and troubleshooting tools.
+
+### 🔄 Changes
+- **Telemetry Enhancements**: Telemetry plugins are now enabled, and the OpenTelemetry version has been updated across key components like auth, build, and config. This improves system monitoring and performance tracking.
+- **Backend Simplification**: The service graph component has been removed to streamline backend operations, reducing complexity and potential points of failure.
+
+### 📚 Documentation
+- **Plugin Fees Update**: The plugin fees documentation has been updated to reflect the version change from 3.0.2 to 3.0.3, ensuring users have access to the most current information and guidelines.
+
+### 🔧 Maintenance
+- **Release Management**: Various components, including auth, backend, build, config, and database, have received release updates to keep the system up-to-date with the latest features and fixes.
+- **Code Cleanup**: Obsolete processor logs have been removed, maintaining a clean and efficient codebase.
+- **Backend Architecture**: Further removal of redundant service graph components to simplify backend architecture and improve maintainability.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

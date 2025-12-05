@@ -36,6 +36,15 @@ spec:
               name: {{ if .Values.pix.useExistingSecret }}{{ .Values.pix.existingSecretName }}{{ else }}{{ include "plugin-br-pix-direct-jd.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-br-pix-direct-jd.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}                       
           resources:
             {{- toYaml .Values.pix.resources | nindent 12 }}
           readinessProbe:

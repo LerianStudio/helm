@@ -324,4 +324,4 @@ mongodb:
   resourcesPreset: "medium"
 
 otel-collector-lerian:
-  enabled: false
+  enabled: true

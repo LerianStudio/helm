@@ -1,3 +1,15 @@
+## [reporter-1.1.7] - 2025-12-08
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.7-beta.1...reporter-v1.1.7)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Version Consistency**: Updated versioning across multiple components to ensure consistent and stable release management, enhancing overall system reliability.
+- **Internal Adjustments**: Routine updates to maintain compatibility and address minor internal adjustments, contributing to smoother operation and preparation for future features.
+- These updates are part of regular maintenance and do not require any user action. They are designed to ensure the ongoing stability and performance of the system.
+- There are no new features or breaking changes in this release, allowing users to continue using the software without interruption.
+
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.

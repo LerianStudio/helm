@@ -17,7 +17,7 @@ maintainers:
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 
-version: 4.4.6
+version: 4.4.7-beta.1
 
 # This is the version number of the application being deployed.
 appVersion: "3.4.4"
@@ -52,6 +52,6 @@ dependencies:
     repository: "https://groundhog2k.github.io/helm-charts"
     condition: rabbitmq.enabled
   - name: otel-collector-lerian
-    version: 1.1.2-beta.2
+    version: 2.1.0
     repository: "oci://registry-1.docker.io/lerianstudio"
     condition: otel-collector-lerian.enabled

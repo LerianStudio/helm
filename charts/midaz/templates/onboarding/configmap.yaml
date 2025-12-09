@@ -19,7 +19,7 @@ data:
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.onboarding.configmap.OTEL_RESOURCE_SERVICE_NAME | default "onboarding" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.onboarding.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v3/components/onboarding" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ include "onboarding.versionLabelValue" . }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.onboarding.image.tag | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.onboarding.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.onboarding.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.onboarding.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local.:4317" .Release.Namespace) | quote }}
@@ -36,7 +36,7 @@ data:
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.onboarding.configmap.SWAGGER_TITLE | default "Onboarding API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.onboarding.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz Onboarding API" | quote }}
-  SWAGGER_VERSION: {{ include "onboarding.versionLabelValue" . }}
+  SWAGGER_VERSION: {{ .Values.onboarding.image.tag | quote }}
   SWAGGER_HOST: {{ .Values.onboarding.configmap.SWAGGER_HOST | default ":3000" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.onboarding.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.onboarding.configmap.SWAGGER_SCHEMES | default "http" | quote }}
@@ -46,7 +46,7 @@ data:
   MAX_PAGINATION_LIMIT: {{ .Values.onboarding.configmap.MAX_PAGINATION_LIMIT | default "100" | quote }}
   MAX_PAGINATION_MONTH_DATE_RANGE: {{ .Values.onboarding.configmap.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
   #APP
-  VERSION: {{ include "onboarding.versionLabelValue" . }}
+  VERSION: {{ .Values.onboarding.image.tag | quote }}
   LOG_LEVEL: {{ .Values.onboarding.configmap.LOG_LEVEL | default "debug" | quote }}
   ENV_NAME: {{ .Values.onboarding.configmap.ENV_NAME | default "production" | quote }}
   SERVER_PORT: {{ .Values.onboarding.configmap.SERVER_PORT | default "3000" | quote }}

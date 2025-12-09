@@ -437,7 +437,7 @@ transaction:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.3.7"
+    tag: "3.3.9"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

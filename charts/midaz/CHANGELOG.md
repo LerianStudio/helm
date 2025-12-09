@@ -1,3 +1,37 @@
+## [midaz-4.4.8] - 2025-12-09
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.3.4...midaz-v4.4.8)
+Contributors: Fellipe Benoni, Gabriel Ferreira, Guilherme Moreira Rodrigues, lerian-studio
+
+### ⚠️ Breaking Changes
+- **Renamed Configuration Files**: The "plugin-smart-templates" has been renamed to "reporter" across all configuration files. Users must update deployment scripts and documentation to maintain compatibility. [Migration Guide]
+- **API and Configuration Updates**: Version 1.0.0 brings extensive changes across multiple components. Users should review the migration guide to adapt their integrations and deployments accordingly. [Migration Guide]
+
+### ✨ Features
+- **gRPC Port Configuration**: Introduced for the transaction service, enhancing inter-service communication and enabling more efficient data handling.
+- **Enhanced RabbitMQ Integration**: Improved configuration with consumer credentials for better message handling and processing within the Reporter system.
+
+### 🐛 Bug Fixes
+- **RabbitMQ Configuration Path**: Corrected path in the transaction service, resolving connectivity issues and ensuring reliable message processing.
+- **NextAuth URL Alignment**: Fixed authentication flow issues by aligning URLs with the Reporter UI base, improving user login experience.
+
+### ⚡ Performance
+- **Helm Setup Reliability**: Improved setup in the release workflow, ensuring smoother and more predictable deployments.
+
+### 🔄 Changes
+- **Environment Variable Standardization**: Updated naming conventions and service URLs for consistency and reduced configuration errors.
+- **Option for Existing Secrets**: Added in Helm chart for more flexible and secure deployments.
+
+### 🗑️ Removed
+- **Deprecated Helm Chart**: "plugin-smart-templates" chart removed, reducing maintenance overhead.
+
+### 📚 Documentation
+- **Updated Guides**: Component versions and upgrade instructions in the README and UPGRADE GUIDE now reflect the latest changes.
+
+### 🔧 Maintenance
+- **GitHub Actions Security**: Pinned actions to specific commit hashes, enhancing build security and reliability.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

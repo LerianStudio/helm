@@ -29,6 +29,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest changes
+        run: git pull origin ${{ github.ref_name }}
 
       - name: Send Slack notification
         env:

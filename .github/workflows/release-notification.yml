@@ -47,37 +47,30 @@ jobs:
           # midaz-helm -> Midaz, plugin-access-manager -> Plugin Access Manager
           CHART_NAME=$(echo "$CHART_NAME_RAW" | sed 's/-helm$//' | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1')
 
-          # Parse header and data from README version table
-          # Find the section for this chart and extract the table
-          # The README has multiple charts, so we need to find the right section
+          # Parse header and data from README version table (root README)
+          # Extract section for this chart (from title to next separator)
+          # Convert hyphens to spaces for matching (plugin-fees -> plugin fees)
+          CHART_PATTERN=$(echo "$CHART_NAME_RAW" | sed 's/-helm$//' | sed 's/-/ /g')
+          CHART_SECTION=$(awk -v chart="$CHART_PATTERN" '
+            BEGIN { IGNORECASE=1; found=0 }
+            tolower($0) ~ tolower("### .*" chart) { found=1 }
+            found && /^-+$/ { exit }
+            found { print }
+          ' README.md)
 
-          # Try chart-specific README first, fall back to root README
-          if [ -f "${CHART_PATH}/README.md" ]; then
-            README_PATH="${CHART_PATH}/README.md"
-            HEADER_LINE=$(grep "| Chart Version |" "$README_PATH" | head -1)
-            DATA_LINE=$(grep -A 2 "| Chart Version |" "$README_PATH" | tail -1)
+          if [ -n "$CHART_SECTION" ]; then
+            HEADER_LINE=$(echo "$CHART_SECTION" | grep "| Chart Version |" | head -1)
+            DATA_LINE=$(echo "$CHART_SECTION" | grep -A 2 "| Chart Version |" | tail -1)
           else
-            # Root README - extract section for this chart (from title to next separator)
-            # Use awk to get only the section for this specific chart
-            # Convert hyphens to spaces for matching (plugin-fees -> plugin fees)
-            # Use raw name for pattern matching
-            CHART_PATTERN=$(echo "$CHART_NAME_RAW" | sed 's/-helm$//' | sed 's/-/ /g')
-            CHART_SECTION=$(awk -v chart="$CHART_PATTERN" '
-              BEGIN { IGNORECASE=1; found=0 }
-              tolower($0) ~ tolower("### .*" chart) { found=1 }
-              found && /^-+$/ { exit }
-              found { print }
-            ' README.md)
-
-            if [ -n "$CHART_SECTION" ]; then
-              HEADER_LINE=$(echo "$CHART_SECTION" | grep "| Chart Version |" | head -1)
-              DATA_LINE=$(echo "$CHART_SECTION" | grep -A 2 "| Chart Version |" | tail -1)
-            else
-              # Fallback: just get first table found
-              HEADER_LINE=$(grep "| Chart Version |" README.md | head -1)
-              DATA_LINE=$(grep -A 2 "| Chart Version |" README.md | tail -1)
-            fi
+            # Fallback: just get first table found
+            HEADER_LINE=$(grep "| Chart Version |" README.md | head -1)
+            DATA_LINE=$(grep -A 2 "| Chart Version |" README.md | tail -1)
           fi
+
+          # Debug output
+          echo "DEBUG: CHART_PATTERN=$CHART_PATTERN"
+          echo "DEBUG: HEADER_LINE=$HEADER_LINE"
+          echo "DEBUG: DATA_LINE=$DATA_LINE"
 
           # Build ASCII table with box drawing characters
           TABLE_ASCII=$(echo "{\"header\": \"$HEADER_LINE\", \"data\": \"$DATA_LINE\"}" | jq -r '

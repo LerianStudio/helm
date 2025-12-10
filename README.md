@@ -80,7 +80,7 @@
 
 #### Application Version Mapping
 
-| Chart Version | Api Version | Job Version |
+| Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
 | `1.0.0` | `1.0.0` | `1.0.0` |
 -----------------

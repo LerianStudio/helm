@@ -14,7 +14,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.1-beta.7"
+    tag: "1.2.1-beta.8"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   # -- Overrides the default generated name by Helm
@@ -277,7 +277,7 @@ job:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.1-beta.7"
+    tag: "1.2.1-beta.8"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   podSecurityContext: {}

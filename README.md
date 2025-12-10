@@ -72,3 +72,15 @@
 | `1.1.5` | `4.0.0` | `4.0.0` | `4.0.0` |
 -----------------
 
+### Plugin BR Pix Direct JD
+
+📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/br-pix-direct-jd).
+
+🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/plugin-br-pix-direct-jd).
+
+#### Application Version Mapping
+
+| Chart Version | Api Version | Job Version |
+| :---: | :---: | :---: |
+| `1.0.0` | `1.0.0` | `1.0.0` |
+-----------------

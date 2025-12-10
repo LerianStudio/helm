@@ -6,3 +6,5 @@ Chart.lock
 **/*.tgz
 **/charts/*/charts
 **/charts/*/lerian-values*
+update-chart-version-readme
+update-readme-matrix

@@ -1,0 +1,28 @@
+name: Update Helm Chart from Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'JSON payload with chart, components, and metadata'
+        required: true
+        type: string
+
+jobs:
+  update:
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@chore/dispatch-helm
+    with:
+      payload: ${{ inputs.payload }}
+      base_branch: develop
+      slack_notification: true
+    secrets:
+      APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+      GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
+      GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
+      GIT_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
+      GIT_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
+      SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+      SLACK_CHANNEL_DEVOPS: ${{ secrets.SLACK_CHANNEL_DEVOPS }}
+      SLACK_GROUP_DEVOPS_SRE: ${{ secrets.SLACK_GROUP_DEVOPS_SRE }}
+      SLACK_BOT_SEVERINO: ${{ secrets.SLACK_BOT_SEVERINO }}

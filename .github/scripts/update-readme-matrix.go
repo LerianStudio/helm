@@ -34,9 +34,9 @@ func main() {
 
 	lines := strings.Split(string(content), "\n")
 
-	tableStart, tableEnd, headers, rows := tableutil.ParseTable(lines)
+	tableStart, tableEnd, headers, rows := tableutil.ParseTableForChart(lines, *chart)
 	if tableStart == -1 {
-		fmt.Println("ERROR: Could not find version matrix table in README.md")
+		fmt.Printf("ERROR: Could not find version matrix table for chart '%s' in README.md\n", *chart)
 		os.Exit(1)
 	}
 

@@ -82,5 +82,5 @@
 
 | Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
-| `1.2.6-beta.1` | 1.2.1-beta.7 | 1.2.1-beta.7 |
+| `1.2.6-beta.1` | 1.2.1-beta.10 | 1.2.1-beta.10 |
 -----------------

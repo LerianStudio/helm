@@ -1,3 +1,23 @@
+## [midaz-4.3.5] - 2025-12-18
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v4.4.8...midaz-v4.3.5)
+Contributors: Guilherme Moreira Rodrigues, lerian-studio
+
+### 🐛 Bug Fixes
+- **Cleaner Configuration Files**: Trailing newlines have been removed from `values.yaml`, reducing potential parsing errors and improving maintainability.
+- **Release Process Reliability**: Fixed file formatting issues and updated release configurations to ensure consistent and reliable deployments, minimizing the risk of errors during release.
+
+### 📚 Documentation
+- **Up-to-Date System Information**: Documentation has been updated to reflect the latest Midaz chart versions and associated component changes, ensuring users have accurate information for system configuration and capabilities.
+
+### 🔧 Maintenance
+- **Efficient Hotfix Deployment**: Support for hotfix branches has been added to the release workflow, allowing for quicker deployment of urgent fixes and minimizing downtime.
+
+### ✨ Improvements
+- **Enhanced Observability and Performance**: The Midaz chart has been updated to version 4.3.5, integrating transaction service v3.3.11 and OpenTelemetry Collector v2.1.0. Users will experience improved monitoring and performance insights, aiding in better system management.
+- **User Interface Enhancements**: The console component has been updated with Midaz chart version 4.3.3, featuring console v3.3.8. This update enhances the user interface, providing a smoother and more intuitive user experience.
+
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.

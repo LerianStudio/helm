@@ -20,7 +20,7 @@ maintainers:
 version: 4.3.4
 
 # This is the version number of the application being deployed.
-appVersion: "3.3.5"
+appVersion: "3.3.11"
 
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
@@ -52,6 +52,6 @@ dependencies:
     repository: "https://groundhog2k.github.io/helm-charts"
     condition: rabbitmq.enabled
   - name: otel-collector-lerian
-    version: 1.1.2-beta.2
+    version: 2.1.0
     repository: "oci://registry-1.docker.io/lerianstudio"
     condition: otel-collector-lerian.enabled

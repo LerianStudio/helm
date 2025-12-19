@@ -119,20 +119,13 @@ opentelemetry-collector:
         send_batch_size: 512
         send_batch_max_size: 1024
 
-      # This processor uses OTTL to explicitly delete sensitive attributes from spans.
-      transform/remove_sensitive_attributes:
-        trace_statements:
-          - context: span
-            statements:
-              # Step 1: Save the request_id to a temporary attribute if it exists.
-              - set(attributes["temp.request_id"], attributes["app.request.request_id"]) where attributes["app.request.request_id"] != nil
-              # Step 2: Delete all attributes matching the broad 'app.request.*' pattern.
-              - delete_matching_keys(attributes, "^app\\.request\\..*")
-              # Step 3: Restore the request_id from the temporary attribute.
-              - set(attributes["app.request.request_id"], attributes["temp.request_id"]) where attributes["temp.request_id"] != nil
-              # Step 4: Clean up the temporary attribute.
-              - delete_key(attributes, "temp.request_id") where attributes["temp.request_id"] != nil
-        
+    # This processor removes the payload attribute from spans to avoid storing sensitive data.
+    transform/remove_sensitive_attributes:
+      trace_statements:
+        - context: span
+          statements:
+            - delete_key(attributes, "app.request.payload")
+            
       transform/mask_body_sensitive_data_replace_1:
         error_mode: ignore
         log_statements:
@@ -257,6 +250,7 @@ opentelemetry-collector:
 
     connectors:
       spanmetrics:
+        metrics_expiration: 5m
         histogram:
           explicit:
             buckets: [10ms, 50ms, 100ms, 200ms, 500ms, 1s, 5s, 10s]
@@ -272,6 +266,7 @@ opentelemetry-collector:
           - name: http.method
           - name: http.route
           - name: http.status_code
+        dimensions_cache_size: 50000
 
     exporters:
       nop: null

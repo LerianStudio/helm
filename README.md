@@ -85,7 +85,7 @@
 | `1.2.6` | 1.2.1-beta.7 | 1.2.1-beta.7 |
 -----------------
 
-## Otel Collector
+## Otel Collector Lerian
 
 🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/otel-collector-lerian).
 

@@ -17,10 +17,10 @@ maintainers:
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 
-version: 4.4.7
+version: 4.4.8
 
 # This is the version number of the application being deployed.
-appVersion: "3.4.4"
+appVersion: "3.4.7"
 
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:

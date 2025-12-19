@@ -19,7 +19,7 @@ data:
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.transaction.configmap.OTEL_RESOURCE_SERVICE_NAME | default "transaction" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.transaction.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v3/components/transaction" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ include "onboarding.versionLabelValue" . }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.transaction.image.tag | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.transaction.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.transaction.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default (printf "midaz-grafana.%s.svc.cluster.local.:4317" .Release.Namespace) | quote }}
@@ -46,7 +46,7 @@ data:
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.transaction.configmap.SWAGGER_TITLE | default "transaction API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.transaction.configmap.SWAGGER_DESCRIPTION | default "Documentation for the Midaz transaction API" | quote }}
-  SWAGGER_VERSION: {{ include "onboarding.versionLabelValue" . }}
+  SWAGGER_VERSION: {{ .Values.transaction.image.tag | quote }}
   SWAGGER_HOST: {{ .Values.transaction.configmap.SWAGGER_HOST | default ":3001" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.transaction.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.transaction.configmap.SWAGGER_SCHEMES | default "http" | quote }}
@@ -56,7 +56,7 @@ data:
   MAX_PAGINATION_LIMIT: {{ .Values.transaction.configmap.MAX_PAGINATION_LIMIT | default "100" | quote }}
   MAX_PAGINATION_MONTH_DATE_RANGE: {{ .Values.transaction.configmap.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
   #APP
-  VERSION: {{ include "onboarding.versionLabelValue" . }}
+  VERSION: {{ .Values.transaction.image.tag | quote }}
   LOG_LEVEL: {{ .Values.transaction.configmap.LOG_LEVEL | default "debug" | quote }}
   ENV_NAME: {{ .Values.transaction.configmap.ENV_NAME | default "production" | quote }}
   SERVER_PORT: {{ .Values.transaction.configmap.SERVER_PORT | default "3001" | quote }}

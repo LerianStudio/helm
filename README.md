@@ -85,12 +85,13 @@
 | `1.2.6` | 1.2.1-beta.7 | 1.2.1-beta.7 |
 -----------------
 
-## Otel Collector Lerian
+### Otel Collector Lerian
 
 🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/otel-collector-lerian).
 
-### Application Version Mapping
+#### Application Version Mapping
 
 | Chart Version | Otel Version |
 | :---: | :---: |
 | `2.1.1` | 2.1.0 |
+-----------------

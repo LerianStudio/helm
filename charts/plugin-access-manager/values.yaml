@@ -359,7 +359,7 @@ auth:
     adminDisplayName: "Admin"
     # -- Admin password (will be stored in a secret)
     # -- IMPORTANT: Change this in production!
-    adminPassword: "Lerian@2025!"
+    adminPassword: ""
     # -- Use existing secret for admin password
     useExistingSecret: false
     # -- Name of the existing secret containing ADMIN_PASSWORD

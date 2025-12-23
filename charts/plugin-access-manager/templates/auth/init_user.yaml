@@ -1,4 +1,8 @@
 {{- if .Values.auth.initUser.enabled }}
+{{- /* Validate: if useExistingSecret is true, adminPasswordSecretName must be set */ -}}
+{{- if and .Values.auth.initUser.useExistingSecret (not .Values.auth.initUser.adminPasswordSecretName) }}
+{{- fail "ERROR: When auth.initUser.useExistingSecret is true, auth.initUser.adminPasswordSecretName must be specified" }}
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -111,5 +115,5 @@ metadata:
     helm.sh/hook-delete-policy: hook-succeeded,before-hook-creation
 type: Opaque
 data:
-  ADMIN_PASSWORD: {{ .Values.auth.initUser.adminPassword | default "Lerian@2025!" | b64enc | quote }}
+  ADMIN_PASSWORD: {{ .Values.auth.initUser.adminPassword | default "Lerian@123" | b64enc | quote }}
 {{- end }}

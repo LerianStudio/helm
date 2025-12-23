@@ -65,7 +65,20 @@ jobs:
         run: git pull origin ${{ github.ref_name }}
 
       - name: Set up Helm
-        uses: azure/setup-helm@v3
+        continue-on-error: true
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+
+      - name: Set up Homebrew
+        id: setup-homebrew
+        if: ${{ steps.setup-helm.outcome == 'failure' }}
+        uses: Homebrew/actions/setup-homebrew@f119db709c0cd61731df77f0dd22c87511ee9b6a
+
+      - name: Install Helm
+        id: install-helm
+        if: ${{ steps.setup-helm.outcome == 'failure' }}
+        shell: bash
+        run: |
+          brew install helm
 
       - name: Helm Dependency Update
         run: helm dependency update ${{ matrix.chart.working_dir }}
@@ -73,11 +86,11 @@ jobs:
       - name: Helm Lint
         run: helm lint ${{ matrix.chart.working_dir }}
 
-      # - name: Run helm unittest
-      #   id: unittest
-      #   run: |
-      #     helm plugin install https://github.com/helm-unittest/helm-unittest.git
-      #     helm unittest ${{ matrix.chart.working_dir }}
+      - name: Run helm unittest
+        id: unittest
+        run: |
+          helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
+          helm unittest ${{ matrix.chart.working_dir }}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -100,6 +113,17 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: .github/scripts/go.mod
+
+      - name: Build scripts
+        run: |
+          cd .github/scripts
+          go build -o update-chart-version-readme update-chart-version-readme.go
+
       - name: Generate .releaserc file
         run: |
           CHART_NAME="${{ matrix.chart.name }}"
@@ -115,10 +139,12 @@ jobs:
             --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
             --arg successCmd "helm package $CHART_PATH && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
+            --arg prepareCmd "./.github/scripts/update-chart-version-readme --chart $CHART_NAME --version \${nextRelease.version}" \
             '.plugins[2][1].chartPath = $chartPath |
-              .plugins[4][1].assets[0] = ($chartPath + "/Chart.yaml") |
+              .plugins[4][1].assets = [($chartPath + "/Chart.yaml"), "README.md"] |
               .tagFormat = $tagFormat |
-              .plugins[3][1].successCmd = $successCmd' \
+              .plugins[3][1].successCmd = $successCmd |
+              .plugins[3][1].prepareCmd = $prepareCmd' \
             .github/configs/.releaserc.json > .releaserc
 
       - name: Semantic Release
@@ -179,3 +205,22 @@ jobs:
           LERIAN_CI_CD_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
           LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+
+  notify-release:
+    needs:
+      - get-changed-paths
+      - release-helm-chart
+    name: 📢 Release Notification
+    if: needs.get-changed-paths.outputs.matrix != '[]' && github.ref == 'refs/heads/main'
+    strategy:
+      max-parallel: 1
+      matrix:
+        chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
+    uses: ./.github/workflows/release-notification.yml
+    with:
+      chart_name: ${{ matrix.chart.name }}
+      chart_path: ${{ matrix.chart.working_dir }}
+    secrets:
+      SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+      SLACK_CHANNEL_DEVOPS: ${{ secrets.SLACK_CHANNEL_DEVOPS }}
+      SLACK_GROUP_TECH_SUPPORT: ${{ secrets.SLACK_GROUP_TECH_SUPPORT }}

@@ -210,7 +210,7 @@ jobs:
       - get-changed-paths
       - release-helm-chart
     name: 📢 Release Notification
-    if: needs.get-changed-paths.outputs.matrix != '[]'
+    if: needs.get-changed-paths.outputs.matrix != '[]' && github.ref == 'refs/heads/main'
     strategy:
       max-parallel: 1
       matrix:

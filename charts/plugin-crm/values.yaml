@@ -17,11 +17,10 @@ crm:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-  tag: "2.0.0"
+  tag: "2.0.1"
 
   # -- Secrets for pulling images from a private registry
-  imagePullSecrets:
-    - name: regcred
+  imagePullSecrets: []
 
   # -- Overrides the default generated name by Helm
   nameOverride: ""

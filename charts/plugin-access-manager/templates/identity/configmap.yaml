@@ -50,7 +50,7 @@ data:
   ENABLE_TELEMETRY: {{ .Values.identity.configmap.ENABLE_TELEMETRY | default "true" | quote }}
   # REDIS
   REDIS_HOST: {{ printf "%s:%s" (.Values.identity.configmap.REDIS_HOST | default (printf "plugin-access-manager-valkey-primary.%s.svc.cluster.local" .Release.Namespace)) (.Values.identity.configmap.REDIS_PORT | default "6379" | toString) | quote }}
-  REDIS_PORT: {{ .Values.au.configmap.REDIS_PORT | default "6379" | quote }}
+  REDIS_PORT: {{ .Values.identity.configmap.REDIS_PORT | default "6379" | quote }}
   REDIS_USER: {{ .Values.identity.configmap.REDIS_USER | default "identity" | quote }}
   REDIS_SCAN_COUNT: {{ .Values.identity.configmap.REDIS_SCAN_COUNT | default "500" | quote }}
   REDIS_MASTER_NAME: {{ .Values.identity.configmap.REDIS_MASTER_NAME | default "" | quote }}

@@ -1,0 +1,166 @@
+name: Release Notification
+
+on:
+  workflow_call:
+    inputs:
+      chart_name:
+        description: 'Name of the Helm chart'
+        required: true
+        type: string
+      chart_path:
+        description: 'Path to the Helm chart directory'
+        required: true
+        type: string
+    secrets:
+      SLACK_BOT_TOKEN_HELM:
+        description: 'Slack Bot Token for Helm notifications'
+        required: true
+      SLACK_CHANNEL_DEVOPS:
+        description: 'Slack channel ID for notifications'
+        required: true
+      SLACK_GROUP_TECH_SUPPORT:
+        description: 'Slack group ID to mention'
+        required: false
+
+jobs:
+  notify:
+    name: Send Slack Notification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Send Slack notification
+        env:
+          SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+        run: |
+          # Get chart name and path from inputs
+          CHART_NAME_RAW="${{ inputs.chart_name }}"
+          CHART_PATH="${{ inputs.chart_path }}"
+
+          # Format chart name for display: remove -helm suffix and convert to Title Case
+          # midaz-helm -> Midaz, plugin-access-manager -> Plugin Access Manager
+          CHART_NAME=$(echo "$CHART_NAME_RAW" | sed 's/-helm$//' | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1')
+
+          # Parse header and data from README version table (root README)
+          # Extract section for this chart (from title to next separator)
+          # Convert hyphens to spaces for matching (plugin-fees -> plugin fees)
+          CHART_PATTERN=$(echo "$CHART_NAME_RAW" | sed 's/-helm$//' | sed 's/-/ /g')
+          CHART_SECTION=$(awk -v chart="$CHART_PATTERN" '
+            BEGIN { IGNORECASE=1; found=0 }
+            tolower($0) ~ tolower("### .*" chart) { found=1 }
+            found && /^-+$/ { exit }
+            found { print }
+          ' README.md)
+
+          if [ -n "$CHART_SECTION" ]; then
+            HEADER_LINE=$(echo "$CHART_SECTION" | grep "| Chart Version |" | head -1)
+            DATA_LINE=$(echo "$CHART_SECTION" | grep -A 2 "| Chart Version |" | tail -1)
+          else
+            # Fallback: just get first table found
+            HEADER_LINE=$(grep "| Chart Version |" README.md | head -1)
+            DATA_LINE=$(grep -A 2 "| Chart Version |" README.md | tail -1)
+          fi
+
+          # Debug output
+          echo "DEBUG: CHART_PATTERN=$CHART_PATTERN"
+          echo "DEBUG: HEADER_LINE=$HEADER_LINE"
+          echo "DEBUG: DATA_LINE=$DATA_LINE"
+
+          # Build ASCII table with box drawing characters
+          TABLE_ASCII=$(echo "{\"header\": \"$HEADER_LINE\", \"data\": \"$DATA_LINE\"}" | jq -r '
+            # Parse columns
+            (.header | split("|") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != ""))) as $headers |
+            (.data | split("|") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != ""))) as $values |
+
+            # Calculate widths
+            [range(0; $headers | length)] | map(
+              [($headers[.] | length), ($values[.] | length)] | max
+            ) as $widths |
+
+            # Build separator line
+            def separator(left; mid; right):
+              left + ([$widths[] | "─" * (. + 2)] | join(mid)) + right;
+
+            # Build data row
+            def row(data):
+              "│" + ([range(0; data | length)] | map(
+                " " + data[.] + (" " * ($widths[.] - (data[.] | length) + 1))
+              ) | join("│")) + "│";
+
+            # Combine all
+            [
+              separator("┌"; "┬"; "┐"),
+              row($headers),
+              separator("├"; "┼"; "┤"),
+              row($values),
+              separator("└"; "┴"; "┘")
+            ] | join("\n")
+          ')
+
+          # Get mention group ID and build context
+          MENTION_GROUP="${{ secrets.SLACK_GROUP_TECH_SUPPORT }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M UTC")
+          WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          WORKFLOW_NUM="${{ github.run_number }}"
+
+          if [ -n "$MENTION_GROUP" ]; then
+            CONTEXT_TEXT=":clock1: ${TIMESTAMP} | Workflow: <${WORKFLOW_URL}|#${WORKFLOW_NUM}> | cc: <!subteam^${MENTION_GROUP}>"
+          else
+            CONTEXT_TEXT=":clock1: ${TIMESTAMP} | Workflow: <${WORKFLOW_URL}|#${WORKFLOW_NUM}>"
+          fi
+
+          # Build Slack payload with green color bar
+          SLACK_PAYLOAD=$(jq -n \
+            --arg channel "${{ secrets.SLACK_CHANNEL_DEVOPS }}" \
+            --arg chart_name "$CHART_NAME" \
+            --arg table "$TABLE_ASCII" \
+            --arg context "$CONTEXT_TEXT" \
+            '{
+              channel: $channel,
+              attachments: [{
+                color: "#36a64f",
+                blocks: [
+                  {
+                    type: "header",
+                    text: {
+                      type: "plain_text",
+                      text: ("New Release: " + $chart_name + " Helm Chart :rocket:"),
+                      emoji: true
+                    }
+                  },
+                  {type: "divider"},
+                  {
+                    type: "rich_text",
+                    elements: [
+                      {
+                        type: "rich_text_preformatted",
+                        elements: [
+                          {type: "text", text: $table}
+                        ]
+                      }
+                    ]
+                  },
+                  {type: "divider"},
+                  {type: "context", elements: [{type: "mrkdwn", text: $context}]}
+                ]
+              }]
+            }')
+
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN_HELM" \
+            -H "Content-type: application/json; charset=utf-8" \
+            --data "$SLACK_PAYLOAD" \
+            "https://slack.com/api/chat.postMessage")
+
+          if echo "$RESPONSE" | jq -e '.ok == true' > /dev/null; then
+            echo "Slack notification sent successfully"
+          else
+            echo "::warning::Failed to send Slack notification"
+            echo "$RESPONSE" | jq .
+          fi

@@ -47,7 +47,7 @@ spec:
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
           image: {{ .Values.auth.backend.image | default "ghcr.io/lerianstudio/casdoor:latest" }}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8000

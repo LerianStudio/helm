@@ -10,7 +10,7 @@ opentelemetry-collector:
   # Contrib image is needed for k8scluster, k8sattributes, transform, and loki exporter.
   image:
     repository: otel/opentelemetry-collector-contrib
-    tag: 0.131.0
+    tag: 0.142.0
 
   # RBAC is required for k8sattributes, k8scluster, and kubeletstats receivers.
   clusterRole:
@@ -82,6 +82,8 @@ opentelemetry-collector:
 
   config:
     receivers:
+      # Disable the default prometheus self-scraping receiver
+      prometheus: null    
       # Receives traces, logs, and metrics from instrumented applications.
       otlp:
         protocols:
@@ -93,9 +95,36 @@ opentelemetry-collector:
       # Collects cluster-level state information, like pod status.
       k8s_cluster:
         collection_interval: 60s
+        node_conditions_to_report: [Ready, MemoryPressure, DiskPressure, PIDPressure]
         metrics:
+          # Pod status metrics
           k8s.pod.status_reason:
             enabled: true
+          # Container status metrics (NEW in 0.142.0)
+          # Tracks container state: running, waiting, terminated
+          k8s.container.status.state:
+            enabled: true
+          # Tracks reason for container state: CrashLoopBackOff, OOMKilled, ImagePullBackOff, etc.
+          k8s.container.status.reason:
+            enabled: true
+          # Node condition metrics
+          k8s.node.condition:
+            enabled: true
+          # HPA metrics
+          k8s.hpa.current_replicas:
+            enabled: true
+          k8s.hpa.desired_replicas:
+            enabled: true
+          k8s.hpa.max_replicas:
+            enabled: true
+          k8s.hpa.min_replicas:
+            enabled: true
+
+      k8sobjects:
+        objects:
+          - name: events
+            mode: watch
+            namespaces: [midaz, midaz-plugins]
 
       # Collects pod/container performance metrics (CPU, memory) from the node's Kubelet.
       kubeletstats:
@@ -119,12 +148,12 @@ opentelemetry-collector:
         send_batch_size: 512
         send_batch_max_size: 1024
 
-    # This processor removes the payload attribute from spans to avoid storing sensitive data.
-    transform/remove_sensitive_attributes:
-      trace_statements:
-        - context: span
-          statements:
-            - delete_key(attributes, "app.request.payload")
+      # This processor removes the payload attribute from spans to avoid storing sensitive data.
+      transform/remove_sensitive_attributes:
+        trace_statements:
+          - context: span
+            statements:
+              - delete_key(attributes, "app.request.payload")
             
       transform/mask_body_sensitive_data_replace_1:
         error_mode: ignore
@@ -269,13 +298,12 @@ opentelemetry-collector:
         dimensions_cache_size: 50000
 
     exporters:
-      nop: null
+      # Disable the default debug exporter
+      debug: null
       otlphttp/server:
         endpoint: "https://telemetry.lerian.io:443"
         headers:
           x-api-key: "${OTEL_API_KEY}"
-      #debug:
-      # verbosity: detailed
 
     service:
       extensions:
@@ -287,6 +315,8 @@ opentelemetry-collector:
           address: "0.0.0.0:8887"
           level: "Basic"
       pipelines:
+        # Disable the default metrics pipeline (uses prometheus receiver we don't want)
+        metrics: null      
         traces:
           # The order of processors is critical for correct data handling:
           # 1. Enrich with K8s metadata.
@@ -325,7 +355,7 @@ opentelemetry-collector:
             - filter/drop_node_metrics
           exporters: [otlphttp/server]
         logs:
-          receivers: [otlp]
+          receivers: [otlp, k8sobjects]
           processors:
             - memory_limiter
             - batch

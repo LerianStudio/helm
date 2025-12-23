@@ -360,9 +360,12 @@ auth:
     # -- Admin password (will be stored in a secret)
     # -- IMPORTANT: Change this in production!
     adminPassword: ""
-    # -- Use existing secret for admin password
+    # -- Use existing secret for admin password instead of creating one
+    # -- IMPORTANT: If set to true, adminPasswordSecretName MUST be specified
     useExistingSecret: false
     # -- Name of the existing secret containing ADMIN_PASSWORD
+    # -- REQUIRED when useExistingSecret is true
+    # -- The secret must exist in the same namespace and contain the key specified in adminPasswordSecretKey
     adminPasswordSecretName: ""
     # -- Key in the secret containing the admin password
     adminPasswordSecretKey: "ADMIN_PASSWORD"

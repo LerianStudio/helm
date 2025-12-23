@@ -48,7 +48,21 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }} 
   ENABLE_TELEMETRY: {{ .Values.identity.configmap.ENABLE_TELEMETRY | default "true" | quote }}
-
+  # REDIS
+  REDIS_HOST: {{ printf "%s:%s" (.Values.identity.configmap.REDIS_HOST | default (printf "plugin-access-manager-valkey-primary.%s.svc.cluster.local" .Release.Namespace)) (.Values.identity.configmap.REDIS_PORT | default "6379" | toString) | quote }}
+  REDIS_PORT: {{ .Values.au.configmap.REDIS_PORT | default "6379" | quote }}
+  REDIS_USER: {{ .Values.identity.configmap.REDIS_USER | default "identity" | quote }}
+  REDIS_SCAN_COUNT: {{ .Values.identity.configmap.REDIS_SCAN_COUNT | default "500" | quote }}
+  REDIS_MASTER_NAME: {{ .Values.identity.configmap.REDIS_MASTER_NAME | default "" | quote }}
+  REDIS_TLS: {{ .Values.identity.configmap.REDIS_TLS | default "false" | quote }}
+  REDIS_CA_CERT: {{ .Values.identity.configmap.REDIS_CA_CERT | default "" | quote }}
+  REDIS_USE_GCP_IAM: {{ .Values.identity.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
+  REDIS_SERVICE_ACCOUNT: {{ .Values.identity.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+  GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.identity.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+  REDIS_TOKEN_LIFETIME: {{ .Values.identity.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
+  REDIS_TOKEN_REFRESH_DURATION: {{ .Values.identity.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
+  REDIS_DB: {{ .Values.identity.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ .Values.identity.configmap.REDIS_PROTOCOL | default "3" | quote }}
   # Extra Env Vars
   {{- with .Values.identity.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -1,0 +1,115 @@
+{{- if .Values.auth.initUser.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "plugin-auth.fullname" . }}-init-user
+  labels:
+    {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name) | nindent 4 }}
+  annotations:
+    # post-install ONLY: runs once on first helm install, NOT on upgrades
+    # This ensures the admin user is created only during initial setup
+    # If the customer deletes the admin user later, it will NOT be recreated
+    helm.sh/hook: post-install
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: hook-succeeded,before-hook-creation
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-auth.selectorLabels" (dict "context" . "name" .Values.auth.name) | nindent 8 }}
+        app.kubernetes.io/component: init-user
+    spec:
+      {{- with .Values.auth.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      restartPolicy: OnFailure
+      containers:
+        - name: init-user
+          image: {{ .Values.auth.initUser.image | default "ghcr.io/lerianstudio/casdoor-user-init:latest" }}
+          imagePullPolicy: {{ .Values.auth.initUser.imagePullPolicy | default "Always" }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            # Database configuration
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_PASSWORD
+            # Casdoor configuration
+            - name: CASDOOR_URL
+              value: "http://{{ include "plugin-auth-backend.fullname" . }}:8000"
+            # Admin user configuration
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.initUser.adminPasswordSecretName | default (printf "%s-init-user" (include "plugin-auth.fullname" .)) }}
+                  key: {{ .Values.auth.initUser.adminPasswordSecretKey | default "ADMIN_PASSWORD" }}
+            {{- if .Values.auth.initUser.adminEmail }}
+            - name: ADMIN_EMAIL
+              value: {{ .Values.auth.initUser.adminEmail | quote }}
+            {{- end }}
+            {{- if .Values.auth.initUser.adminDisplayName }}
+            - name: ADMIN_DISPLAY_NAME
+              value: {{ .Values.auth.initUser.adminDisplayName | quote }}
+            {{- end }}
+            # Timeout configuration
+            {{- if .Values.auth.initUser.casdoorTimeout }}
+            - name: CASDOOR_TIMEOUT_SEC
+              value: {{ .Values.auth.initUser.casdoorTimeout | quote }}
+            {{- end }}
+            {{- if .Values.auth.initUser.tableTimeout }}
+            - name: TABLE_TIMEOUT_SEC
+              value: {{ .Values.auth.initUser.tableTimeout | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.auth.initUser.resources | nindent 12 }}
+{{- end }}
+---
+{{- if and .Values.auth.initUser.enabled (not .Values.auth.initUser.useExistingSecret) }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "plugin-auth.fullname" . }}-init-user
+  labels:
+    {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name) | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install
+    helm.sh/hook-weight: "5"
+    helm.sh/hook-delete-policy: hook-succeeded,before-hook-creation
+type: Opaque
+data:
+  ADMIN_PASSWORD: {{ .Values.auth.initUser.adminPassword | default "Lerian@2025!" | b64enc | quote }}
+{{- end }}

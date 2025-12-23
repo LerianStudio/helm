@@ -23,7 +23,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.0.0"
+    tag: "2.1.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -173,7 +173,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.2.0"
+    tag: "2.3.0"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -342,6 +342,42 @@ auth:
       targetMemoryUtilizationPercentage: 80
     migrations:
       image: ""
+
+  # -- Init User Job configuration
+  # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
+  # -- If the admin user is deleted by the customer, it will NOT be recreated
+  initUser:
+    # -- Enable or disable the init user job
+    enabled: true
+    # -- Container image for the init user job
+    image: "ghcr.io/lerianstudio/casdoor-user-init:latest"
+    # -- Image pull policy
+    imagePullPolicy: Always
+    # -- Admin user email (default: admin@midaz.tech)
+    adminEmail: "admin@midaz.tech"
+    # -- Admin user display name
+    adminDisplayName: "Admin"
+    # -- Admin password (will be stored in a secret)
+    # -- IMPORTANT: Change this in production!
+    adminPassword: "Lerian@2025!"
+    # -- Use existing secret for admin password
+    useExistingSecret: false
+    # -- Name of the existing secret containing ADMIN_PASSWORD
+    adminPasswordSecretName: ""
+    # -- Key in the secret containing the admin password
+    adminPasswordSecretKey: "ADMIN_PASSWORD"
+    # -- Timeout waiting for Casdoor to be ready (in seconds)
+    casdoorTimeout: 120
+    # -- Timeout waiting for user table to exist (in seconds)
+    tableTimeout: 60
+    # -- Resources for the init user job
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
 
 auth-database:
   # Database dependency for identity and access management.

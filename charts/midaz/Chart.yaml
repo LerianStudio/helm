@@ -52,6 +52,6 @@ dependencies:
     repository: "https://groundhog2k.github.io/helm-charts"
     condition: rabbitmq.enabled
   - name: otel-collector-lerian
-    version: 2.2.1
+    version: "2.2.1"
     repository: "oci://registry-1.docker.io/lerianstudio"
     condition: otel-collector-lerian.enabled

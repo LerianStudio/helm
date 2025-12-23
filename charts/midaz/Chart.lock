@@ -13,6 +13,6 @@ dependencies:
   version: 2.1.11
 - name: otel-collector-lerian
   repository: oci://registry-1.docker.io/lerianstudio
-  version: 2.1.0
-digest: sha256:ca7f7e9f0059dce238ead803eca58ce57244ebdebe6db43e6aaea8fe7fa45e0d
-generated: "2025-12-18T15:09:39.090105-03:00"
+  version: 2.2.1
+digest: sha256:8189bfea8e48b9fed73973f01cb04e751bcdc558f4a2791b508efd0862cd9dfd
+generated: "2025-12-23T19:18:16.238454-03:00"

@@ -1,8 +1,5 @@
 
 identity:
-  imagePullSecrets:
-    - name: regcred
-
   ingress:
     enabled: false
     className: ""
@@ -20,6 +17,9 @@ identity:
     AUTH_PORT: "4000"
     AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
     AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
+    REDIS_HOST: "plugin-access-manager-valkey-primary.midaz-plugins.svc.cluster.local"
+    REDIS_PORT: 6379
+    REDIS_USER: "auth"
 
   secrets:
     AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
@@ -27,9 +27,6 @@ identity:
     ORGANIZATION_IDS: ""
 
 auth:
-  imagePullSecrets:
-    - name: regcred
-
   ingress:
     enabled: false
     className: ""
@@ -58,6 +55,9 @@ auth:
     REDIS_PASSWORD: "lerian"
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
+
+  initUser:
+    enabled: true
 
 auth-database:
   enabled: true

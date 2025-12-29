@@ -24,14 +24,14 @@ Expand the name of the chart.
 Expand the name for inbound worker.
 */}}
 {{- define "inbound.name" -}}
-{{- default .Values.inbound.name | trunc 63 | trimSuffix "-" }}
+{{- .Values.inbound.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Expand the name for outbound worker.
 */}}
 {{- define "outbound.name" -}}
-{{- default .Values.outbound.name | trunc 63 | trimSuffix "-" }}
+{{- .Values.outbound.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -56,14 +56,14 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 Create a default fully qualified app name for inbound worker.
 */}}
 {{- define "inbound.fullname" -}}
-{{- default .Values.inbound.name | trunc 63 | trimSuffix "-" }}
+{{- .Values.inbound.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name for outbound worker.
 */}}
 {{- define "outbound.fullname" -}}
-{{- default .Values.outbound.name | trunc 63 | trimSuffix "-" }}
+{{- .Values.outbound.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*

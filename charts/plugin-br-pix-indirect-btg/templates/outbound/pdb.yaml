@@ -15,7 +15,7 @@ spec:
   {{- with .Values.outbound.pdb.maxUnavailable }}
   maxUnavailable: {{ . }}
   {{- else }}
-  minAvailable: {{ .Values.outbound.pdb.minAvailable | default 0 }}
+  minAvailable: {{ .Values.outbound.pdb.minAvailable | default 1 }}
   {{- end }}
   selector:
     matchLabels:

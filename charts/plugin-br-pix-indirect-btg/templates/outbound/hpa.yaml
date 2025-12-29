@@ -1,4 +1,5 @@
 {{- if .Values.outbound.autoscaling.enabled }}
+{{- if or .Values.outbound.autoscaling.targetCPUUtilizationPercentage .Values.outbound.autoscaling.targetMemoryUtilizationPercentage }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -29,4 +30,7 @@ spec:
           type: Utilization
           averageUtilization: {{ .Values.outbound.autoscaling.targetMemoryUtilizationPercentage }}
     {{- end }}
+{{- else }}
+{{- fail "ERROR: HPA requires at least one metric. Set either targetCPUUtilizationPercentage or targetMemoryUtilizationPercentage in outbound.autoscaling" }}
+{{- end }}
 {{- end }}

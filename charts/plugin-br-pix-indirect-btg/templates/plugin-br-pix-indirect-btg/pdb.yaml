@@ -15,7 +15,7 @@ spec:
   {{- with .Values.pix.pdb.maxUnavailable }}
   maxUnavailable: {{ . }}
   {{- else }}
-  minAvailable: {{ .Values.pix.pdb.minAvailable | default 0 }}
+  minAvailable: {{ .Values.pix.pdb.minAvailable | default 1 }}
   {{- end }}
   selector:
     matchLabels:

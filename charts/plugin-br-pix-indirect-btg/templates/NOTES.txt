@@ -1,0 +1,115 @@
+✅ Plugin BR PIX Indirect BTG deployed successfully!
+
+📋 Deployment Information:
+  Release: {{ .Release.Name }}
+  Namespace: {{ .Release.Namespace }}
+  Chart: {{ .Chart.Name }} {{ .Chart.Version }}
+  AppVersion: {{ .Chart.AppVersion }}
+
+---
+
+🚀 Components Deployed:
+
+1. PIX API Service
+   - Name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
+   - Port: {{ .Values.pix.service.port }}
+   - Replicas: {{ if .Values.pix.autoscaling.enabled }}{{ .Values.pix.autoscaling.minReplicas }}-{{ .Values.pix.autoscaling.maxReplicas }} (autoscaling){{ else }}{{ .Values.pix.replicaCount }}{{ end }}
+
+2. Inbound Worker
+   - Name: {{ include "inbound.fullname" . }}
+   - Port: {{ .Values.inbound.service.port | default "4016" }}
+   - Purpose: Processes incoming webhook events
+   - Replicas: {{ if .Values.inbound.autoscaling.enabled }}{{ .Values.inbound.autoscaling.minReplicas }}-{{ .Values.inbound.autoscaling.maxReplicas }} (autoscaling){{ else }}{{ .Values.inbound.replicaCount }}{{ end }}
+
+3. Outbound Worker
+   - Name: {{ include "outbound.fullname" . }}
+   - Port: {{ .Values.outbound.service.port | default "4015" }}
+   - Purpose: Sends webhook notifications to external endpoints
+   - Replicas: {{ if .Values.outbound.autoscaling.enabled }}{{ .Values.outbound.autoscaling.minReplicas }}-{{ .Values.outbound.autoscaling.maxReplicas }} (autoscaling){{ else }}{{ .Values.outbound.replicaCount }}{{ end }}
+
+{{- if .Values.pix.ingress.enabled }}
+
+🌐 External Access:
+{{- $tls := (and .Values.pix.ingress.tls (gt (len .Values.pix.ingress.tls) 0)) }}
+{{- range .Values.pix.ingress.hosts }}
+   URL: http{{ if $tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+
+🌐 Access (Ingress disabled):
+   Use port-forward to access locally:
+   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "plugin-br-pix-indirect-btg.fullname" . }} 4014:{{ .Values.pix.service.port }}
+   Then access: http://localhost:4014
+{{- end }}
+
+---
+
+🔍 Check Status:
+
+  # View all pods
+  kubectl get pods -n {{ .Release.Namespace }}
+
+  # View logs
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name=plugin-br-pix-indirect-btg -f
+
+---
+
+📊 View Logs by Component:
+
+  # PIX API
+  kubectl logs -n {{ .Release.Namespace }} deploy/{{ include "plugin-br-pix-indirect-btg.fullname" . }} -f
+
+  # Inbound Worker
+  kubectl logs -n {{ .Release.Namespace }} deploy/{{ include "inbound.fullname" . }} -f
+
+  # Outbound Worker
+  kubectl logs -n {{ .Release.Namespace }} deploy/{{ include "outbound.fullname" . }} -f
+
+---
+
+💾 Database Information:
+
+{{- if .Values.postgresql.enabled }}
+  PostgreSQL (bundled):
+  - Host: plugin-br-pix-indirect-btg-postgresql.{{ .Release.Namespace }}.svc.cluster.local
+  - Port: 5432
+  - Database: {{ .Values.postgresql.auth.database }}
+  - User: {{ .Values.postgresql.auth.username }}
+  
+  ⚠️  NOTE: Bundled PostgreSQL is for development/testing only.
+      For production, use external managed PostgreSQL.
+{{- end }}
+
+{{- if .Values.mongodb.enabled }}
+  MongoDB (bundled):
+  - Host: plugin-br-pix-indirect-btg-mongodb.{{ .Release.Namespace }}.svc.cluster.local
+  - Port: 27017
+  
+  ⚠️  NOTE: Bundled MongoDB is for development/testing only.
+      For production, use external managed MongoDB.
+{{- end }}
+
+{{- if .Values.valkey.enabled }}
+  Valkey/Redis (bundled):
+  - Host: plugin-br-pix-indirect-btg-valkey-master.{{ .Release.Namespace }}.svc.cluster.local
+  - Port: 6379
+{{- end }}
+
+---
+
+⚠️  Important Notes:
+
+  1. Verify BTG credentials are correctly configured
+  2. Ensure webhook URLs are accessible (for outbound worker)
+  3. Check database connectivity if using external databases
+  4. Monitor logs for any startup errors
+
+---
+
+📚 Documentation:
+
+  For more information, see:
+  - Chart README: https://github.com/LerianStudio/helm
+  - Lerian Docs: https://docs.lerian.studio/
+
+

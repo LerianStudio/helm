@@ -48,7 +48,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- default .Values.pix.name | trunc 63 | trimSuffix "-" }}
+{{- .Values.pix.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 

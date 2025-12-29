@@ -95,7 +95,7 @@
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version |
 | :---: | :---: | :---: | :---: |
-| `1.1.0-beta.2` | 1.0.0-rc.11 | 1.0.0-rc.11 | 1.0.0-rc.11 |
+| `1.0.0-beta.1` | 1.0.0-rc.11 | 1.0.0-rc.11 | 1.0.0-rc.11 |
 -----------------
 
 ### Otel Collector Lerian

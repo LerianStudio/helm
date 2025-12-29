@@ -87,7 +87,7 @@
 
 ### Plugin BR Pix Indirect BTG
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/br-pix-indirect-btg).
+📚 For more details, check out the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/indirect-pix-btg#indirect-pix-btg).
 
 🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/plugin-br-pix-indirect-btg).
 

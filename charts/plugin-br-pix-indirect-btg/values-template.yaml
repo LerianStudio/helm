@@ -1,0 +1,162 @@
+pix:
+  replicaCount: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg
+    pullPolicy: Always
+    tag: "1.0.0-rc.11"
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    BTG_BASE_URL: ""
+    PIX_ISPB: ""
+    MIDAZ_ORGANIZATION_ID: ""
+    MIDAZ_LEDGER_ID: ""
+    CASHIN_FEE_CALCULATION_TYPE: "segment"
+    ORGANIZATION_IDS: global
+
+  secrets:
+    BTG_CLIENT_ID: ""
+    BTG_CLIENT_SECRET: ""
+    MIDAZ_CLIENT_ID: ""
+    MIDAZ_CLIENT_SECRET: ""
+    DB_PASSWORD: "lerian"
+    DB_REPLICA_PASSWORD: "lerian"
+    MONGO_PASSWORD: "lerian"
+    LICENSE_KEY: ""
+    PLUGIN_CRM_CLIENT_ID: ""
+    PLUGIN_CRM_CLIENT_SECRET: ""
+
+  useExistingSecrets: false
+  existingSecretName: ""
+
+inbound:
+  replicaCount: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-inbound
+    pullPolicy: Always
+    tag: "1.0.0-rc.11"
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    DB_HOST: ""
+    DB_USER: ""
+    DB_NAME: ""
+    DB_REPLICA_HOST: ""
+    DB_REPLICA_USER: ""
+    DB_REPLICA_NAME: ""
+    MONGO_HOST: ""
+    MONGO_NAME: ""
+    MONGO_USER: ""
+
+  secrets:
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    MONGO_PASSWORD: ""
+
+  useExistingSecrets: false
+  existingSecretName: ""
+
+outbound:
+  replicaCount: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-outbound
+    pullPolicy: Always
+    tag: "1.0.0-rc.11"
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    ENV_NAME: ""
+    DB_HOST: ""
+    DB_USER: ""
+    DB_NAME: ""
+    DB_REPLICA_HOST: ""
+    DB_REPLICA_USER: ""
+    DB_REPLICA_NAME: ""
+    MONGO_HOST: ""
+    MONGO_NAME: ""
+    MONGO_USER: ""
+    REDIS_HOST: ""
+    WEBHOOK_CLIENT_URL: ""
+    WEBHOOK_DICT_CLAIM_URL: ""
+    WEBHOOK_DICT_INFRACTION_REPORT_URL: ""
+    WEBHOOK_DICT_REFUND_URL: ""
+    WEBHOOK_TRANSFER_CASHIN_URL: ""
+    WEBHOOK_TRANSFER_CASHOUT_URL: ""
+
+  secrets:
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    MONGO_PASSWORD: ""
+
+  useExistingSecrets: false
+  existingSecretName: ""
+
+postgresql:
+  enabled: true
+  auth:
+    username: "pix_btg"
+    password: "lerian"
+    database: "pix_btg"
+
+mongodb:
+  enabled: true
+  auth:
+    enabled: true
+    rootUser: pix_btg
+    rootPassword: "lerian"
+
+valkey:
+  enabled: true
+  auth:
+    enabled: false

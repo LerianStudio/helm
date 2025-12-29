@@ -24,6 +24,16 @@ pix:
     tls: []
 
   configmap:
+    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_USER: "pix_btg"
+    DB_NAME: "pix_btg"
+    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_USER: "pix_btg"
+    DB_REPLICA_NAME: "pix_btg"
+    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_NAME: "plugin-br-pix-indirect-btg-db"
+    MONGO_USER: "pix_btg"
+    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
     BTG_BASE_URL: ""
     PIX_ISPB: ""
     MIDAZ_ORGANIZATION_ID: ""
@@ -32,13 +42,15 @@ pix:
     ORGANIZATION_IDS: global
 
   secrets:
+    DB_PASSWORD: "lerian"
+    DB_REPLICA_PASSWORD: "lerian"
+    REPLICATION_PASSWORD: ""
+    MONGO_PASSWORD: "lerian"
+    REDIS_PASSWORD: ""
     BTG_CLIENT_ID: ""
     BTG_CLIENT_SECRET: ""
     MIDAZ_CLIENT_ID: ""
     MIDAZ_CLIENT_SECRET: ""
-    DB_PASSWORD: "lerian"
-    DB_REPLICA_PASSWORD: "lerian"
-    MONGO_PASSWORD: "lerian"
     LICENSE_KEY: ""
     PLUGIN_CRM_CLIENT_ID: ""
     PLUGIN_CRM_CLIENT_SECRET: ""
@@ -72,20 +84,20 @@ inbound:
     tls: []
 
   configmap:
-    DB_HOST: ""
-    DB_USER: ""
-    DB_NAME: ""
-    DB_REPLICA_HOST: ""
-    DB_REPLICA_USER: ""
-    DB_REPLICA_NAME: ""
-    MONGO_HOST: ""
-    MONGO_NAME: ""
-    MONGO_USER: ""
+    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_USER: "pix_btg"
+    DB_NAME: "pix_btg"
+    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_USER: "pix_btg"
+    DB_REPLICA_NAME: "pix_btg"
+    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_NAME: "plugin-br-pix-indirect-btg-db"
+    MONGO_USER: "pix_btg"
 
   secrets:
-    DB_PASSWORD: ""
-    DB_REPLICA_PASSWORD: ""
-    MONGO_PASSWORD: ""
+    DB_PASSWORD: "lerian"
+    DB_REPLICA_PASSWORD: "lerian"
+    MONGO_PASSWORD: "lerian"
 
   useExistingSecrets: false
   existingSecretName: ""
@@ -116,17 +128,16 @@ outbound:
     tls: []
 
   configmap:
-    ENV_NAME: ""
-    DB_HOST: ""
-    DB_USER: ""
-    DB_NAME: ""
-    DB_REPLICA_HOST: ""
-    DB_REPLICA_USER: ""
-    DB_REPLICA_NAME: ""
-    MONGO_HOST: ""
-    MONGO_NAME: ""
-    MONGO_USER: ""
-    REDIS_HOST: ""
+    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_USER: "pix_btg"
+    DB_NAME: "pix_btg"
+    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_USER: "pix_btg"
+    DB_REPLICA_NAME: "pix_btg"
+    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_NAME: "plugin-br-pix-indirect-btg-db"
+    MONGO_USER: "pix_btg"
+    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
     WEBHOOK_CLIENT_URL: ""
     WEBHOOK_DICT_CLAIM_URL: ""
     WEBHOOK_DICT_INFRACTION_REPORT_URL: ""
@@ -135,9 +146,9 @@ outbound:
     WEBHOOK_TRANSFER_CASHOUT_URL: ""
 
   secrets:
-    DB_PASSWORD: ""
-    DB_REPLICA_PASSWORD: ""
-    MONGO_PASSWORD: ""
+    DB_PASSWORD: "lerian"
+    DB_REPLICA_PASSWORD: "lerian"
+    MONGO_PASSWORD: "lerian"
 
   useExistingSecrets: false
   existingSecretName: ""

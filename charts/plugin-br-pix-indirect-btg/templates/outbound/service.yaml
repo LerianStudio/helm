@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "outbound.fullname" . }}
+  labels:
+    {{- include "outbound.labels" (dict "context" . "name" .Values.outbound.name ) | nindent 4 }} 
+spec:
+  type: {{ .Values.outbound.service.type }}
+  ports:
+    - port: {{ .Values.outbound.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "outbound.selectorLabels" (dict "context" . "name" .Values.outbound.name) | nindent 4 }}

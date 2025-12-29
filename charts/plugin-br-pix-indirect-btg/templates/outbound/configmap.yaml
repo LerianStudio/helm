@@ -1,0 +1,190 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "outbound.fullname" . }}
+  labels:
+    {{- include "outbound.labels" (dict "context" . "name" .Values.outbound.name ) | nindent 4 }} 
+data:
+  # DEFAULT local
+  ENV_NAME: {{ .Values.outbound.configmap.ENV_NAME | default "development" | quote }}
+
+  # APP
+  VERSION: {{ .Values.outbound.configmap.VERSION | default "v1.0.0" | quote }}
+  WORKER_PORT: {{ .Values.outbound.configmap.WORKER_PORT | default "4015" | quote }}
+
+
+  # AUTH PLUGIN
+  PLUGIN_AUTH_ENABLED: {{ .Values.outbound.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.outbound.configmap.PLUGIN_AUTH_HOST | default "http://plugin-auth:4000" | quote }}
+
+  # VALKEY
+  REDIS_HOST: {{ .Values.outbound.configmap.REDIS_HOST | default (printf "plugin-br-pix-indirect-btg-valkey-master.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  REDIS_PORT: {{ .Values.outbound.configmap.REDIS_PORT | default "6379" | quote }}
+  REDIS_USER: {{ .Values.outbound.configmap.REDIS_USER | default "plugin" | quote }}
+
+  # USE ONLY ON SENTINEL
+  REDIS_MASTER_NAME: {{ .Values.outbound.configmap.REDIS_MASTER_NAME | default "" | quote }}
+  REDIS_TLS: {{ .Values.outbound.configmap.REDIS_TLS | default "false" | quote }}
+  REDIS_CA_CERT: {{ .Values.outbound.configmap.REDIS_CA_CERT | default "" | quote }}
+  REDIS_USE_GCP_IAM: {{ .Values.outbound.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
+  REDIS_SERVICE_ACCOUNT: {{ .Values.outbound.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+  GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.outbound.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+  REDIS_TOKEN_LIFETIME: {{ .Values.outbound.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
+  # minutes
+  REDIS_TOKEN_REFRESH_DURATION: {{ .Values.outbound.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
+  REDIS_DB: {{ .Values.outbound.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ .Values.outbound.configmap.REDIS_PROTOCOL | default "3" | quote }}
+  # REDIS POOL & RETRY CONFIGS
+  REDIS_POOL_SIZE: {{ .Values.outbound.configmap.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ .Values.outbound.configmap.REDIS_MIN_IDLE_CONNS | default "0" | quote }}
+  # Seconds
+  REDIS_READ_TIMEOUT: {{ .Values.outbound.configmap.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ .Values.outbound.configmap.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ .Values.outbound.configmap.REDIS_DIAL_TIMEOUT | default "5" | quote }}
+  REDIS_POOL_TIMEOUT: {{ .Values.outbound.configmap.REDIS_POOL_TIMEOUT | default "2" | quote }}
+  REDIS_MAX_RETRIES: {{ .Values.outbound.configmap.REDIS_MAX_RETRIES | default "3" | quote }}
+  # Milliseconds
+  REDIS_MIN_RETRY_BACKOFF: {{ .Values.outbound.configmap.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
+  # Seconds
+  REDIS_MAX_RETRY_BACKOFF: {{ .Values.outbound.configmap.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
+
+  # POSTGRES
+  DB_HOST: {{ .Values.outbound.configmap.DB_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_USER: {{ .Values.outbound.configmap.DB_USER | default "plugin" | quote }}
+  DB_NAME: {{ .Values.outbound.configmap.DB_NAME | default "pix" | quote }}
+  DB_PORT: {{ .Values.outbound.configmap.DB_PORT | default "5432" | quote }}
+  MIGRATIONS_PATH: {{ .Values.outbound.configmap.MIGRATIONS_PATH | default "components/infra/migrations" | quote }}
+
+  # DB POSTGRESQL REPLICA
+  DB_REPLICA_HOST: {{ .Values.outbound.configmap.DB_REPLICA_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_USER: {{ .Values.outbound.configmap.DB_REPLICA_USER | default "plugin" | quote }}
+  DB_REPLICA_NAME: {{ .Values.outbound.configmap.DB_REPLICA_NAME | default "pix" | quote }}
+  DB_REPLICA_PORT: {{ .Values.outbound.configmap.DB_REPLICA_PORT | default "5432" | quote }}
+
+  DB_MAX_OPEN_CONNS: {{ .Values.outbound.configmap.DB_MAX_OPEN_CONNS | default "20" | quote }}
+  DB_MAX_IDLE_CONNS: {{ .Values.outbound.configmap.DB_MAX_IDLE_CONNS | default "10" | quote }}
+  DB_SSL_MODE: {{ .Values.outbound.configmap.DB_SSL_MODE | default "disable" | quote }}
+
+  # Mongo DB
+  MONGO_URI: {{ .Values.outbound.configmap.MONGO_URI | default "mongodb" | quote }}
+  MONGO_HOST: {{ .Values.outbound.configmap.MONGO_HOST | default (printf "plugin-br-pix-indirect-btg-mongodb.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  MONGO_PORT: {{ .Values.outbound.configmap.MONGO_PORT | default "27017" | quote }}
+  MONGO_NAME: {{ .Values.outbound.configmap.MONGO_NAME | default "pix-btg-db" | quote }}
+  MONGO_USER: {{ .Values.outbound.configmap.MONGO_USER | default "pix-btg" | quote }}
+  MONGO_MAX_POOL_SIZE: {{ .Values.outbound.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+
+  # LOG LEVEL
+  LOG_LEVEL: {{ .Values.outbound.configmap.LOG_LEVEL | default "info" | quote }}
+
+  # OPEN TELEMETRY (WITH MIDAZ LGTM SERVICE)
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.outbound.configmap.OTEL_RESOURCE_SERVICE_NAME | default "webhook-outbound-worker" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.outbound.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-indirect-btg/components/worker/webhook/outbound" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.outbound.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "v1.0.0" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.outbound.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.outbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.outbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.outbound.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+
+  # ==============================================================================
+  # WEBHOOK GLOBAL SETTINGS
+  # ==============================================================================
+  # WARNING: Webhook URLs must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_CLIENT_URL: {{ .Values.outbound.configmap.WEBHOOK_CLIENT_URL | default "" | quote }}
+  WEBHOOK_WORKER_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_WORKER_TIMEOUT | default "10s" | quote }}
+  WEBHOOK_WORKER_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_WORKER_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_ORCHESTRATOR_SHUTDOWN_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_ORCHESTRATOR_SHUTDOWN_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_ORCHESTRATOR_RECOVERY_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_ORCHESTRATOR_RECOVERY_TIMEOUT | default "2m" | quote }}
+
+  # Flow-level URL (optional) - all DICT entities inherit this if no specific URL
+  WEBHOOK_DICT_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_URL | default "" | quote }}
+
+  # ==============================================================================
+  # CIRCUIT BREAKER CONFIGURATION
+  # ==============================================================================
+  WEBHOOK_CIRCUIT_BREAKER_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  WEBHOOK_CIRCUIT_BREAKER_FAILURE_THRESHOLD: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_FAILURE_THRESHOLD | default "5" | quote }}
+  WEBHOOK_CIRCUIT_BREAKER_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_CIRCUIT_BREAKER_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_INTERVAL | default "60s" | quote }}
+  WEBHOOK_CIRCUIT_BREAKER_MAX_REQUESTS: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_MAX_REQUESTS | default "3" | quote }}
+  WEBHOOK_CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT | default "5s" | quote }}
+
+  # ==============================================================================
+  # DICT_CLAIM - High volume entity
+  # ==============================================================================
+  WEBHOOK_DICT_CLAIM_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_ENABLED | default "true" | quote }}
+  # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_DICT_CLAIM_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_URL | default "" | quote }}
+  WEBHOOK_DICT_CLAIM_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_WORKER_COUNT | default "2" | quote }}
+  WEBHOOK_DICT_CLAIM_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_BATCH_SIZE | default "100" | quote }}
+  WEBHOOK_DICT_CLAIM_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_POLLING_INTERVAL | default "5s" | quote }}
+  WEBHOOK_DICT_CLAIM_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_REQUEST_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_DICT_CLAIM_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_MAX_RETRIES | default "3" | quote }}
+  WEBHOOK_DICT_CLAIM_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_DICT_CLAIM_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_MAX_CONCURRENT | default "4" | quote }}
+
+  # ==============================================================================
+  # DICT_INFRACTION_REPORT - Medium volume entity
+  # ==============================================================================
+  WEBHOOK_DICT_INFRACTION_REPORT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_ENABLED | default "true" | quote }}
+  # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_DICT_INFRACTION_REPORT_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_URL | default "" | quote }}
+  WEBHOOK_DICT_INFRACTION_REPORT_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_WORKER_COUNT | default "1" | quote }}
+  WEBHOOK_DICT_INFRACTION_REPORT_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_DICT_INFRACTION_REPORT_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_POLLING_INTERVAL | default "10s" | quote }}
+  WEBHOOK_DICT_INFRACTION_REPORT_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_REQUEST_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_DICT_INFRACTION_REPORT_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_DICT_INFRACTION_REPORT_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_DICT_INFRACTION_REPORT_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_MAX_CONCURRENT | default "2" | quote }}
+
+  # ==============================================================================
+  # DICT_REFUND - Medium volume entity
+  # ==============================================================================
+  WEBHOOK_DICT_REFUND_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_ENABLED | default "true" | quote }}
+  # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_DICT_REFUND_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_URL | default "" | quote }}
+  WEBHOOK_DICT_REFUND_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_WORKER_COUNT | default "1" | quote }}
+  WEBHOOK_DICT_REFUND_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_DICT_REFUND_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_POLLING_INTERVAL | default "10s" | quote }}
+  WEBHOOK_DICT_REFUND_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_REQUEST_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_DICT_REFUND_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_DICT_REFUND_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_DICT_REFUND_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_MAX_CONCURRENT | default "2" | quote }}
+
+  # ==============================================================================
+  # TRANSFER_CASHIN - HIGH VOLUME entity (Pix Cashin notifications)
+  # ==============================================================================
+  WEBHOOK_TRANSFER_CASHIN_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_ENABLED | default "true" | quote }}
+  # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_TRANSFER_CASHIN_URL: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_URL | default "" | quote }}
+  WEBHOOK_TRANSFER_CASHIN_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_WORKER_COUNT | default "5" | quote }}
+  WEBHOOK_TRANSFER_CASHIN_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_BATCH_SIZE | default "200" | quote }}
+  WEBHOOK_TRANSFER_CASHIN_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_POLLING_INTERVAL | default "2s" | quote }}
+  WEBHOOK_TRANSFER_CASHIN_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_REQUEST_TIMEOUT | default "15s" | quote }}
+  WEBHOOK_TRANSFER_CASHIN_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_TRANSFER_CASHIN_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_TRANSFER_CASHIN_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_MAX_CONCURRENT | default "10" | quote }}
+
+  # ==============================================================================
+  # TRANSFER_CASHOUT - HIGH VOLUME entity (Pix Cashout notifications)
+  # ==============================================================================
+  WEBHOOK_TRANSFER_CASHOUT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_ENABLED | default "false" | quote }}
+  # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_TRANSFER_CASHOUT_URL: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_URL | default "" | quote }}
+  WEBHOOK_TRANSFER_CASHOUT_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_WORKER_COUNT | default "5" | quote }}
+  WEBHOOK_TRANSFER_CASHOUT_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_BATCH_SIZE | default "200" | quote }}
+  WEBHOOK_TRANSFER_CASHOUT_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_POLLING_INTERVAL | default "1s" | quote }}
+  WEBHOOK_TRANSFER_CASHOUT_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_REQUEST_TIMEOUT | default "15s" | quote }}
+  WEBHOOK_TRANSFER_CASHOUT_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_TRANSFER_CASHOUT_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_TRANSFER_CASHOUT_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_MAX_CONCURRENT | default "10" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.outbound.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

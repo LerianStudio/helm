@@ -9,6 +9,7 @@
 - [ ] Reporter
 - [ ] Plugin Fees
 - [ ] Plugin BR PIX Direct JD
+- [ ] Plugin BR PIX Indirect BTG
 - [ ] Otel Collector
 - [ ] Pipeline
 - [ ] Documentation

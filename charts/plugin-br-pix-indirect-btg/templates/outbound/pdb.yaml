@@ -1,0 +1,23 @@
+{{- if .Values.outbound.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "outbound.fullname" . }}
+  labels:
+    {{- include "outbound.labels" (dict "context" . "name" .Values.outbound.name ) | nindent 4 }} 
+  {{- with .Values.outbound.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.outbound.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.outbound.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "outbound.selectorLabels" (dict "context" . "name" .Values.outbound.name) | nindent 6 }}
+{{- end }}

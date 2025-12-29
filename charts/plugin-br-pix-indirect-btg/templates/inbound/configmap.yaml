@@ -1,0 +1,175 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "inbound.fullname" . }}
+  labels:
+    {{- include "inbound.labels" (dict "context" . "name" .Values.inbound.name ) | nindent 4 }} 
+data:
+  # DEFAULT local
+  ENV_NAME: {{ .Values.inbound.configmap.ENV_NAME | default "development" | quote }}
+
+  # APP
+  VERSION: {{ .Values.inbound.configmap.VERSION | default "v1.0.0" | quote }}
+  WORKER_PORT: {{ .Values.inbound.configmap.WORKER_PORT | default "4016" | quote }}
+
+  # AUTH PLUGIN
+  PLUGIN_AUTH_ENABLED: {{ .Values.inbound.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.inbound.configmap.PLUGIN_AUTH_HOST | default "http://plugin-auth:4000" | quote }}
+
+  # POSTGRES
+  DB_HOST: {{ .Values.inbound.configmap.DB_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_USER: {{ .Values.inbound.configmap.DB_USER | default "plugin" | quote }}
+  DB_NAME: {{ .Values.inbound.configmap.DB_NAME | default "pix" | quote }}
+  DB_PORT: {{ .Values.inbound.configmap.DB_PORT | default "5432" | quote }}
+  MIGRATIONS_PATH: {{ .Values.inbound.configmap.MIGRATIONS_PATH | default "components/infra/migrations" | quote }}
+
+  # DB POSTGRESQL REPLICA
+  DB_REPLICA_HOST: {{ .Values.inbound.configmap.DB_REPLICA_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_USER: {{ .Values.inbound.configmap.DB_REPLICA_USER | default "plugin" | quote }}
+  DB_REPLICA_NAME: {{ .Values.inbound.configmap.DB_REPLICA_NAME | default "pix" | quote }}
+  DB_REPLICA_PORT: {{ .Values.inbound.configmap.DB_REPLICA_PORT | default "5432" | quote }}
+
+  DB_MAX_OPEN_CONNS: {{ .Values.inbound.configmap.DB_MAX_OPEN_CONNS | default "20" | quote }}
+  DB_MAX_IDLE_CONNS: {{ .Values.inbound.configmap.DB_MAX_IDLE_CONNS | default "10" | quote }}
+  DB_SSL_MODE: {{ .Values.inbound.configmap.DB_SSL_MODE | default "disable" | quote }}
+
+  # Mongo DB
+  MONGO_URI: {{ .Values.inbound.configmap.MONGO_URI | default "mongodb" | quote }}
+  MONGO_HOST: {{ .Values.inbound.configmap.MONGO_HOST | default (printf "plugin-br-pix-indirect-btg-mongodb.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  MONGO_PORT: {{ .Values.inbound.configmap.MONGO_PORT | default "27017" | quote }}
+  MONGO_NAME: {{ .Values.inbound.configmap.MONGO_NAME | default "pix-btg-db" | quote }}
+  MONGO_USER: {{ .Values.inbound.configmap.MONGO_USER | default "pix-btg" | quote }}
+  MONGO_MAX_POOL_SIZE: {{ .Values.inbound.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+
+  # OPEN TELEMETRY (WITH MIDAZ LGTM SERVICE)
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.inbound.configmap.OTEL_RESOURCE_SERVICE_NAME | default "webhook-inbound-worker" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.inbound.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-indirect-btg/components/worker/webhook/inbound" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.inbound.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "v1.0.0" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.inbound.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.inbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.inbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.inbound.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+
+  # Routing Configuration
+  WEBHOOK_INBOUND_BASE_URL: {{ .Values.inbound.configmap.WEBHOOK_INBOUND_BASE_URL | default "http://plugin-br-pix-indirect-btg:4014" | quote }}
+
+  # HTTP Client Configuration
+  WEBHOOK_HTTP_CLIENT_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_HTTP_CLIENT_TIMEOUT | default "5s" | quote }}
+  WEBHOOK_HTTP_CLIENT_MAX_IDLE_CONNS: {{ .Values.inbound.configmap.WEBHOOK_HTTP_CLIENT_MAX_IDLE_CONNS | default "100" | quote }}
+  WEBHOOK_HTTP_CLIENT_IDLE_CONN_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_HTTP_CLIENT_IDLE_CONN_TIMEOUT | default "90s" | quote }}
+
+  # Circuit Breaker Configuration
+  WEBHOOK_CIRCUIT_BREAKER_FAILURE_THRESHOLD: {{ .Values.inbound.configmap.WEBHOOK_CIRCUIT_BREAKER_FAILURE_THRESHOLD | default "10" | quote }}
+  WEBHOOK_CIRCUIT_BREAKER_SUCCESS_THRESHOLD: {{ .Values.inbound.configmap.WEBHOOK_CIRCUIT_BREAKER_SUCCESS_THRESHOLD | default "2" | quote }}
+  WEBHOOK_CIRCUIT_BREAKER_OPEN_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_CIRCUIT_BREAKER_OPEN_TIMEOUT | default "30s" | quote }}
+
+  # Retry Configuration
+  WEBHOOK_RETRY_BASE_BACKOFF: {{ .Values.inbound.configmap.WEBHOOK_RETRY_BASE_BACKOFF | default "2s" | quote }}
+  WEBHOOK_RETRY_MAX_BACKOFF: {{ .Values.inbound.configmap.WEBHOOK_RETRY_MAX_BACKOFF | default "1h" | quote }}
+  WEBHOOK_RETRY_JITTER_FRACTION: {{ .Values.inbound.configmap.WEBHOOK_RETRY_JITTER_FRACTION | default "0.2" | quote }}
+  WEBHOOK_RETRY_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_RETRY_MAX_RETRIES | default "5" | quote }}
+
+  # ========================================
+  # Entity-Specific Configurations
+  # Format: WEBHOOK_ENTITY_<ENTITY_TYPE>_<PARAM>
+  #
+  # Throughput Guidelines:
+  # - High (>1000/min):   workers=4-5, batch=150-200, polling=500ms, concurrent=6-8
+  # - Medium (100-1000/min): workers=2-3, batch=50-100, polling=1-2s, concurrent=4
+  # - Low (<100/min):     workers=1, batch=20-50, polling=3-5s, concurrent=2
+  # ========================================
+
+  # DICT_CLAIM - PIX key claims (Medium Throughput)
+  WEBHOOK_ENTITY_DICT_CLAIM_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_DICT_CLAIM_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_WORKER_COUNT | default "3" | quote }}
+  WEBHOOK_ENTITY_DICT_CLAIM_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_BATCH_SIZE | default "100" | quote }}
+  WEBHOOK_ENTITY_DICT_CLAIM_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_POLLING_INTERVAL | default "1s" | quote }}
+  WEBHOOK_ENTITY_DICT_CLAIM_PROCESSING_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_PROCESSING_TIMEOUT | default "12s" | quote }}
+  WEBHOOK_ENTITY_DICT_CLAIM_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_ENTITY_DICT_CLAIM_MAX_PENDING_TIME: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_MAX_PENDING_TIME | default "2m" | quote }}
+  WEBHOOK_ENTITY_DICT_CLAIM_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_MAX_CONCURRENT | default "4" | quote }}
+
+  # INFRACTION_REPORT_V2 - Infraction reports (Medium Throughput)
+  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_WORKER_COUNT | default "2" | quote }}
+  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_POLLING_INTERVAL | default "5s" | quote }}
+  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_PROCESSING_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_PROCESSING_TIMEOUT | default "15s" | quote }}
+  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_MAX_PENDING_TIME: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_MAX_PENDING_TIME | default "5m" | quote }}
+  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_MAX_CONCURRENT | default "4" | quote }}
+
+  # DICT_REFUND - PIX refunds (Medium Throughput)
+  WEBHOOK_ENTITY_DICT_REFUND_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_DICT_REFUND_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_WORKER_COUNT | default "2" | quote }}
+  WEBHOOK_ENTITY_DICT_REFUND_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_ENTITY_DICT_REFUND_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_POLLING_INTERVAL | default "2s" | quote }}
+  WEBHOOK_ENTITY_DICT_REFUND_PROCESSING_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_PROCESSING_TIMEOUT | default "15s" | quote }}
+  WEBHOOK_ENTITY_DICT_REFUND_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_ENTITY_DICT_REFUND_MAX_PENDING_TIME: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_MAX_PENDING_TIME | default "5m" | quote }}
+  WEBHOOK_ENTITY_DICT_REFUND_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_MAX_CONCURRENT | default "4" | quote }}
+
+  # DICT_CID_FILE - CID file processing (Low Throughput)
+  WEBHOOK_ENTITY_DICT_CID_FILE_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_DICT_CID_FILE_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_WORKER_COUNT | default "1" | quote }}
+  WEBHOOK_ENTITY_DICT_CID_FILE_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_BATCH_SIZE | default "20" | quote }}
+  WEBHOOK_ENTITY_DICT_CID_FILE_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_POLLING_INTERVAL | default "5s" | quote }}
+  WEBHOOK_ENTITY_DICT_CID_FILE_PROCESSING_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_PROCESSING_TIMEOUT | default "20s" | quote }}
+  WEBHOOK_ENTITY_DICT_CID_FILE_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_ENTITY_DICT_CID_FILE_MAX_PENDING_TIME: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_MAX_PENDING_TIME | default "10m" | quote }}
+  WEBHOOK_ENTITY_DICT_CID_FILE_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_MAX_CONCURRENT | default "2" | quote }}
+
+  # PIX_DOWNLOAD - PIX downloads (High Throughput)
+  WEBHOOK_ENTITY_PIX_DOWNLOAD_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_DOWNLOAD_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_WORKER_COUNT | default "5" | quote }}
+  WEBHOOK_ENTITY_PIX_DOWNLOAD_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_BATCH_SIZE | default "200" | quote }}
+  WEBHOOK_ENTITY_PIX_DOWNLOAD_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_POLLING_INTERVAL | default "500ms" | quote }}
+  WEBHOOK_ENTITY_PIX_DOWNLOAD_PROCESSING_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_PROCESSING_TIMEOUT | default "10s" | quote }}
+  WEBHOOK_ENTITY_PIX_DOWNLOAD_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_ENTITY_PIX_DOWNLOAD_MAX_PENDING_TIME: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_MAX_PENDING_TIME | default "3m" | quote }}
+  WEBHOOK_ENTITY_PIX_DOWNLOAD_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_MAX_CONCURRENT | default "8" | quote }}
+
+  # PIX_PAYMENT - PIX payments (High Throughput)
+  WEBHOOK_ENTITY_PIX_PAYMENT_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_WORKER_COUNT | default "5" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_BATCH_SIZE | default "200" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_POLLING_INTERVAL | default "500ms" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_PROCESSING_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_PROCESSING_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_MAX_PENDING_TIME: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_MAX_PENDING_TIME | default "5m" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_MAX_CONCURRENT | default "8" | quote }}
+
+  # PIX_PAYMENT_INBOUND - PIX inbound payments (High Throughput)
+  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_WORKER_COUNT | default "5" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_BATCH_SIZE | default "200" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_POLLING_INTERVAL | default "500ms" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_PROCESSING_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_PROCESSING_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_MAX_PENDING_TIME: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_MAX_PENDING_TIME | default "5m" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_MAX_CONCURRENT | default "8" | quote }}
+
+  # PIX_REVERSAL - PIX reversals (Medium Throughput)
+  WEBHOOK_ENTITY_PIX_REVERSAL_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_WORKER_COUNT | default "2" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_POLLING_INTERVAL | default "2s" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_PROCESSING_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_PROCESSING_TIMEOUT | default "15s" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_MAX_PENDING_TIME: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_MAX_PENDING_TIME | default "5m" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_MAX_CONCURRENT | default "4" | quote }}
+
+  # PIX_REVERSAL_INBOUND - PIX inbound reversals (Medium Throughput)
+  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_WORKER_COUNT | default "2" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_POLLING_INTERVAL | default "2s" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_PROCESSING_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_PROCESSING_TIMEOUT | default "15s" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_MAX_RETRIES: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_MAX_PENDING_TIME: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_MAX_PENDING_TIME | default "5m" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_MAX_CONCURRENT | default "4" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.inbound.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

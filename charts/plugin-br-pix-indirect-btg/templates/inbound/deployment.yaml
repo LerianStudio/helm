@@ -23,10 +23,6 @@ spec:
     {{- end }}
       securityContext:
         {{- toYaml .Values.inbound.podSecurityContext | nindent 8 }}
-      hostAliases:
-      - ip: "54.233.251.214"
-        hostnames:
-        - "api.sandbox.developer.btgpactual.com"
       containers:
         - name: {{ include "inbound.fullname" . }}
           image: {{ .Values.inbound.image.repository }}:{{ .Values.inbound.image.tag }}

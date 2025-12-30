@@ -2,8 +2,8 @@ pix:
   replicaCount: 1
   autoscaling:
     enabled: true
-    minReplicas: 1
-    maxReplicas: 3
+    minReplicas: 3
+    maxReplicas: 9
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
 
@@ -40,6 +40,8 @@ pix:
     MIDAZ_LEDGER_ID: ""
     CASHIN_FEE_CALCULATION_TYPE: "segment"
     ORGANIZATION_IDS: global
+    ENTRY_WRITE_BLOCK_START: ""
+    ENTRY_WRITE_BLOCK_END: ""
 
   secrets:
     DB_PASSWORD: "lerian"

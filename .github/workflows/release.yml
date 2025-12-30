@@ -228,7 +228,6 @@ jobs:
     needs:
       - get-changed-paths
       - release-helm-chart
-      - generate_changelog
     name: 🔀 Back Merge to Develop
     if: needs.get-changed-paths.outputs.matrix != '[]' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

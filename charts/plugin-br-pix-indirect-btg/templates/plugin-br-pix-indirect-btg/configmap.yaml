@@ -120,6 +120,13 @@ data:
   # LICENSE
   ORGANIZATION_IDS: {{ .Values.pix.configmap.ORGANIZATION_IDS | default "" | quote }}
 
+  # ENTRY WRITE BLOCK WINDOW
+  ENTRY_WRITE_BLOCK_START: {{ .Values.pix.configmap.ENTRY_WRITE_BLOCK_START | default "" | quote }}
+  ENTRY_WRITE_BLOCK_END: {{ .Values.pix.configmap.ENTRY_WRITE_BLOCK_END | default "" | quote }}
+
+# RECONCILIATION
+  RECONCILIATION_INTERNAL_CIDR: {{ .Values.pix.configmap.RECONCILIATION_INTERNAL_CIDR | default "" | quote }}
+
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

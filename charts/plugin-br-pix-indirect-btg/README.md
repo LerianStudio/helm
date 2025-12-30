@@ -1,88 +1,59 @@
-# Plugin BR PIX Indirect BTG - Helm Chart
+# Plugin BR PIX Indirect BTG Helm Chart
 
-This Helm chart deploys **Plugin BR PIX Indirect BTG** for Midaz, enabling PIX instant payment integration with BTG Pactual.
+Source code can be found here:
+* https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-pix-indirect-btg
+* https://github.com/LerianStudio/midaz
 
-## 📋 Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Required Configuration](#required-configuration)
-- [Installation](#installation)
-- [Configuration Examples](#configuration-examples)
-- [Upgrading](#upgrading)
-- [Uninstalling](#uninstalling)
-- [Parameters](#parameters)
-- [Support](#support)
+This helm chart installs the Plugin BR PIX Indirect BTG for Midaz, enabling PIX instant payment integration with BTG Pactual.
 
 ---
 
-## Prerequisites
+## Install Plugin BR PIX Indirect BTG Helm Chart:
 
-- Kubernetes cluster (1.19+)
-- Helm 3.x
-- BTG Pactual API credentials
-- Midaz platform credentials
-- Valid PIX ISPB code
+To install the Plugin BR PIX Indirect BTG using Helm, run the following command:
+
+```console
+$ helm install plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 1.1.0-beta.2 -n midaz-plugins --create-namespace
+```
+
+This will create a new namespace called midaz-plugins if it doesn't already exist and deploy the Plugin BR PIX Indirect BTG Helm chart.
+
+After installation, you can verify that the release was successful by listing the Helm releases in the midaz-plugins namespace:
+
+```console
+$ helm list -n midaz-plugins
+```
 
 ---
 
-## Quick Start
+## Required Configuration
 
-### 1. Customize Values Template
+Before deploying, you must configure the following required fields. The chart will fail validation if these are not set
+
+Create a custom values file (e.g., `values-custom.yaml`) with the required configuration:
 
 ```yaml
 pix:
   configmap:
-    # BTG Configuration (REQUIRED)
-    BTG_BASE_URL: "https://api.btgpactual.com"  # Production
-    # BTG_BASE_URL: "https://api.sandbox.developer.btgpactual.com"  # Sandbox
+    BTG_BASE_URL: "https://api.btgpactual.com"  # or sandbox URL
     PIX_ISPB: "12345678"  # Your bank's ISPB (8 digits)
-
-    # Midaz Configuration (REQUIRED)
     MIDAZ_ORGANIZATION_ID: "your-organization-id"
     MIDAZ_LEDGER_ID: "your-ledger-id"
 
-    # Fee Configuration
-    CASHIN_FEE_CALCULATION_TYPE: "segment"
-
-    # License
-    ORGANIZATION_IDS: global
-
   secrets:
-    # BTG Credentials (REQUIRED)
     BTG_CLIENT_ID: "your-btg-client-id"
     BTG_CLIENT_SECRET: "your-btg-client-secret"
-
-    # Midaz Credentials (REQUIRED)
     MIDAZ_CLIENT_ID: "your-midaz-client-id"
     MIDAZ_CLIENT_SECRET: "your-midaz-client-secret"
-
-    # Database Passwords (CHANGE FROM DEFAULTS)
+    LICENSE_KEY: "your-license-key"
     DB_PASSWORD: "strong-database-password"
     DB_REPLICA_PASSWORD: "strong-replica-password"
-    REPLICATION_PASSWORD: "strong-replication-password"
     MONGO_PASSWORD: "strong-mongo-password"
-    REDIS_PASSWORD: ""  # Optional, only if valkey auth is enabled
 
-    # License (REQUIRED)
-    LICENSE_KEY: "your-license-key"
-
-    # CRM Credentials (Optional)
-    PLUGIN_CRM_CLIENT_ID: ""
-    PLUGIN_CRM_CLIENT_SECRET: ""
-
-# Outbound Worker (sends webhook notifications to your API)
 outbound:
   configmap:
-    # Webhook URLs (REQUIRED for notifications)
     WEBHOOK_CLIENT_URL: "https://your-api.com/webhook"
-    WEBHOOK_DICT_CLAIM_URL: "https://your-api.com/webhook/dict-claim"
-    WEBHOOK_DICT_INFRACTION_REPORT_URL: "https://your-api.com/webhook/dict-infraction"
-    WEBHOOK_DICT_REFUND_URL: "https://your-api.com/webhook/dict-refund"
-    WEBHOOK_TRANSFER_CASHIN_URL: "https://your-api.com/webhook/transfer-in"
-    WEBHOOK_TRANSFER_CASHOUT_URL: "https://your-api.com/webhook/transfer-out"
 
-# Database configuration (optional - uses bundled PostgreSQL/MongoDB/Valkey by default)
 postgresql:
   auth:
     password: "strong-postgresql-password"
@@ -92,206 +63,216 @@ mongodb:
     rootPassword: "strong-mongodb-password"
 ```
 
-> **Note:** Internal service URLs (CRM, Transaction, Onboarding, Auth, Fee) use Kubernetes DNS defaults and don't need to be configured. Database, MongoDB, and Redis hosts also have sensible defaults for the bundled dependencies.
+Then install with your custom values:
 
-### 2. Install the Chart
-
-```bash
-helm install plugin-pix-btg . \
-  -f values-custom.yaml \
-  --namespace your-namespace \
-  --create-namespace
-```
-
-### 3. Verify Installation
-
-```bash
-# Check pods status
-kubectl get pods -n your-namespace
-
-# Check logs
-kubectl logs -n your-namespace -l app.kubernetes.io/name=plugin-br-pix-indirect-btg -f
+```console
+$ helm install plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 1.1.0-beta.2 -f values-custom.yaml -n midaz-plugins --create-namespace
 ```
 
 ---
 
-## Required Configuration
+## Plugin Components:
 
-The following fields are **REQUIRED** and will cause deployment to fail if not set:
+The Plugin BR PIX Indirect BTG system consists of three main components:
 
-### BTG Configuration
-- `pix.configmap.BTG_BASE_URL` - BTG API endpoint
-- `pix.configmap.PIX_ISPB` - Your bank's ISPB code
-- `pix.secrets.BTG_CLIENT_ID` - BTG client ID
-- `pix.secrets.BTG_CLIENT_SECRET` - BTG client secret
+### PIX Service:
 
-### Midaz Configuration
-- `pix.configmap.MIDAZ_ORGANIZATION_ID` - Midaz organization ID
-- `pix.configmap.MIDAZ_LEDGER_ID` - Midaz ledger ID
-- `pix.secrets.MIDAZ_CLIENT_ID` - Midaz client ID
-- `pix.secrets.MIDAZ_CLIENT_SECRET` - Midaz client secret
+| Parameter | Description | Default Value |
+|---|---|---|
+| `pix.name` | Service name. | `"plugin-br-pix-indirect-btg"` |
+| `pix.replicaCount` | Number of replicas for the deployment. | `1` |
+| `pix.image.repository` | Repository for the container image. | `"ghcr.io/lerianstudio/plugin-br-pix-indirect-btg"` |
+| `pix.image.pullPolicy` | Image pull policy. | `"Always"` |
+| `pix.image.tag` | Image tag used for deployment. | `"1.0.0-rc.11"` |
+| `pix.imagePullSecrets` | Secrets for pulling images from a private registry. | `[]` |
+| `pix.nameOverride` | Overrides the default generated name by Helm. | `""` |
+| `pix.fullnameOverride` | Overrides the full name generated by Helm. | `""` |
+| `pix.podAnnotations` | Pod annotations for additional metadata. | `{}` |
+| `pix.podSecurityContext` | Security context applied at the pod level. | `{}` |
+| `pix.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
+| `pix.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `true` |
+| `pix.pdb.minAvailable` | Minimum number of available pods. | `1` |
+| `pix.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
+| `pix.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
+| `pix.service.type` | Kubernetes service type. | `"ClusterIP"` |
+| `pix.service.port` | Port for the HTTP API. | `4014` |
+| `pix.service.annotations` | Annotations for the service. | `{}` |
+| `pix.ingress.enabled` | Specifies whether Ingress is enabled. | `false` |
+| `pix.ingress.className` | Ingress class name. | `""` |
+| `pix.ingress.annotations` | Additional ingress annotations. | `{}` |
+| `pix.ingress.hosts` | Configured hosts for Ingress and associated paths. | `[]` |
+| `pix.ingress.tls` | TLS configurations for Ingress. | `[]` |
+| `pix.resources.*` | CPU/Memory resource requests/limits. | See `values.yaml` |
+| `pix.autoscaling.enabled` | Specifies whether autoscaling is enabled. | `true` |
+| `pix.autoscaling.minReplicas` | Minimum number of replicas for autoscaling. | `1` |
+| `pix.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `3` |
+| `pix.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling. | `80` |
+| `pix.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling. | `80` |
+| `pix.nodeSelector` | Node selectors for pod scheduling. | `{}` |
+| `pix.tolerations` | Tolerations for pod scheduling. | `{}` |
+| `pix.affinity` | Affinity rules for pod scheduling. | `{}` |
+| `pix.configmap.*` | Environment variables for the service. | See `values.yaml` |
+| `pix.secrets.*` | Secrets for the service. | See `values.yaml` |
+| `pix.useExistingSecrets` | Use an existing secret instead of creating a new one. | `false` |
+| `pix.existingSecretName` | The name of the existing secret to use. | `""` |
+| `pix.extraEnvVars` | A list of extra environment variables. | `[]` |
 
-### License
-- `pix.secrets.LICENSE_KEY` - Your license key
+#### Creating PIX Secret Manually
 
-### Security
-⚠️ **IMPORTANT**: Change default passwords before production deployment:
-- `pix.secrets.DB_PASSWORD`
-- `pix.secrets.DB_REPLICA_PASSWORD`
-- `pix.secrets.REPLICATION_PASSWORD`
-- `pix.secrets.MONGO_PASSWORD`
-- `postgresql.auth.password`
-- `mongodb.auth.rootPassword`
+If you want to use an existing Kubernetes Secret for the pix service, you can create it manually with the following command:
 
----
-
-## Installation
-
-### From OCI Registry
-
-```bash
-helm install plugin-pix-btg \
-  oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg \
-  --version <version> \
-  -f values-custom.yaml \
-  -n your-namespace \
-  --create-namespace
+```console
+kubectl create secret generic plugin-br-pix-indirect-btg-pix \
+  --from-literal=BTG_CLIENT_ID='<your-btg-client-id>' \
+  --from-literal=BTG_CLIENT_SECRET='<your-btg-client-secret>' \
+  --from-literal=MIDAZ_CLIENT_ID='<your-midaz-client-id>' \
+  --from-literal=MIDAZ_CLIENT_SECRET='<your-midaz-client-secret>' \
+  --from-literal=LICENSE_KEY='<your-license-key>' \
+  --from-literal=DB_PASSWORD='<your-db-password>' \
+  --from-literal=DB_REPLICA_PASSWORD='<your-db-replica-password>' \
+  --from-literal=REPLICATION_PASSWORD='<your-replication-password>' \
+  --from-literal=MONGO_PASSWORD='<your-mongo-password>' \
+  --from-literal=REDIS_PASSWORD='<your-redis-password>' \
+  --from-literal=PLUGIN_CRM_CLIENT_ID='<your-crm-client-id>' \
+  --from-literal=PLUGIN_CRM_CLIENT_SECRET='<your-crm-client-secret>' \
+  -n midaz-plugins
 ```
 
-### From Local Chart
-
-```bash
-helm install plugin-pix-btg . \
-  -f values-custom.yaml \
-  -n your-namespace \
-  --create-namespace
-```
-
----
-
-## Configuration Examples
-
-The `values-template.yaml` file contains all configurable options with comments. Here are environment-specific overrides:
-
-### Production Environment
-
-Create `values-production.yaml`:
+Then configure the pix service to use this existing secret:
 
 ```yaml
 pix:
-  autoscaling:
-    minReplicas: 3
-    maxReplicas: 9
-    targetCPUUtilizationPercentage: 70
-  configmap:
-    BTG_BASE_URL: "https://api.btgpactual.com"
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-
-outbound:
-  configmap:
-    ENV_NAME: "production"
-
-postgresql:
-  persistence:
-    size: 50Gi
-    storageClass: "fast-ssd"
-  resources:
-    limits:
-      cpu: 2000m
-      memory: 4Gi
-
-mongodb:
-  persistence:
-    enabled: true
-    size: 20Gi
+  useExistingSecrets: true
+  existingSecretName: "plugin-br-pix-indirect-btg-pix"
 ```
 
-Then deploy with:
-```bash
-helm install plugin-pix-btg . \
-  -f values-template.yaml \
-  -f values-production.yaml \
-  -n production
+### Inbound Worker Configuration
+
+| Parameter | Description | Default Value |
+|---|---|---|
+| `inbound.name` | Service name. | `"plugin-br-pix-indirect-btg-worker-inbound"` |
+| `inbound.replicaCount` | Number of replicas for the inbound worker. | `1` |
+| `inbound.image.repository` | Repository for the inbound worker container image. | `"ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-inbound"` |
+| `inbound.image.pullPolicy` | Image pull policy. | `"Always"` |
+| `inbound.image.tag` | Image tag used for deployment. | `"1.0.0-rc.11"` |
+| `inbound.imagePullSecrets` | Secrets for pulling images from a private registry. | `[]` |
+| `inbound.podAnnotations` | Pod annotations for additional metadata. | `{}` |
+| `inbound.podSecurityContext` | Security context for the pod. | `{}` |
+| `inbound.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
+| `inbound.pdb.enabled` | Enable or disable PodDisruptionBudget. | `true` |
+| `inbound.pdb.minAvailable` | Minimum number of available pods. | `1` |
+| `inbound.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
+| `inbound.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
+| `inbound.service.type` | Kubernetes service type. | `"ClusterIP"` |
+| `inbound.service.port` | Port for the HTTP API. | `4016` |
+| `inbound.service.annotations` | Annotations for the service. | `{}` |
+| `inbound.ingress.enabled` | Enable or disable ingress. | `false` |
+| `inbound.ingress.className` | Ingress class name. | `""` |
+| `inbound.ingress.annotations` | Additional ingress annotations. | `{}` |
+| `inbound.ingress.hosts` | Configured hosts for ingress and associated paths. | `[]` |
+| `inbound.ingress.tls` | TLS configuration for ingress. | `[]` |
+| `inbound.resources.*` | CPU/Memory resource requests/limits. | See `values.yaml` |
+| `inbound.autoscaling.enabled` | Enable or disable horizontal pod autoscaling. | `true` |
+| `inbound.autoscaling.minReplicas` | Minimum number of replicas for autoscaling. | `1` |
+| `inbound.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `3` |
+| `inbound.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling. | `80` |
+| `inbound.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling. | `80` |
+| `inbound.nodeSelector` | Node selector for scheduling pods on specific nodes. | `{}` |
+| `inbound.tolerations` | Tolerations for scheduling on tainted nodes. | `{}` |
+| `inbound.affinity` | Affinity rules for pod scheduling. | `{}` |
+| `inbound.configmap.*` | Environment variables for the service. | See `values.yaml` |
+| `inbound.secrets.*` | Secrets for the service. | See `values.yaml` |
+| `inbound.useExistingSecrets` | Use an existing secret instead of creating a new one. | `false` |
+| `inbound.existingSecretName` | The name of the existing secret to use. | `""` |
+| `inbound.extraEnvVars` | A list of extra environment variables. | `[]` |
+
+#### Creating Inbound Secret Manually
+
+If you want to use an existing Kubernetes Secret for the inbound worker, you can create it manually with the following command:
+
+```console
+kubectl create secret generic plugin-br-pix-indirect-btg-inbound \
+  --from-literal=DB_PASSWORD='<your-db-password>' \
+  --from-literal=DB_REPLICA_PASSWORD='<your-db-replica-password>' \
+  --from-literal=MONGO_PASSWORD='<your-mongo-password>' \
+  -n midaz-plugins
 ```
 
-### Staging Environment
-
-Create `values-staging.yaml`:
+Then configure the inbound service to use this existing secret:
 
 ```yaml
-pix:
-  autoscaling:
-    minReplicas: 1
-    maxReplicas: 3
-  configmap:
-    BTG_BASE_URL: "https://api-h.developer.btgpactual.com"
-
-outbound:
-  configmap:
-    ENV_NAME: "staging"
-
-postgresql:
-  persistence:
-    size: 10Gi
+inbound:
+  useExistingSecrets: true
+  existingSecretName: "plugin-br-pix-indirect-btg-inbound"
 ```
 
-### Development Environment
+### Outbound Worker Configuration
 
-Create `values-development.yaml`:
+| Parameter | Description | Default Value |
+|---|---|---|
+| `outbound.name` | Service name. | `"plugin-br-pix-indirect-btg-worker-outbound"` |
+| `outbound.replicaCount` | Number of replicas for the outbound worker. | `1` |
+| `outbound.image.repository` | Repository for the outbound worker container image. | `"ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-outbound"` |
+| `outbound.image.pullPolicy` | Image pull policy. | `"Always"` |
+| `outbound.image.tag` | Image tag used for deployment. | `"1.0.0-rc.11"` |
+| `outbound.imagePullSecrets` | Secrets for pulling images from a private registry. | `[]` |
+| `outbound.podAnnotations` | Pod annotations for additional metadata. | `{}` |
+| `outbound.podSecurityContext` | Security context for the pod. | `{}` |
+| `outbound.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
+| `outbound.pdb.enabled` | Enable or disable PodDisruptionBudget. | `true` |
+| `outbound.pdb.minAvailable` | Minimum number of available pods. | `1` |
+| `outbound.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
+| `outbound.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
+| `outbound.service.type` | Kubernetes service type. | `"ClusterIP"` |
+| `outbound.service.port` | Port for the HTTP API. | `4015` |
+| `outbound.service.annotations` | Annotations for the service. | `{}` |
+| `outbound.ingress.enabled` | Enable or disable ingress. | `false` |
+| `outbound.ingress.className` | Ingress class name. | `""` |
+| `outbound.ingress.annotations` | Additional ingress annotations. | `{}` |
+| `outbound.ingress.hosts` | Configured hosts for ingress and associated paths. | `[]` |
+| `outbound.ingress.tls` | TLS configuration for ingress. | `[]` |
+| `outbound.resources.*` | CPU/Memory resource requests/limits. | See `values.yaml` |
+| `outbound.autoscaling.enabled` | Enable or disable horizontal pod autoscaling. | `true` |
+| `outbound.autoscaling.minReplicas` | Minimum number of replicas for autoscaling. | `1` |
+| `outbound.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `3` |
+| `outbound.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling. | `80` |
+| `outbound.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling. | `80` |
+| `outbound.nodeSelector` | Node selector for scheduling pods on specific nodes. | `{}` |
+| `outbound.tolerations` | Tolerations for scheduling on tainted nodes. | `{}` |
+| `outbound.affinity` | Affinity rules for pod scheduling. | `{}` |
+| `outbound.configmap.*` | Environment variables for the service. | See `values.yaml` |
+| `outbound.secrets.*` | Secrets for the service. | See `values.yaml` |
+| `outbound.useExistingSecrets` | Use an existing secret instead of creating a new one. | `false` |
+| `outbound.existingSecretName` | The name of the existing secret to use. | `""` |
+| `outbound.extraEnvVars` | A list of extra environment variables. | `[]` |
+
+#### Creating Outbound Secret Manually
+
+If you want to use an existing Kubernetes Secret for the outbound worker, you can create it manually with the following command:
+
+```console
+kubectl create secret generic plugin-br-pix-indirect-btg-outbound \
+  --from-literal=DB_PASSWORD='<your-db-password>' \
+  --from-literal=DB_REPLICA_PASSWORD='<your-db-replica-password>' \
+  --from-literal=MONGO_PASSWORD='<your-mongo-password>' \
+  -n midaz-plugins
+```
+
+Then configure the outbound service to use this existing secret:
 
 ```yaml
-pix:
-  autoscaling:
-    enabled: false
-  replicaCount: 1
-  configmap:
-    BTG_BASE_URL: "https://api.sandbox.developer.btgpactual.com"
-
 outbound:
-  configmap:
-    ENV_NAME: "development"
-
-postgresql:
-  persistence:
-    size: 5Gi
+  useExistingSecrets: true
+  existingSecretName: "plugin-br-pix-indirect-btg-outbound"
 ```
-
----
-
-## Upgrading
-
-To upgrade the chart to a new version:
-
-```bash
-helm upgrade plugin-pix-btg \
-  oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg \
-  --version <new-version> \
-  -f values-custom.yaml \
-  -n your-namespace
-```
-
----
-
-## Uninstalling
-
-To uninstall the chart:
-
-```bash
-helm uninstall plugin-pix-btg -n your-namespace
-```
-
-**Note**: This will also delete the bundled PostgreSQL and MongoDB instances. Ensure you have backups if needed.
 
 ---
 
 ## Configuring Ingress for Different Controllers
 
-The Plugin pix Helm Chart optionally supports different Ingress Controllers for exposing services when necessary. Below are the configurations for commonly used controllers.
+The Plugin BR PIX Indirect BTG Helm Chart optionally supports different Ingress Controllers for exposing services when necessary. It is possible to enable Ingress for the following services: PIX, Inbound Worker, and Outbound Worker. Below are the configurations for commonly used controllers.
 
-- **Note:** Before configuring Ingress, ensure that you have an Ingress Controller installed in your cluster. Examples include NGINX, AWS ALB, and Traefik.
+- **Note:** Before configuring Ingress, ensure that you have an Ingress Controller installed in your cluster. The Ingress Controller is responsible for managing external access to the services. Examples of popular Ingress Controllers include NGINX, AWS ALB, and Traefik.
 
 ### NGINX Ingress Controller
 To use the **NGINX Ingress Controller**, configure the `values.yaml` as follows:
@@ -303,158 +284,184 @@ pix:
     className: "nginx"
     annotations: {}
     hosts:
-      - host: midaz.example.com
+      - host: pix.example.com
         paths:
           - path: /
             pathType: Prefix
     tls:
-      - secretName: midaz-tls
+      - secretName: pix-tls
         hosts:
-          - midaz.example.com
+          - pix.example.com
 ```
 
 ---
 
-## Parameters
+### AWS ALB (Application Load Balancer)
+For **AWS ALB Ingress Controller**, use the following configuration:
 
-### pix Service
+```yaml
+pix:
+  ingress:
+    enabled: true
+    className: "alb"
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internal
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/group.name: "plugin-pix"
+      alb.ingress.kubernetes.io/healthcheck-path: "/healthz"
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    hosts:
+      - host: pix.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+```
 
-| Parameter | Description | Default |
-| --- | --- | --- |
-| `pix.replicaCount` | Number of replicas for the deployment | `1` |
-| `pix.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-pix-indirect-btg` |
-| `pix.image.pullPolicy` | Image pull policy | `Always` |
-| `pix.image.tag` | Image tag used for deployment | `""` (defaults to Chart.AppVersion) |
-| `pix.imagePullSecrets` | Secrets for pulling images from a private registry | `{}` |
-| `pix.revisionHistoryLimit` | Old ReplicaSets to retain | `10` |
-| `pix.nameOverride` | Overrides the default generated name by Helm | `""` |
-| `pix.fullnameOverride` | Overrides the full name generated by Helm | `""` |
-| `pix.ingress.enabled` | Enable or disable ingress | `false` |
-| `pix.ingress.className` | Ingress class name | `""` |
-| `pix.ingress.annotations` | Additional ingress annotations | `{}` |
-| `pix.ingress.hosts` | Ingress host configuration | `[{"host": "", "paths": [{"path": "/", "pathType": "Prefix"}]}]` |
-| `pix.ingress.tls` | TLS configuration for ingress | `[]` |
-| `pix.service.type` | Kubernetes service type | `ClusterIP` |
-| `pix.service.port` | Service port | `4014` |
-| `pix.deploymentStrategy` | Deployment strategy | See `values.yaml` |
-| `pix.podSecurityContext` | Pod security context | `{}` |
-| `pix.securityContext` | Security context for the container | See `values.yaml` |
-| `pix.pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
-| `pix.pdb.maxUnavailable` | Maximum number of unavailable pods | `1` |
-| `pix.pdb.minAvailable` | Minimum number of available pods | `0` |
-| `pix.resources` | CPU and memory limits for pods | See `values.yaml` |
-| `pix.autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `true` |
-| `pix.autoscaling.minReplicas` | Minimum number of replicas | `1` |
-| `pix.autoscaling.maxReplicas` | Maximum number of replicas | `3` |
-| `pix.nodeSelector` | Node selector for scheduling pods | `{}` |
-| `pix.tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
-| `pix.affinity` | Affinity rules for pod scheduling | `{}` |
-| `pix.extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
-| `pix.useExistingSecrets` | Use an existing secret instead of creating a new one | `false` |
-| `pix.existingSecretName` | The name of the existing secret to use | `""` |
-| `pix.configmap.BTG_BASE_URL` | BTG API endpoint (REQUIRED) | `""` |
-| `pix.configmap.PIX_ISPB` | Your bank's ISPB code (REQUIRED) | `""` |
-| `pix.configmap.MIDAZ_ORGANIZATION_ID` | Midaz organization ID (REQUIRED) | `""` |
-| `pix.configmap.MIDAZ_LEDGER_ID` | Midaz ledger ID (REQUIRED) | `""` |
-| `pix.configmap.CASHIN_FEE_CALCULATION_TYPE` | Fee calculation type | `"segment"` |
-| `pix.configmap.ORGANIZATION_IDS` | License organization IDs | `"global"` |
-| `pix.secrets.BTG_CLIENT_ID` | BTG client ID (REQUIRED) | `""` |
-| `pix.secrets.BTG_CLIENT_SECRET` | BTG client secret (REQUIRED) | `""` |
-| `pix.secrets.MIDAZ_CLIENT_ID` | Midaz client ID (REQUIRED) | `""` |
-| `pix.secrets.MIDAZ_CLIENT_SECRET` | Midaz client secret (REQUIRED) | `""` |
-| `pix.secrets.DB_PASSWORD` | Database password | `"lerian"` |
-| `pix.secrets.DB_REPLICA_PASSWORD` | Database replica password | `"lerian"` |
-| `pix.secrets.REPLICATION_PASSWORD` | Replication password | `""` |
-| `pix.secrets.MONGO_PASSWORD` | MongoDB password | `"lerian"` |
-| `pix.secrets.REDIS_PASSWORD` | Redis password | `""` |
-| `pix.secrets.LICENSE_KEY` | License key (REQUIRED) | `""` |
-| `pix.secrets.PLUGIN_CRM_CLIENT_ID` | CRM client ID | `""` |
-| `pix.secrets.PLUGIN_CRM_CLIENT_SECRET` | CRM client secret | `""` |
+---
 
-### Inbound Worker
+### Traefik Ingress Controller
+For **Traefik**, configure the `values.yaml` as follows:
 
-| Parameter | Description | Default |
-| --- | --- | --- |
-| `inbound.replicaCount` | Number of replicas | `1` |
-| `inbound.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-inbound` |
-| `inbound.image.pullPolicy` | Image pull policy | `Always` |
-| `inbound.image.tag` | Image tag used for deployment | `"1.0.0-rc.11"` |
-| `inbound.autoscaling.enabled` | Enable autoscaling | `true` |
-| `inbound.autoscaling.minReplicas` | Minimum replicas | `1` |
-| `inbound.autoscaling.maxReplicas` | Maximum replicas | `3` |
-| `inbound.autoscaling.targetCPUUtilizationPercentage` | Target CPU % | `80` |
-| `inbound.autoscaling.targetMemoryUtilizationPercentage` | Target Memory % | `80` |
-| `inbound.service.type` | Kubernetes service type | `ClusterIP` |
-| `inbound.service.port` | Service port | `4016` |
-| `inbound.resources` | CPU and memory limits | See `values.yaml` |
-| `inbound.useExistingSecrets` | Use existing secret | `false` |
-| `inbound.existingSecretName` | Existing secret name | `""` |
+```yaml
+pix:
+  ingress:
+    enabled: true
+    className: "traefik"
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: "web, websecure"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    hosts:
+      - host: pix.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: pix-tls
+        hosts:
+          - pix.example.com
+```
 
-### Outbound Worker
+---
 
-| Parameter | Description | Default |
-| --- | --- | --- |
-| `outbound.replicaCount` | Number of replicas | `1` |
-| `outbound.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-outbound` |
-| `outbound.image.pullPolicy` | Image pull policy | `Always` |
-| `outbound.image.tag` | Image tag used for deployment | `"1.0.0-rc.11"` |
-| `outbound.autoscaling.enabled` | Enable autoscaling | `true` |
-| `outbound.autoscaling.minReplicas` | Minimum replicas | `1` |
-| `outbound.autoscaling.maxReplicas` | Maximum replicas | `3` |
-| `outbound.autoscaling.targetCPUUtilizationPercentage` | Target CPU % | `80` |
-| `outbound.autoscaling.targetMemoryUtilizationPercentage` | Target Memory % | `80` |
-| `outbound.service.type` | Kubernetes service type | `ClusterIP` |
-| `outbound.service.port` | Service port | `4015` |
-| `outbound.configmap.ENV_NAME` | Environment name | `"development"` |
-| `outbound.configmap.WEBHOOK_CLIENT_URL` | Main webhook URL | `""` |
-| `outbound.configmap.WEBHOOK_DICT_CLAIM_URL` | Dict claim webhook URL | `""` |
-| `outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_URL` | Infraction webhook URL | `""` |
-| `outbound.configmap.WEBHOOK_DICT_REFUND_URL` | Refund webhook URL | `""` |
-| `outbound.configmap.WEBHOOK_TRANSFER_CASHIN_URL` | Cash-in webhook URL | `""` |
-| `outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_URL` | Cash-out webhook URL | `""` |
-| `outbound.resources` | CPU and memory limits | See `values.yaml` |
-| `outbound.useExistingSecrets` | Use existing secret | `false` |
-| `outbound.existingSecretName` | Existing secret name | `""` |
+## Dependencies:
 
-### MongoDB Dependency
+This Chart has the following dependencies for the project's default installation. All dependencies are enabled by default.
 
-| Parameter | Description | Default |
-| --- | --- | --- |
-| `mongodb.enabled` | Enable MongoDB dependency | `true` |
-| `mongodb.image.repository` | MongoDB image repository | `bitnamisecure/mongodb` |
-| `mongodb.image.tag` | MongoDB image tag | `latest` |
-| `mongodb.auth.enabled` | Enable authentication | `true` |
-| `mongodb.auth.rootUser` | Root user | `pix_btg` |
-| `mongodb.auth.rootPassword` | Root password | `lerian` |
+### Valkey
 
-> IMPORTANT: The bundled MongoDB is not intended for production. For production, use an external/managed MongoDB and set `mongodb.enabled=false`.
+- **Version:** 2.4.7
+- **Repository:** https://charts.bitnami.com/bitnami
+- **How to disable:** Set `valkey.enabled` to `false` in the values file.
+- **Note:** If you have an existing Valkey or Redis instance, you can disable this dependency and configure Plugin Components to use your external instance, like this:
 
-### Valkey/Redis Dependency
+  ```yaml
+  pix:
+    configmap:
+      REDIS_HOST: { your-host }:{ your-host-port }
 
-| Parameter | Description | Default |
-| --- | --- | --- |
-| `valkey.enabled` | Enable Valkey dependency | `true` |
-| `valkey.auth.enabled` | Enable authentication | `false` |
+    secrets:
+      REDIS_PASSWORD: { your-host-pass }
 
-> NOTE: Valkey is used for caching and session management. For production, consider enabling authentication.
+  outbound:
+    configmap:
+      REDIS_HOST: { your-host }:{ your-host-port }
+  ```
+  
+### PostgreSQL
 
-### PostgreSQL Dependency
+- **Version:** 16.3.0
+- **Repository:** https://charts.bitnami.com/bitnami
+- **How to disable:** Set `postgresql.enabled` to `false` in the values file.
+- **Note:** If you have an existing PostgreSQL instance, you can disable this dependency and configure Plugin Components to use your external PostgreSQL, like this:
 
-| Parameter | Description | Default |
-| --- | --- | --- |
-| `postgresql.enabled` | Enable the PostgreSQL dependency | `true` |
-| `postgresql.external` | Use an external PostgreSQL instance | `false` |
-| `postgresql.image.repository` | PostgreSQL image repository | `bitnamisecure/postgresql` |
-| `postgresql.image.tag` | PostgreSQL image tag | `latest` |
-| `postgresql.auth.enabled` | Enable authentication | `true` |
-| `postgresql.auth.enablePostgresUser` | Create default postgres user | `false` |
-| `postgresql.auth.username` | Application DB user | `pix_btg` |
-| `postgresql.auth.password` | Application DB password | `lerian` |
-| `postgresql.auth.database` | Application DB name | `pix_btg` |
+  ```yaml
+  pix:
+    configmap:
+      DB_HOST: { your-host }
+      DB_USER: { your-host-user }
+      DB_PORT: { your-host-port }
+      DB_REPLICA_HOST: { your-replication-host }
+      DB_REPLICA_USER: { your-replication-host-user }
+      DB_REPLICA_PORT: { your-replication-host-port}
+    
+    secrets:
+      DB_PASSWORD: { your-host-pass }
+      DB_REPLICA_PASSWORD: { your-replication-host-pass }
 
-> IMPORTANT: The bundled PostgreSQL is not intended for production. For production, use an external/managed PostgreSQL and set `postgresql.enabled=false`.
+  inbound:
+    configmap:
+      DB_HOST: { your-host }
+      DB_USER: { your-host-user }
+      DB_PORT: { your-host-port }
+      DB_REPLICA_HOST: { your-replication-host }
+      DB_REPLICA_USER: { your-replication-host-user }
+      DB_REPLICA_PORT: { your-replication-host-port}
+    
+    secrets:
+      DB_PASSWORD: { your-host-pass }
+      DB_REPLICA_PASSWORD: { your-replication-host-pass }
 
+  outbound:
+    configmap:
+      DB_HOST: { your-host }
+      DB_USER: { your-host-user }
+      DB_PORT: { your-host-port }
+      DB_REPLICA_HOST: { your-replication-host }
+      DB_REPLICA_USER: { your-replication-host-user }
+      DB_REPLICA_PORT: { your-replication-host-port}
+    
+    secrets:
+      DB_PASSWORD: { your-host-pass }
+      DB_REPLICA_PASSWORD: { your-replication-host-pass }
+  ```
 
-## Support
+### MongoDB
 
-For more information, see the [Lerian Studio Documentation](https://docs.lerian.studio/) or contact the maintainers.
+- **Version:** 15.4.5
+- **Repository:** https://charts.bitnami.com/bitnami
+- **How to disable:** Set `mongodb.enabled` to `false` in the values file.
+- **Note:** If you have an existing MongoDB instance, you can disable this dependency and configure Plugin Components to use your external MongoDB, like this:
+
+  ```yaml
+  pix:
+    configmap:
+      MONGO_HOST: { your-host }
+      MONGO_NAME: { your-host-name }
+      MONGO_USER: { your-host-user }
+      MONGO_PORT: { your-host-port }
+    
+    secrets:
+      MONGO_PASSWORD: { your-host-pass }
+
+  inbound:
+    configmap:
+      MONGO_HOST: { your-host }
+      MONGO_NAME: { your-host-name }
+      MONGO_USER: { your-host-user }
+      MONGO_PORT: { your-host-port }
+    
+    secrets:
+      MONGO_PASSWORD: { your-host-pass }
+
+  outbound:
+    configmap:
+      MONGO_HOST: { your-host }
+      MONGO_NAME: { your-host-name }
+      MONGO_USER: { your-host-user }
+      MONGO_PORT: { your-host-port }
+    
+    secrets:
+      MONGO_PASSWORD: { your-host-pass }
+  ```
+
+### OpenTelemetry Collector (Lerian)
+
+- **Note:** This OpenTelemetry collector is used to collect and export telemetry data from Plugin components.
+ - By default, it is enabled.
+ - You can disable it by setting `otel-collector-lerian.enabled` to `false` in the values file.
+
+```yaml
+otel-collector-lerian:
+  enabled: false
+```

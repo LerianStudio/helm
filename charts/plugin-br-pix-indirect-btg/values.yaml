@@ -133,6 +133,9 @@ pix:
     ORGANIZATION_IDS: global
     # Fee Configuration
     CASHIN_FEE_CALCULATION_TYPE: "segment"
+    # Entry Write Block Window
+    ENTRY_WRITE_BLOCK_START: ""
+    ENTRY_WRITE_BLOCK_END: ""
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml

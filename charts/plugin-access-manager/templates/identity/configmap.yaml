@@ -12,7 +12,7 @@ data:
   APPLICATION_NAME: {{ .Values.identity.configmap.APPLICATION_NAME | default "plugin-identity" | quote }}
   SERVER_PORT: {{ .Values.identity.configmap.SERVER_PORT | default "4001" | quote }}
   SERVER_ADDRESS: {{ .Values.identity.configmap.SERVER_ADDRESS | default ":4001" | quote }} 
-  VERSION: "v{{ include "plugin.version" . }}"
+  VERSION: {{ .Values.identity.image.tag | quote }}
 
   # AUTHORIZER
   AUTHORIZER_PORT: {{ .Values.identity.configmap.AUTHORIZER_PORT | default "8000" | quote }}
@@ -29,7 +29,7 @@ data:
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.identity.configmap.SWAGGER_TITLE | default "Plugin Identity API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.identity.configmap.SWAGGER_DESCRIPTION | default "The Identity API provides a set of endpoints for managing users and client credentials." | quote }}
-  SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
+  SWAGGER_VERSION: {{ .Values.identity.image.tag | quote }}
   SWAGGER_HOST: {{ .Values.identity.configmap.SWAGGER_HOST | default (printf "plugin-identity.%s.svc.cluster.local:4001" .Release.Namespace) | quote }}
   SWAGGER_BASE_PATH: {{ .Values.identity.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEME: {{ .Values.identity.configmap.SWAGGER_SCHEME | default "http" | quote }}
@@ -43,7 +43,7 @@ data:
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.identity.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-identity" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.identity.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/identity" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: "v{{ include "plugin.version" . }}"
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.identity.image.tag | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.identity.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }} 

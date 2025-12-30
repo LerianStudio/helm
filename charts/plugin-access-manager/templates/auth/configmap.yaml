@@ -12,7 +12,7 @@ data:
   # APP 
   SERVER_PORT: {{ .Values.auth.configmap.SERVER_PORT | default "4000" | quote }}
   SERVER_ADDRESS: {{ .Values.auth.configmap.SERVER_ADDRESS | default ":4000" | quote }}
-  VERSION: "v{{ include "plugin.version" . }}"
+  VERSION: {{ .Values.auth.image.tag | quote }}
 
   # REDIS
   REDIS_HOST: {{ printf "%s:%s" (.Values.auth.configmap.REDIS_HOST | default (printf "plugin-access-manager-valkey-primary.%s.svc.cluster.local" .Release.Namespace)) (.Values.auth.configmap.REDIS_PORT | default "6379" | toString) | quote }}
@@ -33,7 +33,7 @@ data:
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.auth.configmap.SWAGGER_TITLE | default "Plugin Auth API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.auth.configmap.SWAGGER_DESCRIPTION | default "This is a swagger documentation for the Plugin Auth API" | quote }}
-  SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
+  SWAGGER_VERSION: {{ .Values.auth.image.tag | quote }}
   SWAGGER_HOST: {{ .Values.auth.configmap.SWAGGER_HOST | default (printf "plugin-auth.%s.svc.cluster.local" .Release.Namespace) | quote }}
   SWAGGER_BASE_PATH: {{ .Values.auth.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.auth.configmap.SWAGGER_SCHEMES | default "http" | quote }}
@@ -47,7 +47,7 @@ data:
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.auth.configmap.OTEL_RESOURCE_SERVICE_NAME | default "auth" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.auth.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/auth" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: "v{{ include "plugin.version" . }}"
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.auth.image.tag | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.auth.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }}

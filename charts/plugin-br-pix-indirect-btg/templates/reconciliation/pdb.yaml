@@ -1,0 +1,23 @@
+{{- if .Values.reconciliation.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "reconciliation.fullname" . }}
+  labels:
+    {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 4 }} 
+  {{- with .Values.reconciliation.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.reconciliation.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.reconciliation.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "reconciliation.selectorLabels" (dict "context" . "name" .Values.reconciliation.name) | nindent 6 }}
+{{- end }}

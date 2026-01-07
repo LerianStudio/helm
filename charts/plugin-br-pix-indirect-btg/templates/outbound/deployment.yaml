@@ -33,7 +33,7 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ if .Values.outbound.useExistingSecret }}{{ .Values.outbound.existingSecretName }}{{ else }}{{ include "outbound.fullname" . }}{{ end }}
+              name: {{ if .Values.outbound.useExistingSecrets }}{{ .Values.outbound.existingSecretName }}{{ else }}{{ include "outbound.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "outbound.fullname" . }}
           {{ if (index .Values "otel-collector-lerian").enabled }}

@@ -1,9 +1,10 @@
 {{- if .Values.reconciliation.ingress.enabled -}}
 {{- $fullName := include "reconciliation.fullname" . -}}
 {{- $svcPort := .Values.reconciliation.service.port -}}
+{{- $annotations := .Values.reconciliation.ingress.annotations | default dict -}}
 {{- if and .Values.reconciliation.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.reconciliation.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.reconciliation.ingress.annotations "kubernetes.io/ingress.class" .Values.reconciliation.ingress.className}}
+  {{- if not (hasKey $annotations "kubernetes.io/ingress.class") }}
+  {{- $annotations = merge (dict "kubernetes.io/ingress.class" .Values.reconciliation.ingress.className) $annotations }}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -18,7 +19,7 @@ metadata:
   name: {{ $fullName }}
   labels:
     {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 4 }} 
-  {{- with .Values.reconciliation.ingress.annotations }}
+  {{- with $annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}

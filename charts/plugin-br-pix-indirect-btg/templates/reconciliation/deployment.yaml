@@ -53,14 +53,14 @@ spec:
             httpGet:
               path: /health
               port: {{ .Values.reconciliation.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
-          livenessProbe:
             initialDelaySeconds: 5
             periodSeconds: 5
+          livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.reconciliation.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
       {{- with .Values.reconciliation.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -10,7 +10,7 @@ pix:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg
     pullPolicy: Always
-    tag: "1.0.0-rc.11"
+    tag: "1.0.0-rc.17"
 
   ingress:
     enabled: false
@@ -72,7 +72,7 @@ inbound:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-inbound
     pullPolicy: Always
-    tag: "1.0.0-rc.11"
+    tag: "1.0.0-rc.17"
 
   ingress:
     enabled: false
@@ -116,7 +116,7 @@ outbound:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-outbound
     pullPolicy: Always
-    tag: "1.0.0-rc.11"
+    tag: "1.0.0-rc.17"
 
   ingress:
     enabled: false
@@ -151,6 +151,58 @@ outbound:
     DB_PASSWORD: "lerian"
     DB_REPLICA_PASSWORD: "lerian"
     MONGO_PASSWORD: "lerian"
+
+  useExistingSecrets: false
+  existingSecretName: ""
+
+reconciliation:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-reconciliation
+    pullPolicy: Always
+    tag: "1.0.0-rc.17"
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_USER: "pix_btg"
+    DB_NAME: "pix_btg"
+    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_USER: "pix_btg"
+    DB_REPLICA_NAME: "pix_btg"
+    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    MIDAZ_ORGANIZATION_ID: ""
+    BTG_BASE_URL: ""
+    RECONCILIATION_START_TIME: ""
+    RECONCILIATION_END_TIME: ""
+
+  secrets:
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    REDIS_PASSWORD: ""
+    PLUGIN_CRM_CLIENT_ID: ""
+    PLUGIN_CRM_CLIENT_SECRET: ""
+    BTG_CLIENT_ID: ""
+    BTG_CLIENT_SECRET: ""
+    PLUGIN_PIX_BTG_CLIENT_ID: ""
+    PLUGIN_PIX_BTG_CLIENT_SECRET: ""
 
   useExistingSecrets: false
   existingSecretName: ""

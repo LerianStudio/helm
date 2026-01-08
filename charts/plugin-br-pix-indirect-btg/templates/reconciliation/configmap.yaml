@@ -15,7 +15,7 @@ data:
   DB_PORT: {{ .Values.reconciliation.configmap.DB_PORT | default "5432" | quote }}
   DB_USER: {{ .Values.reconciliation.configmap.DB_USER | default "plugin" | quote }}
   DB_NAME: {{ .Values.reconciliation.configmap.DB_NAME | default "pix_btg" | quote }}
-  DB_SSL_MODE: {{ .Values.reconciliation.configmap.DB_SSL_MODE | default "require" | quote }}
+  DB_SSL_MODE: {{ .Values.reconciliation.configmap.DB_SSL_MODE | default "disable" | quote }}
   DB_MAX_OPEN_CONNS: {{ .Values.reconciliation.configmap.DB_MAX_OPEN_CONNS | default "20" | quote }}
   DB_MAX_IDLE_CONNS: {{ .Values.reconciliation.configmap.DB_MAX_IDLE_CONNS | default "10" | quote }}
   MIGRATIONS_PATH: {{ .Values.reconciliation.configmap.MIGRATIONS_PATH | default "components/infra/migrations" | quote }}

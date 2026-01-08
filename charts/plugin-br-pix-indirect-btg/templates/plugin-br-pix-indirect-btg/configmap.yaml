@@ -98,7 +98,7 @@ data:
   ENABLE_TELEMETRY: {{ .Values.pix.configmap.ENABLE_TELEMETRY | default "true" | quote }}
 
   ## BTG
-  BTG_BASE_URL: {{ .Values.pix.configmap.BTG_BASE_URL | default "https://api.sandbox.developer.btgpactual.com" | quote }}
+  BTG_BASE_URL: {{ .Values.pix.configmap.BTG_BASE_URL | default "https://developer.api.btgpactual.com" | quote }}
 
   ## CRM
   PLUGIN_CRM_BASE_URL: {{ .Values.pix.configmap.PLUGIN_CRM_BASE_URL | default "plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}

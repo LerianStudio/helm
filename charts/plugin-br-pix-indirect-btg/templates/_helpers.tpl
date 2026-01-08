@@ -35,6 +35,13 @@ Expand the name for outbound worker.
 {{- end }}
 
 {{/*
+Expand the name for reconciliation worker.
+*/}}
+{{- define "reconciliation.name" -}}
+{{- default "plugin-br-pix-indirect-btg-worker-reconciliation" .Values.reconciliation.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 ================================================================================
 FULLNAME HELPERS
 ================================================================================
@@ -67,6 +74,13 @@ Create a default fully qualified app name for outbound worker.
 {{- end }}
 
 {{/*
+Create a default fully qualified app name for reconciliation worker.
+*/}}
+{{- define "reconciliation.fullname" -}}
+{{- default "plugin-br-pix-indirect-btg-worker-reconciliation" .Values.reconciliation.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 ================================================================================
 CHART HELPERS
 ================================================================================
@@ -90,6 +104,13 @@ Create chart name for inbound.
 Create chart name for outbound.
 */}}
 {{- define "outbound.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create chart name for reconciliation.
+*/}}
+{{- define "reconciliation.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -137,6 +158,16 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
 {{/*
+Common labels for reconciliation
+*/}}
+{{- define "reconciliation.labels" -}}
+helm.sh/chart: {{ include "reconciliation.chart" .context }}
+{{ include "reconciliation.selectorLabels" (dict "context" .context "name" .name) }}
+app.kubernetes.io/version: {{ include "plugin.version" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
 ================================================================================
 SELECTOR LABEL HELPERS
 ================================================================================
@@ -171,6 +202,16 @@ Selector labels for outbound
 {{- define "outbound.selectorLabels" -}}
 {{- if .name -}}
 app.kubernetes.io/name: {{ include "outbound.name" .context }}
+{{- end }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
+{{/*
+Selector labels for reconciliation
+*/}}
+{{- define "reconciliation.selectorLabels" -}}
+{{- if .name -}}
+app.kubernetes.io/name: {{ include "reconciliation.name" .context }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}

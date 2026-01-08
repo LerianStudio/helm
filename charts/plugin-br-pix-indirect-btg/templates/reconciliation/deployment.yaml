@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reconciliation.fullname" . }}
+  labels:
+    {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 4 }} 
+spec:
+  revisionHistoryLimit: {{ .Values.reconciliation.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml .Values.reconciliation.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.reconciliation.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "reconciliation.selectorLabels" (dict "context" . "name" .Values.reconciliation.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 8 }}
+    spec:
+    {{- with .Values.reconciliation.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.reconciliation.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "reconciliation.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.reconciliation.securityContext | nindent 12 }}
+          image: {{ .Values.reconciliation.image.repository }}:{{ .Values.reconciliation.image.tag }}
+          imagePullPolicy: {{ .Values.reconciliation.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.reconciliation.service.port }}
+              protocol: TCP
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.reconciliation.useExistingSecrets }}{{ .Values.reconciliation.existingSecretName }}{{ else }}{{ include "reconciliation.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "reconciliation.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}  
+          resources:
+            {{- toYaml .Values.reconciliation.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.reconciliation.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.reconciliation.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      {{- with .Values.reconciliation.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.reconciliation.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.reconciliation.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

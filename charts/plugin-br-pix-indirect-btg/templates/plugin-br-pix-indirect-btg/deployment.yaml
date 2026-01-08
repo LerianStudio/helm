@@ -36,7 +36,7 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ if .Values.pix.useExistingSecret }}{{ .Values.pix.existingSecretName }}{{ else }}{{ include "plugin-br-pix-indirect-btg.fullname" . }}{{ end }}
+              name: {{ if .Values.pix.useExistingSecrets }}{{ .Values.pix.existingSecretName }}{{ else }}{{ include "plugin-br-pix-indirect-btg.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
           {{ if (index .Values "otel-collector-lerian").enabled }}

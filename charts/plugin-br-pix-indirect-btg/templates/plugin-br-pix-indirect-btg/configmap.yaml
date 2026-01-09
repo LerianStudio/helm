@@ -124,6 +124,16 @@ data:
   ENTRY_WRITE_BLOCK_START: {{ .Values.pix.configmap.ENTRY_WRITE_BLOCK_START | default "" | quote }}
   ENTRY_WRITE_BLOCK_END: {{ .Values.pix.configmap.ENTRY_WRITE_BLOCK_END | default "" | quote }}
 
+  # HMAC INTERNAL VALIDATION
+  INTERNAL_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.INTERNAL_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}
+  INTERNAL_WEBHOOK_TIMESTAMP_TOLERANCE: {{ .Values.pix.configmap.INTERNAL_WEBHOOK_TIMESTAMP_TOLERANCE | default "300" | quote }}
+
+  # mTLS BTG CONFIGURATION
+  MTLS_ENABLED: {{ .Values.pix.configmap.MTLS_ENABLED | default "false" | quote }}
+  MTLS_CERTIFICATE_TTL: {{ .Values.pix.configmap.MTLS_CERTIFICATE_TTL | default "24h" | quote }}
+  BTG_CERTIFICATE_URL: {{ .Values.pix.configmap.BTG_CERTIFICATE_URL | default "" | quote }}
+  MTLS_HTTP_TIMEOUT: {{ .Values.pix.configmap.MTLS_HTTP_TIMEOUT | default "10s" | quote }}
+
 # RECONCILIATION
   RECONCILIATION_INTERNAL_CIDR: {{ .Values.pix.configmap.RECONCILIATION_INTERNAL_CIDR | default "" | quote }}
 

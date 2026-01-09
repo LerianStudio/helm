@@ -2,6 +2,12 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# -- Global configuration shared across all components
+global:
+  secrets:
+    # -- HMAC Internal Webhook Secret for validation between pix and inbound (min 32 chars)
+    INTERNAL_WEBHOOK_SECRET: ""
+
 pix:
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg"
@@ -152,8 +158,6 @@ pix:
     LICENSE_KEY: "lerian"
     MIDAZ_CLIENT_ID: ""
     MIDAZ_CLIENT_SECRET: ""
-    # HMAC Internal Validation (must match inbound.secrets.INTERNAL_WEBHOOK_SECRET)
-    INTERNAL_WEBHOOK_SECRET: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false
@@ -286,8 +290,6 @@ inbound:
     DB_PASSWORD: "lerian"
     DB_REPLICA_PASSWORD: "lerian"
     MONGO_PASSWORD: "lerian"
-    # HMAC Internal Validation (must match pix.secrets.INTERNAL_WEBHOOK_SECRET)
-    INTERNAL_WEBHOOK_SECRET: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false

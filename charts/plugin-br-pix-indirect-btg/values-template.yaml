@@ -1,3 +1,8 @@
+global:
+  secrets:
+    # HMAC Internal Webhook Secret shared between pix and inbound (min 32 chars)
+    INTERNAL_WEBHOOK_SECRET: ""
+
 pix:
   replicaCount: 1
   autoscaling:
@@ -56,8 +61,6 @@ pix:
     LICENSE_KEY: ""
     PLUGIN_CRM_CLIENT_ID: ""
     PLUGIN_CRM_CLIENT_SECRET: ""
-    # HMAC Internal Validation - MUST match inbound.secrets.INTERNAL_WEBHOOK_SECRET (min 32 chars)
-    INTERNAL_WEBHOOK_SECRET: ""
 
   useExistingSecrets: false
   existingSecretName: ""
@@ -102,8 +105,6 @@ inbound:
     DB_PASSWORD: "lerian"
     DB_REPLICA_PASSWORD: "lerian"
     MONGO_PASSWORD: "lerian"
-    # HMAC Internal Validation - MUST match pix.secrets.INTERNAL_WEBHOOK_SECRET (min 32 chars)
-    INTERNAL_WEBHOOK_SECRET: ""
 
   useExistingSecrets: false
   existingSecretName: ""

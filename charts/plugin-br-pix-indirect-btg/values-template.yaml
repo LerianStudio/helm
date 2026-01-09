@@ -10,7 +10,7 @@ pix:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg
     pullPolicy: Always
-    tag: "1.0.0-rc.17"
+    tag: "1.0.0-rc.26"
 
   ingress:
     enabled: false
@@ -56,6 +56,7 @@ pix:
     LICENSE_KEY: ""
     PLUGIN_CRM_CLIENT_ID: ""
     PLUGIN_CRM_CLIENT_SECRET: ""
+    INTERNAL_WEBHOOK_SECRET: ""
 
   useExistingSecrets: false
   existingSecretName: ""
@@ -72,7 +73,7 @@ inbound:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-inbound
     pullPolicy: Always
-    tag: "1.0.0-rc.17"
+    tag: "1.0.0-rc.26"
 
   ingress:
     enabled: false
@@ -100,6 +101,7 @@ inbound:
     DB_PASSWORD: "lerian"
     DB_REPLICA_PASSWORD: "lerian"
     MONGO_PASSWORD: "lerian"
+    INTERNAL_WEBHOOK_SECRET: ""
 
   useExistingSecrets: false
   existingSecretName: ""
@@ -116,7 +118,7 @@ outbound:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-outbound
     pullPolicy: Always
-    tag: "1.0.0-rc.17"
+    tag: "1.0.0-rc.26"
 
   ingress:
     enabled: false
@@ -167,7 +169,7 @@ reconciliation:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-reconciliation
     pullPolicy: Always
-    tag: "1.0.0-rc.17"
+    tag: "1.0.0-rc.26"
 
   ingress:
     enabled: false

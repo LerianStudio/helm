@@ -310,6 +310,15 @@ Validate required configuration fields
 {{- fail "\n\n❌ ERROR: pix.configmap.ORGANIZATION_IDS is REQUIRED\n   Please set your organization IDs (comma-separated list or 'global' for all organizations)\n" }}
 {{- end }}
 
+{{/* HMAC Internal Webhook Secret - Required (must match between pix and inbound) */}}
+{{- if not .Values.pix.secrets.INTERNAL_WEBHOOK_SECRET }}
+{{- fail "\n\n❌ ERROR: pix.secrets.INTERNAL_WEBHOOK_SECRET is REQUIRED\n   Please set your HMAC internal webhook secret (minimum 32 characters)\n   This value must match inbound.secrets.INTERNAL_WEBHOOK_SECRET\n" }}
+{{- end }}
+
+{{- if not .Values.inbound.secrets.INTERNAL_WEBHOOK_SECRET }}
+{{- fail "\n\n❌ ERROR: inbound.secrets.INTERNAL_WEBHOOK_SECRET is REQUIRED\n   Please set your HMAC internal webhook secret (minimum 32 characters)\n   This value must match pix.secrets.INTERNAL_WEBHOOK_SECRET\n" }}
+{{- end }}
+
 {{- end }}
 
 {{/*

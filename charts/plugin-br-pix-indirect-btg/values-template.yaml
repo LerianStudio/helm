@@ -1,3 +1,8 @@
+global:
+  secrets:
+    # HMAC Internal Webhook Secret shared between pix and inbound (min 32 chars)
+    INTERNAL_WEBHOOK_SECRET: ""
+
 pix:
   replicaCount: 1
   autoscaling:
@@ -10,7 +15,7 @@ pix:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg
     pullPolicy: Always
-    tag: "1.0.0-rc.17"
+    tag: "1.0.0-rc.27"
 
   ingress:
     enabled: false
@@ -42,6 +47,14 @@ pix:
     ORGANIZATION_IDS: global
     ENTRY_WRITE_BLOCK_START: ""
     ENTRY_WRITE_BLOCK_END: ""
+    # HMAC Internal Validation
+    INTERNAL_WEBHOOK_VALIDATION_ENABLED: "true"
+    INTERNAL_WEBHOOK_TIMESTAMP_TOLERANCE: "300"
+    # mTLS BTG Configuration
+    MTLS_ENABLED: "false"
+    MTLS_CERTIFICATE_TTL: "24h"
+    BTG_CERTIFICATE_URL: ""
+    MTLS_HTTP_TIMEOUT: "10s"
 
   secrets:
     DB_PASSWORD: "lerian"
@@ -72,7 +85,7 @@ inbound:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-inbound
     pullPolicy: Always
-    tag: "1.0.0-rc.17"
+    tag: "1.0.0-rc.27"
 
   ingress:
     enabled: false
@@ -116,7 +129,7 @@ outbound:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-outbound
     pullPolicy: Always
-    tag: "1.0.0-rc.17"
+    tag: "1.0.0-rc.27"
 
   ingress:
     enabled: false
@@ -167,7 +180,7 @@ reconciliation:
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-reconciliation
     pullPolicy: Always
-    tag: "1.0.0-rc.17"
+    tag: "1.0.0-rc.27"
 
   ingress:
     enabled: false

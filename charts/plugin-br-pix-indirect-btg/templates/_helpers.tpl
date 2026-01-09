@@ -319,6 +319,13 @@ Validate required configuration fields
 {{- fail "\n\n❌ ERROR: inbound.secrets.INTERNAL_WEBHOOK_SECRET is REQUIRED\n   Please set your HMAC internal webhook secret (minimum 32 characters)\n   This value must match pix.secrets.INTERNAL_WEBHOOK_SECRET\n" }}
 {{- end }}
 
+{{/* Validate that pix and inbound INTERNAL_WEBHOOK_SECRET match */}}
+{{- if and .Values.pix.secrets.INTERNAL_WEBHOOK_SECRET .Values.inbound.secrets.INTERNAL_WEBHOOK_SECRET }}
+{{- if ne .Values.pix.secrets.INTERNAL_WEBHOOK_SECRET .Values.inbound.secrets.INTERNAL_WEBHOOK_SECRET }}
+{{- fail "\n\n❌ ERROR: INTERNAL_WEBHOOK_SECRET mismatch\n   pix.secrets.INTERNAL_WEBHOOK_SECRET and inbound.secrets.INTERNAL_WEBHOOK_SECRET must be identical\n   for HMAC validation to work between components\n" }}
+{{- end }}
+{{- end }}
+
 {{- end }}
 
 {{/*

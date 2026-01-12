@@ -85,7 +85,7 @@ data:
   REDIS_MASTER_NAME: {{ .Values.reconciliation.configmap.REDIS_MASTER_NAME | default "" | quote }}
   REDIS_DB: {{ .Values.reconciliation.configmap.REDIS_DB | default "0" | quote }}
   REDIS_PROTOCOL: {{ .Values.reconciliation.configmap.REDIS_PROTOCOL | default "3" | quote }}
-  REDIS_TLS: {{ .Values.reconciliation.configmap.REDIS_TLS | default "true" | quote }}
+  REDIS_TLS: {{ .Values.reconciliation.configmap.REDIS_TLS | default "false" | quote }}
   REDIS_CA_CERT: {{ .Values.reconciliation.configmap.REDIS_CA_CERT | default "" | quote }}
   REDIS_USE_GCP_IAM: {{ .Values.reconciliation.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
   REDIS_SERVICE_ACCOUNT: {{ .Values.reconciliation.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}

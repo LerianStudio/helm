@@ -291,6 +291,11 @@ Validate required configuration fields
 {{- fail "\n\n❌ ERROR: pix.secrets.BTG_CLIENT_SECRET is REQUIRED\n   Please set your BTG client secret in secrets section\n" }}
 {{- end }}
 
+{{/* HMAC Internal Webhook Secret - Required (shared between pix and inbound) */}}
+{{- if not .Values.pix.secrets.INTERNAL_WEBHOOK_SECRET }}
+{{- fail "\n\n❌ ERROR: pix.secrets.INTERNAL_WEBHOOK_SECRET is REQUIRED\n   Please set your HMAC internal webhook secret (minimum 32 characters)\n   This value is shared between pix and inbound components\n" }}
+{{- end }}
+
 {{/* Midaz Secrets - Required */}}
 {{- if not .Values.pix.secrets.MIDAZ_CLIENT_ID }}
 {{- fail "\n\n❌ ERROR: pix.secrets.MIDAZ_CLIENT_ID is REQUIRED\n   Please set your Midaz client ID in secrets section\n" }}
@@ -310,10 +315,6 @@ Validate required configuration fields
 {{- fail "\n\n❌ ERROR: pix.configmap.ORGANIZATION_IDS is REQUIRED\n   Please set your organization IDs (comma-separated list or 'global' for all organizations)\n" }}
 {{- end }}
 
-{{/* HMAC Internal Webhook Secret - Required (shared between pix and inbound) */}}
-{{- if not .Values.global.secrets.INTERNAL_WEBHOOK_SECRET }}
-{{- fail "\n\n❌ ERROR: global.secrets.INTERNAL_WEBHOOK_SECRET is REQUIRED\n   Please set your HMAC internal webhook secret (minimum 32 characters)\n   This value is shared between pix and inbound components\n" }}
-{{- end }}
 
 {{- end }}
 

@@ -16,42 +16,6 @@ global:
       username: ""
       password: ""
 
-console:
-  configmap:
-    NEXTAUTH_URL: "http://localhost:8081"
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_CLIENT_ID: "ac56c81d4d6d95c0ac12"
-    PLUGIN_AUTH_HOST: "plugin-access-manager-auth"
-    PLUGIN_AUTH_PORT: "4000"
-    PLUGIN_AUTH_BASE_PATH: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000/v1" 
-    PLUGIN_IDENTITY_HOST:  "plugin-access-manager-identity.midaz-plugins.svc.cluster.local."  
-    PLUGIN_IDENTITY_PORT: "4001"
-    PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity.midaz-plugins.svc.cluster.local.:4001/v1"
-    MONGODB_URI: "mongodb:/midaz:lerian@midaz-mongodb.midaz.svc.cluster.local:27017/?directConnection=true"
-    MONGODB_DB_NAME: "midaz-console"
-    MONGODB_USER: "midaz"
-  secrets:
-    PLUGIN_AUTH_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
-    MONGODB_PASS: "lerian"
-
- # -- Existing secrets name
-  useExistingSecret: false
-  existingSecretName: ""
-
-  # Plugins UIs
-  pluginsUi:
-    enabled: false
-    plugins:
-      plugin-crm-ui:
-        enabled: false
-        port: 8082
-      reporter-ui:
-        enabled: false
-        port: 8083
-      plugin-fees-ui:
-        enabled: false
-        port: 8084
-
 onboarding:
   ingress:
     enabled: false
@@ -145,6 +109,89 @@ transaction:
   useExistingSecret: false
   existingSecretName: ""
 
+ledger:
+  # -- Enable ledger service (unified onboarding + transaction)
+  enabled: false
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    # -- Auth configuration
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: ""
+    # -- Accounting config
+    ACCOUNT_TYPE_VALIDATION: ""
+    TRANSACTION_ROUTE_VALIDATION: ""
+    # -- PostgreSQL Onboarding module
+    DB_ONBOARDING_HOST: "midaz-postgresql-primary"
+    DB_ONBOARDING_USER: "midaz"
+    DB_ONBOARDING_NAME: "onboarding"
+    DB_ONBOARDING_PORT: "5432"
+    DB_ONBOARDING_REPLICA_HOST: "midaz-postgresql-replication"
+    DB_ONBOARDING_REPLICA_USER: "midaz"
+    DB_ONBOARDING_REPLICA_NAME: "onboarding"
+    DB_ONBOARDING_REPLICA_PORT: "5432"
+    # -- MongoDB Onboarding module
+    MONGO_ONBOARDING_URI: "mongodb"
+    MONGO_ONBOARDING_HOST: "midaz-mongodb"
+    MONGO_ONBOARDING_NAME: "onboarding"
+    MONGO_ONBOARDING_USER: "midaz"
+    MONGO_ONBOARDING_PORT: "27017"
+    # -- PostgreSQL Transaction module
+    DB_TRANSACTION_HOST: "midaz-postgresql-primary"
+    DB_TRANSACTION_USER: "midaz"
+    DB_TRANSACTION_NAME: "transaction"
+    DB_TRANSACTION_PORT: "5432"
+    DB_TRANSACTION_REPLICA_HOST: "midaz-postgresql-replication"
+    DB_TRANSACTION_REPLICA_USER: "midaz"
+    DB_TRANSACTION_REPLICA_NAME: "transaction"
+    DB_TRANSACTION_REPLICA_PORT: "5432"
+    # -- MongoDB Transaction module
+    MONGO_TRANSACTION_URI: "mongodb"
+    MONGO_TRANSACTION_HOST: "midaz-mongodb"
+    MONGO_TRANSACTION_NAME: "transaction"
+    MONGO_TRANSACTION_USER: "midaz"
+    MONGO_TRANSACTION_PORT: "27017"
+    # -- Redis (shared)
+    REDIS_HOST: "midaz-valkey-primary:6379"
+    # -- RabbitMQ configuration
+    RABBITMQ_URI: "amqp"
+    RABBITMQ_HOST: "midaz-rabbitmq"
+    RABBITMQ_PORT_HOST: "5672"
+    RABBITMQ_PORT_AMQP: "15672"
+    RABBITMQ_DEFAULT_USER: "transaction"
+    RABBITMQ_CONSUMER_USER: "consumer"
+    RABBITMQ_TRANSACTION_ASYNC: "false"
+    # -- Audit
+    AUDIT_LOG_ENABLED: "false"
+    # -- Balance Sync Worker
+    BALANCE_SYNC_WORKER_ENABLED: "false"
+    BALANCE_SYNC_MAX_WORKERS: "5"
+
+  secrets:
+    DB_ONBOARDING_PASSWORD: "lerian"
+    DB_ONBOARDING_REPLICA_PASSWORD: "lerian"
+    MONGO_ONBOARDING_PASSWORD: "lerian"
+    DB_TRANSACTION_PASSWORD: "lerian"
+    DB_TRANSACTION_REPLICA_PASSWORD: "lerian"
+    MONGO_TRANSACTION_PASSWORD: "lerian"
+    REDIS_PASSWORD: "lerian"
+    RABBITMQ_DEFAULT_PASS: "lerian"
+    RABBITMQ_CONSUMER_PASS: "lerian"
+
+ # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
+
 grafana:
   enabled: false
 
@@ -175,7 +222,7 @@ nginx:
             pathType: Prefix
 
 otel-collector-lerian:
-  enabled: false
+  enabled: true
 
   extraEnvs:
   - name: OTEL_API_KEY

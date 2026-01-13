@@ -120,6 +120,125 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Create a default fully qualified app name for ledger.
+*/}}
+{{- define "midaz-ledger.fullname" -}}
+{{- printf "%s-%s" (include "midaz.name" .) .Values.ledger.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create ledger app version
+*/}}
+{{- define "ledger.defaultTag" -}}
+{{- default .Chart.AppVersion .Values.ledger.image.tag }}
+{{- end -}}
+
+{{/*
+Return valid ledger version label
+*/}}
+{{- define "ledger.versionLabelValue" -}}
+{{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "ledger.defaultTag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use for ledger
+*/}}
+{{- define "midaz-ledger.serviceAccountName" -}}
+{{- if .Values.ledger.serviceAccount.create }}
+{{- default (include "midaz-ledger.fullname" .) .Values.ledger.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.ledger.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Helper to check if migration.allowAllServices is enabled.
+This flag is NOT in the public values.yaml - it defaults to false.
+Internal teams can override it in their values to run all 3 services simultaneously.
+*/}}
+{{- define "migration.allowAllServices" -}}
+{{- if .Values.migration }}
+{{- .Values.migration.allowAllServices | default false }}
+{{- else }}
+{{- false }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Helper to determine if onboarding should be deployed.
+Deploys if: onboarding.enabled AND (ledger is disabled OR allowAllServices is true)
+*/}}
+{{- define "onboarding.shouldDeploy" -}}
+{{- $allowAll := include "migration.allowAllServices" . }}
+{{- if and .Values.onboarding.enabled (or (not .Values.ledger.enabled) (eq $allowAll "true")) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+Helper to determine if transaction should be deployed.
+Deploys if: transaction.enabled AND (ledger is disabled OR allowAllServices is true)
+*/}}
+{{- define "transaction.shouldDeploy" -}}
+{{- $allowAll := include "migration.allowAllServices" . }}
+{{- if and .Values.transaction.enabled (or (not .Values.ledger.enabled) (eq $allowAll "true")) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+Helper to get the target service for onboarding ingress.
+Returns ledger fullname if ledger is enabled and allowAllServices is false.
+*/}}
+{{- define "onboarding.ingress.targetService" -}}
+{{- $allowAll := include "migration.allowAllServices" . }}
+{{- if and .Values.ledger.enabled (ne $allowAll "true") -}}
+{{- include "midaz-ledger.fullname" . }}
+{{- else -}}
+{{- include "midaz-onboarding.fullname" . }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Helper to get the target port for onboarding ingress.
+Returns ledger port if ledger is enabled and allowAllServices is false.
+*/}}
+{{- define "onboarding.ingress.targetPort" -}}
+{{- $allowAll := include "migration.allowAllServices" . }}
+{{- if and .Values.ledger.enabled (ne $allowAll "true") -}}
+{{- .Values.ledger.service.port }}
+{{- else -}}
+{{- .Values.onboarding.service.port }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Helper to get the target service for transaction ingress.
+Returns ledger fullname if ledger is enabled and allowAllServices is false.
+*/}}
+{{- define "transaction.ingress.targetService" -}}
+{{- $allowAll := include "migration.allowAllServices" . }}
+{{- if and .Values.ledger.enabled (ne $allowAll "true") -}}
+{{- include "midaz-ledger.fullname" . }}
+{{- else -}}
+{{- include "midaz-transaction.fullname" . }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Helper to get the target port for transaction ingress.
+Returns ledger port if ledger is enabled and allowAllServices is false.
+*/}}
+{{- define "transaction.ingress.targetPort" -}}
+{{- $allowAll := include "migration.allowAllServices" . }}
+{{- if and .Values.ledger.enabled (ne $allowAll "true") -}}
+{{- .Values.ledger.service.port }}
+{{- else -}}
+{{- .Values.transaction.service.port }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Expand the namespace of the release.
 Allows overriding it for multi-namespace deployments in combined charts.
 */}}

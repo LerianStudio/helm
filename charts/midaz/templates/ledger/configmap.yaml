@@ -1,0 +1,180 @@
+{{- if .Values.ledger.enabled }}
+{{- $rabbitHost := .Values.ledger.configmap.RABBITMQ_HOST | default "midaz-rabbitmq" }}
+{{- $rabbitProtocol := .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" }}
+{{- $rabbitAmqpPort := .Values.ledger.configmap.RABBITMQ_PORT_AMQP | default "15672" }}
+
+{{- $rabbitHealthCheckURL := "" }}
+
+{{- if eq $rabbitProtocol "http" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s:%s" $rabbitProtocol $rabbitHost $rabbitAmqpPort }}
+{{- else if eq $rabbitProtocol "https" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s" $rabbitProtocol $rabbitHost }}
+{{- end }}
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "midaz-ledger.fullname" . }}
+data:
+  # =============================================================================
+  # APP CONFIGURATION
+  # =============================================================================
+  ENV_NAME: {{ .Values.ledger.configmap.ENV_NAME | default "production" | quote }}
+  VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
+  LOG_LEVEL: {{ .Values.ledger.configmap.LOG_LEVEL | default "debug" | quote }}
+
+  # Single port for all APIs (onboarding + transaction routes)
+  SERVER_PORT: {{ .Values.ledger.configmap.SERVER_PORT | default "3000" | quote }}
+  SERVER_ADDRESS: {{ .Values.ledger.configmap.SERVER_ADDRESS | default ":3000" | quote }}
+
+  # =============================================================================
+  # AUTH CONFIGS (shared)
+  # =============================================================================
+  PLUGIN_AUTH_ENABLED: {{ .Values.ledger.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.ledger.configmap.PLUGIN_AUTH_HOST | default "" | quote }}
+
+  # =============================================================================
+  # ACCOUNTING CONFIG
+  # =============================================================================
+  ACCOUNT_TYPE_VALIDATION: {{ .Values.ledger.configmap.ACCOUNT_TYPE_VALIDATION | default "" | quote }}
+  TRANSACTION_ROUTE_VALIDATION: {{ .Values.ledger.configmap.TRANSACTION_ROUTE_VALIDATION | default "" | quote }}
+
+  # =============================================================================
+  # DB POSTGRESQL - ONBOARDING MODULE
+  # =============================================================================
+  # Primary
+  DB_ONBOARDING_HOST: {{ .Values.ledger.configmap.DB_ONBOARDING_HOST | default "midaz-postgresql-primary" | quote }}
+  DB_ONBOARDING_USER: {{ .Values.ledger.configmap.DB_ONBOARDING_USER | default "midaz" | quote }}
+  DB_ONBOARDING_NAME: {{ .Values.ledger.configmap.DB_ONBOARDING_NAME | default "onboarding" | quote }}
+  DB_ONBOARDING_PORT: {{ .Values.ledger.configmap.DB_ONBOARDING_PORT | default "5432" | quote }}
+  DB_ONBOARDING_SSLMODE: {{ .Values.ledger.configmap.DB_ONBOARDING_SSLMODE | default "disable" | quote }}
+  # Replica
+  DB_ONBOARDING_REPLICA_HOST: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_HOST | default "midaz-postgresql-read" | quote }}
+  DB_ONBOARDING_REPLICA_USER: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_USER | default "midaz" | quote }}
+  DB_ONBOARDING_REPLICA_NAME: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_NAME | default "onboarding" | quote }}
+  DB_ONBOARDING_REPLICA_PORT: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_PORT | default "5432" | quote }}
+  DB_ONBOARDING_REPLICA_SSLMODE: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_SSLMODE | default "disable" | quote }}
+  # Connection pool
+  DB_ONBOARDING_MAX_OPEN_CONNS: {{ .Values.ledger.configmap.DB_ONBOARDING_MAX_OPEN_CONNS | default "3000" | quote }}
+  DB_ONBOARDING_MAX_IDLE_CONNS: {{ .Values.ledger.configmap.DB_ONBOARDING_MAX_IDLE_CONNS | default "3000" | quote }}
+
+  # =============================================================================
+  # MONGO DB - ONBOARDING MODULE
+  # =============================================================================
+  MONGO_ONBOARDING_URI: {{ .Values.ledger.configmap.MONGO_ONBOARDING_URI | default "mongodb" | quote }}
+  MONGO_ONBOARDING_HOST: {{ .Values.ledger.configmap.MONGO_ONBOARDING_HOST | default "midaz-mongodb" | quote }}
+  MONGO_ONBOARDING_NAME: {{ .Values.ledger.configmap.MONGO_ONBOARDING_NAME | default "onboarding" | quote }}
+  MONGO_ONBOARDING_USER: {{ .Values.ledger.configmap.MONGO_ONBOARDING_USER | default "midaz" | quote }}
+  MONGO_ONBOARDING_PORT: {{ .Values.ledger.configmap.MONGO_ONBOARDING_PORT | default "27017" | quote }}
+  MONGO_ONBOARDING_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_ONBOARDING_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_ONBOARDING_PARAMETERS: {{ .Values.ledger.configmap.MONGO_ONBOARDING_PARAMETERS | default "" | quote }}
+
+  # =============================================================================
+  # DB POSTGRESQL - TRANSACTION MODULE
+  # =============================================================================
+  # Primary
+  DB_TRANSACTION_HOST: {{ .Values.ledger.configmap.DB_TRANSACTION_HOST | default "midaz-postgresql-primary" | quote }}
+  DB_TRANSACTION_USER: {{ .Values.ledger.configmap.DB_TRANSACTION_USER | default "midaz" | quote }}
+  DB_TRANSACTION_NAME: {{ .Values.ledger.configmap.DB_TRANSACTION_NAME | default "transaction" | quote }}
+  DB_TRANSACTION_PORT: {{ .Values.ledger.configmap.DB_TRANSACTION_PORT | default "5432" | quote }}
+  DB_TRANSACTION_SSLMODE: {{ .Values.ledger.configmap.DB_TRANSACTION_SSLMODE | default "disable" | quote }}
+  # Replica
+  DB_TRANSACTION_REPLICA_HOST: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_HOST | default "midaz-postgresql-read" | quote }}
+  DB_TRANSACTION_REPLICA_USER: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_USER | default "midaz" | quote }}
+  DB_TRANSACTION_REPLICA_NAME: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_NAME | default "transaction" | quote }}
+  DB_TRANSACTION_REPLICA_PORT: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_PORT | default "5432" | quote }}
+  DB_TRANSACTION_REPLICA_SSLMODE: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_SSLMODE | default "disable" | quote }}
+  # Connection pool
+  DB_TRANSACTION_MAX_OPEN_CONNS: {{ .Values.ledger.configmap.DB_TRANSACTION_MAX_OPEN_CONNS | default "3000" | quote }}
+  DB_TRANSACTION_MAX_IDLE_CONNS: {{ .Values.ledger.configmap.DB_TRANSACTION_MAX_IDLE_CONNS | default "3000" | quote }}
+
+  # =============================================================================
+  # MONGO DB - TRANSACTION MODULE
+  # =============================================================================
+  MONGO_TRANSACTION_URI: {{ .Values.ledger.configmap.MONGO_TRANSACTION_URI | default "mongodb" | quote }}
+  MONGO_TRANSACTION_HOST: {{ .Values.ledger.configmap.MONGO_TRANSACTION_HOST | default "midaz-mongodb" | quote }}
+  MONGO_TRANSACTION_NAME: {{ .Values.ledger.configmap.MONGO_TRANSACTION_NAME | default "transaction" | quote }}
+  MONGO_TRANSACTION_USER: {{ .Values.ledger.configmap.MONGO_TRANSACTION_USER | default "midaz" | quote }}
+  MONGO_TRANSACTION_PORT: {{ .Values.ledger.configmap.MONGO_TRANSACTION_PORT | default "27017" | quote }}
+  MONGO_TRANSACTION_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_TRANSACTION_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_TRANSACTION_PARAMETERS: {{ .Values.ledger.configmap.MONGO_TRANSACTION_PARAMETERS | default "" | quote }}
+
+  # =============================================================================
+  # REDIS (shared between modules)
+  # =============================================================================
+  REDIS_HOST: {{ .Values.ledger.configmap.REDIS_HOST | default "midaz-valkey-primary:6379" | quote }}
+  REDIS_MASTER_NAME: {{ .Values.ledger.configmap.REDIS_MASTER_NAME | default "" | quote }}
+  REDIS_TLS: {{ .Values.ledger.configmap.REDIS_TLS | default "false" | quote }}
+  REDIS_CA_CERT: {{ .Values.ledger.configmap.REDIS_CA_CERT | default "" | quote }}
+  REDIS_USE_GCP_IAM: {{ .Values.ledger.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
+  REDIS_SERVICE_ACCOUNT: {{ .Values.ledger.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+  GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.ledger.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+  REDIS_TOKEN_LIFETIME: {{ .Values.ledger.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
+  REDIS_TOKEN_REFRESH_DURATION: {{ .Values.ledger.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
+  REDIS_DB: {{ .Values.ledger.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ .Values.ledger.configmap.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_POOL_SIZE: {{ .Values.ledger.configmap.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ .Values.ledger.configmap.REDIS_MIN_IDLE_CONNS | default "0" | quote }}
+  REDIS_READ_TIMEOUT: {{ .Values.ledger.configmap.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ .Values.ledger.configmap.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ .Values.ledger.configmap.REDIS_DIAL_TIMEOUT | default "5" | quote }}
+  REDIS_POOL_TIMEOUT: {{ .Values.ledger.configmap.REDIS_POOL_TIMEOUT | default "2" | quote }}
+  REDIS_MAX_RETRIES: {{ .Values.ledger.configmap.REDIS_MAX_RETRIES | default "3" | quote }}
+  REDIS_MIN_RETRY_BACKOFF: {{ .Values.ledger.configmap.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
+  REDIS_MAX_RETRY_BACKOFF: {{ .Values.ledger.configmap.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
+
+  # =============================================================================
+  # OPEN TELEMETRY
+  # =============================================================================
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.ledger.configmap.OTEL_RESOURCE_SERVICE_NAME | default "ledger" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.ledger.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v3/components/ledger" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.ledger.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+
+  # =============================================================================
+  # RABBITMQ (used by transaction module)
+  # =============================================================================
+  RABBITMQ_URI: {{ .Values.ledger.configmap.RABBITMQ_URI | default "amqp" | quote }}
+  RABBITMQ_HOST: {{ .Values.ledger.configmap.RABBITMQ_HOST | default "midaz-rabbitmq" | quote }}
+  RABBITMQ_PORT_HOST: {{ .Values.ledger.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
+  RABBITMQ_PORT_AMQP: {{ .Values.ledger.configmap.RABBITMQ_PORT_AMQP | default "15672" | quote }}
+  RABBITMQ_DEFAULT_USER: {{ .Values.ledger.configmap.RABBITMQ_DEFAULT_USER | default "transaction" | quote }}
+  RABBITMQ_CONSUMER_USER: {{ .Values.ledger.configmap.RABBITMQ_CONSUMER_USER | default "consumer" | quote }}
+  RABBITMQ_NUMBERS_OF_WORKERS: {{ .Values.ledger.configmap.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
+  RABBITMQ_NUMBERS_OF_PREFETCH: {{ .Values.ledger.configmap.RABBITMQ_NUMBERS_OF_PREFETCH | default "10" | quote }}
+  RABBITMQ_HEALTH_CHECK_URL: {{ .Values.ledger.configmap.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
+  RABBITMQ_BALANCE_CREATE_QUEUE: {{ .Values.ledger.configmap.RABBITMQ_BALANCE_CREATE_QUEUE | default "transaction.balance_create.queue" | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE | default "transaction.transaction_balance_operation.exchange" | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY | default "transaction.transaction_balance_operation.key" | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE | default "transaction.transaction_balance_operation.queue" | quote }}
+  RABBITMQ_TRANSACTION_ASYNC: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_ASYNC | default "false" | quote }}
+
+  # TRANSACTION EXCHANGE EVENTS
+  RABBITMQ_TRANSACTION_EVENTS_ENABLED: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_EVENTS_ENABLED | default "false" | quote }}
+  RABBITMQ_TRANSACTION_EVENTS_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_EVENTS_EXCHANGE | default "transaction.transaction_events.exchange" | quote }}
+
+  # AUDIT
+  AUDIT_LOG_ENABLED: {{ .Values.ledger.configmap.AUDIT_LOG_ENABLED | default "false" | quote }}
+  RABBITMQ_AUDIT_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_AUDIT_EXCHANGE | default "audit.append_log.exchange" | quote }}
+  RABBITMQ_AUDIT_KEY: {{ .Values.ledger.configmap.RABBITMQ_AUDIT_KEY | default "audit.append_log.key" | quote }}
+
+  # =============================================================================
+  # PAGINATION
+  # =============================================================================
+  MAX_PAGINATION_LIMIT: {{ .Values.ledger.configmap.MAX_PAGINATION_LIMIT | default "100" | quote }}
+  MAX_PAGINATION_MONTH_DATE_RANGE: {{ .Values.ledger.configmap.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
+
+  # =============================================================================
+  # BALANCE SYNC WORKER
+  # =============================================================================
+  BALANCE_SYNC_WORKER_ENABLED: {{ .Values.ledger.configmap.BALANCE_SYNC_WORKER_ENABLED | default "false" | quote }}
+  BALANCE_SYNC_MAX_WORKERS: {{ .Values.ledger.configmap.BALANCE_SYNC_MAX_WORKERS | default "5" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.ledger.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

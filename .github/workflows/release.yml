@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - midaz-ledger
     paths-ignore:
       - 'README.md'
       - '.github/workflows/**'

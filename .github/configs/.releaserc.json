@@ -4,6 +4,10 @@
     {
       "name": "develop",
       "prerelease": "beta"
+    },
+    {
+      "name": "midaz-ledger",
+      "prerelease": "alpha"
     }
   ],
   "plugins": [
@@ -50,7 +54,7 @@
       }
     ],
     [
-      "@semantic-release/exec", 
+      "@semantic-release/exec",
       {
         "successCmd": "helm push charts/chart-name oci://ghcr.io/lerianstudio"
       }

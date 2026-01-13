@@ -24,8 +24,8 @@ data:
   LOG_LEVEL: {{ .Values.ledger.configmap.LOG_LEVEL | default "debug" | quote }}
 
   # Single port for all APIs (onboarding + transaction routes)
-  SERVER_PORT: {{ .Values.ledger.configmap.SERVER_PORT | default "3000" | quote }}
-  SERVER_ADDRESS: {{ .Values.ledger.configmap.SERVER_ADDRESS | default ":3000" | quote }}
+  SERVER_PORT: {{ .Values.ledger.configmap.SERVER_PORT | default "3002" | quote }}
+  SERVER_ADDRESS: {{ .Values.ledger.configmap.SERVER_ADDRESS | default ":3002" | quote }}
 
   # =============================================================================
   # AUTH CONFIGS (shared)

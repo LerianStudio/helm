@@ -1,3 +1,4 @@
+{{- if eq (include "transaction.shouldDeploy" .) "true" }}
 {{- $releaseNs := .Release.Namespace }}
 {{- $rabbitHost := .Values.transaction.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." $releaseNs) }}
 {{- $rabbitProtocol := .Values.transaction.configmap.RABBITMQ_PROTOCOL | default "http" }}
@@ -119,3 +120,4 @@ data:
   {{- with .Values.transaction.extraEnvVars }}
   {{- toYaml . | nindent 2 }}
   {{- end }}
+{{- end }}

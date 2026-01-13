@@ -20,6 +20,8 @@
 
 A new `ledger` service is now available that combines the functionality of both onboarding and transaction modules into a single deployment. This is an **optional** feature - existing onboarding and transaction services continue to work as before.
 
+> **Important:** The separate onboarding and transaction services will become **legacy** in a future release, and the unified ledger service will become **mandatory**. We strongly recommend planning your migration to the ledger service as soon as possible.
+
 **Key characteristics:**
 - Single HTTP endpoint (port 3000 by default)
 - Separate database configurations for each module (onboarding and transaction)

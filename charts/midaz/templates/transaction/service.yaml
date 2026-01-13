@@ -1,3 +1,4 @@
+{{- if eq (include "transaction.shouldDeploy" .) "true" }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -21,3 +22,4 @@ spec:
       name: grpc
   selector:
     {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.transaction.name) | nindent 4 }}
+{{- end }}

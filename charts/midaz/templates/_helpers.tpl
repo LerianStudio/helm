@@ -19,15 +19,6 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "midaz-console.fullname" -}}
-{{- printf "%s-%s" (include "midaz.name" .) .Values.console.name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
 {{- define "midaz-transaction.fullname" -}}
 {{- printf "%s-%s" (include "midaz.name" .) .Values.transaction.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -94,17 +85,6 @@ Create the name of the service account to use
 {{- default (include "midaz-onboarding.fullname" .) .Values.onboarding.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.onboarding.serviceAccount.name }}
-{{- end }}
-{{- end }}
-
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "midaz-console.serviceAccountName" -}}
-{{- if .Values.console.serviceAccount.create }}
-{{- default (include "midaz-console.fullname" .) .Values.console.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.console.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -244,6 +224,47 @@ Allows overriding it for multi-namespace deployments in combined charts.
 */}}
 {{- define "global.namespace" -}}
 {{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+Create a default fully qualified app name for CRM.
+*/}}
+{{- define "midaz-crm.fullname" -}}
+{{- printf "%s-%s" (include "midaz.name" .) .Values.crm.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create CRM app version
+*/}}
+{{- define "crm.defaultTag" -}}
+{{- default .Chart.AppVersion .Values.crm.image.tag }}
+{{- end -}}
+
+{{/*
+Return valid CRM version label
+*/}}
+{{- define "crm.versionLabelValue" -}}
+{{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "crm.defaultTag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}
+{{- end -}}
+
+{{/*
+CRM Common labels
+*/}}
+{{- define "midaz-crm.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz-crm.selectorLabels" (dict "context" .context "name" .name) }}
+app.kubernetes.io/version: {{ include "crm.versionLabelValue" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+CRM Selector labels
+*/}}
+{{- define "midaz-crm.selectorLabels" -}}
+{{- if .name -}}
+app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
+{{- end }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
 {{/*

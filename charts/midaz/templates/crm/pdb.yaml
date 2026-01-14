@@ -1,0 +1,23 @@
+{{- if and .Values.crm.enabled .Values.crm.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "midaz-crm.fullname" . }}
+  labels:
+    {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
+  {{- with .Values.crm.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.crm.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.crm.pdb.minAvailable | default 0 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "midaz-crm.selectorLabels" (dict "context" . "name" .Values.crm.name) | nindent 6 }}
+{{- end }}

@@ -81,38 +81,38 @@ ELSE
 
 ### 4. CRM service integration
 
-The CRM (Customer Relationship Management) service is now available as an integrated component in the Midaz helm chart. Previously available as a separate chart (`plugin-crm`), the CRM is being migrated to become a core component of Midaz. This service provides APIs for managing holder data and their ledger account relationships.
+The CRM (Customer Relationship Management) service is now available as an integrated component in the Midaz helm chart. Previously available as a separate chart (`plugin-crm`) deployed in the `midaz-plugins` namespace, the CRM is being migrated to become a core component of Midaz, now deployed in the `midaz` namespace alongside other Midaz services.
 
 For more details, refer to the official documentation: [CRM Documentation](https://docs.lerian.studio/en/v2/crm)
+
+**Key changes:**
+- **Namespace migration:** CRM moves from `midaz-plugins` to `midaz` namespace
+- **Chart consolidation:** No longer requires the separate `plugin-crm` chart
+- **Shared infrastructure:** Uses the same MongoDB instance as other Midaz components
 
 **Key characteristics:**
 - Optional service (disabled by default)
 - Uses MongoDB for data storage (shared with other Midaz components)
 - Supports authentication via the Auth Plugin
-- Includes license validation support
 
-**Enable CRM:**
+**Migration recommendation:**
+
+If you are currently using `plugin-crm` in the `midaz-plugins` namespace, we recommend migrating to this new integrated CRM workload. Steps:
+
+1. Deploy the new CRM in the `midaz` namespace:
 ```yaml
 crm:
   enabled: true
   configmap:
     MONGO_HOST: "midaz-mongodb"
     MONGO_NAME: "crm"
-  secrets:
-    LICENSE_KEY: "<your-license-key>"
-    ORGANIZATION_IDS: "<org1,org2>"
 ```
 
-**New environment variables:**
-```yaml
-# Crypto Security
-LCRYPTO_HASH_SECRET_KEY: "<hash-secret>"
-LCRYPTO_ENCRYPT_SECRET_KEY: "<encrypt-secret>"
+2. Migrate your data from the old MongoDB to the new one (if using separate databases)
 
-# License
-LICENSE_KEY: ""
-ORGANIZATION_IDS: ""
-```
+3. Update your ingress/DNS to point to the new CRM service in the `midaz` namespace
+
+4. Remove the old `plugin-crm` release from `midaz-plugins` namespace
 
 ## Deployment Scenarios
 

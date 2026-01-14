@@ -16,7 +16,7 @@
 
 | Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `4.6.0-alpha.6` | 3.5.0 | 3.5.0 | 3.4.8 | 3.4.8 |
+| `5.0.0` | 3.5.0 | 3.5.0 | 3.5.0 | 3.5.0 |
 -----------------
 
 ### Plugin Access Manager Helm Chart

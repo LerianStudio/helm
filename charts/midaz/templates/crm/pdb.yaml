@@ -15,7 +15,7 @@ spec:
   {{- with .Values.crm.pdb.maxUnavailable }}
   maxUnavailable: {{ . }}
   {{- else }}
-  minAvailable: {{ .Values.crm.pdb.minAvailable | default 0 }}
+  minAvailable: {{ .Values.crm.pdb.minAvailable | default 1 }}
   {{- end }}
   selector:
     matchLabels:

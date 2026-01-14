@@ -5,6 +5,10 @@ metadata:
   name: {{ include "midaz-crm.fullname" . }}
   labels:
     {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
+  {{- with .Values.crm.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.crm.service.type }}
   ports:

@@ -7,10 +7,13 @@ metadata:
     {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ .Values.crm.revisionHistoryLimit | default 10 }}
-  {{- with .Values.crm.deploymentStrategy }}
   strategy:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    type: {{ .Values.crm.deploymentUpdate.type }}
+    {{- if eq .Values.crm.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.crm.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.crm.deploymentUpdate.maxUnavailable }}
+    {{- end }}
   {{- if not .Values.crm.autoscaling.enabled }}
   replicas: {{ .Values.crm.replicaCount }}
   {{- end }}
@@ -74,7 +77,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
           livenessProbe:
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 5
             httpGet:
               path: /health

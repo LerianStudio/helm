@@ -366,10 +366,12 @@ For more details, refer to the official documentation: [CRM Documentation](https
 | `crm.podSecurityContext` | Security context applied at the pod level. | `{}` |
 | `crm.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
 | `crm.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `true` |
-| `crm.pdb.minAvailable` | Minimum number of available pods. | `0` |
+| `crm.pdb.minAvailable` | Minimum number of available pods. | `1` |
 | `crm.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
 | `crm.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
-| `crm.deploymentStrategy.*` | Deployment update strategy. | See `values.yaml` |
+| `crm.deploymentUpdate.type` | Type of deployment strategy. | `"RollingUpdate"` |
+| `crm.deploymentUpdate.maxSurge` | Maximum number of pods that can be created over the desired number of pods. | `1` |
+| `crm.deploymentUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during the update. | `1` |
 | `crm.service.type` | Kubernetes service type. | `"ClusterIP"` |
 | `crm.service.port` | Service port. | `4003` |
 | `crm.ingress.enabled` | Specifies whether Ingress is enabled. | `false` |

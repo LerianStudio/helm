@@ -3,7 +3,7 @@
 ## Topics
 
 - **[Breaking Changes](#breaking-changes)**
-  - [Ledger enabled by default](#ledger-enabled-by-default)
+  - [New Ledger service available](#new-ledger-service-available)
 - **[Features](#features)**
   - [1. New Ledger service with combined functionality](#1-new-ledger-service-with-combined-functionality)
   - [2. Migration support with simultaneous service deployment](#2-migration-support-with-simultaneous-service-deployment)
@@ -19,29 +19,44 @@
 
 ## Breaking Changes
 
-### Ledger enabled by default
+### New Ledger service available
 
-Starting from version 5.0, the **Ledger service is enabled by default** (`ledger.enabled: true`). This is an **infrastructure-level breaking change** that affects how Midaz services are deployed.
+Starting from version 5.0, the **Ledger service is available** (`ledger.enabled: false` by default). When enabled, this service combines the functionality of both onboarding and transaction modules. This is an **infrastructure-level change** that affects how Midaz services are deployed when you opt to use the ledger service.
 
-**What changed:**
+**Default values:**
 
 | Setting | v4.x (before) | v5.0 (after) |
 |---------|---------------|--------------|
-| `ledger.enabled` | `false` | `true` |
+| `ledger.enabled` | `false` | `false` |
 | `onboarding.enabled` | `true` | `true` (but auto-disabled when ledger is enabled) |
 | `transaction.enabled` | `true` | `true` (but auto-disabled when ledger is enabled) |
 
-**Impact:**
+**Recommendation for new workloads:**
 
-When upgrading to v5.0 without configuration changes:
-- The `midaz-onboarding` and `midaz-transaction` deployments will be **removed**
+> **For new installations, we strongly recommend enabling the Ledger service and disabling the separate onboarding and transaction services.** The unified Ledger service is the future architecture of Midaz and provides a simpler deployment model.
+
+```yaml
+ledger:
+  enabled: true
+
+onboarding:
+  enabled: false
+
+transaction:
+  enabled: false
+```
+
+**Impact when enabling Ledger:**
+
+When you enable the ledger service:
+- The `midaz-onboarding` and `midaz-transaction` deployments will be **removed** (or not created for new installations)
 - A new `midaz-ledger` deployment will be created
 - Ingresses will automatically redirect to the ledger service (DNS compatibility maintained)
 - Environment variables and secrets structure changes (module-specific prefixes)
 
-**How to avoid breaking your deployment:**
+**Options for existing installations:**
 
-#### Option 1: Keep using Onboarding and Transaction (recommended for gradual migration)
+#### Option 1: Keep using Onboarding and Transaction (for gradual migration)
 
 Add the following to your values override to maintain the current behavior:
 
@@ -206,6 +221,8 @@ crm:
 
 ### Scenario 1: New installations with Ledger (recommended)
 
+> **This is the recommended approach for all new workloads.** The unified Ledger service is the future architecture of Midaz.
+
 For new deployments, enable only the ledger service:
 
 ```yaml
@@ -267,6 +284,8 @@ migration:
 > **Warning:** This mode is intended for internal testing only. Running all services simultaneously in production is not recommended.
 
 ### Scenario 4: Default mode (Onboarding + Transaction only)
+
+> **Not recommended for new workloads.** Use [Scenario 1](#scenario-1-new-installations-with-ledger-recommended) instead.
 
 This is the **default behavior** - no changes required for existing installations. The onboarding and transaction services continue to work as before:
 

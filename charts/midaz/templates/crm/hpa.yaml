@@ -1,4 +1,4 @@
-{{- if and .Values.crm.enabled .Values.crm.autoscaling.enabled }}
+{{- if and .Values.crm.enabled .Values.crm.autoscaling.enabled (or .Values.crm.autoscaling.targetCPUUtilizationPercentage .Values.crm.autoscaling.targetMemoryUtilizationPercentage) }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

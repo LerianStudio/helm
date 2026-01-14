@@ -46,7 +46,7 @@ spec:
             - /bin/sh
             - -c
             - >
-              TIMEOUT={{ .Values.ledger.initContainer.timeoutSeconds | default 300 }};
+              TIMEOUT={{ dig "initContainer" "timeoutSeconds" 300 .Values.ledger }};
               MONGO_ONBOARDING_PORT_CLEAN=$(echo "$MONGO_ONBOARDING_PORT" | sed 's/[^0-9].*//');
               MONGO_TRANSACTION_PORT_CLEAN=$(echo "$MONGO_TRANSACTION_PORT" | sed 's/[^0-9].*//');
               RABBITMQ_PORT_HOST_CLEAN=$(echo "$RABBITMQ_PORT_HOST" | sed 's/[^0-9].*//');

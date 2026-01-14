@@ -4,10 +4,6 @@
     {
       "name": "develop",
       "prerelease": "beta"
-    },
-    {
-      "name": "refactor/midaz-ledger",
-      "prerelease": "alpha"
     }
   ],
   "plugins": [

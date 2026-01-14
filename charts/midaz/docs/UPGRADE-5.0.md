@@ -1,7 +1,9 @@
-# Helm Upgrade from v4.x to vX.X
+# Helm Upgrade from v4.x to v5.0
 
 ## Topics
 
+- **[Breaking Changes](#breaking-changes)**
+  - [Ledger enabled by default](#ledger-enabled-by-default)
 - **[Features](#features)**
   - [1. New Ledger service with combined functionality](#1-new-ledger-service-with-combined-functionality)
   - [2. Migration support with simultaneous service deployment](#2-migration-support-with-simultaneous-service-deployment)
@@ -14,6 +16,92 @@
   - [Scenario 4: Default mode (Onboarding + Transaction only)](#scenario-4-default-mode-onboarding--transaction-only)
 - **[Configuration Reference](#configuration-reference)**
 - **[Command to upgrade](#command-to-upgrade)**
+
+## Breaking Changes
+
+### Ledger enabled by default
+
+Starting from version 5.0, the **Ledger service is enabled by default** (`ledger.enabled: true`). This is an **infrastructure-level breaking change** that affects how Midaz services are deployed.
+
+**What changed:**
+
+| Setting | v4.x (before) | v5.0 (after) |
+|---------|---------------|--------------|
+| `ledger.enabled` | `false` | `true` |
+| `onboarding.enabled` | `true` | `true` (but auto-disabled when ledger is enabled) |
+| `transaction.enabled` | `true` | `true` (but auto-disabled when ledger is enabled) |
+
+**Impact:**
+
+When upgrading to v5.0 without configuration changes:
+- The `midaz-onboarding` and `midaz-transaction` deployments will be **removed**
+- A new `midaz-ledger` deployment will be created
+- Ingresses will automatically redirect to the ledger service (DNS compatibility maintained)
+- Environment variables and secrets structure changes (module-specific prefixes)
+
+**How to avoid breaking your deployment:**
+
+#### Option 1: Keep using Onboarding and Transaction (recommended for gradual migration)
+
+Add the following to your values override to maintain the current behavior:
+
+```yaml
+ledger:
+  enabled: false
+
+onboarding:
+  enabled: true
+
+transaction:
+  enabled: true
+```
+
+This allows you to upgrade the chart version without changing your infrastructure.
+
+#### Option 2: Run all services simultaneously (testing/migration period)
+
+Use the hidden `migration.allowAllServices` flag to run all three services during the migration:
+
+```yaml
+ledger:
+  enabled: true
+
+onboarding:
+  enabled: true
+
+transaction:
+  enabled: true
+
+migration:
+  allowAllServices: true
+```
+
+> **Warning:** This mode is intended for testing and migration only. Do not use in production long-term.
+
+#### Option 3: Migrate to Ledger (recommended for new behavior)
+
+Accept the new default and migrate to the unified Ledger service:
+
+1. **Before upgrading:** Ensure your databases are ready (same databases, new environment variable names)
+2. **Update secrets:** Create new secrets with module-specific prefixes (see [Configuration Reference](#ledger-service-configuration))
+3. **Upgrade:** Run `helm upgrade` with the new chart version
+4. **Verify:** Check that the ledger service is healthy and ingresses are working
+
+**Rollback procedure:**
+
+If you need to rollback after upgrading:
+
+```bash
+# Rollback to previous release
+helm rollback midaz <REVISION> -n midaz
+
+# Or explicitly disable ledger
+helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm \
+  --set ledger.enabled=false \
+  --set onboarding.enabled=true \
+  --set transaction.enabled=true \
+  -n midaz
+```
 
 ## Features
 

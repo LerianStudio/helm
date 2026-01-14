@@ -349,7 +349,7 @@ The `crm` service provides APIs for managing holder data and their relationships
 
 For more details, refer to the official documentation: [CRM Documentation](https://docs.lerian.studio/en/v2/crm)
 
-> **Migration Note:** If you are currently using `plugin-crm` in the `midaz-plugins` namespace, we recommend migrating to this new integrated CRM workload. See the [Upgrade Guide](docs/UPGRADE-X.X.md#4-crm-service-integration) for migration steps.
+> **Migration Note:** If you are currently using `plugin-crm` in the `midaz-plugins` namespace, we recommend migrating to this new integrated CRM workload. See the [Upgrade Guide](docs/UPGRADE-5.0.md#4-crm-service-integration) for migration steps.
 
 | Parameter | Description | Default Value |
 |---|---|---|

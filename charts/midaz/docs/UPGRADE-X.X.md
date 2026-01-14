@@ -6,6 +6,7 @@
   - [1. New Ledger service with combined functionality](#1-new-ledger-service-with-combined-functionality)
   - [2. Migration support with simultaneous service deployment](#2-migration-support-with-simultaneous-service-deployment)
   - [3. Ingress redirection to Ledger](#3-ingress-redirection-to-ledger)
+  - [4. CRM service integration](#4-crm-service-integration)
 - **[Deployment Scenarios](#deployment-scenarios)**
   - [Scenario 1: New installations with Ledger (recommended)](#scenario-1-new-installations-with-ledger-recommended)
   - [Scenario 2: Gradual migration from Onboarding/Transaction](#scenario-2-gradual-migration-from-onboardingtransaction)
@@ -77,6 +78,41 @@ ELSE
 - The ingress resource **names** remain unchanged (`midaz-onboarding`, `midaz-transaction`) to preserve DNS compatibility
 - Only the **backend service** changes based on the configuration
 - Ingresses are only created if their respective `*.ingress.enabled` flag is `true`
+
+### 4. CRM service integration
+
+The CRM (Customer Relationship Management) service is now available as an integrated component in the Midaz helm chart. Previously available as a separate chart (`plugin-crm`), the CRM is being migrated to become a core component of Midaz. This service provides APIs for managing holder data and their ledger account relationships.
+
+For more details, refer to the official documentation: [CRM Documentation](https://docs.lerian.studio/en/v2/crm)
+
+**Key characteristics:**
+- Optional service (disabled by default)
+- Uses MongoDB for data storage (shared with other Midaz components)
+- Supports authentication via the Auth Plugin
+- Includes license validation support
+
+**Enable CRM:**
+```yaml
+crm:
+  enabled: true
+  configmap:
+    MONGO_HOST: "midaz-mongodb"
+    MONGO_NAME: "crm"
+  secrets:
+    LICENSE_KEY: "<your-license-key>"
+    ORGANIZATION_IDS: "<org1,org2>"
+```
+
+**New environment variables:**
+```yaml
+# Crypto Security
+LCRYPTO_HASH_SECRET_KEY: "<hash-secret>"
+LCRYPTO_ENCRYPT_SECRET_KEY: "<encrypt-secret>"
+
+# License
+LICENSE_KEY: ""
+ORGANIZATION_IDS: ""
+```
 
 ## Deployment Scenarios
 

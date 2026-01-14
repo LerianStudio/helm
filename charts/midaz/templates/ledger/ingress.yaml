@@ -1,8 +1,9 @@
-{{- if .Values.grafana.ingress.enabled -}}
-{{- $fullName := include "midaz-grafana.fullname" . -}}
-{{- if and .Values.grafana.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.grafana.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.grafana.ingress.annotations "kubernetes.io/ingress.class" .Values.grafana.ingress.className}}
+{{- if and .Values.ledger.enabled .Values.ledger.ingress.enabled -}}
+{{- $fullName := include "midaz-ledger.fullname" . -}}
+{{- $svcPort := .Values.ledger.service.port -}}
+{{- if and .Values.ledger.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.ledger.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.ledger.ingress.annotations "kubernetes.io/ingress.class" .Values.ledger.ingress.className}}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -10,24 +11,24 @@ apiVersion: networking.k8s.io/v1
 {{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
 apiVersion: networking.k8s.io/v1beta1
 {{- else -}}
-apiVersion: extensions/v1beta1  
+apiVersion: extensions/v1beta1
 {{- end }}
 kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "midaz.labels" (dict "context" . "component" .Values.grafana.name "name" .Values.grafana.name ) | nindent 4 }}
-  {{- with .Values.grafana.ingress.annotations }}
+    {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
+  {{- with .Values.ledger.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.grafana.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.grafana.ingress.className }}
+  {{- if and .Values.ledger.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.ledger.ingress.className }}
   {{- end }}
-  {{- if .Values.grafana.ingress.tls }}
+  {{- if .Values.ledger.ingress.tls }}
   tls:
-    {{- range .Values.grafana.ingress.tls }}
+    {{- range .Values.ledger.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -36,7 +37,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.grafana.ingress.hosts }}
+    {{- range .Values.ledger.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:
@@ -50,10 +51,10 @@ spec:
               service:
                 name: {{ $fullName }}
                 port:
-                  number: 3000 
+                  number: {{ $svcPort }}
               {{- else }}
               serviceName: {{ $fullName }}
-              servicePort: 3000
+              servicePort: {{ $svcPort }}
               {{- end }}
           {{- end }}
     {{- end }}

@@ -1,6 +1,7 @@
 {{- if .Values.onboarding.ingress.enabled -}}
-{{- $fullName := include "midaz-onboarding.fullname" . -}}
-{{- $svcPort := .Values.onboarding.service.port -}}
+{{- $ingressName := include "midaz-onboarding.fullname" . -}}
+{{- $targetService := include "onboarding.ingress.targetService" . -}}
+{{- $svcPort := include "onboarding.ingress.targetPort" . -}}
 {{- if and .Values.onboarding.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.onboarding.ingress.annotations "kubernetes.io/ingress.class") }}
   {{- $_ := set .Values.onboarding.ingress.annotations "kubernetes.io/ingress.class" .Values.onboarding.ingress.className}}
@@ -15,7 +16,7 @@ apiVersion: extensions/v1beta1
 {{- end }}
 kind: Ingress
 metadata:
-  name: {{ $fullName }}
+  name: {{ $ingressName }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.onboarding.name "name" .Values.onboarding.name ) | nindent 4 }}
   {{- with .Values.onboarding.ingress.annotations }}
@@ -49,11 +50,11 @@ spec:
             backend:
               {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
               service:
-                name: {{ $fullName }}
+                name: {{ $targetService }}
                 port:
                   number: {{ $svcPort }}
               {{- else }}
-              serviceName: {{ $fullName }}
+              serviceName: {{ $targetService }}
               servicePort: {{ $svcPort }}
               {{- end }}
           {{- end }}

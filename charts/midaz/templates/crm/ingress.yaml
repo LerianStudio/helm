@@ -1,9 +1,9 @@
-{{- if and .Values.nginx.enabled .Values.nginx.ingress.enabled -}}
-{{- $fullName := printf "%s-nginx" (include "midaz-console.fullname" .) -}}
-{{- $svcPort := .Values.nginx.service.ports.http -}}
-{{- if and .Values.nginx.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.nginx.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.nginx.ingress.annotations "kubernetes.io/ingress.class" .Values.nginx.ingress.className}}
+{{- if and .Values.crm.enabled .Values.crm.ingress.enabled -}}
+{{- $fullName := include "midaz-crm.fullname" . -}}
+{{- $svcPort := .Values.crm.service.port -}}
+{{- if and .Values.crm.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.crm.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.crm.ingress.annotations "kubernetes.io/ingress.class" .Values.crm.ingress.className}}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -17,18 +17,18 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "midaz.labels" (dict "context" . "component" "nginx" "name" "nginx" ) | nindent 4 }}
-  {{- with .Values.nginx.ingress.annotations }}
+    {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
+  {{- with .Values.crm.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.nginx.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.nginx.ingress.className }}
+  {{- if and .Values.crm.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.crm.ingress.className }}
   {{- end }}
-  {{- if .Values.nginx.ingress.tls }}
+  {{- if .Values.crm.ingress.tls }}
   tls:
-    {{- range .Values.nginx.ingress.tls }}
+    {{- range .Values.crm.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -37,7 +37,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.nginx.ingress.hosts }}
+    {{- range .Values.crm.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:

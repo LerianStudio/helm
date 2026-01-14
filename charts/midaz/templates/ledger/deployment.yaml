@@ -1,0 +1,114 @@
+{{- if .Values.ledger.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "midaz-ledger.fullname" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.ledger.revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ .Values.ledger.deploymentUpdate.type }}
+    {{- if eq .Values.ledger.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.ledger.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.ledger.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not .Values.ledger.autoscaling.enabled }}
+  replicas: {{ .Values.ledger.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.ledger.name ) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.ledger.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.ledger.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "midaz-ledger.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.ledger.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.37
+          envFrom:
+          - configMapRef:
+              name: {{ include "midaz-ledger.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              TIMEOUT={{ .Values.ledger.initContainer.timeoutSeconds | default 300 }};
+              MONGO_ONBOARDING_PORT_CLEAN=$(echo "$MONGO_ONBOARDING_PORT" | sed 's/[^0-9].*//');
+              MONGO_TRANSACTION_PORT_CLEAN=$(echo "$MONGO_TRANSACTION_PORT" | sed 's/[^0-9].*//');
+              RABBITMQ_PORT_HOST_CLEAN=$(echo "$RABBITMQ_PORT_HOST" | sed 's/[^0-9].*//');
+              for svc in "$DB_ONBOARDING_HOST:$DB_ONBOARDING_PORT" "$DB_ONBOARDING_REPLICA_HOST:$DB_ONBOARDING_REPLICA_PORT" "$DB_TRANSACTION_HOST:$DB_TRANSACTION_PORT" "$DB_TRANSACTION_REPLICA_HOST:$DB_TRANSACTION_REPLICA_PORT" "$RABBITMQ_HOST:$RABBITMQ_PORT_HOST_CLEAN" "$MONGO_ONBOARDING_HOST:$MONGO_ONBOARDING_PORT_CLEAN" "$MONGO_TRANSACTION_HOST:$MONGO_TRANSACTION_PORT_CLEAN";
+              do
+                echo "Checking $svc...";
+                ELAPSED=0;
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  if [ $ELAPSED -ge $TIMEOUT ]; then
+                    echo "Timeout waiting for $svc after ${TIMEOUT}s";
+                    exit 1;
+                  fi;
+                  echo "$svc is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)";
+                  sleep 5;
+                  ELAPSED=$((ELAPSED + 5));
+                done;
+                echo "$svc is ready!";
+              done;
+      containers:
+        - name: {{ include "midaz-ledger.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.ledger.securityContext | nindent 12 }}
+          image: "{{ .Values.ledger.image.repository }}:{{ .Values.ledger.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.ledger.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.ledger.useExistingSecret }}{{ .Values.ledger.existingSecretName }}{{ else }}{{ include "midaz-ledger.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "midaz-ledger.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ledger.service.port | default 3000 }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            {{- toYaml .Values.ledger.resources | nindent 12 }}
+      {{- with .Values.ledger.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ledger.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ledger.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

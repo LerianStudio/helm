@@ -2,7 +2,1364 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.0] - 2026-01-15
+## [425775a5297a03a3a14e03cf9fac02924798098c] - 2026-01-15
+
+### ✨ Features
+- add fallback to root image.tag in chart version update script
+- add product-console helm chart
+- improve RabbitMQ bootstrap script with smart URL handling and enhanced logging
+- enable ledger service by default
+- add CRM service with MongoDB integration and complete Kubernetes manifests
+- remove console service and nginx components
+- add conditional deployment logic for onboarding service and update ingress routing
+- add conditional deployment logic for transaction service
+- add ledger service with unified API and migration helpers
+- add ledger service configuration and restructure values files
+- Update new version otel and enable new metrics
+- Create Readme otel
+- Add parameters spanmetrics and remove masc some atribbute payload
+- update pix@1.2.1-beta.11, job@1.2.1-beta.11 - new env vars
+- update pix@1.2.1-beta.10, job@1.2.1-beta.10 - new env vars
+- Add masc log
+- add transaction gRPC configuration and update service versions
+- add gRPC port configuration for transaction service
+- add gRPC port to transaction service
+- add option to use existing secrets in helm chart
+- add RabbitMQ consumer credentials configuration in values-template
+- rename Smart Templates to Reporter and enhance RabbitMQ config
+- improve Helm setup reliability in release workflow
+- ajuste utilização recursos console
+- add CRM data source secrets and disable ingress by default
+- extend RBAC permissions for discovery service to access replicasets and list/watch deployments
+- add RBAC and nginx restart capability to service discovery job
+- add pre-install and pre-upgrade hooks to onboarding and transaction secrets
+- add Helm hooks to onboarding and transaction ConfigMaps for pre-install/upgrade ordering
+- add helm hook weights and delete policies for postgres and rabbitmq resources
+- enable telemetry for onboarding and transaction services
+- support external secrets for RabbitMQ admin credentials in Helm chart
+- add logical replication slot and improve SQL formatting
+- add postgres definitions and update security settings for console deployment
+- add external secret support for RabbitMQ and Postgres definitions in Helm chart
+- add Kubernetes manifests for PIX QR code service deployment
+- add Kubernetes manifests for plugin-br-pix-direct-jd job deployment
+- add helm chart for BR PIX direct JD plugin with PostgreSQL dependency
+- add initial helm chart for BR Pix Direct JD plugin
+- migrate from Bitnami chart to groundhog2k chart
+- allow custom nginx configmap names and update plugins.conf path to snippets directory
+- add security context and service account to nginx deployment
+- add imagePullSecrets and resource limits to nginx deployment
+- upgrade app version to 3.3.0 and add SSL mode configs for database connections
+- Add param identation
+- Publish new version collector
+- bump auth version
+- update transaction otel env var
+- update transaction otel env var
+- update otel env var
+- update app version
+- bump auth version
+- bump auth version
+- add fees ui env var
+- bump chart version BREAKING CHANGE: The REDIS_PORT environment variable has been removed its value must now be included directly in the REDIS_HOST variable
+- restructur plugins with frontend add support for external secrets and create guide to upgrade
+- update ui env vars
+- update values file
+- update transaction configmap
+- update onboarding configmap
+- update console configmap
+- update values file
+- update values template
+- Add param filter spam atribbute
+- create plugin fees ui functions
+- refactor plugin fees templates folder
+- add plugin fees ui templates
+- add crm ui templates
+- add crm ui functions
+- add plugin crm ui values
+- add plugin crm ui values
+- add service discovery job to plugins ui
+- updated default values.yaml, added new field annotations in service block to console, onboarding and transaction
+- add nginx paramters to midaz-console
+- plugins ui support to console
+- plugins ui support to console
+- plugins ui support to console
+- plugins ui support to console
+- plugins ui support to console
+- plugins ui support to console
+- plugins ui support to console
+- create secret to plugin-smart-templates ui
+- create values defintions to plugin-smart-templates ui
+- create functions to plugin-smart-templates ui
+- create helm templates to plugin-smart-templates ui
+- config internal collector in midaz
+- config internal collector in midaz
+- create internal collector helm chart
+- add valkey to smart templates chart
+- add configmap annotations
+- enable extra env vars
+- enable extra env vars
+- enable extra env vars to configmap template
+- enable extra env vars to values yaml
+- add user consumer config to rabbitmq
+- add support to external screts
+- add external secret support to worker values file
+- add external secret support to worker job
+- add ingress template
+- add external secret support paramters to values file
+- add external secret support to deployment
+- add nginx configuration templates
+- add nginx dependence for midaz-console
+- add values template file
+- casdoor bump version
+- plugin auth bump version
+- plugin identity bump version
+- values template file
+- values template file
+- transaction rabbitmq protocol variable
+- onboarding rabbitmq protocol variable
+- transaction bump version
+- onboarding bump version
+- transaction rabbitmq protocol variable
+- onboarding rabbitmq protocol variable
+- transaction rabbitmq protocol variable
+- onboarding rabbitmq protocol variable
+- transaction rabbitmq protocol variable
+- onboarding rabbitmq protocol variable
+- update auth version
+- update identity version
+- update rabbitmq documentation
+- update readme file
+- migrate from StatefulSet to Deployment
+- add job to apply default definitions to external rabbitmq host
+- add mongodb environments
+- add mongodb environments
+- add mongodb environments
+- add mongodb port
+- update app version
+- create job to apply migrations in casdoor db
+- update charts documentation
+- update charts documentation
+- add ingress templates
+- add ingress templates
+- create values file to plugin-fees
+- create chart templates to plugin-fees
+- create chart templates to plugin-fees
+- create values file to plugin-fees
+- create chart file to plugin-fees
+- add release step for ghcr
+- create chart templates to plugin crm
+- create values file to plugin crm
+- create doc to plugin crm
+- create chart file to plugin crm
+- update app version
+- update console version
+- update auth templates
+- update identity templates
+- update auth backend init file
+- update auth backend templates
+- update plugin access manager values
+- update auth templates
+- update console version
+- adds new env vars
+- configure pdb to auth backend
+- add security context to plugin identity
+- add auth backend templates
+- add auth backend helpers functions
+- update apps version and add backend config
+- create plugin access manager identity templates
+- create plugin access manager auth templates
+- create plugin access manager templates
+- create init config file
+- create init sql file
+- create plugin access manager values file
+- create plugin access manager chart file
+- update gitignore
+- new pipe to deploy all charts
+- new releaserc template
+- Create CNAME
+- add lerian banner
+- add secrets
+- add new env vars
+- add app new version and reference default secret
+- add app new version and reference default config
+- add general readme and moving midaz readme
+- update app version
+- update app version
+- create pdb definitions
+- create pdb template
+- create pdb template
+- create pdb template
+- add deployment strategy definitions
+- add deployment strategy
+- add deployment strategy
+- add deployment strategy
+- add new version
+- add new console env vars
+- update values file
+- update extra env vars for postgres
+- update resources limits
+- update values file
+- disable grafana
+- remove old components
+- add new env vars
+- add auth config
+- add auth config
+- update version
+- add branch develop to generate beta release
+- update version
+- update version
+- update version
+- update version
+- Add file Chart.yml config
+- update version
+- add new version
+- update console image
+- update console image
+- remove pgbouncer reference
+- enforce absolute DNS resolution
+- enforce absolute DNS resolution
+- enforce absolute DNS resolution
+- Add step helm install
+- Add releaseRule
+- Add helm semantic release
+- Add Semantic Release changelog
+- remove step commit history
+- remove step commit history
+- remove step commit history
+- remove step commit history
+- remove step commit history
+- remove step commit history
+- Add semantic changelog
+- Add semantic changelog
+- Add semantic changelog
+- Add semantic changelog
+- add init container in casdoor to check if the database is ready (#48) (#48)
+- add new parameters to chart file (#44) (#44)
+- update midaz version (#36) (#36)
+- helm doc (#26) (#26)
+- add doc
+- add doc
+- add doc
+- add doc
+- dependency update
+- dependency update
+- dependency update
+- create chart midaz opensource
+- add dependencies to midaz helm
+- enable karpenter node
+- add helm-compose config and karpenter node
+- add step to update gh-pages
+- add step to update gh-pages
+- add plugin to semantic-release
+- add plugin to semantic-release
+- add plugin to semantic-release
+- add plugin to semantic-release
+- add plugin to semantic-release
+- add plugin to semantic-release
+- add index to semantic-release versioning
+- add index to semantic-release versioning
+- add gpg key and clean file
+
+### 🐛 Bug Fixes
+- add missing MONGO_PARAMETERS to CRM configmap
+- enable external service bootstrap jobs by default for RabbitMQ and PostgreSQL
+- correct RabbitMQ bootstrap secret key reference from RABBITMQ_TRANSACTION_PASS to RABBITMQ_DEFAULT_PASS
+- use dig function for safer nested value access in ledger init container timeout
+- update README with ledger service documentation and remove console/nginx references
+- update ledger service default port from 3000 to 3002
+- correct REDIS_PASSWORD reference in identity secrets
+- update identity@2.1.1, auth@2.4.0 and use image.tag for version fields
+- remove generate_changelog dependency from back-merge step
+- update console@3.4.8, onboarding@3.4.8, transaction@3.4.8 and add back-merge workflow
+- add branch check to release notification job to only run on main branch
+- correct REDIS_PORT reference from au to identity in configmap
+- update pix@1.2.1-beta.7, job@1.2.1-beta.7
+- bump plugin-fees chart to version 3.4.4
+- remove hotfix branch from release config
+- add newline at end of values.yaml file
+- simplify hotfix branch prerelease configuration
+- bump chart and console versions to 4.4.3 and 3.4.3
+- update transaction service DNS name in onboarding config
+- remove RabbitMQ health check from onboarding deployment
+- correct RabbitMQ configuration path in transaction service
+- update Helm setup action to v3.5 in release workflow
+- standardize MIDAZ console URL configuration
+- align NextAuth URLs with reporter UI base URL
+- update reporter cm
+- add trailing slash to default MIDAZ_ONBOARDING_URL in fees configmap
+- remove hardcoded localhost URLs from console configmap
+- add missing space in MIDAZ_CONSOLE_BASE_PATH template expression
+- standardize base URL configuration using MIDAZ_CONSOLE_BASE_PATH as source of truth
+- use /bin/sh instead of /bin/bash in alpine kubectl container
+- update plugin registration URL to use midaz-console-nginx hostname
+- update default NGINX_BASE_PATH to use correct service name midaz-console-nginx
+- change Helm hooks from post-install to pre-install for Postgres and RabbitMQ initialization
+- rename PRIVATE_KEY to KEY in qr-code secrets template
+- update nginx deployment config with correct service account and simplified configmap names
+- update rabbitmq authentication format to use value field in helm chart
+- update rabbitmq authentication username field to user
+- midaz console configmap
+- midaz nginx proxy config
+- crm ui port
+- nginx server definition
+- nginx server definition
+- nginx server definitions
+- enable extra env vars to identity configmap template
+- enable extra env vars to auth configmap template
+- enable extra env vars to auth
+- enable extra env vars to identity
+- fix transaction deployment template
+- fix rabbitmq job to apply default definition
+- rollback plugin-access-manager version
+- rollback midaz version
+- remove empty variable
+- chart name
+- update default value to swagger hot env var
+- update image repository
+- update image repository
+- update default value to swagger hot env var
+- chart app version
+- onboarding adjust default value of env var
+- transaction adjust default value of env var
+- transaction init container
+- onboarding init container
+- job to apply rabbitmq definitions
+- update app image tag from 2.2.0 to 2.2.1
+- fix set secret ref to console deployment
+- fix typo in environment variable name
+- update mongodb default port
+- bump image tag to 2.2.1
+- update casdoor backend images
+- update casdoor backend images
+- resources limits in onboarding and transaction values
+- generate multiples CHANGELOG's
+- add new env var to enable auth plugin
+- auth env vars
+- remove old secrets
+- auth endpoint
+- remove old secrets
+- auth endpoint and remove old env var
+- rabbitmq mispelling name
+- rabbitmq mispelling name
+- rabbitmq mispelling name
+- disable auth ingress
+- fix transaction container port
+- fix default value of rabbitmq secret
+- fix autoscaling parameters
+- fix midaz transaction container port
+- remove grpc port from container
+- rename ledger to onboarding
+- rename env vars and update container port
+- rename env vars and update container port
+- rename ledger component to onboarding
+- rename ledger component to onboarding
+- load definitions for rabbitmq
+- init file for auth app
+- sql init for auth app
+- rename ledger db for onboarding
+- rename ledger component to onboarding
+- rename otel to grafana (#57) (#57)
+- add comments in values (#43) (#43)
+- fix audit configmap (#41) (#41)
+- update nginx ingress config (#35) (#35)
+- fix pr title workflow (#34) (#34)
+- Fix/pipes (#33)
+
+* fix: helm default values
+
+* fix: helm default values (#33)
+- setup otel in template (#24) (#24)
+- codeowners groups (#23) (#23)
+- update mongodb
+- remove hook
+- helm chart
+- templates
+- values
+- chart
+- chart
+- chart name
+- chart name
+
+### ⚡ Performance
+- Update resources
+- Update resources
+
+### 🔄 Changes
+- Extract table parsing utilities and improve version formatting
+- improve extraEnvVars handling in onboarding configmap
+- standardize environment variable naming and update service URLs
+- rename plugin-smart-templates to reporter across configuration files
+- rename plugin-smart-templates to reporter and replace MinIO with SeaweedFS
+- improve bootstrap jobs with TTL, parallelism and user existence checks
+- update nginx ingress configuration structure in values template
+- remove redundant nginx volume mount configurations in helm chart
+- otel colector path name
+- rename plugin smart templates frontend to ui
+- rename plugin smart templates frontend to ui
+- add plugin crm templates
+- add plugin crm ui templates
+- remove old component from rabbitmq config file
+- update image to push from GHCR
+- remove old dependencies from helpers
+- auth backend rename default app
+- refact sensitive envs name for plugins
+- configmap for auth db
+- refact backend folder
+- refact sensitive envs name for plugin identity
+- refact envs name for plugin identity
+- refact sensitive envs name for plugin auth
+- remove auth backend from plugin auth template
+- refact envs name for plugin auth
+- remove auth backend config from auth templates
+- remove old releaserc
+- rename helm chart
+- rename helm chart
+- update values reference for the secrets template
+- replace redis dependency with valkey
+- update values reference for the secrets template
+- replace redis dependency with valkey
+- replace redis dependency with valkey
+- replace redis dependency with valkey
+- replace redis dependency with valkey
+- using semantic-release
+
+### 📚 Documentation
+- correct RabbitMQ bootstrap secret key reference in values.yaml comments from RABBITMQ_TRANSACTION_PASS to RABBITMQ_DEFAULT_PASS
+- correct RabbitMQ app credentials secret key reference from RABBITMQ_TRANSACTION_PASS to RABBITMQ_DEFAULT_PASS
+- expand bootstrap job configuration with connection details and credential management for external services
+- update CRM configuration defaults and improve upgrade documentation for v5.0
+- update version mapping table to include Ledger and CRM services at version 3.5.0
+- update CRM documentation to reflect namespace migration and remove license requirements
+- add deprecation notice for onboarding and transaction services in upgrade guide
+- add upgrade guide for ledger service migration
+- update image tags in README to fees@3.0.5 and frontend@3.0.0
+- Update error message to include chart name in README matrix script
+- Update Plugin BR Pix Direct JD table header from Api to Pix version
+- Add Plugin BR Pix Direct JD documentation and version mapping
+- update component versions to 3.4.1
+- add instructions for manually creating service secrets in Kubernetes
+- add upgrade guide for v4.0 with breaking changes and migration steps
+- bump chart version in doc
+- bump chart and app versions
+- chore(midaz)remove redis port env var BREAKING CHANGE: The REDIS_PORT environment variable has been removed its value must now be included directly in the REDIS_HOST variable
+- create v3.0 readme
+- create 3.0 upgrade guide
+- create 3.0 upgrade guide
+- create 3.0 upgrade guide
+- create 3.0 upgrade guide
+- charts/midaz: Update CHANGELOG for midaz-v2.6.0-beta.4
+- charts/plugin-access-manager: Update CHANGELOG for plugin-access-manager-v2.3.0-beta.2
+- charts/midaz: Update CHANGELOG for midaz-v2.6.0-beta.3
+- charts/plugin-smart-templates: Update CHANGELOG for plugin-smart-templates-v1.2.0-beta.4
+- charts/plugin-access-manager: Update CHANGELOG for plugin-access-manager-v2.2.0-beta.3
+- charts/plugin-access-manager: Update CHANGELOG for plugin-access-manager-v2.2.0-beta.2
+- charts/plugin-smart-templates: Update CHANGELOG for plugin-smart-templates-v1.2.0-beta.2
+- update applications version mapping
+- charts/plugin-fees: Update CHANGELOG for plugin-fees-v1.3.0
+- charts/plugin-fees: Update CHANGELOG for plugin-fees-v1.3.0-beta.2
+- add values template file
+- charts/plugin-crm: Update CHANGELOG for plugin-crm-v1.3.0-beta.1
+- charts/midaz: Update CHANGELOG for midaz-v2.5.0
+- charts/midaz: Update CHANGELOG
+- charts/midaz: Update CHANGELOG
+- charts/midaz: Update CHANGELOG
+- charts/midaz: Update CHANGELOG
+- charts/midaz: Update CHANGELOG
+- charts/midaz: Update CHANGELOG
+- charts/midaz: Update CHANGELOG
+- update values example
+- charts/midaz: Update CHANGELOG
+- values template example (#242) (#242)
+- create readme file to plugin-fees
+- update app and chart version in readme file
+- update app and chart version in readme file
+- Update README.md
+- Update README.md
+- add plugin access manager doc
+- add midaz doc
+- add project doc
+- Initial commit
+
+### 🧪 Testing
+- test remove extra-plugin
+- test novo fluxo
+- Remove plugin helm test
+- Instal nodejs test
+- Comment path-ignore run test
+
+### 👷 CI/CD
+- update release workflow
+- fix ci
+- block trigger from bot
+- block trigger from bot
+- publish closed version only
+- remove changelog generator from semantic release plugin
+- update semantic release workflow
+- update scopes to pr title
+- add permission to action can write labels in pr
+- remove firt lint
+- update labels
+- update releaserc file
+- update pr template
+- add step to publish release in lifecycle management
+- Add semantic release helm
+- Add semantic release helm
+- Ajuste config semantic-release
+- Ajuste config semantic-release
+- Ajuste config semantic-release
+- Ajuste config semantic-release
+- Add file Chart.yml config
+- Add file Chart.yml config
+- Ajuste name plugin
+- Ajuste name plugin
+- Ajuste param plugin helm
+- Remove comment
+
+### 💄 Style
+- fix missing newline at end of configmap template
+- remove trailing newline from UI configmap template
+
+### 🔧 Maintenance
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 5.0.0
+- bump auth image tag from 2.4.0 to 2.4.4
+- 5.1.2
+- 5.1.1
+- 5.1.0
+- 5.0.3
+- 5.0.2
+- standardize bootstrap job documentation and improve external service configuration examples
+- 5.0.1
+- 5.0.0
+- 4.6.0-alpha.6
+- 4.6.0-alpha.5
+- 4.6.0-alpha.4
+- 4.6.0-alpha.3
+- 4.6.0-alpha.2
+- 4.6.0-alpha.1
+- remove nginx configuration from values.yaml
+- update midaz-ledger branch name to refactor/midaz-ledger
+- add midaz-ledger branch to semantic-release configuration
+- 4.2.2
+- Envio de redis_password (padrao secrets.yaml)
+
+Variável redis_password é definida em caso de estar preenchida no yaml da aplicação.
+- 4.2.1
+- 3.5.1
+- update appVersion and image tag to 3.0.5
+- 4.5.0
+- 2.2.1
+- 3.3.0
+- update appVersion and image tag to 2.0.1, remove imagePullSecrets
+- 3.5.0
+- update appVersion and image tag to 3.0.4
+- 4.2.0
+- 4.2.0-beta.3
+- remove imagePullSecrets and add Redis configuration to identity component with initUser enabled for auth
+- 4.2.0-beta.2
+- add Redis configuration to identity component and update script to sync app versions from values.yaml
+- 4.2.0-beta.1
+- add validation for existing secret and update default admin password
+- update image versions and add init user job configuration
+- 2.2.0
+- 2.2.0-beta.1
+- adjust heading levels in README and add separator line
+- update README title and remove trailing newline
+- 1.3.0-beta.2
+- 1.3.0-beta.1
+- Simplify README parsing logic and add debug output in release notification workflow
+- 1.2.6
+- Remove binary scripts and add them to gitignore
+- Add executable scripts for chart version and README matrix updates
+- 1.2.6-beta.1
+- Add Helm chart automation scripts and workflows
+- 4.4.8
+- Update transaction service version to 3.4.7
+- 1.1.7
+- 3.4.7
+- 3.2.1
+- 1.2.5
+- 4.1.1
+- 2.1.1
+- 4.4.7
+- 1.1.7-beta.1
+- 3.4.7-beta.1
+- 3.2.1-beta.1
+- 1.2.5-beta.1
+- 4.1.1-beta.1
+- 2.1.1-beta.1
+- 4.4.7-beta.1
+- Update version otel
+- 1.1.6
+- 3.4.6
+- 3.2.0
+- 1.2.4
+- 4.1.0
+- 2.1.0
+- 1.1.6-beta.1
+- 3.4.6-beta.1
+- 3.2.0-beta.1
+- 1.2.4-beta.1
+- 4.1.0-beta.1
+- 2.1.0-beta.1
+- Remove processor log
+- 3.4.5
+- 3.4.5-beta.1
+- update fees version from 3.0.2 to 3.0.3
+- 4.4.6
+- 4.4.6-beta.1
+- rename plugin-smart-templates-ui to reporter-ui in values-template.yaml
+- update chart version from 4.4.5 to 4.4.6 and console version from 3.4.3 to 3.4.6
+- update console version from 3.4.3 to 3.4.6 and rename plugin-smart-templates-ui to reporter-ui
+- Remove service graph
+- 4.4.5
+- 4.4.5-beta.1
+- update transaction version from 3.4.4 to 3.4.5
+- 1.1.5
+- 1.1.4-beta.2
+- remove default regcred from imagePullSecrets configuration
+- 1.1.4
+- 1.1.4-beta.1
+- add newline at end of values.yaml file
+- disable helm plugin signature verification in release workflow
+- update SeaweedFS filer port from 9000 to 8888
+- bump appVersion to 4.0.0 and update SeaweedFS configuration
+- 4.4.4
+- remove unnecessary verify flag from helm unittest plugin install
+- 4.4.4-beta.1
+- add newline at end of values.yaml file
+- disable helm plugin signature verification in CI
+- bump onboarding and transaction versions to 3.4.4
+- 3.4.4
+- 3.4.4-beta.1
+- bump plugin-fees application version to 3.0.2
+- 3.4.3-beta.2
+- 1.1.3
+- 3.4.3
+- 1.2.3
+- 4.4.3
+- 1.1.3-beta.1
+- 3.4.3-beta.1
+- 1.2.3-beta.1
+- 4.4.3-beta.1
+- 4.4.2-beta.2
+- 1.1.2
+- 3.4.2
+- 1.2.2
+- 4.4.2
+- 1.1.2-beta.1
+- 3.4.2-beta.1
+- 1.2.2-beta.1
+- 4.4.2-beta.1
+- 4.4.1-beta.1
+- bump transaction service image tag to 3.4.2
+- 1.1.1
+- 3.4.1
+- 1.2.1
+- 4.4.1
+- 1.1.1-beta.1
+- 3.4.1-beta.1
+- 1.2.1-beta.1
+- bump chart version to 4.4.1
+- 4.4.0-beta.11
+- bump application version to 3.4.1
+- 1.1.0
+- 3.4.0
+- 1.2.0
+- 4.4.0
+- 1.1.0-beta.1
+- 3.4.0-beta.1
+- 1.2.0-beta.1
+- 4.4.0-beta.10
+- 4.4.0-beta.9
+- update component versions in README file
+- 4.4.0-beta.8
+- 4.4.0-beta.7
+- 4.4.0-beta.6
+- 4.4.0-beta.5
+- 4.4.0-beta.4
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 3.3.0
+- 1.1.0
+- 4.4.0
+- pin GitHub Actions to specific commit hashes
+- 4.4.0-beta.3
+- 1.0.0-beta.6
+- 4.4.0-beta.2
+- 1.0.0-beta.5
+- 1.0.0-beta.4
+- 3.3.0-beta.1
+- 4.4.0-beta.1
+- 1.1.0-beta.2
+- update plguin pix jd envs
+- 1.1.0-beta.1
+- update plguin pix jd envs
+- 1.0.0-beta.3
+- 1.0.0-beta.2
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- update chart version to 0.0.1 and app version to 3.1.0
+- remove deprecated plugin-smart-templates helm chart
+- 3.2.0
+- bump chart version to 3.2.0 and dependencies to 2.1.1
+- 3.2.0-beta.1
+- 3.0.1
+- 3.1.1
+- 3.1.1
+- 4.3.1
+- 3.0.1-beta.1
+- 3.1.1-beta.1
+- 3.1.1-beta.1
+- 4.3.1-beta.1
+- 3.1.0-beta.3
+- bump plugin-fees versions to 2.1.1
+- 3.0.0
+- 3.1.0
+- 3.1.0
+- 4.3.0
+- bump chart versions for access-manager, fees, crm and transaction components
+- 3.1.0-beta.2
+- update frontend service port from 8081 to 8084 in plugin-fees chart
+- 4.3.0-beta.7
+- 4.3.0-beta.6
+- 4.3.0-beta.5
+- 4.3.0-beta.4
+- 4.3.0-beta.3
+- bump transaction image tag from 3.3.4 to 3.3.6
+- 4.3.0-beta.2
+- remove pre-install/upgrade helm hooks from secret templates
+- remove helm pre-install/upgrade hooks from onboarding and transaction configmaps
+- 3.0.0-beta.1
+- 3.1.0-beta.1
+- 3.1.0-beta.1
+- 4.3.0-beta.1
+- 4.2.1
+- 4.2.1-beta.1
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 4.2.0
+- 4.2.0-beta.2
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 4.2.0-beta.1
+- bump appVersion from 3.3.1 to 3.3.5
+- bump chart version to 4.2.0 and update component versions in documentation
+- bump chart version to 4.1.0 and update component versions
+- 1.0.0-beta.2
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- add BR PIX Direct JD plugin to PR template and title validation
+- 4.1.0
+- 3.0.0
+- 3.0.0
+- 4.0.0
+- 2.0.0
+- 4.0.0
+- 3.0.0-beta.1
+- 3.0.0-beta.1
+- 4.0.0-beta.1
+- 2.0.0-beta.1
+- 4.0.0-beta.1
+- update service tags to 3.3.1 and refactor RabbitMQ configuration
+- bump app version from 3.3.0 to 3.3.1
+- update chart version to 4.0.0 and component versions to 3.3.1
+- 3.3.0-beta.6
+- 3.3.0-beta.5
+- 3.3.0-beta.4
+- 3.3.0-beta.3
+- 3.3.0-beta.2
+- set rabbitmq helm chart version to 2.1.11
+- migrate dependencies from Bitnami to alternative solutions and set images to bitnamisecure repo with latest tag
+- 2.2.0
+- 2.2.0
+- 3.2.0
+- 1.2.0
+- 3.3.0
+- 2.2.0-beta.1
+- 2.2.0-beta.1
+- 3.2.0-beta.1
+- 1.2.0-beta.1
+- 3.3.0-beta.1
+- 2.1.1
+- 2.1.1
+- 3.1.3
+- 1.1.2
+- 3.2.2
+- 3.2.2-beta.4
+- Set enable true collector default
+- 3.2.2-beta.3
+- update version collector
+- 1.1.2-beta.2
+- 3.2.2-beta.2
+- update version collector
+- 2.1.1-beta.1
+- 2.1.1-beta.1
+- 3.1.3-beta.1
+- 1.1.2-beta.1
+- 3.2.2-beta.1
+- optmization querys, traces, adjust spanmetrics
+- 2.1.0
+- 2.1.0
+- 3.1.2
+- 1.1.1
+- 3.2.1
+- 2.1.0-beta.1
+- 2.1.0-beta.1
+- 3.1.2-beta.1
+- 1.1.1-beta.1
+- 3.2.1-beta.1
+- 3.1.1
+- 1.1.0
+- 3.2.0
+- 3.1.1-beta.1
+- 1.1.0-beta.1
+- 3.2.0-beta.1
+- 3.1.0-beta.2
+- allow overriding backend image via values
+- 3.1.0
+- 3.1.0-beta.1
+- 3.1.0
+- 3.1.0-beta.3
+- 3.1.0-beta.2
+- 3.1.0-beta.1
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- Update Chart.yaml
+- Update Chart.yaml
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 2.0.2
+- 2.0.2
+- 2.0.2
+- 3.0.2
+- 1.0.2
+- 3.0.2
+- 2.0.2-beta.2
+- 2.0.2-beta.2
+- 2.0.2-beta.2
+- 3.0.2-beta.2
+- 1.0.2-beta.3
+- trigger plugins releases
+- 1.0.2-beta.2
+- 3.0.2-beta.2
+- trigger plugins releases
+- 2.0.2-beta.1
+- 2.0.2-beta.1
+- 2.0.2-beta.1
+- 3.0.2-beta.1
+- 1.0.2-beta.1
+- 3.0.2-beta.1
+- change update document for midaz helm chart + change DATASOURCE_FEES_PORT default value in smart templates plugin
+- 2.0.1
+- 2.0.1
+- 2.0.1
+- 3.0.1
+- 1.0.1
+- 3.0.1
+- 2.0.1-beta.1
+- 2.0.1-beta.1
+- 2.0.1-beta.1
+- 3.0.1-beta.2
+- 1.0.1-beta.3
+- 3.0.1-beta.3
+- 1.0.1-beta.2
+- 3.0.1-beta.2
+- 3.0.1-beta.1
+- 1.0.1-beta.1
+- 3.0.1-beta.1
+- set app versions for all plugins
+- set app versions for all plugins
+- 2.0.0
+- 2.0.0
+- 2.0.0
+- 3.0.0
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 3.0.0
+- 3.0.0-beta.9
+- 4.0.0-beta.1
+- Merge main into develop to sync branches
+- Merge main into develop to sync branches
+- Merge main into develop to sync branches
+- 2.0.0-beta.6
+- 2.0.0-beta.9
+- 2.0.0-beta.8
+- 3.0.0-beta.8
+- 3.0.0-beta.13
+- 2.0.0-beta.5
+- 2.0.0-beta.8
+- 2.0.0-beta.7
+- 3.0.0-beta.7
+- 3.0.0-beta.12
+- bump all plugin versions to 2.0.0 and update Casdoor dependencies
+- 2.0.0-beta.7
+- 3.0.0
+- chart bump version BREAKING CHANGE: The REDIS_PORT environment variable has been removed its value must now be included directly in the REDIS_HOST variable.
+- 2.7.0
+- 2.6.0
+- update docs
+- merge charts/midaz from develop to main
+- merge charts/midaz from develop to main
+- 3.0.0-beta.11
+- update app version
+- 3.0.0-beta.10
+- update app version
+- 3.0.0-beta.6
+- update redis port env var
+- update redis host env var
+- 2.0.0-beta.4
+- update cm
+- 2.0.0-beta.6
+- update env var
+- 3.0.0-beta.9
+- update nginx config
+- 2.0.0-beta.5
+- remove old env var
+- 3.0.0-beta.8
+- update nginx config
+- update nginx config
+- update nginx config
+- 2.0.0-beta.3
+- 2.0.0-beta.6
+- 2.0.0-beta.4
+- 3.0.0-beta.5
+- 3.0.0-beta.7
+- update release pipeline
+- 3.0.0-beta.4
+- update auth backend version
+- 3.0.0-beta.6
+- update nginx buffers
+- 3.0.0-beta.5
+- update console extra env template
+- 3.0.0-beta.4
+- update console extra env template
+- configure revisionHistoryLimit for all deployments in all charts
+- excluding trailing spaces
+- 2.0.0-beta.5
+- change labels in fees templates
+- add plugins scope
+- change selector in fee svc
+- 2.0.0-beta.2
+- 2.0.0-beta.4
+- 2.0.0-beta.3
+- 3.0.0-beta.3
+- 2.0.0-beta.2
+- 3.0.0-beta.2
+- setup license env vars in secrets for all plugins
+- 3.0.0-beta.1
+- update migration script
+- 2.0.0-beta.3
+- update configmap
+- 2.0.0-beta.1
+- 2.0.0-beta.2
+- update configmap
+- 2.0.0-beta.1
+- add container securityContext
+- 3.0.0-beta.3
+- 3.0.0-beta.2
+- 2.0.0-beta.1
+- 3.0.0-beta.1
+- remove redis port env var BREAKING CHANGE: The REDIS_PORT environment variable has been removed its value must now be included directly in the REDIS_HOST variable.
+- 2.6.0-beta.19
+- chore(midaz)remove redis port env var BREAKING CHANGE: The REDIS_PORT environment variable has been removed its value must now be included directly in the REDIS_HOST variable.
+- Alter version otel-collector
+- 1.4.0-beta.4
+- 2.3.0-beta.5
+- 1.0.0-beta.3
+- 2.3.0-beta.4
+- 2.6.0-beta.18
+- 1.4.0-beta.2
+- Alter parameter collector-lerian default=false
+- 1.4.0-beta.3
+- 1.4.0-beta.2
+- 2.6.0-beta.17
+- 1.4.0-beta.3
+- 1.4.0-beta.2
+- 2.6.0-beta.16
+- 1.4.0-beta.1
+- 2.3.0-beta.3
+- Add parameter enpoint default for export metrics Lerian
+- 2.6.0-beta.15
+- 1.3.0-beta.7
+- updated console, onboarding and transaction services templates to receive annotations from values.yaml
+- remove unused env vars from worker secret - plugin-smart-templates
+- 2.6.0-beta.14
+- 2.6.0-beta.13
+- 2.6.0-beta.12
+- 2.6.0-beta.11
+- 2.6.0-beta.10
+- 2.6.0-beta.9
+- 1.3.0-beta.6
+- 2.6.0-beta.8
+- add fee metadata envs and configure redis envs
+- 1.3.0-beta.5
+- 1.3.0-beta.4
+- configure new env vars for plugin-smart-template
+- configure new env vars for plugin-smart-template
+- 2.6.0-beta.7
+- 2.6.0-beta.6
+- Alter version collector
+- 1.0.0-beta.2
+- Remove config port otlp/grpc
+- 2.6.0-beta.5
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 2.6.0-beta.4
+- 1.3.0-beta.3
+- 1.3.0-beta.2
+- 1.3.0-beta.1
+- 1.4.0-beta.1
+- 1.4.0-beta.1
+- 2.3.0-beta.2
+- 2.6.0-beta.3
+- 2.6.0-beta.2
+- 1.3.0
+- 2.3.0-beta.1
+- 2.6.0-beta.1
+- 1.2.0-beta.4
+- rollback env var value
+- Update values.yaml
+- 2.2.0
+- 2.2.0-beta.3
+- 2.2.0-beta.2
+- 2.2.0-beta.1
+- 1.2.0
+- 1.2.0-beta.3
+- 1.2.0-beta.2
+- 1.2.0-beta.1
+- 2.0.0-beta.1
+- 1.3.0
+- 1.3.0-beta.2
+- 1.3.0-beta.1
+- 2.0.0-beta.1
+- 1.3.0
+- 1.3.0-beta.1
+- 2.0.0-beta.1
+- update app version in chart file
+- update app version in values file
+- 2.5.0
+- 2.5.0-beta.1
+- 2.4.0-beta.3
+- 2.4.0
+- 2.4.0-beta.2
+- 2.4.0-beta.1
+- 2.3.1
+- 2.3.1-beta.4
+- 2.3.1-beta.3
+- 2.3.1-beta.2
+- 2.3.1-beta.1
+- 2.3.0
+- 2.3.0-beta.1
+- 2.2.0
+- 2.1.0
+- 2.1.0
+- 2.1.0-beta.1
+- 2.1.0-beta.1
+- 2.0.0
+- 2.0.0-beta.1
+- 2.0.0
+- 2.0.0-beta.3
+- 2.0.0-beta.2
+- 2.0.0-beta.1
+- 1.64.0-beta.4
+- 1.64.0-beta.3
+- Update charts/midaz/templates/console/secrets.yaml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 1.64.0-beta.2
+- 1.64.0-beta.1
+- Update charts/midaz/values.yaml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 1.8.0
+- 1.8.0-beta.2
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- Add plugin smart-template
+- 1.8.0-beta.1
+- removing volumes for migrations and update image to use the custom image
+- removing script for casdoor
+- removing script for casdoor
+- removing volume for migrations
+- 1.1.0
+- 1.1.0
+- 1.63.0
+- add gpg key to sign bot commits
+- 1.1.0-beta.1
+- 1.1.0-beta.1
+- add sufixo in chart name
+- add sufixo in chart name
+- add sufixo in chart name
+- add sufixo in chart name
+- 1.63.0-beta.1
+- 1.62.0
+- 1.62.0-beta.1
+- 1.61.0-beta.1
+- 1.7.0
+- 1.61.0
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 1.6.0
+- 1.60.0
+- 1.0.0-beta.2
+- Update charts/plugin-crm/templates/helpers.tpl
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 1.6.0-beta.2
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- Update charts/plugin-fees/templates/ingress.yaml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- Update charts/plugin-fees/templates/configmap.yaml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- Update charts/plugin-crm/templates/configmap.yaml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- Update charts/plugin-crm/templates/ingress.yaml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 1.6.0-beta.1
+- 1.60.0-beta.1
+- 1.5.0
+- 1.59.1
+- 1.5.0-beta.1
+- 1.59.0-beta.2
+- 1.59.0
+- 1.59.0-beta.1
+- 1.4.1
+- 1.4.1-beta.1
+- 1.4.0-beta.2
+- 1.4.0
+- 1.58.0
+- 1.58.0-beta.1
+- 1.4.0-beta.1
+- 1.3.1
+- 1.57.1
+- 1.3.1-beta.1
+- 1.57.1-beta.1
+- 1.57.0-beta.2
+- 1.3.0
+- 1.57.0
+- 1.3.0-beta.1
+- 1.57.0-beta.1
+- 1.56.0-beta.2
+- 1.2.0
+- 1.56.0
+- 1.56.0-beta.1
+- 1.1.0-beta.4
+- 1.1.0
+- 1.55.0
+- 1.1.0-beta.3
+- 1.55.0-beta.1
+- 1.1.0-beta.2
+- 1.1.0-beta.1
+- Update charts/plugin-access-manager/templates/identity/secrets.yaml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- Update charts/plugin-access-manager/templates/auth/secrets.yaml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 1.0.1
+- 1.54.1
+- 1.0.1-beta.1
+- 1.0.0-beta.3
+- 1.0.0-beta.2
+- 1.54.0-beta.1
+- 1.54.0-beta.1
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 1.0.0 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- 1.0.0-beta.2
+- set git tag in changelog message
+- set stable version
+- 1.0.0-beta.1 (#41, #35, #34, #43, #26, #57, #24, #36, #44, #48, #23)
+- Update charts/plugin-access-manager/templates/auth/configmap-config.yaml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 1.54.0
+- 1.54.0-beta.1
+- update release version
+- 1.53.0
+- 1.52.0
+- update release version
+- 1.53.0
+- 1.52.0
+- 1.52.0-beta.3
+- 1.52.0-beta.2
+- 1.52.0-beta.1
+- 1.51.2
+- 1.51.2-beta.2
+- update component name in pr title
+- update component name
+- remove old dependencies references
+- remove old dependencies references
+- remove old dependencies references
+- remove old dependencies references
+- remove old dependencies references
+- remove old dependencies references
+- add new parameters for postgres
+- 1.51.2-beta.1
+- add feature flat to console
+- add new env var for rabbitmq
+- add new env var
+- remove reff from old dependencies
+- add feature flat to console
+- remove reff for old dependencies
+- 1.51.1
+- update midaz chart version
+- update midaz app version
+- adjust the helm plugin to only update version
+- 1.51.0
+- Update charts/midaz/templates/onboarding/secrets.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- remove casdoor db reference
+- remove mariadb reference
+- remove casdoor reference
+- add valkey reff and env vars to set external services
+- 1.50.0
+- 1.50.0-beta.4
+- 1.50.0-beta.3
+- 1.50.0-beta.2
+- 1.50.0-beta.1
+- Update chart.yaml
+- 1.49.5
+- 1.49.4
+- 1.49.3
+- 1.49.2
+- 1.49.1
+- 1.49.0
+- 1.49.1
+- 1.49.0
+- 1.17.0
+- 1.16.3
+- 1.16.2
+- 1.16.1
+- Ajuste sintax
+- Ajuste release rules
+- Alter orden execute plugin and remove step
+- Alter ordem
+- Ajsuste id step
+- Alter plugin helm
+- Remove version plugin
+- Remove need step
+- Ajuste steps github actions
+- 1.16.0 (#57)
+- 1.15.0
+- 1.14.0
+- 1.13.0 (#41, #35, #34, #43, #26, #24, #36, #44, #48, #23)
+- 1.13.0-changelog.1 (#41, #35, #34, #43, #26, #24, #36, #44, #48, #23)
+- Alter start branch push
+- Alter start branch push
+- set securityContext of dockers on Midaz
+- 1.12.8
+- fix
+- 1.12.7
+- add condition to dependencies
+- 1.12.6
+- debug
+- 1.12.5
+- debug
+- 1.12.4
+- debug
+- 1.12.3
+- update version
+- 1.12.2
+- debug
+- 1.12.1
+- update semantic release version
+- 1.12.0
+- 1.11.1
+- debug
+- 1.11.0
+- 1.10.2
+- debug
+- 1.10.1
+- debug
+- 1.10.0
+- 1.9.1
+- debug
+- 1.9.0
+- 1.8.6
+- add healthcheck
+- 1.8.5
+- debug mongo and postgres integration
+- 1.8.4
+- add configmap to deployment
+- 1.8.3
+- debug configmap file
+- 1.8.2
+- add configmap file
+- 1.8.1
+- debug
+- 1.8.0
+- 1.7.11
+- refining flow
+- 1.7.10
+- remove merge back
+- 1.7.9
+- clean semantic-release usage
+- 1.7.8
+- clean semantic-release usage
+- 1.7.7
+- debug
+- debug
+- debug
+- debug
+- debug
+- debug
+- 1.7.6
+- debug
+- 1.7.5
+- fix
+- 1.7.4
+- fix
+- add debug steps
+- 1.7.3
+- add debug steps
+- 1.7.2
+- add debug steps
+- 1.7.1
+- add debug steps
+- 1.7.0
+- 1.6.0
+- 1.5.0
+- 1.4.0
+- 1.3.0
+- 1.2.0
+- 1.1.0
+- 1.0.7
+- debug
+- 1.0.6
+- debug
+- debug
+- 1.0.5
+- debug
+- 1.0.4
+- debug
+- 1.0.3
+- add step to login
+- 1.0.2
+- debug
+- 1.0.1
+- debug
+- 1.0.0
+- pin version
+- add plugin install
+- debug
+- debug
+- debug
+- debug
+- debug
+- debug
+- debug
+- debug publish
+- debug publish
+- debug publish
+- debug publish
+- remove step
+- comment step
+- comment step
+- comment step
+- debug jobs
+- change version
+- fix paths
+
+
+## [product-console-1.0.0] - 2026-01-15
 
 ### Added
 - Initial release of Product Console Helm chart

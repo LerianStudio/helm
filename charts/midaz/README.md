@@ -246,75 +246,188 @@ transaction:
   existingSecretName: "midaz-transaction"
 ```
 
-### Console:
+### Ledger (Unified Service)
+
+The `ledger` service is a unified service that combines the functionality of both onboarding and transaction modules into a single deployment. This service is recommended for new installations and will become mandatory in future releases.
+
+> **Important:** When `ledger.enabled` is set to `true`, the onboarding and transaction services are automatically disabled (unless `migration.allowAllServices` is set to `true` for testing purposes).
 
 | Parameter | Description | Default Value |
 |---|---|---|
-| `console.name` | Service name. | `"console"` |
-| `console.enabled` | Enable or disable the console service. | `true` |
-| `console.replicaCount` | Number of replicas for the deployment. | `1` |
-| `console.image.repository` | Docker image repository for Console. | `"lerianstudio/midaz-console"` |
-| `console.image.pullPolicy` | Docker image pull policy. | `"IfNotPresent"` |
-| `console.image.tag` | Docker image tag used for deployment. | `"3.3.5"` |
-| `console.imagePullSecrets` | Secrets for pulling Docker images from a private registry. | `[]` |
-| `console.nameOverride` | Overrides the resource name. | `""` |
-| `console.fullnameOverride` | Overrides the full resource name. | `""` |
-| `console.podAnnotations` | Annotations for the pods. | `{}` |
-| `console.podSecurityContext` | Security context applied at the pod level. | `{}` |
-| `console.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
-| `console.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `false` |
-| `console.pdb.minAvailable` | Minimum number of available pods for PodDisruptionBudget. | `1` |
-| `console.pdb.maxUnavailable` | Maximum number of unavailable pods for PodDisruptionBudget. | `1` |
-| `console.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
-| `console.deploymentUpdate.*` | Deployment update strategy. | See `values.yaml` |
-| `console.service.type` | Kubernetes service type. | `"ClusterIP"` |
-| `console.service.port` | Service port. | `8081` |
-| `console.service.annotations` | Annotations for the service. | `{}` |
-| `console.ingress.enabled` | Specifies whether Ingress is enabled. | `false` |
-| `console.ingress.className` | Ingress class name. | `""` |
-| `console.ingress.annotations` | Additional annotations for Ingress. | `{}` |
-| `console.ingress.hosts` | Configured hosts for Ingress and associated paths. | `[]` |
-| `console.ingress.tls` | TLS configurations for Ingress. | `[]` |
-| `console.resources.*` | CPU/Memory resource requests/limits. | See `values.yaml` |
-| `console.autoscaling.enabled` | Specifies whether horizontal pod autoscaling is enabled. | `true` |
-| `console.autoscaling.minReplicas` | Minimum number of replicas for autoscaling. | `1` |
-| `console.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `3` |
-| `console.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling. | `80` |
-| `console.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling. | `80` |
-| `console.nodeSelector` | Node selectors for pod scheduling. | `{}` |
-| `console.tolerations` | Tolerations for pod scheduling. | `{}` |
-| `console.affinity` | Affinity rules for pod scheduling. | `{}` |
-| `console.configmap.*` | Environment variables for the service. | See `values.yaml` |
-| `console.secrets.*` | Secrets for the service. | See `values.yaml` |
-| `console.useExistingSecret` | Use an existing secret instead of creating a new one. | `false` |
-| `console.existingSecretName` | The name of the existing secret to use. | `""` |
-| `console.extraEnvVars` | A list of extra environment variables. | `[]` |
-| `console.pluginsUi.enabled` | Enable or disable the plugins UI proxy. | `false` |
-| `console.pluginsUi.plugins.*` | Configuration for each plugin UI. | See `values.yaml` |
-| `console.serviceAccount.create` | Specifies whether the service account should be created. | `true` |
-| `console.serviceAccount.annotations` | Annotations for the service account. | `{}` |
-| `console.serviceAccount.name` | Service account name. If not defined, it will be generated automatically. | `""` |
+| `ledger.enabled` | Enable or disable the ledger service. | `false` |
+| `ledger.name` | Service name. | `"ledger"` |
+| `ledger.replicaCount` | Number of replicas for the ledger service. | `1` |
+| `ledger.image.repository` | Repository for the ledger service container image. | `"lerianstudio/midaz-ledger"` |
+| `ledger.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |
+| `ledger.image.tag` | Image tag used for deployment. | `""` (defaults to Chart.AppVersion) |
+| `ledger.imagePullSecrets` | Secrets for pulling images from a private registry. | `[]` |
+| `ledger.nameOverride` | Overrides the default generated name by Helm. | `""` |
+| `ledger.fullnameOverride` | Overrides the full name generated by Helm. | `""` |
+| `ledger.podAnnotations` | Pod annotations for additional metadata. | `{}` |
+| `ledger.podSecurityContext` | Security context applied at the pod level. | `{}` |
+| `ledger.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
+| `ledger.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `true` |
+| `ledger.pdb.minAvailable` | Minimum number of available pods. | `1` |
+| `ledger.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
+| `ledger.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
+| `ledger.deploymentUpdate.*` | Deployment update strategy. | See `values.yaml` |
+| `ledger.service.type` | Kubernetes service type. | `"ClusterIP"` |
+| `ledger.service.port` | Port for the HTTP API. | `3000` |
+| `ledger.service.annotations` | Annotations for the service. | `{}` |
+| `ledger.ingress.enabled` | Specifies whether Ingress is enabled. | `false` |
+| `ledger.ingress.className` | Ingress class name. | `""` |
+| `ledger.ingress.annotations` | Additional ingress annotations. | `{}` |
+| `ledger.ingress.hosts` | Configured hosts for Ingress and associated paths. | `[]` |
+| `ledger.ingress.tls` | TLS configurations for Ingress. | `[]` |
+| `ledger.resources.*` | CPU/Memory resource requests/limits. | See `values.yaml` |
+| `ledger.autoscaling.enabled` | Specifies whether autoscaling is enabled. | `true` |
+| `ledger.autoscaling.minReplicas` | Minimum number of replicas for autoscaling. | `2` |
+| `ledger.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `5` |
+| `ledger.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling. | `80` |
+| `ledger.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling. | `80` |
+| `ledger.nodeSelector` | Node selectors for pod scheduling. | `{}` |
+| `ledger.tolerations` | Tolerations for pod scheduling. | `{}` |
+| `ledger.affinity` | Affinity rules for pod scheduling. | `{}` |
+| `ledger.configmap.*` | Environment variables for the service. | See `values.yaml` |
+| `ledger.secrets.*` | Secrets for the service. | See `values.yaml` |
+| `ledger.useExistingSecret` | Use an existing secret instead of creating a new one. | `false` |
+| `ledger.existingSecretName` | The name of the existing secret to use. | `""` |
+| `ledger.extraEnvVars` | A list of extra environment variables. | `[]` |
+| `ledger.serviceAccount.create` | Specifies whether the service account should be created. | `true` |
+| `ledger.serviceAccount.annotations` | Annotations for the service account. | `{}` |
+| `ledger.serviceAccount.name` | Service account name. If not defined, it will be generated automatically. | `""` |
 
-#### Creating Console Secret Manually
+#### Creating Ledger Secret Manually
 
-If you want to use an existing Kubernetes Secret for the console service, you can create it manually with the following command:
+If you want to use an existing Kubernetes Secret for the ledger service, you can create it manually with the following command:
 
 ```console
-kubectl create secret generic midaz-console \
-  --from-literal=PLUGIN_AUTH_CLIENT_SECRET='<your-plugin-auth-client-secret>' \
-  --from-literal=NEXTAUTH_SECRET='<your-nextauth-secret>' \
-  --from-literal=MONGODB_PASS='<your-mongodb-password>' \
+kubectl create secret generic midaz-ledger \
+  --from-literal=DB_ONBOARDING_PASSWORD='<your-db-onboarding-password>' \
+  --from-literal=DB_ONBOARDING_REPLICA_PASSWORD='<your-db-onboarding-replica-password>' \
+  --from-literal=MONGO_ONBOARDING_PASSWORD='<your-mongo-onboarding-password>' \
+  --from-literal=DB_TRANSACTION_PASSWORD='<your-db-transaction-password>' \
+  --from-literal=DB_TRANSACTION_REPLICA_PASSWORD='<your-db-transaction-replica-password>' \
+  --from-literal=MONGO_TRANSACTION_PASSWORD='<your-mongo-transaction-password>' \
+  --from-literal=REDIS_PASSWORD='<your-redis-password>' \
+  --from-literal=RABBITMQ_DEFAULT_PASS='<your-rabbitmq-password>' \
+  --from-literal=RABBITMQ_CONSUMER_PASS='<your-rabbitmq-consumer-password>' \
   -n midaz
 ```
 
-**Note:** The console service has different secret keys compared to onboarding and transaction services.
+**Note:** The ledger service uses module-specific database credentials (onboarding and transaction) since it combines both modules.
 
-Then configure the console service to use this existing secret:
+Then configure the ledger service to use this existing secret:
 
 ```yaml
-console:
+ledger:
+  enabled: true
   useExistingSecret: true
-  existingSecretName: "midaz-console"
+  existingSecretName: "midaz-ledger"
+```
+
+#### Enabling Ledger Service
+
+To enable the ledger service and disable the separate onboarding/transaction services:
+
+```yaml
+ledger:
+  enabled: true
+
+onboarding:
+  enabled: false
+
+transaction:
+  enabled: false
+```
+
+When ledger is enabled, the onboarding and transaction ingresses will automatically redirect traffic to the ledger service, maintaining backward compatibility with existing DNS configurations.
+
+### CRM (Customer Relationship Management)
+
+The `crm` service provides APIs for managing holder data and their relationships with ledger accounts. Previously available as a separate chart (`plugin-crm`) deployed in the `midaz-plugins` namespace, the CRM is being migrated to become a core component of Midaz, now deployed in the `midaz` namespace.
+
+For more details, refer to the official documentation: [CRM Documentation](https://docs.lerian.studio/en/v2/crm)
+
+> **Migration Note:** If you are currently using `plugin-crm` in the `midaz-plugins` namespace, we recommend migrating to this new integrated CRM workload. See the [Upgrade Guide](docs/UPGRADE-5.0.md#4-crm-service-integration) for migration steps.
+
+| Parameter | Description | Default Value |
+|---|---|---|
+| `crm.enabled` | Enable or disable the CRM service. | `false` |
+| `crm.name` | Service name. | `"crm"` |
+| `crm.replicaCount` | Number of replicas for the CRM service. | `1` |
+| `crm.image.repository` | Repository for the CRM service container image. | `"ghcr.io/lerianstudio/midaz-crm"` |
+| `crm.image.pullPolicy` | Image pull policy. | `"Always"` |
+| `crm.image.tag` | Image tag used for deployment. | `"3.5.0"` |
+| `crm.imagePullSecrets` | Secrets for pulling images from a private registry. | `[]` |
+| `crm.nameOverride` | Overrides the default generated name by Helm. | `""` |
+| `crm.fullnameOverride` | Overrides the full name generated by Helm. | `""` |
+| `crm.podAnnotations` | Pod annotations for additional metadata. | `{}` |
+| `crm.podSecurityContext` | Security context applied at the pod level. | `{}` |
+| `crm.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
+| `crm.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `true` |
+| `crm.pdb.minAvailable` | Minimum number of available pods. | `1` |
+| `crm.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
+| `crm.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
+| `crm.deploymentUpdate.type` | Type of deployment strategy. | `"RollingUpdate"` |
+| `crm.deploymentUpdate.maxSurge` | Maximum number of pods that can be created over the desired number of pods. | `1` |
+| `crm.deploymentUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during the update. | `1` |
+| `crm.service.type` | Kubernetes service type. | `"ClusterIP"` |
+| `crm.service.port` | Service port. | `4003` |
+| `crm.ingress.enabled` | Specifies whether Ingress is enabled. | `false` |
+| `crm.ingress.className` | Ingress class name. | `""` |
+| `crm.ingress.annotations` | Additional ingress annotations. | `{}` |
+| `crm.ingress.hosts` | Configured hosts for Ingress and associated paths. | `[]` |
+| `crm.ingress.tls` | TLS configurations for Ingress. | `[]` |
+| `crm.resources.*` | CPU/Memory resource requests/limits. | See `values.yaml` |
+| `crm.autoscaling.enabled` | Specifies whether autoscaling is enabled. | `true` |
+| `crm.autoscaling.minReplicas` | Minimum number of replicas for autoscaling. | `1` |
+| `crm.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `3` |
+| `crm.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling. | `80` |
+| `crm.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling. | `80` |
+| `crm.nodeSelector` | Node selectors for pod scheduling. | `{}` |
+| `crm.tolerations` | Tolerations for pod scheduling. | `{}` |
+| `crm.affinity` | Affinity rules for pod scheduling. | `{}` |
+| `crm.configmap.*` | Environment variables for the service. | See `values.yaml` |
+| `crm.secrets.*` | Secrets for the service. | See `values.yaml` |
+| `crm.useExistingSecret` | Use an existing secret instead of creating a new one. | `false` |
+| `crm.existingSecretName` | The name of the existing secret to use. | `""` |
+| `crm.extraEnvVars` | A list of extra environment variables. | `{}` |
+
+#### Creating CRM Secret Manually
+
+If you want to use an existing Kubernetes Secret for the CRM service, you can create it manually with the following command:
+
+```console
+kubectl create secret generic midaz-crm \
+  --from-literal=LCRYPTO_HASH_SECRET_KEY='<your-hash-secret-key>' \
+  --from-literal=LCRYPTO_ENCRYPT_SECRET_KEY='<your-encrypt-secret-key>' \
+  --from-literal=MONGO_PASSWORD='<your-mongo-password>' \
+  -n midaz
+```
+
+Then configure the CRM service to use this existing secret:
+
+```yaml
+crm:
+  enabled: true
+  useExistingSecret: true
+  existingSecretName: "midaz-crm"
+```
+
+#### Enabling CRM Service
+
+To enable the CRM service:
+
+```yaml
+crm:
+  enabled: true
+  configmap:
+    MONGO_HOST: "midaz-mongodb"  # Use your MongoDB host
+    MONGO_NAME: "crm"
+    MONGO_USER: "midaz"
+  secrets:
+    MONGO_PASSWORD: "lerian"
 ```
 
 ## Observability
@@ -426,18 +539,18 @@ This Chart has the following dependencies for the project's default installation
       DB_REPLICA_PASSWORD: { your-replication-host-pass }
   ```
 
-#### External PostgreSQL Bootstrap (Hook Job)
+#### External PostgreSQL Bootstrap Job
 
 When using an external PostgreSQL (i.e., `postgresql.enabled: false`), this chart provides a one-shot bootstrap Job that:
 
 - Creates the `onboarding` and `transaction` databases if they do not exist.
-- Creates the `midaz` role/user if it does not exist and ensures/updates its password.
+- Creates the `midaz` role/user if it does not exist and sets its password.
 - Grants database privileges and `public` schema permissions so `midaz` can create tables.
-- Waits for connectivity using `onboarding.configmap.DB_HOST` and `onboarding.configmap.DB_PORT`.
+- Waits for connectivity with a 300s timeout.
 - Is idempotent: if everything already exists, it prints and exits.
 
-- Template: `charts/midaz/templates/postgres_boostrap_midaz.yaml`
-- Hook: `helm.sh/hook: post-install`
+- Template: `charts/midaz/templates/bootstrap-postgres.yaml`
+- Job name: `midaz-bootstrap-postgres`
 
 Configure in `values.yaml`:
 
@@ -447,31 +560,30 @@ postgresql:
 
 global:
   externalPostgresDefinitions:
+    enabled: true
+    connection:
+      host: "your-postgres-host"
+      port: "5432"
     postgresAdminLogin:
-      # Prefer using an existing Secret (recommended)
-      # Required keys in that Secret:
-      # - DB_USER_ADMIN
-      # - DB_ADMIN_PASSWORD
+      # Option A: Use an existing Secret (recommended)
+      # Required keys: DB_USER_ADMIN, DB_ADMIN_PASSWORD
       useExistingSecret:
-        name: "my-existing-postgres-admin-secret"
-      # OR provide inline credentials (not recommended in production):
+        name: "my-postgres-admin-secret"
+      # Option B: Inline credentials (not recommended in production)
       # username: "postgres"
       # password: "s3cret"
-
-# Application user password (for role `midaz`) comes from the onboarding Secret
-onboarding:
-  secrets:
-    DB_PASSWORD: "your-midaz-password"
+    midazCredentials:
+      # Option A: Use an existing Secret (recommended)
+      # Required key: DB_PASSWORD_MIDAZ
+      useExistingSecret:
+        name: "my-midaz-credentials-secret"
+      # Option B: Inline password (not recommended in production)
+      # password: "midaz-password"
 ```
 
 Notes:
-- The existing admin Secret must be in the same namespace as the release.
-- The Job runs only on install (`post-install`). If you want hooks to auto-clean, add:
-
-```yaml
-annotations:
-  "helm.sh/hook": post-install
-```
+- All secrets must be in the same namespace as the release.
+- The Job has a TTL of 300 seconds after completion.
 
 ### MongoDB
 
@@ -509,26 +621,25 @@ annotations:
 - **Repository:** https://charts.bitnami.com/bitnami
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
   
-- **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
+- **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (users, queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
 
 - **You have two options to load the definitions:**
 
 1. **Automatically:**
-Enable the flag below in your values.yaml to automatically create a Kubernetes Job that applies the default RabbitMQ definitions to your external RabbitMQ instance:
+Enable the bootstrap job in your values.yaml to automatically apply the RabbitMQ definitions to your external instance:
 
       ```yaml
       global:
-        # -- Enable or disable loading of default RabbitMQ definitions to external host
         externalRabbitmqDefinitions:
           enabled: true
       ```
-    ⚠️ **Note:** This Job runs only on the first installation of the chart because it uses a Helm post-install hook. It will not run during upgrades or re-installs unless the release is deleted and installed again. Use this option for initial setup only.
 
 2. **Manually:**
-You can also manually apply the definitions using RabbitMQ’s HTTP API with the following command:
+You can also manually apply the definitions using RabbitMQ's HTTP API with the following command:
 
     ```console
-    curl -u { your-host-user }: { your-host-pass } -X POST -H "Content-Type: application/json" -d @load_definitions.json http://{ your-host }: { your-host-port }/api/definitions
+    curl -u {user}:{pass} -X POST -H "Content-Type: application/json" \
+      -d @load_definitions.json http://{host}:{port}/api/definitions
     ```
     The load_definitions.json file is located at:
 
@@ -536,46 +647,54 @@ You can also manually apply the definitions using RabbitMQ’s HTTP API with the
     charts/midaz/files/rabbitmq/load_definitions.json
     ```
 
-#### Automatic Definitions Load (Hook Job)
+#### External RabbitMQ Bootstrap Job
 
 To streamline external RabbitMQ setup, this chart provides a one-shot Job that:
 
 - Applies the standard definitions file (`charts/midaz/files/rabbitmq/load_definitions.json`) via the HTTP API.
-- Updates/creates the `onboarding` and `transaction` users with passwords from their Secrets.
-- Waits for connectivity using `onboarding.configmap` (`RABBITMQ_HOST` + `RABBITMQ_PORT_HOST`).
+- Creates/updates the `transaction` and `consumer` users with custom passwords.
+- Waits for AMQP connectivity with a 300s timeout.
+- Is idempotent: if users already exist, it skips and exits.
 
-- Template: `charts/midaz/templates/rabbitmq_external_load_definitions.yaml`
-- Hook: `helm.sh/hook: post-install`
+- Template: `charts/midaz/templates/bootstrap-rabbitmq.yaml`
+- Job name: `midaz-bootstrap-rabbitmq`
 
 Configure in `values.yaml`:
 
 ```yaml
+rabbitmq:
+  enabled: false  # disable bundled RabbitMQ to use an external one
+
 global:
   externalRabbitmqDefinitions:
     enabled: true
+    connection:
+      protocol: "http"          # http or https
+      host: "your-rabbitmq-host"
+      port: "15672"             # HTTP management port
+      portAmqp: "5672"          # AMQP port (for connectivity check)
     rabbitmqAdminLogin:
-      # Option A: Inline admin credentials (simple)
-      # username: "admin"
-      # password: "s3cret"
-
-      # Option B: Admin user from an existing Secret (recommended)
-      # The Secret must contain the key below:
-      # - RABBITMQ_ADMIN_USER
-      # - RABBITMQ_ADMIN_PASS
+      # Option A: Use an existing Secret (recommended)
+      # Required keys: RABBITMQ_ADMIN_USER, RABBITMQ_ADMIN_PASS
       useExistingSecret:
         name: "my-rabbitmq-admin-secret"
+      # Option B: Inline credentials (not recommended in production)
+      # username: "admin"
+      # password: "s3cret"
+    appCredentials:
+      # Option A: Use an existing Secret (recommended)
+      # Required keys: RABBITMQ_DEFAULT_PASS, RABBITMQ_CONSUMER_PASS
+      useExistingSecret:
+        name: "my-rabbitmq-app-credentials"
+      # Option B: Inline passwords (not recommended in production)
+      # transactionPassword: "transaction-pass"
+      # consumerPassword: "consumer-pass"
 ```
 
 Notes:
-- Service user passwords are read from each service Secret using the key `RABBITMQ_DEFAULT_PASS` (`onboarding` and `transaction`).
-- If you want hooks to auto-clean, add:
-
-```yaml
-annotations:
-  "helm.sh/hook": post-install
-  "helm.sh/hook-weight": "0"
-  "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
-```
+- All secrets must be in the same namespace as the release.
+- The Job has a TTL of 300 seconds after completion.
+- Users created: `midaz` (admin), `transaction`, `consumer`.
 
  
 #### RabbitMQ over TLS/SSL
@@ -593,40 +712,6 @@ transaction:
     RABBITMQ_URI: "amqps"      # was "amqp"
     RABBITMQ_PROTOCOL: "https" # was "http"
 ```
-
-### Nginx Proxy Manager ( Plugins UIs )
-
-- **Note:** This nginx proxy manager is used to configure the ingress for the plugins UIs.
- - All plugins UIs are configured to be accessible only from this nginx proxy.
- - You can enable it by setting `nginx.enabled` to `true` in the values file.
-
-```yaml
-nginx:
-  enabled: true
-```
-
-You can also configure the ingress for the plugins UIs by setting `nginx.ingress.enabled` to `true` in the values file.
-
-```yaml
-nginx:
-  ingress:
-    enabled: true
-```
-
-You can enable the UI for a specific plugin by setting `pluginsUi.enabled` to `true` in the console service values file.
-
-```yaml
-console:
-
-  pluginsUi:
-    enabled: true
-    plugins:
-      plugin-crm-ui:
-        enabled: true
-        port: 8082
-```
-
-**Note:** To allow NGINX to serve the plugin UIs, the corresponding Helm charts must be installed with UI enabled in the midaz-plugins namespace.
 
 ### OpenTelemetry Collector (Lerian)
 

@@ -1,4 +1,4 @@
-{{- if .Values.transaction.pdb.enabled }}
+{{- if and (eq (include "transaction.shouldDeploy" .) "true") .Values.transaction.pdb.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

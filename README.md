@@ -14,9 +14,9 @@
 
 #### Application Version Mapping
 
-| Chart Version | Console Version | Onboarding Version | Transaction Version |
-| :---: | :---: | :---: | :---: |
-| `4.5.0` | 3.4.8 | 3.4.8 | 3.4.8 |
+| Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
+| :---: | :---: | :---: | :---: | :---: |
+| `5.1.2` | 3.5.0 | 3.5.0 | 3.5.0 | 3.5.0 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -29,7 +29,7 @@
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `4.2.1` | 2.4.0 | 2.1.1 |
+| `5.0.0` | 2.4.4 | 2.1.1 |
 
 -----------------
 

@@ -1,0 +1,21 @@
+{{- if .Values.crm.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "midaz-crm.fullname" . }}
+  labels:
+    {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
+  {{- with .Values.crm.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.crm.service.type }}
+  ports:
+    - port: {{ .Values.crm.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "midaz-crm.selectorLabels" (dict "context" . "name" .Values.crm.name) | nindent 4 }}
+{{- end }}

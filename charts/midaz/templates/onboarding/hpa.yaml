@@ -1,4 +1,4 @@
-{{- if .Values.onboarding.autoscaling.enabled }}
+{{- if and (eq (include "onboarding.shouldDeploy" .) "true") .Values.onboarding.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

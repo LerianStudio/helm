@@ -1,6 +1,7 @@
 {{- if .Values.transaction.ingress.enabled -}}
-{{- $fullName := include "midaz-transaction.fullname" . -}}
-{{- $svcPort := .Values.transaction.service.port -}}
+{{- $ingressName := include "midaz-transaction.fullname" . -}}
+{{- $targetService := include "transaction.ingress.targetService" . -}}
+{{- $svcPort := include "transaction.ingress.targetPort" . -}}
 {{- if and .Values.transaction.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.transaction.ingress.annotations "kubernetes.io/ingress.class") }}
   {{- $_ := set .Values.transaction.ingress.annotations "kubernetes.io/ingress.class" .Values.transaction.ingress.className}}
@@ -15,7 +16,7 @@ apiVersion: extensions/v1beta1
 {{- end }}
 kind: Ingress
 metadata:
-  name: {{ $fullName }}
+  name: {{ $ingressName }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.transaction.name "name" .Values.transaction.name ) | nindent 4 }}
   {{- with .Values.transaction.ingress.annotations }}
@@ -49,11 +50,11 @@ spec:
             backend:
               {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
               service:
-                name: {{ $fullName }}
+                name: {{ $targetService }}
                 port:
                   number: {{ $svcPort }}
               {{- else }}
-              serviceName: {{ $fullName }}
+              serviceName: {{ $targetService }}
               servicePort: {{ $svcPort }}
               {{- end }}
           {{- end }}

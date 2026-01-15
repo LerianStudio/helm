@@ -1,0 +1,433 @@
+# Helm Upgrade from v4.x to v5.0
+
+## Topics
+
+- **[Breaking Changes](#breaking-changes)**
+  - [New Ledger service available](#new-ledger-service-available)
+- **[Features](#features)**
+  - [1. New Ledger service with combined functionality](#1-new-ledger-service-with-combined-functionality)
+  - [2. Migration support with simultaneous service deployment](#2-migration-support-with-simultaneous-service-deployment)
+  - [3. Ingress redirection to Ledger](#3-ingress-redirection-to-ledger)
+  - [4. CRM service integration](#4-crm-service-integration)
+- **[Deployment Scenarios](#deployment-scenarios)**
+  - [Scenario 1: New installations with Ledger (recommended)](#scenario-1-new-installations-with-ledger-recommended)
+  - [Scenario 2: Gradual migration from Onboarding/Transaction](#scenario-2-gradual-migration-from-onboardingtransaction)
+  - [Scenario 3: Internal testing (all services)](#scenario-3-internal-testing-all-services)
+  - [Scenario 4: Default mode (Onboarding + Transaction only)](#scenario-4-default-mode-onboarding--transaction-only)
+- **[Configuration Reference](#configuration-reference)**
+- **[Command to upgrade](#command-to-upgrade)**
+
+## Breaking Changes
+
+### New Ledger service available
+
+Starting from version 5.0, the **Ledger service is available** (`ledger.enabled: false` by default). When enabled, this service combines the functionality of both onboarding and transaction modules. This is an **infrastructure-level change** that affects how Midaz services are deployed when you opt to use the ledger service.
+
+**Default values:**
+
+| Setting | v4.x (before) | v5.0 (after) |
+|---------|---------------|--------------|
+| `ledger.enabled` | `false` | `false` |
+| `onboarding.enabled` | `true` | `true` (but auto-disabled when ledger is enabled) |
+| `transaction.enabled` | `true` | `true` (but auto-disabled when ledger is enabled) |
+
+**Recommendation for new workloads:**
+
+> **For new installations, we strongly recommend enabling the Ledger service and disabling the separate onboarding and transaction services.** The unified Ledger service is the future architecture of Midaz and provides a simpler deployment model.
+
+```yaml
+ledger:
+  enabled: true
+
+onboarding:
+  enabled: false
+
+transaction:
+  enabled: false
+```
+
+**Impact when enabling Ledger:**
+
+When you enable the ledger service:
+- The `midaz-onboarding` and `midaz-transaction` deployments will be **removed** (or not created for new installations)
+- A new `midaz-ledger` deployment will be created
+- Ingresses will automatically redirect to the ledger service (DNS compatibility maintained)
+- Environment variables and secrets structure changes (module-specific prefixes)
+
+**Options for existing installations:**
+
+#### Option 1: Keep using Onboarding and Transaction (for gradual migration)
+
+Add the following to your values override to maintain the current behavior:
+
+```yaml
+ledger:
+  enabled: false
+
+onboarding:
+  enabled: true
+
+transaction:
+  enabled: true
+```
+
+This allows you to upgrade the chart version without changing your infrastructure.
+
+#### Option 2: Run all services simultaneously (testing/migration period)
+
+Use the hidden `migration.allowAllServices` flag to run all three services during the migration:
+
+```yaml
+ledger:
+  enabled: true
+
+onboarding:
+  enabled: true
+
+transaction:
+  enabled: true
+
+migration:
+  allowAllServices: true
+```
+
+> **Warning:** This mode is intended for testing and migration only. Do not use in production long-term.
+
+#### Option 3: Migrate to Ledger (recommended for new behavior)
+
+Accept the new default and migrate to the unified Ledger service:
+
+1. **Before upgrading:** Ensure your databases are ready (same databases, new environment variable names)
+2. **Update secrets:** Create new secrets with module-specific prefixes (see [Configuration Reference](#ledger-service-configuration))
+3. **Upgrade:** Run `helm upgrade` with the new chart version
+4. **Verify:** Check that the ledger service is healthy and ingresses are working
+
+**Rollback procedure:**
+
+If you need to rollback after upgrading:
+
+```bash
+# Rollback to previous release
+helm rollback midaz <REVISION> -n midaz
+
+# Or explicitly disable ledger
+helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm \
+  --set ledger.enabled=false \
+  --set onboarding.enabled=true \
+  --set transaction.enabled=true \
+  -n midaz
+```
+
+## Features
+
+### 1. New Ledger service with combined functionality
+
+A new `ledger` service is now available that combines the functionality of both onboarding and transaction modules into a single deployment. This is an **optional** feature - existing onboarding and transaction services continue to work as before.
+
+> **Important:** The separate onboarding and transaction services will become **legacy** in a future release, and the unified ledger service will become **mandatory**. We strongly recommend planning your migration to the ledger service as soon as possible.
+
+**Key characteristics:**
+- Single HTTP endpoint (port 3000 by default)
+- Separate database configurations for each module (onboarding and transaction)
+- Shared Redis and RabbitMQ connections
+- New Balance Sync Worker for background processing
+
+**New environment variables introduced:**
+```yaml
+# Balance Sync Worker
+BALANCE_SYNC_WORKER_ENABLED: "false"
+BALANCE_SYNC_MAX_WORKERS: "5"
+```
+
+### 2. Flexible deployment options
+
+The chart now supports multiple deployment configurations to accommodate different use cases:
+
+- **Default behavior (no changes required):** Existing installations continue to deploy onboarding and transaction services as before
+- **Ledger mode:** Enable the unified ledger service for new or migrated installations
+- **Test mode:** Run all three services simultaneously for internal testing purposes
+
+For testing scenarios where you need all services running simultaneously, use the hidden `migration.allowAllServices` flag (not exposed in public `values.yaml`, defaults to `false`):
+
+```yaml
+migration:
+  allowAllServices: true
+```
+
+### 3. Ingress redirection to Ledger
+
+When ledger is enabled, the existing onboarding and transaction ingresses automatically redirect traffic to the ledger service. This ensures backward compatibility with existing DNS configurations and client integrations - your clients don't need to change their endpoints.
+
+**How it works:**
+
+The ingress templates use a helper function to determine the target service:
+
+```
+IF (ledger.enabled = true) AND (migration.allowAllServices ≠ true)
+  THEN → ingress points to "midaz-ledger"
+ELSE
+  → ingress points to original service (midaz-onboarding or midaz-transaction)
+```
+
+**Ingress behavior by configuration:**
+
+| `ledger.enabled` | `migration.allowAllServices` | `onboarding` ingress target | `transaction` ingress target |
+|------------------|------------------------------|----------------------------|------------------------------|
+| `false` | `false` (default) | `midaz-onboarding` | `midaz-transaction` |
+| `true` | `false` (default) | `midaz-ledger` | `midaz-ledger` |
+| `true` | `true` | `midaz-onboarding` | `midaz-transaction` |
+
+**Important notes:**
+- The ingress resource **names** remain unchanged (`midaz-onboarding`, `midaz-transaction`) to preserve DNS compatibility
+- Only the **backend service** changes based on the configuration
+- Ingresses are only created if their respective `*.ingress.enabled` flag is `true`
+
+### 4. CRM service integration
+
+The CRM (Customer Relationship Management) service is now available as an integrated component in the Midaz helm chart. Previously available as a separate chart (`plugin-crm`) deployed in the `midaz-plugins` namespace, the CRM is being migrated to become a core component of Midaz, now deployed in the `midaz` namespace alongside other Midaz services.
+
+For more details, refer to the official documentation: [CRM Documentation](https://docs.lerian.studio/en/v2/crm)
+
+**Key changes:**
+- **Namespace migration:** CRM moves from `midaz-plugins` to `midaz` namespace
+- **Chart consolidation:** No longer requires the separate `plugin-crm` chart
+- **Shared infrastructure:** Uses the same MongoDB instance as other Midaz components
+
+**Key characteristics:**
+- Optional service (disabled by default)
+- Uses MongoDB for data storage (shared with other Midaz components)
+- Supports authentication via the Auth Plugin
+
+**Migration recommendation:**
+
+If you are currently using `plugin-crm` in the `midaz-plugins` namespace, we recommend migrating to this new integrated CRM workload. Steps:
+
+1. Deploy the new CRM in the `midaz` namespace:
+```yaml
+crm:
+  enabled: true
+  configmap:
+    MONGO_HOST: "midaz-mongodb"
+    MONGO_NAME: "crm"
+```
+
+2. Migrate your data from the old MongoDB to the new one (if using separate databases)
+
+3. Update your ingress/DNS to point to the new CRM service in the `midaz` namespace
+
+4. Remove the old `plugin-crm` release from `midaz-plugins` namespace
+
+## Deployment Scenarios
+
+### Scenario 1: New installations with Ledger (recommended)
+
+> **This is the recommended approach for all new workloads.** The unified Ledger service is the future architecture of Midaz.
+
+For new deployments, enable only the ledger service:
+
+```yaml
+ledger:
+  enabled: true
+
+onboarding:
+  enabled: false
+
+transaction:
+  enabled: false
+```
+
+**Resources deployed:**
+- `midaz-ledger` deployment, service, configmap, secrets, serviceaccount
+- `midaz-onboarding` ingress (pointing to ledger)
+- `midaz-transaction` ingress (pointing to ledger)
+
+### Scenario 2: Gradual migration from Onboarding/Transaction
+
+To migrate gradually while maintaining the same ingress endpoints:
+
+```yaml
+ledger:
+  enabled: true
+
+onboarding:
+  enabled: true  # Will be disabled automatically
+
+transaction:
+  enabled: true  # Will be disabled automatically
+```
+
+**Result:** Only ledger is deployed, but ingresses keep their original names for DNS compatibility.
+
+### Scenario 3: Internal testing (all services)
+
+To run all three services simultaneously for testing purposes:
+
+```yaml
+ledger:
+  enabled: true
+
+onboarding:
+  enabled: true
+
+transaction:
+  enabled: true
+
+migration:
+  allowAllServices: true
+```
+
+**Resources deployed:**
+- All ledger resources
+- All onboarding resources (with original ingress pointing to onboarding)
+- All transaction resources (with original ingress pointing to transaction)
+
+> **Warning:** This mode is intended for internal testing only. Running all services simultaneously in production is not recommended.
+
+### Scenario 4: Default mode (Onboarding + Transaction only)
+
+> **Not recommended for new workloads.** Use [Scenario 1](#scenario-1-new-installations-with-ledger-recommended) instead.
+
+This is the **default behavior** - no changes required for existing installations. The onboarding and transaction services continue to work as before:
+
+```yaml
+ledger:
+  enabled: false  # default
+
+onboarding:
+  enabled: true   # default
+
+transaction:
+  enabled: true   # default
+```
+
+**Resources deployed:**
+- All onboarding resources
+- All transaction resources
+
+> **Note:** Existing installations upgrading to this version will continue to work without any configuration changes.
+
+> **Deprecation Notice:** The separate onboarding and transaction services are expected to become legacy in a future release. We recommend planning your migration to the unified ledger service.
+
+## Configuration Reference
+
+### Ledger service configuration
+
+The ledger service uses module-specific database configurations:
+
+```yaml
+ledger:
+  enabled: false
+  name: "ledger"
+  replicaCount: 1
+
+  image:
+    repository: lerianstudio/midaz-ledger
+    tag: ""  # Defaults to Chart.AppVersion
+    pullPolicy: IfNotPresent
+
+  configmap:
+    # App Configuration
+    ENV_NAME: "production"
+    LOG_LEVEL: "debug"
+    SERVER_PORT: "3000"
+    SERVER_ADDRESS: ":3000"
+
+    # Auth Configuration
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: ""
+
+    # Accounting Configuration
+    ACCOUNT_TYPE_VALIDATION: ""
+    TRANSACTION_ROUTE_VALIDATION: ""
+
+    # PostgreSQL - Onboarding Module
+    DB_ONBOARDING_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
+    DB_ONBOARDING_USER: "midaz"
+    DB_ONBOARDING_NAME: "onboarding"
+    DB_ONBOARDING_PORT: "5432"
+    DB_ONBOARDING_SSLMODE: "disable"
+    DB_ONBOARDING_REPLICA_HOST: "midaz-postgresql-replication.midaz.svc.cluster.local."
+    # ... additional replica config
+
+    # PostgreSQL - Transaction Module
+    DB_TRANSACTION_HOST: "midaz-postgresql-primary.midaz.svc.cluster.local."
+    DB_TRANSACTION_USER: "midaz"
+    DB_TRANSACTION_NAME: "transaction"
+    DB_TRANSACTION_PORT: "5432"
+    DB_TRANSACTION_SSLMODE: "disable"
+    DB_TRANSACTION_REPLICA_HOST: "midaz-postgresql-replication.midaz.svc.cluster.local."
+    # ... additional replica config
+
+    # MongoDB - Onboarding Module
+    MONGO_ONBOARDING_HOST: "midaz-mongodb.midaz.svc.cluster.local."
+    MONGO_ONBOARDING_NAME: "onboarding"
+    MONGO_ONBOARDING_USER: "midaz"
+    MONGO_ONBOARDING_PORT: "27017"
+
+    # MongoDB - Transaction Module
+    MONGO_TRANSACTION_HOST: "midaz-mongodb.midaz.svc.cluster.local."
+    MONGO_TRANSACTION_NAME: "transaction"
+    MONGO_TRANSACTION_USER: "midaz"
+    MONGO_TRANSACTION_PORT: "27017"
+
+    # Redis (shared)
+    REDIS_HOST: "midaz-valkey-primary.midaz.svc.cluster.local.:6379"
+    # ... additional Redis config
+
+    # RabbitMQ (shared)
+    RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
+    # ... additional RabbitMQ config
+
+    # Balance Sync Worker (new)
+    BALANCE_SYNC_WORKER_ENABLED: "false"
+    BALANCE_SYNC_MAX_WORKERS: "5"
+
+  secrets:
+    # Onboarding Module
+    DB_ONBOARDING_PASSWORD: "lerian"
+    DB_ONBOARDING_REPLICA_PASSWORD: "lerian"
+    MONGO_ONBOARDING_PASSWORD: "lerian"
+
+    # Transaction Module
+    DB_TRANSACTION_PASSWORD: "lerian"
+    DB_TRANSACTION_REPLICA_PASSWORD: "lerian"
+    MONGO_TRANSACTION_PASSWORD: "lerian"
+
+    # Shared
+    REDIS_PASSWORD: "lerian"
+    RABBITMQ_DEFAULT_PASS: "lerian"
+    RABBITMQ_CONSUMER_PASS: "lerian"
+```
+
+### External Secrets Support
+
+The ledger service supports external secrets:
+
+```yaml
+ledger:
+  useExistingSecret: true
+  existingSecretName: <existing-secret-name>
+```
+
+**Note:** See the [ledger secrets template](https://github.com/LerianStudio/helm/blob/main/charts/midaz/templates/ledger/secrets.yaml) for the required secret keys.
+
+### Deployment flags reference
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `ledger.enabled` | `false` | Enables the unified ledger service |
+| `onboarding.enabled` | `true` | Enables onboarding (auto-disabled when ledger is enabled) |
+| `transaction.enabled` | `true` | Enables transaction (auto-disabled when ledger is enabled) |
+| `migration.allowAllServices` | `false` | Hidden flag to allow all services simultaneously |
+
+## Production recommendation
+
+We do not recommend using the Midaz Helm chart's default dependencies (databases, cache, and message broker) in production environments. For production-grade deployments, follow our best practices to operate these dependencies with proper security, observability, backups, disaster recovery, and SLOs.
+
+Reference: [Midaz Production Best Practices](https://docs.lerian.studio/en/midaz/midaz-production-best-practices)
+
+## Command to upgrade
+
+```bash
+helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version X.X.X -n midaz
+```

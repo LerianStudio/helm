@@ -103,7 +103,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name | quote }}
-                  key: RABBITMQ_TRANSACTION_PASS
+                  key: RABBITMQ_DEFAULT_PASS
               {{- else }}
               value: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.transactionPassword | quote }}
               {{- end }}

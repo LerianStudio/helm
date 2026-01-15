@@ -683,7 +683,7 @@ global:
       # password: "s3cret"
     appCredentials:
       # Option A: Use an existing Secret (recommended)
-      # Required keys: RABBITMQ_TRANSACTION_PASS, RABBITMQ_CONSUMER_PASS
+      # Required keys: RABBITMQ_DEFAULT_PASS, RABBITMQ_CONSUMER_PASS
       useExistingSecret:
         name: "my-rabbitmq-app-credentials"
       # Option B: Inline passwords (not recommended in production)

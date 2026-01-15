@@ -33,7 +33,7 @@ global:
     # -- Credentials for application users created by the job
     appCredentials:
       useExistingSecret:
-        # -- Name of existing secret containing RABBITMQ_TRANSACTION_PASS and RABBITMQ_CONSUMER_PASS keys
+        # -- Name of existing secret containing RABBITMQ_DEFAULT_PASS and RABBITMQ_CONSUMER_PASS keys
         name: ""
       # -- Password for transaction user (ignored if useExistingSecret.name is set)
       transactionPassword: "lerian"

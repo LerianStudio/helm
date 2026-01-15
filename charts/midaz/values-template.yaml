@@ -1,20 +1,39 @@
 global:
-  # -- Enable or disable loading of default RabbitMQ definitions to external host
+  # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
+    # -- Enable or disable the RabbitMQ bootstrap job
     enabled: false
+    connection:
+      protocol: "http"
+      host: "midaz-rabbitmq"
+      port: "15672"
+      portAmqp: "5672"
     rabbitmqAdminLogin:
       useExistingSecret:
         name: ""
-      username: ""
-      password: ""
+      username: "midaz"
+      password: "lerian"
+    appCredentials:
+      useExistingSecret:
+        name: ""
+      transactionPassword: "lerian"
+      consumerPassword: "lerian"
 
+  # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:
     enabled: false
+    connection:
+      host: "midaz-postgresql-primary"
+      port: "5432"
     postgresAdminLogin:
       useExistingSecret:
         name: ""
-      username: ""
-      password: ""
+      username: "postgres"
+      password: "lerian"
+    midazCredentials:
+      useExistingSecret:
+        name: ""
+      password: "lerian"
 
 onboarding:
   ingress:

@@ -1,17 +1,5 @@
 {{- if eq (include "onboarding.shouldDeploy" .) "true" }}
 {{- $releaseNs := .Release.Namespace }}
-{{- $rabbitHost := .Values.onboarding.configmap.RABBITMQ_HOST | default (printf "midaz-rabbitmq.%s.svc.cluster.local." $releaseNs) }}
-{{- $rabbitProtocol := .Values.onboarding.configmap.RABBITMQ_PROTOCOL | default "http" }}
-{{- $rabbitAmqpPort := .Values.onboarding.configmap.RABBITMQ_PORT_AMQP | default "15672" }}
-
-{{- $rabbitHealthCheckURL := "" }}
-
-{{- if eq $rabbitProtocol "http" }}
-  {{- $rabbitHealthCheckURL = printf "%s://%s:%s" $rabbitProtocol $rabbitHost $rabbitAmqpPort }}
-{{- else if eq $rabbitProtocol "https" }}
-  {{- $rabbitHealthCheckURL = printf "%s://%s" $rabbitProtocol $rabbitHost }}
-{{- end }}
-
 kind: ConfigMap
 apiVersion: v1
 metadata:

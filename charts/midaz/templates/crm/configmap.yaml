@@ -21,6 +21,7 @@ data:
   MONGO_NAME: {{ .Values.crm.configmap.MONGO_NAME | default "crm" | quote }}
   MONGO_USER: {{ .Values.crm.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.crm.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_PARAMETERS: {{ .Values.crm.configmap.MONGO_PARAMETERS | default "" | quote }}
 
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.crm.configmap.SWAGGER_TITLE | default "CRM" | quote }}

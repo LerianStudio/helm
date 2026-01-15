@@ -67,6 +67,7 @@ data:
   DB_USER: {{ .Values.auth.configmap.DB_USER | default "auth" | quote }}
   DB_NAME: {{ .Values.auth.configmap.DB_NAME | default "casdoor" | quote }}
   DB_PORT: {{ .Values.auth.configmap.DB_PORT | default "5432" | quote }}
+  DB_SSLMODE: {{ .Values.auth.configmap.DB_SSLMODE | default "disable" | quote }}
   USER_EXECUTE_COMMAND: {{ .Values.auth.configmap.USER_EXECUTE_COMMAND | default "postgres" | quote }}
 
   # Extra Env Vars

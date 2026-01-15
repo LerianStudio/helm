@@ -72,9 +72,9 @@ spec:
               echo "Checking if RabbitMQ users already exist..."
 
               # Check if key users exist (transaction, consumer)
-              TRANSACTION_EXISTS=$(curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+              TRANSACTION_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 "$BASE_URL/api/users/transaction" 2>/dev/null || echo "not_found")
-              CONSUMER_EXISTS=$(curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+              CONSUMER_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 "$BASE_URL/api/users/consumer" 2>/dev/null || echo "not_found")
 
               if echo "$TRANSACTION_EXISTS" | grep -q '"name":"transaction"' && \
@@ -84,27 +84,45 @@ spec:
               fi
 
               echo "Applying RabbitMQ definitions from file..."
-              curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X POST \
                 --data-binary @/definitions/load_definitions.json \
-                "$BASE_URL/api/definitions"
+                "$BASE_URL/api/definitions")
+              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                echo "Error applying definitions (HTTP $HTTP_CODE):"
+                cat /tmp/response.txt
+                exit 1
+              fi
               echo "Done."
 
               echo "Updating RabbitMQ user: transaction..."
-              curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
                 --data "{\"password\":\"$RABBITMQ_TRANSACTION_PASS\",\"tags\":\"administrator\"}" \
-                "$BASE_URL/api/users/transaction"
+                "$BASE_URL/api/users/transaction")
+              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                echo "Error updating transaction user (HTTP $HTTP_CODE):"
+                cat /tmp/response.txt
+                exit 1
+              fi
               echo "Done."
 
               echo "Updating RabbitMQ user: consumer..."
-              curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
                 --data "{\"password\":\"$RABBITMQ_CONSUMER_PASS\",\"tags\":\"administrator\"}" \
-                "$BASE_URL/api/users/consumer"
+                "$BASE_URL/api/users/consumer")
+              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                echo "Error updating consumer user (HTTP $HTTP_CODE):"
+                cat /tmp/response.txt
+                exit 1
+              fi
               echo "Done."
 
               echo ""

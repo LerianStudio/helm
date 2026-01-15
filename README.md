@@ -95,3 +95,16 @@
 | :---: | :---: |
 | `2.2.1` | 2.1.0 |
 -----------------
+
+### Product Console
+
+📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/product-console).
+
+🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/product-console).
+
+#### Application Version Mapping
+
+| Chart Version | Console Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.0 |
+-----------------

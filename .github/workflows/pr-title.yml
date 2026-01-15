@@ -43,4 +43,5 @@ jobs:
             plugins
             pipe
             doc
+            product-console
           requireScope: true

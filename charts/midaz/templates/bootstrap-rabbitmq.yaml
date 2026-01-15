@@ -55,42 +55,60 @@ spec:
             - -c
             - |
               set -e
+
+              # Build base URL - omit port for default HTTPS (443) or HTTP (80)
+              if [ "$RABBITMQ_PROTOCOL" = "https" ] && [ "$RABBITMQ_PORT" = "443" ]; then
+                BASE_URL="$RABBITMQ_PROTOCOL://$RABBITMQ_HOST"
+              elif [ "$RABBITMQ_PROTOCOL" = "http" ] && [ "$RABBITMQ_PORT" = "80" ]; then
+                BASE_URL="$RABBITMQ_PROTOCOL://$RABBITMQ_HOST"
+              else
+                BASE_URL="$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT"
+              fi
+
+              echo "=== RabbitMQ Bootstrap ==="
+              echo "API URL: $BASE_URL"
+              echo ""
+
               echo "Checking if RabbitMQ users already exist..."
 
               # Check if key users exist (transaction, consumer)
               TRANSACTION_EXISTS=$(curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT/api/users/transaction" 2>/dev/null || echo "not_found")
+                "$BASE_URL/api/users/transaction" 2>/dev/null || echo "not_found")
               CONSUMER_EXISTS=$(curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT/api/users/consumer" 2>/dev/null || echo "not_found")
+                "$BASE_URL/api/users/consumer" 2>/dev/null || echo "not_found")
 
-              if echo "$TRANSACTION_EXISTS" | grep -q "transaction" && \
-                 echo "$CONSUMER_EXISTS" | grep -q "consumer"; then
+              if echo "$TRANSACTION_EXISTS" | grep -q '"name":"transaction"' && \
+                 echo "$CONSUMER_EXISTS" | grep -q '"name":"consumer"'; then
                 echo "RabbitMQ definitions already applied (users transaction and consumer exist). Skipping."
                 exit 0
               fi
 
-              echo "Applying RabbitMQ definitions from file"
+              echo "Applying RabbitMQ definitions from file..."
               curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X POST \
                 --data-binary @/definitions/load_definitions.json \
-                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT/api/definitions"
+                "$BASE_URL/api/definitions"
+              echo "Done."
 
-              echo "Updating RabbitMQ user: transaction"
+              echo "Updating RabbitMQ user: transaction..."
               curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
                 --data "{\"password\":\"$RABBITMQ_TRANSACTION_PASS\",\"tags\":\"administrator\"}" \
-                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT/api/users/transaction"
+                "$BASE_URL/api/users/transaction"
+              echo "Done."
 
-              echo "Updating RabbitMQ user: consumer"
+              echo "Updating RabbitMQ user: consumer..."
               curl -sf -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
                 --data "{\"password\":\"$RABBITMQ_CONSUMER_PASS\",\"tags\":\"administrator\"}" \
-                "$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT/api/users/consumer"
+                "$BASE_URL/api/users/consumer"
+              echo "Done."
 
-              echo "RabbitMQ definitions applied successfully."
+              echo ""
+              echo "=== RabbitMQ Bootstrap completed successfully ==="
           env:
             - name: RABBITMQ_PROTOCOL
               value: {{ .Values.global.externalRabbitmqDefinitions.connection.protocol | quote }}

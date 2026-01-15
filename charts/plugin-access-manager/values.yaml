@@ -293,6 +293,7 @@ auth:
     DB_HOST: "plugin-access-manager-auth-database.midaz-plugins.svc.cluster.local"
     DB_PORT: 5432
     DB_NAME: "casdoor"
+    DB_SSLMODE: "disable"
     # -- Default Environment
     ENV_NAME: "development"
     # -- Default Redis Settings

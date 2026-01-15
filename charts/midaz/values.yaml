@@ -7,22 +7,65 @@ fullnameOverride: ""
 namespaceOverride: "midaz"
 
 global:
-  # -- Enable or disable loading of default RabbitMQ definitions to external host
+  # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
+    # -- Enable or disable the RabbitMQ bootstrap job
     enabled: false
+    # -- RabbitMQ connection settings
+    connection:
+      # -- RabbitMQ protocol (http or https)
+      protocol: "http"
+      # -- RabbitMQ host (management API endpoint)
+      host: "midaz-rabbitmq"
+      # -- RabbitMQ HTTP management port
+      port: "15672"
+      # -- RabbitMQ AMQP port (for connectivity check)
+      portAmqp: "5672"
+    # -- Admin credentials for RabbitMQ management API
     rabbitmqAdminLogin:
       useExistingSecret:
+        # -- Name of existing secret containing RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys
         name: ""
-      username: ""
-      password: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "midaz"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for application users created by the job
+    appCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing RABBITMQ_TRANSACTION_PASS and RABBITMQ_CONSUMER_PASS keys
+        name: ""
+      # -- Password for transaction user (ignored if useExistingSecret.name is set)
+      transactionPassword: "lerian"
+      # -- Password for consumer user (ignored if useExistingSecret.name is set)
+      consumerPassword: "lerian"
 
+  # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:
+    # -- Enable or disable the PostgreSQL bootstrap job
     enabled: false
+    # -- PostgreSQL connection settings
+    connection:
+      # -- PostgreSQL host
+      host: "midaz-postgresql-primary"
+      # -- PostgreSQL port
+      port: "5432"
+    # -- Admin credentials for PostgreSQL
     postgresAdminLogin:
       useExistingSecret:
+        # -- Name of existing secret containing DB_USER_ADMIN and DB_ADMIN_PASSWORD keys
         name: ""
-      username: ""
-      password: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "postgres"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for midaz role created by the job
+    midazCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_PASSWORD_MIDAZ key
+        name: ""
+      # -- Password for midaz role (ignored if useExistingSecret.name is set)
+      password: "lerian"
 
 onboarding:
   # -- Service name
@@ -162,13 +205,6 @@ onboarding:
   configmap:
     # -- Otel default configuration
     ENABLE_TELEMETRY: "true"
-    # -- Rabbitmq default configuration
-    RABBITMQ_PROTOCOL: "http"
-    RABBITMQ_URI: "amqp"
-    RABBITMQ_HOST: "midaz-rabbitmq.midaz.svc.cluster.local."
-    RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672"
-    RABBITMQ_DEFAULT_USER: "onboarding"
     # -- MongoDB default configuration
     MONGO_URI: "mongodb"
     MONGO_HOST: "midaz-mongodb.midaz.svc.cluster.local."
@@ -896,7 +932,8 @@ postgresql:
     numSynchronousReplicas: 1
   auth:
     enabled: true
-    enablePostgresUser: false
+    enablePostgresUser: true
+    postgresPassword: "lerian"
     username: "midaz"
     password: "lerian"
     database: "onboarding"

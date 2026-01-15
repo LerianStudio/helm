@@ -539,18 +539,18 @@ This Chart has the following dependencies for the project's default installation
       DB_REPLICA_PASSWORD: { your-replication-host-pass }
   ```
 
-#### External PostgreSQL Bootstrap (Hook Job)
+#### External PostgreSQL Bootstrap Job
 
 When using an external PostgreSQL (i.e., `postgresql.enabled: false`), this chart provides a one-shot bootstrap Job that:
 
 - Creates the `onboarding` and `transaction` databases if they do not exist.
-- Creates the `midaz` role/user if it does not exist and ensures/updates its password.
+- Creates the `midaz` role/user if it does not exist and sets its password.
 - Grants database privileges and `public` schema permissions so `midaz` can create tables.
-- Waits for connectivity using `onboarding.configmap.DB_HOST` and `onboarding.configmap.DB_PORT`.
+- Waits for connectivity with a 300s timeout.
 - Is idempotent: if everything already exists, it prints and exits.
 
-- Template: `charts/midaz/templates/postgres_boostrap_midaz.yaml`
-- Hook: `helm.sh/hook: post-install`
+- Template: `charts/midaz/templates/bootstrap-postgres.yaml`
+- Job name: `midaz-bootstrap-postgres`
 
 Configure in `values.yaml`:
 
@@ -560,31 +560,30 @@ postgresql:
 
 global:
   externalPostgresDefinitions:
+    enabled: true
+    connection:
+      host: "your-postgres-host"
+      port: "5432"
     postgresAdminLogin:
-      # Prefer using an existing Secret (recommended)
-      # Required keys in that Secret:
-      # - DB_USER_ADMIN
-      # - DB_ADMIN_PASSWORD
+      # Option A: Use an existing Secret (recommended)
+      # Required keys: DB_USER_ADMIN, DB_ADMIN_PASSWORD
       useExistingSecret:
-        name: "my-existing-postgres-admin-secret"
-      # OR provide inline credentials (not recommended in production):
+        name: "my-postgres-admin-secret"
+      # Option B: Inline credentials (not recommended in production)
       # username: "postgres"
       # password: "s3cret"
-
-# Application user password (for role `midaz`) comes from the onboarding Secret
-onboarding:
-  secrets:
-    DB_PASSWORD: "your-midaz-password"
+    midazCredentials:
+      # Option A: Use an existing Secret (recommended)
+      # Required key: DB_PASSWORD_MIDAZ
+      useExistingSecret:
+        name: "my-midaz-credentials-secret"
+      # Option B: Inline password (not recommended in production)
+      # password: "midaz-password"
 ```
 
 Notes:
-- The existing admin Secret must be in the same namespace as the release.
-- The Job runs only on install (`post-install`). If you want hooks to auto-clean, add:
-
-```yaml
-annotations:
-  "helm.sh/hook": post-install
-```
+- All secrets must be in the same namespace as the release.
+- The Job has a TTL of 300 seconds after completion.
 
 ### MongoDB
 
@@ -622,26 +621,25 @@ annotations:
 - **Repository:** https://charts.bitnami.com/bitnami
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
   
-- **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
+- **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (users, queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
 
 - **You have two options to load the definitions:**
 
 1. **Automatically:**
-Enable the flag below in your values.yaml to automatically create a Kubernetes Job that applies the default RabbitMQ definitions to your external RabbitMQ instance:
+Enable the bootstrap job in your values.yaml to automatically apply the RabbitMQ definitions to your external instance:
 
       ```yaml
       global:
-        # -- Enable or disable loading of default RabbitMQ definitions to external host
         externalRabbitmqDefinitions:
           enabled: true
       ```
-    ⚠️ **Note:** This Job runs only on the first installation of the chart because it uses a Helm post-install hook. It will not run during upgrades or re-installs unless the release is deleted and installed again. Use this option for initial setup only.
 
 2. **Manually:**
-You can also manually apply the definitions using RabbitMQ’s HTTP API with the following command:
+You can also manually apply the definitions using RabbitMQ's HTTP API with the following command:
 
     ```console
-    curl -u { your-host-user }: { your-host-pass } -X POST -H "Content-Type: application/json" -d @load_definitions.json http://{ your-host }: { your-host-port }/api/definitions
+    curl -u {user}:{pass} -X POST -H "Content-Type: application/json" \
+      -d @load_definitions.json http://{host}:{port}/api/definitions
     ```
     The load_definitions.json file is located at:
 
@@ -649,46 +647,54 @@ You can also manually apply the definitions using RabbitMQ’s HTTP API with the
     charts/midaz/files/rabbitmq/load_definitions.json
     ```
 
-#### Automatic Definitions Load (Hook Job)
+#### External RabbitMQ Bootstrap Job
 
 To streamline external RabbitMQ setup, this chart provides a one-shot Job that:
 
 - Applies the standard definitions file (`charts/midaz/files/rabbitmq/load_definitions.json`) via the HTTP API.
-- Updates/creates the `onboarding` and `transaction` users with passwords from their Secrets.
-- Waits for connectivity using `onboarding.configmap` (`RABBITMQ_HOST` + `RABBITMQ_PORT_HOST`).
+- Creates/updates the `transaction` and `consumer` users with custom passwords.
+- Waits for AMQP connectivity with a 300s timeout.
+- Is idempotent: if users already exist, it skips and exits.
 
-- Template: `charts/midaz/templates/rabbitmq_external_load_definitions.yaml`
-- Hook: `helm.sh/hook: post-install`
+- Template: `charts/midaz/templates/bootstrap-rabbitmq.yaml`
+- Job name: `midaz-bootstrap-rabbitmq`
 
 Configure in `values.yaml`:
 
 ```yaml
+rabbitmq:
+  enabled: false  # disable bundled RabbitMQ to use an external one
+
 global:
   externalRabbitmqDefinitions:
     enabled: true
+    connection:
+      protocol: "http"          # http or https
+      host: "your-rabbitmq-host"
+      port: "15672"             # HTTP management port
+      portAmqp: "5672"          # AMQP port (for connectivity check)
     rabbitmqAdminLogin:
-      # Option A: Inline admin credentials (simple)
-      # username: "admin"
-      # password: "s3cret"
-
-      # Option B: Admin user from an existing Secret (recommended)
-      # The Secret must contain the key below:
-      # - RABBITMQ_ADMIN_USER
-      # - RABBITMQ_ADMIN_PASS
+      # Option A: Use an existing Secret (recommended)
+      # Required keys: RABBITMQ_ADMIN_USER, RABBITMQ_ADMIN_PASS
       useExistingSecret:
         name: "my-rabbitmq-admin-secret"
+      # Option B: Inline credentials (not recommended in production)
+      # username: "admin"
+      # password: "s3cret"
+    appCredentials:
+      # Option A: Use an existing Secret (recommended)
+      # Required keys: RABBITMQ_TRANSACTION_PASS, RABBITMQ_CONSUMER_PASS
+      useExistingSecret:
+        name: "my-rabbitmq-app-credentials"
+      # Option B: Inline passwords (not recommended in production)
+      # transactionPassword: "transaction-pass"
+      # consumerPassword: "consumer-pass"
 ```
 
 Notes:
-- Service user passwords are read from each service Secret using the key `RABBITMQ_DEFAULT_PASS` (`onboarding` and `transaction`).
-- If you want hooks to auto-clean, add:
-
-```yaml
-annotations:
-  "helm.sh/hook": post-install
-  "helm.sh/hook-weight": "0"
-  "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
-```
+- All secrets must be in the same namespace as the release.
+- The Job has a TTL of 300 seconds after completion.
+- Users created: `midaz` (admin), `transaction`, `consumer`.
 
  
 #### RabbitMQ over TLS/SSL

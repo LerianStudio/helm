@@ -652,6 +652,14 @@ keda:
   # When external is true, the chart will still create ScaledJob and TriggerAuthentication resources
   # but will not install the KEDA operator itself
   external: false
+  # TriggerAuthentication configuration for RabbitMQ credentials
+  triggerAuthentication:
+    # -- Secret name containing RabbitMQ credentials (defaults to reporter-manager secret)
+    secretName: ""
+    # -- Key in secret for RabbitMQ username
+    usernameKey: "RABBITMQ_DEFAULT_USER"
+    # -- Key in secret for RabbitMQ password
+    passwordKey: "RABBITMQ_DEFAULT_PASS"
   crds:
     install: true
   webhookCerts:

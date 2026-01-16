@@ -1073,7 +1073,12 @@ rabbitmq:
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
 
 otel-collector-lerian:
+  # -- Enable OTEL collector subchart installation
   enabled: false
+  # -- Use externally installed OTEL collector (injects HOST_IP env vars without installing subchart)
+  # When true, deployment templates will inject OTEL_EXPORTER_OTLP_ENDPOINT pointing to HOST_IP:4317
+  # This is useful when you have an existing OTEL collector DaemonSet with hostPort
+  external: false
 
   opentelemetry-collector:
     config:

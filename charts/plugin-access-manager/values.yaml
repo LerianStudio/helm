@@ -290,14 +290,14 @@ auth:
   configmap:
     # -- Default Environment variables for the postgres
     DB_USER: "auth"
-    DB_HOST: "plugin-access-manager-auth-database.midaz-plugins.svc.cluster.local"
+    DB_HOST: "plugin-access-manager-auth-database"
     DB_PORT: 5432
     DB_NAME: "casdoor"
     DB_SSLMODE: "disable"
     # -- Default Environment
     ENV_NAME: "development"
     # -- Default Redis Settings
-    REDIS_HOST: "plugin-access-manager-valkey-primary.midaz-plugins.svc.cluster.local"
+    REDIS_HOST: "plugin-access-manager-valkey-primary"
     REDIS_PORT: 6379
     REDIS_USER: "auth"
     AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
@@ -389,6 +389,14 @@ auth-database:
   # https://docs.lerian.studio/docs/midaz-security#identity-management-with-casdoor
   enabled: true
 
+  global:
+    security:
+      allowInsecureImages: true
+
+  image:
+    repository: bitnamisecure/postgresql
+    tag: "latest"
+
   auth:
     enabled: true
     enablePostgresUser: false
@@ -429,7 +437,14 @@ valkey:
   # For more details, refer to the documentation:
   # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
+  
+  global:
+    security:
+      allowInsecureImages: true
 
+  image:
+    repository: bitnamisecure/valkey
+    tag: "latest"
   architecture: standalone
   auth:
     enabled: false

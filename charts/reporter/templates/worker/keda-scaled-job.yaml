@@ -72,7 +72,7 @@ spec:
   - type: {{ .type }}
     metadata:
       queueName: {{ $.Values.common.configmap.RABBITMQ_GENERATE_REPORT_QUEUE | quote }}
-      host: "amqp://{{ $.Values.common.configmap.RABBITMQ_HOST }}:{{ $.Values.common.configmap.RABBITMQ_PORT_AMQP }}"
+      host: "{{ $.Values.common.configmap.RABBITMQ_URI | default "amqp" }}://{{ $.Values.common.configmap.RABBITMQ_HOST }}:{{ $.Values.common.configmap.RABBITMQ_PORT_AMQP }}"
       queueLength: {{ .metadata.queueLength | quote }}
       protocol: {{ .metadata.protocol | quote }}
       vhost: {{ .metadata.vhost }}

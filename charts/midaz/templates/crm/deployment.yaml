@@ -59,7 +59,7 @@ spec:
           {{- end }}
           - configMapRef:
               name: {{ include "midaz-crm.fullname" . }}
-          {{- if (index .Values "otel-collector-lerian").enabled }}
+          {{- if or (index .Values "otel-collector-lerian").enabled (index .Values "otel-collector-lerian").external }}
           env:
           - name: "HOST_IP"
             valueFrom:

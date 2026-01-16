@@ -76,7 +76,7 @@ spec:
               name: {{ if .Values.ledger.useExistingSecret }}{{ .Values.ledger.existingSecretName }}{{ else }}{{ include "midaz-ledger.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "midaz-ledger.fullname" . }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
+          {{- if or (index .Values "otel-collector-lerian").enabled (index .Values "otel-collector-lerian").external }}
           env:
           - name: "HOST_IP"
             valueFrom:
@@ -84,7 +84,7 @@ spec:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
-          {{ end }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.ledger.service.port | default 3000 }}

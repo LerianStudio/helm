@@ -67,7 +67,7 @@ spec:
               name: {{ if .Values.onboarding.useExistingSecret }}{{ .Values.onboarding.existingSecretName }}{{ else }}{{ include "midaz-onboarding.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "midaz-onboarding.fullname" . }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
+          {{- if or (index .Values "otel-collector-lerian").enabled (index .Values "otel-collector-lerian").external }}
           env:
           - name: "HOST_IP"
             valueFrom:
@@ -75,7 +75,7 @@ spec:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
-          {{ end }}
+          {{- end }}
           ports:
             - name: http
               containerPort: 3000

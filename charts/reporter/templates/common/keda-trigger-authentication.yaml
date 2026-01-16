@@ -1,13 +1,10 @@
+{{- if or .Values.keda.enabled .Values.keda.external }}
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
   name: keda-trigger-authentication
   labels:
     {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 4 }}
-  annotations:
-    "helm.sh/resource-policy": keep
-    "helm.sh/hook": "post-install,post-upgrade"
-    "helm.sh/hook-weight": "5"
 spec:
   secretTargetRef:
     - parameter: username
@@ -16,3 +13,4 @@ spec:
     - parameter: password
       name: {{ include "plugin-manager.fullname" . }}
       key: RABBITMQ_DEFAULT_PASS
+{{- end }}

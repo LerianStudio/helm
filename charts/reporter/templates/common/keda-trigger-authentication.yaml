@@ -8,9 +8,9 @@ metadata:
 spec:
   secretTargetRef:
     - parameter: username
-      name: {{ include "plugin-manager.fullname" . }}
-      key: RABBITMQ_DEFAULT_USER
+      name: {{ .Values.keda.triggerAuthentication.secretName | default (include "plugin-manager.fullname" .) }}
+      key: {{ .Values.keda.triggerAuthentication.usernameKey | default "RABBITMQ_DEFAULT_USER" }}
     - parameter: password
-      name: {{ include "plugin-manager.fullname" . }}
-      key: RABBITMQ_DEFAULT_PASS
+      name: {{ .Values.keda.triggerAuthentication.secretName | default (include "plugin-manager.fullname" .) }}
+      key: {{ .Values.keda.triggerAuthentication.passwordKey | default "RABBITMQ_DEFAULT_PASS" }}
 {{- end }}

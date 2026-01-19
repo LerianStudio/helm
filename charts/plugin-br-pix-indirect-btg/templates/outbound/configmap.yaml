@@ -172,7 +172,7 @@ data:
   # ==============================================================================
   # TRANSFER_CASHOUT - HIGH VOLUME entity (Pix Cashout notifications)
   # ==============================================================================
-  WEBHOOK_TRANSFER_CASHOUT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_ENABLED | default "false" | quote }}
+  WEBHOOK_TRANSFER_CASHOUT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_ENABLED | default "true" | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_TRANSFER_CASHOUT_URL: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_URL | default "" | quote }}
@@ -183,6 +183,51 @@ data:
   WEBHOOK_TRANSFER_CASHOUT_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_MAX_RETRIES | default "10" | quote }}
   WEBHOOK_TRANSFER_CASHOUT_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_TRANSFER_CASHOUT_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_MAX_CONCURRENT | default "10" | quote }}
+
+  # ==============================================================================
+  # REFUND_CASHIN - HIGH VOLUME entity (Pix Refund Cashin notifications)
+  # ==============================================================================
+  WEBHOOK_REFUND_CASHIN_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_ENABLED | default "true" | quote }}
+  # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_REFUND_CASHIN_URL: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_URL | default "" | quote }}
+  WEBHOOK_REFUND_CASHIN_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_WORKER_COUNT | default "5" | quote }}
+  WEBHOOK_REFUND_CASHIN_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_BATCH_SIZE | default "200" | quote }}
+  WEBHOOK_REFUND_CASHIN_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_POLLING_INTERVAL | default "2s" | quote }}
+  WEBHOOK_REFUND_CASHIN_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_REQUEST_TIMEOUT | default "15s" | quote }}
+  WEBHOOK_REFUND_CASHIN_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_REFUND_CASHIN_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_REFUND_CASHIN_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_MAX_CONCURRENT | default "10" | quote }}
+
+  # ==============================================================================
+  # REFUND_CASHOUT - HIGH VOLUME entity (Pix Refund Cashout notifications)
+  # ==============================================================================
+  WEBHOOK_REFUND_CASHOUT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_ENABLED | default "true" | quote }}
+  # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_REFUND_CASHOUT_URL: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_URL | default "" | quote }}
+  WEBHOOK_REFUND_CASHOUT_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_WORKER_COUNT | default "5" | quote }}
+  WEBHOOK_REFUND_CASHOUT_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_BATCH_SIZE | default "200" | quote }}
+  WEBHOOK_REFUND_CASHOUT_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_POLLING_INTERVAL | default "1s" | quote }}
+  WEBHOOK_REFUND_CASHOUT_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_REQUEST_TIMEOUT | default "15s" | quote }}
+  WEBHOOK_REFUND_CASHOUT_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_REFUND_CASHOUT_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_REFUND_CASHOUT_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_MAX_CONCURRENT | default "10" | quote }}
+
+  # ==============================================================================
+  # DICT_RECONCILIATION - Medium volume entity
+  # ==============================================================================
+  WEBHOOK_DICT_RECONCILIATION_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_ENABLED | default "true" | quote }}
+  # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_DICT_RECONCILIATION_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_URL | default "" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_WORKER_COUNT | default "1" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_POLLING_INTERVAL | default "10s" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_REQUEST_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_MAX_CONCURRENT | default "2" | quote }}
 
   # Extra Env Vars
   {{- with .Values.outbound.extraEnvVars }}

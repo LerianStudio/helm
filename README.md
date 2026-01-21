@@ -85,6 +85,19 @@
 | `1.2.6` | 1.2.1-beta.7 | 1.2.1-beta.7 |
 -----------------
 
+### Plugin BR Pix Indirect BTG
+
+📚 For more details, check out the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/indirect-pix-btg#indirect-pix-btg).
+
+🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/plugin-br-pix-indirect-btg).
+
+#### Application Version Mapping
+
+| Chart Version | Pix Version | Inbound Version | Outbound Version |
+| :---: | :---: | :---: | :---: |
+| `1.0.0-beta.9` | 1.0.0-rc.27 | 1.0.0-rc.27 | 1.0.0-rc.27 |
+-----------------
+
 ### Otel Collector Lerian
 
 🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/otel-collector-lerian).

@@ -1,0 +1,76 @@
+{{- include "plugin-br-pix-indirect-btg.validateRequired" . }}
+{{- include "plugin-br-pix-indirect-btg.validatePostgreSQL" . }}
+{{- include "plugin-br-pix-indirect-btg.validateMongoDB" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-indirect-btg.labels" (dict "context" . "name" .Values.pix.name ) | nindent 4 }} 
+spec:
+  revisionHistoryLimit: {{ .Values.pix.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml .Values.pix.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.pix.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-pix-indirect-btg.selectorLabels" (dict "context" . "name" .Values.pix.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-br-pix-indirect-btg.labels" (dict "context" . "name" .Values.pix.name ) | nindent 8 }}
+    spec:
+    {{- with .Values.pix.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.pix.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
+          image: {{ .Values.pix.image.repository }}:{{ .Values.pix.image.tag | default (include "plugin.version" .) }}
+          imagePullPolicy: {{ .Values.pix.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.pix.service.port }}
+              protocol: TCP
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.pix.useExistingSecrets }}{{ .Values.pix.existingSecretName }}{{ else }}{{ include "plugin-br-pix-indirect-btg.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}  
+          resources:
+            {{- toYaml .Values.pix.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.pix.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            httpGet:
+              path: /health
+              port: {{ .Values.pix.service.port }}
+      {{- with .Values.pix.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.pix.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.pix.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "inbound.fullname" . }}
+  labels:
+    {{- include "inbound.labels" (dict "context" . "name" .Values.inbound.name ) | nindent 4 }} 
+spec:
+  revisionHistoryLimit: {{ .Values.inbound.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml .Values.inbound.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.inbound.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "inbound.selectorLabels" (dict "context" . "name" .Values.inbound.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "inbound.labels" (dict "context" . "name" .Values.inbound.name ) | nindent 8 }}
+    spec:
+    {{- with .Values.inbound.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.inbound.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "inbound.fullname" . }}
+          image: {{ .Values.inbound.image.repository }}:{{ .Values.inbound.image.tag }}
+          imagePullPolicy: {{ .Values.inbound.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.inbound.service.port }}
+              protocol: TCP
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.inbound.useExistingSecrets }}{{ .Values.inbound.existingSecretName }}{{ else }}{{ include "inbound.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "inbound.fullname" . }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}  
+          resources:
+            {{- toYaml .Values.inbound.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.inbound.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            httpGet:
+              path: /health
+              port: {{ .Values.inbound.service.port }}
+      {{- with .Values.inbound.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.inbound.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.inbound.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-indirect-btg.labels" (dict "context" . "name" .Values.pix.name ) | nindent 4 }} 
+spec:
+  type: {{ .Values.pix.service.type }}
+  ports:
+    - port: {{ .Values.pix.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "plugin-br-pix-indirect-btg.selectorLabels" (dict "context" . "name" .Values.pix.name) | nindent 4 }}

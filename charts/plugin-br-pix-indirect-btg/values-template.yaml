@@ -1,0 +1,242 @@
+pix:
+  replicaCount: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 9
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg
+    pullPolicy: Always
+    tag: "1.0.0-rc.27"
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_USER: "pix_btg"
+    DB_NAME: "pix_btg"
+    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_USER: "pix_btg"
+    DB_REPLICA_NAME: "pix_btg"
+    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_NAME: "plugin-br-pix-indirect-btg-db"
+    MONGO_USER: "pix_btg"
+    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    BTG_BASE_URL: ""
+    PIX_ISPB: ""
+    MIDAZ_ORGANIZATION_ID: ""
+    MIDAZ_LEDGER_ID: ""
+    CASHIN_FEE_CALCULATION_TYPE: "segment"
+    ORGANIZATION_IDS: global
+    ENTRY_WRITE_BLOCK_START: ""
+    ENTRY_WRITE_BLOCK_END: ""
+    # HMAC Internal Validation
+    INTERNAL_WEBHOOK_VALIDATION_ENABLED: "true"
+    INTERNAL_WEBHOOK_TIMESTAMP_TOLERANCE: "300"
+    # mTLS BTG Configuration
+    MTLS_ENABLED: "false"
+    MTLS_CERTIFICATE_TTL: "24h"
+    BTG_CERTIFICATE_URL: ""
+    MTLS_HTTP_TIMEOUT: "10s"
+
+  secrets:
+    DB_PASSWORD: "lerian"
+    DB_REPLICA_PASSWORD: "lerian"
+    REPLICATION_PASSWORD: ""
+    MONGO_PASSWORD: "lerian"
+    REDIS_PASSWORD: ""
+    BTG_CLIENT_ID: ""
+    BTG_CLIENT_SECRET: ""
+    MIDAZ_CLIENT_ID: ""
+    MIDAZ_CLIENT_SECRET: ""
+    FEE_CLIENT_ID: ""
+    FEE_CLIENT_SECRET: ""
+    LICENSE_KEY: ""
+    PLUGIN_CRM_CLIENT_ID: ""
+    PLUGIN_CRM_CLIENT_SECRET: ""
+    INTERNAL_WEBHOOK_SECRET: ""
+
+  useExistingSecrets: false
+  existingSecretName: ""
+
+inbound:
+  replicaCount: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-inbound
+    pullPolicy: Always
+    tag: "1.0.0-rc.27"
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_USER: "pix_btg"
+    DB_NAME: "pix_btg"
+    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_USER: "pix_btg"
+    DB_REPLICA_NAME: "pix_btg"
+    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_NAME: "plugin-br-pix-indirect-btg-db"
+    MONGO_USER: "pix_btg"
+
+  secrets:
+    DB_PASSWORD: "lerian"
+    DB_REPLICA_PASSWORD: "lerian"
+    MONGO_PASSWORD: "lerian"
+    INTERNAL_WEBHOOK_SECRET: ""
+
+  useExistingSecrets: false
+  existingSecretName: ""
+
+outbound:
+  replicaCount: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-outbound
+    pullPolicy: Always
+    tag: "1.0.0-rc.27"
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_USER: "pix_btg"
+    DB_NAME: "pix_btg"
+    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_USER: "pix_btg"
+    DB_REPLICA_NAME: "pix_btg"
+    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_NAME: "plugin-br-pix-indirect-btg-db"
+    MONGO_USER: "pix_btg"
+    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    WEBHOOK_CLIENT_URL: ""
+    WEBHOOK_DICT_CLAIM_URL: ""
+    WEBHOOK_DICT_INFRACTION_REPORT_URL: ""
+    WEBHOOK_DICT_REFUND_URL: ""
+    WEBHOOK_TRANSFER_CASHIN_URL: ""
+    WEBHOOK_TRANSFER_CASHOUT_URL: ""
+    WEBHOOK_REFUND_CASHIN_URL: ""
+    WEBHOOK_REFUND_CASHOUT_URL: ""
+    WEBHOOK_DICT_RECONCILIATION_URL: ""
+
+  secrets:
+    DB_PASSWORD: "lerian"
+    DB_REPLICA_PASSWORD: "lerian"
+    MONGO_PASSWORD: "lerian"
+
+  useExistingSecrets: false
+  existingSecretName: ""
+
+reconciliation:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-reconciliation
+    pullPolicy: Always
+    tag: "1.0.0-rc.27"
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_USER: "pix_btg"
+    DB_NAME: "pix_btg"
+    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_USER: "pix_btg"
+    DB_REPLICA_NAME: "pix_btg"
+    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    MIDAZ_ORGANIZATION_ID: ""
+    BTG_BASE_URL: ""
+    RECONCILIATION_START_TIME: ""
+    RECONCILIATION_END_TIME: ""
+
+  secrets:
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    REDIS_PASSWORD: ""
+    PLUGIN_CRM_CLIENT_ID: ""
+    PLUGIN_CRM_CLIENT_SECRET: ""
+    BTG_CLIENT_ID: ""
+    BTG_CLIENT_SECRET: ""
+    PLUGIN_PIX_BTG_CLIENT_ID: ""
+    PLUGIN_PIX_BTG_CLIENT_SECRET: ""
+
+  useExistingSecrets: false
+  existingSecretName: ""
+
+postgresql:
+  enabled: true
+  auth:
+    username: "pix_btg"
+    password: "lerian"
+    database: "pix_btg"
+
+mongodb:
+  enabled: true
+  auth:
+    enabled: true
+    rootUser: pix_btg
+    rootPassword: "lerian"
+
+valkey:
+  enabled: true
+  auth:
+    enabled: false

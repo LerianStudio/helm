@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "reconciliation.fullname" . }}
+  labels:
+    {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 4 }}
+data:
+  ENV_NAME: {{ .Values.reconciliation.configmap.ENV_NAME | default "development" | quote }}
+  VERSION: {{ .Values.reconciliation.configmap.VERSION | default "1.0.0" | quote }}
+  LOG_LEVEL: {{ .Values.reconciliation.configmap.LOG_LEVEL | default "info" | quote }}
+  WORKER_PORT: {{ .Values.reconciliation.configmap.WORKER_PORT | default "4017" | quote }}
+
+  # Database Configuration (Primary)
+  DB_HOST: {{ .Values.reconciliation.configmap.DB_HOST | default "localhost" | quote }}
+  DB_PORT: {{ .Values.reconciliation.configmap.DB_PORT | default "5432" | quote }}
+  DB_USER: {{ .Values.reconciliation.configmap.DB_USER | default "plugin" | quote }}
+  DB_NAME: {{ .Values.reconciliation.configmap.DB_NAME | default "pix_btg" | quote }}
+  DB_SSL_MODE: {{ .Values.reconciliation.configmap.DB_SSL_MODE | default "disable" | quote }}
+  DB_MAX_OPEN_CONNS: {{ .Values.reconciliation.configmap.DB_MAX_OPEN_CONNS | default "20" | quote }}
+  DB_MAX_IDLE_CONNS: {{ .Values.reconciliation.configmap.DB_MAX_IDLE_CONNS | default "10" | quote }}
+  MIGRATIONS_PATH: {{ .Values.reconciliation.configmap.MIGRATIONS_PATH | default "components/infra/migrations" | quote }}
+
+  # Database Configuration (Replica)
+  DB_REPLICA_HOST: {{ .Values.reconciliation.configmap.DB_REPLICA_HOST | default "" | quote }}
+  DB_REPLICA_USER: {{ .Values.reconciliation.configmap.DB_REPLICA_USER | default "" | quote }}
+  DB_REPLICA_NAME: {{ .Values.reconciliation.configmap.DB_REPLICA_NAME | default "" | quote }}
+  DB_REPLICA_PORT: {{ .Values.reconciliation.configmap.DB_REPLICA_PORT | default "" | quote }}
+
+  # VSync Configuration
+  RECONCILIATION_VSYNC_ENABLED: {{ .Values.reconciliation.configmap.RECONCILIATION_VSYNC_ENABLED | default "true" | quote }}
+  RECONCILIATION_VSYNC_SCHEDULE: {{ .Values.reconciliation.configmap.RECONCILIATION_VSYNC_SCHEDULE | default "5m" | quote }}
+
+  # Time Window Configuration
+  RECONCILIATION_START_TIME: {{ .Values.reconciliation.configmap.RECONCILIATION_START_TIME | default "" | quote }}
+  RECONCILIATION_END_TIME: {{ .Values.reconciliation.configmap.RECONCILIATION_END_TIME | default "" | quote }}
+
+  # Job Processing Configuration
+  RECONCILIATION_JOB_POLLING_INTERVAL: {{ .Values.reconciliation.configmap.RECONCILIATION_JOB_POLLING_INTERVAL | default "10s" | quote }}
+  RECONCILIATION_JOB_MAX_CONCURRENT: {{ .Values.reconciliation.configmap.RECONCILIATION_JOB_MAX_CONCURRENT | default "1" | quote }}
+  RECONCILIATION_JOB_TIMEOUT: {{ .Values.reconciliation.configmap.RECONCILIATION_JOB_TIMEOUT | default "2h" | quote }}
+
+  # Full Reconciliation Configuration
+  RECONCILIATION_FILE_BATCH_SIZE: {{ .Values.reconciliation.configmap.RECONCILIATION_FILE_BATCH_SIZE | default "500" | quote }}
+  RECONCILIATION_REMOVAL_BATCH_SIZE: {{ .Values.reconciliation.configmap.RECONCILIATION_REMOVAL_BATCH_SIZE | default "500" | quote }}
+  RECONCILIATION_LOCAL_CID_PAGE_SIZE: {{ .Values.reconciliation.configmap.RECONCILIATION_LOCAL_CID_PAGE_SIZE | default "1000" | quote }}
+
+  # CPU Throttling Configuration
+  RECONCILIATION_RATE_LIMIT: {{ .Values.reconciliation.configmap.RECONCILIATION_RATE_LIMIT | default "100" | quote }}
+  RECONCILIATION_BATCH_SLEEP_MS: {{ .Values.reconciliation.configmap.RECONCILIATION_BATCH_SLEEP_MS | default "150" | quote }}
+  RECONCILIATION_CHUNK_DELAY_MS: {{ .Values.reconciliation.configmap.RECONCILIATION_CHUNK_DELAY_MS | default "100" | quote }}
+  RECONCILIATION_YIELD_INTERVAL: {{ .Values.reconciliation.configmap.RECONCILIATION_YIELD_INTERVAL | default "100" | quote }}
+  RECONCILIATION_LOG_PROGRESS_INTERVAL: {{ .Values.reconciliation.configmap.RECONCILIATION_LOG_PROGRESS_INTERVAL | default "1000" | quote }}
+
+  # BTG API Configuration
+  BTG_BASE_URL: {{ .Values.reconciliation.configmap.BTG_BASE_URL | default "https://developer.api.btgpactual.com" | quote }}
+  BTG_TIMEOUT: {{ .Values.reconciliation.configmap.BTG_TIMEOUT | default "30s" | quote }}
+
+  # CRM API Configuration
+  PLUGIN_CRM_BASE_URL: {{ .Values.reconciliation.configmap.PLUGIN_CRM_BASE_URL | default "plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
+  PLUGIN_CRM_TIMEOUT: {{ .Values.reconciliation.configmap.PLUGIN_CRM_TIMEOUT | default "30s" | quote }}
+  PLUGIN_AUTH_URL: {{ .Values.reconciliation.configmap.PLUGIN_AUTH_URL | default "plugin-access-manager.midaz-plugins.svc.cluster.local:4000/v1/login/oauth/access_token" | quote }}
+
+  # Midaz Organization ID
+  MIDAZ_ORGANIZATION_ID: {{ .Values.reconciliation.configmap.MIDAZ_ORGANIZATION_ID | default "" | quote }}
+
+  # PIX BTG API Configuration
+  PLUGIN_PIX_BTG_BASE_URL: {{ .Values.reconciliation.configmap.PLUGIN_PIX_BTG_BASE_URL | default "plugin-br-pix-indirect-btg.midaz-plugins.svc.cluster.local:4014" | quote }}
+  PLUGIN_PIX_BTG_TIMEOUT: {{ .Values.reconciliation.configmap.PLUGIN_PIX_BTG_TIMEOUT | default "30s" | quote }}
+
+  # Circuit Breaker Configuration
+  CIRCUIT_BREAKER_ENABLED: {{ .Values.reconciliation.configmap.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  CIRCUIT_BREAKER_MAX_REQUESTS: {{ .Values.reconciliation.configmap.CIRCUIT_BREAKER_MAX_REQUESTS | default "3" | quote }}
+  CIRCUIT_BREAKER_INTERVAL: {{ .Values.reconciliation.configmap.CIRCUIT_BREAKER_INTERVAL | default "60s" | quote }}
+  CIRCUIT_BREAKER_FAILURE_THRESHOLD: {{ .Values.reconciliation.configmap.CIRCUIT_BREAKER_FAILURE_THRESHOLD | default "5" | quote }}
+  CIRCUIT_BREAKER_TIMEOUT: {{ .Values.reconciliation.configmap.CIRCUIT_BREAKER_TIMEOUT | default "60s" | quote }}
+
+  # Retry Configuration
+  RECONCILIATION_MAX_RETRIES: {{ .Values.reconciliation.configmap.RECONCILIATION_MAX_RETRIES | default "3" | quote }}
+  RECONCILIATION_BASE_RETRY_DELAY: {{ .Values.reconciliation.configmap.RECONCILIATION_BASE_RETRY_DELAY | default "20s" | quote }}
+  RECONCILIATION_MAX_RETRY_DELAY: {{ .Values.reconciliation.configmap.RECONCILIATION_MAX_RETRY_DELAY | default "30s" | quote }}
+
+  # Redis Configuration
+  REDIS_HOST: {{ .Values.reconciliation.configmap.REDIS_HOST | default "localhost:6379" | quote }}
+  REDIS_USER: {{ .Values.reconciliation.configmap.REDIS_USER | default "plugin" | quote }}
+  REDIS_MASTER_NAME: {{ .Values.reconciliation.configmap.REDIS_MASTER_NAME | default "" | quote }}
+  REDIS_DB: {{ .Values.reconciliation.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ .Values.reconciliation.configmap.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_TLS: {{ .Values.reconciliation.configmap.REDIS_TLS | default "false" | quote }}
+  REDIS_CA_CERT: {{ .Values.reconciliation.configmap.REDIS_CA_CERT | default "" | quote }}
+  REDIS_USE_GCP_IAM: {{ .Values.reconciliation.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
+  REDIS_SERVICE_ACCOUNT: {{ .Values.reconciliation.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+  GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.reconciliation.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+  REDIS_TOKEN_LIFETIME: {{ .Values.reconciliation.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
+  REDIS_TOKEN_REFRESH_DURATION: {{ .Values.reconciliation.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
+  REDIS_POOL_SIZE: {{ .Values.reconciliation.configmap.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ .Values.reconciliation.configmap.REDIS_MIN_IDLE_CONNS | default "0" | quote }}
+  REDIS_READ_TIMEOUT: {{ .Values.reconciliation.configmap.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ .Values.reconciliation.configmap.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ .Values.reconciliation.configmap.REDIS_DIAL_TIMEOUT | default "5" | quote }}
+  REDIS_POOL_TIMEOUT: {{ .Values.reconciliation.configmap.REDIS_POOL_TIMEOUT | default "2" | quote }}
+  REDIS_MAX_RETRIES: {{ .Values.reconciliation.configmap.REDIS_MAX_RETRIES | default "3" | quote }}
+  REDIS_MIN_RETRY_BACKOFF: {{ .Values.reconciliation.configmap.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
+  REDIS_MAX_RETRY_BACKOFF: {{ .Values.reconciliation.configmap.REDIS_MAX_RETRY_BACKOFF | default "512" | quote }}
+
+  # Cache TTL Configuration
+  CACHE_BTG_ENTRY_TTL: {{ .Values.reconciliation.configmap.CACHE_BTG_ENTRY_TTL | default "20m" | quote }}
+  CACHE_CRM_HOLDER_TTL: {{ .Values.reconciliation.configmap.CACHE_CRM_HOLDER_TTL | default "20m" | quote }}
+
+  # Observability Configuration
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.reconciliation.configmap.OTEL_RESOURCE_SERVICE_NAME | default "reconciliation-worker" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.reconciliation.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-indirect-btg/components/worker/reconciliation" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.reconciliation.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "1.0.0" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.reconciliation.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.reconciliation.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.reconciliation.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.reconciliation.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.reconciliation.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

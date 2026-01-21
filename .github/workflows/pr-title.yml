@@ -37,6 +37,7 @@ jobs:
             reporter
             plugin-fees
             plugin-br-pix-direct-jd
+            plugin-br-pix-indirect-btg
             templates
             dependencies
             otel-collector

@@ -22,6 +22,14 @@ plugin-fees:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-fees/**
 
+plugin-br-pix-indirect-btg:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-br-pix-indirect-btg/**
+
+plugin-br-pix-direct-jd:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-br-pix-direct-jd/**
+      
 product-console:
   - changed-files:
       - any-glob-to-any-file: charts/product-console/**

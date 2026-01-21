@@ -1,0 +1,36 @@
+{{- if .Values.outbound.autoscaling.enabled }}
+{{- if or .Values.outbound.autoscaling.targetCPUUtilizationPercentage .Values.outbound.autoscaling.targetMemoryUtilizationPercentage }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "outbound.fullname" . }}
+  labels:
+    {{- include "outbound.labels" (dict "context" . "name" .Values.outbound.name ) | nindent 4 }} 
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "outbound.fullname" . }}
+  minReplicas: {{ .Values.outbound.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.outbound.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.outbound.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.outbound.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.outbound.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.outbound.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- else }}
+{{- fail "ERROR: HPA requires at least one metric. Set either targetCPUUtilizationPercentage or targetMemoryUtilizationPercentage in outbound.autoscaling" }}
+{{- end }}
+{{- end }}

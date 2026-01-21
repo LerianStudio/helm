@@ -93,9 +93,9 @@
 
 #### Application Version Mapping
 
-| Chart Version | Pix Version | Inbound Version | Outbound Version |
-| :---: | :---: | :---: | :---: |
-| `1.0.0-beta.9` | 1.0.0-rc.27 | 1.0.0-rc.27 | 1.0.0-rc.27 |
+| Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
+| :---: | :---: | :---: | :---: | :---: |
+| `1.0.0-beta.10` | 1.0.0 | 1.0.0 | 1.0.0 | 1.0.0 |
 -----------------
 
 ### Otel Collector Lerian

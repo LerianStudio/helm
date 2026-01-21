@@ -14,9 +14,9 @@
 
 #### Application Version Mapping
 
-| Chart Version | Console Version | Onboarding Version | Transaction Version |
-| :---: | :---: | :---: | :---: |
-| `4.5.0` | 3.4.8 | 3.4.8 | 3.4.8 |
+| Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
+| :---: | :---: | :---: | :---: | :---: |
+| `5.3.0` | 3.5.1 | 3.5.1 | 3.5.1 | 3.5.1 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -29,7 +29,7 @@
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `4.2.1` | 2.4.0 | 2.1.1 |
+| `5.2.2` | 2.4.4 | 2.1.1 |
 
 -----------------
 
@@ -43,7 +43,7 @@
 
 | Chart Version | CRM Version | UI Version |
 | :---: | :---: | :---: |
-| `3.3.0` | `2.0.0` | `2.0.0` |
+| `4.0.0` | 3.5.1 | `2.0.0` |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -69,7 +69,7 @@
 
 | Chart Version | Manager Version | Worker Version | UI Version |
 | :---: | :---: | :---: | :---: |
-| `1.1.5` | `4.0.0` | `4.0.0` | `4.0.0` |
+| `2.2.0` | 4.0.0 | 4.0.0 | `4.0.0` |
 -----------------
 
 ### Plugin BR Pix Direct JD
@@ -107,4 +107,17 @@
 | Chart Version | Otel Version |
 | :---: | :---: |
 | `2.2.1` | 2.1.0 |
+-----------------
+
+### Product Console
+
+📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/product-console).
+
+🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/product-console).
+
+#### Application Version Mapping
+
+| Chart Version | Console Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.0 |
 -----------------

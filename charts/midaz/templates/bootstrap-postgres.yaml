@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: midaz-postgres-bootstrap
+  name: midaz-bootstrap-postgres
   namespace: {{ .Release.Namespace }}
 spec:
   ttlSecondsAfterFinished: 300
@@ -14,31 +14,37 @@ spec:
       restartPolicy: Never
       initContainers:
       - name: wait-for-dependencies
-        image: busybox
-        envFrom:
-        - configMapRef:
-            name: {{ include "midaz-onboarding.fullname" . }}
+        image: busybox:1.37
+        env:
+        - name: DB_HOST
+          value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+        - name: DB_PORT
+          value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
         command:
         - /bin/sh
         - -c
         - >
-          for svc in "$DB_HOST:$DB_PORT";
-          do
-            echo "Checking $svc...";
-            while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
-              echo "$svc is not ready yet, waiting...";
-              sleep 5;
-            done;
-            echo "$svc is ready!";
+          TIMEOUT=300;
+          ELAPSED=0;
+          echo "Checking $DB_HOST:$DB_PORT...";
+          while ! nc -z "$DB_HOST" "$DB_PORT"; do
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "Timeout waiting for $DB_HOST:$DB_PORT after ${TIMEOUT}s";
+              exit 1;
+            fi;
+            echo "$DB_HOST:$DB_PORT is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)";
+            sleep 5;
+            ELAPSED=$((ELAPSED + 5));
           done;
+          echo "$DB_HOST:$DB_PORT is ready!";
       containers:
       - name: psql
         image: postgres:16
         env:
         - name: DB_HOST
-          value: {{ .Values.onboarding.configmap.DB_HOST | quote }}
+          value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
         - name: DB_PORT
-          value: {{ .Values.onboarding.configmap.DB_PORT | quote }}
+          value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
         - name: DB_USER_ADMIN
           {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
           valueFrom:
@@ -49,10 +55,14 @@ spec:
           value: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.username | quote }}
           {{- end }}
         - name: DB_PASSWORD_MIDAZ
+          {{- if .Values.global.externalPostgresDefinitions.midazCredentials.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
-              name: {{ include "midaz-onboarding.fullname" . }}
-              key: DB_PASSWORD
+              name: {{ .Values.global.externalPostgresDefinitions.midazCredentials.useExistingSecret.name | quote }}
+              key: DB_PASSWORD_MIDAZ
+          {{- else }}
+          value: {{ .Values.global.externalPostgresDefinitions.midazCredentials.password | quote }}
+          {{- end }}
         - name: DB_ADMIN_PASSWORD
           {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
           valueFrom:

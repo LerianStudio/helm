@@ -61,4 +61,9 @@ spec:
                 secretKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_PASSWORD
+            - name: DB_SSLMODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_SSLMODE
       restartPolicy: OnFailure

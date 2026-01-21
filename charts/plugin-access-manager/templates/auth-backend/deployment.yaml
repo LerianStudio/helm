@@ -52,11 +52,51 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
+          command:
+            - /bin/sh
+            - -c
+            - |
+              export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} dbname=${DB_NAME}"
+              exec /server --createDatabase=true
           envFrom:
           - configMapRef:
               name: {{ include "plugin-auth-backend.fullname" . }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
           env:
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_HOST
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_PORT
+          - name: DB_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_NAME
+          - name: DB_USER
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_USER
+          - name: DB_SSLMODE
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_SSLMODE
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                {{- if .Values.auth.useExistingSecret }}
+                name: {{ .Values.auth.existingSecretName }}
+                {{- else }}
+                name: {{ include "plugin-auth.fullname" . }}
+                {{- end }}
+                key: DB_PASSWORD
+          {{ if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:

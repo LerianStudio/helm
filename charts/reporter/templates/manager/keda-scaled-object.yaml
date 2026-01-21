@@ -1,4 +1,5 @@
-# Nenhuma verificação de API aqui
+{{- if or .Values.keda.enabled .Values.keda.external }}
+{{- if .Values.manager.keda.scaledObject.enabled }}
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
@@ -9,9 +10,6 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
   annotations:
-    "helm.sh/resource-policy": keep
-    "helm.sh/hook": "post-install,post-upgrade"
-    "helm.sh/hook-weight": "5"
     {{- with .Values.manager.annotations }}
     {{- range $key, $value := . }}
     {{ $key }}: {{ $value | quote }}
@@ -36,3 +34,5 @@ spec:
     authenticationRef:
       name: keda-trigger-authentication   
   {{- end }}
+{{- end }}
+{{- end }}

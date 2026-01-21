@@ -1,8 +1,9 @@
-{{- if .Values.grafana.ingress.enabled -}}
-{{- $fullName := include "midaz-grafana.fullname" . -}}
-{{- if and .Values.grafana.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.grafana.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.grafana.ingress.annotations "kubernetes.io/ingress.class" .Values.grafana.ingress.className}}
+{{- if and .Values.crm.enabled .Values.crm.ingress.enabled -}}
+{{- $fullName := include "midaz-crm.fullname" . -}}
+{{- $svcPort := .Values.crm.service.port -}}
+{{- if and .Values.crm.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.crm.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.crm.ingress.annotations "kubernetes.io/ingress.class" .Values.crm.ingress.className}}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -10,24 +11,24 @@ apiVersion: networking.k8s.io/v1
 {{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
 apiVersion: networking.k8s.io/v1beta1
 {{- else -}}
-apiVersion: extensions/v1beta1  
+apiVersion: extensions/v1beta1
 {{- end }}
 kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "midaz.labels" (dict "context" . "component" .Values.grafana.name "name" .Values.grafana.name ) | nindent 4 }}
-  {{- with .Values.grafana.ingress.annotations }}
+    {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
+  {{- with .Values.crm.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.grafana.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.grafana.ingress.className }}
+  {{- if and .Values.crm.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.crm.ingress.className }}
   {{- end }}
-  {{- if .Values.grafana.ingress.tls }}
+  {{- if .Values.crm.ingress.tls }}
   tls:
-    {{- range .Values.grafana.ingress.tls }}
+    {{- range .Values.crm.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -36,7 +37,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.grafana.ingress.hosts }}
+    {{- range .Values.crm.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:
@@ -50,10 +51,10 @@ spec:
               service:
                 name: {{ $fullName }}
                 port:
-                  number: 3000 
+                  number: {{ $svcPort }}
               {{- else }}
               serviceName: {{ $fullName }}
-              servicePort: 3000
+              servicePort: {{ $svcPort }}
               {{- end }}
           {{- end }}
     {{- end }}

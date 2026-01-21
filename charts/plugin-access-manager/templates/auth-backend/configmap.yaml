@@ -7,7 +7,6 @@ data:
   runmode: dev
   httpport: "8000"
   driverName: "postgres"
-  dataSourceName: {{ include "plugin-auth-backend.dataSourceName" . }}
   dbName: casdoor
   showSql: "false"
   authState: "casdoor"

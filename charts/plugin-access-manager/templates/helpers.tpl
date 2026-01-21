@@ -139,7 +139,7 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 Auth dataSourceName
 */}}
 {{- define "plugin-auth-backend.dataSourceName" -}}
-"user={{ .Values.auth.configmap.DB_USER }} password={{ .Values.auth.secrets.DB_PASSWORD }} host={{ .Values.auth.configmap.DB_HOST }} port={{ .Values.auth.configmap.DB_PORT }} sslmode=disable dbname={{ .Values.auth.configmap.DB_NAME }}"
+"user={{ .Values.auth.configmap.DB_USER }} password={{ .Values.auth.secrets.DB_PASSWORD }} host={{ .Values.auth.configmap.DB_HOST }} port={{ .Values.auth.configmap.DB_PORT }} sslmode={{ .Values.auth.configmap.DB_SSLMODE | default "disable" }} dbname={{ .Values.auth.configmap.DB_NAME }}"
 {{- end }}
 
 {{/*

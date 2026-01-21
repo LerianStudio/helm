@@ -12,12 +12,12 @@ crm:
   revisionHistoryLimit: 10
 
   image:
-    # -- Repository for the container image
-    repository: ghcr.io/lerianstudio/plugin-crm
+    # -- Repository for the CRM service container image
+    repository: lerianstudio/midaz-crm
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-  tag: "2.0.1"
+    tag: "3.5.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

@@ -10,7 +10,7 @@ on:
 
 jobs:
   update:
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@chore/dispatch-helm
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@v1.10.0
     with:
       payload: ${{ inputs.payload }}
       base_branch: develop

@@ -47,7 +47,7 @@ data:
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.inbound.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "v1.0.0" | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.inbound.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.inbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.inbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.inbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm" | quote }}
   ENABLE_TELEMETRY: {{ .Values.inbound.configmap.ENABLE_TELEMETRY | default "true" | quote }}
 
   # Routing Configuration

@@ -160,6 +160,8 @@ pix:
     LICENSE_KEY: "lerian"
     MIDAZ_CLIENT_ID: ""
     MIDAZ_CLIENT_SECRET: ""
+    FEE_CLIENT_ID: ""
+    FEE_CLIENT_SECRET: ""
     INTERNAL_WEBHOOK_SECRET: ""
   # -- Extra environment variables
   extraEnvVars: {}

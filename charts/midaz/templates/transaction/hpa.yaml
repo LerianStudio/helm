@@ -1,4 +1,4 @@
-{{- if .Values.transaction.autoscaling.enabled }}
+{{- if and (eq (include "transaction.shouldDeploy" .) "true") .Values.transaction.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

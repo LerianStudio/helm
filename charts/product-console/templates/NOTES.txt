@@ -1,0 +1,56 @@
+
+================================================================================
+  Product Console - Lerian Studio
+================================================================================
+
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named: {{ .Release.Name }}
+Chart version: {{ .Chart.Version }}
+App version: {{ .Chart.AppVersion }}
+
+To get the application URL:
+
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "product-console.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+
+{{- else if contains "LoadBalancer" .Values.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+        You can watch the status by running:
+        kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "product-console.fullname" . }}
+
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "product-console.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.service.port }}
+
+{{- else if contains "ClusterIP" .Values.service.type }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "product-console.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+  Then access: http://localhost:{{ .Values.service.port }}
+{{- end }}
+
+================================================================================
+  Configuration
+================================================================================
+
+The following environment variables are configured via values.yaml:
+
+ConfigMap (non-sensitive):
+  - All keys under 'configmap' section in values.yaml
+
+Secrets (sensitive):
+  - All keys under 'secrets' section in values.yaml
+{{- if .Values.useExistingSecret }}
+  - Using existing secret: {{ .Values.existingSecretName }}
+{{- end }}
+
+To customize configuration, override values in your values.yaml file.
+
+For more information, visit: https://docs.lerian.studio

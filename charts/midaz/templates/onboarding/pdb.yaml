@@ -1,4 +1,4 @@
-{{- if .Values.onboarding.pdb.enabled }}
+{{- if and (eq (include "onboarding.shouldDeploy" .) "true") .Values.onboarding.pdb.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

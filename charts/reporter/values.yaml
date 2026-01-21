@@ -164,6 +164,7 @@ manager:
 
   keda:
     scaledObject:
+      enabled: true
       minReplicaCount: 1
       maxReplicaCount: 10
       pollingInterval: 30
@@ -270,6 +271,7 @@ worker:
   # -- KEDA configuration for worker auto-scaling
   keda:
     scaledJob:
+      enabled: true
       name: "reporter-worker-scaler"
       pollingInterval: 10
       minReplicaCount: 0
@@ -646,6 +648,18 @@ observability:
 # KEDA configuration
 keda:
   enabled: true
+  # Set to true when using an externally installed KEDA operator (e.g., installed via separate helm chart)
+  # When external is true, the chart will still create ScaledJob and TriggerAuthentication resources
+  # but will not install the KEDA operator itself
+  external: false
+  # TriggerAuthentication configuration for RabbitMQ credentials
+  triggerAuthentication:
+    # -- Secret name containing RabbitMQ credentials (defaults to reporter-manager secret)
+    secretName: ""
+    # -- Key in secret for RabbitMQ username
+    usernameKey: "RABBITMQ_DEFAULT_USER"
+    # -- Key in secret for RabbitMQ password
+    passwordKey: "RABBITMQ_DEFAULT_PASS"
   crds:
     install: true
   webhookCerts:

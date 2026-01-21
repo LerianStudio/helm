@@ -144,21 +144,31 @@ func extractAppVersionsFromValues(valuesPath string, headers []string) map[strin
 }
 
 // getImageTag extracts the image tag from a component's configuration
-// Looks for {component}.image.tag in the values map
+// Looks for {component}.image.tag in the values map, with fallback to root image.tag
 func getImageTag(values map[string]interface{}, component string) string {
-	// Get the component section
-	componentSection, ok := values[component]
-	if !ok {
-		return ""
+	// First, try {component}.image.tag
+	if componentSection, ok := values[component]; ok {
+		if componentMap, ok := componentSection.(map[string]interface{}); ok {
+			if tag := extractTagFromImageSection(componentMap); tag != "" {
+				return tag
+			}
+		}
 	}
 
-	componentMap, ok := componentSection.(map[string]interface{})
-	if !ok {
-		return ""
+	// Fallback: try image.tag directly at root level
+	// This handles charts where the values.yaml doesn't have a component section
+	// e.g., product-console where image.tag is at root instead of console.image.tag
+	if tag := extractTagFromImageSection(values); tag != "" {
+		fmt.Printf("  (found at root level image.tag)\n")
+		return tag
 	}
 
-	// Get the image section
-	imageSection, ok := componentMap["image"]
+	return ""
+}
+
+// extractTagFromImageSection extracts the tag from a map that contains an "image" section
+func extractTagFromImageSection(section map[string]interface{}) string {
+	imageSection, ok := section["image"]
 	if !ok {
 		return ""
 	}
@@ -168,7 +178,6 @@ func getImageTag(values map[string]interface{}, component string) string {
 		return ""
 	}
 
-	// Get the tag
 	tag, ok := imageMap["tag"]
 	if !ok {
 		return ""

@@ -1,3 +1,4 @@
+{{- if eq (include "onboarding.shouldDeploy" .) "true" }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -17,3 +18,4 @@ spec:
       name: http
   selector:
     {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.onboarding.name) | nindent 4 }}
+{{- end }}

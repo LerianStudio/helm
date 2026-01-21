@@ -67,10 +67,19 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_USER
+            - name: DB_SSL_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_SSLMODE
             - name: DB_PASS
               valueFrom:
                 secretKeyRef:
+                  {{- if .Values.auth.useExistingSecret }}
+                  name: {{ .Values.auth.existingSecretName }}
+                  {{- else }}
                   name: {{ include "plugin-auth.fullname" . }}
+                  {{- end }}
                   key: DB_PASSWORD
             # Casdoor configuration
             - name: CASDOOR_URL

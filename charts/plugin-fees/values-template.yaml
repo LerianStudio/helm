@@ -20,6 +20,7 @@ fees:
     MONGO_NAME: "plugin-fees-db"
     MONGO_PORT: "27017"
     MONGO_USER: "plugin-fees"
+    MONGO_PARAMETERS: ""
     CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
   useExistingSecret: false

@@ -34,6 +34,10 @@ product-console:
   - changed-files:
       - any-glob-to-any-file: charts/product-console/**
 
+fetcher:
+  - changed-files:
+      - any-glob-to-any-file: charts/fetcher/**
+
 pipe:
   - changed-files:
       - any-glob-to-any-file: .github/workflows/**

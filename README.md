@@ -98,6 +98,19 @@
 | `1.0.0` | 1.0.0 | 1.0.0 | 1.0.0 | 1.0.0 |
 -----------------
 
+### Fetcher
+
+📚 For more details, check out the [official documentation](https://docs.lerian.studio/en/fetcher#fetcher).
+
+🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/fetcher).
+
+#### Application Version Mapping
+
+| Chart Version | Manager Version | Worker Version |
+| :---: | :---: | :---: |
+| `1.0.0-beta.2` | 1.0.0 | 1.0.0 |
+-----------------
+
 ### Otel Collector Lerian
 
 🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/otel-collector-lerian).

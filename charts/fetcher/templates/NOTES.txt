@@ -1,0 +1,42 @@
+
+================================================================================
+  Fetcher - Lerian Studio
+================================================================================
+
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named: {{ .Release.Name }}
+Chart version: {{ .Chart.Version }}
+App version: {{ .Chart.AppVersion }}
+
+Components deployed:
+  - Manager (REST API): {{ include "fetcher-manager.fullname" . }}
+  - Worker (Background): {{ include "fetcher-worker.fullname" . }}
+
+To get the Manager API URL:
+
+{{- if .Values.manager.ingress.enabled }}
+{{- range $host := .Values.manager.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.manager.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+
+{{- else if contains "NodePort" .Values.manager.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "fetcher-manager.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+
+{{- else if contains "LoadBalancer" .Values.manager.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "fetcher-manager.fullname" . }}
+
+{{- else if contains "ClusterIP" .Values.manager.service.type }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "fetcher-manager.fullname" . }} {{ .Values.manager.service.port }}:{{ .Values.manager.service.port }}
+  Then access: http://localhost:{{ .Values.manager.service.port }}
+{{- end }}
+
+Swagger Documentation:
+  http://localhost:{{ .Values.manager.service.port }}/swagger/index.html
+
+For more information, visit: https://docs.lerian.studio

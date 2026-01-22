@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fetcher-manager.fullname" . }}
+  labels:
+    {{- include "fetcher-manager.labels" . | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.manager.revisionHistoryLimit | default 10 }}
+  {{- if not .Values.manager.autoscaling.enabled }}
+  replicas: {{ .Values.manager.replicaCount }}
+  {{- end }}
+  strategy:
+    type: {{ .Values.manager.deploymentStrategy.type }}
+    {{- if eq .Values.manager.deploymentStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.manager.deploymentStrategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.manager.deploymentStrategy.rollingUpdate.maxUnavailable }}
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "fetcher-manager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/manager/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/manager/secrets.yaml") . | sha256sum }}
+        checksum/common-config: {{ include (print $.Template.BasePath "/common/configmap.yaml") . | sha256sum }}
+        {{- with .Values.manager.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "fetcher-manager.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.manager.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fetcher-manager.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.manager.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "fetcher-manager.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.manager.securityContext | nindent 12 }}
+          image: "{{ .Values.manager.image.repository }}:{{ .Values.manager.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.manager.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "fetcher-manager.fullname" . }}
+            - configMapRef:
+                name: {{ include "fetcher.fullname" . }}-common
+            - secretRef:
+                name: {{ if .Values.manager.useExistingSecret }}{{ .Values.manager.existingSecretName }}{{ else }}{{ include "fetcher-manager.fullname" . }}{{ end }}
+            - secretRef:
+                name: {{ include "fetcher.fullname" . }}-common
+          ports:
+            - name: http
+              containerPort: {{ .Values.manager.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ .Values.manager.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.manager.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.manager.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.manager.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ .Values.manager.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.manager.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.manager.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.manager.readinessProbe.failureThreshold }}
+          resources:
+            {{- toYaml .Values.manager.resources | nindent 12 }}
+      {{- with .Values.manager.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.manager.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.manager.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

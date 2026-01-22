@@ -7,6 +7,7 @@ on:
       - develop
     paths-ignore:
       - 'README.md'
+      - '**/CHANGELOG.md'
       - '.github/workflows/**'
       - '.github/configs/**'
       - '.gitignore'
@@ -174,37 +175,6 @@ jobs:
           lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
           working_directory: ${{ matrix.chart.working_dir }}
 
-  generate_changelog:
-    needs:
-      - get-changed-paths
-      - release-helm-chart
-    name: 📝 Generate AI-powered Changelog
-    if: needs.get-changed-paths.outputs.matrix != '[]'
-    runs-on: ubuntu-22.04
-    strategy:
-      max-parallel: 1
-      matrix:
-        chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
-    steps:
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
-          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
-
-      - uses: LerianStudio/github-actions-gptchangelog/helm-repo@chart
-        with:
-          WORK_DIR: ${{ matrix.chart.working_dir }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LERIAN_CI_CD_USER_GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
-          LERIAN_CI_CD_USER_GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
-          LERIAN_CI_CD_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
-          LERIAN_CI_CD_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
-          LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
-          LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
-
   notify-release:
     needs:
       - get-changed-paths
@@ -256,7 +226,7 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
 
-      - name: Create Pull Request for Back Merge
+      - name: Back Merge main into develop
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GIT_AUTHOR_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
@@ -268,26 +238,43 @@ jobs:
 
           # Check if there are differences between main and develop
           if git diff --quiet origin/main origin/develop; then
-            echo "No differences between main and develop. Skipping PR creation."
+            echo "No differences between main and develop. Skipping back-merge."
             exit 0
           fi
 
-          # Check if a back-merge PR already exists
-          EXISTING_PR=$(gh pr list --base develop --head main --state open --json number --jq '.[0].number')
+          # Checkout develop and merge main directly (no PR)
+          # This way the merge is done by the bot, triggering the actor check
+          git checkout develop
+          git pull origin develop
 
-          if [ -n "$EXISTING_PR" ]; then
-            echo "Back-merge PR #$EXISTING_PR already exists. Skipping PR creation."
-            exit 0
-          fi
+          # Merge main into develop
+          if git merge origin/main --no-edit -m "chore: back merge main into develop [skip ci]"; then
+            echo "Merge successful, pushing to develop..."
+            git push origin develop
+            echo "Back-merge completed successfully."
+          else
+            echo "Merge conflict detected. Creating PR for manual resolution."
+            git merge --abort
 
-          # Create the back-merge PR
-          gh pr create \
-            --base develop \
-            --head main \
-            --title "chore: back merge main into develop" \
-            --body "## Back Merge
+            # Check if a back-merge PR already exists
+            EXISTING_PR=$(gh pr list --base develop --head main --state open --json number --jq '.[0].number')
 
-          This PR merges the latest changes from \`main\` back into \`develop\` to keep the branches in sync after a release.
+            if [ -n "$EXISTING_PR" ]; then
+              echo "Back-merge PR #$EXISTING_PR already exists. Skipping PR creation."
+              exit 0
+            fi
+
+            # Create PR for manual conflict resolution
+            gh pr create \
+              --base develop \
+              --head main \
+              --title "chore: back merge main into develop (conflicts)" \
+              --body "## Back Merge
+
+          This PR merges the latest changes from \`main\` back into \`develop\`.
+
+          ⚠️ **Manual intervention required**: There are merge conflicts that need to be resolved manually.
 
           ### Auto-generated
           This PR was automatically created by the release pipeline."
+          fi

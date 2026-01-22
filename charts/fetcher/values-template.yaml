@@ -1,0 +1,153 @@
+manager:
+  name: "fetcher-manager"
+  replicaCount: 1
+
+  image:
+    repository: lerianstudio/fetcher-manager
+    pullPolicy: IfNotPresent
+    tag: "1.0.0"  # REQUIRED - Set the image version
+
+  imagePullSecrets: []
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""  # Set your hostname (e.g., fetcher.example.com)
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    ENV_NAME: ""  # REQUIRED - Environment name (e.g., production, staging)
+    SERVER_PORT: "4006"
+    SERVER_ADDRESS: ":4006"
+    APP_CONTEXT: "/v1"
+    LOG_LEVEL: "info"
+    SCHEMA_CACHE_TTL_SECONDS: "300"
+
+    # Swagger configuration
+    SWAGGER_TITLE: "Fetcher"
+    SWAGGER_DESCRIPTION: "Documentation for fetcher"
+    SWAGGER_VERSION: ""
+    SWAGGER_HOST: ":4006"
+    SWAGGER_BASE_PATH: "/"
+    SWAGGER_SCHEMES: "https"
+
+  secrets:
+    APP_ENC_KEY: ""  # REQUIRED - Base64 encoded 32-byte key (generate with: openssl rand -base64 32)
+    APP_ENC_KEY_VERSION: "1"
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+worker:
+  name: "fetcher-worker"
+  replicaCount: 1
+
+  image:
+    repository: lerianstudio/fetcher-worker
+    pullPolicy: IfNotPresent
+    tag: "1.0.0"  # REQUIRED - Set the image version
+
+  imagePullSecrets: []
+
+  configmap:
+    ENV_NAME: ""  # REQUIRED - Environment name (e.g., production, staging)
+    LOG_LEVEL: "info"
+    RABBITMQ_NUMBERS_OF_WORKERS: "5"
+    RABBITMQ_GENERATE_REPORT_QUEUE: "fetcher.extract-external-data.queue"
+    RABBITMQ_GENERATE_REPORT_KEY: "fetcher.extract-external-data.key"
+    RABBITMQ_DLQ_QUEUE: "fetcher.extract-external-data.dlq"
+    RABBITMQ_JOB_EVENTS_EXCHANGE: "fetcher.extract-external-data.exchange"
+
+  secrets:
+    APP_ENC_KEY: ""  # REQUIRED - Base64 encoded 32-byte key (generate with: openssl rand -base64 32)
+    APP_ENC_KEY_VERSION: "1"
+    CRYPTO_ENCRYPT_SECRET_KEY_SEAWEEDFS: ""
+    CRYPTO_HASH_SECRET_KEY_SEAWEEDFS: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+common:
+  configmap:
+    # MongoDB - REQUIRED
+    MONGO_URI: "mongodb"
+    MONGO_HOST: ""  # REQUIRED - MongoDB host
+    MONGO_NAME: "fetcher-db"
+    MONGO_PORT: "27017"
+    MONGO_MAX_POOL_SIZE: "1000"
+
+    # RabbitMQ - REQUIRED
+    RABBITMQ_URI: "amqp"
+    RABBITMQ_HOST: ""  # REQUIRED - RabbitMQ host
+    RABBITMQ_PORT_AMQP: "5672"
+    RABBITMQ_PORT_HOST: "15672"
+    RABBITMQ_EXCHANGE: "fetcher.generate-fetcher.exchange"
+    RABBITMQ_GENERATE_FETCHER_QUEUE: "fetcher.generate-fetcher.queue"
+    RABBITMQ_GENERATE_FETCHER_KEY: "fetcher.generate-fetcher.key"
+    RABBITMQ_HEALTH_CHECK_URL: ""  # Set to http://<rabbitmq-host>:15672
+
+    # SeaweedFS - REQUIRED
+    SEAWEEDFS_HOST: ""  # REQUIRED - SeaweedFS filer host
+    SEAWEEDFS_FILER_PORT: "8888"
+    SEAWEEDFS_TTL: "6M"
+
+    # Redis/Valkey - REQUIRED
+    REDIS_HOST: ""  # REQUIRED - Redis/Valkey host
+    REDIS_PORT: "6379"
+
+    # OpenTelemetry (optional)
+    OTEL_RESOURCE_SERVICE_NAME: "fetcher"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/fetcher"
+    OTEL_RESOURCE_SERVICE_VERSION: ""
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: ""
+    OTEL_EXPORTER_OTLP_ENDPOINT_PORT: "4317"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    ENABLE_TELEMETRY: "false"
+
+secrets:
+  MONGO_USER: ""  # REQUIRED - MongoDB username
+  MONGO_PASSWORD: ""  # REQUIRED - MongoDB password
+  RABBITMQ_DEFAULT_USER: ""  # REQUIRED - RabbitMQ username
+  RABBITMQ_DEFAULT_PASS: ""  # REQUIRED - RabbitMQ password
+  REDIS_USER: ""
+  REDIS_PASSWORD: ""
+  LICENSE_KEY: ""  # REQUIRED - Lerian license key
+  ORGANIZATION_IDS: ""
+
+# External RabbitMQ Bootstrap - Apply definitions to external RabbitMQ
+externalRabbitmqDefinitions:
+  enabled: false  # Set to true when using external RabbitMQ
+  connection:
+    protocol: "http"  # http or https
+    host: ""  # REQUIRED when enabled - RabbitMQ management API host
+    port: "15672"  # Management API port (use 443 for HTTPS)
+    portAmqp: "5672"  # AMQP port for health check
+  rabbitmqAdminLogin:
+    username: ""  # REQUIRED when enabled - Admin user for applying definitions
+    password: ""  # REQUIRED when enabled - Admin password
+    useExistingSecret:
+      name: ""  # Optional - Use existing secret (keys: RABBITMQ_ADMIN_USER, RABBITMQ_ADMIN_PASS)
+  appCredentials:
+    pluginPassword: ""  # REQUIRED when enabled - Password for 'plugin' user
+    useExistingSecret:
+      name: ""  # Optional - Use existing secret (key: RABBITMQ_DEFAULT_PASS)
+
+seaweedfs:
+  enabled: false
+
+mongodb:
+  enabled: false
+
+rabbitmq:
+  enabled: false
+
+valkey:
+  enabled: false
+
+keda:
+  enabled: false

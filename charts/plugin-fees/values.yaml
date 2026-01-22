@@ -16,7 +16,7 @@ fees:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.0.5"
+    tag: "3.0.6"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
@@ -138,6 +138,7 @@ fees:
     MONGO_NAME: "plugin-fees-db"
     MONGO_PORT: "27017"
     MONGO_USER: "plugin-fees"
+    MONGO_PARAMETERS: ""
     CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
   extraEnvVars: {}

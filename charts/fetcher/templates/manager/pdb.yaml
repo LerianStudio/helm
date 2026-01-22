@@ -1,0 +1,23 @@
+{{- if .Values.manager.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "fetcher-manager.fullname" . }}
+  labels:
+    {{- include "fetcher-manager.labels" . | nindent 4 }}
+  {{- with .Values.manager.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if .Values.manager.pdb.maxUnavailable }}
+  maxUnavailable: {{ .Values.manager.pdb.maxUnavailable }}
+  {{- else }}
+  minAvailable: {{ .Values.manager.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "fetcher-manager.selectorLabels" . | nindent 6 }}
+{{- end }}

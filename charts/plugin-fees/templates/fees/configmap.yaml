@@ -20,6 +20,7 @@ data:
   MONGO_NAME: {{ .Values.fees.configmap.MONGO_NAME | default "plugin-fees-db" | quote }}
   MONGO_USER: {{ .Values.fees.configmap.MONGO_USER | default "plugin-fees" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.fees.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_PARAMETERS: {{ .Values.fees.configmap.MONGO_PARAMETERS | default "" | quote }}
   
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.fees.configmap.SWAGGER_TITLE | default "Plugin Fees" | quote }}

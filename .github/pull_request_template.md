@@ -13,6 +13,7 @@
 - [ ] Otel Collector
 - [ ] Pipeline
 - [ ] Documentation
+- [ ] Fetcher
 
 ## Checklist
 Please check each item after it's completed.

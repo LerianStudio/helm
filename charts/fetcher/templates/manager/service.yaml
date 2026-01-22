@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fetcher-manager.fullname" . }}
+  labels:
+    {{- include "fetcher-manager.labels" . | nindent 4 }}
+  {{- with .Values.manager.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.manager.service.type }}
+  ports:
+    - port: {{ .Values.manager.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "fetcher-manager.selectorLabels" . | nindent 4 }}

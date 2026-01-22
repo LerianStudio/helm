@@ -45,4 +45,5 @@ jobs:
             pipe
             doc
             product-console
+            fetcher
           requireScope: true

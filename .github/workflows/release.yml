@@ -269,12 +269,5 @@ jobs:
               --base develop \
               --head main \
               --title "chore: back merge main into develop (conflicts)" \
-              --body "## Back Merge
-
-          This PR merges the latest changes from \`main\` back into \`develop\`.
-
-          ⚠️ **Manual intervention required**: There are merge conflicts that need to be resolved manually.
-
-          ### Auto-generated
-          This PR was automatically created by the release pipeline."
+              --body "## Back Merge"$'\n\n'"This PR merges the latest changes from main back into develop."$'\n\n'"⚠️ **Manual intervention required**: There are merge conflicts that need to be resolved manually."$'\n\n'"### Auto-generated"$'\n'"This PR was automatically created by the release pipeline."
           fi

@@ -51,7 +51,7 @@ data:
   ENABLE_TELEMETRY: {{ .Values.inbound.configmap.ENABLE_TELEMETRY | default "true" | quote }}
 
   # Routing Configuration
-  WEBHOOK_INBOUND_BASE_URL: {{ .Values.inbound.configmap.WEBHOOK_INBOUND_BASE_URL | default "http://plugin-br-pix-indirect-btg:4014" | quote }}
+  WEBHOOK_INBOUND_BASE_URL: {{ .Values.inbound.configmap.WEBHOOK_INBOUND_BASE_URL | default "http://plugin-br-pix-indirect-btg.midaz-plugins.svc.cluster.local:4014" | quote }}
 
   # HTTP Client Configuration
   WEBHOOK_HTTP_CLIENT_TIMEOUT: {{ .Values.inbound.configmap.WEBHOOK_HTTP_CLIENT_TIMEOUT | default "5s" | quote }}

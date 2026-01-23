@@ -56,15 +56,15 @@ data:
   BTG_TIMEOUT: {{ .Values.reconciliation.configmap.BTG_TIMEOUT | default "30s" | quote }}
 
   # CRM API Configuration
-  PLUGIN_CRM_BASE_URL: {{ .Values.reconciliation.configmap.PLUGIN_CRM_BASE_URL | default "plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
+  PLUGIN_CRM_BASE_URL: {{ .Values.reconciliation.configmap.PLUGIN_CRM_BASE_URL | default "http://plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
   PLUGIN_CRM_TIMEOUT: {{ .Values.reconciliation.configmap.PLUGIN_CRM_TIMEOUT | default "30s" | quote }}
-  PLUGIN_AUTH_URL: {{ .Values.reconciliation.configmap.PLUGIN_AUTH_URL | default "plugin-access-manager.midaz-plugins.svc.cluster.local:4000/v1/login/oauth/access_token" | quote }}
+  PLUGIN_AUTH_URL: {{ .Values.reconciliation.configmap.PLUGIN_AUTH_URL | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000/v1/login/oauth/access_token" | quote }}
 
   # Midaz Organization ID
   MIDAZ_ORGANIZATION_ID: {{ .Values.reconciliation.configmap.MIDAZ_ORGANIZATION_ID | default "" | quote }}
 
   # PIX BTG API Configuration
-  PLUGIN_PIX_BTG_BASE_URL: {{ .Values.reconciliation.configmap.PLUGIN_PIX_BTG_BASE_URL | default "plugin-br-pix-indirect-btg.midaz-plugins.svc.cluster.local:4014" | quote }}
+  PLUGIN_PIX_BTG_BASE_URL: {{ .Values.reconciliation.configmap.PLUGIN_PIX_BTG_BASE_URL | default "http://plugin-br-pix-indirect-btg.midaz-plugins.svc.cluster.local:4014" | quote }}
   PLUGIN_PIX_BTG_TIMEOUT: {{ .Values.reconciliation.configmap.PLUGIN_PIX_BTG_TIMEOUT | default "30s" | quote }}
 
   # Circuit Breaker Configuration

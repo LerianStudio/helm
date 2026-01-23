@@ -497,12 +497,12 @@ reconciliation:
     runAsGroup: 0
     # -- Defines the user ID for the process running inside the container
     runAsUser: 0
-    # -- Ensures the process does not run as root
+    # -- Ensures the process does run as root
     runAsNonRoot: false
     capabilities:
       drop:
         - ALL
-    # -- Defines the root filesystem as read-only
+    # -- Defines the root filesystem as writable
     readOnlyRootFilesystem: false
   pdb:
     # -- Enable or disable PodDisruptionBudget

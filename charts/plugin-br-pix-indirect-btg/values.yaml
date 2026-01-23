@@ -494,16 +494,16 @@ reconciliation:
   podSecurityContext: {} # fsGroup: 2000
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
-    runAsGroup: 1000
+    runAsGroup: 0
     # -- Defines the user ID for the process running inside the container
-    runAsUser: 1000
-    # -- Ensures the process does not run as root
-    runAsNonRoot: true
+    runAsUser: 0
+    # -- Ensures the process does run as root
+    runAsNonRoot: false
     capabilities:
       drop:
         - ALL
-    # -- Defines the root filesystem as read-only
-    readOnlyRootFilesystem: true
+    # -- Defines the root filesystem as writable
+    readOnlyRootFilesystem: false
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true

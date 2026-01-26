@@ -15,7 +15,7 @@ data:
 
   # AUTH PLUGIN
   PLUGIN_AUTH_ENABLED: {{ .Values.pix.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_ADDRESS: {{ .Values.pix.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.pix.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
 
   # VALKEY
   REDIS_HOST: {{ .Values.pix.configmap.REDIS_HOST | default (printf "plugin-br-pix-indirect-btg-valkey-master.%s.svc.cluster.local" .Release.Namespace) | quote }}
@@ -101,12 +101,12 @@ data:
   BTG_BASE_URL: {{ .Values.pix.configmap.BTG_BASE_URL | default "https://developer.api.btgpactual.com" | quote }}
 
   ## CRM
-  PLUGIN_CRM_BASE_URL: {{ .Values.pix.configmap.PLUGIN_CRM_BASE_URL | default "plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
+  PLUGIN_CRM_BASE_URL: {{ .Values.pix.configmap.PLUGIN_CRM_BASE_URL | default "http://plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
 
   ## Midaz
   MIDAZ_ORGANIZATION_ID: {{ .Values.pix.configmap.MIDAZ_ORGANIZATION_ID | default "" | quote }}
-  MIDAZ_TRANSACTION_URL: {{ .Values.pix.configmap.MIDAZ_TRANSACTION_URL | default "midaz-transaction.midaz.svc.cluster.local:3001" | quote }}
-  MIDAZ_ONBOARDING_URL: {{ .Values.pix.configmap.MIDAZ_ONBOARDING_URL | default "midaz-onboarding.midaz.svc.cluster.local:3000" | quote }}
+  MIDAZ_TRANSACTION_URL: {{ .Values.pix.configmap.MIDAZ_TRANSACTION_URL | default "http://midaz-transaction.midaz.svc.cluster.local:3001" | quote }}
+  MIDAZ_ONBOARDING_URL: {{ .Values.pix.configmap.MIDAZ_ONBOARDING_URL | default "http://midaz-onboarding.midaz.svc.cluster.local:3000" | quote }}
   MIDAZ_LEDGER_ID: {{ .Values.pix.configmap.MIDAZ_LEDGER_ID | default "" | quote }}
   
   ## ISPB (8 Primeiros digitos CNPJ)
@@ -114,7 +114,7 @@ data:
 
   ## Fee Configuration
   CASHIN_FEE_CALCULATION_TYPE: {{ .Values.pix.configmap.CASHIN_FEE_CALCULATION_TYPE | default "" | quote }}
-  FEE_SERVICE_URL: {{ .Values.pix.configmap.FEE_SERVICE_URL | default "plugin-fees.midaz-plugins.svc.cluster.local:4002" | quote }}
+  FEE_SERVICE_URL: {{ .Values.pix.configmap.FEE_SERVICE_URL | default "http://plugin-fees.midaz-plugins.svc.cluster.local:4002" | quote }}
   FEE_SERVICE_TIMEOUT: {{ .Values.pix.configmap.FEE_SERVICE_TIMEOUT | default "5000" | quote }}
 
   # LICENSE
@@ -134,8 +134,11 @@ data:
   BTG_CERTIFICATE_URL: {{ .Values.pix.configmap.BTG_CERTIFICATE_URL | default "" | quote }}
   MTLS_HTTP_TIMEOUT: {{ .Values.pix.configmap.MTLS_HTTP_TIMEOUT | default "10s" | quote }}
 
-# RECONCILIATION
+  # RECONCILIATION
   RECONCILIATION_INTERNAL_CIDR: {{ .Values.pix.configmap.RECONCILIATION_INTERNAL_CIDR | default "" | quote }}
+
+  # BTG Webhook Validation
+  BTG_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.BTG_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}
 
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}

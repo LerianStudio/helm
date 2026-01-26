@@ -2,21 +2,16 @@ apiVersion: v2
 name: plugin-br-pix-indirect-btg-helm
 description: A Helm chart for Kubernetes
 type: application
-
 home: https://github.com/LerianStudio/helm
-
 # A list of maintainers who are responsible for the chart
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 version: 1.1.1-beta.1
-
 # This is the version number of the application being deployed.
-appVersion: "1.0.0"
-
+appVersion: "1.1.0"
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
   - midaz
@@ -24,10 +19,8 @@ keywords:
   - ledger
   - plugins
   - pix
-
 # The URL to an icon file for this chart. Or the icon data.
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
-
 dependencies:
   - name: postgresql
     version: "16.3"

@@ -144,6 +144,8 @@ pix:
     MTLS_CERTIFICATE_TTL: "24h"
     BTG_CERTIFICATE_URL: ""
     MTLS_HTTP_TIMEOUT: "10s"
+    # BTG Webhook Validation
+    BTG_WEBHOOK_VALIDATION_ENABLED: "true"
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
@@ -163,6 +165,7 @@ pix:
     FEE_CLIENT_ID: ""
     FEE_CLIENT_SECRET: ""
     INTERNAL_WEBHOOK_SECRET: ""
+    BTG_WEBHOOK_SECRET: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false

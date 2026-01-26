@@ -1,5 +1,24 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v1.1.1)
+
+- **Features:**
+  - Added BTG webhook validation configuration.
+
+- **Fixes:**
+  - Updated plugin-br-pix-indirect-btg to version 1.1.0.
+  - Adjusted default URL for pix-btg.
+
+- **Improvements:**
+  - Removed configmap and secrets templates.
+  - Reorganized templates for better structure.
+
+Contributors: @gui.rodrigues, @guimoreirar, @leonardoz5z
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v1.1.0...plugin-br-pix-indirect-btg-v1.1.1)
+
+---
+
 ## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v1.1.0)
 
 - Improvements:

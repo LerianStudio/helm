@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-indirect-btg.labels" (dict "context" . "name" .Values.pix.name ) | nindent 4 }} 
+data:
+  # DEFAULT local
+  ENV_NAME: {{ .Values.pix.configmap.ENV_NAME | default "development" | quote }}
+
+  # APP
+  VERSION: {{ .Values.pix.image.tag | quote }}
+  SERVER_PORT: {{ .Values.pix.configmap.SERVER_PORT | default "4014" | quote }}
+  SERVER_ADDRESS: {{ .Values.pix.configmap.SERVER_ADDRESS | default ":4014" | quote }}
+
+  # AUTH PLUGIN
+  PLUGIN_AUTH_ENABLED: {{ .Values.pix.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.pix.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+
+  # VALKEY
+  REDIS_HOST: {{ .Values.pix.configmap.REDIS_HOST | default (printf "plugin-br-pix-indirect-btg-valkey-master.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  REDIS_PORT: {{ .Values.pix.configmap.REDIS_PORT | default "6379" | quote }}
+  REDIS_USER: {{ .Values.pix.configmap.REDIS_USER | default "plugin" | quote }}
+
+  # USE ONLY ON SENTINEL
+  REDIS_MASTER_NAME: {{ .Values.pix.configmap.REDIS_MASTER_NAME | default "" | quote }}
+  REDIS_TLS: {{ .Values.pix.configmap.REDIS_TLS | default "false" | quote }}
+  REDIS_CA_CERT: {{ .Values.pix.configmap.REDIS_CA_CERT | default "" | quote }}
+  REDIS_USE_GCP_IAM: {{ .Values.pix.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
+  REDIS_SERVICE_ACCOUNT: {{ .Values.pix.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+  GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.pix.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+  REDIS_TOKEN_LIFETIME: {{ .Values.pix.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
+  # minutes
+  REDIS_TOKEN_REFRESH_DURATION: {{ .Values.pix.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
+  REDIS_DB: {{ .Values.pix.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ .Values.pix.configmap.REDIS_PROTOCOL | default "3" | quote }}
+  # REDIS POOL & RETRY CONFIGS
+  REDIS_POOL_SIZE: {{ .Values.pix.configmap.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ .Values.pix.configmap.REDIS_MIN_IDLE_CONNS | default "0" | quote }}
+  # Seconds
+  REDIS_READ_TIMEOUT: {{ .Values.pix.configmap.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ .Values.pix.configmap.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ .Values.pix.configmap.REDIS_DIAL_TIMEOUT | default "5" | quote }}
+  REDIS_POOL_TIMEOUT: {{ .Values.pix.configmap.REDIS_POOL_TIMEOUT | default "2" | quote }}
+  REDIS_MAX_RETRIES: {{ .Values.pix.configmap.REDIS_MAX_RETRIES | default "3" | quote }}
+  # Milliseconds
+  REDIS_MIN_RETRY_BACKOFF: {{ .Values.pix.configmap.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
+  # Seconds
+  REDIS_MAX_RETRY_BACKOFF: {{ .Values.pix.configmap.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
+
+  # POSTGRES
+  DB_HOST: {{ .Values.pix.configmap.DB_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_USER: {{ .Values.pix.configmap.DB_USER | default "plugin" | quote }}
+  DB_NAME: {{ .Values.pix.configmap.DB_NAME | default "pix" | quote }}
+  DB_PORT: {{ .Values.pix.configmap.DB_PORT | default "5432" | quote }}
+  MIGRATIONS_PATH: {{ .Values.pix.configmap.MIGRATIONS_PATH | default "components/infra/migrations" | quote }}
+  DB_MAX_OPEN_CONNS: {{ .Values.pix.configmap.DB_MAX_OPEN_CONNS | default "30" | quote }}
+  DB_MAX_IDLE_CONNS: {{ .Values.pix.configmap.DB_MAX_IDLE_CONNS | default "10" | quote }}
+  DB_SSL_MODE: {{ .Values.pix.configmap.DB_SSL_MODE | default "disable" | quote }}
+
+  # DB POSTGRESQL REPLICA
+  REPLICATION_USER: {{ .Values.pix.configmap.REPLICATION_USER | default "replicator" | quote }}
+  USER_EXECUTE_COMMAND: {{ .Values.pix.configmap.USER_EXECUTE_COMMAND | default "postgres" | quote }}
+
+  DB_REPLICA_HOST: {{ .Values.pix.configmap.DB_REPLICA_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_USER: {{ .Values.pix.configmap.DB_REPLICA_USER | default "plugin" | quote }}
+  DB_REPLICA_NAME: {{ .Values.pix.configmap.DB_REPLICA_NAME | default "pix" | quote }}
+  DB_REPLICA_PORT: {{ .Values.pix.configmap.DB_REPLICA_PORT | default "5432" | quote }}
+
+  # Mongo DB
+  MONGO_URI: {{ .Values.pix.configmap.MONGO_URI | default "mongodb" | quote }}
+  MONGO_HOST: {{ .Values.pix.configmap.MONGO_HOST | default (printf "plugin-br-pix-indirect-btg-mongodb.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  MONGO_PORT: {{ .Values.pix.configmap.MONGO_PORT | default "27017" | quote }}
+  MONGO_NAME: {{ .Values.pix.configmap.MONGO_NAME | default "pix-btg-db" | quote }}
+  MONGO_USER: {{ .Values.pix.configmap.MONGO_USER | default "pix-btg" | quote }}
+  MONGO_MAX_POOL_SIZE: {{ .Values.pix.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+
+  # SWAGGER
+  SWAGGER_TITLE: {{ .Values.pix.configmap.SWAGGER_TITLE | default "Plugin BR Pix Indirect BTG" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.pix.configmap.SWAGGER_DESCRIPTION | default "Documentation Plugin PIX BTG" | quote }}
+  SWAGGER_VERSION: {{ .Values.pix.configmap.SWAGGER_VERSION | default "v1.0.0" | quote }}
+  SWAGGER_HOST: {{ .Values.pix.configmap.SWAGGER_HOST | default ":4000" | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.pix.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.pix.configmap.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_LEFT_DELIMITER: {{ .Values.pix.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIMITER: {{ .Values.pix.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
+
+  # LOG LEVEL
+  LOG_LEVEL: {{ .Values.pix.configmap.LOG_LEVEL | default "debug" | quote }}
+
+  # OPEN TELEMETRY (WITH MIDAZ LGTM SERVICE)
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.pix.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-pix-indirect-btg" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.pix.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-indirect-btg" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.pix.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "v1.0.0" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.pix.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.pix.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+
+  ## BTG
+  BTG_BASE_URL: {{ .Values.pix.configmap.BTG_BASE_URL | default "https://developer.api.btgpactual.com" | quote }}
+
+  ## CRM
+  PLUGIN_CRM_BASE_URL: {{ .Values.pix.configmap.PLUGIN_CRM_BASE_URL | default "http://plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
+
+  ## Midaz
+  MIDAZ_ORGANIZATION_ID: {{ .Values.pix.configmap.MIDAZ_ORGANIZATION_ID | default "" | quote }}
+  MIDAZ_TRANSACTION_URL: {{ .Values.pix.configmap.MIDAZ_TRANSACTION_URL | default "http://midaz-transaction.midaz.svc.cluster.local:3001" | quote }}
+  MIDAZ_ONBOARDING_URL: {{ .Values.pix.configmap.MIDAZ_ONBOARDING_URL | default "http://midaz-onboarding.midaz.svc.cluster.local:3000" | quote }}
+  MIDAZ_LEDGER_ID: {{ .Values.pix.configmap.MIDAZ_LEDGER_ID | default "" | quote }}
+  
+  ## ISPB (8 Primeiros digitos CNPJ)
+  PIX_ISPB: {{ .Values.pix.configmap.PIX_ISPB | default "" | quote }}
+
+  ## Fee Configuration
+  CASHIN_FEE_CALCULATION_TYPE: {{ .Values.pix.configmap.CASHIN_FEE_CALCULATION_TYPE | default "" | quote }}
+  FEE_SERVICE_URL: {{ .Values.pix.configmap.FEE_SERVICE_URL | default "http://plugin-fees.midaz-plugins.svc.cluster.local:4002" | quote }}
+  FEE_SERVICE_TIMEOUT: {{ .Values.pix.configmap.FEE_SERVICE_TIMEOUT | default "5000" | quote }}
+
+  # LICENSE
+  ORGANIZATION_IDS: {{ .Values.pix.configmap.ORGANIZATION_IDS | default "" | quote }}
+
+  # ENTRY WRITE BLOCK WINDOW
+  ENTRY_WRITE_BLOCK_START: {{ .Values.pix.configmap.ENTRY_WRITE_BLOCK_START | default "" | quote }}
+  ENTRY_WRITE_BLOCK_END: {{ .Values.pix.configmap.ENTRY_WRITE_BLOCK_END | default "" | quote }}
+
+  # HMAC INTERNAL VALIDATION
+  INTERNAL_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.INTERNAL_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}
+  INTERNAL_WEBHOOK_TIMESTAMP_TOLERANCE: {{ .Values.pix.configmap.INTERNAL_WEBHOOK_TIMESTAMP_TOLERANCE | default "300" | quote }}
+
+  # mTLS BTG CONFIGURATION
+  MTLS_ENABLED: {{ .Values.pix.configmap.MTLS_ENABLED | default "false" | quote }}
+  MTLS_CERTIFICATE_TTL: {{ .Values.pix.configmap.MTLS_CERTIFICATE_TTL | default "24h" | quote }}
+  BTG_CERTIFICATE_URL: {{ .Values.pix.configmap.BTG_CERTIFICATE_URL | default "" | quote }}
+  MTLS_HTTP_TIMEOUT: {{ .Values.pix.configmap.MTLS_HTTP_TIMEOUT | default "10s" | quote }}
+
+  # RECONCILIATION
+  RECONCILIATION_INTERNAL_CIDR: {{ .Values.pix.configmap.RECONCILIATION_INTERNAL_CIDR | default "" | quote }}
+
+  # BTG Webhook Validation
+  BTG_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.BTG_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.pix.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

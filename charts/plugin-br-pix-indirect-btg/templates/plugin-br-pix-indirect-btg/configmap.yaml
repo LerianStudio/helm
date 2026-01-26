@@ -134,8 +134,11 @@ data:
   BTG_CERTIFICATE_URL: {{ .Values.pix.configmap.BTG_CERTIFICATE_URL | default "" | quote }}
   MTLS_HTTP_TIMEOUT: {{ .Values.pix.configmap.MTLS_HTTP_TIMEOUT | default "10s" | quote }}
 
-# RECONCILIATION
+  # RECONCILIATION
   RECONCILIATION_INTERNAL_CIDR: {{ .Values.pix.configmap.RECONCILIATION_INTERNAL_CIDR | default "" | quote }}
+
+  # BTG Webhook Validation
+  BTG_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.BTG_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}
 
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}

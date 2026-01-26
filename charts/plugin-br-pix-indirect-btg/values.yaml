@@ -14,7 +14,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.0.0"
+    tag: "1.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -144,6 +144,9 @@ pix:
     MTLS_CERTIFICATE_TTL: "24h"
     BTG_CERTIFICATE_URL: ""
     MTLS_HTTP_TIMEOUT: "10s"
+
+    # BTG Webhook Validation
+    BTG_WEBHOOK_VALIDATION_ENABLED: "true"
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
@@ -163,11 +166,11 @@ pix:
     FEE_CLIENT_ID: ""
     FEE_CLIENT_SECRET: ""
     INTERNAL_WEBHOOK_SECRET: ""
+    BTG_WEBHOOK_SECRET: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false
   existingSecretName: ""
-
 inbound:
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg-worker-inbound"
@@ -296,12 +299,10 @@ inbound:
     DB_REPLICA_PASSWORD: "lerian"
     MONGO_PASSWORD: "lerian"
     INTERNAL_WEBHOOK_SECRET: ""
-
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false
   existingSecretName: "plugin-br-pix-indirect-btg-inbound"
-
 outbound:
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg-worker-outbound"
@@ -589,17 +590,14 @@ reconciliation:
   extraEnvVars: {}
   useExistingSecrets: false
   existingSecretName: ""
-
 postgresql:
   enabled: true
-
   global:
     security:
       allowInsecureImages: true
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
-
   auth:
     enabled: true
     enablePostgresUser: false
@@ -627,7 +625,6 @@ postgresql:
         value: "10"
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
         value: "5"
-
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
@@ -636,22 +633,17 @@ valkey:
   enabled: true
   auth:
     enabled: false
-
 mongodb:
   enabled: true
-
   global:
     security:
       allowInsecureImages: true
-
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
-
   auth:
     enabled: true
     rootUser: pix_btg
     rootPassword: "lerian"
-
 otel-collector-lerian:
   enabled: true

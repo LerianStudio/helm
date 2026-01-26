@@ -50,6 +50,8 @@ pix:
     MTLS_CERTIFICATE_TTL: "24h"
     BTG_CERTIFICATE_URL: ""
     MTLS_HTTP_TIMEOUT: "10s"
+    # BTG Webhook Validation
+    BTG_WEBHOOK_VALIDATION_ENABLED: "true"
 
   secrets:
     DB_PASSWORD: "lerian"
@@ -67,6 +69,7 @@ pix:
     PLUGIN_CRM_CLIENT_ID: ""
     PLUGIN_CRM_CLIENT_SECRET: ""
     INTERNAL_WEBHOOK_SECRET: ""
+    BTG_WEBHOOK_SECRET: ""
 
   useExistingSecrets: false
   existingSecretName: ""

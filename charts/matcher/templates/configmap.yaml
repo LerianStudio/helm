@@ -1,0 +1,113 @@
+{{- if .Values.matcher.enabled }}
+{{- $releaseNs := .Release.Namespace }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "matcher.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+data:
+  # Application Settings
+  ENV_NAME: {{ .Values.matcher.configmap.ENV_NAME | default "production" | quote }}
+  LOG_LEVEL: {{ .Values.matcher.configmap.LOG_LEVEL | default "info" | quote }}
+  SERVER_ADDRESS: {{ .Values.matcher.configmap.SERVER_ADDRESS | default ":8080" | quote }}
+  HTTP_BODY_LIMIT_BYTES: {{ .Values.matcher.configmap.HTTP_BODY_LIMIT_BYTES | default "104857600" | quote }}
+
+  # CORS Configuration
+  CORS_ALLOWED_ORIGINS: {{ .Values.matcher.configmap.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+  CORS_ALLOWED_METHODS: {{ .Values.matcher.configmap.CORS_ALLOWED_METHODS | default "GET,POST,PUT,PATCH,DELETE,OPTIONS" | quote }}
+  CORS_ALLOWED_HEADERS: {{ .Values.matcher.configmap.CORS_ALLOWED_HEADERS | default "Origin,Content-Type,Accept,Authorization,X-Request-ID" | quote }}
+
+  # TLS Configuration
+  TLS_TERMINATED_UPSTREAM: {{ .Values.matcher.configmap.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
+
+  # Multi-Tenancy
+  DEFAULT_TENANT_ID: {{ .Values.matcher.configmap.DEFAULT_TENANT_ID | default "11111111-1111-1111-1111-111111111111" | quote }}
+  DEFAULT_TENANT_SLUG: {{ .Values.matcher.configmap.DEFAULT_TENANT_SLUG | default "default" | quote }}
+  MULTI_TENANT_INFRA_ENABLED: {{ .Values.matcher.configmap.MULTI_TENANT_INFRA_ENABLED | default "false" | quote }}
+
+  # PostgreSQL Primary
+  POSTGRES_HOST: {{ .Values.matcher.configmap.POSTGRES_HOST | default (printf "matcher-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  POSTGRES_PORT: {{ .Values.matcher.configmap.POSTGRES_PORT | default "5432" | quote }}
+  POSTGRES_USER: {{ .Values.matcher.configmap.POSTGRES_USER | default "matcher" | quote }}
+  POSTGRES_DB: {{ .Values.matcher.configmap.POSTGRES_DB | default "matcher" | quote }}
+  POSTGRES_SSLMODE: {{ .Values.matcher.configmap.POSTGRES_SSLMODE | default "disable" | quote }}
+  POSTGRES_MAX_OPEN_CONNS: {{ .Values.matcher.configmap.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ .Values.matcher.configmap.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
+  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ .Values.matcher.configmap.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ .Values.matcher.configmap.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
+  POSTGRES_CONNECT_TIMEOUT_SEC: {{ .Values.matcher.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
+  MIGRATIONS_PATH: {{ .Values.matcher.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
+
+  # PostgreSQL Replica
+  POSTGRES_REPLICA_HOST: {{ .Values.matcher.configmap.POSTGRES_REPLICA_HOST | default (printf "matcher-postgresql-replication.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  POSTGRES_REPLICA_PORT: {{ .Values.matcher.configmap.POSTGRES_REPLICA_PORT | default "5432" | quote }}
+  POSTGRES_REPLICA_USER: {{ .Values.matcher.configmap.POSTGRES_REPLICA_USER | default "matcher" | quote }}
+  POSTGRES_REPLICA_DB: {{ .Values.matcher.configmap.POSTGRES_REPLICA_DB | default "matcher" | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ .Values.matcher.configmap.POSTGRES_REPLICA_SSLMODE | default "disable" | quote }}
+
+  # Infrastructure Boot Timeout
+  INFRA_CONNECT_TIMEOUT_SEC: {{ .Values.matcher.configmap.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
+
+  # Redis/Valkey Configuration
+  REDIS_HOST: {{ .Values.matcher.configmap.REDIS_HOST | default (printf "matcher-valkey-primary.%s.svc.cluster.local.:6379" .Release.Namespace) | quote }}
+  REDIS_DB: {{ .Values.matcher.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ .Values.matcher.configmap.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_POOL_SIZE: {{ .Values.matcher.configmap.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ .Values.matcher.configmap.REDIS_MIN_IDLE_CONNS | default "2" | quote }}
+  REDIS_READ_TIMEOUT_MS: {{ .Values.matcher.configmap.REDIS_READ_TIMEOUT_MS | default "3000" | quote }}
+  REDIS_WRITE_TIMEOUT_MS: {{ .Values.matcher.configmap.REDIS_WRITE_TIMEOUT_MS | default "3000" | quote }}
+  REDIS_DIAL_TIMEOUT_MS: {{ .Values.matcher.configmap.REDIS_DIAL_TIMEOUT_MS | default "5000" | quote }}
+  REDIS_TLS: {{ .Values.matcher.configmap.REDIS_TLS | default "false" | quote }}
+
+  # RabbitMQ Configuration
+  RABBITMQ_URI: {{ .Values.matcher.configmap.RABBITMQ_URI | default "amqp" | quote }}
+  RABBITMQ_HOST: {{ .Values.matcher.configmap.RABBITMQ_HOST | default (printf "matcher-rabbitmq.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  RABBITMQ_PORT: {{ .Values.matcher.configmap.RABBITMQ_PORT | default "5672" | quote }}
+  RABBITMQ_USER: {{ .Values.matcher.configmap.RABBITMQ_USER | default "matcher" | quote }}
+  RABBITMQ_VHOST: {{ .Values.matcher.configmap.RABBITMQ_VHOST | default "/" | quote }}
+  RABBITMQ_HEALTH_URL: {{ .Values.matcher.configmap.RABBITMQ_HEALTH_URL | default (printf "http://matcher-rabbitmq.%s.svc.cluster.local.:15672" .Release.Namespace) | quote }}
+
+  # Authentication
+  AUTH_ENABLED: {{ .Values.matcher.configmap.AUTH_ENABLED | default "false" | quote }}
+  AUTH_SERVICE_ADDRESS: {{ .Values.matcher.configmap.AUTH_SERVICE_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000" | quote }}
+
+  # Swagger Documentation
+  SWAGGER_ENABLED: {{ .Values.matcher.configmap.SWAGGER_ENABLED | default "false" | quote }}
+
+  # OpenTelemetry
+  OTEL_ENABLED: {{ .Values.matcher.configmap.OTEL_ENABLED | default "false" | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.matcher.configmap.OTEL_SERVICE_NAME | default "matcher" | quote }}
+  OTEL_SERVICE_VERSION: {{ .Values.matcher.configmap.OTEL_SERVICE_VERSION | default .Chart.AppVersion | quote }}
+  OTEL_EXPORTER_ENDPOINT: {{ .Values.matcher.configmap.OTEL_EXPORTER_ENDPOINT | default "localhost:4317" | quote }}
+  OTEL_DEPLOYMENT_ENV: {{ .Values.matcher.configmap.OTEL_DEPLOYMENT_ENV | default "production" | quote }}
+
+  # Rate Limiting
+  RATE_LIMIT_ENABLED: {{ .Values.matcher.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ .Values.matcher.configmap.RATE_LIMIT_MAX | default "100" | quote }}
+  RATE_LIMIT_EXPIRY_SEC: {{ .Values.matcher.configmap.RATE_LIMIT_EXPIRY_SEC | default "60" | quote }}
+  EXPORT_RATE_LIMIT_MAX: {{ .Values.matcher.configmap.EXPORT_RATE_LIMIT_MAX | default "10" | quote }}
+  EXPORT_RATE_LIMIT_EXPIRY_SEC: {{ .Values.matcher.configmap.EXPORT_RATE_LIMIT_EXPIRY_SEC | default "60" | quote }}
+
+  # Database Metrics
+  DB_METRICS_INTERVAL_SEC: {{ .Values.matcher.configmap.DB_METRICS_INTERVAL_SEC | default "15" | quote }}
+
+  # Idempotency & Deduplication
+  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ .Values.matcher.configmap.IDEMPOTENCY_RETRY_WINDOW_SEC | default "300" | quote }}
+  DEDUPE_TTL_SEC: {{ .Values.matcher.configmap.DEDUPE_TTL_SEC | default "3600" | quote }}
+
+  # Object Storage (S3-compatible)
+  OBJECT_STORAGE_ENDPOINT: {{ .Values.matcher.configmap.OBJECT_STORAGE_ENDPOINT | default (printf "http://matcher-seaweedfs.%s.svc.cluster.local.:8333" .Release.Namespace) | quote }}
+  OBJECT_STORAGE_REGION: {{ .Values.matcher.configmap.OBJECT_STORAGE_REGION | default "us-east-1" | quote }}
+  OBJECT_STORAGE_BUCKET: {{ .Values.matcher.configmap.OBJECT_STORAGE_BUCKET | default "matcher-exports" | quote }}
+  OBJECT_STORAGE_USE_PATH_STYLE: {{ .Values.matcher.configmap.OBJECT_STORAGE_USE_PATH_STYLE | default "true" | quote }}
+
+  # Export Worker (runs as goroutine in same process)
+  EXPORT_WORKER_ENABLED: {{ .Values.matcher.configmap.EXPORT_WORKER_ENABLED | default "true" | quote }}
+  EXPORT_WORKER_POLL_INTERVAL_SEC: {{ .Values.matcher.configmap.EXPORT_WORKER_POLL_INTERVAL_SEC | default "5" | quote }}
+  EXPORT_WORKER_PAGE_SIZE: {{ .Values.matcher.configmap.EXPORT_WORKER_PAGE_SIZE | default "1000" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.matcher.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

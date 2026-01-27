@@ -435,7 +435,7 @@ outbound:
     WEBHOOK_TRANSFER_CASHOUT_URL: ""
     WEBHOOK_REFUND_CASHIN_URL: ""
     WEBHOOK_REFUND_CASHOUT_URL: ""
-    WEBHOOK_DICT_RECONCILIATION_URL: ""
+    WEBHOOK_DICT_RECONCILIATION_JOB_URL: ""
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml

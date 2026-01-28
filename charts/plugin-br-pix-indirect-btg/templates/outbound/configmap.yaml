@@ -215,19 +215,19 @@ data:
   WEBHOOK_REFUND_CASHOUT_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_MAX_CONCURRENT | default "10" | quote }}
 
   # ==============================================================================
-  # DICT_RECONCILIATION - Medium volume entity
+  # DICT_RECONCILIATION_JOB - Medium volume entity
   # ==============================================================================
-  WEBHOOK_DICT_RECONCILIATION_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_ENABLED | default "true" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_ENABLED | default "true" | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
-  WEBHOOK_DICT_RECONCILIATION_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_URL | default "" | quote }}
-  WEBHOOK_DICT_RECONCILIATION_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_WORKER_COUNT | default "1" | quote }}
-  WEBHOOK_DICT_RECONCILIATION_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_BATCH_SIZE | default "50" | quote }}
-  WEBHOOK_DICT_RECONCILIATION_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_POLLING_INTERVAL | default "10s" | quote }}
-  WEBHOOK_DICT_RECONCILIATION_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_REQUEST_TIMEOUT | default "30s" | quote }}
-  WEBHOOK_DICT_RECONCILIATION_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_MAX_RETRIES | default "5" | quote }}
-  WEBHOOK_DICT_RECONCILIATION_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_BACKOFF_MULTIPLIER | default "2" | quote }}
-  WEBHOOK_DICT_RECONCILIATION_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_MAX_CONCURRENT | default "2" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_URL | default "" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_WORKER_COUNT | default "1" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_POLLING_INTERVAL | default "10s" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_REQUEST_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_MAX_CONCURRENT | default "2" | quote }}
 
   # Extra Env Vars
   {{- with .Values.outbound.extraEnvVars }}

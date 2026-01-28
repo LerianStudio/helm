@@ -77,8 +77,8 @@ data:
   # OpenTelemetry
   OTEL_ENABLED: {{ .Values.matcher.configmap.OTEL_ENABLED | default "false" | quote }}
   OTEL_SERVICE_NAME: {{ .Values.matcher.configmap.OTEL_SERVICE_NAME | default "matcher" | quote }}
-  OTEL_SERVICE_VERSION: {{ .Values.matcher.configmap.OTEL_SERVICE_VERSION | default .Chart.AppVersion | quote }}
-  OTEL_EXPORTER_ENDPOINT: {{ .Values.matcher.configmap.OTEL_EXPORTER_ENDPOINT | default "localhost:4317" | quote }}
+  OTEL_SERVICE_VERSION: {{ .Values.matcher.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_EXPORTER_ENDPOINT: {{ .Values.matcher.configmap.OTEL_EXPORTER_ENDPOINT | default "" | quote }}
   OTEL_DEPLOYMENT_ENV: {{ .Values.matcher.configmap.OTEL_DEPLOYMENT_ENV | default "production" | quote }}
 
   # Rate Limiting
@@ -105,6 +105,13 @@ data:
   EXPORT_WORKER_ENABLED: {{ .Values.matcher.configmap.EXPORT_WORKER_ENABLED | default "true" | quote }}
   EXPORT_WORKER_POLL_INTERVAL_SEC: {{ .Values.matcher.configmap.EXPORT_WORKER_POLL_INTERVAL_SEC | default "5" | quote }}
   EXPORT_WORKER_PAGE_SIZE: {{ .Values.matcher.configmap.EXPORT_WORKER_PAGE_SIZE | default "1000" | quote }}
+
+  # Application Version (for logs/telemetry)
+  {{- if .Values.matcher.image.tag }}
+  VERSION: {{ .Values.matcher.image.tag | quote }}
+  {{- else }}
+  VERSION: {{ .Chart.AppVersion | quote }}
+  {{- end }}
 
   # Extra Env Vars
   {{- with .Values.matcher.extraEnvVars }}

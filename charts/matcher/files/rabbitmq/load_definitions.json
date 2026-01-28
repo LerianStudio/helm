@@ -34,13 +34,19 @@
       "name": "matcher.events",
       "vhost": "/",
       "type": "topic",
-      "durable": true
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
     },
     {
       "name": "matcher.events.dlx",
       "vhost": "/",
       "type": "topic",
-      "durable": true
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
     }
   ],
   "bindings": [

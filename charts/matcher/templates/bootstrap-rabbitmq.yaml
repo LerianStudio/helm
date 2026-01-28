@@ -1,0 +1,169 @@
+{{- if .Values.global.externalRabbitmqDefinitions.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "matcher.fullname" . }}-bootstrap-rabbitmq-definitions
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher.labels" (dict "context" . "component" "bootstrap" "name" "rabbitmq") | nindent 4 }}
+data:
+  load_definitions.json: |
+{{ .Files.Get "files/rabbitmq/load_definitions.json" | indent 4 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "matcher.fullname" . }}-bootstrap-rabbitmq
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher.labels" (dict "context" . "component" "bootstrap" "name" "rabbitmq") | nindent 4 }}
+spec:
+  ttlSecondsAfterFinished: 300
+  completions: 1
+  parallelism: 1
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.37
+          env:
+            - name: RABBITMQ_HOST
+              value: {{ .Values.global.externalRabbitmqDefinitions.connection.host | quote }}
+            - name: RABBITMQ_PORT
+              value: {{ .Values.global.externalRabbitmqDefinitions.connection.portAmqp | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              TIMEOUT=300;
+              ELAPSED=0;
+              echo "Checking $RABBITMQ_HOST:$RABBITMQ_PORT...";
+              while ! nc -z "$RABBITMQ_HOST" "$RABBITMQ_PORT"; do
+                if [ $ELAPSED -ge $TIMEOUT ]; then
+                  echo "Timeout waiting for $RABBITMQ_HOST:$RABBITMQ_PORT after ${TIMEOUT}s";
+                  exit 1;
+                fi;
+                echo "$RABBITMQ_HOST:$RABBITMQ_PORT is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)";
+                sleep 5;
+                ELAPSED=$((ELAPSED + 5));
+              done;
+              echo "$RABBITMQ_HOST:$RABBITMQ_PORT is ready!";
+      containers:
+        - name: apply-definitions
+          image: curlimages/curl:8.7.1
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+
+              # Build base URL - omit port for default HTTPS (443) or HTTP (80)
+              if [ "$RABBITMQ_PROTOCOL" = "https" ] && [ "$RABBITMQ_PORT" = "443" ]; then
+                BASE_URL="$RABBITMQ_PROTOCOL://$RABBITMQ_HOST"
+              elif [ "$RABBITMQ_PROTOCOL" = "http" ] && [ "$RABBITMQ_PORT" = "80" ]; then
+                BASE_URL="$RABBITMQ_PROTOCOL://$RABBITMQ_HOST"
+              else
+                BASE_URL="$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT"
+              fi
+
+              echo "=== Matcher RabbitMQ Bootstrap ==="
+              echo "API URL: $BASE_URL"
+              echo ""
+
+              echo "Checking if RabbitMQ user 'matcher' already exists..."
+
+              # Check if matcher user exists
+              MATCHER_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                "$BASE_URL/api/users/matcher" 2>/dev/null || echo "not_found")
+
+              if echo "$MATCHER_EXISTS" | grep -q '"name":"matcher"'; then
+                echo "RabbitMQ user 'matcher' already exists. Checking exchanges..."
+                
+                # Check if exchanges exist
+                EXCHANGE_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                  "$BASE_URL/api/exchanges/%2F/matcher.events" 2>/dev/null || echo "not_found")
+                
+                if echo "$EXCHANGE_EXISTS" | grep -q '"name":"matcher.events"'; then
+                  echo "RabbitMQ definitions already applied (user and exchanges exist). Skipping."
+                  exit 0
+                fi
+              fi
+
+              echo "Applying RabbitMQ definitions from file..."
+              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                -H "content-type: application/json" \
+                -X POST \
+                --data-binary @/definitions/load_definitions.json \
+                "$BASE_URL/api/definitions")
+              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                echo "Error applying definitions (HTTP $HTTP_CODE):"
+                cat /tmp/response.txt
+                exit 1
+              fi
+              echo "Definitions applied successfully."
+
+              echo "Updating RabbitMQ user 'matcher' password..."
+              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                -H "content-type: application/json" \
+                -X PUT \
+                --data "{\"password\":\"$RABBITMQ_MATCHER_PASS\",\"tags\":\"administrator\"}" \
+                "$BASE_URL/api/users/matcher")
+              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                echo "Error updating matcher user (HTTP $HTTP_CODE):"
+                cat /tmp/response.txt
+                exit 1
+              fi
+              echo "User password updated successfully."
+
+              echo ""
+              echo "=== Matcher RabbitMQ Bootstrap completed successfully ==="
+          env:
+            - name: RABBITMQ_PROTOCOL
+              value: {{ .Values.global.externalRabbitmqDefinitions.connection.protocol | quote }}
+            - name: RABBITMQ_HOST
+              value: {{ .Values.global.externalRabbitmqDefinitions.connection.host | quote }}
+            - name: RABBITMQ_PORT
+              value: {{ .Values.global.externalRabbitmqDefinitions.connection.port | quote }}
+            - name: RABBITMQ_MATCHER_PASS
+              {{- if .Values.global.externalRabbitmqDefinitions.matcherCredentials.useExistingSecret.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.externalRabbitmqDefinitions.matcherCredentials.useExistingSecret.name | quote }}
+                  key: RABBITMQ_MATCHER_PASS
+              {{- else }}
+              value: {{ .Values.global.externalRabbitmqDefinitions.matcherCredentials.password | quote }}
+              {{- end }}
+            - name: RABBITMQ_ADMIN_PASS
+              {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name | quote }}
+                  key: RABBITMQ_ADMIN_PASS
+              {{- else }}
+              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.password | quote }}
+              {{- end }}
+            - name: RABBITMQ_ADMIN_USER
+              {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name | quote }}
+                  key: RABBITMQ_ADMIN_USER
+              {{- else }}
+              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.username | quote }}
+              {{- end }}
+          volumeMounts:
+            - name: definitions
+              mountPath: /definitions
+      volumes:
+        - name: definitions
+          configMap:
+            name: {{ include "matcher.fullname" . }}-bootstrap-rabbitmq-definitions
+            items:
+              - key: load_definitions.json
+                path: load_definitions.json
+{{- end }}

@@ -53,8 +53,15 @@ global:
         # -- Name of existing secret containing RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys
         name: ""
       # -- Admin username (ignored if useExistingSecret.name is set)
-      username: "matcher"
+      username: "admin"
       # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for matcher user created by the job
+    matcherCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing RABBITMQ_MATCHER_PASS key
+        name: ""
+      # -- Password for matcher user (ignored if useExistingSecret.name is set)
       password: "lerian"
 
 matcher:
@@ -252,10 +259,13 @@ matcher:
     SWAGGER_ENABLED: "false"
 
     # OpenTelemetry
+    # -- Enable telemetry collection (when true, OTEL_EXPORTER_ENDPOINT is overridden with HOST_IP:4317)
     OTEL_ENABLED: "false"
+    # -- OTEL service name for traces/metrics
     OTEL_SERVICE_NAME: "matcher"
-    OTEL_SERVICE_VERSION: "1.0.0"
-    OTEL_EXPORTER_ENDPOINT: "localhost:4317"
+    # -- OTEL exporter endpoint (empty when disabled; overridden by HOST_IP:4317 when OTEL_ENABLED=true)
+    OTEL_EXPORTER_ENDPOINT: ""
+    # -- OTEL deployment environment
     OTEL_DEPLOYMENT_ENV: "production"
 
     # Rate Limiting

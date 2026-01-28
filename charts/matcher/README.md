@@ -156,7 +156,7 @@ The following environment variables can be configured via the `matcher.configmap
 | `RABBITMQ_HOST` | RabbitMQ host. | `"matcher-rabbitmq.matcher.svc.cluster.local."` |
 | `RABBITMQ_PORT` | RabbitMQ port. | `"5672"` |
 | `AUTH_ENABLED` | Enable authentication. | `"false"` |
-| `OTEL_ENABLED` | Enable OpenTelemetry. | `"false"` |
+| `ENABLE_TELEMETRY` | Enable OpenTelemetry. | `"false"` |
 | `OBJECT_STORAGE_ENDPOINT` | Object storage endpoint. | `"http://matcher-seaweedfs.matcher.svc.cluster.local.:8333"` |
 | `EXPORT_WORKER_ENABLED` | Enable export worker. | `"true"` |
 

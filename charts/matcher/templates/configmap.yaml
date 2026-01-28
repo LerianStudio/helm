@@ -75,11 +75,12 @@ data:
   SWAGGER_ENABLED: {{ .Values.matcher.configmap.SWAGGER_ENABLED | default "false" | quote }}
 
   # OpenTelemetry
-  OTEL_ENABLED: {{ .Values.matcher.configmap.OTEL_ENABLED | default "false" | quote }}
-  OTEL_SERVICE_NAME: {{ .Values.matcher.configmap.OTEL_SERVICE_NAME | default "matcher" | quote }}
-  OTEL_SERVICE_VERSION: {{ .Values.matcher.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_EXPORTER_ENDPOINT: {{ .Values.matcher.configmap.OTEL_EXPORTER_ENDPOINT | default "" | quote }}
-  OTEL_DEPLOYMENT_ENV: {{ .Values.matcher.configmap.OTEL_DEPLOYMENT_ENV | default "production" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.matcher.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.matcher.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/matcher" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.matcher.configmap.OTEL_RESOURCE_SERVICE_NAME | default "matcher" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.matcher.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.matcher.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.matcher.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
 
   # Rate Limiting
   RATE_LIMIT_ENABLED: {{ .Values.matcher.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}

@@ -259,14 +259,16 @@ matcher:
     SWAGGER_ENABLED: "false"
 
     # OpenTelemetry
-    # -- Enable telemetry collection (when true, OTEL_EXPORTER_ENDPOINT is overridden with HOST_IP:4317)
-    OTEL_ENABLED: "false"
-    # -- OTEL service name for traces/metrics
-    OTEL_SERVICE_NAME: "matcher"
-    # -- OTEL exporter endpoint (empty when disabled; overridden by HOST_IP:4317 when OTEL_ENABLED=true)
-    OTEL_EXPORTER_ENDPOINT: ""
-    # -- OTEL deployment environment
-    OTEL_DEPLOYMENT_ENV: "production"
+    # -- Enable telemetry collection (when true, OTEL_EXPORTER_OTLP_ENDPOINT is overridden with HOST_IP:4317)
+    ENABLE_TELEMETRY: "false"
+    # -- OTEL library name for instrumentation
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/matcher"
+    # -- OTEL resource service name for traces/metrics
+    OTEL_RESOURCE_SERVICE_NAME: "matcher"
+    # -- OTEL exporter endpoint (empty when disabled; overridden by HOST_IP:4317 when ENABLE_TELEMETRY=true)
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- OTEL resource deployment environment
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
 
     # Rate Limiting
     RATE_LIMIT_ENABLED: "true"

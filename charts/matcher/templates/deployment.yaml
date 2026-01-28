@@ -77,13 +77,13 @@ spec:
               name: {{ if .Values.matcher.useExistingSecret }}{{ .Values.matcher.existingSecretName }}{{ else }}{{ include "matcher.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "matcher.fullname" . }}
-          {{- if eq (toString .Values.matcher.configmap.OTEL_ENABLED) "true" }}
+          {{- if eq (toString .Values.matcher.configmap.ENABLE_TELEMETRY) "true" }}
           env:
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
-          - name: "OTEL_EXPORTER_ENDPOINT"
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
           {{- end }}
           ports:

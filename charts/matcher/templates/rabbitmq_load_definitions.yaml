@@ -1,0 +1,8 @@
+kind: Secret
+apiVersion: v1
+metadata:
+  name: "matcher-rabbitmq-load-definition"
+  namespace: {{ include "global.namespace" . }}
+data:
+  load_definition.json: |
+    {{ .Files.Get "files/rabbitmq/load_definitions.json" | b64enc | nindent 4 }}

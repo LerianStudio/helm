@@ -1,0 +1,131 @@
+{{- if .Values.global.externalPostgresDefinitions.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "matcher.fullname" . }}-bootstrap-postgres
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher.labels" (dict "context" . "component" "bootstrap" "name" "postgres") | nindent 4 }}
+spec:
+  ttlSecondsAfterFinished: 300
+  completions: 1
+  parallelism: 1
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.37
+        env:
+        - name: DB_HOST
+          value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+        - name: DB_PORT
+          value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+        command:
+        - /bin/sh
+        - -c
+        - >
+          TIMEOUT=300;
+          ELAPSED=0;
+          echo "Checking $DB_HOST:$DB_PORT...";
+          while ! nc -z "$DB_HOST" "$DB_PORT"; do
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "Timeout waiting for $DB_HOST:$DB_PORT after ${TIMEOUT}s";
+              exit 1;
+            fi;
+            echo "$DB_HOST:$DB_PORT is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)";
+            sleep 5;
+            ELAPSED=$((ELAPSED + 5));
+          done;
+          echo "$DB_HOST:$DB_PORT is ready!";
+      containers:
+      - name: psql
+        image: postgres:17
+        env:
+        - name: DB_HOST
+          value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+        - name: DB_PORT
+          value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+        - name: DB_USER_ADMIN
+          {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name | quote }}
+              key: DB_USER_ADMIN
+          {{- else }}
+          value: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.username | quote }}
+          {{- end }}
+        - name: DB_ADMIN_PASSWORD
+          {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name | quote }}
+              key: DB_ADMIN_PASSWORD
+          {{- else }}
+          value: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.password | quote }}
+          {{- end }}
+        - name: DB_PASSWORD_MATCHER
+          {{- if .Values.global.externalPostgresDefinitions.matcherCredentials.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.externalPostgresDefinitions.matcherCredentials.useExistingSecret.name | quote }}
+              key: DB_PASSWORD_MATCHER
+          {{- else }}
+          value: {{ .Values.global.externalPostgresDefinitions.matcherCredentials.password | quote }}
+          {{- end }}
+        - name: DB_DATABASE
+          value: postgres
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -euo pipefail
+          echo "=== Matcher PostgreSQL Bootstrap ==="
+          echo "Host: $DB_HOST:$DB_PORT"
+          echo ""
+
+          echo "Checking existing PostgreSQL objects..."
+          DB_EXISTS=0
+          ROLE_EXISTS=0
+
+          if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_database WHERE datname='matcher'" | grep -q 1; then
+            DB_EXISTS=1
+          fi
+          if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_roles WHERE rolname='matcher'" | grep -q 1; then
+            ROLE_EXISTS=1
+          fi
+
+          if [ "$DB_EXISTS" = "1" ] && [ "$ROLE_EXISTS" = "1" ]; then
+            echo "PostgreSQL bootstrap already complete (database 'matcher' and role 'matcher' exist). Skipping creation."
+          else
+            # Create role if not exists
+            if [ "$ROLE_EXISTS" = "1" ]; then
+              echo "Role 'matcher' already exists. Skipping creation."
+            else
+              echo "Creating role 'matcher'..."
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE matcher LOGIN PASSWORD '$DB_PASSWORD_MATCHER'"
+            fi
+
+            # Create database if not exists
+            if [ "$DB_EXISTS" = "1" ]; then
+              echo "Database 'matcher' already exists. Skipping creation."
+            else
+              echo "Creating database 'matcher'..."
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE matcher OWNER matcher"
+            fi
+          fi
+
+          # Privileges (safe to run repeatedly)
+          echo "Ensuring privileges and schema permissions..."
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "ALTER USER matcher CREATEDB" || true
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE matcher TO matcher"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d matcher -c "GRANT ALL ON SCHEMA public TO matcher"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d matcher -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO matcher"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d matcher -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO matcher"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d matcher -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO matcher"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d matcher -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO matcher"
+
+          echo ""
+          echo "=== Matcher PostgreSQL Bootstrap completed successfully ==="
+{{- end }}

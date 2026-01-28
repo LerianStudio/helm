@@ -95,7 +95,7 @@
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `1.2.0-beta.1` | 1.1.0 | 1.0.0 | 1.0.0 | 1.1.1 |
+| `1.2.0-beta.2` | 1.1.2 | 1.0.0 | 1.0.0 | 1.1.1 |
 -----------------
 
 ### Fetcher

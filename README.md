@@ -95,7 +95,7 @@
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `1.1.1` | 1.1.0 | 1.0.0 | 1.0.0 | 1.0.0 |
+| `1.2.0-beta.2` | 1.1.2 | 1.0.0 | 1.0.0 | 1.1.1 |
 -----------------
 
 ### Fetcher
@@ -109,6 +109,19 @@
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
 | `1.0.0` | 1.0.0 | 1.0.0 |
+-----------------
+
+### Matcher
+
+📚 For more details, check out the [official documentation](https://docs.lerian.studio/en/matcher#matcher).
+
+🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/matcher).
+
+#### Application Version Mapping
+
+| Chart Version | Matcher Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | 1.0.0 |
 -----------------
 
 ### Otel Collector Lerian

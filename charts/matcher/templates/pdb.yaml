@@ -1,0 +1,24 @@
+{{- if and .Values.matcher.enabled .Values.matcher.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "matcher.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher.labels" (dict "context" . "component" .Values.matcher.name "name" .Values.matcher.name ) | nindent 4 }}
+  {{- with .Values.matcher.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.matcher.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.matcher.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "matcher.selectorLabels" (dict "context" . "name" .Values.matcher.name ) | nindent 6 }}
+{{- end }}

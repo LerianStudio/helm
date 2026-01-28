@@ -1,0 +1,185 @@
+# Template values for matcher deployment
+# Copy this file and fill in the required values for your environment
+# REQUIRED fields must be set before deployment
+
+matcher:
+  name: matcher
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: lerianstudio/matcher
+    pullPolicy: IfNotPresent
+    tag: "1.0.0"  # REQUIRED - Set the image version
+
+  imagePullSecrets: []
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""  # Set your hostname (e.g., matcher.example.com)
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    # Application Settings
+    ENV_NAME: ""  # REQUIRED - Environment name (e.g., production, staging)
+    LOG_LEVEL: "info"
+    SERVER_ADDRESS: ":8080"
+    HTTP_BODY_LIMIT_BYTES: "104857600"
+
+    # CORS Configuration
+    CORS_ALLOWED_ORIGINS: "*"
+    CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
+
+    # TLS Configuration
+    TLS_TERMINATED_UPSTREAM: "true"
+
+    # Multi-Tenancy
+    DEFAULT_TENANT_ID: ""  # REQUIRED - Default tenant UUID
+    DEFAULT_TENANT_SLUG: ""  # REQUIRED - Default tenant slug
+    MULTI_TENANT_INFRA_ENABLED: "false"
+
+    # PostgreSQL Primary - REQUIRED
+    POSTGRES_HOST: ""  # REQUIRED - PostgreSQL primary host
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "matcher"
+    POSTGRES_DB: "matcher"
+    POSTGRES_SSLMODE: "disable"
+    POSTGRES_MAX_OPEN_CONNS: "25"
+    POSTGRES_MAX_IDLE_CONNS: "5"
+    POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
+    POSTGRES_CONN_MAX_IDLE_TIME_MINS: "5"
+    POSTGRES_CONNECT_TIMEOUT_SEC: "10"
+    MIGRATIONS_PATH: "migrations"
+
+    # PostgreSQL Replica - REQUIRED for read scaling
+    POSTGRES_REPLICA_HOST: ""  # REQUIRED - PostgreSQL replica host
+    POSTGRES_REPLICA_PORT: "5432"
+    POSTGRES_REPLICA_USER: "matcher"
+    POSTGRES_REPLICA_DB: "matcher"
+    POSTGRES_REPLICA_SSLMODE: "disable"
+
+    # Infrastructure Boot Timeout
+    INFRA_CONNECT_TIMEOUT_SEC: "30"
+
+    # Redis/Valkey - REQUIRED
+    REDIS_HOST: ""  # REQUIRED - Redis/Valkey host:port (e.g., matcher-valkey:6379)
+    REDIS_DB: "0"
+    REDIS_PROTOCOL: "3"
+    REDIS_POOL_SIZE: "10"
+    REDIS_MIN_IDLE_CONNS: "2"
+    REDIS_READ_TIMEOUT_MS: "3000"
+    REDIS_WRITE_TIMEOUT_MS: "3000"
+    REDIS_DIAL_TIMEOUT_MS: "5000"
+    REDIS_TLS: "false"
+
+    # RabbitMQ - REQUIRED
+    RABBITMQ_URI: "amqp"
+    RABBITMQ_HOST: ""  # REQUIRED - RabbitMQ host
+    RABBITMQ_PORT: "5672"
+    RABBITMQ_USER: "matcher"
+    RABBITMQ_VHOST: "/"
+    RABBITMQ_HEALTH_URL: ""  # REQUIRED - RabbitMQ management URL (e.g., http://matcher-rabbitmq:15672)
+
+    # Authentication
+    AUTH_ENABLED: "false"
+    AUTH_SERVICE_ADDRESS: ""  # Set if AUTH_ENABLED=true
+
+    # Swagger Documentation
+    SWAGGER_ENABLED: "false"
+
+    # OpenTelemetry
+    ENABLE_TELEMETRY: "false"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/matcher"
+    OTEL_RESOURCE_SERVICE_NAME: "matcher"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""  # Set if ENABLE_TELEMETRY=true (e.g., otel-collector:4317)
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "100"
+    RATE_LIMIT_EXPIRY_SEC: "60"
+    EXPORT_RATE_LIMIT_MAX: "10"
+    EXPORT_RATE_LIMIT_EXPIRY_SEC: "60"
+
+    # Database Metrics
+    DB_METRICS_INTERVAL_SEC: "15"
+
+    # Idempotency & Deduplication
+    IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
+    DEDUPE_TTL_SEC: "3600"
+
+    # Object Storage (S3-compatible) - REQUIRED for exports
+    OBJECT_STORAGE_ENDPOINT: ""  # REQUIRED - S3 endpoint (e.g., http://seaweedfs:8333)
+    OBJECT_STORAGE_REGION: "us-east-1"
+    OBJECT_STORAGE_BUCKET: "matcher-exports"
+    OBJECT_STORAGE_USE_PATH_STYLE: "true"
+
+    # Export Worker
+    EXPORT_WORKER_ENABLED: "true"
+    EXPORT_WORKER_POLL_INTERVAL_SEC: "5"
+    EXPORT_WORKER_PAGE_SIZE: "1000"
+
+  secrets:
+    # PostgreSQL - REQUIRED
+    POSTGRES_PASSWORD: ""  # REQUIRED - PostgreSQL primary password
+    POSTGRES_REPLICA_PASSWORD: ""  # REQUIRED - PostgreSQL replica password
+
+    # Redis/Valkey - REQUIRED
+    REDIS_PASSWORD: ""  # REQUIRED - Redis/Valkey password
+
+    # RabbitMQ - REQUIRED
+    RABBITMQ_PASSWORD: ""  # REQUIRED - RabbitMQ password
+
+    # Object Storage - REQUIRED for exports
+    OBJECT_STORAGE_ACCESS_KEY_ID: ""  # REQUIRED - S3 access key
+    OBJECT_STORAGE_SECRET_ACCESS_KEY: ""  # REQUIRED - S3 secret key
+
+    # Authentication
+    AUTH_JWT_SECRET: ""  # Set if AUTH_ENABLED=true
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+# ==============================================================================
+# INFRASTRUCTURE DEPENDENCIES
+# ==============================================================================
+# These are pre-configured resources that matcher expects:
+#
+# RabbitMQ Resources (auto-created via load_definitions.json):
+#   - Exchange: matcher.events (topic, durable) - main event exchange
+#   - Exchange: matcher.events.dlx (topic, durable) - dead letter exchange
+#   - Queue: matcher.events.dlq (durable) - dead letter queue
+#   - Binding: matcher.events.dlx -> matcher.events.dlq (routing_key: #)
+#
+# PostgreSQL:
+#   - Database: matcher
+#   - User: matcher (with full privileges on matcher database)
+#   - Schema: public (default), plus tenant schemas created at runtime
+#
+# Redis/Valkey:
+#   - Used for: rate limiting, idempotency keys, caching
+#   - No pre-configuration needed
+#
+# Object Storage (SeaweedFS/S3):
+#   - Bucket: matcher-exports (auto-created by app if doesn't exist)
+# ==============================================================================
+
+# Disable internal dependencies for external infrastructure
+valkey:
+  enabled: false
+  external: true
+
+postgresql:
+  enabled: false
+  external: true
+
+rabbitmq:
+  enabled: false
+  external: true

@@ -38,6 +38,10 @@ fetcher:
   - changed-files:
       - any-glob-to-any-file: charts/fetcher/**
 
+matcher:
+  - changed-files:
+      - any-glob-to-any-file: charts/matcher/**
+
 pipe:
   - changed-files:
       - any-glob-to-any-file: .github/workflows/**

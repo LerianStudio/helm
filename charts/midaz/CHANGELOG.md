@@ -1,3 +1,16 @@
+# Midaz Changelog
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.4.0)
+
+- Improvements:
+  - Standardized voice in documentation and synchronized with Mintlify docs for consistency.
+
+Contributors: @jade
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.3.0...midaz-v5.4.0)
+
+---
+
 ## [midaz-2.6.0-beta.4] - 2025-07-22
 
 This release enhances configuration flexibility and integration capabilities, providing users with improved deployment options and resolving key issues in plugin management.
@@ -381,3 +394,4 @@ In this release, the key focus is on improving documentation to help users bette
 ### Bug Fixes
 
 * generate multiples CHANGELOG's ([3f60787](https://github.com/LerianStudio/helm/commit/3f607875b618db474e4055c44a2cffd8216f4261))
+

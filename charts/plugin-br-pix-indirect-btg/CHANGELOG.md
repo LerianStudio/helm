@@ -1,5 +1,17 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [1.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v1.2.1)
+
+- Fixes:
+  - Removed trailing newline from `values.yaml`.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation` to version 1.1.3.
+
+Contributors: @gui.rodrigues, @guimoreirar
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v1.2.0...plugin-br-pix-indirect-btg-v1.2.1)
+
+---
+
 ## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v1.2.0)
 
 - **Fixes**

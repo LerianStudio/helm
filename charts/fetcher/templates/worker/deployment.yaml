@@ -43,6 +43,15 @@ spec:
                 name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "fetcher-worker.fullname" . }}{{ end }}
             - secretRef:
                 name: {{ include "fetcher.fullname" . }}-common
+          {{- if eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true" }}
+          env:
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+          {{- end }}
           resources:
             {{- toYaml .Values.worker.resources | nindent 12 }}
       {{- with .Values.worker.nodeSelector }}

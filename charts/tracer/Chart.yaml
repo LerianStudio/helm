@@ -1,6 +1,7 @@
 apiVersion: v2
 name: tracer-helm
-description: A Helm chart for Tracer - Real-time transaction validation and fraud prevention API
+description: A Helm chart for Tracer - Real-time transaction validation and
+  fraud prevention API
 
 type: application
 
@@ -14,7 +15,7 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 1.0.0
+version: 1.0.0-beta.1
 
 appVersion: "1.0.0"
 

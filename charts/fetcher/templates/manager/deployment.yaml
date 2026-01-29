@@ -53,6 +53,15 @@ spec:
                 name: {{ if .Values.manager.useExistingSecret }}{{ .Values.manager.existingSecretName }}{{ else }}{{ include "fetcher-manager.fullname" . }}{{ end }}
             - secretRef:
                 name: {{ include "fetcher.fullname" . }}-common
+          {{- if eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true" }}
+          env:
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.manager.service.port }}

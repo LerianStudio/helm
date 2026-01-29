@@ -1,0 +1,94 @@
+{{- if .Values.tracer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tracer.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.tracer.revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ .Values.tracer.deploymentUpdate.type }}
+    {{- if eq .Values.tracer.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.tracer.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.tracer.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not .Values.tracer.autoscaling.enabled }}
+  replicas: {{ .Values.tracer.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.tracer.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 8 }}
+    spec:
+      {{- with .Values.tracer.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "tracer.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.tracer.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "tracer.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.tracer.securityContext | nindent 12 }}
+          image: "{{ .Values.tracer.image.repository }}:{{ .Values.tracer.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.tracer.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.tracer.useExistingSecret }}{{ .Values.tracer.existingSecretName }}{{ else }}{{ include "tracer.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "tracer.fullname" . }}
+          {{- if eq (toString .Values.tracer.configmap.ENABLE_TELEMETRY) "true" }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.tracer.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.tracer.resources | nindent 12 }}
+      {{- with .Values.tracer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

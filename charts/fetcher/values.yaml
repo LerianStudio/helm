@@ -3,7 +3,7 @@
 
 nameOverride: ""
 fullnameOverride: ""
-namespaceOverride: ""
+namespaceOverride: "fetcher"
 
 # Manager component - REST API service
 manager:

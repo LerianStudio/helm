@@ -1,0 +1,33 @@
+{{- if and .Values.tracer.enabled .Values.tracer.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "tracer.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "tracer.fullname" . }}
+  minReplicas: {{ .Values.tracer.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.tracer.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.tracer.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.tracer.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.tracer.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.tracer.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

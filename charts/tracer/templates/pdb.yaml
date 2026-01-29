@@ -1,0 +1,23 @@
+{{- if and .Values.tracer.enabled .Values.tracer.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "tracer.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
+  {{- with .Values.tracer.pdb.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.tracer.pdb.minAvailable }}
+  minAvailable: {{ .Values.tracer.pdb.minAvailable }}
+  {{- end }}
+  {{- if .Values.tracer.pdb.maxUnavailable }}
+  maxUnavailable: {{ .Values.tracer.pdb.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 6 }}
+{{- end }}

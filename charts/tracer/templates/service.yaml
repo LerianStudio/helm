@@ -1,0 +1,22 @@
+{{- if .Values.tracer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "tracer.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
+  {{- with .Values.tracer.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.tracer.service.type }}
+  ports:
+    - port: {{ .Values.tracer.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 4 }}
+{{- end }}

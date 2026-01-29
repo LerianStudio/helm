@@ -1,0 +1,42 @@
+{{- if and .Values.tracer.enabled .Values.tracer.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "tracer.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
+  {{- with .Values.tracer.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.tracer.ingress.className }}
+  ingressClassName: {{ .Values.tracer.ingress.className }}
+  {{- end }}
+  {{- if .Values.tracer.ingress.tls }}
+  tls:
+    {{- range .Values.tracer.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.tracer.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "tracer.fullname" $ }}
+                port:
+                  number: {{ $.Values.tracer.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}

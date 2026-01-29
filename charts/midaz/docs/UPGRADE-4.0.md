@@ -65,7 +65,7 @@ All midaz application components were bumped to version `3.3.1`. See the project
 
 #### Why we changed (Bitnami-related issues)
 
-Move away from Bitnami dependencies due to policy changes in bitnamisecure (#83267) impacting stability and operations.s
+Move away from Bitnami dependencies due to policy changes in bitnamisecure (#83267) impacting stability and operations.
 
 - https://github.com/bitnami/charts/issues/36215
 - https://github.com/bitnami/containers/issues/86191

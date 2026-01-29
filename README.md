@@ -112,13 +112,26 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Matcher
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/en/matcher#matcher).
+For more details, check out the [official documentation](https://docs.lerian.studio/en/matcher#matcher).
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/matcher).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/matcher).
 
 #### Application Version Mapping
 
 | Chart Version | Matcher Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.0 |
+-----------------
+
+### Tracer
+
+For more details, check out the [official documentation](https://docs.lerian.studio/en/tracer).
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/tracer).
+
+#### Application Version Mapping
+
+| Chart Version | Tracer Version |
 | :---: | :---: |
 | `1.0.0` | 1.0.0 |
 -----------------

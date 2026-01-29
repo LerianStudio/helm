@@ -1,7 +1,7 @@
 # Midaz Helm Chart
 
 Source code can be found here:
-* https://github.com/LerianStudio/midaz-helm/tree/main/charts/midaz
+* https://github.com/LerianStudio/helm/tree/main/charts/midaz
 * https://github.com/LerianStudio/midaz
 
 This helm chart installs [Midaz](https://lerian.studio/midaz#about), a high-performance and open-source ledger.
@@ -12,13 +12,13 @@ The default installation is similar to the one provided in the [Midaz repo](http
 
 ## Install Midaz Helm Chart:
 
-To install Midaz using Helm, run the following command:
+To install Midaz using Helm, run:
 
 ```console
-$ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 4.4.8 -n midaz --create-namespace
+$ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version <version> -n midaz --create-namespace
 ```
 
-This will create a new namespace called midaz if it doesn't already exist and deploy the Midaz Helm chart.
+Replace `<version>` with the desired chart version. This creates a namespace called `midaz` if it doesn't already exist and deploys the Midaz Helm chart.
 
 After installation, you can verify that the release was successful by listing the Helm releases in the midaz namespace:
 
@@ -29,9 +29,9 @@ $ helm list -n midaz
 ---
 ## Configuring Ingress for Different Controllers
 
-The Midaz Helm Chart optionally supports different Ingress Controllers for exposing services when necessary. It is possible to enable Ingress for the following services: Transaction, Onboarding and Console. Below are the configurations for commonly used controllers.
+The Midaz Helm Chart supports different Ingress Controllers for exposing services. You can enable Ingress for the following services: Transaction, Onboarding, and Console. Below are configurations for commonly used controllers.
 
-- **Note:** Before configuring Ingress, ensure that you have an Ingress Controller installed in your cluster. The Ingress Controller is responsible for managing external access to the services. Examples of popular Ingress Controllers include NGINX, AWS ALB, and Traefik.
+**Note:** Before configuring Ingress, ensure that you have an Ingress Controller installed in your cluster. The Ingress Controller manages external access to services. Examples include NGINX, AWS ALB, and Traefik.
 
 ### NGINX Ingress Controller
 To use the **NGINX Ingress Controller**, configure the `values.yaml` as follows:
@@ -40,10 +40,9 @@ To use the **NGINX Ingress Controller**, configure the `values.yaml` as follows:
 ingress:
   enabled: true
   className: "nginx"
-  // The `annotations` field is used to add custom metadata to the Nginx resource.
-  // Annotations are key-value pairs that can be used to attach arbitrary non-identifying metadata to objects.
-  // These annotations can be used by various tools and libraries to augment the behavior of the Nginx resource.
-  // See more https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
+  # The `annotations` field adds custom metadata to the Nginx resource.
+  # Annotations are key-value pairs that augment the behavior of the Nginx resource.
+  # See https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
   annotations: {}
   hosts:
     - host: midaz.example.com
@@ -103,9 +102,9 @@ ingress:
 ```
 
 
-## Midaz Components:
+## Midaz Components
 
-The Midaz system runs on four distinct layers that work together, distributed in segregated workloads:
+Midaz deploys the following core services:
 
 ### Onboarding:
 
@@ -248,7 +247,7 @@ transaction:
 
 ### Ledger (Unified Service)
 
-The `ledger` service is a unified service that combines the functionality of both onboarding and transaction modules into a single deployment. This service is recommended for new installations and will become mandatory in future releases.
+The `ledger` service combines onboarding and transaction modules into a single deployment. Use this service for new installations. It will become mandatory in future releases.
 
 > **Important:** When `ledger.enabled` is set to `true`, the onboarding and transaction services are automatically disabled (unless `migration.allowAllServices` is set to `true` for testing purposes).
 
@@ -432,7 +431,7 @@ crm:
 
 ## Observability
 
-We are using [Grafana Docker OpenTelemetry LGTM](https://github.com/grafana/docker-otel-lgtm) for observability in this project. This component helps in collecting, processing, and exporting telemetry data like traces and metrics.
+Midaz uses [Grafana Docker OpenTelemetry LGTM](https://github.com/grafana/docker-otel-lgtm) for observability. This component collects, processes, and exports telemetry data such as traces and metrics.
 
 You can access the observability dashboard in two ways:
 
@@ -475,9 +474,9 @@ grafana:
   enabled: false
 ```
 
-## Dependencies:
+## Dependencies
 
-This Chart has the following dependencies for the project's default installation. All dependencies are enabled by default.
+This chart includes the following dependencies for the default installation. All dependencies are enabled by default.
 
 ### Valkey
 

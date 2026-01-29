@@ -39,7 +39,7 @@ This change affects the following components:
 ***Note:*** See the [onboarding configmap](https://github.com/LerianStudio/helm/blob/main/charts/midaz/templates/onboarding/configmap.yaml) and [transaction configmap](https://github.com/LerianStudio/helm/blob/main/charts/midaz/templates/transaction/configmap.yaml) templates for more details.
 
 
-⚠️ Make sure to remove REDIS_PORT from your environment and update REDIS_HOST accordingly to avoid connectivity issues.
+**Warning:** Remove `REDIS_PORT` from your environment and update `REDIS_HOST` accordingly to avoid connectivity issues.
 
 ### 2. App Bump Version
 

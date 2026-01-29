@@ -2,28 +2,27 @@
 
 ![banner](image/README/midaz-banner.png)
 
-
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-Lerian%20Studio-%237289da.svg?logo=discord)](https://discord.gg/DnhqKwkGv3)
 
 ### Midaz Helm Chart
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/deploy-midaz-using-helm).
+See the [official documentation](https://docs.lerian.studio/en/midaz/deploy-midaz-using-helm) for deployment guides.
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/midaz).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/midaz).
 
 #### Application Version Mapping
 
 | Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `5.3.0` | 3.5.1 | 3.5.1 | 3.5.1 | 3.5.1 |
+| `5.4.0-beta.1` | 3.5.1 | 3.5.1 | 3.5.1 | 3.5.1 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/auth-identity).
+See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/access-manager) for details.
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/plugin-access-manager).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-access-manager).
 
 #### Application Version Mapping
 
@@ -35,9 +34,9 @@
 
 ### Plugin CRM Helm Chart
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/crm).
+See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/crm/crm-overview) for details.
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/plugin-crm).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-crm).
 
 #### Application Version Mapping
 
@@ -48,9 +47,9 @@
 
 ### Plugin Fees Helm Chart
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/fee-engine).
+See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/fees/fees-overview) for details.
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/plugin-fees).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-fees).
 
 #### Application Version Mapping
 
@@ -61,9 +60,9 @@
 
 ### Reporter
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/en/reporter#reporter).
+See the [official documentation](https://docs.lerian.studio/en/reporter) for details.
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/reporter).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/reporter).
 
 #### Application Version Mapping
 
@@ -74,9 +73,9 @@
 
 ### Plugin BR Pix Direct JD
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/br-pix-direct-jd).
+See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/direct-pix-jd) for details.
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/plugin-br-pix-direct-jd).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-direct-jd).
 
 #### Application Version Mapping
 
@@ -87,22 +86,22 @@
 
 ### Plugin BR Pix Indirect BTG
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/indirect-pix-btg#indirect-pix-btg).
+See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/indirect-pix-btg) for details.
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/plugin-br-pix-indirect-btg).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-indirect-btg).
 
 #### Application Version Mapping
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `1.2.0` | 1.1.2 | 1.0.0 | 1.0.0 | 1.1.1 |
+| `1.2.1-beta.1` | 1.1.2 | 1.0.0 | 1.0.0 | 1.1.3 |
 -----------------
 
 ### Fetcher
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/en/fetcher#fetcher).
+See the [official documentation](https://docs.lerian.studio/en/fetcher) for details.
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/fetcher).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/fetcher).
 
 #### Application Version Mapping
 
@@ -126,7 +125,7 @@
 
 ### Otel Collector Lerian
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/otel-collector-lerian).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/otel-collector-lerian).
 
 #### Application Version Mapping
 
@@ -137,9 +136,9 @@
 
 ### Product Console
 
-📚 For more details, check out the [official documentation](https://docs.lerian.studio/docs/product-console).
+See the [official documentation](https://docs.lerian.studio/en/console) for details.
 
-🛠️ Looking for implementation and configuration details? See the [README](https://charts.lerian.studio/charts/product-console).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/product-console).
 
 #### Application Version Mapping
 

@@ -33,7 +33,7 @@ Starting from version 5.0, the **Ledger service is available** (`ledger.enabled:
 
 **Recommendation for new workloads:**
 
-> **For new installations, we strongly recommend enabling the Ledger service and disabling the separate onboarding and transaction services.** The unified Ledger service is the future architecture of Midaz and provides a simpler deployment model.
+> **For new installations, enable the Ledger service and disable the separate onboarding and transaction services.** The unified Ledger service is the future architecture of Midaz and provides a simpler deployment model.
 
 ```yaml
 ledger:
@@ -124,7 +124,7 @@ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm \
 
 A new `ledger` service is now available that combines the functionality of both onboarding and transaction modules into a single deployment. This is an **optional** feature - existing onboarding and transaction services continue to work as before.
 
-> **Important:** The separate onboarding and transaction services will become **legacy** in a future release, and the unified ledger service will become **mandatory**. We strongly recommend planning your migration to the ledger service as soon as possible.
+> **Important:** The separate onboarding and transaction services will become **legacy** in a future release, and the unified ledger service will become **mandatory**. Plan your migration to the ledger service.
 
 **Key characteristics:**
 - Single HTTP endpoint (port 3000 by default)

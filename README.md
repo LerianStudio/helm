@@ -107,7 +107,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `1.1.0-beta.2` | 1.0.0 | 1.0.0 |
+| `1.1.0` | 1.0.0 | 1.0.0 |
 -----------------
 
 ### Matcher
@@ -120,7 +120,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Matcher Version |
 | :---: | :---: |
-| `1.1.0-beta.1` | 1.0.0 |
+| `1.1.0` | 1.0.0 |
 -----------------
 
 ### Tracer
@@ -133,7 +133,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Tracer Version |
 | :---: | :---: |
-| `1.0.0-beta.1` | 1.0.0 |
+| `1.0.0` | 1.0.0 |
 -----------------
 
 ### Otel Collector Lerian
@@ -157,5 +157,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `1.1.0-beta.1` | 1.0.0 |
+| `1.1.0` | 1.0.0 |
 -----------------

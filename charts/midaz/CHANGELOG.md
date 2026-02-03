@@ -1,5 +1,16 @@
 # Midaz Changelog
 
+## [5.5.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.5.1)
+
+- Fixes:
+  - Adjusted midaz-crm repository image.
+
+Contributors: @gui.rodrigues
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.5.0...midaz-v5.5.1)
+
+---
+
 ## [5.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.5.0)
 
 - Fixes:

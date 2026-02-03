@@ -87,7 +87,7 @@ spec:
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.ledger.service.port | default 3000 }}
+              containerPort: {{ .Values.ledger.service.port | default 3002 }}
               protocol: TCP
           livenessProbe:
             httpGet:

@@ -545,7 +545,7 @@ ledger:
     # -- Kubernetes service type
     type: ClusterIP
     # -- Port for the HTTP API (all APIs on single port)
-    port: 3000
+    port: 3002
     annotations: {}
 
   ingress:

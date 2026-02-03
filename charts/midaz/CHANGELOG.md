@@ -1,5 +1,16 @@
 # Midaz Changelog
 
+## [5.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.5.0)
+
+- Fixes:
+  - Adjusted ledger component port from 3000 to 3002.
+
+Contributors: @gui.rodrigues, @guimoreirar
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.4.0...midaz-v5.5.0)
+
+---
+
 ## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.4.0)
 
 - Improvements:

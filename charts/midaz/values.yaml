@@ -709,7 +709,7 @@ crm:
 
   image:
     # -- Repository for the CRM service container image
-    repository: ghcr.io/lerianstudio/midaz-crm
+    repository: lerianstudio/midaz-crm
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment

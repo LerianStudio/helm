@@ -46,4 +46,5 @@ jobs:
             doc
             product-console
             fetcher
+            flowker
           requireScope: true

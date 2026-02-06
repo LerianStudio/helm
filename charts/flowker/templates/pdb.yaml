@@ -1,0 +1,23 @@
+{{- if and .Values.flowker.enabled .Values.flowker.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "flowker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name) | nindent 4 }}
+  {{- with .Values.flowker.pdb.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.flowker.pdb.minAvailable }}
+  minAvailable: {{ .Values.flowker.pdb.minAvailable }}
+  {{- end }}
+  {{- if .Values.flowker.pdb.maxUnavailable }}
+  maxUnavailable: {{ .Values.flowker.pdb.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "flowker.selectorLabels" (dict "context" . "name" .Values.flowker.name) | nindent 6 }}
+{{- end }}

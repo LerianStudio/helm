@@ -1,0 +1,33 @@
+{{- if and .Values.flowker.enabled .Values.flowker.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "flowker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "flowker.fullname" . }}
+  minReplicas: {{ .Values.flowker.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.flowker.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.flowker.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.flowker.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.flowker.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.flowker.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

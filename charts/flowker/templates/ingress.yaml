@@ -1,0 +1,42 @@
+{{- if and .Values.flowker.enabled .Values.flowker.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "flowker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name) | nindent 4 }}
+  {{- with .Values.flowker.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.flowker.ingress.className }}
+  ingressClassName: {{ .Values.flowker.ingress.className }}
+  {{- end }}
+  {{- if .Values.flowker.ingress.tls }}
+  tls:
+    {{- range .Values.flowker.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.flowker.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "flowker.fullname" $ }}
+                port:
+                  number: {{ $.Values.flowker.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}

@@ -1,3 +1,30 @@
+# Reporter Changelog
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v1.0.0)
+
+- **Features:**
+  - Add configurable secret for KEDA TriggerAuthentication.
+  - Support external KEDA operator.
+  - Rename Smart Templates to Reporter and enhance RabbitMQ configuration.
+
+- **Fixes:**
+  - Update reporter-manager and reporter-worker to version 1.0.0.
+  - Use RABBITMQ_URI for KEDA scaler host.
+  - Align NextAuth URLs with reporter UI base URL.
+
+- **Improvements:**
+  - Remove default regcred from imagePullSecrets configuration.
+  - Update SeaweedFS filer port from 9000 to 8888.
+  - Bump appVersion to 4.0.0 and update SeaweedFS configuration.
+  - Standardize environment variable naming and update service URLs.
+  - Update frontend service name from reporter-frontend to reporter-ui.
+
+Contributors: @ferr3ira.gabriel, @gauchito, @gui.rodrigues, @guimoreirar.
+
+[View all changes](https://github.com/LerianStudio/helm/commits/reporter-v1.0.0)
+
+---
+
 ## [reporter-1.2.0-beta.4] - 2025-07-08
 
 This release introduces significant enhancements to security and configuration management, along with improvements in network traffic handling and system reliability.
@@ -447,3 +474,4 @@ This changelog highlights the new feature that users will directly benefit from,
 ### Bug Fixes
 
 * generate multiples CHANGELOG's ([3f60787](https://github.com/LerianStudio/helm/commit/3f607875b618db474e4055c44a2cffd8216f4261))
+

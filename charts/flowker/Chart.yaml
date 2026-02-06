@@ -1,6 +1,7 @@
 apiVersion: v2
 name: flowker-helm
-description: A Helm chart for Flowker - Workflow orchestration platform for financial validation
+description: A Helm chart for Flowker - Workflow orchestration platform for
+  financial validation
 type: application
 home: https://github.com/LerianStudio/flowker
 sources:
@@ -8,7 +9,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 1.0.0
+version: 1.0.0-beta.1
 appVersion: "1.0.0"
 keywords:
   - flowker

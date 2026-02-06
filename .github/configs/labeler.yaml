@@ -49,3 +49,7 @@ pipe:
 doc:
   - changed-files:
       - any-glob-to-any-file: README.md
+
+flowker:
+  - changed-files:
+      - any-glob-to-any-file: charts/flowker/**

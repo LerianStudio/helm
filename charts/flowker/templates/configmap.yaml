@@ -1,0 +1,62 @@
+{{- if .Values.flowker.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "flowker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name) | nindent 4 }}
+data:
+  # Server
+  ENV_NAME: {{ .Values.flowker.configmap.ENV_NAME | default "development" | quote }}
+  VERSION: {{ .Values.flowker.configmap.VERSION | default "v1.0.0" | quote }}
+  SERVER_PORT: {{ .Values.flowker.configmap.SERVER_PORT | default "4000" | quote }}
+  SERVER_ADDRESS: {{ .Values.flowker.configmap.SERVER_ADDRESS | default ":4000" | quote }}
+
+  # Logging
+  LOG_LEVEL: {{ .Values.flowker.configmap.LOG_LEVEL | default "info" | quote }}
+
+  # Authentication
+  API_KEY_ENABLED: {{ .Values.flowker.configmap.API_KEY_ENABLED | default "false" | quote }}
+
+  # CORS
+  CORS_ALLOWED_ORIGINS: {{ .Values.flowker.configmap.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+
+  # MongoDB
+  MONGO_URI: {{ .Values.flowker.configmap.MONGO_URI | default "mongodb" | quote }}
+  MONGO_HOST: {{ .Values.flowker.configmap.MONGO_HOST | default "flowker-mongodb" | quote }}
+  MONGO_PORT: {{ .Values.flowker.configmap.MONGO_PORT | default "27017" | quote }}
+  MONGO_DB_NAME: {{ .Values.flowker.configmap.MONGO_DB_NAME | default "flowker" | quote }}
+  MONGO_APP_USER: {{ .Values.flowker.configmap.MONGO_APP_USER | default "flowker" | quote }}
+  MONGO_MAX_POOL_SIZE: {{ .Values.flowker.configmap.MONGO_MAX_POOL_SIZE | default "10" | quote }}
+  MONGO_MIN_POOL_SIZE: {{ .Values.flowker.configmap.MONGO_MIN_POOL_SIZE | default "5" | quote }}
+  MONGO_MAX_IDLE_TIME_MS: {{ .Values.flowker.configmap.MONGO_MAX_IDLE_TIME_MS | default "60000" | quote }}
+  MONGO_CONNECT_TIMEOUT_MS: {{ .Values.flowker.configmap.MONGO_CONNECT_TIMEOUT_MS | default "10000" | quote }}
+  MONGO_SOCKET_TIMEOUT_MS: {{ .Values.flowker.configmap.MONGO_SOCKET_TIMEOUT_MS | default "30000" | quote }}
+
+  # Swagger
+  SWAGGER_TITLE: {{ .Values.flowker.configmap.SWAGGER_TITLE | default "Flowker API" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.flowker.configmap.SWAGGER_DESCRIPTION | default "Workflow orchestration platform for financial validation" | quote }}
+  SWAGGER_VERSION: {{ .Values.flowker.configmap.SWAGGER_VERSION | default "v1.0.0" | quote }}
+  SWAGGER_HOST: {{ .Values.flowker.configmap.SWAGGER_HOST | default ":4000" | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.flowker.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.flowker.configmap.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_LEFT_DELIM: {{ .Values.flowker.configmap.SWAGGER_LEFT_DELIM | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIM: {{ .Values.flowker.configmap.SWAGGER_RIGHT_DELIM | default "}}" | quote }}
+
+  # OpenTelemetry
+  ENABLE_TELEMETRY: {{ .Values.flowker.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.flowker.configmap.OTEL_RESOURCE_SERVICE_NAME | default "flowker" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.flowker.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/flowker" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.flowker.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "v1.0.0" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.flowker.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.flowker.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.flowker.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.flowker.extraEnvVars }}
+  {{- range $key, $value := . }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

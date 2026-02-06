@@ -12,12 +12,6 @@ Expand the name of the chart and plugin worker.
 {{- default (default .Values.worker.name) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{/*
-Expand the name of the chart and plugin frontend.
-*/}}
-{{- define "plugin-frontend.name" -}}
-{{- default (default .Values.frontend.name) | trunc 63 | trimSuffix "-" }}
-{{- end }}
 
 {{/*
 Create chart name and version as used by the chart label for plugin manager.
@@ -33,12 +27,6 @@ Create chart name and version as used by the chart label for plugin worker.
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{/*
-Create chart name and version as used by the chart label for plugin frontend.
-*/}}
-{{- define "plugin-frontend.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{- end }}
 
 {{/*
 Create a default fully qualified app name manager.
@@ -58,14 +46,6 @@ If release name contains chart name it will be used as a full name.
 {{- default (default .Values.worker.name) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{/*
-Create a default fully qualified app name frontend.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
-{{- define "plugin-frontend.fullname" -}}
-{{- default (default .Values.frontend.name) | trunc 63 | trimSuffix "-" }}
-{{- end }}
 
 {{/*
 Create app version.
@@ -94,15 +74,6 @@ app.kubernetes.io/name: {{ include "plugin-worker.name" .context }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
-{{/*
-frontend Selector labels
-*/}}
-{{- define "plugin-frontend.selectorLabels" -}}
-{{- if .name -}}
-app.kubernetes.io/name: {{ include "plugin-frontend.name" .context }}
-{{- end }}
-app.kubernetes.io/instance: {{ .context.Release.Name }}
-{{- end }}
 
 {{/*
 manager Common labels
@@ -124,15 +95,6 @@ app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
-{{/*
-frontend Common labels
-*/}}
-{{- define "plugin-frontend.labels" -}}
-helm.sh/chart: {{ include "plugin-frontend.chart" .context }}
-{{ include "plugin-frontend.selectorLabels" (dict "context" .context "name" .name) }}
-app.kubernetes.io/version: {{ include "plugin.version" .context }}
-app.kubernetes.io/managed-by: {{ .context.Release.Service }}
-{{- end }}
 
 {{/*
 Manager dataSourceName
@@ -163,16 +125,6 @@ Create the name of the worker service account to use
 {{- end }}
 {{- end }}
 
-{{/*
-Create the name of the frontend service account to use
-*/}}
-{{- define "plugin-frontend.serviceAccountName" -}}
-{{- if .Values.frontend.serviceAccount.create }}
-{{- default (include "plugin-frontend.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.frontend.serviceAccount.name }}
-{{- end }}
-{{- end }}
 
 {{/*
 Expand the namespace of the release.

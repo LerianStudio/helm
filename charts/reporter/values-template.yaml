@@ -5,6 +5,12 @@ manager:
     PLUGIN_AUTH_ENABLED: "false"
   useExistingSecret: false
   existingSecretName: ""
+  clusterRole:
+    create: true
+
+worker:
+  useExistingSecret: false
+  existingSecretName: ""
 
 common:
   configmap:
@@ -52,10 +58,9 @@ common:
     DATASOURCE_ONBOARDING_TYPE: postgresql
     DATASOURCE_ONBOARDING_SSLMODE: disable
 
-
-
 secrets:
   MONGO_PASSWORD: lerian
+  REDIS_PASSWORD: lerian
   RABBITMQ_DEFAULT_USER: plugin
   RABBITMQ_DEFAULT_PASS: Lerian@123
   DATASOURCE_ONBOARDING_PASSWORD: lerian
@@ -69,6 +74,9 @@ keda:
   enabled: true
 
 mongodb:
+  enabled: true
+
+valkey:
   enabled: true
 
 externalRabbitmqDefinitions:

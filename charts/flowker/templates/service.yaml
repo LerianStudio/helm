@@ -1,0 +1,22 @@
+{{- if .Values.flowker.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flowker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name) | nindent 4 }}
+  {{- with .Values.flowker.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.flowker.service.type }}
+  ports:
+    - port: {{ .Values.flowker.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "flowker.selectorLabels" (dict "context" . "name" .Values.flowker.name) | nindent 4 }}
+{{- end }}

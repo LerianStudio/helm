@@ -123,6 +123,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.1.0` | 1.0.0 |
 -----------------
 
+### Flowker
+
+For more details, check out the [official documentation](https://docs.lerian.studio/en/flowker).
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/flowker).
+
+#### Application Version Mapping
+
+| Chart Version | Flowker Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.0 |
+-----------------
+
 ### Tracer
 
 For more details, check out the [official documentation](https://docs.lerian.studio/en/tracer).

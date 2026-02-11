@@ -9,7 +9,7 @@ data:
   ENV_NAME: {{ .Values.outbound.configmap.ENV_NAME | default "development" | quote }}
 
   # APP
-  VERSION: {{ .Values.outbound.configmap.VERSION | default "v1.0.0" | quote }}
+  VERSION: {{ .Values.outbound.image.tag | default "v1.0.0" | quote }}
   WORKER_PORT: {{ .Values.outbound.configmap.WORKER_PORT | default "4015" | quote }}
 
 
@@ -79,7 +79,7 @@ data:
   # OPEN TELEMETRY (WITH MIDAZ LGTM SERVICE)
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.outbound.configmap.OTEL_RESOURCE_SERVICE_NAME | default "webhook-outbound-worker" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.outbound.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-indirect-btg/components/worker/webhook/outbound" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.outbound.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "v1.0.0" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.outbound.image.tag | default "v1.0.0" | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.outbound.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.outbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.outbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}

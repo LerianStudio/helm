@@ -6,7 +6,7 @@ metadata:
     {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 4 }}
 data:
   ENV_NAME: {{ .Values.reconciliation.configmap.ENV_NAME | default "development" | quote }}
-  VERSION: {{ .Values.reconciliation.configmap.VERSION | default "1.0.0" | quote }}
+  VERSION: {{ .Values.reconciliation.image.tag | default "v1.0.0" | quote }}
   LOG_LEVEL: {{ .Values.reconciliation.configmap.LOG_LEVEL | default "info" | quote }}
   WORKER_PORT: {{ .Values.reconciliation.configmap.WORKER_PORT | default "4017" | quote }}
 
@@ -109,7 +109,7 @@ data:
   # Observability Configuration
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.reconciliation.configmap.OTEL_RESOURCE_SERVICE_NAME | default "reconciliation-worker" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.reconciliation.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-indirect-btg/components/worker/reconciliation" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.reconciliation.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "1.0.0" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.reconciliation.image.tag | default "1.0.0" | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.reconciliation.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.reconciliation.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.reconciliation.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}

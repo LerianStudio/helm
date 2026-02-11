@@ -78,7 +78,7 @@ data:
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.pix.configmap.SWAGGER_TITLE | default "Plugin BR Pix Indirect BTG" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.pix.configmap.SWAGGER_DESCRIPTION | default "Documentation Plugin PIX BTG" | quote }}
-  SWAGGER_VERSION: {{ .Values.pix.configmap.SWAGGER_VERSION | default "v1.0.0" | quote }}
+  SWAGGER_VERSION: {{ .Values.pix.image.tag | default "v1.0.0" | quote }}
   SWAGGER_HOST: {{ .Values.pix.configmap.SWAGGER_HOST | default ":4000" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.pix.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.pix.configmap.SWAGGER_SCHEMES | default "http" | quote }}

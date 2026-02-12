@@ -94,7 +94,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `1.3.3` | 1.2.3 | 1.0.0 | 1.0.0 | 1.2.0 |
+| `1.3.4` | 1.2.4 | 1.0.0 | 1.0.0 | 1.2.0 |
 -----------------
 
 ### Fetcher

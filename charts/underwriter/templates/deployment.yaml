@@ -1,0 +1,94 @@
+{{- if .Values.underwriter.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "underwriter.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "underwriter.labels" (dict "context" . "component" .Values.underwriter.name "name" .Values.underwriter.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.underwriter.revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ .Values.underwriter.deploymentUpdate.type }}
+    {{- if eq .Values.underwriter.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.underwriter.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.underwriter.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not .Values.underwriter.autoscaling.enabled }}
+  replicas: {{ .Values.underwriter.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "underwriter.selectorLabels" (dict "context" . "name" .Values.underwriter.name) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.underwriter.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "underwriter.labels" (dict "context" . "component" .Values.underwriter.name "name" .Values.underwriter.name) | nindent 8 }}
+    spec:
+      {{- with .Values.underwriter.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "underwriter.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.underwriter.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "underwriter.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.underwriter.securityContext | nindent 12 }}
+          image: "{{ .Values.underwriter.image.repository }}:{{ .Values.underwriter.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.underwriter.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.underwriter.useExistingSecret }}{{ .Values.underwriter.existingSecretName }}{{ else }}{{ include "underwriter.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "underwriter.fullname" . }}
+          {{- if eq (toString .Values.underwriter.configmap.ENABLE_TELEMETRY) "true" }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.underwriter.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.underwriter.resources | nindent 12 }}
+      {{- with .Values.underwriter.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.underwriter.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.underwriter.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

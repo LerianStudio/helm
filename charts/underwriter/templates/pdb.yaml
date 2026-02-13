@@ -1,0 +1,22 @@
+{{- if and .Values.underwriter.enabled .Values.underwriter.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "underwriter.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "underwriter.labels" (dict "context" . "component" .Values.underwriter.name "name" .Values.underwriter.name) | nindent 4 }}
+  {{- with .Values.underwriter.pdb.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.underwriter.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.underwriter.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "underwriter.selectorLabels" (dict "context" . "name" .Values.underwriter.name) | nindent 6 }}
+{{- end }}

@@ -1,0 +1,33 @@
+{{- if and .Values.underwriter.enabled .Values.underwriter.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "underwriter.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "underwriter.labels" (dict "context" . "component" .Values.underwriter.name "name" .Values.underwriter.name) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "underwriter.fullname" . }}
+  minReplicas: {{ .Values.underwriter.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.underwriter.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.underwriter.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.underwriter.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.underwriter.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.underwriter.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

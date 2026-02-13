@@ -53,3 +53,7 @@ doc:
 flowker:
   - changed-files:
       - any-glob-to-any-file: charts/flowker/**
+
+underwriter:
+  - changed-files:
+      - any-glob-to-any-file: charts/underwriter/**

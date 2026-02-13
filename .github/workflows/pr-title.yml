@@ -47,4 +47,6 @@ jobs:
             product-console
             fetcher
             flowker
+            underwriter
+            new
           requireScope: true

@@ -16,7 +16,7 @@
 
 | Chart Version | Console Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: |
-| `4.5.0` | 3.4.8 | 3.4.9 | 3.4.9 |
+| `4.5.1` | 3.4.8 | 3.4.9 | 3.4.9 |
 -----------------
 
 ### Plugin Access Manager Helm Chart

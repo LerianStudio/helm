@@ -13,7 +13,7 @@ fees:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.0.7"
+    tag: "3.0.8"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: regcred

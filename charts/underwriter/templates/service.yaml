@@ -1,0 +1,22 @@
+{{- if .Values.underwriter.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "underwriter.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "underwriter.labels" (dict "context" . "component" .Values.underwriter.name "name" .Values.underwriter.name) | nindent 4 }}
+  {{- with .Values.underwriter.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.underwriter.service.type }}
+  ports:
+    - port: {{ .Values.underwriter.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "underwriter.selectorLabels" (dict "context" . "name" .Values.underwriter.name) | nindent 4 }}
+{{- end }}

@@ -1,0 +1,56 @@
+
+=======================================================
+  Underwriter Helm Chart
+=======================================================
+
+Chart: {{ .Chart.Name }}
+Version: {{ .Chart.Version }}
+App Version: {{ .Chart.AppVersion }}
+
+Deployed Components:
+  - Underwriter Service (Risk Assessment API)
+
+{{- if .Values.underwriter.enabled }}
+
+=======================================================
+  Underwriter Service Access
+=======================================================
+
+{{- if .Values.underwriter.ingress.enabled }}
+  Ingress is enabled. Access the service at:
+  {{- range .Values.underwriter.ingress.hosts }}
+    http{{ if $.Values.underwriter.ingress.tls }}s{{ end }}://{{ .host }}
+  {{- end }}
+
+{{- else if contains "NodePort" .Values.underwriter.service.type }}
+  Get the application URL by running these commands:
+    export NODE_PORT=$(kubectl get --namespace {{ include "global.namespace" . }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "underwriter.fullname" . }})
+    export NODE_IP=$(kubectl get nodes --namespace {{ include "global.namespace" . }} -o jsonpath="{.items[0].status.addresses[0].address}")
+    echo http://$NODE_IP:$NODE_PORT
+
+{{- else if contains "LoadBalancer" .Values.underwriter.service.type }}
+  Get the application URL by running these commands:
+    NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+    export SERVICE_IP=$(kubectl get svc --namespace {{ include "global.namespace" . }} {{ include "underwriter.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+    echo http://$SERVICE_IP:{{ .Values.underwriter.service.port }}
+
+{{- else if contains "ClusterIP" .Values.underwriter.service.type }}
+  The service is accessible within the cluster at:
+    {{ include "underwriter.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ .Values.underwriter.service.port }}
+
+  To access it locally, run:
+    kubectl port-forward --namespace {{ include "global.namespace" . }} svc/{{ include "underwriter.fullname" . }} {{ .Values.underwriter.service.port }}:{{ .Values.underwriter.service.port }}
+    echo "Visit http://127.0.0.1:{{ .Values.underwriter.service.port }}"
+{{- end }}
+
+  Health check: GET /health
+  Readiness:    GET /ready
+
+{{- end }}
+
+=======================================================
+  Documentation
+=======================================================
+
+  For more information, visit:
+    https://docs.lerian.studio

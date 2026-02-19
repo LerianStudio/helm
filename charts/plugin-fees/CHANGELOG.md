@@ -1,3 +1,16 @@
+# Plugin-fees Changelog
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v4.1.0)
+
+- Fixes:
+  - Updated plugin-fees to version 3.0.7 to address existing issues.
+
+Contributors:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v4.0.0...plugin-fees-v4.1.0)
+
+---
+
 ## [plugin-fees-1.3.0] - 2025-06-20
 
 This release focuses on enhancing the configuration and database components, leading to a more streamlined setup process and improved system performance. Users can expect a more efficient and reliable experience.
@@ -410,3 +423,4 @@ This changelog presents the updates in a user-friendly manner, highlighting the 
 * update mongodb ([858c934](https://github.com/LerianStudio/helm/commit/858c93496a5e45fcb84389614536d63ca6b84a02))
 * **doc:** update nginx ingress config ([#35](https://github.com/LerianStudio/helm/issues/35)) ([d9763ea](https://github.com/LerianStudio/helm/commit/d9763ea4c2139c7d5f020d71422a634f37e15172))
 * values ([b1dc8f7](https://github.com/LerianStudio/helm/commit/b1dc8f7105ab3aa0bbed2549525f013875087b7d))
+

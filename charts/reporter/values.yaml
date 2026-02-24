@@ -31,7 +31,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.0.0"
+    tag: "1.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -169,7 +169,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.0.0"
+    tag: "1.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -248,7 +248,6 @@ worker:
             queueLength: "1"
             protocol: "amqp"
             vhost: "/"
-
 common:
   configmap:
     # WORKER
@@ -323,7 +322,6 @@ secrets:
   #DATASOURCE_EXTERNAL_PASSWORD: db_password
   OBJECT_STORAGE_ACCESS_KEY_ID: "any"
   OBJECT_STORAGE_SECRET_KEY: "any"
-
 seaweedfs:
   enabled: true
   master:
@@ -382,14 +380,11 @@ seaweedfs:
     enabled: true
     port: 8333
     grpcPort: 18333
-
     # Allow empty access key for development (disable auth)
     # In production, use Kubernetes secrets for credentials
     allowEmptyAccessKey: true
-
     # Enable path-style URLs (required for most S3 clients with non-AWS endpoints)
     enableAuth: false
-
     resources:
       limits:
         cpu: 200m
@@ -397,10 +392,8 @@ seaweedfs:
       requests:
         cpu: 100m
         memory: 128Mi
-
     logs:
       type: "emptyDir"
-
 # KEDA configuration
 keda:
   enabled: true

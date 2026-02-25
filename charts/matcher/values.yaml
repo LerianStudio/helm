@@ -220,6 +220,7 @@ matcher:
     POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
     POSTGRES_CONN_MAX_IDLE_TIME_MINS: "5"
     POSTGRES_CONNECT_TIMEOUT_SEC: "10"
+    POSTGRES_QUERY_TIMEOUT_SEC: "30"
     MIGRATIONS_PATH: "migrations"
 
     # PostgreSQL Replica (optional - for CQRS read scaling)
@@ -257,6 +258,8 @@ matcher:
 
     # Swagger Documentation
     SWAGGER_ENABLED: "false"
+    SWAGGER_HOST: ""
+    SWAGGER_SCHEMES: "https"
 
     # OpenTelemetry
     # -- Enable telemetry collection (when true, OTEL_EXPORTER_OTLP_ENDPOINT is overridden with HOST_IP:4317)
@@ -276,12 +279,15 @@ matcher:
     RATE_LIMIT_EXPIRY_SEC: "60"
     EXPORT_RATE_LIMIT_MAX: "10"
     EXPORT_RATE_LIMIT_EXPIRY_SEC: "60"
+    DISPATCH_RATE_LIMIT_MAX: "50"
+    DISPATCH_RATE_LIMIT_EXPIRY_SEC: "60"
 
     # Database Metrics
     DB_METRICS_INTERVAL_SEC: "15"
 
     # Idempotency & Deduplication
     IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
+    IDEMPOTENCY_SUCCESS_TTL_HOURS: "168"
     DEDUPE_TTL_SEC: "3600"
 
     # Object Storage (S3-compatible)
@@ -294,6 +300,35 @@ matcher:
     EXPORT_WORKER_ENABLED: "true"
     EXPORT_WORKER_POLL_INTERVAL_SEC: "5"
     EXPORT_WORKER_PAGE_SIZE: "1000"
+    EXPORT_PRESIGN_EXPIRY_SEC: "3600"
+
+    # Webhook Configuration
+    WEBHOOK_TIMEOUT_SEC: "30"
+
+    # Callback Rate Limiting
+    CALLBACK_RATE_LIMIT_PER_MIN: "60"
+
+    # Cleanup Worker
+    CLEANUP_WORKER_ENABLED: "true"
+    CLEANUP_WORKER_INTERVAL_SEC: "3600"
+    CLEANUP_WORKER_BATCH_SIZE: "100"
+    CLEANUP_WORKER_GRACE_PERIOD_SEC: "3600"
+
+    # Scheduler
+    SCHEDULER_INTERVAL_SEC: "60"
+
+    # Archival Worker (disabled by default)
+    ARCHIVAL_WORKER_ENABLED: "false"
+    # ARCHIVAL_WORKER_INTERVAL_HOURS: "24"
+    # ARCHIVAL_HOT_RETENTION_DAYS: "90"
+    # ARCHIVAL_WARM_RETENTION_MONTHS: "24"
+    # ARCHIVAL_COLD_RETENTION_MONTHS: "84"
+    # ARCHIVAL_BATCH_SIZE: "5000"
+    # ARCHIVAL_STORAGE_BUCKET: ""
+    # ARCHIVAL_STORAGE_PREFIX: "archives/audit-logs"
+    # ARCHIVAL_STORAGE_CLASS: "GLACIER"
+    # ARCHIVAL_PARTITION_LOOKAHEAD: "3"
+    # ARCHIVAL_PRESIGN_EXPIRY_SEC: "3600"
 
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml

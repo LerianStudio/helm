@@ -36,6 +36,7 @@ data:
   POSTGRES_CONN_MAX_LIFETIME_MINS: {{ .Values.matcher.configmap.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
   POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ .Values.matcher.configmap.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
   POSTGRES_CONNECT_TIMEOUT_SEC: {{ .Values.matcher.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
+  POSTGRES_QUERY_TIMEOUT_SEC: {{ .Values.matcher.configmap.POSTGRES_QUERY_TIMEOUT_SEC | default "30" | quote }}
   MIGRATIONS_PATH: {{ .Values.matcher.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
 
   # PostgreSQL Replica
@@ -58,6 +59,12 @@ data:
   REDIS_WRITE_TIMEOUT_MS: {{ .Values.matcher.configmap.REDIS_WRITE_TIMEOUT_MS | default "3000" | quote }}
   REDIS_DIAL_TIMEOUT_MS: {{ .Values.matcher.configmap.REDIS_DIAL_TIMEOUT_MS | default "5000" | quote }}
   REDIS_TLS: {{ .Values.matcher.configmap.REDIS_TLS | default "false" | quote }}
+  {{- if .Values.matcher.configmap.REDIS_MASTER_NAME }}
+  REDIS_MASTER_NAME: {{ .Values.matcher.configmap.REDIS_MASTER_NAME | quote }}
+  {{- end }}
+  {{- if .Values.matcher.configmap.REDIS_CA_CERT }}
+  REDIS_CA_CERT: {{ .Values.matcher.configmap.REDIS_CA_CERT | quote }}
+  {{- end }}
 
   # RabbitMQ Configuration
   RABBITMQ_URI: {{ .Values.matcher.configmap.RABBITMQ_URI | default "amqp" | quote }}
@@ -73,6 +80,8 @@ data:
 
   # Swagger Documentation
   SWAGGER_ENABLED: {{ .Values.matcher.configmap.SWAGGER_ENABLED | default "false" | quote }}
+  SWAGGER_HOST: {{ .Values.matcher.configmap.SWAGGER_HOST | default "" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.matcher.configmap.SWAGGER_SCHEMES | default "https" | quote }}
 
   # OpenTelemetry
   ENABLE_TELEMETRY: {{ .Values.matcher.configmap.ENABLE_TELEMETRY | default "false" | quote }}
@@ -88,12 +97,15 @@ data:
   RATE_LIMIT_EXPIRY_SEC: {{ .Values.matcher.configmap.RATE_LIMIT_EXPIRY_SEC | default "60" | quote }}
   EXPORT_RATE_LIMIT_MAX: {{ .Values.matcher.configmap.EXPORT_RATE_LIMIT_MAX | default "10" | quote }}
   EXPORT_RATE_LIMIT_EXPIRY_SEC: {{ .Values.matcher.configmap.EXPORT_RATE_LIMIT_EXPIRY_SEC | default "60" | quote }}
+  DISPATCH_RATE_LIMIT_MAX: {{ .Values.matcher.configmap.DISPATCH_RATE_LIMIT_MAX | default "50" | quote }}
+  DISPATCH_RATE_LIMIT_EXPIRY_SEC: {{ .Values.matcher.configmap.DISPATCH_RATE_LIMIT_EXPIRY_SEC | default "60" | quote }}
 
   # Database Metrics
   DB_METRICS_INTERVAL_SEC: {{ .Values.matcher.configmap.DB_METRICS_INTERVAL_SEC | default "15" | quote }}
 
   # Idempotency & Deduplication
   IDEMPOTENCY_RETRY_WINDOW_SEC: {{ .Values.matcher.configmap.IDEMPOTENCY_RETRY_WINDOW_SEC | default "300" | quote }}
+  IDEMPOTENCY_SUCCESS_TTL_HOURS: {{ .Values.matcher.configmap.IDEMPOTENCY_SUCCESS_TTL_HOURS | default "168" | quote }}
   DEDUPE_TTL_SEC: {{ .Values.matcher.configmap.DEDUPE_TTL_SEC | default "3600" | quote }}
 
   # Object Storage (S3-compatible)
@@ -106,6 +118,37 @@ data:
   EXPORT_WORKER_ENABLED: {{ .Values.matcher.configmap.EXPORT_WORKER_ENABLED | default "true" | quote }}
   EXPORT_WORKER_POLL_INTERVAL_SEC: {{ .Values.matcher.configmap.EXPORT_WORKER_POLL_INTERVAL_SEC | default "5" | quote }}
   EXPORT_WORKER_PAGE_SIZE: {{ .Values.matcher.configmap.EXPORT_WORKER_PAGE_SIZE | default "1000" | quote }}
+  EXPORT_PRESIGN_EXPIRY_SEC: {{ .Values.matcher.configmap.EXPORT_PRESIGN_EXPIRY_SEC | default "3600" | quote }}
+
+  # Webhook Configuration
+  WEBHOOK_TIMEOUT_SEC: {{ .Values.matcher.configmap.WEBHOOK_TIMEOUT_SEC | default "30" | quote }}
+
+  # Callback Rate Limiting
+  CALLBACK_RATE_LIMIT_PER_MIN: {{ .Values.matcher.configmap.CALLBACK_RATE_LIMIT_PER_MIN | default "60" | quote }}
+
+  # Cleanup Worker
+  CLEANUP_WORKER_ENABLED: {{ .Values.matcher.configmap.CLEANUP_WORKER_ENABLED | default "true" | quote }}
+  CLEANUP_WORKER_INTERVAL_SEC: {{ .Values.matcher.configmap.CLEANUP_WORKER_INTERVAL_SEC | default "3600" | quote }}
+  CLEANUP_WORKER_BATCH_SIZE: {{ .Values.matcher.configmap.CLEANUP_WORKER_BATCH_SIZE | default "100" | quote }}
+  CLEANUP_WORKER_GRACE_PERIOD_SEC: {{ .Values.matcher.configmap.CLEANUP_WORKER_GRACE_PERIOD_SEC | default "3600" | quote }}
+
+  # Scheduler
+  SCHEDULER_INTERVAL_SEC: {{ .Values.matcher.configmap.SCHEDULER_INTERVAL_SEC | default "60" | quote }}
+
+  # Archival Worker
+  ARCHIVAL_WORKER_ENABLED: {{ .Values.matcher.configmap.ARCHIVAL_WORKER_ENABLED | default "false" | quote }}
+  {{- if .Values.matcher.configmap.ARCHIVAL_WORKER_ENABLED }}
+  ARCHIVAL_WORKER_INTERVAL_HOURS: {{ .Values.matcher.configmap.ARCHIVAL_WORKER_INTERVAL_HOURS | default "24" | quote }}
+  ARCHIVAL_HOT_RETENTION_DAYS: {{ .Values.matcher.configmap.ARCHIVAL_HOT_RETENTION_DAYS | default "90" | quote }}
+  ARCHIVAL_WARM_RETENTION_MONTHS: {{ .Values.matcher.configmap.ARCHIVAL_WARM_RETENTION_MONTHS | default "24" | quote }}
+  ARCHIVAL_COLD_RETENTION_MONTHS: {{ .Values.matcher.configmap.ARCHIVAL_COLD_RETENTION_MONTHS | default "84" | quote }}
+  ARCHIVAL_BATCH_SIZE: {{ .Values.matcher.configmap.ARCHIVAL_BATCH_SIZE | default "5000" | quote }}
+  ARCHIVAL_STORAGE_BUCKET: {{ .Values.matcher.configmap.ARCHIVAL_STORAGE_BUCKET | quote }}
+  ARCHIVAL_STORAGE_PREFIX: {{ .Values.matcher.configmap.ARCHIVAL_STORAGE_PREFIX | default "archives/audit-logs" | quote }}
+  ARCHIVAL_STORAGE_CLASS: {{ .Values.matcher.configmap.ARCHIVAL_STORAGE_CLASS | default "GLACIER" | quote }}
+  ARCHIVAL_PARTITION_LOOKAHEAD: {{ .Values.matcher.configmap.ARCHIVAL_PARTITION_LOOKAHEAD | default "3" | quote }}
+  ARCHIVAL_PRESIGN_EXPIRY_SEC: {{ .Values.matcher.configmap.ARCHIVAL_PRESIGN_EXPIRY_SEC | default "3600" | quote }}
+  {{- end }}
 
   # Application Version (for logs/telemetry)
   {{- if .Values.matcher.image.tag }}

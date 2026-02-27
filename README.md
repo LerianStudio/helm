@@ -15,7 +15,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `5.5.1` | 3.5.1 | 3.5.1 | 3.5.1 | 3.5.1 |
+| `5.6.0` | 3.5.2 | 3.5.1 | 3.5.2 | 3.5.2 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -94,7 +94,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `1.4.0` | 1.2.6 | 1.0.0 | 1.0.0 | 1.2.0 |
+| `1.5.0` | 1.2.7 | 1.0.0 | 1.0.0 | 1.2.0 |
 -----------------
 
 ### Fetcher
@@ -133,7 +133,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Matcher Version |
 | :---: | :---: |
-| `1.1.0` | 1.0.0 |
+| `1.2.0` | 1.0.0 |
 -----------------
 
 ### Flowker

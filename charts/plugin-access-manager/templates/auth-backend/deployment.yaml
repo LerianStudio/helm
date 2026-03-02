@@ -46,8 +46,8 @@ spec:
         - name: {{ include "plugin-auth-backend.fullname" . }}
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: {{ .Values.auth.backend.image | default "ghcr.io/lerianstudio/casdoor:latest" }}
-          imagePullPolicy: Always
+          image: "{{ .Values.auth.backend.image.repository }}:{{ .Values.auth.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.auth.backend.image.pullPolicy }}
           ports:
             - name: http
               containerPort: 8000

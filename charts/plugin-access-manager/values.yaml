@@ -321,6 +321,8 @@ auth:
     replicaCount: 1
     revisionHistoryLimit: 10
     name: "plugin-access-manager-auth-backend"
+    # -- Whether to create database on startup (requires CREATEDB permission)
+    createDatabase: true
     image:
       # -- Repository for the auth backend (casdoor) container image
       repository: ghcr.io/lerianstudio/casdoor

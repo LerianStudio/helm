@@ -57,7 +57,7 @@ spec:
             - -c
             - |
               export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} dbname=${DB_NAME}"
-              exec /server --createDatabase=true
+              exec /server --createDatabase={{- if hasKey .Values.auth.backend "createDatabase" }}{{ .Values.auth.backend.createDatabase }}{{- else }}true{{- end }}
           envFrom:
           - configMapRef:
               name: {{ include "plugin-auth-backend.fullname" . }}

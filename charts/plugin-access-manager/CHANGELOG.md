@@ -1,3 +1,19 @@
+# Plugin-access-manager Changelog
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v5.3.0)
+
+- **Features**
+  - Make `createDatabase` configurable in plugin-access-manager.
+
+- **Fixes**
+  - Use separate repository and tag for auth backend image in plugin-access-manager.
+
+Contributors: @ferr3ira.gabriel
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v5.2.2...plugin-access-manager-v5.3.0)
+
+---
+
 ## [plugin-access-manager-2.3.0-beta.2] - 2025-07-21
 
 This release brings enhanced integration capabilities and improved security management, along with several bug fixes and maintenance updates to ensure a smoother user experience.
@@ -197,3 +213,4 @@ This changelog highlights the key feature introduced in this release, focusing o
 ### Bug Fixes
 
 * generate multiples CHANGELOG's ([3f60787](https://github.com/LerianStudio/helm/commit/3f607875b618db474e4055c44a2cffd8216f4261))
+

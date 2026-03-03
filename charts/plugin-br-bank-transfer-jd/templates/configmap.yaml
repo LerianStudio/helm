@@ -35,7 +35,7 @@ data:
   POOL_MANAGER_L2_TTL_SEC: {{ .Values.bankTransfer.configmap.POOL_MANAGER_L2_TTL_SEC | default "43200" | quote }}
 
   # PostgreSQL Primary
-  POSTGRES_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_HOST | default (printf "plugin-br-bank-transfer-jd-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  POSTGRES_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_HOST | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name .Release.Namespace) | quote }}
   POSTGRES_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_PORT | default "5432" | quote }}
   POSTGRES_USER: {{ .Values.bankTransfer.configmap.POSTGRES_USER | default "bank_transfer" | quote }}
   POSTGRES_DB: {{ .Values.bankTransfer.configmap.POSTGRES_DB | default "bank_transfer" | quote }}
@@ -60,7 +60,7 @@ data:
   INFRA_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
 
   # Redis/Valkey Configuration
-  REDIS_HOST: {{ .Values.bankTransfer.configmap.REDIS_HOST | default (printf "plugin-br-bank-transfer-jd-valkey-primary.%s.svc.cluster.local.:6379" .Release.Namespace) | quote }}
+  REDIS_HOST: {{ .Values.bankTransfer.configmap.REDIS_HOST | default (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name .Release.Namespace) | quote }}
   REDIS_DB: {{ .Values.bankTransfer.configmap.REDIS_DB | default "0" | quote }}
   REDIS_PROTOCOL: {{ .Values.bankTransfer.configmap.REDIS_PROTOCOL | default "3" | quote }}
   REDIS_POOL_SIZE: {{ .Values.bankTransfer.configmap.REDIS_POOL_SIZE | default "10" | quote }}
@@ -81,7 +81,7 @@ data:
   {{- if .Values.bankTransfer.configmap.MONGO_URI }}
   MONGO_URI: {{ .Values.bankTransfer.configmap.MONGO_URI | quote }}
   {{- else }}
-  MONGO_URI: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@plugin-br-bank-transfer-jd-mongodb.%s.svc.cluster.local.:27017/?authSource=admin" .Release.Namespace | quote }}
+  MONGO_URI: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@%s-mongodb.%s.svc.cluster.local:27017/?authSource=admin" .Release.Name .Release.Namespace | quote }}
   {{- end }}
   MONGO_DATABASE: {{ .Values.bankTransfer.configmap.MONGO_DATABASE | default "plugin_br_bank_transfer_jd" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.bankTransfer.configmap.MONGO_MAX_POOL_SIZE | default "25" | quote }}
@@ -173,7 +173,7 @@ data:
   # RabbitMQ Event Bus (optional)
   RABBITMQ_ENABLED: {{ .Values.bankTransfer.configmap.RABBITMQ_ENABLED | default "false" | quote }}
   {{- if eq (toString .Values.bankTransfer.configmap.RABBITMQ_ENABLED) "true" }}
-  RABBITMQ_URL: {{ .Values.bankTransfer.configmap.RABBITMQ_URL | default (printf "amqp://bank_transfer:$(RABBITMQ_PASSWORD)@plugin-br-bank-transfer-jd-rabbitmq.%s.svc.cluster.local.:5672/" .Release.Namespace) | quote }}
+  RABBITMQ_URL: {{ .Values.bankTransfer.configmap.RABBITMQ_URL | default (printf "amqp://bank_transfer:$(RABBITMQ_PASSWORD)@%s-rabbitmq.%s.svc.cluster.local:5672/" .Release.Name .Release.Namespace) | quote }}
   RABBITMQ_EXCHANGE: {{ .Values.bankTransfer.configmap.RABBITMQ_EXCHANGE | default "bank_transfer.lifecycle" | quote }}
   RABBITMQ_ROUTING_KEY_PREFIX: {{ .Values.bankTransfer.configmap.RABBITMQ_ROUTING_KEY_PREFIX | default "transfer" | quote }}
   RABBITMQ_PUBLISH_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.RABBITMQ_PUBLISH_TIMEOUT_MS | default "5000" | quote }}

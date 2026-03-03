@@ -216,8 +216,8 @@ bankTransfer:
     POOL_MANAGER_L1_TTL_SEC: "300"
     POOL_MANAGER_L2_TTL_SEC: "43200"
 
-    # PostgreSQL Primary
-    POSTGRES_HOST: "plugin-br-bank-transfer-jd-postgresql-primary.bank-transfer.svc.cluster.local."
+    # PostgreSQL Primary (host defaults to {{ .Release.Name }}-postgresql-primary.{{ .Release.Namespace }}.svc.cluster.local)
+    # POSTGRES_HOST: ""  # Leave empty to use dynamic default based on release name
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "bank_transfer"
     POSTGRES_DB: "bank_transfer"
@@ -239,8 +239,8 @@ bankTransfer:
     # Infrastructure Boot Timeout
     INFRA_CONNECT_TIMEOUT_SEC: "30"
 
-    # Redis/Valkey Configuration
-    REDIS_HOST: "plugin-br-bank-transfer-jd-valkey-primary.bank-transfer.svc.cluster.local.:6379"
+    # Redis/Valkey Configuration (host defaults to {{ .Release.Name }}-valkey-primary.{{ .Release.Namespace }}.svc.cluster.local:6379)
+    # REDIS_HOST: ""  # Leave empty to use dynamic default based on release name
     REDIS_DB: "0"
     REDIS_PROTOCOL: "3"
     REDIS_POOL_SIZE: "10"
@@ -543,7 +543,7 @@ mongodb:
 
   image:
     repository: bitnami/mongodb
-    tag: "8.0"
+    tag: "latest"
 
   architecture: standalone
 

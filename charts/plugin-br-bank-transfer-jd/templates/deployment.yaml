@@ -1,0 +1,123 @@
+{{- if .Values.bankTransfer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bank-transfer.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name ) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.bankTransfer.revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ .Values.bankTransfer.deploymentUpdate.type }}
+    {{- if eq .Values.bankTransfer.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.bankTransfer.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.bankTransfer.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not .Values.bankTransfer.autoscaling.enabled }}
+  replicas: {{ .Values.bankTransfer.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name ) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.bankTransfer.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.bankTransfer.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "bank-transfer.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.bankTransfer.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "bank-transfer.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$POSTGRES_HOST:$POSTGRES_PORT";
+              do
+                HOST=$(echo $svc | cut -d: -f1);
+                PORT=$(echo $svc | cut -d: -f2);
+                echo "Checking $HOST:$PORT...";
+                while ! nc -z "$HOST" "$PORT"; do
+                  echo "$HOST:$PORT is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$HOST:$PORT is ready!";
+              done;
+              REDIS_SVC=$(echo "$REDIS_HOST" | cut -d: -f1);
+              REDIS_PORT=$(echo "$REDIS_HOST" | cut -d: -f2);
+              echo "Checking $REDIS_SVC:$REDIS_PORT...";
+              while ! nc -z "$REDIS_SVC" "$REDIS_PORT"; do
+                echo "$REDIS_SVC:$REDIS_PORT is not ready yet, waiting...";
+                sleep 5;
+              done;
+              echo "$REDIS_SVC:$REDIS_PORT is ready!";
+      containers:
+        - name: {{ include "bank-transfer.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.bankTransfer.securityContext | nindent 12 }}
+          image: "{{ .Values.bankTransfer.image.repository }}:{{ .Values.bankTransfer.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.bankTransfer.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.bankTransfer.useExistingSecret }}{{ .Values.bankTransfer.existingSecretName }}{{ else }}{{ include "bank-transfer.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "bank-transfer.fullname" . }}
+          {{- if eq (toString .Values.bankTransfer.configmap.ENABLE_TELEMETRY) "true" }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.bankTransfer.resources | nindent 12 }}
+      {{- with .Values.bankTransfer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.bankTransfer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.bankTransfer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

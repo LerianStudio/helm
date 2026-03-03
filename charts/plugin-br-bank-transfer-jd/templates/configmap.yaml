@@ -1,0 +1,222 @@
+{{- if .Values.bankTransfer.enabled }}
+{{- $releaseNs := .Release.Namespace }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "bank-transfer.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+data:
+  # Application Settings
+  ENV_NAME: {{ .Values.bankTransfer.configmap.ENV_NAME | default "production" | quote }}
+  LOG_LEVEL: {{ .Values.bankTransfer.configmap.LOG_LEVEL | default "info" | quote }}
+  SERVER_ADDRESS: {{ .Values.bankTransfer.configmap.SERVER_ADDRESS | default ":8080" | quote }}
+  HTTP_BODY_LIMIT_BYTES: {{ .Values.bankTransfer.configmap.HTTP_BODY_LIMIT_BYTES | default "1048576" | quote }}
+
+  # CORS Configuration
+  CORS_ALLOWED_ORIGINS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+  CORS_ALLOWED_METHODS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_METHODS | default "GET,POST,PUT,PATCH,DELETE,OPTIONS" | quote }}
+  CORS_ALLOWED_HEADERS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_HEADERS | default "Origin,Content-Type,Accept,Authorization,X-Request-ID" | quote }}
+
+  # TLS Configuration
+  TLS_TERMINATED_UPSTREAM: {{ .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
+
+  # Multi-Tenancy
+  DEFAULT_TENANT_ID: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_ID | default "11111111-1111-1111-1111-111111111111" | quote }}
+  DEFAULT_TENANT_SLUG: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_SLUG | default "default" | quote }}
+  MULTI_TENANT_INFRA_ENABLED: {{ .Values.bankTransfer.configmap.MULTI_TENANT_INFRA_ENABLED | default "false" | quote }}
+
+  # Pool Manager (SaaS multi-tenant mode)
+  POOL_MANAGER_ENABLED: {{ .Values.bankTransfer.configmap.POOL_MANAGER_ENABLED | default "false" | quote }}
+  {{- if .Values.bankTransfer.configmap.POOL_MANAGER_BASE_URL }}
+  POOL_MANAGER_BASE_URL: {{ .Values.bankTransfer.configmap.POOL_MANAGER_BASE_URL | quote }}
+  {{- end }}
+  POOL_MANAGER_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.POOL_MANAGER_TIMEOUT_MS | default "2000" | quote }}
+  POOL_MANAGER_L1_TTL_SEC: {{ .Values.bankTransfer.configmap.POOL_MANAGER_L1_TTL_SEC | default "300" | quote }}
+  POOL_MANAGER_L2_TTL_SEC: {{ .Values.bankTransfer.configmap.POOL_MANAGER_L2_TTL_SEC | default "43200" | quote }}
+
+  # PostgreSQL Primary
+  POSTGRES_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_HOST | default (printf "plugin-br-bank-transfer-jd-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  POSTGRES_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_PORT | default "5432" | quote }}
+  POSTGRES_USER: {{ .Values.bankTransfer.configmap.POSTGRES_USER | default "bank_transfer" | quote }}
+  POSTGRES_DB: {{ .Values.bankTransfer.configmap.POSTGRES_DB | default "bank_transfer" | quote }}
+  POSTGRES_SSLMODE: {{ .Values.bankTransfer.configmap.POSTGRES_SSLMODE | default "require" | quote }}
+  POSTGRES_MAX_OPEN_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
+  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
+  POSTGRES_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
+  MIGRATIONS_PATH: {{ .Values.bankTransfer.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
+
+  # PostgreSQL Replica (optional - for CQRS read scaling)
+  {{- if .Values.bankTransfer.configmap.POSTGRES_REPLICA_HOST }}
+  POSTGRES_REPLICA_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_HOST | quote }}
+  POSTGRES_REPLICA_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_PORT | default "5432" | quote }}
+  POSTGRES_REPLICA_USER: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_USER | quote }}
+  POSTGRES_REPLICA_DB: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_DB | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_SSLMODE | default "require" | quote }}
+  {{- end }}
+
+  # Infrastructure Boot Timeout
+  INFRA_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
+
+  # Redis/Valkey Configuration
+  REDIS_HOST: {{ .Values.bankTransfer.configmap.REDIS_HOST | default (printf "plugin-br-bank-transfer-jd-valkey-primary.%s.svc.cluster.local.:6379" .Release.Namespace) | quote }}
+  REDIS_DB: {{ .Values.bankTransfer.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ .Values.bankTransfer.configmap.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_POOL_SIZE: {{ .Values.bankTransfer.configmap.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ .Values.bankTransfer.configmap.REDIS_MIN_IDLE_CONNS | default "2" | quote }}
+  REDIS_READ_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.REDIS_READ_TIMEOUT_MS | default "3000" | quote }}
+  REDIS_WRITE_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.REDIS_WRITE_TIMEOUT_MS | default "3000" | quote }}
+  REDIS_DIAL_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.REDIS_DIAL_TIMEOUT_MS | default "5000" | quote }}
+  REDIS_TLS: {{ .Values.bankTransfer.configmap.REDIS_TLS | default "false" | quote }}
+  {{- if .Values.bankTransfer.configmap.REDIS_MASTER_NAME }}
+  REDIS_MASTER_NAME: {{ .Values.bankTransfer.configmap.REDIS_MASTER_NAME | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.REDIS_CA_CERT }}
+  REDIS_CA_CERT: {{ .Values.bankTransfer.configmap.REDIS_CA_CERT | quote }}
+  {{- end }}
+
+  # MongoDB Configuration (mandatory for audit/event persistence)
+  MONGO_ENABLED: {{ .Values.bankTransfer.configmap.MONGO_ENABLED | default "true" | quote }}
+  {{- if .Values.bankTransfer.configmap.MONGO_URI }}
+  MONGO_URI: {{ .Values.bankTransfer.configmap.MONGO_URI | quote }}
+  {{- else }}
+  MONGO_URI: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@plugin-br-bank-transfer-jd-mongodb.%s.svc.cluster.local.:27017/?authSource=admin" .Release.Namespace | quote }}
+  {{- end }}
+  MONGO_DATABASE: {{ .Values.bankTransfer.configmap.MONGO_DATABASE | default "plugin_br_bank_transfer_jd" | quote }}
+  MONGO_MAX_POOL_SIZE: {{ .Values.bankTransfer.configmap.MONGO_MAX_POOL_SIZE | default "25" | quote }}
+  MONGO_SERVER_SELECTION_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MONGO_SERVER_SELECTION_TIMEOUT_MS | default "3000" | quote }}
+  MONGO_HEARTBEAT_INTERVAL_MS: {{ .Values.bankTransfer.configmap.MONGO_HEARTBEAT_INTERVAL_MS | default "10000" | quote }}
+
+  # Authentication
+  AUTH_ENABLED: {{ .Values.bankTransfer.configmap.AUTH_ENABLED | default "true" | quote }}
+  AUTH_SERVICE_ADDRESS: {{ .Values.bankTransfer.configmap.AUTH_SERVICE_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000" | quote }}
+  AUTH_CACHE_TTL_SEC: {{ .Values.bankTransfer.configmap.AUTH_CACHE_TTL_SEC | default "300" | quote }}
+
+  # License Validation
+  {{- if .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS }}
+  LICENSE_SERVICE_ADDRESS: {{ .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.ORGANIZATION_IDS }}
+  ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
+  {{- end }}
+
+  # OpenTelemetry
+  ENABLE_TELEMETRY: {{ .Values.bankTransfer.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.bankTransfer.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-bank-transfer-jd" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-bank-transfer-jd" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.bankTransfer.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+
+  # Rate Limiting
+  RATE_LIMIT_ENABLED: {{ .Values.bankTransfer.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ .Values.bankTransfer.configmap.RATE_LIMIT_MAX | default "100" | quote }}
+  RATE_LIMIT_EXPIRY_SEC: {{ .Values.bankTransfer.configmap.RATE_LIMIT_EXPIRY_SEC | default "60" | quote }}
+
+  # Database Metrics & Observability
+  DB_METRICS_INTERVAL_SEC: {{ .Values.bankTransfer.configmap.DB_METRICS_INTERVAL_SEC | default "15" | quote }}
+  RECONCILIATION_PENDING_ALERT_THRESHOLD: {{ .Values.bankTransfer.configmap.RECONCILIATION_PENDING_ALERT_THRESHOLD | default "20" | quote }}
+
+  # Idempotency
+  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ .Values.bankTransfer.configmap.IDEMPOTENCY_RETRY_WINDOW_SEC | default "300" | quote }}
+  IDEMPOTENCY_REQUIRE_REDIS: {{ .Values.bankTransfer.configmap.IDEMPOTENCY_REQUIRE_REDIS | default "true" | quote }}
+
+  # Midaz Adapter
+  MIDAZ_BASE_URL: {{ required "bankTransfer.configmap.MIDAZ_BASE_URL is required" .Values.bankTransfer.configmap.MIDAZ_BASE_URL | quote }}
+  MIDAZ_TRANSACTION_URL: {{ .Values.bankTransfer.configmap.MIDAZ_TRANSACTION_URL | default .Values.bankTransfer.configmap.MIDAZ_BASE_URL | quote }}
+  MIDAZ_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS | default "3000" | quote }}
+  MIDAZ_MAX_RETRIES: {{ .Values.bankTransfer.configmap.MIDAZ_MAX_RETRIES | default "3" | quote }}
+  MIDAZ_OTEL_ENABLED: {{ .Values.bankTransfer.configmap.MIDAZ_OTEL_ENABLED | default "true" | quote }}
+  MIDAZ_DEBUG: {{ .Values.bankTransfer.configmap.MIDAZ_DEBUG | default "false" | quote }}
+  MIDAZ_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ENABLED | default "false" | quote }}
+  {{- if .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS }}
+  MIDAZ_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS | quote }}
+  {{- end }}
+  MIDAZ_BREAKER_FAILURES: {{ .Values.bankTransfer.configmap.MIDAZ_BREAKER_FAILURES | default "3" | quote }}
+  MIDAZ_BREAKER_TIMEOUT_SECONDS: {{ .Values.bankTransfer.configmap.MIDAZ_BREAKER_TIMEOUT_SECONDS | default "30" | quote }}
+
+  # CRM Adapter
+  CRM_BASE_URL: {{ required "bankTransfer.configmap.CRM_BASE_URL is required" .Values.bankTransfer.configmap.CRM_BASE_URL | quote }}
+  CRM_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.CRM_TIMEOUT_MS | default "2000" | quote }}
+  CRM_MAX_RETRIES: {{ .Values.bankTransfer.configmap.CRM_MAX_RETRIES | default "2" | quote }}
+  CRM_CACHE_TTL_MS: {{ .Values.bankTransfer.configmap.CRM_CACHE_TTL_MS | default "300000" | quote }}
+
+  # Fees Adapter
+  FEES_BASE_URL: {{ required "bankTransfer.configmap.FEES_BASE_URL is required" .Values.bankTransfer.configmap.FEES_BASE_URL | quote }}
+  FEES_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.FEES_TIMEOUT_MS | default "2000" | quote }}
+  FEES_MAX_RETRIES: {{ .Values.bankTransfer.configmap.FEES_MAX_RETRIES | default "2" | quote }}
+  FEES_FAIL_CLOSED_DEFAULT: {{ .Values.bankTransfer.configmap.FEES_FAIL_CLOSED_DEFAULT | default "false" | quote }}
+  FEES_MAX_FEE_AMOUNT_CENTS: {{ .Values.bankTransfer.configmap.FEES_MAX_FEE_AMOUNT_CENTS | default "99999999" | quote }}
+
+  # JD SPB Adapter
+  JD_BASE_URL: {{ required "bankTransfer.configmap.JD_BASE_URL is required" .Values.bankTransfer.configmap.JD_BASE_URL | quote }}
+  JD_SOAP_PATH: {{ .Values.bankTransfer.configmap.JD_SOAP_PATH | default "/soap" | quote }}
+  JD_ORIGIN_ISPB: {{ required "bankTransfer.configmap.JD_ORIGIN_ISPB is required" .Values.bankTransfer.configmap.JD_ORIGIN_ISPB | quote }}
+  {{- if .Values.bankTransfer.configmap.JD_LEGACY_CODE }}
+  JD_LEGACY_CODE: {{ .Values.bankTransfer.configmap.JD_LEGACY_CODE | quote }}
+  {{- end }}
+  JD_SIGNATURE_REQUIRED: {{ .Values.bankTransfer.configmap.JD_SIGNATURE_REQUIRED | default "true" | quote }}
+  JD_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.JD_TIMEOUT_MS | default "8000" | quote }}
+  JD_MAX_RETRIES: {{ .Values.bankTransfer.configmap.JD_MAX_RETRIES | default "3" | quote }}
+
+  # JD Sandbox Mode (must be false in production)
+  JD_SANDBOX_MODE: {{ .Values.bankTransfer.configmap.JD_SANDBOX_MODE | default "false" | quote }}
+
+  # JD Polling (TED IN ingestion)
+  JD_POLLING_ENABLED: {{ .Values.bankTransfer.configmap.JD_POLLING_ENABLED | default "false" | quote }}
+  JD_POLL_INTERVAL_SECONDS: {{ .Values.bankTransfer.configmap.JD_POLL_INTERVAL_SECONDS | default "30" | quote }}
+  JD_POLL_MAX_MESSAGES_PER_CYCLE: {{ .Values.bankTransfer.configmap.JD_POLL_MAX_MESSAGES_PER_CYCLE | default "50" | quote }}
+  JD_POLL_MAX_RETRIES: {{ .Values.bankTransfer.configmap.JD_POLL_MAX_RETRIES | default "3" | quote }}
+  JD_POLL_RECOVERY_BATCH_SIZE: {{ .Values.bankTransfer.configmap.JD_POLL_RECOVERY_BATCH_SIZE | default "200" | quote }}
+
+  # RabbitMQ Event Bus (optional)
+  RABBITMQ_ENABLED: {{ .Values.bankTransfer.configmap.RABBITMQ_ENABLED | default "false" | quote }}
+  {{- if eq (toString .Values.bankTransfer.configmap.RABBITMQ_ENABLED) "true" }}
+  RABBITMQ_URL: {{ .Values.bankTransfer.configmap.RABBITMQ_URL | default (printf "amqp://bank_transfer:$(RABBITMQ_PASSWORD)@plugin-br-bank-transfer-jd-rabbitmq.%s.svc.cluster.local.:5672/" .Release.Namespace) | quote }}
+  RABBITMQ_EXCHANGE: {{ .Values.bankTransfer.configmap.RABBITMQ_EXCHANGE | default "bank_transfer.lifecycle" | quote }}
+  RABBITMQ_ROUTING_KEY_PREFIX: {{ .Values.bankTransfer.configmap.RABBITMQ_ROUTING_KEY_PREFIX | default "transfer" | quote }}
+  RABBITMQ_PUBLISH_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.RABBITMQ_PUBLISH_TIMEOUT_MS | default "5000" | quote }}
+  RABBITMQ_MAX_RETRIES: {{ .Values.bankTransfer.configmap.RABBITMQ_MAX_RETRIES | default "3" | quote }}
+  RABBITMQ_RETRY_BACKOFF_MS: {{ .Values.bankTransfer.configmap.RABBITMQ_RETRY_BACKOFF_MS | default "200" | quote }}
+  {{- end }}
+
+  # Webhook Delivery Worker (optional)
+  WEBHOOK_ENABLED: {{ .Values.bankTransfer.configmap.WEBHOOK_ENABLED | default "false" | quote }}
+  {{- if eq (toString .Values.bankTransfer.configmap.WEBHOOK_ENABLED) "true" }}
+  WEBHOOK_ENDPOINT_URL: {{ required "bankTransfer.configmap.WEBHOOK_ENDPOINT_URL is required when WEBHOOK_ENABLED=true" .Values.bankTransfer.configmap.WEBHOOK_ENDPOINT_URL | quote }}
+  WEBHOOK_QUEUE_NAME: {{ .Values.bankTransfer.configmap.WEBHOOK_QUEUE_NAME | default "transfer.webhook.delivery" | quote }}
+  WEBHOOK_DLQ_NAME: {{ .Values.bankTransfer.configmap.WEBHOOK_DLQ_NAME | default "transfer.webhook.dlq" | quote }}
+  WEBHOOK_CONSUMER_TAG: {{ .Values.bankTransfer.configmap.WEBHOOK_CONSUMER_TAG | default "plugin-br-bank-transfer-jd-webhook" | quote }}
+  WEBHOOK_PREFETCH_COUNT: {{ .Values.bankTransfer.configmap.WEBHOOK_PREFETCH_COUNT | default "20" | quote }}
+  WEBHOOK_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.WEBHOOK_TIMEOUT_MS | default "5000" | quote }}
+  WEBHOOK_MAX_RETRIES: {{ .Values.bankTransfer.configmap.WEBHOOK_MAX_RETRIES | default "3" | quote }}
+  WEBHOOK_RETRY_BACKOFF_MS: {{ .Values.bankTransfer.configmap.WEBHOOK_RETRY_BACKOFF_MS | default "500" | quote }}
+  WEBHOOK_ALLOW_UNSIGNED_BROKER_EVENTS: {{ .Values.bankTransfer.configmap.WEBHOOK_ALLOW_UNSIGNED_BROKER_EVENTS | default "false" | quote }}
+  WEBHOOK_UNSIGNED_BROKER_EVENTS_GRACE_SEC: {{ .Values.bankTransfer.configmap.WEBHOOK_UNSIGNED_BROKER_EVENTS_GRACE_SEC | default "0" | quote }}
+  {{- end }}
+
+  # Usage Limits
+  USAGE_LIMITS_ENABLED: {{ .Values.bankTransfer.configmap.USAGE_LIMITS_ENABLED | default "false" | quote }}
+  {{- if eq (toString .Values.bankTransfer.configmap.USAGE_LIMITS_ENABLED) "true" }}
+  USAGE_LIMIT_DAILY_CENTS: {{ .Values.bankTransfer.configmap.USAGE_LIMIT_DAILY_CENTS | default "0" | quote }}
+  USAGE_LIMIT_MONTHLY_CENTS: {{ .Values.bankTransfer.configmap.USAGE_LIMIT_MONTHLY_CENTS | default "0" | quote }}
+  {{- end }}
+
+  # Operating Hours
+  TRANSFER_OPERATING_OPEN: {{ .Values.bankTransfer.configmap.TRANSFER_OPERATING_OPEN | default "06:30" | quote }}
+  TRANSFER_OPERATING_CLOSE: {{ .Values.bankTransfer.configmap.TRANSFER_OPERATING_CLOSE | default "17:00" | quote }}
+  TRANSFER_OPERATING_TIMEZONE: {{ .Values.bankTransfer.configmap.TRANSFER_OPERATING_TIMEZONE | default "America/Sao_Paulo" | quote }}
+
+  # Application Version (for logs/telemetry)
+  {{- if .Values.bankTransfer.image.tag }}
+  VERSION: {{ .Values.bankTransfer.image.tag | quote }}
+  {{- else }}
+  VERSION: {{ .Chart.AppVersion | quote }}
+  {{- end }}
+
+  # Extra Env Vars
+  {{- with .Values.bankTransfer.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

@@ -77,12 +77,8 @@ data:
   {{- end }}
 
   # MongoDB Configuration (mandatory for audit/event persistence)
+  # Note: MONGO_URI is in secrets.yaml to include the password securely
   MONGO_ENABLED: {{ .Values.bankTransfer.configmap.MONGO_ENABLED | default "true" | quote }}
-  {{- if .Values.bankTransfer.configmap.MONGO_URI }}
-  MONGO_URI: {{ .Values.bankTransfer.configmap.MONGO_URI | quote }}
-  {{- else }}
-  MONGO_URI: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@%s-mongodb.%s.svc.cluster.local:27017/?authSource=admin" .Release.Name .Release.Namespace | quote }}
-  {{- end }}
   MONGO_DATABASE: {{ .Values.bankTransfer.configmap.MONGO_DATABASE | default "plugin_br_bank_transfer_jd" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.bankTransfer.configmap.MONGO_MAX_POOL_SIZE | default "25" | quote }}
   MONGO_SERVER_SELECTION_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MONGO_SERVER_SELECTION_TIMEOUT_MS | default "3000" | quote }}
@@ -149,19 +145,21 @@ data:
   FEES_FAIL_CLOSED_DEFAULT: {{ .Values.bankTransfer.configmap.FEES_FAIL_CLOSED_DEFAULT | default "false" | quote }}
   FEES_MAX_FEE_AMOUNT_CENTS: {{ .Values.bankTransfer.configmap.FEES_MAX_FEE_AMOUNT_CENTS | default "99999999" | quote }}
 
-  # JD SPB Adapter
-  JD_BASE_URL: {{ required "bankTransfer.configmap.JD_BASE_URL is required" .Values.bankTransfer.configmap.JD_BASE_URL | quote }}
+  # JD Sandbox Mode (uses in-process fake adapter, cannot combine with live JD config)
+  JD_SANDBOX_MODE: {{ .Values.bankTransfer.configmap.JD_SANDBOX_MODE | default "false" | quote }}
+
+  # JD SPB Adapter (only when NOT in sandbox mode)
+  {{- if ne (toString .Values.bankTransfer.configmap.JD_SANDBOX_MODE) "true" }}
+  JD_BASE_URL: {{ required "bankTransfer.configmap.JD_BASE_URL is required when JD_SANDBOX_MODE is not true" .Values.bankTransfer.configmap.JD_BASE_URL | quote }}
   JD_SOAP_PATH: {{ .Values.bankTransfer.configmap.JD_SOAP_PATH | default "/soap" | quote }}
-  JD_ORIGIN_ISPB: {{ required "bankTransfer.configmap.JD_ORIGIN_ISPB is required" .Values.bankTransfer.configmap.JD_ORIGIN_ISPB | quote }}
+  JD_ORIGIN_ISPB: {{ required "bankTransfer.configmap.JD_ORIGIN_ISPB is required when JD_SANDBOX_MODE is not true" .Values.bankTransfer.configmap.JD_ORIGIN_ISPB | quote }}
   {{- if .Values.bankTransfer.configmap.JD_LEGACY_CODE }}
   JD_LEGACY_CODE: {{ .Values.bankTransfer.configmap.JD_LEGACY_CODE | quote }}
   {{- end }}
   JD_SIGNATURE_REQUIRED: {{ .Values.bankTransfer.configmap.JD_SIGNATURE_REQUIRED | default "true" | quote }}
   JD_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.JD_TIMEOUT_MS | default "8000" | quote }}
   JD_MAX_RETRIES: {{ .Values.bankTransfer.configmap.JD_MAX_RETRIES | default "3" | quote }}
-
-  # JD Sandbox Mode (must be false in production)
-  JD_SANDBOX_MODE: {{ .Values.bankTransfer.configmap.JD_SANDBOX_MODE | default "false" | quote }}
+  {{- end }}
 
   # JD Polling (TED IN ingestion)
   JD_POLLING_ENABLED: {{ .Values.bankTransfer.configmap.JD_POLLING_ENABLED | default "false" | quote }}

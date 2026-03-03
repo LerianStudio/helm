@@ -79,11 +79,11 @@ bankTransfer:
 
   image:
     # -- Repository for the bank-transfer service container image
-    repository: lerianstudio/plugin-br-bank-transfer-jd
+    repository: ghcr.io/lerianstudio/plugin-br-bank-transfer-jd
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.0.0"
+    tag: "1.0.0-beta.1"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

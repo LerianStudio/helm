@@ -46,8 +46,8 @@ spec:
         - name: {{ include "plugin-auth-backend.fullname" . }}
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: {{ .Values.auth.backend.image | default "ghcr.io/lerianstudio/casdoor:latest" }}
-          imagePullPolicy: Always
+          image: "{{ .Values.auth.backend.image.repository }}:{{ .Values.auth.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.auth.backend.image.pullPolicy }}
           ports:
             - name: http
               containerPort: 8000
@@ -57,7 +57,7 @@ spec:
             - -c
             - |
               export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} dbname=${DB_NAME}"
-              exec /server --createDatabase=true
+              exec /server --createDatabase={{- if hasKey .Values.auth.backend "createDatabase" }}{{ .Values.auth.backend.createDatabase }}{{- else }}true{{- end }}
           envFrom:
           - configMapRef:
               name: {{ include "plugin-auth-backend.fullname" . }}

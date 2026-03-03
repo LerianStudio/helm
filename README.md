@@ -28,7 +28,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `5.2.2` | 2.4.4 | 2.1.1 |
+| `5.3.0-beta.2` | 2.4.4 | 2.1.1 |
 
 -----------------
 
@@ -94,7 +94,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `1.5.0` | 1.2.7 | 1.0.0 | 1.0.0 | 1.2.0 |
+| `1.6.0-beta.1` | 1.2.8 | 1.0.0 | 1.0.0 | 1.2.0 |
 -----------------
 
 ### Fetcher

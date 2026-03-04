@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 nameOverride: "bank-transfer"
 fullnameOverride: ""
-namespaceOverride: "bank-transfer"
+namespaceOverride: ""
 
 global:
   # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges

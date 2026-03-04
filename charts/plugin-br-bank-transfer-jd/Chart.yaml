@@ -1,6 +1,7 @@
 apiVersion: v2
 name: plugin-br-bank-transfer-jd-helm
-description: A Helm chart for the Brazilian Bank Transfer (TED) Plugin with JD Consultores SPB integration
+description: A Helm chart for the Brazilian Bank Transfer (TED) Plugin with JD
+  Consultores SPB integration
 
 type: application
 
@@ -14,7 +15,7 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 1.0.0
+version: 1.0.0-beta.1
 
 appVersion: "1.0.0"
 

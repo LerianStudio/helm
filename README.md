@@ -94,7 +94,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
-| `1.2.6` | 1.2.1-beta.7 | 1.2.1-beta.7 |
+| `1.2.6` | 1.3.0-beta.1 | 1.3.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG

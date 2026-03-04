@@ -184,7 +184,7 @@ bankTransfer:
   nodeSelector: {}
 
   # -- Tolerations for scheduling on tainted nodes
-  tolerations: {}
+  tolerations: []
 
   # -- Affinity rules for pod scheduling
   affinity: {}
@@ -409,8 +409,8 @@ bankTransfer:
   useExistingSecret: false
   existingSecretName: ""
 
-  # -- Extra environment variables
-  extraEnvVars: []
+  # -- Extra environment variables (map of key: value pairs)
+  extraEnvVars: {}
 
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
@@ -427,10 +427,10 @@ valkey:
 
   global:
     security:
-      allowInsecureImages: true
+      allowInsecureImages: false
 
   image:
-    repository: bitnamisecure/valkey
+    repository: bitnami/valkey
     tag: "latest"
 
   external: false
@@ -460,10 +460,10 @@ postgresql:
 
   global:
     security:
-      allowInsecureImages: true
+      allowInsecureImages: false
 
   image:
-    repository: bitnamisecure/postgresql
+    repository: bitnami/postgresql
     tag: "latest"
 
   external: false
@@ -541,7 +541,7 @@ mongodb:
 
   global:
     security:
-      allowInsecureImages: true
+      allowInsecureImages: false
 
   image:
     repository: bitnami/mongodb

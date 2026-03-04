@@ -86,6 +86,7 @@ spec:
               BANK_TRANSFER_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 "$BASE_URL/api/users/bank_transfer" 2>/dev/null || echo "not_found")
 
+              SKIP_DEFINITIONS=false
               if echo "$BANK_TRANSFER_EXISTS" | grep -q '"name":"bank_transfer"'; then
                 echo "RabbitMQ user 'bank_transfer' already exists. Checking exchanges..."
                 
@@ -94,24 +95,26 @@ spec:
                   "$BASE_URL/api/exchanges/%2F/bank_transfer.lifecycle" 2>/dev/null || echo "not_found")
                 
                 if echo "$EXCHANGE_EXISTS" | grep -q '"name":"bank_transfer.lifecycle"'; then
-                  echo "RabbitMQ definitions already applied (user and exchanges exist). Skipping."
-                  exit 0
+                  echo "RabbitMQ definitions already applied (user and exchanges exist). Skipping definitions import."
+                  SKIP_DEFINITIONS=true
                 fi
               fi
 
-              echo "Applying RabbitMQ definitions from file..."
-              HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X POST \
-                --data-binary @/definitions/load_definitions.json \
-                "$BASE_URL/api/definitions")
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error applying definitions (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
-                exit 1
+              if [ "$SKIP_DEFINITIONS" = "false" ]; then
+                echo "Applying RabbitMQ definitions from file..."
+                HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
+                  -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                  -H "content-type: application/json" \
+                  -X POST \
+                  --data-binary @/definitions/load_definitions.json \
+                  "$BASE_URL/api/definitions")
+                if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                  echo "Error applying definitions (HTTP $HTTP_CODE):"
+                  cat /tmp/response.txt
+                  exit 1
+                fi
+                echo "Definitions applied successfully."
               fi
-              echo "Definitions applied successfully."
 
               echo "Updating RabbitMQ user 'bank_transfer' password..."
               # Use jq to safely construct JSON with properly escaped password

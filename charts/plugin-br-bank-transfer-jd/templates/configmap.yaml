@@ -34,7 +34,8 @@ data:
   POOL_MANAGER_L2_TTL_SEC: {{ .Values.bankTransfer.configmap.POOL_MANAGER_L2_TTL_SEC | default "43200" | quote }}
 
   # PostgreSQL Primary
-  POSTGRES_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_HOST | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name .Release.Namespace) | quote }}
+  {{- $namespace := include "global.namespace" . }}
+  POSTGRES_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_HOST | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
   POSTGRES_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_PORT | default "5432" | quote }}
   POSTGRES_USER: {{ .Values.bankTransfer.configmap.POSTGRES_USER | default "bank_transfer" | quote }}
   POSTGRES_DB: {{ .Values.bankTransfer.configmap.POSTGRES_DB | default "bank_transfer" | quote }}
@@ -59,7 +60,7 @@ data:
   INFRA_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
 
   # Redis/Valkey Configuration
-  REDIS_HOST: {{ .Values.bankTransfer.configmap.REDIS_HOST | default (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name .Release.Namespace) | quote }}
+  REDIS_HOST: {{ .Values.bankTransfer.configmap.REDIS_HOST | default (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace) | quote }}
   REDIS_DB: {{ .Values.bankTransfer.configmap.REDIS_DB | default "0" | quote }}
   REDIS_PROTOCOL: {{ .Values.bankTransfer.configmap.REDIS_PROTOCOL | default "3" | quote }}
   REDIS_POOL_SIZE: {{ .Values.bankTransfer.configmap.REDIS_POOL_SIZE | default "10" | quote }}
@@ -170,7 +171,7 @@ data:
   # RabbitMQ Event Bus (optional)
   RABBITMQ_ENABLED: {{ .Values.bankTransfer.configmap.RABBITMQ_ENABLED | default "false" | quote }}
   {{- if eq (toString .Values.bankTransfer.configmap.RABBITMQ_ENABLED) "true" }}
-  RABBITMQ_URL: {{ .Values.bankTransfer.configmap.RABBITMQ_URL | default (printf "amqp://bank_transfer:$(RABBITMQ_PASSWORD)@%s-rabbitmq.%s.svc.cluster.local:5672/" .Release.Name .Release.Namespace) | quote }}
+  RABBITMQ_URL: {{ .Values.bankTransfer.configmap.RABBITMQ_URL | default (printf "amqp://bank_transfer:$(RABBITMQ_PASSWORD)@%s-rabbitmq.%s.svc.cluster.local:5672/" .Release.Name $namespace) | quote }}
   RABBITMQ_EXCHANGE: {{ .Values.bankTransfer.configmap.RABBITMQ_EXCHANGE | default "bank_transfer.lifecycle" | quote }}
   RABBITMQ_ROUTING_KEY_PREFIX: {{ .Values.bankTransfer.configmap.RABBITMQ_ROUTING_KEY_PREFIX | default "transfer" | quote }}
   RABBITMQ_PUBLISH_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.RABBITMQ_PUBLISH_TIMEOUT_MS | default "5000" | quote }}
@@ -212,8 +213,8 @@ data:
   VERSION: {{ .Chart.AppVersion | quote }}
   {{- end }}
 
-  # Extra Env Vars
-  {{- with .Values.bankTransfer.extraEnvVars }}
-  {{- toYaml . | nindent 2 }}
+  # Extra Env Vars (must be a map of key: value pairs)
+  {{- range $key, $value := .Values.bankTransfer.extraEnvVars }}
+  {{ $key }}: {{ $value | quote }}
   {{- end }}
 {{- end }}

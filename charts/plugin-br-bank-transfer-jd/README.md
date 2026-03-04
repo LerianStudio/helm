@@ -145,7 +145,11 @@ bankTransfer:
 | `rabbitmq.authentication.user.value` | RabbitMQ username | `bank_transfer` |
 | `rabbitmq.authentication.password.value` | RabbitMQ password | `lerian` |
 
-> **IMPORTANT:** The bundled dependencies (PostgreSQL, Valkey, MongoDB, RabbitMQ) are not intended for production. For production, use external/managed services and set `<dependency>.enabled=false`.
+> **IMPORTANT - Security Warning:**
+> - The bundled dependencies (PostgreSQL, Valkey, MongoDB, RabbitMQ) are **NOT intended for production**
+> - Default passwords (`lerian`) are for **development only** - always override with secure credentials
+> - For production, use external/managed services and set `<dependency>.enabled=false`
+> - Use `useExistingSecret` options to reference pre-created Kubernetes secrets for sensitive data
 
 ---
 
@@ -165,6 +169,10 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `MIDAZ_BASE_URL` | Midaz API base URL | **Required** |
 | `CRM_BASE_URL` | CRM adapter base URL | **Required** |
 | `FEES_BASE_URL` | Fees adapter base URL | **Required** |
+| `JD_BASE_URL` | JD SPB SOAP API URL | **Required** (unless `JD_SANDBOX_MODE=true`) |
+| `JD_ORIGIN_ISPB` | Bank ISPB code for JD | **Required** (unless `JD_SANDBOX_MODE=true`) |
+| `LICENSE_SERVICE_ADDRESS` | License validation service URL | Optional |
+| `ORGANIZATION_IDS` | Organization IDs for license validation | Optional |
 
 For a complete list, see `values.yaml`.
 
@@ -188,17 +196,18 @@ Key secrets configured via `bankTransfer.secrets`:
 
 ## Development Mode
 
-For local development/testing, you can disable authentication and license validation:
+For local development/testing, you can disable authentication and use sandbox mode:
 
 ```yaml
 bankTransfer:
   configmap:
     ENV_NAME: "development"
     AUTH_ENABLED: "false"
-    LICENSE_ENABLED: "false"
     POSTGRES_SSLMODE: "disable"
-    JD_SANDBOX_MODE: "true"  # Uses fake JD adapter
+    JD_SANDBOX_MODE: "true"  # Uses fake JD adapter (no real bank calls)
 ```
+
+> **Note:** License validation is controlled via `LICENSE_SERVICE_ADDRESS` and `ORGANIZATION_IDS`. When these are not set, license validation is skipped.
 
 ---
 

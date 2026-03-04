@@ -1,5 +1,4 @@
 {{- if .Values.bankTransfer.enabled }}
-{{- $releaseNs := .Release.Namespace }}
 kind: ConfigMap
 apiVersion: v1
 metadata:

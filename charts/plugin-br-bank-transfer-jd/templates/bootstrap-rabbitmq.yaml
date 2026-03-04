@@ -53,12 +53,19 @@ spec:
               echo "$RABBITMQ_HOST:$RABBITMQ_PORT is ready!";
       containers:
         - name: apply-definitions
-          image: curlimages/curl:8.7.1
+          image: ghcr.io/jqlang/jq:1.7.1
           command:
             - sh
             - -c
             - |
               set -e
+
+              # Set curl TLS options based on configuration
+              CURL_OPTS="-sS"
+              if [ "$RABBITMQ_SKIP_TLS_VERIFY" = "true" ]; then
+                CURL_OPTS="$CURL_OPTS -k"
+                echo "Warning: TLS verification is disabled"
+              fi
 
               # Build base URL - omit port for default HTTPS (443) or HTTP (80)
               if [ "$RABBITMQ_PROTOCOL" = "https" ] && [ "$RABBITMQ_PORT" = "443" ]; then
@@ -76,14 +83,14 @@ spec:
               echo "Checking if RabbitMQ user 'bank_transfer' already exists..."
 
               # Check if bank_transfer user exists
-              BANK_TRANSFER_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+              BANK_TRANSFER_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 "$BASE_URL/api/users/bank_transfer" 2>/dev/null || echo "not_found")
 
               if echo "$BANK_TRANSFER_EXISTS" | grep -q '"name":"bank_transfer"'; then
                 echo "RabbitMQ user 'bank_transfer' already exists. Checking exchanges..."
                 
                 # Check if exchanges exist
-                EXCHANGE_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                EXCHANGE_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                   "$BASE_URL/api/exchanges/%2F/bank_transfer.lifecycle" 2>/dev/null || echo "not_found")
                 
                 if echo "$EXCHANGE_EXISTS" | grep -q '"name":"bank_transfer.lifecycle"'; then
@@ -93,7 +100,7 @@ spec:
               fi
 
               echo "Applying RabbitMQ definitions from file..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+              HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X POST \
@@ -107,11 +114,13 @@ spec:
               echo "Definitions applied successfully."
 
               echo "Updating RabbitMQ user 'bank_transfer' password..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+              # Use jq to safely construct JSON with properly escaped password
+              USER_JSON=$(jq -n --arg pw "$RABBITMQ_BANK_TRANSFER_PASS" '{"password": $pw, "tags": ""}')
+              HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
-                --data "{\"password\":\"$RABBITMQ_BANK_TRANSFER_PASS\",\"tags\":\"administrator\"}" \
+                --data "$USER_JSON" \
                 "$BASE_URL/api/users/bank_transfer")
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error updating bank_transfer user (HTTP $HTTP_CODE):"
@@ -129,6 +138,8 @@ spec:
               value: {{ .Values.global.externalRabbitmqDefinitions.connection.host | quote }}
             - name: RABBITMQ_PORT
               value: {{ .Values.global.externalRabbitmqDefinitions.connection.port | quote }}
+            - name: RABBITMQ_SKIP_TLS_VERIFY
+              value: {{ .Values.global.externalRabbitmqDefinitions.connection.skipTlsVerify | default false | quote }}
             - name: RABBITMQ_BANK_TRANSFER_PASS
               {{- if .Values.global.externalRabbitmqDefinitions.bankTransferCredentials.useExistingSecret.name }}
               valueFrom:

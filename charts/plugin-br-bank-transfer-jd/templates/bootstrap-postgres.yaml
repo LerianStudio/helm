@@ -104,7 +104,7 @@ spec:
               echo "Role 'bank_transfer' already exists. Skipping creation."
             else
               echo "Creating role 'bank_transfer'..."
-              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE bank_transfer LOGIN PASSWORD '$DB_PASSWORD_BANK_TRANSFER'"
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_BANK_TRANSFER" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE bank_transfer LOGIN PASSWORD :'pw'"
             fi
 
             # Create database if not exists

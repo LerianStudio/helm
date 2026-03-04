@@ -47,6 +47,8 @@ global:
       port: "15672"
       # -- RabbitMQ AMQP port (for connectivity check)
       portAmqp: "5672"
+      # -- Skip TLS verification for self-signed certificates (not recommended for production)
+      skipTlsVerify: false
     # -- Admin credentials for RabbitMQ management API
     rabbitmqAdminLogin:
       useExistingSecret:

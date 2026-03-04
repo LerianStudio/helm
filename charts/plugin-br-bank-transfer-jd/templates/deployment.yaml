@@ -39,33 +39,44 @@ spec:
         {{- toYaml .Values.bankTransfer.podSecurityContext | nindent 8 }}
       initContainers:
         - name: wait-for-dependencies
-          image: busybox
+          image: busybox:1.37
           envFrom:
           - configMapRef:
               name: {{ include "bank-transfer.fullname" . }}
           command:
             - /bin/sh
             - -c
-            - >
-              for svc in "$POSTGRES_HOST:$POSTGRES_PORT";
-              do
-                HOST=$(echo $svc | cut -d: -f1);
-                PORT=$(echo $svc | cut -d: -f2);
-                echo "Checking $HOST:$PORT...";
+            - |
+              MAX_ATTEMPTS=60
+              SLEEP_SECONDS=5
+              # Total timeout: 60 * 5 = 300 seconds (5 minutes)
+
+              wait_for_service() {
+                local HOST="$1"
+                local PORT="$2"
+                local ATTEMPTS=0
+                echo "Checking $HOST:$PORT..."
                 while ! nc -z "$HOST" "$PORT"; do
-                  echo "$HOST:$PORT is not ready yet, waiting...";
-                  sleep 5;
-                done;
-                echo "$HOST:$PORT is ready!";
-              done;
-              REDIS_SVC=$(echo "$REDIS_HOST" | cut -d: -f1);
-              REDIS_PORT=$(echo "$REDIS_HOST" | cut -d: -f2);
-              echo "Checking $REDIS_SVC:$REDIS_PORT...";
-              while ! nc -z "$REDIS_SVC" "$REDIS_PORT"; do
-                echo "$REDIS_SVC:$REDIS_PORT is not ready yet, waiting...";
-                sleep 5;
-              done;
-              echo "$REDIS_SVC:$REDIS_PORT is ready!";
+                  ATTEMPTS=$((ATTEMPTS + 1))
+                  if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
+                    echo "Timeout waiting for $HOST:$PORT after $((MAX_ATTEMPTS * SLEEP_SECONDS)) seconds"
+                    exit 1
+                  fi
+                  echo "$HOST:$PORT is not ready yet, waiting... (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+                  sleep $SLEEP_SECONDS
+                done
+                echo "$HOST:$PORT is ready!"
+              }
+
+              # Wait for PostgreSQL
+              wait_for_service "$POSTGRES_HOST" "$POSTGRES_PORT"
+
+              # Wait for Redis/Valkey
+              REDIS_SVC=$(echo "$REDIS_HOST" | cut -d: -f1)
+              REDIS_PORT_NUM=$(echo "$REDIS_HOST" | cut -d: -f2)
+              wait_for_service "$REDIS_SVC" "$REDIS_PORT_NUM"
+
+              echo "All dependencies are ready!"
       containers:
         - name: {{ include "bank-transfer.fullname" . }}
           securityContext:
@@ -74,7 +85,7 @@ spec:
           imagePullPolicy: {{ .Values.bankTransfer.image.pullPolicy }}
           envFrom:
           - secretRef:
-              name: {{ if .Values.bankTransfer.useExistingSecret }}{{ .Values.bankTransfer.existingSecretName }}{{ else }}{{ include "bank-transfer.fullname" . }}{{ end }}
+              name: {{ if .Values.bankTransfer.useExistingSecret }}{{ required "bankTransfer.existingSecretName is required when bankTransfer.useExistingSecret is true" .Values.bankTransfer.existingSecretName }}{{ else }}{{ include "bank-transfer.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "bank-transfer.fullname" . }}
           {{- if eq (toString .Values.bankTransfer.configmap.ENABLE_TELEMETRY) "true" }}

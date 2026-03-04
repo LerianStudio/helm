@@ -118,7 +118,7 @@ spec:
 
           # Privileges (safe to run repeatedly)
           echo "Ensuring privileges and schema permissions..."
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "ALTER USER bank_transfer CREATEDB" || true
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "ALTER USER bank_transfer CREATEDB" || echo "Warning: Could not grant CREATEDB (may require superuser privileges)"
           PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE bank_transfer TO bank_transfer"
           PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d bank_transfer -c "GRANT ALL ON SCHEMA public TO bank_transfer"
           PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d bank_transfer -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bank_transfer"

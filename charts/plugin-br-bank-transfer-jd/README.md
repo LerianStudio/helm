@@ -101,7 +101,7 @@ bankTransfer:
 | `bankTransfer.autoscaling.minReplicas` | Minimum number of replicas | `2` |
 | `bankTransfer.autoscaling.maxReplicas` | Maximum number of replicas | `5` |
 | `bankTransfer.nodeSelector` | Node selector for scheduling pods | `{}` |
-| `bankTransfer.tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
+| `bankTransfer.tolerations` | Tolerations for scheduling on tainted nodes | `[]` |
 | `bankTransfer.affinity` | Affinity rules for pod scheduling | `{}` |
 | `bankTransfer.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `bankTransfer.existingSecretName` | The name of the existing secret to use | `""` |

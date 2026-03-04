@@ -99,7 +99,7 @@ bankTransfer:
   podAnnotations: {}
 
   podSecurityContext: {}
-    # fsGroup: 2000
+  # fsGroup: 2000
 
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
@@ -431,7 +431,7 @@ valkey:
 
   image:
     repository: bitnami/valkey
-    tag: "latest"
+    tag: "8.0.2"
 
   external: false
   architecture: standalone
@@ -464,7 +464,7 @@ postgresql:
 
   image:
     repository: bitnami/postgresql
-    tag: "latest"
+    tag: "17.4.0"
 
   external: false
   architecture: replication
@@ -545,7 +545,7 @@ mongodb:
 
   image:
     repository: bitnami/mongodb
-    tag: "latest"
+    tag: "8.0.5"
 
   architecture: standalone
 
@@ -610,7 +610,7 @@ rabbitmq:
       value: "WCB00CfurKivfNH61hbxPaNg+xtyA/7RI6bEx5RMGvE="
 
   extraSecrets:
-    - name: "plugin-br-bank-transfer-jd-rabbitmq-load-definition"
+    - name: "bank-transfer-rabbitmq-load-definition"
       mountPath: /etc/rabbitmq/definitions
 
   customConfig: |

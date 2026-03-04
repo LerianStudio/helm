@@ -76,9 +76,10 @@ Allows overriding it for multi-namespace deployments in combined charts.
 
 {{/*
 Enable internal dependencies
+These helpers check both .enabled and .external flags
 */}}
 {{- define "rabbitmq.enabled" -}}
-{{- if not .Values.rabbitmq.external -}}
+{{- if and (default true .Values.rabbitmq.enabled) (not .Values.rabbitmq.external) -}}
 true
 {{- else -}}
 false
@@ -86,7 +87,7 @@ false
 {{- end -}}
 
 {{- define "valkey.enabled" -}}
-{{- if not .Values.valkey.external -}}
+{{- if and (default true .Values.valkey.enabled) (not .Values.valkey.external) -}}
 true
 {{- else -}}
 false
@@ -94,7 +95,7 @@ false
 {{- end -}}
 
 {{- define "postgresql.enabled" -}}
-{{- if not .Values.postgresql.external -}}
+{{- if and (default true .Values.postgresql.enabled) (not .Values.postgresql.external) -}}
 true
 {{- else -}}
 false
@@ -102,7 +103,7 @@ false
 {{- end -}}
 
 {{- define "mongodb.enabled" -}}
-{{- if not .Values.mongodb.external -}}
+{{- if and (default true .Values.mongodb.enabled) (not .Values.mongodb.external) -}}
 true
 {{- else -}}
 false

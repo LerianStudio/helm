@@ -86,7 +86,7 @@ data:
 
   # Authentication
   AUTH_ENABLED: {{ .Values.bankTransfer.configmap.AUTH_ENABLED | default "true" | quote }}
-  AUTH_SERVICE_ADDRESS: {{ .Values.bankTransfer.configmap.AUTH_SERVICE_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000" | quote }}
+  AUTH_SERVICE_ADDRESS: {{ .Values.bankTransfer.configmap.AUTH_SERVICE_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
   AUTH_CACHE_TTL_SEC: {{ .Values.bankTransfer.configmap.AUTH_CACHE_TTL_SEC | default "300" | quote }}
 
   # License Validation

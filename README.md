@@ -71,6 +71,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0` | 1.0.0 | 1.0.0 |
 -----------------
 
+### Plugin BR Bank Transfer JD
+
+See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/bank-transfer/bank-transfer-jd) for details.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-bank-transfer-jd).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | 1.0.0-beta.1 |
+-----------------
+
 ### Plugin BR Pix Direct JD
 
 See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/direct-pix-jd) for details.

@@ -1,0 +1,24 @@
+{{- if and .Values.bankTransfer.enabled .Values.bankTransfer.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "bank-transfer.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name ) | nindent 4 }}
+  {{- with .Values.bankTransfer.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.bankTransfer.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.bankTransfer.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name ) | nindent 6 }}
+{{- end }}

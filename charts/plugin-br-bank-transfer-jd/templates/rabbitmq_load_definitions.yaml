@@ -1,0 +1,12 @@
+{{- if .Values.rabbitmq.enabled }}
+kind: Secret
+apiVersion: v1
+metadata:
+  name: {{ include "bank-transfer.fullname" . }}-rabbitmq-load-definition
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "bank-transfer.labels" (dict "context" . "component" "rabbitmq" "name" "load-definition") | nindent 4 }}
+data:
+  load_definition.json: |
+    {{ .Files.Get "files/rabbitmq/load_definitions.json" | b64enc | nindent 4 }}
+{{- end }}

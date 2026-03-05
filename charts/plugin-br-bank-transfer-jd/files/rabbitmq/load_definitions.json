@@ -1,0 +1,75 @@
+{
+  "users": [
+    {
+      "name": "bank_transfer",
+      "tags": ""
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "bank_transfer",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "queues": [
+    {
+      "name": "transfer.webhook.delivery",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "bank_transfer.lifecycle.dlx",
+        "x-dead-letter-routing-key": "transfer.webhook.dlq"
+      }
+    },
+    {
+      "name": "transfer.webhook.dlq",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {}
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "bank_transfer.lifecycle",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "bank_transfer.lifecycle.dlx",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "bank_transfer.lifecycle",
+      "vhost": "/",
+      "destination": "transfer.webhook.delivery",
+      "destination_type": "queue",
+      "routing_key": "transfer.#"
+    },
+    {
+      "source": "bank_transfer.lifecycle.dlx",
+      "vhost": "/",
+      "destination": "transfer.webhook.dlq",
+      "destination_type": "queue",
+      "routing_key": "#"
+    }
+  ]
+}

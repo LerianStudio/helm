@@ -28,7 +28,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `5.3.0` | 2.4.4 | 2.1.1 |
+| `5.4.0-beta.2` | 2.4.4 | 2.1.1 |
 
 -----------------
 

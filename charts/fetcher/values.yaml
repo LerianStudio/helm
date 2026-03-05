@@ -12,7 +12,7 @@ manager:
   image:
     repository: lerianstudio/fetcher-manager
     pullPolicy: IfNotPresent
-    tag: "1.1.0"
+    tag: "1.2.0"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -114,7 +114,7 @@ worker:
   image:
     repository: lerianstudio/fetcher-worker
     pullPolicy: IfNotPresent
-    tag: "1.1.0"
+    tag: "1.2.0"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -190,6 +190,7 @@ common:
     REDIS_HOST: "valkey"
     REDIS_PORT: "6379"
     REDIS_DB: "0"
+
     # OpenTelemetry
     OTEL_RESOURCE_SERVICE_NAME: "fetcher"
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/fetcher"

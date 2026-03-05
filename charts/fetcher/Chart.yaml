@@ -1,26 +1,19 @@
 apiVersion: v2
 name: fetcher-helm
 description: A Helm chart for Fetcher - Data extraction service for Lerian Studio
-
 type: application
-
 home: https://github.com/LerianStudio/fetcher
-
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-
 version: 1.1.0
-appVersion: "1.0.0"
-
+appVersion: "1.1.0"
 keywords:
   - midaz
   - lerian
   - fetcher
   - data-extraction
-
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
-
 # Dependencies
 dependencies:
   - name: keda

@@ -1,5 +1,16 @@
 # Reporter Changelog
 
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v1.1.0)
+
+- Fixes:
+  - Update reporter-manager to version 1.1.1
+
+Contributors:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.0.0...reporter-v1.1.0)
+
+---
+
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v1.0.0)
 
 - **Features:**

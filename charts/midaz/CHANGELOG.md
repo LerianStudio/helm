@@ -1,5 +1,17 @@
 # Midaz Changelog
 
+## [5.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.6.0)
+
+- Improvements:
+  - Bumped chart version to 5.5.2.
+  - Updated appVersion to 3.5.2.
+
+Contributors: @mclara.tersi
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.5.1...midaz-v5.6.0)
+
+---
+
 ## [5.5.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.5.1)
 
 - Fixes:

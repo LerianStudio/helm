@@ -1,0 +1,33 @@
+{{- if and .Values.bankTransfer.enabled .Values.bankTransfer.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "bank-transfer.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name ) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "bank-transfer.fullname" . }}
+  minReplicas: {{ .Values.bankTransfer.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.bankTransfer.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.bankTransfer.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.bankTransfer.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.bankTransfer.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.bankTransfer.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

@@ -28,7 +28,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `5.3.0-beta.2` | 2.4.4 | 2.1.1 |
+| `5.4.0-beta.2` | 2.4.4 | 2.1.1 |
 
 -----------------
 
@@ -68,7 +68,20 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `1.0.0` | 1.0.0 | 1.0.0 |
+| `1.1.0` | 1.1.1 | 1.0.0 |
+-----------------
+
+### Plugin BR Bank Transfer JD
+
+See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/bank-transfer/bank-transfer-jd) for details.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-bank-transfer-jd).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Direct JD
@@ -94,7 +107,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `1.5.0` | 1.2.7 | 1.0.0 | 1.0.0 | 1.2.0 |
+| `1.6.0` | 1.2.8 | 1.0.0 | 1.0.0 | 1.2.0 |
 -----------------
 
 ### Fetcher
@@ -107,7 +120,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `1.1.0` | 1.0.0 | 1.0.0 |
+| `1.2.0` | 1.1.0 | 1.1.0 |
 -----------------
 
 ### Underwriter

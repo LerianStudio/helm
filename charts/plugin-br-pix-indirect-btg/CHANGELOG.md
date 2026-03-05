@@ -1,5 +1,30 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [1.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v1.5.0)
+
+- Fixes:
+  - Updated plugin-br-pix-indirect-btg to version 1.2.7.
+
+Contributors:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v1.4.0...plugin-br-pix-indirect-btg-v1.5.0)
+
+---
+
+## [1.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v1.4.0)
+
+- Features:
+  - Released version 1.4.0 with new enhancements.
+
+- Fixes:
+  - Updated to version 1.2.6 to address various bugs and improve stability.
+
+Contributors:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v1.3.4...plugin-br-pix-indirect-btg-v1.4.0)
+
+---
+
 ## [1.3.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v1.3.4)
 
 - Fixes:

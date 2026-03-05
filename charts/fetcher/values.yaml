@@ -83,9 +83,10 @@ manager:
     ENV_NAME: "development"
     SERVER_PORT: "4006"
     SERVER_ADDRESS: ":4006"
-    APP_CONTEXT: "/v1"
     SCHEMA_CACHE_TTL_SECONDS: "300"
     LOG_LEVEL: "debug"
+    # RabbitMQ
+    RABBITMQ_FETCHER_WORK_QUEUE: "fetcher.extract-external-data.queue"
     # Swagger
     SWAGGER_TITLE: "Fetcher"
     SWAGGER_DESCRIPTION: "Documentation for fetcher"
@@ -93,8 +94,11 @@ manager:
     SWAGGER_HOST: ":4006"
     SWAGGER_BASE_PATH: "/"
     SWAGGER_SCHEMES: "http"
-    SWAGGER_LEFT_DELIMITER: "{{"
-    SWAGGER_RIGHT_DELIMITER: "}}"
+    SWAGGER_LEFT_DELIM: "{{"
+    SWAGGER_RIGHT_DELIM: "}}"
+    # Auth
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_ADDRESS: ""
   # Manager-specific Secrets
   secrets:
     APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key
@@ -136,17 +140,30 @@ worker:
   configmap:
     ENV_NAME: "development"
     LOG_LEVEL: "debug"
+    # RabbitMQ
     RABBITMQ_NUMBERS_OF_WORKERS: "5"
-    RABBITMQ_GENERATE_REPORT_QUEUE: "fetcher.extract-external-data.queue"
-    RABBITMQ_GENERATE_REPORT_KEY: "fetcher.extract-external-data.key"
-    RABBITMQ_DLQ_QUEUE: "fetcher.extract-external-data.dlq"
-    RABBITMQ_JOB_EVENTS_EXCHANGE: "fetcher.extract-external-data.exchange"
+    RABBITMQ_FETCHER_WORK_QUEUE: "fetcher.extract-external-data.queue"
+    RABBITMQ_JOB_EVENTS_EXCHANGE: "fetcher.job.events"
+    # Storage Provider
+    STORAGE_PROVIDER: "seaweedfs"
+    OBJECT_STORAGE_ENDPOINT: ""
+    OBJECT_STORAGE_REGION: "us-east-1"
+    OBJECT_STORAGE_BUCKET: "external-data"
+    OBJECT_STORAGE_KEY_PREFIX: ""
+    OBJECT_STORAGE_USE_PATH_STYLE: "false"
   # Worker-specific Secrets
   secrets:
     APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key
     APP_ENC_KEY_VERSION: "1"
-    CRYPTO_ENCRYPT_SECRET_KEY_SEAWEEDFS: ""
-    CRYPTO_HASH_SECRET_KEY_SEAWEEDFS: ""
+    # Storage Encryption Keys
+    CRYPTO_ENCRYPT_FILE_STORAGE: ""
+    CRYPTO_HASH_SECRET_KEY_FILE_STORAGE: ""
+    # CRM Plugin Encryption Keys
+    CRYPTO_ENCRYPT_SECRET_KEY_PLUGIN_CRM: ""
+    CRYPTO_HASH_SECRET_KEY_PLUGIN_CRM: ""
+    # S3 Object Storage Credentials
+    OBJECT_STORAGE_ACCESS_KEY_ID: ""
+    OBJECT_STORAGE_SECRET_KEY: ""
   extraEnvVars: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -164,9 +181,6 @@ common:
     RABBITMQ_HOST: "rabbitmq"
     RABBITMQ_PORT_AMQP: "5672"
     RABBITMQ_PORT_HOST: "15672"
-    RABBITMQ_EXCHANGE: "fetcher.generate-fetcher.exchange"
-    RABBITMQ_GENERATE_FETCHER_QUEUE: "fetcher.generate-fetcher.queue"
-    RABBITMQ_GENERATE_FETCHER_KEY: "fetcher.generate-fetcher.key"
     RABBITMQ_HEALTH_CHECK_URL: "http://rabbitmq:15672"
     # SeaweedFS
     SEAWEEDFS_HOST: "seaweedfs-filer"
@@ -175,6 +189,7 @@ common:
     # Redis/Valkey
     REDIS_HOST: "valkey"
     REDIS_PORT: "6379"
+    REDIS_DB: "0"
     # OpenTelemetry
     OTEL_RESOURCE_SERVICE_NAME: "fetcher"
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/fetcher"
@@ -183,6 +198,14 @@ common:
     OTEL_EXPORTER_OTLP_ENDPOINT_PORT: "4317"
     OTEL_EXPORTER_OTLP_ENDPOINT: "midaz-otel-lgtm:4317"
     ENABLE_TELEMETRY: "false"
+    # Multi-Tenant
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    MULTI_TENANT_ENVIRONMENT: ""
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
 # Shared secrets
 secrets:
   MONGO_USER: "fetcher"

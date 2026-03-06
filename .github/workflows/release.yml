@@ -168,7 +168,7 @@ jobs:
 
       - name: Install oras
         if: steps.semantic_changelog.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
-        uses: oras-project/setup-oras@v1
+        uses: oras-project/setup-oras@v1.2.4
 
       - name: Tag chart as latest
         if: steps.semantic_changelog.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'

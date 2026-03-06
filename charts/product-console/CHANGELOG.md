@@ -1,5 +1,16 @@
 # Product-console Changelog
 
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v1.2.0)
+
+- **Features**
+  - Added MongoDB dependency and configuration to the product-console chart.
+
+Contributors: @gui.rodrigues,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v1.1.0...product-console-v1.2.0)
+
+---
+
 ## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v1.1.0)
 
 - **Features**

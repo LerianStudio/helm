@@ -176,11 +176,17 @@ jobs:
           CHART="${{ matrix.chart.name }}"
           VERSION="${{ steps.semantic_changelog.outputs.new_release_version }}"
 
+          if [ "$CHART" == "plugin-access-manager" ] || [ "$CHART" == "otel-collector-lerian" ]; then
+            PACKAGE="$CHART"
+          else
+            PACKAGE="${CHART}-helm"
+          fi
+
           echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u lerianstudio --password-stdin
           echo "${{ secrets.DOCKER_PASSWORD }}" | oras login registry-1.docker.io -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-          oras cp "ghcr.io/lerianstudio/${CHART}:${VERSION}" "ghcr.io/lerianstudio/${CHART}:latest"
-          oras cp "registry-1.docker.io/lerianstudio/${CHART}:${VERSION}" "registry-1.docker.io/lerianstudio/${CHART}:latest"
+          oras cp "ghcr.io/lerianstudio/${PACKAGE}:${VERSION}" "ghcr.io/lerianstudio/${PACKAGE}:latest"
+          oras cp "registry-1.docker.io/lerianstudio/${PACKAGE}:${VERSION}" "registry-1.docker.io/lerianstudio/${PACKAGE}:latest"
 
       - name: Publish Release in Plugin Lifecycle Management
         if: github.ref == 'refs/heads/main'

@@ -547,3 +547,27 @@ valkey:
     enabled: false
 otel-collector-lerian:
   enabled: true
+
+# -- AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Clotilde/Proxmox)
+aws:
+  rolesAnywhere:
+    enabled: false
+    trustAnchorArn: ""
+    profileArn: ""
+    roleArn: ""
+    region: "us-east-2"
+    sessionDuration: 3600
+    certificateSecretName: "reporter-iam-tls"
+    sidecar:
+      image:
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        tag: "latest-amd64"
+        pullPolicy: IfNotPresent
+      port: 9911
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi

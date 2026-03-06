@@ -25,6 +25,10 @@ spec:
         imagePullSecrets:
           {{- toYaml . | nindent 10 }}
         {{- end }}
+        {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+        securityContext:
+          fsGroup: 65532
+        {{- end }}
         containers:
         - name: {{ include "plugin-worker.fullname" . }}
           image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
@@ -34,15 +38,21 @@ spec:
                 name: {{ include "plugin-worker.fullname" . }}
             - secretRef:
                 name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "plugin-worker.fullname" . }}{{ end }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
           env:
+          {{- if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
-          {{ end }}          
+          {{- end }}
+          {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+          - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+            value: "http://127.0.0.1:{{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+          - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
+            value: "IPv4"
+          {{- end }}
           resources:
             limits:
               cpu: {{ .Values.worker.resources.limits.cpu }}
@@ -50,6 +60,60 @@ spec:
             requests:
               cpu: {{ .Values.worker.resources.requests.cpu }}
               memory: {{ .Values.worker.resources.requests.memory }}
+        {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+        - name: aws-signing-helper
+          image: "{{ $.Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ $.Values.aws.rolesAnywhere.sidecar.image.tag }}"
+          imagePullPolicy: {{ $.Values.aws.rolesAnywhere.sidecar.image.pullPolicy | default "IfNotPresent" }}
+          args:
+            - serve
+            - --certificate
+            - /certs/tls.crt
+            - --private-key
+            - /certs/tls.key
+            - --trust-anchor-arn
+            - "{{ $.Values.aws.rolesAnywhere.trustAnchorArn }}"
+            - --profile-arn
+            - "{{ $.Values.aws.rolesAnywhere.profileArn }}"
+            - --role-arn
+            - "{{ $.Values.aws.rolesAnywhere.roleArn }}"
+            - --region
+            - "{{ $.Values.aws.rolesAnywhere.region | default "us-east-2" }}"
+            - --session-duration
+            - "{{ $.Values.aws.rolesAnywhere.sessionDuration | default 3600 }}"
+            - --port
+            - "{{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+          ports:
+            - name: imds
+              containerPort: {{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}
+              protocol: TCP
+          volumeMounts:
+            - name: iam-certs
+              mountPath: /certs
+              readOnly: true
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          resources:
+            {{- toYaml $.Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
+        {{- end }}
+        {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+        volumes:
+          - name: iam-certs
+            secret:
+              secretName: {{ $.Values.aws.rolesAnywhere.certificateSecretName | default "reporter-iam-tls" }}
+              defaultMode: 0440
+              items:
+                - key: tls.crt
+                  path: tls.crt
+                - key: tls.key
+                  path: tls.key
+        {{- end }}
         restartPolicy: Never
         {{- with .Values.worker.nodeSelector }}
         nodeSelector:

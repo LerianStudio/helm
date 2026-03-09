@@ -1,5 +1,16 @@
 # Reporter Changelog
 
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v1.2.0)
+
+- Features:
+  - Add IAM Roles Anywhere sidecar support
+
+Contributors: @gandalf
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.1.0...reporter-v1.2.0)
+
+---
+
 ## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v1.1.0)
 
 - Fixes:

@@ -17,6 +17,12 @@ data:
   CORS_ALLOWED_HEADERS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_HEADERS | default "Origin,Content-Type,Accept,Authorization,X-Request-ID" | quote }}
 
   # TLS Configuration
+  {{- if .Values.bankTransfer.configmap.SERVER_TLS_CERT_FILE }}
+  SERVER_TLS_CERT_FILE: {{ .Values.bankTransfer.configmap.SERVER_TLS_CERT_FILE | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.SERVER_TLS_KEY_FILE }}
+  SERVER_TLS_KEY_FILE: {{ .Values.bankTransfer.configmap.SERVER_TLS_KEY_FILE | quote }}
+  {{- end }}
   TLS_TERMINATED_UPSTREAM: {{ .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
 
   # Multi-Tenancy

@@ -228,6 +228,8 @@ worker:
     annotations: {}
     # APP
     VERSION: v1.0.0
+    # HEALTH SERVER
+    HEALTH_PORT: "4006"
     # LOG LEVEL
     LOG_LEVEL: debug
     # OPEN TELEMETRY

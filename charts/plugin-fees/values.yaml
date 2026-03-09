@@ -141,7 +141,7 @@ frontend:
   # -- Service name
   name: plugin-fees-ui
   # -- Enable or disable the frontend service
-  enabled: true
+  enabled: false
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   # -- Number of replicas for the deployment

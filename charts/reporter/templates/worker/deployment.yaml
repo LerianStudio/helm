@@ -1,0 +1,178 @@
+{{- if not (or .Values.keda.enabled .Values.keda.external) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-worker.fullname" . }}
+  labels:
+    {{- include "plugin-worker.labels" (dict "context" . "name" .Values.worker.name ) | nindent 4 }}
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/part-of: reporter
+  {{- with .Values.worker.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  revisionHistoryLimit: {{ .Values.worker.revisionHistoryLimit | default 10 }}
+  {{- with .Values.worker.deploymentStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-worker.selectorLabels" (dict "context" . "name" .Values.worker.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-worker.labels" (dict "context" . "name" .Values.worker.name ) | nindent 8 }}
+      {{- with .Values.worker.podAnnotations }}
+      annotations:
+        {{- range $key, $value := . }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      {{- with .Values.worker.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+      securityContext:
+        fsGroup: 65532
+      {{- end }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "plugin-worker.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$RABBITMQ_HOST:$RABBITMQ_PORT_AMQP" "$MONGO_HOST:$MONGO_PORT";
+              do
+                echo "Checking $svc...";
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done;
+      containers:
+        - name: {{ include "plugin-worker.fullname" . }}
+          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.worker.service.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "plugin-worker.fullname" . }}
+            - secretRef:
+                name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "plugin-worker.fullname" . }}{{ end }}
+          env:
+          {{- if (index .Values "otel-collector-lerian").enabled }}
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{- end }}
+          {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+          - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+            value: "http://127.0.0.1:{{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+          - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
+            value: "IPv4"
+          {{- end }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: {{ .Values.worker.configmap.HEALTH_PORT | default 4006 }}
+            initialDelaySeconds: {{ .Values.worker.readinessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.worker.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.worker.readinessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ .Values.worker.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.worker.readinessProbe.failureThreshold | default 3 }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: {{ .Values.worker.configmap.HEALTH_PORT | default 4006 }}
+            initialDelaySeconds: {{ .Values.worker.livenessProbe.initialDelaySeconds | default 20 }}
+            periodSeconds: {{ .Values.worker.livenessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.worker.livenessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ .Values.worker.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.worker.livenessProbe.failureThreshold | default 3 }}
+        {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+        - name: aws-signing-helper
+          image: "{{ $.Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ $.Values.aws.rolesAnywhere.sidecar.image.tag }}"
+          imagePullPolicy: {{ $.Values.aws.rolesAnywhere.sidecar.image.pullPolicy | default "IfNotPresent" }}
+          args:
+            - serve
+            - --certificate
+            - /certs/tls.crt
+            - --private-key
+            - /certs/tls.key
+            - --trust-anchor-arn
+            - "{{ $.Values.aws.rolesAnywhere.trustAnchorArn }}"
+            - --profile-arn
+            - "{{ $.Values.aws.rolesAnywhere.profileArn }}"
+            - --role-arn
+            - "{{ $.Values.aws.rolesAnywhere.roleArn }}"
+            - --region
+            - "{{ $.Values.aws.rolesAnywhere.region | default "us-east-2" }}"
+            - --session-duration
+            - "{{ $.Values.aws.rolesAnywhere.sessionDuration | default 3600 }}"
+            - --port
+            - "{{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+          ports:
+            - name: imds
+              containerPort: {{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}
+              protocol: TCP
+          volumeMounts:
+            - name: iam-certs
+              mountPath: /certs
+              readOnly: true
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          resources:
+            {{- toYaml $.Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
+        {{- end }}
+      {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+      volumes:
+        - name: iam-certs
+          secret:
+            secretName: {{ $.Values.aws.rolesAnywhere.certificateSecretName | default "reporter-iam-tls" }}
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+      {{- end }}
+      {{- with .Values.worker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

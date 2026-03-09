@@ -1,0 +1,39 @@
+{{- if not (or .Values.keda.enabled .Values.keda.external) }}
+{{- if .Values.manager.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "plugin-manager.fullname" . }}
+  labels:
+    {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 4 }}
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/part-of: reporter
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "plugin-manager.fullname" . }}
+  minReplicas: {{ .Values.manager.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.manager.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.manager.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.manager.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.manager.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.manager.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.manager.autoscaling.scaleDownStabilizationSeconds | default 300 }}
+{{- end }}
+{{- end }}

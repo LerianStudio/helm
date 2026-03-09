@@ -139,6 +139,14 @@ manager:
     PDF_TIMEOUT_SECONDS: "60"
   # Extra Env Vars
   extraEnvVars: {}
+  # -- HPA configuration (used when KEDA is disabled)
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+    scaleDownStabilizationSeconds: 300
   keda:
     scaledObject:
       enabled: true
@@ -162,7 +170,8 @@ worker:
   name: "reporter-worker"
   # -- Annotations for worker job resources
   annotations: {}
-  replicaCount: 0
+  # -- Number of replicas (used when KEDA is disabled and worker runs as a Deployment)
+  replicaCount: 2
   image:
     # -- Repository for the console service container image
     repository: ghcr.io/lerianstudio/reporter-worker
@@ -226,9 +235,39 @@ worker:
     OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0"
     PDF_POOL_WORKERS: "5"
     PDF_TIMEOUT_SECONDS: "30"
+  # -- Pod annotations for the worker deployment (used when KEDA is disabled)
+  podAnnotations: {}
+  # -- Deployment strategy (used when KEDA is disabled)
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  # -- Readiness probe configuration (used when KEDA is disabled)
+  readinessProbe:
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 3
+  # -- Liveness probe configuration (used when KEDA is disabled)
+  livenessProbe:
+    initialDelaySeconds: 20
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 3
+  # -- HPA configuration (used when KEDA is disabled)
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+    scaleDownStabilizationSeconds: 300
   # Extra Env Vars
   extraEnvVars: {}
-  # -- KEDA configuration for worker auto-scaling
+  # -- KEDA configuration for worker auto-scaling (default mode)
   keda:
     scaledJob:
       enabled: true

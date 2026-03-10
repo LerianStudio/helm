@@ -15,7 +15,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `5.6.0` | 3.5.2 | 3.5.1 | 3.5.2 | 3.5.2 |
+| `5.7.0-beta.1` | 3.5.3 | 3.5.3 | 3.5.3 | 3.5.3 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -68,7 +68,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `1.2.0` | 1.1.1 | 1.0.0 |
+| `1.2.1-beta.2` | 1.1.1 | 1.0.0 |
 -----------------
 
 ### Plugin BR Bank Transfer JD

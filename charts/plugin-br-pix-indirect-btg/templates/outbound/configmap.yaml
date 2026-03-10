@@ -232,17 +232,17 @@ data:
   # ==============================================================================
   # DICT_FUNDS_RECOVERY_EVENT - Funds Recovery Events entity
   # ==============================================================================
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_ENABLED | default "true" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_ENABLED | default "true" | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_URL | default "" | quote }}
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_WORKER_COUNT | default "1" | quote }}
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_BATCH_SIZE | default "50" | quote }}
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_POLLING_INTERVAL | default "10s" | quote }}
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_REQUEST_TIMEOUT | default "30s" | quote }}
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_MAX_RETRIES | default "5" | quote }}
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_BACKOFF_MULTIPLIER | default "2" | quote }}
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENT_MAX_CONCURRENT | default "2" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_URL | default "" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_WORKER_COUNT | default "1" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_POLLING_INTERVAL | default "10s" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_REQUEST_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_MAX_CONCURRENT | default "2" | quote }}
 
   # ==============================================================================
   # DICT_RECONCILIATION_JOB - Medium volume entity

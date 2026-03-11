@@ -1,5 +1,20 @@
 # Reporter Changelog
 
+## [1.2.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v1.2.1)
+
+Features:
+- Added health server configuration and updated readiness/liveness probe path for improved monitoring.
+- Introduced Horizontal Pod Autoscaler (HPA) support for manager and worker deployments to enhance scalability.
+
+Fixes:
+- Updated worker default image tag to match the latest stable release, ensuring compatibility and stability.
+
+Contributors: @gandalf, @gui.rodrigues, @guimoreirar
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.2.0...reporter-v1.2.1)
+
+---
+
 ## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v1.2.0)
 
 - Features:

@@ -99,3 +99,14 @@ secrets:
 useExistingSecret: false
 # -- Name of the existing secret to use
 existingSecretName: ""
+
+# =============================================================================
+# Optional Dependencies
+# =============================================================================
+
+mongodb:
+  # -- Enable or disable the bundled MongoDB subchart.
+  # Set to false when using an external MongoDB (e.g. DocumentDB).
+  # When disabled, configure MONGODB_URI/MONGO_HOST/MONGO_PORT in configmap
+  # and MONGODB_PASS in secrets to point to your external instance.
+  enabled: true

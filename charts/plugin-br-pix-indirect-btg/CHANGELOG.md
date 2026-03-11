@@ -1,5 +1,22 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v2.0.0)
+
+- **Features**
+  - Added new environments for MED 2 BTG.
+
+- **Fixes**
+  - Updated plugin-br-pix-indirect-btg to version 1.4.1.
+
+- **Improvements**
+  - Fixed missing plural in funds recovery events.
+
+Contributors: @brunognovaes.cm, @guimoreirar
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v1.7.0...plugin-br-pix-indirect-btg-v2.0.0)
+
+---
+
 ## [1.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v1.7.0)
 
 - Fixes:

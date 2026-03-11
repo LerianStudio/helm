@@ -132,11 +132,11 @@ spec:
             - --private-key
             - /certs/tls.key
             - --trust-anchor-arn
-            - "{{ .Values.aws.rolesAnywhere.trustAnchorArn }}"
+            - "{{ required "aws.rolesAnywhere.trustAnchorArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.trustAnchorArn }}"
             - --profile-arn
-            - "{{ .Values.aws.rolesAnywhere.profileArn }}"
+            - "{{ required "aws.rolesAnywhere.profileArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.profileArn }}"
             - --role-arn
-            - "{{ .Values.aws.rolesAnywhere.roleArn }}"
+            - "{{ required "aws.rolesAnywhere.roleArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.roleArn }}"
             - --region
             - "{{ .Values.aws.rolesAnywhere.region | default "us-east-2" }}"
             - --session-duration

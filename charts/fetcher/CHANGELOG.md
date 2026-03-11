@@ -1,5 +1,19 @@
 # Fetcher Changelog
 
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.0)
+
+Features:
+- Added IAM Roles Anywhere sidecar support for fetcher.
+
+Fixes:
+- Added required validation for Roles Anywhere ARNs.
+
+Contributors: @ferr3ira.gabriel, @gandalf, @guimoreirar,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v1.3.0...fetcher-v2.0.0)
+
+---
+
 ## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v1.2.0)
 
 Features:

@@ -51,6 +51,27 @@ Secrets (sensitive):
   - Using existing secret: {{ .Values.existingSecretName }}
 {{- end }}
 
+================================================================================
+  MongoDB
+================================================================================
+{{- if .Values.mongodb.enabled }}
+
+  Bundled MongoDB is ENABLED (Bitnami subchart).
+  The internal service will be available at:
+    {{ .Release.Name }}-mongodb.{{ .Release.Namespace }}.svc.cluster.local:27017
+
+  Default credentials are set in values.yaml under 'mongodb.auth'.
+  ⚠️  Change the default password before deploying to production.
+
+{{- else }}
+
+  Bundled MongoDB is DISABLED.
+  Make sure to configure an external MongoDB connection:
+    - configmap.MONGODB_URI / configmap.MONGO_HOST / configmap.MONGO_PORT
+    - secrets.MONGODB_PASS
+
+{{- end }}
+
 To customize configuration, override values in your values.yaml file.
 
 For more information, visit: https://docs.lerian.studio

@@ -1,5 +1,20 @@
 # Product-console Changelog
 
+## [1.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v1.3.0)
+
+- **Fixes:**
+  - Derive MongoDB service name dynamically in NOTES.txt.
+  - Set image tag to 1.3.0 in values.yaml.
+  - Update appVersion to 1.3.0.
+  - Address CodeRabbit review on NOTES.txt.
+  - Add MongoDB connection info to NOTES.txt.
+
+Contributors: @gandalf
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v1.2.0...product-console-v1.3.0)
+
+---
+
 ## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v1.2.0)
 
 - **Features**

@@ -107,6 +107,7 @@ existingSecretName: ""
 mongodb:
   # -- Enable or disable the bundled MongoDB subchart.
   # Set to false when using an external MongoDB (e.g. DocumentDB).
-  # When disabled, configure MONGODB_URI/MONGO_HOST/MONGO_PORT in configmap
-  # and MONGODB_PASS in secrets to point to your external instance.
+  # When disabled, configure the external MongoDB connection settings in
+  # configmap/secrets (for example `MONGODB_URI` and `MONGODB_PASS`) to point
+  # to your external instance.
   enabled: true

@@ -35,8 +35,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "matcher.serviceAccountName" . }}
+      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      securityContext:
+        fsGroup: 65532
+      {{- else }}
       securityContext:
         {{- toYaml .Values.matcher.podSecurityContext | nindent 8 }}
+      {{- end }}
       initContainers:
         - name: wait-for-dependencies
           image: busybox
@@ -77,14 +82,22 @@ spec:
               name: {{ if .Values.matcher.useExistingSecret }}{{ .Values.matcher.existingSecretName }}{{ else }}{{ include "matcher.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "matcher.fullname" . }}
-          {{- if eq (toString .Values.matcher.configmap.ENABLE_TELEMETRY) "true" }}
+          {{- if or (eq (toString .Values.matcher.configmap.ENABLE_TELEMETRY) "true") (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
           env:
+          {{- if eq (toString .Values.matcher.configmap.ENABLE_TELEMETRY) "true" }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
+          {{- end }}
+          {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+          - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+            value: "http://127.0.0.1:{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+          - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
+            value: "IPv4"
+          {{- end }}
           {{- end }}
           ports:
             - name: http
@@ -108,6 +121,59 @@ spec:
             failureThreshold: 3
           resources:
             {{- toYaml .Values.matcher.resources | nindent 12 }}
+        {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+        - name: aws-signing-helper
+          image: "{{ .Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ .Values.aws.rolesAnywhere.sidecar.image.tag }}"
+          imagePullPolicy: {{ .Values.aws.rolesAnywhere.sidecar.image.pullPolicy | default "IfNotPresent" }}
+          args:
+            - serve
+            - --certificate
+            - /certs/tls.crt
+            - --private-key
+            - /certs/tls.key
+            - --trust-anchor-arn
+            - "{{ .Values.aws.rolesAnywhere.trustAnchorArn }}"
+            - --profile-arn
+            - "{{ .Values.aws.rolesAnywhere.profileArn }}"
+            - --role-arn
+            - "{{ .Values.aws.rolesAnywhere.roleArn }}"
+            - --region
+            - "{{ .Values.aws.rolesAnywhere.region | default "us-east-2" }}"
+            - --session-duration
+            - "{{ .Values.aws.rolesAnywhere.sessionDuration | default 3600 }}"
+            - --port
+            - "{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+          ports:
+            - name: imds
+              containerPort: {{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}
+              protocol: TCP
+          volumeMounts:
+            - name: iam-certs
+              mountPath: /certs
+              readOnly: true
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          resources:
+            {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
+        {{- end }}
+      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      volumes:
+        - name: iam-certs
+          secret:
+            secretName: {{ .Values.aws.rolesAnywhere.certificateSecretName | default "matcher-iam-tls" }}
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+      {{- end }}
       {{- with .Values.matcher.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -1,5 +1,17 @@
 # Plugin-access-manager Changelog
 
+## [6.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.0.0)
+
+- Fixes:
+  - Add `kindIs` guard for backward compatibility with string image values.
+  - Split migrations and `initUser` image into repository/tag fields.
+
+Contributors: @gandalf
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v5.4.0...plugin-access-manager-v6.0.0)
+
+---
+
 ## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v5.4.0)
 
 - Improvements:

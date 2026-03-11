@@ -33,8 +33,14 @@ spec:
             done;
       containers:
         - name: migrate
-          image: {{ .Values.auth.backend.migrations.image | default "ghcr.io/lerianstudio/casdoor-migrations:latest" }}
+          {{- $migrationImage := .Values.auth.backend.migrations.image -}}
+          {{- if kindIs "string" $migrationImage }}
+          image: {{ $migrationImage | quote }}
           imagePullPolicy: Always
+          {{- else }}
+          image: "{{ $migrationImage.repository | default "ghcr.io/lerianstudio/casdoor-migrations" }}:{{ $migrationImage.tag | default "latest" }}"
+          imagePullPolicy: {{ $migrationImage.pullPolicy | default "Always" }}
+          {{- end }}
           env:
             - name: DB_HOST
               valueFrom:

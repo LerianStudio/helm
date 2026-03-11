@@ -37,8 +37,8 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: init-user
-          image: {{ .Values.auth.initUser.image | default "ghcr.io/lerianstudio/casdoor-user-init:latest" }}
-          imagePullPolicy: {{ .Values.auth.initUser.imagePullPolicy | default "Always" }}
+          image: "{{ .Values.auth.initUser.image.repository | default "ghcr.io/lerianstudio/casdoor-user-init" }}:{{ .Values.auth.initUser.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.auth.initUser.image.pullPolicy | default "Always" }}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

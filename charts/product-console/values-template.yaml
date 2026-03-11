@@ -67,7 +67,9 @@ configmap:
 
   # MongoDB Configuration
   MONGODB_URI: ""
-  MONGODB_DB_NAME: "product-console"
+  MONGO_HOST: ""
+  MONGO_PORT: "27017"
+  MONGODB_DB_NAME: "midaz-console"
   MONGODB_USER: ""
 
   # CRM Plugin Configuration

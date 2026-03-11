@@ -58,10 +58,18 @@ Secrets (sensitive):
 
   Bundled MongoDB is ENABLED (Bitnami subchart).
   The internal service will be available at:
-    {{ .Release.Name }}-mongodb.{{ .Release.Namespace }}.svc.cluster.local:27017
+    {{- $mongoName := default (printf "%s-mongodb" .Release.Name) .Values.mongodb.fullnameOverride }}
+    {{- if and (not .Values.mongodb.fullnameOverride) .Values.mongodb.nameOverride }}
+    {{- $mongoName = printf "%s-%s" .Release.Name .Values.mongodb.nameOverride }}
+    {{- end }}
+    {{ $mongoName }}.{{ .Release.Namespace }}.svc.cluster.local:27017
 
+  {{- if .Values.mongodb.auth.existingSecret }}
+  Credentials are loaded from existing secret: {{ .Values.mongodb.auth.existingSecret }}
+  {{- else }}
   Default credentials are set in values.yaml under 'mongodb.auth'.
   ⚠️  Change the default password before deploying to production.
+  {{- end }}
 
 {{- else }}
 

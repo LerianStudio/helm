@@ -67,7 +67,9 @@ configmap:
 
   # MongoDB Configuration
   MONGODB_URI: ""
-  MONGODB_DB_NAME: "product-console"
+  MONGO_HOST: ""
+  MONGO_PORT: "27017"
+  MONGODB_DB_NAME: "midaz-console"
   MONGODB_USER: ""
 
   # CRM Plugin Configuration
@@ -99,3 +101,15 @@ secrets:
 useExistingSecret: false
 # -- Name of the existing secret to use
 existingSecretName: ""
+
+# =============================================================================
+# Optional Dependencies
+# =============================================================================
+
+mongodb:
+  # -- Enable or disable the bundled MongoDB subchart.
+  # Set to false when using an external MongoDB (e.g. DocumentDB).
+  # When disabled, configure the external MongoDB connection settings in
+  # configmap/secrets (for example `MONGODB_URI` and `MONGODB_PASS`) to point
+  # to your external instance.
+  enabled: true

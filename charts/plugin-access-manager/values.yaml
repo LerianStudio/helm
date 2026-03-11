@@ -350,7 +350,13 @@ auth:
       targetCPUUtilizationPercentage: 80
       targetMemoryUtilizationPercentage: 80
     migrations:
-      image: ""
+      image:
+        # -- Repository for the casdoor-migrations container image
+        repository: ghcr.io/lerianstudio/casdoor-migrations
+        # -- Image pull policy
+        pullPolicy: Always
+        # -- Image tag used for deployment
+        tag: "latest"
 
   # -- Init User Job configuration
   # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
@@ -358,10 +364,13 @@ auth:
   initUser:
     # -- Enable or disable the init user job
     enabled: true
-    # -- Container image for the init user job
-    image: "ghcr.io/lerianstudio/casdoor-user-init:latest"
-    # -- Image pull policy
-    imagePullPolicy: Always
+    image:
+      # -- Repository for the casdoor-user-init container image
+      repository: ghcr.io/lerianstudio/casdoor-user-init
+      # -- Image pull policy
+      pullPolicy: Always
+      # -- Image tag used for deployment
+      tag: "latest"
     # -- Admin user email (default: admin@midaz.tech)
     adminEmail: "admin@midaz.tech"
     # -- Admin user display name

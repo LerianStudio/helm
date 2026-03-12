@@ -74,6 +74,7 @@ spec:
                 name: {{ include "plugin-worker.fullname" . }}
             - secretRef:
                 name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "plugin-worker.fullname" . }}{{ end }}
+          {{- if or (index .Values "otel-collector-lerian").enabled (and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled) }}
           env:
           {{- if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
@@ -88,6 +89,7 @@ spec:
             value: "http://127.0.0.1:{{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
           - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
             value: "IPv4"
+          {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.worker.resources | nindent 12 }}

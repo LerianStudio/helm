@@ -38,6 +38,16 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
+Create a unique name for cluster-scoped resources (ClusterRole, ClusterRoleBinding).
+Includes namespace to avoid conflicts when multiple releases exist in different namespaces.
+*/}}
+{{- define "plugin-manager.clusterResourceName" -}}
+{{- $namespace := include "global.namespace" . -}}
+{{- $name := default .Values.manager.name -}}
+{{- printf "%s-%s" $name $namespace | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name worker.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.

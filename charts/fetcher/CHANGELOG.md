@@ -1,5 +1,16 @@
 # Fetcher Changelog
 
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.2)
+
+- Fixes:
+  - Add http:// prefix to OTEL_EXPORTER_OTLP_ENDPOINT in fetcher.
+
+Contributors: @ferr3ira.gabriel
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.0.1...fetcher-v2.0.2)
+
+---
+
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.0)
 
 Features:

@@ -1,5 +1,16 @@
 # Fetcher Changelog
 
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.1)
+
+- Fixes:
+  - Add http:// prefix to OTEL_EXPORTER_OTLP_ENDPOINT in charts.
+
+Contributors: @ferr3ira.gabriel,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.0.0...fetcher-v2.0.1)
+
+---
+
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.0)
 
 Features:

@@ -86,7 +86,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `1.2.1` | 1.1.1 | 1.1.0 |
+| `2.0.0-beta.3` | 1.1.1 | 1.1.0 |
 -----------------
 
 ### Plugin BR Bank Transfer JD
@@ -138,7 +138,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `2.0.2` | 1.2.0 | 1.2.0 |
+| `2.0.3-beta.1` | 1.2.0 | 1.2.0 |
 -----------------
 
 ### Underwriter
@@ -164,8 +164,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Matcher Version |
 | :---: | :---: |
-| `2.0.1` | 1.0.0 |
------------------
+| `2.0.2-beta.1` | 1.0.0 |
 
 ### Flowker
 

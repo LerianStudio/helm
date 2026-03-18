@@ -6,7 +6,7 @@ home: https://github.com/LerianStudio/fetcher
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 2.0.3-beta.1
+version: 2.0.3
 appVersion: "1.2.0"
 keywords:
   - midaz

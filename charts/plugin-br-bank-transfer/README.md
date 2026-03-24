@@ -1,6 +1,6 @@
-# Plugin BR Bank Transfer JD Helm Chart
+# Plugin BR Bank Transfer Helm Chart
 
-This Helm chart installs **Plugin BR Bank Transfer (JD)** for Midaz, a high-performance and open-source ledger.
+This Helm chart installs **Plugin BR Bank Transfer** for Midaz, a high-performance and open-source ledger.
 
 ---
 
@@ -135,7 +135,7 @@ bankTransfer:
 | `mongodb.auth.rootPassword` | MongoDB admin password | `lerian` |
 | `mongodb.auth.usernames` | Application DB users | `["bank_transfer"]` |
 | `mongodb.auth.passwords` | Application DB passwords | `["lerian"]` |
-| `mongodb.auth.databases` | Application databases | `["plugin_br_bank_transfer_jd"]` |
+| `mongodb.auth.databases` | Application databases | `["plugin_br_bank_transfer"]` |
 
 ### RabbitMQ Dependency (Optional)
 
@@ -164,7 +164,7 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `SERVER_ADDRESS` | Server listen address | `:8080` |
 | `POSTGRES_HOST` | PostgreSQL host | Dynamic based on release |
 | `REDIS_HOST` | Redis/Valkey host | Dynamic based on release |
-| `AUTH_ENABLED` | Enable authentication | `true` |
+| `PLUGIN_AUTH_ENABLED` | Enable authentication | `true` |
 | `JD_SANDBOX_MODE` | Enable JD sandbox mode (fake adapter) | `false` |
 | `MIDAZ_BASE_URL` | Midaz API base URL | **Required** |
 | `CRM_BASE_URL` | CRM adapter base URL | **Required** |
@@ -172,7 +172,7 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `JD_BASE_URL` | JD SPB SOAP API URL | **Required** (unless `JD_SANDBOX_MODE=true`) |
 | `JD_ORIGIN_ISPB` | Bank ISPB code for JD | **Required** (unless `JD_SANDBOX_MODE=true`) |
 | `LICENSE_SERVICE_ADDRESS` | License validation service URL | Optional |
-| `ORGANIZATION_IDS` | Organization IDs for license validation | Optional |
+| `TENANT_IDS` | Tenant IDs for license validation | Optional |
 
 For a complete list, see `values.yaml`.
 
@@ -202,12 +202,12 @@ For local development/testing, you can disable authentication and use sandbox mo
 bankTransfer:
   configmap:
     ENV_NAME: "development"
-    AUTH_ENABLED: "false"
+    PLUGIN_AUTH_ENABLED: "false"
     POSTGRES_SSLMODE: "disable"
     JD_SANDBOX_MODE: "true"  # Uses fake JD adapter (no real bank calls)
 ```
 
-> **Note:** License validation is controlled via `LICENSE_SERVICE_ADDRESS` and `ORGANIZATION_IDS`. When these are not set, license validation is skipped.
+> **Note:** License validation is controlled via `LICENSE_SERVICE_ADDRESS` and `TENANT_IDS`. When these are not set, license validation is skipped.
 
 ---
 

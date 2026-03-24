@@ -49,6 +49,10 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ .Values.crm.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-auth" | quote }}
   PLUGIN_AUTH_ENABLED: {{ .Values.crm.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
 
+  # MULTI-TENANT
+  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.crm.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
+  MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC: {{ .Values.crm.configmap.MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC | default "30" | quote }}
+
   # Extra Env Vars
   {{- with .Values.crm.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

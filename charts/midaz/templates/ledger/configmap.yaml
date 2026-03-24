@@ -173,6 +173,12 @@ data:
   BALANCE_SYNC_WORKER_ENABLED: {{ .Values.ledger.configmap.BALANCE_SYNC_WORKER_ENABLED | default "false" | quote }}
   BALANCE_SYNC_MAX_WORKERS: {{ .Values.ledger.configmap.BALANCE_SYNC_MAX_WORKERS | default "5" | quote }}
 
+  # =============================================================================
+  # MULTI-TENANT
+  # =============================================================================
+  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.ledger.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
+  MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC: {{ .Values.ledger.configmap.MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC | default "30" | quote }}
+
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

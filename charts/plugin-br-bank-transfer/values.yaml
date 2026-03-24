@@ -1,4 +1,4 @@
-# Default values for plugin-br-bank-transfer-jd components.
+# Default values for plugin-br-bank-transfer components.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 nameOverride: "bank-transfer"
@@ -12,7 +12,7 @@ global:
     # -- PostgreSQL connection settings
     connection:
       # -- PostgreSQL host
-      host: "plugin-br-bank-transfer-jd-postgresql-primary"
+      host: "plugin-br-bank-transfer-postgresql-primary"
       # -- PostgreSQL port
       port: "5432"
     # -- Admin credentials for PostgreSQL
@@ -40,7 +40,7 @@ global:
       # -- RabbitMQ protocol (http or https)
       protocol: "http"
       # -- RabbitMQ host (management API endpoint)
-      host: "plugin-br-bank-transfer-jd-rabbitmq"
+      host: "plugin-br-bank-transfer-rabbitmq"
       # -- RabbitMQ HTTP management port
       port: "15672"
       # -- RabbitMQ AMQP port (for connectivity check)
@@ -74,7 +74,7 @@ bankTransfer:
   revisionHistoryLimit: 10
   image:
     # -- Repository for the bank-transfer service container image
-    repository: ghcr.io/lerianstudio/plugin-br-bank-transfer-jd
+    repository: ghcr.io/lerianstudio/plugin-br-bank-transfer
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
@@ -226,24 +226,28 @@ bankTransfer:
     # MongoDB Configuration (mandatory for audit/event persistence)
     MONGO_ENABLED: "true"
     # MONGO_URI is constructed from secrets if not explicitly set
-    MONGO_DATABASE: "plugin_br_bank_transfer_jd"
+    MONGO_DATABASE: "plugin_br_bank_transfer"
     MONGO_MAX_POOL_SIZE: "25"
     MONGO_SERVER_SELECTION_TIMEOUT_MS: "3000"
     MONGO_HEARTBEAT_INTERVAL_MS: "10000"
-    # Authentication
-    AUTH_ENABLED: "true"
-    AUTH_SERVICE_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    # Authentication (plugin-auth)
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    PLUGIN_AUTH_CLIENT_ID: "plugin-br-bank-transfer"
     AUTH_CACHE_TTL_SEC: "300"
     # License Validation
     # LICENSE_SERVICE_ADDRESS: ""
-    # ORGANIZATION_IDS: ""
+    # TENANT_IDS: ""
 
     # OpenTelemetry
     ENABLE_TELEMETRY: "false"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-bank-transfer-jd"
-    OTEL_RESOURCE_SERVICE_NAME: "plugin-br-bank-transfer-jd"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-bank-transfer"
+    OTEL_RESOURCE_SERVICE_NAME: "plugin-br-bank-transfer"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    # Systemplane Runtime Configuration (optional)
+    # SYSTEMPLANE_BACKEND: "postgres"
+    # SYSTEMPLANE_POSTGRES_SCHEMA: "system"
     # Rate Limiting
     RATE_LIMIT_ENABLED: "true"
     RATE_LIMIT_MAX: "100"
@@ -266,16 +270,20 @@ bankTransfer:
     MIDAZ_BREAKER_FAILURES: "3"
     MIDAZ_BREAKER_TIMEOUT_SECONDS: "30"
     # CRM Adapter (REQUIRED)
-    CRM_BASE_URL: "http://plugin-crm.midaz-plugins.svc.cluster.local.:4003"
+    CRM_BASE_URL: "http://plugin-crm.midaz-plugins.svc.cluster.local:4003"
     CRM_TIMEOUT_MS: "2000"
     CRM_MAX_RETRIES: "2"
     CRM_CACHE_TTL_MS: "300000"
+    CRM_AUTH_ENABLED: "false"
+    # CRM_CLIENT_ID: ""
     # Fees Adapter (REQUIRED)
-    FEES_BASE_URL: "http://plugin-fees.midaz-plugins.svc.cluster.local.:4004"
+    FEES_BASE_URL: "http://plugin-fees.midaz-plugins.svc.cluster.local:4004"
     FEES_TIMEOUT_MS: "2000"
     FEES_MAX_RETRIES: "2"
     FEES_FAIL_CLOSED_DEFAULT: "false"
     FEES_MAX_FEE_AMOUNT_CENTS: "99999999"
+    FEES_AUTH_ENABLED: "false"
+    # FEES_CLIENT_ID: ""
     # JD SPB Adapter (REQUIRED)
     JD_BASE_URL: "" # MUST BE SET - JD SOAP endpoint
     JD_SOAP_PATH: "/soap"
@@ -305,7 +313,7 @@ bankTransfer:
     # WEBHOOK_ENDPOINT_URL: "https://example.com/webhooks/transfers"
     WEBHOOK_QUEUE_NAME: "transfer.webhook.delivery"
     WEBHOOK_DLQ_NAME: "transfer.webhook.dlq"
-    WEBHOOK_CONSUMER_TAG: "plugin-br-bank-transfer-jd-webhook"
+    WEBHOOK_CONSUMER_TAG: "plugin-br-bank-transfer-webhook"
     WEBHOOK_PREFETCH_COUNT: "20"
     WEBHOOK_TIMEOUT_MS: "5000"
     WEBHOOK_MAX_RETRIES: "3"
@@ -331,10 +339,21 @@ bankTransfer:
     REDIS_PASSWORD: "lerian"
     # MongoDB password (REQUIRED)
     MONGO_PASSWORD: "lerian"
-    # Authentication
-    AUTH_JWT_SECRET: ""
+    # Authentication (plugin-auth) - client secret for M2M auth
+    # PLUGIN_AUTH_CLIENT_SECRET: ""
+
     # License Key (required in production)
     # LICENSE_KEY: ""
+
+    # CRM Outbound M2M Credentials (optional - when CRM_AUTH_ENABLED=true)
+    # CRM_CLIENT_SECRET: ""
+
+    # Fees Outbound M2M Credentials (optional - when FEES_AUTH_ENABLED=true)
+    # FEES_CLIENT_SECRET: ""
+
+    # Systemplane Secrets (optional - for runtime config)
+    # SYSTEMPLANE_SECRET_MASTER_KEY: ""
+    # SYSTEMPLANE_POSTGRES_DSN: ""
 
     # JD SPB Credentials (REQUIRED for production)
     # JD_USER_CODE: ""
@@ -527,6 +546,6 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
-br-bank-transfer-jd:
+br-bank-transfer:
   image:
     tag: 1.0.0

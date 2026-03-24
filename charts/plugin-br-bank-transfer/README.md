@@ -9,7 +9,7 @@ This Helm chart installs **Plugin BR Bank Transfer (JD)** for Midaz, a high-perf
 To install Plugin BR Bank Transfer using Helm, run the following command:
 
 ```console
-$ helm install plugin-br-bank-transfer-jd oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-jd-helm --version <version> -n midaz-plugins --create-namespace
+$ helm install plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-helm --version <version> -n midaz-plugins --create-namespace
 ```
 
 This will create a new namespace called `midaz-plugins` if it doesn't already exist and deploy the Plugin BR Bank Transfer Helm chart.
@@ -27,7 +27,7 @@ $ helm list -n midaz-plugins
 To upgrade the chart to a new version:
 
 ```console
-$ helm upgrade plugin-br-bank-transfer-jd oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-jd-helm --version <new-version> -n midaz-plugins
+$ helm upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-helm --version <new-version> -n midaz-plugins
 ```
 
 ---
@@ -37,7 +37,7 @@ $ helm upgrade plugin-br-bank-transfer-jd oci://registry-1.docker.io/lerianstudi
 To uninstall the chart:
 
 ```console
-$ helm uninstall plugin-br-bank-transfer-jd -n midaz-plugins
+$ helm uninstall plugin-br-bank-transfer -n midaz-plugins
 ```
 
 ---
@@ -76,7 +76,7 @@ bankTransfer:
 | --- | --- | --- |
 | `bankTransfer.enabled` | Enable or disable the bank-transfer service | `true` |
 | `bankTransfer.replicaCount` | Number of replicas for the deployment | `2` |
-| `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer-jd` |
+| `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer` |
 | `bankTransfer.image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `bankTransfer.image.tag` | Image tag used for deployment | `1.0.0-beta.1` |
 | `bankTransfer.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |

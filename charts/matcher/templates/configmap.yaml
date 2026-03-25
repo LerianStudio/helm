@@ -117,11 +117,7 @@ data:
   DEDUPE_TTL_SEC: {{ .Values.matcher.configmap.DEDUPE_TTL_SEC | default "3600" | quote }}
 
   # Object Storage (S3-compatible)
-  {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
-  OBJECT_STORAGE_ENDPOINT: ""
-  {{- else }}
   OBJECT_STORAGE_ENDPOINT: {{ .Values.matcher.configmap.OBJECT_STORAGE_ENDPOINT | default (printf "http://matcher-seaweedfs.%s.svc.cluster.local.:8333" .Release.Namespace) | quote }}
-  {{- end }}
   OBJECT_STORAGE_REGION: {{ .Values.matcher.configmap.OBJECT_STORAGE_REGION | default "us-east-1" | quote }}
   OBJECT_STORAGE_BUCKET: {{ .Values.matcher.configmap.OBJECT_STORAGE_BUCKET | default "matcher-exports" | quote }}
   OBJECT_STORAGE_USE_PATH_STYLE: {{ .Values.matcher.configmap.OBJECT_STORAGE_USE_PATH_STYLE | default "true" | quote }}

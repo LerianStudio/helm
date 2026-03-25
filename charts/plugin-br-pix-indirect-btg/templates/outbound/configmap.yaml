@@ -259,6 +259,14 @@ data:
   WEBHOOK_DICT_RECONCILIATION_JOB_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_DICT_RECONCILIATION_JOB_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_MAX_CONCURRENT | default "2" | quote }}
 
+  # Security Tier Configuration (lib-commons v4.4.0)
+  SECURITY_TIER: {{ .Values.outbound.configmap.SECURITY_TIER | default "" | quote }}
+  SECURITY_ENFORCEMENT: {{ .Values.outbound.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}
+  ALLOW_INSECURE_TLS: {{ .Values.outbound.configmap.ALLOW_INSECURE_TLS | default "" | quote }}
+  ALLOW_CORS_WILDCARD: {{ .Values.outbound.configmap.ALLOW_CORS_WILDCARD | default "" | quote }}
+  RATE_LIMIT_ENABLED: {{ .Values.outbound.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  ALLOW_RATELIMIT_DISABLED: {{ .Values.outbound.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
+
   # Extra Env Vars
   {{- with .Values.outbound.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

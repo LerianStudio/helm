@@ -140,6 +140,14 @@ data:
   # BTG Webhook Validation
   BTG_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.BTG_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}
 
+  # Security Tier Configuration (lib-commons v4.4.0)
+  SECURITY_TIER: {{ .Values.pix.configmap.SECURITY_TIER | default "" | quote }}
+  SECURITY_ENFORCEMENT: {{ .Values.pix.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}
+  ALLOW_INSECURE_TLS: {{ .Values.pix.configmap.ALLOW_INSECURE_TLS | default "" | quote }}
+  ALLOW_CORS_WILDCARD: {{ .Values.pix.configmap.ALLOW_CORS_WILDCARD | default "" | quote }}
+  RATE_LIMIT_ENABLED: {{ .Values.pix.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  ALLOW_RATELIMIT_DISABLED: {{ .Values.pix.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
+
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

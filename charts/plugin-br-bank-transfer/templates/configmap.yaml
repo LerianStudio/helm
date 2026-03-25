@@ -85,31 +85,40 @@ data:
   # MongoDB Configuration (mandatory for audit/event persistence)
   # Note: MONGO_URI is in secrets.yaml to include the password securely
   MONGO_ENABLED: {{ .Values.bankTransfer.configmap.MONGO_ENABLED | default "true" | quote }}
-  MONGO_DATABASE: {{ .Values.bankTransfer.configmap.MONGO_DATABASE | default "plugin_br_bank_transfer_jd" | quote }}
+  MONGO_DATABASE: {{ .Values.bankTransfer.configmap.MONGO_DATABASE | default "plugin_br_bank_transfer" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.bankTransfer.configmap.MONGO_MAX_POOL_SIZE | default "25" | quote }}
   MONGO_SERVER_SELECTION_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MONGO_SERVER_SELECTION_TIMEOUT_MS | default "3000" | quote }}
   MONGO_HEARTBEAT_INTERVAL_MS: {{ .Values.bankTransfer.configmap.MONGO_HEARTBEAT_INTERVAL_MS | default "10000" | quote }}
 
-  # Authentication
-  AUTH_ENABLED: {{ .Values.bankTransfer.configmap.AUTH_ENABLED | default "true" | quote }}
-  AUTH_SERVICE_ADDRESS: {{ .Values.bankTransfer.configmap.AUTH_SERVICE_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  # Authentication (plugin-auth)
+  # Note: PLUGIN_AUTH_CLIENT_ID is in secrets.yaml for secure Vault integration
+  PLUGIN_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.PLUGIN_AUTH_ENABLED | default "true" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
   AUTH_CACHE_TTL_SEC: {{ .Values.bankTransfer.configmap.AUTH_CACHE_TTL_SEC | default "300" | quote }}
 
   # License Validation
   {{- if .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS }}
   LICENSE_SERVICE_ADDRESS: {{ .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS | quote }}
   {{- end }}
-  {{- if .Values.bankTransfer.configmap.ORGANIZATION_IDS }}
-  ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
+  {{- if .Values.bankTransfer.configmap.TENANT_IDS }}
+  TENANT_IDS: {{ .Values.bankTransfer.configmap.TENANT_IDS | quote }}
   {{- end }}
 
   # OpenTelemetry
   ENABLE_TELEMETRY: {{ .Values.bankTransfer.configmap.ENABLE_TELEMETRY | default "false" | quote }}
-  OTEL_LIBRARY_NAME: {{ .Values.bankTransfer.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-bank-transfer-jd" | quote }}
-  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-bank-transfer-jd" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.bankTransfer.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-bank-transfer" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-bank-transfer" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.bankTransfer.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+
+  # Systemplane Runtime Configuration (optional)
+  {{- if .Values.bankTransfer.configmap.SYSTEMPLANE_BACKEND }}
+  SYSTEMPLANE_BACKEND: {{ .Values.bankTransfer.configmap.SYSTEMPLANE_BACKEND | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.SYSTEMPLANE_POSTGRES_SCHEMA }}
+  SYSTEMPLANE_POSTGRES_SCHEMA: {{ .Values.bankTransfer.configmap.SYSTEMPLANE_POSTGRES_SCHEMA | quote }}
+  {{- end }}
 
   # Rate Limiting
   RATE_LIMIT_ENABLED: {{ .Values.bankTransfer.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
@@ -139,17 +148,21 @@ data:
   MIDAZ_BREAKER_TIMEOUT_SECONDS: {{ .Values.bankTransfer.configmap.MIDAZ_BREAKER_TIMEOUT_SECONDS | default "30" | quote }}
 
   # CRM Adapter
+  # Note: CRM_CLIENT_ID is in secrets.yaml for secure Vault integration
   CRM_BASE_URL: {{ required "bankTransfer.configmap.CRM_BASE_URL is required" .Values.bankTransfer.configmap.CRM_BASE_URL | quote }}
   CRM_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.CRM_TIMEOUT_MS | default "2000" | quote }}
   CRM_MAX_RETRIES: {{ .Values.bankTransfer.configmap.CRM_MAX_RETRIES | default "2" | quote }}
   CRM_CACHE_TTL_MS: {{ .Values.bankTransfer.configmap.CRM_CACHE_TTL_MS | default "300000" | quote }}
+  CRM_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.CRM_AUTH_ENABLED | default "false" | quote }}
 
   # Fees Adapter
+  # Note: FEES_CLIENT_ID is in secrets.yaml for secure Vault integration
   FEES_BASE_URL: {{ required "bankTransfer.configmap.FEES_BASE_URL is required" .Values.bankTransfer.configmap.FEES_BASE_URL | quote }}
   FEES_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.FEES_TIMEOUT_MS | default "2000" | quote }}
   FEES_MAX_RETRIES: {{ .Values.bankTransfer.configmap.FEES_MAX_RETRIES | default "2" | quote }}
   FEES_FAIL_CLOSED_DEFAULT: {{ .Values.bankTransfer.configmap.FEES_FAIL_CLOSED_DEFAULT | default "false" | quote }}
   FEES_MAX_FEE_AMOUNT_CENTS: {{ .Values.bankTransfer.configmap.FEES_MAX_FEE_AMOUNT_CENTS | default "99999999" | quote }}
+  FEES_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.FEES_AUTH_ENABLED | default "false" | quote }}
 
   # JD Sandbox Mode (uses in-process fake adapter, cannot combine with live JD config)
   JD_SANDBOX_MODE: {{ .Values.bankTransfer.configmap.JD_SANDBOX_MODE | default "false" | quote }}
@@ -191,7 +204,7 @@ data:
   WEBHOOK_ENDPOINT_URL: {{ required "bankTransfer.configmap.WEBHOOK_ENDPOINT_URL is required when WEBHOOK_ENABLED=true" .Values.bankTransfer.configmap.WEBHOOK_ENDPOINT_URL | quote }}
   WEBHOOK_QUEUE_NAME: {{ .Values.bankTransfer.configmap.WEBHOOK_QUEUE_NAME | default "transfer.webhook.delivery" | quote }}
   WEBHOOK_DLQ_NAME: {{ .Values.bankTransfer.configmap.WEBHOOK_DLQ_NAME | default "transfer.webhook.dlq" | quote }}
-  WEBHOOK_CONSUMER_TAG: {{ .Values.bankTransfer.configmap.WEBHOOK_CONSUMER_TAG | default "plugin-br-bank-transfer-jd-webhook" | quote }}
+  WEBHOOK_CONSUMER_TAG: {{ .Values.bankTransfer.configmap.WEBHOOK_CONSUMER_TAG | default "plugin-br-bank-transfer-webhook" | quote }}
   WEBHOOK_PREFETCH_COUNT: {{ .Values.bankTransfer.configmap.WEBHOOK_PREFETCH_COUNT | default "20" | quote }}
   WEBHOOK_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.WEBHOOK_TIMEOUT_MS | default "5000" | quote }}
   WEBHOOK_MAX_RETRIES: {{ .Values.bankTransfer.configmap.WEBHOOK_MAX_RETRIES | default "3" | quote }}

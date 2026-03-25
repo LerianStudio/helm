@@ -1,4 +1,4 @@
-# Template values for plugin-br-bank-transfer-jd deployment
+# Template values for plugin-br-bank-transfer deployment
 # Copy this file and fill in the required values for your environment
 # REQUIRED fields must be set before deployment
 
@@ -8,7 +8,7 @@ bankTransfer:
   replicaCount: 2
 
   image:
-    repository: lerianstudio/plugin-br-bank-transfer-jd
+    repository: lerianstudio/plugin-br-bank-transfer
     pullPolicy: IfNotPresent
     tag: "1.0.0"  # REQUIRED - Set the image version
 
@@ -99,8 +99,8 @@ bankTransfer:
 
     # OpenTelemetry
     ENABLE_TELEMETRY: "false"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-bank-transfer-jd"
-    OTEL_RESOURCE_SERVICE_NAME: "plugin-br-bank-transfer-jd"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-bank-transfer"
+    OTEL_RESOURCE_SERVICE_NAME: "plugin-br-bank-transfer"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""  # Set if ENABLE_TELEMETRY=true
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
 
@@ -224,7 +224,7 @@ bankTransfer:
 # ==============================================================================
 # INFRASTRUCTURE DEPENDENCIES
 # ==============================================================================
-# These are pre-configured resources that plugin-br-bank-transfer-jd expects:
+# These are pre-configured resources that plugin-br-bank-transfer expects:
 #
 # PostgreSQL:
 #   - Database: bank_transfer

@@ -23,7 +23,15 @@ data:
   # Multi-Tenancy
   DEFAULT_TENANT_ID: {{ .Values.matcher.configmap.DEFAULT_TENANT_ID | default "11111111-1111-1111-1111-111111111111" | quote }}
   DEFAULT_TENANT_SLUG: {{ .Values.matcher.configmap.DEFAULT_TENANT_SLUG | default "default" | quote }}
-  MULTI_TENANT_INFRA_ENABLED: {{ .Values.matcher.configmap.MULTI_TENANT_INFRA_ENABLED | default "false" | quote }}
+  MULTI_TENANT_ENABLED: {{ .Values.matcher.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- if eq (.Values.matcher.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  MULTI_TENANT_URL: {{ .Values.matcher.configmap.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_ENVIRONMENT: {{ .Values.matcher.configmap.MULTI_TENANT_ENVIRONMENT | quote }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.matcher.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.matcher.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.matcher.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.matcher.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  {{- end }}
 
   # PostgreSQL Primary
   POSTGRES_HOST: {{ .Values.matcher.configmap.POSTGRES_HOST | default (printf "matcher-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}

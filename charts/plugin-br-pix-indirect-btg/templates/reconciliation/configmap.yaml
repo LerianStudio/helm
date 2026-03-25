@@ -115,6 +115,14 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.reconciliation.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
   ENABLE_TELEMETRY: {{ .Values.reconciliation.configmap.ENABLE_TELEMETRY | default "true" | quote }}
 
+  # Security Tier Configuration (lib-commons v4.4.0)
+  SECURITY_TIER: {{ .Values.reconciliation.configmap.SECURITY_TIER | default "" | quote }}
+  SECURITY_ENFORCEMENT: {{ .Values.reconciliation.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}
+  ALLOW_INSECURE_TLS: {{ .Values.reconciliation.configmap.ALLOW_INSECURE_TLS | default "" | quote }}
+  ALLOW_CORS_WILDCARD: {{ .Values.reconciliation.configmap.ALLOW_CORS_WILDCARD | default "" | quote }}
+  RATE_LIMIT_ENABLED: {{ .Values.reconciliation.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  ALLOW_RATELIMIT_DISABLED: {{ .Values.reconciliation.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
+
   # Extra Env Vars
   {{- with .Values.reconciliation.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

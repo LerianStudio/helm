@@ -427,6 +427,7 @@ outbound:
     # Redis Configuration
     REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
     # Webhook URLs (Client-specific)
+    WEBHOOK_DEFAULT_URL: ""
     WEBHOOK_CLIENT_URL: ""
     WEBHOOK_DICT_CLAIM_URL: ""
     WEBHOOK_DICT_INFRACTION_REPORT_URL: ""

@@ -90,6 +90,7 @@ data:
   # ==============================================================================
   # WARNING: Webhook URLs must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_DEFAULT_URL: {{ .Values.outbound.configmap.WEBHOOK_DEFAULT_URL | default "" | quote }}
   WEBHOOK_CLIENT_URL: {{ .Values.outbound.configmap.WEBHOOK_CLIENT_URL | default "" | quote }}
   WEBHOOK_WORKER_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_WORKER_TIMEOUT | default "10s" | quote }}
   WEBHOOK_WORKER_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_WORKER_BACKOFF_MULTIPLIER | default "2" | quote }}

@@ -11,6 +11,17 @@ Contributors: @guimoreirar
 
 ---
 
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v4.1.2)
+
+- Fixes:
+  - Update plugin-fees to version 3.0.8.
+
+Contributors: @guimoreirar
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v4.1.1...plugin-fees-v4.1.2)
+
+---
+
 ## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v4.1.1)
 
 - Improvements:

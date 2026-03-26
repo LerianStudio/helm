@@ -125,7 +125,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `2.1.0` | 1.5.0 | 1.5.0 | 1.5.0 | 1.5.0 |
+| `2.1.1-beta.1` | 1.5.1 | 1.5.1 | 1.5.1 | 1.5.1 |
 -----------------
 
 ### Fetcher
@@ -164,7 +164,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Matcher Version |
 | :---: | :---: |
-| `2.1.0` | 1.0.0 |
+| `2.1.1-beta.1` | 1.0.0 |
 
 ### Flowker
 

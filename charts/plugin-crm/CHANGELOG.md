@@ -1,3 +1,16 @@
+# Plugin-crm Changelog
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-crm-v4.0.0)
+
+- Improvements:
+  - Updated image repository and bumped version to 3.5.1.
+
+Contributors: @gui.rodrigues
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v3.3.0...plugin-crm-v4.0.0)
+
+---
+
 ## [plugin-crm-1.3.0-beta.1] - 2025-06-20
 
 This major release introduces significant architectural changes, enhancing system robustness and configurability. Users should review migration steps for seamless integration.
@@ -402,3 +415,4 @@ These updates collectively improve the application's robustness, providing users
 * update mongodb ([858c934](https://github.com/LerianStudio/helm/commit/858c93496a5e45fcb84389614536d63ca6b84a02))
 * **doc:** update nginx ingress config ([#35](https://github.com/LerianStudio/helm/issues/35)) ([d9763ea](https://github.com/LerianStudio/helm/commit/d9763ea4c2139c7d5f020d71422a634f37e15172))
 * values ([b1dc8f7](https://github.com/LerianStudio/helm/commit/b1dc8f7105ab3aa0bbed2549525f013875087b7d))
+

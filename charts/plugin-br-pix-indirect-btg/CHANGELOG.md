@@ -1,5 +1,23 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v2.1.0)
+
+- **Features:**
+  - Added missing inbound webhook entity environment variables and security tier configuration.
+  - Updated to plugin-br-pix-indirect-btg@1.5.0, including new environment variables for reconciliation, inbound, and outbound workers.
+
+- **Fixes:**
+  - Added `WEBHOOK_DEFAULT_URL` to outbound configuration map.
+
+- **Improvements:**
+  - Triggered BTG version update.
+
+Contributors: @gandalf, @gui.rodrigues, @guimoreirar,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v2.0.0...plugin-br-pix-indirect-btg-v2.1.0)
+
+---
+
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v2.0.0)
 
 - **Features**

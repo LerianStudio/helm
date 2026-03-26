@@ -16,6 +16,22 @@ Contributors: @ferr3ira-gabriel, @ferr3ira.gabriel, @gandalf
 
 ---
 
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v2.0.0)
+
+- Fixes:
+  - Prevent null environment variables in manager and worker deployments.
+  - Prevent null environment variables in ScaledJob when no environment variables are configured.
+  - Use unique names for cluster-scoped resources to avoid conflicts.
+
+- Improvements:
+  - Added a blank line to README to trigger Helm release.
+
+Contributors: @ferr3ira-gabriel, @ferr3ira.gabriel, @gandalf
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v1.2.1...reporter-v2.0.0)
+
+---
+
 ## [1.2.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v1.2.1)
 
 Features:

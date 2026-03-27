@@ -7,7 +7,7 @@ metadata:
 data:
   # Application
   ENV_NAME: {{ .Values.pixSwitch.configmap.ENV_NAME | default "development" | quote }}
-  VERSION: {{ .Values.pixSwitch.configmap.VERSION | default "1.8.0-beta.2" | quote }}
+  VERSION: {{ .Values.pixSwitch.configmap.VERSION | default "1.0.0-beta.1" | quote }}
   SERVER_PORT: {{ .Values.pixSwitch.configmap.SERVER_PORT | default "4000" | quote }}
   LOG_LEVEL: {{ .Values.pixSwitch.configmap.LOG_LEVEL | default "info" | quote }}
 
@@ -52,7 +52,7 @@ data:
   # OpenTelemetry - Shared Midaz LGTM Infrastructure
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.pixSwitch.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-pix-switch" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.pixSwitch.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-switch" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.pixSwitch.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "1.8.0-beta.2" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.pixSwitch.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "1.0.0-beta.1" | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.pixSwitch.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.pixSwitch.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.pixSwitch.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-otel-lgtm:4317" | quote }}

@@ -33,7 +33,7 @@ helm install plugin-br-pix-switch . -n midaz-plugins --create-namespace
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `pixSwitch.image.repository` | Container image repository | `ghcr.io/lerianstudio/plugin-br-pix-switch` |
-| `pixSwitch.image.tag` | Container image tag | `1.8.0-beta.2` |
+| `pixSwitch.image.tag` | Container image tag | `1.0.0-beta.1` |
 | `pixSwitch.service.port` | HTTP service port | `4000` |
 | `pixSwitch.service.grpcPort` | gRPC service port | `7001` |
 | `pixSwitch.replicaCount` | Number of replicas | `1` |

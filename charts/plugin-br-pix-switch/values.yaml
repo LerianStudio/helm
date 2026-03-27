@@ -14,7 +14,7 @@ pixSwitch:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.8.0-beta.2"
+    tag: "1.0.0-beta.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   # -- Overrides the default generated name by Helm
@@ -115,7 +115,7 @@ pixSwitch:
   configmap:
     # Application
     ENV_NAME: "development"
-    VERSION: "1.8.0-beta.2"
+    VERSION: "1.0.0-beta.1"
     SERVER_PORT: "4000"
     LOG_LEVEL: "info"
 
@@ -160,7 +160,7 @@ pixSwitch:
     # OpenTelemetry
     OTEL_RESOURCE_SERVICE_NAME: "plugin-br-pix-switch"
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
-    OTEL_RESOURCE_SERVICE_VERSION: "1.8.0-beta.2"
+    OTEL_RESOURCE_SERVICE_VERSION: "1.0.0-beta.1"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT_PORT: "4317"
     OTEL_EXPORTER_OTLP_ENDPOINT: "midaz-otel-lgtm:4317"

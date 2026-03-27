@@ -38,8 +38,8 @@ App Version:     {{ .Chart.AppVersion }}
   HPA:           Enabled
   Min Replicas:  {{ .Values.pixSwitch.autoscaling.minReplicas }}
   Max Replicas:  {{ .Values.pixSwitch.autoscaling.maxReplicas }}
-  CPU Target:    {{ .Values.pixSwitch.autoscaling.targetCPUUtilizationPercentage }}%
-  Memory Target: {{ .Values.pixSwitch.autoscaling.targetMemoryUtilizationPercentage }}%
+  CPU Target:    {{ .Values.pixSwitch.autoscaling.targetCPUUtilizationPercentage | default "N/A" }}%
+  Memory Target: {{ .Values.pixSwitch.autoscaling.targetMemoryUtilizationPercentage | default "N/A" }}%
 {{- else }}
   HPA:           Disabled
   Replicas:      {{ .Values.pixSwitch.replicaCount }}

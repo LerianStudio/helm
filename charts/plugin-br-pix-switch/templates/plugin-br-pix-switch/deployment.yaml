@@ -25,6 +25,8 @@ spec:
         {{- toYaml .Values.pixSwitch.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "plugin-br-pix-switch.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.pixSwitch.securityContext | nindent 12 }}
           image: {{ .Values.pixSwitch.image.repository }}:{{ .Values.pixSwitch.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.pixSwitch.image.pullPolicy }}
           ports:

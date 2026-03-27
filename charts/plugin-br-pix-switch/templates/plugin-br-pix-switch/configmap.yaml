@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-pix-switch.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" . "name" .Values.pixSwitch.name ) | nindent 4 }}
+data:
+  # Application
+  ENV_NAME: {{ .Values.pixSwitch.configmap.ENV_NAME | default "development" | quote }}
+  VERSION: {{ .Values.pixSwitch.configmap.VERSION | default "1.8.0-beta.2" | quote }}
+  SERVER_PORT: {{ .Values.pixSwitch.configmap.SERVER_PORT | default "4000" | quote }}
+  LOG_LEVEL: {{ .Values.pixSwitch.configmap.LOG_LEVEL | default "info" | quote }}
+
+  # gRPC / Protobuf
+  PROTO_PORT: {{ .Values.pixSwitch.configmap.PROTO_PORT | default "7001" | quote }}
+
+  # Auth
+  PLUGIN_AUTH_ENABLED: {{ .Values.pixSwitch.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.pixSwitch.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+
+  # License
+  ORGANIZATION_IDS: {{ .Values.pixSwitch.configmap.ORGANIZATION_IDS | default "global" | quote }}
+
+  # PostgreSQL Primary
+  DB_HOST: {{ .Values.pixSwitch.configmap.DB_HOST | default "plugin-br-pix-switch-postgresql.midaz-plugins.svc.cluster.local" | quote }}
+  DB_USER: {{ .Values.pixSwitch.configmap.DB_USER | default "pixswitch" | quote }}
+  DB_NAME: {{ .Values.pixSwitch.configmap.DB_NAME | default "pixswitch" | quote }}
+  DB_PORT: {{ .Values.pixSwitch.configmap.DB_PORT | default "5432" | quote }}
+  DB_SSL_MODE: {{ .Values.pixSwitch.configmap.DB_SSL_MODE | default "disable" | quote }}
+
+  # PostgreSQL Replica
+  DB_REPLICA_HOST: {{ .Values.pixSwitch.configmap.DB_REPLICA_HOST | default "" | quote }}
+  DB_REPLICA_USER: {{ .Values.pixSwitch.configmap.DB_REPLICA_USER | default "pixswitch" | quote }}
+  DB_REPLICA_NAME: {{ .Values.pixSwitch.configmap.DB_REPLICA_NAME | default "pixswitch" | quote }}
+  DB_REPLICA_PORT: {{ .Values.pixSwitch.configmap.DB_REPLICA_PORT | default "5432" | quote }}
+  DB_REPLICA_SSL_MODE: {{ .Values.pixSwitch.configmap.DB_REPLICA_SSL_MODE | default "disable" | quote }}
+
+  # Valkey (Redis-compatible)
+  VALKEY_HOST: {{ .Values.pixSwitch.configmap.VALKEY_HOST | default "plugin-br-pix-switch-valkey-primary" | quote }}
+  VALKEY_PORT: {{ .Values.pixSwitch.configmap.VALKEY_PORT | default "6379" | quote }}
+  VALKEY_USER: {{ .Values.pixSwitch.configmap.VALKEY_USER | default "pixswitch" | quote }}
+
+  # Swagger
+  SWAGGER_TITLE: {{ .Values.pixSwitch.configmap.SWAGGER_TITLE | default "Plugin BR Pix Switch" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.pixSwitch.configmap.SWAGGER_DESCRIPTION | default "Plugin BR Pix Switch API" | quote }}
+  SWAGGER_HOST: {{ .Values.pixSwitch.configmap.SWAGGER_HOST | default "" | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.pixSwitch.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.pixSwitch.configmap.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_LEFT_DELIMITER: {{ .Values.pixSwitch.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIMITER: {{ .Values.pixSwitch.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
+
+  # OpenTelemetry - Shared Midaz LGTM Infrastructure
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.pixSwitch.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-pix-switch" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.pixSwitch.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-switch" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.pixSwitch.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "1.8.0-beta.2" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.pixSwitch.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.pixSwitch.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.pixSwitch.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-otel-lgtm:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.pixSwitch.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.pixSwitch.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

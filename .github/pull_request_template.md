@@ -10,6 +10,7 @@
 - [ ] Plugin Fees
 - [ ] Plugin BR PIX Direct JD
 - [ ] Plugin BR PIX Indirect BTG
+- [ ] Plugin BR PIX Switch
 - [ ] Otel Collector
 - [ ] Pipeline
 - [ ] Documentation

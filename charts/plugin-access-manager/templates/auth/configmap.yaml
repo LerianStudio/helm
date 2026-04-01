@@ -34,7 +34,7 @@ data:
   SWAGGER_TITLE: {{ .Values.auth.configmap.SWAGGER_TITLE | default "Plugin Auth API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.auth.configmap.SWAGGER_DESCRIPTION | default "This is a swagger documentation for the Plugin Auth API" | quote }}
   SWAGGER_VERSION: {{ .Values.auth.image.tag | quote }}
-  SWAGGER_HOST: {{ .Values.auth.configmap.SWAGGER_HOST | default (printf "plugin-auth.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  SWAGGER_HOST: {{ .Values.auth.configmap.SWAGGER_HOST | default (printf "plugin-access-manager-auth.%s.svc.cluster.local" .Release.Namespace) | quote }}
   SWAGGER_BASE_PATH: {{ .Values.auth.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.auth.configmap.SWAGGER_SCHEMES | default "http" | quote }}
   SWAGGER_LEFT_DELIMITER: {{ .Values.auth.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
@@ -50,7 +50,7 @@ data:
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.auth.image.tag | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.auth.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
   ENABLE_TELEMETRY: {{ .Values.auth.configmap.ENABLE_TELEMETRY | default "true" | quote }}
 
   # AUTHORIZER

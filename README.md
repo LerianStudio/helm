@@ -213,5 +213,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `1.3.0` | 1.3.0 |
+| `2.0.0-beta.1` | 1.3.0 |
 -----------------

@@ -1,3 +1,6 @@
+{{- if and (eq (index .Values.configmap "ENABLE_TELEMETRY") "true") (not (or .Values.otel.enabled .Values.otel.external)) }}
+{{- fail "ENABLE_TELEMETRY is 'true' but no OTEL exporter is configured. Set either otel.enabled=true or otel.external=true to configure OTEL endpoints." }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -50,6 +53,32 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if or .Values.otel.enabled .Values.otel.external }}
+          env:
+            {{- if .Values.otel.host }}
+            - name: OTEL_HOST
+              value: {{ .Values.otel.host | quote }}
+            - name: OTEL_URL_METRICS
+              value: "http://{{ .Values.otel.host }}:{{ .Values.otel.port }}/v1/metrics"
+            - name: OTEL_URL_TRACES
+              value: "http://{{ .Values.otel.host }}:{{ .Values.otel.port }}/v1/traces"
+            - name: OTEL_URL_LOGS
+              value: "http://{{ .Values.otel.host }}:{{ .Values.otel.port }}/v1/logs"
+            {{- else }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_HOST
+              value: "$(HOST_IP)"
+            - name: OTEL_URL_METRICS
+              value: "http://$(HOST_IP):{{ .Values.otel.port }}/v1/metrics"
+            - name: OTEL_URL_TRACES
+              value: "http://$(HOST_IP):{{ .Values.otel.port }}/v1/traces"
+            - name: OTEL_URL_LOGS
+              value: "http://$(HOST_IP):{{ .Values.otel.port }}/v1/logs"
+            {{- end }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "product-console.fullname" . }}

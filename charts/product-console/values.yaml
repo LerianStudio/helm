@@ -132,6 +132,20 @@ serviceAccount:
   # -- Name of the service account (defaults to fullname)
   name: ""
 
+# -- OpenTelemetry Configuration
+# When enabled or external, configures OTEL endpoints dynamically
+otel:
+  # -- Enable OTEL collector subchart installation (if applicable)
+  enabled: false
+  # -- Use externally installed OTEL collector (injects env vars without installing subchart)
+  # When true, deployment will inject OTEL_URL_* environment variables
+  external: false
+  # -- OTEL collector host (optional)
+  # If set, uses this static host. If empty, injects HOST_IP from pod's node (for DaemonSet with hostPort)
+  host: ""
+  # -- OTEL collector HTTP port (OTLP/HTTP protocol)
+  port: 4318
+
 # -- ConfigMap for environment variables and configurations
 # All values here will be set as environment variables in the deployment
 configmap:
@@ -140,12 +154,9 @@ configmap:
   MIDAZ_CONSOLE_PORT: "8081"
 
   # OpenTelemetry Configuration
+  # Note: When otel.enabled=true or otel.external=true, OTEL_HOST and OTEL_URL_* are injected dynamically
   ENABLE_TELEMETRY: "false"
   OTEL_RECEIVER_HTTP_PORT: "4318"
-  OTEL_HOST: "otel-collector"
-  OTEL_URL_METRICS: ""
-  OTEL_URL_TRACES: ""
-  OTEL_URL_LOGS: ""
 
   # NextAuth Configuration
   NEXTAUTH_URL: "http://localhost:8081"

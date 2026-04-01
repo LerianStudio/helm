@@ -24,16 +24,16 @@ pix:
     tls: []
 
   configmap:
-    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_HOST: ""
     DB_USER: "pix_btg"
     DB_NAME: "pix_btg"
-    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
-    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
-    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    REDIS_HOST: ""
     BTG_BASE_URL: ""
     PIX_ISPB: ""
     MIDAZ_ORGANIZATION_ID: ""
@@ -100,13 +100,13 @@ inbound:
     tls: []
 
   configmap:
-    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_HOST: ""
     DB_USER: "pix_btg"
     DB_NAME: "pix_btg"
-    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
-    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
 
@@ -145,16 +145,16 @@ outbound:
     tls: []
 
   configmap:
-    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_HOST: ""
     DB_USER: "pix_btg"
     DB_NAME: "pix_btg"
-    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
-    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
-    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    REDIS_HOST: ""
     WEBHOOK_CLIENT_URL: ""
     WEBHOOK_DICT_CLAIM_URL: ""
     WEBHOOK_DICT_INFRACTION_REPORT_URL: ""
@@ -201,13 +201,13 @@ reconciliation:
     tls: []
 
   configmap:
-    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_HOST: ""
     DB_USER: "pix_btg"
     DB_NAME: "pix_btg"
-    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
-    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    REDIS_HOST: ""
     MIDAZ_ORGANIZATION_ID: ""
     BTG_BASE_URL: ""
     RECONCILIATION_START_TIME: ""

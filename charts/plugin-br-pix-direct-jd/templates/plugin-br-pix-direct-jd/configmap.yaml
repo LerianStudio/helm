@@ -39,7 +39,7 @@ data:
 
   # Database
   DATABASE_ACQUIRE: {{ .Values.pix.configmap.DATABASE_ACQUIRE | default "10000" | quote }}
-  DATABASE_HOST: {{ .Values.pix.configmap.DATABASE_HOST | default "plugin-br-pix-direct-jd-postgresql.midaz-plugins.svc.cluster.local" | quote }}
+  DATABASE_HOST: {{ .Values.pix.configmap.DATABASE_HOST | default (printf "plugin-br-pix-direct-jd-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DATABASE_IDLE: {{ .Values.pix.configmap.DATABASE_IDLE | default "20000" | quote }}
   DATABASE_USER: {{ .Values.pix.configmap.DATABASE_USER | default "pix" | quote }}
   DATABASE_NAME: {{ .Values.pix.configmap.DATABASE_NAME | default "pix" | quote }}
@@ -49,7 +49,7 @@ data:
 
   # AUTH CONFIGS - Access Manager (OAuth2)
   PLUGIN_AUTH_ENABLED: {{ .Values.pix.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_HOST: {{ .Values.pix.configmap.PLUGIN_AUTH_HOST | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.pix.configmap.PLUGIN_AUTH_HOST | default (printf "http://plugin-access-manager-auth.%s.svc.cluster.local:4000" .Release.Namespace) | quote }}
 
   # Midaz
   MIDAZ_ORGANIZATION_ID: {{ .Values.pix.configmap.MIDAZ_ORGANIZATION_ID | default "" | quote }}
@@ -61,7 +61,7 @@ data:
   MIDAZ_URL_TRANSACTION: {{ .Values.pix.configmap.MIDAZ_URL_TRANSACTION | default "http://midaz-transaction.midaz.svc.cluster.local:3001" | quote }}
 
   # CRM
-  CRM_URL: {{ .Values.pix.configmap.CRM_URL | default "http://plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
+  CRM_URL: {{ .Values.pix.configmap.CRM_URL | default (printf "http://plugin-crm.%s.svc.cluster.local:4003" .Release.Namespace) | quote }}
 
   # OpenTelemetry - Shared Midaz LGTM Infrastructure
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.pix.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-pix-direct-jd" | quote }}

@@ -15,7 +15,7 @@ data:
 
   # AUTH PLUGIN
   PLUGIN_AUTH_ENABLED: {{ .Values.pix.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_ADDRESS: {{ .Values.pix.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.pix.configmap.PLUGIN_AUTH_ADDRESS | default (printf "http://plugin-access-manager-auth.%s.svc.cluster.local:4000" .Release.Namespace) | quote }}
 
   # VALKEY
   REDIS_HOST: {{ .Values.pix.configmap.REDIS_HOST | default (printf "plugin-br-pix-indirect-btg-valkey-master.%s.svc.cluster.local" .Release.Namespace) | quote }}
@@ -101,7 +101,7 @@ data:
   BTG_BASE_URL: {{ .Values.pix.configmap.BTG_BASE_URL | default "https://developer.api.btgpactual.com" | quote }}
 
   ## CRM
-  PLUGIN_CRM_BASE_URL: {{ .Values.pix.configmap.PLUGIN_CRM_BASE_URL | default "http://plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
+  PLUGIN_CRM_BASE_URL: {{ .Values.pix.configmap.PLUGIN_CRM_BASE_URL | default (printf "http://plugin-crm.%s.svc.cluster.local:4003" .Release.Namespace) | quote }}
 
   ## Midaz
   MIDAZ_ORGANIZATION_ID: {{ .Values.pix.configmap.MIDAZ_ORGANIZATION_ID | default "" | quote }}
@@ -114,7 +114,7 @@ data:
 
   ## Fee Configuration
   CASHIN_FEE_CALCULATION_TYPE: {{ .Values.pix.configmap.CASHIN_FEE_CALCULATION_TYPE | default "" | quote }}
-  FEE_SERVICE_URL: {{ .Values.pix.configmap.FEE_SERVICE_URL | default "http://plugin-fees.midaz-plugins.svc.cluster.local:4002" | quote }}
+  FEE_SERVICE_URL: {{ .Values.pix.configmap.FEE_SERVICE_URL | default (printf "http://plugin-fees.%s.svc.cluster.local:4002" .Release.Namespace) | quote }}
   FEE_SERVICE_TIMEOUT: {{ .Values.pix.configmap.FEE_SERVICE_TIMEOUT | default "5000" | quote }}
 
   # LICENSE

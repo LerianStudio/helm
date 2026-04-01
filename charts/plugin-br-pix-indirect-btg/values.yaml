@@ -110,18 +110,18 @@ pix:
   # @default -- templates/configmap.yaml
   configmap:
     # Database Configuration
-    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_HOST: ""
     DB_USER: "pix_btg"
     DB_NAME: "pix_btg"
-    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
     # MongoDB Configuration
-    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
     # Redis Configuration
-    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    REDIS_HOST: ""
     # External Services
     BTG_BASE_URL: ""
     # Midaz Configuration
@@ -280,14 +280,14 @@ inbound:
   # @default -- templates/configmap.yaml
   configmap:
     # Database Configuration
-    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_HOST: ""
     DB_USER: "pix_btg"
     DB_NAME: "pix_btg"
-    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
     # MongoDB Configuration
-    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
   # -- Secrets for storing sensitive data
@@ -414,18 +414,18 @@ outbound:
     # Environment
     ENV_NAME: "staging"
     # Database Configuration
-    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_HOST: ""
     DB_USER: "pix_btg"
     DB_NAME: "pix_btg"
-    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
     # MongoDB Configuration
-    MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
+    MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
     # Redis Configuration
-    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    REDIS_HOST: ""
     # Webhook URLs (Client-specific)
     WEBHOOK_DEFAULT_URL: ""
     WEBHOOK_CLIENT_URL: ""
@@ -560,14 +560,14 @@ reconciliation:
   # @default -- templates/configmap.yaml
   configmap:
     # Database Configuration
-    DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_HOST: ""
     DB_USER: "pix_btg"
     DB_NAME: "pix_btg"
-    DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
+    DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
     # Redis Configuration
-    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
+    REDIS_HOST: ""
     # Midaz Configuration
     MIDAZ_ORGANIZATION_ID: ""
     # BTG API Configuration

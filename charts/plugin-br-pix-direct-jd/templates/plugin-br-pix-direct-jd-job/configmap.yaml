@@ -33,14 +33,14 @@ data:
   CORE_PIX_SERVER: {{ .Values.job.configmap.CORE_PIX_SERVER | default "jd" | quote }}
 
   # JD Pix Integration Configuration
-  JD_BASE_URL: {{ .Values.job.configmap.JD_BASE_URL | default "http://jd-pix.midaz-plugins.svc.cluster.local:3000" | quote }}
+  JD_BASE_URL: {{ .Values.job.configmap.JD_BASE_URL | default (printf "http://jd-pix.%s.svc.cluster.local:3000" .Release.Namespace) | quote }}
   JD_CLIENT_ID: {{ .Values.job.configmap.JD_CLIENT_ID | default "" | quote }}
   JD_GRANT_TYPE: {{ .Values.job.configmap.JD_GRANT_TYPE | default "client_credentials" | quote }}
   JD_BANK_ID: {{ .Values.job.configmap.JD_BANK_ID | default "37040044" | quote }}
 
   # Database
   DATABASE_ACQUIRE: {{ .Values.pix.configmap.DATABASE_ACQUIRE | default "10000" | quote }}
-  DATABASE_HOST: {{ .Values.pix.configmap.DATABASE_HOST | default "plugin-br-pix-direct-jd-postgresql.midaz-plugins.svc.cluster.local" | quote }}
+  DATABASE_HOST: {{ .Values.pix.configmap.DATABASE_HOST | default (printf "plugin-br-pix-direct-jd-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
   DATABASE_IDLE: {{ .Values.pix.configmap.DATABASE_IDLE | default "20000" | quote }}
   DATABASE_USER: {{ .Values.pix.configmap.DATABASE_USER | default "pix" | quote }}
   DATABASE_NAME: {{ .Values.pix.configmap.DATABASE_NAME | default "pix" | quote }}
@@ -50,7 +50,7 @@ data:
 
   # AUTH CONFIGS - Access Manager (OAuth2)
   PLUGIN_AUTH_ENABLED: {{ .Values.job.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_HOST: {{ .Values.job.configmap.PLUGIN_AUTH_HOST | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.job.configmap.PLUGIN_AUTH_HOST | default (printf "http://plugin-access-manager-auth.%s.svc.cluster.local:4000" .Release.Namespace) | quote }}
 
   # Midaz
   MIDAZ_ORGANIZATION_ID: {{ .Values.job.configmap.MIDAZ_ORGANIZATION_ID | default "" | quote }}
@@ -62,11 +62,11 @@ data:
   MIDAZ_URL_TRANSACTION: {{ .Values.job.configmap.MIDAZ_URL_TRANSACTION | default "http://midaz-transaction.midaz.svc.cluster.local:3001" | quote }}
 
   # CRM
-  CRM_URL: {{ .Values.job.configmap.CRM_URL | default "http://plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
+  CRM_URL: {{ .Values.job.configmap.CRM_URL | default (printf "http://plugin-crm.%s.svc.cluster.local:4003" .Release.Namespace) | quote }}
 
   # JD Pix Configuration
   JD_JD_PIX_URL: {{ .Values.pix.configmap.JD_JD_PIX_URL | default "" | quote }}
-  JD_BASE_URL: {{ .Values.pix.configmap.JD_BASE_URL | default "http://jd-mock-api.jd-mock.svc.cluster.local:4013" | quote }}
+  JD_BASE_URL: {{ .Values.pix.configmap.JD_BASE_URL | default (printf "http://jd-mock-api.%s.svc.cluster.local:4013" .Release.Namespace) | quote }}
   JD_GRANT_TYPE: {{ .Values.pix.configmap.JD_GRANT_TYPE | default "client_credentials" | quote }}
 
   # OpenTelemetry - Shared Midaz LGTM Infrastructure

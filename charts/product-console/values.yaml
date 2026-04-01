@@ -187,6 +187,8 @@ configmap:
   MONGO_PORT: "27017"
   MONGODB_DB_NAME: "midaz-console"
   MONGODB_USER: "midaz"
+  # -- Additional MongoDB connection parameters (e.g., "tls=true&authSource=admin")
+  MONGO_PARAMETERS: ""
 
   # CRM Plugin Configuration
   CRM_BASE_PATH: "http://crm-plugin:4003/v1/"

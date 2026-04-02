@@ -360,9 +360,9 @@ bankTransfer:
     # JD_PASSWORD: ""
     # JD_PRIVATE_KEY_PEM: ""
 
-    # Encryption Keys (REQUIRED - 32-byte base64 encoded)
-    JD_INCOMING_RAW_XML_ENCRYPTION_KEY_BASE64: ""
-    RECIPIENT_DETAILS_ENCRYPTION_KEY_BASE64: ""
+    # Encryption Keys (REQUIRED - hex-encoded 32-byte AES-256 keys, 64 hex characters)
+    JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""
+    RECIPIENT_DETAILS_ENCRYPTION_KEY: ""
     # Midaz M2M Credentials (optional)
     # MIDAZ_CLIENT_ID: ""
     # MIDAZ_CLIENT_SECRET: ""

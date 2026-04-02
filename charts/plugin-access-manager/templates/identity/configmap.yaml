@@ -30,7 +30,7 @@ data:
   SWAGGER_TITLE: {{ .Values.identity.configmap.SWAGGER_TITLE | default "Plugin Identity API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.identity.configmap.SWAGGER_DESCRIPTION | default "The Identity API provides a set of endpoints for managing users and client credentials." | quote }}
   SWAGGER_VERSION: {{ .Values.identity.image.tag | quote }}
-  SWAGGER_HOST: {{ .Values.identity.configmap.SWAGGER_HOST | default (printf "plugin-identity.%s.svc.cluster.local:4001" .Release.Namespace) | quote }}
+  SWAGGER_HOST: {{ .Values.identity.configmap.SWAGGER_HOST | default (printf "plugin-access-manager-identity.%s.svc.cluster.local:4001" .Release.Namespace) | quote }}
   SWAGGER_BASE_PATH: {{ .Values.identity.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEME: {{ .Values.identity.configmap.SWAGGER_SCHEME | default "http" | quote }}
   SWAGGER_LEFT_DELIMITER: {{ .Values.identity.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
@@ -46,7 +46,7 @@ data:
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.identity.image.tag | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.identity.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana.midaz.svc.cluster.local:4317" | quote }} 
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }} 
   ENABLE_TELEMETRY: {{ .Values.identity.configmap.ENABLE_TELEMETRY | default "true" | quote }}
   # REDIS
   REDIS_HOST: {{ printf "%s:%s" (.Values.identity.configmap.REDIS_HOST | default (printf "plugin-access-manager-valkey-primary.%s.svc.cluster.local" .Release.Namespace)) (.Values.identity.configmap.REDIS_PORT | default "6379" | toString) | quote }}

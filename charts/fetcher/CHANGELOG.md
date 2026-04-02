@@ -6,6 +6,20 @@
   - Released version 2.0.3-beta.1 for testing and feedback.
 
 - Fixes:
+  - Updated CHANGELOGs for fetcher to reflect version 2.0.2 changes accurately.
+
+Contributors:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.0.2...fetcher-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.3)
+
+- Features:
+  - Released version 2.0.3-beta.1 for testing and feedback.
+
+- Fixes:
   - Updated CHANGELOGs for fetcher to reflect changes in version 2.0.2.
 
 Contributors:

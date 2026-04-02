@@ -89,7 +89,7 @@ bankTransfer:
 | `bankTransfer.ingress.hosts` | Ingress host configuration | See `values.yaml` |
 | `bankTransfer.ingress.tls` | TLS configuration for ingress | `[]` |
 | `bankTransfer.service.type` | Kubernetes service type | `ClusterIP` |
-| `bankTransfer.service.port` | Service port | `8080` |
+| `bankTransfer.service.port` | Service port | `4027` |
 | `bankTransfer.deploymentUpdate.type` | Deployment strategy type | `RollingUpdate` |
 | `bankTransfer.podSecurityContext` | Pod security context | `{}` |
 | `bankTransfer.securityContext` | Security context for the container | See `values.yaml` |
@@ -161,7 +161,7 @@ Key environment variables configured via `bankTransfer.configmap`:
 | --- | --- | --- |
 | `ENV_NAME` | Environment name | `production` |
 | `LOG_LEVEL` | Log level | `info` |
-| `SERVER_ADDRESS` | Server listen address | `:8080` |
+| `SERVER_ADDRESS` | Server listen address | `:4027` |
 | `POSTGRES_HOST` | PostgreSQL host | Dynamic based on release |
 | `REDIS_HOST` | Redis/Valkey host | Dynamic based on release |
 | `PLUGIN_AUTH_ENABLED` | Enable authentication | `true` |

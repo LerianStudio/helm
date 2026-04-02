@@ -124,7 +124,7 @@ bankTransfer:
     # -- Kubernetes service type
     type: ClusterIP
     # -- Port for the HTTP API
-    port: 8080
+    port: 4027
     annotations: {}
   ingress:
     # -- Enable or disable ingress
@@ -174,7 +174,7 @@ bankTransfer:
     # Application Settings
     ENV_NAME: "production"
     LOG_LEVEL: "info"
-    SERVER_ADDRESS: ":8080"
+    SERVER_ADDRESS: ":4027"
     HTTP_BODY_LIMIT_BYTES: "1048576"
     # CORS Configuration
     CORS_ALLOWED_ORIGINS: "*"

@@ -1,5 +1,18 @@
 # Product-console Changelog
 
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v2.0.0)
+
+- Features:
+  - Update image tag to 1.5.0 and add upgrade guide.
+  - Add MONGO_PARAMETERS environment variable for TLS/auth options.
+  - Add dynamic OTEL host injection support.
+
+Contributors: @ferr3ira-gabriel, @ferr3ira.gabriel,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v1.3.0...product-console-v2.0.0)
+
+---
+
 ## [1.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v1.3.0)
 
 - Fixes:

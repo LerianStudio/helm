@@ -8,7 +8,7 @@ data:
   # Application Settings
   ENV_NAME: {{ .Values.bankTransfer.configmap.ENV_NAME | default "production" | quote }}
   LOG_LEVEL: {{ .Values.bankTransfer.configmap.LOG_LEVEL | default "info" | quote }}
-  SERVER_ADDRESS: {{ .Values.bankTransfer.configmap.SERVER_ADDRESS | default ":8080" | quote }}
+  SERVER_ADDRESS: {{ .Values.bankTransfer.configmap.SERVER_ADDRESS | default ":4027" | quote }}
   HTTP_BODY_LIMIT_BYTES: {{ .Values.bankTransfer.configmap.HTTP_BODY_LIMIT_BYTES | default "1048576" | quote }}
 
   # CORS Configuration

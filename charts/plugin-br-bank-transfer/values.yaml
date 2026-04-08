@@ -168,6 +168,14 @@ bankTransfer:
   tolerations: []
   # -- Affinity rules for pod scheduling
   affinity: {}
+  # -- Host aliases for custom DNS resolution inside the pod
+  # Useful for resolving private/internal hostnames not available via cluster DNS
+  # Example:
+  # hostAliases:
+  #   - ip: "10.0.27.231"
+  #     hostnames:
+  #       - "jdspb53058329homl.jdpsti.com.br"
+  hostAliases: []
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml
   configmap:

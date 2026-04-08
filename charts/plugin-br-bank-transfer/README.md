@@ -188,8 +188,8 @@ Key secrets configured via `bankTransfer.secrets`:
 | `REDIS_PASSWORD` | Redis/Valkey password |
 | `MONGO_PASSWORD` | MongoDB password |
 | `MONGO_URI` | MongoDB connection URI (auto-generated if not provided) |
-| `JD_INCOMING_RAW_XML_ENCRYPTION_KEY_BASE64` | Encryption key (32-byte base64) |
-| `RECIPIENT_DETAILS_ENCRYPTION_KEY_BASE64` | Encryption key (32-byte base64) |
+| `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars) |
+| `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars) |
 | `JD_WEBHOOK_NOTIFICATION_RAW_XML_DECRYPTION_KEY_BASE64` | Decryption key (32-byte base64) |
 
 ---

@@ -42,6 +42,7 @@ data:
 
   # LOG LEVEL
   LOG_LEVEL: {{ .Values.auth.configmap.LOG_LEVEL | default "debug" | quote }}
+  LOG_OBFUSCATION_DISABLED: {{ .Values.auth.configmap.LOG_OBFUSCATION_DISABLED | default "false" | quote }}
   SECURE_LOG_FIELDS: {{ .Values.auth.configmap.SECURE_LOG_FIELDS | default "password,clientSecret" | quote }}
 
   # OPEN TELEMETRY
@@ -61,6 +62,8 @@ data:
   AUTHORIZER_ORGANIZATION_NAME: {{ .Values.auth.configmap.AUTHORIZER_ORGANIZATION_NAME | default "lerian" | quote }}
   AUTHORIZER_APPLICATION_NAME: {{ .Values.auth.configmap.AUTHORIZER_APPLICATION_NAME | default "app-lerian" | quote }}
   AUTHORIZER_MODEL_NAME: {{ .Values.auth.configmap.AUTHORIZER_MODEL_NAME | default "api-model" | quote }}
+  AUTHORIZER_ENFORCER_NAME: {{ .Values.auth.configmap.AUTHORIZER_ENFORCER_NAME | default "lerian-user-enforcer" | quote }}
+  AUTHORIZER_M2M_ENFORCER_NAME: {{ .Values.auth.configmap.AUTHORIZER_M2M_ENFORCER_NAME | default "lerian-m2m-enforcer" | quote }}
 
   # DB
   DB_HOST: {{ .Values.auth.configmap.DB_HOST | default (printf "plugin-access-manager-authdb.%s.svc.cluster.local." .Release.Namespace) | quote }}
@@ -69,6 +72,49 @@ data:
   DB_PORT: {{ .Values.auth.configmap.DB_PORT | default "5432" | quote }}
   DB_SSLMODE: {{ .Values.auth.configmap.DB_SSLMODE | default "disable" | quote }}
   USER_EXECUTE_COMMAND: {{ .Values.auth.configmap.USER_EXECUTE_COMMAND | default "postgres" | quote }}
+
+  # CORS
+  ACCESS_CONTROL_ALLOW_ORIGIN: {{ .Values.auth.configmap.ACCESS_CONTROL_ALLOW_ORIGIN | default "" | quote }}
+  ACCESS_CONTROL_ALLOW_METHODS: {{ .Values.auth.configmap.ACCESS_CONTROL_ALLOW_METHODS | default "POST, GET, OPTIONS, PUT, DELETE, PATCH" | quote }}
+  ACCESS_CONTROL_ALLOW_HEADERS: {{ .Values.auth.configmap.ACCESS_CONTROL_ALLOW_HEADERS | default "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization" | quote }}
+  ACCESS_CONTROL_EXPOSE_HEADERS: {{ .Values.auth.configmap.ACCESS_CONTROL_EXPOSE_HEADERS | default "" | quote }}
+  ACCESS_CONTROL_ALLOW_CREDENTIALS: {{ .Values.auth.configmap.ACCESS_CONTROL_ALLOW_CREDENTIALS | default "false" | quote }}
+
+  #RATE LIMIT
+  RATE_LIMIT_ENABLED: {{ .Values.auth.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ .Values.auth.configmap.RATE_LIMIT_MAX | default "100" | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ .Values.auth.configmap.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  RATE_LIMIT_REDIS_TIMEOUT_MS: {{ .Values.auth.configmap.RATE_LIMIT_REDIS_TIMEOUT_MS | default "500" | quote }}
+  RATE_LIMIT_AUTH_MAX: {{ .Values.auth.configmap.RATE_LIMIT_AUTH_MAX | default "10" | quote }}
+  RATE_LIMIT_AUTH_WINDOW_SEC: {{ .Values.auth.configmap.RATE_LIMIT_AUTH_WINDOW_SEC | default "60" | quote }}
+  RATE_LIMIT_PERMISSION_MAX: {{ .Values.auth.configmap.RATE_LIMIT_PERMISSION_MAX | default "60" | quote }}
+  RATE_LIMIT_PERMISSION_WINDOW_SEC: {{ .Values.auth.configmap.RATE_LIMIT_PERMISSION_WINDOW_SEC | default "60" | quote }}
+
+  # MULTI-TENANCY
+  MULTI_TENANT_ENABLED: {{ .Values.auth.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+
+  # CIRCUIT BREAKER
+  CIRCUIT_BREAKER_ENABLED: {{ .Values.auth.configmap.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL_SEC: {{ .Values.auth.configmap.CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL_SEC | default "30" | quote }}
+  CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT_SEC: {{ .Values.auth.configmap.CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT_SEC | default "10" | quote }}
+  CIRCUIT_BREAKER_MAX_REQUESTS_HALF_OPEN: {{ .Values.auth.configmap.CIRCUIT_BREAKER_MAX_REQUESTS_HALF_OPEN | default "3" | quote }}
+  CIRCUIT_BREAKER_INTERVAL_SEC: {{ .Values.auth.configmap.CIRCUIT_BREAKER_INTERVAL_SEC | default "60" | quote }}
+  CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.auth.configmap.CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  CIRCUIT_BREAKER_CONSECUTIVE_FAILURES: {{ .Values.auth.configmap.CIRCUIT_BREAKER_CONSECUTIVE_FAILURES | default "5" | quote }}
+  CIRCUIT_BREAKER_FAILURE_RATIO: {{ .Values.auth.configmap.CIRCUIT_BREAKER_FAILURE_RATIO | default "0.5" | quote }}
+  CIRCUIT_BREAKER_MIN_REQUESTS_FOR_RATIO: {{ .Values.auth.configmap.CIRCUIT_BREAKER_MIN_REQUESTS_FOR_RATIO | default "10" | quote }}
+
+  # HTTP CLIENT
+  HTTP_CLIENT_TIMEOUT_SEC: {{ .Values.auth.configmap.HTTP_CLIENT_TIMEOUT_SEC | default "30" | quote }}
+  HTTP_CLIENT_MAX_IDLE_CONNS: {{ .Values.auth.configmap.HTTP_CLIENT_MAX_IDLE_CONNS | default "100" | quote }}
+  HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST: {{ .Values.auth.configmap.HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST | default "100" | quote }}
+  HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC: {{ .Values.auth.configmap.HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC | default "90" | quote }}
+
+  # MFA
+  MFA_SESSION_TTL_SEC: {{ .Values.auth.configmap.MFA_SESSION_TTL_SEC | default "300" | quote }}
+  MFA_REMEMBER_TTL_SEC: {{ .Values.auth.configmap.MFA_REMEMBER_TTL_SEC | default "2592000" | quote }}
+  MFA_MAX_ATTEMPTS: {{ .Values.auth.configmap.MFA_MAX_ATTEMPTS | default "5" | quote }}
+  MFA_MAX_RESEND_ATTEMPTS: {{ .Values.auth.configmap.MFA_MAX_RESEND_ATTEMPTS | default "3" | quote }}
 
   # Extra Env Vars
   {{- with .Values.auth.extraEnvVars }}

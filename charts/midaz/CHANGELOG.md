@@ -5,6 +5,20 @@
 - **Features**
   - Released midaz version 3.5.3.
 
+- **Improvements**
+  - Updated CHANGELOG for midaz version 5.6.0.
+
+Contributors: @medeirosygohr
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
+
+---
+
+## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
+
+- **Features**
+  - Released midaz version 3.5.3.
+
 - **Contributors**
   - @medeirosygohr
 

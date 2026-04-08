@@ -172,9 +172,9 @@ bankTransfer:
   # Useful for resolving private/internal hostnames not available via cluster DNS
   # Example:
   # hostAliases:
-  #   - ip: "10.0.27.231"
+  #   - ip: "0.0.0.0"
   #     hostnames:
-  #       - "jdspb53058329homl.jdpsti.com.br"
+  #       - "jd.com.br"
   hostAliases: []
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml

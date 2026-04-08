@@ -193,7 +193,7 @@ bankTransfer:
     # Multi-Tenancy
     DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
     DEFAULT_TENANT_SLUG: "default"
-    MULTI_TENANT_INFRA_ENABLED: "false"
+    MULTI_TENANT_ENABLED: "false"
     # Pool Manager (SaaS multi-tenant mode)
     POOL_MANAGER_ENABLED: "false"
     # POOL_MANAGER_BASE_URL: "http://pool-manager:8080"

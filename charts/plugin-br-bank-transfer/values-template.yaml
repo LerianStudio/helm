@@ -43,7 +43,7 @@ bankTransfer:
     # Multi-Tenancy
     DEFAULT_TENANT_ID: ""  # REQUIRED - Default tenant UUID
     DEFAULT_TENANT_SLUG: ""  # REQUIRED - Default tenant slug
-    MULTI_TENANT_INFRA_ENABLED: "false"
+    MULTI_TENANT_ENABLED: "false"
 
     # Pool Manager (SaaS multi-tenant mode)
     POOL_MANAGER_ENABLED: "false"

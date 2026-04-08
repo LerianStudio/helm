@@ -29,15 +29,10 @@ data:
   DEFAULT_TENANT_ID: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_ID | default "11111111-1111-1111-1111-111111111111" | quote }}
   DEFAULT_TENANT_SLUG: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_SLUG | default "default" | quote }}
   MULTI_TENANT_ENABLED: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_URL }}
-  MULTI_TENANT_URL: {{ .Values.bankTransfer.configmap.MULTI_TENANT_URL | quote }}
-  {{- end }}
-  {{- if .Values.bankTransfer.configmap.AWS_REGION }}
-  AWS_REGION: {{ .Values.bankTransfer.configmap.AWS_REGION | quote }}
-  {{- end }}
-  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_HOST }}
-  MULTI_TENANT_REDIS_HOST: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_HOST | quote }}
-  {{- end }}
+  {{- if eq (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false") "true" }}
+  MULTI_TENANT_URL: {{ .Values.bankTransfer.configmap.MULTI_TENANT_URL | default "" | quote }}
+  AWS_REGION: {{ .Values.bankTransfer.configmap.AWS_REGION | default "" | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_HOST | default "" | quote }}
   MULTI_TENANT_REDIS_PORT: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
   MULTI_TENANT_REDIS_TLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
   MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
@@ -48,6 +43,7 @@ data:
   MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE: {{ .Values.bankTransfer.configmap.MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE | default "tenants/{env}/{tenantId}/{applicationName}/integration/configuration" | quote }}
   MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
   MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
+  {{- end }}
 
   # Pool Manager (SaaS multi-tenant mode)
   POOL_MANAGER_ENABLED: {{ .Values.bankTransfer.configmap.POOL_MANAGER_ENABLED | default "false" | quote }}

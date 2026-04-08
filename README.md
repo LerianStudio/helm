@@ -28,7 +28,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `6.0.0` | 2.4.4 | 2.1.1 |
+| `6.1.0` | 2.6.0 | 2.4.1 |
 
 > **⚠️ Migration note for 6.0.0-beta.1:** The `auth.backend.migrations.image` and `auth.initUser.image` values changed from a single string to an object with `repository`, `tag`, and `pullPolicy` fields. Existing overrides using the old string format (e.g. `image: "ghcr.io/lerianstudio/casdoor-migrations:v1"`) will continue to work thanks to backward compatibility, but we recommend updating to the new format:
 > ```yaml

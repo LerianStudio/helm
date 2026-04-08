@@ -1,5 +1,21 @@
 # Plugin-access-manager Changelog
 
+## [6.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.1.0)
+
+- **Features:**
+  - Added new configuration options for logging, rate limiting, and MFA in `configmap.yaml`.
+  - Introduced configurations for CORS, rate limiting, multi-tenancy, and circuit breaker.
+
+- **Fixes:**
+  - Removed `imagePullSecrets` from `values.yaml` for identity and auth sections.
+  - Updated image tags to ensure compatibility and performance.
+
+Contributors: @gandalf, @gui.rodrigues, @guimoreirar,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v6.0.0...plugin-access-manager-v6.1.0)
+
+---
+
 ## [6.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.0.0)
 
 - Fixes:

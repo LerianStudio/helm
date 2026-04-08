@@ -2,6 +2,20 @@
 
 ## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.3)
 
+- Features:
+  - Released version 2.0.3-beta.1
+
+- Fixes:
+  - Updated CHANGELOGs for fetcher to version 2.0.2
+
+Contributors:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.0.2...fetcher-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.3)
+
 - Improvements:
   - Updated CHANGELOGs for fetcher to version 2.0.2.
 

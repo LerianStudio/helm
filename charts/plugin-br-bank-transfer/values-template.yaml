@@ -29,7 +29,7 @@ bankTransfer:
     # Application Settings
     ENV_NAME: ""  # REQUIRED - Environment name (e.g., production, staging)
     LOG_LEVEL: "info"
-    SERVER_ADDRESS: ":8080"
+    SERVER_ADDRESS: ":4027"
     HTTP_BODY_LIMIT_BYTES: "1048576"
 
     # CORS Configuration

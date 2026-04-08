@@ -32,12 +32,13 @@ data:
   SWAGGER_VERSION: {{ .Values.identity.image.tag | quote }}
   SWAGGER_HOST: {{ .Values.identity.configmap.SWAGGER_HOST | default (printf "plugin-access-manager-identity.%s.svc.cluster.local:4001" .Release.Namespace) | quote }}
   SWAGGER_BASE_PATH: {{ .Values.identity.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
-  SWAGGER_SCHEME: {{ .Values.identity.configmap.SWAGGER_SCHEME | default "http" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.identity.configmap.SWAGGER_SCHEMES | default "http" | quote }}
   SWAGGER_LEFT_DELIMITER: {{ .Values.identity.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
   SWAGGER_RIGHT_DELIMITER: {{ .Values.identity.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
 
   # LOG LEVEL
   LOG_LEVEL: {{ .Values.identity.configmap.LOG_LEVEL | default "debug" | quote }}
+  LOG_OBFUSCATION_DISABLED: {{ .Values.identity.configmap.LOG_OBFUSCATION_DISABLED | default "false" | quote }}
   SECURE_LOG_FIELDS: {{ .Values.identity.configmap.SECURE_LOG_FIELDS | default "password,clientSecret" | quote }}
 
   # OPEN TELEMETRY
@@ -63,6 +64,40 @@ data:
   REDIS_TOKEN_REFRESH_DURATION: {{ .Values.identity.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
   REDIS_DB: {{ .Values.identity.configmap.REDIS_DB | default "0" | quote }}
   REDIS_PROTOCOL: {{ .Values.identity.configmap.REDIS_PROTOCOL | default "3" | quote }}
+
+  # CORS
+  ACCESS_CONTROL_ALLOW_ORIGIN: {{ .Values.identity.configmap.ACCESS_CONTROL_ALLOW_ORIGIN | default "" | quote }}
+  ACCESS_CONTROL_ALLOW_METHODS: {{ .Values.identity.configmap.ACCESS_CONTROL_ALLOW_METHODS | default "POST, GET, OPTIONS, PUT, DELETE, PATCH" | quote }}
+  ACCESS_CONTROL_ALLOW_HEADERS: {{ .Values.identity.configmap.ACCESS_CONTROL_ALLOW_HEADERS | default "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization" | quote }}
+  ACCESS_CONTROL_EXPOSE_HEADERS: {{ .Values.identity.configmap.ACCESS_CONTROL_EXPOSE_HEADERS | default "" | quote }}
+  ACCESS_CONTROL_ALLOW_CREDENTIALS: {{ .Values.identity.configmap.ACCESS_CONTROL_ALLOW_CREDENTIALS | default "false" | quote }}
+
+  #RATE LIMIT
+  RATE_LIMIT_ENABLED: {{ .Values.identity.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ .Values.identity.configmap.RATE_LIMIT_MAX | default "100" | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ .Values.identity.configmap.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  RATE_LIMIT_REDIS_TIMEOUT_MS: {{ .Values.identity.configmap.RATE_LIMIT_REDIS_TIMEOUT_MS | default "500" | quote }}
+
+  # MULTI-TENANCY
+  MULTI_TENANT_ENABLED: {{ .Values.identity.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+
+  # CIRCUIT BREAKER
+  CIRCUIT_BREAKER_ENABLED: {{ .Values.identity.configmap.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL_SEC: {{ .Values.identity.configmap.CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL_SEC | default "30" | quote }}
+  CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT_SEC: {{ .Values.identity.configmap.CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT_SEC | default "10" | quote }}
+  CIRCUIT_BREAKER_MAX_REQUESTS_HALF_OPEN: {{ .Values.identity.configmap.CIRCUIT_BREAKER_MAX_REQUESTS_HALF_OPEN | default "3" | quote }}
+  CIRCUIT_BREAKER_INTERVAL_SEC: {{ .Values.identity.configmap.CIRCUIT_BREAKER_INTERVAL_SEC | default "60" | quote }}
+  CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.identity.configmap.CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  CIRCUIT_BREAKER_CONSECUTIVE_FAILURES: {{ .Values.identity.configmap.CIRCUIT_BREAKER_CONSECUTIVE_FAILURES | default "5" | quote }}
+  CIRCUIT_BREAKER_FAILURE_RATIO: {{ .Values.identity.configmap.CIRCUIT_BREAKER_FAILURE_RATIO | default "0.5" | quote }}
+  CIRCUIT_BREAKER_MIN_REQUESTS_FOR_RATIO: {{ .Values.identity.configmap.CIRCUIT_BREAKER_MIN_REQUESTS_FOR_RATIO | default "10" | quote }}
+
+  # HTTP CLIENT
+  HTTP_CLIENT_TIMEOUT_SEC: {{ .Values.identity.configmap.HTTP_CLIENT_TIMEOUT_SEC | default "30" | quote }}
+  HTTP_CLIENT_MAX_IDLE_CONNS: {{ .Values.identity.configmap.HTTP_CLIENT_MAX_IDLE_CONNS | default "100" | quote }}
+  HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST: {{ .Values.identity.configmap.HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST | default "100" | quote }}
+  HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC: {{ .Values.identity.configmap.HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC | default "90" | quote }}
+
   # Extra Env Vars
   {{- with .Values.identity.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

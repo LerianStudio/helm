@@ -19,7 +19,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.1.1"
+    tag: "2.4.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: regcred
@@ -292,7 +292,7 @@ auth:
       # -- Image pull policy
       pullPolicy: Always
       # -- Image tag used for deployment
-      tag: "latest"
+      tag: "2.6.0"
     resources:
       limits:
         cpu: 512m
@@ -317,7 +317,7 @@ auth:
         # -- Image pull policy
         pullPolicy: Always
         # -- Image tag used for deployment
-        tag: "latest"
+        tag: "2.6.0"
   # -- Init User Job configuration
   # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
   # -- If the admin user is deleted by the customer, it will NOT be recreated

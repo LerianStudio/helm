@@ -26,7 +26,7 @@ data:
   TLS_TERMINATED_UPSTREAM: {{ .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
 
   # Multi-Tenancy
-  DEFAULT_TENANT_ID: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_ID | default "11111111-1111-1111-1111-111111111111" | quote }}
+  DEFAULT_TENANT_ID: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_ID | default "" | quote }}
   DEFAULT_TENANT_SLUG: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_SLUG | default "default" | quote }}
   MULTI_TENANT_ENABLED: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
   {{- if eq (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false") "true" }}

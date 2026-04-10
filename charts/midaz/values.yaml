@@ -67,6 +67,33 @@ global:
       # -- Password for midaz role (ignored if useExistingSecret.name is set)
       password: "lerian"
 
+  # -- Bootstrap job for external MongoDB: creates users and grants privileges
+  externalMongoDefinitions:
+    # -- Enable or disable the MongoDB bootstrap job
+    enabled: false
+    # -- MongoDB connection settings
+    connection:
+      # -- MongoDB host
+      host: "midaz-mongodb"
+      # -- MongoDB port
+      port: "27017"
+    # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
+    mongoAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_ROOT_USER and MONGO_ROOT_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "midaz"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for midaz user created by the job
+    midazCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_APP_PASSWORD key
+        name: ""
+      # -- Password for midaz user (ignored if useExistingSecret.name is set)
+      password: "lerian"
+
 onboarding:
   # -- Service name
   name: onboarding

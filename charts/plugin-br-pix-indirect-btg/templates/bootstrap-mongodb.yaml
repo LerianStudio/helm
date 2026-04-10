@@ -1,0 +1,104 @@
+{{- if .Values.global.externalMongoDefinitions.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}-bootstrap-mongodb
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-indirect-btg.labels" (dict "context" . "name" "bootstrap-mongodb") | nindent 4 }}
+spec:
+  ttlSecondsAfterFinished: 300
+  completions: 1
+  parallelism: 1
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.37
+        env:
+        - name: DB_HOST
+          value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}
+        - name: DB_PORT
+          value: {{ .Values.global.externalMongoDefinitions.connection.port | quote }}
+        command:
+        - /bin/sh
+        - -c
+        - >
+          TIMEOUT=300;
+          ELAPSED=0;
+          echo "Checking $DB_HOST:$DB_PORT...";
+          while ! nc -z "$DB_HOST" "$DB_PORT"; do
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "Timeout waiting for $DB_HOST:$DB_PORT after ${TIMEOUT}s";
+              exit 1;
+            fi;
+            echo "$DB_HOST:$DB_PORT is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)";
+            sleep 5;
+            ELAPSED=$((ELAPSED + 5));
+          done;
+          echo "$DB_HOST:$DB_PORT is ready!";
+      containers:
+      - name: mongosh
+        image: mongo:8
+        env:
+        - name: DB_HOST
+          value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}
+        - name: DB_PORT
+          value: {{ .Values.global.externalMongoDefinitions.connection.port | quote }}
+        - name: MONGO_ROOT_USER
+          {{- if .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name | quote }}
+              key: MONGO_ROOT_USER
+          {{- else }}
+          value: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.username | quote }}
+          {{- end }}
+        - name: MONGO_ROOT_PASSWORD
+          {{- if .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name | quote }}
+              key: MONGO_ROOT_PASSWORD
+          {{- else }}
+          value: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.password | quote }}
+          {{- end }}
+        - name: MONGO_APP_PASSWORD
+          {{- if .Values.global.externalMongoDefinitions.pixBtgCredentials.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.externalMongoDefinitions.pixBtgCredentials.useExistingSecret.name | quote }}
+              key: MONGO_APP_PASSWORD
+          {{- else }}
+          value: {{ .Values.global.externalMongoDefinitions.pixBtgCredentials.password | quote }}
+          {{- end }}
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -euo pipefail
+          echo "=== Plugin BR PIX Indirect BTG MongoDB Bootstrap ==="
+          echo "Host: $DB_HOST:$DB_PORT"
+          echo ""
+
+          echo "Checking existing MongoDB objects..."
+          USER_EXISTS=0
+
+          if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "var u = db.getSiblingDB('admin').getUser('pix_btg'); if (u !== null) { print('EXISTS'); }" | grep -q "EXISTS"; then
+            USER_EXISTS=1
+          fi
+
+          if [ "$USER_EXISTS" = "1" ]; then
+            echo "User 'pix_btg' already exists. Updating password and ensuring roles..."
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').changeUserPassword('pix_btg', '$MONGO_APP_PASSWORD')"
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').grantRolesToUser('pix_btg', [{role: 'readWrite', db: 'plugin-br-pix-indirect-btg-db'}])"
+          else
+            echo "Creating user 'pix_btg'..."
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').createUser({user: 'pix_btg', pwd: '$MONGO_APP_PASSWORD', roles: [{role: 'readWrite', db: 'plugin-br-pix-indirect-btg-db'}]})"
+          fi
+
+          echo ""
+          echo "=== Plugin BR PIX Indirect BTG MongoDB Bootstrap completed successfully ==="
+{{- end }}

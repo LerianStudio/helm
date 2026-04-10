@@ -5,6 +5,34 @@ nameOverride: "flowker"
 fullnameOverride: ""
 namespaceOverride: "flowker"
 
+global:
+  # -- Bootstrap job for external MongoDB: creates users and grants privileges
+  externalMongoDefinitions:
+    # -- Enable or disable the MongoDB bootstrap job
+    enabled: false
+    # -- MongoDB connection settings
+    connection:
+      # -- MongoDB host
+      host: "flowker-mongodb"
+      # -- MongoDB port
+      port: "27017"
+    # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
+    mongoAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_ROOT_USER and MONGO_ROOT_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "flowker"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for flowker user created by the job
+    flowkerCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_APP_PASSWORD key
+        name: ""
+      # -- Password for flowker user (ignored if useExistingSecret.name is set)
+      password: "lerian"
+
 flowker:
   # -- Service name
   name: flowker

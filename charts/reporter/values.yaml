@@ -2,6 +2,34 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+global:
+  # -- Bootstrap job for external MongoDB: creates users and grants privileges
+  externalMongoDefinitions:
+    # -- Enable or disable the MongoDB bootstrap job
+    enabled: false
+    # -- MongoDB connection settings
+    connection:
+      # -- MongoDB host
+      host: "reporter-mongodb"
+      # -- MongoDB port
+      port: "27017"
+    # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
+    mongoAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_ROOT_USER and MONGO_ROOT_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "reporter"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for reporter user created by the job
+    reporterCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_APP_PASSWORD key
+        name: ""
+      # -- Password for reporter user (ignored if useExistingSecret.name is set)
+      password: "lerian"
+
 manager:
   name: "reporter-manager"
   # -- Number of old ReplicaSets to retain for deployment rollback

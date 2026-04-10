@@ -76,7 +76,7 @@ spec:
           value: {{ .Values.global.externalMongoDefinitions.consoleCredentials.password | quote }}
           {{- end }}
         command:
-        - /bin/sh
+        - /bin/bash
         - -c
         - |
           set -euo pipefail

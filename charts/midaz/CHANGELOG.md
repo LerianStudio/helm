@@ -2,6 +2,21 @@
 
 ## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
 
+- Features:
+  - Released version 5.7.0 of midaz.
+  - Released version 5.7.0-beta.1 of midaz.
+
+- Improvements:
+  - Bumped midaz to version 3.5.3.
+
+Contributors: @medeirosygohr
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
+
+---
+
+## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
+
 - Improvements:
   - Bumped midaz to v3.5.3.
   - Updated CHANGELOGs for midaz:v5.6.0.

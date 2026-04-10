@@ -4,6 +4,35 @@
 nameOverride: ""
 fullnameOverride: ""
 namespaceOverride: "fetcher"
+
+global:
+  # -- Bootstrap job for external MongoDB: creates users and grants privileges
+  externalMongoDefinitions:
+    # -- Enable or disable the MongoDB bootstrap job
+    enabled: false
+    # -- MongoDB connection settings
+    connection:
+      # -- MongoDB host
+      host: "fetcher-mongodb"
+      # -- MongoDB port
+      port: "27017"
+    # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
+    mongoAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_ROOT_USER and MONGO_ROOT_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "fetcher"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for fetcher user created by the job
+    fetcherCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_APP_PASSWORD key
+        name: ""
+      # -- Password for fetcher user (ignored if useExistingSecret.name is set)
+      password: "lerian"
+
 # Manager component - REST API service
 manager:
   name: "fetcher-manager"

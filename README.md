@@ -73,7 +73,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `4.1.2` | 3.0.8 | `3.0.0` |
+| `5.0.0-beta.1` | 3.0.8 | `3.0.0` |
 -----------------
 
 ### Reporter

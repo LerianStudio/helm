@@ -27,6 +27,7 @@ data:
 
   # Multi-Tenancy
   DEFAULT_TENANT_ID: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_ID | default "" | quote }}
+  DEFAULT_MIDAZ_ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.DEFAULT_MIDAZ_ORGANIZATION_ID | default "" | quote }}
   DEFAULT_TENANT_SLUG: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_SLUG | default "default" | quote }}
   MULTI_TENANT_ENABLED: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
   {{- if eq (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false") "true" }}

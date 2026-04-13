@@ -28,10 +28,16 @@ global:
     # -- Credentials for flowker user created by the job
     flowkerCredentials:
       useExistingSecret:
-        # -- Name of existing secret containing MONGO_APP_PASSWORD key
+        # -- Name of existing secret containing MONGO_APP_USER and MONGO_APP_PASSWORD keys
         name: ""
+      # -- App username (ignored if useExistingSecret.name is set)
+      username: "flowker"
       # -- Password for flowker user (ignored if useExistingSecret.name is set)
       password: "lerian"
+      # -- List of roles to grant to the user. Each item is a {role, db} pair.
+      roles:
+        - role: "readWrite"
+          db: "flowker"
 
 flowker:
   # -- Service name

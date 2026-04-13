@@ -1,4 +1,6 @@
 {{- if .Values.global.externalMongoDefinitions.enabled }}
+{{- $creds := .Values.global.externalMongoDefinitions.pixBtgCredentials -}}
+{{- $rolesJSON := toJson $creds.roles -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -65,15 +67,26 @@ spec:
           {{- else }}
           value: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.password | quote }}
           {{- end }}
-        - name: MONGO_APP_PASSWORD
-          {{- if .Values.global.externalMongoDefinitions.pixBtgCredentials.useExistingSecret.name }}
+        - name: MONGO_APP_USER
+          {{- if $creds.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.global.externalMongoDefinitions.pixBtgCredentials.useExistingSecret.name | quote }}
+              name: {{ $creds.useExistingSecret.name | quote }}
+              key: MONGO_APP_USER
+          {{- else }}
+          value: {{ $creds.username | quote }}
+          {{- end }}
+        - name: MONGO_APP_PASSWORD
+          {{- if $creds.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $creds.useExistingSecret.name | quote }}
               key: MONGO_APP_PASSWORD
           {{- else }}
-          value: {{ .Values.global.externalMongoDefinitions.pixBtgCredentials.password | quote }}
+          value: {{ $creds.password | quote }}
           {{- end }}
+        - name: ROLES_JSON
+          value: {{ $rolesJSON | quote }}
         command:
         - /bin/bash
         - -c
@@ -81,22 +94,22 @@ spec:
           set -euo pipefail
           echo "=== Plugin BR PIX Indirect BTG MongoDB Bootstrap ==="
           echo "Host: $DB_HOST:$DB_PORT"
+          echo "App user: $MONGO_APP_USER"
           echo ""
 
           echo "Checking existing MongoDB objects..."
           USER_EXISTS=0
 
-          if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "var u = db.getSiblingDB('admin').getUser('pix_btg'); if (u !== null) { print('EXISTS'); }" | grep -q "EXISTS"; then
+          if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'if (db.getSiblingDB("admin").getUser(process.env.MONGO_APP_USER) !== null) { print("EXISTS"); }' | grep -q "EXISTS"; then
             USER_EXISTS=1
           fi
 
           if [ "$USER_EXISTS" = "1" ]; then
-            echo "User 'pix_btg' already exists. Updating password and ensuring roles..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').changeUserPassword('pix_btg', '$MONGO_APP_PASSWORD')"
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').grantRolesToUser('pix_btg', [{role: 'readWrite', db: 'plugin-br-pix-indirect-btg-db'}])"
+            echo "User '$MONGO_APP_USER' already exists. Updating password and replacing roles..."
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").updateUser(process.env.MONGO_APP_USER, {pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
           else
-            echo "Creating user 'pix_btg'..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').createUser({user: 'pix_btg', pwd: '$MONGO_APP_PASSWORD', roles: [{role: 'readWrite', db: 'plugin-br-pix-indirect-btg-db'}]})"
+            echo "Creating user '$MONGO_APP_USER'..."
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").createUser({user: process.env.MONGO_APP_USER, pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
           fi
 
           echo ""

@@ -35,7 +35,6 @@ global:
       roles:
         - role: "readWrite"
           db: "plugin-fees-db"
-
 fees:
   replicaCount: 1
   name: "plugin-fees"
@@ -48,7 +47,7 @@ fees:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.0.8"
+    tag: "3.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: regcred

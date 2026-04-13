@@ -4,7 +4,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: midaz-bootstrap-mongodb
+  name: {{ include "midaz.name" . }}-bootstrap-mongodb
   namespace: {{ .Release.Namespace }}
 spec:
   ttlSecondsAfterFinished: 300

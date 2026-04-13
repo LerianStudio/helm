@@ -4,7 +4,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: reporter-bootstrap-mongodb
+  name: {{ include "reporter.name" . }}-bootstrap-mongodb
   namespace: {{ include "global.namespace" . }}
 spec:
   ttlSecondsAfterFinished: 300

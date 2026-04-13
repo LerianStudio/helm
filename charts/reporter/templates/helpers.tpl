@@ -1,4 +1,11 @@
 {{/*
+Expand the name of the chart.
+*/}}
+{{- define "reporter.name" -}}
+{{- default "reporter" .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Expand the name of the chart and plugin manager.
 */}}
 {{- define "plugin-manager.name" -}}

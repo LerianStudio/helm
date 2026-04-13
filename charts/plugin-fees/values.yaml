@@ -35,7 +35,6 @@ global:
       roles:
         - role: "readWrite"
           db: "plugin-fees-db"
-
 fees:
   replicaCount: 1
   name: "plugin-fees"
@@ -48,7 +47,7 @@ fees:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.0.8"
+    tag: "3.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: regcred
@@ -159,7 +158,22 @@ fees:
     MONGO_PORT: "27017"
     MONGO_USER: "plugin-fees"
     MONGO_PARAMETERS: ""
+    MONGO_TLS_CA_CERT: ""
+    MONGO_MIN_POOL_SIZE: "10"
+    MONGO_MAX_CONN_IDLE_TIME_SECONDS: "300"
     CLIENT_ID: "ac56c81d4d6d95c0ac12"
+    MIDAZ_TRANSACTION_URL: "http://midaz-transaction.midaz.svc.cluster.local:3002/v1/"
+    CORS_ALLOW_ORIGINS: "http://localhost:3000"
+    RATE_LIMIT_MAX: "100"
+    RATE_LIMIT_WINDOW_SECONDS: "60"
+    DEFAULT_CURRENCY: "BRL"
+    PACKAGE_CACHE_ENABLED: "true"
+    PACKAGE_CACHE_TTL_SECONDS: "180"
+    BILLING_PACKAGE_CACHE_ENABLED: "true"
+    BILLING_PACKAGE_CACHE_TTL_SECONDS: "180"
+    ACCOUNT_CACHE_ENABLED: "true"
+    ACCOUNT_CACHE_TTL_SECONDS: "300"
+    TRUSTED_PROXIES: ""
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml

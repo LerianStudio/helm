@@ -290,7 +290,7 @@ auth:
       # -- Image pull policy
       pullPolicy: Always
       # -- Image tag used for deployment
-      tag: "2.6.0"
+      tag: "2.6.1"
     resources:
       limits:
         cpu: 512m
@@ -315,7 +315,7 @@ auth:
         # -- Image pull policy
         pullPolicy: Always
         # -- Image tag used for deployment
-        tag: "2.6.0"
+        tag: "2.6.1"
   # -- Init User Job configuration
   # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
   # -- If the admin user is deleted by the customer, it will NOT be recreated
@@ -328,7 +328,7 @@ auth:
       # -- Image pull policy
       pullPolicy: Always
       # -- Image tag used for deployment
-      tag: "latest"
+      tag: "2.6.1"
     # -- Admin user email (default: admin@midaz.tech)
     adminEmail: "admin@midaz.tech"
     # -- Admin user display name

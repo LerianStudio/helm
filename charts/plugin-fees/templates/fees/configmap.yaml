@@ -57,7 +57,7 @@ data:
   # MIDAZ COMMUNICATION
   CLIENT_ID: {{ .Values.fees.configmap.CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
   MIDAZ_ONBOARDING_URL: {{ .Values.fees.configmap.MIDAZ_ONBOARDING_URL | default "http://midaz-onboarding.midaz.svc.cluster.local:3000/v1/" | quote }}
-  MIDAZ_TRANSACTION_URL: {{ .Values.fees.configmap.MIDAZ_TRANSACTION_URL | default "http://midaz-transaction.midaz.svc.cluster.local:3002/v1/" | quote }}
+  MIDAZ_TRANSACTION_URL: {{ .Values.fees.configmap.MIDAZ_TRANSACTION_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1/" | quote }}
 
   # CORS & RATE LIMIT
   CORS_ALLOW_ORIGINS: {{ .Values.fees.configmap.CORS_ALLOW_ORIGINS | default "http://localhost:3000" | quote }}

@@ -176,7 +176,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Flowker Version |
 | :---: | :---: |
-| `2.0.0-beta.1` | 1.0.0-beta.22 |
+| `2.0.0-beta.2` | 1.0.0-beta.22 |
 -----------------
 
 ### Tracer

@@ -45,10 +45,6 @@ bankTransfer:
     DEFAULT_TENANT_SLUG: ""  # REQUIRED - Default tenant slug
     MULTI_TENANT_ENABLED: "false"
 
-    # Pool Manager (SaaS multi-tenant mode)
-    POOL_MANAGER_ENABLED: "false"
-    # POOL_MANAGER_BASE_URL: ""  # Required if POOL_MANAGER_ENABLED=true
-
     # PostgreSQL Primary - REQUIRED
     POSTGRES_HOST: ""  # REQUIRED - PostgreSQL primary host
     POSTGRES_PORT: "5432"
@@ -147,7 +143,9 @@ bankTransfer:
     JD_SOAP_PATH: "/soap"
     JD_ORIGIN_ISPB: ""  # REQUIRED - Origin ISPB code
     # JD_LEGACY_CODE: ""
+    JD_SIGNING_MODE: "local_pem"  # local_pem | external_provided | disabled
     JD_SIGNATURE_REQUIRED: "true"
+    JD_VALIDATE_EXTERNAL_SIGNATURE: "true"
     JD_TIMEOUT_MS: "8000"
     JD_MAX_RETRIES: "3"
 
@@ -201,6 +199,7 @@ bankTransfer:
     # JD_USER_CODE: ""
     # JD_PASSWORD: ""
     # JD_PRIVATE_KEY_PEM: ""
+    # JD_PUBLIC_KEY_PEM: ""  # Required for external_provided mode with signature validation
 
     # Encryption Keys - REQUIRED (hex-encoded 32-byte AES-256 keys, 64 hex characters)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""  # REQUIRED

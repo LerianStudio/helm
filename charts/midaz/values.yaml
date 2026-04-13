@@ -89,10 +89,20 @@ global:
     # -- Credentials for midaz user created by the job
     midazCredentials:
       useExistingSecret:
-        # -- Name of existing secret containing MONGO_APP_PASSWORD key
+        # -- Name of existing secret containing MONGO_APP_USER and MONGO_APP_PASSWORD keys
         name: ""
+      # -- App username (ignored if useExistingSecret.name is set)
+      username: "midaz"
       # -- Password for midaz user (ignored if useExistingSecret.name is set)
       password: "lerian"
+      # -- List of roles to grant to the user. Each item is a {role, db} pair.
+      roles:
+        - role: "readWrite"
+          db: "onboarding"
+        - role: "readWrite"
+          db: "transaction"
+        - role: "readWrite"
+          db: "crm"
 
 onboarding:
   # -- Service name

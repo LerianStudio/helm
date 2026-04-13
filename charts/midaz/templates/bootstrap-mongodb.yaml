@@ -1,4 +1,10 @@
 {{- if .Values.global.externalMongoDefinitions.enabled }}
+{{- $creds := .Values.global.externalMongoDefinitions.midazCredentials -}}
+{{- $rolesList := list -}}
+{{- range $creds.roles -}}
+{{- $rolesList = append $rolesList (printf "{role: '%s', db: '%s'}" .role .db) -}}
+{{- end -}}
+{{- $rolesJSON := printf "[%s]" (join ", " $rolesList) -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -63,14 +69,23 @@ spec:
           {{- else }}
           value: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.password | quote }}
           {{- end }}
-        - name: MONGO_APP_PASSWORD
-          {{- if .Values.global.externalMongoDefinitions.midazCredentials.useExistingSecret.name }}
+        - name: MONGO_APP_USER
+          {{- if $creds.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.global.externalMongoDefinitions.midazCredentials.useExistingSecret.name | quote }}
+              name: {{ $creds.useExistingSecret.name | quote }}
+              key: MONGO_APP_USER
+          {{- else }}
+          value: {{ $creds.username | quote }}
+          {{- end }}
+        - name: MONGO_APP_PASSWORD
+          {{- if $creds.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $creds.useExistingSecret.name | quote }}
               key: MONGO_APP_PASSWORD
           {{- else }}
-          value: {{ .Values.global.externalMongoDefinitions.midazCredentials.password | quote }}
+          value: {{ $creds.password | quote }}
           {{- end }}
         command:
         - /bin/bash
@@ -79,22 +94,25 @@ spec:
           set -euo pipefail
           echo "=== Midaz MongoDB Bootstrap ==="
           echo "Host: $DB_HOST:$DB_PORT"
+          echo "App user: $MONGO_APP_USER"
           echo ""
+
+          ROLES={{ $rolesJSON | quote }}
 
           echo "Checking existing MongoDB objects..."
           USER_EXISTS=0
 
-          if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "var u = db.getSiblingDB('admin').getUser('midaz'); if (u !== null) { print('EXISTS'); }" | grep -q "EXISTS"; then
+          if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "var u = db.getSiblingDB('admin').getUser('$MONGO_APP_USER'); if (u !== null) { print('EXISTS'); }" | grep -q "EXISTS"; then
             USER_EXISTS=1
           fi
 
           if [ "$USER_EXISTS" = "1" ]; then
-            echo "User 'midaz' already exists. Updating password and ensuring roles..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').changeUserPassword('midaz', '$MONGO_APP_PASSWORD')"
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').grantRolesToUser('midaz', [{role: 'readWrite', db: 'onboarding'}, {role: 'readWrite', db: 'transaction'}, {role: 'readWrite', db: 'crm'}])"
+            echo "User '$MONGO_APP_USER' already exists. Updating password and ensuring roles..."
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').changeUserPassword('$MONGO_APP_USER', '$MONGO_APP_PASSWORD')"
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').grantRolesToUser('$MONGO_APP_USER', $ROLES)"
           else
-            echo "Creating user 'midaz'..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').createUser({user: 'midaz', pwd: '$MONGO_APP_PASSWORD', roles: [{role: 'readWrite', db: 'onboarding'}, {role: 'readWrite', db: 'transaction'}, {role: 'readWrite', db: 'crm'}]})"
+            echo "Creating user '$MONGO_APP_USER'..."
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.getSiblingDB('admin').createUser({user: '$MONGO_APP_USER', pwd: '$MONGO_APP_PASSWORD', roles: $ROLES})"
           fi
 
           echo ""

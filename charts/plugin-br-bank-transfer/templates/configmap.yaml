@@ -27,7 +27,6 @@ data:
 
   # Multi-Tenancy
   DEFAULT_TENANT_ID: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_ID | default "" | quote }}
-  DEFAULT_MIDAZ_ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.DEFAULT_MIDAZ_ORGANIZATION_ID | default "" | quote }}
   DEFAULT_TENANT_SLUG: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_SLUG | default "default" | quote }}
   MULTI_TENANT_ENABLED: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
   {{- if eq (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false") "true" }}
@@ -45,15 +44,6 @@ data:
   MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
   MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
   {{- end }}
-
-  # Pool Manager (SaaS multi-tenant mode)
-  POOL_MANAGER_ENABLED: {{ .Values.bankTransfer.configmap.POOL_MANAGER_ENABLED | default "false" | quote }}
-  {{- if .Values.bankTransfer.configmap.POOL_MANAGER_BASE_URL }}
-  POOL_MANAGER_BASE_URL: {{ .Values.bankTransfer.configmap.POOL_MANAGER_BASE_URL | quote }}
-  {{- end }}
-  POOL_MANAGER_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.POOL_MANAGER_TIMEOUT_MS | default "2000" | quote }}
-  POOL_MANAGER_L1_TTL_SEC: {{ .Values.bankTransfer.configmap.POOL_MANAGER_L1_TTL_SEC | default "300" | quote }}
-  POOL_MANAGER_L2_TTL_SEC: {{ .Values.bankTransfer.configmap.POOL_MANAGER_L2_TTL_SEC | default "43200" | quote }}
 
   # PostgreSQL Primary
   {{- $namespace := include "global.namespace" . }}
@@ -197,7 +187,9 @@ data:
   {{- if .Values.bankTransfer.configmap.JD_LEGACY_CODE }}
   JD_LEGACY_CODE: {{ .Values.bankTransfer.configmap.JD_LEGACY_CODE | quote }}
   {{- end }}
+  JD_SIGNING_MODE: {{ .Values.bankTransfer.configmap.JD_SIGNING_MODE | default "local_pem" | quote }}
   JD_SIGNATURE_REQUIRED: {{ .Values.bankTransfer.configmap.JD_SIGNATURE_REQUIRED | default "true" | quote }}
+  JD_VALIDATE_EXTERNAL_SIGNATURE: {{ .Values.bankTransfer.configmap.JD_VALIDATE_EXTERNAL_SIGNATURE | default "true" | quote }}
   JD_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.JD_TIMEOUT_MS | default "8000" | quote }}
   JD_MAX_RETRIES: {{ .Values.bankTransfer.configmap.JD_MAX_RETRIES | default "3" | quote }}
   {{- end }}

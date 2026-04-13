@@ -194,12 +194,6 @@ bankTransfer:
     DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
     DEFAULT_TENANT_SLUG: "default"
     MULTI_TENANT_ENABLED: "false"
-    # Pool Manager (SaaS multi-tenant mode)
-    POOL_MANAGER_ENABLED: "false"
-    # POOL_MANAGER_BASE_URL: "http://pool-manager:8080"
-    POOL_MANAGER_TIMEOUT_MS: "2000"
-    POOL_MANAGER_L1_TTL_SEC: "300"
-    POOL_MANAGER_L2_TTL_SEC: "43200"
     # PostgreSQL Primary (host defaults to {{ .Release.Name }}-postgresql-primary.{{ .Release.Namespace }}.svc.cluster.local)
     # POSTGRES_HOST: ""  # Leave empty to use dynamic default based on release name
     POSTGRES_PORT: "5432"
@@ -297,7 +291,9 @@ bankTransfer:
     JD_SOAP_PATH: "/soap"
     JD_ORIGIN_ISPB: "" # MUST BE SET - Origin ISPB code
     # JD_LEGACY_CODE: ""
+    JD_SIGNING_MODE: "local_pem"  # local_pem | external_provided | disabled
     JD_SIGNATURE_REQUIRED: "true"
+    JD_VALIDATE_EXTERNAL_SIGNATURE: "true"
     JD_TIMEOUT_MS: "8000"
     JD_MAX_RETRIES: "3"
     # JD Sandbox Mode (must be false in production)
@@ -367,6 +363,7 @@ bankTransfer:
     # JD_USER_CODE: ""
     # JD_PASSWORD: ""
     # JD_PRIVATE_KEY_PEM: ""
+    # JD_PUBLIC_KEY_PEM: ""  # Required for external_provided mode with signature validation
 
     # Encryption Keys (REQUIRED - hex-encoded 32-byte AES-256 keys, 64 hex characters)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""

@@ -56,8 +56,6 @@ spec:
                 name: {{ include "fetcher.fullname" . }}-common
             - secretRef:
                 name: {{ if .Values.manager.useExistingSecret }}{{ .Values.manager.existingSecretName }}{{ else }}{{ include "fetcher-manager.fullname" . }}{{ end }}
-            - secretRef:
-                name: {{ include "fetcher.fullname" . }}-common
           {{- if or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
           env:
           {{- if eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true" }}

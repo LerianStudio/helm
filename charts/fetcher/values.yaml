@@ -171,6 +171,10 @@ worker:
   nodeSelector: {}
   tolerations: {}
   affinity: {}
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
   # Worker-specific ConfigMap (VERSION is auto-set from image tag)
   configmap:
     ENV_NAME: "development"

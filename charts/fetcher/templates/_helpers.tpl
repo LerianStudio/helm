@@ -95,6 +95,17 @@ Create the name of the service account to use for manager
 {{- end }}
 
 {{/*
+Create the name of the service account to use for worker
+*/}}
+{{- define "fetcher-worker.serviceAccountName" -}}
+{{- if .Values.worker.serviceAccount.create }}
+{{- default (include "fetcher-worker.fullname" .) .Values.worker.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.worker.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
 Expand the namespace of the release.
 */}}
 {{- define "fetcher.namespace" -}}

@@ -25,6 +25,9 @@ spec:
         imagePullSecrets:
           {{- toYaml . | nindent 10 }}
         {{- end }}
+        {{- if .Values.worker.serviceAccount.create }}
+        serviceAccountName: {{ include "plugin-worker.fullname" . }}
+        {{- end }}
         {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
         securityContext:
           fsGroup: 65532

@@ -144,6 +144,15 @@ manager:
   clusterRole:
     # -- Enable or disable ClusterRole and ClusterRoleBinding creation
     create: true
+  # -- ServiceAccount configuration for manager
+  serviceAccount:
+    # -- Enable or disable ServiceAccount creation
+    create: true
+    # -- Annotations to add to the ServiceAccount (e.g., for IRSA)
+    annotations: {}
+    # Example for AWS IRSA:
+    # annotations:
+    #   eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/my-role"
   configmap:
     # -- Annotations for the configmap
     annotations: {}
@@ -257,6 +266,15 @@ worker:
 
   useExistingSecret: false
   existingSecretName: ""
+  # -- ServiceAccount configuration for worker
+  serviceAccount:
+    # -- Enable or disable ServiceAccount creation
+    create: true
+    # -- Annotations to add to the ServiceAccount (e.g., for IRSA)
+    annotations: {}
+    # Example for AWS IRSA:
+    # annotations:
+    #   eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/my-role"
   configmap:
     # -- Annotations for the configmap
     annotations: {}

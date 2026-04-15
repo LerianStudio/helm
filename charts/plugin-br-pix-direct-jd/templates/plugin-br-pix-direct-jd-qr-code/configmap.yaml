@@ -6,7 +6,7 @@ metadata:
     {{- include "plugin-br-pix-direct-jd-qr-code.labels" (dict "context" . "name" .Values.qrcode.name ) | nindent 4 }}
 data:
   # APP
-  VERSION: "v1.0.0"
+  VERSION: {{ .Values.qrcode.image.tag | default .Chart.AppVersion | quote }}
   SERVER_PORT: "4009"
   SERVER_ADDRESS: ":4009"
 

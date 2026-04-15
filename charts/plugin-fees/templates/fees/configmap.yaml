@@ -11,7 +11,7 @@ data:
   # APP 
   SERVER_PORT: {{ .Values.fees.configmap.SERVER_PORT | default "4002" | quote }}
   SERVER_ADDRESS: {{ .Values.fees.configmap.SERVER_ADDRESS | default ":4002" | quote }}
-  VERSION: "v{{ include "plugin.version" . }}"
+  VERSION: {{ .Values.fees.image.tag | default .Chart.AppVersion | quote }}
 
   # Mongo DB
   MONGO_URI: {{ .Values.fees.configmap.MONGO_URI | default "mongodb" | quote }}
@@ -31,7 +31,7 @@ data:
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.fees.configmap.SWAGGER_TITLE | default "Plugin Fees" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.fees.configmap.SWAGGER_DESCRIPTION | default "Documentation for the plugins fees" | quote }}
-  SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
+  SWAGGER_VERSION: {{ .Values.fees.image.tag | default .Chart.AppVersion | quote }}
   SWAGGER_HOST: {{ .Values.fees.configmap.SWAGGER_HOST | default ":4002" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.fees.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.fees.configmap.SWAGGER_SCHEMES | default "http" | quote }}
@@ -44,7 +44,7 @@ data:
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.fees.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-fees" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.fees.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-fees" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: "v{{ include "plugin.version" . }}"
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.fees.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.fees.configmap.ENV_NAME | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.fees.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.fees.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}

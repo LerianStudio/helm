@@ -19,6 +19,9 @@ data:
   {{- range $key, $value := .Values.worker.configmap }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag
+  VERSION: {{ .Values.worker.image.tag | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.worker.image.tag | quote }}
   # Extra Env Vars
   {{- with .Values.worker.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

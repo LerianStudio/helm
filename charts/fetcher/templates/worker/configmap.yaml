@@ -8,21 +8,9 @@ data:
   {{- range $key, $value := .Values.worker.configmap }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
-  # Auto-set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag if not explicitly set
-  {{- if not .Values.worker.configmap.VERSION }}
-  {{- if .Values.worker.image.tag }}
-  VERSION: {{ .Values.worker.image.tag | quote }}
-  {{- else }}
-  VERSION: {{ .Chart.AppVersion | quote }}
-  {{- end }}
-  {{- end }}
-  {{- if not .Values.worker.configmap.OTEL_RESOURCE_SERVICE_VERSION }}
-  {{- if .Values.worker.image.tag }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.worker.image.tag | quote }}
-  {{- else }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Chart.AppVersion | quote }}
-  {{- end }}
-  {{- end }}
+  # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag
+  VERSION: {{ .Values.worker.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.worker.image.tag | default .Chart.AppVersion | quote }}
   {{- with .Values.worker.extraEnvVars }}
   {{- range $key, $value := . }}
   {{ $key }}: {{ $value | quote }}

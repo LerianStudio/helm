@@ -12,7 +12,7 @@ data:
   # APP
   APPLICATION_NAME: {{ .Values.pix.configmap.APPLICATION_NAME | default "plugin-br-pix-direct-jd" | quote }}
   APPLICATION_BASE_URL: {{ .Values.pix.configmap.APPLICATION_BASE_URL | default "http://plugin-br-pix-direct-jd:4011" | quote }}
-  API_VERSION: {{ .Values.pix.configmap.API_VERSION | default "1.0.0" | quote }}
+  API_VERSION: {{ .Values.pix.image.tag | default .Chart.AppVersion | quote }}
   API_PORT: {{ .Values.pix.configmap.API_PORT | default "4011" | quote }}
   API_RATE_CRITICAL_MAX: {{ .Values.pix.configmap.API_RATE_CRITICAL_MAX | default "5" | quote }}
   API_RATE_CRITICAL_WINDOW: {{ .Values.pix.configmap.API_RATE_CRITICAL_WINDOW | default "1" | quote }}
@@ -65,7 +65,7 @@ data:
 
   # OpenTelemetry - Shared Midaz LGTM Infrastructure
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.pix.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-pix-direct-jd" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.pix.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "1.0.0" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.pix.image.tag | default .Chart.AppVersion | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-otel-lgtm:4317" | quote }}
   ENABLE_TELEMETRY: {{ .Values.pix.configmap.ENABLE_TELEMETRY | default "true" | quote }}

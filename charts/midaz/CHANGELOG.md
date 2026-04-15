@@ -1,5 +1,22 @@
 # Midaz Changelog
 
+## [6.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.0.0)
+
+- **Features:**
+  - Released version 6.0.0 of midaz with updated functionalities and improvements.
+
+- **Fixes:**
+  - Addressed hotfix in version 3.6.1 to resolve specific issues affecting midaz.
+
+- **Improvements:**
+  - Updated appVersion to 3.6.1 and modified service configurations for better performance.
+
+Contributors: @gui.rodrigues, @guimoreirar
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.7.0...midaz-v6.0.0)
+
+---
+
 ## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
 
 - Features:

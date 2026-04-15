@@ -44,7 +44,7 @@ data:
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.fees.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-fees" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.fees.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-fees" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: "v{{ include "plugin.version" . }}"
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.fees.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.fees.configmap.ENV_NAME | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.fees.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.fees.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}

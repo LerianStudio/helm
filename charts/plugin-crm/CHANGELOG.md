@@ -3,6 +3,17 @@
 ## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-crm-v4.0.0)
 
 - Improvements:
+  - Update image repository and bump version to 3.5.1
+
+Contributors: @gui.rodrigues
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-crm-v3.3.0...plugin-crm-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-crm-v4.0.0)
+
+- Improvements:
   - Updated image repository and bumped version to 3.5.1.
 
 Contributors: @gui.rodrigues,

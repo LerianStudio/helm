@@ -35,7 +35,6 @@ global:
       roles:
         - role: "readWrite"
           db: "reporter-db"
-
 manager:
   name: "reporter-manager"
   # -- Number of old ReplicaSets to retain for deployment rollback
@@ -65,7 +64,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.1.1"
+    tag: "1.2.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -221,7 +220,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.1.0"
+    tag: "1.2.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -640,7 +639,6 @@ valkey:
     enabled: false
 otel-collector-lerian:
   enabled: true
-
 # -- AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Clotilde/Proxmox)
 aws:
   rolesAnywhere:

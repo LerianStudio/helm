@@ -91,7 +91,7 @@ data:
   # OPEN TELEMETRY (WITH MIDAZ LGTM SERVICE)
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.pix.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-pix-indirect-btg" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.pix.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-indirect-btg" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.pix.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "v1.0.0" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.pix.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.pix.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}

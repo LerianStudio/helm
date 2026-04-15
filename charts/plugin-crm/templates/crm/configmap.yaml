@@ -11,7 +11,7 @@ data:
   # APP 
   SERVER_PORT: {{ .Values.crm.configmap.SERVER_PORT | default "4003" | quote }}
   SERVER_ADDRESS: {{ .Values.crm.configmap.SERVER_ADDRESS | default ":4003" | quote }}
-  VERSION: "v{{ include "plugin.version" . }}"
+  VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
 
   # Mongo DB
   MONGO_URI: {{ .Values.crm.configmap.MONGO_URI | default "mongodb" | quote }}
@@ -24,7 +24,7 @@ data:
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.crm.configmap.SWAGGER_TITLE | default "Plugin CRM" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.crm.configmap.SWAGGER_DESCRIPTION | default "The CRM API provides a set of endpoints for managing holder data, including information related to their ledger accounts." | quote }}
-  SWAGGER_VERSION: "v{{ include "plugin.version" . }}"
+  SWAGGER_VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
   SWAGGER_HOST: {{ .Values.crm.configmap.SWAGGER_HOST | default ":4003" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.crm.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.crm.configmap.SWAGGER_SCHEMES | default "http" | quote }}

@@ -10,6 +10,7 @@ data:
   ENV_NAME: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
 
   # APP
+  APPLICATION_NAME: {{ .Values.crm.configmap.APPLICATION_NAME | default "crm" | quote }}
   SERVER_PORT: {{ .Values.crm.configmap.SERVER_PORT | default "4003" | quote }}
   SERVER_ADDRESS: {{ .Values.crm.configmap.SERVER_ADDRESS | default ":4003" | quote }}
   VERSION: "v{{ .Values.crm.image.tag | default .Chart.AppVersion }}"
@@ -22,6 +23,7 @@ data:
   MONGO_USER: {{ .Values.crm.configmap.MONGO_USER | default "midaz" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.crm.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
   MONGO_PARAMETERS: {{ .Values.crm.configmap.MONGO_PARAMETERS | default "" | quote }}
+  MONGO_TLS_CA_CERT: {{ .Values.crm.configmap.MONGO_TLS_CA_CERT | default "" | quote }}
 
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.crm.configmap.SWAGGER_TITLE | default "CRM" | quote }}
@@ -48,6 +50,9 @@ data:
   # AUTH
   PLUGIN_AUTH_ADDRESS: {{ .Values.crm.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-auth" | quote }}
   PLUGIN_AUTH_ENABLED: {{ .Values.crm.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+
+  # MULTI-TENANT
+  MULTI_TENANT_ENABLED: {{ .Values.crm.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
 
   # Extra Env Vars
   {{- with .Values.crm.extraEnvVars }}

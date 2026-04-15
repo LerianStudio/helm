@@ -7,7 +7,7 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 version: 2.1.0-beta.5
-appVersion: "1.2.0"
+appVersion: "1.3.0"
 keywords:
   - midaz
   - lerian

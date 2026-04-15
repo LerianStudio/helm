@@ -10,7 +10,7 @@ data:
   ENV_NAME: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
 
   # APP
-  APPLICATION_NAME: {{ .Values.crm.configmap.APPLICATION_NAME | default "ledger" | quote }}
+  APPLICATION_NAME: {{ .Values.crm.configmap.APPLICATION_NAME | default "crm" | quote }}
   SERVER_PORT: {{ .Values.crm.configmap.SERVER_PORT | default "4003" | quote }}
   SERVER_ADDRESS: {{ .Values.crm.configmap.SERVER_ADDRESS | default ":4003" | quote }}
   VERSION: "v{{ .Values.crm.image.tag | default .Chart.AppVersion }}"

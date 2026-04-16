@@ -180,6 +180,20 @@ manager:
     SWAGGER_RIGHT_DELIMITER: "}}"
     PDF_POOL_WORKERS: "3"
     PDF_TIMEOUT_SECONDS: "60"
+    # Rate Limiting - Three-tier system with Redis backend
+    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   # Extra Env Vars
   extraEnvVars: {}
   # -- HPA configuration (used when KEDA is disabled)
@@ -289,6 +303,20 @@ worker:
     OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0"
     PDF_POOL_WORKERS: "5"
     PDF_TIMEOUT_SECONDS: "30"
+    # Rate Limiting - Three-tier system with Redis backend
+    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   # -- Pod annotations for the worker deployment (used when KEDA is disabled)
   podAnnotations: {}
   # -- Deployment strategy (used when KEDA is disabled)

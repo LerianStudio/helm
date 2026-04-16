@@ -173,6 +173,24 @@ data:
   BALANCE_SYNC_WORKER_ENABLED: {{ .Values.ledger.configmap.BALANCE_SYNC_WORKER_ENABLED | default "false" | quote }}
   BALANCE_SYNC_MAX_WORKERS: {{ .Values.ledger.configmap.BALANCE_SYNC_MAX_WORKERS | default "5" | quote }}
 
+  # =============================================================================
+  # RATE LIMITING
+  # =============================================================================
+  # Three-tier system with Redis backend
+  # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+  # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
+  # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+  RATE_LIMIT_ENABLED: {{ .Values.ledger.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ .Values.ledger.configmap.RATE_LIMIT_MAX | default "500" | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ .Values.ledger.configmap.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  AGGRESSIVE_RATE_LIMIT_MAX: {{ .Values.ledger.configmap.AGGRESSIVE_RATE_LIMIT_MAX | default "100" | quote }}
+  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ .Values.ledger.configmap.AGGRESSIVE_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  RELAXED_RATE_LIMIT_MAX: {{ .Values.ledger.configmap.RELAXED_RATE_LIMIT_MAX | default "1000" | quote }}
+  RELAXED_RATE_LIMIT_WINDOW_SEC: {{ .Values.ledger.configmap.RELAXED_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  RATE_LIMIT_REDIS_TIMEOUT_MS: {{ .Values.ledger.configmap.RATE_LIMIT_REDIS_TIMEOUT_MS | default "500" | quote }}
+  ALLOW_RATELIMIT_DISABLED: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
+
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

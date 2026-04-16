@@ -6,6 +6,24 @@
   - Introduced new data fetching capabilities to enhance performance and reliability.
 
 - Fixes:
+  - Resolved issue causing intermittent data retrieval failures under specific network conditions.
+
+- Improvements:
+  - Optimized data parsing logic for faster processing and reduced memory usage.
+  - Enhanced logging for better traceability and debugging.
+
+Contributors:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
+  - Introduced new data fetching capabilities to enhance performance and reliability.
+
+- Fixes:
   - Resolved issue causing intermittent failures in data retrieval under specific network conditions.
   - Fixed bug related to incorrect parsing of response headers in certain API calls.
 

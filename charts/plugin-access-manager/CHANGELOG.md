@@ -3,6 +3,25 @@
 ## [6.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.2.0)
 
 - **Features**
+  - Released version 6.2.0.
+  - Released version 6.2.0-beta.2.
+  - Released version 6.2.0-beta.1.
+
+- **Fixes**
+  - Updated plugin-auth to version 2.6.1.
+
+- **Improvements**
+  - Updated image tag to 2.6.1 in values.yaml.
+
+Contributors: @gui.rodrigues, @guimoreirar
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v6.1.1...plugin-access-manager-v6.2.0)
+
+---
+
+## [6.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.2.0)
+
+- **Features**
   - Released version 6.2.0
 
 - **Fixes**

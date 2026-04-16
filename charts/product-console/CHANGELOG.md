@@ -3,6 +3,22 @@
 ## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v2.0.1)
 
 - Features:
+  - Released version 2.0.0 of product-console, introducing significant updates and enhancements.
+
+- Improvements:
+  - Enhanced user interface for better navigation and usability.
+  - Optimized backend processes for improved performance and reliability.
+
+Contributors:
+- [List of contributors]
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v2.0.0...product-console-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v2.0.1)
+
+- Features:
   - Released version 2.0.0 of product-console.
 
 Contributors:

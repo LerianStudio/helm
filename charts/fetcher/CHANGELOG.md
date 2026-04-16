@@ -1,5 +1,22 @@
 # Fetcher Changelog
 
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.0)
+
+- **Features:**
+  - Added missing NEU app environment variables to fetcher.
+  - Updated fetcher-manager to version 1.3.0 and fetcher-worker to version 1.3.0 with new environment variables.
+  - Auto-set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag.
+  - Added ServiceAccount support for fetcher worker.
+
+- **Fixes:**
+  - Removed common secret to match reporter pattern.
+
+Contributors: @ferr3ira-gabriel, @ferr3ira.gabriel, @guimoreirar, @lucas.bedatty
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.0.3...fetcher-v2.1.0)
+
+---
+
 ## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.4)
 
 - Fixes:

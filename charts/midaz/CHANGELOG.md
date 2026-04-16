@@ -11,6 +11,17 @@ Contributors: @gui.rodrigues
 
 ---
 
+## [6.0.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.0.1)
+
+- Improvements:
+  - Updated CRM image tag to 3.6.0 in `values.yaml`.
+
+Contributors: @gui.rodrigues
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.0.0...midaz-v6.0.1)
+
+---
+
 ## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
 
 - Features:

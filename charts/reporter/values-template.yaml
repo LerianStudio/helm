@@ -71,6 +71,18 @@ common:
     OTEL_EXPORTER_OTLP_ENDPOINT_PORT: 4317
     OTEL_EXPORTER_OTLP_ENDPOINT: otlp://midaz-otel-lgtm:4317
     ENABLE_TELEMETRY: false
+    OTEL_INSECURE_EXPORTER: "false"
+
+    # MongoDB TLS
+    MONGO_TLS_CA_CERT: ""
+    MONGO_PARAMETERS: ""
+
+    # Fetcher Integration
+    FETCHER_ENABLED: "false"
+    FETCHER_URL: ""
+
+    # Multi-Tenant
+    MULTI_TENANT_ENABLED: "false"
 
     # MIDAZ ONBOARDING
     DATASOURCE_ONBOARDING_CONFIG_NAME: midaz_onboarding
@@ -89,6 +101,8 @@ secrets:
   DATASOURCE_ONBOARDING_PASSWORD: lerian
   OBJECT_STORAGE_ACCESS_KEY_ID: any
   OBJECT_STORAGE_SECRET_KEY: any
+  # Fetcher Integration - Base64 encoded 32-byte encryption key
+  APP_ENC_KEY: ""
 
 seaweedfs:
   enabled: true

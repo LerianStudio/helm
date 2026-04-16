@@ -2,6 +2,40 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+global:
+  # -- Bootstrap job for external MongoDB: creates users and grants privileges
+  externalMongoDefinitions:
+    # -- Enable or disable the MongoDB bootstrap job
+    enabled: false
+    # -- MongoDB connection settings
+    connection:
+      # -- MongoDB host
+      host: "plugin-br-pix-indirect-btg-mongodb"
+      # -- MongoDB port
+      port: "27017"
+    # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
+    mongoAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_ROOT_USER and MONGO_ROOT_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "pix_btg"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for pix_btg user created by the job
+    pixBtgCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_APP_USER and MONGO_APP_PASSWORD keys
+        name: ""
+      # -- App username (ignored if useExistingSecret.name is set)
+      username: "pix_btg"
+      # -- Password for pix_btg user (ignored if useExistingSecret.name is set)
+      password: "lerian"
+      # -- List of roles to grant to the user. Each item is a {role, db} pair.
+      roles:
+        - role: "readWrite"
+          db: "plugin-br-pix-indirect-btg-db"
+
 pix:
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg"

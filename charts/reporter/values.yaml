@@ -2,6 +2,39 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+global:
+  # -- Bootstrap job for external MongoDB: creates users and grants privileges
+  externalMongoDefinitions:
+    # -- Enable or disable the MongoDB bootstrap job
+    enabled: false
+    # -- MongoDB connection settings
+    connection:
+      # -- MongoDB host
+      host: "reporter-mongodb"
+      # -- MongoDB port
+      port: "27017"
+    # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
+    mongoAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_ROOT_USER and MONGO_ROOT_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "reporter"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for reporter user created by the job
+    reporterCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_APP_USER and MONGO_APP_PASSWORD keys
+        name: ""
+      # -- App username (ignored if useExistingSecret.name is set)
+      username: "reporter"
+      # -- Password for reporter user (ignored if useExistingSecret.name is set)
+      password: "lerian"
+      # -- List of roles to grant to the user. Each item is a {role, db} pair.
+      roles:
+        - role: "readWrite"
+          db: "reporter-db"
 manager:
   name: "reporter-manager"
   # -- Number of old ReplicaSets to retain for deployment rollback
@@ -31,7 +64,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.1.1"
+    tag: "1.2.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -110,6 +143,15 @@ manager:
   clusterRole:
     # -- Enable or disable ClusterRole and ClusterRoleBinding creation
     create: true
+  # -- ServiceAccount configuration for manager
+  serviceAccount:
+    # -- Enable or disable ServiceAccount creation
+    create: true
+    # -- Annotations to add to the ServiceAccount (e.g., for IRSA)
+    annotations: {}
+    # Example for AWS IRSA:
+    # annotations:
+    #   eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/my-role"
   configmap:
     # -- Annotations for the configmap
     annotations: {}
@@ -137,6 +179,20 @@ manager:
     SWAGGER_RIGHT_DELIMITER: "}}"
     PDF_POOL_WORKERS: "3"
     PDF_TIMEOUT_SECONDS: "60"
+    # Rate Limiting - Three-tier system with Redis backend
+    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   # Extra Env Vars
   extraEnvVars: {}
   # -- HPA configuration (used when KEDA is disabled)
@@ -178,7 +234,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.1.0"
+    tag: "1.2.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -223,6 +279,15 @@ worker:
 
   useExistingSecret: false
   existingSecretName: ""
+  # -- ServiceAccount configuration for worker
+  serviceAccount:
+    # -- Enable or disable ServiceAccount creation
+    create: true
+    # -- Annotations to add to the ServiceAccount (e.g., for IRSA)
+    annotations: {}
+    # Example for AWS IRSA:
+    # annotations:
+    #   eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/my-role"
   configmap:
     # -- Annotations for the configmap
     annotations: {}
@@ -237,6 +302,20 @@ worker:
     OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0"
     PDF_POOL_WORKERS: "5"
     PDF_TIMEOUT_SECONDS: "30"
+    # Rate Limiting - Three-tier system with Redis backend
+    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   # -- Pod annotations for the worker deployment (used when KEDA is disabled)
   podAnnotations: {}
   # -- Deployment strategy (used when KEDA is disabled)
@@ -332,6 +411,15 @@ common:
     OTEL_EXPORTER_OTLP_ENDPOINT_PORT: 4317
     OTEL_EXPORTER_OTLP_ENDPOINT: otlp://midaz-otel-lgtm:4317
     ENABLE_TELEMETRY: true
+    OTEL_INSECURE_EXPORTER: "false"
+    # MongoDB TLS
+    MONGO_TLS_CA_CERT: ""
+    MONGO_PARAMETERS: ""
+    # Fetcher Integration
+    FETCHER_ENABLED: "false"
+    FETCHER_URL: ""
+    # Multi-Tenant
+    MULTI_TENANT_ENABLED: "false"
     # MIDAZ ONBOARDING
     DATASOURCE_ONBOARDING_CONFIG_NAME: midaz_onboarding
     DATASOURCE_ONBOARDING_HOST: midaz-postgresql-replication.midaz.svc.cluster.local
@@ -363,6 +451,8 @@ secrets:
   #DATASOURCE_EXTERNAL_PASSWORD: db_password
   OBJECT_STORAGE_ACCESS_KEY_ID: "any"
   OBJECT_STORAGE_SECRET_KEY: "any"
+  # Fetcher Integration - Base64 encoded 32-byte encryption key
+  APP_ENC_KEY: ""
 seaweedfs:
   enabled: true
   master:
@@ -588,7 +678,6 @@ valkey:
     enabled: false
 otel-collector-lerian:
   enabled: true
-
 # -- AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Clotilde/Proxmox)
 aws:
   rolesAnywhere:

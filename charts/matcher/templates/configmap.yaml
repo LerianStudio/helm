@@ -159,11 +159,7 @@ data:
   {{- end }}
 
   # Application Version (for logs/telemetry)
-  {{- if .Values.matcher.image.tag }}
-  VERSION: {{ .Values.matcher.image.tag | quote }}
-  {{- else }}
-  VERSION: {{ .Chart.AppVersion | quote }}
-  {{- end }}
+  VERSION: {{ .Values.matcher.image.tag | default .Chart.AppVersion | quote }}
 
   # Extra Env Vars
   {{- with .Values.matcher.extraEnvVars }}

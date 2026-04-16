@@ -3,12 +3,35 @@
 manager:
   configmap:
     PLUGIN_AUTH_ENABLED: "false"
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   useExistingSecret: false
   existingSecretName: ""
   clusterRole:
     create: true
 
 worker:
+  configmap:
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -48,6 +71,18 @@ common:
     OTEL_EXPORTER_OTLP_ENDPOINT_PORT: 4317
     OTEL_EXPORTER_OTLP_ENDPOINT: otlp://midaz-otel-lgtm:4317
     ENABLE_TELEMETRY: false
+    OTEL_INSECURE_EXPORTER: "false"
+
+    # MongoDB TLS
+    MONGO_TLS_CA_CERT: ""
+    MONGO_PARAMETERS: ""
+
+    # Fetcher Integration
+    FETCHER_ENABLED: "false"
+    FETCHER_URL: ""
+
+    # Multi-Tenant
+    MULTI_TENANT_ENABLED: "false"
 
     # MIDAZ ONBOARDING
     DATASOURCE_ONBOARDING_CONFIG_NAME: midaz_onboarding
@@ -66,6 +101,8 @@ secrets:
   DATASOURCE_ONBOARDING_PASSWORD: lerian
   OBJECT_STORAGE_ACCESS_KEY_ID: any
   OBJECT_STORAGE_SECRET_KEY: any
+  # Fetcher Integration - Base64 encoded 32-byte encryption key
+  APP_ENC_KEY: ""
 
 seaweedfs:
   enabled: true

@@ -1,5 +1,15 @@
 # Fetcher Changelog
 
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.4)
+
+- Fixes:
+  - Remove common secret to match reporter chart pattern
+  - Secrets now managed via `useExistingSecret` on manager/worker only
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.0.3...fetcher-v2.0.4)
+
+---
+
 ## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.0.3)
 
 - Features:

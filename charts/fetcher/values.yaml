@@ -4,6 +4,39 @@
 nameOverride: ""
 fullnameOverride: ""
 namespaceOverride: "fetcher"
+global:
+  # -- Bootstrap job for external MongoDB: creates users and grants privileges
+  externalMongoDefinitions:
+    # -- Enable or disable the MongoDB bootstrap job
+    enabled: false
+    # -- MongoDB connection settings
+    connection:
+      # -- MongoDB host
+      host: "fetcher-mongodb"
+      # -- MongoDB port
+      port: "27017"
+    # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
+    mongoAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_ROOT_USER and MONGO_ROOT_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "fetcher"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for fetcher user created by the job
+    fetcherCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_APP_USER and MONGO_APP_PASSWORD keys
+        name: ""
+      # -- App username (ignored if useExistingSecret.name is set)
+      username: "fetcher"
+      # -- Password for fetcher user (ignored if useExistingSecret.name is set)
+      password: "lerian"
+      # -- List of roles to grant to the user. Each item is a {role, db} pair.
+      roles:
+        - role: "readWrite"
+          db: "fetcher-db"
 # Manager component - REST API service
 manager:
   name: "fetcher-manager"
@@ -12,7 +45,7 @@ manager:
   image:
     repository: lerianstudio/fetcher-manager
     pullPolicy: IfNotPresent
-    tag: "1.2.0"
+    tag: "1.3.0"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -99,6 +132,20 @@ manager:
     # Auth
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_ADDRESS: ""
+    # Rate Limiting - Three-tier system with Redis backend
+    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   # Manager-specific Secrets
   secrets:
     APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key
@@ -114,7 +161,7 @@ worker:
   image:
     repository: lerianstudio/fetcher-worker
     pullPolicy: IfNotPresent
-    tag: "1.2.0"
+    tag: "1.3.0"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -136,6 +183,10 @@ worker:
   nodeSelector: {}
   tolerations: {}
   affinity: {}
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
   # Worker-specific ConfigMap (VERSION is auto-set from image tag)
   configmap:
     ENV_NAME: "development"
@@ -151,6 +202,20 @@ worker:
     OBJECT_STORAGE_BUCKET: "external-data"
     OBJECT_STORAGE_KEY_PREFIX: ""
     OBJECT_STORAGE_USE_PATH_STYLE: "false"
+    # Rate Limiting - Three-tier system with Redis backend
+    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   # Worker-specific Secrets
   secrets:
     APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key
@@ -176,6 +241,8 @@ common:
     MONGO_NAME: "fetcher-db"
     MONGO_PORT: "27017"
     MONGO_MAX_POOL_SIZE: "1000"
+    MONGO_PARAMETERS: ""
+    MONGO_TLS_CA_CERT: ""
     # RabbitMQ
     RABBITMQ_URI: "amqp"
     RABBITMQ_HOST: "rabbitmq"
@@ -190,7 +257,6 @@ common:
     REDIS_HOST: "valkey"
     REDIS_PORT: "6379"
     REDIS_DB: "0"
-
     # OpenTelemetry
     OTEL_RESOURCE_SERVICE_NAME: "fetcher"
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/fetcher"
@@ -199,6 +265,7 @@ common:
     OTEL_EXPORTER_OTLP_ENDPOINT_PORT: "4317"
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(HOST_IP):4317"
     ENABLE_TELEMETRY: "false"
+    OTEL_INSECURE_EXPORTER: "false"
     # Multi-Tenant
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
@@ -413,7 +480,6 @@ observability:
     enabled: false
     jaegerEndpoint: {}
     samplingRate: {}
-
 # AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Proxmox)
 aws:
   rolesAnywhere:

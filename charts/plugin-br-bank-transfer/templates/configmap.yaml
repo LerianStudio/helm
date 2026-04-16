@@ -240,11 +240,7 @@ data:
   TRANSFER_OPERATING_TIMEZONE: {{ .Values.bankTransfer.configmap.TRANSFER_OPERATING_TIMEZONE | default "America/Sao_Paulo" | quote }}
 
   # Application Version (for logs/telemetry)
-  {{- if .Values.bankTransfer.image.tag }}
-  VERSION: {{ .Values.bankTransfer.image.tag | quote }}
-  {{- else }}
-  VERSION: {{ .Chart.AppVersion | quote }}
-  {{- end }}
+  VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
 
   # Extra Env Vars (must be a map of key: value pairs)
   {{- range $key, $value := .Values.bankTransfer.extraEnvVars }}

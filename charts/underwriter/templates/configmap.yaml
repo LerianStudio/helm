@@ -64,7 +64,7 @@ data:
   ENABLE_TELEMETRY: {{ .Values.underwriter.configmap.ENABLE_TELEMETRY | default "false" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.underwriter.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/underwriter" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.underwriter.configmap.OTEL_RESOURCE_SERVICE_NAME | default "underwriter" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.underwriter.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "1.0.0" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.underwriter.image.tag | default .Chart.AppVersion | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.underwriter.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.underwriter.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
 

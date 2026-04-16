@@ -8,11 +8,7 @@ data:
   {{- range $key, $value := .Values.configmap }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
-  {{- if .Values.image.tag }}
-  VERSION: {{ .Values.image.tag | quote }}
-  {{- else }}
-  VERSION: {{ .Chart.AppVersion | quote }}
-  {{- end }}
+  VERSION: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
   {{- with .Values.extraEnvVars }}
   {{- range $key, $value := . }}
   {{ $key }}: {{ $value | quote }}

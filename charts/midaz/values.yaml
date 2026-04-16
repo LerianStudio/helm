@@ -67,6 +67,43 @@ global:
       # -- Password for midaz role (ignored if useExistingSecret.name is set)
       password: "lerian"
 
+  # -- Bootstrap job for external MongoDB: creates users and grants privileges
+  externalMongoDefinitions:
+    # -- Enable or disable the MongoDB bootstrap job
+    enabled: false
+    # -- MongoDB connection settings
+    connection:
+      # -- MongoDB host
+      host: "midaz-mongodb"
+      # -- MongoDB port
+      port: "27017"
+    # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
+    mongoAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_ROOT_USER and MONGO_ROOT_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "midaz"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for midaz user created by the job
+    midazCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_APP_USER and MONGO_APP_PASSWORD keys
+        name: ""
+      # -- App username (ignored if useExistingSecret.name is set)
+      username: "midaz"
+      # -- Password for midaz user (ignored if useExistingSecret.name is set)
+      password: "lerian"
+      # -- List of roles to grant to the user. Each item is a {role, db} pair.
+      roles:
+        - role: "readWrite"
+          db: "onboarding"
+        - role: "readWrite"
+          db: "transaction"
+        - role: "readWrite"
+          db: "crm"
+
 onboarding:
   # -- Service name
   name: onboarding
@@ -233,6 +270,20 @@ onboarding:
     # -- This configuration is used to validate the account type
     # -- List of <organization-id>:<ledger-id> separated by comma
     ACCOUNT_TYPE_VALIDATION: ""
+    # -- Rate Limiting - Three-tier system with Redis backend
+    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
 
   # -- Secrets for storing sensitive data
   # @default -- templates/onboarding/secrets.yaml
@@ -440,6 +491,20 @@ transaction:
     # -- Transaction Route Validation
     # -- List of <organization-id>:<ledger-id> separated by comma
     TRANSACTION_ROUTE_VALIDATION: ""
+    # -- Rate Limiting - Three-tier system with Redis backend
+    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
 
   # -- Existing secrets name
   useExistingSecret: false
@@ -661,6 +726,20 @@ ledger:
     # -- Balance Sync Worker
     BALANCE_SYNC_WORKER_ENABLED: "false"
     BALANCE_SYNC_MAX_WORKERS: "5"
+    # -- Rate Limiting - Three-tier system with Redis backend
+    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
 
   # -- Existing secrets name
   useExistingSecret: false
@@ -837,6 +916,20 @@ crm:
     MONGO_NAME: "crm"
     MONGO_PORT: "27017"
     MONGO_USER: "midaz"
+    # -- Rate Limiting - Three-tier system with Redis backend
+    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
 
   # -- Extra environment variables
   extraEnvVars: {}

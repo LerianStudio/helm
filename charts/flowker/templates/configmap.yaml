@@ -9,7 +9,7 @@ metadata:
 data:
   # Server
   ENV_NAME: {{ .Values.flowker.configmap.ENV_NAME | default "development" | quote }}
-  VERSION: {{ .Values.flowker.configmap.VERSION | default "v1.0.0" | quote }}
+  VERSION: {{ .Values.flowker.image.tag | default .Chart.AppVersion | quote }}
   SERVER_PORT: {{ .Values.flowker.configmap.SERVER_PORT | default "4000" | quote }}
   SERVER_ADDRESS: {{ .Values.flowker.configmap.SERVER_ADDRESS | default ":4000" | quote }}
 
@@ -37,7 +37,7 @@ data:
   # Swagger
   SWAGGER_TITLE: {{ .Values.flowker.configmap.SWAGGER_TITLE | default "Flowker API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.flowker.configmap.SWAGGER_DESCRIPTION | default "Workflow orchestration platform for financial validation" | quote }}
-  SWAGGER_VERSION: {{ .Values.flowker.configmap.SWAGGER_VERSION | default "v1.0.0" | quote }}
+  SWAGGER_VERSION: {{ .Values.flowker.image.tag | default .Chart.AppVersion | quote }}
   SWAGGER_HOST: {{ .Values.flowker.configmap.SWAGGER_HOST | default ":4000" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.flowker.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.flowker.configmap.SWAGGER_SCHEMES | default "http" | quote }}
@@ -48,7 +48,7 @@ data:
   ENABLE_TELEMETRY: {{ .Values.flowker.configmap.ENABLE_TELEMETRY | default "false" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.flowker.configmap.OTEL_RESOURCE_SERVICE_NAME | default "flowker" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.flowker.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/flowker" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.flowker.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "v1.0.0" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.flowker.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.flowker.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.flowker.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.flowker.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}

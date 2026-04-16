@@ -26,6 +26,9 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.worker.serviceAccount.create }}
+      serviceAccountName: {{ include "fetcher-worker.serviceAccountName" . }}
+      {{- end }}
       {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
       securityContext:
         fsGroup: 65532
@@ -46,8 +49,6 @@ spec:
                 name: {{ include "fetcher.fullname" . }}-common
             - secretRef:
                 name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "fetcher-worker.fullname" . }}{{ end }}
-            - secretRef:
-                name: {{ include "fetcher.fullname" . }}-common
           {{- if or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
           env:
           {{- if eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true" }}

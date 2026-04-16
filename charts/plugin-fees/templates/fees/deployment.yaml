@@ -16,6 +16,11 @@ spec:
     metadata:
       labels:
         {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/fees/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.fees.useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/fees/secrets.yaml") . | sha256sum }}
+        {{- end }}
     spec:
       {{- with .Values.fees.imagePullSecrets }}
       imagePullSecrets:

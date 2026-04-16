@@ -15,7 +15,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `6.0.0-beta.6` | 3.6.1 | 3.6.0 | 3.5.3 | 3.5.3 |
+| `6.0.1` | 3.6.1 | 3.6.0 | 3.5.3 | 3.5.3 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -29,25 +29,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
 | `6.2.0-beta.2` | 2.6.1 | 2.4.2 |
-
-> **⚠️ Migration note for 6.0.0-beta.1:** The `auth.backend.migrations.image` and `auth.initUser.image` values changed from a single string to an object with `repository`, `tag`, and `pullPolicy` fields. Existing overrides using the old string format (e.g. `image: "ghcr.io/lerianstudio/casdoor-migrations:v1"`) will continue to work thanks to backward compatibility, but we recommend updating to the new format:
-> ```yaml
-> # Old format (still supported):
-> auth:
->   backend:
->     migrations:
->       image: "ghcr.io/lerianstudio/casdoor-migrations:v1.0.0"
->
-> # New format (recommended):
-> auth:
->   backend:
->     migrations:
->       image:
->         repository: ghcr.io/lerianstudio/casdoor-migrations
->         tag: "v1.0.0"
->         pullPolicy: Always
-> ```
-
 -----------------
 
 ### Plugin CRM Helm Chart
@@ -99,7 +80,8 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.2.0-beta.1` | 1.0.0-beta.1 |
+| `1.1.6` | 1.0.0-beta.1 |
+
 
 
 ### Plugin BR Pix Direct JD

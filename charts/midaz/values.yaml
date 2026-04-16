@@ -110,7 +110,7 @@ onboarding:
 
   # -- Enable or disable the onboarding service
   # -- When ledger.enabled is true, this service will not be deployed unless migration.allowAllServices is true
-  enabled: true
+  enabled: false
 
   # -- Number of replicas for the onboarding service
   replicaCount: 2
@@ -321,7 +321,7 @@ transaction:
 
   # -- Enable or disable the transaction service
   # -- When ledger.enabled is true, this service will not be deployed unless migration.allowAllServices is true
-  enabled: true
+  enabled: false
 
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
@@ -543,7 +543,7 @@ ledger:
   # -- Enable or disable the ledger service (unified onboarding + transaction)
   # -- When enabled, onboarding and transaction services will not be deployed unless migration.allowAllServices is true
   # -- NOTE: migration.allowAllServices is not in the public values.yaml - set it in your override values for internal testing
-  enabled: false
+  enabled: true
 
   # -- Number of replicas for the ledger service
   replicaCount: 2

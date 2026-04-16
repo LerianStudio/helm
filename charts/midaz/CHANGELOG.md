@@ -10,7 +10,7 @@
   - Standardized VERSION/OTEL_RESOURCE_SERVICE_VERSION in remaining charts.
 
 - **Improvements**
-  - Updated appVersion to 3.6.1, ledger to 3.6.1, crm to 3.6.0.
+  - Updated appVersion to 3.6.1, ledger to 3.6.1, and crm to 3.6.0.
 
 Contributors: @ferr3ira.gabriel, @gandalf, @guimoreirar, @lucas.bedatty
 

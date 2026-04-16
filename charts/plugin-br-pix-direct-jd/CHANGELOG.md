@@ -3,8 +3,8 @@
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.0.0)
 
 - **Features:**
-  - Updated to pix@1.2.1-beta.11 and job@1.2.1-beta.11, introducing new environment variables.
-  - Updated to pix@1.2.1-beta.10 and job@1.2.1-beta.10, introducing new environment variables.
+  - Updated to pix@1.2.1-beta.11 and job@1.2.1-beta.11 with new environment variables.
+  - Updated to pix@1.2.1-beta.10 and job@1.2.1-beta.10 with new environment variables.
 
 - **Fixes:**
   - Completed standardization of VERSION across all remaining charts.

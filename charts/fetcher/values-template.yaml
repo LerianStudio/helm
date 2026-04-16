@@ -35,6 +35,17 @@ manager:
     SWAGGER_HOST: ":4006"
     SWAGGER_BASE_PATH: "/"
     SWAGGER_SCHEMES: "https"
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
 
   secrets:
     APP_ENC_KEY: ""  # REQUIRED - Base64 encoded 32-byte key (generate with: openssl rand -base64 32)
@@ -62,6 +73,17 @@ worker:
     RABBITMQ_GENERATE_REPORT_KEY: "fetcher.extract-external-data.key"
     RABBITMQ_DLQ_QUEUE: "fetcher.extract-external-data.dlq"
     RABBITMQ_JOB_EVENTS_EXCHANGE: "fetcher.extract-external-data.exchange"
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
 
   secrets:
     APP_ENC_KEY: ""  # REQUIRED - Base64 encoded 32-byte key (generate with: openssl rand -base64 32)

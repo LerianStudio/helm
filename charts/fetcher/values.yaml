@@ -132,6 +132,20 @@ manager:
     # Auth
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_ADDRESS: ""
+    # Rate Limiting - Three-tier system with Redis backend
+    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   # Manager-specific Secrets
   secrets:
     APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key
@@ -188,6 +202,20 @@ worker:
     OBJECT_STORAGE_BUCKET: "external-data"
     OBJECT_STORAGE_KEY_PREFIX: ""
     OBJECT_STORAGE_USE_PATH_STYLE: "false"
+    # Rate Limiting - Three-tier system with Redis backend
+    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
+    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
+    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
   # Worker-specific Secrets
   secrets:
     APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key

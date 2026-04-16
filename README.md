@@ -28,7 +28,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `6.2.0-beta.2` | 2.6.1 | 2.4.2 |
+| `6.2.0` | 2.6.1 | 2.4.2 |
 -----------------
 
 ### Plugin CRM Helm Chart

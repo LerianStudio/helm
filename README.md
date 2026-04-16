@@ -67,7 +67,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `2.1.0-beta.8` | 1.2.0 | 1.2.0 |
+| `2.1.0` | 1.2.0 | 1.2.0 |
 -----------------
 
 ### Plugin BR Bank Transfer JD
@@ -195,5 +195,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `2.1.0-beta.3` | 1.5.0 |
+| `2.1.0` | 1.5.0 |
 -----------------

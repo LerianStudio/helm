@@ -1,5 +1,19 @@
 # Fetcher Changelog
 
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
+  - Initial release of fetcher version 2.1.0 with enhanced data retrieval capabilities.
+
+- Fixes:
+  - Addressed minor bugs affecting data synchronization in fetcher version 2.1.1.
+
+Contributors:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
 ## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.0)
 
 - **Features:**

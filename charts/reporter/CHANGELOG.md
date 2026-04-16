@@ -1,5 +1,23 @@
 # Reporter Changelog
 
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v2.1.0)
+
+- **Features:**
+  - Added support for ServiceAccount annotations for IRSA.
+  - Updated reporter-manager to version 1.2.0 and reporter-worker to version 1.2.0, including new environment variables.
+  - Added rate limit configuration to reporter charts.
+  - Auto-set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag.
+  - Added missing NEU app environment variables.
+
+- **Fixes:**
+  - Removed duplicate `reporter-manager/secret.yaml` with incorrect template references.
+
+Contributors: @ferr3ira-gabriel, @ferr3ira.gabriel, @gandalf, @guimoreirar, @lucas.bedatty
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v2.0.0...reporter-v2.1.0)
+
+---
+
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v2.0.0)
 
 - Fixes:

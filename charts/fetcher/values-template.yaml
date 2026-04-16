@@ -47,10 +47,6 @@ manager:
     ALLOW_RATELIMIT_DISABLED: ""
     ALLOW_RATELIMIT_FAIL_OPEN: ""
 
-  secrets:
-    APP_ENC_KEY: ""  # REQUIRED - Base64 encoded 32-byte key (generate with: openssl rand -base64 32)
-    APP_ENC_KEY_VERSION: "1"
-
   useExistingSecret: false
   existingSecretName: ""
 
@@ -84,12 +80,6 @@ worker:
     RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
     ALLOW_RATELIMIT_DISABLED: ""
     ALLOW_RATELIMIT_FAIL_OPEN: ""
-
-  secrets:
-    APP_ENC_KEY: ""  # REQUIRED - Base64 encoded 32-byte key (generate with: openssl rand -base64 32)
-    APP_ENC_KEY_VERSION: "1"
-    CRYPTO_ENCRYPT_SECRET_KEY_SEAWEEDFS: ""
-    CRYPTO_HASH_SECRET_KEY_SEAWEEDFS: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -134,6 +124,7 @@ common:
     ENABLE_TELEMETRY: "false"
     OTEL_INSECURE_EXPORTER: "false"
 
+# Shared secrets (used by both manager and worker)
 secrets:
   MONGO_USER: ""  # REQUIRED - MongoDB username
   MONGO_PASSWORD: ""  # REQUIRED - MongoDB password
@@ -143,6 +134,17 @@ secrets:
   REDIS_PASSWORD: ""
   LICENSE_KEY: ""  # REQUIRED - Lerian license key
   ORGANIZATION_IDS: ""
+  APP_ENC_KEY: ""  # REQUIRED - Base64 encoded 32-byte key (generate with: openssl rand -base64 32)
+  APP_ENC_KEY_VERSION: "1"
+  # Storage Encryption Keys
+  CRYPTO_ENCRYPT_FILE_STORAGE: ""
+  CRYPTO_HASH_SECRET_KEY_FILE_STORAGE: ""
+  # CRM Plugin Encryption Keys
+  CRYPTO_ENCRYPT_SECRET_KEY_PLUGIN_CRM: ""
+  CRYPTO_HASH_SECRET_KEY_PLUGIN_CRM: ""
+  # S3 Object Storage Credentials
+  OBJECT_STORAGE_ACCESS_KEY_ID: ""
+  OBJECT_STORAGE_SECRET_KEY: ""
 
 # External RabbitMQ Bootstrap - Apply definitions to external RabbitMQ
 externalRabbitmqDefinitions:

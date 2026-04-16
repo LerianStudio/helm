@@ -146,10 +146,6 @@ manager:
     RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
     ALLOW_RATELIMIT_DISABLED: ""
     ALLOW_RATELIMIT_FAIL_OPEN: ""
-  # Manager-specific Secrets
-  secrets:
-    APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key
-    APP_ENC_KEY_VERSION: "1"
   extraEnvVars: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -216,19 +212,6 @@ worker:
     RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
     ALLOW_RATELIMIT_DISABLED: ""
     ALLOW_RATELIMIT_FAIL_OPEN: ""
-  # Worker-specific Secrets
-  secrets:
-    APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key
-    APP_ENC_KEY_VERSION: "1"
-    # Storage Encryption Keys
-    CRYPTO_ENCRYPT_FILE_STORAGE: ""
-    CRYPTO_HASH_SECRET_KEY_FILE_STORAGE: ""
-    # CRM Plugin Encryption Keys
-    CRYPTO_ENCRYPT_SECRET_KEY_PLUGIN_CRM: ""
-    CRYPTO_HASH_SECRET_KEY_PLUGIN_CRM: ""
-    # S3 Object Storage Credentials
-    OBJECT_STORAGE_ACCESS_KEY_ID: ""
-    OBJECT_STORAGE_SECRET_KEY: ""
   extraEnvVars: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -274,7 +257,7 @@ common:
     MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
     MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
     MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-# Shared secrets
+# Shared secrets (used by both manager and worker)
 secrets:
   MONGO_USER: "fetcher"
   MONGO_PASSWORD: "lerian"
@@ -284,6 +267,17 @@ secrets:
   REDIS_PASSWORD: ""
   LICENSE_KEY: ""
   ORGANIZATION_IDS: ""
+  APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE="
+  APP_ENC_KEY_VERSION: "1"
+  # Storage Encryption Keys
+  CRYPTO_ENCRYPT_FILE_STORAGE: ""
+  CRYPTO_HASH_SECRET_KEY_FILE_STORAGE: ""
+  # CRM Plugin Encryption Keys
+  CRYPTO_ENCRYPT_SECRET_KEY_PLUGIN_CRM: ""
+  CRYPTO_HASH_SECRET_KEY_PLUGIN_CRM: ""
+  # S3 Object Storage Credentials
+  OBJECT_STORAGE_ACCESS_KEY_ID: ""
+  OBJECT_STORAGE_SECRET_KEY: ""
 # =============================================================================
 # Optional Dependencies - Enable to deploy components in Kubernetes
 # =============================================================================

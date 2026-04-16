@@ -2,6 +2,17 @@
 
 ## [6.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.1.1)
 
+- **Fixes**
+  - Updated plugin-identity to version 2.4.2 for improved compatibility and performance.
+
+Contributors: @guimoreirar
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v6.1.0...plugin-access-manager-v6.1.1)
+
+---
+
+## [6.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.1.1)
+
 - **Fixes:**
   - Updated dependency to `plugin-identity@2.4.2` to address compatibility issues.
 

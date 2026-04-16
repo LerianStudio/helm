@@ -7,6 +7,23 @@
 
 - **Fixes**
   - Completed standardization of VERSION across all remaining charts.
+
+- **Improvements**
+  - Updated appVersion to 3.6.1, ledger to 3.6.1, crm to 3.6.0.
+
+Contributors: @ferr3ira.gabriel, @gandalf, @guimoreirar, @lucas.bedatty
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.0.1...midaz-v6.1.0)
+
+---
+
+## [6.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.1.0)
+
+- **Features**
+  - Added rate limit configuration to midaz charts.
+
+- **Fixes**
+  - Completed standardization of VERSION across all remaining charts.
   - Standardized VERSION/OTEL_RESOURCE_SERVICE_VERSION in remaining charts.
 
 - **Improvements**

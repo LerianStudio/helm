@@ -4,7 +4,6 @@
 nameOverride: ""
 fullnameOverride: ""
 namespaceOverride: "fetcher"
-
 global:
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
@@ -38,7 +37,6 @@ global:
       roles:
         - role: "readWrite"
           db: "fetcher-db"
-
 # Manager component - REST API service
 manager:
   name: "fetcher-manager"
@@ -47,7 +45,7 @@ manager:
   image:
     repository: lerianstudio/fetcher-manager
     pullPolicy: IfNotPresent
-    tag: "1.2.0"
+    tag: "1.3.0"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -149,7 +147,7 @@ worker:
   image:
     repository: lerianstudio/fetcher-worker
     pullPolicy: IfNotPresent
-    tag: "1.2.0"
+    tag: "1.3.0"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -229,7 +227,6 @@ common:
     REDIS_HOST: "valkey"
     REDIS_PORT: "6379"
     REDIS_DB: "0"
-
     # OpenTelemetry
     OTEL_RESOURCE_SERVICE_NAME: "fetcher"
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/fetcher"
@@ -452,7 +449,6 @@ observability:
     enabled: false
     jaegerEndpoint: {}
     samplingRate: {}
-
 # AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Proxmox)
 aws:
   rolesAnywhere:

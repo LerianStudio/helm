@@ -1,5 +1,23 @@
 # Plugin-fees Changelog
 
+## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.1.0)
+
+- Features:
+  - Added multi-tenant support via tenant-manager. New configmap fields (rendered when `MULTI_TENANT_ENABLED=true`): `MULTI_TENANT_URL`, `MULTI_TENANT_ENVIRONMENT`, `MULTI_TENANT_MAX_TENANT_POOLS`, `MULTI_TENANT_IDLE_TIMEOUT_SEC`, `MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD`, `MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC`, `MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC`, `MULTI_TENANT_REDIS_HOST`, `MULTI_TENANT_REDIS_PORT`, `MULTI_TENANT_REDIS_TLS`. New secret fields: `MULTI_TENANT_SERVICE_API_KEY` (required when enabled), `MULTI_TENANT_REDIS_PASSWORD` (optional).
+  - Added `useExistingSecret` guard on the in-tree Secret manifest to avoid creating a default Secret when an external one is provided.
+  - Added `checksum/config` and `checksum/secret` pod annotations so ConfigMap/Secret changes automatically trigger pod rollouts.
+
+- Fixes:
+  - Migrated `fees` Secret from `data:` + `b64enc` to `stringData:`. The previous pattern silently broke argocd-vault-plugin (AVP) substitution because Helm encoded the `<path:...>` placeholder before AVP could resolve it. Existing deployments that relied on AVP for `MONGO_PASSWORD`, `CLIENT_SECRET`, `LICENSE_KEY`, or `ORGANIZATION_IDS` will now receive the actual Vault values on the next sync (was previously falling back to chart defaults).
+
+- Breaking notes:
+  - **Behavior change for AVP users:** Secret values that were silently falling back to chart defaults (e.g. `MONGO_PASSWORD: lerian`) will now be replaced by the real Vault values on first sync. Operators must verify that downstream services (MongoDB user, OAuth client) are provisioned with the credentials stored in Vault before upgrading.
+  - **Pre-encoded secrets in Vault are no longer supported:** if any consumer was storing base64-pre-encoded values in Vault, switch them to plaintext.
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.0.0...plugin-fees-v5.1.0)
+
+---
+
 ## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v4.1.2)
 
 - Fixes:

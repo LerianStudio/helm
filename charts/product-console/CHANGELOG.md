@@ -2,6 +2,23 @@
 
 ## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v2.1.0)
 
+- Features:
+  - Added bootstrap-mongodb.yaml for idempotent MongoDB user/db provisioning.
+  - Made app user and roles configurable via values in bootstrap-mongodb.
+
+- Fixes:
+  - Used /bin/bash instead of /bin/sh for mongosh container in bootstrap-mongodb.
+  - Standardized VERSION/OTEL_RESOURCE_SERVICE_VERSION in remaining charts.
+  - Used updateUser + process.env for safer reconciliation in bootstrap-mongodb.
+
+Contributors: @bedatty, @ferr3ira-gabriel, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v2.0.1...product-console-v2.1.0)
+
+---
+
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v2.1.0)
+
 - **Features**
   - Added `bootstrap-mongodb.yaml` for idempotent MongoDB user/db provisioning.
   - Made app user and roles configurable via values in bootstrap-mongodb.

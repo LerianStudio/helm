@@ -2,6 +2,22 @@
 
 ## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.1.0)
 
+Features:
+- Add IAM Roles Anywhere sidecar support.
+- Add MULTI_TENANT_ALLOW_INSECURE_HTTP to configmap template.
+- Add multi-tenant support and fix AVP secret rendering.
+
+Fixes:
+- Remove MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC from configmap.
+
+Contributors: @ferr3ira-gabriel, @gandalf-at-lerian, @lerian-studio, @prymax10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.0.0...plugin-fees-v5.1.0)
+
+---
+
+## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.1.0)
+
 - Features:
   - Added IAM Roles Anywhere sidecar support.
   - Introduced multi-tenant support and fixed AVP secret rendering.

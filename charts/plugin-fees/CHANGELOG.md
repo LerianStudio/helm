@@ -1,5 +1,21 @@
 # Plugin-fees Changelog
 
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.0.0)
+
+- **Features:**
+  - Added new environment variables for version 3.1.0.
+  - Updated plugin-fees to version 3.1.0 with new environment variables.
+
+- **Fixes:**
+  - Reverted `MIDAZ_TRANSACTION_URL` to use the `midaz-transaction` default.
+  - Updated `MIDAZ_TRANSACTION_URL` to use the `midaz-ledger` service as default.
+
+Contributors: @bedatty, @ferr3ira-gabriel, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v4.1.2...plugin-fees-v5.0.0)
+
+---
+
 ## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.1.0)
 
 - **Features:**

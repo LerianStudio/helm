@@ -79,6 +79,7 @@ data:
   MULTI_TENANT_ENABLED: {{ .Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
   {{- if eq (.Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
   MULTI_TENANT_URL: {{ required "fees.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.fees.configmap.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.fees.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
   MULTI_TENANT_ENVIRONMENT: {{ .Values.fees.configmap.MULTI_TENANT_ENVIRONMENT | default "" | quote }}
   MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.fees.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
   MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.fees.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}

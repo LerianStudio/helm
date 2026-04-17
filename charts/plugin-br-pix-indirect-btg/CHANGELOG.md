@@ -3,6 +3,23 @@
 ## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v2.2.0)
 
 - **Features:**
+  - Added bootstrap-mongodb.yaml for idempotent MongoDB user/db provisioning.
+  - Made app user and roles configurable via values in bootstrap-mongodb.
+
+- **Fixes:**
+  - Updated pix OTEL_RESOURCE_SERVICE_VERSION.
+  - Used /bin/bash instead of /bin/sh for mongosh container in bootstrap-mongodb.
+  - Completed standardization of VERSION across all remaining charts.
+
+Contributors: @bedatty, @ferr3ira-gabriel, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v2.1.1...plugin-br-pix-indirect-btg-v2.2.0)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v2.2.0)
+
+- **Features:**
   - Updated `plugin-br-pix-indirect-btg` to version 2.1.1.
 
 - **Fixes:**

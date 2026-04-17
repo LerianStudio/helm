@@ -151,6 +151,8 @@ fees:
   configmap:
     # -- Default Environment
     ENV_NAME: "development"
+    # -- Application name used for service identification in logs/tracing
+    APPLICATION_NAME: "plugin-fees"
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
     MONGO_HOST: "plugin-fees-mongodb.midaz-plugins.svc.cluster.local"
@@ -201,6 +203,10 @@ fees:
     MULTI_TENANT_REDIS_PORT: "6379"
     # -- Enable TLS for the Redis/Valkey connection
     MULTI_TENANT_REDIS_TLS: "false"
+    # -- HTTP client timeout in seconds for tenant-manager requests
+    MULTI_TENANT_TIMEOUT: "30"
+    # -- TTL in seconds for local tenant config cache (0 = disabled)
+    MULTI_TENANT_CACHE_TTL_SEC: "120"
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml

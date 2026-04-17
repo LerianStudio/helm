@@ -85,7 +85,6 @@ data:
   MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.fees.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
   MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.fees.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
-  MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC | default "60" | quote }}
   MULTI_TENANT_REDIS_HOST: {{ required "fees.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.fees.configmap.MULTI_TENANT_REDIS_HOST | quote }}
   MULTI_TENANT_REDIS_PORT: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
   MULTI_TENANT_REDIS_TLS: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}

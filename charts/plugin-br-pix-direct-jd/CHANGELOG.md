@@ -2,6 +2,22 @@
 
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.0.0)
 
+- **Features:**
+  - Updated to pix@1.2.1-beta.11 and job@1.2.1-beta.11, introducing new environment variables.
+  - Updated to pix@1.2.1-beta.10 and job@1.2.1-beta.10, introducing new environment variables.
+
+- **Fixes:**
+  - Completed standardization of VERSION across all remaining charts.
+  - Ensured VERSION and OTEL_RESOURCE_SERVICE_VERSION are always set from image.tag.
+
+Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v1.2.6...plugin-br-pix-direct-jd-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.0.0)
+
 - **Features**
   - Updated pix to version 1.2.1-beta.11 and job to version 1.2.1-beta.11, introducing new environment variables.
   - Updated pix to version 1.2.1-beta.10 and job to version 1.2.1-beta.10, introducing new environment variables.

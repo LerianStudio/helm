@@ -75,6 +75,13 @@ data:
   ACCOUNT_CACHE_ENABLED: {{ .Values.fees.configmap.ACCOUNT_CACHE_ENABLED | default "true" | quote }}
   ACCOUNT_CACHE_TTL_SECONDS: {{ .Values.fees.configmap.ACCOUNT_CACHE_TTL_SECONDS | default "300" | quote }}
 
+  # M2M (Machine-to-Machine)
+  M2M_TARGET_SERVICE: {{ .Values.fees.configmap.M2M_TARGET_SERVICE | default "" | quote }}
+  M2M_CREDENTIAL_CACHE_TTL_SEC: {{ .Values.fees.configmap.M2M_CREDENTIAL_CACHE_TTL_SEC | default "30" | quote }}
+
+  # AWS
+  AWS_REGION: {{ .Values.fees.configmap.AWS_REGION | default "" | quote }}
+
   # MULTI TENANT
   MULTI_TENANT_ENABLED: {{ .Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
   {{- if eq (.Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}

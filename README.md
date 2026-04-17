@@ -41,7 +41,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | CRM Version | UI Version |
 | :---: | :---: | :---: |
-| `5.0.0` | 3.5.1 | `2.0.0` |
+| `5.1.0-beta.1` | 3.5.1 | `2.0.0` |
 -----------------
 
 ### Plugin Fees Helm Chart

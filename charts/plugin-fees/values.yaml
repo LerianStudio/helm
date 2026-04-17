@@ -189,7 +189,6 @@ fees:
     # -- Seconds the circuit breaker stays open before retrying
     MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
     # -- Interval in seconds to re-check tenant-manager settings
-    MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC: "60"
     # -- Hostname of the Redis/Valkey instance used for tenant cache
     MULTI_TENANT_REDIS_HOST: ""
     # -- Port of the Redis/Valkey instance

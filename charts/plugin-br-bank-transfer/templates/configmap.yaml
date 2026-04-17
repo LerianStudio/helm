@@ -7,6 +7,8 @@ metadata:
 data:
   # Application Settings
   ENV_NAME: {{ .Values.bankTransfer.configmap.ENV_NAME | default "production" | quote }}
+  DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
+  ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
   LOG_LEVEL: {{ .Values.bankTransfer.configmap.LOG_LEVEL | default "info" | quote }}
   SERVER_ADDRESS: {{ .Values.bankTransfer.configmap.SERVER_ADDRESS | default ":4027" | quote }}
   HTTP_BODY_LIMIT_BYTES: {{ .Values.bankTransfer.configmap.HTTP_BODY_LIMIT_BYTES | default "1048576" | quote }}
@@ -24,6 +26,12 @@ data:
   SERVER_TLS_KEY_FILE: {{ .Values.bankTransfer.configmap.SERVER_TLS_KEY_FILE | quote }}
   {{- end }}
   TLS_TERMINATED_UPSTREAM: {{ .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
+  {{- if .Values.bankTransfer.configmap.SERVER_PROXY_HEADER }}
+  SERVER_PROXY_HEADER: {{ .Values.bankTransfer.configmap.SERVER_PROXY_HEADER | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.SERVER_TRUSTED_PROXIES }}
+  SERVER_TRUSTED_PROXIES: {{ .Values.bankTransfer.configmap.SERVER_TRUSTED_PROXIES | quote }}
+  {{- end }}
 
   # Multi-Tenancy
   DEFAULT_TENANT_ID: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_ID | default "" | quote }}
@@ -138,6 +146,7 @@ data:
   # Idempotency
   IDEMPOTENCY_RETRY_WINDOW_SEC: {{ .Values.bankTransfer.configmap.IDEMPOTENCY_RETRY_WINDOW_SEC | default "300" | quote }}
   IDEMPOTENCY_REQUIRE_REDIS: {{ .Values.bankTransfer.configmap.IDEMPOTENCY_REQUIRE_REDIS | default "true" | quote }}
+  DUPLICATE_GUARD_TTL_SEC: {{ .Values.bankTransfer.configmap.DUPLICATE_GUARD_TTL_SEC | default "300" | quote }}
 
   # Midaz Adapter
   MIDAZ_BASE_URL: {{ required "bankTransfer.configmap.MIDAZ_BASE_URL is required" .Values.bankTransfer.configmap.MIDAZ_BASE_URL | quote }}
@@ -166,6 +175,9 @@ data:
   {{- if .Values.bankTransfer.configmap.CRM_RECIPIENT_LOOKUP_PATH_TEMPLATE }}
   CRM_RECIPIENT_LOOKUP_PATH_TEMPLATE: {{ .Values.bankTransfer.configmap.CRM_RECIPIENT_LOOKUP_PATH_TEMPLATE | quote }}
   {{- end }}
+  {{- if .Values.bankTransfer.configmap.CRM_HOLDER_LOOKUP_PATH_TEMPLATE }}
+  CRM_HOLDER_LOOKUP_PATH_TEMPLATE: {{ .Values.bankTransfer.configmap.CRM_HOLDER_LOOKUP_PATH_TEMPLATE | quote }}
+  {{- end }}
 
   # Fees Adapter
   # Note: FEES_CLIENT_ID is in secrets.yaml for secure Vault integration
@@ -174,6 +186,7 @@ data:
   FEES_MAX_RETRIES: {{ .Values.bankTransfer.configmap.FEES_MAX_RETRIES | default "2" | quote }}
   FEES_FAIL_CLOSED_DEFAULT: {{ .Values.bankTransfer.configmap.FEES_FAIL_CLOSED_DEFAULT | default "false" | quote }}
   FEES_MAX_FEE_AMOUNT_CENTS: {{ .Values.bankTransfer.configmap.FEES_MAX_FEE_AMOUNT_CENTS | default "99999999" | quote }}
+  FEES_REFUND_ON_DEVOLUCAO: {{ .Values.bankTransfer.configmap.FEES_REFUND_ON_DEVOLUCAO | default "false" | quote }}
   FEES_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.FEES_AUTH_ENABLED | default "false" | quote }}
 
   # JD Sandbox Mode (uses in-process fake adapter, cannot combine with live JD config)
@@ -200,6 +213,7 @@ data:
   JD_POLL_MAX_MESSAGES_PER_CYCLE: {{ .Values.bankTransfer.configmap.JD_POLL_MAX_MESSAGES_PER_CYCLE | default "50" | quote }}
   JD_POLL_MAX_RETRIES: {{ .Values.bankTransfer.configmap.JD_POLL_MAX_RETRIES | default "3" | quote }}
   JD_POLL_RECOVERY_BATCH_SIZE: {{ .Values.bankTransfer.configmap.JD_POLL_RECOVERY_BATCH_SIZE | default "200" | quote }}
+  JD_POLL_DISABLE_OPERATING_HOURS_WINDOW: {{ .Values.bankTransfer.configmap.JD_POLL_DISABLE_OPERATING_HOURS_WINDOW | default "true" | quote }}
 
   # RabbitMQ Event Bus (optional)
   RABBITMQ_ENABLED: {{ .Values.bankTransfer.configmap.RABBITMQ_ENABLED | default "false" | quote }}
@@ -241,6 +255,12 @@ data:
 
   # Application Version (for logs/telemetry)
   VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
+
+  BTF_RECONCILIATION_ENABLED: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_ENABLED | default "true" | quote }}
+  BTF_RECONCILIATION_INTERVAL_SEC: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_INTERVAL_SEC | default "30" | quote }}
+  BTF_RECONCILIATION_BATCH_SIZE: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_BATCH_SIZE | default "20" | quote }}
+  BTF_RECONCILIATION_MAX_ATTEMPTS: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_MAX_ATTEMPTS | default "5" | quote }}
+  BTF_RECONCILIATION_STALE_AFTER_SEC: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_STALE_AFTER_SEC | default "60" | quote }}
 
   # Extra Env Vars (must be a map of key: value pairs)
   {{- range $key, $value := .Values.bankTransfer.extraEnvVars }}

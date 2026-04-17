@@ -7,6 +7,7 @@ metadata:
 data:
   # -- Default Environment variables for the plugin-fees 
   ENV_NAME: {{ .Values.fees.configmap.ENV_NAME | default "development" | quote }}
+  APPLICATION_NAME: {{ .Values.fees.configmap.APPLICATION_NAME | default "plugin-fees" | quote }}
 
   # APP 
   SERVER_PORT: {{ .Values.fees.configmap.SERVER_PORT | default "4002" | quote }}
@@ -95,6 +96,8 @@ data:
   MULTI_TENANT_REDIS_HOST: {{ required "fees.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.fees.configmap.MULTI_TENANT_REDIS_HOST | quote }}
   MULTI_TENANT_REDIS_PORT: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
   MULTI_TENANT_REDIS_TLS: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  MULTI_TENANT_TIMEOUT: {{ .Values.fees.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}
+  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
   {{- end }}
 
   # Extra Env Vars

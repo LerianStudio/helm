@@ -195,5 +195,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `2.2.0-beta.2` | 1.6.0 |
+| `2.2.0` | 1.6.0 |
 -----------------

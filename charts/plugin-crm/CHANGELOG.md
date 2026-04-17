@@ -2,10 +2,10 @@
 
 ## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-crm-v5.0.0)
 
-- **Features:**
+- **Features**
   - Released version 4.0.0 of plugin-crm.
 
-- **Fixes:**
+- **Fixes**
   - Completed standardization of VERSION across all remaining charts.
   - Standardized VERSION/OTEL_RESOURCE_SERVICE_VERSION in remaining charts.
 

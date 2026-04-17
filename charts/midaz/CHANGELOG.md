@@ -2,9 +2,9 @@
 
 ## [6.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.2.0)
 
-- Fixes:
-  - Updated midaz-crm to version 3.6.2.
-  - Updated midaz-ledger to version 3.6.2.
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.6.2.
+  - Updated `midaz-ledger` to version 3.6.2.
 
 Contributors: @lerian-studio
 

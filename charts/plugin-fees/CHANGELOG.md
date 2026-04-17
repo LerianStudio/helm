@@ -18,6 +18,22 @@ Contributors: @bedatty, @ferr3ira-gabriel, @gandalf-at-lerian, @guimoreirar, @le
 
 ## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.1.0)
 
+- **Features:**
+  - Added IAM Roles Anywhere sidecar support.
+  - Introduced multi-tenant support and fixed AVP secret rendering.
+  - Added MULTI_TENANT_ALLOW_INSECURE_HTTP to configmap template.
+
+- **Fixes:**
+  - Removed MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC from configmap.
+
+Contributors: @ferr3ira-gabriel, @gandalf-at-lerian, @lerian-studio, @prymax10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.0.0...plugin-fees-v5.1.0)
+
+---
+
+## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.1.0)
+
 - Features:
   - Added multi-tenant support via tenant-manager. New configmap fields (rendered when `MULTI_TENANT_ENABLED=true`): `MULTI_TENANT_URL`, `MULTI_TENANT_ENVIRONMENT`, `MULTI_TENANT_MAX_TENANT_POOLS`, `MULTI_TENANT_IDLE_TIMEOUT_SEC`, `MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD`, `MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC`, `MULTI_TENANT_SETTINGS_CHECK_INTERVAL_SEC`, `MULTI_TENANT_REDIS_HOST`, `MULTI_TENANT_REDIS_PORT`, `MULTI_TENANT_REDIS_TLS`. New secret fields: `MULTI_TENANT_SERVICE_API_KEY` (required when enabled), `MULTI_TENANT_REDIS_PASSWORD` (optional).
   - Added `useExistingSecret` guard on the in-tree Secret manifest to avoid creating a default Secret when an external one is provided.

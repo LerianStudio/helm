@@ -75,6 +75,21 @@ data:
   ACCOUNT_CACHE_ENABLED: {{ .Values.fees.configmap.ACCOUNT_CACHE_ENABLED | default "true" | quote }}
   ACCOUNT_CACHE_TTL_SECONDS: {{ .Values.fees.configmap.ACCOUNT_CACHE_TTL_SECONDS | default "300" | quote }}
 
+  # MULTI TENANT
+  MULTI_TENANT_ENABLED: {{ .Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- if eq (.Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  MULTI_TENANT_URL: {{ required "fees.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.fees.configmap.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.fees.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
+  MULTI_TENANT_ENVIRONMENT: {{ .Values.fees.configmap.MULTI_TENANT_ENVIRONMENT | default "" | quote }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.fees.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.fees.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.fees.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ required "fees.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.fees.configmap.MULTI_TENANT_REDIS_HOST | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  {{- end }}
+
   # Extra Env Vars
   {{- with .Values.fees.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

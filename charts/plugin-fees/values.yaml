@@ -174,6 +174,27 @@ fees:
     ACCOUNT_CACHE_ENABLED: "true"
     ACCOUNT_CACHE_TTL_SECONDS: "300"
     TRUSTED_PROXIES: ""
+    # -- Enable multi-tenant support via tenant-manager
+    MULTI_TENANT_ENABLED: "false"
+    # -- URL of the tenant-manager service (required when MULTI_TENANT_ENABLED=true)
+    MULTI_TENANT_URL: ""
+    # -- Environment label sent to tenant-manager for tenant scoping
+    MULTI_TENANT_ENVIRONMENT: ""
+    # -- Maximum number of per-tenant MongoDB connection pools
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # -- Seconds before an idle tenant connection pool is released
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    # -- Number of failures before the circuit breaker opens
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    # -- Seconds the circuit breaker stays open before retrying
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # -- Interval in seconds to re-check tenant-manager settings
+    # -- Hostname of the Redis/Valkey instance used for tenant cache
+    MULTI_TENANT_REDIS_HOST: ""
+    # -- Port of the Redis/Valkey instance
+    MULTI_TENANT_REDIS_PORT: "6379"
+    # -- Enable TLS for the Redis/Valkey connection
+    MULTI_TENANT_REDIS_TLS: "false"
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
@@ -186,6 +207,10 @@ fees:
     CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
+    # -- API key used to authenticate with the tenant-manager service (required when MULTI_TENANT_ENABLED=true)
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    # -- Password for the Redis/Valkey instance used by the multi-tenant cache (required when MULTI_TENANT_ENABLED=true)
+    MULTI_TENANT_REDIS_PASSWORD: ""
 frontend:
   # -- Service name
   name: plugin-fees-ui
@@ -328,3 +353,26 @@ mongodb:
   resourcesPreset: "medium"
 otel-collector-lerian:
   enabled: true
+# AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Proxmox)
+aws:
+  rolesAnywhere:
+    enabled: false
+    trustAnchorArn: ""
+    profileArn: ""
+    roleArn: ""
+    region: "us-east-2"
+    sessionDuration: 3600
+    certificateSecretName: "plugin-fees-iam-tls"
+    sidecar:
+      image:
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        tag: "latest-amd64"
+        pullPolicy: IfNotPresent
+      port: 9911
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi

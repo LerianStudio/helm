@@ -97,6 +97,17 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.1.0-beta.1` | 1.2.1-beta.11 | 1.2.1-beta.11 |
 -----------------
 
+### Plugin BR Pix Switch
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-switch).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.0-beta.1 |
+-----------------
+
 ### Plugin BR Pix Indirect BTG
 
 See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/indirect-pix-btg) for details.

@@ -1,0 +1,41 @@
+# Values template for production-like deployments
+# Override only the fields you need to change from defaults
+
+pixSwitch:
+  image:
+    tag: ""  # Set to the desired application version
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  configmap:
+    ENV_NAME: ""
+    DB_HOST: ""
+    DB_REPLICA_HOST: ""
+    VALKEY_HOST: ""
+    PLUGIN_AUTH_ENABLED: ""
+    PLUGIN_AUTH_ADDRESS: ""
+    ORGANIZATION_IDS: ""
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  secrets:
+    LICENSE_KEY: ""
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    VALKEY_PASSWORD: ""
+  useExistingSecrets: false
+  existingSecretName: ""
+
+postgresql:
+  enabled: true
+
+valkey:
+  enabled: true
+
+otel-collector-lerian:
+  enabled: true

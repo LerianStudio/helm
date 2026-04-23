@@ -30,6 +30,7 @@ jobs:
         charts/plugin-access-manager
         charts/plugin-br-pix-direct-jd
         charts/plugin-br-pix-indirect-btg
+        charts/plugin-br-pix-switch
         charts/plugin-crm
         charts/plugin-fees
         charts/product-console

@@ -16,7 +16,7 @@ App Version:     {{ .Chart.AppVersion }}
   Type:          {{ .Values.pixSwitch.service.type }}
 
   In-cluster access (HTTP):
-    curl http://{{ include "plugin-br-pix-switch.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.pixSwitch.service.port }}/health
+    curl http://{{ include "plugin-br-pix-switch.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.pixSwitch.service.port }}/ready
 
   In-cluster access (gRPC):
     {{ include "plugin-br-pix-switch.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.pixSwitch.service.grpcPort }}

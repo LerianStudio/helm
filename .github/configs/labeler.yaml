@@ -29,6 +29,10 @@ plugin-br-pix-indirect-btg:
 plugin-br-pix-direct-jd:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-br-pix-direct-jd/**
+
+plugin-br-pix-switch:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-br-pix-switch/**
       
 product-console:
   - changed-files:

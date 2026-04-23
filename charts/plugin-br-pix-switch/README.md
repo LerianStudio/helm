@@ -13,7 +13,7 @@ This chart deploys a single Go microservice for PIX switching operations, along 
 
 ## Prerequisites
 
-- Kubernetes 1.19+
+- Kubernetes 1.23+ (uses `autoscaling/v2` HPA and `policy/v1` PDB)
 - Helm 3.x
 
 ## Installation

@@ -78,7 +78,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.0"
+    tag: "2.3.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -291,7 +291,7 @@ bankTransfer:
     JD_SOAP_PATH: "/soap"
     JD_ORIGIN_ISPB: "" # MUST BE SET - Origin ISPB code
     # JD_LEGACY_CODE: ""
-    JD_SIGNING_MODE: "local_pem"  # local_pem | external_provided | disabled
+    JD_SIGNING_MODE: "local_pem" # local_pem | external_provided | disabled
     JD_SIGNATURE_REQUIRED: "true"
     JD_VALIDATE_EXTERNAL_SIGNATURE: "true"
     JD_TIMEOUT_MS: "8000"

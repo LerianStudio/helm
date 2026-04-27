@@ -67,7 +67,7 @@ spec:
             {{- toYaml .Values.fees.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: {{ .Values.fees.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 5

@@ -62,6 +62,18 @@ spec:
               name: {{ include "plugin-identity.fullname" . }}
           resources:
             {{- toYaml .Values.identity.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.identity.service.port }}
+            initialDelaySeconds: 25
+            periodSeconds: 5
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            httpGet:
+              path: /health
+              port: {{ .Values.identity.service.port }}
           {{ if (index .Values "otel-collector-lerian").enabled }}
           env:
           - name: "HOST_IP"

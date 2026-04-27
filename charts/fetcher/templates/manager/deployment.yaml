@@ -87,7 +87,7 @@ spec:
             failureThreshold: {{ .Values.manager.livenessProbe.failureThreshold }}
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: http
             initialDelaySeconds: {{ .Values.manager.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.manager.readinessProbe.periodSeconds }}

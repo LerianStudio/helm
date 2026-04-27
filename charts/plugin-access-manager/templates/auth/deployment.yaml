@@ -65,7 +65,7 @@ spec:
             {{- toYaml .Values.auth.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: {{ .Values.auth.service.port }}
             initialDelaySeconds: 25
             periodSeconds: 5

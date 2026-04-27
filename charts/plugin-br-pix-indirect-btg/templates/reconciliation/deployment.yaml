@@ -51,7 +51,7 @@ spec:
             {{- toYaml .Values.reconciliation.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: {{ .Values.reconciliation.service.port }}
             initialDelaySeconds: 5
             periodSeconds: 5

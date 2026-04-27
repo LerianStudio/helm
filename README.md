@@ -28,7 +28,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `6.3.0-beta.1` | 2.6.1 | 2.4.2 |
+| `6.3.0` | 2.6.1 | 2.4.2 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -81,7 +81,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
-| `2.1.0-beta.1` | 1.2.1-beta.11 | 1.2.1-beta.11 |
+| `2.1.0` | 1.2.1-beta.11 | 1.2.1-beta.11 |
 -----------------
 
 ### Plugin BR Pix Switch

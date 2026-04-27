@@ -95,7 +95,7 @@ spec:
               port: http
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: http
           resources:
             {{- toYaml .Values.ledger.resources | nindent 12 }}

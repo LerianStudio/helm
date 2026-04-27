@@ -49,7 +49,7 @@ spec:
             {{- toYaml .Values.inbound.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: {{ .Values.inbound.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 5

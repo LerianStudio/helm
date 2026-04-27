@@ -98,7 +98,7 @@ spec:
             {{- toYaml .Values.worker.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /readyz
               port: {{ .Values.worker.configmap.HEALTH_PORT | default 4006 }}
             initialDelaySeconds: {{ .Values.worker.readinessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.worker.readinessProbe.periodSeconds | default 5 }}

@@ -49,7 +49,7 @@ spec:
             {{- toYaml .Values.pix.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /v1/health
+              path: /readyz
               port: {{ .Values.pix.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 5

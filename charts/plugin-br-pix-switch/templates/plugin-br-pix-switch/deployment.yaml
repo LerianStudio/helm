@@ -54,7 +54,7 @@ spec:
             {{- toYaml .Values.pixSwitch.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /readyz
               port: {{ .Values.pixSwitch.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 5

@@ -91,7 +91,7 @@ spec:
             {{- toYaml .Values.manager.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: {{ .Values.manager.service.port }}
             initialDelaySeconds: {{ .Values.manager.readinessProbe.initialDelaySeconds | default 25 }}
             periodSeconds: {{ .Values.manager.readinessProbe.periodSeconds | default 5 }}

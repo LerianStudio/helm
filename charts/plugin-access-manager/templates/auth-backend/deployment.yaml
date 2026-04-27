@@ -106,7 +106,7 @@ spec:
           {{ end }}
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /readyz
               port: 8000
             initialDelaySeconds: 15
             periodSeconds: 5

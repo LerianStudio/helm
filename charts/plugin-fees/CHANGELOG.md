@@ -2,8 +2,8 @@
 
 ## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.3.0)
 
-- Features:
-  - Add support for `APPLICATION_NAME`, `MULTI_TENANT_TIMEOUT`, and `MULTI_TENANT_CACHE_TTL_SEC` environment variables.
+- **Features**
+  - Added support for `APPLICATION_NAME`, `MULTI_TENANT_TIMEOUT`, and `MULTI_TENANT_CACHE_TTL_SEC` environment variables.
 
 Contributors: @gandalf-at-lerian, @guimoreirar, @jeffersonrodrigues92, @lerian-studio,
 

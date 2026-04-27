@@ -4,9 +4,8 @@
 
 - **Features**
   - Released version 2.0.0 of the plugin-br-pix-direct-jd.
-  
-- **Contributors**
-  - @lerian-studio
+
+Contributors: @lerian-studio
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.0.0...plugin-br-pix-direct-jd-v2.1.0)
 

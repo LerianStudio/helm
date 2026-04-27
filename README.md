@@ -31,19 +31,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | `6.3.0-beta.1` | 2.6.1 | 2.4.2 |
 -----------------
 
-### Plugin CRM Helm Chart
-
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/crm/crm-overview) for details.
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-crm).
-
-#### Application Version Mapping
-
-| Chart Version | CRM Version | UI Version |
-| :---: | :---: | :---: |
-| `5.1.0-beta.1` | 3.5.1 | `2.0.0` |
------------------
-
 ### Plugin Fees Helm Chart
 
 See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/fees/fees-overview) for details.

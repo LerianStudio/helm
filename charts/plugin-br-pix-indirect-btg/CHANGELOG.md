@@ -3,7 +3,7 @@
 ## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v2.2.0)
 
 - **Fixes:**
-  - Updated `pix OTEL_RESOURCE_SERVICE_VERSION` for improved observability.
+  - Updated `pix OTEL_RESOURCE_SERVICE_VERSION` for improved standardization.
 
 Contributors: @bedatty, @ferr3ira-gabriel, @guimoreirar, @lerian-studio
 

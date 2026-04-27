@@ -15,7 +15,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `6.3.0-beta.1` | 3.6.2 | 3.6.2 | 3.5.3 | 3.5.3 |
+| `6.3.0-beta.2` | 3.6.3 | 3.6.3 | 3.5.3 | 3.5.3 |
 -----------------
 
 ### Plugin Access Manager Helm Chart

@@ -23,7 +23,13 @@ Contributors: @lerian-studio
 - Features:
   - Released version 2.1.0 of fetcher.
 
-- Contributors: @lerian-studio
+- Fixes:
+  - Addressed minor bugs to improve stability and performance.
+
+- Improvements:
+  - Updated internal dependencies for better compatibility and security.
+
+Contributors: @lerian-studio
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
 

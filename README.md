@@ -15,7 +15,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `6.2.0` | 3.6.2 | 3.6.2 | 3.5.3 | 3.5.3 |
+| `6.3.0-beta.2` | 3.6.3 | 3.6.3 | 3.5.3 | 3.5.3 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -28,20 +28,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `6.2.0` | 2.6.1 | 2.4.2 |
------------------
-
-### Plugin CRM Helm Chart
-
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/crm/crm-overview) for details.
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-crm).
-
-#### Application Version Mapping
-
-| Chart Version | CRM Version | UI Version |
-| :---: | :---: | :---: |
-| `5.0.0` | 3.5.1 | `2.0.0` |
+| `6.3.0-beta.1` | 2.6.1 | 2.4.2 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -54,7 +41,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `5.2.0` | 3.1.0 | `3.0.0` |
+| `5.3.0-beta.1` | 3.1.0 | `3.0.0` |
 -----------------
 
 ### Reporter
@@ -67,7 +54,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `2.1.0` | 1.2.0 | 1.2.0 |
+| `2.2.0-beta.1` | 1.2.0 | 1.2.0 |
 -----------------
 
 ### Plugin BR Bank Transfer JD
@@ -94,7 +81,18 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
-| `2.0.0` | 1.2.1-beta.11 | 1.2.1-beta.11 |
+| `2.1.0-beta.1` | 1.2.1-beta.11 | 1.2.1-beta.11 |
+-----------------
+
+### Plugin BR Pix Switch
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-switch).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | 1.0.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
@@ -107,7 +105,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `2.2.0` | 1.5.1 | 1.5.1 | 1.5.1 | 1.5.1 |
+| `2.3.0-beta.1` | 1.5.1 | 1.5.1 | 1.5.1 | 1.5.1 |
 -----------------
 
 ### Fetcher
@@ -182,7 +180,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `2.2.1` | 2.1.0 |
+| `3.0.0-beta.1` | 2.1.0 |
 -----------------
 
 ### Product Console
@@ -195,5 +193,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `2.2.0` | 1.6.0 |
+| `2.3.0-beta.1` | 1.6.0 |
 -----------------

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plugin-br-pix-switch.fullname" . }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" . "name" .Values.pixSwitch.name ) | nindent 4 }}
+spec:
+  type: {{ .Values.pixSwitch.service.type }}
+  ports:
+    - port: {{ .Values.pixSwitch.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.pixSwitch.service.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    {{- include "plugin-br-pix-switch.selectorLabels" (dict "context" . "name" .Values.pixSwitch.name) | nindent 4 }}

@@ -4,10 +4,10 @@
 
 - **Features:**
   - Added missing NEU app environment variables to reporter.
-  - Updated reporter-manager to version 1.2.0 and reporter-worker to version 1.2.0, introducing new environment variables.
-  - Added support for ServiceAccount annotations for IRSA.
-  - Introduced rate limit configuration to reporter charts.
+  - Updated reporter-manager to version 1.2.0 and reporter-worker to version 1.2.0 with new environment variables.
+  - Added rate limit configuration to reporter charts.
   - Auto-set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag.
+  - Added ServiceAccount annotations support for IRSA.
 
 - **Fixes:**
   - Removed duplicate `reporter-manager/secret.yaml` with incorrect template references.

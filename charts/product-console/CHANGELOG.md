@@ -3,13 +3,13 @@
 ## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v2.2.0)
 
 - **Features**
-  - Updated product-console to version 1.6.0.
+  - Update to version 1.6.0
 
 - **Fixes**
-  - Removed inconsistent artifacthub image annotation.
-  - Added image annotation for product-console 1.6.0.
+  - Remove inconsistent artifacthub image annotation
+  - Add image annotation for product-console 1.6.0
 
-Contributors: @ferr3ira-gabriel, @lerian-studio,
+Contributors: @ferr3ira-gabriel, @lerian-studio
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v2.1.0...product-console-v2.2.0)
 

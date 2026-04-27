@@ -3,6 +3,24 @@
 ## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
 
 - Features:
+  - Released version 2.1.0 with enhanced data fetching capabilities.
+  
+- Fixes:
+  - Addressed minor bugs to improve stability and performance.
+
+- Improvements:
+  - Optimized data retrieval processes for faster execution.
+  - Enhanced error handling to provide more informative feedback.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
   - Released version 2.1.0 of fetcher.
 
 - Contributors:

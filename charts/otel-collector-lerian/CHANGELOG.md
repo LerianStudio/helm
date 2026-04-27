@@ -1,5 +1,18 @@
 # Otel-collector-lerian Changelog
 
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v3.0.0)
+
+- **Features**
+  - Released version 2.2.1 of otel-collector-lerian.
+  - Released version 3.0.0-beta.1 of otel-collector-lerian.
+  - Released version 3.0.0 of otel-collector-lerian.
+
+- **Contributors:** @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v2.2.1...otel-collector-lerian-v3.0.0)
+
+---
+
 ## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v2.2.1)
 
 - **Features**

@@ -11,6 +11,17 @@ Contributors: @gandalf-at-lerian, @lerian-studio
 
 ---
 
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.2.0)
+
+- **Features**
+  - Added M2M and AWS_REGION environment variables to chart.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.1.0...plugin-fees-v5.2.0)
+
+---
+
 ## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.1.0)
 
 Features:

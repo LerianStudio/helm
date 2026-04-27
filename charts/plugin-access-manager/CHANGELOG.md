@@ -2,6 +2,19 @@
 
 ## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.3.0)
 
+- Features:
+  - Released version 6.3.0.
+  - Released version 6.3.0-beta.1.
+  - Released version 6.2.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v6.2.0...plugin-access-manager-v6.3.0)
+
+---
+
+## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.3.0)
+
 - **Features:**
   - Released version 6.3.0.
   - Released version 6.3.0-beta.1.

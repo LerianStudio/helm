@@ -2,9 +2,9 @@ apiVersion: v2
 name: plugin-bc-correios-helm
 description: A Helm chart for the BC Correios Plugin — Brazilian Central Bank mail system integration
 type: application
-home: https://github.com/LerianStudio/midaz-helm
+home: https://github.com/LerianStudio/helm
 sources:
-  - https://github.com/LerianStudio/midaz-helm/tree/main/charts/plugin-bc-correios
+  - https://github.com/LerianStudio/helm/tree/main/charts/plugin-bc-correios
   - https://github.com/LerianStudio/plugin-bc-correios
 maintainers:
   - name: "Lerian Studio"

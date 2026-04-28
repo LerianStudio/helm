@@ -47,4 +47,4 @@ Your release is named {{ .Release.Name }}.
 {{- end }}
 
 For more information, see:
-  https://github.com/LerianStudio/midaz-helm/tree/main/charts/plugin-bc-correios
+  https://github.com/LerianStudio/helm/tree/main/charts/plugin-bc-correios

@@ -8,7 +8,7 @@ bc-correios:
   replicaCount: 2
 
   image:
-    repository: lerianstudio/plugin-bc-correios
+    repository: ghcr.io/lerianstudio/plugin-bc-correios
     pullPolicy: IfNotPresent
     tag: "1.0.0"  # REQUIRED - Set the image version
 
@@ -58,7 +58,6 @@ bc-correios:
 
     # Cache (Valkey) - REQUIRED
     CACHE_ADDR: ""    # REQUIRED - e.g., bc-correios-valkey:6379
-    CACHE_PASSWORD: ""
     CACHE_TTL_SEC: "60"
 
     # Object Storage - REQUIRED
@@ -107,6 +106,9 @@ bc-correios:
 
     # Encryption - REQUIRED (AES-256, exactly 32 bytes)
     ENCRYPTION_KEY: ""     # REQUIRED - override dev placeholder
+
+    # Cache (Valkey) credentials (required when Valkey auth is enabled)
+    CACHE_PASSWORD: ""
 
     # Object storage - REQUIRED when using S3 or SeaweedFS with auth
     OBJECT_STORAGE_ACCESS_KEY: ""

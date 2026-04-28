@@ -73,7 +73,9 @@ spec:
               wait_for_service "$POSTGRES_HOST" "$POSTGRES_PORT"
 
               # Wait for RabbitMQ (AMQP port)
-              wait_for_service "$(echo $RABBITMQ_URL | sed 's|amqp://[^@]*@||' | cut -d: -f1)" "5672"
+              # Handles both amqp://user:pass@host:port/ and amqp://user@host:port/ formats
+              RABBITMQ_HOST=$(echo "$RABBITMQ_URL" | sed 's|amqp://[^@]*@||' | cut -d: -f1 | cut -d/ -f1)
+              wait_for_service "$RABBITMQ_HOST" "5672"
 
               # Wait for Valkey/Cache
               CACHE_HOST=$(echo "$CACHE_ADDR" | cut -d: -f1)

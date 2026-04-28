@@ -53,12 +53,15 @@ spec:
               echo "$RABBITMQ_HOST:$RABBITMQ_PORT is ready!";
       containers:
         - name: apply-definitions
-          image: ghcr.io/jqlang/jq:1.7.1
+          image: alpine:3.19
           command:
             - sh
             - -c
             - |
               set -e
+
+              # Install required tools
+              apk add --no-cache curl jq
 
               # Set curl TLS options based on configuration
               CURL_OPTS="-sS"
@@ -80,27 +83,13 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
-              echo "Checking if RabbitMQ user 'plugin-bc-correios' already exists..."
+              # Check if exchange already exists to avoid re-importing definitions
+              EXCHANGE_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                "$BASE_URL/api/exchanges/%2F/bc-correios.audit" 2>/dev/null || echo "not_found")
 
-              # Check if plugin-bc-correios user exists
-              BC_CORREIOS_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/users/plugin-bc-correios" 2>/dev/null || echo "not_found")
-
-              SKIP_DEFINITIONS=false
-              if echo "$BC_CORREIOS_EXISTS" | grep -q '"name":"plugin-bc-correios"'; then
-                echo "RabbitMQ user 'plugin-bc-correios' already exists. Checking exchanges..."
-
-                # Check if exchange exists
-                EXCHANGE_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                  "$BASE_URL/api/exchanges/%2F/bc_correios.events" 2>/dev/null || echo "not_found")
-
-                if echo "$EXCHANGE_EXISTS" | grep -q '"name":"bc_correios.events"'; then
-                  echo "RabbitMQ definitions already applied (user and exchanges exist). Skipping definitions import."
-                  SKIP_DEFINITIONS=true
-                fi
-              fi
-
-              if [ "$SKIP_DEFINITIONS" = "false" ]; then
+              if echo "$EXCHANGE_EXISTS" | grep -q '"name":"bc-correios.audit"'; then
+                echo "RabbitMQ definitions already applied (exchange bc-correios.audit exists). Skipping definitions import."
+              else
                 echo "Applying RabbitMQ definitions from file..."
                 HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
                   -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
@@ -116,22 +105,6 @@ spec:
                 echo "Definitions applied successfully."
               fi
 
-              echo "Updating RabbitMQ user 'plugin-bc-correios' password..."
-              # Use jq to safely construct JSON with properly escaped password
-              USER_JSON=$(jq -n --arg pw "$RABBITMQ_BC_CORREIOS_PASS" '{"password": $pw, "tags": ""}')
-              HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X PUT \
-                --data "$USER_JSON" \
-                "$BASE_URL/api/users/plugin-bc-correios")
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error updating plugin-bc-correios user (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
-                exit 1
-              fi
-              echo "User password updated successfully."
-
               echo ""
               echo "=== BC Correios RabbitMQ Bootstrap completed successfully ==="
           env:
@@ -143,15 +116,6 @@ spec:
               value: {{ .Values.global.externalRabbitmqDefinitions.connection.port | quote }}
             - name: RABBITMQ_SKIP_TLS_VERIFY
               value: {{ .Values.global.externalRabbitmqDefinitions.connection.skipTlsVerify | default false | quote }}
-            - name: RABBITMQ_BC_CORREIOS_PASS
-              {{- if .Values.global.externalRabbitmqDefinitions.bcCorreiosCredentials.useExistingSecret.name }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.bcCorreiosCredentials.useExistingSecret.name | quote }}
-                  key: RABBITMQ_BC_CORREIOS_PASS
-              {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.bcCorreiosCredentials.password | quote }}
-              {{- end }}
             - name: RABBITMQ_ADMIN_PASS
               {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
               valueFrom:

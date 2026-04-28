@@ -31,12 +31,13 @@ data:
   POSTGRES_MIN_CONNS: {{ $component.configmap.POSTGRES_MIN_CONNS | default "5" | quote }}
 
   # RabbitMQ
+  # NOTE: When using external RabbitMQ, RABBITMQ_URL must be set explicitly in configmap overrides
+  # to match the actual user and host. The default URL below is only valid for bundled RabbitMQ.
   RABBITMQ_USER: {{ $component.configmap.RABBITMQ_USER | default "plugin-bc-correios" | quote }}
-  RABBITMQ_URL: {{ $component.configmap.RABBITMQ_URL | default (printf "amqp://plugin-bc-correios:$(RABBITMQ_PASS)@%s-rabbitmq:5672/" .Release.Name) | quote }}
+  RABBITMQ_URL: {{ $component.configmap.RABBITMQ_URL | default (printf "amqp://%s:$(RABBITMQ_PASS)@%s-rabbitmq:5672/" ($component.configmap.RABBITMQ_USER | default "plugin-bc-correios") .Release.Name) | quote }}
 
   # Cache (Valkey)
   CACHE_ADDR: {{ $component.configmap.CACHE_ADDR | default (printf "%s-valkey-master:6379" .Release.Name) | quote }}
-  CACHE_PASSWORD: {{ $component.configmap.CACHE_PASSWORD | default "" | quote }}
   CACHE_TTL_SEC: {{ $component.configmap.CACHE_TTL_SEC | default "60" | quote }}
 
   # Object Storage (SeaweedFS S3)

@@ -2,6 +2,17 @@
 
 ## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v2.2.0)
 
+- **Features**
+  - Released version 2.1.0 of the reporter.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v2.1.0...reporter-v2.2.0)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v2.2.0)
+
 - Features:
   - Released version 2.1.0 of the reporter component.
   - Released version 2.2.0-beta.1 of the reporter component.

@@ -196,7 +196,7 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.3.1-beta.1` | 1.6.0 |
 -----------------
 
-### BC Correios Plugin
+### Plugin BC Correios
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-bc-correios).
 

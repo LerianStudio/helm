@@ -104,7 +104,9 @@ spec:
               echo "Role 'go-boilerplate-ddd' already exists. Skipping creation."
             else
               echo "Creating role 'go-boilerplate-ddd'..."
-              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE \"go-boilerplate-ddd\" LOGIN PASSWORD '$DB_PASSWORD_BOILERPLATE'"
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" \
+                -v pwd="$DB_PASSWORD_BOILERPLATE" \
+                -c "CREATE ROLE \"go-boilerplate-ddd\" LOGIN PASSWORD :'pwd'"
             fi
 
             # Create database if not exists

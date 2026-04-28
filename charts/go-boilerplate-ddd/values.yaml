@@ -69,21 +69,27 @@ boilerplate:
   # -- Pod annotations for additional metadata
   podAnnotations: {}
 
-  podSecurityContext: {}
-    # fsGroup: 2000
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
 
   securityContext:
-    # -- Defines the group ID for the user running the process inside the container (distroless nonroot)
-    runAsGroup: 65532
-    # -- Defines the user ID for the process running inside the container (distroless nonroot)
-    runAsUser: 65532
+    allowPrivilegeEscalation: false
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
     # -- Ensures the process does not run as root
     runAsNonRoot: true
+    # -- Defines the user ID for the process running inside the container (distroless nonroot)
+    runAsUser: 65532
+    # -- Defines the group ID for the user running the process inside the container (distroless nonroot)
+    runAsGroup: 65532
     capabilities:
       drop:
         - ALL
-    # -- Defines the root filesystem as read-only
-    readOnlyRootFilesystem: true
 
   # -- PodDisruptionBudget configuration
   pdb:
@@ -91,8 +97,8 @@ boilerplate:
     enabled: true
     # -- Minimum number of available pods
     minAvailable: 1
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
+    # -- Maximum number of unavailable pods (set this instead of minAvailable if preferred)
+    # maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
 

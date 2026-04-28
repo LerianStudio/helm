@@ -1,4 +1,10 @@
 {{- if and .Values.boilerplate.enabled .Values.boilerplate.pdb.enabled }}
+{{- if and .Values.boilerplate.pdb.minAvailable .Values.boilerplate.pdb.maxUnavailable }}
+  {{- fail "pdb: set either minAvailable or maxUnavailable, not both" }}
+{{- end }}
+{{- if and (not .Values.boilerplate.pdb.minAvailable) (not .Values.boilerplate.pdb.maxUnavailable) }}
+  {{- fail "pdb: at least one of minAvailable or maxUnavailable must be set" }}
+{{- end }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

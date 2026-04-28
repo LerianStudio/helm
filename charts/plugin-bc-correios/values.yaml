@@ -197,7 +197,7 @@ bc-correios:
     POSTGRES_MIN_CONNS: "5"
     # RabbitMQ
     RABBITMQ_USER: "plugin-bc-correios"
-    RABBITMQ_URL: "amqp://plugin-bc-correios:$(RABBITMQ_PASS)@plugin-bc-correios-rabbitmq:5672/"
+    RABBITMQ_HOST: "plugin-bc-correios-rabbitmq"
     # Cache (Valkey)
     CACHE_ADDR: "plugin-bc-correios-valkey-master:6379"
     CACHE_TTL_SEC: "60"
@@ -238,6 +238,7 @@ bc-correios:
     POSTGRES_PASSWORD: "lerian"
     # RabbitMQ credentials
     RABBITMQ_PASS: "lerian"
+    RABBITMQ_URL: "amqp://plugin-bc-correios:lerian@plugin-bc-correios-rabbitmq:5672/"
     # AES-256 encryption key (32 bytes — override with a real key in production)
     ENCRYPTION_KEY: "01234567890123456789012345678901"
     # Cache (Valkey) credentials

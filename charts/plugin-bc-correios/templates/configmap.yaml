@@ -30,10 +30,11 @@ data:
   POSTGRES_MIN_CONNS: {{ $component.configmap.POSTGRES_MIN_CONNS | default "5" | quote }}
 
   # RabbitMQ
-  # NOTE: When using external RabbitMQ, RABBITMQ_URL must be set explicitly in configmap overrides
-  # to match the actual user and host. The default URL below is only valid for bundled RabbitMQ.
   RABBITMQ_USER: {{ $component.configmap.RABBITMQ_USER | default "plugin-bc-correios" | quote }}
-  RABBITMQ_URL: {{ $component.configmap.RABBITMQ_URL | default (printf "amqp://%s:$(RABBITMQ_PASS)@%s-rabbitmq:5672/" ($component.configmap.RABBITMQ_USER | default "plugin-bc-correios") .Release.Name) | quote }}
+  # RABBITMQ_HOST is used by the init container to wait for RabbitMQ (no credentials needed).
+  # For bundled RabbitMQ, defaults to the subchart service name.
+  # For external RabbitMQ, set configmap.RABBITMQ_HOST to the external hostname.
+  RABBITMQ_HOST: {{ $component.configmap.RABBITMQ_HOST | default (printf "%s-rabbitmq" .Release.Name) | quote }}
 
   # Cache (Valkey)
   CACHE_ADDR: {{ $component.configmap.CACHE_ADDR | default (printf "%s-valkey-master:6379" .Release.Name) | quote }}

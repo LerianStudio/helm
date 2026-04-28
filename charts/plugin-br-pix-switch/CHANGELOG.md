@@ -2,6 +2,22 @@
 
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v1.0.0)
 
+- Features:
+  - Added Helm chart for plugin-br-pix-switch.
+
+- Fixes:
+  - Addressed CodeRabbit feedback on NOTES, README, configmap, and labeler.
+  - Corrected appVersion to 1.0.0-beta.1 and added it to the compatibility matrix.
+  - Applied container securityContext, fixed tolerations type, and added NOTES defaults.
+
+Contributors: @bedatty, @lerian-studio
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-switch-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v1.0.0)
+
 - **Features**
   - Added Helm chart for plugin-br-pix-switch.
 

@@ -1,0 +1,82 @@
+# Template values for go-boilerplate-ddd deployment
+# Copy this file and customize for your environment
+
+namespaceOverride: "go-boilerplate-ddd"
+
+global:
+  externalPostgresDefinitions:
+    enabled: false
+    connection:
+      host: ""
+      port: "5432"
+    postgresAdminLogin:
+      useExistingSecret:
+        name: ""
+      username: ""
+      password: ""
+    boilerplateCredentials:
+      useExistingSecret:
+        name: ""
+      password: ""
+
+boilerplate:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/lerianstudio/go-boilerplate-ddd
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  imagePullSecrets:
+    - name: ghcr-credential
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  configmap:
+    ENV_NAME: ""
+    SERVER_ADDRESS: ":8080"
+    LOG_LEVEL: "info"
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "go-boilerplate-ddd"
+    POSTGRES_NAME: "go-boilerplate-ddd"
+    POSTGRES_SSLMODE: "disable"
+    REDIS_HOST: ""
+    REDIS_DB: "0"
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: ""
+    ENABLE_TELEMETRY: "false"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    MULTI_TENANT_ENABLED: "false"
+
+  secrets:
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+
+  useExistingSecret: false
+  existingSecretName: ""

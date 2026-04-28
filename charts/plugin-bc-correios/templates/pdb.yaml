@@ -1,0 +1,25 @@
+{{- $component := index .Values "bc-correios" -}}
+{{- if and $component.enabled $component.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "bc-correios.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "bc-correios.labels" (dict "context" . "component" $component.name "name" $component.name) | nindent 4 }}
+  {{- with $component.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with $component.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ $component.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "bc-correios.selectorLabels" (dict "context" . "name" $component.name) | nindent 6 }}
+{{- end }}

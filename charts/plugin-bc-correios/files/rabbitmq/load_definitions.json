@@ -1,0 +1,107 @@
+{
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "bc-correios.audit",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "bc-correios.audit.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "bc-correios.mail-events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "bc-correios.webhook.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "bc-correios.audit.events",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "bc-correios.audit.dlx",
+        "x-dead-letter-routing-key": "audit.dead"
+      }
+    },
+    {
+      "name": "bc-correios.audit.dead",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {}
+    },
+    {
+      "name": "bc-correios.webhook.dispatch",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "bc-correios.webhook.dlx",
+        "x-dead-letter-routing-key": "webhook.dead"
+      }
+    },
+    {
+      "name": "bc-correios.webhook.dead",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "bc-correios.audit",
+      "vhost": "/",
+      "destination": "bc-correios.audit.events",
+      "destination_type": "queue",
+      "routing_key": "audit.event.#"
+    },
+    {
+      "source": "bc-correios.audit.dlx",
+      "vhost": "/",
+      "destination": "bc-correios.audit.dead",
+      "destination_type": "queue",
+      "routing_key": "audit.dead"
+    },
+    {
+      "source": "bc-correios.mail-events",
+      "vhost": "/",
+      "destination": "bc-correios.webhook.dispatch",
+      "destination_type": "queue",
+      "routing_key": "mail.stored.#"
+    },
+    {
+      "source": "bc-correios.webhook.dlx",
+      "vhost": "/",
+      "destination": "bc-correios.webhook.dead",
+      "destination_type": "queue",
+      "routing_key": "webhook.dead"
+    }
+  ]
+}

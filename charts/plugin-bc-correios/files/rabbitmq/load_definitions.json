@@ -1,75 +1,107 @@
 {
-  "users": [
-    {
-      "name": "plugin-bc-correios",
-      "tags": ""
-    }
-  ],
   "vhosts": [
     {
       "name": "/"
     }
   ],
-  "permissions": [
+  "exchanges": [
     {
-      "user": "plugin-bc-correios",
+      "name": "bc-correios.audit",
       "vhost": "/",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "bc-correios.audit.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "bc-correios.mail-events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "bc-correios.webhook.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
     }
   ],
   "queues": [
     {
-      "name": "bc_correios.mail.inbound",
+      "name": "bc-correios.audit.events",
       "vhost": "/",
       "durable": true,
       "arguments": {
-        "x-dead-letter-exchange": "bc_correios.events.dlx",
-        "x-dead-letter-routing-key": "bc_correios.mail.inbound.dlq"
+        "x-dead-letter-exchange": "bc-correios.audit.dlx",
+        "x-dead-letter-routing-key": "audit.dead"
       }
     },
     {
-      "name": "bc_correios.mail.inbound.dlq",
+      "name": "bc-correios.audit.dead",
       "vhost": "/",
       "durable": true,
-      "arguments": {}
-    }
-  ],
-  "exchanges": [
-    {
-      "name": "bc_correios.events",
-      "vhost": "/",
-      "type": "topic",
-      "durable": true,
-      "auto_delete": false,
-      "internal": false,
       "arguments": {}
     },
     {
-      "name": "bc_correios.events.dlx",
+      "name": "bc-correios.webhook.dispatch",
       "vhost": "/",
-      "type": "topic",
       "durable": true,
-      "auto_delete": false,
-      "internal": false,
+      "arguments": {
+        "x-dead-letter-exchange": "bc-correios.webhook.dlx",
+        "x-dead-letter-routing-key": "webhook.dead"
+      }
+    },
+    {
+      "name": "bc-correios.webhook.dead",
+      "vhost": "/",
+      "durable": true,
       "arguments": {}
     }
   ],
   "bindings": [
     {
-      "source": "bc_correios.events",
+      "source": "bc-correios.audit",
       "vhost": "/",
-      "destination": "bc_correios.mail.inbound",
+      "destination": "bc-correios.audit.events",
       "destination_type": "queue",
-      "routing_key": "mail.#"
+      "routing_key": "audit.event.#"
     },
     {
-      "source": "bc_correios.events.dlx",
+      "source": "bc-correios.audit.dlx",
       "vhost": "/",
-      "destination": "bc_correios.mail.inbound.dlq",
+      "destination": "bc-correios.audit.dead",
       "destination_type": "queue",
-      "routing_key": "#"
+      "routing_key": "audit.dead"
+    },
+    {
+      "source": "bc-correios.mail-events",
+      "vhost": "/",
+      "destination": "bc-correios.webhook.dispatch",
+      "destination_type": "queue",
+      "routing_key": "mail.stored.#"
+    },
+    {
+      "source": "bc-correios.webhook.dlx",
+      "vhost": "/",
+      "destination": "bc-correios.webhook.dead",
+      "destination_type": "queue",
+      "routing_key": "webhook.dead"
     }
   ]
 }

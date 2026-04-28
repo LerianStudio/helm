@@ -6,7 +6,7 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
-Create a default fully qualified app name for go-boilerplate-ddd.
+Create a default fully qualified app name for boilerplate.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "boilerplate.fullname" -}}
@@ -21,14 +21,14 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Create go-boilerplate-ddd app version
+Create boilerplate app version
 */}}
 {{- define "boilerplate.defaultTag" -}}
 {{- default .Chart.AppVersion .Values.boilerplate.image.tag }}
 {{- end -}}
 
 {{/*
-Return valid go-boilerplate-ddd version label
+Return valid boilerplate version label
 */}}
 {{- define "boilerplate.versionLabelValue" -}}
 {{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "boilerplate.defaultTag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}

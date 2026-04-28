@@ -1,10 +1,4 @@
 {{- if and .Values.boilerplate.enabled .Values.boilerplate.pdb.enabled }}
-{{- if and .Values.boilerplate.pdb.minAvailable .Values.boilerplate.pdb.maxUnavailable }}
-  {{- fail "pdb: set either minAvailable or maxUnavailable, not both" }}
-{{- end }}
-{{- if and (not .Values.boilerplate.pdb.minAvailable) (not .Values.boilerplate.pdb.maxUnavailable) }}
-  {{- fail "pdb: at least one of minAvailable or maxUnavailable must be set" }}
-{{- end }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -17,11 +11,10 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if .Values.boilerplate.pdb.minAvailable }}
-  minAvailable: {{ .Values.boilerplate.pdb.minAvailable }}
-  {{- end }}
-  {{- if .Values.boilerplate.pdb.maxUnavailable }}
-  maxUnavailable: {{ .Values.boilerplate.pdb.maxUnavailable }}
+  {{- with .Values.boilerplate.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.boilerplate.pdb.minAvailable | default 1 }}
   {{- end }}
   selector:
     matchLabels:

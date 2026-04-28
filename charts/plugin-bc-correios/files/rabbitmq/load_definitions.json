@@ -1,0 +1,75 @@
+{
+  "users": [
+    {
+      "name": "plugin-bc-correios",
+      "tags": ""
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "plugin-bc-correios",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "queues": [
+    {
+      "name": "bc_correios.mail.inbound",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "bc_correios.events.dlx",
+        "x-dead-letter-routing-key": "bc_correios.mail.inbound.dlq"
+      }
+    },
+    {
+      "name": "bc_correios.mail.inbound.dlq",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {}
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "bc_correios.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "bc_correios.events.dlx",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "bc_correios.events",
+      "vhost": "/",
+      "destination": "bc_correios.mail.inbound",
+      "destination_type": "queue",
+      "routing_key": "mail.#"
+    },
+    {
+      "source": "bc_correios.events.dlx",
+      "vhost": "/",
+      "destination": "bc_correios.mail.inbound.dlq",
+      "destination_type": "queue",
+      "routing_key": "#"
+    }
+  ]
+}

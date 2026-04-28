@@ -1,0 +1,83 @@
+{{- $component := index .Values "bc-correios" -}}
+{{- if $component.enabled }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "bc-correios.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+data:
+  # Application Settings
+  APP_ENV: {{ $component.configmap.APP_ENV | default "development" | quote }}
+  APP_NAME: {{ $component.configmap.APP_NAME | default "plugin-bc-correios" | quote }}
+  APP_VERSION: {{ $component.configmap.APP_VERSION | default "1.0.0" | quote }}
+  LOG_LEVEL: {{ $component.configmap.LOG_LEVEL | default "info" | quote }}
+  SERVER_PORT: {{ $component.configmap.SERVER_PORT | default "9090" | quote }}
+  SERVER_READ_TIMEOUT_SEC: {{ $component.configmap.SERVER_READ_TIMEOUT_SEC | default "30" | quote }}
+  SERVER_WRITE_TIMEOUT_SEC: {{ $component.configmap.SERVER_WRITE_TIMEOUT_SEC | default "30" | quote }}
+  SERVER_SHUTDOWN_TIMEOUT_SEC: {{ $component.configmap.SERVER_SHUTDOWN_TIMEOUT_SEC | default "30" | quote }}
+
+  # CORS / Proxy
+  ALLOWED_ORIGINS: {{ $component.configmap.ALLOWED_ORIGINS | default "*" | quote }}
+  TRUSTED_PROXIES: {{ $component.configmap.TRUSTED_PROXIES | default "127.0.0.1,::1" | quote }}
+
+  # PostgreSQL
+  {{- $namespace := include "global.namespace" . }}
+  POSTGRES_HOST: {{ $component.configmap.POSTGRES_HOST | default (printf "%s-postgresql" .Release.Name) | quote }}
+  POSTGRES_PORT: {{ $component.configmap.POSTGRES_PORT | default "5432" | quote }}
+  POSTGRES_USER: {{ $component.configmap.POSTGRES_USER | default "plugin-bc-correios" | quote }}
+  POSTGRES_NAME: {{ $component.configmap.POSTGRES_NAME | default "plugin-bc-correios" | quote }}
+  POSTGRES_SSLMODE: {{ $component.configmap.POSTGRES_SSLMODE | default "disable" | quote }}
+  POSTGRES_MAX_CONNS: {{ $component.configmap.POSTGRES_MAX_CONNS | default "50" | quote }}
+  POSTGRES_MIN_CONNS: {{ $component.configmap.POSTGRES_MIN_CONNS | default "5" | quote }}
+
+  # RabbitMQ
+  RABBITMQ_USER: {{ $component.configmap.RABBITMQ_USER | default "plugin-bc-correios" | quote }}
+  RABBITMQ_URL: {{ $component.configmap.RABBITMQ_URL | default (printf "amqp://plugin-bc-correios:$(RABBITMQ_PASS)@%s-rabbitmq:5672/" .Release.Name) | quote }}
+
+  # Cache (Valkey)
+  CACHE_ADDR: {{ $component.configmap.CACHE_ADDR | default (printf "%s-valkey-master:6379" .Release.Name) | quote }}
+  CACHE_PASSWORD: {{ $component.configmap.CACHE_PASSWORD | default "" | quote }}
+  CACHE_TTL_SEC: {{ $component.configmap.CACHE_TTL_SEC | default "60" | quote }}
+
+  # Object Storage (SeaweedFS S3)
+  OBJECT_STORAGE_PROVIDER: {{ $component.configmap.OBJECT_STORAGE_PROVIDER | default "s3" | quote }}
+  OBJECT_STORAGE_ENDPOINT: {{ $component.configmap.OBJECT_STORAGE_ENDPOINT | default (printf "http://%s-seaweedfs:8333" .Release.Name) | quote }}
+  OBJECT_STORAGE_BUCKET: {{ $component.configmap.OBJECT_STORAGE_BUCKET | default "bc-correios-attachments" | quote }}
+  OBJECT_STORAGE_PATH_STYLE: {{ $component.configmap.OBJECT_STORAGE_PATH_STYLE | default "true" | quote }}
+
+  # BC Correio integration
+  BC_CORREIO_ENVIRONMENT: {{ $component.configmap.BC_CORREIO_ENVIRONMENT | default "homologation" | quote }}
+  BC_CORREIO_RATE_LIMIT_PER_MINUTE: {{ $component.configmap.BC_CORREIO_RATE_LIMIT_PER_MINUTE | default "50" | quote }}
+  BC_CORREIO_RATE_LIMIT_PER_HOUR: {{ $component.configmap.BC_CORREIO_RATE_LIMIT_PER_HOUR | default "2700" | quote }}
+  BC_CORREIO_RETRY_MAX_RETRIES: {{ $component.configmap.BC_CORREIO_RETRY_MAX_RETRIES | default "3" | quote }}
+  BC_CORREIO_TLS_MIN_VERSION: {{ $component.configmap.BC_CORREIO_TLS_MIN_VERSION | default "TLSv1.2" | quote }}
+
+  # Plugin Auth
+  PLUGIN_AUTH_ENABLED: {{ $component.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_HOST: {{ $component.configmap.PLUGIN_AUTH_HOST | default "" | quote }}
+  PLUGIN_AUTH_CLIENT_ID: {{ $component.configmap.PLUGIN_AUTH_CLIENT_ID | default "plugin-bc-correios" | quote }}
+
+  # License
+  LICENSE_KEY: {{ $component.configmap.LICENSE_KEY | default "" | quote }}
+
+  # AI Insights
+  FEATURE_AI_INSIGHTS_ENABLED: {{ $component.configmap.FEATURE_AI_INSIGHTS_ENABLED | default "true" | quote }}
+  AI_TENANT_RATE_LIMIT_PER_MIN: {{ $component.configmap.AI_TENANT_RATE_LIMIT_PER_MIN | default "50" | quote }}
+  AI_TENANT_MAX_CONCURRENT: {{ $component.configmap.AI_TENANT_MAX_CONCURRENT | default "3" | quote }}
+  AI_GLOBAL_MAX_CONCURRENT: {{ $component.configmap.AI_GLOBAL_MAX_CONCURRENT | default "15" | quote }}
+
+  # Multi-tenancy
+  MULTI_TENANT_ENABLED: {{ $component.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  MULTI_TENANT_URL: {{ $component.configmap.MULTI_TENANT_URL | default "" | quote }}
+  DEFAULT_TENANT_ID: {{ $component.configmap.DEFAULT_TENANT_ID | default "00000000-0000-0000-0000-000000000001" | quote }}
+
+  # Observability
+  TRACING_ENABLED: {{ $component.configmap.TRACING_ENABLED | default "false" | quote }}
+  METRICS_ENABLED: {{ $component.configmap.METRICS_ENABLED | default "false" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ $component.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://otel-collector:4317" | quote }}
+
+  # Extra Env Vars (must be a map of key: value pairs)
+  {{- range $key, $value := $component.extraEnvVars }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,160 @@
+# Template values for plugin-bc-correios deployment
+# Copy this file and fill in the required values for your environment
+# REQUIRED fields must be set before deployment
+
+bc-correios:
+  name: bc-correios
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: lerianstudio/plugin-bc-correios
+    pullPolicy: IfNotPresent
+    tag: "1.0.0"  # REQUIRED - Set the image version
+
+  imagePullSecrets: []
+
+  ingress:
+    enabled: false
+    className: "alb"
+    annotations:
+      kubernetes.io/ingress.class: alb
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+    hosts:
+      - host: ""  # REQUIRED - Set your hostname (e.g., bc-correios.prod.lerian.io)
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  configmap:
+    # Application Settings
+    APP_ENV: ""       # REQUIRED - e.g., production, staging
+    APP_NAME: "plugin-bc-correios"
+    APP_VERSION: ""   # REQUIRED - matches image tag
+    LOG_LEVEL: "info"
+    SERVER_PORT: "9090"
+    SERVER_READ_TIMEOUT_SEC: "30"
+    SERVER_WRITE_TIMEOUT_SEC: "30"
+    SERVER_SHUTDOWN_TIMEOUT_SEC: "30"
+
+    # CORS / Proxy
+    ALLOWED_ORIGINS: "*"
+    TRUSTED_PROXIES: "127.0.0.1,::1"
+
+    # PostgreSQL - REQUIRED
+    POSTGRES_HOST: ""       # REQUIRED - PostgreSQL host
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "plugin-bc-correios"
+    POSTGRES_NAME: "plugin-bc-correios"
+    POSTGRES_SSLMODE: "require"   # Use "require" in production
+    POSTGRES_MAX_CONNS: "50"
+    POSTGRES_MIN_CONNS: "5"
+
+    # RabbitMQ - REQUIRED
+    RABBITMQ_USER: "plugin-bc-correios"
+    RABBITMQ_URL: ""  # REQUIRED - amqp://plugin-bc-correios:$(RABBITMQ_PASS)@<host>:5672/
+
+    # Cache (Valkey) - REQUIRED
+    CACHE_ADDR: ""    # REQUIRED - e.g., bc-correios-valkey:6379
+    CACHE_PASSWORD: ""
+    CACHE_TTL_SEC: "60"
+
+    # Object Storage - REQUIRED
+    OBJECT_STORAGE_PROVIDER: "s3"
+    OBJECT_STORAGE_ENDPOINT: ""   # REQUIRED - e.g., http://bc-correios-seaweedfs:8333 or AWS S3 URL
+    OBJECT_STORAGE_BUCKET: "bc-correios-attachments"
+    OBJECT_STORAGE_PATH_STYLE: "true"
+
+    # BC Correio integration - REQUIRED
+    BC_CORREIO_ENVIRONMENT: ""    # REQUIRED - homologation or production
+    BC_CORREIO_RATE_LIMIT_PER_MINUTE: "50"
+    BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
+    BC_CORREIO_RETRY_MAX_RETRIES: "3"
+    BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
+
+    # Plugin Auth
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: ""          # REQUIRED when PLUGIN_AUTH_ENABLED=true
+    PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
+
+    # License
+    LICENSE_KEY: ""   # REQUIRED in production
+
+    # AI Insights
+    FEATURE_AI_INSIGHTS_ENABLED: "true"
+    AI_TENANT_RATE_LIMIT_PER_MIN: "50"
+    AI_TENANT_MAX_CONCURRENT: "3"
+    AI_GLOBAL_MAX_CONCURRENT: "15"
+
+    # Multi-tenancy
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""          # REQUIRED when MULTI_TENANT_ENABLED=true
+    DEFAULT_TENANT_ID: ""         # REQUIRED - default tenant UUID
+
+    # Observability
+    TRACING_ENABLED: "false"
+    METRICS_ENABLED: "false"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""  # REQUIRED when TRACING_ENABLED=true or METRICS_ENABLED=true
+
+  secrets:
+    # PostgreSQL - REQUIRED
+    POSTGRES_PASSWORD: ""  # REQUIRED - PostgreSQL password
+
+    # RabbitMQ - REQUIRED
+    RABBITMQ_PASS: ""      # REQUIRED - RabbitMQ password
+
+    # Encryption - REQUIRED (AES-256, exactly 32 bytes)
+    ENCRYPTION_KEY: ""     # REQUIRED - override dev placeholder
+
+    # Object storage - REQUIRED when using S3 or SeaweedFS with auth
+    OBJECT_STORAGE_ACCESS_KEY: ""
+    OBJECT_STORAGE_SECRET_KEY: ""
+
+    # Plugin Auth M2M client secret (required when PLUGIN_AUTH_ENABLED=true)
+    # PLUGIN_AUTH_CLIENT_SECRET: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+# ==============================================================================
+# INFRASTRUCTURE DEPENDENCIES
+# ==============================================================================
+# These are pre-configured resources that plugin-bc-correios expects:
+#
+# PostgreSQL:
+#   - Database: plugin-bc-correios
+#   - User: plugin-bc-correios (with full privileges)
+#   - Schema: public
+#
+# RabbitMQ:
+#   - User: plugin-bc-correios (with full permissions on / vhost)
+#   - Exchange: bc_correios.events (topic, durable)
+#   - Exchange: bc_correios.events.dlx (topic, durable)
+#   - Queue: bc_correios.mail.inbound (durable)
+#   - Queue: bc_correios.mail.inbound.dlq (durable)
+#
+# Valkey (Redis-compatible):
+#   - Used for: caching, rate limiting
+#
+# SeaweedFS or S3:
+#   - Used for: mail attachment storage
+#   - Bucket: bc-correios-attachments
+# ==============================================================================
+
+# Disable internal dependencies for external infrastructure
+valkey:
+  enabled: false
+  external: true
+
+postgresql:
+  enabled: false
+  external: true
+
+rabbitmq:
+  enabled: false
+  external: true
+
+seaweedfs:
+  enabled: false

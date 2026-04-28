@@ -1,0 +1,93 @@
+# Template values for go-boilerplate-ddd deployment
+# Copy this file and customize for your environment
+
+namespaceOverride: "go-boilerplate-ddd"
+
+global:
+  externalPostgresDefinitions:
+    enabled: false
+    connection:
+      host: ""
+      port: "5432"
+    postgresAdminLogin:
+      useExistingSecret:
+        name: ""
+      username: ""
+      password: ""
+    boilerplateCredentials:
+      useExistingSecret:
+        name: ""
+      password: ""
+
+boilerplate:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/lerianstudio/go-boilerplate-ddd
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  imagePullSecrets:
+    - name: ghcr-credential
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  configmap:
+    ENV_NAME: ""
+    LOG_LEVEL: "info"
+    SERVER_ADDRESS: ":8080"
+    CORS_ALLOWED_ORIGINS: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: ""
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "go-boilerplate-ddd"
+    POSTGRES_NAME: "go-boilerplate-ddd"
+    POSTGRES_SSLMODE: "disable"
+    MIGRATIONS_PATH: "migrations"
+    REDIS_HOST: ""
+    REDIS_DB: "0"
+    REDIS_TLS: "false"
+    ENABLE_TELEMETRY: "false"
+    OTEL_RESOURCE_SERVICE_NAME: "go-boilerplate-ddd"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/go-boilerplate-ddd"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: ""
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    SWAGGER_ENABLED: "true"
+    SWAGGER_TITLE: "Go Boilerplate DDD"
+    MULTI_TENANT_ENABLED: "false"
+
+  secrets:
+    POSTGRES_PASSWORD: "<path:secret/data/firmino/go-boilerplate-ddd/${ENV}#POSTGRES_PASSWORD>"
+    REDIS_PASSWORD: "<path:secret/data/firmino/go-boilerplate-ddd/${ENV}#REDIS_PASSWORD>"
+
+  useExistingSecret: false
+  existingSecretName: ""

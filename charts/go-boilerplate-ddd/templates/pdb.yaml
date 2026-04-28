@@ -1,0 +1,23 @@
+{{- if and .Values.boilerplate.enabled .Values.boilerplate.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "boilerplate.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "boilerplate.labels" (dict "context" . "component" .Values.boilerplate.name "name" .Values.boilerplate.name) | nindent 4 }}
+  {{- with .Values.boilerplate.pdb.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.boilerplate.pdb.minAvailable }}
+  minAvailable: {{ .Values.boilerplate.pdb.minAvailable }}
+  {{- end }}
+  {{- if .Values.boilerplate.pdb.maxUnavailable }}
+  maxUnavailable: {{ .Values.boilerplate.pdb.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "boilerplate.selectorLabels" (dict "context" . "name" .Values.boilerplate.name) | nindent 6 }}
+{{- end }}

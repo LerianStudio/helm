@@ -1,0 +1,22 @@
+{{- if .Values.boilerplate.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "boilerplate.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "boilerplate.labels" (dict "context" . "component" .Values.boilerplate.name "name" .Values.boilerplate.name) | nindent 4 }}
+  {{- with .Values.boilerplate.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.boilerplate.service.type }}
+  ports:
+    - port: {{ .Values.boilerplate.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "boilerplate.selectorLabels" (dict "context" . "name" .Values.boilerplate.name) | nindent 4 }}
+{{- end }}

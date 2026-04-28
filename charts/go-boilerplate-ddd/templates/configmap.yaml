@@ -1,0 +1,60 @@
+{{- if .Values.boilerplate.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "boilerplate.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "boilerplate.labels" (dict "context" . "component" .Values.boilerplate.name "name" .Values.boilerplate.name) | nindent 4 }}
+data:
+  # Application Settings
+  ENV_NAME: {{ .Values.boilerplate.configmap.ENV_NAME | default "production" | quote }}
+  LOG_LEVEL: {{ .Values.boilerplate.configmap.LOG_LEVEL | default "info" | quote }}
+  SERVER_ADDRESS: {{ .Values.boilerplate.configmap.SERVER_ADDRESS | default ":8080" | quote }}
+
+  # CORS
+  CORS_ALLOWED_ORIGINS: {{ .Values.boilerplate.configmap.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+
+  # Auth Plugin (Access Manager)
+  PLUGIN_AUTH_ENABLED: {{ .Values.boilerplate.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_HOST: {{ .Values.boilerplate.configmap.PLUGIN_AUTH_HOST | default "http://plugin-auth:4000" | quote }}
+
+  # PostgreSQL Database
+  POSTGRES_HOST: {{ .Values.boilerplate.configmap.POSTGRES_HOST | default "go-boilerplate-ddd-postgresql" | quote }}
+  POSTGRES_PORT: {{ .Values.boilerplate.configmap.POSTGRES_PORT | default "5432" | quote }}
+  POSTGRES_USER: {{ .Values.boilerplate.configmap.POSTGRES_USER | default "go-boilerplate-ddd" | quote }}
+  POSTGRES_NAME: {{ .Values.boilerplate.configmap.POSTGRES_NAME | default "go-boilerplate-ddd" | quote }}
+  POSTGRES_SSLMODE: {{ .Values.boilerplate.configmap.POSTGRES_SSLMODE | default "disable" | quote }}
+  MIGRATIONS_PATH: {{ .Values.boilerplate.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
+
+  # Redis
+  REDIS_HOST: {{ .Values.boilerplate.configmap.REDIS_HOST | default "go-boilerplate-ddd-redis:6379" | quote }}
+  REDIS_DB: {{ .Values.boilerplate.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_TLS: {{ .Values.boilerplate.configmap.REDIS_TLS | default "false" | quote }}
+
+  # OpenTelemetry (Observability)
+  ENABLE_TELEMETRY: {{ .Values.boilerplate.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.boilerplate.configmap.OTEL_RESOURCE_SERVICE_NAME | default "go-boilerplate-ddd" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.boilerplate.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/go-boilerplate-ddd" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.boilerplate.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.boilerplate.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+
+  # Rate Limiting
+  RATE_LIMIT_ENABLED: {{ .Values.boilerplate.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ .Values.boilerplate.configmap.RATE_LIMIT_MAX | default "500" | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ .Values.boilerplate.configmap.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+
+  # Swagger Documentation
+  SWAGGER_ENABLED: {{ .Values.boilerplate.configmap.SWAGGER_ENABLED | default "true" | quote }}
+  SWAGGER_TITLE: {{ .Values.boilerplate.configmap.SWAGGER_TITLE | default "Go Boilerplate DDD" | quote }}
+
+  # Multi-tenant (disabled by default)
+  MULTI_TENANT_ENABLED: {{ .Values.boilerplate.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.boilerplate.extraEnvVars }}
+  {{- range . }}
+  {{ .name }}: {{ .value | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,127 @@
+{{- if .Values.seaweedfs.enabled }}
+---
+# SeaweedFS PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "bc-correios.fullname" . }}-seaweedfs-data
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "bc-correios.labels" (dict "context" . "component" "seaweedfs" "name" "seaweedfs") | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.seaweedfs.persistence.storageClass }}
+  storageClassName: {{ .Values.seaweedfs.persistence.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.seaweedfs.persistence.size | default "10Gi" }}
+---
+# SeaweedFS Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bc-correios.fullname" . }}-seaweedfs
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "bc-correios.labels" (dict "context" . "component" "seaweedfs" "name" "seaweedfs") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "bc-correios.selectorLabels" (dict "context" . "component" "seaweedfs" "name" "seaweedfs") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "bc-correios.labels" (dict "context" . "component" "seaweedfs" "name" "seaweedfs") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+      containers:
+        - name: seaweedfs
+          image: "{{ .Values.seaweedfs.image.repository }}:{{ .Values.seaweedfs.image.tag }}"
+          imagePullPolicy: {{ .Values.seaweedfs.image.pullPolicy | default "IfNotPresent" }}
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+          # SeaweedFS "server" mode runs master + volume server + S3 gateway in one process.
+          # -dir is the data directory; -s3 enables the S3-compatible API on port 8333.
+          command:
+            - weed
+            - server
+            - -dir=/data
+            - -s3
+            - -master.port=9333
+            - -volume.port=8080
+            - -s3.port=8333
+          ports:
+            - name: s3
+              containerPort: 8333
+              protocol: TCP
+            - name: master
+              containerPort: 9333
+              protocol: TCP
+            - name: volume
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /cluster/status
+              port: master
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /cluster/status
+              port: master
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.seaweedfs.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "bc-correios.fullname" . }}-seaweedfs-data
+---
+# SeaweedFS Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bc-correios.fullname" . }}-seaweedfs
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "bc-correios.labels" (dict "context" . "component" "seaweedfs" "name" "seaweedfs") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: s3
+      port: 8333
+      targetPort: s3
+      protocol: TCP
+    - name: master
+      port: 9333
+      targetPort: master
+      protocol: TCP
+    - name: volume
+      port: 8080
+      targetPort: volume
+      protocol: TCP
+  selector:
+    {{- include "bc-correios.selectorLabels" (dict "context" . "component" "seaweedfs" "name" "seaweedfs") | nindent 4 }}
+{{- end }}

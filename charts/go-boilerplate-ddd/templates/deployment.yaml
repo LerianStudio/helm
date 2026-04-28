@@ -1,0 +1,94 @@
+{{- if .Values.boilerplate.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "boilerplate.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "boilerplate.labels" (dict "context" . "component" .Values.boilerplate.name "name" .Values.boilerplate.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.boilerplate.revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ .Values.boilerplate.deploymentUpdate.type }}
+    {{- if eq .Values.boilerplate.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.boilerplate.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.boilerplate.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not .Values.boilerplate.autoscaling.enabled }}
+  replicas: {{ .Values.boilerplate.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "boilerplate.selectorLabels" (dict "context" . "name" .Values.boilerplate.name) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.boilerplate.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "boilerplate.labels" (dict "context" . "component" .Values.boilerplate.name "name" .Values.boilerplate.name) | nindent 8 }}
+    spec:
+      {{- with .Values.boilerplate.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "boilerplate.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.boilerplate.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "boilerplate.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.boilerplate.securityContext | nindent 12 }}
+          image: "{{ .Values.boilerplate.image.repository }}:{{ .Values.boilerplate.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.boilerplate.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.boilerplate.useExistingSecret }}{{ .Values.boilerplate.existingSecretName }}{{ else }}{{ include "boilerplate.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "boilerplate.fullname" . }}
+          {{- if eq (toString .Values.boilerplate.configmap.ENABLE_TELEMETRY) "true" }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.boilerplate.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.boilerplate.resources | nindent 12 }}
+      {{- with .Values.boilerplate.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.boilerplate.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.boilerplate.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

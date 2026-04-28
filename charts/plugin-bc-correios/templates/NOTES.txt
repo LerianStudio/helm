@@ -1,0 +1,50 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+{{- $component := index .Values "bc-correios" -}}
+{{- if $component.enabled }}
+
+== BC Correios Service ==
+
+  Service name: {{ include "bc-correios.fullname" . }}
+  Namespace:    {{ include "global.namespace" . }}
+  Port:         {{ $component.service.port }}
+
+  {{- if $component.ingress.enabled }}
+  Ingress enabled:
+  {{- range $component.ingress.hosts }}
+    http{{ if $component.ingress.tls }}s{{ end }}://{{ .host }}
+  {{- end }}
+  {{- else }}
+  Ingress is disabled. To access the service locally, run:
+
+    kubectl port-forward -n {{ include "global.namespace" . }} \
+      svc/{{ include "bc-correios.fullname" . }} 9090:9090
+
+  Then open: http://localhost:9090
+  {{- end }}
+
+  Health check:
+    Liveness:   GET /health/live
+    Readiness:  GET /health/ready
+    Startup:    GET /health/live (30 retries / 10s)
+
+{{- end }}
+
+== Dependencies ==
+
+  PostgreSQL:  {{ if .Values.postgresql.enabled }}ENABLED (subchart){{ else }}DISABLED (external){{ end }}
+  RabbitMQ:    {{ if .Values.rabbitmq.enabled }}ENABLED (subchart){{ else }}DISABLED (external){{ end }}
+  Valkey:      {{ if .Values.valkey.enabled }}ENABLED (subchart){{ else }}DISABLED (external){{ end }}
+  SeaweedFS:   {{ if .Values.seaweedfs.enabled }}ENABLED (inline){{ else }}DISABLED{{ end }}
+
+{{ if .Values.global.externalPostgresDefinitions.enabled -}}
+  NOTE: PostgreSQL bootstrap job will run to create the plugin-bc-correios database and role.
+{{- end }}
+{{ if .Values.global.externalRabbitmqDefinitions.enabled -}}
+  NOTE: RabbitMQ bootstrap job will run to create exchanges, queues, and users.
+{{- end }}
+
+For more information, see:
+  https://github.com/LerianStudio/helm/tree/main/charts/plugin-bc-correios

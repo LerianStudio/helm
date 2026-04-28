@@ -97,7 +97,6 @@ data:
   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.boilerplate.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
   MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.boilerplate.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
   MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.boilerplate.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
-  MULTI_TENANT_SERVICE_API_KEY: {{ required "boilerplate.configmap.MULTI_TENANT_SERVICE_API_KEY is required when MULTI_TENANT_ENABLED=true" .Values.boilerplate.configmap.MULTI_TENANT_SERVICE_API_KEY | quote }}
   {{- end }}
 
   # Extra Env Vars

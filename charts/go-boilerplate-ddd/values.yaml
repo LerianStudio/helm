@@ -244,6 +244,8 @@ boilerplate:
     POSTGRES_PASSWORD: "lerian"
     # -- Redis password (empty if auth disabled)
     REDIS_PASSWORD: ""
+    # -- Multi-tenant service API key (required when MULTI_TENANT_ENABLED=true)
+    MULTI_TENANT_SERVICE_API_KEY: ""
 
   # -- Existing secrets name
   useExistingSecret: false

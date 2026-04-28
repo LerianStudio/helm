@@ -21,7 +21,6 @@ data:
   TRUSTED_PROXIES: {{ $component.configmap.TRUSTED_PROXIES | default "127.0.0.1,::1" | quote }}
 
   # PostgreSQL
-  {{- $namespace := include "global.namespace" . }}
   POSTGRES_HOST: {{ $component.configmap.POSTGRES_HOST | default (printf "%s-postgresql" .Release.Name) | quote }}
   POSTGRES_PORT: {{ $component.configmap.POSTGRES_PORT | default "5432" | quote }}
   POSTGRES_USER: {{ $component.configmap.POSTGRES_USER | default "plugin-bc-correios" | quote }}

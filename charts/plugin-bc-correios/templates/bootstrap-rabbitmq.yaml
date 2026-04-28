@@ -83,12 +83,15 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
-              # Check if exchange already exists to avoid re-importing definitions
+              # Idempotency: verify both exchange and queue exist to avoid false positives from partial imports
               EXCHANGE_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 "$BASE_URL/api/exchanges/%2F/bc-correios.audit" 2>/dev/null || echo "not_found")
+              QUEUE_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                "$BASE_URL/api/queues/%2F/bc-correios.webhook.dispatch" 2>/dev/null || echo "not_found")
 
-              if echo "$EXCHANGE_EXISTS" | grep -q '"name":"bc-correios.audit"'; then
-                echo "RabbitMQ definitions already applied (exchange bc-correios.audit exists). Skipping definitions import."
+              if echo "$EXCHANGE_EXISTS" | grep -q '"name":"bc-correios.audit"' && \
+                 echo "$QUEUE_EXISTS" | grep -q '"name":"bc-correios.webhook.dispatch"'; then
+                echo "RabbitMQ definitions already applied (exchange and queue verified). Skipping definitions import."
               else
                 echo "Applying RabbitMQ definitions from file..."
                 HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \

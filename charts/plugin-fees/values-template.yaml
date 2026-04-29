@@ -32,11 +32,6 @@ fees:
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
 
-frontend:
-  enabled: false
-  configmap:
-    NEXT_PUBLIC_MIDAZ_CONSOLE_BASE_URL: "http://midaz-nginx.midaz.svc.cluster.local.:8080" # @default -- "http://midaz-nginx.midaz.svc.cluster.local.:8080" if ingress is enabled set the ingress.hostname value  
-
 mongodb:
   enabled: true
 

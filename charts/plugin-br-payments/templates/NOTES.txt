@@ -1,0 +1,82 @@
+# Plugin BR Payments
+
+Thank you for installing {{ .Chart.Name }} v{{ .Chart.Version }}!
+
+## Deployment Status
+
+{{ if .Release.IsUpgrade }}
+The chart has been UPGRADED to version {{ .Chart.Version }} (appVersion {{ .Chart.AppVersion }}).
+{{ else }}
+The chart has been INSTALLED at version {{ .Chart.Version }} (appVersion {{ .Chart.AppVersion }}).
+{{ end }}
+
+## Component Deployed
+
+Single Deployment ({{ .Values.app.replicaCount }} replica(s)) running the /app binary
+with SERVICE_TYPE={{ .Values.app.configmap.SERVICE_TYPE | default "both" }}.
+HTTP API + reconciliation worker + outbox dispatcher run as goroutines in one process.
+
+  Service: {{ include "plugin-br-payments.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ .Values.app.service.port }}
+  Liveness:  /health
+  Readiness: /readyz (deep dependency checks)
+  {{- if eq (.Values.app.configmap.MULTI_TENANCY_ENABLED | toString) "true" }}
+  Tenant readiness: /readyz/tenant/:id (multi-tenant mode)
+  {{- end }}
+
+## Dependencies
+
+{{- if eq (include "postgresql.enabled" .) "true" }}
+1. PostgreSQL (in-cluster, Bitnami subchart)
+   - Primary: {{ .Release.Name }}-postgresql-primary.{{ include "global.namespace" . }}.svc.cluster.local:5432
+   - Database: {{ .Values.postgresql.auth.database }}
+   - User:     {{ .Values.postgresql.auth.username }}
+{{- else if .Values.global.externalPostgresDefinitions.enabled }}
+1. PostgreSQL (external, bootstrapped by Helm)
+   - Host: {{ .Values.global.externalPostgresDefinitions.connection.host }}:{{ .Values.global.externalPostgresDefinitions.connection.port }}
+   - Database/Role: plugin_br_payments
+{{- else }}
+1. PostgreSQL (external, expected to be pre-provisioned)
+   - Configure POSTGRES_HOST/POSTGRES_PORT/POSTGRES_USER/POSTGRES_DB/POSTGRES_PASSWORD before installing.
+{{- end }}
+
+## Required Configuration
+
+The following values MUST be set for the deployment to start successfully:
+
+  - app.configmap.OUTBOX_ENABLED          (must be "true" — HTTP routes only register when the outbox is enabled)
+  - app.configmap.PROVIDER_API_BASE_URL   (provider API base URL)
+  - app.configmap.PROVIDER_AUTH_URL       (provider OAuth2 token URL)
+  - app.configmap.MIDAZ_ONBOARDING_URL    (Midaz onboarding service URL)
+  - app.configmap.MIDAZ_TRANSACTION_URL   (Midaz transaction service URL)
+  - app.secrets.PROVIDER_CLIENT_ID        (provider OAuth2 client ID)
+  - app.secrets.PROVIDER_CLIENT_SECRET    (provider OAuth2 client secret)
+  - app.secrets.PROVIDER_WEBHOOK_SECRET   (provider webhook bearer token)
+  - app.secrets.POSTGRES_PASSWORD         (PostgreSQL application password)
+  - app.secrets.INTERNAL_API_KEY          (>=32 chars; required for SERVICE_TYPE=both/worker)
+  - app.secrets.CREDENTIAL_ENCRYPTION_KEY (base64 AES-256; required for SERVICE_TYPE=both/worker)
+  - app.secrets.LICENSE_KEY               (recommended — required in production)
+
+When MULTI_TENANCY_ENABLED=true, additionally:
+  - app.configmap.MULTI_TENANT_MANAGER_URL
+  - app.secrets.MULTI_TENANT_SERVICE_API_KEY
+
+## Accessing the API
+
+{{- if contains "ClusterIP" .Values.app.service.type }}
+
+Port-forward locally:
+
+  kubectl port-forward -n {{ include "global.namespace" . }} svc/{{ include "plugin-br-payments.fullname" . }} {{ .Values.app.service.port }}:{{ .Values.app.service.port }}
+
+Then access: http://localhost:{{ .Values.app.service.port }}/health
+{{- end }}
+
+## Useful Commands
+
+  kubectl get pods -n {{ include "global.namespace" . }} -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl logs   -n {{ include "global.namespace" . }} -l app.kubernetes.io/instance={{ .Release.Name }} --tail=200
+
+## Source
+
+  - Plugin source:   https://github.com/LerianStudio/plugin-br-payments
+  - Chart source:    https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-payments

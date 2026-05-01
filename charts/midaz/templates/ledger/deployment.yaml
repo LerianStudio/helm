@@ -91,12 +91,22 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.ledger.livenessProbe.path | default "/health" }}
               port: http
+            initialDelaySeconds: {{ .Values.ledger.livenessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.ledger.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.ledger.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.ledger.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.ledger.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.ledger.readinessProbe.path | default "/readyz" }}
               port: http
+            initialDelaySeconds: {{ .Values.ledger.readinessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.ledger.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.ledger.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.ledger.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.ledger.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.ledger.resources | nindent 12 }}
       {{- with .Values.ledger.nodeSelector }}

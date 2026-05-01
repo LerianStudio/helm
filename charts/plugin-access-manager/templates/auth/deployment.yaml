@@ -65,16 +65,22 @@ spec:
             {{- toYaml .Values.auth.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.auth.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.auth.service.port }}
-            initialDelaySeconds: 25
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.auth.readinessProbe.initialDelaySeconds | default 25 }}
+            periodSeconds: {{ .Values.auth.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.auth.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.auth.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.auth.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
-            initialDelaySeconds: 30
-            periodSeconds: 5
             httpGet:
-              path: /health
+              path: {{ .Values.auth.livenessProbe.path | default "/health" }}
               port: {{ .Values.auth.service.port }}
+            initialDelaySeconds: {{ .Values.auth.livenessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.auth.livenessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.auth.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.auth.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.auth.livenessProbe.failureThreshold | default 3 }}
       volumes:
         - name: backend-init-data
           configMap:

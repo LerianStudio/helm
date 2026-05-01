@@ -67,16 +67,22 @@ spec:
             {{- toYaml .Values.fees.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.fees.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.fees.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.fees.readinessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.fees.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.fees.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.fees.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.fees.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.fees.livenessProbe.path | default "/health" }}
               port: {{ .Values.fees.service.port }}
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.fees.livenessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.fees.livenessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.fees.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.fees.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.fees.livenessProbe.failureThreshold | default 3 }}
         {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
         - name: aws-signing-helper
           image: "{{ .Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ .Values.aws.rolesAnywhere.sidecar.image.tag }}"

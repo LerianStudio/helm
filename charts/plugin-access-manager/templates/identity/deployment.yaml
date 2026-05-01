@@ -64,16 +64,22 @@ spec:
             {{- toYaml .Values.identity.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.identity.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.identity.service.port }}
-            initialDelaySeconds: 25
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.identity.readinessProbe.initialDelaySeconds | default 25 }}
+            periodSeconds: {{ .Values.identity.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.identity.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.identity.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.identity.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
-            initialDelaySeconds: 30
-            periodSeconds: 5
             httpGet:
-              path: /health
+              path: {{ .Values.identity.livenessProbe.path | default "/health" }}
               port: {{ .Values.identity.service.port }}
+            initialDelaySeconds: {{ .Values.identity.livenessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.identity.livenessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.identity.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold | default 3 }}
           {{ if (index .Values "otel-collector-lerian").enabled }}
           env:
           - name: "HOST_IP"

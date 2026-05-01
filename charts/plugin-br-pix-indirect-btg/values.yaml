@@ -37,6 +37,10 @@ global:
           db: "plugin-br-pix-indirect-btg-db"
 
 pix:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg"
   description: "Plugin pix for Midaz"
@@ -205,6 +209,10 @@ pix:
   useExistingSecrets: false
   existingSecretName: ""
 inbound:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg-worker-inbound"
   description: "Plugin pix for Midaz"
@@ -337,6 +345,10 @@ inbound:
   useExistingSecrets: false
   existingSecretName: "plugin-br-pix-indirect-btg-inbound"
 outbound:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg-worker-outbound"
   description: "Plugin pix for Midaz"
@@ -485,6 +497,10 @@ outbound:
   useExistingSecrets: false
   existingSecretName: ""
 reconciliation:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg-worker-reconciliation"
   description: "Reconciliation Worker for Plugin BR PIX Indirect BTG"

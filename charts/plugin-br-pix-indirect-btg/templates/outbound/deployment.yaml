@@ -49,16 +49,22 @@ spec:
             {{- toYaml .Values.outbound.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.outbound.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.outbound.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.outbound.readinessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.outbound.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.outbound.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.outbound.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.outbound.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
-            initialDelaySeconds: 5
-            periodSeconds: 5
             httpGet:
-              path: /health
+              path: {{ .Values.outbound.livenessProbe.path | default "/health" }}
               port: {{ .Values.outbound.service.port }}
+            initialDelaySeconds: {{ .Values.outbound.livenessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.outbound.livenessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.outbound.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.outbound.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.outbound.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.outbound.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

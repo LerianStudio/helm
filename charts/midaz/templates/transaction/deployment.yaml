@@ -85,12 +85,22 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.transaction.livenessProbe.path | default "/health" }}
               port: http
+            initialDelaySeconds: {{ .Values.transaction.livenessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.transaction.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.transaction.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.transaction.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.transaction.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.transaction.readinessProbe.path | default "/readyz" }}
               port: http
+            initialDelaySeconds: {{ .Values.transaction.readinessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.transaction.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.transaction.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.transaction.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.transaction.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.transaction.resources | nindent 12 }}
       {{- with .Values.transaction.nodeSelector }}

@@ -51,16 +51,22 @@ spec:
             {{- toYaml .Values.reconciliation.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.reconciliation.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.reconciliation.service.port }}
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.reconciliation.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.reconciliation.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.reconciliation.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.reconciliation.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.reconciliation.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.reconciliation.livenessProbe.path | default "/health" }}
               port: {{ .Values.reconciliation.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.reconciliation.livenessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.reconciliation.livenessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.reconciliation.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.reconciliation.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.reconciliation.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.reconciliation.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

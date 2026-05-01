@@ -82,12 +82,22 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.onboarding.livenessProbe.path | default "/health" }}
               port: http
+            initialDelaySeconds: {{ .Values.onboarding.livenessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.onboarding.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.onboarding.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.onboarding.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.onboarding.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.onboarding.readinessProbe.path | default "/readyz" }}
               port: http
+            initialDelaySeconds: {{ .Values.onboarding.readinessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.onboarding.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.onboarding.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.onboarding.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.onboarding.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.onboarding.resources | nindent 12 }}
       {{- with .Values.onboarding.nodeSelector }}

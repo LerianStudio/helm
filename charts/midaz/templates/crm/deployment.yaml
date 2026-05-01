@@ -72,16 +72,22 @@ spec:
             {{- toYaml .Values.crm.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.crm.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.crm.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.crm.readinessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.crm.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.crm.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.crm.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.crm.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
-            initialDelaySeconds: 10
-            periodSeconds: 5
             httpGet:
-              path: /health
+              path: {{ .Values.crm.livenessProbe.path | default "/health" }}
               port: {{ .Values.crm.service.port }}
+            initialDelaySeconds: {{ .Values.crm.livenessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.crm.livenessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.crm.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.crm.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.crm.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.crm.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

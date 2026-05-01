@@ -106,15 +106,22 @@ spec:
           {{ end }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.auth.backend.readinessProbe.path | default "/readyz" }}
               port: 8000
-            initialDelaySeconds: 15
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.auth.backend.readinessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.auth.backend.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.auth.backend.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.auth.backend.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.auth.backend.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
-            initialDelaySeconds: 20
             httpGet:
-              path: /api/health
+              path: {{ .Values.auth.backend.livenessProbe.path | default "/api/health" }}
               port: 8000
+            initialDelaySeconds: {{ .Values.auth.backend.livenessProbe.initialDelaySeconds | default 20 }}
+            periodSeconds: {{ .Values.auth.backend.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.auth.backend.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.auth.backend.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.auth.backend.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.auth.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

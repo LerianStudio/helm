@@ -3,6 +3,10 @@
 # Declare variables to be passed into your templates.
 
 pixSwitch:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   replicaCount: 1
   name: "plugin-br-pix-switch"
   description: "Plugin BR Pix Switch for Midaz"

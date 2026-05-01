@@ -68,30 +68,18 @@ spec:
               port: {{ .Values.identity.service.port }}
             initialDelaySeconds: {{ .Values.identity.readinessProbe.initialDelaySeconds | default 25 }}
             periodSeconds: {{ .Values.identity.readinessProbe.periodSeconds | default 5 }}
-            {{- if and .Values.identity.readinessProbe (hasKey (.Values.identity.readinessProbe | default dict) "timeoutSeconds") }}
-            timeoutSeconds: {{ .Values.identity.readinessProbe.timeoutSeconds }}
-            {{- end }}
-            {{- if and .Values.identity.readinessProbe (hasKey (.Values.identity.readinessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.identity.readinessProbe.successThreshold }}
-            {{- end }}
-            {{- if and .Values.identity.readinessProbe (hasKey (.Values.identity.readinessProbe | default dict) "failureThreshold") }}
-            failureThreshold: {{ .Values.identity.readinessProbe.failureThreshold }}
-            {{- end }}
+            timeoutSeconds: {{ .Values.identity.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.identity.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.identity.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
             httpGet:
               path: {{ .Values.identity.livenessProbe.path | default "/health" }}
               port: {{ .Values.identity.service.port }}
             initialDelaySeconds: {{ .Values.identity.livenessProbe.initialDelaySeconds | default 30 }}
             periodSeconds: {{ .Values.identity.livenessProbe.periodSeconds | default 5 }}
-            {{- if and .Values.identity.livenessProbe (hasKey (.Values.identity.livenessProbe | default dict) "timeoutSeconds") }}
-            timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds }}
-            {{- end }}
-            {{- if and .Values.identity.livenessProbe (hasKey (.Values.identity.livenessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.identity.livenessProbe.successThreshold }}
-            {{- end }}
-            {{- if and .Values.identity.livenessProbe (hasKey (.Values.identity.livenessProbe | default dict) "failureThreshold") }}
-            failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold }}
-            {{- end }}
+            timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.identity.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold | default 3 }}
           {{ if (index .Values "otel-collector-lerian").enabled }}
           env:
           - name: "HOST_IP"

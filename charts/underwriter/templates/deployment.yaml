@@ -68,9 +68,7 @@ spec:
             initialDelaySeconds: {{ .Values.underwriter.livenessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.underwriter.livenessProbe.periodSeconds | default 20 }}
             timeoutSeconds: {{ .Values.underwriter.livenessProbe.timeoutSeconds | default 5 }}
-            {{- if and .Values.underwriter.livenessProbe (hasKey (.Values.underwriter.livenessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.underwriter.livenessProbe.successThreshold }}
-            {{- end }}
+            successThreshold: {{ .Values.underwriter.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.underwriter.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
@@ -79,9 +77,7 @@ spec:
             initialDelaySeconds: {{ .Values.underwriter.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.underwriter.readinessProbe.periodSeconds | default 10 }}
             timeoutSeconds: {{ .Values.underwriter.readinessProbe.timeoutSeconds | default 5 }}
-            {{- if and .Values.underwriter.readinessProbe (hasKey (.Values.underwriter.readinessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.underwriter.readinessProbe.successThreshold }}
-            {{- end }}
+            successThreshold: {{ .Values.underwriter.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.underwriter.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.underwriter.resources | nindent 12 }}

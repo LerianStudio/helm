@@ -108,9 +108,7 @@ spec:
             initialDelaySeconds: {{ .Values.bankTransfer.livenessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.bankTransfer.livenessProbe.periodSeconds | default 20 }}
             timeoutSeconds: {{ .Values.bankTransfer.livenessProbe.timeoutSeconds | default 5 }}
-            {{- if and .Values.bankTransfer.livenessProbe (hasKey (.Values.bankTransfer.livenessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.bankTransfer.livenessProbe.successThreshold }}
-            {{- end }}
+            successThreshold: {{ .Values.bankTransfer.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.bankTransfer.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
@@ -119,9 +117,7 @@ spec:
             initialDelaySeconds: {{ .Values.bankTransfer.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.bankTransfer.readinessProbe.periodSeconds | default 10 }}
             timeoutSeconds: {{ .Values.bankTransfer.readinessProbe.timeoutSeconds | default 5 }}
-            {{- if and .Values.bankTransfer.readinessProbe (hasKey (.Values.bankTransfer.readinessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.bankTransfer.readinessProbe.successThreshold }}
-            {{- end }}
+            successThreshold: {{ .Values.bankTransfer.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.bankTransfer.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.bankTransfer.resources | nindent 12 }}

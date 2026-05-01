@@ -55,30 +55,18 @@ spec:
               port: {{ .Values.reconciliation.service.port }}
             initialDelaySeconds: {{ .Values.reconciliation.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.reconciliation.readinessProbe.periodSeconds | default 5 }}
-            {{- if and .Values.reconciliation.readinessProbe (hasKey (.Values.reconciliation.readinessProbe | default dict) "timeoutSeconds") }}
-            timeoutSeconds: {{ .Values.reconciliation.readinessProbe.timeoutSeconds }}
-            {{- end }}
-            {{- if and .Values.reconciliation.readinessProbe (hasKey (.Values.reconciliation.readinessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.reconciliation.readinessProbe.successThreshold }}
-            {{- end }}
-            {{- if and .Values.reconciliation.readinessProbe (hasKey (.Values.reconciliation.readinessProbe | default dict) "failureThreshold") }}
-            failureThreshold: {{ .Values.reconciliation.readinessProbe.failureThreshold }}
-            {{- end }}
+            timeoutSeconds: {{ .Values.reconciliation.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.reconciliation.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.reconciliation.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
             httpGet:
               path: {{ .Values.reconciliation.livenessProbe.path | default "/health" }}
               port: {{ .Values.reconciliation.service.port }}
             initialDelaySeconds: {{ .Values.reconciliation.livenessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.reconciliation.livenessProbe.periodSeconds | default 5 }}
-            {{- if and .Values.reconciliation.livenessProbe (hasKey (.Values.reconciliation.livenessProbe | default dict) "timeoutSeconds") }}
-            timeoutSeconds: {{ .Values.reconciliation.livenessProbe.timeoutSeconds }}
-            {{- end }}
-            {{- if and .Values.reconciliation.livenessProbe (hasKey (.Values.reconciliation.livenessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.reconciliation.livenessProbe.successThreshold }}
-            {{- end }}
-            {{- if and .Values.reconciliation.livenessProbe (hasKey (.Values.reconciliation.livenessProbe | default dict) "failureThreshold") }}
-            failureThreshold: {{ .Values.reconciliation.livenessProbe.failureThreshold }}
-            {{- end }}
+            timeoutSeconds: {{ .Values.reconciliation.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.reconciliation.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.reconciliation.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.reconciliation.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

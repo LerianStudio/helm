@@ -88,9 +88,7 @@ spec:
             initialDelaySeconds: {{ .Values.flowker.livenessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.flowker.livenessProbe.periodSeconds | default 20 }}
             timeoutSeconds: {{ .Values.flowker.livenessProbe.timeoutSeconds | default 5 }}
-            {{- if and .Values.flowker.livenessProbe (hasKey (.Values.flowker.livenessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.flowker.livenessProbe.successThreshold }}
-            {{- end }}
+            successThreshold: {{ .Values.flowker.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.flowker.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
@@ -99,9 +97,7 @@ spec:
             initialDelaySeconds: {{ .Values.flowker.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.flowker.readinessProbe.periodSeconds | default 10 }}
             timeoutSeconds: {{ .Values.flowker.readinessProbe.timeoutSeconds | default 5 }}
-            {{- if and .Values.flowker.readinessProbe (hasKey (.Values.flowker.readinessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.flowker.readinessProbe.successThreshold }}
-            {{- end }}
+            successThreshold: {{ .Values.flowker.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.flowker.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.flowker.resources | nindent 12 }}

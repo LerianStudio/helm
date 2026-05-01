@@ -84,40 +84,20 @@ spec:
             httpGet:
               path: {{ .Values.onboarding.livenessProbe.path | default "/health" }}
               port: http
-            {{- if and .Values.onboarding.livenessProbe (hasKey (.Values.onboarding.livenessProbe | default dict) "initialDelaySeconds") }}
-            initialDelaySeconds: {{ .Values.onboarding.livenessProbe.initialDelaySeconds }}
-            {{- end }}
-            {{- if and .Values.onboarding.livenessProbe (hasKey (.Values.onboarding.livenessProbe | default dict) "periodSeconds") }}
-            periodSeconds: {{ .Values.onboarding.livenessProbe.periodSeconds }}
-            {{- end }}
-            {{- if and .Values.onboarding.livenessProbe (hasKey (.Values.onboarding.livenessProbe | default dict) "timeoutSeconds") }}
-            timeoutSeconds: {{ .Values.onboarding.livenessProbe.timeoutSeconds }}
-            {{- end }}
-            {{- if and .Values.onboarding.livenessProbe (hasKey (.Values.onboarding.livenessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.onboarding.livenessProbe.successThreshold }}
-            {{- end }}
-            {{- if and .Values.onboarding.livenessProbe (hasKey (.Values.onboarding.livenessProbe | default dict) "failureThreshold") }}
-            failureThreshold: {{ .Values.onboarding.livenessProbe.failureThreshold }}
-            {{- end }}
+            initialDelaySeconds: {{ .Values.onboarding.livenessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.onboarding.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.onboarding.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.onboarding.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.onboarding.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
               path: {{ .Values.onboarding.readinessProbe.path | default "/readyz" }}
               port: http
-            {{- if and .Values.onboarding.readinessProbe (hasKey (.Values.onboarding.readinessProbe | default dict) "initialDelaySeconds") }}
-            initialDelaySeconds: {{ .Values.onboarding.readinessProbe.initialDelaySeconds }}
-            {{- end }}
-            {{- if and .Values.onboarding.readinessProbe (hasKey (.Values.onboarding.readinessProbe | default dict) "periodSeconds") }}
-            periodSeconds: {{ .Values.onboarding.readinessProbe.periodSeconds }}
-            {{- end }}
-            {{- if and .Values.onboarding.readinessProbe (hasKey (.Values.onboarding.readinessProbe | default dict) "timeoutSeconds") }}
-            timeoutSeconds: {{ .Values.onboarding.readinessProbe.timeoutSeconds }}
-            {{- end }}
-            {{- if and .Values.onboarding.readinessProbe (hasKey (.Values.onboarding.readinessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.onboarding.readinessProbe.successThreshold }}
-            {{- end }}
-            {{- if and .Values.onboarding.readinessProbe (hasKey (.Values.onboarding.readinessProbe | default dict) "failureThreshold") }}
-            failureThreshold: {{ .Values.onboarding.readinessProbe.failureThreshold }}
-            {{- end }}
+            initialDelaySeconds: {{ .Values.onboarding.readinessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.onboarding.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.onboarding.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.onboarding.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.onboarding.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.onboarding.resources | nindent 12 }}
       {{- with .Values.onboarding.nodeSelector }}

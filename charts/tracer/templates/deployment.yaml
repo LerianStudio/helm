@@ -68,9 +68,7 @@ spec:
             initialDelaySeconds: {{ .Values.tracer.livenessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.tracer.livenessProbe.periodSeconds | default 20 }}
             timeoutSeconds: {{ .Values.tracer.livenessProbe.timeoutSeconds | default 5 }}
-            {{- if and .Values.tracer.livenessProbe (hasKey (.Values.tracer.livenessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.tracer.livenessProbe.successThreshold }}
-            {{- end }}
+            successThreshold: {{ .Values.tracer.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.tracer.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
@@ -79,9 +77,7 @@ spec:
             initialDelaySeconds: {{ .Values.tracer.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.tracer.readinessProbe.periodSeconds | default 10 }}
             timeoutSeconds: {{ .Values.tracer.readinessProbe.timeoutSeconds | default 5 }}
-            {{- if and .Values.tracer.readinessProbe (hasKey (.Values.tracer.readinessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.tracer.readinessProbe.successThreshold }}
-            {{- end }}
+            successThreshold: {{ .Values.tracer.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.tracer.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.tracer.resources | nindent 12 }}

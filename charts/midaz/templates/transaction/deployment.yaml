@@ -87,40 +87,20 @@ spec:
             httpGet:
               path: {{ .Values.transaction.livenessProbe.path | default "/health" }}
               port: http
-            {{- if and .Values.transaction.livenessProbe (hasKey (.Values.transaction.livenessProbe | default dict) "initialDelaySeconds") }}
-            initialDelaySeconds: {{ .Values.transaction.livenessProbe.initialDelaySeconds }}
-            {{- end }}
-            {{- if and .Values.transaction.livenessProbe (hasKey (.Values.transaction.livenessProbe | default dict) "periodSeconds") }}
-            periodSeconds: {{ .Values.transaction.livenessProbe.periodSeconds }}
-            {{- end }}
-            {{- if and .Values.transaction.livenessProbe (hasKey (.Values.transaction.livenessProbe | default dict) "timeoutSeconds") }}
-            timeoutSeconds: {{ .Values.transaction.livenessProbe.timeoutSeconds }}
-            {{- end }}
-            {{- if and .Values.transaction.livenessProbe (hasKey (.Values.transaction.livenessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.transaction.livenessProbe.successThreshold }}
-            {{- end }}
-            {{- if and .Values.transaction.livenessProbe (hasKey (.Values.transaction.livenessProbe | default dict) "failureThreshold") }}
-            failureThreshold: {{ .Values.transaction.livenessProbe.failureThreshold }}
-            {{- end }}
+            initialDelaySeconds: {{ .Values.transaction.livenessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.transaction.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.transaction.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.transaction.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.transaction.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
               path: {{ .Values.transaction.readinessProbe.path | default "/readyz" }}
               port: http
-            {{- if and .Values.transaction.readinessProbe (hasKey (.Values.transaction.readinessProbe | default dict) "initialDelaySeconds") }}
-            initialDelaySeconds: {{ .Values.transaction.readinessProbe.initialDelaySeconds }}
-            {{- end }}
-            {{- if and .Values.transaction.readinessProbe (hasKey (.Values.transaction.readinessProbe | default dict) "periodSeconds") }}
-            periodSeconds: {{ .Values.transaction.readinessProbe.periodSeconds }}
-            {{- end }}
-            {{- if and .Values.transaction.readinessProbe (hasKey (.Values.transaction.readinessProbe | default dict) "timeoutSeconds") }}
-            timeoutSeconds: {{ .Values.transaction.readinessProbe.timeoutSeconds }}
-            {{- end }}
-            {{- if and .Values.transaction.readinessProbe (hasKey (.Values.transaction.readinessProbe | default dict) "successThreshold") }}
-            successThreshold: {{ .Values.transaction.readinessProbe.successThreshold }}
-            {{- end }}
-            {{- if and .Values.transaction.readinessProbe (hasKey (.Values.transaction.readinessProbe | default dict) "failureThreshold") }}
-            failureThreshold: {{ .Values.transaction.readinessProbe.failureThreshold }}
-            {{- end }}
+            initialDelaySeconds: {{ .Values.transaction.readinessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.transaction.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.transaction.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.transaction.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.transaction.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.transaction.resources | nindent 12 }}
       {{- with .Values.transaction.nodeSelector }}

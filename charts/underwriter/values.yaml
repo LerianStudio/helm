@@ -34,6 +34,10 @@ global:
       password: "lerian"
 
 underwriter:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # -- Service name
   name: underwriter
 

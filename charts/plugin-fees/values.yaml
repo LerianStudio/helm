@@ -36,6 +36,10 @@ global:
         - role: "readWrite"
           db: "plugin-fees-db"
 fees:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   replicaCount: 1
   name: "plugin-fees"
   description: "Plugin Fees for Midaz"

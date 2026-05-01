@@ -49,16 +49,34 @@ spec:
             {{- toYaml .Values.outbound.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.outbound.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.outbound.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.outbound.readinessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.outbound.readinessProbe.periodSeconds | default 5 }}
+            {{- if and .Values.outbound.readinessProbe (hasKey (.Values.outbound.readinessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.outbound.readinessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.outbound.readinessProbe (hasKey (.Values.outbound.readinessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.outbound.readinessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.outbound.readinessProbe (hasKey (.Values.outbound.readinessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.outbound.readinessProbe.failureThreshold }}
+            {{- end }}
           livenessProbe:
-            initialDelaySeconds: 5
-            periodSeconds: 5
             httpGet:
-              path: /health
+              path: {{ .Values.outbound.livenessProbe.path | default "/health" }}
               port: {{ .Values.outbound.service.port }}
+            initialDelaySeconds: {{ .Values.outbound.livenessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.outbound.livenessProbe.periodSeconds | default 5 }}
+            {{- if and .Values.outbound.livenessProbe (hasKey (.Values.outbound.livenessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.outbound.livenessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.outbound.livenessProbe (hasKey (.Values.outbound.livenessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.outbound.livenessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.outbound.livenessProbe (hasKey (.Values.outbound.livenessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.outbound.livenessProbe.failureThreshold }}
+            {{- end }}
       {{- with .Values.outbound.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

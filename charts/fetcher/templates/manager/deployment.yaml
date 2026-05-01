@@ -79,19 +79,21 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.manager.livenessProbe.path | default "/health" }}
               port: http
             initialDelaySeconds: {{ .Values.manager.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.manager.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.manager.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.manager.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.manager.livenessProbe.failureThreshold }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.manager.readinessProbe.path | default "/readyz" }}
               port: http
             initialDelaySeconds: {{ .Values.manager.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.manager.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.manager.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.manager.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.manager.readinessProbe.failureThreshold }}
           resources:
             {{- toYaml .Values.manager.resources | nindent 12 }}

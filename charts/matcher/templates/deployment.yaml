@@ -105,20 +105,26 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.matcher.livenessProbe.path | default "/health" }}
               port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.matcher.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.matcher.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ .Values.matcher.livenessProbe.timeoutSeconds | default 5 }}
+            {{- if and .Values.matcher.livenessProbe (hasKey (.Values.matcher.livenessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.matcher.livenessProbe.successThreshold }}
+            {{- end }}
+            failureThreshold: {{ .Values.matcher.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.matcher.readinessProbe.path | default "/readyz" }}
               port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.matcher.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.matcher.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.matcher.readinessProbe.timeoutSeconds | default 5 }}
+            {{- if and .Values.matcher.readinessProbe (hasKey (.Values.matcher.readinessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.matcher.readinessProbe.successThreshold }}
+            {{- end }}
+            failureThreshold: {{ .Values.matcher.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.matcher.resources | nindent 12 }}
         {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}

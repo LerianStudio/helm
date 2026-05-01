@@ -54,16 +54,34 @@ spec:
             {{- toYaml .Values.pixSwitch.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.pixSwitch.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.pixSwitch.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.pixSwitch.readinessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.pixSwitch.readinessProbe.periodSeconds | default 5 }}
+            {{- if and .Values.pixSwitch.readinessProbe (hasKey (.Values.pixSwitch.readinessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.pixSwitch.readinessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.pixSwitch.readinessProbe (hasKey (.Values.pixSwitch.readinessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.pixSwitch.readinessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.pixSwitch.readinessProbe (hasKey (.Values.pixSwitch.readinessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.pixSwitch.readinessProbe.failureThreshold }}
+            {{- end }}
           livenessProbe:
-            initialDelaySeconds: 5
-            periodSeconds: 5
             httpGet:
-              path: /live
+              path: {{ .Values.pixSwitch.livenessProbe.path | default "/live" }}
               port: {{ .Values.pixSwitch.service.port }}
+            initialDelaySeconds: {{ .Values.pixSwitch.livenessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.pixSwitch.livenessProbe.periodSeconds | default 5 }}
+            {{- if and .Values.pixSwitch.livenessProbe (hasKey (.Values.pixSwitch.livenessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.pixSwitch.livenessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.pixSwitch.livenessProbe (hasKey (.Values.pixSwitch.livenessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.pixSwitch.livenessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.pixSwitch.livenessProbe (hasKey (.Values.pixSwitch.livenessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.pixSwitch.livenessProbe.failureThreshold }}
+            {{- end }}
       {{- with .Values.pixSwitch.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

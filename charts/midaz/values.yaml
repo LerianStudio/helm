@@ -101,6 +101,10 @@ global:
         - role: "readWrite"
           db: "crm"
 onboarding:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # -- Service name
   name: onboarding
   # -- Enable or disable the onboarding service
@@ -290,6 +294,10 @@ onboarding:
     # @default -- `midaz-onboarding.fullname`
     name: ""
 transaction:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # -- Service name
   name: transaction
   # -- Enable or disable the transaction service
@@ -489,6 +497,10 @@ transaction:
     # @default -- `midaz-transaction.fullname`
     name: ""
 ledger:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # -- Service name
   name: ledger
   # -- Enable or disable the ledger service (unified onboarding + transaction)
@@ -704,6 +716,10 @@ ledger:
     # @default -- `midaz-ledger.fullname`
     name: ""
 crm:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # -- Service name
   name: crm
   # -- Enable or disable the CRM service

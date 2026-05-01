@@ -65,16 +65,34 @@ spec:
             {{- toYaml .Values.auth.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.auth.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.auth.service.port }}
-            initialDelaySeconds: 25
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.auth.readinessProbe.initialDelaySeconds | default 25 }}
+            periodSeconds: {{ .Values.auth.readinessProbe.periodSeconds | default 5 }}
+            {{- if and .Values.auth.readinessProbe (hasKey (.Values.auth.readinessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.auth.readinessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.auth.readinessProbe (hasKey (.Values.auth.readinessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.auth.readinessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.auth.readinessProbe (hasKey (.Values.auth.readinessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.auth.readinessProbe.failureThreshold }}
+            {{- end }}
           livenessProbe:
-            initialDelaySeconds: 30
-            periodSeconds: 5
             httpGet:
-              path: /health
+              path: {{ .Values.auth.livenessProbe.path | default "/health" }}
               port: {{ .Values.auth.service.port }}
+            initialDelaySeconds: {{ .Values.auth.livenessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.auth.livenessProbe.periodSeconds | default 5 }}
+            {{- if and .Values.auth.livenessProbe (hasKey (.Values.auth.livenessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.auth.livenessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.auth.livenessProbe (hasKey (.Values.auth.livenessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.auth.livenessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.auth.livenessProbe (hasKey (.Values.auth.livenessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.auth.livenessProbe.failureThreshold }}
+            {{- end }}
       volumes:
         - name: backend-init-data
           configMap:

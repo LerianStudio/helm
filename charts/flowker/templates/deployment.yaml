@@ -83,20 +83,26 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health/live
+              path: {{ .Values.flowker.livenessProbe.path | default "/health/live" }}
               port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.flowker.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.flowker.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ .Values.flowker.livenessProbe.timeoutSeconds | default 5 }}
+            {{- if and .Values.flowker.livenessProbe (hasKey (.Values.flowker.livenessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.flowker.livenessProbe.successThreshold }}
+            {{- end }}
+            failureThreshold: {{ .Values.flowker.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.flowker.readinessProbe.path | default "/readyz" }}
               port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.flowker.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.flowker.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.flowker.readinessProbe.timeoutSeconds | default 5 }}
+            {{- if and .Values.flowker.readinessProbe (hasKey (.Values.flowker.readinessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.flowker.readinessProbe.successThreshold }}
+            {{- end }}
+            failureThreshold: {{ .Values.flowker.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.flowker.resources | nindent 12 }}
       {{- with .Values.flowker.nodeSelector }}

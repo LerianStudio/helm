@@ -72,16 +72,34 @@ spec:
             {{- toYaml .Values.crm.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.crm.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.crm.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.crm.readinessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.crm.readinessProbe.periodSeconds | default 5 }}
+            {{- if and .Values.crm.readinessProbe (hasKey (.Values.crm.readinessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.crm.readinessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.crm.readinessProbe (hasKey (.Values.crm.readinessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.crm.readinessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.crm.readinessProbe (hasKey (.Values.crm.readinessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.crm.readinessProbe.failureThreshold }}
+            {{- end }}
           livenessProbe:
-            initialDelaySeconds: 10
-            periodSeconds: 5
             httpGet:
-              path: /health
+              path: {{ .Values.crm.livenessProbe.path | default "/health" }}
               port: {{ .Values.crm.service.port }}
+            initialDelaySeconds: {{ .Values.crm.livenessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.crm.livenessProbe.periodSeconds | default 5 }}
+            {{- if and .Values.crm.livenessProbe (hasKey (.Values.crm.livenessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.crm.livenessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.crm.livenessProbe (hasKey (.Values.crm.livenessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.crm.livenessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.crm.livenessProbe (hasKey (.Values.crm.livenessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.crm.livenessProbe.failureThreshold }}
+            {{- end }}
       {{- with .Values.crm.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -103,20 +103,26 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health/live
+              path: {{ .Values.bankTransfer.livenessProbe.path | default "/health/live" }}
               port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.bankTransfer.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.bankTransfer.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ .Values.bankTransfer.livenessProbe.timeoutSeconds | default 5 }}
+            {{- if and .Values.bankTransfer.livenessProbe (hasKey (.Values.bankTransfer.livenessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.bankTransfer.livenessProbe.successThreshold }}
+            {{- end }}
+            failureThreshold: {{ .Values.bankTransfer.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.bankTransfer.readinessProbe.path | default "/readyz" }}
               port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.bankTransfer.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.bankTransfer.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.bankTransfer.readinessProbe.timeoutSeconds | default 5 }}
+            {{- if and .Values.bankTransfer.readinessProbe (hasKey (.Values.bankTransfer.readinessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.bankTransfer.readinessProbe.successThreshold }}
+            {{- end }}
+            failureThreshold: {{ .Values.bankTransfer.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.bankTransfer.resources | nindent 12 }}
       {{- with .Values.bankTransfer.nodeSelector }}

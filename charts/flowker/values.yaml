@@ -40,6 +40,10 @@ global:
           db: "flowker"
 
 flowker:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # -- Service name
   name: flowker
 

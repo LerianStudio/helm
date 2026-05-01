@@ -63,20 +63,26 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.tracer.livenessProbe.path | default "/health" }}
               port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.tracer.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.tracer.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ .Values.tracer.livenessProbe.timeoutSeconds | default 5 }}
+            {{- if and .Values.tracer.livenessProbe (hasKey (.Values.tracer.livenessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.tracer.livenessProbe.successThreshold }}
+            {{- end }}
+            failureThreshold: {{ .Values.tracer.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.tracer.readinessProbe.path | default "/readyz" }}
               port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.tracer.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.tracer.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.tracer.readinessProbe.timeoutSeconds | default 5 }}
+            {{- if and .Values.tracer.readinessProbe (hasKey (.Values.tracer.readinessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.tracer.readinessProbe.successThreshold }}
+            {{- end }}
+            failureThreshold: {{ .Values.tracer.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.tracer.resources | nindent 12 }}
       {{- with .Values.tracer.nodeSelector }}

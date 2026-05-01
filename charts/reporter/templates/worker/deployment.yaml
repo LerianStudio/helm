@@ -98,7 +98,7 @@ spec:
             {{- toYaml .Values.worker.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.worker.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.worker.configmap.HEALTH_PORT | default 4006 }}
             initialDelaySeconds: {{ .Values.worker.readinessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.worker.readinessProbe.periodSeconds | default 5 }}
@@ -107,7 +107,7 @@ spec:
             failureThreshold: {{ .Values.worker.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.worker.livenessProbe.path | default "/health" }}
               port: {{ .Values.worker.configmap.HEALTH_PORT | default 4006 }}
             initialDelaySeconds: {{ .Values.worker.livenessProbe.initialDelaySeconds | default 20 }}
             periodSeconds: {{ .Values.worker.livenessProbe.periodSeconds | default 5 }}

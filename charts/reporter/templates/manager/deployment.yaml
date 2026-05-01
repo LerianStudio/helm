@@ -91,7 +91,7 @@ spec:
             {{- toYaml .Values.manager.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.manager.readinessProbe.path | default "/readyz" }}
               port: {{ .Values.manager.service.port }}
             initialDelaySeconds: {{ .Values.manager.readinessProbe.initialDelaySeconds | default 25 }}
             periodSeconds: {{ .Values.manager.readinessProbe.periodSeconds | default 5 }}
@@ -100,8 +100,8 @@ spec:
             failureThreshold: {{ .Values.manager.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
             httpGet:
-              path: /health
-              port: {{ .Values.manager.service.port }}            
+              path: {{ .Values.manager.livenessProbe.path | default "/health" }}
+              port: {{ .Values.manager.service.port }}
             initialDelaySeconds: {{ .Values.manager.livenessProbe.initialDelaySeconds | default 30 }}
             periodSeconds: {{ .Values.manager.livenessProbe.periodSeconds | default 5 }}
             timeoutSeconds: {{ .Values.manager.livenessProbe.timeoutSeconds | default 3 }}

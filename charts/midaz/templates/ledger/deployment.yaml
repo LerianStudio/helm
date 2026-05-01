@@ -91,12 +91,42 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.ledger.livenessProbe.path | default "/health" }}
               port: http
+            {{- if and .Values.ledger.livenessProbe (hasKey (.Values.ledger.livenessProbe | default dict) "initialDelaySeconds") }}
+            initialDelaySeconds: {{ .Values.ledger.livenessProbe.initialDelaySeconds }}
+            {{- end }}
+            {{- if and .Values.ledger.livenessProbe (hasKey (.Values.ledger.livenessProbe | default dict) "periodSeconds") }}
+            periodSeconds: {{ .Values.ledger.livenessProbe.periodSeconds }}
+            {{- end }}
+            {{- if and .Values.ledger.livenessProbe (hasKey (.Values.ledger.livenessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.ledger.livenessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.ledger.livenessProbe (hasKey (.Values.ledger.livenessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.ledger.livenessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.ledger.livenessProbe (hasKey (.Values.ledger.livenessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.ledger.livenessProbe.failureThreshold }}
+            {{- end }}
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: {{ .Values.ledger.readinessProbe.path | default "/readyz" }}
               port: http
+            {{- if and .Values.ledger.readinessProbe (hasKey (.Values.ledger.readinessProbe | default dict) "initialDelaySeconds") }}
+            initialDelaySeconds: {{ .Values.ledger.readinessProbe.initialDelaySeconds }}
+            {{- end }}
+            {{- if and .Values.ledger.readinessProbe (hasKey (.Values.ledger.readinessProbe | default dict) "periodSeconds") }}
+            periodSeconds: {{ .Values.ledger.readinessProbe.periodSeconds }}
+            {{- end }}
+            {{- if and .Values.ledger.readinessProbe (hasKey (.Values.ledger.readinessProbe | default dict) "timeoutSeconds") }}
+            timeoutSeconds: {{ .Values.ledger.readinessProbe.timeoutSeconds }}
+            {{- end }}
+            {{- if and .Values.ledger.readinessProbe (hasKey (.Values.ledger.readinessProbe | default dict) "successThreshold") }}
+            successThreshold: {{ .Values.ledger.readinessProbe.successThreshold }}
+            {{- end }}
+            {{- if and .Values.ledger.readinessProbe (hasKey (.Values.ledger.readinessProbe | default dict) "failureThreshold") }}
+            failureThreshold: {{ .Values.ledger.readinessProbe.failureThreshold }}
+            {{- end }}
           resources:
             {{- toYaml .Values.ledger.resources | nindent 12 }}
       {{- with .Values.ledger.nodeSelector }}

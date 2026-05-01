@@ -83,7 +83,7 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: {{ .Values.flowker.livenessProbe.path | default "/health/live" }}
+              path: {{ .Values.flowker.livenessProbe.path | default "/health" }}
               port: http
             initialDelaySeconds: {{ .Values.flowker.livenessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.flowker.livenessProbe.periodSeconds | default 20 }}

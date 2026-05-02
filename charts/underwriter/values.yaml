@@ -163,36 +163,66 @@ underwriter:
   # -- Affinity rules for pod scheduling
   affinity: {}
 
-  # -- ConfigMap for environment variables and configurations
+  # -- ConfigMap for environment variables and configurations.
+  # All keys mirror the env vars consumed by the underwriter app
+  # (see internal/bootstrap/config.go). Only the keys you want to override
+  # need to appear here in consumer values.yaml; defaults are applied by
+  # the chart template.
   # @default -- templates/configmap.yaml
   configmap:
     # Application Settings
     ENV_NAME: "production"
     LOG_LEVEL: "info"
+    DEPLOYMENT_MODE: "local"
+    # NOTE: VERSION and OTEL_RESOURCE_SERVICE_VERSION are auto-derived from
+    #       .Values.underwriter.image.tag in templates/configmap.yaml; do not
+    #       set them here.
+
+    # HTTP server
     SERVER_ADDRESS: ":4017"
     HTTP_BODY_LIMIT_BYTES: "104857600"
+    TLS_TERMINATED_UPSTREAM: "true"
 
-    # CORS Configuration
+    # CORS
     CORS_ALLOWED_ORIGINS: "*"
     CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
     CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
-
-    # TLS Configuration
-    TLS_TERMINATED_UPSTREAM: "true"
+    CORS_EXPOSE_HEADERS: ""
+    CORS_ALLOW_CREDENTIALS: "false"
 
     # Tenancy
     DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
-    DEFAULT_TENANT_SLUG: "default"
 
-    # PostgreSQL Database
+    # Multi-tenant
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    MULTI_TENANT_REDIS_HOST: ""
+    MULTI_TENANT_REDIS_PORT: "6379"
+    MULTI_TENANT_REDIS_TLS: "false"
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    MULTI_TENANT_TIMEOUT: "30"
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    MULTI_TENANT_CACHE_TTL_SEC: "120"
+    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+
+    # PostgreSQL primary
     POSTGRES_HOST: "underwriter-postgresql-primary"
     POSTGRES_PORT: "5432"
-    POSTGRES_DB: "underwriter"
+    POSTGRES_NAME: "underwriter"
     POSTGRES_USER: "underwriter"
     POSTGRES_SSLMODE: "disable"
     MIGRATIONS_PATH: "migrations"
 
-    # PostgreSQL Connection Pool
+    # PostgreSQL replica (optional; falls back to primary if unset)
+    POSTGRES_REPLICA_HOST: ""
+    POSTGRES_REPLICA_PORT: ""
+    POSTGRES_REPLICA_NAME: ""
+    POSTGRES_REPLICA_USER: ""
+    POSTGRES_REPLICA_SSLMODE: ""
+
+    # PostgreSQL connection pool
     POSTGRES_MAX_OPEN_CONNS: "25"
     POSTGRES_MAX_IDLE_CONNS: "5"
     POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
@@ -203,21 +233,93 @@ underwriter:
     REDIS_HOST: "underwriter-valkey-primary:6379"
     REDIS_DB: "0"
     REDIS_PROTOCOL: "3"
+    REDIS_TLS: "false"
     REDIS_POOL_SIZE: "10"
     REDIS_MIN_IDLE_CONNS: "2"
-    REDIS_READ_TIMEOUT_MS: "3000"
-    REDIS_WRITE_TIMEOUT_MS: "3000"
-    REDIS_DIAL_TIMEOUT_MS: "5000"
+    REDIS_READ_TIMEOUT: "3s"
+    REDIS_WRITE_TIMEOUT: "3s"
+    REDIS_DIAL_TIMEOUT: "5s"
+    REDIS_POOL_TIMEOUT: "4s"
+    REDIS_MAX_RETRIES: "3"
+    REDIS_MIN_RETRY_BACKOFF: "8ms"
+    REDIS_MAX_RETRY_BACKOFF: "512ms"
+    REDIS_MASTER_NAME: ""
 
-    # Authentication
-    AUTH_ENABLED: "false"
-    AUTH_SERVICE_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    # RabbitMQ
+    RABBITMQ_ENABLED: "false"
+    RABBITMQ_HOST: ""
+    RABBITMQ_PORT_AMQP: "5672"
+    RABBITMQ_PORT_HOST: "15672"
+    RABBITMQ_VHOST: "/"
+    RABBITMQ_DEFAULT_USER: ""
+    RABBITMQ_EXCHANGE: "underwriter.events"
+    RABBITMQ_QUEUE: "underwriter.events.queue"
+    RABBITMQ_URL: ""
+    RABBITMQ_HEALTH_CHECK_URL: ""
+    RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS: ""
+    RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: "false"
+    RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: "false"
+    RABBITMQ_ALLOW_INSECURE_TLS: "false"
+    RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS: "5000"
+    RABBITMQ_PUBLISHER_MAX_RECOVERIES: "5"
+    RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS: "100"
+    RABBITMQ_PUBLISHER_RECOVERY_MAX_MS: "5000"
 
-    # Swagger Documentation
+    # Outbox pattern (transactional event publishing)
+    OUTBOX_ENABLED: "false"
+    OUTBOX_TABLE_NAME: "outbox_events"
+    OUTBOX_BATCH_SIZE: "100"
+    OUTBOX_DISPATCH_INTERVAL_SEC: "5"
+    OUTBOX_PROCESSING_TIMEOUT_SEC: "30"
+    OUTBOX_MAX_DISPATCH_ATTEMPTS: "5"
+    OUTBOX_MAX_FAILED_PER_BATCH: "10"
+    OUTBOX_RETRY_WINDOW_SEC: "60"
+    OUTBOX_PUBLISH_BACKOFF_MS: "100"
+    OUTBOX_PUBLISH_MAX_ATTEMPTS: "3"
+    OUTBOX_PRIORITY_EVENT_TYPES: ""
+    OUTBOX_INCLUDE_TENANT_METRICS: "false"
+    OUTBOX_ALLOW_EMPTY_TENANT: "false"
+
+    # Plugin Auth (Access Manager integration)
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+
+    # Swagger
     SWAGGER_ENABLED: "false"
+    SWAGGER_TITLE: "Underwriter API"
+    SWAGGER_DESCRIPTION: "Underwriter service"
+    SWAGGER_HOST: ""
+    SWAGGER_BASE_PATH: "/"
+    SWAGGER_SCHEMES: "https"
+    SWAGGER_LEFT_DELIM: "{{"
+    SWAGGER_RIGHT_DELIM: "}}"
 
-    # Infrastructure Boot Timeout
+    # Rate limiting
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "100"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "10"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    CIRCUIT_BREAKER_ENABLED: "true"
+
+    # Idempotency
+    IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
+
+    # Pagination
+    MAX_PAGINATION_LIMIT: "100"
+    MAX_PAGINATION_MONTH_DATE_RANGE: "12"
+
+    # Infrastructure boot
     INFRA_CONNECT_TIMEOUT_SEC: "30"
+    DB_METRICS_INTERVAL_SEC: "15"
+
+    # AWS
+    AWS_REGION: ""
+
+    # Examples / domain features
+    EXAMPLE_STATUS_PROVIDER_MODE: "healthy"
 
     # OpenTelemetry
     # -- Enable telemetry collection (when true, OTEL_EXPORTER_OTLP_ENDPOINT is overridden with HOST_IP:4317)
@@ -226,33 +328,32 @@ underwriter:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/underwriter"
     # -- OTEL resource service name for traces/metrics
     OTEL_RESOURCE_SERVICE_NAME: "underwriter"
-    # -- OTEL resource service version
-    OTEL_RESOURCE_SERVICE_VERSION: "1.0.0"
     # -- OTEL exporter endpoint (empty when disabled; overridden by HOST_IP:4317 when ENABLE_TELEMETRY=true)
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     # -- OTEL deployment environment
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
 
-    # Rate Limiting
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "100"
-    RATE_LIMIT_EXPIRY_SEC: "60"
-
-    # Observability & Metrics
-    DB_METRICS_INTERVAL_SEC: "15"
-
-    # Idempotency
-    IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
-
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
-    # -- PostgreSQL password
+    # -- PostgreSQL primary password
     POSTGRES_PASSWORD: "lerian"
+    # -- PostgreSQL replica password (defaults to PostgreSQL primary password if unset)
+    POSTGRES_REPLICA_PASSWORD: ""
     # -- Redis password (empty if auth disabled)
     REDIS_PASSWORD: ""
-    # -- Auth JWT secret (if AUTH_ENABLED is true)
-    AUTH_JWT_SECRET: ""
+    # -- Redis CA certificate path / contents (when REDIS_TLS=true and a custom CA is required)
+    REDIS_CA_CERT: ""
+    # -- RabbitMQ password (when RABBITMQ_ENABLED=true)
+    RABBITMQ_DEFAULT_PASS: ""
+    # -- Multi-tenant Redis password (when MULTI_TENANT_ENABLED=true and the manager Redis requires auth)
+    MULTI_TENANT_REDIS_PASSWORD: ""
+    # -- Multi-tenant service API key (M2M auth against the tenant-manager)
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    # -- TLS certificate file path (when running TLS at the app layer instead of TLS_TERMINATED_UPSTREAM=true)
+    SERVER_TLS_CERT_FILE: ""
+    # -- TLS key file path
+    SERVER_TLS_KEY_FILE: ""
 
   # -- Existing secrets name
   useExistingSecret: false

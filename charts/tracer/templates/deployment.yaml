@@ -72,7 +72,7 @@ spec:
             failureThreshold: {{ .Values.tracer.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.tracer.readinessProbe.path | default "/readyz" }}
+              path: {{ .Values.tracer.readinessProbe.path | default "/ready" }}
               port: http
             initialDelaySeconds: {{ .Values.tracer.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.tracer.readinessProbe.periodSeconds | default 10 }}

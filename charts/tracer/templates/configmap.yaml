@@ -54,6 +54,29 @@ data:
   CLEANUP_INTERVAL_HOURS: {{ .Values.tracer.configmap.CLEANUP_INTERVAL_HOURS | default "24" | quote }}
   CLEANUP_RETENTION_DAYS: {{ .Values.tracer.configmap.CLEANUP_RETENTION_DAYS | default "90" | quote }}
 
+  # Multi-Tenant
+  MULTI_TENANT_ENABLED: {{ .Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- if eq (.Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  MULTI_TENANT_URL: {{ required "tracer.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.tracer.configmap.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.tracer.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ required "tracer.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.tracer.configmap.MULTI_TENANT_REDIS_HOST | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ .Values.tracer.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ .Values.tracer.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.tracer.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
+  MULTI_TENANT_TIMEOUT: {{ .Values.tracer.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.tracer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
+  {{- if .Values.tracer.configmap.MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT }}
+  MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: {{ .Values.tracer.configmap.MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT | quote }}
+  {{- end }}
+  {{- if .Values.tracer.configmap.MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT }}
+  MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT: {{ .Values.tracer.configmap.MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT | quote }}
+  {{- end }}
+  {{- end }}
+
   # Extra Env Vars
   {{- with .Values.tracer.extraEnvVars }}
   {{- range . }}

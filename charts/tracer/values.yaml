@@ -215,6 +215,43 @@ tracer:
     CLEANUP_INTERVAL_HOURS: "24"
     CLEANUP_RETENTION_DAYS: "90"
 
+    # Multi-Tenant
+    # -- Enable multi-tenant mode. When true, the following fields are required:
+    #    MULTI_TENANT_URL, MULTI_TENANT_REDIS_HOST, secrets.MULTI_TENANT_SERVICE_API_KEY.
+    #    Also requires PLUGIN_AUTH_ENABLED=true and API_KEY_ENABLED_ONLY_VALIDATION=false
+    #    (enforced by the app at boot for security).
+    MULTI_TENANT_ENABLED: "false"
+    # -- Tenant Manager URL (required when MULTI_TENANT_ENABLED=true).
+    #    Use http://tenant-manager.<ns>.svc.cluster.local:4026 for in-cluster traffic.
+    MULTI_TENANT_URL: ""
+    # -- Allow http:// MULTI_TENANT_URL. lib-commons rejects cleartext HTTP unless
+    #    this is true. Never set true in production.
+    MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
+    # -- Redis host for tenant connection-pool registry (required when MT enabled).
+    MULTI_TENANT_REDIS_HOST: ""
+    # -- Redis port for tenant registry.
+    MULTI_TENANT_REDIS_PORT: "6379"
+    # -- Use TLS for tenant Redis connection.
+    MULTI_TENANT_REDIS_TLS: "false"
+    # -- Maximum number of tenant connection pools held in memory.
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # -- Idle timeout (seconds) before evicting unused tenant pool.
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    # -- Tenant manager request timeout (seconds).
+    MULTI_TENANT_TIMEOUT: "30"
+    # -- Circuit breaker failure threshold for tenant manager calls.
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    # -- Circuit breaker open timeout (seconds) before half-open retry.
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # -- Cache TTL (seconds) for tenant manager responses.
+    MULTI_TENANT_CACHE_TTL_SEC: "120"
+    # -- Per-tenant connection liveness check interval (seconds).
+    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+    # -- Optional cap on per-tenant DB connections (only set in MT integration tests
+    #    or environments with very low DB max_connections; leave unset in production).
+    # MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: ""
+    # MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT: ""
+
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
@@ -222,6 +259,11 @@ tracer:
     DB_PASSWORD: "lerian"
     # -- API Key secret (if API_KEY_ENABLED is true)
     API_KEY_SECRET: ""
+    # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
+    #    Helm render fails fast if MT is enabled and this is empty.
+    # MULTI_TENANT_SERVICE_API_KEY: ""
+    # -- Optional Redis password for the tenant connection-pool registry.
+    # MULTI_TENANT_REDIS_PASSWORD: ""
 
   # -- Existing secrets name
   useExistingSecret: false

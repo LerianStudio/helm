@@ -179,7 +179,7 @@ tracer:
 
     # Auth Plugin (Access Manager)
     PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
 
     # PostgreSQL Database
     DB_HOST: "tracer-postgresql.tracer.svc.cluster.local."

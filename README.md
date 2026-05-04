@@ -169,7 +169,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Tracer Version |
 | :---: | :---: |
-| `2.0.0-beta.2` | 1.0.0 |
+| `2.0.0-beta.3` | 1.0.0 |
 -----------------
 
 ### Otel Collector Lerian

@@ -22,7 +22,7 @@ data:
 
   # Auth Plugin (Access Manager)
   PLUGIN_AUTH_ENABLED: {{ .Values.tracer.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_HOST: {{ .Values.tracer.configmap.PLUGIN_AUTH_HOST | default "http://plugin-auth:4000" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.tracer.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-auth:4000" | quote }}
 
   # PostgreSQL Database
   DB_HOST: {{ .Values.tracer.configmap.DB_HOST | default "tracer-postgresql" | quote }}

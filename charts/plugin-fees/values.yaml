@@ -219,7 +219,7 @@ fees:
   existingSecretName: ""
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
-    create: true
+    create: false
     # -- Annotations for the ServiceAccount
     annotations: {}
     # -- Name of the service account

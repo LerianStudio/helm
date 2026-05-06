@@ -217,6 +217,14 @@ fees:
   # @default -- templates/secrets.yaml
   useExistingSecret: false
   existingSecretName: ""
+  serviceAccount:
+    # -- Specifies whether a ServiceAccount should be created
+    create: true
+    # -- Annotations for the ServiceAccount
+    annotations: {}
+    # -- Name of the service account
+    # @default -- `plugin-fees-frontend.fullname`
+    name: ""  
   # -- Default sensitive variables for the plugin-fees
   secrets:
     MONGO_PASSWORD: "lerian"

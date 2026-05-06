@@ -116,7 +116,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `0.1.0` | 1.0.0-beta.9 |
+| `1.0.0-beta.1` | 1.0.0-beta.9 |
 -----------------
 
 ### Fetcher

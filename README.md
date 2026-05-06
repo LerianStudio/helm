@@ -41,7 +41,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `5.4.0-beta.1` | 3.1.0 | `3.0.0` |
+| `5.4.0-beta.2` | 3.1.0 | `3.0.0` |
 -----------------
 
 ### Reporter

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-payments.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-payments.labels" (dict "context" .) | nindent 4 }}
+data:
+  # Application environment values
+  {{- range $key, $value := .Values.app.configmap }}
+  {{- if ne $key "POSTGRES_HOST" }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+
+  # PostgreSQL host: explicit value or dynamic default based on release name when in-cluster Postgres is enabled.
+  # The Bitnami subchart exposes the primary at "{release}-postgresql-primary" in replication
+  # architecture and at "{release}-postgresql" in standalone architecture.
+  {{- if .Values.app.configmap.POSTGRES_HOST }}
+  POSTGRES_HOST: {{ .Values.app.configmap.POSTGRES_HOST | quote }}
+  {{- else if eq (include "postgresql.enabled" .) "true" }}
+  {{- $pgArch := default "replication" .Values.postgresql.architecture }}
+  {{- if eq $pgArch "replication" }}
+  POSTGRES_HOST: {{ printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name (include "global.namespace" .) | quote }}
+  {{- else }}
+  POSTGRES_HOST: {{ printf "%s-postgresql.%s.svc.cluster.local" .Release.Name (include "global.namespace" .) | quote }}
+  {{- end }}
+  {{- else }}
+  POSTGRES_HOST: ""
+  {{- end }}
+
+  # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from the resolved image tag
+  VERSION: {{ include "plugin-br-payments.defaultTag" . | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ include "plugin-br-payments.defaultTag" . | quote }}
+
+  # Extra environment variables (passthrough from values.app.extraEnvVars)
+  {{- with .Values.app.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

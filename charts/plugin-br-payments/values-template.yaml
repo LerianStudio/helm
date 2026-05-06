@@ -1,0 +1,90 @@
+# Production values overlay starter for plugin-br-payments-helm.
+# Copy this file, fill in the placeholders, and pass it to helm install/upgrade.
+#
+#   helm upgrade --install plugin-br-payments lerian/plugin-br-payments-helm \
+#     -n midaz-plugins --create-namespace \
+#     -f values-prod.yaml
+
+app:
+  replicaCount: 2
+  image:
+    tag: "1.0.0"   # pin to a published immutable tag
+  ingress:
+    enabled: false
+    className: nginx
+    annotations: {}
+    hosts:
+      - host: payments.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: payments-tls
+        hosts:
+          - payments.example.com
+  configmap:
+    ENV_NAME: "production"
+    DEPLOYMENT_MODE: "saas"
+    LOG_LEVEL: "info"
+    SERVICE_TYPE: "both"
+    OUTBOX_ENABLED: "true"
+    # External PostgreSQL — leave empty here only if postgresql.enabled=true.
+    POSTGRES_HOST: ""
+    POSTGRES_SSLMODE: "require"
+    # Provider integration (REQUIRED)
+    PROVIDER_API_BASE_URL: ""
+    PROVIDER_AUTH_URL: ""
+    # Midaz Ledger (REQUIRED)
+    MIDAZ_ONBOARDING_URL: ""
+    MIDAZ_TRANSACTION_URL: ""
+    # Auth
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_ADDRESS: ""
+    # Multi-tenancy (set to "true" to enable)
+    MULTI_TENANCY_ENABLED: "false"
+    # MULTI_TENANT_MANAGER_URL: ""
+    # OpenTelemetry (use otel-collector-lerian.enabled below for host injection)
+    ENABLE_TELEMETRY: "true"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+  secrets:
+    # Database
+    POSTGRES_PASSWORD: ""        # REQUIRED
+    # Provider OAuth2 (REQUIRED)
+    PROVIDER_CLIENT_ID: ""
+    PROVIDER_CLIENT_SECRET: ""
+    PROVIDER_WEBHOOK_SECRET: ""
+    # Internal cross-pod API (REQUIRED for SERVICE_TYPE=both/worker)
+    # Generate with: openssl rand -hex 32   (>=32 chars)
+    INTERNAL_API_KEY: ""
+    # Credential encryption (REQUIRED for SERVICE_TYPE=both/worker)
+    # Generate with: openssl rand -base64 32   (AES-256 key)
+    CREDENTIAL_ENCRYPTION_KEY: ""
+    # License (REQUIRED in production)
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
+    # Multi-tenancy (REQUIRED when MULTI_TENANCY_ENABLED=true)
+    # MULTI_TENANT_SERVICE_API_KEY: ""
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+
+# Use a managed Postgres in production.
+postgresql:
+  enabled: false
+
+# When using a fresh external Postgres, optionally run the bootstrap Job once:
+# global:
+#   externalPostgresDefinitions:
+#     enabled: true
+#     connection:
+#       host: my-rds.example.com
+#       port: "5432"
+#     postgresAdminLogin:
+#       username: postgres
+#       password: <admin password>
+#     paymentsCredentials:
+#       password: <plugin_br_payments password>
+
+# otel-collector-lerian:
+#   enabled: true

@@ -1,0 +1,399 @@
+# Default values for plugin-br-payments.
+# This is a YAML-formatted file.
+#
+# Runtime model: ONE Deployment, ONE pod, ONE process (the /app binary with
+# SERVICE_TYPE=both, the default). HTTP server, reconciliation worker, outbox
+# dispatcher, and webhook delivery all run as goroutines inside the same
+# process. There is NO separate worker Deployment.
+
+# -- Override the chart top-level name
+nameOverride: "plugin-br-payments"
+# -- Override the fully generated name
+fullnameOverride: ""
+# -- Override the namespace used by templates
+namespaceOverride: ""
+
+global:
+  # -- Bootstrap job for external PostgreSQL: creates database and role
+  externalPostgresDefinitions:
+    # -- Enable or disable the PostgreSQL bootstrap job
+    enabled: false
+    # -- PostgreSQL connection settings (used by the bootstrap job only)
+    connection:
+      # -- PostgreSQL host
+      host: "plugin-br-payments-postgresql-primary"
+      # -- PostgreSQL port
+      port: "5432"
+    # -- Admin (superuser) credentials used to create the application DB and role
+    postgresAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_USER_ADMIN and DB_ADMIN_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "postgres"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: "lerian"
+    # -- Credentials for the plugin_br_payments role created by the job
+    paymentsCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_PASSWORD_PLUGIN_BR_PAYMENTS key
+        name: ""
+      # -- Password for plugin_br_payments role (ignored if useExistingSecret.name is set)
+      password: "lerian"
+
+# ==============================================================================
+# APPLICATION
+# Single Deployment running the /app binary with SERVICE_TYPE=both.
+# Combines HTTP API + reconciliation worker + outbox dispatcher + webhook
+# delivery in one process.
+# ==============================================================================
+app:
+  # -- Service name
+  name: "plugin-br-payments"
+  # -- Number of replicas
+  replicaCount: 2
+  # -- Number of old ReplicaSets to retain for rollback
+  revisionHistoryLimit: 10
+  # -- Annotations applied to the Deployment resource
+  annotations: {}
+  # -- Annotations applied to the pods
+  podAnnotations: {}
+  image:
+    # -- Repository for the plugin-br-payments image
+    repository: ghcr.io/lerianstudio/plugin-br-payments
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag (defaults to Chart.appVersion if empty)
+    tag: ""
+  # -- Image pull secrets for private registries
+  imagePullSecrets: []
+  # -- Override of the resource name
+  nameOverride: ""
+  # -- Override of the fully qualified resource name
+  fullnameOverride: ""
+  # -- Termination grace period.
+  # The /readyz contract requires this to be 60 (drain grace + App.Shutdown budget).
+  # See applications/plugins/plugin-br-payments/docs/readyz-guide.md
+  terminationGracePeriodSeconds: 60
+  # -- Pod security context
+  podSecurityContext: {}
+  # -- Container security context (Distroless nonroot UID/GID is 65532)
+  securityContext:
+    runAsGroup: 65532
+    runAsUser: 65532
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  # -- PodDisruptionBudget configuration
+  pdb:
+    enabled: true
+    minAvailable: 1
+    maxUnavailable: ""
+    annotations: {}
+  # -- Deployment strategy
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  # -- Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+  # -- Ingress configuration
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  # -- Resource requests and limits.
+  # Reconciliation runs in-process so the limit accounts for both API + worker work.
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 768Mi
+    requests:
+      cpu: 250m
+      memory: 384Mi
+  # -- HorizontalPodAutoscaler configuration
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+    scaleDownStabilizationSeconds: 300
+  # -- Readiness probe configuration. Canonical values from
+  # applications/plugins/plugin-br-payments/docs/readyz-guide.md
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 2
+  # -- Liveness probe configuration. Canonical values from the same guide.
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 3
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: []
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+  # -- Host aliases for custom DNS resolution inside the pod
+  hostAliases: []
+  # -- ConfigMap (non-sensitive environment variables)
+  # @default -- templates/configmap.yaml
+  configmap:
+    # Application Settings
+    ENV_NAME: "production"
+    LOG_LEVEL: "info"
+    DEPLOYMENT_MODE: "saas"
+    # The plugin's ServerAddress() resolves an empty host to localhost, which
+    # would make pods unreachable from kubelet probes. Set the host explicitly
+    # to bind to all interfaces inside the pod.
+    SERVER_ADDRESS: "0.0.0.0:8080"
+    HTTP_BODY_LIMIT_BYTES: "104857600"
+    TLS_TERMINATED_UPSTREAM: "true"
+    # Service mode — run API + worker in the same process (default).
+    # Other valid values: "api" or "worker" for split deployments (not used here).
+    SERVICE_TYPE: "both"
+    # Cross-pod worker URL — only required for split deployments (SERVICE_TYPE=api).
+    # In SERVICE_TYPE=both mode the worker runs in-process so this is unused.
+    INTERNAL_WORKER_URL: ""
+    # CORS Configuration
+    ACCESS_CONTROL_ALLOW_ORIGIN: "*"
+    ACCESS_CONTROL_ALLOW_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    ACCESS_CONTROL_ALLOW_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
+    ACCESS_CONTROL_EXPOSE_HEADERS: ""
+    ACCESS_CONTROL_ALLOW_CREDENTIALS: "false"
+    # Multi-Tenancy (database-per-tenant via tenant-manager)
+    # When enabled, MULTI_TENANT_MANAGER_URL and MULTI_TENANT_SERVICE_API_KEY become required.
+    MULTI_TENANCY_ENABLED: "false"
+    MULTI_TENANT_MANAGER_URL: ""
+    MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
+    MULTI_TENANT_POSTGRES_MODULE: ""
+    MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
+    MULTI_TENANT_CLIENT_TIMEOUT_SEC: "10"
+    MULTI_TENANT_CACHE_TTL_MINUTES: "60"
+    MULTI_TENANT_CB_THRESHOLD: "5"
+    MULTI_TENANT_CB_TIMEOUT_SEC: "30"
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # PostgreSQL Primary (host defaults to {Release.Name}-postgresql-primary)
+    POSTGRES_HOST: ""  # Empty -> dynamic default in configmap template
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "plugin_br_payments"
+    POSTGRES_DB: "plugin_br_payments"
+    POSTGRES_SSLMODE: "require"
+    POSTGRES_MAX_IDLE_CONNS: "15"
+    POSTGRES_MAX_OPEN_CONNS: "25"
+    POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
+    POSTGRES_CONN_MAX_IDLE_TIME_MINS: "5"
+    POSTGRES_CONNECT_TIMEOUT_SEC: "10"
+    # PostgreSQL Replica (optional - for CQRS read scaling)
+    # POSTGRES_REPLICA_HOST: ""
+    # POSTGRES_REPLICA_PORT: "5432"
+    # POSTGRES_REPLICA_USER: ""
+    # POSTGRES_REPLICA_DB: ""
+    # POSTGRES_REPLICA_SSLMODE: "require"
+    # Migrations (applied at startup by the /app binary)
+    INFRA_CONNECT_TIMEOUT_SEC: "30"
+    MIGRATION_TIMEOUT_SEC: "300"
+    MIGRATION_LOCK_TIMEOUT_MS: "10000"
+    # Outbox Pattern (REQUIRED - HTTP routes only register when OUTBOX_ENABLED=true)
+    OUTBOX_ENABLED: "true"
+    OUTBOX_TABLE_NAME: "outbox_events"
+    OUTBOX_DISPATCH_INTERVAL_SEC: "2"
+    OUTBOX_BATCH_SIZE: "50"
+    OUTBOX_PUBLISH_MAX_ATTEMPTS: "3"
+    OUTBOX_PUBLISH_BACKOFF_MS: "200"
+    OUTBOX_RETRY_WINDOW_SEC: "300"
+    OUTBOX_MAX_DISPATCH_ATTEMPTS: "10"
+    OUTBOX_PROCESSING_TIMEOUT_SEC: "600"
+    OUTBOX_MAX_FAILED_PER_BATCH: "25"
+    OUTBOX_INCLUDE_TENANT_METRICS: "false"
+    OUTBOX_ALLOW_EMPTY_TENANT: "true"
+    # Circuit Breaker
+    CIRCUIT_BREAKER_ENABLED: "true"
+    # Authentication (lib-auth + plugin-auth)
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    # Provider Integration (REQUIRED - validated by helper)
+    PROVIDER_API_BASE_URL: ""
+    PROVIDER_AUTH_URL: ""
+    PROVIDER_TOKEN_REFRESH_INTERVAL: "1h"
+    # Midaz Ledger URLs (REQUIRED for production - validated by helper)
+    MIDAZ_ONBOARDING_URL: ""
+    MIDAZ_TRANSACTION_URL: ""
+    # Reconciliation worker (in-process)
+    RECONCILIATION_INTERVAL: "5m"
+    RECONCILIATION_LOOKBACK_HOURS: "24"
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    RATE_LIMIT_WRITE: "100"
+    RATE_LIMIT_READ: "500"
+    # Observability & Metrics
+    DB_METRICS_INTERVAL_SEC: "15"
+    # Idempotency
+    IDEMPOTENCY_RECORD_TTL_HOURS: "48"
+    # API Documentation
+    SWAGGER_ENABLED: "false"
+    # OpenTelemetry
+    ENABLE_TELEMETRY: "true"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-payments"
+    OTEL_RESOURCE_SERVICE_NAME: "plugin-br-payments"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # Resilience example (repo-local simulation only)
+    EXAMPLE_STATUS_PROVIDER_MODE: "healthy"
+  # -- Secrets (sensitive environment variables)
+  # @default -- templates/secrets.yml
+  secrets:
+    # PostgreSQL credentials
+    POSTGRES_PASSWORD: "lerian"
+    # POSTGRES_REPLICA_PASSWORD: ""
+    # Provider OAuth2 (REQUIRED)
+    PROVIDER_CLIENT_ID: ""
+    PROVIDER_CLIENT_SECRET: ""
+    PROVIDER_WEBHOOK_SECRET: ""
+    # Internal cross-pod API (REQUIRED when SERVICE_TYPE includes worker, i.e. "both" or "worker").
+    # Must be at least 32 characters. Generate with: openssl rand -hex 32
+    INTERNAL_API_KEY: ""
+    # INTERNAL_API_KEY_PREVIOUS: ""  # optional, for key rotation
+    # Credential encryption (REQUIRED when SERVICE_TYPE includes worker).
+    # Base64-encoded AES-256 key (32 random bytes). Generate with:
+    #   openssl rand -base64 32
+    CREDENTIAL_ENCRYPTION_KEY: ""
+    # CREDENTIAL_ENCRYPTION_KEY_PREVIOUS: ""  # optional, for key rotation
+    # License (required in production)
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
+    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANCY_ENABLED=true)
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    # Midaz M2M (optional)
+    # MIDAZ_CLIENT_ID: ""
+    # MIDAZ_CLIENT_SECRET: ""
+    # plugin-auth M2M (optional)
+    # PLUGIN_AUTH_CLIENT_ID: ""
+    # PLUGIN_AUTH_CLIENT_SECRET: ""
+  # -- Use an externally managed Secret instead of generating one
+  useExistingSecret: false
+  # -- Name of the externally managed Secret
+  existingSecretName: ""
+  # -- Extra environment variables (map of key:value pairs)
+  extraEnvVars: {}
+  # -- ServiceAccount configuration
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+# ==============================================================================
+# POSTGRESQL SUB-CHART (Bitnami)
+# Default: enabled with replication for in-cluster development/staging.
+# Production: set postgresql.enabled=false and configure
+#   global.externalPostgresDefinitions for an externally managed Postgres.
+# ==============================================================================
+postgresql:
+  enabled: true
+  external: false
+  global:
+    security:
+      # Bitnami moved free images to bitnamisecure / bitnamilegacy in 2025;
+      # the upstream Bitnami chart treats those repos as "non-standard" and
+      # blocks them unless this flag is set. Required for fresh installs.
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/postgresql
+    tag: "latest"
+  architecture: replication
+  replication:
+    numSynchronousReplicas: 1
+  auth:
+    enabled: true
+    enablePostgresUser: true
+    postgresPassword: "lerian"
+    username: "plugin_br_payments"
+    password: "lerian"
+    database: "plugin_br_payments"
+    replicationUsername: "replicator"
+    replicationPassword: "replicator_password"
+  primary:
+    persistence:
+      size: 8Gi
+    resourcesPreset: "medium"
+    extendedConfiguration: |
+      shared_buffers = 512MB
+      max_wal_senders = 20
+      wal_keep_size = 512MB
+      max_replication_slots = 20
+    extraEnvVars:
+      - name: POSTGRESQL_WAL_LEVEL
+        value: "logical"
+      - name: POSTGRESQL_HOST_STANDBY
+        value: "on"
+      - name: POSTGRESQL_MAX_CONNECTIONS
+        value: "200"
+      - name: POSTGRESQL_TCP_KEEPALIVES_IDLE
+        value: "30"
+      - name: POSTGRESQL_TCP_KEEPALIVES_INTERVAL
+        value: "10"
+      - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
+        value: "5"
+  readReplicas:
+    name: replication
+    replicaCount: 1
+    persistence:
+      size: 8Gi
+    resourcesPreset: "medium"
+    extendedConfiguration: |
+      shared_buffers = 512MB
+      max_wal_senders = 20
+      max_replication_slots = 20
+      wal_keep_size = 512MB
+    extraEnvVars:
+      - name: POSTGRESQL_WAL_LEVEL
+        value: "logical"
+      - name: POSTGRESQL_HOST_STANDBY
+        value: "on"
+      - name: POSTGRESQL_MAX_CONNECTIONS
+        value: "200"
+      - name: POSTGRESQL_TCP_KEEPALIVES_IDLE
+        value: "40"
+      - name: POSTGRESQL_TCP_KEEPALIVES_INTERVAL
+        value: "10"
+      - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
+        value: "5"
+
+# ==============================================================================
+# OPTIONAL OTEL COLLECTOR INTEGRATION
+# Setting otel-collector-lerian.enabled=true causes the deployment to inject
+# HOST_IP/OTEL_EXPORTER_OTLP_ENDPOINT pointing at the host node's collector.
+# Mirrors the convention used by reporter, plugin-fees, and pix-indirect-btg.
+# ==============================================================================
+otel-collector-lerian:
+  enabled: false
+
+# Tag at end of file for image-update tooling.
+plugin-br-payments:
+  image:
+    tag: 1.0.0-beta.9

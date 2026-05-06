@@ -108,6 +108,17 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.3.0-beta.3` | 1.5.1 | 1.5.1 | 1.5.1 | 1.5.1 |
 -----------------
 
+### Plugin BR Payments
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-payments).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `0.1.0` | 1.0.0-beta.9 |
+-----------------
+
 ### Fetcher
 
 See the [official documentation](https://docs.lerian.studio/en/fetcher) for details.

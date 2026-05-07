@@ -197,7 +197,6 @@ tracer:
     SWAGGER_SCHEMES: "http"
 
     # CEL Expression Engine
-    CEL_CACHE_MAX_SIZE: "1000"
     CEL_COST_LIMIT: "10000"
 
     # OpenTelemetry
@@ -213,7 +212,6 @@ tracer:
     # Cleanup Worker
     CLEANUP_WORKER_ENABLED: "false"
     CLEANUP_INTERVAL_HOURS: "24"
-    CLEANUP_RETENTION_DAYS: "90"
 
     # Multi-Tenant
     # -- Enable multi-tenant mode. When true, the following fields are required:
@@ -231,8 +229,9 @@ tracer:
     MULTI_TENANT_REDIS_HOST: ""
     # -- Redis port for tenant registry.
     MULTI_TENANT_REDIS_PORT: "6379"
-    # -- Use TLS for tenant Redis connection.
-    MULTI_TENANT_REDIS_TLS: "false"
+    # -- Use TLS for tenant Redis connection. Default true (matches app's
+    #    secure-by-default; app forces true when env var is unset).
+    MULTI_TENANT_REDIS_TLS: "true"
     # -- Maximum number of tenant connection pools held in memory.
     MULTI_TENANT_MAX_TENANT_POOLS: "100"
     # -- Idle timeout (seconds) before evicting unused tenant pool.
@@ -257,8 +256,10 @@ tracer:
   secrets:
     # -- PostgreSQL password
     DB_PASSWORD: "lerian"
-    # -- API Key secret (if API_KEY_ENABLED is true)
-    API_KEY_SECRET: ""
+    # -- API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true).
+    #    The chart previously named this API_KEY_SECRET, which the app never
+    #    reads — silently disabling API-key auth even with API_KEY_ENABLED=true.
+    API_KEY: ""
     # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
     #    Helm render fails fast if MT is enabled and this is empty.
     # MULTI_TENANT_SERVICE_API_KEY: ""

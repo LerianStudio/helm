@@ -262,6 +262,12 @@ data:
   BTF_RECONCILIATION_MAX_ATTEMPTS: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_MAX_ATTEMPTS | default "5" | quote }}
   BTF_RECONCILIATION_STALE_AFTER_SEC: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_STALE_AFTER_SEC | default "60" | quote }}
 
+  BTF_FEE_ENABLED: {{ .Values.bankTransfer.configmap.BTF_FEE_ENABLED | default "false" | quote }}
+  BTF_MIDAZ_CB_ENABLED: {{ .Values.bankTransfer.configmap.BTF_MIDAZ_CB_ENABLED | default "false" | quote }}
+  DEFAULT_ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.DEFAULT_ORGANIZATION_ID | default "" | quote }}
+  ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
+
+  
   # Extra Env Vars (must be a map of key: value pairs)
   {{- range $key, $value := .Values.bankTransfer.extraEnvVars }}
   {{ $key }}: {{ $value | quote }}

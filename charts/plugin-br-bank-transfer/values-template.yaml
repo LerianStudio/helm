@@ -7,13 +7,6 @@ bankTransfer:
   enabled: true
   replicaCount: 2
 
-  image:
-    repository: lerianstudio/plugin-br-bank-transfer
-    pullPolicy: IfNotPresent
-    tag: "1.0.0"  # REQUIRED - Set the image version
-
-  imagePullSecrets: []
-
   ingress:
     enabled: false
     className: ""

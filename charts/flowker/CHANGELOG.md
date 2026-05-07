@@ -1,4 +1,41 @@
-# Changelog
+## [2.1.0-beta.5] — Unreleased
+
+### Changed
+
+- **Move `MONGO_URI` from ConfigMap to Secret.** The connection URI
+  embeds the application password and must not be persisted in plaintext
+  in a ConfigMap.
+- **`MONGO_URI` is now REQUIRED** — set `flowker.secrets.MONGO_URI` to a
+  full `mongodb://` URI. Auto-construction was removed because the
+  application reads `MONGO_URI` directly and the individual fields used
+  for construction were not consumed by the app.
+
+### Removed
+
+- ConfigMap no longer emits the following Mongo env vars (the application
+  source does not read them):
+  - `MONGO_HOST`, `MONGO_PORT`, `MONGO_APP_USER`
+  - `MONGO_MIN_POOL_SIZE`, `MONGO_MAX_IDLE_TIME_MS`
+  - `MONGO_CONNECT_TIMEOUT_MS`, `MONGO_SOCKET_TIMEOUT_MS`
+- Secret no longer emits `MONGO_APP_PASSWORD` standalone — the password
+  is provided as part of `MONGO_URI`.
+
+### Kept in ConfigMap
+
+- `MONGO_DB_NAME` (read via `env:"MONGO_DB_NAME"`)
+- `MONGO_MAX_POOL_SIZE` (read via `getEnvAsIntOrDefault`)
+
+### Kept in Secret
+
+- `MONGO_URI` (REQUIRED, read via `env:"MONGO_URI"`)
+- `MONGO_TLS_CA_CERT` (read via `env:"MONGO_TLS_CA_CERT"`)
+
+### Migration notes
+
+Installs that previously set `flowker.configmap.MONGO_URI` or
+`flowker.secrets.MONGO_APP_PASSWORD` MUST move to
+`flowker.secrets.MONGO_URI` with the full URI. The chart will fail to
+render if `MONGO_URI` is not set.
 
 ## [2.2.0-beta.1] — Unreleased
 

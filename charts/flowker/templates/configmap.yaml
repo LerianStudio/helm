@@ -35,16 +35,12 @@ data:
   SSRF_ALLOW_PRIVATE: {{ .Values.flowker.configmap.SSRF_ALLOW_PRIVATE | default "false" | quote }}
 
   # MongoDB
-  MONGO_URI: {{ .Values.flowker.configmap.MONGO_URI | default "mongodb" | quote }}
-  MONGO_HOST: {{ .Values.flowker.configmap.MONGO_HOST | default "flowker-mongodb" | quote }}
-  MONGO_PORT: {{ .Values.flowker.configmap.MONGO_PORT | default "27017" | quote }}
+  # MONGO_URI lives in the Secret (templates/secrets.yaml) because it
+  # contains the application password.
+  # MONGO_DB_NAME is non-sensitive and used by the app to scope database operations.
   MONGO_DB_NAME: {{ .Values.flowker.configmap.MONGO_DB_NAME | default "flowker" | quote }}
-  MONGO_APP_USER: {{ .Values.flowker.configmap.MONGO_APP_USER | default "flowker" | quote }}
-  MONGO_MAX_POOL_SIZE: {{ .Values.flowker.configmap.MONGO_MAX_POOL_SIZE | default "10" | quote }}
-  MONGO_MIN_POOL_SIZE: {{ .Values.flowker.configmap.MONGO_MIN_POOL_SIZE | default "5" | quote }}
-  MONGO_MAX_IDLE_TIME_MS: {{ .Values.flowker.configmap.MONGO_MAX_IDLE_TIME_MS | default "60000" | quote }}
-  MONGO_CONNECT_TIMEOUT_MS: {{ .Values.flowker.configmap.MONGO_CONNECT_TIMEOUT_MS | default "10000" | quote }}
-  MONGO_SOCKET_TIMEOUT_MS: {{ .Values.flowker.configmap.MONGO_SOCKET_TIMEOUT_MS | default "30000" | quote }}
+  # MongoDB driver pool size (read directly via getEnvAsIntOrDefault, not via struct tag).
+  MONGO_MAX_POOL_SIZE: {{ .Values.flowker.configmap.MONGO_MAX_POOL_SIZE | default "20" | quote }}
 
   # Swagger
   SWAGGER_TITLE: {{ .Values.flowker.configmap.SWAGGER_TITLE | default "Flowker API" | quote }}

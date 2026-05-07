@@ -13,14 +13,26 @@ data:
   SERVER_PORT: {{ .Values.flowker.configmap.SERVER_PORT | default "4000" | quote }}
   SERVER_ADDRESS: {{ .Values.flowker.configmap.SERVER_ADDRESS | default ":4000" | quote }}
 
+  # Deployment mode (saas/byoc/local — controls TLS enforcement at startup)
+  DEPLOYMENT_MODE: {{ .Values.flowker.configmap.DEPLOYMENT_MODE | default "local" | quote }}
+
   # Logging
   LOG_LEVEL: {{ .Values.flowker.configmap.LOG_LEVEL | default "info" | quote }}
 
-  # Authentication
+  # Authentication (API key fallback when Access Manager is disabled)
   API_KEY_ENABLED: {{ .Values.flowker.configmap.API_KEY_ENABLED | default "false" | quote }}
+
+  # Access Manager (plugin auth)
+  PLUGIN_AUTH_ENABLED: {{ .Values.flowker.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.flowker.configmap.PLUGIN_AUTH_ADDRESS | default "" | quote }}
 
   # CORS
   CORS_ALLOWED_ORIGINS: {{ .Values.flowker.configmap.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+
+  # Feature flags
+  SKIP_LIB_COMMONS_TELEMETRY: {{ .Values.flowker.configmap.SKIP_LIB_COMMONS_TELEMETRY | default "false" | quote }}
+  FAULT_INJECTION_ENABLED: {{ .Values.flowker.configmap.FAULT_INJECTION_ENABLED | default "false" | quote }}
+  SSRF_ALLOW_PRIVATE: {{ .Values.flowker.configmap.SSRF_ALLOW_PRIVATE | default "false" | quote }}
 
   # MongoDB
   MONGO_URI: {{ .Values.flowker.configmap.MONGO_URI | default "mongodb" | quote }}
@@ -52,6 +64,31 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.flowker.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.flowker.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.flowker.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+
+  # Audit Database (PostgreSQL — required when MULTI_TENANT_ENABLED=false)
+  AUDIT_DB_HOST: {{ .Values.flowker.configmap.AUDIT_DB_HOST | default "" | quote }}
+  AUDIT_DB_PORT: {{ .Values.flowker.configmap.AUDIT_DB_PORT | default "5432" | quote }}
+  AUDIT_DB_USER: {{ .Values.flowker.configmap.AUDIT_DB_USER | default "flowker_audit" | quote }}
+  AUDIT_DB_NAME: {{ .Values.flowker.configmap.AUDIT_DB_NAME | default "flowker_audit" | quote }}
+  AUDIT_DB_SSL_MODE: {{ .Values.flowker.configmap.AUDIT_DB_SSL_MODE | default "disable" | quote }}
+  AUDIT_MIGRATIONS_PATH: {{ .Values.flowker.configmap.AUDIT_MIGRATIONS_PATH | default "/migrations" | quote }}
+
+  # Multi-tenant configuration
+  MULTI_TENANT_ENABLED: {{ .Values.flowker.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- if eq (.Values.flowker.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  MULTI_TENANT_URL: {{ required "flowker.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.flowker.configmap.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.flowker.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ .Values.flowker.configmap.MULTI_TENANT_REDIS_HOST | default "" | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ .Values.flowker.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ .Values.flowker.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.flowker.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.flowker.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.flowker.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
+  MULTI_TENANT_TIMEOUT: {{ .Values.flowker.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}
+  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.flowker.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.flowker.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.flowker.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  {{- end }}
 
   # Extra Env Vars
   {{- with .Values.flowker.extraEnvVars }}

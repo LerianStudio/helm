@@ -177,14 +177,29 @@ flowker:
     SERVER_PORT: "4000"
     SERVER_ADDRESS: ":4000"
 
+    # Deployment mode (controls TLS enforcement)
+    # Values: saas (TLS mandatory), byoc (TLS recommended), local (TLS optional)
+    DEPLOYMENT_MODE: "local"
+
     # Logging
     LOG_LEVEL: "info"
 
-    # Authentication
+    # Authentication (API key fallback when Access Manager is disabled)
     API_KEY_ENABLED: "false"
+
+    # Access Manager (plugin auth)
+    PLUGIN_AUTH_ENABLED: "false"
+    # -- Access Manager service URL (required when PLUGIN_AUTH_ENABLED=true)
+    PLUGIN_AUTH_ADDRESS: ""
 
     # CORS
     CORS_ALLOWED_ORIGINS: "*"
+
+    # Feature flags
+    SKIP_LIB_COMMONS_TELEMETRY: "false"
+    FAULT_INJECTION_ENABLED: "false"
+    # -- NEVER enable in production. Allows SSRF to private IPs (localhost providers in dev).
+    SSRF_ALLOW_PRIVATE: "false"
 
     # MongoDB
     MONGO_URI: "mongodb://flowker:lerian@flowker-mongodb:27017/flowker?authSource=admin"
@@ -224,13 +239,57 @@ flowker:
     # -- OTEL exporter endpoint (empty when disabled; overridden by HOST_IP:4317 when ENABLE_TELEMETRY=true)
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
 
+    # Audit Database (PostgreSQL — required when MULTI_TENANT_ENABLED=false)
+    # In multi-tenant mode the static audit pool is never opened — per-tenant
+    # audit DBs are managed by the dispatch layer.
+    # -- Audit DB host (required when MULTI_TENANT_ENABLED=false)
+    AUDIT_DB_HOST: ""
+    AUDIT_DB_PORT: "5432"
+    AUDIT_DB_USER: "flowker_audit"
+    AUDIT_DB_NAME: "flowker_audit"
+    AUDIT_DB_SSL_MODE: "disable"
+    AUDIT_MIGRATIONS_PATH: "/migrations"
+
+    # Multi-tenant configuration
+    # When MULTI_TENANT_ENABLED=true, database connections are resolved per-tenant
+    # via Tenant Manager. Required fields when enabled:
+    #   - MULTI_TENANT_URL (configmap)
+    #   - MULTI_TENANT_SERVICE_API_KEY (secrets)
+    MULTI_TENANT_ENABLED: "false"
+    # -- Tenant Manager API URL (required when MULTI_TENANT_ENABLED=true)
+    MULTI_TENANT_URL: ""
+    # -- Allow http:// MULTI_TENANT_URL. NEVER enable in production.
+    MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
+    # -- Redis host for Pub/Sub event-driven tenant discovery (optional)
+    MULTI_TENANT_REDIS_HOST: ""
+    MULTI_TENANT_REDIS_PORT: "6379"
+    MULTI_TENANT_REDIS_TLS: "false"
+    # Connection pool settings
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+    # HTTP client and cache settings
+    MULTI_TENANT_TIMEOUT: "30"
+    MULTI_TENANT_CACHE_TTL_SEC: "120"
+    # Circuit breaker for Tenant Manager client
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
     # -- MongoDB application password
     MONGO_APP_PASSWORD: "lerian"
+    # -- Base64-encoded PEM CA certificate for MongoDB TLS (e.g., AWS DocumentDB). Empty disables TLS CA validation.
+    MONGO_TLS_CA_CERT: ""
     # -- API Key secret (if API_KEY_ENABLED is true)
     API_KEY: ""
+    # -- Audit DB password (required when MULTI_TENANT_ENABLED=false)
+    AUDIT_DB_PASSWORD: "lerian"
+    # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true)
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    # -- Redis password for tenant Pub/Sub (optional)
+    MULTI_TENANT_REDIS_PASSWORD: ""
 
   # -- Use an existing secret instead of creating one
   useExistingSecret: false

@@ -111,8 +111,11 @@ tracer:
   service:
     # -- Kubernetes service type
     type: ClusterIP
-    # -- Port for the HTTP API
-    port: 8080
+    # -- Port for the HTTP API. Matches the tracer source convention
+    # (Dockerfile EXPOSE 4020 + .env.example + Dockerfile.dev SERVER_PORT=4020).
+    # Override in environment values.yaml when an existing deployment expects
+    # a different port (e.g. legacy 8080).
+    port: 4020
     annotations: {}
 
   ingress:
@@ -167,8 +170,13 @@ tracer:
   # @default -- templates/configmap.yaml
   configmap:
     # Application Settings
-    SERVER_PORT: "8080"
-    SERVER_ADDRESS: ":8080"
+    # SERVER_PORT/SERVER_ADDRESS default to 4020 to match the tracer source
+    # convention (Dockerfile EXPOSE 4020 + .env.example + Dockerfile.dev). The
+    # app reads SERVER_ADDRESS first; if empty, falls back to SERVER_PORT.
+    # Keep these in sync with service.port above (and containerPort) when
+    # overriding in environment values.yaml.
+    SERVER_PORT: "4020"
+    SERVER_ADDRESS: ":4020"
     LOG_LEVEL: "info"
 
     # Authentication
@@ -192,7 +200,7 @@ tracer:
     # Swagger Documentation
     SWAGGER_TITLE: "Tracer API"
     SWAGGER_DESCRIPTION: "Real-time transaction validation and fraud prevention API"
-    SWAGGER_HOST: ":8080"
+    SWAGGER_HOST: ":4020"
     SWAGGER_BASE_PATH: "/"
     SWAGGER_SCHEMES: "http"
 

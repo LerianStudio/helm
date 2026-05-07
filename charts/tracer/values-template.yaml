@@ -57,7 +57,7 @@ tracer:
     targetMemoryUtilizationPercentage: 80
 
   configmap:
-    SERVER_ADDRESS: ":8080"
+    SERVER_ADDRESS: ":4020"
     LOG_LEVEL: "info"
     DB_HOST: ""
     DB_PORT: "5432"

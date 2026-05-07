@@ -9,7 +9,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 2.2.0-beta.1
+version: 2.1.0-beta.4
 appVersion: "1.0.0"
 keywords:
   - flowker

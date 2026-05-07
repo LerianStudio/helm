@@ -8,8 +8,8 @@ metadata:
     {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
 data:
   # Application Configuration
-  SERVER_PORT: {{ .Values.tracer.configmap.SERVER_PORT | default "8080" | quote }}
-  SERVER_ADDRESS: {{ .Values.tracer.configmap.SERVER_ADDRESS | default ":8080" | quote }}
+  SERVER_PORT: {{ .Values.tracer.configmap.SERVER_PORT | default "4020" | quote }}
+  SERVER_ADDRESS: {{ .Values.tracer.configmap.SERVER_ADDRESS | default ":4020" | quote }}
 
   # Logging
   LOG_LEVEL: {{ .Values.tracer.configmap.LOG_LEVEL | default "info" | quote }}
@@ -35,7 +35,7 @@ data:
   # Swagger Documentation
   SWAGGER_TITLE: {{ .Values.tracer.configmap.SWAGGER_TITLE | default "Tracer API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.tracer.configmap.SWAGGER_DESCRIPTION | default "Real-time transaction validation and fraud prevention API" | quote }}
-  SWAGGER_HOST: {{ .Values.tracer.configmap.SWAGGER_HOST | default ":8080" | quote }}
+  SWAGGER_HOST: {{ .Values.tracer.configmap.SWAGGER_HOST | default ":4020" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.tracer.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.tracer.configmap.SWAGGER_SCHEMES | default "http" | quote }}
 

@@ -3,6 +3,22 @@
 ## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
 
 - Features:
+  - Introduced new data fetching algorithm to improve performance and reduce latency.
+  - Added support for custom headers in API requests.
+
+- Fixes:
+  - Resolved issue with incorrect data parsing in specific edge cases.
+  - Fixed bug causing occasional timeout errors during data retrieval.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
   - Released version 2.1.0.
 
 - Fixes:

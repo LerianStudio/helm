@@ -198,9 +198,9 @@ spi:
     ORGANIZATION_ID: ""
     ISPB: ""
     # Sibling services
-    ADAPTER_BASE_URL: ""
-    DICT_BASE_URL: ""
-    COB_BASE_URL: ""
+    ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
+    DICT_BASE_URL: "http://plugin-br-pix-switch-dict-hub:4104"
+    COB_BASE_URL: "http://plugin-br-pix-switch-cob-hub:4108"
     # Upstream integrations
     CRM_BASE_URL: ""
     CRM_CLIENT_ID: ""
@@ -401,9 +401,9 @@ adapterBtgMock:
     ADAPTER_ISPB: ""
     POLLER_INTERVAL_SEC: "30"
     PROVIDER_BASE_URL: ""
-    SPI_BASE_URL: ""
-    DICT_BASE_URL: ""
-    COB_BASE_URL: ""
+    SPI_BASE_URL: "http://plugin-br-pix-switch-spi:4101"
+    DICT_BASE_URL: "http://plugin-br-pix-switch-dict-hub:4104"
+    COB_BASE_URL: "http://plugin-br-pix-switch-cob-hub:4108"
 
   secrets:
     LICENSE_KEY: ""
@@ -500,7 +500,7 @@ dictHub:
     SYSTEMPLANE_POSTGRES_DSN: ""
     ORGANIZATION_ID: ""
     ISPB: ""
-    ADAPTER_BASE_URL: ""
+    ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
     CRM_BASE_URL: ""
     CRM_CLIENT_ID: ""
     CRM_ORGANIZATION_ID: ""
@@ -604,7 +604,7 @@ dictHubVsync:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
     ORGANIZATION_ID: ""
-    ADAPTER_BASE_URL: ""
+    ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
     CRM_BASE_URL: ""
     CRM_CLIENT_ID: ""
     CRM_ORGANIZATION_ID: ""

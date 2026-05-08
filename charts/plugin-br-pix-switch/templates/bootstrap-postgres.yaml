@@ -18,6 +18,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "plugin-br-pix-switch.name" $ }}-bootstrap-postgres-{{ $db }}
+  namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" "bootstrap-postgres") | nindent 4 }}
   annotations:

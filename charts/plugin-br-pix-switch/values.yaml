@@ -26,6 +26,10 @@
 nameOverride: ""
 fullnameOverride: ""
 
+# Override the namespace where resources are created. Defaults to
+# .Release.Namespace (the -n flag passed to helm install).
+namespaceOverride: ""
+
 # =============================================================================
 # GLOBAL DEFAULTS — applied to all components unless overridden in their block
 # =============================================================================

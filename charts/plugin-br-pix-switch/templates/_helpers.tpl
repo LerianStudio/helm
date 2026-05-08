@@ -6,6 +6,14 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
+Expand the namespace of the release.
+Allows overriding via .Values.namespaceOverride for combined / umbrella charts.
+*/}}
+{{- define "global.namespace" -}}
+{{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "plugin-br-pix-switch.chart" -}}
@@ -24,11 +32,13 @@ Returns: <chartname>-<component-name>  (e.g. plugin-br-pix-switch-spi)
 
 {{/*
 Resolve image repository for a component, falling back to the global default.
+Tag resolution order: component override > global override > Chart.AppVersion.
 Usage: include "plugin-br-pix-switch.componentImage" (dict "context" $ "componentValues" .Values.spi)
 */}}
 {{- define "plugin-br-pix-switch.componentImage" -}}
 {{- $repo := default .context.Values.global.image.repository .componentValues.image.repository -}}
-{{- $tag := default .context.Chart.AppVersion .componentValues.image.tag -}}
+{{- $globalTag := default .context.Chart.AppVersion .context.Values.global.image.tag -}}
+{{- $tag := default $globalTag .componentValues.image.tag -}}
 {{- printf "%s:%s" $repo $tag -}}
 {{- end }}
 

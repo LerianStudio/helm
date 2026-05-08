@@ -14,6 +14,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "plugin-br-pix-switch.name" . }}-bootstrap-mongodb
+  namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "plugin-br-pix-switch.labels" (dict "context" . "component" "bootstrap-mongodb") | nindent 4 }}
   annotations:

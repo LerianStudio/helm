@@ -7,6 +7,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ $fullName }}
+  namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" $component) | nindent 4 }}
   {{- with $values.ingress.annotations }}

@@ -41,7 +41,7 @@ flowker:
     targetMemoryUtilizationPercentage: 80
 
   configmap:
-    SERVER_ADDRESS: ":4000"
+    SERVER_ADDRESS: ":4021"
     LOG_LEVEL: "info"
     API_KEY_ENABLED: "false"
     CORS_ALLOWED_ORIGINS: "*"

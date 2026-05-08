@@ -116,8 +116,10 @@ flowker:
   service:
     # -- Kubernetes service type
     type: ClusterIP
-    # -- Port for the HTTP API
-    port: 4000
+    # -- Port for the HTTP API. Matches the flowker source convention
+    # (.env.example SERVER_PORT=4021). Override in environment values.yaml
+    # when an existing deployment expects a different port (e.g. legacy 4000).
+    port: 4021
     annotations: {}
 
   ingress:
@@ -172,10 +174,14 @@ flowker:
   # @default -- templates/configmap.yaml
   configmap:
     # Server
+    # SERVER_PORT/SERVER_ADDRESS default to 4021 to match the flowker source
+    # convention (.env.example SERVER_PORT=4021). Keep these in sync with
+    # service.port above (and containerPort) when overriding in environment
+    # values.yaml.
     ENV_NAME: "development"
     VERSION: "v1.0.0"
-    SERVER_PORT: "4000"
-    SERVER_ADDRESS: ":4000"
+    SERVER_PORT: "4021"
+    SERVER_ADDRESS: ":4021"
 
     # Deployment mode (controls TLS enforcement)
     # Values: saas (TLS mandatory), byoc (TLS recommended), local (TLS optional)
@@ -213,7 +219,7 @@ flowker:
     SWAGGER_TITLE: "Flowker API"
     SWAGGER_DESCRIPTION: "Workflow orchestration platform for financial validation"
     SWAGGER_VERSION: "v1.0.0"
-    SWAGGER_HOST: ":4000"
+    SWAGGER_HOST: ":4021"
     SWAGGER_BASE_PATH: "/"
     SWAGGER_SCHEMES: "http"
     SWAGGER_LEFT_DELIM: "{{"

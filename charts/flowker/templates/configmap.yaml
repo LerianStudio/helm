@@ -10,8 +10,8 @@ data:
   # Server
   ENV_NAME: {{ .Values.flowker.configmap.ENV_NAME | default "development" | quote }}
   VERSION: {{ .Values.flowker.image.tag | default .Chart.AppVersion | quote }}
-  SERVER_PORT: {{ .Values.flowker.configmap.SERVER_PORT | default "4000" | quote }}
-  SERVER_ADDRESS: {{ .Values.flowker.configmap.SERVER_ADDRESS | default ":4000" | quote }}
+  SERVER_PORT: {{ .Values.flowker.configmap.SERVER_PORT | default "4021" | quote }}
+  SERVER_ADDRESS: {{ .Values.flowker.configmap.SERVER_ADDRESS | default ":4021" | quote }}
 
   # Deployment mode (saas/byoc/local — controls TLS enforcement at startup)
   DEPLOYMENT_MODE: {{ .Values.flowker.configmap.DEPLOYMENT_MODE | default "local" | quote }}
@@ -46,7 +46,7 @@ data:
   SWAGGER_TITLE: {{ .Values.flowker.configmap.SWAGGER_TITLE | default "Flowker API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.flowker.configmap.SWAGGER_DESCRIPTION | default "Workflow orchestration platform for financial validation" | quote }}
   SWAGGER_VERSION: {{ .Values.flowker.image.tag | default .Chart.AppVersion | quote }}
-  SWAGGER_HOST: {{ .Values.flowker.configmap.SWAGGER_HOST | default ":4000" | quote }}
+  SWAGGER_HOST: {{ .Values.flowker.configmap.SWAGGER_HOST | default ":4021" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.flowker.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.flowker.configmap.SWAGGER_SCHEMES | default "http" | quote }}
   SWAGGER_LEFT_DELIM: {{ .Values.flowker.configmap.SWAGGER_LEFT_DELIM | default "{{" | quote }}

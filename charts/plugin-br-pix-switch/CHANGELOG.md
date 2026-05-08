@@ -1,6 +1,6 @@
 # Plugin-br-pix-switch Changelog
 
-## [2.0.0-beta.1] - Multi-component refactor (BREAKING)
+## [2.0.0-beta.1] - Multi-component refactor + bootstrap Jobs (BREAKING)
 
 The chart now deploys all 10 independently-built components of the
 plugin-br-pix-switch app, each with its own Deployment, Service, ConfigMap,
@@ -18,6 +18,21 @@ Secret, ServiceAccount, HPA, PDB, and optional Ingress.
 - `cob-hub` (port 4108) — COB hub
 - `cob-proxy` (port 4109) — COB proxy to BCB
 - `cob-systemplane` (port 4110) — runtime config plane for COB
+
+### Bootstrap Jobs
+
+The chart now ships database bootstrap Jobs (gated by
+`global.externalPostgresDefinitions.enabled` and
+`global.externalMongoDefinitions.enabled`, both `false` by default):
+
+- `bootstrap-postgres-pix-spi` — creates `pix-spi` database + `pixswitch` role
+- `bootstrap-postgres-pix-dict` — creates `pix-dict` database + grants
+- `bootstrap-postgres-pix-cob` — creates `pix-cob` database + grants
+- `bootstrap-mongodb` — creates the `pixswitch` Mongo user with `readWrite`
+  on `pix-dict` and `pix-cob` databases
+
+All Jobs run as `pre-install,pre-upgrade` Helm hooks so they execute before
+the application Deployments. Each Job is idempotent.
 
 ### Breaking changes
 

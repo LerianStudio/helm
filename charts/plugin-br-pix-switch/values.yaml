@@ -38,6 +38,56 @@ global:
     pullPolicy: IfNotPresent
     # tag: defaults to .Chart.AppVersion when empty
 
+  # -- External PostgreSQL bootstrap. When enabled, a pre-install/pre-upgrade
+  # Job runs for each database in `databases`, creating the role + database +
+  # grants if they don't exist. Idempotent.
+  externalPostgresDefinitions:
+    enabled: false
+    # -- Databases to create (one Job per database). pix-switch needs 3.
+    databases:
+      - pix-spi
+      - pix-dict
+      - pix-cob
+    connection:
+      host: ""
+      port: "5432"
+    # -- Postgres admin credentials (used to create role+databases)
+    postgresAdminLogin:
+      useExistingSecret:
+        name: ""   # if set, reads DB_USER_ADMIN/DB_ADMIN_PASSWORD keys
+      username: "postgres"
+      password: ""   # required when useExistingSecret.name is empty
+    # -- Application credentials for the role created by the bootstrap Job
+    pixswitchCredentials:
+      useExistingSecret:
+        name: ""   # if set, reads DB_PASSWORD_PIXSWITCH key
+      username: "pixswitch"
+      password: ""
+
+  # -- External MongoDB bootstrap. Creates the pixswitch user with readWrite
+  # roles on pix-dict and pix-cob databases (used by dict-hub and cob-hub).
+  externalMongoDefinitions:
+    enabled: false
+    connection:
+      host: ""
+      port: "27017"
+    mongoAdminLogin:
+      useExistingSecret:
+        name: ""   # if set, reads MONGO_ROOT_USER/MONGO_ROOT_PASSWORD keys
+      username: "root"
+      password: ""
+    pixswitchCredentials:
+      useExistingSecret:
+        name: ""   # if set, reads MONGO_APP_USER/MONGO_APP_PASSWORD keys
+      username: "pixswitch"
+      password: ""
+      # -- Roles granted to the pixswitch user
+      roles:
+        - role: readWrite
+          db: pix-dict
+        - role: readWrite
+          db: pix-cob
+
 # =============================================================================
 # COMPONENTS
 # Each component renders its own Deployment, Service, ConfigMap, Secret, HPA,

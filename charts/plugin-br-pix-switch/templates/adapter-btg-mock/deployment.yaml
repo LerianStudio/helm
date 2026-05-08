@@ -1,0 +1,92 @@
+{{- if .Values.adapterBtgMock.enabled }}
+{{- $component := "adapter-btg-mock" }}
+{{- $values := .Values.adapterBtgMock }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-br-pix-switch.componentFullname" (dict "context" $ "component" $component) }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" $component) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $values.revisionHistoryLimit | default 10 }}
+  {{- if not $values.autoscaling.enabled }}
+  replicas: {{ $values.replicaCount }}
+  {{- end }}
+  strategy:
+    {{- toYaml $values.deploymentStrategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-pix-switch.selectorLabels" (dict "context" $ "component" $component) | nindent 6 }}
+  template:
+    metadata:
+      {{- with $values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" $component) | nindent 8 }}
+    spec:
+      {{- with (include "plugin-br-pix-switch.componentImagePullSecrets" (dict "context" $ "componentValues" $values)) }}
+      {{- if . }}
+      imagePullSecrets:
+        {{- . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      serviceAccountName: {{ include "plugin-br-pix-switch.componentServiceAccountName" (dict "context" $ "component" $component "componentValues" $values) }}
+      securityContext:
+        {{- toYaml $values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ $component }}
+          securityContext:
+            {{- toYaml $values.securityContext | nindent 12 }}
+          image: {{ include "plugin-br-pix-switch.componentImage" (dict "context" $ "componentValues" $values) }}
+          imagePullPolicy: {{ include "plugin-br-pix-switch.componentPullPolicy" (dict "context" $ "componentValues" $values) }}
+          ports:
+            - name: http
+              containerPort: {{ $values.service.port }}
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "plugin-br-pix-switch.componentSecretName" (dict "context" $ "component" $component "componentValues" $values) }}
+            - configMapRef:
+                name: {{ include "plugin-br-pix-switch.componentFullname" (dict "context" $ "component" $component) }}
+          {{- with $values.extraEnvVars }}
+          env:
+            {{- range $k, $v := . }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml $values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ $values.readinessProbe.path | default "/readyz" }}
+              port: http
+            initialDelaySeconds: {{ $values.readinessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ $values.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ $values.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ $values.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $values.readinessProbe.failureThreshold | default 3 }}
+          livenessProbe:
+            httpGet:
+              path: {{ $values.livenessProbe.path | default "/live" }}
+              port: http
+            initialDelaySeconds: {{ $values.livenessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ $values.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $values.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ $values.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $values.livenessProbe.failureThreshold | default 3 }}
+      {{- with $values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

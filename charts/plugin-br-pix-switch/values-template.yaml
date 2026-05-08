@@ -1,41 +1,177 @@
-# Values template for production-like deployments
-# Override only the fields you need to change from defaults
+# Production values template for plugin-br-pix-switch (chart 2.0.0-beta.1+)
+#
+# Override only the fields you need to change from values.yaml defaults.
+# All 10 components are enabled by default except adapter-btg-mock; disable
+# any component by setting its `enabled: false`.
 
-pixSwitch:
+# Global image override (applies to every component unless overridden per-component)
+global:
   image:
-    tag: ""  # Set to the desired application version
-  ingress:
-    enabled: false
-    className: ""
-    annotations: {}
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
+    repository: ghcr.io/lerianstudio/plugin-br-pix-switch
+    tag: ""   # required: set to the released tag (e.g. "1.0.0-beta.51")
+    pullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: ghcr-credential
+
+# ------------------------------------------------------------
+# spi/api — PIX SPI (single-tenant identity REQUIRED)
+# ------------------------------------------------------------
+spi:
+  enabled: true
   configmap:
-    ENV_NAME: ""
-    DB_HOST: ""
-    DB_REPLICA_HOST: ""
-    VALKEY_HOST: ""
-    PLUGIN_AUTH_ENABLED: ""
-    PLUGIN_AUTH_ADDRESS: ""
-    ORGANIZATION_IDS: ""
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    DEPLOYMENT_MODE: "saas"            # or "byoc" / "local"
+    ENV_NAME: "production"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_ORGANIZATION_IDS: "global"
+    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-spi?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-spi?sslmode=require"
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
+    DICT_BASE_URL: "http://plugin-br-pix-switch-dict-hub:4104"
+    COB_BASE_URL: "http://plugin-br-pix-switch-cob-hub:4108"
+    MIDAZ_BASE_URL: "http://midaz-onboarding.midaz.svc.cluster.local:3000"
+    MIDAZ_LEDGER_ID: ""
+    MIDAZ_ORGANIZATION_ID: ""
+    MIDAZ_CLIENT_ID: ""
+    DICT_CLIENT_ID: ""
+    COB_CLIENT_ID: ""
+    CRM_BASE_URL: ""
+    CRM_CLIENT_ID: ""
+    CRM_ORGANIZATION_ID: ""
+    VALKEY_URL: "redis://default:<pwd>@valkey-host:6379/0"
+  secrets:
+    LICENSE_KEY: ""                   # use Vault / external-secret reference
+    DICT_CLIENT_SECRET: ""
+    COB_CLIENT_SECRET: ""
+    CRM_CLIENT_SECRET: ""
+    MIDAZ_CLIENT_SECRET: ""
+
+# ------------------------------------------------------------
+# spi/systemplane/api
+# ------------------------------------------------------------
+spiSystemplane:
+  enabled: true
+  configmap:
+    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-spi?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-spi?sslmode=require"
   secrets:
     LICENSE_KEY: ""
-    DB_PASSWORD: ""
-    DB_REPLICA_PASSWORD: ""
-    VALKEY_PASSWORD: ""
-  useExistingSecrets: false
-  existingSecretName: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
+# ------------------------------------------------------------
+# adapter-btg-mock (disabled in production!)
+# ------------------------------------------------------------
+adapterBtgMock:
+  enabled: false
+
+# ------------------------------------------------------------
+# dict/hub/api — DICT hub
+# ------------------------------------------------------------
+dictHub:
+  enabled: true
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_ORGANIZATION_IDS: "global"
+    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
+    KEY_CACHE_TTL_SEC: "60"
+    MONGO_URL: "mongodb://user:<pwd>@mongo-host:27017/?authSource=admin"
+    MONGO_DB_NAME: "pix-dict"
+    VALKEY_URL: "redis://default:<pwd>@valkey-host:6379/0"
+  secrets:
+    LICENSE_KEY: ""
+    CRM_CLIENT_SECRET: ""
+
+# ------------------------------------------------------------
+# dict/hub/vsync — singleton background worker
+# ------------------------------------------------------------
+dictHubVsync:
+  enabled: true
+  configmap:
+    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
+    VALKEY_URL: "redis://default:<pwd>@valkey-host:6379/0"
+    # RABBITMQ_URI is read by this component
+    VSYNC_ENABLED: "true"
+  secrets:
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# dict/proxy/api
+# ------------------------------------------------------------
+dictProxy:
+  enabled: true
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+  secrets:
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# dict/systemplane/api
+# ------------------------------------------------------------
+dictSystemplane:
+  enabled: true
+  configmap:
+    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
+  secrets:
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+# ------------------------------------------------------------
+# cob/hub/api — COB hub
+# ------------------------------------------------------------
+cobHub:
+  enabled: true
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_ORGANIZATION_IDS: "global"
+    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-cob?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-cob?sslmode=require"
+    ORGANIZATION_ID: "<your-org-id>"
+  secrets:
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# cob/proxy/api
+# ------------------------------------------------------------
+cobProxy:
+  enabled: true
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+  secrets:
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# cob/systemplane/api
+# ------------------------------------------------------------
+cobSystemplane:
+  enabled: true
+  configmap:
+    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-cob?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-cob?sslmode=require"
+  secrets:
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+# ------------------------------------------------------------
+# Disable in-cluster subcharts (use external infra in production)
+# ------------------------------------------------------------
 postgresql:
-  enabled: true
-
+  enabled: false
 valkey:
-  enabled: true
-
+  enabled: false
+rabbitmq:
+  enabled: false
+mongodb:
+  enabled: false
 otel-collector-lerian:
-  enabled: true
+  enabled: false

@@ -1,0 +1,14 @@
+{{- if .Values.dictProxy.enabled }}
+{{- $component := "dict-proxy" }}
+{{- $values := .Values.dictProxy }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-pix-switch.componentFullname" (dict "context" $ "component" $component) }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" $component) | nindent 4 }}
+data:
+  {{- range $key, $value := $values.configmap }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,23 @@
+{{- if .Values.cobSystemplane.enabled }}
+{{- $component := "cob-systemplane" }}
+{{- $values := .Values.cobSystemplane }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plugin-br-pix-switch.componentFullname" (dict "context" $ "component" $component) }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" $component) | nindent 4 }}
+  {{- with $values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ $values.service.type }}
+  ports:
+    - port: {{ $values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "plugin-br-pix-switch.selectorLabels" (dict "context" $ "component" $component) | nindent 4 }}
+{{- end }}

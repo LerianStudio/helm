@@ -1,92 +1,111 @@
-# Plugin BR Pix Switch Helm Chart
+# plugin-br-pix-switch (Helm chart)
 
-Helm chart for deploying the Plugin BR Pix Switch service on Kubernetes.
+BACEN-compliant PIX instant payment platform for the Lerian ecosystem.
 
-## Overview
+The plugin is a Go monorepo that produces 10 independently-deployable binaries.
+This chart deploys all of them with one helm release. Each component has its
+own Deployment, Service, ConfigMap, Secret, HPA, and PDB; ingress is opt-in
+per component.
 
-This chart deploys a single Go microservice for PIX switching operations, along with its dependencies:
+## Components
 
-- **Plugin BR Pix Switch** - Main API service (HTTP port 4000, gRPC port 7001)
-- **PostgreSQL** - Primary database (Bitnami subchart)
-- **Valkey** - Redis-compatible cache (Bitnami subchart)
-- **OpenTelemetry Collector** - Observability (Lerian subchart)
+| Key in values.yaml | Component | Default port | Notes |
+|---|---|---|---|
+| `spi` | `spi/api` | 4101 | PIX SPI service |
+| `spiSystemplane` | `spi/systemplane/api` | 4102 | Runtime config plane |
+| `adapterBtgMock` | `adapter-btg-mock/api` | 4103 | BTG provider mock (disabled by default) |
+| `dictHub` | `dict/hub/api` | 4104 | DICT hub (Postgres + Mongo + Valkey) |
+| `dictHubVsync` | `dict/hub/vsync` | 4105 | DICT verification sync worker (singleton) |
+| `dictProxy` | `dict/proxy/api` | 4106 | DICT proxy to BCB |
+| `dictSystemplane` | `dict/systemplane/api` | 4107 | Runtime config plane for DICT |
+| `cobHub` | `cob/hub/api` | 4108 | COB hub |
+| `cobProxy` | `cob/proxy/api` | 4109 | COB proxy to BCB |
+| `cobSystemplane` | `cob/systemplane/api` | 4110 | Runtime config plane for COB |
 
-## Prerequisites
+## Architecture
 
-- Kubernetes 1.23+ (uses `autoscaling/v2` HPA and `policy/v1` PDB)
-- Helm 3.x
+The plugin uses a Proxy/Hub deployment model. A "hub" component owns business
+logic and local state (its own Postgres database, sometimes Mongo+Valkey),
+while a "proxy" component is a stateless pass-through. Both expose identical
+APIs. Three Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`)
+and two Mongo databases for `dict-hub` and `cob-hub`.
 
-## Installation
+## Required infrastructure
 
-```bash
-# Add dependencies
-helm dependency build
+For a full deployment:
+- **PostgreSQL**: 3 databases (`pix-spi`, `pix-dict`, `pix-cob`) and a role
+  `pixswitch` with full ownership of each
+- **MongoDB**: 2 databases (`pix-dict`, `pix-cob`)
+- **Valkey** (Redis-compatible): used by `spi`, `dict-hub`, `dict-hub-vsync`,
+  `dict-proxy` for caching
+- **RabbitMQ**: used by `dict-hub-vsync` only
 
-# Install the chart
-helm install plugin-br-pix-switch . -n midaz-plugins --create-namespace
-```
+For development, the chart's `postgresql`, `valkey`, `rabbitmq`, and `mongodb`
+subcharts can be enabled (set their `enabled: true`). For production, point
+the in-cluster components at managed external services and leave the
+subcharts disabled (default).
+
+## Enabling/disabling components
+
+Each component's top-level key has an `enabled: true|false` field. Set
+`enabled: false` to skip a component entirely (no resources rendered).
+Default `enabled` values:
+
+- `spi`, `spiSystemplane`, `dictHub`, `dictHubVsync`, `dictProxy`,
+  `dictSystemplane`, `cobHub`, `cobProxy`, `cobSystemplane`: `true`
+- `adapterBtgMock`: `false` (it's a mock — only enable in dev/staging)
 
 ## Configuration
 
-### Key Values
+Each component has its own `configmap` and `secrets` blocks in values.yaml.
+The chart accepts every env var the app reads at runtime; see
+`templates/<component>/configmap.yaml` for the rendered list per component.
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `pixSwitch.image.repository` | Container image repository | `ghcr.io/lerianstudio/plugin-br-pix-switch` |
-| `pixSwitch.image.tag` | Container image tag | `1.0.0-beta.1` |
-| `pixSwitch.service.port` | HTTP service port | `4000` |
-| `pixSwitch.service.grpcPort` | gRPC service port | `7001` |
-| `pixSwitch.replicaCount` | Number of replicas | `1` |
-| `pixSwitch.autoscaling.enabled` | Enable HPA | `true` |
-| `pixSwitch.ingress.enabled` | Enable ingress | `false` |
-| `postgresql.enabled` | Enable PostgreSQL subchart | `true` |
-| `valkey.enabled` | Enable Valkey subchart | `true` |
+The app reads:
+- `DATABASE_URL` (full Postgres DSN, not `DB_HOST/DB_PORT/...`)
+- `MONGO_URL`, `MONGO_DB_NAME` (only `dict-hub` and `cob-hub`)
+- `VALKEY_URL` (full Redis URL)
+- `RABBITMQ_URI` (only `dict-hub-vsync`)
+- `LICENSE_KEY`, `LICENSE_ORGANIZATION_IDS` (every component)
+- `DEPLOYMENT_MODE` (saas/byoc/local)
+- Sibling URLs (`ADAPTER_BASE_URL`, `DICT_BASE_URL`, `COB_BASE_URL`,
+  `MIDAZ_BASE_URL`, `CRM_BASE_URL`)
+- Per-component-specific keys (`ISPB`, `ORGANIZATION_ID`, `KEY_CACHE_TTL_SEC`,
+  `VSYNC_*`, etc.)
 
-### Health Endpoints
+## Image
 
-The service exposes the following health endpoints:
+All 10 components share the same image, parameterized at build time with
+`APP_NAME` + `COMPONENT_NAME` build args. The chart sets `image.repository`
+once at the global level (`global.image.repository`) and individual
+components inherit it. Each component can override `image.tag` if you need
+to pin a specific tag per component (rare).
 
-- `/health` - General health check
-- `/ready` - Readiness probe (used by Kubernetes)
-- `/live` - Liveness probe (used by Kubernetes)
+## Pattern source
 
-### Using External Database
+This chart follows the multi-component layout used by
+`helm/charts/plugin-access-manager` (auth, auth-backend, identity) and
+`helm/charts/midaz` (onboarding, transaction, crm, ledger).
 
-To use an external PostgreSQL database instead of the bundled subchart:
+## Compatibility
 
-```yaml
-postgresql:
-  enabled: false
+| Chart version | App image tag |
+|---|---|
+| 2.0.0-beta.1+ | 1.0.0-beta.51+ |
+| 1.x.x | (chart was incomplete; do not use) |
 
-pixSwitch:
-  configmap:
-    DB_HOST: "your-external-db-host"
-    DB_USER: "your-db-user"
-    DB_NAME: "your-db-name"
-    DB_PORT: "5432"
-  secrets:
-    DB_PASSWORD: "your-db-password"
+## Useful commands
+
+```sh
+# Render with all components and one disabled
+helm template my-release ./plugin-br-pix-switch --set adapterBtgMock.enabled=true
+
+# Lint
+helm lint ./plugin-br-pix-switch
+
+# Inspect a single component's deployment
+helm template my-release ./plugin-br-pix-switch | yq 'select(.kind=="Deployment" and .metadata.name=="my-release-spi")'
+
+# Get all chart-managed pods
+kubectl get pods -l app.kubernetes.io/part-of=plugin-br-pix-switch -n <ns>
 ```
-
-### Using External Cache
-
-To use an external Redis/Valkey instance:
-
-```yaml
-valkey:
-  enabled: false
-
-pixSwitch:
-  configmap:
-    VALKEY_HOST: "your-external-cache-host"
-    VALKEY_PORT: "6379"
-  secrets:
-    VALKEY_PASSWORD: "your-cache-password"
-```
-
-## Production Notes
-
-- The bundled PostgreSQL and Valkey subcharts are intended for **development only**
-- For production, use managed database and cache services
-- Configure `pixSwitch.useExistingSecrets: true` to use pre-existing Kubernetes secrets
-- Enable ingress and TLS for external access

@@ -18,13 +18,9 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "plugin-br-pix-switch.name" $ }}-bootstrap-postgres-{{ $db }}
-  namespace: {{ include "global.namespace" . }}
+  namespace: {{ include "global.namespace" $ }}
   labels:
     {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" "bootstrap-postgres") | nindent 4 }}
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1
@@ -116,27 +112,31 @@ spec:
                 DB_EXISTS=1
               fi
 
+              # Role and database names come from chart values (validated upstream), so
+              # interpolating them via shell is safe. The password is escaped (single
+              # quotes doubled) before being interpolated into the SQL literal.
               if [ "${ROLE_EXISTS}" = "1" ]; then
                 echo "Role '${DB_ROLE}' already exists. Skipping creation."
               else
                 echo "Creating role '${DB_ROLE}'..."
-                PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -v role="${DB_ROLE}" -v pw="${DB_PASSWORD_PIXSWITCH}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "CREATE ROLE :\"role\" LOGIN PASSWORD :'pw'"
+                ESCAPED_PW=$(printf '%s' "${DB_PASSWORD_PIXSWITCH}" | sed "s/'/''/g")
+                PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "CREATE ROLE \"${DB_ROLE}\" LOGIN PASSWORD '${ESCAPED_PW}'"
               fi
 
               if [ "${DB_EXISTS}" = "1" ]; then
                 echo "Database '${DB_NAME}' already exists. Skipping creation."
               else
                 echo "Creating database '${DB_NAME}'..."
-                PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -v db="${DB_NAME}" -v role="${DB_ROLE}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "CREATE DATABASE :\"db\" OWNER :\"role\""
+                PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "CREATE DATABASE \"${DB_NAME}\" OWNER \"${DB_ROLE}\""
               fi
 
               echo "Ensuring privileges on '${DB_NAME}'..."
-              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -v db="${DB_NAME}" -v role="${DB_ROLE}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "GRANT ALL PRIVILEGES ON DATABASE :\"db\" TO :\"role\""
-              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -v role="${DB_ROLE}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "GRANT ALL ON SCHEMA public TO :\"role\""
-              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -v role="${DB_ROLE}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO :\"role\""
-              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -v role="${DB_ROLE}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO :\"role\""
-              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -v role="${DB_ROLE}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO :\"role\""
-              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -v role="${DB_ROLE}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO :\"role\""
+              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "GRANT ALL PRIVILEGES ON DATABASE \"${DB_NAME}\" TO \"${DB_ROLE}\""
+              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "GRANT ALL ON SCHEMA public TO \"${DB_ROLE}\""
+              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"${DB_ROLE}\""
+              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"${DB_ROLE}\""
+              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO \"${DB_ROLE}\""
+              PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO \"${DB_ROLE}\""
 
               echo ""
               echo "=== Pix Switch PostgreSQL Bootstrap (${DB_NAME}) completed ==="

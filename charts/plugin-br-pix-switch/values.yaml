@@ -1087,9 +1087,23 @@ cobSystemplane:
 # Valkey) so these are off. Enable for self-contained development.
 # Note: this chart does NOT include in-cluster subcharts for RabbitMQ or
 # MongoDB; use external services or add the subchart dependencies manually.
+#
+# Image: Bitnami moved free images to bitnamisecure / bitnamilegacy in 2025;
+# the upstream subchart points at the now-removed bitnami/* tags by default.
+# Override repository to bitnamisecure/* and tolerate the unsigned-image flag.
 # =============================================================================
 postgresql:
   enabled: false
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/postgresql
 
 valkey:
   enabled: false
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/valkey

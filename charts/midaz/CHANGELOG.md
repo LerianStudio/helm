@@ -1,5 +1,18 @@
 # Midaz Changelog
 
+## [6.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.0)
+
+- **Features**
+  - Released version 6.4.0 of midaz.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.3.0...midaz-v6.4.0)
+
+---
+
 ## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
 
 - **Fixes**

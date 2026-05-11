@@ -42,6 +42,14 @@ spec:
             {{- toYaml $values.securityContext | nindent 12 }}
           image: {{ include "plugin-br-pix-switch.componentImage" (dict "context" $ "componentValues" $values) }}
           imagePullPolicy: {{ include "plugin-br-pix-switch.componentPullPolicy" (dict "context" $ "componentValues" $values) }}
+          {{- with $values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $values.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ $values.service.port }}

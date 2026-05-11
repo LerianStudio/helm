@@ -116,6 +116,12 @@ spi:
 
   imagePullSecrets: []
 
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -247,6 +253,12 @@ spiSystemplane:
 
   imagePullSecrets: []
 
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -336,6 +348,12 @@ adapterBtgMock:
     tag: ""
 
   imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
 
   podAnnotations: {}
   podSecurityContext: {}
@@ -431,6 +449,12 @@ dictHub:
     tag: ""
 
   imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
 
   podAnnotations: {}
   podSecurityContext: {}
@@ -537,6 +561,12 @@ dictHubVsync:
     tag: ""
 
   imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
 
   podAnnotations: {}
   podSecurityContext: {}
@@ -648,6 +678,12 @@ dictProxy:
 
   imagePullSecrets: []
 
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -734,6 +770,12 @@ dictSystemplane:
     tag: ""
 
   imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
 
   podAnnotations: {}
   podSecurityContext: {}
@@ -824,6 +866,12 @@ cobHub:
     tag: ""
 
   imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
 
   podAnnotations: {}
   podSecurityContext: {}
@@ -921,6 +969,12 @@ cobProxy:
 
   imagePullSecrets: []
 
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -1007,6 +1061,12 @@ cobSystemplane:
     tag: ""
 
   imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
 
   podAnnotations: {}
   podSecurityContext: {}

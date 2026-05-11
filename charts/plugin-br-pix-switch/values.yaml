@@ -1144,11 +1144,16 @@ cobSystemplane:
   extraEnvVars: {}
 
 # =============================================================================
-# OPTIONAL DEPENDENCIES (subcharts) — disabled by default
-# Most production deployments use external infrastructure (shared Postgres,
-# Valkey) so these are off. Enable for self-contained development.
-# Note: this chart does NOT include in-cluster subcharts for RabbitMQ or
-# MongoDB; use external services or add the subchart dependencies manually.
+# OPTIONAL DEPENDENCIES (subcharts) — all disabled by default
+# Production deployments use external managed infrastructure; enable these
+# only for self-contained development / smoke tests. Per-component dependency
+# usage (from source audit):
+#
+#   postgres   spi, spi-systemplane, dict-hub, dict-hub-vsync,
+#              dict-systemplane, cob-hub, cob-systemplane (7 components)
+#   mongodb    dict-hub only
+#   valkey     spi (optional), dict-hub (optional), dict-hub-vsync (optional)
+#   rabbitmq   dict-hub-vsync only
 #
 # Image: Bitnami moved free images to bitnamisecure / bitnamilegacy in 2025;
 # the upstream subchart points at the now-removed bitnami/* tags by default.
@@ -1161,6 +1166,7 @@ postgresql:
       allowInsecureImages: true
   image:
     repository: bitnamisecure/postgresql
+    tag: "latest"
 
 valkey:
   enabled: false
@@ -1169,3 +1175,65 @@ valkey:
       allowInsecureImages: true
   image:
     repository: bitnamisecure/valkey
+    tag: "latest"
+
+mongodb:
+  enabled: false
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/mongodb
+    tag: "latest"
+  architecture: standalone
+  auth:
+    enabled: true
+    rootUser: "admin"
+    rootPassword: "lerian"
+    usernames:
+      - "pixswitch"
+    passwords:
+      - "lerian"
+    databases:
+      - "pix-dict"
+  persistence:
+    enabled: true
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+# RabbitMQ subchart (groundhog2k — same as plugin-br-bank-transfer / matcher)
+# Used only by dict-hub-vsync. Other components ignore it.
+rabbitmq:
+  enabled: false
+  image:
+    tag: "3.13.6"
+  persistence:
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  podSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile: {type: RuntimeDefault}
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: {drop: ["ALL"]}
+  authentication:
+    user:
+      value: "pixswitch"
+    password:
+      value: "lerian"

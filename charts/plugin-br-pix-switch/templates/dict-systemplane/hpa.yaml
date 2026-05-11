@@ -1,0 +1,35 @@
+{{- if and .Values.dictSystemplane.enabled .Values.dictSystemplane.autoscaling.enabled }}
+{{- $component := "dict-systemplane" }}
+{{- $values := .Values.dictSystemplane }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "plugin-br-pix-switch.componentFullname" (dict "context" $ "component" $component) }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" $component) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "plugin-br-pix-switch.componentFullname" (dict "context" $ "component" $component) }}
+  minReplicas: {{ $values.autoscaling.minReplicas }}
+  maxReplicas: {{ $values.autoscaling.maxReplicas }}
+  metrics:
+    {{- if $values.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $values.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if $values.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $values.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

@@ -1,0 +1,40 @@
+{{- if and .Values.spi.enabled .Values.spi.ingress.enabled }}
+{{- $component := "spi" }}
+{{- $values := .Values.spi }}
+{{- $fullName := include "plugin-br-pix-switch.componentFullname" (dict "context" $ "component" $component) }}
+{{- $svcPort := $values.service.port }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" $component) | nindent 4 }}
+  {{- with $values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with $values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range $values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end }}

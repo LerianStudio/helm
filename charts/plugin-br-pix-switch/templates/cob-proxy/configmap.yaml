@@ -1,0 +1,28 @@
+{{- if .Values.cobProxy.enabled }}
+{{- $component := "cob-proxy" }}
+{{- $values := .Values.cobProxy }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-pix-switch.componentFullname" (dict "context" $ "component" $component) }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" $ "component" $component) | nindent 4 }}
+data:
+  {{- range $key, $value := $values.configmap }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- /*
+  OTEL_RESOURCE_SERVICE_VERSION: derive from the deployed image tag so it
+  tracks releases automatically. Resolution order:
+    component image.tag > global image.tag > Chart.AppVersion.
+  Operators can override by setting `<component>.configmap.OTEL_RESOURCE_SERVICE_VERSION`
+  explicitly (the range above wins because data keys are unique per YAML map,
+  but we only emit this when the key wasn't already provided).
+  */}}
+  {{- if not (hasKey $values.configmap "OTEL_RESOURCE_SERVICE_VERSION") }}
+  {{- $globalTag := default $.Chart.AppVersion $.Values.global.image.tag }}
+  {{- $compTag := default $globalTag $values.image.tag }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
+  {{- end }}
+{{- end }}

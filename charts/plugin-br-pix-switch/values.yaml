@@ -42,9 +42,31 @@ global:
     pullPolicy: IfNotPresent
     # tag: defaults to .Chart.AppVersion when empty
 
-  # -- External PostgreSQL bootstrap. When enabled, a pre-install/pre-upgrade
-  # Job runs for each database in `databases`, creating the role + database +
-  # grants if they don't exist. Idempotent.
+  # ---------------------------------------------------------------------------
+  # External PostgreSQL bootstrap
+  # ---------------------------------------------------------------------------
+  # When enabled, a Job runs for each database in `databases`, creating the
+  # role + database + grants if they don't exist (idempotent).
+  #
+  # Use cases:
+  #   - In-cluster Postgres subchart (postgresql.enabled=true) AND you want
+  #     the chart to create the 3 pix-switch databases for you. Set
+  #     connection.host to the in-cluster service name
+  #     (plugin-br-pix-switch-postgresql).
+  #   - External Postgres (RDS, Cloud SQL, etc.) where the operator wants the
+  #     chart to provision the role+databases. The admin credentials below
+  #     must have privilege to CREATE ROLE / CREATE DATABASE on the target
+  #     server.
+  #
+  # CREDENTIALS:
+  #   - postgresAdminLogin: admin user used by the Job to provision objects.
+  #     For production, store admin password in an external Secret and set
+  #     useExistingSecret.name (the Job reads DB_USER_ADMIN + DB_ADMIN_PASSWORD
+  #     from that Secret). Never put real admin passwords in values.yaml.
+  #   - pixswitchCredentials: app user the Job creates. Default password
+  #     "lerian" MATCHES the DATABASE_URL defaults in spi/dictHub/cobHub/etc.
+  #     configmap blocks. Override for production with an existing Secret
+  #     (DB_PASSWORD_PIXSWITCH key) AND override each component's DATABASE_URL.
   externalPostgresDefinitions:
     enabled: false
     # -- Databases to create (one Job per database). pix-switch needs 3.
@@ -58,20 +80,30 @@ global:
     # -- Postgres admin credentials (used to create role+databases)
     postgresAdminLogin:
       useExistingSecret:
-        name: ""   # if set, reads DB_USER_ADMIN/DB_ADMIN_PASSWORD keys
+        name: ""   # PRODUCTION: set this, leave password empty
       username: "postgres"
       password: ""   # required when useExistingSecret.name is empty
     # -- Application credentials for the role created by the bootstrap Job
-    # Default password "lerian" matches the URL defaults in component
-    # configmap blocks. Operators MUST override both for production.
     pixswitchCredentials:
       useExistingSecret:
-        name: ""   # if set, reads DB_PASSWORD_PIXSWITCH key
+        name: ""   # PRODUCTION: set this, leave password empty
       username: "pixswitch"
-      password: "lerian"   # matches DATABASE_URL defaults; override for prod
+      password: "lerian"   # MATCHES DATABASE_URL defaults (dev only)
 
-  # -- External MongoDB bootstrap. Creates the pixswitch user with readWrite
-  # roles on pix-dict and pix-cob databases (used by dict-hub and cob-hub).
+  # ---------------------------------------------------------------------------
+  # External MongoDB bootstrap
+  # ---------------------------------------------------------------------------
+  # Creates the pixswitch user with readWrite roles on the listed databases.
+  # Only dict-hub uses Mongo today (pix-dict). pix-cob is included as a
+  # forward-compat slot in case cob-hub adopts Mongo later.
+  #
+  # CREDENTIALS:
+  #   - mongoAdminLogin: root admin user used by the Job. For production,
+  #     store admin password in an external Secret (useExistingSecret.name).
+  #   - pixswitchCredentials: app user the Job creates. Default password
+  #     "lerian" MATCHES the MONGO_URL defaults in dictHub.configmap.
+  #     Override for production with an existing Secret (MONGO_APP_PASSWORD
+  #     key) AND override dictHub.configmap.MONGO_URL.
   externalMongoDefinitions:
     enabled: false
     connection:
@@ -79,14 +111,14 @@ global:
       port: "27017"
     mongoAdminLogin:
       useExistingSecret:
-        name: ""   # if set, reads MONGO_ROOT_USER/MONGO_ROOT_PASSWORD keys
+        name: ""   # PRODUCTION: set this, leave password empty
       username: "root"
       password: ""
     pixswitchCredentials:
       useExistingSecret:
-        name: ""   # if set, reads MONGO_APP_USER/MONGO_APP_PASSWORD keys
+        name: ""   # PRODUCTION: set this, leave password empty
       username: "pixswitch"
-      password: "lerian"   # matches MONGO_URL defaults; override for prod
+      password: "lerian"   # MATCHES MONGO_URL defaults (dev only)
       # -- Roles granted to the pixswitch user
       roles:
         - role: readWrite
@@ -1159,9 +1191,8 @@ cobSystemplane:
 
 # =============================================================================
 # OPTIONAL DEPENDENCIES (subcharts) — all disabled by default
-# Production deployments use external managed infrastructure; enable these
-# only for self-contained development / smoke tests. Per-component dependency
-# usage (from source audit):
+#
+# Per-component dependency usage (from source audit):
 #
 #   postgres   spi, spi-systemplane, dict-hub, dict-hub-vsync,
 #              dict-systemplane, cob-hub, cob-systemplane (7 components)
@@ -1169,10 +1200,48 @@ cobSystemplane:
 #   valkey     spi (optional), dict-hub (optional), dict-hub-vsync (optional)
 #   rabbitmq   dict-hub-vsync only
 #
+# -----------------------------------------------------------------------------
+# DEFAULT CREDENTIALS WARNING
+# -----------------------------------------------------------------------------
+# Every credential below (user: pixswitch / password: lerian) is intended
+# ONLY for the in-cluster subcharts started by `<subchart>.enabled=true`
+# during local development and smoke tests. They MATCH the URL defaults
+# baked into each component's configmap block (e.g.
+#   spi.configmap.DATABASE_URL: postgres://pixswitch:lerian@...
+# ) so a fresh `helm install --set postgresql.enabled=true ...` works
+# without any per-URL override.
+#
+# IMPORTANT — for external databases (RDS, DocumentDB, ElastiCache,
+# AmazonMQ, etc.) the operator MUST NOT rely on these defaults. Instead:
+#
+#   1. Set `<subchart>.enabled: false` for every external dependency.
+#   2. Provide real credentials via a Kubernetes Secret created out-of-band
+#      (Vault, AWS Secrets Manager + ESO, sealed-secrets, etc.) and reference
+#      it from each component's configmap/secrets override:
+#
+#        spi:
+#          useExistingSecret: true
+#          existingSecretName: "pix-switch-spi-credentials"
+#          configmap:
+#            # only non-sensitive fields here; URLs that need passwords
+#            # come from the existing Secret keys above.
+#            DATABASE_URL: "postgres://<user>:$(DB_PASSWORD)@managed.example.com:5432/pix-spi?sslmode=require"
+#            VALKEY_URL: "redis://default:$(VALKEY_PASSWORD)@managed.example.com:6379/0"
+#
+#   3. Override `global.externalPostgresDefinitions.pixswitchCredentials.useExistingSecret.name`
+#      and `global.externalMongoDefinitions.pixswitchCredentials.useExistingSecret.name`
+#      when running the bootstrap Jobs against external infra — never put real
+#      passwords in values.yaml.
+#
 # Image: Bitnami moved free images to bitnamisecure / bitnamilegacy in 2025;
 # the upstream subchart points at the now-removed bitnami/* tags by default.
 # Override repository to bitnamisecure/* and tolerate the unsigned-image flag.
 # =============================================================================
+
+# PostgreSQL (Bitnami chart)
+# Used by 7 components for DATABASE_URL / SYSTEMPLANE_POSTGRES_DSN.
+# Default creds below feed the URL defaults in spi/dictHub/dictHubVsync/cobHub
+# (and the systemplane variants) configmap blocks.
 postgresql:
   enabled: false
   global:
@@ -1181,7 +1250,18 @@ postgresql:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
+  # Bitnami subchart credentials. Operator MUST override for production.
+  # For external Postgres set `enabled: false` and configure DATABASE_URL
+  # per component via an existing Kubernetes Secret (see header).
+  auth:
+    enablePostgresUser: true
+    postgresPassword: "lerian"   # admin password (used by bootstrap Jobs)
+    username: "pixswitch"        # MATCHES DATABASE_URL default
+    password: "lerian"           # MATCHES DATABASE_URL default
+    database: "postgres"
 
+# Valkey (Bitnami chart, OCI registry)
+# Used by spi, dict-hub, dict-hub-vsync for VALKEY_URL (optional — caching).
 valkey:
   enabled: false
   global:
@@ -1190,7 +1270,15 @@ valkey:
   image:
     repository: bitnamisecure/valkey
     tag: "latest"
+  # Bitnami subchart credentials. Operator MUST override for production.
+  # For external Valkey/ElastiCache set `enabled: false` and configure
+  # VALKEY_URL per component via an existing Kubernetes Secret (see header).
+  auth:
+    enabled: true
+    password: "lerian"           # MATCHES VALKEY_URL default
 
+# MongoDB (Bitnami chart)
+# Used by dict-hub only for MONGO_URL.
 mongodb:
   enabled: false
   global:
@@ -1200,16 +1288,19 @@ mongodb:
     repository: bitnamisecure/mongodb
     tag: "latest"
   architecture: standalone
+  # Bitnami subchart credentials. Operator MUST override for production.
+  # For external Mongo/DocumentDB/Atlas set `enabled: false` and configure
+  # dictHub.configmap.MONGO_URL via an existing Kubernetes Secret (see header).
   auth:
     enabled: true
     rootUser: "admin"
     rootPassword: "lerian"
     usernames:
-      - "pixswitch"
+      - "pixswitch"              # MATCHES MONGO_URL default
     passwords:
-      - "lerian"
+      - "lerian"                 # MATCHES MONGO_URL default
     databases:
-      - "pix-dict"
+      - "pix-dict"               # only dict-hub uses Mongo
   persistence:
     enabled: true
     size: 8Gi
@@ -1221,8 +1312,8 @@ mongodb:
       cpu: "1"
       memory: 2Gi
 
-# RabbitMQ subchart (groundhog2k — same as plugin-br-bank-transfer / matcher)
-# Used only by dict-hub-vsync. Other components ignore it.
+# RabbitMQ (groundhog2k chart — same as plugin-br-bank-transfer / matcher)
+# Used only by dict-hub-vsync for RABBITMQ_URI.
 rabbitmq:
   enabled: false
   image:
@@ -1246,8 +1337,15 @@ rabbitmq:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities: {drop: ["ALL"]}
+  # groundhog2k subchart credentials. Operator MUST override for production.
+  # For external RabbitMQ / AmazonMQ set `enabled: false` and configure
+  # dictHubVsync.configmap.RABBITMQ_URI via an existing Kubernetes Secret.
   authentication:
     user:
-      value: "pixswitch"
+      value: "pixswitch"         # MATCHES RABBITMQ_URI default
     password:
-      value: "lerian"
+      value: "lerian"            # MATCHES RABBITMQ_URI default
+    erlangCookie:
+      value: ""                  # MUST be set when enabled=true
+                                 # (groundhog2k chart requires it; generate
+                                 #  with `openssl rand -base64 32`)

@@ -36,6 +36,8 @@ spec:
       serviceAccountName: {{ include "plugin-br-pix-switch.componentServiceAccountName" (dict "context" $ "component" $component "componentValues" $values) }}
       securityContext:
         {{- toYaml $values.podSecurityContext | nindent 8 }}
+      initContainers:
+        {{- include "plugin-br-pix-switch.waitForDependencies" (dict "context" $ "component" $component "componentValues" $values) | nindent 8 }}
       containers:
         - name: {{ $component }}
           securityContext:

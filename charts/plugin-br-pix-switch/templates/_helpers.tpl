@@ -107,3 +107,96 @@ When useExistingSecret=true, returns the externally-managed name; otherwise the 
 {{- include "plugin-br-pix-switch.componentFullname" (dict "context" .context "component" .component) -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Wait-for-dependencies init container.
+Parses DATABASE_URL / VALKEY_URL / MONGO_URL / RABBITMQ_URI from the
+component's ConfigMap and Secret and waits for each to be reachable via nc -z.
+Skips any URL that is empty / unset.
+
+Usage:
+  initContainers:
+    {{- include "plugin-br-pix-switch.waitForDependencies" (dict "context" $ "component" $component "componentValues" $values) | nindent 8 }}
+*/}}
+{{- define "plugin-br-pix-switch.waitForDependencies" -}}
+- name: wait-for-dependencies
+  image: busybox:1.37
+  envFrom:
+    - configMapRef:
+        name: {{ include "plugin-br-pix-switch.componentFullname" (dict "context" .context "component" .component) }}
+    - secretRef:
+        name: {{ include "plugin-br-pix-switch.componentSecretName" (dict "context" .context "component" .component "componentValues" .componentValues) }}
+  command:
+    - /bin/sh
+    - -c
+    - |
+      set -eu
+      MAX_ATTEMPTS=60
+      SLEEP_SECONDS=5
+
+      wait_for_service() {
+        local NAME="$1"
+        local HOST="$2"
+        local PORT="$3"
+        if [ -z "$HOST" ]; then
+          echo "skip: $NAME (not configured)"
+          return 0
+        fi
+        local ATTEMPTS=0
+        echo "wait: $NAME at $HOST:$PORT"
+        while ! nc -z "$HOST" "$PORT" 2>/dev/null; do
+          ATTEMPTS=$((ATTEMPTS + 1))
+          if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+            echo "timeout: $NAME at $HOST:$PORT after $((MAX_ATTEMPTS * SLEEP_SECONDS))s"
+            exit 1
+          fi
+          echo "  $NAME not ready (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+          sleep "$SLEEP_SECONDS"
+        done
+        echo "ready: $NAME at $HOST:$PORT"
+      }
+
+      # Parse URL of the form scheme://[user[:pass]@]host[:port]/path
+      # Outputs: HOST PORT  (port empty when scheme default applies)
+      parse_url() {
+        local URL="$1"
+        if [ -z "$URL" ]; then
+          echo ""
+          return
+        fi
+        # Strip scheme
+        local REST="${URL#*://}"
+        # Strip userinfo if present
+        case "$REST" in
+          *@*) REST="${REST#*@}" ;;
+        esac
+        # Strip path/query/fragment
+        REST="${REST%%/*}"
+        REST="${REST%%\?*}"
+        # Split host:port
+        local HOST="${REST%%:*}"
+        local PORT="${REST##*:}"
+        if [ "$HOST" = "$PORT" ]; then
+          PORT=""
+        fi
+        echo "$HOST $PORT"
+      }
+
+      # PostgreSQL (DATABASE_URL)
+      set -- $(parse_url "${DATABASE_URL:-}")
+      wait_for_service "postgres" "${1:-}" "${2:-5432}"
+
+      # Valkey/Redis (VALKEY_URL)
+      set -- $(parse_url "${VALKEY_URL:-}")
+      wait_for_service "valkey" "${1:-}" "${2:-6379}"
+
+      # MongoDB (MONGO_URL)
+      set -- $(parse_url "${MONGO_URL:-}")
+      wait_for_service "mongo" "${1:-}" "${2:-27017}"
+
+      # RabbitMQ (RABBITMQ_URI)
+      set -- $(parse_url "${RABBITMQ_URI:-}")
+      wait_for_service "rabbitmq" "${1:-}" "${2:-5672}"
+
+      echo "all dependencies ready"
+{{- end }}

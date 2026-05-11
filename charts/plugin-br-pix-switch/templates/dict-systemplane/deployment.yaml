@@ -79,7 +79,7 @@ spec:
             failureThreshold: {{ $values.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
             httpGet:
-              path: {{ $values.livenessProbe.path | default "/live" }}
+              path: {{ $values.livenessProbe.path | default "/health" }}
               port: http
             initialDelaySeconds: {{ $values.livenessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ $values.livenessProbe.periodSeconds | default 10 }}

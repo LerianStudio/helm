@@ -1,12 +1,19 @@
 # Plugin-br-pix-switch Changelog
 
-## [2.0.0-beta.1] - Multi-component refactor + bootstrap Jobs (BREAKING)
+## [1.1.0-beta.2] - Multi-component refactor + bootstrap Jobs + subchart wiring
 
 The chart now deploys all 10 independently-built components of the
 plugin-br-pix-switch app, each with its own Deployment, Service, ConfigMap,
 Secret, ServiceAccount, HPA, PDB, and optional Ingress.
 
-### Components
+The prior `1.x-beta.1` chart never produced a working deployment (its
+single-binary `pixSwitch` block emitted env vars the app source never reads,
+e.g. `DB_HOST`/`DB_PORT`/... while the source reads `DATABASE_URL`). Because
+no prior tag was ever functional, this release continues the 1.x line
+instead of jumping to 2.0; consumers who tried 1.x cannot have a working
+deployment to migrate from.
+
+### Components (10 binaries, 10 Deployments)
 
 - `spi` (port 4101) — PIX SPI service
 - `spi-systemplane` (port 4102) — runtime config plane for SPI
@@ -19,9 +26,12 @@ Secret, ServiceAccount, HPA, PDB, and optional Ingress.
 - `cob-proxy` (port 4109) — COB proxy to BCB
 - `cob-systemplane` (port 4110) — runtime config plane for COB
 
+Ports allocated in the 41xx range to avoid conflicts with the org port
+allocation table (4001–4013 is used by Identity, Fees, CRM, Reporter, etc.).
+
 ### Bootstrap Jobs
 
-The chart now ships database bootstrap Jobs (gated by
+Optional database bootstrap Jobs (gated by
 `global.externalPostgresDefinitions.enabled` and
 `global.externalMongoDefinitions.enabled`, both `false` by default):
 
@@ -31,34 +41,55 @@ The chart now ships database bootstrap Jobs (gated by
 - `bootstrap-mongodb` — creates the `pixswitch` Mongo user with `readWrite`
   on `pix-dict` and `pix-cob` databases
 
-All Jobs run as `pre-install,pre-upgrade` Helm hooks so they execute before
-the application Deployments. Each Job is idempotent.
+Each Job is idempotent (skips when the role/database/user already exists).
 
-### Breaking changes
+### Subchart dependencies (all disabled by default)
 
-- **values.yaml shape rewritten**. The single `pixSwitch` block is gone,
-  replaced by per-component blocks (`spi`, `dictHub`, etc.). Existing values
-  files for chart 1.x will not work with 2.x.
-- **Env-var schema corrected**. App reads `DATABASE_URL` (full DSN), not
-  `DB_HOST/DB_PORT/...`. Mongo uses `MONGO_URL`/`MONGO_DB_NAME`. Valkey uses
-  `VALKEY_URL`. Old chart's `DB_*`/`VALKEY_HOST`/etc. envs were never read by
-  the app.
-- **Port allocation moved to 4101–4110** (per org port allocation table; the
-  4001–4013 range used in docker-compose conflicts with other Lerian services).
-- **`LICENSE_ORGANIZATION_IDS`** key (the app reads this name) replaces
-  `ORGANIZATION_IDS`.
-- **Per-component IDs**: every K8s resource is named `<release>-<component>`,
-  so resource counts grow from 7 to ~50 (9 components × 5–7 resources).
-- Chart was bumped to a major version (`2.0.0-beta.1`) to signal the breaking
-  change.
+| Subchart | Used by |
+|---|---|
+| postgresql (Bitnami 16.3) | 7 components (DATABASE_URL) |
+| valkey (Bitnami 2.4.7) | spi, dict-hub, dict-hub-vsync (optional cache) |
+| mongodb (Bitnami 16.4) | dict-hub only |
+| rabbitmq (groundhog2k 2.1.11) | dict-hub-vsync only |
+
+Default credentials (`pixswitch` / `lerian`) feed the URL defaults in each
+component's configmap block so a fresh `helm install --set
+<subchart>.enabled=true` works out of the box. Production deployments
+disable the subcharts and provide URLs via an external Kubernetes Secret
+(see values.yaml header for the override pattern).
+
+### Other features
+
+- `wait-for-dependencies` init container parses each component's URL env
+  vars (DATABASE_URL / MONGO_URL / VALKEY_URL / RABBITMQ_URI) and waits
+  for each TCP endpoint to be reachable. Skips dependencies that aren't
+  configured for that component.
+- Per-component `command` / `args` overrides so a single multi-binary
+  image (when the source repo publishes one) can run different binaries
+  per Deployment.
+- `OTEL_RESOURCE_SERVICE_VERSION` auto-derived from the deployed image
+  tag (component > global > Chart.AppVersion).
+- When `TELEMETRY_ENABLED=true`, each pod injects `HOST_IP` via downward
+  API and points `OTEL_EXPORTER_OTLP_ENDPOINT` at `$(HOST_IP):4317` for
+  node-local OTel collectors. Operators can override the endpoint via
+  the component's configmap for external collectors.
+- `livenessProbe.path` defaults to `/health` (matches what the pix-switch
+  binaries actually serve).
 
 ### Migration
 
-If you were using chart 1.x (which never deployed a working app due to the
-env-var mismatch), there is no in-place migration. Rewrite your values
-following `values.yaml`'s new shape, provision Postgres (3 DBs: pix-spi,
-pix-dict, pix-cob), Mongo (2 DBs: pix-dict, pix-cob), Valkey, and (for
-dict-hub-vsync) RabbitMQ, then deploy 2.0.0-beta.1.
+No usable 1.0.x / 1.1.0-beta.1 deployment exists today (env-var mismatch).
+Operators who tried earlier versions should:
+
+1. Rewrite values to the new shape (per-component blocks: `spi:`, `dictHub:`,
+   etc.) using `values-template.yaml` as a starting point.
+2. Provision 3 Postgres databases (`pix-spi`, `pix-dict`, `pix-cob`) and a
+   `pixswitch` role — or let the bootstrap Jobs do it via
+   `global.externalPostgresDefinitions.enabled=true`.
+3. Provision MongoDB databases for `dict-hub` (and optionally `cob-hub`).
+4. Configure Valkey (optional, for caching) and RabbitMQ (required only for
+   `dict-hub-vsync`).
+5. Deploy with `installed: true` in helmfile.
 
 Pattern adapted from `helm/charts/plugin-access-manager` and
 `helm/charts/midaz` multi-component layouts.

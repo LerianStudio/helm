@@ -91,8 +91,8 @@ This chart follows the multi-component layout used by
 
 | Chart version | App image tag |
 |---|---|
-| 2.0.0-beta.1+ | 1.0.0-beta.51+ |
-| 1.x.x | (chart was incomplete; do not use) |
+| 1.1.0-beta.2+ | 1.0.0-beta.51+ |
+| 1.0.0 – 1.1.0-beta.1 | (chart was incomplete; do not use) |
 
 ## Useful commands
 

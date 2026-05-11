@@ -639,6 +639,8 @@ dictHubVsync:
     CRM_CLIENT_ID: ""
     CRM_ORGANIZATION_ID: ""
     VALKEY_URL: ""
+    # RabbitMQ — required (vsync is a queue consumer)
+    RABBITMQ_URI: ""
     MULTI_TENANT_URL: ""
     # VSync tunables
     VSYNC_ENABLED: "true"

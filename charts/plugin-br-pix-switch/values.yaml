@@ -62,11 +62,13 @@ global:
       username: "postgres"
       password: ""   # required when useExistingSecret.name is empty
     # -- Application credentials for the role created by the bootstrap Job
+    # Default password "lerian" matches the URL defaults in component
+    # configmap blocks. Operators MUST override both for production.
     pixswitchCredentials:
       useExistingSecret:
         name: ""   # if set, reads DB_PASSWORD_PIXSWITCH key
       username: "pixswitch"
-      password: ""
+      password: "lerian"   # matches DATABASE_URL defaults; override for prod
 
   # -- External MongoDB bootstrap. Creates the pixswitch user with readWrite
   # roles on pix-dict and pix-cob databases (used by dict-hub and cob-hub).
@@ -84,7 +86,7 @@ global:
       useExistingSecret:
         name: ""   # if set, reads MONGO_APP_USER/MONGO_APP_PASSWORD keys
       username: "pixswitch"
-      password: ""
+      password: "lerian"   # matches MONGO_URL defaults; override for prod
       # -- Roles granted to the pixswitch user
       roles:
         - role: readWrite
@@ -198,8 +200,8 @@ spi:
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
     # Postgres (full DSN — pix apps use DATABASE_URL, not DB_HOST/DB_PORT/...)
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
+    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-spi?sslmode=disable"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-spi?sslmode=disable"
     # Single-tenant identity
     ORGANIZATION_ID: ""
     ISPB: ""
@@ -218,7 +220,7 @@ spi:
     MIDAZ_LEDGER_ID: ""
     MIDAZ_ORGANIZATION_ID: ""
     # Cache
-    VALKEY_URL: ""
+    VALKEY_URL: "redis://default:lerian@plugin-br-pix-switch-valkey-primary:6379/0"
     # Multi-tenant
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
@@ -308,6 +310,8 @@ spiSystemplane:
     name: ""
 
   configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     APPLICATION_NAME: "pix-spi-systemplane"
     SERVER_ADDRESS: ":4102"
     LOG_LEVEL: "info"
@@ -320,8 +324,8 @@ spiSystemplane:
     OTEL_RESOURCE_SERVICE_VERSION: ""
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
+    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-spi?sslmode=disable"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-spi?sslmode=disable"
 
   secrets:
     LICENSE_KEY: ""
@@ -404,6 +408,8 @@ adapterBtgMock:
     name: ""
 
   configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     APPLICATION_NAME: "pix-adapter-btg-mock"
     SERVER_ADDRESS: ":4103"
     LOG_LEVEL: "info"
@@ -520,8 +526,8 @@ dictHub:
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
+    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
     ORGANIZATION_ID: ""
     ISPB: ""
     ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
@@ -529,9 +535,9 @@ dictHub:
     CRM_CLIENT_ID: ""
     CRM_ORGANIZATION_ID: ""
     KEY_CACHE_TTL_SEC: "60"
-    MONGO_URL: ""
-    MONGO_DB_NAME: "dict"
-    VALKEY_URL: ""
+    MONGO_URL: "mongodb://pixswitch:lerian@plugin-br-pix-switch-mongodb:27017/pix-dict?authSource=pix-dict"
+    MONGO_DB_NAME: "pix-dict"
+    VALKEY_URL: "redis://default:lerian@plugin-br-pix-switch-valkey-primary:6379/0"
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
 
@@ -631,16 +637,16 @@ dictHubVsync:
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
+    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
     ORGANIZATION_ID: ""
     ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
     CRM_BASE_URL: ""
     CRM_CLIENT_ID: ""
     CRM_ORGANIZATION_ID: ""
-    VALKEY_URL: ""
+    VALKEY_URL: "redis://default:lerian@plugin-br-pix-switch-valkey-primary:6379/0"
     # RabbitMQ — required (vsync is a queue consumer)
-    RABBITMQ_URI: ""
+    RABBITMQ_URI: "amqp://pixswitch:lerian@plugin-br-pix-switch-rabbitmq:5672/"
     MULTI_TENANT_URL: ""
     # VSync tunables
     VSYNC_ENABLED: "true"
@@ -735,6 +741,8 @@ dictProxy:
     name: ""
 
   configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     APPLICATION_NAME: "pix-dict-proxy"
     SERVER_ADDRESS: ":4106"
     LOG_LEVEL: "info"
@@ -828,6 +836,8 @@ dictSystemplane:
     name: ""
 
   configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     APPLICATION_NAME: "pix-dict-systemplane"
     SERVER_ADDRESS: ":4107"
     LOG_LEVEL: "info"
@@ -840,8 +850,8 @@ dictSystemplane:
     OTEL_RESOURCE_SERVICE_VERSION: ""
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
+    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
 
   secrets:
     LICENSE_KEY: ""
@@ -939,8 +949,8 @@ cobHub:
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
+    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-cob?sslmode=disable"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-cob?sslmode=disable"
     ORGANIZATION_ID: ""
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
@@ -1026,6 +1036,8 @@ cobProxy:
     name: ""
 
   configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     APPLICATION_NAME: "pix-cob-proxy"
     SERVER_ADDRESS: ":4109"
     LOG_LEVEL: "info"
@@ -1119,6 +1131,8 @@ cobSystemplane:
     name: ""
 
   configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     APPLICATION_NAME: "pix-cob-systemplane"
     SERVER_ADDRESS: ":4110"
     LOG_LEVEL: "info"
@@ -1131,8 +1145,8 @@ cobSystemplane:
     OTEL_RESOURCE_SERVICE_VERSION: ""
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
+    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-cob?sslmode=disable"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-cob?sslmode=disable"
 
   secrets:
     LICENSE_KEY: ""

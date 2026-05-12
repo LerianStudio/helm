@@ -1,5 +1,50 @@
 # Plugin-br-pix-switch Changelog
 
+## [1.2.0-beta.1] - Shared multi-path ingresses
+
+Replaces the per-component `ingress:` blocks with two top-level ingress
+objects routed by URL path prefix:
+
+- `appsIngress` (single hostname) — user-facing traffic. Routes `/spi`,
+  `/dict-hub`, `/dict-proxy`, `/cob-hub`, `/cob-proxy` to the matching
+  application Service.
+- `systemplaneIngress` (separate hostname) — admin/runtime-config traffic.
+  Routes `/spi`, `/dict`, `/cob` to the matching `*-systemplane` Service.
+
+Two hostnames keep the apps and systemplane traffic boundaries clean so
+operators can layer different ingress annotations (auth, IP allowlist,
+WAF) on each without coupling them.
+
+The chart skips routes whose target component is disabled, so partial
+deployments render only the path rules that have a backing Service.
+
+No path rewriting is performed at the ingress — apps own their
+`/<component>` path namespace. Application routing must register routes
+under their prefix (e.g. SPI registers `/spi/health`, `/spi/keys/lookup`).
+
+### Breaking changes from `1.1.0-beta.4`
+
+- Removed: per-component `ingress:` blocks on every component (`.spi.ingress`,
+  `.dictHub.ingress`, etc.). Any per-env values that set
+  `<component>.ingress.enabled=true` are no longer honored — migrate to
+  `appsIngress` / `systemplaneIngress`.
+- Removed: 10 per-component `templates/<component>/ingress.yaml` files.
+
+## [1.1.0-beta.4] - envFrom order fix
+
+Swap envFrom order on all 10 component deployment templates so
+external-Secret values (DATABASE_URL, MONGO_URL, VALKEY_URL,
+RABBITMQ_URI) override the chart's bundled-subchart ConfigMap defaults.
+The previous order `[secretRef, configMapRef]` caused the ConfigMap to
+win, silently dropping every Vault-injected URL override.
+
+## [1.1.0-beta.3] - DEPLOYMENT_MODE default to byoc
+
+Switch the chart-wide default for `DEPLOYMENT_MODE` from `local` to
+`byoc` on all 10 component blocks. byoc triggers production license
+enforcement; operators opt back into `local` explicitly for dev/CI
+installs without a license.
+
 ## [1.1.0-beta.2] - Multi-component refactor + bootstrap Jobs + subchart wiring
 
 The chart now deploys all 10 independently-built components of the

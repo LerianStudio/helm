@@ -1,0 +1,63 @@
+{{- /*
+Apps Ingress — single hostname routes user-facing traffic to the application
+components (SPI, DICT hub/proxy, COB hub/proxy, optionally adapter-btg-mock).
+
+Each path under .Values.appsIngress.routes maps to one component's Service.
+The chart renders one path rule per route only when the target component is
+enabled; rendering is skipped entirely when .Values.appsIngress.enabled is
+false or no routes resolve to enabled components.
+
+No path rewriting is performed at the ingress — apps own their /<component>
+path namespace (e.g. SPI's router registers /spi/health, /spi/keys/lookup).
+*/}}
+{{- if .Values.appsIngress.enabled }}
+{{- $ctx := . }}
+{{- $cfg := .Values.appsIngress }}
+{{- $fullName := include "plugin-br-pix-switch.componentFullname" (dict "context" $ctx "component" "apps") }}
+{{- /* Collect routes whose target component is enabled. */}}
+{{- $renderedRoutes := list }}
+{{- range $route := $cfg.routes }}
+  {{- $componentValues := index $ctx.Values $route.component }}
+  {{- if and $componentValues $componentValues.enabled }}
+    {{- $renderedRoutes = append $renderedRoutes $route }}
+  {{- end }}
+{{- end }}
+{{- if $renderedRoutes }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" $ctx "component" "apps") | nindent 4 }}
+  {{- with $cfg.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $cfg.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with $cfg.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range $host := $cfg.hosts }}
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          {{- range $route := $renderedRoutes }}
+          {{- $componentValues := index $ctx.Values $route.component }}
+          {{- $serviceFullname := include "plugin-br-pix-switch.componentFullname" (dict "context" $ctx "component" $route.serviceName) }}
+          - path: {{ $route.path }}
+            pathType: {{ default "Prefix" $route.pathType }}
+            backend:
+              service:
+                name: {{ $serviceFullname }}
+                port:
+                  number: {{ $componentValues.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}

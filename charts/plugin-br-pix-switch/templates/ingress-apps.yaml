@@ -1,6 +1,6 @@
 {{- /*
 Apps Ingress — single hostname routes user-facing traffic to the application
-components (SPI, DICT hub/proxy, COB hub/proxy, optionally adapter-btg-mock).
+components (SPI, DICT hub/proxy, COB hub/proxy).
 
 Each path under .Values.appsIngress.routes maps to one component's Service.
 The chart renders one path rule per route only when the target component is
@@ -9,6 +9,9 @@ false or no routes resolve to enabled components.
 
 No path rewriting is performed at the ingress — apps own their /<component>
 path namespace (e.g. SPI's router registers /spi/health, /spi/keys/lookup).
+
+adapter-btg-mock retains its own per-component ingress block; this shared
+ingress only covers the externally-facing application components.
 */}}
 {{- if .Values.appsIngress.enabled }}
 {{- $ctx := . }}

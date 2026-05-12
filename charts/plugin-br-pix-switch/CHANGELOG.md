@@ -2,8 +2,8 @@
 
 ## [1.2.0-beta.1] - Shared multi-path ingresses
 
-Replaces the per-component `ingress:` blocks with two top-level ingress
-objects routed by URL path prefix:
+Replaces 9 of the per-component `ingress:` blocks with two top-level
+ingress objects routed by URL path prefix:
 
 - `appsIngress` (single hostname) — user-facing traffic. Routes `/spi`,
   `/dict-hub`, `/dict-proxy`, `/cob-hub`, `/cob-proxy` to the matching
@@ -22,13 +22,21 @@ No path rewriting is performed at the ingress — apps own their
 `/<component>` path namespace. Application routing must register routes
 under their prefix (e.g. SPI registers `/spi/health`, `/spi/keys/lookup`).
 
+`adapter-btg-mock` keeps its own per-component `ingress` block and
+template — it sits outside the apps/systemplane shared ingress design
+because it is dev-only and operators may want to expose it
+independently.
+
 ### Breaking changes from `1.1.0-beta.4`
 
-- Removed: per-component `ingress:` blocks on every component (`.spi.ingress`,
-  `.dictHub.ingress`, etc.). Any per-env values that set
-  `<component>.ingress.enabled=true` are no longer honored — migrate to
-  `appsIngress` / `systemplaneIngress`.
-- Removed: 10 per-component `templates/<component>/ingress.yaml` files.
+- Removed: per-component `ingress:` blocks on the 9 production components
+  (`.spi.ingress`, `.spiSystemplane.ingress`, `.dictHub.ingress`,
+  `.dictHubVsync.ingress`, `.dictProxy.ingress`, `.dictSystemplane.ingress`,
+  `.cobHub.ingress`, `.cobProxy.ingress`, `.cobSystemplane.ingress`). Any
+  per-env values that set `<component>.ingress.enabled=true` on these are
+  no longer honored — migrate to `appsIngress` / `systemplaneIngress`.
+- Removed: 9 per-component `templates/<component>/ingress.yaml` files.
+- `adapterBtgMock.ingress` is preserved unchanged.
 
 ## [1.1.0-beta.4] - envFrom order fix
 

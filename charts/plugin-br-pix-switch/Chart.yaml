@@ -50,3 +50,4 @@ dependencies:
     version: "2.1.11"
     repository: "https://groundhog2k.github.io/helm-charts"
     condition: rabbitmq.enabled
+

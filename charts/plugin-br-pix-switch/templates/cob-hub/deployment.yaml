@@ -57,10 +57,10 @@ spec:
               containerPort: {{ $values.service.port }}
               protocol: TCP
           envFrom:
-            - secretRef:
-                name: {{ include "plugin-br-pix-switch.componentSecretName" (dict "context" $ "component" $component "componentValues" $values) }}
             - configMapRef:
                 name: {{ include "plugin-br-pix-switch.componentFullname" (dict "context" $ "component" $component) }}
+            - secretRef:
+                name: {{ include "plugin-br-pix-switch.componentSecretName" (dict "context" $ "component" $component "componentValues" $values) }}
           {{- /*
           Build the env: list when EITHER telemetry is enabled (HOST_IP +
           OTEL_EXPORTER_OTLP_ENDPOINT injected via downward API so each

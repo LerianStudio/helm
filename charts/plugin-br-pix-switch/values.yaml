@@ -181,13 +181,6 @@ spi:
     type: ClusterIP
     port: 4101
 
-  ingress:
-    enabled: false
-    className: ""
-    annotations: {}
-    hosts: []
-    tls: []
-
   resources:
     limits:
       cpu: 500m
@@ -317,9 +310,6 @@ spiSystemplane:
     type: ClusterIP
     port: 4102
 
-  ingress:
-    enabled: false
-
   resources:
     limits: { cpu: 200m, memory: 256Mi }
     requests: { cpu: 50m, memory: 64Mi }
@@ -413,9 +403,6 @@ adapterBtgMock:
   service:
     type: ClusterIP
     port: 4103
-
-  ingress:
-    enabled: false
 
   resources:
     limits: { cpu: 200m, memory: 256Mi }
@@ -515,9 +502,6 @@ dictHub:
   service:
     type: ClusterIP
     port: 4104
-
-  ingress:
-    enabled: false
 
   resources:
     limits: { cpu: 500m, memory: 512Mi }
@@ -626,9 +610,6 @@ dictHubVsync:
   service:
     type: ClusterIP
     port: 4105
-
-  ingress:
-    enabled: false
 
   resources:
     limits: { cpu: 500m, memory: 512Mi }
@@ -744,9 +725,6 @@ dictProxy:
     type: ClusterIP
     port: 4106
 
-  ingress:
-    enabled: false
-
   resources:
     limits: { cpu: 200m, memory: 256Mi }
     requests: { cpu: 50m, memory: 64Mi }
@@ -837,9 +815,6 @@ dictSystemplane:
   service:
     type: ClusterIP
     port: 4107
-
-  ingress:
-    enabled: false
 
   resources:
     limits: { cpu: 200m, memory: 256Mi }
@@ -934,9 +909,6 @@ cobHub:
   service:
     type: ClusterIP
     port: 4108
-
-  ingress:
-    enabled: false
 
   resources:
     limits: { cpu: 500m, memory: 512Mi }
@@ -1036,9 +1008,6 @@ cobProxy:
     type: ClusterIP
     port: 4109
 
-  ingress:
-    enabled: false
-
   resources:
     limits: { cpu: 200m, memory: 256Mi }
     requests: { cpu: 50m, memory: 64Mi }
@@ -1129,9 +1098,6 @@ cobSystemplane:
   service:
     type: ClusterIP
     port: 4110
-
-  ingress:
-    enabled: false
 
   resources:
     limits: { cpu: 200m, memory: 256Mi }
@@ -1232,6 +1198,83 @@ cobSystemplane:
 # Used by 7 components for DATABASE_URL / SYSTEMPLANE_POSTGRES_DSN.
 # Default creds below feed the URL defaults in spi/dictHub/dictHubVsync/cobHub
 # (and the systemplane variants) configmap blocks.
+# =============================================================================
+# SHARED INGRESSES
+#
+# Two ingress objects, both routed by path prefix:
+#
+#   appsIngress         — user-facing traffic (SPI, DICT/COB hub+proxy, optional
+#                         adapter-btg-mock). Single hostname.
+#   systemplaneIngress  — admin/runtime-config traffic (SPI/DICT/COB systemplanes).
+#                         Separate hostname so operators can apply stricter
+#                         annotations (auth, IP allowlist, WAF) than the apps
+#                         ingress without coupling them.
+#
+# Each `routes` entry maps a path prefix to a component's Service. The chart
+# silently skips paths whose target component is disabled.
+#
+# NO path rewriting is performed at the ingress — apps own their /<component>
+# path namespace (e.g. SPI's router registers /spi/health, /spi/keys/lookup).
+# =============================================================================
+
+appsIngress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts: []
+  tls: []
+  # -- Path-to-component mapping. Each route renders one path rule on every
+  # host in `hosts`. The chart skips routes whose `component` is disabled.
+  #
+  # Each route has:
+  #   - `path`         (string, required): URL path prefix
+  #   - `pathType`     (string, optional, default "Prefix"): K8s Ingress pathType
+  #   - `component`    (string, required): values-key of the component
+  #                     (camelCase, e.g. dictHub) — used to look up enabled+port
+  #   - `serviceName`  (string, required): kebab-case Service name suffix
+  #                     (e.g. dict-hub) — matches the rendered Service object
+  routes:
+    - path: /spi
+      pathType: Prefix
+      component: spi
+      serviceName: spi
+    - path: /dict-hub
+      pathType: Prefix
+      component: dictHub
+      serviceName: dict-hub
+    - path: /dict-proxy
+      pathType: Prefix
+      component: dictProxy
+      serviceName: dict-proxy
+    - path: /cob-hub
+      pathType: Prefix
+      component: cobHub
+      serviceName: cob-hub
+    - path: /cob-proxy
+      pathType: Prefix
+      component: cobProxy
+      serviceName: cob-proxy
+
+systemplaneIngress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts: []
+  tls: []
+  routes:
+    - path: /spi
+      pathType: Prefix
+      component: spiSystemplane
+      serviceName: spi-systemplane
+    - path: /dict
+      pathType: Prefix
+      component: dictSystemplane
+      serviceName: dict-systemplane
+    - path: /cob
+      pathType: Prefix
+      component: cobSystemplane
+      serviceName: cob-systemplane
+
 postgresql:
   enabled: false
   global:

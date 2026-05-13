@@ -12,7 +12,7 @@ maintainers:
 
 version: 2.2.2
 # This is the version number of the application being deployed.
-appVersion: "1.2.1-beta.11"
+appVersion: "1.2.1-beta.15"
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
   - midaz

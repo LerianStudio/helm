@@ -1,5 +1,16 @@
 # Plugin-br-pix-direct-jd Changelog
 
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.1)
+
+- **Improvements:**
+  - Updated image tag to 1.2.1-beta.13 for plugin-br-pix-direct-jd.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.0...plugin-br-pix-direct-jd-v2.2.1)
+
+---
+
 ## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.0)
 
 - **Features:**

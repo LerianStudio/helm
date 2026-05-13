@@ -1,5 +1,19 @@
 # Plugin-br-pix-direct-jd Changelog
 
+## [2.2.7](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.7)
+
+- **Improvements:**
+  - Updated environment variables, fixed secret key casing, and adjusted deployment probes for improved reliability and performance.
+
+- **Documentation:**
+  - Added an upgrade guide for version 2.2.6 to assist users with the transition.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.6...plugin-br-pix-direct-jd-v2.2.7)
+
+---
+
 ## [2.2.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.6)
 
 - Improvements:

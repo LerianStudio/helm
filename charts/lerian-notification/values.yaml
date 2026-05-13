@@ -1,0 +1,585 @@
+# Default values for lerian-notification
+# This is a YAML-formatted file.
+#
+# Topology:
+#   - api             (HTTP API on :8080, ingress optional)
+#   - worker-email    (consumer on :8081 — health probe only)
+#   - worker-sms      (consumer on :8082 — health probe only)
+#   - worker-webhook  (consumer on :8083 — health probe only)
+#
+# All components share the same env contract, exposed via a single ConfigMap
+# (non-sensitive) and a single Secret (sensitive — fillable per env via gitops
+# + ArgoCD Vault Plugin, or pre-existing secret referenced by `secretRef.name`).
+#
+# External dependencies (NOT bundled): Postgres, Redis, RabbitMQ. Connection
+# details are configured under `config` (ConfigMap) and `secrets` (Secret).
+
+# -- Global overrides (chart-wide)
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+
+# -- Image pull secrets applied to every component (component-level
+#    `imagePullSecrets` still overrides per-deployment).
+imagePullSecrets: []
+# - name: lerian-dockerhub
+
+# -- Shared service account for all components.
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# -- Reference to an externally-managed Secret (e.g. ArgoCD Vault Plugin).
+#    If `name` is set, the chart skips rendering its own Secret resource and
+#    every component mounts this Secret via envFrom instead.
+secretRef:
+  name: ""
+
+# -- Override the generated ConfigMap name. Leave empty for default
+#    (= chart fullname).
+configMapNameOverride: ""
+
+#==============================================================================
+# Database migrations (golang-migrate)
+#==============================================================================
+# Runs as a Helm pre-install / pre-upgrade Job using the API image (which
+# bundles /migrations from the service Dockerfile). Set `enabled: false` to
+# skip when migrations are managed out-of-band.
+migrations:
+  enabled: true
+  # -- Reuses the API image by default; override here only if you ship a
+  #    dedicated migrations image.
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: Always
+  # -- Resource limits for the migration Job pod.
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  restartPolicy: OnFailure
+  backoffLimit: 3
+  # -- TTL (seconds) for the completed Job. Helm hooks delete on success by
+  #    default; this is a belt-and-suspenders for clusters where the hook
+  #    annotation policy is overridden.
+  ttlSecondsAfterFinished: 600
+  # -- Extra args appended to the migrate CLI. The chart already supplies
+  #    `-path /migrations -database "$DATABASE_URL" up`.
+  extraArgs: []
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+#==============================================================================
+# Shared environment (ConfigMap)
+#==============================================================================
+# Non-sensitive env vars consumed by EVERY component. Sensitive values live
+# under `secrets` (rendered into a separate Secret).
+config:
+  # ---- Application ----
+  ENV_NAME: "firmino"
+  LOG_LEVEL: "info"
+  SERVER_ADDRESS: ":8080"
+  HTTP_BODY_LIMIT_BYTES: "104857600"
+  TLS_TERMINATED_UPSTREAM: "true"
+  DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
+
+  # ---- CORS ----
+  CORS_ALLOWED_ORIGINS: ""
+  CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
+  CORS_EXPOSE_HEADERS: ""
+  CORS_ALLOW_CREDENTIALS: "false"
+
+  # ---- Multi-tenant (tenant-manager) ----
+  MULTI_TENANT_ENABLED: "false"
+  MULTI_TENANT_REDIS_PORT: "6379"
+  MULTI_TENANT_REDIS_TLS: "false"
+  MULTI_TENANT_MAX_TENANT_POOLS: "100"
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+  MULTI_TENANT_TIMEOUT: "30"
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+  MULTI_TENANT_CACHE_TTL_SEC: "120"
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+
+  # ---- Postgres (external) ----
+  POSTGRES_HOST: ""
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "lerian-notification"
+  POSTGRES_NAME: "lerian-notification"
+  POSTGRES_SSLMODE: "require"
+  POSTGRES_MAX_OPEN_CONNS: "25"
+  POSTGRES_MAX_IDLE_CONNS: "5"
+  POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: "5"
+  POSTGRES_CONNECT_TIMEOUT_SEC: "10"
+  MIGRATIONS_PATH: "/migrations"
+  SYSTEMPLANE_ENABLED: "false"
+  INFRA_CONNECT_TIMEOUT_SEC: "30"
+
+  # ---- Redis (external) ----
+  REDIS_HOST: ""
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  REDIS_PROTOCOL: "3"
+  REDIS_POOL_SIZE: "10"
+  REDIS_MIN_IDLE_CONNS: "2"
+  REDIS_READ_TIMEOUT: "3"
+  REDIS_WRITE_TIMEOUT: "3"
+  REDIS_DIAL_TIMEOUT: "5"
+  REDIS_POOL_TIMEOUT: "2"
+  REDIS_MAX_RETRIES: "3"
+  REDIS_MIN_RETRY_BACKOFF: "8"
+  REDIS_MAX_RETRY_BACKOFF: "1"
+
+  # ---- RabbitMQ (external) ----
+  RABBITMQ_HOST: ""
+  RABBITMQ_PORT_AMQP: "5672"
+  RABBITMQ_PORT_HOST: "15672"
+  RABBITMQ_VHOST: "/"
+  RABBITMQ_EXCHANGE: "events"
+  RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: "false"
+  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: "false"
+  RABBITMQ_ALLOW_INSECURE_TLS: "false"
+  RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS: "5000"
+  RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS: "1000"
+  RABBITMQ_PUBLISHER_RECOVERY_MAX_MS: "30000"
+  RABBITMQ_PUBLISHER_MAX_RECOVERIES: "10"
+
+  # ---- Outbox ----
+  OUTBOX_TABLE_NAME: "outbox_events"
+  OUTBOX_DISPATCH_INTERVAL_SEC: "2"
+  OUTBOX_BATCH_SIZE: "50"
+  OUTBOX_PUBLISH_MAX_ATTEMPTS: "3"
+  OUTBOX_PUBLISH_BACKOFF_MS: "200"
+  OUTBOX_RETRY_WINDOW_SEC: "300"
+  OUTBOX_MAX_DISPATCH_ATTEMPTS: "10"
+  OUTBOX_PROCESSING_TIMEOUT_SEC: "600"
+  OUTBOX_MAX_FAILED_PER_BATCH: "25"
+  OUTBOX_INCLUDE_TENANT_METRICS: "false"
+  OUTBOX_ALLOW_EMPTY_TENANT: "true"
+
+  # ---- Plugin Auth ----
+  PLUGIN_AUTH_ENABLED: "false"
+
+  # ---- Notification delivery knobs ----
+  NOTIFICATION_RETRY_MAX_ATTEMPTS: "5"
+  NOTIFICATION_RETRY_BASE_DELAY_SEC: "30"
+  NOTIFICATION_RETRY_MAX_DELAY_SEC: "3600"
+  NOTIFICATION_CONCURRENCY_EMAIL: "10"
+  NOTIFICATION_CONCURRENCY_SMS: "5"
+  NOTIFICATION_CONCURRENCY_WEBHOOK: "10"
+  NOTIFICATION_WEBHOOK_TIMEOUT_SEC: "30"
+  NOTIFICATION_CB_FAILURE_THRESHOLD: "5"
+  NOTIFICATION_CB_RECOVERY_TIMEOUT_SEC: "60"
+
+  # ---- Worker tuning (consumed by all worker-* components) ----
+  WORKER_RETRY_INTERVAL_SEC: "30"
+  WORKER_RETRY_BATCH_SIZE: "50"
+  WORKER_SHUTDOWN_TIMEOUT_SEC: "30"
+
+  # ---- Swagger ----
+  SWAGGER_ENABLED: "true"
+  SWAGGER_TITLE: "Lerian Notification"
+  SWAGGER_VERSION: "1.0.0"
+  SWAGGER_BASE_PATH: "/"
+  SWAGGER_LEFT_DELIM: "{{"
+  SWAGGER_RIGHT_DELIM: "}}"
+
+  # ---- OpenTelemetry ----
+  ENABLE_TELEMETRY: "false"
+  OTEL_LIBRARY_NAME: "lerian-notification"
+  OTEL_RESOURCE_SERVICE_NAME: "lerian-notification"
+  OTEL_RESOURCE_SERVICE_VERSION: "0.1.0"
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "firmino"
+
+  # ---- Rate Limiting ----
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_MAX: "500"
+  RATE_LIMIT_WINDOW_SEC: "60"
+  AGGRESSIVE_RATE_LIMIT_MAX: "100"
+  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+  RELAXED_RATE_LIMIT_MAX: "1000"
+  RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+
+  # ---- Observability ----
+  DB_METRICS_INTERVAL_SEC: "15"
+
+  # ---- Idempotency ----
+  IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
+
+  # ---- Destination Auth Cache ----
+  NOTIFICATION_AUTH_CACHE_L1_TTL: "30"
+  NOTIFICATION_AUTH_CACHE_MAX_TTL: "300"
+  NOTIFICATION_AUTH_CACHE_SAFETY_MARGIN: "30"
+  NOTIFICATION_AUTH_CACHE_REFRESH_THRESHOLD: "0.8"
+  NOTIFICATION_AUTH_CACHE_ENCRYPTION_ENABLED: "true"
+
+  # ---- M2M ----
+  M2M_CREDENTIAL_CACHE_TTL_SEC: "300"
+  AWS_REGION: "us-east-1"
+
+  # ---- Pagination ----
+  MAX_PAGINATION_LIMIT: "100"
+  MAX_PAGINATION_MONTH_DATE_RANGE: "3"
+
+# Extra non-sensitive env vars merged into the ConfigMap.
+extraConfig: {}
+
+#==============================================================================
+# Shared environment (Secret)
+#==============================================================================
+# Sensitive env vars. Leave empty here; populate per-env via gitops + AVP, or
+# point `secretRef.name` at an externally-managed Secret to skip this entirely.
+secrets:
+  # -- Postgres
+  POSTGRES_PASSWORD: ""
+  # -- Postgres replica (optional, leave empty if unused)
+  POSTGRES_REPLICA_HOST: ""
+  POSTGRES_REPLICA_PORT: ""
+  POSTGRES_REPLICA_USER: ""
+  POSTGRES_REPLICA_PASSWORD: ""
+  POSTGRES_REPLICA_NAME: ""
+  POSTGRES_REPLICA_SSLMODE: ""
+  # -- Redis
+  REDIS_PASSWORD: ""
+  REDIS_MASTER_NAME: ""
+  REDIS_TLS: ""
+  REDIS_CA_CERT: ""
+  # -- RabbitMQ (full URL with credentials)
+  RABBITMQ_URL: ""
+  RABBITMQ_DEFAULT_USER: ""
+  RABBITMQ_DEFAULT_PASS: ""
+  RABBITMQ_HEALTH_CHECK_URL: ""
+  # -- Multi-tenant
+  MULTI_TENANT_URL: ""
+  MULTI_TENANT_SERVICE_API_KEY: ""
+  MULTI_TENANT_REDIS_HOST: ""
+  MULTI_TENANT_REDIS_PASSWORD: ""
+  # -- Plugin Auth
+  PLUGIN_AUTH_HOST: ""
+  # -- Destination auth cache encryption key (base64 AES-256-GCM)
+  NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY: ""
+  # -- M2M
+  M2M_TARGET_SERVICE: ""
+  # -- Webhook SSRF allowlist override (development only)
+  NOTIFICATION_SSRF_ALLOW_PRIVATE_CIDRS: ""
+
+# Extra sensitive env vars merged into the Secret.
+extraSecrets: {}
+
+#==============================================================================
+# API (cmd/api)
+#==============================================================================
+api:
+  name: "lerian-notification"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: docker.io/lerianstudio/lerian-notification
+    pullPolicy: Always
+    tag: ""  # defaults to .Chart.AppVersion
+  imagePullSecrets: []
+  containerPort: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 70
+  pdb:
+    enabled: false
+    maxUnavailable: 1
+    minAvailable: 0
+    annotations: {}
+  probes:
+    liveness:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 3
+    readiness:
+      path: /readyz
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+    startup:
+      enabled: true
+      path: /health
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 30
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  extraEnvVars: {}
+
+#==============================================================================
+# Worker - Email (cmd/worker-email)
+#==============================================================================
+workerEmail:
+  name: "lerian-notification-worker-email"
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: docker.io/lerianstudio/lerian-notification-worker-email
+    pullPolicy: Always
+    tag: ""  # defaults to .Chart.AppVersion
+  imagePullSecrets: []
+  containerPort: 8081
+  # -- Bound to WORKER_HEALTH_ADDRESS (=:8081). Exposed only via probes; no
+  #    Service is created for workers.
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 70
+  pdb:
+    enabled: false
+    maxUnavailable: 1
+    minAvailable: 0
+    annotations: {}
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  probes:
+    liveness:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 3
+    readiness:
+      path: /readyz
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+    startup:
+      enabled: true
+      path: /health
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 30
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  extraEnvVars: {}
+
+#==============================================================================
+# Worker - SMS (cmd/worker-sms)
+#==============================================================================
+workerSms:
+  name: "lerian-notification-worker-sms"
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: docker.io/lerianstudio/lerian-notification-worker-sms
+    pullPolicy: Always
+    tag: ""
+  imagePullSecrets: []
+  containerPort: 8082
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 70
+  pdb:
+    enabled: false
+    maxUnavailable: 1
+    minAvailable: 0
+    annotations: {}
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  probes:
+    liveness:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 3
+    readiness:
+      path: /readyz
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+    startup:
+      enabled: true
+      path: /health
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 30
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  extraEnvVars: {}
+
+#==============================================================================
+# Worker - Webhook (cmd/worker-webhook)
+#==============================================================================
+workerWebhook:
+  name: "lerian-notification-worker-webhook"
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: docker.io/lerianstudio/lerian-notification-worker-webhook
+    pullPolicy: Always
+    tag: ""
+  imagePullSecrets: []
+  containerPort: 8083
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 70
+  pdb:
+    enabled: false
+    maxUnavailable: 1
+    minAvailable: 0
+    annotations: {}
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  probes:
+    liveness:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 3
+    readiness:
+      path: /readyz
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+    startup:
+      enabled: true
+      path: /health
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 30
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  extraEnvVars: {}

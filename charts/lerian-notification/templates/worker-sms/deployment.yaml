@@ -1,0 +1,105 @@
+{{- if .Values.workerSms.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "workerSms.fullname" . }}
+  namespace: {{ include "lerian-notification.namespace" . }}
+  labels:
+    {{- include "lerian-notification.labels" (dict "context" . "name" .Values.workerSms.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.workerSms.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml .Values.workerSms.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.workerSms.autoscaling.enabled }}
+  replicas: {{ .Values.workerSms.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "lerian-notification.selectorLabels" (dict "context" . "name" .Values.workerSms.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "lerian-notification.labels" (dict "context" . "name" .Values.workerSms.name) | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.secretRef.name }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.workerSms.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "lerian-notification.serviceAccountName" . }}
+      {{- with (concat .Values.imagePullSecrets .Values.workerSms.imagePullSecrets) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.workerSms.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.workerSms.name }}
+          image: "{{ .Values.workerSms.image.repository }}:{{ .Values.workerSms.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.workerSms.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.workerSms.securityContext | nindent 12 }}
+          ports:
+            - name: health
+              containerPort: {{ .Values.workerSms.containerPort }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "lerian-notification.configMapName" . }}
+            - secretRef:
+                name: {{ include "lerian-notification.secretName" . }}
+          env:
+            # Worker binds /health and /readyz on this address (overrides the
+            # shared ConfigMap default to match this worker's containerPort).
+            - name: WORKER_HEALTH_ADDRESS
+              value: ":{{ .Values.workerSms.containerPort }}"
+            {{- range $key, $value := .Values.workerSms.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.workerSms.resources | nindent 12 }}
+          {{- if .Values.workerSms.probes.startup.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.workerSms.probes.startup.path }}
+              port: health
+            initialDelaySeconds: {{ .Values.workerSms.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.workerSms.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.workerSms.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.workerSms.probes.startup.failureThreshold }}
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.workerSms.probes.readiness.path }}
+              port: health
+            initialDelaySeconds: {{ .Values.workerSms.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.workerSms.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.workerSms.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.workerSms.probes.readiness.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.workerSms.probes.liveness.path }}
+              port: health
+            initialDelaySeconds: {{ .Values.workerSms.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.workerSms.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.workerSms.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.workerSms.probes.liveness.failureThreshold }}
+      {{- with .Values.workerSms.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.workerSms.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.workerSms.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,69 @@
+{{- if .Values.migrations.enabled }}
+{{- /*
+  golang-migrate Job — runs as a Helm pre-install / pre-upgrade hook so DDL
+  is applied before the API and workers attempt to connect.
+
+  Uses the API image because the service Dockerfile bundles /migrations
+  (COPY --from=builder /app/migrations /migrations). Override
+  .Values.migrations.image only when you build a dedicated migrations image.
+
+  The DATABASE_URL is constructed at runtime from the shared ConfigMap +
+  Secret so the Job stays consistent with whatever the app pods see.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "lerian-notification.fullname" . }}-migrations
+  namespace: {{ include "lerian-notification.namespace" . }}
+  labels:
+    {{- include "lerian-notification.labels" (dict "context" . "name" (printf "%s-migrations" (include "lerian-notification.fullname" .))) | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "lerian-notification.selectorLabels" (dict "context" . "name" (printf "%s-migrations" (include "lerian-notification.fullname" .))) | nindent 8 }}
+      {{- with .Values.migrations.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "lerian-notification.serviceAccountName" . }}
+      restartPolicy: {{ .Values.migrations.restartPolicy }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.migrations.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.migrations.image.repository | default .Values.api.image.repository }}:{{ .Values.migrations.image.tag | default .Values.api.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default .Values.api.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.migrations.securityContext | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "lerian-notification.configMapName" . }}
+            - secretRef:
+                name: {{ include "lerian-notification.secretName" . }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              # Build DSN from POSTGRES_* env vars. URL-encode the password so
+              # special characters survive the connection string.
+              PW_ENC=$(printf '%s' "${POSTGRES_PASSWORD}" | od -An -tx1 -v | tr -d ' \n' | sed 's/\(..\)/%\1/g')
+              DATABASE_URL="postgres://${POSTGRES_USER}:${PW_ENC}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_NAME}?sslmode=${POSTGRES_SSLMODE}"
+              echo "Running migrations against ${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_NAME} (sslmode=${POSTGRES_SSLMODE})"
+              exec migrate -path /migrations -database "${DATABASE_URL}" {{ range .Values.migrations.extraArgs }}{{ . | quote }} {{ end }}up
+          resources:
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
+{{- end }}

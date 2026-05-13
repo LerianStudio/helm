@@ -14,7 +14,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.1-beta.11"
+    tag: "1.2.1-beta.12"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   # -- Overrides the default generated name by Helm
@@ -72,7 +72,7 @@ pix:
     # -- CPU and memory limits for pods
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
       cpu: 100m
@@ -85,7 +85,7 @@ pix:
     # -- Maximum number of replicas
     maxReplicas: 9
     # -- Target CPU utilization percentage for autoscaling
-    targetCPUUtilizationPercentage: 70
+    targetCPUUtilizationPercentage: 75
     targetMemoryUtilizationPercentage: 85
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
@@ -114,7 +114,7 @@ pix:
     # -- Default Environment
     #MIDAZ Variables
     MIDAZ_ORGANIZATION_ID: "your-organization"
-    MIDAZ_LEDGER_ID: ""
+    MIDAZ_LEDGER_ID: "your_ledger"
     MIDAZ_ASSET_ID: ""
     MIDAZ_EXTERNAL_ID: ""
     MIDAZ_TIMEOUT: ""

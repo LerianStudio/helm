@@ -7,9 +7,9 @@ metadata:
 data:
   # -- Default Environment variables for the plugin-br-pix-direct-jd
   NODE_ENV: {{ .Values.pix.configmap.NODE_ENV | default "production" | quote }}
-  DEBUG: {{ .Values.pix.configmap.DEBUG | default "false" | quote }}
-  ENVIRONMENT: {{ .Values.pix.configmap.ENVIRONMENT | default "development" | quote }}
-  LOG_LEVEL: {{ .Values.pix.configmap.LOG_LEVEL | default "info" | quote }}
+  DEBUG: {{ .Values.pix.configmap.DEBUG | default "true" | quote }}
+  ENVIRONMENT: {{ .Values.pix.configmap.ENVIRONMENT | default "production" | quote }}
+  LOG_LEVEL: {{ .Values.pix.configmap.LOG_LEVEL | default "debug" | quote }}
   
   # APP
   APPLICATION_NAME: {{ .Values.pix.configmap.APPLICATION_NAME | default "plugin-br-pix-direct-jd" | quote }}
@@ -33,7 +33,7 @@ data:
   # Integration
   CORE_BANK_SERVER: {{ .Values.pix.configmap.CORE_BANK_SERVER | default "midaz" | quote }}
   CORE_PIX_SERVER: {{ .Values.pix.configmap.CORE_PIX_SERVER | default "jd" | quote }}
-  
+
   # JD Pix Integration Configuration
   JD_BASE_URL: {{ .Values.pix.configmap.JD_BASE_URL | default "" | quote }}
   JD_GRANT_TYPE: {{ .Values.pix.configmap.JD_GRANT_TYPE | default "client_credentials" | quote }}

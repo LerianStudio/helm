@@ -2,6 +2,20 @@
 
 ## [2.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v2.3.0)
 
+- **Features:**
+  - Released version 2.2.0 of plugin-br-pix-indirect-btg.
+
+- **Improvements:**
+  - Updated BTG version to 1.5.2.
+
+Contributors: @brunognovaes, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v2.2.0...plugin-br-pix-indirect-btg-v2.3.0)
+
+---
+
+## [2.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v2.3.0)
+
 - **Features**
   - Released version 2.2.0 of the plugin-br-pix-indirect-btg.
 

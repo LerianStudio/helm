@@ -13,7 +13,7 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  {{- if hasKey .Values.api.pdb "maxUnavailable" }}
+  {{- if and (hasKey .Values.api.pdb "maxUnavailable") (ne .Values.api.pdb.maxUnavailable nil) }}
   maxUnavailable: {{ .Values.api.pdb.maxUnavailable }}
   {{- else }}
   minAvailable: {{ .Values.api.pdb.minAvailable | default 1 }}

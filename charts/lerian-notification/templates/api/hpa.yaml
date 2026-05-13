@@ -13,8 +13,11 @@ spec:
     name: {{ include "lerian-notification.fullname" . }}
   minReplicas: {{ .Values.api.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.api.autoscaling.maxReplicas }}
+  {{- $cpu := .Values.api.autoscaling.targetCPUUtilizationPercentage }}
+  {{- $mem := .Values.api.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- if or $cpu $mem }}
   metrics:
-    {{- with .Values.api.autoscaling.targetCPUUtilizationPercentage }}
+    {{- with $cpu }}
     - type: Resource
       resource:
         name: cpu
@@ -22,7 +25,7 @@ spec:
           type: Utilization
           averageUtilization: {{ . }}
     {{- end }}
-    {{- with .Values.api.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- with $mem }}
     - type: Resource
       resource:
         name: memory
@@ -30,4 +33,7 @@ spec:
           type: Utilization
           averageUtilization: {{ . }}
     {{- end }}
+  {{- else }}
+  {{- fail "api.autoscaling.enabled=true requires targetCPUUtilizationPercentage and/or targetMemoryUtilizationPercentage" }}
+  {{- end }}
 {{- end }}

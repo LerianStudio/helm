@@ -74,6 +74,7 @@ migrations:
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
+    allowPrivilegeEscalation: false
     runAsNonRoot: true
     runAsUser: 65532
     runAsGroup: 65532
@@ -81,6 +82,8 @@ migrations:
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
 
 #==============================================================================
 # Shared environment (ConfigMap)
@@ -142,8 +145,8 @@ config:
   REDIS_DIAL_TIMEOUT: "5"
   REDIS_POOL_TIMEOUT: "2"
   REDIS_MAX_RETRIES: "3"
-  REDIS_MIN_RETRY_BACKOFF: "8"
-  REDIS_MAX_RETRY_BACKOFF: "1"
+  REDIS_MIN_RETRY_BACKOFF: "1"
+  REDIS_MAX_RETRY_BACKOFF: "8"
 
   # ---- RabbitMQ (external) ----
   RABBITMQ_HOST: ""
@@ -316,6 +319,7 @@ api:
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
+    allowPrivilegeEscalation: false
     runAsNonRoot: true
     runAsUser: 65532
     runAsGroup: 65532
@@ -323,6 +327,8 @@ api:
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     limits:
       cpu: 500m
@@ -385,6 +391,7 @@ workerEmail:
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
+    allowPrivilegeEscalation: false
     runAsNonRoot: true
     runAsUser: 65532
     runAsGroup: 65532
@@ -392,6 +399,8 @@ workerEmail:
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     limits:
       cpu: 500m
@@ -457,6 +466,7 @@ workerSms:
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
+    allowPrivilegeEscalation: false
     runAsNonRoot: true
     runAsUser: 65532
     runAsGroup: 65532
@@ -464,6 +474,8 @@ workerSms:
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     limits:
       cpu: 500m
@@ -529,6 +541,7 @@ workerWebhook:
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
+    allowPrivilegeEscalation: false
     runAsNonRoot: true
     runAsUser: 65532
     runAsGroup: 65532
@@ -536,6 +549,8 @@ workerWebhook:
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     limits:
       cpu: 500m

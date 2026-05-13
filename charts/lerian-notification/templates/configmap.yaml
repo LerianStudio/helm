@@ -15,13 +15,17 @@ data:
        Values are always quoted to keep "true"/"false"/"123" as strings,
        which is what envconfig (env: tags) expects.
   */}}
-  {{- range $key, $value := .Values.config }}
+  {{- range $key := keys .Values.config | sortAlpha }}
+  {{- $value := index $.Values.config $key }}
   {{- if not (has $key (list "VERSION" "OTEL_RESOURCE_SERVICE_VERSION" "SWAGGER_VERSION")) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}
   {{- with .Values.extraConfig }}
-  {{- range $key, $value := . }}
+  {{- range $key := keys . | sortAlpha }}
+  {{- $value := index $.Values.extraConfig $key }}
+  {{- if not (has $key (list "VERSION" "OTEL_RESOURCE_SERVICE_VERSION" "SWAGGER_VERSION")) }}
   {{ $key }}: {{ $value | quote }}
+  {{- end }}
   {{- end }}
   {{- end }}

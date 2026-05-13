@@ -1,6 +1,19 @@
 # Plugin-br-pix-switch Changelog
 
-## [1.1.0-beta.8] - Providers ingress + prefixed health probes
+## [1.1.0-beta.8] - Fix providers ingress default path for adapter-btg-mock
+
+`providersIngress.routes` default for `adapterBtgMock` had `/mock-btg`
+but the source binary mounts its router at `/btg-mock` (per
+`apps/adapter-btg-mock/components/api/bootstrap/server.go`:
+`const routePrefix = "/btg-mock"`). Requests reaching the ingress at
+`/mock-btg/<anything>` were forwarded to the pod which had no route
+registered there → 404s.
+
+Switch the default path to `/btg-mock` so it matches what the binary
+actually serves (and what the deployment template's probe defaults
+already use).
+
+## [1.1.0-beta.7] - Providers ingress + prefixed health probes
 
 Two additions, single chart bump.
 

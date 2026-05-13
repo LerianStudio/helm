@@ -9,5 +9,6 @@ data:
   VERSION: {{ .Values.qrcode.image.tag | default .Chart.AppVersion | quote }}
   SERVER_PORT: "4009"
   SERVER_ADDRESS: ":4009"
+  LOG_LEVEL: {{ .Values.qrcode.configmap.LOG_LEVEL | default "info" | quote }}
 
   # -- Default Environment variables for the cert-provider

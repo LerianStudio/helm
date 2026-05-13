@@ -14,7 +14,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.1-beta.15"
+    tag: "1.2.1-beta.16"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   # -- Overrides the default generated name by Helm
@@ -72,7 +72,7 @@ pix:
     # -- CPU and memory limits for pods
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
       cpu: 100m
@@ -215,7 +215,7 @@ qrcode:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
     # -- Minimum number of replicas
-    minReplicas: 1
+    minReplicas: 3
     # -- Maximum number of replicas
     maxReplicas: 9
     # -- Target CPU utilization percentage for autoscaling

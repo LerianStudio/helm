@@ -143,8 +143,10 @@ spi:
   revisionHistoryLimit: 10
 
   image:
-    # Inherits global.image.repository / pullPolicy when not set
-    repository: ""
+    # Defaults to the per-component image published from
+    # apps/<path>/Dockerfile by the plugin-br-pix-switch build pipeline.
+    # Override only when pinning to a different registry or fork.
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-spi-api"
     pullPolicy: ""
     tag: ""
 
@@ -273,7 +275,7 @@ spiSystemplane:
   revisionHistoryLimit: 10
 
   image:
-    repository: ""
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-spi-systemplane-api"
     pullPolicy: ""
     tag: ""
 
@@ -367,7 +369,7 @@ adapterBtgMock:
   revisionHistoryLimit: 10
 
   image:
-    repository: ""
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-adapter-btg-mock-api"
     pullPolicy: ""
     tag: ""
 
@@ -469,7 +471,7 @@ dictHub:
   revisionHistoryLimit: 10
 
   image:
-    repository: ""
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-dict-hub-api"
     pullPolicy: ""
     tag: ""
 
@@ -577,7 +579,7 @@ dictHubVsync:
   revisionHistoryLimit: 10
 
   image:
-    repository: ""
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-dict-hub-vsync"
     pullPolicy: ""
     tag: ""
 
@@ -691,7 +693,7 @@ dictProxy:
   revisionHistoryLimit: 10
 
   image:
-    repository: ""
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-dict-proxy-api"
     pullPolicy: ""
     tag: ""
 
@@ -782,7 +784,7 @@ dictSystemplane:
   revisionHistoryLimit: 10
 
   image:
-    repository: ""
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-dict-systemplane-api"
     pullPolicy: ""
     tag: ""
 
@@ -876,7 +878,7 @@ cobHub:
   revisionHistoryLimit: 10
 
   image:
-    repository: ""
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-cob-hub-api"
     pullPolicy: ""
     tag: ""
 
@@ -974,7 +976,7 @@ cobProxy:
   revisionHistoryLimit: 10
 
   image:
-    repository: ""
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-cob-proxy-api"
     pullPolicy: ""
     tag: ""
 
@@ -1065,7 +1067,7 @@ cobSystemplane:
   revisionHistoryLimit: 10
 
   image:
-    repository: ""
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-cob-systemplane-api"
     pullPolicy: ""
     tag: ""
 

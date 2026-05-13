@@ -14,7 +14,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.1-beta.17"
+    tag: "1.2.1-beta.18"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   # -- Overrides the default generated name by Helm
@@ -76,7 +76,7 @@ pix:
     # -- Minimum CPU and memory requests
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
@@ -85,8 +85,8 @@ pix:
     # -- Maximum number of replicas
     maxReplicas: 6
     # -- Target CPU utilization percentage for autoscaling
-    targetCPUUtilizationPercentage: 80
-    targetMemoryUtilizationPercentage: 80
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 85
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -277,7 +277,7 @@ job:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.1-beta.11"
+    tag: "1.2.1-beta.12"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   podSecurityContext: {}

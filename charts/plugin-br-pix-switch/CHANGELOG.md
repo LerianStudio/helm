@@ -1,5 +1,33 @@
 # Plugin-br-pix-switch Changelog
 
+## [1.1.0-beta.8] - Providers ingress
+
+Adds a third top-level ingress, `providersIngress`, routed by URL path
+prefix and disabled by default. Same shape as `appsIngress` /
+`systemplaneIngress` (custom `routes` list, enabled-aware rendering,
+no path rewriting at the ingress).
+
+The hostname is dedicated to outbound-provider adapters so cluster
+operators can apply provider-specific annotations (mTLS, IP allowlists,
+per-provider WAF rules) without coupling to the apps or systemplane
+ingresses.
+
+Default `routes` ships a single path:
+
+  /mock-btg  ->  adapter-btg-mock (port 4103)
+
+Future provider components (BACEN, JD, …) can be added by either:
+
+1. Defining a new component (`bacenAdapter`, `jdAdapter`, …) and
+   appending to `providersIngress.routes` at the chart level (separate
+   PR).
+2. Overriding `providersIngress.routes` per env in gitops to point at
+   an existing component or external Service.
+
+The chart skips routes whose target component is disabled, so the
+default `mock-btg` route is silently dropped when `adapterBtgMock.enabled`
+is false.
+
 ## [1.1.0-beta.7] - Remove dead global.image block
 
 Drop the `global.image` block from `values.yaml`. Since `1.1.0-beta.6`

@@ -1276,6 +1276,38 @@ systemplaneIngress:
       component: cobSystemplane
       serviceName: cob-systemplane
 
+# -----------------------------------------------------------------------------
+# Providers Ingress — outbound-provider adapters (BTG mock, BACEN, JD, ...).
+#
+# Single hostname routes provider traffic by path prefix. Each route names a
+# component already defined in the chart (or one a future PR adds) and the
+# kebab-case Service name suffix.
+#
+# Today only adapter-btg-mock is shipped; BACEN and JD providers will be
+# added as components in future PRs and exposed here under their own paths.
+# -----------------------------------------------------------------------------
+providersIngress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts: []
+  tls: []
+  routes:
+    - path: /mock-btg
+      pathType: Prefix
+      component: adapterBtgMock
+      serviceName: adapter-btg-mock
+    # Reserved for future components — uncomment when the bacen/jd
+    # adapter components ship in the chart:
+    # - path: /bacen
+    #   pathType: Prefix
+    #   component: bacenAdapter
+    #   serviceName: bacen-adapter
+    # - path: /jd
+    #   pathType: Prefix
+    #   component: jdAdapter
+    #   serviceName: jd-adapter
+
 postgresql:
   enabled: false
   global:

@@ -1,5 +1,17 @@
 # Plugin-br-pix-direct-jd Changelog
 
+## [2.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.4)
+
+- **Improvements:**
+  - Updated memory limit to 512Mi for improved performance.
+  - Increased minReplicas to 3 to enhance reliability and availability.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.3...plugin-br-pix-direct-jd-v2.2.4)
+
+---
+
 ## [2.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.3)
 
 - Improvements:

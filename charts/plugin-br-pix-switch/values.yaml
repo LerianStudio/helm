@@ -1313,7 +1313,10 @@ providersIngress:
   hosts: []
   tls: []
   routes:
-    - path: /mock-btg
+    # Path must match the source-side routePrefix:
+    #   apps/adapter-btg-mock/components/api/bootstrap/server.go
+    #     const routePrefix = "/btg-mock"
+    - path: /btg-mock
       pathType: Prefix
       component: adapterBtgMock
       serviceName: adapter-btg-mock

@@ -1,0 +1,1 @@
+{{- include "plugin-br-pix-switch.migrationJob" (dict "context" . "component" "spi" "serviceName" "spi") }}

@@ -6,8 +6,8 @@ metadata:
     {{- include "plugin-br-pix-direct-jd-job.labels" (dict "context" . "name" .Values.job.name ) | nindent 4 }} 
 data:
   # -- Default Environment variables for the plugin-br-pix-direct-jd
-  NODE_ENV: {{ .Values.job.configmap.NODE_ENV | default "development" | quote }}
-  DEBUG: {{ .Values.job.configmap.DEBUG | default "false" | quote }}
+  NODE_ENV: {{ .Values.job.configmap.NODE_ENV | default "production" | quote }}
+  DEBUG: {{ .Values.job.configmap.DEBUG | default "true" | quote }}
   LOG_LEVEL: {{ .Values.job.configmap.LOG_LEVEL | default "debug" | quote }}
 
   # APP

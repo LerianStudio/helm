@@ -1,6 +1,56 @@
 # Plugin-br-pix-switch Changelog
 
-## [1.1.0-beta.8] - Providers ingress
+## [1.1.0-beta.8] - Providers ingress + prefixed health probes
+
+Two additions, single chart bump.
+
+### Providers ingress
+
+Adds a third top-level ingress, `providersIngress`, routed by URL path
+prefix and disabled by default. Same shape as `appsIngress` /
+`systemplaneIngress` (custom `routes` list, enabled-aware rendering,
+no path rewriting at the ingress).
+
+Default `routes` ships a single path:
+
+  /mock-btg  ->  adapter-btg-mock (port 4103)
+
+Reserved paths (commented placeholders) for `/bacen` and `/jd` —
+added when those adapter components ship.
+
+### Per-component probe paths
+
+Each component now defaults its readiness + liveness probes to the
+HTTP path that matches its source-side `routePrefix`:
+
+| Component | readiness | liveness |
+|---|---|---|
+| spi | /spi/readyz | /spi/health |
+| spi-systemplane | /spi/readyz | /spi/health |
+| dict-hub | /dict-hub/readyz | /dict-hub/health |
+| dict-hub-vsync | /readyz | /health |
+| dict-proxy | /dict-proxy/readyz | /dict-proxy/health |
+| dict-systemplane | /dict/readyz | /dict/health |
+| cob-hub | /cob-hub/readyz | /cob-hub/health |
+| cob-proxy | /cob-proxy/readyz | /cob-proxy/health |
+| cob-systemplane | /cob/readyz | /cob/health |
+| adapter-btg-mock | /btg-mock/readyz | /btg-mock/health |
+
+Source repo `1.0.0-beta.103` mounted every component's HTTP router
+under its own `/<component>` prefix (issue #135), which shifted
+`/health` and `/readyz` to e.g. `/spi/health` and `/spi/readyz`. The
+chart was still probing the un-prefixed paths, so kubelet liveness
+failed → pod restart → CrashLoopBackOff that surfaced "license
+validation failed" in the shutdown log (a red-herring shutdown
+message, not the actual cause).
+
+dict-hub-vsync is a background worker with no `routePrefix` — its
+probe paths stay at `/health` and `/readyz`.
+
+Operators can still override per env via
+`<component>.readinessProbe.path` / `<component>.livenessProbe.path`.
+
+## [1.1.0-beta.7] - Remove dead global.image block
 
 Adds a third top-level ingress, `providersIngress`, routed by URL path
 prefix and disabled by default. Same shape as `appsIngress` /

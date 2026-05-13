@@ -198,8 +198,10 @@ spi:
   tolerations: []
   affinity: {}
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/spi/readyz"
+  livenessProbe:
+    path: "/spi/health"
 
   serviceAccount:
     create: true
@@ -317,8 +319,10 @@ spiSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/spi/readyz"
+  livenessProbe:
+    path: "/spi/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -414,8 +418,10 @@ adapterBtgMock:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/btg-mock/readyz"
+  livenessProbe:
+    path: "/btg-mock/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -513,8 +519,10 @@ dictHub:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/dict-hub/readyz"
+  livenessProbe:
+    path: "/dict-hub/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -621,8 +629,10 @@ dictHubVsync:
     minReplicas: 1
     maxReplicas: 1   # vsync is a singleton worker
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/readyz"
+  livenessProbe:
+    path: "/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -735,8 +745,10 @@ dictProxy:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/dict-proxy/readyz"
+  livenessProbe:
+    path: "/dict-proxy/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -826,8 +838,10 @@ dictSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/dict/readyz"
+  livenessProbe:
+    path: "/dict/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -920,8 +934,10 @@ cobHub:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/cob-hub/readyz"
+  livenessProbe:
+    path: "/cob-hub/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1018,8 +1034,10 @@ cobProxy:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/cob-proxy/readyz"
+  livenessProbe:
+    path: "/cob-proxy/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1109,8 +1127,10 @@ cobSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/cob/readyz"
+  livenessProbe:
+    path: "/cob/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}

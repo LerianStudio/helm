@@ -1,5 +1,19 @@
 # Plugin-br-pix-direct-jd Changelog
 
+## [2.2.10](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.10)
+
+- Improvements:
+  - Downgraded appVersion to 1.2.1-beta.11 for better compatibility.
+  - Adjusted image tag to align with the downgraded appVersion.
+  - Modified memory limit to 256Mi to optimize resource usage.
+  - Changed target CPU utilization percentage to 70 for improved performance.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.9...plugin-br-pix-direct-jd-v2.2.10)
+
+---
+
 ## [2.2.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.9)
 
 - **Improvements:**

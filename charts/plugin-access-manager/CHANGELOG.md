@@ -2,6 +2,19 @@
 
 ## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.4.1)
 
+- **Fixes**
+  - Updated appVersion and image tags to 2.6.3 for improved compatibility and performance.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v6.4.0...plugin-access-manager-v6.4.1)
+
+---
+
+## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.4.1)
+
 - Fixes:
   - Updated appVersion and image tags to 2.6.3 for improved compatibility and performance.
 

@@ -81,7 +81,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
-| `2.2.3` | 1.2.1-beta.15 | 1.2.1-beta.11 |
+| `2.2.4` | 1.2.1-beta.16 | 1.2.1-beta.11 |
 -----------------
 
 ### Plugin BR Pix Switch

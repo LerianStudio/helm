@@ -1,6 +1,40 @@
 # Plugin-br-pix-switch Changelog
 
-## [1.2.0-beta.1] - Shared multi-path ingresses
+## [1.1.0-beta.6] - Per-component image repositories
+
+Each component's `image.repository` now defaults to its own GHCR image
+name, published by the plugin-br-pix-switch source repo as 10 distinct
+per-component images (one per Dockerfile):
+
+| Component (values key) | Default image |
+|---|---|
+| `spi` | `ghcr.io/lerianstudio/plugin-br-pix-switch-spi-api` |
+| `spiSystemplane` | `ghcr.io/lerianstudio/plugin-br-pix-switch-spi-systemplane-api` |
+| `adapterBtgMock` | `ghcr.io/lerianstudio/plugin-br-pix-switch-adapter-btg-mock-api` |
+| `dictHub` | `ghcr.io/lerianstudio/plugin-br-pix-switch-dict-hub-api` |
+| `dictHubVsync` | `ghcr.io/lerianstudio/plugin-br-pix-switch-dict-hub-vsync` |
+| `dictProxy` | `ghcr.io/lerianstudio/plugin-br-pix-switch-dict-proxy-api` |
+| `dictSystemplane` | `ghcr.io/lerianstudio/plugin-br-pix-switch-dict-systemplane-api` |
+| `cobHub` | `ghcr.io/lerianstudio/plugin-br-pix-switch-cob-hub-api` |
+| `cobProxy` | `ghcr.io/lerianstudio/plugin-br-pix-switch-cob-proxy-api` |
+| `cobSystemplane` | `ghcr.io/lerianstudio/plugin-br-pix-switch-cob-systemplane-api` |
+
+Previously every component fell back to the global default
+`ghcr.io/lerianstudio/plugin-br-pix-switch`, which only contained the
+SPI binary — meaning all 9 component pods ran SPI regardless of role.
+With the source repo now publishing per-component images
+(plugin-br-pix-switch PR #137, available from `1.0.0-beta.101`), each
+pod can run its own binary out of the box.
+
+The `global.image.repository` fallback stays unchanged for backwards
+compatibility — operators using a custom registry can still override
+globally without setting every component.
+
+`appVersion` bumped to `1.0.0-beta.101` so the chart's default tag
+points at real published images (was `1.0.0-beta.1` which never existed
+in GHCR as a per-component image).
+
+## [1.1.0-beta.5] - Shared multi-path ingresses
 
 Replaces 9 of the per-component `ingress:` blocks with two top-level
 ingress objects routed by URL path prefix:

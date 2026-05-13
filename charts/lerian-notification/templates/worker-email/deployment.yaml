@@ -1,0 +1,105 @@
+{{- if .Values.workerEmail.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "workerEmail.fullname" . }}
+  namespace: {{ include "lerian-notification.namespace" . }}
+  labels:
+    {{- include "lerian-notification.labels" (dict "context" . "name" .Values.workerEmail.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.workerEmail.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml .Values.workerEmail.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.workerEmail.autoscaling.enabled }}
+  replicas: {{ .Values.workerEmail.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "lerian-notification.selectorLabels" (dict "context" . "name" .Values.workerEmail.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "lerian-notification.labels" (dict "context" . "name" .Values.workerEmail.name) | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.secretRef.name }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.workerEmail.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "lerian-notification.serviceAccountName" . }}
+      {{- with (concat .Values.imagePullSecrets .Values.workerEmail.imagePullSecrets) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.workerEmail.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.workerEmail.name }}
+          image: "{{ .Values.workerEmail.image.repository }}:{{ .Values.workerEmail.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.workerEmail.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.workerEmail.securityContext | nindent 12 }}
+          ports:
+            - name: health
+              containerPort: {{ .Values.workerEmail.containerPort }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "lerian-notification.configMapName" . }}
+            - secretRef:
+                name: {{ include "lerian-notification.secretName" . }}
+          env:
+            # Worker binds /health and /readyz on this address (overrides the
+            # shared ConfigMap default to match this worker's containerPort).
+            - name: WORKER_HEALTH_ADDRESS
+              value: ":{{ .Values.workerEmail.containerPort }}"
+            {{- range $key, $value := .Values.workerEmail.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.workerEmail.resources | nindent 12 }}
+          {{- if .Values.workerEmail.probes.startup.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.workerEmail.probes.startup.path }}
+              port: health
+            initialDelaySeconds: {{ .Values.workerEmail.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.workerEmail.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.workerEmail.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.workerEmail.probes.startup.failureThreshold }}
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.workerEmail.probes.readiness.path }}
+              port: health
+            initialDelaySeconds: {{ .Values.workerEmail.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.workerEmail.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.workerEmail.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.workerEmail.probes.readiness.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.workerEmail.probes.liveness.path }}
+              port: health
+            initialDelaySeconds: {{ .Values.workerEmail.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.workerEmail.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.workerEmail.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.workerEmail.probes.liveness.failureThreshold }}
+      {{- with .Values.workerEmail.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.workerEmail.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.workerEmail.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

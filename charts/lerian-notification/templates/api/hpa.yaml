@@ -1,0 +1,39 @@
+{{- if .Values.api.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "lerian-notification.fullname" . }}
+  namespace: {{ include "lerian-notification.namespace" . }}
+  labels:
+    {{- include "lerian-notification.labels" (dict "context" . "name" .Values.api.name) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "lerian-notification.fullname" . }}
+  minReplicas: {{ .Values.api.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.api.autoscaling.maxReplicas }}
+  {{- $cpu := .Values.api.autoscaling.targetCPUUtilizationPercentage }}
+  {{- $mem := .Values.api.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- if or $cpu $mem }}
+  metrics:
+    {{- with $cpu }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ . }}
+    {{- end }}
+    {{- with $mem }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ . }}
+    {{- end }}
+  {{- else }}
+  {{- fail "api.autoscaling.enabled=true requires targetCPUUtilizationPercentage and/or targetMemoryUtilizationPercentage" }}
+  {{- end }}
+{{- end }}

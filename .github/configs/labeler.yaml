@@ -37,7 +37,11 @@ plugin-br-pix-switch:
 plugin-br-payments:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-br-payments/**
-      
+
+lerian-notification:
+  - changed-files:
+      - any-glob-to-any-file: charts/lerian-notification/**
+
 product-console:
   - changed-files:
       - any-glob-to-any-file: charts/product-console/**

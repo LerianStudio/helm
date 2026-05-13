@@ -228,3 +228,14 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: |
 | `1.0.0` | 1.0.0 |
 -----------------
+
+### Lerian Notification
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-notification).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `0.1.0` | 0.1.0 |
+-----------------

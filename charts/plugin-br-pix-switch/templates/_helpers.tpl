@@ -31,22 +31,28 @@ Returns: <chartname>-<component-name>  (e.g. plugin-br-pix-switch-spi)
 {{- end }}
 
 {{/*
-Resolve image repository for a component, falling back to the global default.
-Tag resolution order: component override > global override > Chart.AppVersion.
+Resolve image repository + tag for a component.
+Each component sets its own image.repository (default to per-component image
+shipped by the plugin-br-pix-switch source repo). image.tag falls back to
+.Chart.AppVersion when unset, which keeps the cohort in lockstep by default.
+
+Override only image.tag at deploy time (per env) when you need to pin a
+specific build.
+
 Usage: include "plugin-br-pix-switch.componentImage" (dict "context" $ "componentValues" .Values.spi)
 */}}
 {{- define "plugin-br-pix-switch.componentImage" -}}
-{{- $repo := default .context.Values.global.image.repository .componentValues.image.repository -}}
-{{- $globalTag := default .context.Chart.AppVersion .context.Values.global.image.tag -}}
-{{- $tag := default $globalTag .componentValues.image.tag -}}
+{{- $repo := .componentValues.image.repository -}}
+{{- $tag := default .context.Chart.AppVersion .componentValues.image.tag -}}
 {{- printf "%s:%s" $repo $tag -}}
 {{- end }}
 
 {{/*
-Resolve image pullPolicy for a component, falling back to the global default.
+Resolve image pullPolicy for a component. Falls back to IfNotPresent — the
+K8s convention for tagged images.
 */}}
 {{- define "plugin-br-pix-switch.componentPullPolicy" -}}
-{{- default .context.Values.global.image.pullPolicy .componentValues.image.pullPolicy -}}
+{{- default "IfNotPresent" .componentValues.image.pullPolicy -}}
 {{- end }}
 
 {{/*

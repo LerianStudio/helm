@@ -1,5 +1,35 @@
 # Plugin-br-pix-switch Changelog
 
+## [1.1.0-beta.7] - Remove dead global.image block
+
+Drop the `global.image` block from `values.yaml`. Since `1.1.0-beta.6`
+every component already sets its own `image.repository` to a distinct
+per-component image, so the global default was never reached at render
+time and the old `repository: ghcr.io/lerianstudio/plugin-br-pix-switch`
+value misled readers into thinking pods pulled from the original
+single-binary image.
+
+Changes:
+
+- `values.yaml`: remove `global.image` (the `{repository, pullPolicy,
+  tag}` sub-block). `global.imagePullSecrets` stays — it's still
+  the natural place to set a single pull-secret list for the whole
+  cohort.
+- `_helpers.tpl`: simplify `componentImage` to read repo directly from
+  per-component values and default tag to `.Chart.AppVersion`. Drop the
+  intermediate `global.image.tag` fallback.
+- `componentPullPolicy`: hard-default to `IfNotPresent` instead of
+  reading `global.image.pullPolicy`.
+- 10 component `configmap.yaml` templates: drop the
+  `global.image.tag` fallback when deriving
+  `OTEL_RESOURCE_SERVICE_VERSION`.
+
+No rendered output changes when component-level `image.repository` and
+`image.tag` are set (which is the documented use). Operators who relied
+on `global.image.tag` for cohort-wide tag override must switch to
+setting `image.tag` per component (or use a YAML anchor / helmfile
+override list).
+
 ## [1.1.0-beta.6] - Per-component image repositories
 
 Each component's `image.repository` now defaults to its own GHCR image

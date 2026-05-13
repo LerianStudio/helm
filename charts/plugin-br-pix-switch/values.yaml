@@ -34,13 +34,9 @@ namespaceOverride: ""
 # GLOBAL DEFAULTS — applied to all components unless overridden in their block
 # =============================================================================
 global:
-  # -- Image pull secrets propagated to every component
+  # -- Image pull secrets propagated to every component when the component's
+  # own `imagePullSecrets` list is empty.
   imagePullSecrets: []
-  # -- Default image config (each component can override)
-  image:
-    repository: ghcr.io/lerianstudio/plugin-br-pix-switch
-    pullPolicy: IfNotPresent
-    # tag: defaults to .Chart.AppVersion when empty
 
   # ---------------------------------------------------------------------------
   # External PostgreSQL bootstrap

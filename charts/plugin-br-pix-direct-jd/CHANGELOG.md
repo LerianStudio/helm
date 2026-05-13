@@ -1,5 +1,20 @@
 # Plugin-br-pix-direct-jd Changelog
 
+## [2.2.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.5)
+
+- **Improvements:**
+  - Updated image tag to `1.2.1-beta.18`.
+  - Adjusted memory limit to `256Mi`.
+  - Modified autoscaling settings.
+  - Updated appVersion to `1.2.1-beta.17`.
+  - Adjusted memory limits and replica settings.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.4...plugin-br-pix-direct-jd-v2.2.5)
+
+---
+
 ## [2.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.3)
 
 - Improvements:

@@ -2,6 +2,17 @@
 
 ## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
 
+- **Improvements:**
+  - Removed frontend service and updated backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
 - **Features**
   - Released version 5.4.0.
 

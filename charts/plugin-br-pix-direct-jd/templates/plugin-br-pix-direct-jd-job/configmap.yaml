@@ -8,7 +8,7 @@ data:
   # -- Default Environment variables for the plugin-br-pix-direct-jd
   NODE_ENV: {{ .Values.job.configmap.NODE_ENV | default "production" | quote }}
   DEBUG: {{ .Values.job.configmap.DEBUG | default "true" | quote }}
-  LOG_LEVEL: {{ .Values.job.configmap.LOG_LEVEL | default "info" | quote }}
+  LOG_LEVEL: {{ .Values.job.configmap.LOG_LEVEL | default "debug" | quote }}
 
   # APP
   APPLICATION_NAME: {{ .Values.job.configmap.APPLICATION_NAME | default "plugin-br-pix-direct-jd" | quote }}

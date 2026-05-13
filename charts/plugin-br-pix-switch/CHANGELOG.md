@@ -1,5 +1,40 @@
 # Plugin-br-pix-switch Changelog
 
+## [1.1.0-beta.9] - Schema migration Jobs for spi/dict-hub/cob-hub
+
+Add `golang-migrate` Helm-hook Jobs for the 3 components that own
+schema migrations (`spi`, `dictHub`, `cobHub`). Each Job:
+
+- Uses the component's own image (which now ships both `/app` and
+  `/migrate` per plugin-br-pix-switch#143).
+- Overrides `command:` to invoke `/migrate -path /migrations -database
+  $DATABASE_URL up` against the same database the app reads.
+- Annotates `helm.sh/hook: pre-upgrade,post-install` + weight `-5`, so
+  migrations land before pod rollout. `helm.sh/hook-delete-policy:
+  before-hook-creation,hook-succeeded` keeps successful runs out of
+  the cluster after completion.
+
+Configurable per-component:
+
+```yaml
+<component>:
+  migrations:
+    enabled: true         # set false to skip the Job entirely
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+```
+
+Without this, app tables never get created — the live firmino-dev
+`pix-spi`/`pix-dict`/`pix-cob` databases currently contain only
+`systemplane_entries` (created by lib-commons at startup), which is
+why SPI/DICT/COB pods start cleanly but would fail on any real
+business request.
+
+Requires plugin-br-pix-switch#143 to be merged + released first (it
+adds `/migrate` to the spi-api, dict-hub-api, cob-hub-api images). The
+Job will fail to run otherwise (exec: "/migrate": no such file).
+
 ## [1.1.0-beta.8] - Fix providers ingress default path for adapter-btg-mock
 
 `providersIngress.routes` default for `adapterBtgMock` had `/mock-btg`

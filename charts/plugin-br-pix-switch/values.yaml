@@ -265,6 +265,19 @@ spi:
 # -----------------------------------------------------------------------------
 # spi/systemplane/api — runtime config plane for SPI
 # -----------------------------------------------------------------------------
+
+  # -- golang-migrate Job that applies SQL migrations from the component's
+  # /migrations directory against the database referenced by DATABASE_URL.
+  # The migrate binary ships in the same image (plugin-br-pix-switch#143);
+  # the chart renders a Job with command [/migrate] overriding the default
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  migrations:
+    enabled: true
+    # Image path holding the SQL files. Match the Dockerfile's COPY target.
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+
 spiSystemplane:
   enabled: true
   name: "spi-systemplane"
@@ -575,6 +588,19 @@ dictHub:
 # -----------------------------------------------------------------------------
 # dict/hub/vsync — DICT verification sync worker (background, no ingress)
 # -----------------------------------------------------------------------------
+
+  # -- golang-migrate Job that applies SQL migrations from the component's
+  # /migrations directory against the database referenced by DATABASE_URL.
+  # The migrate binary ships in the same image (plugin-br-pix-switch#143);
+  # the chart renders a Job with command [/migrate] overriding the default
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  migrations:
+    enabled: true
+    # Image path holding the SQL files. Match the Dockerfile's COPY target.
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+
 dictHubVsync:
   enabled: true
   name: "dict-hub-vsync"
@@ -980,6 +1006,19 @@ cobHub:
 # -----------------------------------------------------------------------------
 # cob/proxy/api — COB proxy to BCB (BaseConfig only)
 # -----------------------------------------------------------------------------
+
+  # -- golang-migrate Job that applies SQL migrations from the component's
+  # /migrations directory against the database referenced by DATABASE_URL.
+  # The migrate binary ships in the same image (plugin-br-pix-switch#143);
+  # the chart renders a Job with command [/migrate] overriding the default
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  migrations:
+    enabled: true
+    # Image path holding the SQL files. Match the Dockerfile's COPY target.
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+
 cobProxy:
   enabled: true
   name: "cob-proxy"

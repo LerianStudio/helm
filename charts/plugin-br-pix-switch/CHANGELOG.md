@@ -1,5 +1,113 @@
 # Plugin-br-pix-switch Changelog
 
+## [1.1.0-beta.8] - Providers ingress + prefixed health probes
+
+Two additions, single chart bump.
+
+### Providers ingress
+
+Adds a third top-level ingress, `providersIngress`, routed by URL path
+prefix and disabled by default. Same shape as `appsIngress` /
+`systemplaneIngress` (custom `routes` list, enabled-aware rendering,
+no path rewriting at the ingress).
+
+Default `routes` ships a single path:
+
+  /mock-btg  ->  adapter-btg-mock (port 4103)
+
+Reserved paths (commented placeholders) for `/bacen` and `/jd` —
+added when those adapter components ship.
+
+### Per-component probe paths
+
+Each component now defaults its readiness + liveness probes to the
+HTTP path that matches its source-side `routePrefix`:
+
+| Component | readiness | liveness |
+|---|---|---|
+| spi | /spi/readyz | /spi/health |
+| spi-systemplane | /spi/readyz | /spi/health |
+| dict-hub | /dict-hub/readyz | /dict-hub/health |
+| dict-hub-vsync | /readyz | /health |
+| dict-proxy | /dict-proxy/readyz | /dict-proxy/health |
+| dict-systemplane | /dict/readyz | /dict/health |
+| cob-hub | /cob-hub/readyz | /cob-hub/health |
+| cob-proxy | /cob-proxy/readyz | /cob-proxy/health |
+| cob-systemplane | /cob/readyz | /cob/health |
+| adapter-btg-mock | /btg-mock/readyz | /btg-mock/health |
+
+Source repo `1.0.0-beta.103` mounted every component's HTTP router
+under its own `/<component>` prefix (issue #135), which shifted
+`/health` and `/readyz` to e.g. `/spi/health` and `/spi/readyz`. The
+chart was still probing the un-prefixed paths, so kubelet liveness
+failed → pod restart → CrashLoopBackOff that surfaced "license
+validation failed" in the shutdown log (a red-herring shutdown
+message, not the actual cause).
+
+dict-hub-vsync is a background worker with no `routePrefix` — its
+probe paths stay at `/health` and `/readyz`.
+
+Operators can still override per env via
+`<component>.readinessProbe.path` / `<component>.livenessProbe.path`.
+
+## [1.1.0-beta.7] - Remove dead global.image block
+
+Adds a third top-level ingress, `providersIngress`, routed by URL path
+prefix and disabled by default. Same shape as `appsIngress` /
+`systemplaneIngress` (custom `routes` list, enabled-aware rendering,
+no path rewriting at the ingress).
+
+The hostname is dedicated to outbound-provider adapters so cluster
+operators can apply provider-specific annotations (mTLS, IP allowlists,
+per-provider WAF rules) without coupling to the apps or systemplane
+ingresses.
+
+Default `routes` ships a single path:
+
+  /mock-btg  ->  adapter-btg-mock (port 4103)
+
+Future provider components (BACEN, JD, …) can be added by either:
+
+1. Defining a new component (`bacenAdapter`, `jdAdapter`, …) and
+   appending to `providersIngress.routes` at the chart level (separate
+   PR).
+2. Overriding `providersIngress.routes` per env in gitops to point at
+   an existing component or external Service.
+
+The chart skips routes whose target component is disabled, so the
+default `mock-btg` route is silently dropped when `adapterBtgMock.enabled`
+is false.
+
+## [1.1.0-beta.7] - Remove dead global.image block
+
+Drop the `global.image` block from `values.yaml`. Since `1.1.0-beta.6`
+every component already sets its own `image.repository` to a distinct
+per-component image, so the global default was never reached at render
+time and the old `repository: ghcr.io/lerianstudio/plugin-br-pix-switch`
+value misled readers into thinking pods pulled from the original
+single-binary image.
+
+Changes:
+
+- `values.yaml`: remove `global.image` (the `{repository, pullPolicy,
+  tag}` sub-block). `global.imagePullSecrets` stays — it's still
+  the natural place to set a single pull-secret list for the whole
+  cohort.
+- `_helpers.tpl`: simplify `componentImage` to read repo directly from
+  per-component values and default tag to `.Chart.AppVersion`. Drop the
+  intermediate `global.image.tag` fallback.
+- `componentPullPolicy`: hard-default to `IfNotPresent` instead of
+  reading `global.image.pullPolicy`.
+- 10 component `configmap.yaml` templates: drop the
+  `global.image.tag` fallback when deriving
+  `OTEL_RESOURCE_SERVICE_VERSION`.
+
+No rendered output changes when component-level `image.repository` and
+`image.tag` are set (which is the documented use). Operators who relied
+on `global.image.tag` for cohort-wide tag override must switch to
+setting `image.tag` per component (or use a YAML anchor / helmfile
+override list).
+
 ## [1.1.0-beta.6] - Per-component image repositories
 
 Each component's `image.repository` now defaults to its own GHCR image

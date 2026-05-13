@@ -34,13 +34,9 @@ namespaceOverride: ""
 # GLOBAL DEFAULTS — applied to all components unless overridden in their block
 # =============================================================================
 global:
-  # -- Image pull secrets propagated to every component
+  # -- Image pull secrets propagated to every component when the component's
+  # own `imagePullSecrets` list is empty.
   imagePullSecrets: []
-  # -- Default image config (each component can override)
-  image:
-    repository: ghcr.io/lerianstudio/plugin-br-pix-switch
-    pullPolicy: IfNotPresent
-    # tag: defaults to .Chart.AppVersion when empty
 
   # ---------------------------------------------------------------------------
   # External PostgreSQL bootstrap
@@ -202,8 +198,10 @@ spi:
   tolerations: []
   affinity: {}
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/spi/readyz"
+  livenessProbe:
+    path: "/spi/health"
 
   serviceAccount:
     create: true
@@ -321,8 +319,10 @@ spiSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/spi/readyz"
+  livenessProbe:
+    path: "/spi/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -418,8 +418,10 @@ adapterBtgMock:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/btg-mock/readyz"
+  livenessProbe:
+    path: "/btg-mock/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -517,8 +519,10 @@ dictHub:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/dict-hub/readyz"
+  livenessProbe:
+    path: "/dict-hub/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -625,8 +629,10 @@ dictHubVsync:
     minReplicas: 1
     maxReplicas: 1   # vsync is a singleton worker
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/readyz"
+  livenessProbe:
+    path: "/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -739,8 +745,10 @@ dictProxy:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/dict-proxy/readyz"
+  livenessProbe:
+    path: "/dict-proxy/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -830,8 +838,10 @@ dictSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/dict/readyz"
+  livenessProbe:
+    path: "/dict/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -924,8 +934,10 @@ cobHub:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/cob-hub/readyz"
+  livenessProbe:
+    path: "/cob-hub/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1022,8 +1034,10 @@ cobProxy:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/cob-proxy/readyz"
+  livenessProbe:
+    path: "/cob-proxy/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1113,8 +1127,10 @@ cobSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe: {}
-  livenessProbe: {}
+  readinessProbe:
+    path: "/cob/readyz"
+  livenessProbe:
+    path: "/cob/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1279,6 +1295,38 @@ systemplaneIngress:
       pathType: Prefix
       component: cobSystemplane
       serviceName: cob-systemplane
+
+# -----------------------------------------------------------------------------
+# Providers Ingress — outbound-provider adapters (BTG mock, BACEN, JD, ...).
+#
+# Single hostname routes provider traffic by path prefix. Each route names a
+# component already defined in the chart (or one a future PR adds) and the
+# kebab-case Service name suffix.
+#
+# Today only adapter-btg-mock is shipped; BACEN and JD providers will be
+# added as components in future PRs and exposed here under their own paths.
+# -----------------------------------------------------------------------------
+providersIngress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts: []
+  tls: []
+  routes:
+    - path: /mock-btg
+      pathType: Prefix
+      component: adapterBtgMock
+      serviceName: adapter-btg-mock
+    # Reserved for future components — uncomment when the bacen/jd
+    # adapter components ship in the chart:
+    # - path: /bacen
+    #   pathType: Prefix
+    #   component: bacenAdapter
+    #   serviceName: bacen-adapter
+    # - path: /jd
+    #   pathType: Prefix
+    #   component: jdAdapter
+    #   serviceName: jd-adapter
 
 postgresql:
   enabled: false

@@ -94,7 +94,7 @@ spec:
             {{- toYaml $values.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: {{ $values.readinessProbe.path | default "/readyz" }}
+              path: {{ $values.readinessProbe.path | default "/cob-proxy/readyz" }}
               port: http
             initialDelaySeconds: {{ $values.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ $values.readinessProbe.periodSeconds | default 5 }}
@@ -103,7 +103,7 @@ spec:
             failureThreshold: {{ $values.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
             httpGet:
-              path: {{ $values.livenessProbe.path | default "/health" }}
+              path: {{ $values.livenessProbe.path | default "/cob-proxy/health" }}
               port: http
             initialDelaySeconds: {{ $values.livenessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ $values.livenessProbe.periodSeconds | default 10 }}

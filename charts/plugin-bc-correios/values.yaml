@@ -248,7 +248,6 @@ bc-correios:
     OBJECT_STORAGE_SECRET_KEY: ""
     # Plugin Auth M2M client secret (optional)
     # PLUGIN_AUTH_CLIENT_SECRET: ""
-
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -370,3 +369,7 @@ seaweedfs:
 # already contains image.tag; this comment documents the CI/CD mapping:
 #   helm_values_key_mappings: '{"plugin-bc-correios": "bc-correios"}'
 # No duplicate key needed — the pipeline targets the bc-correios block directly.
+
+br-spb-bc-correios:
+  image:
+    tag: 1.2.0

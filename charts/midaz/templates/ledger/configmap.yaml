@@ -21,11 +21,23 @@ data:
   # =============================================================================
   ENV_NAME: {{ .Values.ledger.configmap.ENV_NAME | default "production" | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
+  DEPLOYMENT_MODE: {{ .Values.ledger.configmap.DEPLOYMENT_MODE | default "local" | quote }}
   LOG_LEVEL: {{ .Values.ledger.configmap.LOG_LEVEL | default "debug" | quote }}
 
-  # Single port for all APIs (onboarding + transaction routes)
   SERVER_PORT: {{ .Values.ledger.configmap.SERVER_PORT | default "3002" | quote }}
   SERVER_ADDRESS: {{ .Values.ledger.configmap.SERVER_ADDRESS | default ":3002" | quote }}
+
+  # =============================================================================
+  # SWAGGER
+  # =============================================================================
+  SWAGGER_TITLE: {{ .Values.ledger.configmap.SWAGGER_TITLE | default "" | quote }}
+  SWAGGER_DESCRIPTION: {{ .Values.ledger.configmap.SWAGGER_DESCRIPTION | default "" | quote }}
+  SWAGGER_VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
+  SWAGGER_HOST: {{ .Values.ledger.configmap.SWAGGER_HOST | default "" | quote }}
+  SWAGGER_BASE_PATH: {{ .Values.ledger.configmap.SWAGGER_BASE_PATH | default "" | quote }}
+  SWAGGER_SCHEMES: {{ .Values.ledger.configmap.SWAGGER_SCHEMES | default "" | quote }}
+  SWAGGER_LEFT_DELIM: {{ .Values.ledger.configmap.SWAGGER_LEFT_DELIM | default "" | quote }}
+  SWAGGER_RIGHT_DELIM: {{ .Values.ledger.configmap.SWAGGER_RIGHT_DELIM | default "" | quote }}
 
   # =============================================================================
   # AUTH CONFIGS (shared)
@@ -37,6 +49,15 @@ data:
   # MULTI-TENANT
   # =============================================================================
   MULTI_TENANT_ENABLED: {{ .Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- if eq (.Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  MULTI_TENANT_URL: {{ required "ledger.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.ledger.configmap.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_SERVICE_NAME: {{ .Values.ledger.configmap.MULTI_TENANT_SERVICE_NAME | default "ledger" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ required "ledger.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.ledger.configmap.MULTI_TENANT_REDIS_HOST | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ .Values.ledger.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ .Values.ledger.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  {{- end }}
 
   # =============================================================================
   # ACCOUNTING CONFIG
@@ -145,6 +166,7 @@ data:
   # RABBITMQ (used by transaction module)
   # =============================================================================
   RABBITMQ_URI: {{ .Values.ledger.configmap.RABBITMQ_URI | default "amqp" | quote }}
+  RABBITMQ_PROTOCOL: {{ .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" | quote }}
   RABBITMQ_HOST: {{ .Values.ledger.configmap.RABBITMQ_HOST | default "midaz-rabbitmq" | quote }}
   RABBITMQ_PORT_HOST: {{ .Values.ledger.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
   RABBITMQ_PORT_AMQP: {{ .Values.ledger.configmap.RABBITMQ_PORT_AMQP | default "15672" | quote }}
@@ -171,6 +193,7 @@ data:
   RABBITMQ_CIRCUIT_BREAKER_TIMEOUT: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_TIMEOUT | default "30" | quote }}
   RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL | default "30" | quote }}
   RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT | default "10" | quote }}
+  RABBITMQ_OPERATION_TIMEOUT: {{ .Values.ledger.configmap.RABBITMQ_OPERATION_TIMEOUT | default "30s" | quote }}
 
   # =============================================================================
   # BULK RECORDER
@@ -183,6 +206,10 @@ data:
   # TRANSACTION EXCHANGE EVENTS
   RABBITMQ_TRANSACTION_EVENTS_ENABLED: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_EVENTS_ENABLED | default "false" | quote }}
   RABBITMQ_TRANSACTION_EVENTS_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_EVENTS_EXCHANGE | default "transaction.transaction_events.exchange" | quote }}
+
+  # OVERDRAFT EVENTS
+  RABBITMQ_OVERDRAFT_EVENTS_ENABLED: {{ .Values.ledger.configmap.RABBITMQ_OVERDRAFT_EVENTS_ENABLED | default "false" | quote }}
+  RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE | default "transaction.overdraft_events.exchange" | quote }}
 
   # AUDIT
   AUDIT_LOG_ENABLED: {{ .Values.ledger.configmap.AUDIT_LOG_ENABLED | default "false" | quote }}
@@ -200,6 +227,9 @@ data:
   # =============================================================================
   BALANCE_SYNC_WORKER_ENABLED: {{ .Values.ledger.configmap.BALANCE_SYNC_WORKER_ENABLED | default "false" | quote }}
   BALANCE_SYNC_MAX_WORKERS: {{ .Values.ledger.configmap.BALANCE_SYNC_MAX_WORKERS | default "5" | quote }}
+  BALANCE_SYNC_BATCH_SIZE: {{ .Values.ledger.configmap.BALANCE_SYNC_BATCH_SIZE | default "50" | quote }}
+  BALANCE_SYNC_FLUSH_TIMEOUT_MS: {{ .Values.ledger.configmap.BALANCE_SYNC_FLUSH_TIMEOUT_MS | default "500" | quote }}
+  BALANCE_SYNC_POLL_INTERVAL_MS: {{ .Values.ledger.configmap.BALANCE_SYNC_POLL_INTERVAL_MS | default "50" | quote }}
 
   # =============================================================================
   # RATE LIMITING

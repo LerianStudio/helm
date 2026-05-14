@@ -13,9 +13,9 @@ For implementation and configuration details, see the [README](https://charts.le
 
 #### Application Version Mapping
 
-| Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
-| :---: | :---: | :---: | :---: | :---: |
-| `6.5.0-beta.1` | 3.7.1 | 3.7.0 | 3.5.3 | 3.5.3 |
+| Chart Version | Ledger Version | CRM Version |
+| :---: | :---: | :---: |
+| `6.5.0-beta.1` | 3.7.1 | 3.7.0 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -29,8 +29,7 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
 | `6.5.0` | 2.6.5 | 2.4.4 |
-=======
-
+-----------------
 
 ### Plugin Fees Helm Chart
 

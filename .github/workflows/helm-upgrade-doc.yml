@@ -11,5 +11,5 @@ permissions:
 
 jobs:
   upgrade-doc:
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-upgrade-doc.yml@feat/helm-upgrade-doc
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-upgrade-doc.yml@v1.29.0
     secrets: inherit

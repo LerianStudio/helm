@@ -39,6 +39,15 @@
         "x-message-ttl": 604800000,
         "x-max-length": 10000
       }
+    },
+    {
+      "name": "reporter.fetcher.job.events",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "reporter.dlx",
+        "x-dead-letter-routing-key": "reporter.dlq.key"
+      }
     }
   ],
   "exchanges": [
@@ -52,6 +61,12 @@
       "name": "reporter.dlx",
       "vhost": "/",
       "type": "direct",
+      "durable": true
+    },
+    {
+      "name": "fetcher.job.events",
+      "vhost": "/",
+      "type": "topic",
       "durable": true
     }
   ],
@@ -69,6 +84,20 @@
       "destination": "reporter.dlq",
       "destination_type": "queue",
       "routing_key": "reporter.dlq.key"
+    },
+    {
+      "source": "fetcher.job.events",
+      "vhost": "/",
+      "destination": "reporter.fetcher.job.events",
+      "destination_type": "queue",
+      "routing_key": "job.completed.reporter"
+    },
+    {
+      "source": "fetcher.job.events",
+      "vhost": "/",
+      "destination": "reporter.fetcher.job.events",
+      "destination_type": "queue",
+      "routing_key": "job.failed.reporter"
     }
   ]
 }

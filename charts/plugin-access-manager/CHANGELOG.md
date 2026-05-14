@@ -9,6 +9,21 @@
   - Updated appVersion to 2.6.5.
   - Updated image tags for identity and auth components to latest versions.
 
+Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v6.4.1...plugin-access-manager-v6.5.0)
+
+---
+
+## [6.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v6.5.0)
+
+- **Features**
+  - Parametrized probe path and timing for all charts using `/readyz`.
+
+- **Fixes**
+  - Updated appVersion to 2.6.5.
+  - Updated image tags for identity and auth components to latest versions.
+
 - **Improvements**
   - Standardized probe field set across all charts.
 

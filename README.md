@@ -15,7 +15,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `6.4.1` | 3.7.1 | 3.7.0 | 3.5.3 | 3.5.3 |
+| `6.5.0-beta.1` | 3.7.1 | 3.7.0 | 3.5.3 | 3.5.3 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -29,7 +29,8 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
 | `6.5.0` | 2.6.5 | 2.4.4 |
------------------
+=======
+
 
 ### Plugin Fees Helm Chart
 
@@ -68,7 +69,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.4.0` | 1.0.0-beta.1 |
+| `1.5.0-beta.1` | 1.0.0-beta.1 |
 
 
 
@@ -132,7 +133,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `2.2.0-beta.2` | 1.3.0 | 1.3.0 |
+| `2.2.0-beta.3` | 1.3.0 | 1.3.0 |
 -----------------
 
 ### Underwriter
@@ -194,7 +195,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `3.0.0` | 2.1.0 |
+| `3.1.0-beta.1` | 2.1.0 |
 -----------------
 
 ### Product Console
@@ -218,7 +219,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.1` | 1.0.0 |
+| `1.1.0-beta.1` | 1.0.0 |
 -----------------
 
 ### Go Boilerplate DDD

@@ -195,7 +195,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `3.1.0-beta.1` | 2.1.0 |
+| `3.1.0-beta.2` | 2.1.0 |
 -----------------
 
 ### Product Console

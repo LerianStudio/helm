@@ -1,5 +1,125 @@
 # Plugin-fees Changelog
 
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
+- **Improvements**
+  - Removed frontend service and updated backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
+- **Improvements**
+  - Removed frontend service and updated backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
+- **Improvements**
+  - Removed frontend service and updated backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
+- **Improvements:**
+  - Removed frontend service and updated backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
+- **Features**
+  - Released version 5.4.0.
+
+- **Improvements**
+  - Removed frontend service and updated backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
+- **Improvements:**
+  - Removed frontend service from plugin-fees.
+  - Bumped backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
+- **Features**
+  - Removed frontend service from plugin-fees.
+  - Bumped backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
+- **Features**
+  - Removed frontend service from plugin-fees.
+  - Bumped backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.4.0)
+
+- **Features**
+  - Released version 5.4.0 of plugin-fees.
+
+- **Improvements**
+  - Removed frontend service from plugin-fees.
+  - Bumped backend version to 3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.3.0...plugin-fees-v5.4.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.3.0)
+
+- Features:
+  - Added support for new environment variables: APPLICATION_NAME, MULTI_TENANT_TIMEOUT, MULTI_TENANT_CACHE_TTL_SEC.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @jeffersonrodrigues92, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.2.0...plugin-fees-v5.3.0)
+
+---
+
 ## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v5.3.0)
 
 - **Features**

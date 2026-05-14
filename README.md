@@ -15,7 +15,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version | Onboarding Version | Transaction Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `6.4.0-beta.1` | 3.6.3 | 3.6.3 | 3.5.3 | 3.5.3 |
+| `6.4.1` | 3.7.1 | 3.7.0 | 3.5.3 | 3.5.3 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -28,7 +28,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `6.4.0-beta.1` | 2.6.1 | 2.4.2 |
+| `6.4.1` | 2.6.3 | 2.4.2 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -41,7 +41,8 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `5.4.0-beta.2` | 3.1.0 | `3.0.0` |
+| `5.4.0` | 3.2.0 | `3.0.0` |
+
 -----------------
 
 ### Reporter
@@ -67,7 +68,8 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.4.0-beta.2` | 1.0.0-beta.1 |
+| `1.4.0` | 1.0.0-beta.1 |
+
 
 
 
@@ -81,7 +83,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
-| `2.2.0-beta.1` | 1.2.1-beta.11 | 1.2.1-beta.11 |
+| `2.2.11` | 1.2.1-beta.11 | 1.2.1-beta.12 |
 -----------------
 
 ### Plugin BR Pix Switch
@@ -105,7 +107,8 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `2.3.0-beta.4` | 1.5.2 | 1.5.2 | 1.5.2 | 1.5.2 |
+| `2.3.0` | 1.5.2 | 1.5.2 | 1.5.2 | 1.5.2 |
+
 -----------------
 
 ### Plugin BR Payments

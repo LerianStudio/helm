@@ -2,6 +2,139 @@
 
 ## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
 
+- Features:
+  - Released version 2.1.0 of fetcher.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
+  - Introduced new data fetching capabilities to improve performance and reliability.
+
+- Fixes:
+  - Resolved an issue causing intermittent failures during data retrieval.
+  - Fixed a bug related to incorrect data parsing under specific conditions.
+
+- Improvements:
+  - Enhanced logging for better traceability and debugging.
+  - Optimized network requests to reduce latency and improve efficiency.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
+  - Introduced new data fetching capabilities to enhance performance and reliability.
+
+- Fixes:
+  - Resolved issue causing intermittent failures during data retrieval.
+  - Fixed bug related to incorrect data parsing under specific conditions.
+
+- Improvements:
+  - Optimized network request handling for reduced latency.
+  - Enhanced logging for better traceability and debugging.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
+  - Released version 2.1.0 of fetcher.
+
+- Contributors:
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
+  - Released version 2.1.0.
+
+- Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- **Features**
+  - Released version 2.1.0 of fetcher.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
+  - Released version 2.1.0 of fetcher.
+
+- Fixes:
+  - Minor bug fixes and performance improvements in fetcher.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
+  - Released version 2.1.0.
+
+- Fixes:
+  - Minor bug fixes and performance improvements.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Improvements:
+  - Updated CHANGELOG for fetcher to version 2.1.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
+  - Released version 2.1.0 of fetcher.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
 - Improvements:
   - Updated version to 2.1.0.
 

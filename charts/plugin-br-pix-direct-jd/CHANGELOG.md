@@ -1,5 +1,135 @@
 # Plugin-br-pix-direct-jd Changelog
 
+## [2.2.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.9)
+
+- **Improvements:**
+  - Updated appVersion to 1.2.1-beta.12 for plugin-br-pix-direct-jd.
+  - Modified memory limit to 512Mi for enhanced performance.
+  - Adjusted target CPU utilization percentage to 75 for better resource management.
+  - Changed NODE_ENV to development to align with current development practices.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.8...plugin-br-pix-direct-jd-v2.2.9)
+
+---
+
+## [2.2.7](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.7)
+
+- **Improvements:**
+  - Updated environment variables, fixed secret key casing, and adjusted deployment probes for improved reliability and performance.
+
+- **Documentation:**
+  - Added an upgrade guide for version 2.2.6 to assist users with the transition.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.6...plugin-br-pix-direct-jd-v2.2.7)
+
+---
+
+## [2.2.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.6)
+
+- Improvements:
+  - Updated environment variables and configuration settings for enhanced performance and compatibility.
+
+- Documentation:
+  - Added an upgrade guide for version 2.2.5 to assist users with the transition.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.5...plugin-br-pix-direct-jd-v2.2.6)
+
+---
+
+## [2.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.3)
+
+- Improvements:
+  - Updated appVersion and image tag to 1.2.1-beta.15 for plugin-br-pix-direct-jd.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.2...plugin-br-pix-direct-jd-v2.2.3)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.1)
+
+- **Improvements:**
+  - Updated image tag to 1.2.1-beta.13 for plugin-br-pix-direct-jd.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.0...plugin-br-pix-direct-jd-v2.2.1)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.0)
+
+- **Features:**
+  - Released version 2.2.0 of the plugin-br-pix-direct-jd.
+
+- **Improvements:**
+  - Updated image tag to 1.2.1-beta.12 for plugin-br-pix-direct-jd.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.1.0...plugin-br-pix-direct-jd-v2.2.0)
+
+---
+
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.1.0)
+
+- **Features**
+  - Released version 2.0.0 of the plugin-br-pix-direct-jd.
+  - Released version 2.1.0-beta.1 of the plugin-br-pix-direct-jd.
+  - Released version 2.1.0 of the plugin-br-pix-direct-jd.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.0.0...plugin-br-pix-direct-jd-v2.1.0)
+
+---
+
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.1.0)
+
+- **Features**
+  - Released version 2.0.0 of plugin-br-pix-direct-jd.
+  - Released version 2.1.0-beta.1 of plugin-br-pix-direct-jd.
+  - Released version 2.1.0 of plugin-br-pix-direct-jd.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.0.0...plugin-br-pix-direct-jd-v2.1.0)
+
+---
+
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.1.0)
+
+- **Features**
+  - Released version 2.0.0 of the plugin-br-pix-direct-jd.
+  - Released version 2.1.0-beta.1 of the plugin-br-pix-direct-jd.
+  - Released version 2.1.0 of the plugin-br-pix-direct-jd.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.0.0...plugin-br-pix-direct-jd-v2.1.0)
+
+---
+
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.1.0)
+
+- **Features**
+  - Released version 2.0.0 of the plugin-br-pix-direct-jd.
+  - Released version 2.1.0-beta.1 of the plugin-br-pix-direct-jd.
+  - Released version 2.1.0 of the plugin-br-pix-direct-jd.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.0.0...plugin-br-pix-direct-jd-v2.1.0)
+
+---
+
 ## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.1.0)
 
 - Features:

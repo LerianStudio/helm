@@ -8,7 +8,6 @@ data:
   # Application Settings
   ENV_NAME: {{ .Values.bankTransfer.configmap.ENV_NAME | default "production" | quote }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
-  ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
   LOG_LEVEL: {{ .Values.bankTransfer.configmap.LOG_LEVEL | default "info" | quote }}
   SERVER_ADDRESS: {{ .Values.bankTransfer.configmap.SERVER_ADDRESS | default ":4027" | quote }}
   HTTP_BODY_LIMIT_BYTES: {{ .Values.bankTransfer.configmap.HTTP_BODY_LIMIT_BYTES | default "1048576" | quote }}
@@ -262,6 +261,12 @@ data:
   BTF_RECONCILIATION_MAX_ATTEMPTS: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_MAX_ATTEMPTS | default "5" | quote }}
   BTF_RECONCILIATION_STALE_AFTER_SEC: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_STALE_AFTER_SEC | default "60" | quote }}
 
+  BTF_FEE_ENABLED: {{ .Values.bankTransfer.configmap.BTF_FEE_ENABLED | default "false" | quote }}
+  BTF_MIDAZ_CB_ENABLED: {{ .Values.bankTransfer.configmap.BTF_MIDAZ_CB_ENABLED | default "false" | quote }}
+  DEFAULT_ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.DEFAULT_ORGANIZATION_ID | default "" | quote }}
+  ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
+
+  
   # Extra Env Vars (must be a map of key: value pairs)
   {{- range $key, $value := .Values.bankTransfer.extraEnvVars }}
   {{ $key }}: {{ $value | quote }}

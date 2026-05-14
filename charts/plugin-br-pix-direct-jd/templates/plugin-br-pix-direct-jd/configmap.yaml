@@ -6,9 +6,12 @@ metadata:
     {{- include "plugin-br-pix-direct-jd.labels" (dict "context" . "name" .Values.pix.name ) | nindent 4 }} 
 data:
   # -- Default Environment variables for the plugin-br-pix-direct-jd
-  NODE_ENV: {{ .Values.pix.configmap.NODE_ENV | default "development" | quote }}
-  DEBUG: {{ .Values.pix.configmap.DEBUG | default "false" | quote }}
-
+  NODE_ENV: {{ .Values.pix.configmap.NODE_ENV | default "production" | quote }}
+  DEBUG: {{ .Values.pix.configmap.DEBUG | default "true" | quote }}
+  LOG_LEVEL: {{ .Values.pix.configmap.LOG_LEVEL | default "debug" | quote }}
+  NEW_VAR: {{ .Values.pix.configmap.NEW_VAR | default "value" | quote }}
+  NEW_TAG: {{ .Values.pix.image.tag | default .Chart.AppVersion | quote }}
+  
   # APP
   APPLICATION_NAME: {{ .Values.pix.configmap.APPLICATION_NAME | default "plugin-br-pix-direct-jd" | quote }}
   APPLICATION_BASE_URL: {{ .Values.pix.configmap.APPLICATION_BASE_URL | default "http://plugin-br-pix-direct-jd:4011" | quote }}
@@ -23,7 +26,7 @@ data:
   API_RATE_ONBOARD_WINDOW: {{ .Values.pix.configmap.API_RATE_ONBOARD_WINDOW | default "1" | quote }}
 
   # JOBS
-  JOBS_CRON_TRANSACTIONS: {{ .Values.pix.configmap.JOBS_CRON_TRANSACTIONS | default "*/10 * * * *" | quote }}
+  JOBS_CRON_TRANSACTIONS: {{ .Values.pix.configmap.JOBS_CRON_TRANSACTIONS | default "*/11 * * * *" | quote }}
   JOBS_CRON: {{ .Values.pix.configmap.JOBS_CRON | default "*/10 * * * *" | quote }}
   JOBS_CRON_PROCESS_CSM: {{ .Values.pix.configmap.JOBS_CRON_PROCESS_CSM | default "*/1 * * * *" | quote }}
   JOBS_CRON_TRANSACTIONS_NON_PRIORITY: {{ .Values.pix.configmap.JOBS_CRON_TRANSACTIONS_NON_PRIORITY | default "*/1 * * * *" | quote }}

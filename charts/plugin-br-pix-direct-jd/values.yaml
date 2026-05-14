@@ -11,7 +11,7 @@ pix:
   name: "plugin-br-pix-direct-jd"
   description: "Plugin pix for Midaz"
   # -- Number of old ReplicaSets to retain for deployment rollback
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 5
   image:
     # -- Repository for the container image
     repository: ghcr.io/lerianstudio/plugin-br-pix-direct-jd
@@ -76,21 +76,21 @@ pix:
     # -- CPU and memory limits for pods
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 512Mi
     # -- Minimum CPU and memory requests
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
     # -- Minimum number of replicas
-    minReplicas: 1
+    minReplicas: 3
     # -- Maximum number of replicas
-    maxReplicas: 3
+    maxReplicas: 12
     # -- Target CPU utilization percentage for autoscaling
-    targetCPUUtilizationPercentage: 80
-    targetMemoryUtilizationPercentage: 80
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 85
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -117,7 +117,7 @@ pix:
   configmap:
     # -- Default Environment
     #MIDAZ Variables
-    MIDAZ_ORGANIZATION_ID: ""
+    MIDAZ_ORGANIZATION_ID: "your-organization"
     MIDAZ_LEDGER_ID: ""
     MIDAZ_ASSET_ID: ""
     MIDAZ_EXTERNAL_ID: ""
@@ -186,7 +186,7 @@ qrcode:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: ""
+    tag: "1.2.1-beta.11"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   podSecurityContext: {}
@@ -219,7 +219,7 @@ qrcode:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
     # -- Minimum number of replicas
-    minReplicas: 1
+    minReplicas: 3
     # -- Maximum number of replicas
     maxReplicas: 9
     # -- Target CPU utilization percentage for autoscaling
@@ -281,7 +281,7 @@ job:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.2.1-beta.11"
+    tag: "1.2.1-beta.12"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   podSecurityContext: {}

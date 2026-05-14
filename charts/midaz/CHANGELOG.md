@@ -1,5 +1,134 @@
 # Midaz Changelog
 
+## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
+
+- **Fixes**
+  - Resolved an issue with the midaz component in version 3.7.1.
+  
+- **Improvements**
+  - Updated CRM image tag to version 3.7.0 for better performance and compatibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
+
+---
+
+## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
+
+- **Fixes**
+  - Resolved an issue in midaz with the hotfix update to version 3.7.1.
+
+- **Improvements**
+  - Updated CRM image tag to 3.7.0 for better compatibility and performance.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
+
+---
+
+## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
+
+- Features:
+  - Updated CRM image tag to version 3.7.0.
+
+- Fixes:
+  - Applied hotfix for midaz version 3.7.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
+
+---
+
+## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
+
+- **Fixes:**
+  - Resolved issue with midaz version 3.7.1 to ensure seamless functionality.
+
+- **Improvements:**
+  - Updated CRM image tag to version 3.7.0 for enhanced performance.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
+
+---
+
+## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
+
+- **Fixes:**
+  - Resolved issue with CRM image tag by updating it to version 3.7.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
+
+---
+
+## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
+
+- Features:
+  - Updated CRM image tag to version 3.7.0.
+
+- Fixes:
+  - Addressed issues in midaz with hotfix version 3.7.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
+
+---
+
+## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
+
+- **Fixes:**
+  - Resolved an issue with the CRM image tag, updating it to version 3.7.0 to ensure compatibility and stability.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
+
+---
+
+## [6.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.0)
+
+- **Features**
+  - Released version 6.4.0 of midaz.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.3.0...midaz-v6.4.0)
+
+---
+
+## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
+
+- **Fixes**
+  - Updated midaz-crm to version 3.6.3.
+  - Updated midaz-ledger to version 3.6.3.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.2.0...midaz-v6.3.0)
+
+---
+
+## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
+
+- **Fixes**
+  - Updated midaz-crm to version 3.6.3.
+  - Updated midaz-ledger to version 3.6.3.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.2.0...midaz-v6.3.0)
+
+---
+
 ## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
 
 - **Fixes**

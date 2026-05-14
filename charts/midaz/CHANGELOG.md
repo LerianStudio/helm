@@ -1,5 +1,37 @@
 # Midaz Changelog
 
+## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
+
+- **Features**
+  - Removed onboarding and transaction services from midaz chart.
+
+- **Improvements**
+  - Standardized probe field set across all charts.
+  - Parameterized probe path and timing for all charts using /readyz.
+  - Updated readiness probe paths to /readyz across multiple deployment templates.
+
+Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.1...midaz-v7.0.0)
+
+---
+
+## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
+
+- **Features**
+  - Removed onboarding and transaction services from midaz chart.
+
+- **Improvements**
+  - Standardized probe field set across all charts.
+  - Parameterized probe path and timing for all charts using /readyz.
+  - Updated readiness probe paths to /readyz across multiple deployment templates.
+
+Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.1...midaz-v7.0.0)
+
+---
+
 ## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
 
 - Features:

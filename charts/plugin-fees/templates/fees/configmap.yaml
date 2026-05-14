@@ -8,11 +8,17 @@ data:
   # -- Default Environment variables for the plugin-fees 
   ENV_NAME: {{ .Values.fees.configmap.ENV_NAME | default "development" | quote }}
   APPLICATION_NAME: {{ .Values.fees.configmap.APPLICATION_NAME | default "plugin-fees" | quote }}
+  DEPLOYMENT_MODE: {{ .Values.fees.configmap.DEPLOYMENT_MODE | default "local" | quote }}
 
-  # APP 
+  # APP
   SERVER_PORT: {{ .Values.fees.configmap.SERVER_PORT | default "4002" | quote }}
   SERVER_ADDRESS: {{ .Values.fees.configmap.SERVER_ADDRESS | default ":4002" | quote }}
   VERSION: {{ .Values.fees.image.tag | default .Chart.AppVersion | quote }}
+
+  # READYZ
+  READYZ_DEPENDENCY_TIMEOUT_SECONDS: {{ .Values.fees.configmap.READYZ_DEPENDENCY_TIMEOUT_SECONDS | default "1" | quote }}
+  READYZ_LICENSE_TIMEOUT_SECONDS: {{ .Values.fees.configmap.READYZ_LICENSE_TIMEOUT_SECONDS | default "5" | quote }}
+  READYZ_DRAIN_GRACE_SECONDS: {{ .Values.fees.configmap.READYZ_DRAIN_GRACE_SECONDS | default "10" | quote }}
 
   # Mongo DB
   MONGO_URI: {{ .Values.fees.configmap.MONGO_URI | default "mongodb" | quote }}
@@ -98,6 +104,7 @@ data:
   MULTI_TENANT_REDIS_TLS: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
   MULTI_TENANT_TIMEOUT: {{ .Values.fees.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}
   MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
   {{- end }}
 
   # Extra Env Vars

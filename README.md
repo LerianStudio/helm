@@ -83,7 +83,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
-| `2.2.11` | 1.2.1-beta.11 | 1.2.1-beta.12 |
+| `2.3.0-beta.1` | 1.2.1-beta.11 | 1.2.1-beta.12 |
 -----------------
 
 ### Plugin BR Pix Switch
@@ -94,7 +94,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0-beta.9` | 1.0.0-beta.1 |
+| `1.1.0-beta.10` | 1.0.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
@@ -107,7 +107,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `2.3.0` | 1.5.2 | 1.5.2 | 1.5.2 | 1.5.2 |
+| `2.4.0-beta.1` | 1.5.2 | 1.5.2 | 1.5.2 | 1.5.2 |
 
 -----------------
 
@@ -132,7 +132,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `2.2.0-beta.3` | 1.3.0 | 1.3.0 |
+| `2.2.0-beta.4` | 1.3.0 | 1.3.0 |
 -----------------
 
 ### Underwriter
@@ -194,7 +194,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `3.1.0-beta.1` | 2.1.0 |
+| `3.1.0-beta.2` | 2.1.0 |
 -----------------
 
 ### Product Console

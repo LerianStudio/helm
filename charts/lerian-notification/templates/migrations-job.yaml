@@ -3,12 +3,21 @@
   golang-migrate Job — runs as a Helm pre-install / pre-upgrade hook so DDL
   is applied before the API and workers attempt to connect.
 
-  Uses the API image because the service Dockerfile bundles /migrations
-  (COPY --from=builder /app/migrations /migrations). Override
-  .Values.migrations.image only when you build a dedicated migrations image.
+  Uses the API image because the service Dockerfile (starting at
+  lerian-notification v1.0.0-beta.2) bundles both /migrations and a
+  static /migrate binary alongside /api. The Job overrides the image
+  command to invoke /migrate directly — distroless has no shell, so the
+  binary is invoked with a fixed args list and DATABASE_URL is consumed
+  via $(DATABASE_URL) env substitution (handled by the kubelet, not a
+  shell).
 
-  The DATABASE_URL is constructed at runtime from the shared ConfigMap +
-  Secret so the Job stays consistent with whatever the app pods see.
+  DATABASE_URL must be supplied pre-built and URL-escaped by the
+  consumer — either inside .Values.secrets.DATABASE_URL (which the
+  ArgoCD Vault Plugin resolves at apply time) or, when an external
+  Secret is referenced via .Values.secretRef.name, as a DATABASE_URL
+  key in that Secret. The chart does not try to assemble the DSN from
+  POSTGRES_* values because a distroless Job has no shell to URL-encode
+  the password at runtime.
 */}}
 apiVersion: batch/v1
 kind: Job
@@ -53,43 +62,27 @@ spec:
           imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default .Values.api.image.pullPolicy }}
           securityContext:
             {{- toYaml .Values.migrations.securityContext | nindent 12 }}
-          {{- /*
-            Env vars are inlined (not envFrom) because the chart's ConfigMap
-            and Secret are regular release resources applied AFTER hooks.
-            For secretRef.name (external Secret) we read POSTGRES_PASSWORD
-            via secretKeyRef; otherwise we fall back to the rendered Secret
-            values (which the ArgoCD Vault Plugin resolves at apply time).
-          */}}
           env:
-            - name: POSTGRES_HOST
-              value: {{ .Values.config.POSTGRES_HOST | quote }}
-            - name: POSTGRES_PORT
-              value: {{ .Values.config.POSTGRES_PORT | quote }}
-            - name: POSTGRES_USER
-              value: {{ .Values.config.POSTGRES_USER | quote }}
-            - name: POSTGRES_NAME
-              value: {{ .Values.config.POSTGRES_NAME | quote }}
-            - name: POSTGRES_SSLMODE
-              value: {{ .Values.config.POSTGRES_SSLMODE | quote }}
-            - name: POSTGRES_PASSWORD
+            - name: DATABASE_URL
               {{- if .Values.secretRef.name }}
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.secretRef.name }}
-                  key: POSTGRES_PASSWORD
+                  key: DATABASE_URL
               {{- else }}
-              value: {{ .Values.secrets.POSTGRES_PASSWORD | quote }}
+              value: {{ .Values.secrets.DATABASE_URL | quote }}
               {{- end }}
           command:
-            - /bin/sh
-            - -ec
-            - |
-              # Build DSN from POSTGRES_* env vars. URL-encode the password so
-              # special characters survive the connection string.
-              PW_ENC=$(printf '%s' "${POSTGRES_PASSWORD}" | od -An -tx1 -v | tr -d ' \n' | sed 's/\(..\)/%\1/g')
-              DATABASE_URL="postgres://${POSTGRES_USER}:${PW_ENC}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_NAME}?sslmode=${POSTGRES_SSLMODE}"
-              echo "Running migrations against ${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_NAME} (sslmode=${POSTGRES_SSLMODE})"
-              exec migrate -path /migrations -database "${DATABASE_URL}" {{ range .Values.migrations.extraArgs }}{{ . | quote }} {{ end }}up
+            - /migrate
+          args:
+            - "-path"
+            - "/migrations"
+            - "-database"
+            - "$(DATABASE_URL)"
+            {{- range .Values.migrations.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
+            - "up"
           resources:
             {{- toYaml .Values.migrations.resources | nindent 12 }}
 {{- end }}

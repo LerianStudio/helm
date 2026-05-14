@@ -249,6 +249,11 @@ extraConfig: {}
 # Sensitive env vars. Leave empty here; populate per-env via gitops + AVP, or
 # point `secretRef.name` at an externally-managed Secret to skip this entirely.
 secrets:
+  # -- DATABASE_URL is the pre-built, URL-escaped Postgres DSN consumed
+  # by the migrations Job (templates/migrations-job.yaml). Required when
+  # `migrations.enabled` is true. Format:
+  #   postgres://USER:URLENCODED_PW@HOST:PORT/DB?sslmode=disable
+  DATABASE_URL: ""
   # -- Postgres
   POSTGRES_PASSWORD: ""
   # -- Postgres replica (optional, leave empty if unused)

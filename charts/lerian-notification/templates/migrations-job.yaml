@@ -33,7 +33,11 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
-      serviceAccountName: {{ include "lerian-notification.serviceAccountName" . }}
+      {{- /*
+        Intentionally NOT setting serviceAccountName: the chart's SA is a
+        regular release resource (applied after hooks), so the Job uses the
+        namespace's default SA which always exists at hook time.
+      */}}
       restartPolicy: {{ .Values.migrations.restartPolicy }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -49,11 +53,33 @@ spec:
           imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default .Values.api.image.pullPolicy }}
           securityContext:
             {{- toYaml .Values.migrations.securityContext | nindent 12 }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "lerian-notification.configMapName" . }}
-            - secretRef:
-                name: {{ include "lerian-notification.secretName" . }}
+          {{- /*
+            Env vars are inlined (not envFrom) because the chart's ConfigMap
+            and Secret are regular release resources applied AFTER hooks.
+            For secretRef.name (external Secret) we read POSTGRES_PASSWORD
+            via secretKeyRef; otherwise we fall back to the rendered Secret
+            values (which the ArgoCD Vault Plugin resolves at apply time).
+          */}}
+          env:
+            - name: POSTGRES_HOST
+              value: {{ .Values.config.POSTGRES_HOST | quote }}
+            - name: POSTGRES_PORT
+              value: {{ .Values.config.POSTGRES_PORT | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.config.POSTGRES_USER | quote }}
+            - name: POSTGRES_NAME
+              value: {{ .Values.config.POSTGRES_NAME | quote }}
+            - name: POSTGRES_SSLMODE
+              value: {{ .Values.config.POSTGRES_SSLMODE | quote }}
+            - name: POSTGRES_PASSWORD
+              {{- if .Values.secretRef.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretRef.name }}
+                  key: POSTGRES_PASSWORD
+              {{- else }}
+              value: {{ .Values.secrets.POSTGRES_PASSWORD | quote }}
+              {{- end }}
           command:
             - /bin/sh
             - -ec

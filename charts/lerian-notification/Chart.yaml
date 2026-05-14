@@ -2,6 +2,7 @@ apiVersion: v2
 name: lerian-notification-helm
 description: Lerian Notification service - multi-channel delivery (email, SMS, webhook) for the Lerian platform
 type: application
+kubeVersion: ">=1.24.0-0"
 home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/lerian-notification

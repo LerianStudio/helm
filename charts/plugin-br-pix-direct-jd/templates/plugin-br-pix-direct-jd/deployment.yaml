@@ -54,7 +54,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
           livenessProbe:
-            initialDelaySeconds: 10
+            initialDelaySeconds: 5
             periodSeconds: 5
             httpGet:
               path: /v1/health

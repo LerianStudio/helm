@@ -23,7 +23,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.4.2"
+    tag: "2.4.4"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -158,7 +158,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.6.3"
+    tag: "2.6.5"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -302,7 +302,7 @@ auth:
       # -- Image pull policy
       pullPolicy: Always
       # -- Image tag used for deployment
-      tag: "2.6.2"
+      tag: "2.6.5"
     resources:
       limits:
         cpu: 512m

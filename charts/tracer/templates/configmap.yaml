@@ -8,8 +8,8 @@ metadata:
     {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
 data:
   # Application Configuration
-  SERVER_PORT: {{ .Values.tracer.configmap.SERVER_PORT | default "8080" | quote }}
-  SERVER_ADDRESS: {{ .Values.tracer.configmap.SERVER_ADDRESS | default ":8080" | quote }}
+  SERVER_PORT: {{ .Values.tracer.configmap.SERVER_PORT | default "4020" | quote }}
+  SERVER_ADDRESS: {{ .Values.tracer.configmap.SERVER_ADDRESS | default ":4020" | quote }}
 
   # Logging
   LOG_LEVEL: {{ .Values.tracer.configmap.LOG_LEVEL | default "info" | quote }}
@@ -22,7 +22,7 @@ data:
 
   # Auth Plugin (Access Manager)
   PLUGIN_AUTH_ENABLED: {{ .Values.tracer.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_HOST: {{ .Values.tracer.configmap.PLUGIN_AUTH_HOST | default "http://plugin-auth:4000" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.tracer.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-auth:4000" | quote }}
 
   # PostgreSQL Database
   DB_HOST: {{ .Values.tracer.configmap.DB_HOST | default "tracer-postgresql" | quote }}
@@ -35,12 +35,11 @@ data:
   # Swagger Documentation
   SWAGGER_TITLE: {{ .Values.tracer.configmap.SWAGGER_TITLE | default "Tracer API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.tracer.configmap.SWAGGER_DESCRIPTION | default "Real-time transaction validation and fraud prevention API" | quote }}
-  SWAGGER_HOST: {{ .Values.tracer.configmap.SWAGGER_HOST | default ":8080" | quote }}
+  SWAGGER_HOST: {{ .Values.tracer.configmap.SWAGGER_HOST | default ":4020" | quote }}
   SWAGGER_BASE_PATH: {{ .Values.tracer.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.tracer.configmap.SWAGGER_SCHEMES | default "http" | quote }}
 
   # CEL Expression Engine
-  CEL_CACHE_MAX_SIZE: {{ .Values.tracer.configmap.CEL_CACHE_MAX_SIZE | default "1000" | quote }}
   CEL_COST_LIMIT: {{ .Values.tracer.configmap.CEL_COST_LIMIT | default "10000" | quote }}
 
   # OpenTelemetry (Observability)
@@ -52,7 +51,29 @@ data:
   # Cleanup Worker
   CLEANUP_WORKER_ENABLED: {{ .Values.tracer.configmap.CLEANUP_WORKER_ENABLED | default "false" | quote }}
   CLEANUP_INTERVAL_HOURS: {{ .Values.tracer.configmap.CLEANUP_INTERVAL_HOURS | default "24" | quote }}
-  CLEANUP_RETENTION_DAYS: {{ .Values.tracer.configmap.CLEANUP_RETENTION_DAYS | default "90" | quote }}
+
+  # Multi-Tenant
+  MULTI_TENANT_ENABLED: {{ .Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- if eq (.Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  MULTI_TENANT_URL: {{ required "tracer.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.tracer.configmap.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.tracer.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ required "tracer.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.tracer.configmap.MULTI_TENANT_REDIS_HOST | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ .Values.tracer.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ .Values.tracer.configmap.MULTI_TENANT_REDIS_TLS | default "true" | quote }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.tracer.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
+  MULTI_TENANT_TIMEOUT: {{ .Values.tracer.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.tracer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
+  {{- if .Values.tracer.configmap.MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT }}
+  MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: {{ .Values.tracer.configmap.MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT | quote }}
+  {{- end }}
+  {{- if .Values.tracer.configmap.MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT }}
+  MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT: {{ .Values.tracer.configmap.MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT | quote }}
+  {{- end }}
+  {{- end }}
 
   # Extra Env Vars
   {{- with .Values.tracer.extraEnvVars }}

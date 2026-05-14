@@ -64,6 +64,10 @@ global:
       # -- Password for bank_transfer user (ignored if useExistingSecret.name is set)
       password: "lerian"
 bankTransfer:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # -- Service name
   name: bank-transfer
   # -- Enable or disable the bank-transfer service

@@ -12,6 +12,7 @@ maintainers:
 
 version: 1.4.0
 
+
 appVersion: "2.4.0"
 keywords:
   - bank-transfer

@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lerian-notification.configMapName" . }}
+  namespace: {{ include "lerian-notification.namespace" . }}
+  labels:
+    {{- include "lerian-notification.labels" (dict "context" . "name" (include "lerian-notification.fullname" .)) | nindent 4 }}
+data:
+  # ---- App version (overrides config-supplied value with chart appVersion) ----
+  VERSION: {{ .Values.api.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.api.image.tag | default .Chart.AppVersion | quote }}
+  SWAGGER_VERSION: {{ .Values.api.image.tag | default .Chart.AppVersion | quote }}
+  {{- /*
+       Render every key under .Values.config followed by extraConfig.
+       Values are always quoted to keep "true"/"false"/"123" as strings,
+       which is what envconfig (env: tags) expects.
+  */}}
+  {{- range $key := keys .Values.config | sortAlpha }}
+  {{- $value := index $.Values.config $key }}
+  {{- if not (has $key (list "VERSION" "OTEL_RESOURCE_SERVICE_VERSION" "SWAGGER_VERSION")) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  {{- with .Values.extraConfig }}
+  {{- range $key := keys . | sortAlpha }}
+  {{- $value := index $.Values.extraConfig $key }}
+  {{- if not (has $key (list "VERSION" "OTEL_RESOURCE_SERVICE_VERSION" "SWAGGER_VERSION")) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  {{- end }}

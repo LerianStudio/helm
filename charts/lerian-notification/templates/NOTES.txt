@@ -1,0 +1,45 @@
+Lerian Notification deployed successfully.
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Chart:     {{ .Chart.Name }} {{ .Chart.Version }} (appVersion {{ .Chart.AppVersion }})
+
+Components:
+  - API              {{ include "lerian-notification.fullname" . }}      :{{ .Values.api.containerPort }}
+{{- if .Values.workerEmail.enabled }}
+  - Worker (email)   {{ include "workerEmail.fullname" . }}              :{{ .Values.workerEmail.containerPort }}
+{{- end }}
+{{- if .Values.workerSms.enabled }}
+  - Worker (sms)     {{ include "workerSms.fullname" . }}                :{{ .Values.workerSms.containerPort }}
+{{- end }}
+{{- if .Values.workerWebhook.enabled }}
+  - Worker (webhook) {{ include "workerWebhook.fullname" . }}            :{{ .Values.workerWebhook.containerPort }}
+{{- end }}
+
+{{- if .Values.migrations.enabled }}
+
+Migrations ran as a pre-install/pre-upgrade Helm hook:
+  kubectl logs -n {{ .Release.Namespace }} job/{{ include "lerian-notification.fullname" . }}-migrations
+{{- end }}
+
+External dependencies (NOT bundled):
+  - Postgres : {{ .Values.config.POSTGRES_HOST | default "<unset>" }}:{{ .Values.config.POSTGRES_PORT }}
+  - Redis    : {{ .Values.config.REDIS_HOST | default "<unset>" }}:{{ .Values.config.REDIS_PORT }}
+  - RabbitMQ : {{ .Values.config.RABBITMQ_HOST | default "<unset>" }}:{{ .Values.config.RABBITMQ_PORT_AMQP }}
+
+{{- if .Values.api.ingress.enabled }}
+
+Ingress:
+{{- $tls := (and .Values.api.ingress.tls (gt (len .Values.api.ingress.tls) 0)) }}
+{{- range .Values.api.ingress.hosts }}
+  URL: http{{ if $tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+
+Local access (ingress disabled):
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "lerian-notification.fullname" . }} 8080:{{ .Values.api.service.port }}
+  curl http://localhost:8080/health
+{{- end }}
+
+Logs:
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/part-of=lerian-notification --tail=200 -f

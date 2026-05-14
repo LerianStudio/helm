@@ -7,101 +7,34 @@ Namespace:       {{ .Release.Namespace }}
 Chart:           {{ .Chart.Name }}-{{ .Chart.Version }}
 App Version:     {{ .Chart.AppVersion }}
 
-------------------------------------------------------------
-  Main API Service (pixSwitch)
-------------------------------------------------------------
-  Service:       {{ include "plugin-br-pix-switch.fullname" . }}
-  HTTP Port:     {{ .Values.pixSwitch.service.port }}
-  gRPC Port:     {{ .Values.pixSwitch.service.grpcPort }}
-  Type:          {{ .Values.pixSwitch.service.type }}
-
-  In-cluster access (HTTP):
-    curl http://{{ include "plugin-br-pix-switch.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.pixSwitch.service.port }}/ready
-
-  In-cluster access (gRPC):
-    {{ include "plugin-br-pix-switch.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.pixSwitch.service.grpcPort }}
-
-{{- if .Values.pixSwitch.ingress.enabled }}
-
-  Ingress:       Enabled
-  {{- range .Values.pixSwitch.ingress.hosts }}
-  Host:          {{ .host }}
-  {{- end }}
-{{- else }}
-  Ingress:       Disabled
-{{- end }}
+This chart deploys multiple independent components of the
+plugin-br-pix-switch app. Each component has its own Deployment,
+Service, ConfigMap, and Secret.
 
 ------------------------------------------------------------
-  Autoscaling & Availability
+  Component Status
 ------------------------------------------------------------
-{{- if .Values.pixSwitch.autoscaling.enabled }}
-  HPA:           Enabled
-  Min Replicas:  {{ .Values.pixSwitch.autoscaling.minReplicas }}
-  Max Replicas:  {{ .Values.pixSwitch.autoscaling.maxReplicas }}
-  CPU Target:    {{ .Values.pixSwitch.autoscaling.targetCPUUtilizationPercentage | default "N/A" }}%
-  Memory Target: {{ .Values.pixSwitch.autoscaling.targetMemoryUtilizationPercentage | default "N/A" }}%
-{{- else }}
-  HPA:           Disabled
-  Replicas:      {{ .Values.pixSwitch.replicaCount }}
-{{- end }}
-{{- if .Values.pixSwitch.pdb.enabled }}
-  PDB:           Enabled (maxUnavailable: {{ .Values.pixSwitch.pdb.maxUnavailable }})
-{{- else }}
-  PDB:           Disabled
-{{- end }}
-
-------------------------------------------------------------
-  Secrets & Configuration
-------------------------------------------------------------
-  ConfigMap:     {{ include "plugin-br-pix-switch.fullname" . }}
-{{- if .Values.pixSwitch.useExistingSecrets }}
-  Secret:        {{ .Values.pixSwitch.existingSecretName }} (existing)
-{{- else }}
-  Secret:        {{ include "plugin-br-pix-switch.fullname" . }}
-{{- end }}
-
-------------------------------------------------------------
-  PostgreSQL
-------------------------------------------------------------
-{{- if .Values.postgresql.enabled }}
-  Status:        Enabled (Bitnami subchart)
-  Database:      {{ .Values.postgresql.auth.database }}
-  Username:      {{ .Values.postgresql.auth.username }}
-  In-cluster:    {{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432
-
-  WARNING: Bitnami PostgreSQL is intended for development only.
-  For production, use an external managed database and set postgresql.enabled=false.
-{{- else }}
-  Status:        Disabled (using external database)
-{{- end }}
-
-------------------------------------------------------------
-  Valkey (Redis-compatible)
-------------------------------------------------------------
-{{- if .Values.valkey.enabled }}
-  Status:        Enabled (Bitnami subchart)
-  Architecture:  {{ .Values.valkey.architecture }}
-  In-cluster:    {{ .Release.Name }}-valkey-primary.{{ .Release.Namespace }}.svc.cluster.local:6379
-
-  WARNING: Bitnami Valkey is intended for development only.
-  For production, use an external managed cache and set valkey.enabled=false.
-{{- else }}
-  Status:        Disabled (using external cache)
-{{- end }}
+{{ if .Values.spi.enabled }}  ✓ spi                  port {{ .Values.spi.service.port }}{{ else }}  ✗ spi                  (disabled){{ end }}
+{{ if .Values.spiSystemplane.enabled }}  ✓ spi-systemplane      port {{ .Values.spiSystemplane.service.port }}{{ else }}  ✗ spi-systemplane      (disabled){{ end }}
+{{ if .Values.adapterBtgMock.enabled }}  ✓ adapter-btg-mock     port {{ .Values.adapterBtgMock.service.port }}{{ else }}  ✗ adapter-btg-mock     (disabled){{ end }}
+{{ if .Values.dictHub.enabled }}  ✓ dict-hub             port {{ .Values.dictHub.service.port }}{{ else }}  ✗ dict-hub             (disabled){{ end }}
+{{ if .Values.dictHubVsync.enabled }}  ✓ dict-hub-vsync       port {{ .Values.dictHubVsync.service.port }}{{ else }}  ✗ dict-hub-vsync       (disabled){{ end }}
+{{ if .Values.dictProxy.enabled }}  ✓ dict-proxy           port {{ .Values.dictProxy.service.port }}{{ else }}  ✗ dict-proxy           (disabled){{ end }}
+{{ if .Values.dictSystemplane.enabled }}  ✓ dict-systemplane     port {{ .Values.dictSystemplane.service.port }}{{ else }}  ✗ dict-systemplane     (disabled){{ end }}
+{{ if .Values.cobHub.enabled }}  ✓ cob-hub              port {{ .Values.cobHub.service.port }}{{ else }}  ✗ cob-hub              (disabled){{ end }}
+{{ if .Values.cobProxy.enabled }}  ✓ cob-proxy            port {{ .Values.cobProxy.service.port }}{{ else }}  ✗ cob-proxy            (disabled){{ end }}
+{{ if .Values.cobSystemplane.enabled }}  ✓ cob-systemplane      port {{ .Values.cobSystemplane.service.port }}{{ else }}  ✗ cob-systemplane      (disabled){{ end }}
 
 ------------------------------------------------------------
   Useful Commands
 ------------------------------------------------------------
-  # Get all resources
+  # Get all resources for this release
   kubectl get all -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
 
-  # Check pod status
-  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
+  # Check pod status across all components
+  kubectl get pods -l app.kubernetes.io/part-of={{ include "plugin-br-pix-switch.name" . }} -n {{ .Release.Namespace }}
 
-  # View logs
-  kubectl logs -l app.kubernetes.io/name={{ include "plugin-br-pix-switch.name" . }} -n {{ .Release.Namespace }} -f
-
-  # Describe service
-  kubectl describe svc {{ include "plugin-br-pix-switch.fullname" . }} -n {{ .Release.Namespace }}
+  # View logs for a specific component (replace <component>)
+  kubectl logs -l app.kubernetes.io/component=<component> -n {{ .Release.Namespace }} -f
 
 ============================================================

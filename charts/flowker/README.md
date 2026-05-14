@@ -58,7 +58,7 @@ The secret must contain the keys defined in `flowker.secrets` (e.g., `MONGO_APP_
 | `flowker.replicaCount` | Number of replicas | `1` |
 | `flowker.image.repository` | Image repository | `ghcr.io/lerianstudio/flowker` |
 | `flowker.image.tag` | Image tag | `1.0.0-beta.22` |
-| `flowker.service.port` | Service port | `4000` |
+| `flowker.service.port` | Service port | `4021` |
 | `flowker.ingress.enabled` | Enable ingress | `false` |
 | `flowker.autoscaling.enabled` | Enable HPA | `true` |
 | `flowker.pdb.enabled` | Enable PodDisruptionBudget | `true` |

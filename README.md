@@ -42,6 +42,7 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
 | `5.4.0` | 3.2.0 | `3.0.0` |
+
 -----------------
 
 ### Reporter
@@ -54,7 +55,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `2.2.0` | 1.2.0 | 1.2.0 |
+| `2.3.0-beta.1` | 1.2.0 | 1.2.0 |
 -----------------
 
 ### Plugin BR Bank Transfer JD
@@ -68,6 +69,7 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | App Version |
 | :---: | :---: |
 | `1.4.0` | 1.0.0-beta.1 |
+
 
 
 
@@ -92,7 +94,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0-beta.1 |
+| `1.1.0-beta.9` | 1.0.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
@@ -106,6 +108,18 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
 | `2.3.0` | 1.5.2 | 1.5.2 | 1.5.2 | 1.5.2 |
+
+-----------------
+
+### Plugin BR Payments
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-payments).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | 1.0.0-beta.9 |
 -----------------
 
 ### Fetcher
@@ -118,7 +132,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `2.1.1` | 1.3.0 | 1.3.0 |
+| `2.2.0-beta.2` | 1.3.0 | 1.3.0 |
 -----------------
 
 ### Underwriter
@@ -131,7 +145,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Underwriter Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0 |
+| `2.1.0-beta.3` | 1.0.0 |
 -----------------
 
 ### Matcher
@@ -144,7 +158,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Matcher Version |
 | :---: | :---: |
-| `2.2.0` | 1.0.0 |
+| `2.3.0-beta.2` | 1.0.0 |
 
 ### Flowker
 
@@ -156,7 +170,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Flowker Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0-beta.22 |
+| `2.1.0-beta.6` | 1.0.0-beta.22 |
 -----------------
 
 ### Tracer
@@ -169,7 +183,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Tracer Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0 |
+| `2.0.0-beta.6` | 1.0.0 |
 -----------------
 
 ### Otel Collector Lerian
@@ -193,7 +207,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `2.3.0` | 1.6.0 |
+| `2.4.0-beta.1` | 1.6.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -216,4 +230,15 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | App Version |
 | :---: | :---: |
 | `1.0.0` | 1.0.0 |
+-----------------
+
+### Lerian Notification
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-notification).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0-beta.3` | 0.1.0 |
 -----------------

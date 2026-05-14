@@ -1,0 +1,24 @@
+{{- if .Values.api.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "lerian-notification.fullname" . }}
+  namespace: {{ include "lerian-notification.namespace" . }}
+  labels:
+    {{- include "lerian-notification.labels" (dict "context" . "name" .Values.api.name) | nindent 4 }}
+  {{- with .Values.api.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if and (hasKey .Values.api.pdb "maxUnavailable") (ne .Values.api.pdb.maxUnavailable nil) }}
+  maxUnavailable: {{ .Values.api.pdb.maxUnavailable }}
+  {{- else }}
+  minAvailable: {{ .Values.api.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "lerian-notification.selectorLabels" (dict "context" . "name" .Values.api.name) | nindent 6 }}
+{{- end }}

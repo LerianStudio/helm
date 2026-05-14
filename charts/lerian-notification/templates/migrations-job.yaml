@@ -1,0 +1,88 @@
+{{- if .Values.migrations.enabled }}
+{{- /*
+  golang-migrate Job — runs as a Helm pre-install / pre-upgrade hook so DDL
+  is applied before the API and workers attempt to connect.
+
+  Uses the API image because the service Dockerfile (starting at
+  lerian-notification v1.0.0-beta.2) bundles both /migrations and a
+  static /migrate binary alongside /api. The Job overrides the image
+  command to invoke /migrate directly — distroless has no shell, so the
+  binary is invoked with a fixed args list and DATABASE_URL is consumed
+  via $(DATABASE_URL) env substitution (handled by the kubelet, not a
+  shell).
+
+  DATABASE_URL must be supplied pre-built and URL-escaped by the
+  consumer — either inside .Values.secrets.DATABASE_URL (which the
+  ArgoCD Vault Plugin resolves at apply time) or, when an external
+  Secret is referenced via .Values.secretRef.name, as a DATABASE_URL
+  key in that Secret. The chart does not try to assemble the DSN from
+  POSTGRES_* values because a distroless Job has no shell to URL-encode
+  the password at runtime.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "lerian-notification.fullname" . }}-migrations
+  namespace: {{ include "lerian-notification.namespace" . }}
+  labels:
+    {{- include "lerian-notification.labels" (dict "context" . "name" (printf "%s-migrations" (include "lerian-notification.fullname" .))) | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "lerian-notification.selectorLabels" (dict "context" . "name" (printf "%s-migrations" (include "lerian-notification.fullname" .))) | nindent 8 }}
+      {{- with .Values.migrations.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- /*
+        Intentionally NOT setting serviceAccountName: the chart's SA is a
+        regular release resource (applied after hooks), so the Job uses the
+        namespace's default SA which always exists at hook time.
+      */}}
+      restartPolicy: {{ .Values.migrations.restartPolicy }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.migrations.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.migrations.image.repository | default .Values.api.image.repository }}:{{ .Values.migrations.image.tag | default .Values.api.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default .Values.api.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.migrations.securityContext | nindent 12 }}
+          env:
+            - name: DATABASE_URL
+              {{- if .Values.secretRef.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretRef.name }}
+                  key: DATABASE_URL
+              {{- else }}
+              value: {{ .Values.secrets.DATABASE_URL | quote }}
+              {{- end }}
+          command:
+            - /migrate
+          args:
+            - "-path"
+            - "/migrations"
+            - "-database"
+            - "$(DATABASE_URL)"
+            {{- range .Values.migrations.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
+            - "up"
+          resources:
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
+{{- end }}

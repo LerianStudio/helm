@@ -6,6 +6,10 @@ common:
     clientId: "ac56c81d4d6d95c0ac12"
     clientSecret: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
 identity:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
@@ -138,6 +142,10 @@ identity:
   useExistingSecret: false
   existingSecretName: ""
 auth:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
@@ -279,6 +287,10 @@ auth:
   useExistingSecret: false
   existingSecretName: ""
   backend:
+    # -- Readiness probe configuration. All fields override chart defaults.
+    readinessProbe: {}
+    # -- Liveness probe configuration. All fields override chart defaults.
+    livenessProbe: {}
     replicaCount: 1
     revisionHistoryLimit: 10
     name: "plugin-access-manager-auth-backend"

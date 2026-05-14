@@ -1,0 +1,78 @@
+# Per-environment values template. Copy and override per env (firmino, staging,
+# production). Sensitive values should be left empty here and injected via
+# gitops + ArgoCD Vault Plugin, or replaced entirely with `secretRef.name`
+# pointing at a pre-existing Secret.
+
+api:
+  replicaCount: 1
+  image:
+    repository: docker.io/lerianstudio/lerian-notification
+    pullPolicy: Always
+    tag: ""  # set per release (e.g. "0.1.0-rc.1")
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+
+workerEmail:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: docker.io/lerianstudio/lerian-notification-worker-email
+    pullPolicy: Always
+    tag: ""
+
+workerSms:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: docker.io/lerianstudio/lerian-notification-worker-sms
+    pullPolicy: Always
+    tag: ""
+
+workerWebhook:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: docker.io/lerianstudio/lerian-notification-worker-webhook
+    pullPolicy: Always
+    tag: ""
+
+migrations:
+  enabled: true
+
+# External Secret (preferred for gitops). Leave blank to use the chart-rendered
+# Secret populated from `.Values.secrets` below.
+secretRef:
+  name: ""
+
+config:
+  ENV_NAME: "firmino"
+  LOG_LEVEL: "info"
+  POSTGRES_HOST: ""
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "lerian-notification"
+  POSTGRES_NAME: "lerian-notification"
+  POSTGRES_SSLMODE: "require"
+  REDIS_HOST: ""
+  REDIS_PORT: "6379"
+  RABBITMQ_HOST: ""
+  RABBITMQ_PORT_AMQP: "5672"
+
+secrets:
+  POSTGRES_PASSWORD: ""
+  REDIS_PASSWORD: ""
+  RABBITMQ_URL: ""
+  RABBITMQ_DEFAULT_USER: ""
+  RABBITMQ_DEFAULT_PASS: ""
+  RABBITMQ_HEALTH_CHECK_URL: ""

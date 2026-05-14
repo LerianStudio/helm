@@ -68,7 +68,7 @@ global:
 | `tracer.replicaCount` | Number of replicas | `1` |
 | `tracer.image.repository` | Image repository | `lerianstudio/tracer` |
 | `tracer.image.tag` | Image tag | `1.0.0` |
-| `tracer.service.port` | Service port | `8080` |
+| `tracer.service.port` | Service port | `4020` |
 | `tracer.ingress.enabled` | Enable ingress | `false` |
 | `tracer.autoscaling.enabled` | Enable HPA | `true` |
 | `tracer.pdb.enabled` | Enable PodDisruptionBudget | `true` |

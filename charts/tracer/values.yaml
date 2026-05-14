@@ -34,6 +34,10 @@ global:
       password: "lerian"
 
 tracer:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
   # -- Service name
   name: tracer
 
@@ -107,8 +111,11 @@ tracer:
   service:
     # -- Kubernetes service type
     type: ClusterIP
-    # -- Port for the HTTP API
-    port: 8080
+    # -- Port for the HTTP API. Matches the tracer source convention
+    # (Dockerfile EXPOSE 4020 + .env.example + Dockerfile.dev SERVER_PORT=4020).
+    # Override in environment values.yaml when an existing deployment expects
+    # a different port (e.g. legacy 8080).
+    port: 4020
     annotations: {}
 
   ingress:
@@ -163,8 +170,13 @@ tracer:
   # @default -- templates/configmap.yaml
   configmap:
     # Application Settings
-    SERVER_PORT: "8080"
-    SERVER_ADDRESS: ":8080"
+    # SERVER_PORT/SERVER_ADDRESS default to 4020 to match the tracer source
+    # convention (Dockerfile EXPOSE 4020 + .env.example + Dockerfile.dev). The
+    # app reads SERVER_ADDRESS first; if empty, falls back to SERVER_PORT.
+    # Keep these in sync with service.port above (and containerPort) when
+    # overriding in environment values.yaml.
+    SERVER_PORT: "4020"
+    SERVER_ADDRESS: ":4020"
     LOG_LEVEL: "info"
 
     # Authentication
@@ -175,7 +187,7 @@ tracer:
 
     # Auth Plugin (Access Manager)
     PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
 
     # PostgreSQL Database
     DB_HOST: "tracer-postgresql.tracer.svc.cluster.local."
@@ -188,12 +200,11 @@ tracer:
     # Swagger Documentation
     SWAGGER_TITLE: "Tracer API"
     SWAGGER_DESCRIPTION: "Real-time transaction validation and fraud prevention API"
-    SWAGGER_HOST: ":8080"
+    SWAGGER_HOST: ":4020"
     SWAGGER_BASE_PATH: "/"
     SWAGGER_SCHEMES: "http"
 
     # CEL Expression Engine
-    CEL_CACHE_MAX_SIZE: "1000"
     CEL_COST_LIMIT: "10000"
 
     # OpenTelemetry
@@ -209,15 +220,59 @@ tracer:
     # Cleanup Worker
     CLEANUP_WORKER_ENABLED: "false"
     CLEANUP_INTERVAL_HOURS: "24"
-    CLEANUP_RETENTION_DAYS: "90"
+
+    # Multi-Tenant
+    # -- Enable multi-tenant mode. When true, the following fields are required:
+    #    MULTI_TENANT_URL, MULTI_TENANT_REDIS_HOST, secrets.MULTI_TENANT_SERVICE_API_KEY.
+    #    Also requires PLUGIN_AUTH_ENABLED=true and API_KEY_ENABLED_ONLY_VALIDATION=false
+    #    (enforced by the app at boot for security).
+    MULTI_TENANT_ENABLED: "false"
+    # -- Tenant Manager URL (required when MULTI_TENANT_ENABLED=true).
+    #    Use http://tenant-manager.<ns>.svc.cluster.local:4026 for in-cluster traffic.
+    MULTI_TENANT_URL: ""
+    # -- Allow http:// MULTI_TENANT_URL. lib-commons rejects cleartext HTTP unless
+    #    this is true. Never set true in production.
+    MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
+    # -- Redis host for tenant connection-pool registry (required when MT enabled).
+    MULTI_TENANT_REDIS_HOST: ""
+    # -- Redis port for tenant registry.
+    MULTI_TENANT_REDIS_PORT: "6379"
+    # -- Use TLS for tenant Redis connection. Default true (matches app's
+    #    secure-by-default; app forces true when env var is unset).
+    MULTI_TENANT_REDIS_TLS: "true"
+    # -- Maximum number of tenant connection pools held in memory.
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # -- Idle timeout (seconds) before evicting unused tenant pool.
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    # -- Tenant manager request timeout (seconds).
+    MULTI_TENANT_TIMEOUT: "30"
+    # -- Circuit breaker failure threshold for tenant manager calls.
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    # -- Circuit breaker open timeout (seconds) before half-open retry.
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # -- Cache TTL (seconds) for tenant manager responses.
+    MULTI_TENANT_CACHE_TTL_SEC: "120"
+    # -- Per-tenant connection liveness check interval (seconds).
+    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+    # -- Optional cap on per-tenant DB connections (only set in MT integration tests
+    #    or environments with very low DB max_connections; leave unset in production).
+    # MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: ""
+    # MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT: ""
 
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
     # -- PostgreSQL password
     DB_PASSWORD: "lerian"
-    # -- API Key secret (if API_KEY_ENABLED is true)
-    API_KEY_SECRET: ""
+    # -- API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true).
+    #    The chart previously named this API_KEY_SECRET, which the app never
+    #    reads — silently disabling API-key auth even with API_KEY_ENABLED=true.
+    API_KEY: ""
+    # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
+    #    Helm render fails fast if MT is enabled and this is empty.
+    # MULTI_TENANT_SERVICE_API_KEY: ""
+    # -- Optional Redis password for the tenant connection-pool registry.
+    # MULTI_TENANT_REDIS_PASSWORD: ""
 
   # -- Existing secrets name
   useExistingSecret: false

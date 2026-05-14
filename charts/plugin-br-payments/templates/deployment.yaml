@@ -1,0 +1,124 @@
+{{- include "plugin-br-payments.validateRequired" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-br-payments.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-payments.labels" (dict "context" .) | nindent 4 }}
+  {{- with .Values.app.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  revisionHistoryLimit: {{ .Values.app.revisionHistoryLimit | default 10 }}
+  {{- with .Values.app.deploymentStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-payments.selectorLabels" (dict "context" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-br-payments.labels" (dict "context" .) | nindent 8 }}
+      {{- with .Values.app.podAnnotations }}
+      annotations:
+        {{- range $key, $value := . }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      {{- with .Values.app.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "plugin-br-payments.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.app.terminationGracePeriodSeconds | default 60 }}
+      {{- with .Values.app.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.app.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if eq (include "postgresql.enabled" .) "true" }}
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.37
+          envFrom:
+            - configMapRef:
+                name: {{ include "plugin-br-payments.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              echo "Waiting for $POSTGRES_HOST:$POSTGRES_PORT...";
+              until nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+                echo "$POSTGRES_HOST:$POSTGRES_PORT not ready, sleeping 5s";
+                sleep 5;
+              done;
+              echo "$POSTGRES_HOST:$POSTGRES_PORT is ready";
+      {{- end }}
+      containers:
+        - name: {{ include "plugin-br-payments.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.app.securityContext | nindent 12 }}
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default (include "plugin-br-payments.defaultTag" .) }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.app.service.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "plugin-br-payments.fullname" . }}
+            - secretRef:
+                name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
+          {{- if (index .Values "otel-collector-lerian").enabled }}
+          env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "$(HOST_IP):4317"
+          {{- end }}
+          resources:
+            {{- toYaml .Values.app.resources | nindent 12 }}
+          # Canonical Lerian readiness contract — see plugin docs/readyz-guide.md
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: {{ .Values.app.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.app.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.app.readinessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ .Values.app.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.app.readinessProbe.failureThreshold | default 2 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.app.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.app.livenessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ .Values.app.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.app.livenessProbe.failureThreshold | default 3 }}
+      {{- with .Values.app.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.app.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.app.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,24 @@
+{{- if .Values.app.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "plugin-br-payments.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-payments.labels" (dict "context" .) | nindent 4 }}
+  {{- with .Values.app.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if .Values.app.pdb.maxUnavailable }}
+  maxUnavailable: {{ .Values.app.pdb.maxUnavailable }}
+  {{- else }}
+  minAvailable: {{ .Values.app.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-payments.selectorLabels" (dict "context" .) | nindent 6 }}
+{{- end }}

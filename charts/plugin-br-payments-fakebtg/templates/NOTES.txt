@@ -1,0 +1,30 @@
+# Plugin BR Payments — fakebtg
+
+Thank you for installing {{ .Chart.Name }} v{{ .Chart.Version }} (appVersion {{ .Chart.AppVersion }}).
+
+The fakebtg service is reachable in-cluster at:
+
+  http://{{ include "plugin-br-payments-fakebtg.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ .Values.fakebtg.service.port }}
+
+Probe target: GET /health
+
+
+# Chaos / Scenario Endpoints
+
+fakebtg exposes admin endpoints for runtime injection of errors and latency:
+
+  POST /admin/set-error      — inject a specific error response for a route
+  POST /admin/set-latency    — inject artificial latency
+  POST /admin/clear-error    — clear an injected error
+  POST /admin/clear-latency  — clear injected latency
+  POST /admin/reset          — reset all injected scenarios
+  GET  /inspect/calls        — list recorded inbound requests
+  DELETE /inspect/calls      — clear the request log
+
+
+# Reminder
+
+fakebtg is a test double for dev/staging only. Do NOT use this chart in
+production. The real BTG provider must be reached via plugin-br-payments'
+PROVIDER_API_BASE_URL configuration pointing at the actual BTG sandbox or
+production endpoints.

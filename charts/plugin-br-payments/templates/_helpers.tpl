@@ -136,25 +136,25 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.configmap.OUTBOX_ENABLED must be \"true\".\n   plugin-br-payments only registers its routes when the outbox pattern is enabled.\n   See README -> 'Local Development Config'.\n" }}
 {{- end }}
 
-{{/* Provider integration — required for any write operation */}}
-{{- if not .Values.app.configmap.PROVIDER_API_BASE_URL }}
-{{- fail "\n\nERROR: app.configmap.PROVIDER_API_BASE_URL is REQUIRED.\n   Set the provider API base URL (e.g., https://api.btgpactual.com).\n" }}
+{{/* BTG provider integration — required for any write operation */}}
+{{- if not .Values.app.configmap.BTG_API_BASE_URL }}
+{{- fail "\n\nERROR: app.configmap.BTG_API_BASE_URL is REQUIRED.\n   Set the BTG API base URL (e.g., https://api.btgpactual.com).\n" }}
 {{- end }}
 
-{{- if not .Values.app.configmap.PROVIDER_AUTH_URL }}
-{{- fail "\n\nERROR: app.configmap.PROVIDER_AUTH_URL is REQUIRED.\n   Set the provider OAuth2 token endpoint URL.\n" }}
+{{- if not .Values.app.configmap.BTG_AUTH_URL }}
+{{- fail "\n\nERROR: app.configmap.BTG_AUTH_URL is REQUIRED.\n   Set the BTG OAuth2 token endpoint URL.\n" }}
 {{- end }}
 
-{{- if not .Values.app.secrets.PROVIDER_CLIENT_ID }}
-{{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_ID is REQUIRED.\n   Set the provider OAuth2 client ID in the secrets section.\n" }}
+{{- if not .Values.app.secrets.BTG_CLIENT_ID }}
+{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_ID is REQUIRED.\n   Set the BTG OAuth2 client ID in the secrets section.\n" }}
 {{- end }}
 
-{{- if not .Values.app.secrets.PROVIDER_CLIENT_SECRET }}
-{{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_SECRET is REQUIRED.\n   Set the provider OAuth2 client secret in the secrets section.\n" }}
+{{- if not .Values.app.secrets.BTG_CLIENT_SECRET }}
+{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_SECRET is REQUIRED.\n   Set the BTG OAuth2 client secret in the secrets section.\n" }}
 {{- end }}
 
-{{- if not .Values.app.secrets.PROVIDER_WEBHOOK_SECRET }}
-{{- fail "\n\nERROR: app.secrets.PROVIDER_WEBHOOK_SECRET is REQUIRED.\n   Set the provider webhook bearer token in the secrets section.\n" }}
+{{- if not .Values.app.secrets.BTG_WEBHOOK_SECRET }}
+{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_SECRET is REQUIRED.\n   Set the BTG webhook bearer token in the secrets section.\n" }}
 {{- end }}
 
 {{/* Midaz Ledger URLs — required for production */}}

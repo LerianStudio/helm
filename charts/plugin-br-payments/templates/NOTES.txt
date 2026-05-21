@@ -44,13 +44,13 @@ HTTP API + reconciliation worker + outbox dispatcher run as goroutines in one pr
 The following values MUST be set for the deployment to start successfully:
 
   - app.configmap.OUTBOX_ENABLED          (must be "true" — HTTP routes only register when the outbox is enabled)
-  - app.configmap.PROVIDER_API_BASE_URL   (provider API base URL)
-  - app.configmap.PROVIDER_AUTH_URL       (provider OAuth2 token URL)
+  - app.configmap.BTG_API_BASE_URL        (BTG API base URL)
+  - app.configmap.BTG_AUTH_URL            (BTG OAuth2 token URL)
   - app.configmap.MIDAZ_ONBOARDING_URL    (Midaz onboarding service URL)
   - app.configmap.MIDAZ_TRANSACTION_URL   (Midaz transaction service URL)
-  - app.secrets.PROVIDER_CLIENT_ID        (provider OAuth2 client ID)
-  - app.secrets.PROVIDER_CLIENT_SECRET    (provider OAuth2 client secret)
-  - app.secrets.PROVIDER_WEBHOOK_SECRET   (provider webhook bearer token)
+  - app.secrets.BTG_CLIENT_ID             (BTG OAuth2 client ID)
+  - app.secrets.BTG_CLIENT_SECRET         (BTG OAuth2 client secret)
+  - app.secrets.BTG_WEBHOOK_SECRET        (BTG webhook bearer token)
   - app.secrets.POSTGRES_PASSWORD         (PostgreSQL application password)
   - app.secrets.INTERNAL_API_KEY          (>=32 chars; required for SERVICE_TYPE=both/worker)
   - app.secrets.CREDENTIAL_ENCRYPTION_KEY (base64 AES-256; required for SERVICE_TYPE=both/worker)

@@ -231,10 +231,10 @@ app:
     # Authentication (lib-auth + plugin-auth)
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    # Provider Integration (REQUIRED - validated by helper)
-    PROVIDER_API_BASE_URL: ""
-    PROVIDER_AUTH_URL: ""
-    PROVIDER_TOKEN_REFRESH_INTERVAL: "1h"
+    # BTG Provider Integration (REQUIRED - validated by helper)
+    BTG_API_BASE_URL: ""
+    BTG_AUTH_URL: ""
+    BTG_TOKEN_REFRESH_INTERVAL: "1h"
     # Midaz Ledger URLs (REQUIRED for production - validated by helper)
     MIDAZ_ONBOARDING_URL: ""
     MIDAZ_TRANSACTION_URL: ""
@@ -271,10 +271,10 @@ app:
     # PostgreSQL credentials
     POSTGRES_PASSWORD: "lerian"
     # POSTGRES_REPLICA_PASSWORD: ""
-    # Provider OAuth2 (REQUIRED)
-    PROVIDER_CLIENT_ID: ""
-    PROVIDER_CLIENT_SECRET: ""
-    PROVIDER_WEBHOOK_SECRET: ""
+    # BTG OAuth2 (REQUIRED)
+    BTG_CLIENT_ID: ""
+    BTG_CLIENT_SECRET: ""
+    BTG_WEBHOOK_SECRET: ""
     # Internal cross-pod API (REQUIRED when SERVICE_TYPE includes worker, i.e. "both" or "worker").
     # Must be at least 32 characters. Generate with: openssl rand -hex 32
     INTERNAL_API_KEY: ""

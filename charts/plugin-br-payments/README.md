@@ -46,13 +46,13 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | Field | Description |
 |-------|-------------|
 | `app.configmap.OUTBOX_ENABLED` | Must be `"true"`. The plugin only registers HTTP routes when the outbox is enabled. |
-| `app.configmap.PROVIDER_API_BASE_URL` | Provider API base URL. |
-| `app.configmap.PROVIDER_AUTH_URL` | Provider OAuth2 token URL. |
+| `app.configmap.BTG_API_BASE_URL` | BTG API base URL. |
+| `app.configmap.BTG_AUTH_URL` | BTG OAuth2 token URL. |
 | `app.configmap.MIDAZ_ONBOARDING_URL` | Midaz onboarding service URL. |
 | `app.configmap.MIDAZ_TRANSACTION_URL` | Midaz transaction service URL. |
-| `app.secrets.PROVIDER_CLIENT_ID` | Provider OAuth2 client ID. |
-| `app.secrets.PROVIDER_CLIENT_SECRET` | Provider OAuth2 client secret. |
-| `app.secrets.PROVIDER_WEBHOOK_SECRET` | Bearer token for incoming provider webhooks. |
+| `app.secrets.BTG_CLIENT_ID` | BTG OAuth2 client ID. |
+| `app.secrets.BTG_CLIENT_SECRET` | BTG OAuth2 client secret. |
+| `app.secrets.BTG_WEBHOOK_SECRET` | Bearer token for incoming BTG webhooks. |
 | `app.secrets.POSTGRES_PASSWORD` | PostgreSQL application password. |
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
 | `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker. Generate with `openssl rand -base64 32`. |

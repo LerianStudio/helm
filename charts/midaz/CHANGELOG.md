@@ -2,6 +2,17 @@
 
 ## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
 
+- **Features:**
+  - Removed onboarding and transaction services from midaz chart.
+
+Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.1...midaz-v7.0.0)
+
+---
+
+## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
+
 - **Features**
   - Removed onboarding and transaction services from midaz chart.
 

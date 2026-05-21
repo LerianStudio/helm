@@ -5,6 +5,26 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.2] — Unreleased
+
+### Changed
+
+- **BREAKING:** Renamed provider integration value keys from `PROVIDER_*` to `BTG_*`
+  to align with the names the `plugin-br-payments` binary actually reads
+  (`internal/bootstrap/config.go`). Affected keys:
+  - `app.configmap.PROVIDER_API_BASE_URL` → `app.configmap.BTG_API_BASE_URL`
+  - `app.configmap.PROVIDER_AUTH_URL` → `app.configmap.BTG_AUTH_URL`
+  - `app.configmap.PROVIDER_TOKEN_REFRESH_INTERVAL` → `app.configmap.BTG_TOKEN_REFRESH_INTERVAL`
+  - `app.secrets.PROVIDER_CLIENT_ID` → `app.secrets.BTG_CLIENT_ID`
+  - `app.secrets.PROVIDER_CLIENT_SECRET` → `app.secrets.BTG_CLIENT_SECRET`
+  - `app.secrets.PROVIDER_WEBHOOK_SECRET` → `app.secrets.BTG_WEBHOOK_SECRET`
+
+  Existing deployments must rename these keys in their values overlays in the
+  same change set that pins to chart version `1.0.0-beta.2` or later. The
+  previous `PROVIDER_*` keys were never consumed by the running binary, so the
+  token reconciliation worker remained idle in any environment that relied on
+  them.
+
 ## [0.1.0] — Unreleased
 
 ### Added

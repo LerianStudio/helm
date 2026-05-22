@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-br-payments-fakebtg.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-payments-fakebtg.labels" (dict "context" .) | nindent 4 }}
+  {{- with .Values.fakebtg.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  revisionHistoryLimit: {{ .Values.fakebtg.revisionHistoryLimit | default 5 }}
+  {{- with .Values.fakebtg.deploymentStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  replicas: {{ .Values.fakebtg.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-payments-fakebtg.selectorLabels" (dict "context" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-br-payments-fakebtg.labels" (dict "context" .) | nindent 8 }}
+      {{- with .Values.fakebtg.podAnnotations }}
+      annotations:
+        {{- range $key, $value := . }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      {{- with .Values.fakebtg.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "plugin-br-payments-fakebtg.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.fakebtg.terminationGracePeriodSeconds | default 10 }}
+      {{- with .Values.fakebtg.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ include "plugin-br-payments-fakebtg.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.fakebtg.securityContext | nindent 12 }}
+          image: "{{ .Values.fakebtg.image.repository }}:{{ .Values.fakebtg.image.tag | default (include "plugin-br-payments-fakebtg.defaultTag" .) }}"
+          imagePullPolicy: {{ .Values.fakebtg.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.fakebtg.service.targetPort }}
+              protocol: TCP
+          {{- with .Values.fakebtg.extraEnvVars }}
+          env:
+            {{- range $key, $value := . }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.fakebtg.resources | nindent 12 }}
+          # fakebtg exposes a single GET /health endpoint used for both probes.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ .Values.fakebtg.readinessProbe.initialDelaySeconds | default 2 }}
+            periodSeconds: {{ .Values.fakebtg.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.fakebtg.readinessProbe.timeoutSeconds | default 2 }}
+            successThreshold: {{ .Values.fakebtg.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.fakebtg.readinessProbe.failureThreshold | default 2 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ .Values.fakebtg.livenessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.fakebtg.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.fakebtg.livenessProbe.timeoutSeconds | default 2 }}
+            successThreshold: {{ .Values.fakebtg.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.fakebtg.livenessProbe.failureThreshold | default 3 }}
+      {{- with .Values.fakebtg.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.fakebtg.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.fakebtg.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -9,10 +9,8 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-
 version: 1.5.0-beta.1
-
-appVersion: "2.4.0"
+appVersion: "3.1.0"
 keywords:
   - bank-transfer
   - ted

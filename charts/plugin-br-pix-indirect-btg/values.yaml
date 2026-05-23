@@ -37,7 +37,8 @@ global:
           db: "plugin-br-pix-indirect-btg-db"
 pix:
   # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
+  readinessProbe:
+    path: /health
   # -- Liveness probe configuration. All fields override chart defaults.
   livenessProbe: {}
   replicaCount: 1
@@ -209,7 +210,8 @@ pix:
   existingSecretName: ""
 inbound:
   # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
+  readinessProbe:
+    path: /health
   # -- Liveness probe configuration. All fields override chart defaults.
   livenessProbe: {}
   replicaCount: 1
@@ -345,7 +347,8 @@ inbound:
   existingSecretName: "plugin-br-pix-indirect-btg-inbound"
 outbound:
   # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
+  readinessProbe:
+    path: /health
   # -- Liveness probe configuration. All fields override chart defaults.
   livenessProbe: {}
   replicaCount: 1
@@ -497,7 +500,8 @@ outbound:
   existingSecretName: ""
 reconciliation:
   # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
+  readinessProbe:
+    path: /health
   # -- Liveness probe configuration. All fields override chart defaults.
   livenessProbe: {}
   replicaCount: 1

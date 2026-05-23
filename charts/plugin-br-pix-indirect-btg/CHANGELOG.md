@@ -1,5 +1,26 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.0.0)
+
+- **Features:**
+  - Released version 2.3.0-beta.4.
+  - Released version 2.3.0-beta.3.
+  - Released version 2.3.0-beta.2.
+
+- **Fixes:**
+  - Updated plugin-br-pix-indirect-btg and related workers to version 1.5.2.
+
+- **Improvements:**
+  - Standardized probe field set across all charts.
+  - Parametrized probe path and timing using /readyz.
+  - Updated readiness probe paths to /readyz across multiple deployment templates.
+
+Contributors: @brunognovaes, @ferr3ira-gabriel, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v2.3.0...plugin-br-pix-indirect-btg-v3.0.0)
+
+---
+
 ## [2.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v2.3.0)
 
 - **Features:**

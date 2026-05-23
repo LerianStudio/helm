@@ -1,5 +1,19 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [3.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.0.1)
+
+- Features:
+  - Released version 3.0.0 of plugin-br-pix-indirect-btg.
+
+- Fixes:
+  - Updated plugin-br-pix-indirect-btg to use health readiness probe.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.0...plugin-br-pix-indirect-btg-v3.0.1)
+
+---
+
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.0.0)
 
 - **Features:**

@@ -1,5 +1,23 @@
 # Plugin-access-manager Changelog
 
+## [8.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.0.0)
+
+- **Features:**
+  - Released version 8.0.0 of plugin-access-manager.
+
+- **Fixes:**
+  - Updated image tag to 2.6.7 for plugin-access-manager.
+  - Updated plugin-auth to version 2.6.7.
+
+- **Documentation:**
+  - Added upgrade guide for plugin-access-manager v7.0.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v7.0.0...plugin-access-manager-v8.0.0)
+
+---
+
 ## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v7.0.0)
 
 - **Features:**

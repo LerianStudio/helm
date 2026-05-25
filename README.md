@@ -15,7 +15,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `7.0.0` | 3.7.1 | 3.7.0 |
+| `8.0.0-beta.1` | 3.7.2 | 3.7.2 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -240,7 +240,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0 |
+| `2.0.0-beta.1` | 1.0.0 |
 -----------------
 
 ### Lerian Notification

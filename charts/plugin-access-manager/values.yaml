@@ -302,7 +302,7 @@ auth:
       # -- Image pull policy
       pullPolicy: Always
       # -- Image tag used for deployment
-      tag: "2.6.6"
+      tag: "2.6.7"
     resources:
       limits:
         cpu: 512m

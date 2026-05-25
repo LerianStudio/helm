@@ -2,6 +2,21 @@
 
 ## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v7.0.0)
 
+- **Features**
+  - Released version 7.0.0 of plugin-access-manager.
+
+- **Improvements**
+  - Updated appVersion and image tags for plugin-access-manager to 2.6.6 and 2.4.5.
+
+- **Contributors**
+  - @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v6.5.0...plugin-access-manager-v7.0.0)
+
+---
+
+## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v7.0.0)
+
 - **Features:**
   - Updated appVersion and image tags for plugin-access-manager to 2.6.6 and 2.4.5.
 

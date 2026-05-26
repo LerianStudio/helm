@@ -183,23 +183,37 @@ bankTransfer:
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml
   configmap:
-    # Application Settings
+    # =================================================================
+    # Application identity
+    # =================================================================
     ENV_NAME: "production"
-    LOG_LEVEL: "info"
     SERVER_ADDRESS: ":4027"
     HTTP_BODY_LIMIT_BYTES: "1048576"
-    # CORS Configuration
-    CORS_ALLOWED_ORIGINS: "*"
-    CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-    CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
-    # TLS Configuration
+
+    # =================================================================
+    # TLS / proxy
+    # =================================================================
     TLS_TERMINATED_UPSTREAM: "true"
-    # Multi-Tenancy
+
+    # =================================================================
+    # Multi-tenancy
+    # Only the toggle, the DEFAULT_TENANT_* identifiers, and the
+    # infrastructure endpoints live in the chart. Operational tuning
+    # (pool sizes, timeouts, circuit breaker) is hot-reloadable via
+    # systemplane or covered by lib-commons compiled defaults.
+    # =================================================================
     DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
     DEFAULT_TENANT_SLUG: "default"
     MULTI_TENANT_ENABLED: "false"
-    # PostgreSQL Primary (host defaults to {{ .Release.Name }}-postgresql-primary.{{ .Release.Namespace }}.svc.cluster.local)
-    # POSTGRES_HOST: ""  # Leave empty to use dynamic default based on release name
+    # When MULTI_TENANT_ENABLED=true the chart also emits:
+    #   MULTI_TENANT_URL, AWS_REGION, MULTI_TENANT_REDIS_HOST,
+    #   MULTI_TENANT_REDIS_TLS, MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE
+    # Set those under .configmap as needed.
+
+    # =================================================================
+    # PostgreSQL (primary)
+    # POSTGRES_HOST defaults to "<release>-postgresql-primary.<ns>.svc.cluster.local"
+    # =================================================================
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "bank_transfer"
     POSTGRES_DB: "bank_transfer"
@@ -210,17 +224,18 @@ bankTransfer:
     POSTGRES_CONN_MAX_IDLE_TIME_MINS: "5"
     POSTGRES_CONNECT_TIMEOUT_SEC: "10"
     MIGRATIONS_PATH: "migrations"
-    # PostgreSQL Replica (optional - for CQRS read scaling)
+    INFRA_CONNECT_TIMEOUT_SEC: "30"
+    # PostgreSQL replica (optional — CQRS read scaling)
     # POSTGRES_REPLICA_HOST: ""
     # POSTGRES_REPLICA_PORT: "5432"
     # POSTGRES_REPLICA_USER: ""
     # POSTGRES_REPLICA_DB: ""
     # POSTGRES_REPLICA_SSLMODE: "require"
 
-    # Infrastructure Boot Timeout
-    INFRA_CONNECT_TIMEOUT_SEC: "30"
-    # Redis/Valkey Configuration (host defaults to {{ .Release.Name }}-valkey-primary.{{ .Release.Namespace }}.svc.cluster.local:6379)
-    # REDIS_HOST: ""  # Leave empty to use dynamic default based on release name
+    # =================================================================
+    # Valkey / Redis (app-level)
+    # REDIS_HOST defaults to "<release>-valkey-primary.<ns>.svc.cluster.local:6379"
+    # =================================================================
     REDIS_DB: "0"
     REDIS_PROTOCOL: "3"
     REDIS_POOL_SIZE: "10"
@@ -229,113 +244,76 @@ bankTransfer:
     REDIS_WRITE_TIMEOUT_MS: "3000"
     REDIS_DIAL_TIMEOUT_MS: "5000"
     REDIS_TLS: "false"
-    # MongoDB Configuration (mandatory for audit/event persistence)
+
+    # =================================================================
+    # MongoDB (audit/event persistence)
+    # MONGO_URI is in templates/secrets.yaml.
+    # =================================================================
     MONGO_ENABLED: "true"
-    # MONGO_URI is constructed from secrets if not explicitly set
     MONGO_DATABASE: "plugin_br_bank_transfer"
     MONGO_MAX_POOL_SIZE: "25"
     MONGO_SERVER_SELECTION_TIMEOUT_MS: "3000"
     MONGO_HEARTBEAT_INTERVAL_MS: "10000"
-    # Authentication (plugin-auth)
+
+    # =================================================================
+    # RabbitMQ (event bus, optional)
+    # RABBITMQ_URL is rendered from chart defaults when empty.
+    # Retries / timeouts / routing-key prefix are systemplane-managed.
+    # =================================================================
+    RABBITMQ_ENABLED: "false"
+    RABBITMQ_EXCHANGE: "bank_transfer.lifecycle"
+
+    # =================================================================
+    # Authentication (inbound — plugin-access-manager)
+    # =================================================================
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    PLUGIN_AUTH_CLIENT_ID: "plugin-br-bank-transfer"
-    AUTH_CACHE_TTL_SEC: "300"
-    # License Validation
+
+    # =================================================================
+    # License gateway override (optional — defaults to lib-license-go's
+    # hard-coded endpoint when LICENSE_SERVICE_ADDRESS is unset)
+    # =================================================================
     # LICENSE_SERVICE_ADDRESS: ""
     # TENANT_IDS: ""
 
+    # =================================================================
     # OpenTelemetry
+    # =================================================================
     ENABLE_TELEMETRY: "false"
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-bank-transfer"
     OTEL_RESOURCE_SERVICE_NAME: "plugin-br-bank-transfer"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
-    # Systemplane Runtime Configuration (optional)
-    # SYSTEMPLANE_BACKEND: "postgres"
-    # SYSTEMPLANE_POSTGRES_SCHEMA: "system"
-    # Rate Limiting
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "100"
-    RATE_LIMIT_EXPIRY_SEC: "60"
-    # Database Metrics & Observability
-    DB_METRICS_INTERVAL_SEC: "15"
-    RECONCILIATION_PENDING_ALERT_THRESHOLD: "20"
-    # Idempotency
-    IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
-    IDEMPOTENCY_REQUIRE_REDIS: "true"
-    # Midaz Adapter (REQUIRED)
+
+    # =================================================================
+    # Outbound adapters — endpoints + auth toggles only.
+    # Timeouts, retries, circuit breakers, cache TTLs, and lookup
+    # path templates are systemplane-managed at runtime.
+    # =================================================================
+
+    # Midaz (REQUIRED)
     MIDAZ_BASE_URL: "http://midaz.midaz.svc.cluster.local.:3001"
     MIDAZ_TRANSACTION_URL: "http://midaz.midaz.svc.cluster.local.:3001"
-    MIDAZ_TIMEOUT_MS: "3000"
-    MIDAZ_MAX_RETRIES: "3"
-    MIDAZ_OTEL_ENABLED: "true"
-    MIDAZ_DEBUG: "false"
     MIDAZ_AUTH_ENABLED: "false"
     # MIDAZ_AUTH_ADDRESS: ""
-    MIDAZ_BREAKER_FAILURES: "3"
-    MIDAZ_BREAKER_TIMEOUT_SECONDS: "30"
-    # CRM Adapter (REQUIRED)
+
+    # CRM (REQUIRED)
     CRM_BASE_URL: "http://plugin-crm.midaz-plugins.svc.cluster.local:4003"
-    CRM_TIMEOUT_MS: "2000"
-    CRM_MAX_RETRIES: "2"
-    CRM_CACHE_TTL_MS: "300000"
     CRM_AUTH_ENABLED: "false"
-    # CRM_CLIENT_ID: ""
-    # Fees Adapter (REQUIRED)
+
+    # Fees (REQUIRED)
     FEES_BASE_URL: "http://plugin-fees.midaz-plugins.svc.cluster.local:4004"
-    FEES_TIMEOUT_MS: "2000"
-    FEES_MAX_RETRIES: "2"
-    FEES_FAIL_CLOSED_DEFAULT: "false"
-    FEES_MAX_FEE_AMOUNT_CENTS: "99999999"
     FEES_AUTH_ENABLED: "false"
-    # FEES_CLIENT_ID: ""
-    # JD SPB Adapter (REQUIRED)
-    JD_BASE_URL: "" # MUST BE SET - JD SOAP endpoint
-    JD_SOAP_PATH: "/soap"
-    JD_ORIGIN_ISPB: "" # MUST BE SET - Origin ISPB code
-    # JD_LEGACY_CODE: ""
-    JD_SIGNING_MODE: "local_pem"  # local_pem | external_provided | disabled
-    JD_SIGNATURE_REQUIRED: "true"
-    JD_VALIDATE_EXTERNAL_SIGNATURE: "true"
-    JD_TIMEOUT_MS: "8000"
-    JD_MAX_RETRIES: "3"
-    # JD Sandbox Mode (must be false in production)
+
+    # JD-SPB
+    # JD sandbox mode swaps the adapter; when false, JD_BASE_URL and
+    # JD_ORIGIN_ISPB are required by the chart.
     JD_SANDBOX_MODE: "false"
-    # JD Polling (TED IN ingestion)
-    JD_POLLING_ENABLED: "false"
-    JD_POLL_INTERVAL_SECONDS: "30"
-    JD_POLL_MAX_MESSAGES_PER_CYCLE: "50"
-    JD_POLL_MAX_RETRIES: "3"
-    JD_POLL_RECOVERY_BATCH_SIZE: "200"
-    # RabbitMQ Event Bus (optional)
-    RABBITMQ_ENABLED: "false"
-    # RABBITMQ_URL: "amqp://bank_transfer:password@plugin-br-bank-transfer-jd-rabbitmq:5672/"
-    RABBITMQ_EXCHANGE: "bank_transfer.lifecycle"
-    RABBITMQ_ROUTING_KEY_PREFIX: "transfer"
-    RABBITMQ_PUBLISH_TIMEOUT_MS: "5000"
-    RABBITMQ_MAX_RETRIES: "3"
-    RABBITMQ_RETRY_BACKOFF_MS: "200"
-    # Webhook Delivery Worker (optional)
-    WEBHOOK_ENABLED: "false"
-    # WEBHOOK_ENDPOINT_URL: "https://example.com/webhooks/transfers"
-    WEBHOOK_QUEUE_NAME: "transfer.webhook.delivery"
-    WEBHOOK_DLQ_NAME: "transfer.webhook.dlq"
-    WEBHOOK_CONSUMER_TAG: "plugin-br-bank-transfer-webhook"
-    WEBHOOK_PREFETCH_COUNT: "20"
-    WEBHOOK_TIMEOUT_MS: "5000"
-    WEBHOOK_MAX_RETRIES: "3"
-    WEBHOOK_RETRY_BACKOFF_MS: "500"
-    WEBHOOK_ALLOW_UNSIGNED_BROKER_EVENTS: "false"
-    WEBHOOK_UNSIGNED_BROKER_EVENTS_GRACE_SEC: "0"
-    # Usage Limits
-    USAGE_LIMITS_ENABLED: "false"
-    USAGE_LIMIT_DAILY_CENTS: "0"
-    USAGE_LIMIT_MONTHLY_CENTS: "0"
-    # Operating Hours
-    TRANSFER_OPERATING_OPEN: "06:30"
-    TRANSFER_OPERATING_CLOSE: "17:00"
-    TRANSFER_OPERATING_TIMEZONE: "America/Sao_Paulo"
+    JD_BASE_URL: "" # MUST BE SET — JD SOAP endpoint
+    JD_SOAP_PATH: "/soap"
+    JD_ORIGIN_ISPB: "" # MUST BE SET — Origin ISPB code
+    # JD_LEGACY_CODE: ""
+    JD_SIGNING_MODE: "local_pem" # local_pem | external_provided | disabled
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:

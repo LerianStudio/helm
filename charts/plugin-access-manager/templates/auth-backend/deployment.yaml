@@ -104,6 +104,8 @@ spec:
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
           {{ end }}
+          resources:
+            {{- toYaml .Values.auth.backend.resources | nindent 12 }}
           readinessProbe:
             httpGet:
               path: {{ .Values.auth.backend.readinessProbe.path | default "/readyz" }}

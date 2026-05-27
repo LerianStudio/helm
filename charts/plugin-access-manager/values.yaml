@@ -304,12 +304,14 @@ auth:
       # -- Image tag used for deployment
       tag: "2.6.7"
     resources:
+      # -- CPU and memory limits for pods
       limits:
-        cpu: 512m
-        memory: 2048Mi
-      requests:
-        cpu: 256m
+        cpu: 1
         memory: 1024Mi
+      # -- Minimum CPU and memory requests
+      requests:
+        cpu: 500m
+        memory: 256Mi
     autoscaling:
       # -- Enable or disable horizontal pod autoscaling
       enabled: true

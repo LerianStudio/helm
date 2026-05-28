@@ -9,6 +9,7 @@ data:
   # APPLICATION IDENTITY
   # =====================================================================
   ENV_NAME: {{ .Values.bankTransfer.configmap.ENV_NAME | default "production" | quote }}
+  APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
   VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
 
@@ -44,8 +45,29 @@ data:
   MULTI_TENANT_URL: {{ .Values.bankTransfer.configmap.MULTI_TENANT_URL | default "" | quote }}
   AWS_REGION: {{ .Values.bankTransfer.configmap.AWS_REGION | default "" | quote }}
   MULTI_TENANT_REDIS_HOST: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_HOST | default "" | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
   MULTI_TENANT_REDIS_TLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  MULTI_TENANT_ENVIRONMENT: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ENVIRONMENT | default "" | quote }}
+  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
   MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE: {{ .Values.bankTransfer.configmap.MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE | default "tenants/{env}/{tenantId}/{applicationName}/integration/configuration" | quote }}
+  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_MAX_TENANT_POOLS }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_MAX_TENANT_POOLS | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_TIMEOUT }}
+  MULTI_TENANT_TIMEOUT: {{ .Values.bankTransfer.configmap.MULTI_TENANT_TIMEOUT | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_CACHE_TTL_SEC }}
+  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CACHE_TTL_SEC | quote }}
+  {{- end }}
   {{- end }}
 
   # =====================================================================
@@ -90,6 +112,9 @@ data:
   REDIS_TLS: {{ .Values.bankTransfer.configmap.REDIS_TLS | default "false" | quote }}
   {{- if .Values.bankTransfer.configmap.REDIS_MASTER_NAME }}
   REDIS_MASTER_NAME: {{ .Values.bankTransfer.configmap.REDIS_MASTER_NAME | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.REDIS_USER }}
+  REDIS_USER: {{ .Values.bankTransfer.configmap.REDIS_USER | quote }}
   {{- end }}
   {{- if .Values.bankTransfer.configmap.REDIS_CA_CERT }}
   REDIS_CA_CERT: {{ .Values.bankTransfer.configmap.REDIS_CA_CERT | quote }}
@@ -152,14 +177,23 @@ data:
   {{- if .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS }}
   MIDAZ_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS | quote }}
   {{- end }}
+  {{- if .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS }}
+  MIDAZ_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS | quote }}
+  {{- end }}
 
   # CRM
   CRM_BASE_URL: {{ required "bankTransfer.configmap.CRM_BASE_URL is required" .Values.bankTransfer.configmap.CRM_BASE_URL | quote }}
   CRM_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.CRM_AUTH_ENABLED | default "false" | quote }}
+  {{- if .Values.bankTransfer.configmap.CRM_TIMEOUT_MS }}
+  CRM_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.CRM_TIMEOUT_MS | quote }}
+  {{- end }}
 
   # Fees
   FEES_BASE_URL: {{ required "bankTransfer.configmap.FEES_BASE_URL is required" .Values.bankTransfer.configmap.FEES_BASE_URL | quote }}
   FEES_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.FEES_AUTH_ENABLED | default "false" | quote }}
+  {{- if .Values.bankTransfer.configmap.FEES_TIMEOUT_MS }}
+  FEES_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.FEES_TIMEOUT_MS | quote }}
+  {{- end }}
 
   # JD-SPB. Sandbox mode swaps the adapter; live config required otherwise.
   JD_SANDBOX_MODE: {{ .Values.bankTransfer.configmap.JD_SANDBOX_MODE | default "false" | quote }}
@@ -168,8 +202,12 @@ data:
   JD_ORIGIN_ISPB: {{ required "bankTransfer.configmap.JD_ORIGIN_ISPB is required when JD_SANDBOX_MODE is not true" .Values.bankTransfer.configmap.JD_ORIGIN_ISPB | quote }}
   JD_SOAP_PATH: {{ .Values.bankTransfer.configmap.JD_SOAP_PATH | default "/soap" | quote }}
   JD_SIGNING_MODE: {{ .Values.bankTransfer.configmap.JD_SIGNING_MODE | default "local_pem" | quote }}
+  JD_POLLING_ENABLED: {{ .Values.bankTransfer.configmap.JD_POLLING_ENABLED | default "false" | quote }}
   {{- if .Values.bankTransfer.configmap.JD_LEGACY_CODE }}
   JD_LEGACY_CODE: {{ .Values.bankTransfer.configmap.JD_LEGACY_CODE | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.JD_PRIVATE_KEY_KEYINFO }}
+  JD_PRIVATE_KEY_KEYINFO: {{ .Values.bankTransfer.configmap.JD_PRIVATE_KEY_KEYINFO | quote }}
   {{- end }}
   {{- end }}
 
@@ -178,6 +216,15 @@ data:
   # =====================================================================
   ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.ORGANIZATION_ID | default "" | quote }}
   DEFAULT_ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.DEFAULT_ORGANIZATION_ID | default "" | quote }}
+  ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | default "" | quote }}
+  IS_DEVELOPMENT: {{ .Values.bankTransfer.configmap.IS_DEVELOPMENT | default "false" | quote }}
+
+  # =====================================================================
+  # FEATURE FLAGS
+  # =====================================================================
+  WEBHOOK_ENABLED: {{ .Values.bankTransfer.configmap.WEBHOOK_ENABLED | default "false" | quote }}
+  BTF_FEE_ENABLED: {{ .Values.bankTransfer.configmap.BTF_FEE_ENABLED | default "false" | quote }}
+  OTEL_SDK_DISABLED: {{ .Values.bankTransfer.configmap.OTEL_SDK_DISABLED | default "false" | quote }}
 
   # =====================================================================
   # EXTRA OVERRIDES (escape hatch for env vars not modeled above)

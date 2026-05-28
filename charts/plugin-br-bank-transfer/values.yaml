@@ -89,7 +89,7 @@ bankTransfer:
     enabled: true
     image:
       # -- Repository for the migrations init container image
-      repository: ghcr.io/lerianstudio/plugin-br-bank-transfer-postgres-migrations
+      repository: ghcr.io/lerianstudio/plugin-br-bank-transfer-migrations
       # -- Image pull policy
       pullPolicy: IfNotPresent
       # -- Image tag — defaults to Chart.AppVersion when empty

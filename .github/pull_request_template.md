@@ -11,6 +11,7 @@
 - [ ] Plugin BR PIX Direct JD
 - [ ] Plugin BR PIX Indirect BTG
 - [ ] Plugin BR PIX Switch
+- [ ] Plugin BR Bank Transfer
 - [ ] Otel Collector
 - [ ] Pipeline
 - [ ] Documentation

@@ -83,6 +83,26 @@ bankTransfer:
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
     tag: "2.4.0"
+  # -- PostgreSQL migrations job (pre-upgrade / post-install hook)
+  migrations:
+    # -- Enable or disable the migrations job
+    enabled: true
+    image:
+      # -- Repository for the migrations init container image
+      repository: ghcr.io/lerianstudio/plugin-br-bank-transfer-postgres-migrations
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+      # -- Image tag — defaults to Chart.AppVersion when empty
+      tag: "3.2.0-beta.13"
+    # -- Maximum number of retries before the Job is considered failed
+    backoffLimit: 3
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 64Mi
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -187,6 +207,7 @@ bankTransfer:
     # Application identity
     # =================================================================
     ENV_NAME: "production"
+    APPLICATION_NAME: "plugin-br-bank-transfer"
     SERVER_ADDRESS: ":4027"
     HTTP_BODY_LIMIT_BYTES: "1048576"
 
@@ -207,7 +228,13 @@ bankTransfer:
     MULTI_TENANT_ENABLED: "false"
     # When MULTI_TENANT_ENABLED=true the chart also emits:
     #   MULTI_TENANT_URL, AWS_REGION, MULTI_TENANT_REDIS_HOST,
-    #   MULTI_TENANT_REDIS_TLS, MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE
+    #   MULTI_TENANT_REDIS_PORT, MULTI_TENANT_REDIS_TLS,
+    #   MULTI_TENANT_ENVIRONMENT, MULTI_TENANT_ALLOW_INSECURE_HTTP,
+    #   MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE
+    # Optional tuning (lib-commons defaults apply when unset):
+    #   MULTI_TENANT_MAX_TENANT_POOLS, MULTI_TENANT_IDLE_TIMEOUT_SEC,
+    #   MULTI_TENANT_TIMEOUT, MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD,
+    #   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC, MULTI_TENANT_CACHE_TTL_SEC
     # Set those under .configmap as needed.
 
     # =================================================================
@@ -296,14 +323,17 @@ bankTransfer:
     MIDAZ_TRANSACTION_URL: "http://midaz.midaz.svc.cluster.local.:3001"
     MIDAZ_AUTH_ENABLED: "false"
     # MIDAZ_AUTH_ADDRESS: ""
+    # MIDAZ_TIMEOUT_MS: ""
 
     # CRM (REQUIRED)
     CRM_BASE_URL: "http://plugin-crm.midaz-plugins.svc.cluster.local:4003"
     CRM_AUTH_ENABLED: "false"
+    # CRM_TIMEOUT_MS: ""
 
     # Fees (REQUIRED)
     FEES_BASE_URL: "http://plugin-fees.midaz-plugins.svc.cluster.local:4004"
     FEES_AUTH_ENABLED: "false"
+    # FEES_TIMEOUT_MS: ""
 
     # JD-SPB
     # JD sandbox mode swaps the adapter; when false, JD_BASE_URL and
@@ -314,6 +344,23 @@ bankTransfer:
     JD_ORIGIN_ISPB: "" # MUST BE SET — Origin ISPB code
     # JD_LEGACY_CODE: ""
     JD_SIGNING_MODE: "local_pem" # local_pem | external_provided | disabled
+    JD_POLLING_ENABLED: "false"
+    # JD_PRIVATE_KEY_KEYINFO: ""  # key metadata for external signing providers
+
+    # =================================================================
+    # Single-tenant defaults
+    # =================================================================
+    ORGANIZATION_ID: ""
+    ORGANIZATION_IDS: ""
+    IS_DEVELOPMENT: "false"
+
+    # =================================================================
+    # Feature flags
+    # =================================================================
+    WEBHOOK_ENABLED: "false"
+    BTF_FEE_ENABLED: "false"
+    OTEL_SDK_DISABLED: "false"
+
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
@@ -533,6 +580,3 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
-br-bank-transfer:
-  image:
-    tag: 1.0.0

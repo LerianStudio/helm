@@ -1,0 +1,90 @@
+{{- if .Values.bankTransfer.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "bank-transfer.fullname" . }}-migrations
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "bank-transfer.labels" (dict "context" . "component" "migrations" "name" "migrations") | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-upgrade,post-install
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: {{ .Values.bankTransfer.migrations.backoffLimit | default 3 }}
+  template:
+    metadata:
+      labels:
+        {{- include "bank-transfer.selectorLabels" (dict "context" . "component" "migrations" "name" "migrations") | nindent 8 }}
+    spec:
+      {{- with .Values.bankTransfer.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.37
+          envFrom:
+            - configMapRef:
+                name: {{ include "bank-transfer.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              MAX_ATTEMPTS=60
+              SLEEP_SECONDS=5
+              ATTEMPTS=0
+              echo "Waiting for PostgreSQL at $POSTGRES_HOST:$POSTGRES_PORT..."
+              while ! nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+                ATTEMPTS=$((ATTEMPTS + 1))
+                if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
+                  echo "Timeout waiting for PostgreSQL after $((MAX_ATTEMPTS * SLEEP_SECONDS))s"
+                  exit 1
+                fi
+                echo "PostgreSQL not ready, retrying in ${SLEEP_SECONDS}s... (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+                sleep $SLEEP_SECONDS
+              done
+              echo "PostgreSQL is ready."
+      containers:
+        - name: migrations
+          image: "{{ .Values.bankTransfer.migrations.image.repository }}:{{ .Values.bankTransfer.migrations.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.bankTransfer.migrations.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bank-transfer.fullname" . }}
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bank-transfer.fullname" . }}
+                  key: POSTGRES_PORT
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bank-transfer.fullname" . }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bank-transfer.fullname" . }}
+                  key: POSTGRES_DB
+            - name: POSTGRES_SSLMODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bank-transfer.fullname" . }}
+                  key: POSTGRES_SSLMODE
+            - name: POSTGRES_CONNECT_TIMEOUT_SEC
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bank-transfer.fullname" . }}
+                  key: POSTGRES_CONNECT_TIMEOUT_SEC
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.bankTransfer.useExistingSecret }}{{ required "bankTransfer.existingSecretName is required when bankTransfer.useExistingSecret is true" .Values.bankTransfer.existingSecretName }}{{ else }}{{ include "bank-transfer.fullname" . }}{{ end }}
+                  key: POSTGRES_PASSWORD
+          resources:
+            {{- toYaml .Values.bankTransfer.migrations.resources | nindent 12 }}
+{{- end }}

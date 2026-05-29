@@ -1,57 +1,45 @@
 # Helm Upgrade from v2.0.x to v2.1.x
+
 ## Topics
-- **[Overview](#overview)**- **[Version changes](#version-changes)**- **[Configuration changes](#configuration-changes)**- **[Template changes](#template-changes)**- **[Migration steps](#migration-steps)**- **[Preview changes before upgrading](#preview-changes-before-upgrading)**- **[Command to upgrade](#command-to-upgrade)**
+
+- **[Overview](#overview)**
+- **[Features](#features)**
+  - [1. Default service port moved to 4021](#1-default-service-port-moved-to-4021)
+  - [2. Mongo connection consolidated to `MONGO_URI`](#2-mongo-connection-consolidated-to-mongo_uri)
+  - [3. Multi-tenant support (opt-in)](#3-multi-tenant-support-opt-in)
+  - [4. Audit database configuration](#4-audit-database-configuration)
+  - [5. Plugin Auth and SSRF / telemetry knobs](#5-plugin-auth-and-ssrf--telemetry-knobs)
+- **[Configuration Changes](#configuration-changes)**
+- **[Migration Steps](#migration-steps)**
+- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
+- **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
-This guide covers the `flowker` chart upgrade from `2.0.0` to `2.1.0-beta.6`. It was generated retroactively from the chart history and focuses on minor version changes; patch-only releases are intentionally ignored.
 
-Because this is a minor upgrade, the expected path is an in-place Helm upgrade after reviewing new values and changed defaults.
+This guide covers the `flowker` chart upgrade from `2.0.0` to `2.1.0-beta.6`. The application image (`appVersion: 1.0.0`) is unchanged, but the chart now reflects upstream environment-variable changes: the service port moves to `4021`, the Mongo connection collapses into a single `MONGO_URI`, and the chart exposes opt-in support for multi-tenant pools, an audit database, plugin-auth, SSRF protection, and lib-commons telemetry.
 
-## Version changes
+The upgrade is **not transparent**: the default port changes and the Mongo env-var surface changes. Read [Migration Steps](#migration-steps) before upgrading any environment that overrides those values.
 
-| Field | Previous | Current |
-|-------|----------|---------|
-| Chart version | `2.0.0` | `2.1.0-beta.6` |
-| App version | `1.0.0` | `1.0.0` |
+## Features
 
-## Configuration changes
+### 1. Default service port moved to 4021
 
-### Added values
+The chart default port moves from `4000` to `4021`, matching the upstream Flowker source convention.
 
-```yaml
-flowker.configmap.AUDIT_DB_HOST: ""
-flowker.configmap.AUDIT_DB_NAME: "flowker_audit"
-flowker.configmap.AUDIT_DB_PORT: "5432"
-flowker.configmap.AUDIT_DB_SSL_MODE: "disable"
-flowker.configmap.AUDIT_DB_USER: "flowker_audit"
-flowker.configmap.AUDIT_MIGRATIONS_PATH: "/migrations"
-flowker.configmap.DEPLOYMENT_MODE: "local"
-flowker.configmap.FAULT_INJECTION_ENABLED: "false"
-flowker.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
-flowker.configmap.MULTI_TENANT_CACHE_TTL_SEC: "120"
-flowker.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-flowker.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-flowker.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
-flowker.configmap.MULTI_TENANT_ENABLED: "false"
-flowker.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
-flowker.configmap.MULTI_TENANT_MAX_TENANT_POOLS: "100"
-flowker.configmap.MULTI_TENANT_REDIS_HOST: ""
-flowker.configmap.MULTI_TENANT_REDIS_PORT: "6379"
-flowker.configmap.MULTI_TENANT_REDIS_TLS: "false"
-flowker.configmap.MULTI_TENANT_TIMEOUT: "30"
-flowker.configmap.MULTI_TENANT_URL: ""
-flowker.configmap.PLUGIN_AUTH_ADDRESS: ""
-flowker.configmap.PLUGIN_AUTH_ENABLED: "false"
-flowker.configmap.SKIP_LIB_COMMONS_TELEMETRY: "false"
-flowker.configmap.SSRF_ALLOW_PRIVATE: "false"
-flowker.secrets.AUDIT_DB_PASSWORD: "lerian"
-flowker.secrets.MONGO_TLS_CA_CERT: ""
-flowker.secrets.MONGO_URI: "mongodb://flowker:lerian@flowker-mongodb:27017/flowker?authSource=flowker"
-flowker.secrets.MULTI_TENANT_REDIS_PASSWORD: ""
-flowker.secrets.MULTI_TENANT_SERVICE_API_KEY: ""
-```
+| Setting | v2.0.0 | v2.1.0-beta.6 |
+|---------|--------|---------------|
+| `flowker.service.port` | `4000` | `4021` |
+| `flowker.configmap.SERVER_ADDRESS` | `:4000` | `:4021` |
+| `flowker.configmap.SERVER_PORT` | `4000` | `4021` |
+| `flowker.configmap.SWAGGER_HOST` | `:4000` | `:4021` |
 
-### Removed values
+> **Note:** Any Ingress, Service, NetworkPolicy, or downstream client pinned to `4000` must be updated, or `flowker.service.port` must be pinned to `4000` in your values override.
+
+### 2. Mongo connection consolidated to `MONGO_URI`
+
+The previous chart exposed Mongo via discrete env vars (`MONGO_HOST`, `MONGO_PORT`, `MONGO_APP_USER`, `MONGO_APP_PASSWORD`, pool/timeout knobs). v2.1 collapses these into a single `MONGO_URI` secret plus optional TLS CA, aligning with how the Flowker application now reads its configuration.
+
+Removed values:
 
 ```yaml
 flowker.configmap.MONGO_APP_USER: "flowker"
@@ -61,71 +49,135 @@ flowker.configmap.MONGO_MAX_IDLE_TIME_MS: "60000"
 flowker.configmap.MONGO_MIN_POOL_SIZE: "5"
 flowker.configmap.MONGO_PORT: "27017"
 flowker.configmap.MONGO_SOCKET_TIMEOUT_MS: "30000"
-flowker.configmap.MONGO_URI: "mongodb://flowker:lerian@flowker-mongodb:27017/flowker?authSource=admin"
 flowker.secrets.MONGO_APP_PASSWORD: "lerian"
 ```
 
-### Changed operational values
+New values:
 
 ```yaml
-# flowker.configmap.MONGO_MAX_POOL_SIZE
-#   previous: "10"
-#   current:  "20"
-# flowker.configmap.SERVER_ADDRESS
-#   previous: ":4000"
-#   current:  ":4021"
-# flowker.configmap.SERVER_PORT
-#   previous: "4000"
-#   current:  "4021"
-# flowker.configmap.SWAGGER_HOST
-#   previous: ":4000"
-#   current:  ":4021"
-# flowker.service.port
-#   previous: 4000
-#   current:  4021
+flowker:
+  secrets:
+    MONGO_URI: "mongodb://flowker:lerian@flowker-mongodb:27017/flowker?authSource=flowker"
+    MONGO_TLS_CA_CERT: ""
 ```
 
-## Template changes
+Note also that the Mongo URI default `authSource` changes from `admin` to `flowker`. Pool size now lives in a single knob:
 
-### Added files
+| Setting | v2.0.0 | v2.1.0-beta.6 |
+|---------|--------|---------------|
+| `flowker.configmap.MONGO_MAX_POOL_SIZE` | `10` | `20` |
 
-- No chart files added.
+### 3. Multi-tenant support (opt-in)
 
-### Removed files
+The chart now ships configuration for the multi-tenant pool manager. Disabled by default; enable only if your deployment runs in multi-tenant mode.
 
-- No chart files removed.
+```yaml
+flowker:
+  configmap:
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    MULTI_TENANT_TIMEOUT: "30"
+    MULTI_TENANT_CACHE_TTL_SEC: "120"
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
+    MULTI_TENANT_REDIS_HOST: ""
+    MULTI_TENANT_REDIS_PORT: "6379"
+    MULTI_TENANT_REDIS_TLS: "false"
+  secrets:
+    MULTI_TENANT_REDIS_PASSWORD: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
+```
 
-### Modified files
+### 4. Audit database configuration
 
-- `charts/flowker/CHANGELOG.md`
+A separate audit Postgres connection is now configurable, intended for the audit trail subsystem. Disabled in practice if `AUDIT_DB_HOST` is empty.
+
+```yaml
+flowker:
+  configmap:
+    AUDIT_DB_HOST: ""
+    AUDIT_DB_PORT: "5432"
+    AUDIT_DB_NAME: "flowker_audit"
+    AUDIT_DB_USER: "flowker_audit"
+    AUDIT_DB_SSL_MODE: "disable"
+    AUDIT_MIGRATIONS_PATH: "/migrations"
+  secrets:
+    AUDIT_DB_PASSWORD: "lerian"
+```
+
+### 5. Plugin Auth and SSRF / telemetry knobs
+
+New operational knobs:
+
+```yaml
+flowker:
+  configmap:
+    DEPLOYMENT_MODE: "local"
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_ADDRESS: ""
+    FAULT_INJECTION_ENABLED: "false"
+    SSRF_ALLOW_PRIVATE: "false"
+    SKIP_LIB_COMMONS_TELEMETRY: "false"
+```
+
+## Configuration Changes
+
+Summary of `values.yaml` impact:
+
+| Category | Count |
+|----------|-------|
+| Added configmap keys | 21 |
+| Added secret keys | 4 |
+| Removed configmap keys | 8 |
+| Removed secret keys | 1 |
+| Changed defaults | 5 (port + pool size) |
+
+Files touched in the chart between `2.0.0` and `2.1.0-beta.6`:
+
 - `charts/flowker/Chart.yaml`
-- `charts/flowker/README.md`
-- `charts/flowker/templates/configmap.yaml`
-- `charts/flowker/templates/deployment.yaml`
-- `charts/flowker/templates/secrets.yaml`
-- `charts/flowker/values-template.yaml`
 - `charts/flowker/values.yaml`
+- `charts/flowker/values-template.yaml`
+- `charts/flowker/templates/configmap.yaml`
+- `charts/flowker/templates/secrets.yaml`
+- `charts/flowker/templates/deployment.yaml`
+- `charts/flowker/README.md`
 
-## Migration steps
+## Migration Steps
 
-1. Read this guide and compare your custom values against `charts/flowker/values.yaml`.
-2. Remove values that no longer exist in the chart before running the upgrade.
-3. Add any required new values for your environment, especially secrets, configmaps, probes, ingress, and service settings.
-4. Render the chart locally with your production values and review the manifest diff.
-5. Apply the upgrade in a controlled environment before production.
+1. **Audit your overrides for the legacy Mongo keys.** If you set any of `MONGO_HOST`, `MONGO_PORT`, `MONGO_APP_USER`, `MONGO_APP_PASSWORD`, or the Mongo timeout knobs, replace them with a single `flowker.secrets.MONGO_URI`. Confirm the `authSource` query parameter matches your deployment (default flips from `admin` to `flowker`).
+2. **Decide on the service port.** If anything in your cluster (Ingress, Service consumers, NetworkPolicy, Istio rules) is pinned to `4000`, either pin `flowker.service.port: 4000` and the `SERVER_*`/`SWAGGER_HOST` values back to `:4000`, or update those downstream pins to `4021`.
+3. **Leave multi-tenant disabled** unless you are intentionally enabling it. The defaults are inert (`MULTI_TENANT_ENABLED: "false"`).
+4. **Leave the audit DB host empty** unless you are wiring a separate audit Postgres.
+5. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
+6. Run the upgrade and verify the rollout:
+
+```bash
+kubectl rollout status -n flowker deploy/flowker
+kubectl get pods -n flowker
+```
+
+7. Check that the application is listening on the new port:
+
+```bash
+kubectl logs -n flowker -l app.kubernetes.io/name=flowker --tail=50
+```
+
+> **Note:** Because the default Service port changes, clients calling `flowker.<namespace>.svc.cluster.local:4000` will fail after the upgrade unless you pin the port back to `4000` in values.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade flowker ./charts/flowker \
-  --namespace <namespace> \
-  --values <your-values.yaml>
+helm diff upgrade flowker oci://registry-1.docker.io/lerianstudio/flowker-helm --version 2.1.0-beta.6 -n flowker
 ```
+
+> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
 ```bash
-helm upgrade flowker ./charts/flowker \
-  --namespace <namespace> \
-  --values <your-values.yaml>
+helm upgrade flowker oci://registry-1.docker.io/lerianstudio/flowker-helm --version 2.1.0-beta.6 -n flowker
 ```

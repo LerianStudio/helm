@@ -149,6 +149,7 @@ bankTransfer:
     JD_ORIGIN_ISPB: ""  # REQUIRED when JD_SANDBOX_MODE=false
     # JD_LEGACY_CODE: ""
     JD_SIGNING_MODE: "local_pem"  # local_pem | external_provided | disabled
+    JD_POLLING_ENABLED: "false"
 
   secrets:
     # PostgreSQL - REQUIRED

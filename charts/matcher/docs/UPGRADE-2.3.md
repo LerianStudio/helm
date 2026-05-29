@@ -1,68 +1,111 @@
 # Helm Upgrade from v2.2.x to v2.3.x
+
 ## Topics
-- **[Overview](#overview)**- **[Version changes](#version-changes)**- **[Configuration changes](#configuration-changes)**- **[Template changes](#template-changes)**- **[Migration steps](#migration-steps)**- **[Preview changes before upgrading](#preview-changes-before-upgrading)**- **[Command to upgrade](#command-to-upgrade)**
+
+- **[Overview](#overview)**
+- **[Features](#features)**
+  - [1. Configurable liveness and readiness probes](#1-configurable-liveness-and-readiness-probes)
+  - [2. Readiness probe default path changes to `/readyz`](#2-readiness-probe-default-path-changes-to-readyz)
+- **[Configuration Changes](#configuration-changes)**
+- **[Migration Steps](#migration-steps)**
+- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
+- **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
-This guide covers the `matcher` chart upgrade from `2.2.0` to `2.3.0-beta.2`. It was generated retroactively from the chart history and focuses on minor version changes; patch-only releases are intentionally ignored.
 
-Because this is a minor upgrade, the expected path is an in-place Helm upgrade after reviewing new values and changed defaults.
+This guide covers the `matcher` chart upgrade from `2.2.0` to `2.3.0-beta.2`. It is a minor maintenance release that promotes the previously hard-coded liveness/readiness probe fields to configurable values. The application image (`appVersion: 1.0.0`) is unchanged.
 
-## Version changes
+The only behavioral change for users who do not override probe values is the readiness probe path, which moves from `/health` to `/readyz`. See [Migration Steps](#migration-steps) before upgrading.
 
-| Field | Previous | Current |
-|-------|----------|---------|
-| Chart version | `2.2.0` | `2.3.0-beta.2` |
-| App version | `1.0.0` | `1.0.0` |
+## Features
 
-## Configuration changes
+### 1. Configurable liveness and readiness probes
 
-### Added values
+`matcher.livenessProbe` and `matcher.readinessProbe` are now empty maps in `values.yaml`, ready to receive overrides for any probe field. Every field on the probe is now templated with a default that matches the previous hard-coded value, except for the readiness path (see next feature).
 
-_No direct values.yaml key changes detected._
+```yaml
+matcher:
+  livenessProbe: {}     # all fields fall back to chart defaults
+  readinessProbe: {}    # all fields fall back to chart defaults
+```
 
-### Removed values
+Defaults applied when unset:
 
-_No direct values.yaml key changes detected._
+| Probe | Field | Default |
+|-------|-------|---------|
+| Liveness | `path` | `/health` |
+| Liveness | `initialDelaySeconds` | `15` |
+| Liveness | `periodSeconds` | `20` |
+| Liveness | `timeoutSeconds` | `5` |
+| Liveness | `successThreshold` | `1` |
+| Liveness | `failureThreshold` | `3` |
+| Readiness | `path` | `/readyz` |
+| Readiness | `initialDelaySeconds` | `5` |
+| Readiness | `periodSeconds` | `10` |
+| Readiness | `timeoutSeconds` | `5` |
+| Readiness | `successThreshold` | `1` |
+| Readiness | `failureThreshold` | `3` |
 
-### Changed operational values
+`successThreshold` is newly exposed; v2.2.0 inherited the Kubernetes implicit default (`1`), so behavior is unchanged when the value is omitted.
 
-_No image, env, secret, probe, ingress, service, port, or enablement changes detected in values.yaml._
+### 2. Readiness probe default path changes to `/readyz`
 
-## Template changes
+| Probe | v2.2.0 path | v2.3.0-beta.2 default |
+|-------|-------------|------------------------|
+| Liveness | `/health` | `/health` |
+| Readiness | `/health` | `/readyz` |
 
-### Added files
+> **Note:** If your `matcher` image still serves readiness on `/health`, pin it explicitly before upgrading:
+>
+> ```yaml
+> matcher:
+>   readinessProbe:
+>     path: /health
+> ```
 
-- No chart files added.
+## Configuration Changes
 
-### Removed files
+| Setting | v2.2.0 | v2.3.0-beta.2 |
+|---------|--------|---------------|
+| `matcher.livenessProbe` | (not exposed; hard-coded in template) | `{}` (override any field) |
+| `matcher.readinessProbe` | (not exposed; hard-coded in template) | `{}` (override any field) |
+| Readiness probe default path | `/health` | `/readyz` |
 
-- No chart files removed.
-
-### Modified files
+Files modified between `2.2.0` and `2.3.0-beta.2`:
 
 - `charts/matcher/Chart.yaml`
-- `charts/matcher/templates/deployment.yaml`
 - `charts/matcher/values.yaml`
+- `charts/matcher/templates/deployment.yaml`
 
-## Migration steps
+## Migration Steps
 
-1. Read this guide and compare your custom values against `charts/matcher/values.yaml`.
-2. Add any required new values for your environment, especially secrets, configmaps, probes, ingress, and service settings.
-3. Render the chart locally with your production values and review the manifest diff.
-4. Apply the upgrade in a controlled environment before production.
+1. **Confirm which path your `matcher` image serves readiness on.** If it is `/health`, pin `matcher.readinessProbe.path: /health` in your values. If your image already supports `/readyz`, no action is needed.
+2. Review the rendered diff using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
+3. Run the upgrade and verify the rollout:
+
+```bash
+kubectl rollout status -n matcher deploy/matcher
+kubectl get pods -n matcher
+```
+
+4. Watch for readiness flapping after rollout:
+
+```bash
+kubectl describe pod -n matcher -l app.kubernetes.io/name=matcher | grep -A2 Readiness
+```
+
+> **Note:** A readiness probe pointing at a path the application does not serve will keep pods out of the Service endpoints. Verify the readiness path before upgrading in production.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade matcher ./charts/matcher \
-  --namespace <namespace> \
-  --values <your-values.yaml>
+helm diff upgrade matcher oci://registry-1.docker.io/lerianstudio/matcher-helm --version 2.3.0-beta.2 -n matcher
 ```
+
+> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
 ```bash
-helm upgrade matcher ./charts/matcher \
-  --namespace <namespace> \
-  --values <your-values.yaml>
+helm upgrade matcher oci://registry-1.docker.io/lerianstudio/matcher-helm --version 2.3.0-beta.2 -n matcher
 ```

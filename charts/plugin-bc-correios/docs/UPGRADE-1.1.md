@@ -1,69 +1,109 @@
 # Helm Upgrade from v1.0.x to v1.1.x
+
 ## Topics
-- **[Overview](#overview)**- **[Version changes](#version-changes)**- **[Configuration changes](#configuration-changes)**- **[Template changes](#template-changes)**- **[Migration steps](#migration-steps)**- **[Preview changes before upgrading](#preview-changes-before-upgrading)**- **[Command to upgrade](#command-to-upgrade)**
+
+- **[Overview](#overview)**
+- **[Features](#features)**
+  - [1. Application version bump to 1.2.0](#1-application-version-bump-to-120)
+  - [2. br-spb-bc-correios sibling image tag pinned](#2-br-spb-bc-correios-sibling-image-tag-pinned)
+- **[Configuration Changes](#configuration-changes)**
+- **[Migration Steps](#migration-steps)**
+- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
+- **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
-This guide covers the `plugin-bc-correios` chart upgrade from `1.0.1` to `1.1.0-beta.1`. It was generated retroactively from the chart history and focuses on minor version changes; patch-only releases are intentionally ignored.
 
-Because this is a minor upgrade, the expected path is an in-place Helm upgrade after reviewing new values and changed defaults.
+This is a minor release that updates the application version of the BC Correios plugin and pins the image tag of the `br-spb-bc-correios` sibling component. No breaking changes are introduced and no manual data migration is required.
 
-## Version changes
+## Features
 
-| Field | Previous | Current |
-|-------|----------|---------|
-| Chart version | `1.0.1` | `1.1.0-beta.1` |
-| App version | `1.0.0` | `1.2.0` |
+### 1. Application version bump to 1.2.0
 
-## Configuration changes
+The chart now ships with `appVersion` `1.2.0`, replacing the previous `1.0.0`. The chart version itself moves from `1.0.1` to `1.1.0-beta.1`.
 
-### Added values
+| Component   | v1.0.1  | v1.1.0-beta.1   |
+|-------------|---------|-----------------|
+| version     | 1.0.1   | 1.1.0-beta.1    |
+| appVersion  | 1.0.0   | 1.2.0           |
+
+The `bc-correios.image.tag` value in `values.yaml` still defaults to `"1.0.0"`. The runtime image tag is rendered by the CI/CD pipeline through the existing `helm_values_key_mappings` declared in `values.yaml`:
 
 ```yaml
-br-spb-bc-correios.image.tag: "1.2.0"
+# helm_values_key_mappings: '{"plugin-bc-correios": "bc-correios"}'
 ```
 
-### Removed values
+If you set `bc-correios.image.tag` explicitly in your overrides, align it with the new `appVersion`:
 
-_No direct values.yaml key changes detected._
+```yaml
+bc-correios:
+  image:
+    repository: lerianstudio/plugin-bc-correios
+    tag: "1.2.0"
+```
 
-### Changed operational values
+> **Note:** For application-level changes included in version 1.2.0, refer to the [plugin-bc-correios changelog](https://github.com/LerianStudio/plugin-bc-correios).
 
-_No image, env, secret, probe, ingress, service, port, or enablement changes detected in values.yaml._
+### 2. br-spb-bc-correios sibling image tag pinned
 
-## Template changes
+A new top-level `br-spb-bc-correios` block is added to `values.yaml`, pinning the image tag of the sibling SPB BC Correios component to `1.2.0`.
 
-### Added files
+| Component                      | v1.0.1  | v1.1.0-beta.1 |
+|--------------------------------|---------|---------------|
+| br-spb-bc-correios.image.tag   | _unset_ | 1.2.0         |
 
-- No chart files added.
+```yaml
+br-spb-bc-correios:
+  image:
+    tag: 1.2.0
+```
 
-### Removed files
+If you already override this value, review your override against the new chart default. No other keys are introduced.
 
-- No chart files removed.
+## Configuration Changes
 
-### Modified files
+No keys are removed or renamed in this release. The following table summarizes the value changes:
 
-- `charts/plugin-bc-correios/Chart.yaml`
-- `charts/plugin-bc-correios/values.yaml`
+| Setting                      | v1.0.1  | v1.1.0-beta.1 |
+|------------------------------|---------|---------------|
+| Chart `version`              | 1.0.1   | 1.1.0-beta.1  |
+| Chart `appVersion`           | 1.0.0   | 1.2.0         |
+| `br-spb-bc-correios.image.tag` | _unset_ | 1.2.0       |
 
-## Migration steps
+All existing `values.yaml` settings remain compatible with version 1.1.0-beta.1.
 
-1. Read this guide and compare your custom values against `charts/plugin-bc-correios/values.yaml`.
-2. Add any required new values for your environment, especially secrets, configmaps, probes, ingress, and service settings.
-3. Render the chart locally with your production values and review the manifest diff.
-4. Apply the upgrade in a controlled environment before production.
+## Migration Steps
+
+This upgrade requires no manual migration steps. The Helm upgrade will roll the pods with the new image tags.
+
+**Recommended upgrade process:**
+
+1. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading))
+2. Ensure you have a recent backup of your data (if using chart-managed databases)
+3. Run the upgrade command during a maintenance window
+4. Verify all pods are running and healthy after the upgrade
+
+```bash
+kubectl get pods -n <namespace>
+```
+
+5. Check service logs for any startup issues
+
+```bash
+kubectl logs -n <namespace> -l app.kubernetes.io/name=plugin-bc-correios-helm --tail=50
+```
+
+> **Note:** The upgrade will trigger a rolling restart of the BC Correios pods. Depending on your replica count and readiness probe configuration, this may cause brief service interruptions.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-bc-correios ./charts/plugin-bc-correios \
-  --namespace <namespace> \
-  --values <your-values.yaml>
+helm diff upgrade plugin-bc-correios oci://registry-1.docker.io/lerianstudio/plugin-bc-correios-helm --version 1.1.0-beta.1 -n <namespace>
 ```
+
+> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-bc-correios ./charts/plugin-bc-correios \
-  --namespace <namespace> \
-  --values <your-values.yaml>
+helm upgrade plugin-bc-correios oci://registry-1.docker.io/lerianstudio/plugin-bc-correios-helm --version 1.1.0-beta.1 -n <namespace>
 ```

@@ -47,7 +47,7 @@ spec:
               echo "PostgreSQL is ready."
       containers:
         - name: migrations
-          image: "{{ .Values.bankTransfer.migrations.image.repository }}:{{ .Values.bankTransfer.migrations.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.bankTransfer.migrations.image.repository }}:{{ .Values.bankTransfer.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.bankTransfer.migrations.image.pullPolicy | default "IfNotPresent" }}
           env:
             - name: POSTGRES_HOST

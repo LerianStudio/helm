@@ -92,8 +92,6 @@ bankTransfer:
       repository: ghcr.io/lerianstudio/plugin-br-bank-transfer-migrations
       # -- Image pull policy
       pullPolicy: IfNotPresent
-      # -- Image tag — defaults to Chart.AppVersion when empty
-      tag: "3.2.0-beta.13"
     # -- Maximum number of retries before the Job is considered failed
     backoffLimit: 3
     resources:

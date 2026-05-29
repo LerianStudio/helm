@@ -17,7 +17,9 @@ bankTransfer:
           - path: /
             pathType: Prefix
     tls: []
-
+  migrations:
+    # -- Enable or disable the migrations job
+    enabled: true
   configmap:
     # Chart scope (as of 1.6.0): infrastructure connection + multi-tenant
     # toggle + outbound URLs / auth toggles only. Operational tuning

@@ -1,333 +1,229 @@
 # Helm Upgrade from v1.0.x to v1.1.x
+
 ## Topics
-- **[Overview](#overview)**- **[Version changes](#version-changes)**- **[Configuration changes](#configuration-changes)**- **[Template changes](#template-changes)**- **[Migration steps](#migration-steps)**- **[Preview changes before upgrading](#preview-changes-before-upgrading)**- **[Command to upgrade](#command-to-upgrade)**
+
+- **[Overview](#overview)**
+- **[Features](#features)**
+  - [1. Multi-component refactor](#1-multi-component-refactor)
+  - [2. New subchart dependencies](#2-new-subchart-dependencies)
+  - [3. Bootstrap Jobs for PostgreSQL and MongoDB](#3-bootstrap-jobs-for-postgresql-and-mongodb)
+  - [4. Schema migration Jobs for spi, dict-hub, cob-hub](#4-schema-migration-jobs-for-spi-dict-hub-cob-hub)
+  - [5. Shared multi-path ingresses](#5-shared-multi-path-ingresses)
+  - [6. Per-component image repositories](#6-per-component-image-repositories)
+  - [7. Per-component health probe paths](#7-per-component-health-probe-paths)
+  - [8. DEPLOYMENT_MODE default switched to byoc](#8-deployment_mode-default-switched-to-byoc)
+- **[Configuration Changes](#configuration-changes)**
+- **[Migration Steps](#migration-steps)**
+- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
+- **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
-This guide covers the `plugin-br-pix-switch` chart upgrade from `1.0.1-beta.1` to `1.1.0-beta.10`. It was generated retroactively from the chart history and focuses on minor version changes; patch-only releases are intentionally ignored.
 
-Because this is a minor upgrade, the expected path is an in-place Helm upgrade after reviewing new values and changed defaults.
+This is a major refactor of the `plugin-br-pix-switch` chart. The 1.0.x line shipped a single-Deployment chart whose values exposed environment variables (`DB_HOST`, `DB_PORT`, ...) that the application binaries do not read. As a result, no usable production deployment of the chart exists on the 1.0.x line, so this guide treats the migration as a values-shape rewrite rather than a state-preserving upgrade.
 
-## Version changes
+The 1.1.x chart deploys all 10 application components independently (`spi`, `spi-systemplane`, `adapter-btg-mock`, `dict-hub`, `dict-hub-vsync`, `dict-proxy`, `dict-systemplane`, `cob-hub`, `cob-proxy`, `cob-systemplane`), each with its own Deployment, Service, ConfigMap, Secret, ServiceAccount, HPA, PDB, and ingress route. It also adds optional bootstrap and schema-migration Jobs and three new subchart dependencies (`mongodb`, `rabbitmq`, plus `valkey` repository change).
 
-| Field | Previous | Current |
-|-------|----------|---------|
+## Features
+
+### 1. Multi-component refactor
+
+The single `pixSwitch` values block has been replaced by 10 per-component blocks. Each block is independently `enabled`, sized, and configured.
+
+| Component (values key) | Service port | Purpose |
+|------------------------|--------------|---------|
+| `spi` | 4101 | PIX SPI service |
+| `spiSystemplane` | 4102 | Runtime config plane for SPI |
+| `adapterBtgMock` | 4103 | BTG provider mock (disabled by default) |
+| `dictHub` | 4104 | DICT hub |
+| `dictHubVsync` | 4105 | DICT verification sync worker |
+| `dictProxy` | 4106 | DICT proxy to BCB |
+| `dictSystemplane` | 4107 | Runtime config plane for DICT |
+| `cobHub` | 4108 | COB hub |
+| `cobProxy` | 4109 | COB proxy to BCB |
+| `cobSystemplane` | 4110 | Runtime config plane for COB |
+
+Ports sit in the 41xx range to avoid conflicts with the org port allocation table (4001-4013 is used by Identity, Fees, CRM, Reporter, etc.).
+
+The legacy `pixSwitch.*` values are not honored and must be removed.
+
+### 2. New subchart dependencies
+
+`Chart.yaml` declares four optional subcharts. All default to disabled; production deployments are expected to point each component at an externally-managed datastore through a Kubernetes Secret.
+
+| Subchart | Version | Repository | Used by |
+|----------|---------|------------|---------|
+| `postgresql` | 16.3 | https://charts.bitnami.com/bitnami | 7 components (DATABASE_URL) |
+| `valkey` | 2.4.7 | oci://registry-1.docker.io/bitnamicharts | spi, dict-hub, dict-hub-vsync (optional cache) |
+| `mongodb` | 16.4 | https://charts.bitnami.com/bitnami | dict-hub |
+| `rabbitmq` | 2.1.11 | https://groundhog2k.github.io/helm-charts | dict-hub-vsync |
+
+The `valkey` subchart was previously sourced from `https://valkey.io/valkey-helm`; in 1.1.x it is sourced from the Bitnami OCI registry instead.
+
+### 3. Bootstrap Jobs for PostgreSQL and MongoDB
+
+Optional bootstrap Jobs provision the databases, roles, and grants required by the application. Both are disabled by default and gated by `global.externalPostgresDefinitions.enabled` and `global.externalMongoDefinitions.enabled`.
+
+```yaml
+global:
+  externalPostgresDefinitions:
+    enabled: false
+  externalMongoDefinitions:
+    enabled: false
+```
+
+When enabled, the chart renders:
+
+| Job | Action |
+|-----|--------|
+| `bootstrap-postgres-pix-spi` | Creates `pix-spi` database and `pixswitch` role |
+| `bootstrap-postgres-pix-dict` | Creates `pix-dict` database and grants |
+| `bootstrap-postgres-pix-cob` | Creates `pix-cob` database and grants |
+| `bootstrap-mongodb` | Creates `pixswitch` Mongo user with `readWrite` on `pix-dict` and `pix-cob` |
+
+Each Job is idempotent and skips when the role, database, or user already exists.
+
+### 4. Schema migration Jobs for spi, dict-hub, cob-hub
+
+The three components that own schema migrations now ship a `golang-migrate` Helm-hook Job. Each Job uses the component's own image (which since `1.0.0-beta.101` ships both `/app` and `/migrate` binaries) and runs `pre-upgrade,post-install` with weight `-5`.
+
+```yaml
+spi:
+  migrations:
+    enabled: true
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+dictHub:
+  migrations:
+    enabled: true
+cobHub:
+  migrations:
+    enabled: true
+```
+
+Setting `migrations.enabled: false` skips the Job for that component. Without these Jobs, application tables are never created.
+
+### 5. Shared multi-path ingresses
+
+Per-component `ingress` blocks have been replaced by three top-level ingress objects routed by URL path prefix.
+
+| Top-level key | Default hostname | Default routes |
+|---------------|------------------|----------------|
+| `appsIngress` | (operator-set) | `/spi`, `/dict-hub`, `/dict-proxy`, `/cob-hub`, `/cob-proxy` |
+| `systemplaneIngress` | (operator-set) | `/spi`, `/dict`, `/cob` |
+| `providersIngress` | (operator-set) | `/btg-mock` |
+
+Routes whose target component is disabled are silently dropped. No path rewriting is performed at the ingress; applications register their own `/<component>` prefix on the source side.
+
+`adapterBtgMock` keeps its own per-component `ingress` block in addition to its entry in `providersIngress.routes` because it is dev-only and operators may want to expose it independently.
+
+### 6. Per-component image repositories
+
+Each component now defaults its `image.repository` to the per-component image published by the source repo from `1.0.0-beta.101` onward. Previously every component fell back to the global default `ghcr.io/lerianstudio/plugin-br-pix-switch`, which only contained the SPI binary.
+
+| Component | Default image |
+|-----------|---------------|
+| `spi` | `ghcr.io/lerianstudio/plugin-br-pix-switch-spi-api` |
+| `spiSystemplane` | `ghcr.io/lerianstudio/plugin-br-pix-switch-spi-systemplane-api` |
+| `adapterBtgMock` | `ghcr.io/lerianstudio/plugin-br-pix-switch-adapter-btg-mock-api` |
+| `dictHub` | `ghcr.io/lerianstudio/plugin-br-pix-switch-dict-hub-api` |
+| `dictHubVsync` | `ghcr.io/lerianstudio/plugin-br-pix-switch-dict-hub-vsync` |
+| `dictProxy` | `ghcr.io/lerianstudio/plugin-br-pix-switch-dict-proxy-api` |
+| `dictSystemplane` | `ghcr.io/lerianstudio/plugin-br-pix-switch-dict-systemplane-api` |
+| `cobHub` | `ghcr.io/lerianstudio/plugin-br-pix-switch-cob-hub-api` |
+| `cobProxy` | `ghcr.io/lerianstudio/plugin-br-pix-switch-cob-proxy-api` |
+| `cobSystemplane` | `ghcr.io/lerianstudio/plugin-br-pix-switch-cob-systemplane-api` |
+
+The dead `global.image` block was removed in `1.1.0-beta.7`. Operators who relied on `global.image.tag` for cohort-wide tag overrides must now set `image.tag` per component.
+
+### 7. Per-component health probe paths
+
+Each component defaults its readiness and liveness probes to the HTTP path that matches its source-side `routePrefix`:
+
+| Component | readiness | liveness |
+|-----------|-----------|----------|
+| `spi` | `/spi/readyz` | `/spi/health` |
+| `spiSystemplane` | `/spi/readyz` | `/spi/health` |
+| `dictHub` | `/dict-hub/readyz` | `/dict-hub/health` |
+| `dictHubVsync` | `/readyz` | `/health` |
+| `dictProxy` | `/dict-proxy/readyz` | `/dict-proxy/health` |
+| `dictSystemplane` | `/dict/readyz` | `/dict/health` |
+| `cobHub` | `/cob-hub/readyz` | `/cob-hub/health` |
+| `cobProxy` | `/cob-proxy/readyz` | `/cob-proxy/health` |
+| `cobSystemplane` | `/cob/readyz` | `/cob/health` |
+| `adapterBtgMock` | `/btg-mock/readyz` | `/btg-mock/health` |
+
+Override per environment via `<component>.readinessProbe.path` and `<component>.livenessProbe.path`.
+
+### 8. DEPLOYMENT_MODE default switched to byoc
+
+The chart-wide default for `DEPLOYMENT_MODE` switched from `local` to `byoc` on every component's configmap. `byoc` triggers production license enforcement; opt back in to `local` explicitly for dev or CI installs without a license:
+
+```yaml
+spi:
+  configmap:
+    DEPLOYMENT_MODE: "local"
+# ... repeat per component
+```
+
+## Configuration Changes
+
+The following table summarizes the chart-level changes between v1.0.x and v1.1.x:
+
+| Setting | v1.0.1-beta.1 | v1.1.0-beta.10 |
+|---------|---------------|----------------|
 | Chart version | `1.0.1-beta.1` | `1.1.0-beta.10` |
 | App version | `1.0.0-beta.1` | `1.0.0-beta.101` |
+| `pixSwitch.*` block | present | removed |
+| Per-component blocks (`spi`, `dictHub`, ...) | not present | required |
+| `postgresql.enabled` (default) | `true` | `false` |
+| `valkey.enabled` (default) | `true` | `false` |
+| `valkey.auth.enabled` (default) | `false` | `true` |
+| `valkey` repository | `https://valkey.io/valkey-helm` | `oci://registry-1.docker.io/bitnamicharts` |
+| `mongodb` subchart | not declared | declared, disabled |
+| `rabbitmq` subchart | not declared | declared, disabled |
+| `global.image` block | present | removed |
+| `appsIngress`, `systemplaneIngress`, `providersIngress` | not present | added |
+| Bootstrap and migration Jobs | not present | added (opt-in) |
+| `DEPLOYMENT_MODE` default | `local` | `byoc` |
 
-## Configuration changes
+## Migration Steps
 
-### Added values
+Because the 1.0.x chart did not produce a working deployment (the old `pixSwitch` block emitted `DB_HOST`/`DB_PORT`/... which the application binaries do not read), there is no in-place state to preserve. The migration is a values-shape rewrite.
 
-```yaml
-adapterBtgMock.args: "[0 items]"
-adapterBtgMock.autoscaling.enabled: false
-adapterBtgMock.autoscaling.maxReplicas: 1
-adapterBtgMock.autoscaling.minReplicas: 1
-adapterBtgMock.command: "[0 items]"
-adapterBtgMock.configmap.ADAPTER_ISPB: ""
-adapterBtgMock.configmap.APPLICATION_NAME: "pix-adapter-btg-mock"
-adapterBtgMock.configmap.COB_BASE_URL: "http://plugin-br-pix-switch-cob-hub:4108"
-adapterBtgMock.configmap.DEPLOYMENT_MODE: "byoc"
-adapterBtgMock.configmap.DICT_BASE_URL: "http://plugin-br-pix-switch-dict-hub:4104"
-adapterBtgMock.configmap.ENV_NAME: "development"
-adapterBtgMock.configmap.LOG_LEVEL: "info"
-adapterBtgMock.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: ""
-adapterBtgMock.configmap.OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
-adapterBtgMock.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-adapterBtgMock.configmap.OTEL_RESOURCE_SERVICE_NAME: "pix-adapter-btg-mock"
-adapterBtgMock.configmap.PLUGIN_AUTH_ENABLED: "false"
-adapterBtgMock.configmap.PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-adapterBtgMock.configmap.POLLER_INTERVAL_SEC: "30"
-adapterBtgMock.configmap.PROVIDER_BASE_URL: ""
-adapterBtgMock.configmap.REQUEST_TIMEOUT_SEC: "30"
-adapterBtgMock.configmap.SERVER_ADDRESS: ":4103"
-adapterBtgMock.configmap.SPI_BASE_URL: "http://plugin-br-pix-switch-spi:4101"
-adapterBtgMock.configmap.TELEMETRY_ENABLED: "false"
-adapterBtgMock.deploymentStrategy.rollingUpdate.maxSurge: 1
-adapterBtgMock.deploymentStrategy.rollingUpdate.maxUnavailable: 1
-adapterBtgMock.deploymentStrategy.type: "RollingUpdate"
-adapterBtgMock.description: "BTG provider mock"
-adapterBtgMock.enabled: false
-adapterBtgMock.existingSecretName: ""
-adapterBtgMock.image.pullPolicy: ""
-adapterBtgMock.image.repository: "ghcr.io/lerianstudio/plugin-br-pix-switch-adapter-btg-mock-api"
-adapterBtgMock.image.tag: ""
-adapterBtgMock.imagePullSecrets: "[0 items]"
-adapterBtgMock.ingress.enabled: false
-adapterBtgMock.livenessProbe.path: "/btg-mock/health"
-adapterBtgMock.name: "adapter-btg-mock"
-adapterBtgMock.pdb.enabled: false
-adapterBtgMock.pdb.maxUnavailable: 1
-adapterBtgMock.pdb.minAvailable: 0
-adapterBtgMock.readinessProbe.path: "/btg-mock/readyz"
-adapterBtgMock.replicaCount: 1
-adapterBtgMock.resources.limits.cpu: "200m"
-adapterBtgMock.resources.limits.memory: "256Mi"
-adapterBtgMock.resources.requests.cpu: "50m"
-adapterBtgMock.resources.requests.memory: "64Mi"
-adapterBtgMock.revisionHistoryLimit: 10
-adapterBtgMock.secrets.LICENSE_KEY: ""
-adapterBtgMock.secrets.PROVIDER_CLIENT_ID: ""
-adapterBtgMock.secrets.PROVIDER_CLIENT_SECRET: ""
-adapterBtgMock.securityContext.capabilities.drop: "[1 items]"
-adapterBtgMock.securityContext.readOnlyRootFilesystem: true
-adapterBtgMock.securityContext.runAsGroup: 1000
-adapterBtgMock.securityContext.runAsNonRoot: true
-adapterBtgMock.securityContext.runAsUser: 1000
-adapterBtgMock.service.port: 4103
-adapterBtgMock.service.type: "ClusterIP"
-adapterBtgMock.serviceAccount.create: true
-adapterBtgMock.serviceAccount.name: ""
-adapterBtgMock.tolerations: "[0 items]"
-adapterBtgMock.useExistingSecret: false
-appsIngress.className: "nginx"
-appsIngress.enabled: false
-appsIngress.hosts: "[0 items]"
-appsIngress.routes: "[5 items]"
-appsIngress.tls: "[0 items]"
-cobHub.args: "[0 items]"
-cobHub.autoscaling.enabled: false
-cobHub.autoscaling.maxReplicas: 3
-cobHub.autoscaling.minReplicas: 1
-cobHub.command: "[0 items]"
-cobHub.configmap.APPLICATION_NAME: "pix-cob-hub"
-cobHub.configmap.DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-cob?sslmode=disable"
-cobHub.configmap.DEPLOYMENT_MODE: "byoc"
-cobHub.configmap.ENV_NAME: "development"
-cobHub.configmap.LICENSE_ORGANIZATION_IDS: "global"
-cobHub.configmap.LOG_LEVEL: "info"
-cobHub.configmap.MULTI_TENANT_ENABLED: "false"
-cobHub.configmap.MULTI_TENANT_URL: ""
-cobHub.configmap.ORGANIZATION_ID: ""
-# ... 618 more entries
+1. Read this guide alongside `charts/plugin-br-pix-switch/values.yaml` and `charts/plugin-br-pix-switch/values-template.yaml` in the new chart.
+2. Remove the legacy `pixSwitch:` block and any `pixSwitch.*` overrides from your custom values.
+3. Rewrite custom values into the per-component shape (`spi:`, `spiSystemplane:`, `dictHub:`, `dictHubVsync:`, `dictProxy:`, `dictSystemplane:`, `cobHub:`, `cobProxy:`, `cobSystemplane:`, `adapterBtgMock:`).
+4. Decide how to provide datastores:
+   - Provision `pix-spi`, `pix-dict`, `pix-cob` PostgreSQL databases and a `pixswitch` role externally, or set `global.externalPostgresDefinitions.enabled=true` to let the chart bootstrap them.
+   - Provision a MongoDB database for `dict-hub` (and optionally `cob-hub`), or set `global.externalMongoDefinitions.enabled=true`.
+   - Configure RabbitMQ (required only by `dict-hub-vsync`) and Valkey (optional cache for `spi`, `dict-hub`, `dict-hub-vsync`).
+5. Set per-component `image.repository` and `image.tag` if you do not want the new per-component defaults.
+6. Replace per-component `ingress.*` overrides with entries in `appsIngress.routes`, `systemplaneIngress.routes`, or `providersIngress.routes`.
+7. If running outside production, set `DEPLOYMENT_MODE: "local"` in each component's `configmap` block to bypass license enforcement.
+8. Render the chart locally with `helm template` and review the manifest diff.
+9. Apply the upgrade in a controlled environment before production.
+
+```bash
+kubectl get pods -n <namespace>
 ```
 
-### Removed values
-
-```yaml
-otel-collector-lerian.enabled: true
-pixSwitch.autoscaling.enabled: true
-pixSwitch.autoscaling.maxReplicas: 3
-pixSwitch.autoscaling.minReplicas: 1
-pixSwitch.autoscaling.targetCPUUtilizationPercentage: 80
-pixSwitch.autoscaling.targetMemoryUtilizationPercentage: 80
-pixSwitch.configmap.DB_HOST: ""
-pixSwitch.configmap.DB_NAME: "pixswitch"
-pixSwitch.configmap.DB_PORT: "5432"
-pixSwitch.configmap.DB_REPLICA_HOST: ""
-pixSwitch.configmap.DB_REPLICA_NAME: "pixswitch"
-pixSwitch.configmap.DB_REPLICA_PORT: "5432"
-pixSwitch.configmap.DB_REPLICA_SSL_MODE: "disable"
-pixSwitch.configmap.DB_REPLICA_USER: "pixswitch"
-pixSwitch.configmap.DB_SSL_MODE: "disable"
-pixSwitch.configmap.DB_USER: "pixswitch"
-pixSwitch.configmap.ENABLE_TELEMETRY: "true"
-pixSwitch.configmap.ENV_NAME: "development"
-pixSwitch.configmap.LOG_LEVEL: "info"
-pixSwitch.configmap.ORGANIZATION_IDS: "global"
-pixSwitch.configmap.OTEL_EXPORTER_OTLP_ENDPOINT: "midaz-otel-lgtm:4317"
-pixSwitch.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT: "4317"
-pixSwitch.configmap.OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
-pixSwitch.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-pixSwitch.configmap.OTEL_RESOURCE_SERVICE_NAME: "plugin-br-pix-switch"
-pixSwitch.configmap.OTEL_RESOURCE_SERVICE_VERSION: "1.0.0-beta.1"
-pixSwitch.configmap.PLUGIN_AUTH_ADDRESS: ""
-pixSwitch.configmap.PLUGIN_AUTH_ENABLED: "false"
-pixSwitch.configmap.PROTO_PORT: "7001"
-pixSwitch.configmap.SERVER_PORT: "4000"
-pixSwitch.configmap.SWAGGER_BASE_PATH: "/"
-pixSwitch.configmap.SWAGGER_DESCRIPTION: "Plugin BR Pix Switch API"
-pixSwitch.configmap.SWAGGER_HOST: ""
-pixSwitch.configmap.SWAGGER_LEFT_DELIMITER: "{{"
-pixSwitch.configmap.SWAGGER_RIGHT_DELIMITER: "}}"
-pixSwitch.configmap.SWAGGER_SCHEMES: "http"
-pixSwitch.configmap.SWAGGER_TITLE: "Plugin BR Pix Switch"
-pixSwitch.configmap.VALKEY_HOST: ""
-pixSwitch.configmap.VALKEY_PORT: "6379"
-pixSwitch.configmap.VALKEY_USER: "pixswitch"
-pixSwitch.configmap.VERSION: "1.0.0-beta.1"
-pixSwitch.deploymentStrategy.rollingUpdate.maxSurge: 1
-pixSwitch.deploymentStrategy.rollingUpdate.maxUnavailable: 1
-pixSwitch.deploymentStrategy.type: "RollingUpdate"
-pixSwitch.description: "Plugin BR Pix Switch for Midaz"
-pixSwitch.existingSecretName: ""
-pixSwitch.fullnameOverride: ""
-pixSwitch.image.pullPolicy: "Always"
-pixSwitch.image.repository: "ghcr.io/lerianstudio/plugin-br-pix-switch"
-pixSwitch.image.tag: "1.0.0-beta.1"
-pixSwitch.ingress.className: ""
-pixSwitch.ingress.enabled: false
-pixSwitch.ingress.hosts: "[1 items]"
-pixSwitch.ingress.tls: "[0 items]"
-pixSwitch.name: "plugin-br-pix-switch"
-pixSwitch.nameOverride: ""
-pixSwitch.pdb.enabled: true
-pixSwitch.pdb.maxUnavailable: 1
-pixSwitch.pdb.minAvailable: 0
-pixSwitch.replicaCount: 1
-pixSwitch.resources.limits.cpu: "200m"
-pixSwitch.resources.limits.memory: "256Mi"
-pixSwitch.resources.requests.cpu: "100m"
-pixSwitch.resources.requests.memory: "128Mi"
-pixSwitch.revisionHistoryLimit: 10
-pixSwitch.secrets.DB_PASSWORD: ""
-pixSwitch.secrets.DB_REPLICA_PASSWORD: ""
-pixSwitch.secrets.LICENSE_KEY: ""
-pixSwitch.secrets.VALKEY_PASSWORD: ""
-pixSwitch.securityContext.capabilities.drop: "[1 items]"
-pixSwitch.securityContext.readOnlyRootFilesystem: true
-pixSwitch.securityContext.runAsGroup: 1000
-pixSwitch.securityContext.runAsNonRoot: true
-pixSwitch.securityContext.runAsUser: 1000
-pixSwitch.service.grpcPort: 7001
-pixSwitch.service.port: 4000
-pixSwitch.service.type: "ClusterIP"
-pixSwitch.tolerations: "[0 items]"
-pixSwitch.useExistingSecrets: false
-postgresql.auth.enabled: true
-# ... 6 more entries
+```bash
+kubectl logs -n <namespace> -l app.kubernetes.io/instance=plugin-br-pix-switch --tail=50
 ```
 
-### Changed operational values
-
-```yaml
-# postgresql.enabled
-#   previous: true
-#   current:  false
-# valkey.auth.enabled
-#   previous: false
-#   current:  true
-# valkey.enabled
-#   previous: true
-#   current:  false
-```
-
-## Template changes
-
-### Added files
-
-- `charts/plugin-br-pix-switch/templates/_helpers.tpl`
-- `charts/plugin-br-pix-switch/templates/_migrations.tpl`
-- `charts/plugin-br-pix-switch/templates/adapter-btg-mock/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/adapter-btg-mock/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/adapter-btg-mock/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/adapter-btg-mock/ingress.yaml`
-- `charts/plugin-br-pix-switch/templates/adapter-btg-mock/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/adapter-btg-mock/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/adapter-btg-mock/service.yaml`
-- `charts/plugin-br-pix-switch/templates/adapter-btg-mock/serviceaccount.yaml`
-- `charts/plugin-br-pix-switch/templates/bootstrap-mongodb.yaml`
-- `charts/plugin-br-pix-switch/templates/bootstrap-postgres.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-hub/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-hub/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-hub/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-hub/migrations-job.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-hub/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-hub/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-hub/service.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-hub/serviceaccount.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-proxy/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-proxy/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-proxy/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-proxy/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-proxy/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-proxy/service.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-proxy/serviceaccount.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-systemplane/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-systemplane/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-systemplane/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-systemplane/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-systemplane/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-systemplane/service.yaml`
-- `charts/plugin-br-pix-switch/templates/cob-systemplane/serviceaccount.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub-vsync/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub-vsync/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub-vsync/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub-vsync/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub-vsync/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub-vsync/service.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub-vsync/serviceaccount.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub/migrations-job.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub/service.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-hub/serviceaccount.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-proxy/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-proxy/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-proxy/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-proxy/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-proxy/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-proxy/service.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-proxy/serviceaccount.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-systemplane/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-systemplane/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-systemplane/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-systemplane/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-systemplane/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-systemplane/service.yaml`
-- `charts/plugin-br-pix-switch/templates/dict-systemplane/serviceaccount.yaml`
-- `charts/plugin-br-pix-switch/templates/ingress-apps.yaml`
-- `charts/plugin-br-pix-switch/templates/ingress-providers.yaml`
-- `charts/plugin-br-pix-switch/templates/ingress-systemplane.yaml`
-- `charts/plugin-br-pix-switch/templates/spi-systemplane/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/spi-systemplane/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/spi-systemplane/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/spi-systemplane/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/spi-systemplane/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/spi-systemplane/service.yaml`
-- `charts/plugin-br-pix-switch/templates/spi-systemplane/serviceaccount.yaml`
-- `charts/plugin-br-pix-switch/templates/spi/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/spi/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/spi/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/spi/migrations-job.yaml`
-- `charts/plugin-br-pix-switch/templates/spi/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/spi/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/spi/service.yaml`
-- ... 1 more
-
-### Removed files
-
-- `charts/plugin-br-pix-switch/templates/helpers.tpl`
-- `charts/plugin-br-pix-switch/templates/plugin-br-pix-switch/configmap.yaml`
-- `charts/plugin-br-pix-switch/templates/plugin-br-pix-switch/deployment.yaml`
-- `charts/plugin-br-pix-switch/templates/plugin-br-pix-switch/hpa.yaml`
-- `charts/plugin-br-pix-switch/templates/plugin-br-pix-switch/ingress.yaml`
-- `charts/plugin-br-pix-switch/templates/plugin-br-pix-switch/pdb.yaml`
-- `charts/plugin-br-pix-switch/templates/plugin-br-pix-switch/secrets.yaml`
-- `charts/plugin-br-pix-switch/templates/plugin-br-pix-switch/service.yaml`
-
-### Modified files
-
-- `charts/plugin-br-pix-switch/CHANGELOG.md`
-- `charts/plugin-br-pix-switch/Chart.yaml`
-- `charts/plugin-br-pix-switch/README.md`
-- `charts/plugin-br-pix-switch/templates/NOTES.txt`
-- `charts/plugin-br-pix-switch/values-template.yaml`
-- `charts/plugin-br-pix-switch/values.yaml`
-
-## Migration steps
-
-1. Read this guide and compare your custom values against `charts/plugin-br-pix-switch/values.yaml`.
-2. Remove values that no longer exist in the chart before running the upgrade.
-3. Add any required new values for your environment, especially secrets, configmaps, probes, ingress, and service settings.
-4. Render the chart locally with your production values and review the manifest diff.
-5. Apply the upgrade in a controlled environment before production.
+> **Note:** The schema-migration Jobs run as `pre-upgrade` hooks. Confirm the application image has `/migrate` available (source `1.0.0-beta.101` and later) before enabling them, otherwise the Job will fail with `exec: "/migrate": no such file`.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-switch ./charts/plugin-br-pix-switch \
-  --namespace <namespace> \
-  --values <your-values.yaml>
+helm diff upgrade plugin-br-pix-switch oci://registry-1.docker.io/lerianstudio/plugin-br-pix-switch-helm --version 1.1.0-beta.10 -n <namespace>
 ```
+
+> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-pix-switch ./charts/plugin-br-pix-switch \
-  --namespace <namespace> \
-  --values <your-values.yaml>
+helm upgrade plugin-br-pix-switch oci://registry-1.docker.io/lerianstudio/plugin-br-pix-switch-helm --version 1.1.0-beta.10 -n <namespace>
 ```

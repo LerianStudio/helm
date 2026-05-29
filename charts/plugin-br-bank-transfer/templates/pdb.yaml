@@ -20,5 +20,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name ) | nindent 6 }}
+      {{- include "bank-transfer.selectorLabels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name ) | nindent 6 }}
 {{- end }}

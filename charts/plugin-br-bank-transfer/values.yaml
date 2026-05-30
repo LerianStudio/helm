@@ -371,6 +371,8 @@ bankTransfer:
     # =================================================================
     WEBHOOK_ENABLED: "false"
     BTF_FEE_ENABLED: "false"
+    RATE_LIMIT_ENABLED: "false"
+    ALLOW_INSECURE_TLS: "true"
     OTEL_SDK_DISABLED: "false"
 
   # -- Secrets for storing sensitive data

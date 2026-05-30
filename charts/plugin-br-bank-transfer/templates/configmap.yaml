@@ -269,6 +269,8 @@ data:
   # =====================================================================
   WEBHOOK_ENABLED: {{ .Values.bankTransfer.configmap.WEBHOOK_ENABLED | default "false" | quote }}
   BTF_FEE_ENABLED: {{ .Values.bankTransfer.configmap.BTF_FEE_ENABLED | default "false" | quote }}
+  RATE_LIMIT_ENABLED: {{ .Values.bankTransfer.configmap.RATE_LIMIT_ENABLED | default "false" | quote }}
+  ALLOW_INSECURE_TLS: {{ .Values.bankTransfer.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
 
   # =====================================================================
   # EXTRA OVERRIDES (escape hatch for env vars not modeled above)

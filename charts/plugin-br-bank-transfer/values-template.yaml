@@ -153,6 +153,9 @@ bankTransfer:
     JD_SIGNING_MODE: "local_pem"  # local_pem | external_provided | disabled
     JD_POLLING_ENABLED: "false"
 
+    RATE_LIMIT_ENABLED: "false"
+    ALLOW_INSECURE_TLS: "true"
+
   secrets:
     # PostgreSQL - REQUIRED
     POSTGRES_PASSWORD: ""  # REQUIRED - PostgreSQL primary password

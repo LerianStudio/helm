@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.8]
+
+### Fixed
+- `templates/deployment.yaml`: the `wait-for-dependencies` init container
+  is now gated behind `MULTI_TENANT_ENABLED != "true"`. In 2.0.0-beta.7
+  we stopped rendering `POSTGRES_HOST` / `POSTGRES_PORT` / `REDIS_HOST`
+  tuning in MT mode, but the init container still referenced
+  `$POSTGRES_HOST:$POSTGRES_PORT` and `$REDIS_HOST` for its `nc -z`
+  probes. With those envs unset the probe loop ran forever printing
+  `nc: bad port ''` and pods never started.
+
+  In MT mode the bootstrap does not connect to any static Postgres /
+  Redis at boot — per-tenant connections are resolved via tenant-manager
+  at request time — so the dependency wait gate has nothing legitimate
+  to wait for. The init container is now omitted entirely in MT mode.
+- `templates/migrations.yaml`: the migrations Job is now gated by
+  `MULTI_TENANT_ENABLED != "true"` as well. Per-tenant schema migrations
+  in MT mode are owned by tenant-manager, not by a static pre-upgrade
+  hook bound to a single Postgres host.
+
 ## [2.0.0-beta.7]
 
 ### Changed

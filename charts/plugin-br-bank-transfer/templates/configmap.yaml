@@ -15,7 +15,6 @@ data:
   APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}
   {{- if not $multiTenantEnabled }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
-  VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
   {{- end }}
 
   # =====================================================================
@@ -56,9 +55,6 @@ data:
   MULTI_TENANT_REDIS_HOST: {{ required "bankTransfer.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_HOST | quote }}
   MULTI_TENANT_REDIS_PORT: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
   MULTI_TENANT_REDIS_TLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
-  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_CA_CERT }}
-  MULTI_TENANT_REDIS_CA_CERT: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_CA_CERT | quote }}
-  {{- end }}
   {{- if .Values.bankTransfer.configmap.MULTI_TENANT_MAX_TENANT_POOLS }}
   MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_MAX_TENANT_POOLS | quote }}
   {{- end }}
@@ -72,12 +68,6 @@ data:
   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | quote }}
   {{- end }}
   AWS_REGION: {{ required "bankTransfer.configmap.AWS_REGION is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.AWS_REGION | quote }}
-  {{- else }}
-  DEFAULT_TENANT_ID: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_ID | default "" | quote }}
-  DEFAULT_TENANT_SLUG: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_SLUG | default "default" | quote }}
-  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE }}
-  MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE: {{ .Values.bankTransfer.configmap.MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE | quote }}
-  {{- end }}
   {{- end }}
 
   {{- if not $multiTenantEnabled }}
@@ -97,7 +87,6 @@ data:
   POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
   POSTGRES_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
   MIGRATIONS_PATH: {{ .Values.bankTransfer.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
-  INFRA_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
 
   # =====================================================================
   # POSTGRES (replica — optional, for CQRS read scaling)
@@ -168,7 +157,7 @@ data:
   # =====================================================================
   # LICENSE GATEWAY
   # ORGANIZATION_IDS is rendered in both modes (license tenancy hint).
-  # LICENSE_SERVICE_ADDRESS + TENANT_IDS are single-tenant only.
+  # LICENSE_SERVICE_ADDRESS is single-tenant only.
   # =====================================================================
   {{- if .Values.bankTransfer.configmap.ORGANIZATION_IDS }}
   ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
@@ -176,9 +165,6 @@ data:
   {{- if not $multiTenantEnabled }}
   {{- if .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS }}
   LICENSE_SERVICE_ADDRESS: {{ .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS | quote }}
-  {{- end }}
-  {{- if .Values.bankTransfer.configmap.TENANT_IDS }}
-  TENANT_IDS: {{ .Values.bankTransfer.configmap.TENANT_IDS | quote }}
   {{- end }}
   {{- end }}
 
@@ -254,8 +240,6 @@ data:
   # SINGLE-TENANT DEFAULTS (ignored / not rendered when MULTI_TENANT_ENABLED=true)
   # =====================================================================
   ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.ORGANIZATION_ID | default "" | quote }}
-  DEFAULT_ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.DEFAULT_ORGANIZATION_ID | default "" | quote }}
-  IS_DEVELOPMENT: {{ .Values.bankTransfer.configmap.IS_DEVELOPMENT | default "false" | quote }}
   {{- end }}
 
   # =====================================================================

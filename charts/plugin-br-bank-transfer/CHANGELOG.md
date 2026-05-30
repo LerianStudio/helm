@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.7]
+
+### Changed
+- ConfigMap and Secret templates now gate single-tenant-only infrastructure
+  keys behind `MULTI_TENANT_ENABLED != "true"`. In multi-tenant mode the
+  rendered ConfigMap only contains the envs the bootstrap actually consumes
+  in that mode (app identity, server address, multi-tenant infrastructure,
+  app-level Redis connection envs, outbound adapter URLs + auth toggles,
+  inbound auth, telemetry toggle/endpoint, feature flags, AWS region for
+  the secrets-manager client). Removed from the MT-mode render:
+  - All `POSTGRES_*` / `MIGRATIONS_PATH` / `INFRA_CONNECT_TIMEOUT_SEC`
+    (per-tenant Postgres resolves via tenant-manager)
+  - All `MONGO_*` (per-tenant Mongo resolves via tenant-manager)
+  - All `RABBITMQ_*` (not used in MT mode)
+  - Redis pool / timeout / `REDIS_PROTOCOL` tuning (systemplane-managed)
+  - `DEPLOYMENT_MODE`, `VERSION`, `HTTP_BODY_LIMIT_BYTES`,
+    `TLS_TERMINATED_UPSTREAM`, `SERVER_*` TLS / proxy
+  - `OTEL_LIBRARY_NAME`, `OTEL_RESOURCE_SERVICE_NAME`,
+    `OTEL_RESOURCE_SERVICE_VERSION`, `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`
+  - JD live config (`JD_BASE_URL`, `JD_ORIGIN_ISPB`, `JD_SOAP_PATH`,
+    `JD_SIGNING_MODE`, `JD_LEGACY_CODE`, `JD_PRIVATE_KEY_KEYINFO`) — these
+    are per-tenant via `TenantIntegrationResolver` in MT mode
+  - `LICENSE_SERVICE_ADDRESS`, `TENANT_IDS`
+  - `ORGANIZATION_ID`, `DEFAULT_ORGANIZATION_ID`, `IS_DEVELOPMENT`,
+    `DEFAULT_TENANT_ID`, `DEFAULT_TENANT_SLUG`,
+    `MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE`
+- Single-tenant mode is unchanged: the previous required guards still apply
+  (`POSTGRES_PASSWORD`, `MONGO_PASSWORD`, `JD_BASE_URL`, `JD_ORIGIN_ISPB`
+  when sandbox mode is off) and all single-tenant defaults still render.
+
+### Fixed
+- Multi-tenant installs no longer fail at template time with
+  `bankTransfer.configmap.JD_BASE_URL is required when JD_SANDBOX_MODE is
+  not true`. The required guard now also requires `MULTI_TENANT_ENABLED`
+  to be off before triggering.
+
 ## [1.6.0-beta.1]
 
 ### Changed

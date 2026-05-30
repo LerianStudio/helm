@@ -215,6 +215,20 @@ bankTransfer:
     TLS_TERMINATED_UPSTREAM: "true"
 
     # =================================================================
+    # CORS policy
+    # In production the plugin's validator rejects wildcard "*" and any
+    # localhost / 127.0.0.1 / [::1] origin. Leave empty in single-tenant
+    # dev defaults; production deployments MUST override CORS_ALLOWED_ORIGINS
+    # with the API's public ingress hostname (e.g.
+    # "https://bank-transfer.sa-east-1.lerian.io"). When unset, the app's
+    # in-code safety net defaults to http://localhost:3000 — fine for dev,
+    # fatal in production.
+    # =================================================================
+    CORS_ALLOWED_ORIGINS: ""
+    CORS_ALLOWED_METHODS: ""
+    CORS_ALLOWED_HEADERS: ""
+
+    # =================================================================
     # Multi-tenancy
     # Only the toggle, the DEFAULT_TENANT_* identifiers, and the
     # infrastructure endpoints live in the chart. Operational tuning

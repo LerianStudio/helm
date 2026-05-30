@@ -32,6 +32,8 @@ bankTransfer:
 
     # TLS Configuration
     TLS_TERMINATED_UPSTREAM: "true"
+    # Allow insecure TLS (skip cert verification). Secure default off; gitops sets per-env.
+    ALLOW_INSECURE_TLS: "false"
 
     # Multi-Tenancy
     DEFAULT_TENANT_ID: ""  # REQUIRED - Default tenant UUID
@@ -94,7 +96,7 @@ bankTransfer:
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
 
     # Rate Limiting
-    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_ENABLED: "false"
     RATE_LIMIT_MAX: "100"
     RATE_LIMIT_EXPIRY_SEC: "60"
 

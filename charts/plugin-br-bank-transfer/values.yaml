@@ -194,6 +194,7 @@ bankTransfer:
     CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
     # TLS Configuration
     TLS_TERMINATED_UPSTREAM: "true"
+    ALLOW_INSECURE_TLS: "false"
     # Multi-Tenancy
     DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
     DEFAULT_TENANT_SLUG: "default"
@@ -255,7 +256,7 @@ bankTransfer:
     # SYSTEMPLANE_BACKEND: "postgres"
     # SYSTEMPLANE_POSTGRES_SCHEMA: "system"
     # Rate Limiting
-    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_ENABLED: "false"
     RATE_LIMIT_MAX: "100"
     RATE_LIMIT_EXPIRY_SEC: "60"
     # Database Metrics & Observability

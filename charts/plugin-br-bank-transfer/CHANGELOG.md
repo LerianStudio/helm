@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0-beta.2] - 2026-05-30
+
+### Changed
+- `RATE_LIMIT_ENABLED` default changed from `"true"` to `"false"` to match lib-commons v5.4.1 secure defaults
+
+### Added
+- `ALLOW_INSECURE_TLS` toggle (default `"false"`) exposed for per-env gitops overrides
+
 ## [1.0.0] - 2024-03-24
 
 ### Changed

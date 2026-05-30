@@ -25,6 +25,7 @@ data:
   SERVER_TLS_KEY_FILE: {{ .Values.bankTransfer.configmap.SERVER_TLS_KEY_FILE | quote }}
   {{- end }}
   TLS_TERMINATED_UPSTREAM: {{ .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ .Values.bankTransfer.configmap.ALLOW_INSECURE_TLS | default "false" | quote }}
   {{- if .Values.bankTransfer.configmap.SERVER_PROXY_HEADER }}
   SERVER_PROXY_HEADER: {{ .Values.bankTransfer.configmap.SERVER_PROXY_HEADER | quote }}
   {{- end }}
@@ -134,7 +135,7 @@ data:
   {{- end }}
 
   # Rate Limiting
-  RATE_LIMIT_ENABLED: {{ .Values.bankTransfer.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ .Values.bankTransfer.configmap.RATE_LIMIT_ENABLED | default "false" | quote }}
   RATE_LIMIT_MAX: {{ .Values.bankTransfer.configmap.RATE_LIMIT_MAX | default "100" | quote }}
   RATE_LIMIT_EXPIRY_SEC: {{ .Values.bankTransfer.configmap.RATE_LIMIT_EXPIRY_SEC | default "60" | quote }}
 

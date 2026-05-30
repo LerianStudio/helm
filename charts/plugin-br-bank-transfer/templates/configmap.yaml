@@ -1,4 +1,5 @@
 {{- if .Values.bankTransfer.enabled }}
+{{- $multiTenantEnabled := eq (toString (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -20,6 +21,12 @@ data:
   HTTP_BODY_LIMIT_BYTES: {{ .Values.bankTransfer.configmap.HTTP_BODY_LIMIT_BYTES | default "1048576" | quote }}
   TLS_TERMINATED_UPSTREAM: {{ .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
   ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
+  {{- if not $multiTenantEnabled }}
+  LOG_LEVEL: {{ .Values.bankTransfer.configmap.LOG_LEVEL | default "info" | quote }}
+  CORS_ALLOWED_ORIGINS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+  CORS_ALLOWED_METHODS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_METHODS | default "GET,POST,PUT,PATCH,DELETE,OPTIONS" | quote }}
+  CORS_ALLOWED_HEADERS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_HEADERS | default "Origin,Content-Type,Accept,Authorization,X-Request-ID" | quote }}
+  {{- end }}
   {{- if .Values.bankTransfer.configmap.SERVER_TLS_CERT_FILE }}
   SERVER_TLS_CERT_FILE: {{ .Values.bankTransfer.configmap.SERVER_TLS_CERT_FILE | quote }}
   {{- end }}
@@ -36,12 +43,12 @@ data:
   # =====================================================================
   # MULTI-TENANCY (chart-managed: toggle + infrastructure endpoints only)
   # All operational tuning (timeouts, pool sizes, circuit breaker) ships
-  # via lib-commons defaults or is hot-reloadable via systemplane.
+  # via lib-commons defaults/systemplane when multi-tenant is enabled.
   # =====================================================================
   MULTI_TENANT_ENABLED: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
   DEFAULT_TENANT_ID: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_ID | default "" | quote }}
   DEFAULT_TENANT_SLUG: {{ .Values.bankTransfer.configmap.DEFAULT_TENANT_SLUG | default "default" | quote }}
-  {{- if eq (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false") "true" }}
+  {{- if $multiTenantEnabled }}
   MULTI_TENANT_URL: {{ .Values.bankTransfer.configmap.MULTI_TENANT_URL | default "" | quote }}
   AWS_REGION: {{ .Values.bankTransfer.configmap.AWS_REGION | default "" | quote }}
   MULTI_TENANT_REDIS_HOST: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_HOST | default "" | quote }}
@@ -49,7 +56,9 @@ data:
   MULTI_TENANT_REDIS_TLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
   MULTI_TENANT_ENVIRONMENT: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ENVIRONMENT | default "" | quote }}
   MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
-  MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE: {{ .Values.bankTransfer.configmap.MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE | default "tenants/{env}/{tenantId}/{applicationName}/integration/configuration" | quote }}
+  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE }}
+  MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE: {{ .Values.bankTransfer.configmap.MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE | quote }}
+  {{- end }}
   {{- if .Values.bankTransfer.configmap.MULTI_TENANT_MAX_TENANT_POOLS }}
   MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_MAX_TENANT_POOLS | quote }}
   {{- end }}
@@ -68,12 +77,16 @@ data:
   {{- if .Values.bankTransfer.configmap.MULTI_TENANT_CACHE_TTL_SEC }}
   MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CACHE_TTL_SEC | quote }}
   {{- end }}
+  {{- if .Values.bankTransfer.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC }}
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.bankTransfer.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | quote }}
+  {{- end }}
   {{- end }}
 
   # =====================================================================
   # POSTGRES (primary)
   # =====================================================================
   {{- $namespace := include "global.namespace" . }}
+  {{- if not $multiTenantEnabled }}
   POSTGRES_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_HOST | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
   POSTGRES_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_PORT | default "5432" | quote }}
   POSTGRES_USER: {{ .Values.bankTransfer.configmap.POSTGRES_USER | default "bank_transfer" | quote }}
@@ -86,11 +99,12 @@ data:
   POSTGRES_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
   MIGRATIONS_PATH: {{ .Values.bankTransfer.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
   INFRA_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
+  {{- end }}
 
   # =====================================================================
   # POSTGRES (replica — optional, for CQRS read scaling)
   # =====================================================================
-  {{- if .Values.bankTransfer.configmap.POSTGRES_REPLICA_HOST }}
+  {{- if and (not $multiTenantEnabled) .Values.bankTransfer.configmap.POSTGRES_REPLICA_HOST }}
   POSTGRES_REPLICA_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_HOST | quote }}
   POSTGRES_REPLICA_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_PORT | default "5432" | quote }}
   POSTGRES_REPLICA_USER: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_USER | quote }}
@@ -123,19 +137,23 @@ data:
   # =====================================================================
   # MONGODB (audit/event persistence)
   # =====================================================================
+  {{- if not $multiTenantEnabled }}
   MONGO_ENABLED: {{ .Values.bankTransfer.configmap.MONGO_ENABLED | default "true" | quote }}
   MONGO_DATABASE: {{ .Values.bankTransfer.configmap.MONGO_DATABASE | default "plugin_br_bank_transfer" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.bankTransfer.configmap.MONGO_MAX_POOL_SIZE | default "25" | quote }}
   MONGO_SERVER_SELECTION_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MONGO_SERVER_SELECTION_TIMEOUT_MS | default "3000" | quote }}
   MONGO_HEARTBEAT_INTERVAL_MS: {{ .Values.bankTransfer.configmap.MONGO_HEARTBEAT_INTERVAL_MS | default "10000" | quote }}
+  {{- end }}
 
   # =====================================================================
   # RABBITMQ (connection + toggle only — retries/timeouts via systemplane)
   # =====================================================================
+  {{- if not $multiTenantEnabled }}
   RABBITMQ_ENABLED: {{ .Values.bankTransfer.configmap.RABBITMQ_ENABLED | default "false" | quote }}
   {{- if eq (toString .Values.bankTransfer.configmap.RABBITMQ_ENABLED) "true" }}
   RABBITMQ_URL: {{ .Values.bankTransfer.configmap.RABBITMQ_URL | default (printf "amqp://bank_transfer:$(RABBITMQ_PASSWORD)@%s-rabbitmq.%s.svc.cluster.local:5672/" .Release.Name $namespace) | quote }}
   RABBITMQ_EXCHANGE: {{ .Values.bankTransfer.configmap.RABBITMQ_EXCHANGE | default "bank_transfer.lifecycle" | quote }}
+  {{- end }}
   {{- end }}
 
   # =====================================================================
@@ -143,6 +161,9 @@ data:
   # =====================================================================
   PLUGIN_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.PLUGIN_AUTH_ENABLED | default "true" | quote }}
   PLUGIN_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  {{- if not $multiTenantEnabled }}
+  AUTH_CACHE_TTL_SEC: {{ .Values.bankTransfer.configmap.AUTH_CACHE_TTL_SEC | default "300" | quote }}
+  {{- end }}
 
   # =====================================================================
   # LICENSE GATEWAY (optional override of lib-license-go default)
@@ -159,15 +180,39 @@ data:
   # =====================================================================
   ENABLE_TELEMETRY: {{ .Values.bankTransfer.configmap.ENABLE_TELEMETRY | default "false" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.bankTransfer.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-bank-transfer" | quote }}
+  {{- if not $multiTenantEnabled }}
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-bank-transfer" | quote }}
+  {{- end }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.bankTransfer.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+  {{- if not $multiTenantEnabled }}
+  {{- if .Values.bankTransfer.configmap.SYSTEMPLANE_BACKEND }}
+  SYSTEMPLANE_BACKEND: {{ .Values.bankTransfer.configmap.SYSTEMPLANE_BACKEND | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.SYSTEMPLANE_POSTGRES_SCHEMA }}
+  SYSTEMPLANE_POSTGRES_SCHEMA: {{ .Values.bankTransfer.configmap.SYSTEMPLANE_POSTGRES_SCHEMA | quote }}
+  {{- end }}
+  {{- end }}
+
+  # =====================================================================
+  # SINGLE-TENANT RUNTIME TUNING (systemplane-managed in multi-tenant)
+  # =====================================================================
+  {{- if not $multiTenantEnabled }}
+  RATE_LIMIT_ENABLED: {{ .Values.bankTransfer.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ .Values.bankTransfer.configmap.RATE_LIMIT_MAX | default "100" | quote }}
+  RATE_LIMIT_EXPIRY_SEC: {{ .Values.bankTransfer.configmap.RATE_LIMIT_EXPIRY_SEC | default "60" | quote }}
+  DB_METRICS_INTERVAL_SEC: {{ .Values.bankTransfer.configmap.DB_METRICS_INTERVAL_SEC | default "15" | quote }}
+  RECONCILIATION_PENDING_ALERT_THRESHOLD: {{ .Values.bankTransfer.configmap.RECONCILIATION_PENDING_ALERT_THRESHOLD | default "20" | quote }}
+  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ .Values.bankTransfer.configmap.IDEMPOTENCY_RETRY_WINDOW_SEC | default "300" | quote }}
+  IDEMPOTENCY_REQUIRE_REDIS: {{ .Values.bankTransfer.configmap.IDEMPOTENCY_REQUIRE_REDIS | default "true" | quote }}
+  DUPLICATE_GUARD_TTL_SEC: {{ .Values.bankTransfer.configmap.DUPLICATE_GUARD_TTL_SEC | default "300" | quote }}
+  {{- end }}
 
   # =====================================================================
   # OUTBOUND ADAPTERS — URLs + auth toggles only.
   # Timeouts, retries, circuit breakers, cache TTLs, and lookup path
-  # templates are managed by systemplane at runtime.
+  # templates are managed by systemplane at runtime in multi-tenant mode.
   # =====================================================================
 
   # Midaz
@@ -180,12 +225,32 @@ data:
   {{- if .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS }}
   MIDAZ_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS | quote }}
   {{- end }}
+  {{- if not $multiTenantEnabled }}
+  MIDAZ_MAX_RETRIES: {{ .Values.bankTransfer.configmap.MIDAZ_MAX_RETRIES | default "3" | quote }}
+  MIDAZ_OTEL_ENABLED: {{ .Values.bankTransfer.configmap.MIDAZ_OTEL_ENABLED | default "true" | quote }}
+  MIDAZ_DEBUG: {{ .Values.bankTransfer.configmap.MIDAZ_DEBUG | default "false" | quote }}
+  MIDAZ_BREAKER_FAILURES: {{ .Values.bankTransfer.configmap.MIDAZ_BREAKER_FAILURES | default "3" | quote }}
+  MIDAZ_BREAKER_TIMEOUT_SECONDS: {{ .Values.bankTransfer.configmap.MIDAZ_BREAKER_TIMEOUT_SECONDS | default "30" | quote }}
+  {{- end }}
 
   # CRM
   CRM_BASE_URL: {{ required "bankTransfer.configmap.CRM_BASE_URL is required" .Values.bankTransfer.configmap.CRM_BASE_URL | quote }}
   CRM_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.CRM_AUTH_ENABLED | default "false" | quote }}
   {{- if .Values.bankTransfer.configmap.CRM_TIMEOUT_MS }}
   CRM_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.CRM_TIMEOUT_MS | quote }}
+  {{- end }}
+  {{- if not $multiTenantEnabled }}
+  CRM_MAX_RETRIES: {{ .Values.bankTransfer.configmap.CRM_MAX_RETRIES | default "2" | quote }}
+  CRM_CACHE_TTL_MS: {{ .Values.bankTransfer.configmap.CRM_CACHE_TTL_MS | default "300000" | quote }}
+  {{- if .Values.bankTransfer.configmap.CRM_SENDER_LOOKUP_PATH_TEMPLATE }}
+  CRM_SENDER_LOOKUP_PATH_TEMPLATE: {{ .Values.bankTransfer.configmap.CRM_SENDER_LOOKUP_PATH_TEMPLATE | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.CRM_RECIPIENT_LOOKUP_PATH_TEMPLATE }}
+  CRM_RECIPIENT_LOOKUP_PATH_TEMPLATE: {{ .Values.bankTransfer.configmap.CRM_RECIPIENT_LOOKUP_PATH_TEMPLATE | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.CRM_HOLDER_LOOKUP_PATH_TEMPLATE }}
+  CRM_HOLDER_LOOKUP_PATH_TEMPLATE: {{ .Values.bankTransfer.configmap.CRM_HOLDER_LOOKUP_PATH_TEMPLATE | quote }}
+  {{- end }}
   {{- end }}
 
   # Fees
@@ -194,30 +259,49 @@ data:
   {{- if .Values.bankTransfer.configmap.FEES_TIMEOUT_MS }}
   FEES_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.FEES_TIMEOUT_MS | quote }}
   {{- end }}
+  {{- if not $multiTenantEnabled }}
+  FEES_MAX_RETRIES: {{ .Values.bankTransfer.configmap.FEES_MAX_RETRIES | default "2" | quote }}
+  FEES_FAIL_CLOSED_DEFAULT: {{ .Values.bankTransfer.configmap.FEES_FAIL_CLOSED_DEFAULT | default "false" | quote }}
+  FEES_MAX_FEE_AMOUNT_CENTS: {{ .Values.bankTransfer.configmap.FEES_MAX_FEE_AMOUNT_CENTS | default "99999999" | quote }}
+  FEES_REFUND_ON_DEVOLUCAO: {{ .Values.bankTransfer.configmap.FEES_REFUND_ON_DEVOLUCAO | default "false" | quote }}
+  {{- end }}
 
   # JD-SPB. Sandbox mode swaps the adapter; live config required otherwise.
   JD_SANDBOX_MODE: {{ .Values.bankTransfer.configmap.JD_SANDBOX_MODE | default "false" | quote }}
-  {{- if ne (toString .Values.bankTransfer.configmap.JD_SANDBOX_MODE) "true" }}
+  {{- if and (not $multiTenantEnabled) (ne (toString .Values.bankTransfer.configmap.JD_SANDBOX_MODE) "true") }}
   JD_BASE_URL: {{ required "bankTransfer.configmap.JD_BASE_URL is required when JD_SANDBOX_MODE is not true" .Values.bankTransfer.configmap.JD_BASE_URL | quote }}
   JD_ORIGIN_ISPB: {{ required "bankTransfer.configmap.JD_ORIGIN_ISPB is required when JD_SANDBOX_MODE is not true" .Values.bankTransfer.configmap.JD_ORIGIN_ISPB | quote }}
   JD_SOAP_PATH: {{ .Values.bankTransfer.configmap.JD_SOAP_PATH | default "/soap" | quote }}
   JD_SIGNING_MODE: {{ .Values.bankTransfer.configmap.JD_SIGNING_MODE | default "local_pem" | quote }}
-  JD_POLLING_ENABLED: {{ .Values.bankTransfer.configmap.JD_POLLING_ENABLED | default "false" | quote }}
   {{- if .Values.bankTransfer.configmap.JD_LEGACY_CODE }}
   JD_LEGACY_CODE: {{ .Values.bankTransfer.configmap.JD_LEGACY_CODE | quote }}
   {{- end }}
   {{- if .Values.bankTransfer.configmap.JD_PRIVATE_KEY_KEYINFO }}
   JD_PRIVATE_KEY_KEYINFO: {{ .Values.bankTransfer.configmap.JD_PRIVATE_KEY_KEYINFO | quote }}
   {{- end }}
+  JD_SIGNATURE_REQUIRED: {{ .Values.bankTransfer.configmap.JD_SIGNATURE_REQUIRED | default "true" | quote }}
+  JD_VALIDATE_EXTERNAL_SIGNATURE: {{ .Values.bankTransfer.configmap.JD_VALIDATE_EXTERNAL_SIGNATURE | default "true" | quote }}
+  JD_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.JD_TIMEOUT_MS | default "8000" | quote }}
+  JD_MAX_RETRIES: {{ .Values.bankTransfer.configmap.JD_MAX_RETRIES | default "3" | quote }}
+  {{- end }}
+  JD_POLLING_ENABLED: {{ .Values.bankTransfer.configmap.JD_POLLING_ENABLED | default "false" | quote }}
+  {{- if not $multiTenantEnabled }}
+  JD_POLL_INTERVAL_SECONDS: {{ .Values.bankTransfer.configmap.JD_POLL_INTERVAL_SECONDS | default "30" | quote }}
+  JD_POLL_MAX_MESSAGES_PER_CYCLE: {{ .Values.bankTransfer.configmap.JD_POLL_MAX_MESSAGES_PER_CYCLE | default "50" | quote }}
+  JD_POLL_MAX_RETRIES: {{ .Values.bankTransfer.configmap.JD_POLL_MAX_RETRIES | default "3" | quote }}
+  JD_POLL_RECOVERY_BATCH_SIZE: {{ .Values.bankTransfer.configmap.JD_POLL_RECOVERY_BATCH_SIZE | default "200" | quote }}
+  JD_POLL_DISABLE_OPERATING_HOURS_WINDOW: {{ .Values.bankTransfer.configmap.JD_POLL_DISABLE_OPERATING_HOURS_WINDOW | default "true" | quote }}
   {{- end }}
 
   # =====================================================================
   # SINGLE-TENANT DEFAULTS (ignored when MULTI_TENANT_ENABLED=true)
   # =====================================================================
+  {{- if not $multiTenantEnabled }}
   ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.ORGANIZATION_ID | default "" | quote }}
   DEFAULT_ORGANIZATION_ID: {{ .Values.bankTransfer.configmap.DEFAULT_ORGANIZATION_ID | default "" | quote }}
   ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | default "" | quote }}
   IS_DEVELOPMENT: {{ .Values.bankTransfer.configmap.IS_DEVELOPMENT | default "false" | quote }}
+  {{- end }}
 
   # =====================================================================
   # FEATURE FLAGS
@@ -225,6 +309,40 @@ data:
   WEBHOOK_ENABLED: {{ .Values.bankTransfer.configmap.WEBHOOK_ENABLED | default "false" | quote }}
   BTF_FEE_ENABLED: {{ .Values.bankTransfer.configmap.BTF_FEE_ENABLED | default "false" | quote }}
   OTEL_SDK_DISABLED: {{ .Values.bankTransfer.configmap.OTEL_SDK_DISABLED | default "false" | quote }}
+  {{- if not $multiTenantEnabled }}
+  {{- if eq (toString .Values.bankTransfer.configmap.RABBITMQ_ENABLED) "true" }}
+  RABBITMQ_ROUTING_KEY_PREFIX: {{ .Values.bankTransfer.configmap.RABBITMQ_ROUTING_KEY_PREFIX | default "transfer" | quote }}
+  RABBITMQ_PUBLISH_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.RABBITMQ_PUBLISH_TIMEOUT_MS | default "5000" | quote }}
+  RABBITMQ_MAX_RETRIES: {{ .Values.bankTransfer.configmap.RABBITMQ_MAX_RETRIES | default "3" | quote }}
+  RABBITMQ_RETRY_BACKOFF_MS: {{ .Values.bankTransfer.configmap.RABBITMQ_RETRY_BACKOFF_MS | default "200" | quote }}
+  {{- end }}
+  {{- if eq (toString .Values.bankTransfer.configmap.WEBHOOK_ENABLED) "true" }}
+  WEBHOOK_ENDPOINT_URL: {{ required "bankTransfer.configmap.WEBHOOK_ENDPOINT_URL is required when WEBHOOK_ENABLED=true" .Values.bankTransfer.configmap.WEBHOOK_ENDPOINT_URL | quote }}
+  WEBHOOK_QUEUE_NAME: {{ .Values.bankTransfer.configmap.WEBHOOK_QUEUE_NAME | default "transfer.webhook.delivery" | quote }}
+  WEBHOOK_DLQ_NAME: {{ .Values.bankTransfer.configmap.WEBHOOK_DLQ_NAME | default "transfer.webhook.dlq" | quote }}
+  WEBHOOK_CONSUMER_TAG: {{ .Values.bankTransfer.configmap.WEBHOOK_CONSUMER_TAG | default "plugin-br-bank-transfer-webhook" | quote }}
+  WEBHOOK_PREFETCH_COUNT: {{ .Values.bankTransfer.configmap.WEBHOOK_PREFETCH_COUNT | default "20" | quote }}
+  WEBHOOK_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.WEBHOOK_TIMEOUT_MS | default "5000" | quote }}
+  WEBHOOK_MAX_RETRIES: {{ .Values.bankTransfer.configmap.WEBHOOK_MAX_RETRIES | default "3" | quote }}
+  WEBHOOK_RETRY_BACKOFF_MS: {{ .Values.bankTransfer.configmap.WEBHOOK_RETRY_BACKOFF_MS | default "500" | quote }}
+  WEBHOOK_ALLOW_UNSIGNED_BROKER_EVENTS: {{ .Values.bankTransfer.configmap.WEBHOOK_ALLOW_UNSIGNED_BROKER_EVENTS | default "false" | quote }}
+  WEBHOOK_UNSIGNED_BROKER_EVENTS_GRACE_SEC: {{ .Values.bankTransfer.configmap.WEBHOOK_UNSIGNED_BROKER_EVENTS_GRACE_SEC | default "0" | quote }}
+  {{- end }}
+  USAGE_LIMITS_ENABLED: {{ .Values.bankTransfer.configmap.USAGE_LIMITS_ENABLED | default "false" | quote }}
+  {{- if eq (toString .Values.bankTransfer.configmap.USAGE_LIMITS_ENABLED) "true" }}
+  USAGE_LIMIT_DAILY_CENTS: {{ .Values.bankTransfer.configmap.USAGE_LIMIT_DAILY_CENTS | default "0" | quote }}
+  USAGE_LIMIT_MONTHLY_CENTS: {{ .Values.bankTransfer.configmap.USAGE_LIMIT_MONTHLY_CENTS | default "0" | quote }}
+  {{- end }}
+  TRANSFER_OPERATING_OPEN: {{ .Values.bankTransfer.configmap.TRANSFER_OPERATING_OPEN | default "06:30" | quote }}
+  TRANSFER_OPERATING_CLOSE: {{ .Values.bankTransfer.configmap.TRANSFER_OPERATING_CLOSE | default "17:00" | quote }}
+  TRANSFER_OPERATING_TIMEZONE: {{ .Values.bankTransfer.configmap.TRANSFER_OPERATING_TIMEZONE | default "America/Sao_Paulo" | quote }}
+  BTF_RECONCILIATION_ENABLED: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_ENABLED | default "true" | quote }}
+  BTF_RECONCILIATION_INTERVAL_SEC: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_INTERVAL_SEC | default "30" | quote }}
+  BTF_RECONCILIATION_BATCH_SIZE: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_BATCH_SIZE | default "20" | quote }}
+  BTF_RECONCILIATION_MAX_ATTEMPTS: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_MAX_ATTEMPTS | default "5" | quote }}
+  BTF_RECONCILIATION_STALE_AFTER_SEC: {{ .Values.bankTransfer.configmap.BTF_RECONCILIATION_STALE_AFTER_SEC | default "60" | quote }}
+  BTF_MIDAZ_CB_ENABLED: {{ .Values.bankTransfer.configmap.BTF_MIDAZ_CB_ENABLED | default "false" | quote }}
+  {{- end }}
 
   # =====================================================================
   # EXTRA OVERRIDES (escape hatch for env vars not modeled above)

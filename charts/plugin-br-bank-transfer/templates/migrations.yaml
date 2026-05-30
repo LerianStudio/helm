@@ -1,4 +1,5 @@
-{{- if .Values.bankTransfer.migrations.enabled }}
+{{- $multiTenantEnabled := eq (toString (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
+{{- if and .Values.bankTransfer.migrations.enabled (not $multiTenantEnabled) }}
 apiVersion: batch/v1
 kind: Job
 metadata:

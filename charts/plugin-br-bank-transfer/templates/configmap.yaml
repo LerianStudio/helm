@@ -42,6 +42,28 @@ data:
   ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
 
   # =====================================================================
+  # CORS POLICY
+  # CORS_ALLOWED_ORIGINS is rendered in both modes. The plugin's
+  # production validator (internal/bootstrap/config/validate_production.go)
+  # rejects wildcard "*" and any origin containing localhost / 127.0.0.1 /
+  # [::1], so production deployments MUST set this to a concrete public
+  # hostname allowlist. When unset, the in-code dev safety net falls back
+  # to "http://localhost:3000" which trips that production validator.
+  # CORS_ALLOWED_METHODS and CORS_ALLOWED_HEADERS are optional: only
+  # rendered when explicitly set so operators can rely on the plugin's
+  # own sensible defaults until they need to override.
+  # =====================================================================
+  {{- if .Values.bankTransfer.configmap.CORS_ALLOWED_ORIGINS }}
+  CORS_ALLOWED_ORIGINS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_ORIGINS | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.CORS_ALLOWED_METHODS }}
+  CORS_ALLOWED_METHODS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_METHODS | quote }}
+  {{- end }}
+  {{- if .Values.bankTransfer.configmap.CORS_ALLOWED_HEADERS }}
+  CORS_ALLOWED_HEADERS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_HEADERS | quote }}
+  {{- end }}
+
+  # =====================================================================
   # MULTI-TENANCY
   # Toggle is always rendered. Infrastructure endpoints only in MT mode.
   # All operational tuning (timeouts, pool sizes, circuit breaker) ships

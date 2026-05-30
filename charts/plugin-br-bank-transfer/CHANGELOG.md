@@ -2,6 +2,69 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.7]
+
+### Changed
+- ConfigMap and Secret templates now gate single-tenant-only infrastructure
+  keys behind `MULTI_TENANT_ENABLED != "true"`. In multi-tenant mode the
+  rendered ConfigMap only contains the envs the bootstrap actually consumes
+  in that mode (app identity, server address, multi-tenant infrastructure,
+  app-level Redis connection envs, outbound adapter URLs + auth toggles,
+  inbound auth, telemetry toggle/endpoint, feature flags, AWS region for
+  the secrets-manager client). Gated single-tenant-only in MT-mode render:
+  - All `POSTGRES_*` / `MIGRATIONS_PATH` (per-tenant Postgres resolves via
+    tenant-manager; migrations init container only runs in single-tenant)
+  - All `MONGO_*` (per-tenant Mongo resolves via tenant-manager)
+  - All `RABBITMQ_*` (not used in MT mode)
+  - Redis pool / timeout / `REDIS_PROTOCOL` tuning (systemplane-managed)
+  - `DEPLOYMENT_MODE`, `HTTP_BODY_LIMIT_BYTES`, `TLS_TERMINATED_UPSTREAM`,
+    `SERVER_*` TLS / proxy
+  - `OTEL_LIBRARY_NAME`, `OTEL_RESOURCE_SERVICE_NAME`,
+    `OTEL_RESOURCE_SERVICE_VERSION`, `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`
+  - JD live config (`JD_BASE_URL`, `JD_ORIGIN_ISPB`, `JD_SOAP_PATH`,
+    `JD_SIGNING_MODE`, `JD_LEGACY_CODE`, `JD_PRIVATE_KEY_KEYINFO`) — these
+    are per-tenant via `TenantIntegrationResolver` in MT mode
+  - `LICENSE_SERVICE_ADDRESS`
+  - `ORGANIZATION_ID`
+- Single-tenant mode is unchanged: same defaults, same required guards
+  (`POSTGRES_PASSWORD`, `MONGO_PASSWORD`, `JD_BASE_URL`, `JD_ORIGIN_ISPB`
+  when sandbox mode is off).
+
+### Removed (dead envs not consumed by the app)
+Audited against `plugin-br-bank-transfer` source (`internal/bootstrap/config`,
+`.env.example`, and the `lib-license-go` / `lib-commons` integrations) and
+dropped from the chart entirely:
+
+- `VERSION` — populated at build time via Docker `--build-arg VERSION` +
+  Go `ldflags -X ...bootstrap.Version=...`. Not read from env at runtime.
+- `TENANT_IDS` — explicitly removed from the app in the D7 license rewrite
+  (`internal/bootstrap/config/validate_production.go`).
+- `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET` — explicitly removed
+  in D7; the inbound `PLUGIN_AUTH_ENABLED` + `PLUGIN_AUTH_ADDRESS` are the
+  only inbound-auth wiring the app needs.
+- `DEFAULT_ORGANIZATION_ID`, `DEFAULT_TENANT_ID`, `DEFAULT_TENANT_SLUG` —
+  no `env:` tag anywhere in source and no reference in `.env.example`.
+- `IS_DEVELOPMENT` — no `env:` tag or `.env.example` reference. The
+  per-environment behaviour is selected via `ENV_NAME` / `DEPLOYMENT_MODE`.
+- `INFRA_CONNECT_TIMEOUT_SEC` — no source reference. Per-dependency
+  connect timeouts use the explicit `POSTGRES_CONNECT_TIMEOUT_SEC` /
+  `MONGO_*_TIMEOUT_MS` / `REDIS_DIAL_TIMEOUT_MS` envs instead.
+- `MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE` — no source reference;
+  the per-tenant integration secret name template is hard-coded in the
+  `TenantIntegrationResolver`.
+- `MULTI_TENANT_REDIS_CA_CERT` — no source reference and no `.env.example`
+  entry; MT-mode Redis uses TLS via the system trust store.
+- `SYSTEMPLANE_POSTGRES_DSN`, `SYSTEMPLANE_SECRET_MASTER_KEY` — no source
+  reference. lib-commons `systemplane` reads DSN/key bundles via its own
+  envs (`SYSTEMPLANE_*` v5 surface), not these.
+- `JD_CERTIFICATE_PEM` — orphan / typo. The app reads `JD_CERT_PEM`.
+
+### Fixed
+- Multi-tenant installs no longer fail at template time with
+  `bankTransfer.configmap.JD_BASE_URL is required when JD_SANDBOX_MODE is
+  not true`. The required guard now also requires `MULTI_TENANT_ENABLED`
+  to be off before triggering.
+
 ## [1.6.0-beta.1]
 
 ### Changed

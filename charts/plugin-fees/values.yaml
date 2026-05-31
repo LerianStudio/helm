@@ -51,7 +51,7 @@ fees:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.2.0"
+    tag: "3.2.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: regcred
@@ -224,7 +224,7 @@ fees:
     annotations: {}
     # -- Name of the service account
     # @default -- `plugin-fees-frontend.fullname`
-    name: ""  
+    name: ""
   # -- Default sensitive variables for the plugin-fees
   secrets:
     MONGO_PASSWORD: "lerian"
@@ -235,7 +235,6 @@ fees:
     MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Password for the Redis/Valkey instance used by the multi-tenant cache (required when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_REDIS_PASSWORD: ""
-
 mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.
   enabled: true

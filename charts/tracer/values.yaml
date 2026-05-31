@@ -170,6 +170,11 @@ tracer:
   # @default -- templates/configmap.yaml
   configmap:
     # Application Settings
+    # ENV_NAME selects the deployment environment. lib-commons v4.6.3+
+    # TenantEventListener fails fast at boot if this (or ENVIRONMENT_NAME) is
+    # unset — must be "staging" or "production". GitOps overrides this to
+    # "staging" per non-prod environment.
+    ENV_NAME: "production"
     # SERVER_PORT/SERVER_ADDRESS default to 4020 to match the tracer source
     # convention (Dockerfile EXPOSE 4020 + .env.example + Dockerfile.dev). The
     # app reads SERVER_ADDRESS first; if empty, falls back to SERVER_PORT.

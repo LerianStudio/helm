@@ -71,6 +71,7 @@ configmap:
   MONGO_PORT: "27017"
   MONGODB_DB_NAME: "midaz-console"
   MONGODB_USER: ""
+  MONGO_PARAMETERS: ""
 
   # CRM Plugin Configuration
   CRM_BASE_PATH: ""

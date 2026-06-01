@@ -154,6 +154,31 @@ opentelemetry-collector:
           - context: span
             statements:
               - delete_key(attributes, "app.request.payload")
+
+      # TEMPORARY compatibility workaround. The real fix belongs in lib-observability,
+      # which should emit `http.status_code` alongside the OTel semantic convention
+      # attribute `http.response.status_code` at source. Until that library fix is
+      # released and rolled out across services, this processor keeps the spanmetrics
+      # connector's `http.status_code` dimension populated so `calls_total` retains
+      # its status label.
+      # Remove this processor (and its entry in the traces pipeline below) once the
+      # lib-observability fix has shipped and all consumers have upgraded.
+      # - If only `http.response.status_code` exists, copy it to `http.status_code`.
+      # - If only `http.status_code` exists, mirror it to `http.response.status_code`
+      #   so traces carry both forms during the migration window.
+      transform/normalize_http_status_code:
+        error_mode: ignore
+        trace_statements:
+          - context: span
+            conditions:
+              - attributes["http.response.status_code"] != nil and attributes["http.status_code"] == nil
+            statements:
+              - set(attributes["http.status_code"], attributes["http.response.status_code"])
+          - context: span
+            conditions:
+              - attributes["http.status_code"] != nil and attributes["http.response.status_code"] == nil
+            statements:
+              - set(attributes["http.response.status_code"], attributes["http.status_code"])
             
       transform/mask_body_sensitive_data_replace_1:
         error_mode: ignore
@@ -331,6 +356,9 @@ opentelemetry-collector:
               - k8sattributes
               - resource/add_client_id
               - transform/remove_sensitive_attributes
+              # Must run before the spanmetrics connector so its `http.status_code`
+              # dimension is populated for services emitting `http.response.status_code`.
+              - transform/normalize_http_status_code
           exporters: [spanmetrics, otlphttp/server]
 
         # Pipeline for span-derived metrics, sent to central backend.

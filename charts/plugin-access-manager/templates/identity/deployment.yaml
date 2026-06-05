@@ -36,9 +36,10 @@ spec:
               for svc in "$PLUGIN_AUTH_ADDRESS";
               do
                 echo "Checking $svc...";
-                hostport=$(echo "$svc" | sed 's|http://||');
+                case "$svc" in https://*) default_port=443;; *) default_port=80;; esac;
+                hostport=$(echo "$svc" | sed -E 's|^https?://||' | cut -d/ -f1);
                 host=$(echo "$hostport" | cut -d: -f1);
-                port=$(echo "$hostport" | cut -d: -f2);
+                case "$hostport" in *:*) port=$(echo "$hostport" | cut -d: -f2);; *) port=$default_port;; esac;
                 while ! nc -z "$host" "$port"; do
                   echo "$svc is not ready yet, waiting...";
                   sleep 5;

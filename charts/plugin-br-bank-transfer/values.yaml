@@ -83,13 +83,26 @@ bankTransfer:
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
     tag: "2.4.0"
-  # -- PostgreSQL migrations job (pre-upgrade / post-install hook)
+  # -- PostgreSQL migrations job (Helm hook pre-install,pre-upgrade; ArgoCD PreSync).
+  # The Job references NO chart-managed ConfigMap/Secret (all env inline), so the
+  # PreSync hook works on first install. Requires an operator-provisioned Secret
+  # carrying POSTGRES_PASSWORD (useExistingSecret/existingSecretName below) and an
+  # explicit image tag or digest. Must stay disabled when MULTI_TENANT_ENABLED=true
+  # (tenant-manager owns tenant database migrations — template enforces this).
   migrations:
-    # -- Enable or disable the migrations job
-    enabled: true
+    # -- Enable or disable the migrations job. When enabling, you MUST set
+    # useExistingSecret=true, existingSecretName, and image.tag (or digest).
+    enabled: false
+    # -- Migration hooks run before chart-managed Secrets exist; the password
+    # must come from a pre-existing Secret with key POSTGRES_PASSWORD.
+    useExistingSecret: false
+    # -- Name of the pre-existing Secret containing POSTGRES_PASSWORD
+    existingSecretName: ""
     image:
       # -- Repository for the migrations init container image
       repository: ghcr.io/lerianstudio/plugin-br-bank-transfer-migrations
+      # -- Image tag (required when enabled; never silently reuses the app tag)
+      tag: ""
       # -- Image pull policy
       pullPolicy: IfNotPresent
     # -- Maximum number of retries before the Job is considered failed

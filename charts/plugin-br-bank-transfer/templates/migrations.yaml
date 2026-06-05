@@ -50,37 +50,15 @@ spec:
         - name: migrations
           image: "{{ .Values.bankTransfer.migrations.image.repository }}:{{ .Values.bankTransfer.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.bankTransfer.migrations.image.pullPolicy | default "IfNotPresent" }}
+          # Pull every value from the rendered ConfigMap so the migration
+          # runner sees the same configuration surface as the main
+          # bank-transfer Deployment (POSTGRES_HOST/PORT/USER/DB/SSLMODE/
+          # CONNECT_TIMEOUT, ALLOW_INSECURE_TLS, MIGRATIONS_PATH, etc.).
+          # POSTGRES_PASSWORD stays an explicit secretKeyRef.
+          envFrom:
+            - configMapRef:
+                name: {{ include "bank-transfer.fullname" . }}
           env:
-            - name: POSTGRES_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "bank-transfer.fullname" . }}
-                  key: POSTGRES_HOST
-            - name: POSTGRES_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "bank-transfer.fullname" . }}
-                  key: POSTGRES_PORT
-            - name: POSTGRES_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "bank-transfer.fullname" . }}
-                  key: POSTGRES_USER
-            - name: POSTGRES_DB
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "bank-transfer.fullname" . }}
-                  key: POSTGRES_DB
-            - name: POSTGRES_SSLMODE
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "bank-transfer.fullname" . }}
-                  key: POSTGRES_SSLMODE
-            - name: POSTGRES_CONNECT_TIMEOUT_SEC
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "bank-transfer.fullname" . }}
-                  key: POSTGRES_CONNECT_TIMEOUT_SEC
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:

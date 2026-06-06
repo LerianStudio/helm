@@ -82,7 +82,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.4.0"
+    tag: "3.3.1"
   # -- PostgreSQL migrations job (Helm hook pre-install,pre-upgrade; ArgoCD PreSync).
   # The Job references NO chart-managed ConfigMap/Secret (all env inline), so the
   # PreSync hook works on first install. Requires an operator-provisioned Secret
@@ -221,12 +221,10 @@ bankTransfer:
     APPLICATION_NAME: "plugin-br-bank-transfer"
     SERVER_ADDRESS: ":4027"
     HTTP_BODY_LIMIT_BYTES: "1048576"
-
     # =================================================================
     # TLS / proxy
     # =================================================================
     TLS_TERMINATED_UPSTREAM: "true"
-
     # =================================================================
     # CORS policy
     # In production the plugin's validator rejects wildcard "*" and any
@@ -240,7 +238,6 @@ bankTransfer:
     CORS_ALLOWED_ORIGINS: ""
     CORS_ALLOWED_METHODS: ""
     CORS_ALLOWED_HEADERS: ""
-
     # =================================================================
     # Multi-tenancy
     # Only the toggle, the DEFAULT_TENANT_* identifiers, and the
@@ -296,7 +293,6 @@ bankTransfer:
     REDIS_WRITE_TIMEOUT_MS: "3000"
     REDIS_DIAL_TIMEOUT_MS: "5000"
     REDIS_TLS: "false"
-
     # =================================================================
     # MongoDB (audit/event persistence)
     # MONGO_URI is in templates/secrets.yaml.
@@ -306,7 +302,6 @@ bankTransfer:
     MONGO_MAX_POOL_SIZE: "25"
     MONGO_SERVER_SELECTION_TIMEOUT_MS: "3000"
     MONGO_HEARTBEAT_INTERVAL_MS: "10000"
-
     # =================================================================
     # RabbitMQ (event bus, optional)
     # RABBITMQ_URL is rendered from chart defaults when empty.
@@ -314,13 +309,11 @@ bankTransfer:
     # =================================================================
     RABBITMQ_ENABLED: "false"
     RABBITMQ_EXCHANGE: "bank_transfer.lifecycle"
-
     # =================================================================
     # Authentication (inbound — plugin-access-manager)
     # =================================================================
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-
     # =================================================================
     # License gateway override (optional — defaults to lib-license-go's
     # hard-coded endpoint when LICENSE_SERVICE_ADDRESS is unset)
@@ -336,7 +329,6 @@ bankTransfer:
     OTEL_RESOURCE_SERVICE_NAME: "plugin-br-bank-transfer"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
-
     # =================================================================
     # Outbound adapters — endpoints + auth toggles only.
     # Timeouts, retries, circuit breakers, cache TTLs, and lookup
@@ -378,7 +370,6 @@ bankTransfer:
     ORGANIZATION_ID: ""
     ORGANIZATION_IDS: ""
     IS_DEVELOPMENT: "false"
-
     # =================================================================
     # Feature flags
     # =================================================================
@@ -387,7 +378,6 @@ bankTransfer:
     RATE_LIMIT_ENABLED: "false"
     ALLOW_INSECURE_TLS: "true"
     OTEL_SDK_DISABLED: "false"
-
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
@@ -605,5 +595,5 @@ rabbitmq:
   extraSecrets:
     - name: "bank-transfer-rabbitmq-load-definition"
       mountPath: /etc/rabbitmq/definitions
-  customConfig: |
+  customConfig: |-
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json

@@ -1,0 +1,16 @@
+crm:
+  secrets:
+    MONGO_PASSWORD: "sample"
+    LCRYPTO_HASH_SECRET_KEY: "sample"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "sample"
+ledger:
+  secrets:
+    DB_ONBOARDING_PASSWORD: "sample"
+    DB_ONBOARDING_REPLICA_PASSWORD: "sample"
+    MONGO_ONBOARDING_PASSWORD: "sample"
+    DB_TRANSACTION_PASSWORD: "sample"
+    DB_TRANSACTION_REPLICA_PASSWORD: "sample"
+    MONGO_TRANSACTION_PASSWORD: "sample"
+    REDIS_PASSWORD: "sample"
+    RABBITMQ_DEFAULT_PASS: "sample"
+    RABBITMQ_CONSUMER_PASS: "sample"

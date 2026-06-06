@@ -1,0 +1,6 @@
+matcher:
+  secrets:
+    POSTGRES_PASSWORD: "sample"
+    POSTGRES_REPLICA_PASSWORD: "sample"
+    REDIS_PASSWORD: "sample"
+    RABBITMQ_PASSWORD: "sample"

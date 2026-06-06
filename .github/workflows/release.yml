@@ -81,11 +81,23 @@ jobs:
         run: |
           brew install helm
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: .github/scripts/go.sum
+
       - name: Helm Dependency Update
         run: helm dependency update ${{ matrix.chart.working_dir }}
 
       - name: Helm Lint
         run: helm lint ${{ matrix.chart.working_dir }}
+
+      - name: Render Helm Chart
+        working-directory: .github/scripts
+        run: |
+          chart_name="$(basename "${{ matrix.chart.working_dir }}")"
+          go run ./validate-helm-charts.go --root ../.. --render-gate --charts "$chart_name"
 
       #- name: Run helm unittest
       #  id: unittest
@@ -113,12 +125,6 @@ jobs:
           git_config_global: true
           git_user_signingkey: true
           git_commit_gpgsign: true
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-          cache-dependency-path: .github/scripts/go.mod
 
       - name: Build scripts
         run: |

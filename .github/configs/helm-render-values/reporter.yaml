@@ -1,0 +1,4 @@
+secrets:
+  MONGO_PASSWORD: "sample"
+  RABBITMQ_DEFAULT_PASS: "sample"
+  DATASOURCE_ONBOARDING_PASSWORD: "sample"

@@ -1,0 +1,11 @@
+bankTransfer:
+  configmap:
+    MIDAZ_BASE_URL: "http://midaz-onboarding:3000"
+    CRM_BASE_URL: "http://midaz-crm:4000"
+    FEES_BASE_URL: "http://plugin-fees:4000"
+    JD_SANDBOX_MODE: "true"
+  secrets:
+    POSTGRES_PASSWORD: "sample"
+    MONGO_PASSWORD: "sample"
+    JD_INCOMING_RAW_XML_ENCRYPTION_KEY: "sample"
+    RECIPIENT_DETAILS_ENCRYPTION_KEY: "sample"

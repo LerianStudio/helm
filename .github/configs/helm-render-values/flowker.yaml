@@ -1,0 +1,4 @@
+flowker:
+  secrets:
+    MONGO_URI: "mongodb://sample:sample@flowker-mongodb:27017/flowker?authSource=admin"
+    AUDIT_DB_PASSWORD: "sample"

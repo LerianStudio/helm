@@ -52,7 +52,7 @@ func main() {
 	newLines = append(newLines, newTableLines...)
 	newLines = append(newLines, lines[tableEnd:]...)
 
-	err = os.WriteFile("README.md", []byte(strings.Join(newLines, "\n")), 0644)
+	err = os.WriteFile("README.md", []byte(strings.Join(newLines, "\n")), 0o644)
 	if err != nil {
 		fmt.Printf("ERROR: Could not write README.md: %v\n", err)
 		os.Exit(1)

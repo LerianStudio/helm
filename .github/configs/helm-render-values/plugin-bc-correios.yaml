@@ -1,0 +1,6 @@
+bc-correios:
+  secrets:
+    POSTGRES_PASSWORD: "sample"
+    RABBITMQ_PASS: "sample"
+    RABBITMQ_URL: "amqp://sample:sample@rabbitmq:5672/"
+    ENCRYPTION_KEY: "sample"

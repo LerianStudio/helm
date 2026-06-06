@@ -1,0 +1,8 @@
+pix:
+  secrets:
+    DATABASE_PASSWORD: "sample"
+    POSTGRES_PASSWORD: "sample"
+    MIDAZ_CLIENT_SECRET: "sample"
+    JD_SECRET: "sample"
+    JD_PIX_CLIENT_SECRET: "sample"
+    SECRET_KEY_BASE: "sample"

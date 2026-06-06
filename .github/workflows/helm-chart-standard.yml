@@ -1,0 +1,71 @@
+name: Helm Chart Standard
+
+on:
+  pull_request:
+    paths:
+      - 'charts/**'
+      - 'docs/helm-chart-standard.md'
+      - 'docs/helm-render-inventory.md'
+      - '.github/configs/helm-chart-standard-baseline.yaml'
+      - '.github/configs/helm-render-values/**'
+      - '.github/scripts/validate-helm-charts.go'
+      - '.github/workflows/helm-chart-standard.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Helm chart standard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: .github/scripts/go.sum
+
+      - name: Validate chart standard
+        working-directory: .github/scripts
+        run: go run ./validate-helm-charts.go --root ../.. --strict
+
+      - name: Determine render scope
+        id: render-scope
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "args=--all" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          changed_files="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")"
+
+          if grep -Eq '^(\.github/scripts/validate-helm-charts\.go|\.github/configs/helm-render-values/|\.github/workflows/helm-chart-standard\.yml|docs/helm-chart-standard\.md|docs/helm-render-inventory\.md)' <<< "$changed_files"; then
+            echo "args=--all" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          charts="$(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed_files" | sort -u | paste -sd, -)"
+          if [[ -z "$charts" ]]; then
+            echo "args=--all" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "args=--charts $charts" >> "$GITHUB_OUTPUT"
+
+      - name: Render chart templates
+        working-directory: .github/scripts
+        run: go run ./validate-helm-charts.go --root ../.. --render-gate ${{ steps.render-scope.outputs.args }}

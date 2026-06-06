@@ -5,6 +5,15 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-Lerian%20Studio-%237289da.svg?logo=discord)](https://discord.gg/DnhqKwkGv3)
 
+## Chart Maintenance
+
+- Chart contract: [`docs/helm-chart-standard.md`](docs/helm-chart-standard.md)
+- Render inventory: [`docs/helm-render-inventory.md`](docs/helm-render-inventory.md)
+- Static validation: `cd .github/scripts && go run ./validate-helm-charts.go --root ../.. --strict`
+- Render validation: `cd .github/scripts && go run ./validate-helm-charts.go --root ../.. --render-gate --all`
+
+CI enforces the static contract and render gate. Required production secrets are represented by dummy sample values under `.github/configs/helm-render-values/` only so charts can render in CI without publishing credentials.
+
 ### Midaz Helm Chart
 
 See the [official documentation](https://docs.lerian.studio/en/midaz/deploy-midaz-using-helm) for deployment guides.

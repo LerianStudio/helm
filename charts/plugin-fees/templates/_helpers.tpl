@@ -118,13 +118,3 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- end }}
 
 
-{{/*
-Enable dependencies
-*/}}
-{{- define "mongodb.enabled" -}}
-{{- if not .Values.mongodb.external -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}

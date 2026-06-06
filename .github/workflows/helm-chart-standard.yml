@@ -43,15 +43,19 @@ jobs:
       - name: Determine render scope
         id: render-scope
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
             echo "args=--all" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          changed_files="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")"
+          changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
 
           if grep -Eq '^(\.github/scripts/validate-helm-charts\.go|\.github/configs/helm-render-values/|\.github/workflows/helm-chart-standard\.yml|docs/helm-chart-standard\.md|docs/helm-render-inventory\.md)' <<< "$changed_files"; then
             echo "args=--all" >> "$GITHUB_OUTPUT"
@@ -68,4 +72,7 @@ jobs:
 
       - name: Render chart templates
         working-directory: .github/scripts
-        run: go run ./validate-helm-charts.go --root ../.. --render-gate ${{ steps.render-scope.outputs.args }}
+        shell: bash
+        env:
+          RENDER_SCOPE_ARGS: ${{ steps.render-scope.outputs.args }}
+        run: go run ./validate-helm-charts.go --root ../.. --render-gate $RENDER_SCOPE_ARGS

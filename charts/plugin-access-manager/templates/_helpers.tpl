@@ -173,20 +173,3 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- end }}
 
 
-{{/*
-Enable dependencies
-*/}}
-{{- define "valkey.enabled" -}}
-{{- if not .Values.valkey.external -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-{{- define "postgresql.enabled" -}}
-{{- if not (index .Values "auth-database").external -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}

@@ -150,36 +150,3 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- define "global.namespace" -}}
 {{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
 {{- end }}
-
-
-{{/*
-Enable dependencies
-*/}}
-{{- define "rabbitmq.enabled" -}}
-{{- if not .Values.rabbitmq.external -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-{{- define "mongodb.enabled" -}}
-{{- if not .Values.mongodb.external -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-{{- define "seaweedfs.enabled" -}}
-{{- if not .Values.seaweedfs.external -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-{{- define "keda.enabled" -}}
-{{- if not .Values.keda.external -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}

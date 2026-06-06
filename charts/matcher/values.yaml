@@ -541,7 +541,7 @@ rabbitmq:
     password:
       value: ""
     erlangCookie:
-      value: "WCB00CfurKivfNH61hbxPaNg+xtyA/7RI6bEx5RMGvE="
+      value: ""
 
   extraSecrets:
     - name: "matcher-rabbitmq-load-definition"

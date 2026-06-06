@@ -23,14 +23,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for bank_transfer role created by the job
     bankTransferCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_BANK_TRANSFER key
         name: ""
       # -- Password for bank_transfer role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
   # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
     # -- Enable or disable the RabbitMQ bootstrap job
@@ -55,14 +55,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "admin"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for bank_transfer user created by the job
     bankTransferCredentials:
       useExistingSecret:
         # -- Name of existing secret containing RABBITMQ_BANK_TRANSFER_PASS key
         name: ""
       # -- Password for bank_transfer user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 bankTransfer:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -104,8 +104,11 @@ bankTransfer:
     capabilities:
       drop:
         - ALL
+    allowPrivilegeEscalation: false
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   # -- PodDisruptionBudget configuration
   pdb:
     # -- Enable or disable PodDisruptionBudget
@@ -340,13 +343,13 @@ bankTransfer:
   # @default -- templates/secrets.yaml
   secrets:
     # PostgreSQL credentials
-    POSTGRES_PASSWORD: "lerian"
+    POSTGRES_PASSWORD: ""
     # POSTGRES_REPLICA_PASSWORD: ""
 
     # Redis/Valkey password
-    REDIS_PASSWORD: "lerian"
+    REDIS_PASSWORD: ""
     # MongoDB password (REQUIRED)
-    MONGO_PASSWORD: "lerian"
+    MONGO_PASSWORD: ""
     # Authentication (plugin-auth) - client secret for M2M auth
     # PLUGIN_AUTH_CLIENT_SECRET: ""
 
@@ -409,7 +412,7 @@ valkey:
   architecture: standalone
   auth:
     enabled: true
-    password: lerian
+    password: ""
     username: bank_transfer
   primary:
     kind: Deployment
@@ -437,12 +440,12 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "bank_transfer"
-    password: "lerian"
+    password: ""
     database: "bank_transfer"
     replicationUsername: "replicator"
-    replicationPassword: "replicator_password"
+    replicationPassword: ""
   primary:
     persistence:
       size: 8Gi
@@ -502,11 +505,11 @@ mongodb:
   auth:
     enabled: true
     rootUser: "admin"
-    rootPassword: "lerian"
+    rootPassword: ""
     usernames:
       - "bank_transfer"
     passwords:
-      - "lerian"
+      - ""
     databases:
       - "plugin_br_bank_transfer_jd"
   persistence:
@@ -547,7 +550,7 @@ rabbitmq:
     user:
       value: "bank_transfer"
     password:
-      value: "lerian"
+      value: ""
     erlangCookie:
       value: "WCB00CfurKivfNH61hbxPaNg+xtyA/7RI6bEx5RMGvE="
   extraSecrets:

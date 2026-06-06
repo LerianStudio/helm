@@ -1,5 +1,13 @@
 # plugin-br-pix-switch (Helm chart)
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: None for default render; credential-bearing DSNs, URLs, tokens, and passwords belong in component `secrets`, never in component `configmap`.
+- Dependency notes: Uses local MongoDB, PostgreSQL, RabbitMQ, Redis/Valkey, and KEDA-related dependencies unless external services are configured.
+- Production overrides: Provide SPI/DICT/COB/adapter credentials through component secrets or existing Secrets where supported; keep ConfigMaps limited to non-sensitive hosts, ports, flags, and identifiers.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 BACEN-compliant PIX instant payment platform for the Lerian ecosystem.
 
 The plugin is a Go monorepo that produces 10 independently-deployable binaries.

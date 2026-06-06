@@ -2,6 +2,8 @@ apiVersion: v2
 name: fetcher-helm
 description: A Helm chart for Fetcher - Data extraction service for Lerian Studio
 type: application
+annotations:
+  lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/fetcher
 maintainers:
   - name: "Lerian Studio"

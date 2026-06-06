@@ -21,7 +21,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "pix_btg"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for pix_btg user created by the job
     pixBtgCredentials:
       useExistingSecret:
@@ -30,7 +30,7 @@ global:
       # -- App username (ignored if useExistingSecret.name is set)
       username: "pix_btg"
       # -- Password for pix_btg user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
       # -- List of roles to grant to the user. Each item is a {role, db} pair.
       roles:
         - role: "readWrite"
@@ -95,6 +95,9 @@ pix:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -188,16 +191,16 @@ pix:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
   secrets:
-    DB_PASSWORD: "lerian"
-    DB_REPLICA_PASSWORD: "lerian"
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
     REPLICATION_PASSWORD: ""
-    MONGO_PASSWORD: "lerian"
+    MONGO_PASSWORD: ""
     REDIS_PASSWORD: ""
     PLUGIN_CRM_CLIENT_ID: ""
     PLUGIN_CRM_CLIENT_SECRET: ""
     BTG_CLIENT_ID: ""
     BTG_CLIENT_SECRET: ""
-    LICENSE_KEY: "lerian"
+    LICENSE_KEY: ""
     MIDAZ_CLIENT_ID: ""
     MIDAZ_CLIENT_SECRET: ""
     FEE_CLIENT_ID: ""
@@ -270,6 +273,9 @@ inbound:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -337,9 +343,9 @@ inbound:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
   secrets:
-    DB_PASSWORD: "lerian"
-    DB_REPLICA_PASSWORD: "lerian"
-    MONGO_PASSWORD: "lerian"
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    MONGO_PASSWORD: ""
     INTERNAL_WEBHOOK_SECRET: ""
   # -- Extra environment variables
   extraEnvVars: {}
@@ -407,6 +413,9 @@ outbound:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -491,9 +500,9 @@ outbound:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
   secrets:
-    DB_PASSWORD: "lerian"
-    DB_REPLICA_PASSWORD: "lerian"
-    MONGO_PASSWORD: "lerian"
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    MONGO_PASSWORD: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false
@@ -550,16 +559,19 @@ reconciliation:
   podSecurityContext: {} # fsGroup: 2000
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
-    runAsGroup: 0
+    runAsGroup: 1000
     # -- Defines the user ID for the process running inside the container
-    runAsUser: 0
-    # -- Ensures the process does run as root
-    runAsNonRoot: false
+    runAsUser: 1000
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
     capabilities:
       drop:
         - ALL
-    # -- Defines the root filesystem as writable
-    readOnlyRootFilesystem: false
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -657,7 +669,7 @@ postgresql:
     enabled: true
     enablePostgresUser: false
     username: "pix_btg"
-    password: "lerian"
+    password: ""
     database: "pix_btg"
     persistence:
       size: 8Gi
@@ -699,6 +711,6 @@ mongodb:
   auth:
     enabled: true
     rootUser: pix_btg
-    rootPassword: "lerian"
+    rootPassword: ""
 otel-collector-lerian:
   enabled: true

@@ -25,6 +25,8 @@ spec:
         {{- toYaml .Values.inbound.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "inbound.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.inbound.securityContext | nindent 12 }}
           image: {{ .Values.inbound.image.repository }}:{{ .Values.inbound.image.tag }}
           imagePullPolicy: {{ .Values.inbound.image.pullPolicy }}
           ports:

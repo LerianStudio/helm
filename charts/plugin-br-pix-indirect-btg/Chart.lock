@@ -1,0 +1,12 @@
+dependencies:
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.3.5
+- name: valkey
+  repository: https://valkey.io/valkey-helm
+  version: 0.7.4
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.4.0
+digest: sha256:80b3afaf7db67b3f04bb7b43eef69fd55b7f4dcb21a476679e4aa30e1ea02a73
+generated: "2026-06-06T17:41:18.668911-03:00"

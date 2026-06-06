@@ -266,53 +266,53 @@ Validate required configuration fields
 
 {{/* BTG Configuration - Required */}}
 {{- if not .Values.pix.configmap.BTG_BASE_URL }}
-{{- fail "\n\n❌ ERROR: pix.configmap.BTG_BASE_URL is REQUIRED\n   Please set your BTG API URL (e.g., https://api.btgpactual.com or https://api.sandbox.developer.btgpactual.com)\n" }}
+{{- fail "\n\nERROR: pix.configmap.BTG_BASE_URL is required. Set your BTG API URL (e.g., https://api.btgpactual.com or https://api.sandbox.developer.btgpactual.com).\n" }}
 {{- end }}
 
 {{- if not .Values.pix.configmap.PIX_ISPB }}
-{{- fail "\n\n❌ ERROR: pix.configmap.PIX_ISPB is REQUIRED\n   Please set your bank's ISPB (8-digit code)\n" }}
+{{- fail "\n\nERROR: pix.configmap.PIX_ISPB is required. Set your bank's ISPB (8-digit code).\n" }}
 {{- end }}
 
 {{/* Midaz Configuration - Required */}}
 {{- if not .Values.pix.configmap.MIDAZ_ORGANIZATION_ID }}
-{{- fail "\n\n❌ ERROR: pix.configmap.MIDAZ_ORGANIZATION_ID is REQUIRED\n   Please set your Midaz organization ID\n" }}
+{{- fail "\n\nERROR: pix.configmap.MIDAZ_ORGANIZATION_ID is required. Set your Midaz organization ID.\n" }}
 {{- end }}
 
 {{- if not .Values.pix.configmap.MIDAZ_LEDGER_ID }}
-{{- fail "\n\n❌ ERROR: pix.configmap.MIDAZ_LEDGER_ID is REQUIRED\n   Please set your Midaz ledger ID\n" }}
+{{- fail "\n\nERROR: pix.configmap.MIDAZ_LEDGER_ID is required. Set your Midaz ledger ID.\n" }}
 {{- end }}
 
 {{/* BTG Secrets - Required */}}
 {{- if not .Values.pix.secrets.BTG_CLIENT_ID }}
-{{- fail "\n\n❌ ERROR: pix.secrets.BTG_CLIENT_ID is REQUIRED\n   Please set your BTG client ID in secrets section\n" }}
+{{- fail "\n\nERROR: pix.secrets.BTG_CLIENT_ID is required. Set your BTG client ID in secrets section.\n" }}
 {{- end }}
 
 {{- if not .Values.pix.secrets.BTG_CLIENT_SECRET }}
-{{- fail "\n\n❌ ERROR: pix.secrets.BTG_CLIENT_SECRET is REQUIRED\n   Please set your BTG client secret in secrets section\n" }}
+{{- fail "\n\nERROR: pix.secrets.BTG_CLIENT_SECRET is required. Set your BTG client secret in secrets section.\n" }}
 {{- end }}
 
 {{/* HMAC Internal Webhook Secret - Required (shared between pix and inbound) */}}
 {{- if not .Values.pix.secrets.INTERNAL_WEBHOOK_SECRET }}
-{{- fail "\n\n❌ ERROR: pix.secrets.INTERNAL_WEBHOOK_SECRET is REQUIRED\n   Please set your HMAC internal webhook secret (minimum 32 characters)\n   This value is shared between pix and inbound components\n" }}
+{{- fail "\n\nERROR: pix.secrets.INTERNAL_WEBHOOK_SECRET is required. Set your HMAC internal webhook secret (minimum 32 characters). This value is shared between pix and inbound components.\n" }}
 {{- end }}
 
 {{/* Midaz Secrets - Required */}}
 {{- if not .Values.pix.secrets.MIDAZ_CLIENT_ID }}
-{{- fail "\n\n❌ ERROR: pix.secrets.MIDAZ_CLIENT_ID is REQUIRED\n   Please set your Midaz client ID in secrets section\n" }}
+{{- fail "\n\nERROR: pix.secrets.MIDAZ_CLIENT_ID is required. Set your Midaz client ID in secrets section.\n" }}
 {{- end }}
 
 {{- if not .Values.pix.secrets.MIDAZ_CLIENT_SECRET }}
-{{- fail "\n\n❌ ERROR: pix.secrets.MIDAZ_CLIENT_SECRET is REQUIRED\n   Please set your Midaz client secret in secrets section\n" }}
+{{- fail "\n\nERROR: pix.secrets.MIDAZ_CLIENT_SECRET is required. Set your Midaz client secret in secrets section.\n" }}
 {{- end }}
 
 {{/* License - Required */}}
 {{- if not .Values.pix.secrets.LICENSE_KEY }}
-{{- fail "\n\n❌ ERROR: pix.secrets.LICENSE_KEY is REQUIRED\n   Please set your license key in secrets section\n" }}
+{{- fail "\n\nERROR: pix.secrets.LICENSE_KEY is required. Set your license key in secrets section.\n" }}
 {{- end }}
 
 {{/* Organization IDs - Required */}}
 {{- if not .Values.pix.configmap.ORGANIZATION_IDS }}
-{{- fail "\n\n❌ ERROR: pix.configmap.ORGANIZATION_IDS is REQUIRED\n   Please set your organization IDs (comma-separated list or 'global' for all organizations)\n" }}
+{{- fail "\n\nERROR: pix.configmap.ORGANIZATION_IDS is required. Set your organization IDs (comma-separated list or 'global' for all organizations).\n" }}
 {{- end }}
 
 

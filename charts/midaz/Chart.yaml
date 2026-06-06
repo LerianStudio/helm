@@ -2,6 +2,8 @@ apiVersion: v2
 name: midaz-helm
 description: A Helm chart for Kubernetes
 type: application
+annotations:
+  lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/midaz-helm
 sources:
   - https://github.com/LerianStudio/midaz-helm/tree/main/charts/midaz

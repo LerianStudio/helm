@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "nameOverride": { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "namespaceOverride": { "type": "string" },
+    "replicaCount": { "type": "integer", "minimum": 0 },
+    "image": { "$ref": "#/$defs/image" },
+    "service": { "$ref": "#/$defs/service" },
+    "ingress": { "$ref": "#/$defs/ingress" },
+    "autoscaling": { "$ref": "#/$defs/autoscaling" },
+    "pdb": { "$ref": "#/$defs/pdb" },
+    "resources": { "type": "object" },
+    "podSecurityContext": { "type": "object" },
+    "securityContext": { "$ref": "#/$defs/securityContext" },
+    "configmap": { "$ref": "#/$defs/stringMap" },
+    "secrets": { "$ref": "#/$defs/stringMap" },
+    "extraEnvVars": { "type": ["object", "array"] },
+    "serviceAccount": { "$ref": "#/$defs/serviceAccount" },
+    "flowker": { "$ref": "#/$defs/component" },
+    "boilerplate": { "$ref": "#/$defs/component" },
+    "matcher": { "$ref": "#/$defs/component" },
+    "bc-correios": { "$ref": "#/$defs/component" },
+    "bankTransfer": { "$ref": "#/$defs/component" },
+    "app": { "$ref": "#/$defs/component" },
+    "tracer": { "$ref": "#/$defs/component" },
+    "underwriter": { "$ref": "#/$defs/component" }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "replicaCount": { "type": "integer", "minimum": 0 },
+        "image": { "$ref": "#/$defs/image" },
+        "service": { "$ref": "#/$defs/service" },
+        "ingress": { "$ref": "#/$defs/ingress" },
+        "autoscaling": { "$ref": "#/$defs/autoscaling" },
+        "pdb": { "$ref": "#/$defs/pdb" },
+        "resources": { "type": "object" },
+        "podSecurityContext": { "type": "object" },
+        "securityContext": { "$ref": "#/$defs/securityContext" },
+        "configmap": { "$ref": "#/$defs/stringMap" },
+        "secrets": { "$ref": "#/$defs/stringMap" },
+        "useExistingSecret": { "type": "boolean" },
+        "existingSecretName": { "type": "string" },
+        "extraEnvVars": { "type": ["object", "array"] },
+        "serviceAccount": { "$ref": "#/$defs/serviceAccount" }
+      }
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "repository": { "type": "string" },
+        "tag": { "type": ["string", "number"] },
+        "pullPolicy": { "type": "string" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "type": "string" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "annotations": { "type": "object" }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "className": { "type": "string" },
+        "annotations": { "type": "object" },
+        "hosts": { "type": "array" },
+        "tls": { "type": "array" }
+      }
+    },
+    "autoscaling": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "minReplicas": { "type": "integer", "minimum": 0 },
+        "maxReplicas": { "type": "integer", "minimum": 0 },
+        "targetCPUUtilizationPercentage": { "type": "integer" },
+        "targetMemoryUtilizationPercentage": { "type": "integer" }
+      }
+    },
+    "pdb": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "minAvailable": { "type": ["integer", "string"] },
+        "maxUnavailable": { "type": ["integer", "string"] },
+        "annotations": { "type": "object" }
+      }
+    },
+    "securityContext": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "runAsGroup": { "type": "integer" },
+        "runAsUser": { "type": "integer" },
+        "runAsNonRoot": { "type": "boolean" },
+        "allowPrivilegeEscalation": { "type": "boolean" },
+        "readOnlyRootFilesystem": { "type": "boolean" },
+        "capabilities": { "type": "object" },
+        "seccompProfile": { "type": "object" }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "create": { "type": "boolean" },
+        "annotations": { "type": "object" },
+        "name": { "type": "string" }
+      }
+    },
+    "stringMap": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+    }
+  }
+}

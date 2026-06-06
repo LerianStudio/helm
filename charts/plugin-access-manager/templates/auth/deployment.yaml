@@ -25,6 +25,8 @@ spec:
         {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
       initContainers:
         - name: wait-for-dependencies
+          securityContext:
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
           image: busybox
           envFrom:
           - configMapRef:
@@ -41,6 +43,8 @@ spec:
               echo "Backend is up!";
       containers:
         - name: {{ include "plugin-auth.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
           image: {{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.auth.image.pullPolicy }}
           ports:
@@ -81,13 +85,6 @@ spec:
             timeoutSeconds: {{ .Values.auth.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ .Values.auth.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.auth.livenessProbe.failureThreshold | default 3 }}
-      volumes:
-        - name: backend-init-data
-          configMap:
-            name: {{ include "plugin-auth.fullname" . }}-init-data
-            items:
-              - key: init_data.json
-                path: init_data.json       
       {{- with .Values.auth.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

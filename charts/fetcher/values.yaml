@@ -23,7 +23,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "fetcher"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for fetcher user created by the job
     fetcherCredentials:
       useExistingSecret:
@@ -32,7 +32,7 @@ global:
       # -- App username (ignored if useExistingSecret.name is set)
       username: "fetcher"
       # -- Password for fetcher user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
       # -- List of roles to grant to the user. Each item is a {role, db} pair.
       roles:
         - role: "readWrite"
@@ -57,6 +57,9 @@ manager:
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   service:
     type: ClusterIP
     port: 4006
@@ -148,7 +151,7 @@ manager:
     ALLOW_RATELIMIT_FAIL_OPEN: ""
   # Manager-specific Secrets
   secrets:
-    APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key
+    APP_ENC_KEY: ""
     APP_ENC_KEY_VERSION: "1"
   extraEnvVars: {}
   useExistingSecret: false
@@ -173,6 +176,9 @@ worker:
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     limits:
       cpu: 200m
@@ -218,7 +224,7 @@ worker:
     ALLOW_RATELIMIT_FAIL_OPEN: ""
   # Worker-specific Secrets
   secrets:
-    APP_ENC_KEY: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=" # Base64 encoded 32-byte key
+    APP_ENC_KEY: ""
     APP_ENC_KEY_VERSION: "1"
     # Storage Encryption Keys
     CRYPTO_ENCRYPT_FILE_STORAGE: ""
@@ -277,9 +283,9 @@ common:
 # Shared secrets
 secrets:
   MONGO_USER: "fetcher"
-  MONGO_PASSWORD: "lerian"
+  MONGO_PASSWORD: ""
   RABBITMQ_DEFAULT_USER: "plugin"
-  RABBITMQ_DEFAULT_PASS: "Lerian@123"
+  RABBITMQ_DEFAULT_PASS: ""
   REDIS_USER: ""
   REDIS_PASSWORD: ""
   LICENSE_KEY: ""
@@ -359,7 +365,7 @@ mongodb:
   auth:
     enabled: true
     rootUser: fetcher
-    rootPassword: lerian
+    rootPassword: ""
   persistence:
     size: 8Gi
   resources:
@@ -383,11 +389,11 @@ externalRabbitmqDefinitions:
     portAmqp: "5672"
   rabbitmqAdminLogin:
     username: "guest"
-    password: "guest"
+    password: ""
     useExistingSecret:
       name: ""
   appCredentials:
-    pluginPassword: "Lerian@123"
+    pluginPassword: ""
     useExistingSecret:
       name: ""
 # RabbitMQ - Message broker for async processing
@@ -418,9 +424,9 @@ rabbitmq:
     user:
       value: "midaz"
     password:
-      value: "lerian"
+      value: ""
     erlangCookie:
-      value: "b2a717550ac09676c545fe9d986c7651f7237b2691292961"
+      value: ""
   extraSecrets:
     - name: "fetcher-manager-load-definitions"
       mountPath: /etc/rabbitmq/definitions

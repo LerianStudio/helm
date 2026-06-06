@@ -25,6 +25,8 @@ spec:
         {{- toYaml .Values.pix.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "plugin-br-pix-direct-jd.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.pix.securityContext | nindent 12 }}
           image: {{ .Values.pix.image.repository }}:{{ .Values.pix.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.pix.image.pullPolicy }}
           ports:

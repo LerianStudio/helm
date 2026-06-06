@@ -32,14 +32,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for the plugin_br_payments role created by the job
     paymentsCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_PLUGIN_BR_PAYMENTS key
         name: ""
       # -- Password for plugin_br_payments role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
 # ==============================================================================
 # APPLICATION
@@ -87,6 +87,8 @@ app:
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   # -- PodDisruptionBudget configuration
   pdb:
     enabled: true
@@ -266,10 +268,10 @@ app:
     # Resilience example (repo-local simulation only)
     EXAMPLE_STATUS_PROVIDER_MODE: "healthy"
   # -- Secrets (sensitive environment variables)
-  # @default -- templates/secrets.yml
+  # @default -- templates/secrets.yaml
   secrets:
     # PostgreSQL credentials
-    POSTGRES_PASSWORD: "lerian"
+    POSTGRES_PASSWORD: ""
     # POSTGRES_REPLICA_PASSWORD: ""
     # BTG OAuth2 (REQUIRED)
     BTG_CLIENT_ID: ""
@@ -331,12 +333,12 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "plugin_br_payments"
-    password: "lerian"
+    password: ""
     database: "plugin_br_payments"
     replicationUsername: "replicator"
-    replicationPassword: "replicator_password"
+    replicationPassword: ""
   primary:
     persistence:
       size: 8Gi

@@ -2,6 +2,8 @@ apiVersion: v2
 name: go-boilerplate-ddd-helm
 description: A Helm chart for Go Boilerplate DDD - Lerian reference service template
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 home: https://github.com/LerianStudio/go-boilerplate-ddd
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/go-boilerplate-ddd

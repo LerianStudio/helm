@@ -2,6 +2,8 @@ apiVersion: v2
 name: plugin-access-manager
 description: A Helm chart for Kubernetes
 type: application
+annotations:
+  lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/helm
 # A list of maintainers who are responsible for the chart
 maintainers:

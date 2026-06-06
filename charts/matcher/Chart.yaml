@@ -3,6 +3,8 @@ name: matcher-helm
 description: A Helm chart for the Matcher reconciliation service
 
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 
 home: https://github.com/LerianStudio/midaz-helm
 

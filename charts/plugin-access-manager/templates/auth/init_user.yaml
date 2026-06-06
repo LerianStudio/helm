@@ -130,5 +130,5 @@ metadata:
     helm.sh/hook-delete-policy: hook-succeeded,before-hook-creation
 type: Opaque
 data:
-  ADMIN_PASSWORD: {{ .Values.auth.initUser.adminPassword | default "Lerian@123" | b64enc | quote }}
+  ADMIN_PASSWORD: {{ .Values.auth.initUser.adminPassword | default "" | b64enc | quote }}
 {{- end }}

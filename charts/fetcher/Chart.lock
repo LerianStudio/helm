@@ -1,0 +1,18 @@
+dependencies:
+- name: keda
+  repository: https://kedacore.github.io/charts
+  version: 2.17.1
+- name: seaweedfs
+  repository: https://seaweedfs.github.io/seaweedfs/helm
+  version: 4.0.393
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.4.0
+- name: rabbitmq
+  repository: https://groundhog2k.github.io/helm-charts
+  version: 2.1.11
+- name: valkey
+  repository: https://valkey.io/valkey-helm
+  version: 0.7.4
+digest: sha256:e3c538162ad8091a01cf65259872e53ba151e33afea8c873f819eb8208215d72
+generated: "2026-06-06T17:40:14.911287-03:00"

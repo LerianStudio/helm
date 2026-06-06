@@ -1,5 +1,13 @@
 # Plugin BR Instant Payment Helm Chart
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: None for default render; production JD, database, certificate, and encryption credentials must be supplied through secrets.
+- Dependency notes: Uses local PostgreSQL, MongoDB, RabbitMQ, and Redis/Valkey dependency charts unless external services are configured.
+- Production overrides: Provide production JD credentials, certificates, encryption keys, database credentials, and messaging credentials through chart secrets or existing Secrets where supported; override image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 This Helm chart installs **Plugin BR Instant Payment** for Midaz, a high-performance and open-source ledger.
 
 ---

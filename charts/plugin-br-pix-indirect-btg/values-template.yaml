@@ -54,10 +54,10 @@ pix:
     BTG_WEBHOOK_VALIDATION_ENABLED: "true"
 
   secrets:
-    DB_PASSWORD: "lerian"
-    DB_REPLICA_PASSWORD: "lerian"
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
     REPLICATION_PASSWORD: ""
-    MONGO_PASSWORD: "lerian"
+    MONGO_PASSWORD: ""
     REDIS_PASSWORD: ""
     BTG_CLIENT_ID: ""
     BTG_CLIENT_SECRET: ""
@@ -111,9 +111,9 @@ inbound:
     MONGO_USER: "pix_btg"
 
   secrets:
-    DB_PASSWORD: "lerian"
-    DB_REPLICA_PASSWORD: "lerian"
-    MONGO_PASSWORD: "lerian"
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    MONGO_PASSWORD: ""
     INTERNAL_WEBHOOK_SECRET: ""
 
   useExistingSecrets: false
@@ -168,9 +168,9 @@ outbound:
     WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_URL: ""
 
   secrets:
-    DB_PASSWORD: "lerian"
-    DB_REPLICA_PASSWORD: "lerian"
-    MONGO_PASSWORD: "lerian"
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    MONGO_PASSWORD: ""
 
   useExistingSecrets: false
   existingSecretName: ""
@@ -231,7 +231,7 @@ postgresql:
   enabled: true
   auth:
     username: "pix_btg"
-    password: "lerian"
+    password: ""
     database: "pix_btg"
 
 mongodb:
@@ -239,7 +239,7 @@ mongodb:
   auth:
     enabled: true
     rootUser: pix_btg
-    rootPassword: "lerian"
+    rootPassword: ""
 
 valkey:
   enabled: true

@@ -1,5 +1,13 @@
 # Midaz Helm Chart
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: `crm.secrets.MONGO_PASSWORD` plus `ledger.secrets.DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `RABBITMQ_DEFAULT_PASS`, and `RABBITMQ_CONSUMER_PASS`.
+- Dependency notes: Uses local PostgreSQL, MongoDB, RabbitMQ, Redis/Valkey, and optional OpenTelemetry dependencies unless external services are configured.
+- Production overrides: Provide all database, messaging, cache, and telemetry credentials through chart secrets or existing dependency Secrets; override image tags, ingress, resources, namespace, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 Source code can be found here:
 * https://github.com/LerianStudio/helm/tree/main/charts/midaz
 * https://github.com/LerianStudio/midaz

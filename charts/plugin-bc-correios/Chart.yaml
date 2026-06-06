@@ -3,6 +3,8 @@ name: plugin-bc-correios-helm
 description: Helm chart for BC Correios Plugin — Brazilian Central Bank mail
   system integration
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/plugin-bc-correios

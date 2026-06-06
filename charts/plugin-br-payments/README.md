@@ -1,5 +1,13 @@
 # plugin-br-payments-helm
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: `app.secrets.BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET`, `POSTGRES_PASSWORD`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render.
+- Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
+- Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 A Helm chart for [plugin-br-payments](https://github.com/LerianStudio/plugin-br-payments) — Lerian Studio's plugin for Brazilian payment operations: boleto issuance, bill payments (bankslip, utilities, DARF), settlement via webhooks, and periodic reconciliation.
 
 ## TL;DR

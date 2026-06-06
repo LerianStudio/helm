@@ -4,6 +4,8 @@ description: A Helm chart for Underwriter - Risk assessment and underwriting
   service for Lerian Studio
 
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 
 home: https://github.com/LerianStudio/underwriter
 

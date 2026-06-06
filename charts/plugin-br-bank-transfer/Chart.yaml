@@ -2,6 +2,8 @@ apiVersion: v2
 name: plugin-br-bank-transfer-helm
 description: A Helm chart for the Brazilian Bank Transfer (TED) Plugin
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 home: https://github.com/LerianStudio/midaz-helm
 sources:
   - https://github.com/LerianStudio/midaz-helm/tree/main/charts/plugin-br-bank-transfer

@@ -24,14 +24,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for go-boilerplate-ddd role created by the job
     boilerplateCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_BOILERPLATE key
         name: ""
       # -- Password for go-boilerplate-ddd role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
 boilerplate:
   # -- Service name
@@ -77,8 +77,11 @@ boilerplate:
     capabilities:
       drop:
         - ALL
+    allowPrivilegeEscalation: false
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # -- PodDisruptionBudget configuration
   pdb:
@@ -241,7 +244,7 @@ boilerplate:
   # @default -- templates/secrets.yaml
   secrets:
     # -- PostgreSQL password
-    POSTGRES_PASSWORD: "lerian"
+    POSTGRES_PASSWORD: ""
     # -- Redis password (empty if auth disabled)
     REDIS_PASSWORD: ""
     # -- Multi-tenant service API key (required when MULTI_TENANT_ENABLED=true)

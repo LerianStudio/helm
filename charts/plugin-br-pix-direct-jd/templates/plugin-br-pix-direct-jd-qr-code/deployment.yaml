@@ -24,6 +24,8 @@ spec:
         {{- toYaml .Values.qrcode.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "plugin-br-pix-direct-jd-qr-code.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.qrcode.securityContext | nindent 12 }}
           image: "{{ .Values.qrcode.image.repository }}:{{ .Values.qrcode.image.tag | default (include "plugin.version" .) }}"
           imagePullPolicy: {{ .Values.qrcode.image.pullPolicy }}
           ports:

@@ -27,11 +27,10 @@ fees:
   existingSecretName: ""
 
   secrets:
-    MONGO_PASSWORD: "lerian"
-    CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    MONGO_PASSWORD: ""
+    CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
 
 mongodb:
   enabled: true
-

@@ -23,14 +23,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for bc_correios role created by the job
     bcCorreiosCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_BC_CORREIOS key
         name: ""
       # -- Password for bc_correios role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
   # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
     # -- Enable or disable the RabbitMQ bootstrap job
@@ -55,7 +55,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "admin"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 bc-correios:
   # -- Service name
   name: bc-correios
@@ -93,8 +93,11 @@ bc-correios:
     capabilities:
       drop:
         - ALL
+    allowPrivilegeEscalation: false
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   # -- PodDisruptionBudget configuration
   pdb:
     # -- Enable or disable PodDisruptionBudget
@@ -235,12 +238,12 @@ bc-correios:
   # @default -- templates/secrets.yaml
   secrets:
     # PostgreSQL credentials
-    POSTGRES_PASSWORD: "lerian"
+    POSTGRES_PASSWORD: ""
     # RabbitMQ credentials
-    RABBITMQ_PASS: "lerian"
-    RABBITMQ_URL: "amqp://plugin-bc-correios:lerian@plugin-bc-correios-rabbitmq:5672/"
+    RABBITMQ_PASS: ""
+    RABBITMQ_URL: ""
     # AES-256 encryption key (32 bytes — override with a real key in production)
-    ENCRYPTION_KEY: "01234567890123456789012345678901"
+    ENCRYPTION_KEY: ""
     # Cache (Valkey) credentials
     CACHE_PASSWORD: ""
     # Object storage credentials
@@ -274,7 +277,7 @@ valkey:
   architecture: standalone
   auth:
     enabled: true
-    password: lerian
+    password: ""
     username: bc_correios
   primary:
     kind: Deployment
@@ -300,9 +303,9 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "plugin-bc-correios"
-    password: "lerian"
+    password: ""
     database: "plugin-bc-correios"
   primary:
     persistence:
@@ -339,7 +342,7 @@ rabbitmq:
     user:
       value: "plugin-bc-correios"
     password:
-      value: "lerian"
+      value: ""
     erlangCookie:
       value: "BcCorreiosErlangCookiePlaceholderChangeMe=="
   extraSecrets:

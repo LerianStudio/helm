@@ -1,5 +1,13 @@
 # lerian-notification
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: None for default render.
+- Dependency notes: Uses local dependency charts where enabled and supports external notification providers through values.
+- Production overrides: Provide provider credentials through chart secrets or existing Secrets where supported; override API/worker image tags, ingress, resources, and provider endpoints.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 Helm chart for the Lerian Notification service — multi-channel delivery (email, SMS, webhook) for the Lerian platform.
 
 ## Topology

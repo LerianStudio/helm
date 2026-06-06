@@ -1,5 +1,13 @@
 # Product Console Helm Chart
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: None for default render.
+- Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
+- Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override image tags, ingress, resources, namespace, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 A Helm chart for deploying Product Console - Lerian Studio's web interface for managing Midaz ledger.
 
 ## Prerequisites

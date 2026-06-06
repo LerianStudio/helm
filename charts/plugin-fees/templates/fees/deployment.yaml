@@ -38,6 +38,8 @@ spec:
       {{- end }}
       containers:
         - name: {{ include "plugin-fees.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.fees.securityContext | nindent 12 }}
           image: "{{ .Values.fees.image.repository }}:{{ .Values.fees.image.tag | default (include "plugin.version" .) }}"
           imagePullPolicy: {{ .Values.fees.image.pullPolicy }}
           ports:

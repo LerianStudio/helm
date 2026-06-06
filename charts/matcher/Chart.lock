@@ -1,0 +1,12 @@
+dependencies:
+- name: valkey
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 2.4.7
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.3.5
+- name: rabbitmq
+  repository: https://groundhog2k.github.io/helm-charts
+  version: 2.1.11
+digest: sha256:1bbe927a1529e673647b37918ee04f50275fcf05d98b65474fdb02e4df9adf62
+generated: "2026-06-06T17:02:32.632355-03:00"

@@ -24,14 +24,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for underwriter role created by the job
     underwriterCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_UNDERWRITER key
         name: ""
       # -- Password for underwriter role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
 underwriter:
   # -- Readiness probe configuration. All fields override chart defaults.
@@ -85,8 +85,11 @@ underwriter:
     capabilities:
       drop:
         - ALL
+    allowPrivilegeEscalation: false
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # -- PodDisruptionBudget configuration
   pdb:
@@ -337,7 +340,7 @@ underwriter:
   # @default -- templates/secrets.yaml
   secrets:
     # -- PostgreSQL primary password
-    POSTGRES_PASSWORD: "lerian"
+    POSTGRES_PASSWORD: ""
     # -- PostgreSQL replica password (defaults to PostgreSQL primary password if unset)
     POSTGRES_REPLICA_PASSWORD: ""
     # -- Redis password (empty if auth disabled)
@@ -388,7 +391,7 @@ valkey:
 
   auth:
     enabled: true
-    password: lerian
+    password: ""
     username: underwriter
 
   primary:
@@ -423,12 +426,12 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "underwriter"
-    password: "lerian"
+    password: ""
     database: "underwriter"
     replicationUsername: "replicator"
-    replicationPassword: "replicator_password"
+    replicationPassword: ""
 
   primary:
     persistence:
@@ -483,4 +486,3 @@ postgresql:
         value: "10"
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
         value: "5"
-

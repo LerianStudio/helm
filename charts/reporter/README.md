@@ -1,5 +1,13 @@
 # Reporter Helm Chart
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: `secrets.MONGO_PASSWORD`, `RABBITMQ_DEFAULT_PASS`, and `DATASOURCE_ONBOARDING_PASSWORD`.
+- Dependency notes: Uses local MongoDB and RabbitMQ dependency charts unless external services are configured.
+- Production overrides: Provide reporting database and messaging credentials through chart secrets or existing Secrets where supported; override manager/worker image tags, ingress, resources, KEDA settings, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 ## Overview
 
 The Reporter plugin provides a flexible document templating system that enables dynamic report generation based on predefined templates. This plugin consists of two main components:
@@ -332,4 +340,3 @@ The API documentation is available at the `/swagger/index.html` endpoint.
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-

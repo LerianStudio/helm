@@ -1,5 +1,13 @@
 # Matcher Helm Chart
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: None for default render; production database and messaging credentials must not be committed in values files.
+- Dependency notes: Uses local PostgreSQL, MongoDB, and RabbitMQ dependency charts unless external services are configured.
+- Production overrides: Provide production credentials through chart secrets or existing dependency Secrets where supported; override image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 Source code can be found here:
 * https://github.com/LerianStudio/midaz-helm/tree/main/charts/matcher
 * https://github.com/LerianStudio/matcher

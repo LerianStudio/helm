@@ -1,5 +1,13 @@
 # Fetcher Helm Chart
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: None for default render; production MongoDB credentials must not be committed in values files.
+- Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
+- Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override manager/worker image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 ## Overview
 
 Fetcher is a data extraction service for Lerian Studio that enables automated data collection from external sources. This plugin consists of two main components:

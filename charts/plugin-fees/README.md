@@ -1,5 +1,13 @@
 # Plugin Fees Helm Chart
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: `fees.secrets.MONGO_PASSWORD` and `fees.secrets.CLIENT_SECRET`; multi-tenant API/cache secrets are required when multi-tenancy is enabled.
+- Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
+- Production overrides: Provide fees, MongoDB, client, AWS, and multi-tenant credentials through chart secrets or existing Secrets where supported; override API/UI image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 This Helm chart installs **Plugin Fees** for Midaz, a high-performance and open-source ledger.
 
 ---

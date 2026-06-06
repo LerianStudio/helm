@@ -40,6 +40,8 @@ spec:
       {{- end }}
       initContainers:
         - name: wait-for-dependencies
+          securityContext:
+            {{- toYaml .Values.manager.securityContext | nindent 12 }}
           image: busybox
           envFrom:
           - configMapRef:
@@ -59,6 +61,8 @@ spec:
               done; 
       containers:
         - name: {{ include "plugin-manager.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.manager.securityContext | nindent 12 }}
           image: {{ .Values.manager.image.repository }}:{{ .Values.manager.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.manager.image.pullPolicy }}
           ports:

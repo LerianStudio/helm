@@ -4,6 +4,8 @@ description: A Helm chart for Tracer - Real-time transaction validation and
   fraud prevention API
 
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 
 home: https://github.com/LerianStudio/midaz-helm
 

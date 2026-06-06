@@ -122,7 +122,7 @@ Allows overriding it for multi-namespace deployments in combined charts.
 Enable dependencies
 */}}
 {{- define "mongodb.enabled" -}}
-{{- if not .Values.fees.mongodob.external -}}
+{{- if not .Values.mongodb.external -}}
 true
 {{- else -}}
 false

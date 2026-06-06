@@ -1,5 +1,13 @@
 # Plugin BR PIX Indirect BTG Helm Chart
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: `pix.secrets.BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `INTERNAL_WEBHOOK_SECRET`, `MIDAZ_CLIENT_ID`, `MIDAZ_CLIENT_SECRET`, and `LICENSE_KEY`.
+- Dependency notes: Uses local PostgreSQL, MongoDB, RabbitMQ, and Redis/Valkey dependency charts unless external services are configured.
+- Production overrides: Provide BTG, Midaz, license, database, messaging, and cache credentials through chart secrets or existing Secrets where supported; override PIX/inbound/outbound/reconciliation image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 Source code can be found here:
 * https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-pix-indirect-btg
 * https://github.com/LerianStudio/midaz

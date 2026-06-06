@@ -2,6 +2,8 @@ apiVersion: v2
 name: plugin-br-pix-switch-helm
 description: A Helm chart for Kubernetes
 type: application
+annotations:
+  lerian.studio/chart-type: multi-component
 
 home: https://github.com/LerianStudio/helm
 

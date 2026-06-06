@@ -1,5 +1,13 @@
 # Tracer Helm Chart
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: None for default render.
+- Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
+- Production overrides: Provide production PostgreSQL credentials through chart secrets or dependency Secret settings; override image tags, ingress, resources, namespace, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 A Helm chart for deploying Tracer - Real-time transaction validation and fraud prevention API.
 
 ## Prerequisites

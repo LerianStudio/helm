@@ -21,7 +21,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "plugin-fees"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for plugin-fees user created by the job
     pluginFeesCredentials:
       useExistingSecret:
@@ -30,7 +30,7 @@ global:
       # -- App username (ignored if useExistingSecret.name is set)
       username: "plugin-fees"
       # -- Password for plugin-fees user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
       # -- List of roles to grant to the user. Each item is a {role, db} pair.
       roles:
         - role: "readWrite"
@@ -101,6 +101,9 @@ fees:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -227,8 +230,8 @@ fees:
     name: ""  
   # -- Default sensitive variables for the plugin-fees
   secrets:
-    MONGO_PASSWORD: "lerian"
-    CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    MONGO_PASSWORD: ""
+    CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
     # -- API key used to authenticate with the tenant-manager service (required when MULTI_TENANT_ENABLED=true)
@@ -243,7 +246,7 @@ mongodb:
   auth:
     enabled: true
     rootUser: "plugin-fees"
-    rootPassword: "lerian"
+    rootPassword: ""
   persistence:
     size: 8Gi
   resourcesPreset: "medium"

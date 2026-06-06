@@ -184,7 +184,7 @@ false
 {{- end -}}
 {{- end -}}
 {{- define "postgresql.enabled" -}}
-{{- if not .Values.authdb.external -}}
+{{- if not (index .Values "auth-database").external -}}
 true
 {{- else -}}
 false

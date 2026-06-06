@@ -1,5 +1,14 @@
 # Plugin Access Manager Helm Chart
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.secrets.DB_PASSWORD`.
+- Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
+- Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/auth-backend image tags, ingress, resources, and persistence.
+- Initial admin: the Casdoor bootstrap admin (`admin@midaz.tech`) is seeded from `init_data.json` baked into the `ghcr.io/lerianstudio/casdoor` image at first boot, not from this chart. Rotate the admin password immediately after the first login; never rely on the placeholder shipped in the image.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 This helm chart installs [Plugin Acess Manager](https://docs.lerian.studio/docs/auth-identity) for Midaz, a high-performance and open-source ledger.
 
 ---

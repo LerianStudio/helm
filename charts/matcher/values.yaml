@@ -24,14 +24,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for matcher role created by the job
     matcherCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_MATCHER key
         name: ""
       # -- Password for matcher role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
   # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
@@ -55,14 +55,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "admin"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for matcher user created by the job
     matcherCredentials:
       useExistingSecret:
         # -- Name of existing secret containing RABBITMQ_MATCHER_PASS key
         name: ""
       # -- Password for matcher user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
 matcher:
   # -- Readiness probe configuration. All fields override chart defaults.
@@ -105,16 +105,19 @@ matcher:
 
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
-    runAsGroup: 0
+    runAsGroup: 1000
     # -- Defines the user ID for the process running inside the container
-    runAsUser: 0
-    # -- Ensures the process does run as root
-    runAsNonRoot: false
+    runAsUser: 1000
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
     capabilities:
       drop:
         - ALL
-    # -- Defines the root filesystem as writable
-    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # -- PodDisruptionBudget configuration
   pdb:
@@ -351,13 +354,13 @@ matcher:
   # @default -- templates/secrets.yaml
   secrets:
     # -- PostgreSQL primary password
-    POSTGRES_PASSWORD: "lerian"
+    POSTGRES_PASSWORD: ""
     # -- PostgreSQL replica password
-    POSTGRES_REPLICA_PASSWORD: "lerian"
+    POSTGRES_REPLICA_PASSWORD: ""
     # -- Redis/Valkey password
-    REDIS_PASSWORD: "lerian"
+    REDIS_PASSWORD: ""
     # -- RabbitMQ password
-    RABBITMQ_PASSWORD: "lerian"
+    RABBITMQ_PASSWORD: ""
     # -- Object Storage access key
     OBJECT_STORAGE_ACCESS_KEY_ID: ""
     # -- Object Storage secret key
@@ -406,7 +409,7 @@ valkey:
 
   auth:
     enabled: true
-    password: lerian
+    password: ""
     username: matcher
 
   primary:
@@ -442,12 +445,12 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "matcher"
-    password: "lerian"
+    password: ""
     database: "matcher"
     replicationUsername: "replicator"
-    replicationPassword: "replicator_password"
+    replicationPassword: ""
 
   primary:
     persistence:
@@ -536,7 +539,7 @@ rabbitmq:
     user:
       value: "matcher"
     password:
-      value: "lerian"
+      value: ""
     erlangCookie:
       value: "WCB00CfurKivfNH61hbxPaNg+xtyA/7RI6bEx5RMGvE="
 
@@ -570,5 +573,3 @@ aws:
         requests:
           cpu: 10m
           memory: 64Mi
-
-

@@ -25,6 +25,8 @@ spec:
         {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
       initContainers:
         - name: wait-for-dependencies
+          securityContext:
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
           image: busybox
           envFrom:
           - configMapRef:

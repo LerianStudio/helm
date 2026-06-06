@@ -1,8 +1,18 @@
 # plugin-br-payments-fakebtg-helm
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: None for default render.
+- Dependency notes: This is a constrained fake/mock chart and intentionally has no local dependency charts.
+- Production overrides: Do not use this chart as a production payment provider; override image, ingress, resources, and probes only for test environments.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 A Helm chart for [fakebtg](https://github.com/LerianStudio/plugin-br-payments/tree/main/cmd/fakebtg) — a stand-in HTTP server that mocks the BTG provider API surface for use in dev/staging environments without access to the real BTG sandbox.
 
 > Dev/staging only. Do **not** install in production.
+
+This chart is a constrained `single-service` mock chart: one Deployment, one Service, no persistent state, no upstream dependencies, and no required secrets. The intentionally small surface is part of the contract; do not copy production-only constructs from `plugin-br-payments` into this fake unless the fake binary actually needs them.
 
 ## TL;DR
 

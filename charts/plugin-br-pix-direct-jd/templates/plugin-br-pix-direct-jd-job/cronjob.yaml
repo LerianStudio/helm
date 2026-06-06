@@ -26,6 +26,8 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: {{ include "plugin-br-pix-direct-jd-job.fullname" . }}
+              securityContext:
+                {{- toYaml .Values.job.securityContext | nindent 16 }}
               image: {{ .Values.job.image.repository }}:{{ .Values.job.image.tag | default (include "plugin.version" .) }}
               imagePullPolicy: {{ .Values.job.image.pullPolicy }}
               envFrom:

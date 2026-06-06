@@ -1,5 +1,13 @@
 # Plugin BR Bank Transfer Helm Chart
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: `bankTransfer.secrets.POSTGRES_PASSWORD`, `MONGO_PASSWORD`, `JD_INCOMING_RAW_XML_ENCRYPTION_KEY`, and `RECIPIENT_DETAILS_ENCRYPTION_KEY`; JD and webhook fields are required when their non-sandbox features are enabled.
+- Dependency notes: Uses local PostgreSQL and MongoDB dependency charts unless external services are configured.
+- Production overrides: Provide bank-transfer credentials through chart secrets or `bankTransfer.useExistingSecret`; override Midaz/CRM/Fees/JD endpoints, image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 This Helm chart installs **Plugin BR Bank Transfer** for Midaz, a high-performance and open-source ledger.
 
 ---

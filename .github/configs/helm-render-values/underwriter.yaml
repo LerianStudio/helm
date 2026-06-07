@@ -1,0 +1,3 @@
+underwriter:
+  secrets:
+    MULTI_TENANT_SERVICE_API_KEY: "sample"

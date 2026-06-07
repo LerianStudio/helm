@@ -4,7 +4,6 @@ common:
   # Common secrets and configurations
   authorizer:
     clientId: "ac56c81d4d6d95c0ac12"
-    clientSecret: ""
 identity:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}

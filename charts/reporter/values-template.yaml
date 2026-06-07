@@ -94,10 +94,10 @@ common:
     DATASOURCE_ONBOARDING_SSLMODE: disable
 
 secrets:
-  MONGO_PASSWORD: ""
-  REDIS_PASSWORD: ""
   RABBITMQ_DEFAULT_USER: plugin
   RABBITMQ_DEFAULT_PASS: ""
+  # RABBITMQ_ERLANG_COOKIE is required when rabbitmq.enabled=true (single-sourced to the broker).
+  RABBITMQ_ERLANG_COOKIE: ""
   DATASOURCE_ONBOARDING_PASSWORD: ""
   OBJECT_STORAGE_ACCESS_KEY_ID: ""
   OBJECT_STORAGE_SECRET_KEY: ""

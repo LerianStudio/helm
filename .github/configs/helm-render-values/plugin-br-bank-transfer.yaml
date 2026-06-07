@@ -5,7 +5,5 @@ bankTransfer:
     FEES_BASE_URL: "http://plugin-fees:4000"
     JD_SANDBOX_MODE: "true"
   secrets:
-    POSTGRES_PASSWORD: "sample"
-    MONGO_PASSWORD: "sample"
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: "sample"
     RECIPIENT_DETAILS_ENCRYPTION_KEY: "sample"

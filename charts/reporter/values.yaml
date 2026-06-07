@@ -472,7 +472,8 @@ secrets:
   # with the bundled subchart; only set for an external MongoDB without
   # mongodb.auth.existingSecret. See docs/helm-chart-standard.md "Single-Source Infra Secrets".
   MONGO_PASSWORD: ""
-  REDIS_PASSWORD: ""
+  # REDIS_PASSWORD intentionally omitted: the bundled valkey runs with auth.enabled=false, so
+  # nothing authenticates with it. Reintroduce this key if valkey.auth is ever enabled.
   # RabbitMQ is single-sourced here (Pattern B): the broker is pointed at this Secret via
   # rabbitmq.authentication.existingSecret, so these are the only copies of the broker creds.
   RABBITMQ_DEFAULT_USER: plugin

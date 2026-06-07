@@ -249,6 +249,8 @@ boilerplate:
     REDIS_PASSWORD: ""
     # -- Multi-tenant service API key (required when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_SERVICE_API_KEY: ""
+    # -- Multi-tenant Redis password (empty if auth disabled)
+    MULTI_TENANT_REDIS_PASSWORD: ""
 
   # -- Existing secrets name
   useExistingSecret: false

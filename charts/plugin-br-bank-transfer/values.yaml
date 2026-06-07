@@ -552,7 +552,8 @@ rabbitmq:
     password:
       value: ""
     erlangCookie:
-      value: "WCB00CfurKivfNH61hbxPaNg+xtyA/7RI6bEx5RMGvE="
+      # Operators MUST supply a stable cookie (e.g. openssl rand -base64 32) when rabbitmq.enabled=true.
+      value: ""
   extraSecrets:
     - name: "bank-transfer-rabbitmq-load-definition"
       mountPath: /etc/rabbitmq/definitions

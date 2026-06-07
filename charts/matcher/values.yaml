@@ -230,7 +230,8 @@ matcher:
     MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
 
     # PostgreSQL Primary
-    POSTGRES_HOST: "matcher-postgresql-primary.matcher.svc.cluster.local."
+    # -- Leave empty to derive from the postgresql subchart's primary Service name (release-aware)
+    POSTGRES_HOST: ""
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "matcher"
     POSTGRES_DB: "matcher"
@@ -244,7 +245,8 @@ matcher:
     MIGRATIONS_PATH: "migrations"
 
     # PostgreSQL Replica (optional - for CQRS read scaling)
-    POSTGRES_REPLICA_HOST: "matcher-postgresql-replication.matcher.svc.cluster.local."
+    # -- Leave empty to derive from the postgresql subchart's read-replica Service name (release-aware)
+    POSTGRES_REPLICA_HOST: ""
     POSTGRES_REPLICA_PORT: "5432"
     POSTGRES_REPLICA_USER: "matcher"
     POSTGRES_REPLICA_DB: "matcher"
@@ -254,7 +256,8 @@ matcher:
     INFRA_CONNECT_TIMEOUT_SEC: "30"
 
     # Redis/Valkey Configuration
-    REDIS_HOST: "matcher-valkey-primary.matcher.svc.cluster.local.:6379"
+    # -- Leave empty to derive from the valkey subchart's primary Service name (release-aware)
+    REDIS_HOST: ""
     REDIS_DB: "0"
     REDIS_PROTOCOL: "3"
     REDIS_POOL_SIZE: "10"

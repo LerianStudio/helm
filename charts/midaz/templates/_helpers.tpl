@@ -99,13 +99,29 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- if $auth.existingSecret -}}
 {{- $secretName = $auth.existingSecret -}}
 {{- else -}}
-{{- $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
   valueFrom:
     secretKeyRef:
       name: {{ $secretName }}
       key: {{ .key }}
+{{- end }}
+
+{{/*
+midaz.mongodbAuthRequired — fail when the bundled Bitnami mongodb subchart is internal
+(enabled and not external) but mongodb.auth.enabled is disabled and no mongodb.auth.existingSecret
+is provided. Bitnami's mongodb emits NO `<release>-mongodb` Secret when auth.enabled=false (its
+secrets.yaml is wrapped in `if .Values.auth.enabled`), yet ledger and crm still reference
+`mongodb-root-password` via secretKeyRef — a dangling ref that yields CreateContainerConfigError.
+Fail loud at render time so the operator fixes the configuration.
+*/}}
+{{- define "midaz.mongodbAuthRequired" -}}
+{{- $mongo := .Values.mongodb | default dict -}}
+{{- $mongoAuth := $mongo.auth | default dict -}}
+{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) (not $mongoAuth.enabled) (not $mongoAuth.existingSecret) -}}
+{{- fail "\n\nERROR: mongodb.auth.enabled is REQUIRED when the bundled mongodb subchart is internal.\n   ledger and crm read MONGO_*_PASSWORD from the mongodb Secret (single source), but Bitnami\n   mongodb creates no Secret when auth.enabled=false, leaving a dangling secretKeyRef.\n   Choose one: set mongodb.auth.enabled=true, or provide mongodb.auth.existingSecret, or set mongodb.external=true.\n" -}}
+{{- end -}}
 {{- end }}
 
 {{/*

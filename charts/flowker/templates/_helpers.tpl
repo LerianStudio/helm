@@ -83,11 +83,29 @@ flowker.mongoInternal — true when the bundled Bitnami mongodb subchart provide
 {{- end }}
 
 {{/*
-flowker.mongoHost — the bundled subchart Service host (release-derived). Used by the readiness
-init container and the assembled URI so they stay consistent.
+flowker.mongoHost — the bundled subchart Service host. Used by the readiness init container and
+the assembled URI so they stay consistent. When the bundled Bitnami mongodb subchart is enabled,
+resolve the Service name via Bitnami's own helper so it matches the collapse/override rules
+(release name containing "mongodb", nameOverride, fullnameOverride). On the external path the
+subchart templates are not loaded, so common.names.dependency.fullname is out of scope — fall back
+to self-contained logic mirroring it (fullnameOverride, then nameOverride, then the collapse).
 */}}
 {{- define "flowker.mongoHost" -}}
-{{- printf "%s-mongodb.%s.svc.cluster.local" .Release.Name (include "global.namespace" .) -}}
+{{- $mongo := default dict .Values.mongodb -}}
+{{- $mongoFullname := "" -}}
+{{- if eq (include "flowker.mongoInternal" .) "true" -}}
+{{- $mongoFullname = include "common.names.dependency.fullname" (dict "chartName" "mongodb" "chartValues" $mongo "context" .) -}}
+{{- else if $mongo.fullnameOverride -}}
+{{- $mongoFullname = $mongo.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default "mongodb" $mongo.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- $mongoFullname = .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $mongoFullname = printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- printf "%s.%s.svc.cluster.local" $mongoFullname (include "global.namespace" .) -}}
 {{- end }}
 
 {{/*
@@ -111,7 +129,10 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
   value: {{ $ctx.Values.flowker.secrets.MONGO_URI | quote }}
 {{- else }}
 {{- if or $internal $mongoAuth.existingSecret }}
-{{- $secretName := $mongoAuth.existingSecret | default (printf "%s-mongodb" $ctx.Release.Name) }}
+{{- $secretName := $mongoAuth.existingSecret }}
+{{- if not $secretName }}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" "mongodb" "chartValues" $mongo "context" $ctx) }}
+{{- end }}
 - name: MONGO_PASSWORD
   valueFrom:
     secretKeyRef:

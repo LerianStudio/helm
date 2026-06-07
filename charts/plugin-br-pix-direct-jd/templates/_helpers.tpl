@@ -190,7 +190,7 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- if $auth.existingSecret -}}
 {{- $secretName = $auth.existingSecret -}}
 {{- else -}}
-{{- $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
   valueFrom:

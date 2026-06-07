@@ -2,21 +2,21 @@
 Expand the name of the chart and plugin identity.
 */}}
 {{- define "plugin-identity.name" -}}
-{{- default (default .Values.identity.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-identity" .Values.identity.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Expand the name of the chart and plugin auth.
 */}}
 {{- define "plugin-auth.name" -}}
-{{- default (default .Values.auth.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-auth" .Values.auth.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Expand the name of the chart and plugin auth.
 */}}
 {{- define "plugin-auth-backend.name" -}}
-{{- default (default .Values.auth.backend.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-auth-backend" .Values.auth.backend.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 
@@ -47,7 +47,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-identity.fullname" -}}
-{{- default (default .Values.identity.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-identity" .Values.identity.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -56,7 +56,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-auth.fullname" -}}
-{{- default (default .Values.auth.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-auth" .Values.auth.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -65,7 +65,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-auth-backend.fullname" -}}
-{{- default (default .Values.auth.backend.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-auth-backend" .Values.auth.backend.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -186,9 +186,10 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
       name: {{ $dbAuth.existingSecret }}
       key: password
     {{- else if $internal }}
-      name: {{ printf "%s-auth-database" $ctx.Release.Name }}
+      name: {{ include "common.names.dependency.fullname" (dict "chartName" "auth-database" "chartValues" (index $ctx.Values "auth-database") "context" $ctx) }}
       key: password
     {{- else }}
+      {{- if not $ctx.Values.auth.useExistingSecret }}{{- $_ := required "\n\nERROR: auth-database is external or disabled.\n   The DB password is no longer single-sourced from the subchart Secret, so you must provide it.\n   Set auth.secrets.DB_PASSWORD, or point auth-database.auth.existingSecret at an external Secret.\n" $ctx.Values.auth.secrets.DB_PASSWORD -}}{{- end }}
       name: {{ if $ctx.Values.auth.useExistingSecret }}{{ $ctx.Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" $ctx }}{{ end }}
       key: DB_PASSWORD
     {{- end }}

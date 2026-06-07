@@ -92,13 +92,6 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
 {{/*
-fees dataSourceName
-*/}}
-{{- define "plugin-fees-backend.dataSourceName" -}}
-"user={{ .Values.fees.configmap.DB_USER }} password={{ .Values.fees.secrets.DB_PASSWORD }} host={{ .Values.fees.configmap.DB_HOST }} port={{ .Values.fees.configmap.DB_PORT }} sslmode=disable dbname={{ .Values.fees.configmap.DB_NAME }}"
-{{- end }}
-
-{{/*
 Create the name of the fees service account to use
 */}}
 {{- define "plugin-fees.serviceAccountName" -}}
@@ -118,6 +111,40 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- end }}
 
 {{/*
+plugin-fees.mongoInternal — true when the bundled Bitnami mongodb subchart provides the DB.
+*/}}
+{{- define "plugin-fees.mongoInternal" -}}
+{{- $mongo := default dict .Values.mongodb -}}
+{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) -}}true{{- else -}}false{{- end -}}
+{{- end }}
+
+{{/*
+plugin-fees.mongoHost — the bundled subchart Service host used as the MONGO_HOST default so it
+stays consistent with the rendered mongodb Service. When the bundled Bitnami mongodb subchart is
+enabled, resolve the Service name via Bitnami's own helper so it matches the collapse/override
+rules (release name containing "mongodb", nameOverride, fullnameOverride). On the external path the
+subchart templates are not loaded, so common.names.dependency.fullname is out of scope — fall back
+to self-contained logic mirroring it (fullnameOverride, then nameOverride, then the collapse).
+*/}}
+{{- define "plugin-fees.mongoHost" -}}
+{{- $mongo := default dict .Values.mongodb -}}
+{{- $mongoFullname := "" -}}
+{{- if eq (include "plugin-fees.mongoInternal" .) "true" -}}
+{{- $mongoFullname = include "common.names.dependency.fullname" (dict "chartName" "mongodb" "chartValues" $mongo "context" .) -}}
+{{- else if $mongo.fullnameOverride -}}
+{{- $mongoFullname = $mongo.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default "mongodb" $mongo.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- $mongoFullname = .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $mongoFullname = printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- printf "%s.%s.svc.cluster.local" $mongoFullname (include "global.namespace" .) -}}
+{{- end }}
+
+{{/*
 infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` env entry
 pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
 Inputs (dict): context (root .), subchart ("postgresql"|"mongodb"|"valkey"),
@@ -132,7 +159,7 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- if $auth.existingSecret -}}
 {{- $secretName = $auth.existingSecret -}}
 {{- else -}}
-{{- $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
   valueFrom:

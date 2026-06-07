@@ -158,7 +158,7 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- if $auth.existingSecret -}}
 {{- $secretName = $auth.existingSecret -}}
 {{- else -}}
-{{- $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
   valueFrom:
@@ -221,5 +221,23 @@ operator-provided cookie is mandatory for clustering across restarts.
 {{- if hasKey $rmq "enabled" -}}{{- $rmqEnabled = $rmq.enabled -}}{{- end -}}
 {{- if and $rmqEnabled (not .Values.secrets.RABBITMQ_ERLANG_COOKIE) -}}
 {{- fail "\n\nERROR: secrets.RABBITMQ_ERLANG_COOKIE is REQUIRED when the bundled rabbitmq subchart is enabled.\n   The broker reads its Erlang cookie from the application Secret (single source).\n   Provide a stable value (it must not change across upgrades) e.g.: openssl rand -hex 32\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.rabbitmqExistingSecretConsistent — fail when the bundled groundhog2k rabbitmq subchart is
+enabled and still carries the SHIPPED DEFAULT authentication.existingSecret ("reporter-manager") but
+the manager Secret has been renamed (manager.name / fullnameOverride), so the broker would reference a
+Secret that does not exist. values.yaml cannot template, so this render-time gate catches the drift.
+Custom (non-default) existingSecret values are the operator's responsibility and pass untouched.
+*/}}
+{{- define "reporter.rabbitmqExistingSecretConsistent" -}}
+{{- $rmq := default dict .Values.rabbitmq -}}
+{{- $rmqEnabled := true -}}
+{{- if hasKey $rmq "enabled" -}}{{- $rmqEnabled = $rmq.enabled -}}{{- end -}}
+{{- $auth := default dict $rmq.authentication -}}
+{{- $managerName := include "plugin-manager.fullname" . -}}
+{{- if and $rmqEnabled (eq (default "" $auth.existingSecret) "reporter-manager") (ne $managerName "reporter-manager") -}}
+{{- fail (printf "\n\nERROR: rabbitmq.authentication.existingSecret is still the shipped default \"reporter-manager\" but the manager Secret renders as %q.\n   The broker would reference a Secret that does not exist.\n   Update rabbitmq.authentication.existingSecret to %q (or set it to your own existing Secret).\n" $managerName $managerName) -}}
 {{- end -}}
 {{- end }}

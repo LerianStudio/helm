@@ -27,7 +27,7 @@ HTTP API + reconciliation worker + outbox dispatcher run as goroutines in one pr
 
 {{- if eq (include "postgresql.enabled" .) "true" }}
 1. PostgreSQL (in-cluster, Bitnami subchart)
-   - Primary: {{ .Release.Name }}-postgresql-primary.{{ include "global.namespace" . }}.svc.cluster.local:5432
+   - Primary: {{ include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" (index .Values "postgresql") "context" .) }}-primary.{{ include "global.namespace" . }}.svc.cluster.local:5432
    - Database: {{ .Values.postgresql.auth.database }}
    - User:     {{ .Values.postgresql.auth.username }}
 {{- else if .Values.global.externalPostgresDefinitions.enabled }}

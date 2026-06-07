@@ -124,7 +124,7 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- if $auth.existingSecret -}}
 {{- $secretName = $auth.existingSecret -}}
 {{- else -}}
-{{- $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
   valueFrom:
@@ -147,11 +147,12 @@ Emits a MONGO_PASSWORD env (secretKeyRef) followed by a MONGO_URI env that refer
 $(MONGO_PASSWORD) shell-style expansion (Kubernetes expands against earlier env entries in the
 same list, so MONGO_PASSWORD MUST precede MONGO_URI). The app is URI-only, so the URI is
 assembled here rather than embedding a plaintext password in the Secret.
-- Bundled subchart: MONGO_PASSWORD <- <release>-mongodb / mongodb-passwords (user bank_transfer).
+- Bundled subchart: MONGO_PASSWORD <- the mongodb subchart Secret / mongodb-passwords (user bank_transfer).
 - existingSecret override: MONGO_PASSWORD <- <existingSecret> / mongodb-passwords.
 - External inline: MONGO_PASSWORD <- app Secret / MONGO_PASSWORD.
 If the operator sets bankTransfer.secrets.MONGO_URI explicitly, that wins and is emitted verbatim
-(no $(MONGO_PASSWORD) assembly). The host tracks .Release.Name (subchart Service is release-derived).
+(no $(MONGO_PASSWORD) assembly). The host tracks the mongodb subchart's Bitnami fullname (Service and
+Secret names share it, honoring nameOverride/fullnameOverride and the name-collapse rule).
 Input (dict): context (root .), secretName (app Secret name for the external-inline fallback).
 */}}
 {{- define "bank-transfer.mongoEnv" -}}
@@ -160,8 +161,9 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
 {{- $mongo := default dict $ctx.Values.mongodb -}}
 {{- $mongoAuth := default dict $mongo.auth -}}
 {{- $internal := eq (include "bank-transfer.mongoInternal" $ctx) "true" -}}
+{{- $mongoFullname := include "common.names.dependency.fullname" (dict "chartName" "mongodb" "chartValues" $mongo "context" $ctx) -}}
 {{- if or $internal $mongoAuth.existingSecret }}
-{{- $secretName := $mongoAuth.existingSecret | default (printf "%s-mongodb" $ctx.Release.Name) }}
+{{- $secretName := $mongoAuth.existingSecret | default $mongoFullname }}
 - name: MONGO_PASSWORD
   valueFrom:
     secretKeyRef:
@@ -179,7 +181,7 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
   value: {{ $ctx.Values.bankTransfer.secrets.MONGO_URI | quote }}
 {{- else }}
 - name: MONGO_URI
-  value: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@%s-mongodb.%s.svc.cluster.local:27017/?authSource=admin" $ctx.Release.Name $ns | quote }}
+  value: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=admin" $mongoFullname $ns | quote }}
 {{- end }}
 {{- end }}
 

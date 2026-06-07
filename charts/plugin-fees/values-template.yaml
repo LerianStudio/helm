@@ -16,7 +16,9 @@ fees:
     ENV_NAME: "development"
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    MONGO_HOST: "plugin-fees-mongodb.midaz-plugins.svc.cluster.local"
+    # -- MongoDB host. Leave empty to derive the bundled subchart Service name
+    # (collapse-aware via common.names.dependency.fullname). Set only for an external MongoDB.
+    MONGO_HOST: ""
     MONGO_NAME: "plugin-fees-db"
     MONGO_PORT: "27017"
     MONGO_USER: "plugin-fees"

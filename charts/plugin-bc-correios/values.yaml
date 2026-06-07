@@ -191,7 +191,8 @@ bc-correios:
     ALLOWED_ORIGINS: "*"
     TRUSTED_PROXIES: "127.0.0.1,::1"
     # PostgreSQL
-    POSTGRES_HOST: "plugin-bc-correios-postgresql"
+    # Chart derives the in-cluster host automatically (collapse-aware). Set only for an external/overridden endpoint.
+    POSTGRES_HOST: ""
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "plugin-bc-correios"
     POSTGRES_NAME: "plugin-bc-correios"
@@ -200,13 +201,16 @@ bc-correios:
     POSTGRES_MIN_CONNS: "5"
     # RabbitMQ
     RABBITMQ_USER: "plugin-bc-correios"
-    RABBITMQ_HOST: "plugin-bc-correios-rabbitmq"
+    # Chart derives the in-cluster host automatically (collapse-aware). Set only for an external/overridden endpoint.
+    RABBITMQ_HOST: ""
     # Cache (Valkey)
-    CACHE_ADDR: "plugin-bc-correios-valkey-master:6379"
+    # Chart derives the in-cluster address automatically (collapse-aware). Set only for an external/overridden endpoint.
+    CACHE_ADDR: ""
     CACHE_TTL_SEC: "60"
     # Object Storage (SeaweedFS S3)
     OBJECT_STORAGE_PROVIDER: "s3"
-    OBJECT_STORAGE_ENDPOINT: "http://plugin-bc-correios-seaweedfs:8333"
+    # Chart derives the in-cluster endpoint automatically. Set only for an external/overridden endpoint.
+    OBJECT_STORAGE_ENDPOINT: ""
     OBJECT_STORAGE_BUCKET: "bc-correios-attachments"
     OBJECT_STORAGE_PATH_STYLE: "true"
     # BC Correio integration

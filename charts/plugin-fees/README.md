@@ -132,7 +132,7 @@ ingress:
 
 - **Version:** 16.4.0
 - **Repository:** https://charts.bitnami.com/bitnami
-- **Release name:** The bundled MongoDB host and its generated Secret are named `plugin-fees-mongodb`, which assumes the release is installed as `plugin-fees`. Install with that release name (or override `fees.configmap.MONGO_HOST` and use `mongodb.auth.existingSecret` accordingly).
+- **Release name:** The bundled MongoDB host and its generated Secret name are derived automatically from the release name (collapse-aware, honoring `nameOverride`/`fullnameOverride`), so any release name works. Set `fees.configmap.MONGO_HOST` only when pointing at an external MongoDB.
 - **How to disable:** Set `mongodb.enabled` to `false` in the values file.
 - **Note:** If you have an existing MongoDB instance, you can disable this dependency and configure Midaz Components to use your external MongoDB, like this:
 

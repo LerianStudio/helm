@@ -324,7 +324,7 @@ Every chart must pass the repository validator:
 
 ```sh
 cd .github/scripts
-go run ./validate-helm-charts.go --root ../.. --strict
+go run ./validate-helm-charts --root ../.. --strict
 ```
 
 The migration baseline must stay empty. Use `--baseline` only for local audit workflows; CI uses strict mode so new drift cannot be hidden by editing the baseline in the same pull request.
@@ -333,7 +333,7 @@ Every chart must also render through the repository render gate:
 
 ```sh
 cd .github/scripts
-go run ./validate-helm-charts.go --root ../.. --render-gate --all
+go run ./validate-helm-charts --root ../.. --render-gate --all
 ```
 
 Charts with required production values use dummy CI-only fixtures under `.github/configs/helm-render-values/<chart>.yaml`. These files are not production examples and must not contain real credentials.

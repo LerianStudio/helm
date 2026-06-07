@@ -35,6 +35,11 @@ var credentialURLPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/@
 // so the validator can flag non-empty secret defaults that live in templates
 // (not values.yaml). Group 1 is the YAML/template key, group 2 is the quoted
 // default literal.
+//
+// Limitation: the `[^}]*` segments cannot span a literal `}` (e.g. a default
+// containing a brace, or a pipeline that crosses the closing `}}` onto another
+// line). Such forms are not matched and would slip past this check; they are
+// rare in practice, so the simple single-line pattern is kept deliberately.
 var templateDefaultPattern = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9_.-]+)\s*:\s*\{\{[^}]*\|\s*default\s+"([^"]*)"[^}]*\}\}`)
 
 // dualSecretRequiredPattern matches a Secret data line whose value is gated by a
@@ -56,6 +61,7 @@ type chartYAML struct {
 
 type chartDependency struct {
 	Name       string `yaml:"name"`
+	Alias      string `yaml:"alias"`
 	Repository string `yaml:"repository"`
 }
 
@@ -71,11 +77,10 @@ type baselineFile struct {
 }
 
 type renderRow struct {
-	Chart      string
-	Status     string
-	Class      string
-	PhaseOwner string
-	Detail     string
+	Chart  string
+	Status string
+	Class  string
+	Detail string
 }
 
 func main() {
@@ -265,6 +270,7 @@ func collectViolations(root string) ([]violation, error) {
 		violations = append(violations, findForbiddenTemplateNames(root, chartDir, chartName)...)
 		violations = append(violations, scanValues(root, chartDir, chartName)...)
 		violations = append(violations, scanTemplateDefaults(root, chartDir, chartName)...)
+		violations = append(violations, scanConfigMapTemplates(root, chartDir, chartName)...)
 		violations = append(violations, scanValuesTemplate(root, chartDir, chartName)...)
 		violations = append(violations, scanDualSecret(root, chartDir, chartName, chart.Dependencies)...)
 	}
@@ -401,6 +407,112 @@ func scanTemplateDefaults(root, chartDir, chartName string) []violation {
 	})
 
 	return violations
+}
+
+// configMapKindPattern matches a `kind: ConfigMap` line in a template file.
+var configMapKindPattern = regexp.MustCompile(`(?m)^\s*kind:\s*ConfigMap\s*$`)
+
+// configMapDataKeyPattern captures a data-block key/value in a ConfigMap
+// template, e.g.
+//
+//	  SOME_PASSWORD: {{ .Values.x }}
+//
+// Group 1 is the key name, group 2 the (template) value text. Pure-template
+// lines ({{- if ... }}, comments) do not match because they lack the `KEY:`
+// shape.
+var configMapDataKeyPattern = regexp.MustCompile(`^\s+([A-Za-z0-9_.-]+)\s*:\s*(\S.*)$`)
+
+// configMapDefaultLiteralPattern extracts the `| default "X"` literal from a
+// ConfigMap value, mirroring templateDefaultPattern. Used to skip config flags
+// (booleans/numbers) authored on a secret-shaped key, e.g.
+// API_KEY_ENABLED: {{ ... | default "false" }}.
+var configMapDefaultLiteralPattern = regexp.MustCompile(`\|\s*default\s+"([^"]*)"`)
+
+// scanConfigMapTemplates scans rendered-kind ConfigMap templates (templates/**.yaml
+// with `kind: ConfigMap`) for data keys whose names classify as secret-like.
+// Unlike scanValues, which only walks values.yaml, this catches a credential key
+// authored directly into a ConfigMap template payload — a Secret value that
+// would be persisted in plaintext as ConfigMap data. Template control lines and
+// non-data sections (metadata, labels) are skipped by tracking the `data:` block.
+func scanConfigMapTemplates(root, chartDir, chartName string) []violation {
+	templatesDir := filepath.Join(chartDir, "templates")
+	if !dirExists(templatesDir) {
+		return nil
+	}
+
+	var violations []violation
+	_ = filepath.WalkDir(templatesDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		ext := strings.ToLower(filepath.Ext(d.Name()))
+		if ext != ".yaml" && ext != ".yml" {
+			return nil
+		}
+
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return nil
+		}
+		if !configMapKindPattern.MatchString(string(data)) {
+			return nil
+		}
+
+		for key, value := range configMapDataKeys(string(data)) {
+			if !isTemplateSecretKey(key) {
+				continue
+			}
+			// Skip config flags authored on a secret-shaped key: a value whose
+			// `| default "X"` literal is a boolean/number (e.g.
+			// API_KEY_ENABLED | default "false", MOCK_TOKEN | default "false")
+			// is a toggle, not a credential. Keys without such a default (a
+			// reference or hardcoded literal) are flagged.
+			if def := configMapDefaultLiteralPattern.FindStringSubmatch(value); def != nil && !isCredentialLikeDefault(def[1]) {
+				continue
+			}
+			violations = append(violations, newViolation(chartName, "secret-in-configmap", rel(root, path)+":"+key,
+				fmt.Sprintf("%s is credential-like and lives in a ConfigMap template; move it to a Secret", key)))
+		}
+		return nil
+	})
+
+	return violations
+}
+
+// configMapDataKeys extracts the data-block key/value pairs of a ConfigMap
+// template. It enters the block at a `data:` line and collects keys indented
+// deeper than `data:`, stopping when a sibling (or shallower) section begins.
+// This is a source-level scan: it sees the authored keys and their (templated)
+// value text, which is sufficient to classify key names and skip flag defaults.
+func configMapDataKeys(content string) map[string]string {
+	keys := map[string]string{}
+	inData := false
+	dataIndent := 0
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		indent := len(line) - len(strings.TrimLeft(line, " "))
+
+		if !inData {
+			if trimmed == "data:" {
+				inData = true
+				dataIndent = indent
+			}
+			continue
+		}
+
+		// A non-template line at or below data's indentation ends the block.
+		if indent <= dataIndent && !strings.HasPrefix(trimmed, "{{") {
+			inData = false
+			continue
+		}
+		if match := configMapDataKeyPattern.FindStringSubmatch(line); match != nil {
+			keys[match[1]] = match[2]
+		}
+	}
+	return keys
 }
 
 // scanValuesTemplate applies the same credential checks to values-template.yaml.
@@ -551,11 +663,13 @@ func checkScalarValue(root, chartName, valuesPath, key string, value *yaml.Node,
 		*violations = append(*violations, newViolation(chartName, "secret-in-configmap", pathText, "credential-bearing URL lives under configmap"))
 	}
 
-	if isPasswordKey(key) && strings.EqualFold(valueText, "lerian") {
+	classifyKey := classificationKey(key, path)
+
+	if isPasswordKey(classifyKey) && strings.EqualFold(valueText, "lerian") {
 		*violations = append(*violations, newViolation(chartName, "default-credential", pathText, "published values must not default password-like keys to lerian"))
 	}
 
-	if isSecretValueKey(key) && isLiteralSecretDefault(valueText) {
+	if isSecretValueKey(classifyKey) && isLiteralSecretDefault(valueText) {
 		*violations = append(*violations, newViolation(chartName, "default-credential", pathText, "published values must not contain non-empty defaults for secret-like keys"))
 	}
 
@@ -583,6 +697,39 @@ func checkScalarValue(root, chartName, valuesPath, key string, value *yaml.Node,
 	}
 }
 
+// classificationKey returns the key that should drive secret-like classification
+// for a scalar value. When the immediate key is a generic literal carrier (the
+// groundhog2k convention of nesting the credential under a `value` field, e.g.
+// authentication.erlangCookie.value or password.value), the carrier itself
+// reveals nothing, so the meaningful parent key (erlangCookie, password) is used
+// instead. Otherwise the immediate key is returned unchanged.
+//
+// Note: `secretKey` is deliberately NOT a carrier. In the single-source pattern
+// (authentication.password.secretKey: RABBITMQ_DEFAULT_PASS) its value is the
+// NAME of a key inside an existingSecret, never a literal credential, so it must
+// keep being treated as a reference and pass classification untouched.
+func classificationKey(key string, path []string) string {
+	if !isGenericValueCarrier(key) {
+		return key
+	}
+	// path ends with the immediate key; the parent is the entry before it.
+	if len(path) >= 2 {
+		parent := path[len(path)-2]
+		if !isGenericValueCarrier(parent) {
+			return parent
+		}
+	}
+	return key
+}
+
+// isGenericValueCarrier reports whether a key is a structural wrapper that
+// carries a credential literal without naming it (the groundhog2k convention of
+// nesting the value under a `value` field). Such keys never classify on their
+// own; the parent key holds the meaning.
+func isGenericValueCarrier(key string) bool {
+	return strings.ToLower(strings.NewReplacer("_", "", "-", "", ".", "").Replace(key)) == "value"
+}
+
 func isSensitiveConfigKey(key string) bool {
 	lower := strings.ToLower(key)
 	if strings.Contains(lower, "password") || strings.Contains(lower, "secret") || strings.Contains(lower, "private_key") || strings.Contains(lower, "client_secret") {
@@ -599,7 +746,10 @@ func isSensitiveConfigKey(key string) bool {
 
 func isPasswordKey(key string) bool {
 	lower := strings.ToLower(key)
-	return strings.Contains(lower, "password") || strings.HasSuffix(lower, "_pass") || strings.HasSuffix(lower, "pass")
+	// Word-boundary semantics: a bare HasSuffix "pass" would match compass/bypass.
+	// Only the abbreviation "pass" used as a whole word (exact or "_pass" suffix)
+	// or a key containing "password" is treated as a password key.
+	return strings.Contains(lower, "password") || strings.HasSuffix(lower, "_pass") || lower == "pass"
 }
 
 // isTemplateSecretKey classifies a template data-key (e.g. POSTGRES_PASSWORD,
@@ -626,7 +776,9 @@ func isTemplateSecretKey(key string) bool {
 		strings.Contains(normalized, "privatekey") ||
 		strings.Contains(normalized, "secret") ||
 		strings.Contains(normalized, "apikey") ||
-		strings.Contains(normalized, "accesskey") {
+		strings.Contains(normalized, "accesskey") ||
+		strings.Contains(normalized, "erlang") ||
+		strings.Contains(normalized, "cookie") {
 		return true
 	}
 	if normalized == "token" || strings.HasSuffix(normalized, "token") {
@@ -664,6 +816,10 @@ func isSecretValueKey(key string) bool {
 		return false
 	}
 	if strings.Contains(normalized, "password") || strings.HasSuffix(normalized, "pass") || strings.Contains(normalized, "privatekey") || strings.Contains(normalized, "clientsecret") {
+		return true
+	}
+	// erlangCookie / *-cookie carry the RabbitMQ clustering secret.
+	if strings.Contains(normalized, "erlang") || strings.Contains(normalized, "cookie") {
 		return true
 	}
 	if normalized == "secret" || strings.HasSuffix(normalized, "secret") {
@@ -884,7 +1040,12 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 		if chartSelection != nil && !chartSelection[chartName] {
 			continue
 		}
-		row := renderRow{Chart: chartName, PhaseOwner: phaseOwner(chartName)}
+		row := renderRow{Chart: chartName}
+
+		deps, err := chartDependencies(chartDir)
+		if err != nil {
+			return nil, err
+		}
 
 		tmpRoot, err := os.MkdirTemp("", "helm-chart-render-*")
 		if err != nil {
@@ -933,10 +1094,11 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			}
 		}
 
-		if out, err := runHelmWithEnv(tmpRoot, helmEnv, templateArgs...); err != nil {
+		normalOut, err := runHelmWithEnv(tmpRoot, helmEnv, templateArgs...)
+		if err != nil {
 			row.Status = "fail"
-			row.Class = classifyTemplateFailure(out)
-			detail := oneLine(out)
+			row.Class = classifyTemplateFailure(normalOut)
+			detail := oneLine(normalOut)
 			// M2: make the fixture-coupling explicit. When a chart needs
 			// operator-provided values (required/fail gate) but no fixture
 			// exists for it, surface that the fixture is missing rather than
@@ -954,18 +1116,236 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 
+		// H1: dangling-secretKeyRef assertion on the normal render.
+		if msg := danglingSecretRefMessage(normalOut); msg != "" {
+			row.Status = "fail"
+			row.Class = "dangling-secret-ref"
+			row.Detail = appendDetail(row.Detail, "release "+chartName+": "+msg)
+			rows = append(rows, row)
+			_ = os.RemoveAll(tmpRoot)
+			continue
+		}
+
+		// H1: Bitnami release-name collapse. When the release name equals a
+		// bundled Bitnami subchart name (or alias), common.names.dependency.fullname
+		// collapses <release>-<subchart> to just <subchart>; any app helper that
+		// hardcodes <release>-<subchart> instead would then reference a Secret that
+		// no longer exists. Render once per Bitnami dependency under that release
+		// name and re-run the dangling-ref assertion to catch that whole bug class.
+		collapseDetail, collapseFailed := runCollapseRenders(tmpRoot, tmpChart, helmEnv, chartName, bitnamiReleaseNames(chartName, deps), templateArgs)
+		if collapseFailed {
+			row.Status = "fail"
+			row.Class = "dangling-secret-ref"
+			row.Detail = appendDetail(row.Detail, collapseDetail)
+			rows = append(rows, row)
+			_ = os.RemoveAll(tmpRoot)
+			continue
+		}
+
 		row.Status = "ok"
 		row.Class = "render-ok"
-		if row.Detail == "" {
-			row.Detail = "helm dependency build and helm template succeeded"
-		} else {
-			row.Detail += "; helm dependency build and helm template succeeded"
+		successDetail := "helm dependency build and helm template succeeded"
+		if collapseDetail != "" {
+			successDetail += "; " + collapseDetail
 		}
+		row.Detail = appendDetail(row.Detail, successDetail)
 		rows = append(rows, row)
 		_ = os.RemoveAll(tmpRoot)
 	}
 
 	return rows, nil
+}
+
+// appendDetail joins a new detail fragment onto an existing row detail with a
+// "; " separator, matching the existing render-row detail formatting.
+func appendDetail(existing, detail string) string {
+	if existing == "" {
+		return detail
+	}
+	return existing + "; " + detail
+}
+
+// bitnamiReleaseNames returns the release names that trigger the Bitnami
+// release-name collapse for a chart: one per bundled Bitnami subchart, using the
+// dependency alias when set (the alias is what common.names.dependency.fullname
+// keys on) and the subchart name otherwise. The chart's own name is excluded
+// because the normal render already exercises release == chartName.
+func bitnamiReleaseNames(chartName string, deps []chartDependency) []string {
+	seen := map[string]bool{}
+	var names []string
+	for _, dep := range deps {
+		if !bitnamiInfraSubcharts[strings.ToLower(strings.TrimSpace(dep.Name))] {
+			continue
+		}
+		release := strings.TrimSpace(dep.Alias)
+		if release == "" {
+			release = strings.TrimSpace(dep.Name)
+		}
+		if release == "" || release == chartName || seen[release] {
+			continue
+		}
+		seen[release] = true
+		names = append(names, release)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// runCollapseRenders renders the chart once per collapse release name and runs
+// the dangling-ref assertion on each. It returns a one-line detail describing
+// the renders performed (or the first failure) and whether any render exposed a
+// dangling secret reference.
+func runCollapseRenders(tmpRoot, tmpChart string, env []string, chartName string, releaseNames []string, baseArgs []string) (string, bool) {
+	if len(releaseNames) == 0 {
+		return "", false
+	}
+	for _, release := range releaseNames {
+		args := append([]string{"template", release, tmpChart}, baseArgs[3:]...)
+		out, err := runHelmWithEnv(tmpRoot, env, args...)
+		if err != nil {
+			return fmt.Sprintf("collapse render (release %q) failed: %s", release, oneLine(out)), true
+		}
+		if msg := danglingSecretRefMessage(out); msg != "" {
+			return fmt.Sprintf("collapse render (release %q): %s", release, msg), true
+		}
+	}
+	return fmt.Sprintf("collapse renders passed for release name(s) %s", strings.Join(releaseNames, ", ")), false
+}
+
+// chartDependencies reads the dependency list from a chart's Chart.yaml.
+func chartDependencies(chartDir string) ([]chartDependency, error) {
+	data, err := os.ReadFile(filepath.Join(chartDir, "Chart.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	var chart chartYAML
+	if err := yaml.Unmarshal(data, &chart); err != nil {
+		return nil, err
+	}
+	return chart.Dependencies, nil
+}
+
+// allowedDanglingSecrets lists Secret names that a rendered manifest may
+// reference without that Secret being rendered in the same release. Entries are
+// for intentionally external/pre-existing secrets the operator (or a subchart's
+// own controller) provisions out of band. Each entry MUST carry a justification.
+var allowedDanglingSecrets = map[string]bool{
+	// otel-collector-lerian references an operator-provisioned API-key Secret;
+	// its README instructs `kubectl create secret generic otel-api-key` before
+	// install, so the chart intentionally never renders it.
+	"otel-api-key": true,
+	// reporter bundles the KEDA subchart, whose operator self-manages this TLS
+	// cert Secret at runtime via --enable-cert-rotation/--cert-secret-name. KEDA
+	// creates it; no Helm chart renders it.
+	"kedaorg-certs": true,
+}
+
+// danglingSecretRefMessage parses rendered multi-document Helm output, collects
+// the names of every rendered Secret and every secret reference (secretKeyRef,
+// envFrom.secretRef, volume.secret.secretName), and returns a non-empty message
+// when a reference points at a Secret that is neither rendered in the release nor
+// in allowedDanglingSecrets. This is the H1 assertion: a release-name collapse
+// (or any helper drift) that makes an app point at a Secret the subchart renders
+// under a different name shows up here as a dangling reference.
+func danglingSecretRefMessage(rendered string) string {
+	rendered = stripNonManifest(rendered)
+	secretNames := map[string]bool{}
+	refs := map[string]bool{}
+
+	dec := yaml.NewDecoder(strings.NewReader(rendered))
+	for {
+		var doc yaml.Node
+		if err := dec.Decode(&doc); err != nil {
+			if err == io.EOF {
+				break
+			}
+			// A non-fatal decode error on one document should not mask the rest;
+			// stop scanning rather than crash the gate.
+			break
+		}
+		var m map[string]interface{}
+		if err := doc.Decode(&m); err != nil || m == nil {
+			continue
+		}
+		if kind, _ := m["kind"].(string); kind == "Secret" {
+			if name := nestedString(m, "metadata", "name"); name != "" {
+				secretNames[name] = true
+			}
+		}
+		collectSecretRefs(m, refs)
+	}
+
+	var missing []string
+	for ref := range refs {
+		if ref == "" || secretNames[ref] || allowedDanglingSecrets[ref] {
+			continue
+		}
+		missing = append(missing, ref)
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	sort.Strings(missing)
+	return "secret reference(s) point at non-rendered Secret(s): " + strings.Join(missing, ", ")
+}
+
+// stripNonManifest drops leading non-YAML banner lines (helm warnings, NOTES)
+// that helm template can emit on stderr-merged output, keeping only manifest
+// documents so the YAML decoder does not choke.
+func stripNonManifest(rendered string) string {
+	idx := strings.Index(rendered, "---")
+	if idx <= 0 {
+		return rendered
+	}
+	// Keep everything from the first document separator; if the output starts
+	// with a manifest (no leading separator) we already returned it above.
+	return rendered[idx:]
+}
+
+// collectSecretRefs recursively walks a decoded manifest, recording the Secret
+// names referenced via secretKeyRef.name, envFrom[].secretRef.name, and
+// volumes[].secret.secretName.
+func collectSecretRefs(node interface{}, refs map[string]bool) {
+	switch v := node.(type) {
+	case map[string]interface{}:
+		if ref, ok := v["secretKeyRef"].(map[string]interface{}); ok {
+			if name, _ := ref["name"].(string); name != "" {
+				refs[name] = true
+			}
+		}
+		if ref, ok := v["secretRef"].(map[string]interface{}); ok {
+			if name, _ := ref["name"].(string); name != "" {
+				refs[name] = true
+			}
+		}
+		if ref, ok := v["secret"].(map[string]interface{}); ok {
+			if name, _ := ref["secretName"].(string); name != "" {
+				refs[name] = true
+			}
+		}
+		for _, child := range v {
+			collectSecretRefs(child, refs)
+		}
+	case []interface{}:
+		for _, child := range v {
+			collectSecretRefs(child, refs)
+		}
+	}
+}
+
+// nestedString returns the string at a nested map path, or "" if any segment is
+// missing or not the expected type.
+func nestedString(m map[string]interface{}, keys ...string) string {
+	cur := interface{}(m)
+	for _, k := range keys {
+		asMap, ok := cur.(map[string]interface{})
+		if !ok {
+			return ""
+		}
+		cur = asMap[k]
+	}
+	s, _ := cur.(string)
+	return s
 }
 
 func parseRenderGateSelection(allCharts bool, selectedCharts string) (map[string]bool, error) {
@@ -1077,42 +1457,17 @@ func classifyTemplateFailure(output string) string {
 func writeRenderInventory(path string, rows []renderRow) error {
 	var builder strings.Builder
 	builder.WriteString("# Helm Render Inventory\n\n")
-	builder.WriteString("Generated by `.github/scripts/validate-helm-charts.go --render-inventory`.\n\n")
-	builder.WriteString("| Chart | Status | Class | Phase Owner | Detail |\n")
-	builder.WriteString("|-------|--------|-------|-------------|--------|\n")
+	builder.WriteString("Generated on demand by `.github/scripts/validate-helm-charts --render-inventory`.\n\n")
+	builder.WriteString("| Chart | Status | Class | Detail |\n")
+	builder.WriteString("|-------|--------|-------|--------|\n")
 	for _, row := range rows {
-		builder.WriteString(fmt.Sprintf("| `%s` | %s | `%s` | %s | %s |\n", row.Chart, row.Status, row.Class, row.PhaseOwner, escapeTable(row.Detail)))
+		builder.WriteString(fmt.Sprintf("| `%s` | %s | `%s` | %s |\n", row.Chart, row.Status, row.Class, escapeTable(row.Detail)))
 	}
-
-	builder.WriteString("\n## Migration Queue\n\n")
-	builder.WriteString("The queue should be re-generated after each phase so it reflects the repository that actually exists.\n\n")
-	writePhaseQueue(&builder, rows, "Phase 2", "standard single-service application charts")
-	writePhaseQueue(&builder, rows, "Phase 3", "multi-component, PIX, dependency-wrapper, and mock/stub charts")
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
 	return os.WriteFile(path, []byte(builder.String()), 0o644)
-}
-
-func writePhaseQueue(builder *strings.Builder, rows []renderRow, phase, description string) {
-	builder.WriteString(fmt.Sprintf("### %s: %s\n\n", phase, description))
-	for _, row := range rows {
-		if row.PhaseOwner != phase {
-			continue
-		}
-		builder.WriteString(fmt.Sprintf("- `%s` - `%s` (%s)\n", row.Chart, row.Class, row.Status))
-	}
-	builder.WriteString("\n")
-}
-
-func phaseOwner(chart string) string {
-	switch chart {
-	case "tracer", "underwriter", "flowker", "matcher", "product-console", "go-boilerplate-ddd", "plugin-bc-correios", "plugin-br-bank-transfer", "plugin-br-payments":
-		return "Phase 2"
-	default:
-		return "Phase 3"
-	}
 }
 
 func copyDir(src, dst string) error {

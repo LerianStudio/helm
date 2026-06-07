@@ -97,7 +97,7 @@ jobs:
         working-directory: .github/scripts
         run: |
           chart_name="$(basename "${{ matrix.chart.working_dir }}")"
-          go run ./validate-helm-charts.go --root ../.. --render-gate --charts "$chart_name"
+          go run ./validate-helm-charts --root ../.. --render-gate --charts "$chart_name"
 
       #- name: Run helm unittest
       #  id: unittest
@@ -129,7 +129,7 @@ jobs:
       - name: Build scripts
         run: |
           cd .github/scripts
-          go build -o update-chart-version-readme update-chart-version-readme.go
+          go build -o update-chart-version-readme-bin ./update-chart-version-readme
 
       - name: Generate .releaserc file
         run: |
@@ -146,7 +146,7 @@ jobs:
             --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
             --arg successCmd "helm package $CHART_PATH && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
-            --arg prepareCmd "./.github/scripts/update-chart-version-readme --chart $CHART_NAME --version \${nextRelease.version}" \
+            --arg prepareCmd "./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
             '.plugins[2][1].chartPath = $chartPath |
               .plugins[4][1].assets = [($chartPath + "/Chart.yaml"), "README.md"] |
               .tagFormat = $tagFormat |

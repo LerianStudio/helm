@@ -8,9 +8,9 @@
 ## Chart Maintenance
 
 - Chart contract: [`docs/helm-chart-standard.md`](docs/helm-chart-standard.md)
-- Render inventory: [`docs/helm-render-inventory.md`](docs/helm-render-inventory.md)
-- Static validation: `cd .github/scripts && go run ./validate-helm-charts.go --root ../.. --strict`
-- Render validation: `cd .github/scripts && go run ./validate-helm-charts.go --root ../.. --render-gate --all`
+- Render inventory (on demand): `cd .github/scripts && go run ./validate-helm-charts --root ../.. --render-inventory --output /tmp/helm-render-inventory.md`
+- Static validation: `cd .github/scripts && go run ./validate-helm-charts --root ../.. --strict`
+- Render validation: `cd .github/scripts && go run ./validate-helm-charts --root ../.. --render-gate --all`
 
 CI enforces the static contract and render gate. Required production secrets are represented by dummy sample values under `.github/configs/helm-render-values/` only so charts can render in CI without publishing credentials.
 

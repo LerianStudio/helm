@@ -281,6 +281,10 @@ auth:
   # -- Secrets for storing sensitive data
   # @default -- templates/auth/secrets.yaml
   secrets:
+    # DB_PASSWORD is single-sourced from the auth-database subchart Secret
+    # (<release>-auth-database, key "password"), read via secretKeyRef. Leave empty with
+    # the bundled subchart. Only set this for an EXTERNAL database (auth-database.external=true)
+    # without auth-database.auth.existingSecret. See docs/helm-chart-standard.md.
     DB_PASSWORD: ""
     AUTHORIZER_CLIENT_SECRET: ""
     REDIS_PASSWORD: ""

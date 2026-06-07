@@ -4,4 +4,3 @@ identity:
 auth:
   secrets:
     AUTHORIZER_CLIENT_SECRET: "sample"
-    DB_PASSWORD: "sample"

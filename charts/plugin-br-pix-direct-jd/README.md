@@ -3,10 +3,27 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: None for default render; production JD, database, certificate, and encryption credentials must be supplied through secrets.
-- Dependency notes: Uses local PostgreSQL, MongoDB, RabbitMQ, and Redis/Valkey dependency charts unless external services are configured.
-- Production overrides: Provide production JD credentials, certificates, encryption keys, database credentials, and messaging credentials through chart secrets or existing Secrets where supported; override image tags, ingress, resources, and persistence.
+- Required secrets: `pix.secrets.MIDAZ_CLIENT_SECRET`, `pix.secrets.JD_SECRET`, `pix.secrets.JD_PIX_CLIENT_SECRET`, and `pix.secrets.SECRET_KEY_BASE` (external-boundary credentials). The PostgreSQL password (`DATABASE_PASSWORD`/`POSTGRES_PASSWORD`) is **not** required: it is single-sourced from the bundled `postgresql` subchart Secret and read via `secretKeyRef` (see "Single-source PostgreSQL secret" below).
+- Dependency notes: Uses the bundled Bitnami PostgreSQL dependency chart unless an external PostgreSQL is configured.
+- Production overrides: Provide production JD credentials, certificates, encryption keys, and messaging credentials through chart secrets or existing Secrets where supported; override image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
+### Single-source PostgreSQL secret
+
+The PostgreSQL password lives in exactly one place per deployment mode:
+
+- **Bundled subchart (default, `postgresql.enabled=true`):** the Bitnami `postgresql` subchart generates the Secret `<release>-postgresql` (key `password`). The `pix` Deployment wires both `DATABASE_PASSWORD` and `POSTGRES_PASSWORD`, and the job CronJob wires `DATABASE_PASSWORD`, to that key via `secretKeyRef`. The app Secret carries no DB password keys, and `pix.secrets.DATABASE_PASSWORD`/`POSTGRES_PASSWORD` should be left empty.
+- **External Postgres with `postgresql.auth.existingSecret`:** the refs point at that existing Secret's `password` key. The app Secret carries no DB password keys.
+- **External Postgres inline (`postgresql.enabled=false`, `postgresql.external=true`, no `existingSecret`):** set `pix.secrets.DATABASE_PASSWORD`/`POSTGRES_PASSWORD`; these are stored in the app Secret and the refs point there.
+
+### Release name
+
+The bundled-subchart paths assume the release is installed as **`plugin-br-pix-direct-jd`**:
+
+- `DATABASE_HOST` is hardcoded to `plugin-br-pix-direct-jd-postgresql.midaz-plugins.svc.cluster.local` in the pix and job ConfigMaps.
+- The single-source `secretKeyRef` resolves the subchart Secret as `<release>-postgresql`, which only equals `plugin-br-pix-direct-jd-postgresql` when the release name is `plugin-br-pix-direct-jd`.
+
+Installing under any other release name breaks both the DB host resolution and the secret reference. This is a pre-existing constraint of the hardcoded host; install this chart as `plugin-br-pix-direct-jd` or switch to an external Postgres.
 
 This Helm chart installs **Plugin BR Instant Payment** for Midaz, a high-performance and open-source ledger.
 

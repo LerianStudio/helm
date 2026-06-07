@@ -136,13 +136,6 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
 {{/*
-Auth dataSourceName
-*/}}
-{{- define "plugin-auth-backend.dataSourceName" -}}
-"user={{ .Values.auth.configmap.DB_USER }} password={{ .Values.auth.secrets.DB_PASSWORD }} host={{ .Values.auth.configmap.DB_HOST }} port={{ .Values.auth.configmap.DB_PORT }} sslmode={{ .Values.auth.configmap.DB_SSLMODE | default "disable" }} dbname={{ .Values.auth.configmap.DB_NAME }}"
-{{- end }}
-
-{{/*
 Create the name of the identity service account to use
 */}}
 {{- define "plugin-identity.serviceAccountName" -}}
@@ -170,6 +163,35 @@ Allows overriding it for multi-namespace deployments in combined charts.
 */}}
 {{- define "global.namespace" -}}
 {{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+plugin-auth.dbPasswordEnv — emit a single `- name: <envName> valueFrom: secretKeyRef: {name,key}`
+entry for the auth database password, single-sourced. With the bundled `auth-database`
+(aliased Bitnami postgresql) subchart, it reads the generated Secret
+(<release>-auth-database, key "password"); honors auth-database.auth.existingSecret; and
+falls back to the app's plugin-auth Secret (key DB_PASSWORD) only for an external database.
+Input (dict): context (root .), envName (container env var name, e.g. DB_PASSWORD or DB_PASS).
+See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+*/}}
+{{- define "plugin-auth.dbPasswordEnv" -}}
+{{- $ctx := .context -}}
+{{- $db := default dict (index $ctx.Values "auth-database") -}}
+{{- $dbAuth := default dict $db.auth -}}
+{{- $internal := and (ne (toString $db.enabled) "false") (not $db.external) -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+    {{- if $dbAuth.existingSecret }}
+      name: {{ $dbAuth.existingSecret }}
+      key: password
+    {{- else if $internal }}
+      name: {{ printf "%s-auth-database" $ctx.Release.Name }}
+      key: password
+    {{- else }}
+      name: {{ if $ctx.Values.auth.useExistingSecret }}{{ $ctx.Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" $ctx }}{{ end }}
+      key: DB_PASSWORD
+    {{- end }}
 {{- end }}
 
 

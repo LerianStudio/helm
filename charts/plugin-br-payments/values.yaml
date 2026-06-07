@@ -270,7 +270,11 @@ app:
   # -- Secrets (sensitive environment variables)
   # @default -- templates/secrets.yaml
   secrets:
-    # PostgreSQL credentials
+    # PostgreSQL password is single-sourced from the postgresql subchart Secret
+    # (<release>-postgresql, key "password") and read via secretKeyRef on the
+    # deployment — leave empty with the bundled subchart. Only set this for an
+    # EXTERNAL Postgres without postgresql.auth.existingSecret.
+    # See docs/helm-chart-standard.md "Single-Source Infra Secrets".
     POSTGRES_PASSWORD: ""
     # POSTGRES_REPLICA_PASSWORD: ""
     # BTG OAuth2 (REQUIRED)

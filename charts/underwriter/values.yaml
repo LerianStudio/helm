@@ -339,11 +339,22 @@ underwriter:
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
-    # -- PostgreSQL primary password
+    # -- PostgreSQL primary password.
+    # Single-source: when the bundled postgresql subchart is enabled, the password lives ONLY in
+    # the subchart-generated Secret (`<release>-postgresql`, key `password`) and is read by the app
+    # via secretKeyRef — leave this empty. Set it ONLY for external PostgreSQL without an
+    # `postgresql.auth.existingSecret` override.
     POSTGRES_PASSWORD: ""
-    # -- PostgreSQL replica password (defaults to PostgreSQL primary password if unset)
+    # -- PostgreSQL replica password.
+    # Single-source: when the bundled postgresql subchart is enabled (architecture: replication),
+    # this lives ONLY in the subchart Secret (`<release>-postgresql`, key `replication-password`)
+    # and is read via secretKeyRef — leave empty. Set ONLY for external PostgreSQL without existingSecret.
     POSTGRES_REPLICA_PASSWORD: ""
-    # -- Redis password (empty if auth disabled)
+    # -- Redis/Valkey password.
+    # Single-source: when the bundled valkey subchart is enabled with auth, this lives ONLY in the
+    # subchart Secret (`<release>-valkey`, key `valkey-password`) and is read via secretKeyRef —
+    # leave empty. Set ONLY for external Valkey without `valkey.auth.existingSecret`. If valkey auth
+    # is disabled, no REDIS_PASSWORD env is wired at all.
     REDIS_PASSWORD: ""
     # -- Redis CA certificate path / contents (when REDIS_TLS=true and a custom CA is required)
     REDIS_CA_CERT: ""

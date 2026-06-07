@@ -167,6 +167,10 @@ pix:
     JD_PIX_CLIENT_ID: ""
     JD_PIX_CLIENT_SECRET: ""
     # Database Configuration
+    # -- Single-source: the bundled postgresql subchart generates the DB password
+    # in its own Secret (<release>-postgresql, key "password"), which the app and
+    # job read via secretKeyRef. Leave these empty for the bundled subchart. Only
+    # set them for an external Postgres that has no existingSecret of its own.
     DATABASE_PASSWORD: ""
     POSTGRES_PASSWORD: ""
     # Twilio Configuration

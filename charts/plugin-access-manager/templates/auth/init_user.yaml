@@ -78,15 +78,7 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_SSLMODE
-            - name: DB_PASS
-              valueFrom:
-                secretKeyRef:
-                  {{- if .Values.auth.useExistingSecret }}
-                  name: {{ .Values.auth.existingSecretName }}
-                  {{- else }}
-                  name: {{ include "plugin-auth.fullname" . }}
-                  {{- end }}
-                  key: DB_PASSWORD
+            {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASS") | nindent 12 }}
             # Casdoor configuration
             - name: CASDOOR_URL
               value: "http://{{ include "plugin-auth-backend.fullname" . }}:8000"

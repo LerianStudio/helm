@@ -187,6 +187,101 @@ app:
 - `values-template.yaml` may contain empty placeholders for required secrets.
 - If a secret is required, use a clear Helm `required` message and mirror the key in `values-template.yaml`.
 
+## Single-Source Infra Secrets
+
+Each infrastructure credential (Postgres / Mongo / Valkey / RabbitMQ password) must live in exactly **one** place. The hazard being eliminated: an application chart historically kept its own copy of the infra password (in `<component>.secrets.*`) **and** the subchart kept another (`<subchart>.auth.*`), with no link between them. The operator had to set the same value twice; an old `| default "lerian"` masked the mismatch. The rule: pick a single owner per credential based on subchart provenance, and have the other side reference it.
+
+### Pattern A — Bitnami subcharts (app references subchart)
+
+For Bitnami `postgresql` / `mongodb` / `valkey`, leave the password empty so the subchart auto-generates it into its **own** Secret, then have the application container read that Secret via a discrete `secretKeyRef` env entry. The app's own Secret (delivered by `envFrom: secretRef`) keeps only non-infra keys (client secrets, encryption keys).
+
+Generated Secret name and data keys, **verified against rendered output at this repo's pinned subchart versions** (version-sensitive — re-verify on subchart bump):
+
+| Subchart | Pinned version | Secret name pattern | Data key(s) |
+|----------|----------------|---------------------|-------------|
+| postgresql | 16.3 | `<release>-postgresql` | `postgres-password` (admin/superuser), `password` (the `auth.username` user), `replication-password` |
+| mongodb | 16.4.0 | `<release>-mongodb` | `mongodb-root-password` (root user); `mongodb-passwords` (array, only when `auth.usernames`/`auth.passwords` provision non-root users) |
+| valkey | 2.4.7 | `<release>-valkey` | `valkey-password` |
+
+Name resolution rule:
+- Default: `printf "%s-%s" .Release.Name "<subchart>"` — the Secret name tracks the **release name**, not the chart name. Charts that hardcode the service host to a fixed name (e.g. `plugin-fees-mongodb`) therefore assume a fixed release name; document that assumption in the chart README.
+- `nameOverride`/`fullnameOverride` on the subchart shifts the Secret name accordingly; account for it when set.
+- `existingSecret` override: when the operator sets `<subchart>.auth.existingSecret`, that name wins. The helper must prefer it.
+- Root vs non-root key: use `mongodb-root-password` when the app authenticates as the root user (`auth.rootUser`), `password`/`mongodb-passwords` when it authenticates as a provisioned non-root user. Confirm which user the app connects as before choosing the key.
+
+### `infraSecretRef` helper contract
+
+Application charts have no shared library chart, so the helper lives per-chart in `templates/_helpers.tpl`. Each chart that adopts Pattern A defines:
+
+```
+{{/*
+infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` env entry
+pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+Inputs (dict): context (root .), subchart ("postgresql"|"mongodb"|"valkey"),
+key (data key), envName (container env var name).
+*/}}
+{{- define "<chart>.infraSecretRef" -}}
+{{- $ctx := .context -}}
+{{- $sub := .subchart -}}
+{{- $auth := index $ctx.Values $sub "auth" | default dict -}}
+{{- $secretName := "" -}}
+{{- if $auth.existingSecret -}}
+{{-   $secretName = $auth.existingSecret -}}
+{{- else -}}
+{{-   $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- end -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: {{ .key }}
+{{- end -}}
+```
+
+Usage on the app container:
+
+```
+env:
+  {{- include "<chart>.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_PASSWORD") | nindent 12 }}
+```
+
+Rules:
+- The infra-internal key (e.g. `MONGO_PASSWORD`) is **removed** from the chart's own `secrets.yaml` and from `<component>.secrets.*` in `values.yaml`, and added as a discrete `secretKeyRef` env entry. The app's `envFrom: secretRef` keeps the remaining non-infra keys. Avoid double-definition (do not leave the key in both the `envFrom` Secret and the discrete `env:`).
+- This **replaces** any review-era `required "<component>.secrets.<KEY> is required"` gate on an infra-internal key. External-boundary keys (third-party client secrets, AES/encryption keys, license keys) keep their `required` gate — they are operator-provided and have no subchart to source them from.
+- All wiring is GitOps-safe: resolution happens in-pod via `secretKeyRef`, never via Helm `lookup` at template time.
+
+### Pattern B — non-Bitnami brokers (subchart references app)
+
+For non-Bitnami brokers the password stays in the **application** Secret and the broker is pointed at it via the subchart's own external-secret mechanism. The application keeps the broker keys in its own `secrets.yaml` (no `required` removal needed — the app Secret is the source); only the **subchart values** change to reference them.
+
+**`groundhog2k/rabbitmq`** exposes a per-field existing-secret model:
+
+```yaml
+rabbitmq:
+  authentication:
+    existingSecret: <app-secret-name>      # e.g. the manager Secret
+    user:
+      secretKey: RABBITMQ_DEFAULT_USER
+    password:
+      secretKey: RABBITMQ_DEFAULT_PASS
+    erlangCookie:
+      secretKey: RABBITMQ_ERLANG_COOKIE
+```
+
+Caveat: setting `authentication.existingSecret` suppresses the inline `erlangCookie.value`, and the Erlang cookie is **mandatory**. Add a stable `RABBITMQ_ERLANG_COOKIE` key to the application Secret and reference it via `erlangCookie.secretKey`. The cookie must not change across upgrades (it breaks clustering) — make it operator-provided and `required` when the bundled broker is enabled, not chart-generated (`randAlphaNum` regenerates each render and is not GitOps-safe). Pointing the broker at the app Secret also lets the app and broker agree on the username (removing drift).
+
+**`valkey.io/valkey`** (NOT Bitnami valkey) exposes **no** Secret-based password mechanism — auth is an inline ACL written to a plaintext ConfigMap (`auth.aclConfig`), and ships disabled (`auth.enabled: false`). There is no clean single-source wiring for it; if a password is ever required, it must be injected via mounted config, not a Secret reference. Document this per chart rather than forcing a pattern. (Bitnami `valkey` — a different subchart — does follow Pattern A with key `valkey-password`.)
+
+### `enabled` coercion (GOTCHA)
+
+When guarding "is the bundled subchart active", do **not** write `(default true $sub.enabled)` — Helm's `default` treats an explicit `false` as empty and coerces it back to `true`, so `--set <sub>.enabled=false` would still take the subchart branch and dangle a `secretKeyRef` at a Secret that no longer renders. Use a nil-aware comparison instead:
+
+```
+{{- if or (and (ne (toString $sub.enabled) "false") (not $sub.external)) $subAuth.existingSecret }}
+```
+
+`ne (toString $sub.enabled) "false"` yields true for unset/`true` and false only for an explicit `false`.
+
 ## Security Defaults
 
 Application containers should default to:

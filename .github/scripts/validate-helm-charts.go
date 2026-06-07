@@ -37,6 +37,17 @@ var credentialURLPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/@
 // default literal.
 var templateDefaultPattern = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9_.-]+)\s*:\s*\{\{[^}]*\|\s*default\s+"([^"]*)"[^}]*\}\}`)
 
+// dualSecretRequiredPattern matches a Secret data line whose value is gated by a
+// Helm `required` on an infra-internal password key, e.g.
+//
+//	POSTGRES_PASSWORD: {{ required "app.secrets.POSTGRES_PASSWORD is required" ... }}
+//
+// Such a `required` gate co-existing with the matching bundled Bitnami subchart is
+// the dual-secret smell: the app keeps its own copy of a password the subchart
+// already owns. After single-sourcing, the infra key is read via secretKeyRef and
+// only conditionally written (no `required`), so it no longer matches.
+var dualSecretRequiredPattern = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9_]+)\s*:\s*\{\{[^}]*\brequired\b[^}]*\}\}`)
+
 type chartYAML struct {
 	Type         string            `yaml:"type"`
 	Annotations  map[string]string `yaml:"annotations"`
@@ -255,6 +266,7 @@ func collectViolations(root string) ([]violation, error) {
 		violations = append(violations, scanValues(root, chartDir, chartName)...)
 		violations = append(violations, scanTemplateDefaults(root, chartDir, chartName)...)
 		violations = append(violations, scanValuesTemplate(root, chartDir, chartName)...)
+		violations = append(violations, scanDualSecret(root, chartDir, chartName, chart.Dependencies)...)
 	}
 
 	sortViolations(violations)
@@ -411,6 +423,92 @@ func scanValuesTemplate(root, chartDir, chartName string) []violation {
 	if len(doc.Content) > 0 {
 		walkValues(root, chartName, valuesPath, doc.Content[0], nil, false, &violations)
 	}
+	return violations
+}
+
+// bitnamiInfraSubcharts lists the Bitnami subcharts whose passwords must be
+// single-sourced (the app reads the subchart-generated Secret via secretKeyRef
+// rather than keeping its own copy). Keyed by subchart name.
+var bitnamiInfraSubcharts = map[string]bool{
+	"postgresql": true,
+	"mongodb":    true,
+	"valkey":     true,
+}
+
+// infraKeySubchart maps an app Secret data-key to the Bitnami subchart that owns
+// its credential, or "" when the key is not an infra-internal password that a
+// bundled Bitnami subchart provides. Replica passwords map to postgresql.
+func infraKeySubchart(key string) string {
+	u := strings.ToUpper(key)
+	switch {
+	case strings.Contains(u, "MONGO") && strings.Contains(u, "PASSWORD"):
+		return "mongodb"
+	case u == "REDIS_PASSWORD" || u == "VALKEY_PASSWORD":
+		return "valkey"
+	case strings.Contains(u, "POSTGRES") && strings.Contains(u, "PASSWORD"):
+		return "postgresql"
+	case strings.HasPrefix(u, "DB_") && strings.Contains(u, "PASSWORD"):
+		// e.g. DB_ONBOARDING_PASSWORD, DB_TRANSACTION_REPLICA_PASSWORD, DB_PASSWORD.
+		return "postgresql"
+	}
+	return ""
+}
+
+// scanDualSecret flags the dual-secret hazard: an app-owned infra password that
+// is `required` in a Secret template while the matching bundled Bitnami subchart
+// is declared as a dependency. That co-existence means the operator must set the
+// same password in two places (the app Secret and the subchart). After
+// single-sourcing, the app reads the subchart Secret via secretKeyRef and the key
+// carries no `required` gate, so it no longer matches this rule.
+func scanDualSecret(root, chartDir, chartName string, deps []chartDependency) []violation {
+	templatesDir := filepath.Join(chartDir, "templates")
+	if !dirExists(templatesDir) {
+		return nil
+	}
+
+	declared := map[string]bool{}
+	for _, dep := range deps {
+		name := strings.ToLower(strings.TrimSpace(dep.Name))
+		if bitnamiInfraSubcharts[name] {
+			declared[name] = true
+		}
+	}
+	if len(declared) == 0 {
+		return nil
+	}
+
+	var violations []violation
+	_ = filepath.WalkDir(templatesDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		base := strings.ToLower(d.Name())
+		// Only inspect Secret templates (secrets.yaml, *secret*.yaml).
+		if !strings.Contains(base, "secret") {
+			return nil
+		}
+		ext := strings.ToLower(filepath.Ext(d.Name()))
+		if ext != ".yaml" && ext != ".yml" {
+			return nil
+		}
+
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return nil
+		}
+
+		for _, match := range dualSecretRequiredPattern.FindAllStringSubmatch(string(data), -1) {
+			key := match[1]
+			sub := infraKeySubchart(key)
+			if sub == "" || !declared[sub] {
+				continue
+			}
+			violations = append(violations, newViolation(chartName, "dual-secret-infra-password", rel(root, path)+":"+key,
+				fmt.Sprintf("%s is `required` while the bundled %q subchart is declared; single-source it: read the subchart Secret via secretKeyRef and drop the required gate (see docs/helm-chart-standard.md \"Single-Source Infra Secrets\")", key, sub)))
+		}
+		return nil
+	})
+
 	return violations
 }
 

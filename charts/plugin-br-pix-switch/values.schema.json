@@ -1,1 +1,191 @@
-{"$schema":"https://json-schema.org/draft-07/schema#","type":"object","additionalProperties":true,"properties":{"replicaCount":{"type":"integer","minimum":0},"manager":{"$ref":"#/$defs/component"},"worker":{"$ref":"#/$defs/component"},"ledger":{"$ref":"#/$defs/component"},"crm":{"$ref":"#/$defs/component"},"identity":{"$ref":"#/$defs/component"},"auth":{"$ref":"#/$defs/component"},"fees":{"$ref":"#/$defs/component"},"pix":{"$ref":"#/$defs/component"},"inbound":{"$ref":"#/$defs/component"},"outbound":{"$ref":"#/$defs/component"},"reconciliation":{"$ref":"#/$defs/component"},"spi":{"$ref":"#/$defs/component"},"spiSystemplane":{"$ref":"#/$defs/component"},"adapterBtgMock":{"$ref":"#/$defs/component"},"dictHub":{"$ref":"#/$defs/component"},"dictHubVsync":{"$ref":"#/$defs/component"},"dictProxy":{"$ref":"#/$defs/component"},"dictSystemplane":{"$ref":"#/$defs/component"},"cobHub":{"$ref":"#/$defs/component"},"cobProxy":{"$ref":"#/$defs/component"},"cobSystemplane":{"$ref":"#/$defs/component"},"fakebtg":{"$ref":"#/$defs/component"},"qrcode":{"$ref":"#/$defs/component"},"job":{"$ref":"#/$defs/component"}},"$defs":{"component":{"type":"object","additionalProperties":true,"properties":{"enabled":{"type":"boolean"},"replicaCount":{"type":"integer","minimum":0},"revisionHistoryLimit":{"type":"integer","minimum":0},"image":{"$ref":"#/$defs/image"},"service":{"$ref":"#/$defs/service"},"ingress":{"type":"object"},"autoscaling":{"type":"object"},"pdb":{"type":"object"},"resources":{"type":"object"},"podSecurityContext":{"type":"object"},"securityContext":{"type":"object"},"configmap":{"type":"object"},"secrets":{"type":"object"},"useExistingSecret":{"type":"boolean"},"useExistingSecrets":{"type":"boolean"},"existingSecretName":{"type":"string"},"serviceAccount":{"type":"object"},"extraEnvVars":{"type":["object","array"]}}},"image":{"type":"object","additionalProperties":true,"properties":{"repository":{"type":"string"},"tag":{"type":["string","number"]},"pullPolicy":{"type":"string"}}},"service":{"type":"object","additionalProperties":true,"properties":{"type":{"type":"string"},"port":{"type":["integer","string"]},"targetPort":{"type":["integer","string"]},"annotations":{"type":"object"}}}}}
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "spi": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "spiSystemplane": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "adapterBtgMock": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "dictHub": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "dictHubVsync": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "dictProxy": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "dictSystemplane": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "cobHub": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "cobProxy": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "cobSystemplane": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "appsIngress": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "systemplaneIngress": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "providersIngress": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "postgresql": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "mongodb": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "rabbitmq": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "adapterBtgMock",
+    "appsIngress",
+    "cobHub",
+    "cobProxy",
+    "cobSystemplane",
+    "dictHub",
+    "dictHubVsync",
+    "dictProxy",
+    "dictSystemplane",
+    "fullnameOverride",
+    "global",
+    "mongodb",
+    "nameOverride",
+    "namespaceOverride",
+    "postgresql",
+    "providersIngress",
+    "rabbitmq",
+    "spi",
+    "spiSystemplane",
+    "systemplaneIngress",
+    "valkey"
+  ]
+}

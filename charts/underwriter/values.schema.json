@@ -1,1 +1,49 @@
-{"$schema":"https://json-schema.org/draft-07/schema#","type":"object","additionalProperties":true,"properties":{"replicaCount":{"type":"integer","minimum":0},"image":{"$ref":"#/$defs/image"},"service":{"$ref":"#/$defs/service"},"ingress":{"type":"object"},"autoscaling":{"$ref":"#/$defs/autoscaling"},"pdb":{"type":"object"},"resources":{"type":"object"},"podSecurityContext":{"type":"object"},"securityContext":{"$ref":"#/$defs/securityContext"},"configmap":{"type":"object"},"secrets":{"type":"object"},"serviceAccount":{"type":"object"},"flowker":{"$ref":"#/$defs/component"},"boilerplate":{"$ref":"#/$defs/component"},"matcher":{"$ref":"#/$defs/component"},"bc-correios":{"$ref":"#/$defs/component"},"bankTransfer":{"$ref":"#/$defs/component"},"app":{"$ref":"#/$defs/component"},"tracer":{"$ref":"#/$defs/component"},"underwriter":{"$ref":"#/$defs/component"}},"$defs":{"component":{"type":"object","additionalProperties":true,"properties":{"enabled":{"type":"boolean"},"replicaCount":{"type":"integer","minimum":0},"image":{"$ref":"#/$defs/image"},"service":{"$ref":"#/$defs/service"},"ingress":{"type":"object"},"autoscaling":{"$ref":"#/$defs/autoscaling"},"pdb":{"type":"object"},"resources":{"type":"object"},"podSecurityContext":{"type":"object"},"securityContext":{"$ref":"#/$defs/securityContext"},"configmap":{"type":"object"},"secrets":{"type":"object"},"useExistingSecret":{"type":"boolean"},"existingSecretName":{"type":"string"},"serviceAccount":{"type":"object"}}},"image":{"type":"object","additionalProperties":true,"properties":{"repository":{"type":"string"},"tag":{"type":["string","number"]},"pullPolicy":{"type":"string"}}},"service":{"type":"object","additionalProperties":true,"properties":{"type":{"type":"string"},"port":{"type":"integer","minimum":1,"maximum":65535},"annotations":{"type":"object"}}},"autoscaling":{"type":"object","additionalProperties":true,"properties":{"enabled":{"type":"boolean"},"minReplicas":{"type":"integer","minimum":0},"maxReplicas":{"type":"integer","minimum":0},"targetCPUUtilizationPercentage":{"type":"integer"},"targetMemoryUtilizationPercentage":{"type":"integer"}}},"securityContext":{"type":"object","additionalProperties":true,"properties":{"runAsGroup":{"type":"integer"},"runAsUser":{"type":"integer"},"runAsNonRoot":{"type":"boolean"},"allowPrivilegeEscalation":{"type":"boolean"},"readOnlyRootFilesystem":{"type":"boolean"},"capabilities":{"type":"object"},"seccompProfile":{"type":"object"}}}}}
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "underwriter": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "postgresql": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "fullnameOverride",
+    "global",
+    "nameOverride",
+    "namespaceOverride",
+    "postgresql",
+    "underwriter",
+    "valkey"
+  ]
+}

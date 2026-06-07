@@ -1,1 +1,150 @@
-{"$schema":"https://json-schema.org/draft-07/schema#","type":"object","additionalProperties":true,"properties":{"replicaCount":{"type":"integer","minimum":0},"image":{"$ref":"#/$defs/image"},"service":{"$ref":"#/$defs/service"},"ingress":{"type":"object"},"autoscaling":{"$ref":"#/$defs/autoscaling"},"pdb":{"type":"object"},"resources":{"type":"object"},"podSecurityContext":{"type":"object"},"securityContext":{"$ref":"#/$defs/securityContext"},"configmap":{"type":"object"},"secrets":{"type":"object"},"serviceAccount":{"type":"object"},"flowker":{"$ref":"#/$defs/component"},"boilerplate":{"$ref":"#/$defs/component"},"matcher":{"$ref":"#/$defs/component"},"bc-correios":{"$ref":"#/$defs/component"},"bankTransfer":{"$ref":"#/$defs/component"},"app":{"$ref":"#/$defs/component"},"tracer":{"$ref":"#/$defs/component"},"underwriter":{"$ref":"#/$defs/component"}},"$defs":{"component":{"type":"object","additionalProperties":true,"properties":{"enabled":{"type":"boolean"},"replicaCount":{"type":"integer","minimum":0},"image":{"$ref":"#/$defs/image"},"service":{"$ref":"#/$defs/service"},"ingress":{"type":"object"},"autoscaling":{"$ref":"#/$defs/autoscaling"},"pdb":{"type":"object"},"resources":{"type":"object"},"podSecurityContext":{"type":"object"},"securityContext":{"$ref":"#/$defs/securityContext"},"configmap":{"type":"object"},"secrets":{"type":"object"},"useExistingSecret":{"type":"boolean"},"existingSecretName":{"type":"string"},"serviceAccount":{"type":"object"}}},"image":{"type":"object","additionalProperties":true,"properties":{"repository":{"type":"string"},"tag":{"type":["string","number"]},"pullPolicy":{"type":"string"}}},"service":{"type":"object","additionalProperties":true,"properties":{"type":{"type":"string"},"port":{"type":"integer","minimum":1,"maximum":65535},"annotations":{"type":"object"}}},"autoscaling":{"type":"object","additionalProperties":true,"properties":{"enabled":{"type":"boolean"},"minReplicas":{"type":"integer","minimum":0},"maxReplicas":{"type":"integer","minimum":0},"targetCPUUtilizationPercentage":{"type":"integer"},"targetMemoryUtilizationPercentage":{"type":"integer"}}},"securityContext":{"type":"object","additionalProperties":true,"properties":{"runAsGroup":{"type":"integer"},"runAsUser":{"type":"integer"},"runAsNonRoot":{"type":"boolean"},"allowPrivilegeEscalation":{"type":"boolean"},"readOnlyRootFilesystem":{"type":"boolean"},"capabilities":{"type":"object"},"seccompProfile":{"type":"object"}}}}}
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "replicaCount": {
+      "type": "integer"
+    },
+    "revisionHistoryLimit": {
+      "type": "integer"
+    },
+    "readinessProbe": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "livenessProbe": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "imagePullSecrets": {
+      "type": "array"
+    },
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "podAnnotations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "securityContext": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "pdb": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "deploymentStrategy": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "autoscaling": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "tolerations": {
+      "type": "array"
+    },
+    "affinity": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "otel": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "configmap": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "extraEnvVars": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "secrets": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "useExistingSecret": {
+      "type": "boolean"
+    },
+    "existingSecretName": {
+      "type": "string"
+    },
+    "mongodb": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "affinity",
+    "autoscaling",
+    "configmap",
+    "deploymentStrategy",
+    "existingSecretName",
+    "extraEnvVars",
+    "fullnameOverride",
+    "global",
+    "image",
+    "imagePullSecrets",
+    "ingress",
+    "livenessProbe",
+    "mongodb",
+    "nameOverride",
+    "namespaceOverride",
+    "nodeSelector",
+    "otel",
+    "pdb",
+    "podAnnotations",
+    "podSecurityContext",
+    "readinessProbe",
+    "replicaCount",
+    "resources",
+    "revisionHistoryLimit",
+    "secrets",
+    "securityContext",
+    "service",
+    "serviceAccount",
+    "tolerations",
+    "useExistingSecret"
+  ]
+}

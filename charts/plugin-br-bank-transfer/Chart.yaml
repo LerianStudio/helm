@@ -31,11 +31,11 @@ dependencies:
     repository: "oci://registry-1.docker.io/bitnamicharts"
     condition: valkey.enabled
   - name: postgresql
-    version: "16.3"
+    version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
   - name: mongodb
-    version: "16.4"
+    version: "16.4.12"
     repository: "https://charts.bitnami.com/bitnami"
     condition: mongodb.enabled
   - name: rabbitmq

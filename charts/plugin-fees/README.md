@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `fees.secrets.MONGO_PASSWORD` and `fees.secrets.CLIENT_SECRET`; multi-tenant API/cache secrets are required when multi-tenancy is enabled.
+- Required secrets: `fees.secrets.CLIENT_SECRET`; multi-tenant API/cache secrets are required when multi-tenancy is enabled. The MongoDB password is **not** an operator-provided secret with the bundled MongoDB: the Bitnami `mongodb` subchart auto-generates it into the `<release>-mongodb` Secret (key `mongodb-root-password`) and the app reads it via `secretKeyRef`. For an external MongoDB (`mongodb.external=true`), supply it via `mongodb.auth.existingSecret` or set `fees.secrets.MONGO_PASSWORD`.
 - Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
 - Production overrides: Provide fees, MongoDB, client, AWS, and multi-tenant credentials through chart secrets or existing Secrets where supported; override API/UI image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -122,7 +122,7 @@ ingress:
 | `mongodb.external` | Use an external MongoDB instance | `false` |
 | `mongodb.auth.enabled` | Enable authentication for MongoDB | `true` |
 | `mongodb.auth.rootUser` | Root user for MongoDB | `plugin-fees` |
-| `mongodb.auth.rootPassword` | Root password for MongoDB | `lerian` |
+| `mongodb.auth.rootPassword` | Root password for MongoDB. Leave empty to let the subchart auto-generate it into the `<release>-mongodb` Secret (the app reads it via `secretKeyRef`). | `""` |
 | `mongodb.persistence.size` | Persistence size for MongoDB | `8Gi` |
 | `mongodb.resourcesPreset` | Resource preset for MongoDB | `medium` |
 
@@ -132,6 +132,7 @@ ingress:
 
 - **Version:** 16.4.0
 - **Repository:** https://charts.bitnami.com/bitnami
+- **Release name:** The bundled MongoDB host and its generated Secret are named `plugin-fees-mongodb`, which assumes the release is installed as `plugin-fees`. Install with that release name (or override `fees.configmap.MONGO_HOST` and use `mongodb.auth.existingSecret` accordingly).
 - **How to disable:** Set `mongodb.enabled` to `false` in the values file.
 - **Note:** If you have an existing MongoDB instance, you can disable this dependency and configure Midaz Components to use your external MongoDB, like this:
 

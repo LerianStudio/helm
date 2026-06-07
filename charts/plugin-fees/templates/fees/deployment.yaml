@@ -51,8 +51,18 @@ spec:
                 name: {{ if .Values.fees.useExistingSecret }}{{ .Values.fees.existingSecretName }}{{ else }}{{ include "plugin-fees.fullname" . }}{{ end }}
             - configMapRef:
                 name: {{ include "plugin-fees.fullname" . }}
-          {{- if or (index .Values "otel-collector-lerian").enabled (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
           env:
+          {{- $mongo := .Values.mongodb | default dict }}
+          {{- $mongoAuth := $mongo.auth | default dict }}
+          {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}
+          {{- include "plugin-fees.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_PASSWORD") | nindent 10 }}
+          {{- else if .Values.fees.secrets.MONGO_PASSWORD }}
+          - name: MONGO_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ if .Values.fees.useExistingSecret }}{{ .Values.fees.existingSecretName }}{{ else }}{{ include "plugin-fees.fullname" . }}{{ end }}
+                key: MONGO_PASSWORD
+          {{- end }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:
@@ -66,7 +76,6 @@ spec:
             value: "http://127.0.0.1:{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
           - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
             value: "IPv4"
-          {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.fees.resources | nindent 12 }}

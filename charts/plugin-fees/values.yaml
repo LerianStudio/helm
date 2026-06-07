@@ -229,8 +229,11 @@ fees:
     # @default -- `plugin-fees-frontend.fullname`
     name: ""  
   # -- Default sensitive variables for the plugin-fees
+  # MONGO_PASSWORD is not listed here: with the bundled Bitnami mongodb subchart it is
+  # auto-generated into the plugin-fees-mongodb Secret and read via secretKeyRef. For an
+  # external MongoDB, set mongodb.external=true and either mongodb.auth.existingSecret or
+  # provide MONGO_PASSWORD here. See docs/helm-chart-standard.md "Single-Source Infra Secrets".
   secrets:
-    MONGO_PASSWORD: ""
     CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""

@@ -1,4 +1,3 @@
 fees:
   secrets:
-    MONGO_PASSWORD: "sample"
     CLIENT_SECRET: "sample"

@@ -117,4 +117,28 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- default .Release.Namespace .Values.fees.namespaceOverride | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
+{{/*
+infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` env entry
+pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+Inputs (dict): context (root .), subchart ("postgresql"|"mongodb"|"valkey"),
+key (data key), envName (container env var name).
+See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+*/}}
+{{- define "plugin-fees.infraSecretRef" -}}
+{{- $ctx := .context -}}
+{{- $sub := .subchart -}}
+{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
+{{- $secretName := "" -}}
+{{- if $auth.existingSecret -}}
+{{- $secretName = $auth.existingSecret -}}
+{{- else -}}
+{{- $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- end -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: {{ .key }}
+{{- end }}
+
 

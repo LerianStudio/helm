@@ -31,10 +31,11 @@ Operator-provided secrets (no subchart source — set these yourself when the co
 
 ### Release name
 
-Hosts are hardcoded to `underwriter-postgresql-primary` and `underwriter-valkey-primary:6379`, and the
-subchart Secret names resolve to `<release>-postgresql` / `<release>-valkey`. These align **only when the
-release is named `underwriter`**. Install with `helm upgrade --install underwriter ...` (pre-existing
-constraint; not addressed by this chart).
+Infra hosts and subchart Secret names are derived **collapse-aware** from the release name via Bitnami's
+`common.names.dependency.fullname`. The primary hosts resolve to `<release>-postgresql-primary` /
+`<release>-valkey-primary:6379` and the Secrets to `<release>-postgresql` / `<release>-valkey`, honoring
+any `nameOverride`/`fullnameOverride` and Bitnami name collapse. Any release name works. For external
+infra, set `underwriter.configmap.POSTGRES_HOST` / `REDIS_HOST` explicitly.
 
 Helm chart for deploying the Lerian underwriter service.
 

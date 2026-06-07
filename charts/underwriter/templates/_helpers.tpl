@@ -129,3 +129,68 @@ gate stays silent. Stands down on the existing-app-Secret path (envFrom).
 {{- fail "\n\nERROR: underwriter.secrets.REDIS_PASSWORD is REQUIRED when valkey auth is enabled but the bundled subchart is disabled or external.\n   Set underwriter.secrets.REDIS_PASSWORD, set valkey.auth.existingSecret, or use underwriter.useExistingSecret + existingSecretName.\n" -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+underwriter.postgresqlInternal — true when the bundled Bitnami postgresql subchart provides the DB.
+*/}}
+{{- define "underwriter.postgresqlInternal" -}}
+{{- $pg := default dict .Values.postgresql -}}
+{{- if and (ne (toString $pg.enabled) "false") (not $pg.external) -}}true{{- else -}}false{{- end -}}
+{{- end }}
+
+{{/*
+underwriter.valkeyInternal — true when the bundled Bitnami valkey subchart provides the cache.
+*/}}
+{{- define "underwriter.valkeyInternal" -}}
+{{- $vk := default dict .Values.valkey -}}
+{{- if and (ne (toString $vk.enabled) "false") (not $vk.external) -}}true{{- else -}}false{{- end -}}
+{{- end }}
+
+{{/*
+underwriter.postgresqlHost — collapse-aware default for POSTGRES_HOST. The bundled PostgreSQL uses
+`architecture: replication`, so the primary Service is `<dependency-fullname>-primary`. When the
+bundled subchart is enabled, resolve the base via Bitnami's own helper so it matches the
+collapse/override rules (release name containing "postgresql", nameOverride, fullnameOverride). On
+the external path the subchart templates are not loaded, so common.names.dependency.fullname is out
+of scope — fall back to self-contained logic mirroring it.
+*/}}
+{{- define "underwriter.postgresqlHost" -}}
+{{- $pg := default dict .Values.postgresql -}}
+{{- $base := "" -}}
+{{- if eq (include "underwriter.postgresqlInternal" .) "true" -}}
+{{- $base = include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" $pg "context" .) -}}
+{{- else if $pg.fullnameOverride -}}
+{{- $base = $pg.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default "postgresql" $pg.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- $base = .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $base = printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- printf "%s-primary" $base -}}
+{{- end }}
+
+{{/*
+underwriter.valkeyHost — collapse-aware default for REDIS_HOST (host:port). The bundled Valkey uses
+`architecture: replication`, so the primary Service is `<dependency-fullname>-primary`. Resolution
+mirrors underwriter.postgresqlHost; the `:6379` port is appended to match the previous default.
+*/}}
+{{- define "underwriter.valkeyHost" -}}
+{{- $vk := default dict .Values.valkey -}}
+{{- $base := "" -}}
+{{- if eq (include "underwriter.valkeyInternal" .) "true" -}}
+{{- $base = include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" $vk "context" .) -}}
+{{- else if $vk.fullnameOverride -}}
+{{- $base = $vk.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default "valkey" $vk.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- $base = .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $base = printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- printf "%s-primary:6379" $base -}}
+{{- end }}

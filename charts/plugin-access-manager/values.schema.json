@@ -47,13 +47,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "auth",
-    "auth-database",
-    "common",
-    "identity",
-    "otel-collector-lerian",
-    "valkey"
-  ]
+  }
 }

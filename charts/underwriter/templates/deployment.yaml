@@ -48,6 +48,8 @@ spec:
               name: {{ if .Values.underwriter.useExistingSecret }}{{ .Values.underwriter.existingSecretName }}{{ else }}{{ include "underwriter.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "underwriter.fullname" . }}
+          {{- include "underwriter.dbPasswordRequired" . }}
+          {{- include "underwriter.redisPasswordRequired" . }}
           env:
             {{- $pg := .Values.postgresql | default dict }}
             {{- $pgAuth := $pg.auth | default dict }}

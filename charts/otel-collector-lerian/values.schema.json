@@ -11,8 +11,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "opentelemetry-collector"
-  ]
+  }
 }

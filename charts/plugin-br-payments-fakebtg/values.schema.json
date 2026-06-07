@@ -24,12 +24,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "fakebtg",
-    "fullnameOverride",
-    "nameOverride",
-    "namespaceOverride",
-    "plugin-br-payments-fakebtg"
-  ]
+  }
 }

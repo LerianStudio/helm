@@ -271,8 +271,9 @@ app:
   # @default -- templates/secrets.yaml
   secrets:
     # PostgreSQL password is single-sourced from the postgresql subchart Secret
-    # (<release>-postgresql, key "password") and read via secretKeyRef on the
-    # deployment — leave empty with the bundled subchart. Only set this for an
+    # (name derived collapse-aware via common.names.dependency.fullname, honoring
+    # nameOverride/fullnameOverride; typically "<release>-postgresql"; key "password")
+    # and read via secretKeyRef on the deployment — leave empty with the bundled subchart. Only set this for an
     # EXTERNAL Postgres without postgresql.auth.existingSecret.
     # See docs/helm-chart-standard.md "Single-Source Infra Secrets".
     POSTGRES_PASSWORD: ""

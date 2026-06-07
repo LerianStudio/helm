@@ -9,14 +9,14 @@ Expand the name of the chart.
 Expand the name of the chart and plugin manager.
 */}}
 {{- define "plugin-manager.name" -}}
-{{- default (default .Values.manager.name) | trunc 63 | trimSuffix "-" }}
+{{- default "reporter-manager" .Values.manager.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Expand the name of the chart and plugin worker.
 */}}
 {{- define "plugin-worker.name" -}}
-{{- default (default .Values.worker.name) | trunc 63 | trimSuffix "-" }}
+{{- default "reporter-worker" .Values.worker.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 
@@ -41,7 +41,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-manager.fullname" -}}
-{{- default (default .Values.manager.name) | trunc 63 | trimSuffix "-" }}
+{{- default "reporter-manager" .Values.manager.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -50,7 +50,7 @@ Includes namespace to avoid conflicts when multiple releases exist in different 
 */}}
 {{- define "plugin-manager.clusterResourceName" -}}
 {{- $namespace := include "global.namespace" . -}}
-{{- $name := default .Values.manager.name -}}
+{{- $name := default "reporter-manager" .Values.manager.name -}}
 {{- printf "%s-%s" $name $namespace | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -60,7 +60,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-worker.fullname" -}}
-{{- default (default .Values.worker.name) | trunc 63 | trimSuffix "-" }}
+{{- default "reporter-worker" .Values.worker.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 
@@ -236,7 +236,7 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- $rmqEnabled := true -}}
 {{- if hasKey $rmq "enabled" -}}{{- $rmqEnabled = $rmq.enabled -}}{{- end -}}
 {{- $auth := default dict $rmq.authentication -}}
-{{- $managerName := include "plugin-manager.fullname" . -}}
+{{- $managerName := ternary .Values.manager.existingSecretName (include "plugin-manager.fullname" .) .Values.manager.useExistingSecret -}}
 {{- if and $rmqEnabled (eq (default "" $auth.existingSecret) "reporter-manager") (ne $managerName "reporter-manager") -}}
 {{- fail (printf "\n\nERROR: rabbitmq.authentication.existingSecret is still the shipped default \"reporter-manager\" but the manager Secret renders as %q.\n   The broker would reference a Secret that does not exist.\n   Update rabbitmq.authentication.existingSecret to %q (or set it to your own existing Secret).\n" $managerName $managerName) -}}
 {{- end -}}

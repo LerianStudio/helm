@@ -211,7 +211,10 @@ underwriter:
     MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
 
     # PostgreSQL primary
-    POSTGRES_HOST: "underwriter-postgresql-primary"
+    # -- Host of the PostgreSQL primary. Leave empty to default to
+    #    "<release>-postgresql-primary" (the bundled subchart Service). Set
+    #    explicitly for external PostgreSQL.
+    POSTGRES_HOST: ""
     POSTGRES_PORT: "5432"
     POSTGRES_NAME: "underwriter"
     POSTGRES_USER: "underwriter"
@@ -233,7 +236,10 @@ underwriter:
     POSTGRES_CONNECT_TIMEOUT_SEC: "10"
 
     # Redis / Valkey
-    REDIS_HOST: "underwriter-valkey-primary:6379"
+    # -- Host:port of Valkey. Leave empty to default to
+    #    "<release>-valkey-primary:6379" (the bundled subchart Service). Set
+    #    explicitly for external Valkey.
+    REDIS_HOST: ""
     REDIS_DB: "0"
     REDIS_PROTOCOL: "3"
     REDIS_TLS: "false"

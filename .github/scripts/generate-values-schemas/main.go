@@ -15,9 +15,9 @@
 //     declare "secrets"/"configmap" sub-keys as objects when present.
 //   - Top-level scalars are type-checked (string/boolean/integer/number) against
 //     the values.yaml default.
-//   - required lists the top-level keys that exist in values.yaml. Helm validates
-//     COALESCED values, so defaults always satisfy this; it guards against a chart
-//     accidentally dropping a block.
+//   - No keys are declared required: conventional Helm override keys
+//     (nameOverride, global, imagePullSecrets, etc.) are optional by convention,
+//     and operator -f files must not be forced to repeat defaulted blocks.
 //
 // Usage (run from .github/scripts):
 //
@@ -30,7 +30,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -217,29 +216,22 @@ func dependencyKeys(chartPath string) (map[string]bool, error) {
 // top-level keys, their value nodes, and the set of dependency block names.
 func buildSchema(topKeys []string, topValues map[string]*yaml.Node, subcharts map[string]bool) *orderedObject {
 	properties := newObject()
-	required := []string{}
 
 	for _, key := range topKeys {
 		properties.set(key, propertySchema(key, topValues[key], subcharts))
-		required = append(required, key)
 	}
 
-	// Helm always injects "global"; declare it as an open object. Only add it to
-	// required when the chart actually ships a global block (see required policy).
+	// Helm always injects "global"; declare it as an open object when the chart
+	// does not ship its own global block.
 	if _, hasGlobal := topValues["global"]; !hasGlobal {
 		properties.set("global", openObject())
 	}
-
-	sort.Strings(required)
 
 	schema := newObject()
 	schema.set("$schema", "https://json-schema.org/draft-07/schema#")
 	schema.set("type", "object")
 	schema.set("additionalProperties", false)
 	schema.set("properties", properties)
-	if len(required) > 0 {
-		schema.set("required", required)
-	}
 	return schema
 }
 

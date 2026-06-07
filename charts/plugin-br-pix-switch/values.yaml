@@ -1494,3 +1494,9 @@ rabbitmq:
       value: ""                  # MUST be set when enabled=true
                                  # (groundhog2k chart requires it; generate
                                  #  with `openssl rand -base64 32`)
+
+# OpenTelemetry Collector (Lerian)
+# Optional in-cluster collector. Disabled by default — set per-component
+# OTEL_EXPORTER_OTLP_ENDPOINT to an external collector for production.
+otel-collector-lerian:
+  enabled: false

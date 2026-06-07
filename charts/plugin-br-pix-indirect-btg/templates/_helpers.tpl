@@ -389,6 +389,35 @@ Input (dict): context (root .), component (component key under .Values).
 {{- end }}
 
 {{/*
+plugin-br-pix-indirect-btg.dbHostRequired — fail-loud. When the bundled postgresql subchart is not
+the source (external/disabled), the host helper returns empty, so the operator MUST set
+<component>.configmap.DB_HOST. On the bundled path the host is derived; the gate does not fire.
+Input (dict): context (root .), component (component key under .Values).
+*/}}
+{{- define "plugin-br-pix-indirect-btg.dbHostRequired" -}}
+{{- $ctx := .context -}}
+{{- $comp := .component -}}
+{{- $cfg := default dict (index $ctx.Values $comp "configmap") -}}
+{{- if and (ne (include "plugin-br-pix-indirect-btg.postgresInternal" $ctx) "true") (not $cfg.DB_HOST) -}}
+{{- fail (printf "\n\nERROR: %s.configmap.DB_HOST is REQUIRED when the bundled postgresql subchart is disabled or external.\n   The in-cluster Service name is not derived on the external path.\n   Set %s.configmap.DB_HOST to the external PostgreSQL host.\n" $comp $comp) -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-br-pix-indirect-btg.mongoHostRequired — fail-loud gate for MongoDB, mirror of the postgres
+host gate. Only invoked for components that consume MongoDB.
+Input (dict): context (root .), component (component key under .Values).
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mongoHostRequired" -}}
+{{- $ctx := .context -}}
+{{- $comp := .component -}}
+{{- $cfg := default dict (index $ctx.Values $comp "configmap") -}}
+{{- if and (ne (include "plugin-br-pix-indirect-btg.mongoInternal" $ctx) "true") (not $cfg.MONGO_HOST) -}}
+{{- fail (printf "\n\nERROR: %s.configmap.MONGO_HOST is REQUIRED when the bundled mongodb subchart is disabled or external.\n   Set %s.configmap.MONGO_HOST to the external MongoDB host.\n" $comp $comp) -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 plugin-br-pix-indirect-btg.infraEnv — emit the discrete infra-password env entries for a component
 container, single-sourced.
 - DB_PASSWORD / DB_REPLICA_PASSWORD: bundled postgresql -> secretKeyRef to <dep>/password (the

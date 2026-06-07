@@ -36,14 +36,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "fullnameOverride",
-    "global",
-    "nameOverride",
-    "namespaceOverride",
-    "postgresql",
-    "underwriter",
-    "valkey"
-  ]
+  }
 }

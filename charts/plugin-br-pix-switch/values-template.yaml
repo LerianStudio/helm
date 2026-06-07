@@ -53,7 +53,7 @@ spi:
 # ------------------------------------------------------------
 spiSystemplane:
   enabled: true
-  configmap:
+  configmap: {}
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
@@ -117,7 +117,7 @@ dictProxy:
 # ------------------------------------------------------------
 dictSystemplane:
   enabled: true
-  configmap:
+  configmap: {}
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
@@ -155,7 +155,7 @@ cobProxy:
 # ------------------------------------------------------------
 cobSystemplane:
   enabled: true
-  configmap:
+  configmap: {}
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"

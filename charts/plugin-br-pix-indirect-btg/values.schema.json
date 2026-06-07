@@ -71,16 +71,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "global",
-    "inbound",
-    "mongodb",
-    "otel-collector-lerian",
-    "outbound",
-    "pix",
-    "postgresql",
-    "reconciliation",
-    "valkey"
-  ]
+  }
 }

@@ -162,6 +162,7 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
 {{- $mongoAuth := default dict $mongo.auth -}}
 {{- $internal := eq (include "bank-transfer.mongoInternal" $ctx) "true" -}}
 {{- $mongoFullname := include "common.names.dependency.fullname" (dict "chartName" "mongodb" "chartValues" $mongo "context" $ctx) -}}
+{{- if not $ctx.Values.bankTransfer.useExistingSecret }}
 {{- if or $internal $mongoAuth.existingSecret }}
 {{- $secretName := $mongoAuth.existingSecret | default $mongoFullname }}
 - name: MONGO_PASSWORD
@@ -179,9 +180,10 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
 {{- if $ctx.Values.bankTransfer.secrets.MONGO_URI }}
 - name: MONGO_URI
   value: {{ $ctx.Values.bankTransfer.secrets.MONGO_URI | quote }}
-{{- else }}
+{{- else if $internal }}
 - name: MONGO_URI
   value: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=admin" $mongoFullname $ns | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 

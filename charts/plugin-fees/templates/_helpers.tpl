@@ -119,6 +119,17 @@ plugin-fees.mongoInternal — true when the bundled Bitnami mongodb subchart pro
 {{- end }}
 
 {{/*
+plugin-fees.mongoHostRequired — fail loudly when MongoDB is external/disabled but no explicit
+MONGO_HOST is set. The in-cluster Service name fallback does not point at an external MongoDB.
+*/}}
+{{- define "plugin-fees.mongoHostRequired" -}}
+{{- $cfg := default dict .Values.fees.configmap -}}
+{{- if and (ne (include "plugin-fees.mongoInternal" .) "true") (not $cfg.MONGO_HOST) -}}
+{{- fail "\n\nERROR: fees.configmap.MONGO_HOST is REQUIRED when the bundled mongodb subchart is disabled or external.\n   The in-cluster Service name fallback does not point at your external MongoDB.\n   Set fees.configmap.MONGO_HOST to the external MongoDB host.\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 plugin-fees.mongoHost — the bundled subchart Service host used as the MONGO_HOST default so it
 stays consistent with the rendered mongodb Service. When the bundled Bitnami mongodb subchart is
 enabled, resolve the Service name via Bitnami's own helper so it matches the collapse/override

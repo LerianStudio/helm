@@ -31,12 +31,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "aws",
-    "fees",
-    "global",
-    "mongodb",
-    "otel-collector-lerian"
-  ]
+  }
 }

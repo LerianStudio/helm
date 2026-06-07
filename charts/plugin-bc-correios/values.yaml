@@ -246,6 +246,11 @@ bc-correios:
     # RabbitMQ credentials
     RABBITMQ_PASS: ""
     RABBITMQ_URL: ""
+    # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
+    # it from this Secret via rabbitmq.authentication.existingSecret + erlangCookie.secretKey).
+    # Must be a STABLE value — changing it across upgrades breaks the cluster.
+    # Generate once with: openssl rand -hex 32
+    RABBITMQ_ERLANG_COOKIE: ""
     # AES-256 encryption key (32 bytes — override with a real key in production)
     ENCRYPTION_KEY: ""
     # Cache (Valkey) credentials
@@ -342,13 +347,23 @@ rabbitmq:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities: {drop: ["ALL"]}
+  # The broker reads its Erlang cookie from the application Secret (single source) via
+  # authentication.existingSecret + erlangCookie.secretKey. Setting existingSecret only
+  # affects keys that declare a secretKey, so the broker user/password behaviour is
+  # unchanged; the cookie is no longer a deterministic literal shipped in the chart.
+  # RABBITMQ_ERLANG_COOKIE is REQUIRED in the app Secret when rabbitmq.enabled (see
+  # secrets + bc-correios.rabbitmqErlangCookieRequired). Must be a STABLE value — changing
+  # it across upgrades breaks the cluster. Generate once with: openssl rand -hex 32
+  # If the app Secret name is overridden (fullnameOverride/nameOverride), update
+  # authentication.existingSecret to match.
   authentication:
+    existingSecret: "bc-correios"
     user:
       value: "plugin-bc-correios"
     password:
       value: ""
     erlangCookie:
-      value: "BcCorreiosErlangCookiePlaceholderChangeMe=="
+      secretKey: RABBITMQ_ERLANG_COOKIE
   extraSecrets:
     - name: "bc-correios-rabbitmq-load-definition"
       mountPath: /etc/rabbitmq/definitions

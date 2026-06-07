@@ -43,6 +43,8 @@ spec:
               name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
           {{- include "plugin-br-pix-indirect-btg.dbPasswordRequired" (dict "context" . "component" "pix") }}
           {{- include "plugin-br-pix-indirect-btg.mongoPasswordRequired" (dict "context" . "component" "pix") }}
+          {{- include "plugin-br-pix-indirect-btg.dbHostRequired" (dict "context" . "component" "pix") }}
+          {{- include "plugin-br-pix-indirect-btg.mongoHostRequired" (dict "context" . "component" "pix") }}
           {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "pix" "secretName" (include "plugin-br-pix-indirect-btg.fullname" .)) }}
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
           {{- if or (trim $infraEnv) $otelEnabled }}

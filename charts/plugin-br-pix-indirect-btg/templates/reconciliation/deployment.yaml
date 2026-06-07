@@ -39,6 +39,7 @@ spec:
           - configMapRef:
               name: {{ include "reconciliation.fullname" . }}
           {{- include "plugin-br-pix-indirect-btg.dbPasswordRequired" (dict "context" . "component" "reconciliation") }}
+          {{- include "plugin-br-pix-indirect-btg.dbHostRequired" (dict "context" . "component" "reconciliation") }}
           {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "reconciliation" "secretName" (include "reconciliation.fullname" .)) }}
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
           {{- if or (trim $infraEnv) $otelEnabled }}

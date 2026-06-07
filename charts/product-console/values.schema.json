@@ -114,37 +114,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "affinity",
-    "autoscaling",
-    "configmap",
-    "deploymentStrategy",
-    "existingSecretName",
-    "extraEnvVars",
-    "fullnameOverride",
-    "global",
-    "image",
-    "imagePullSecrets",
-    "ingress",
-    "livenessProbe",
-    "mongodb",
-    "nameOverride",
-    "namespaceOverride",
-    "nodeSelector",
-    "otel",
-    "pdb",
-    "podAnnotations",
-    "podSecurityContext",
-    "readinessProbe",
-    "replicaCount",
-    "resources",
-    "revisionHistoryLimit",
-    "secrets",
-    "securityContext",
-    "service",
-    "serviceAccount",
-    "tolerations",
-    "useExistingSecret"
-  ]
+  }
 }

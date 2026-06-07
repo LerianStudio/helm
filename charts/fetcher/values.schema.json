@@ -85,23 +85,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "aws",
-    "common",
-    "externalRabbitmqDefinitions",
-    "fullnameOverride",
-    "global",
-    "keda",
-    "manager",
-    "mongodb",
-    "nameOverride",
-    "namespaceOverride",
-    "observability",
-    "rabbitmq",
-    "seaweedfs",
-    "secrets",
-    "valkey",
-    "worker"
-  ]
+  }
 }

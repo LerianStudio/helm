@@ -1,5 +1,7 @@
 {{- $component := index .Values "bc-correios" -}}
 {{- if $component.enabled }}
+{{- include "bc-correios.rabbitmqErlangCookieRequired" . }}
+{{- include "bc-correios.rabbitmqExistingSecretConsistent" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

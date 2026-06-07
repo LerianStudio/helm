@@ -1303,8 +1303,8 @@ func stripNonManifest(rendered string) string {
 }
 
 // collectSecretRefs recursively walks a decoded manifest, recording the Secret
-// names referenced via secretKeyRef.name, envFrom[].secretRef.name, and
-// volumes[].secret.secretName.
+// names referenced via secretKeyRef.name, envFrom[].secretRef.name,
+// volumes[].secret.secretName, and projected.sources[].secret.name.
 func collectSecretRefs(node interface{}, refs map[string]bool) {
 	switch v := node.(type) {
 	case map[string]interface{}:
@@ -1319,7 +1319,10 @@ func collectSecretRefs(node interface{}, refs map[string]bool) {
 			}
 		}
 		if ref, ok := v["secret"].(map[string]interface{}); ok {
-			if name, _ := ref["secretName"].(string); name != "" {
+			if name, _ := ref["secretName"].(string); name != "" { // volume secret
+				refs[name] = true
+			}
+			if name, _ := ref["name"].(string); name != "" { // projected volume source secret
 				refs[name] = true
 			}
 		}

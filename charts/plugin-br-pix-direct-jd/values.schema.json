@@ -51,12 +51,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "job",
-    "otel-collector-lerian",
-    "pix",
-    "postgresql",
-    "qrcode"
-  ]
+  }
 }

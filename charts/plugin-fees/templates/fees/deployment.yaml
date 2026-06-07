@@ -52,6 +52,7 @@ spec:
             - configMapRef:
                 name: {{ include "plugin-fees.fullname" . }}
           env:
+          {{- include "plugin-fees.mongoHostRequired" . }}
           {{- $mongo := .Values.mongodb | default dict }}
           {{- $mongoAuth := $mongo.auth | default dict }}
           {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}

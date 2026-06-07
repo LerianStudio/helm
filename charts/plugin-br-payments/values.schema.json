@@ -40,15 +40,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "app",
-    "fullnameOverride",
-    "global",
-    "nameOverride",
-    "namespaceOverride",
-    "otel-collector-lerian",
-    "plugin-br-payments",
-    "postgresql"
-  ]
+  }
 }

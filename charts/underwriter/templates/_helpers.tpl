@@ -96,3 +96,36 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
       name: {{ $secretName }}
       key: {{ .key }}
 {{- end }}
+
+{{/*
+underwriter.dbPasswordRequired — fail-loud gate. When the bundled postgresql subchart is NOT the
+source (external or disabled) and no operator credential or existingSecret is supplied, fail the
+render naming the exact value. On the bundled path the password comes from the subchart Secret, so
+the gate does not fire. Stands down when the operator supplies an existing app Secret via
+underwriter.useExistingSecret + existingSecretName (delivered through envFrom).
+*/}}
+{{- define "underwriter.dbPasswordRequired" -}}
+{{- $pg := .Values.postgresql | default dict -}}
+{{- $pgAuth := $pg.auth | default dict -}}
+{{- $internal := and (ne (toString $pg.enabled) "false") (not $pg.external) -}}
+{{- $usesExisting := and .Values.underwriter.useExistingSecret .Values.underwriter.existingSecretName -}}
+{{- if and (not $internal) (not $pgAuth.existingSecret) (not .Values.underwriter.secrets.POSTGRES_PASSWORD) (not $usesExisting) -}}
+{{- fail "\n\nERROR: underwriter.secrets.POSTGRES_PASSWORD is REQUIRED when the bundled postgresql subchart is disabled or external.\n   Set underwriter.secrets.POSTGRES_PASSWORD, set postgresql.auth.existingSecret, or provide it via underwriter.useExistingSecret + underwriter.existingSecretName.\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+underwriter.redisPasswordRequired — fail-loud gate for Valkey. Only fires when valkey auth is
+enabled AND the bundled subchart is NOT the source (external or disabled) AND no operator credential
+or existingSecret is supplied. When valkey auth is disabled no REDIS_PASSWORD is wired at all, so the
+gate stays silent. Stands down on the existing-app-Secret path (envFrom).
+*/}}
+{{- define "underwriter.redisPasswordRequired" -}}
+{{- $vk := .Values.valkey | default dict -}}
+{{- $vkAuth := $vk.auth | default dict -}}
+{{- $internal := and (ne (toString $vk.enabled) "false") (not $vk.external) -}}
+{{- $usesExisting := and .Values.underwriter.useExistingSecret .Values.underwriter.existingSecretName -}}
+{{- if and $vkAuth.enabled (not $internal) (not $vkAuth.existingSecret) (not .Values.underwriter.secrets.REDIS_PASSWORD) (not $usesExisting) -}}
+{{- fail "\n\nERROR: underwriter.secrets.REDIS_PASSWORD is REQUIRED when valkey auth is enabled but the bundled subchart is disabled or external.\n   Set underwriter.secrets.REDIS_PASSWORD, set valkey.auth.existingSecret, or use underwriter.useExistingSecret + existingSecretName.\n" -}}
+{{- end -}}
+{{- end }}

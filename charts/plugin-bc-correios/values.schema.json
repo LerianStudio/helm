@@ -48,17 +48,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "bc-correios",
-    "br-spb-bc-correios",
-    "fullnameOverride",
-    "global",
-    "nameOverride",
-    "namespaceOverride",
-    "postgresql",
-    "rabbitmq",
-    "seaweedfs",
-    "valkey"
-  ]
+  }
 }

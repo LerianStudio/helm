@@ -100,6 +100,39 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- end }}
 
 {{/*
+bc-correios.rabbitmqErlangCookieRequired — fail when the bundled groundhog2k rabbitmq subchart is
+enabled but no erlang cookie is provided. The broker is pointed at the app Secret via
+authentication.existingSecret, which sources the cookie from secretKey RABBITMQ_ERLANG_COOKIE, so a
+stable operator-provided cookie is mandatory for clustering across restarts. Stands down when the
+bundled broker is disabled/external or an existing app Secret is used (useExistingSecret).
+*/}}
+{{- define "bc-correios.rabbitmqErlangCookieRequired" -}}
+{{- $component := index .Values "bc-correios" -}}
+{{- $rmq := default dict .Values.rabbitmq -}}
+{{- $rmqEnabled := ne (toString $rmq.enabled) "false" -}}
+{{- if and $rmqEnabled (not $component.useExistingSecret) (not $component.secrets.RABBITMQ_ERLANG_COOKIE) -}}
+{{- fail "\n\nERROR: bc-correios.secrets.RABBITMQ_ERLANG_COOKIE is REQUIRED when the bundled rabbitmq subchart is enabled.\n   The broker reads its Erlang cookie from the application Secret (single source).\n   Provide a stable value (it must not change across upgrades) e.g.: openssl rand -hex 32\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+bc-correios.rabbitmqExistingSecretConsistent — fail when the bundled rabbitmq subchart is enabled and
+still carries the SHIPPED DEFAULT authentication.existingSecret ("bc-correios") but the app Secret has
+been renamed (fullnameOverride / nameOverride), so the broker would reference a Secret that does not
+exist. values.yaml cannot template, so this render-time gate catches the drift. Custom (non-default)
+existingSecret values are the operator's responsibility and pass untouched.
+*/}}
+{{- define "bc-correios.rabbitmqExistingSecretConsistent" -}}
+{{- $rmq := default dict .Values.rabbitmq -}}
+{{- $rmqEnabled := ne (toString $rmq.enabled) "false" -}}
+{{- $auth := default dict $rmq.authentication -}}
+{{- $secretName := include "bc-correios.fullname" . -}}
+{{- if and $rmqEnabled (eq (default "" $auth.existingSecret) "bc-correios") (ne $secretName "bc-correios") -}}
+{{- fail (printf "\n\nERROR: rabbitmq.authentication.existingSecret is still the shipped default \"bc-correios\" but the app Secret renders as %q.\n   The broker would reference a Secret that does not exist.\n   Update rabbitmq.authentication.existingSecret to %q (or set it to your own existing Secret).\n" $secretName $secretName) -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Enable internal dependencies
 These helpers check both .enabled and .external flags
 */}}

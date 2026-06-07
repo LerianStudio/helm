@@ -127,7 +127,7 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
 {{- if $ctx.Values.flowker.secrets.MONGO_URI }}
 - name: MONGO_URI
   value: {{ $ctx.Values.flowker.secrets.MONGO_URI | quote }}
-{{- else }}
+{{- else if not $ctx.Values.flowker.useExistingSecret }}
 {{- if or $internal $mongoAuth.existingSecret }}
 {{- $secretName := $mongoAuth.existingSecret }}
 {{- if not $secretName }}

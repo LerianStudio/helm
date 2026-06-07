@@ -163,29 +163,10 @@
     "rabbitmq": {
       "type": "object",
       "additionalProperties": true
+    },
+    "otel-collector-lerian": {
+      "type": "object",
+      "additionalProperties": true
     }
-  },
-  "required": [
-    "adapterBtgMock",
-    "appsIngress",
-    "cobHub",
-    "cobProxy",
-    "cobSystemplane",
-    "dictHub",
-    "dictHubVsync",
-    "dictProxy",
-    "dictSystemplane",
-    "fullnameOverride",
-    "global",
-    "mongodb",
-    "nameOverride",
-    "namespaceOverride",
-    "postgresql",
-    "providersIngress",
-    "rabbitmq",
-    "spi",
-    "spiSystemplane",
-    "systemplaneIngress",
-    "valkey"
-  ]
+  }
 }

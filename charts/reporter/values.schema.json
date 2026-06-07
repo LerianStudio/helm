@@ -70,20 +70,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "aws",
-    "common",
-    "externalRabbitmqDefinitions",
-    "global",
-    "keda",
-    "manager",
-    "mongodb",
-    "otel-collector-lerian",
-    "rabbitmq",
-    "seaweedfs",
-    "secrets",
-    "valkey",
-    "worker"
-  ]
+  }
 }

@@ -64,19 +64,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "crm",
-    "fullnameOverride",
-    "global",
-    "grafana",
-    "ledger",
-    "mongodb",
-    "nameOverride",
-    "namespaceOverride",
-    "otel-collector-lerian",
-    "postgresql",
-    "rabbitmq",
-    "valkey"
-  ]
+  }
 }

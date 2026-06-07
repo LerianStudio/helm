@@ -66,23 +66,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "api",
-    "config",
-    "configMapNameOverride",
-    "extraConfig",
-    "extraSecrets",
-    "fullnameOverride",
-    "imagePullSecrets",
-    "migrations",
-    "nameOverride",
-    "namespaceOverride",
-    "secretRef",
-    "secrets",
-    "serviceAccount",
-    "workerEmail",
-    "workerSms",
-    "workerWebhook"
-  ]
+  }
 }

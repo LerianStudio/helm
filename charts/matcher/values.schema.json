@@ -44,16 +44,5 @@
       "type": "object",
       "additionalProperties": true
     }
-  },
-  "required": [
-    "aws",
-    "fullnameOverride",
-    "global",
-    "matcher",
-    "nameOverride",
-    "namespaceOverride",
-    "postgresql",
-    "rabbitmq",
-    "valkey"
-  ]
+  }
 }

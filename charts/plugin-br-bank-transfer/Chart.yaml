@@ -4,9 +4,9 @@ description: A Helm chart for the Brazilian Bank Transfer (TED) Plugin
 type: application
 annotations:
   lerian.studio/chart-type: single-service
-home: https://github.com/LerianStudio/midaz-helm
+home: https://github.com/LerianStudio/helm
 sources:
-  - https://github.com/LerianStudio/midaz-helm/tree/main/charts/plugin-br-bank-transfer
+  - https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-bank-transfer
   - https://github.com/LerianStudio/plugin-br-bank-transfer
 maintainers:
   - name: "Lerian Studio"

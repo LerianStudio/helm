@@ -6,10 +6,10 @@ type: application
 annotations:
   lerian.studio/chart-type: single-service
 
-home: https://github.com/LerianStudio/midaz-helm
+home: https://github.com/LerianStudio/helm
 
 sources:
-  - https://github.com/LerianStudio/midaz-helm/tree/main/charts/matcher
+  - https://github.com/LerianStudio/helm/tree/main/charts/matcher
   - https://github.com/LerianStudio/matcher
 
 maintainers:

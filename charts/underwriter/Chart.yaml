@@ -10,7 +10,7 @@ annotations:
 home: https://github.com/LerianStudio/underwriter
 
 sources:
-  - https://github.com/LerianStudio/midaz-helm/tree/main/charts/underwriter
+  - https://github.com/LerianStudio/helm/tree/main/charts/underwriter
   - https://github.com/LerianStudio/underwriter
 
 maintainers:

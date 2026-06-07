@@ -31,8 +31,10 @@ spec:
     metadata:
       value: {{ .metadata.value | quote }}
       containerName: {{ .metadata.containerName }}
+    {{- if not (has .type (list "cpu" "memory")) }}
     authenticationRef:
-      name: keda-trigger-authentication   
+      name: keda-trigger-authentication
+    {{- end }}
   {{- end }}
 {{- end }}
 {{- end }}

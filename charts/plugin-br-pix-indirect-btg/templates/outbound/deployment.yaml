@@ -38,15 +38,22 @@ spec:
               name: {{ if .Values.outbound.useExistingSecrets }}{{ .Values.outbound.existingSecretName }}{{ else }}{{ include "outbound.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "outbound.fullname" . }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
+          {{- include "plugin-br-pix-indirect-btg.dbPasswordRequired" (dict "context" . "component" "outbound") }}
+          {{- include "plugin-br-pix-indirect-btg.mongoPasswordRequired" (dict "context" . "component" "outbound") }}
+          {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "outbound" "secretName" (include "outbound.fullname" .)) }}
+          {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
+          {{- if or (trim $infraEnv) $otelEnabled }}
           env:
+          {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
+          {{- if $otelEnabled }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
-          {{ end }}  
+          {{- end }}
+          {{- end }}
           resources:
             {{- toYaml .Values.outbound.resources | nindent 12 }}
           readinessProbe:

@@ -10,7 +10,7 @@
 
 This Helm chart installs the [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) configured for Lerian's observability stack. It collects traces, logs, and metrics from Kubernetes workloads and exports them to Lerian's central telemetry backend.
 
-This chart is intentionally a `dependency-wrapper`: it configures the upstream `opentelemetry-collector` chart and does not carry local Kubernetes templates. Application-chart requirements such as `templates/_helpers.tpl`, `values-template.yaml`, and `values.schema.json` do not apply unless local templates are added later. `Chart.lock` is committed so dependency resolution is reproducible.
+This chart is intentionally a `dependency-wrapper`: it configures the upstream `opentelemetry-collector` chart and does not carry local Kubernetes templates. Application-chart requirements such as `templates/_helpers.tpl` and `values-template.yaml` do not apply unless local templates are added later. A `values.schema.json` is committed to keep the subchart configuration block validated, and `Chart.lock` is committed so dependency resolution is reproducible.
 
 ---
 
@@ -77,7 +77,7 @@ This chart provides a pre-configured OpenTelemetry Collector with the following 
 | --- | --- | --- |
 | `opentelemetry-collector.mode` | Deployment mode (daemonset required for kubeletstats) | `daemonset` |
 | `opentelemetry-collector.image.repository` | Container image repository | `otel/opentelemetry-collector-contrib` |
-| `opentelemetry-collector.image.tag` | Container image tag | `0.131.0` |
+| `opentelemetry-collector.image.tag` | Container image tag | `0.142.0` |
 
 ### Resource Configuration
 
@@ -198,7 +198,7 @@ The chart automatically creates the necessary ClusterRole with permissions to:
 
 | Dependency | Version | Repository |
 | --- | --- | --- |
-| opentelemetry-collector | 0.131.0 | https://open-telemetry.github.io/opentelemetry-helm-charts |
+| opentelemetry-collector | 0.142.0 | https://open-telemetry.github.io/opentelemetry-helm-charts |
 
 ---
 

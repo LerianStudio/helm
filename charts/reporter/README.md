@@ -76,7 +76,7 @@ The following table lists the configurable parameters and their default values.
 |-----------|-------------|---------|
 | `manager.replicaCount` | Number of manager replicas | `1` |
 | `manager.image.repository` | Manager image repository | `ghcr.io/lerianstudio/reporter-manager` |
-| `manager.image.tag` | Manager image tag | `1.0.0` |
+| `manager.image.tag` | Manager image tag | `1.2.0` |
 | `manager.image.pullPolicy` | Manager image pull policy | `IfNotPresent` |
 | `manager.service.type` | Kubernetes Service type | `ClusterIP` |
 | `manager.service.port` | Service HTTP port | `4005` |
@@ -91,7 +91,7 @@ The following table lists the configurable parameters and their default values.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `worker.image.repository` | Worker image repository | `ghcr.io/lerianstudio/reporter-worker` |
-| `worker.image.tag` | Worker image tag | `1.0.0` |
+| `worker.image.tag` | Worker image tag | `1.2.0` |
 | `worker.image.pullPolicy` | Worker image pull policy | `IfNotPresent` |
 | `worker.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
 | `worker.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
@@ -117,11 +117,15 @@ The `secrets` section in `values.yaml` is fully dynamic. Any key/value pair adde
 
 ```yaml
 secrets:
-  MONGO_PASSWORD: lerian
-  REDIS_PASSWORD: lerian
   RABBITMQ_DEFAULT_USER: plugin
   RABBITMQ_DEFAULT_PASS: Lerian@123
+  # Stable Erlang cookie for the bundled RabbitMQ (required when rabbitmq.enabled).
+  # Generate once with: openssl rand -hex 32
+  RABBITMQ_ERLANG_COOKIE: <stable-cookie>
   DATASOURCE_ONBOARDING_PASSWORD: lerian
+  # MONGO_PASSWORD is single-sourced from the bundled mongodb subchart Secret and read
+  # via secretKeyRef — leave it unset; only set it for an EXTERNAL MongoDB.
+  # REDIS_PASSWORD is omitted because the bundled valkey runs with auth disabled.
   # Add any custom datasource password:
   DATASOURCE_EXTERNAL_PASSWORD: db_password
 ```

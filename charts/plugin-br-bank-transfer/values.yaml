@@ -348,7 +348,8 @@ bankTransfer:
 
     # Redis/Valkey password
     REDIS_PASSWORD: ""
-    # MongoDB password (REQUIRED)
+    # MongoDB password. With the bundled subchart it is read from the subchart Secret
+    # (key mongodb-passwords); set here only for an external MongoDB without mongodb.auth.existingSecret.
     MONGO_PASSWORD: ""
     # Authentication (plugin-auth) - client secret for M2M auth
     # PLUGIN_AUTH_CLIENT_SECRET: ""

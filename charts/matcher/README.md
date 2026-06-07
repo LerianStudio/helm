@@ -3,14 +3,14 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: None for default render. The PostgreSQL primary/replica and Valkey passwords are **single-sourced from their Bitnami subchart Secrets** — `matcher` reads them at runtime from `<release>-postgresql` (keys `password`, `replication-password`) and `<release>-valkey` (key `valkey-password`), so they are not stored in the app Secret. Only set `matcher.secrets.POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, and `REDIS_PASSWORD` when pointing at **external** infra without an `existingSecret`. `RABBITMQ_PASSWORD` remains operator-provided (see Known limitations). Production database and messaging credentials must not be committed in values files.
+- Required secrets: `matcher.secrets.RABBITMQ_PASSWORD` (install fails loud if unset, unless `matcher.useExistingSecret` is enabled). The PostgreSQL primary/replica and Valkey passwords are **single-sourced from their Bitnami subchart Secrets** — `matcher` reads them at runtime from `<release>-postgresql` (keys `password`, `replication-password`) and `<release>-valkey` (key `valkey-password`), so they are not stored in the app Secret. Only set `matcher.secrets.POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, and `REDIS_PASSWORD` when pointing at **external** infra without an `existingSecret`. `RABBITMQ_PASSWORD` remains operator-provided (see Known limitations). Production database and messaging credentials must not be committed in values files.
 - Dependency notes: Uses local PostgreSQL, Valkey, and RabbitMQ dependency charts unless external services are configured.
 - Production overrides: Provide production credentials through chart secrets or existing dependency Secrets where supported; override image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
 ### Release name
 
-The chart hardcodes infra hostnames with a `matcher-` prefix (e.g. `matcher-postgresql-primary`, `matcher-valkey-primary`, `matcher-rabbitmq` in `matcher.configmap`), and the single-source secret references resolve to `<release>-postgresql` and `<release>-valkey`. Both assume the release is installed as **`matcher`** (`helm install matcher ...`). Installing under a different release name requires overriding the corresponding `matcher.configmap.*_HOST` values; the subchart Secret names follow the release name automatically.
+The PostgreSQL and Valkey hosts (`POSTGRES_HOST`, `POSTGRES_REPLICA_HOST`, `REDIS_HOST`) default to the subchart service names resolved collapse-aware via `common.names.dependency.fullname`, and the single-source secret references resolve to `<release>-postgresql` and `<release>-valkey` the same way — so both follow any release name automatically. The RabbitMQ and object-storage hosts (`matcher-rabbitmq`, `matcher-seaweedfs`), however, are literals carrying a `matcher-` prefix that assume the release is installed as **`matcher`** (`helm install matcher ...`); installing under a different release name requires overriding `matcher.configmap.RABBITMQ_HOST` (and `RABBITMQ_HEALTH_URL`, `OBJECT_STORAGE_ENDPOINT`) accordingly.
 
 ### Known limitations
 
@@ -164,11 +164,11 @@ The following environment variables can be configured via the `matcher.configmap
 | `LOG_LEVEL` | Log level. | `"info"` |
 | `SERVER_ADDRESS` | Server address. | `":8080"` |
 | `HTTP_BODY_LIMIT_BYTES` | HTTP body limit in bytes. | `"104857600"` |
-| `POSTGRES_HOST` | PostgreSQL host. | `"matcher-postgresql-primary.matcher.svc.cluster.local."` |
+| `POSTGRES_HOST` | PostgreSQL host. Derived collapse-aware from the subchart name; shown for release `matcher`. | `"matcher-postgresql-primary.matcher.svc.cluster.local."` |
 | `POSTGRES_PORT` | PostgreSQL port. | `"5432"` |
 | `POSTGRES_USER` | PostgreSQL username. | `"matcher"` |
 | `POSTGRES_DB` | PostgreSQL database. | `"matcher"` |
-| `REDIS_HOST` | Redis/Valkey host. | `"matcher-valkey-primary.matcher.svc.cluster.local.:6379"` |
+| `REDIS_HOST` | Redis/Valkey host. Derived collapse-aware from the subchart name; shown for release `matcher`. | `"matcher-valkey-primary.matcher.svc.cluster.local.:6379"` |
 | `RABBITMQ_HOST` | RabbitMQ host. | `"matcher-rabbitmq.matcher.svc.cluster.local."` |
 | `RABBITMQ_PORT` | RabbitMQ port. | `"5672"` |
 | `AUTH_ENABLED` | Enable authentication. | `"false"` |

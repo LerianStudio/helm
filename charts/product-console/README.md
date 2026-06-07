@@ -49,7 +49,7 @@ helm install product-console lerianstudio/product-console-helm -f my-values.yaml
 | `configmap.NODE_ENV` | Node environment | `production` |
 | `configmap.MIDAZ_CONSOLE_PORT` | Console port | `8081` |
 | `configmap.MIDAZ_BASE_PATH` | Midaz API base path | `http://midaz-onboarding:3000/v1` |
-| `secrets.NEXTAUTH_SECRET` | NextAuth secret | `change-me-in-production` |
+| `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
 
 ## Uninstalling the Chart
 

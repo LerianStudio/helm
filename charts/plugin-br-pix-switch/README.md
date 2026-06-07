@@ -36,16 +36,18 @@ The plugin uses a Proxy/Hub deployment model. A "hub" component owns business
 logic and local state (its own Postgres database, sometimes Mongo+Valkey),
 while a "proxy" component is a stateless pass-through. Both expose identical
 APIs. Three Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`)
-and two Mongo databases for `dict-hub` and `cob-hub`.
+and one Mongo database (`pix-dict`) for `dict-hub` (`pix-cob` is a
+forward-compat slot the Mongo bootstrap provisions but no component reads yet).
 
 ## Required infrastructure
 
 For a full deployment:
 - **PostgreSQL**: 3 databases (`pix-spi`, `pix-dict`, `pix-cob`) and a role
   `pixswitch` with full ownership of each
-- **MongoDB**: 2 databases (`pix-dict`, `pix-cob`)
-- **Valkey** (Redis-compatible): used by `spi`, `dict-hub`, `dict-hub-vsync`,
-  `dict-proxy` for caching
+- **MongoDB**: 1 database (`pix-dict`) used by `dict-hub`; the bootstrap also
+  provisions `pix-cob` as a forward-compat slot, but no component reads it yet
+- **Valkey** (Redis-compatible): used by `spi`, `dict-hub`, `dict-hub-vsync`
+  for caching
 - **RabbitMQ**: used by `dict-hub-vsync` only
 
 For development, the chart's `postgresql`, `valkey`, `rabbitmq`, and `mongodb`
@@ -71,7 +73,7 @@ The chart accepts every env var the app reads at runtime; see
 
 The app reads:
 - `DATABASE_URL` (full Postgres DSN, not `DB_HOST/DB_PORT/...`)
-- `MONGO_URL`, `MONGO_DB_NAME` (only `dict-hub` and `cob-hub`)
+- `MONGO_URL`, `MONGO_DB_NAME` (only `dict-hub`)
 - `VALKEY_URL` (full Redis URL)
 - `RABBITMQ_URI` (only `dict-hub-vsync`)
 - `LICENSE_KEY`, `LICENSE_ORGANIZATION_IDS` (every component)
@@ -83,11 +85,12 @@ The app reads:
 
 ## Image
 
-All 10 components share the same image, parameterized at build time with
-`APP_NAME` + `COMPONENT_NAME` build args. The chart sets `image.repository`
-once at the global level (`global.image.repository`) and individual
-components inherit it. Each component can override `image.tag` if you need
-to pin a specific tag per component (rare).
+Each component publishes and pulls its own image
+(`ghcr.io/lerianstudio/plugin-br-pix-switch-<component>-api`), set per
+component under `<component>.image.repository`. There is no shared
+`global.image.repository`. When a component's `image.tag` is unset it falls
+back to `.Chart.AppVersion`, which keeps the cohort in lockstep by default;
+override `<component>.image.tag` to pin a specific build per component (rare).
 
 ## Pattern source
 

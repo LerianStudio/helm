@@ -18,12 +18,9 @@ The PostgreSQL password lives in exactly one place per deployment mode:
 
 ### Release name
 
-The bundled-subchart paths assume the release is installed as **`plugin-br-pix-direct-jd`**:
+The single-source `secretKeyRef` is release-name agnostic: it resolves the subchart Secret through the Bitnami `common.names.dependency.fullname` helper, which honors Bitnami name collapse, `nameOverride` and `fullnameOverride`. Any release name works for the secret reference.
 
-- `DATABASE_HOST` is hardcoded to `plugin-br-pix-direct-jd-postgresql.midaz-plugins.svc.cluster.local` in the pix and job ConfigMaps.
-- The single-source `secretKeyRef` resolves the subchart Secret as `<release>-postgresql`, which only equals `plugin-br-pix-direct-jd-postgresql` when the release name is `plugin-br-pix-direct-jd`.
-
-Installing under any other release name breaks both the DB host resolution and the secret reference. This is a pre-existing constraint of the hardcoded host; install this chart as `plugin-br-pix-direct-jd` or switch to an external Postgres.
+The DB **host**, however, has a hardcoded default. With the bundled subchart, `DATABASE_HOST` defaults to `plugin-br-pix-direct-jd-postgresql.midaz-plugins.svc.cluster.local` in the pix and job ConfigMaps, which only resolves correctly when the release is installed as `plugin-br-pix-direct-jd` in the `midaz-plugins` namespace. Under any other release name or namespace, set `pix.configmap.DATABASE_HOST` (and the job's `DATABASE_HOST`) explicitly to the subchart's primary Service, or switch to an external Postgres.
 
 This Helm chart installs **Plugin BR Instant Payment** for Midaz, a high-performance and open-source ledger.
 
@@ -186,7 +183,7 @@ pix:
 | `postgresql.auth.enabled` | Enable authentication | `true` |
 | `postgresql.auth.enablePostgresUser` | Create default postgres user | `false` |
 | `postgresql.auth.username` | Application DB user | `pix` |
-| `postgresql.auth.password` | Application DB password | `lerian` |
+| `postgresql.auth.password` | Application DB password (empty → subchart auto-generates it; read via `secretKeyRef`) | `""` |
 | `postgresql.auth.database` | Application DB name | `pix` |
 
 > IMPORTANT: The bundled PostgreSQL is not intended for production. For production, use an external/managed PostgreSQL and set `postgresql.enabled=false`.

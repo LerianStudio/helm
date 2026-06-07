@@ -178,7 +178,7 @@ pix:
     TWILIO_AUTH_TOKEN: ""
     # SendGrid Configuration
     SENDGRID_API_KEY: ""
-  useExistingSecrets: false
+  useExistingSecret: false
   existingSecretName: ""
 qrcode:
   # Default values

@@ -4,7 +4,7 @@
 
 - Chart type: `multi-component`
 - Required secrets: None for default render.
-- Dependency notes: Uses local dependency charts where enabled and supports external notification providers through values.
+- Dependency notes: No local dependency charts are bundled. PostgreSQL, Redis, and RabbitMQ are external (provided by the target environment); migrations run as a Helm pre-install/pre-upgrade Job against the external PostgreSQL. External notification providers are configured through values.
 - Production overrides: Provide provider credentials through chart secrets or existing Secrets where supported; override API/worker image tags, ingress, resources, and provider endpoints.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 

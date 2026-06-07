@@ -27,7 +27,7 @@ spec:
         - name: {{ include "reconciliation.fullname" . }}
           securityContext:
             {{- toYaml .Values.reconciliation.securityContext | nindent 12 }}
-          image: {{ .Values.reconciliation.image.repository }}:{{ .Values.reconciliation.image.tag }}
+          image: {{ .Values.reconciliation.image.repository }}:{{ .Values.reconciliation.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.reconciliation.image.pullPolicy }}
           ports:
             - name: http

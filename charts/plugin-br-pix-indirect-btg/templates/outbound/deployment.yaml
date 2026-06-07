@@ -27,7 +27,7 @@ spec:
         - name: {{ include "outbound.fullname" . }}
           securityContext:
             {{- toYaml .Values.outbound.securityContext | nindent 12 }}
-          image: {{ .Values.outbound.image.repository }}:{{ .Values.outbound.image.tag }}
+          image: {{ .Values.outbound.image.repository }}:{{ .Values.outbound.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.outbound.image.pullPolicy }}
           ports:
             - name: http

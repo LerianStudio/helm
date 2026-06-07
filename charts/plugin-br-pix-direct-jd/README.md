@@ -130,7 +130,7 @@ pix:
 | `pix.tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `pix.affinity` | Affinity rules for pod scheduling | `{}` |
 | `pix.extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
-| `pix.useExistingSecrets` | Use an existing secret instead of creating a new one | `false` |
+| `pix.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `pix.existingSecretName` | The name of the existing secret to use | `""` |
 
 ### QR Code Service

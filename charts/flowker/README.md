@@ -4,7 +4,7 @@
 
 - Chart type: `single-service`
 - Required secrets: `flowker.secrets.MONGO_URI` and `flowker.secrets.AUDIT_DB_PASSWORD` for the default non-multi-tenant render.
-- Dependency notes: Uses local MongoDB and PostgreSQL dependency charts unless external services are configured.
+- Dependency notes: Bundles the Bitnami MongoDB subchart unless external MongoDB is configured. The audit PostgreSQL (required when `MULTI_TENANT_ENABLED=false`) is always external — no PostgreSQL dependency chart is bundled.
 - Production overrides: Provide production database credentials through chart secrets or an existing Secret where supported; override image tags, ingress, resources, and dependency persistence for the target environment.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 

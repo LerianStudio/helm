@@ -302,15 +302,25 @@ ledger:
   # -- Secrets for storing sensitive data
   # @default -- templates/ledger/secrets.yaml
   secrets:
-    # -- Onboarding module passwords
+    # -- Onboarding module passwords.
+    # DB_ONBOARDING_PASSWORD / DB_ONBOARDING_REPLICA_PASSWORD are single-sourced from
+    # the Bitnami postgresql subchart Secret (keys `password` / `replication-password`)
+    # and MONGO_ONBOARDING_PASSWORD from the mongodb subchart Secret
+    # (key `mongodb-root-password`). Only set these for an EXTERNAL backend
+    # (subchart disabled / .external=true) without an existingSecret override.
     DB_ONBOARDING_PASSWORD: ""
     DB_ONBOARDING_REPLICA_PASSWORD: ""
     MONGO_ONBOARDING_PASSWORD: ""
-    # -- Transaction module passwords
+    # -- Transaction module passwords (same single-source rule as onboarding;
+    # both DB_* authenticate as role `midaz`, both MONGO_* as the mongo root user).
     DB_TRANSACTION_PASSWORD: ""
     DB_TRANSACTION_REPLICA_PASSWORD: ""
     MONGO_TRANSACTION_PASSWORD: ""
-    # -- Shared passwords
+    # -- Shared passwords.
+    # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
+    # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an
+    # existingSecret override. RABBITMQ_* remain operator-provided (see README
+    # "Known limitation" — RabbitMQ is not yet single-sourced).
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""
     RABBITMQ_CONSUMER_PASS: ""
@@ -474,8 +484,12 @@ crm:
   # -- Secrets for storing sensitive data
   # @default -- templates/crm/secrets.yaml
   secrets:
+    # -- App crypto material (operator-provided, external boundary).
     LCRYPTO_HASH_SECRET_KEY: ""
     LCRYPTO_ENCRYPT_SECRET_KEY: ""
+    # -- MONGO_PASSWORD is single-sourced from the Bitnami mongodb subchart Secret
+    # (key `mongodb-root-password`); only set it for an EXTERNAL MongoDB
+    # (subchart disabled / .external=true) without an existingSecret override.
     MONGO_PASSWORD: ""
   # -- Existing secrets name
   useExistingSecret: false

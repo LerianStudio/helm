@@ -86,6 +86,29 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- end }}
 
 {{/*
+infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` env entry
+pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+Inputs (dict): context (root .), subchart, key, envName.
+See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+*/}}
+{{- define "midaz.infraSecretRef" -}}
+{{- $ctx := .context -}}
+{{- $sub := .subchart -}}
+{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
+{{- $secretName := "" -}}
+{{- if $auth.existingSecret -}}
+{{- $secretName = $auth.existingSecret -}}
+{{- else -}}
+{{- $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- end -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: {{ .key }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name for CRM.
 */}}
 {{- define "midaz-crm.fullname" -}}

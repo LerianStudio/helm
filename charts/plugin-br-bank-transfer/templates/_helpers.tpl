@@ -110,3 +110,76 @@ false
 {{- end -}}
 {{- end -}}
 
+{{/*
+bank-transfer.infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}`
+entry pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret
+override). Inputs (dict): context (root .), subchart, key, envName.
+See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+*/}}
+{{- define "bank-transfer.infraSecretRef" -}}
+{{- $ctx := .context -}}
+{{- $sub := .subchart -}}
+{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
+{{- $secretName := "" -}}
+{{- if $auth.existingSecret -}}
+{{- $secretName = $auth.existingSecret -}}
+{{- else -}}
+{{- $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- end -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: {{ .key }}
+{{- end }}
+
+{{/*
+bank-transfer.mongoInternal — true when the bundled Bitnami mongodb subchart provides the DB.
+*/}}
+{{- define "bank-transfer.mongoInternal" -}}
+{{- $mongo := default dict .Values.mongodb -}}
+{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) -}}true{{- else -}}false{{- end -}}
+{{- end }}
+
+{{/*
+bank-transfer.mongoEnv — single-source the MongoDB connection.
+Emits a MONGO_PASSWORD env (secretKeyRef) followed by a MONGO_URI env that references it via
+$(MONGO_PASSWORD) shell-style expansion (Kubernetes expands against earlier env entries in the
+same list, so MONGO_PASSWORD MUST precede MONGO_URI). The app is URI-only, so the URI is
+assembled here rather than embedding a plaintext password in the Secret.
+- Bundled subchart: MONGO_PASSWORD <- <release>-mongodb / mongodb-passwords (user bank_transfer).
+- existingSecret override: MONGO_PASSWORD <- <existingSecret> / mongodb-passwords.
+- External inline: MONGO_PASSWORD <- app Secret / MONGO_PASSWORD.
+If the operator sets bankTransfer.secrets.MONGO_URI explicitly, that wins and is emitted verbatim
+(no $(MONGO_PASSWORD) assembly). The host tracks .Release.Name (subchart Service is release-derived).
+Input (dict): context (root .), secretName (app Secret name for the external-inline fallback).
+*/}}
+{{- define "bank-transfer.mongoEnv" -}}
+{{- $ctx := .context -}}
+{{- $ns := include "global.namespace" $ctx -}}
+{{- $mongo := default dict $ctx.Values.mongodb -}}
+{{- $mongoAuth := default dict $mongo.auth -}}
+{{- $internal := eq (include "bank-transfer.mongoInternal" $ctx) "true" -}}
+{{- if or $internal $mongoAuth.existingSecret }}
+{{- $secretName := $mongoAuth.existingSecret | default (printf "%s-mongodb" $ctx.Release.Name) }}
+- name: MONGO_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: mongodb-passwords
+{{- else if $ctx.Values.bankTransfer.secrets.MONGO_PASSWORD }}
+- name: MONGO_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .secretName }}
+      key: MONGO_PASSWORD
+{{- end }}
+{{- if $ctx.Values.bankTransfer.secrets.MONGO_URI }}
+- name: MONGO_URI
+  value: {{ $ctx.Values.bankTransfer.secrets.MONGO_URI | quote }}
+{{- else }}
+- name: MONGO_URI
+  value: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@%s-mongodb.%s.svc.cluster.local:27017/?authSource=admin" $ctx.Release.Name $ns | quote }}
+{{- end }}
+{{- end }}
+

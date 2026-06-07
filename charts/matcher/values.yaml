@@ -353,13 +353,19 @@ matcher:
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
-    # -- PostgreSQL primary password
+    # -- PostgreSQL primary password. Single-sourced from the postgresql subchart Secret
+    # (<release>-postgresql / password). Only set this for external PostgreSQL without an
+    # existingSecret; for internal PostgreSQL leave it empty (the subchart generates it).
     POSTGRES_PASSWORD: ""
-    # -- PostgreSQL replica password
+    # -- PostgreSQL replica password. Single-sourced from the postgresql subchart Secret
+    # (<release>-postgresql / replication-password). Only set this for external PostgreSQL
+    # without an existingSecret; for internal PostgreSQL leave it empty.
     POSTGRES_REPLICA_PASSWORD: ""
-    # -- Redis/Valkey password
+    # -- Redis/Valkey password. Single-sourced from the valkey subchart Secret
+    # (<release>-valkey / valkey-password). Only set this for external Valkey without an
+    # existingSecret; for internal Valkey leave it empty (the subchart generates it).
     REDIS_PASSWORD: ""
-    # -- RabbitMQ password
+    # -- RabbitMQ password (operator-provided; not single-sourced — see README known limitation)
     RABBITMQ_PASSWORD: ""
     # -- Object Storage access key
     OBJECT_STORAGE_ACCESS_KEY_ID: ""

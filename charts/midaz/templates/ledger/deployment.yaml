@@ -76,15 +76,89 @@ spec:
               name: {{ if .Values.ledger.useExistingSecret }}{{ .Values.ledger.existingSecretName }}{{ else }}{{ include "midaz-ledger.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "midaz-ledger.fullname" . }}
-          {{- if or (index .Values "otel-collector-lerian").enabled (index .Values "otel-collector-lerian").external }}
           env:
-          - name: "HOST_IP"
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value: "$(HOST_IP):4317"
-          {{- end }}
+            {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
+            {{/* PostgreSQL: single role `midaz` backs both onboarding and transaction; both
+                 module passwords map to Bitnami key `password`, both replicas to `replication-password`. */}}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_ONBOARDING_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "DB_ONBOARDING_REPLICA_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "DB_TRANSACTION_REPLICA_PASSWORD") | nindent 12 }}
+            {{- else }}
+            {{- if .Values.ledger.secrets.DB_ONBOARDING_PASSWORD }}
+            - name: DB_ONBOARDING_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_ONBOARDING_PASSWORD
+            {{- end }}
+            {{- if .Values.ledger.secrets.DB_TRANSACTION_PASSWORD }}
+            - name: DB_TRANSACTION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_TRANSACTION_PASSWORD
+            {{- end }}
+            {{- if .Values.ledger.secrets.DB_ONBOARDING_REPLICA_PASSWORD }}
+            - name: DB_ONBOARDING_REPLICA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_ONBOARDING_REPLICA_PASSWORD
+            {{- end }}
+            {{- if .Values.ledger.secrets.DB_TRANSACTION_REPLICA_PASSWORD }}
+            - name: DB_TRANSACTION_REPLICA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_TRANSACTION_REPLICA_PASSWORD
+            {{- end }}
+            {{- end }}
+            {{/* MongoDB: app authenticates as root; both module passwords map to `mongodb-root-password`. */}}
+            {{- $mongo := .Values.mongodb | default dict }}
+            {{- $mongoAuth := $mongo.auth | default dict }}
+            {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_ONBOARDING_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_TRANSACTION_PASSWORD") | nindent 12 }}
+            {{- else }}
+            {{- if .Values.ledger.secrets.MONGO_ONBOARDING_PASSWORD }}
+            - name: MONGO_ONBOARDING_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: MONGO_ONBOARDING_PASSWORD
+            {{- end }}
+            {{- if .Values.ledger.secrets.MONGO_TRANSACTION_PASSWORD }}
+            - name: MONGO_TRANSACTION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: MONGO_TRANSACTION_PASSWORD
+            {{- end }}
+            {{- end }}
+            {{/* Valkey: REDIS_PASSWORD maps to Bitnami key `valkey-password`. */}}
+            {{- $vk := .Values.valkey | default dict }}
+            {{- $vkAuth := $vk.auth | default dict }}
+            {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
+            {{- else if .Values.ledger.secrets.REDIS_PASSWORD }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: REDIS_PASSWORD
+            {{- end }}
+            {{- if or (index .Values "otel-collector-lerian").enabled (index .Values "otel-collector-lerian").external }}
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.ledger.service.port | default 3002 }}

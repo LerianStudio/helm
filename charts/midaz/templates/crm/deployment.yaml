@@ -62,6 +62,7 @@ spec:
           env:
             {{- $secretName := ternary .Values.crm.existingSecretName (include "midaz-crm.fullname" .) .Values.crm.useExistingSecret }}
             {{/* MongoDB: CRM authenticates as root; MONGO_PASSWORD maps to `mongodb-root-password`. */}}
+            {{- include "midaz.mongodbAuthRequired" . }}
             {{- $mongo := .Values.mongodb | default dict }}
             {{- $mongoAuth := $mongo.auth | default dict }}
             {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}

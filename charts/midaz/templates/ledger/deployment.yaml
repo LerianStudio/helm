@@ -118,6 +118,7 @@ spec:
             {{- end }}
             {{- end }}
             {{/* MongoDB: app authenticates as root; both module passwords map to `mongodb-root-password`. */}}
+            {{- include "midaz.mongodbAuthRequired" . }}
             {{- $mongo := .Values.mongodb | default dict }}
             {{- $mongoAuth := $mongo.auth | default dict }}
             {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}

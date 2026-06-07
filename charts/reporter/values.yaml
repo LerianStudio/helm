@@ -467,10 +467,20 @@ common:
     #DATASOURCE_EXTERNAL_SSLROOTCERT:
     #DATASOURCE_EXTERNAL_DB_SCHEMAS: sales,inventory,reporting
 secrets:
+  # MONGO_PASSWORD is single-sourced from the Bitnami mongodb subchart Secret
+  # (<release>-mongodb, key mongodb-root-password) and read via secretKeyRef — leave empty
+  # with the bundled subchart; only set for an external MongoDB without
+  # mongodb.auth.existingSecret. See docs/helm-chart-standard.md "Single-Source Infra Secrets".
   MONGO_PASSWORD: ""
   REDIS_PASSWORD: ""
+  # RabbitMQ is single-sourced here (Pattern B): the broker is pointed at this Secret via
+  # rabbitmq.authentication.existingSecret, so these are the only copies of the broker creds.
   RABBITMQ_DEFAULT_USER: plugin
   RABBITMQ_DEFAULT_PASS: ""
+  # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
+  # it from this Secret). Must be a STABLE value — changing it across upgrades breaks the
+  # cluster. Generate once with: openssl rand -hex 32
+  RABBITMQ_ERLANG_COOKIE: ""
   DATASOURCE_ONBOARDING_PASSWORD: ""
   #DATASOURCE_EXTERNAL_PASSWORD: db_password
   OBJECT_STORAGE_ACCESS_KEY_ID: ""
@@ -680,13 +690,23 @@ rabbitmq:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities: {drop: ["ALL"]}
+  # Single-source (Pattern B): the broker reads its credentials from the application
+  # manager Secret (reporter-manager) instead of keeping its own copy. The RabbitMQ
+  # password therefore lives in exactly one place — secrets.RABBITMQ_DEFAULT_PASS — and
+  # the latent user mismatch (broker "midaz" vs app "plugin") is removed. Setting
+  # existingSecret suppresses the inline cookie, so RABBITMQ_ERLANG_COOKIE is required
+  # in the app Secret (see secrets + reporter.rabbitmqErlangCookieRequired).
+  # If the manager Secret name is overridden (manager.name / manager.existingSecretName),
+  # update authentication.existingSecret to match.
+  # See docs/helm-chart-standard.md "Single-Source Infra Secrets".
   authentication:
+    existingSecret: "reporter-manager"
     user:
-      value: "midaz"
+      secretKey: RABBITMQ_DEFAULT_USER
     password:
-      value: ""
+      secretKey: RABBITMQ_DEFAULT_PASS
     erlangCookie:
-      value: ""
+      secretKey: RABBITMQ_ERLANG_COOKIE
   extraSecrets:
     - name: "reporter-manager-load-definitions"
       mountPath: /etc/rabbitmq/definitions

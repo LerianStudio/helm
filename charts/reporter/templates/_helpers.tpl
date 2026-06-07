@@ -114,13 +114,6 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 
 
 {{/*
-Manager dataSourceName
-*/}}
-{{- define "plugin-manager-backend.dataSourceName" -}}
-"user={{ .Values.manager.configmap.DB_USER }} password={{ .Values.manager.secrets.DB_PASSWORD }} host={{ .Values.manager.configmap.DB_HOST }} port={{ .Values.manager.configmap.DB_PORT }} sslmode=disable dbname={{ .Values.manager.configmap.DB_NAME }}"
-{{- end }}
-
-{{/*
 Create the name of the manager service account to use
 */}}
 {{- define "plugin-manager.serviceAccountName" -}}
@@ -149,4 +142,84 @@ Allows overriding it for multi-namespace deployments in combined charts.
 */}}
 {{- define "global.namespace" -}}
 {{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+reporter.infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` entry
+pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+Inputs (dict): context (root .), subchart ("mongodb"), key, envName.
+See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+*/}}
+{{- define "reporter.infraSecretRef" -}}
+{{- $ctx := .context -}}
+{{- $sub := .subchart -}}
+{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
+{{- $secretName := "" -}}
+{{- if $auth.existingSecret -}}
+{{- $secretName = $auth.existingSecret -}}
+{{- else -}}
+{{- $secretName = printf "%s-%s" $ctx.Release.Name $sub -}}
+{{- end -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: {{ .key }}
+{{- end }}
+
+{{/*
+reporter.mongoInternal — true when the bundled Bitnami mongodb subchart provides the DB.
+*/}}
+{{- define "reporter.mongoInternal" -}}
+{{- $mongo := default dict .Values.mongodb -}}
+{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) -}}true{{- else -}}false{{- end -}}
+{{- end }}
+
+{{/*
+reporter.mongoExternalSecretData — emit the MONGO_PASSWORD app-Secret data entry ONLY for an
+external MongoDB without an existingSecret (the operator supplies it inline). For the bundled
+subchart the password lives in <release>-mongodb and this emits nothing.
+*/}}
+{{- define "reporter.mongoExternalSecretData" -}}
+{{- $mongo := default dict .Values.mongodb -}}
+{{- $mongoAuth := default dict $mongo.auth -}}
+{{- if and (ne (include "reporter.mongoInternal" .) "true") (not $mongoAuth.existingSecret) .Values.secrets.MONGO_PASSWORD -}}
+MONGO_PASSWORD: {{ .Values.secrets.MONGO_PASSWORD | toString | b64enc | quote }}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.mongoPasswordEnv — emit the MONGO_PASSWORD env entry for an app workload, single-sourced.
+Bundled subchart -> secretKeyRef to <release>-mongodb/mongodb-root-password (or existingSecret).
+External inline -> secretKeyRef to the given app Secret name / MONGO_PASSWORD.
+Input (dict): context (root .), secretName (the app Secret name for the external-inline fallback).
+*/}}
+{{- define "reporter.mongoPasswordEnv" -}}
+{{- $ctx := .context -}}
+{{- $mongo := default dict $ctx.Values.mongodb -}}
+{{- $mongoAuth := default dict $mongo.auth -}}
+{{- if or (eq (include "reporter.mongoInternal" $ctx) "true") $mongoAuth.existingSecret -}}
+{{ include "reporter.infraSecretRef" (dict "context" $ctx "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_PASSWORD") }}
+{{- else if $ctx.Values.secrets.MONGO_PASSWORD -}}
+- name: MONGO_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .secretName }}
+      key: MONGO_PASSWORD
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.rabbitmqErlangCookieRequired — fail when the bundled groundhog2k rabbitmq subchart is
+enabled but no erlang cookie is provided. The broker is pointed at the app Secret via
+authentication.existingSecret, which suppresses the inline cookie value, so a stable
+operator-provided cookie is mandatory for clustering across restarts.
+*/}}
+{{- define "reporter.rabbitmqErlangCookieRequired" -}}
+{{- $rmq := default dict .Values.rabbitmq -}}
+{{- $rmqEnabled := true -}}
+{{- if hasKey $rmq "enabled" -}}{{- $rmqEnabled = $rmq.enabled -}}{{- end -}}
+{{- if and $rmqEnabled (not .Values.secrets.RABBITMQ_ERLANG_COOKIE) -}}
+{{- fail "\n\nERROR: secrets.RABBITMQ_ERLANG_COOKIE is REQUIRED when the bundled rabbitmq subchart is enabled.\n   The broker reads its Erlang cookie from the application Secret (single source).\n   Provide a stable value (it must not change across upgrades) e.g.: openssl rand -hex 32\n" -}}
+{{- end -}}
 {{- end }}

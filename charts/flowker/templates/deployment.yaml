@@ -46,8 +46,9 @@ spec:
             - >
               TIMEOUT=300;
               ELAPSED=0;
-              echo "Checking {{ .Values.flowker.configmap.MONGO_HOST }}:{{ .Values.flowker.configmap.MONGO_PORT }}...";
-              while ! nc -z "{{ .Values.flowker.configmap.MONGO_HOST }}" {{ .Values.flowker.configmap.MONGO_PORT }}; do
+              {{- $mongoHost := include "flowker.mongoHost" . }}
+              echo "Checking {{ $mongoHost }}:27017...";
+              while ! nc -z "{{ $mongoHost }}" 27017; do
                 if [ $ELAPSED -ge $TIMEOUT ]; then
                   echo "Timeout waiting for MongoDB after ${TIMEOUT}s";
                   exit 1;
@@ -68,8 +69,10 @@ spec:
               name: {{ if .Values.flowker.useExistingSecret }}{{ .Values.flowker.existingSecretName }}{{ else }}{{ include "flowker.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "flowker.fullname" . }}
-          {{- if eq (toString .Values.flowker.configmap.ENABLE_TELEMETRY) "true" }}
           env:
+          {{- $secretName := ternary .Values.flowker.existingSecretName (include "flowker.fullname" .) .Values.flowker.useExistingSecret }}
+          {{- include "flowker.mongoEnv" (dict "context" $ "secretName" $secretName) | nindent 10 }}
+          {{- if eq (toString .Values.flowker.configmap.ENABLE_TELEMETRY) "true" }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:

@@ -99,8 +99,20 @@ spec:
               name: {{ if $component.useExistingSecret }}{{ required "bc-correios.existingSecretName is required when bc-correios.useExistingSecret is true" $component.existingSecretName }}{{ else }}{{ include "bc-correios.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "bc-correios.fullname" . }}
-          {{- if eq (toString $component.configmap.TRACING_ENABLED) "true" }}
           env:
+          {{- $secretName := ternary $component.existingSecretName (include "bc-correios.fullname" .) $component.useExistingSecret }}
+          {{- $pg := .Values.postgresql | default dict }}
+          {{- $pgAuth := $pg.auth | default dict }}
+          {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+          {{- include "bc-correios.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
+          {{- else if $component.secrets.POSTGRES_PASSWORD }}
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $secretName }}
+                key: POSTGRES_PASSWORD
+          {{- end }}
+          {{- if eq (toString $component.configmap.TRACING_ENABLED) "true" }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:

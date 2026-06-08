@@ -68,7 +68,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.0-beta.11` | 1.0.0-beta.1 |
+| `2.0.0-beta.12` | 1.0.0-beta.1 |
 
 
 

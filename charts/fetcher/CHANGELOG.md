@@ -3,6 +3,20 @@
 ## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
 
 - Features:
+  - Released version 2.1.0 of fetcher with new enhancements.
+
+- Improvements:
+  - Updated CHANGELOG for fetcher to reflect recent changes and improvements.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.0...fetcher-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v2.1.1)
+
+- Features:
   - Initial release of fetcher v2.1.0 with new capabilities for data retrieval and processing.
 
 - Fixes:

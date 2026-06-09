@@ -3,6 +3,17 @@
 ## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.0.1)
 
 - Fixes:
+  - Wired resources block into auth-backend deployment to ensure proper authentication flow. (#1430)
+
+Contributors: @lerian-studio, @prymax10
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.0.0...plugin-access-manager-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.0.1)
+
+- Fixes:
   - Wire resources block into auth-backend deployment to ensure proper access management functionality.
 
 Contributors: @lerian-studio, @prymax10

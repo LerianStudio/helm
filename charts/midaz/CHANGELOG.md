@@ -1,5 +1,23 @@
 # Midaz Changelog
 
+## [8.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.1.0)
+
+- **Features**
+  - Released version 8.1.0 of Midaz.
+  - Released version 8.0.0 of Midaz.
+
+- **Fixes**
+  - Updated midaz-crm to version 3.7.3.
+
+- **Improvements**
+  - Added an upgrade guide for Midaz v8.0.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.0.0...midaz-v8.1.0)
+
+---
+
 ## [8.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.0.0)
 
 - **Features:**

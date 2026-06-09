@@ -14,6 +14,17 @@ Contributors: @gandalf-at-lerian, @lerian-studio
 ## [3.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.0.1)
 
 - Fixes:
+  - Use health readiness probe to improve system reliability.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.0...plugin-br-pix-indirect-btg-v3.0.1)
+
+---
+
+## [3.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.0.1)
+
+- Fixes:
   - Use health readiness probe to improve stability and reliability.
 
 Contributors: @gandalf-at-lerian, @lerian-studio

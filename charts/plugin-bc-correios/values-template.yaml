@@ -28,6 +28,51 @@ bc-correios:
             pathType: Prefix
     tls: []
 
+  # -- Liveness probe configuration
+  livenessProbe:
+    # -- HTTP path to probe for liveness
+    path: "/health/live"
+    # -- Seconds to wait before the first liveness probe
+    initialDelaySeconds: 15
+    # -- Seconds between liveness probes
+    periodSeconds: 20
+    # -- Seconds before the probe times out
+    timeoutSeconds: 5
+    # -- Number of consecutive successes required to mark the container healthy
+    successThreshold: 1
+    # -- Number of consecutive failures required to mark the container unhealthy
+    failureThreshold: 3
+
+  # -- Readiness probe configuration
+  readinessProbe:
+    # -- HTTP path to probe for readiness
+    path: "/health/ready"
+    # -- Seconds to wait before the first readiness probe
+    initialDelaySeconds: 5
+    # -- Seconds between readiness probes
+    periodSeconds: 10
+    # -- Seconds before the probe times out
+    timeoutSeconds: 5
+    # -- Number of consecutive successes required to mark the container ready
+    successThreshold: 1
+    # -- Number of consecutive failures required to mark the container not ready
+    failureThreshold: 3
+
+  # -- Startup probe configuration
+  startupProbe:
+    # -- HTTP path to probe during startup
+    path: "/health/live"
+    # -- Seconds to wait before the first startup probe
+    initialDelaySeconds: 0
+    # -- Seconds between startup probes
+    periodSeconds: 10
+    # -- Seconds before the probe times out
+    timeoutSeconds: 1
+    # -- Number of consecutive successes required to mark startup complete
+    successThreshold: 1
+    # -- Number of consecutive failures required before the container is restarted
+    failureThreshold: 30
+
   configmap:
     # Application Settings
     APP_ENV: ""       # REQUIRED - e.g., production, staging

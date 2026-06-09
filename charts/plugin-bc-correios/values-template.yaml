@@ -28,6 +28,16 @@ bc-correios:
             pathType: Prefix
     tls: []
 
+  # Health probe HTTP paths.
+  # Override when the deployed app version exposes different endpoints.
+  # Defaults below match plugin-bc-correios >= 1.2.0 (separate live/ready).
+  # For older or simpler app versions exposing a single endpoint,
+  # set all three to "/health".
+  probes:
+    livenessPath: "/health/live"
+    readinessPath: "/health/ready"
+    startupPath: "/health/live"
+
   configmap:
     # Application Settings
     APP_ENV: ""       # REQUIRED - e.g., production, staging

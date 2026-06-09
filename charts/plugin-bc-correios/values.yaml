@@ -172,6 +172,18 @@ bc-correios:
   #     hostnames:
   #       - "correios.com.br"
   hostAliases: []
+  # -- Health probe HTTP paths
+  # Override these per-environment when the application exposes different
+  # endpoints. Defaults match plugin-bc-correios >= 1.2.0 (separate live/ready).
+  # For applications exposing only a single `/health` endpoint, set all three
+  # to "/health" in your values override.
+  probes:
+    # -- HTTP path for the livenessProbe
+    livenessPath: "/health/live"
+    # -- HTTP path for the readinessProbe
+    readinessPath: "/health/ready"
+    # -- HTTP path for the startupProbe
+    startupPath: "/health/live"
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml
   configmap:

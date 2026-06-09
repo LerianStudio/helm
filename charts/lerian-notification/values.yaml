@@ -108,8 +108,11 @@ config:
 
   # ---- Multi-tenant (tenant-manager) ----
   MULTI_TENANT_ENABLED: "false"
+  MULTI_TENANT_URL: ""
+  MULTI_TENANT_REDIS_HOST: ""
   MULTI_TENANT_REDIS_PORT: "6379"
   MULTI_TENANT_REDIS_TLS: "false"
+  MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
   MULTI_TENANT_MAX_TENANT_POOLS: "100"
   MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
   MULTI_TENANT_TIMEOUT: "30"
@@ -273,10 +276,10 @@ secrets:
   RABBITMQ_DEFAULT_USER: ""
   RABBITMQ_DEFAULT_PASS: ""
   RABBITMQ_HEALTH_CHECK_URL: ""
-  # -- Multi-tenant
-  MULTI_TENANT_URL: ""
+  # -- Multi-tenant (MULTI_TENANT_URL and MULTI_TENANT_REDIS_HOST are
+  #    non-sensitive and live in `config`/ConfigMap; only the API key and
+  #    Redis password are sensitive)
   MULTI_TENANT_SERVICE_API_KEY: ""
-  MULTI_TENANT_REDIS_HOST: ""
   MULTI_TENANT_REDIS_PASSWORD: ""
   # -- Plugin Auth
   PLUGIN_AUTH_HOST: ""

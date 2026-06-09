@@ -172,6 +172,30 @@ bc-correios:
   #     hostnames:
   #       - "correios.com.br"
   hostAliases: []
+  # -- Liveness probe configuration
+  livenessProbe:
+    path: "/health/live"
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  # -- Readiness probe configuration
+  readinessProbe:
+    path: "/health/ready"
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  # -- Startup probe configuration
+  startupProbe:
+    path: "/health/live"
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 30
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml
   configmap:

@@ -10,7 +10,9 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
+    
 version: 2.0.0-beta.1
+
 appVersion: "1.2.0"
 keywords:
   - bc-correios

@@ -83,7 +83,7 @@ spec:
 
               {{- if .Values.seaweedfs.enabled }}
               # Wait for SeaweedFS S3 API
-              SEAWEEDFS_HOST=$(echo "$OBJECT_STORAGE_ENDPOINT" | sed 's|http://||' | cut -d: -f1)
+              SEAWEEDFS_HOST=$(echo "$OBJECT_STORAGE_ENDPOINT" | sed -E 's|^https?://||' | cut -d/ -f1 | cut -d: -f1)
               wait_for_service "$SEAWEEDFS_HOST" "8333"
               {{- end }}
 

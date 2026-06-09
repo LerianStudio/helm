@@ -15,7 +15,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.0.0` | 3.7.2 | 3.7.2 |
+| `8.1.0-beta.1` | 3.7.2 | 3.7.3 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -28,7 +28,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `8.0.1` | 2.6.7 | 2.4.5 |
+| `8.1.0-beta.1` | 2.6.7 | 2.4.5 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -68,7 +68,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.5.0-beta.1` | 1.0.0-beta.1 |
+| `2.0.0-beta.12` | 1.0.0-beta.1 |
 
 
 
@@ -107,7 +107,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `3.0.1` | 1.6.0 | 1.6.0 | 1.6.0 | 1.6.0 |
+| `3.1.0-beta.1` | 1.7.3 | 1.7.3 | 1.7.3 | 1.7.3 |
 
 -----------------
 
@@ -194,7 +194,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Tracer Version |
 | :---: | :---: |
-| `2.0.0-beta.6` | 1.0.0 |
+| `2.0.0-beta.7` | 1.0.0 |
 -----------------
 
 ### Otel Collector Lerian
@@ -229,8 +229,8 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0 |
------------------
+| `2.0.0-beta.1` | 1.0.0 |
+
 
 ### Go Boilerplate DDD
 

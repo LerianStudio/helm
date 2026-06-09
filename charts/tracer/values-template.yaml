@@ -57,6 +57,7 @@ tracer:
     targetMemoryUtilizationPercentage: 80
 
   configmap:
+    ENV_NAME: "production"
     SERVER_ADDRESS: ":4020"
     LOG_LEVEL: "info"
     DB_HOST: ""

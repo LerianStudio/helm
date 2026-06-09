@@ -1,0 +1,135 @@
+{{- $bankTransfer := .Values.bankTransfer | default dict }}
+{{- $migrations := get $bankTransfer "migrations" | default dict }}
+{{- $configmap := get $bankTransfer "configmap" | default dict }}
+{{- $postgresql := .Values.postgresql | default dict }}
+{{- $migrationImage := get $migrations "image" | default dict }}
+{{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") }}
+{{- $migrationsEnabled := and (eq (lower (toString (get $bankTransfer "enabled" | default false))) "true") (eq (lower (toString (get $migrations "enabled" | default false))) "true") }}
+{{- if $migrationsEnabled }}
+{{- if eq (lower (toString (get $configmap "MULTI_TENANT_ENABLED" | default "false"))) "true" }}
+{{- fail "bankTransfer.migrations.enabled cannot be true when bankTransfer.configmap.MULTI_TENANT_ENABLED=true; tenant-manager owns tenant database migrations" }}
+{{- end }}
+{{- if and (eq (lower (toString (get $postgresql "enabled" | default false))) "true") (not (eq (lower (toString (get $postgresql "external" | default false))) "true")) }}
+{{- fail "bankTransfer.migrations.enabled cannot be true when chart-managed postgresql.enabled=true; use an external PostgreSQL migration path instead" }}
+{{- end }}
+{{- if not (eq (lower (toString (get $migrations "useExistingSecret" | default false))) "true") }}
+{{- fail "bankTransfer.migrations.useExistingSecret must be true because migration hooks run before chart-managed Secrets exist" }}
+{{- end }}
+{{- $existingSecretName := required "bankTransfer.migrations.existingSecretName is required when bankTransfer.migrations.enabled=true" (get $migrations "existingSecretName") }}
+{{- $namespace := include "global.namespace" . }}
+{{- $migrationTag := "" }}
+{{- $migrationDigest := "" }}
+{{- if kindIs "string" $migrationImage }}
+{{- if not (regexMatch "(@sha256:[A-Fa-f0-9]{64}|:[^/:@]+)$" $migrationImage) }}
+{{- fail "bankTransfer.migrations.image string must include an explicit tag or sha256 digest when bankTransfer.migrations.enabled=true" }}
+{{- end }}
+{{- else }}
+{{- $migrationTag = get $migrationImage "tag" | default "" }}
+{{- $migrationDigest = get $migrationImage "digest" | default "" }}
+{{- if and (empty $migrationTag) (empty $migrationDigest) }}
+{{- fail "bankTransfer.migrations.image.tag or bankTransfer.migrations.image.digest is required when bankTransfer.migrations.enabled=true; migration images must not silently reuse the app tag" }}
+{{- end }}
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-migrations" (include "bank-transfer.fullname" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "bank-transfer.labels" (dict "context" . "component" "migrations" "name" (get $bankTransfer "name") ) | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
+    {{- with (get $migrations "annotations") }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  backoffLimit: {{ get $migrations "backoffLimit" | default 3 }}
+  activeDeadlineSeconds: {{ get $migrations "activeDeadlineSeconds" | default 600 }}
+  ttlSecondsAfterFinished: {{ get $migrations "ttlSecondsAfterFinished" | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "bank-transfer.labels" (dict "context" . "component" "migrations" "name" (get $bankTransfer "name") ) | nindent 8 }}
+      {{- with (get $migrations "podAnnotations") }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with (get $bankTransfer "imagePullSecrets") }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (get $migrations "serviceAccountName") }}
+      serviceAccountName: {{ . | quote }}
+      {{- end }}
+      containers:
+        - name: migrations
+          {{- if kindIs "string" $migrationImage }}
+          image: {{ $migrationImage | quote }}
+          imagePullPolicy: Always
+          {{- else }}
+          {{- $migrationRepository := get $migrationImage "repository" | default "ghcr.io/lerianstudio/plugin-br-bank-transfer-migrations" }}
+          {{- if $migrationDigest }}
+          image: "{{ $migrationRepository }}@{{ $migrationDigest }}"
+          {{- else }}
+          image: "{{ $migrationRepository }}:{{ $migrationTag }}"
+          {{- end }}
+          imagePullPolicy: {{ get $migrationImage "pullPolicy" | default "IfNotPresent" }}
+          {{- end }}
+          env:
+            - name: MIGRATIONS_PATH
+              value: {{ get $migrations "path" | default "/migrations" | quote }}
+            # The migrations runner refuses sslmode=disable unless this is set;
+            # mirror the app-level toggle so non-TLS Postgres targets work.
+            - name: ALLOW_INSECURE_TLS
+              value: {{ get $configmap "ALLOW_INSECURE_TLS" | default "false" | quote }}
+            - name: POSTGRES_HOST
+              value: {{ get $configmap "POSTGRES_HOST" | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+            - name: POSTGRES_PORT
+              value: {{ get $configmap "POSTGRES_PORT" | default "5432" | quote }}
+            - name: POSTGRES_USER
+              value: {{ get $configmap "POSTGRES_USER" | default "plugin-br-bank-transfer" | quote }}
+            - name: POSTGRES_DB
+              value: {{ get $configmap "POSTGRES_DB" | default "plugin-br-bank-transfer" | quote }}
+            - name: POSTGRES_SSLMODE
+              value: {{ get $configmap "POSTGRES_SSLMODE" | default "require" | quote }}
+            - name: POSTGRES_CONNECT_TIMEOUT_SEC
+              value: {{ get $configmap "POSTGRES_CONNECT_TIMEOUT_SEC" | default "10" | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $existingSecretName }}
+                  key: POSTGRES_PASSWORD
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml (get $migrations "resources" | default $defaultMigrationResources) | nindent 12 }}
+      {{- with (get $bankTransfer "nodeSelector") }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (get $bankTransfer "affinity") }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (get $bankTransfer "tolerations") }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

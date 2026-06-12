@@ -58,11 +58,11 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.3.0-beta.1` | 1.2.0 | 1.2.0 |
 -----------------
 
-### Plugin BR Bank Transfer JD
+### Plugin BR Bank Transfer 
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/bank-transfer/bank-transfer-jd) for details.
+See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/bank-transfer/bank-transfer) for details.
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-bank-transfer-jd).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-bank-transfer).
 
 #### Application Version Mapping
 

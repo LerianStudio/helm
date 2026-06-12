@@ -9,9 +9,13 @@
 {{- if eq (lower (toString (get $configmap "MULTI_TENANT_ENABLED" | default "false"))) "true" }}
 {{- fail "bankTransfer.migrations.enabled cannot be true when bankTransfer.configmap.MULTI_TENANT_ENABLED=true; tenant-manager owns tenant database migrations" }}
 {{- end }}
-{{- if and (eq (lower (toString (get $postgresql "enabled" | default false))) "true") (not (eq (lower (toString (get $postgresql "external" | default false))) "true")) }}
-{{- fail "bankTransfer.migrations.enabled cannot be true when chart-managed postgresql.enabled=true; use an external PostgreSQL migration path instead" }}
-{{- end }}
+{{- /* Internal (chart-managed) Postgres support. When postgresql.enabled=true and not
+     external, the database is provisioned during the Sync phase (bitnami StatefulSet), so
+     the migration must run as a POST hook (after the DB exists) with a wait-for-Postgres
+     initContainer. External/pre-existing Postgres keeps the PRE hook (DB already exists).
+     Internal mode reuses the same chart-managed Secret as the app, so its POSTGRES_PASSWORD
+     must equal postgresql.auth.password (the app already requires this). */}}
+{{- $internalPg := and (eq (lower (toString (get $postgresql "enabled" | default false))) "true") (not (eq (lower (toString (get $postgresql "external" | default false))) "true")) }}
 {{- /* Secret resolution. The chart-managed Secret is now a pre-install/pre-upgrade hook
      (weight -5) that exists before this migration hook (weight -1), so a pre-existing
      Secret is no longer required to run migrations. Preference order:
@@ -53,10 +57,17 @@ metadata:
   labels:
     {{- include "bank-transfer.labels" (dict "context" . "component" "migrations" "name" (get $bankTransfer "name") ) | nindent 4 }}
   annotations:
+    {{- if $internalPg }}
+    # Internal Postgres is provisioned during Sync — run AFTER it exists and is reachable.
+    "helm.sh/hook": post-install,post-upgrade
+    "argocd.argoproj.io/hook": PostSync
+    {{- else }}
+    # External Postgres already exists — run BEFORE the app rolls out (schema-first).
     "helm.sh/hook": pre-install,pre-upgrade
+    "argocd.argoproj.io/hook": PreSync
+    {{- end }}
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
-    "argocd.argoproj.io/hook": PreSync
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
     {{- with (get $migrations "annotations") }}
     {{- toYaml . | nindent 4 }}
@@ -86,6 +97,36 @@ spec:
       {{- with (get $migrations "serviceAccountName") }}
       serviceAccountName: {{ . | quote }}
       {{- end }}
+      {{- if $internalPg }}
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.37
+          command:
+            - /bin/sh
+            - -c
+            - >
+              echo "Waiting for $POSTGRES_HOST:$POSTGRES_PORT...";
+              ELAPSED=0;
+              while ! nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+                if [ $ELAPSED -ge 300 ]; then echo "Timeout after 300s"; exit 1; fi;
+                echo "not ready, waiting (${ELAPSED}s/300s)"; sleep 5; ELAPSED=$((ELAPSED + 5));
+              done;
+              echo "Postgres is ready";
+          env:
+            - name: POSTGRES_HOST
+              value: {{ get $configmap "POSTGRES_HOST" | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+            - name: POSTGRES_PORT
+              value: {{ get $configmap "POSTGRES_PORT" | default "5432" | quote }}
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      {{- end }}
       containers:
         - name: migrations
           {{- if kindIs "string" $migrationImage }}
@@ -106,15 +147,15 @@ spec:
             # The migrations runner refuses sslmode=disable unless this is set;
             # mirror the app-level toggle so non-TLS Postgres targets work.
             - name: ALLOW_INSECURE_TLS
-              value: {{ get $configmap "ALLOW_INSECURE_TLS" | default "false" | quote }}
+              value: {{ get $configmap "ALLOW_INSECURE_TLS" | default "true" | quote }}
             - name: POSTGRES_HOST
               value: {{ get $configmap "POSTGRES_HOST" | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
             - name: POSTGRES_PORT
               value: {{ get $configmap "POSTGRES_PORT" | default "5432" | quote }}
             - name: POSTGRES_USER
-              value: {{ get $configmap "POSTGRES_USER" | default "plugin-br-bank-transfer" | quote }}
+              value: {{ get $configmap "POSTGRES_USER" | default "bank_transfer" | quote }}
             - name: POSTGRES_DB
-              value: {{ get $configmap "POSTGRES_DB" | default "plugin-br-bank-transfer" | quote }}
+              value: {{ get $configmap "POSTGRES_DB" | default "bank_transfer" | quote }}
             - name: POSTGRES_SSLMODE
               value: {{ get $configmap "POSTGRES_SSLMODE" | default "require" | quote }}
             - name: POSTGRES_CONNECT_TIMEOUT_SEC

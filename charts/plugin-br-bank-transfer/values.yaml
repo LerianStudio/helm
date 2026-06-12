@@ -82,26 +82,28 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.4.0"
+    tag: "3.3.1"
   # -- PostgreSQL migrations job (Helm hook pre-install,pre-upgrade; ArgoCD PreSync).
-  # The Job references NO chart-managed ConfigMap/Secret (all env inline), so the
-  # PreSync hook works on first install. Requires an operator-provisioned Secret
-  # carrying POSTGRES_PASSWORD (useExistingSecret/existingSecretName below) and an
-  # explicit image tag or digest. Must stay disabled when MULTI_TENANT_ENABLED=true
-  # (tenant-manager owns tenant database migrations — template enforces this).
+  # The chart-managed Secret is rendered as an earlier hook (weight -5 / sync-wave -5),
+  # so it exists before this migration hook (weight -1) — migrations run against the
+  # chart-managed Secret with NO pre-existing Secret required. Set useExistingSecret
+  # only if you want migrations to read POSTGRES_PASSWORD from an operator-provisioned
+  # Secret instead. Must stay disabled when MULTI_TENANT_ENABLED=true (tenant-manager
+  # owns tenant database migrations — template enforces this).
   migrations:
-    # -- Enable or disable the migrations job. When enabling, you MUST set
-    # useExistingSecret=true, existingSecretName, and image.tag (or digest).
-    enabled: false
-    # -- Migration hooks run before chart-managed Secrets exist; the password
-    # must come from a pre-existing Secret with key POSTGRES_PASSWORD.
+    # -- Enable or disable the migrations job.
+    enabled: true
+    # -- Optional. When true, migrations read POSTGRES_PASSWORD from a pre-existing
+    # Secret (existingSecretName) instead of the chart-managed Secret hook.
     useExistingSecret: false
     # -- Name of the pre-existing Secret containing POSTGRES_PASSWORD
+    # (only used when useExistingSecret=true).
     existingSecretName: ""
     image:
       # -- Repository for the migrations init container image
       repository: ghcr.io/lerianstudio/plugin-br-bank-transfer-migrations
-      # -- Image tag (required when enabled; never silently reuses the app tag)
+      # -- Tag for the migrations image. Defaults to the app image tag
+      # (bankTransfer.image.tag, or the chart appVersion) when left empty.
       tag: ""
       # -- Image pull policy
       pullPolicy: IfNotPresent
@@ -422,8 +424,8 @@ bankTransfer:
     # JD_PUBLIC_KEY_PEM: ""  # Required for external_provided mode with signature validation
 
     # Encryption Keys (REQUIRED - hex-encoded 32-byte AES-256 keys, 64 hex characters)
-    JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""
-    RECIPIENT_DETAILS_ENCRYPTION_KEY: ""
+    JD_INCOMING_RAW_XML_ENCRYPTION_KEY: "aaa"
+    RECIPIENT_DETAILS_ENCRYPTION_KEY: "aa"
     # Midaz M2M Credentials (optional)
     # MIDAZ_CLIENT_ID: ""
     # MIDAZ_CLIENT_SECRET: ""
@@ -475,7 +477,7 @@ valkey:
       - "--maxclients 10000"
 # PostgreSQL configuration
 postgresql:
-  enabled: true
+  enabled: false
   global:
     security:
       allowInsecureImages: false

@@ -12,10 +12,22 @@
 {{- if and (eq (lower (toString (get $postgresql "enabled" | default false))) "true") (not (eq (lower (toString (get $postgresql "external" | default false))) "true")) }}
 {{- fail "bankTransfer.migrations.enabled cannot be true when chart-managed postgresql.enabled=true; use an external PostgreSQL migration path instead" }}
 {{- end }}
-{{- if not (eq (lower (toString (get $migrations "useExistingSecret" | default false))) "true") }}
-{{- fail "bankTransfer.migrations.useExistingSecret must be true because migration hooks run before chart-managed Secrets exist" }}
+{{- /* Secret resolution. The chart-managed Secret is now a pre-install/pre-upgrade hook
+     (weight -5) that exists before this migration hook (weight -1), so a pre-existing
+     Secret is no longer required to run migrations. Preference order:
+       1. migration-specific existing Secret (bankTransfer.migrations.existingSecretName)
+       2. app-level existing Secret        (bankTransfer.existingSecretName)
+       3. chart-managed Secret             (the hook above) */}}
+{{- $appUseExisting := eq (lower (toString (get $bankTransfer "useExistingSecret" | default false))) "true" }}
+{{- $migUseExisting := eq (lower (toString (get $migrations "useExistingSecret" | default false))) "true" }}
+{{- $existingSecretName := "" }}
+{{- if $migUseExisting }}
+{{- $existingSecretName = required "bankTransfer.migrations.existingSecretName is required when bankTransfer.migrations.useExistingSecret=true" (get $migrations "existingSecretName") }}
+{{- else if $appUseExisting }}
+{{- $existingSecretName = required "bankTransfer.existingSecretName is required when bankTransfer.useExistingSecret=true" (get $bankTransfer "existingSecretName") }}
+{{- else }}
+{{- $existingSecretName = include "bank-transfer.fullname" . }}
 {{- end }}
-{{- $existingSecretName := required "bankTransfer.migrations.existingSecretName is required when bankTransfer.migrations.enabled=true" (get $migrations "existingSecretName") }}
 {{- $namespace := include "global.namespace" . }}
 {{- $migrationTag := "" }}
 {{- $migrationDigest := "" }}
@@ -26,8 +38,11 @@
 {{- else }}
 {{- $migrationTag = get $migrationImage "tag" | default "" }}
 {{- $migrationDigest = get $migrationImage "digest" | default "" }}
+{{- /* The migration image tag is coupled to the app image tag. When neither an explicit
+     tag nor digest is set, fall back to the app tag (bankTransfer.image.tag, or the chart
+     appVersion). An explicit migration tag/digest still overrides this. */}}
 {{- if and (empty $migrationTag) (empty $migrationDigest) }}
-{{- fail "bankTransfer.migrations.image.tag or bankTransfer.migrations.image.digest is required when bankTransfer.migrations.enabled=true; migration images must not silently reuse the app tag" }}
+{{- $migrationTag = .Values.bankTransfer.image.tag | default .Chart.AppVersion }}
 {{- end }}
 {{- end }}
 apiVersion: batch/v1

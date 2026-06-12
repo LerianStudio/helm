@@ -66,9 +66,9 @@ For implementation and configuration details, see the [README](https://charts.le
 
 #### Application Version Mapping
 
-| Chart Version | App Version |
+| Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0-beta.1 |
+| `2.0.0` | 1.0.0 |
 
 
 

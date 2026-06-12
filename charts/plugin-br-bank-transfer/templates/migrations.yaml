@@ -16,12 +16,17 @@
      Internal mode reuses the same chart-managed Secret as the app, so its POSTGRES_PASSWORD
      must equal postgresql.auth.password (the app already requires this). */}}
 {{- $internalPg := and (eq (lower (toString (get $postgresql "enabled" | default false))) "true") (not (eq (lower (toString (get $postgresql "external" | default false))) "true")) }}
-{{- /* Secret resolution. The chart-managed Secret is now a pre-install/pre-upgrade hook
-     (weight -5) that exists before this migration hook (weight -1), so a pre-existing
-     Secret is no longer required to run migrations. Preference order:
+{{- /* Secret resolution — POSTGRES_PASSWORD source. The full application Secret
+     (secrets.yaml) is a NORMAL resource (not a hook), so it is pruned correctly on
+     uninstall and never lingers. Preference order:
        1. migration-specific existing Secret (bankTransfer.migrations.existingSecretName)
-       2. app-level existing Secret        (bankTransfer.existingSecretName)
-       3. chart-managed Secret             (the hook above) */}}
+       2. app-level existing Secret          (bankTransfer.existingSecretName)
+       3. chart-managed:
+          - internal Postgres → migration is a POST hook, so the normal app Secret
+            already exists; reference it directly (no extra hook Secret).
+          - external Postgres → migration is a PRE hook that runs before the normal app
+            Secret, so use a minimal migration-only hook Secret (migration-secret.yaml)
+            that carries ONLY POSTGRES_PASSWORD. */}}
 {{- $appUseExisting := eq (lower (toString (get $bankTransfer "useExistingSecret" | default false))) "true" }}
 {{- $migUseExisting := eq (lower (toString (get $migrations "useExistingSecret" | default false))) "true" }}
 {{- $existingSecretName := "" }}
@@ -29,8 +34,10 @@
 {{- $existingSecretName = required "bankTransfer.migrations.existingSecretName is required when bankTransfer.migrations.useExistingSecret=true" (get $migrations "existingSecretName") }}
 {{- else if $appUseExisting }}
 {{- $existingSecretName = required "bankTransfer.existingSecretName is required when bankTransfer.useExistingSecret=true" (get $bankTransfer "existingSecretName") }}
-{{- else }}
+{{- else if $internalPg }}
 {{- $existingSecretName = include "bank-transfer.fullname" . }}
+{{- else }}
+{{- $existingSecretName = printf "%s-migrations" (include "bank-transfer.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- $namespace := include "global.namespace" . }}
 {{- $migrationTag := "" }}

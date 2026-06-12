@@ -12,7 +12,8 @@ maintainers:
 
 version: 2.0.0
 
-appVersion: "2.4.0"
+appVersion: "1.0.0"
+
 keywords:
   - bank-transfer
   - ted

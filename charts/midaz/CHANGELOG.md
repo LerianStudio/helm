@@ -22,6 +22,21 @@ Contributors: @guimoreirar, @lerian-studio
   - Updated midaz-ledger to version 3.7.6.
 
 - **Documentation:**
+  - Added an upgrade guide for midaz v8.1.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.1.0...midaz-v8.1.1)
+
+---
+
+## [8.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.1.1)
+
+- **Fixes:**
+  - Updated midaz-crm to version 3.7.6.
+  - Updated midaz-ledger to version 3.7.6.
+
+- **Documentation:**
   - Added upgrade guide for midaz v8.1.0.
 
 Contributors: @guimoreirar, @lerian-studio

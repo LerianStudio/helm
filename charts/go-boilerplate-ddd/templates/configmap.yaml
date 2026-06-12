@@ -30,6 +30,9 @@ data:
   POSTGRES_USER: {{ .Values.boilerplate.configmap.POSTGRES_USER | default "go-boilerplate-ddd" | quote }}
   POSTGRES_NAME: {{ .Values.boilerplate.configmap.POSTGRES_NAME | default "go-boilerplate-ddd" | quote }}
   POSTGRES_SSLMODE: {{ .Values.boilerplate.configmap.POSTGRES_SSLMODE | default "disable" | quote }}
+  {{- if .Values.boilerplate.configmap.ALLOW_INSECURE_TLS }}
+  ALLOW_INSECURE_TLS: {{ .Values.boilerplate.configmap.ALLOW_INSECURE_TLS | quote }}
+  {{- end }}
   MIGRATIONS_PATH: {{ .Values.boilerplate.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
 
   # PostgreSQL Connection Pool

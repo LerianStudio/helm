@@ -2,6 +2,25 @@
 
 ## [8.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.1.0)
 
+- **Features:**
+  - Released version 8.1.0.
+  - Released version 8.1.0-beta.1.
+
+- **Fixes:**
+  - Handled HTTPS URLs in `wait-for-dependencies` initContainer.
+
+- **Improvements:**
+  - Added upgrade guide for version 8.0.1.
+  - Added upgrade guide for version 8.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.0.1...plugin-access-manager-v8.1.0)
+
+---
+
+## [8.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.1.0)
+
 - **Fixes:**
   - Handle HTTPS URLs in wait-for-dependencies initContainer.
 

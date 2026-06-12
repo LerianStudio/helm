@@ -424,8 +424,8 @@ bankTransfer:
     # JD_PUBLIC_KEY_PEM: ""  # Required for external_provided mode with signature validation
 
     # Encryption Keys (REQUIRED - hex-encoded 32-byte AES-256 keys, 64 hex characters)
-    JD_INCOMING_RAW_XML_ENCRYPTION_KEY: "aaa"
-    RECIPIENT_DETAILS_ENCRYPTION_KEY: "aa"
+    JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""
+    RECIPIENT_DETAILS_ENCRYPTION_KEY: ""
     # Midaz M2M Credentials (optional)
     # MIDAZ_CLIENT_ID: ""
     # MIDAZ_CLIENT_SECRET: ""

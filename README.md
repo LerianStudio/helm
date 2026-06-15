@@ -178,7 +178,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Matcher Version |
 | :---: | :---: |
-| `2.3.0-beta.2` | 1.0.0 |
+| `3.0.0-beta.1` | 1.0.0 |
 
 ### Flowker
 

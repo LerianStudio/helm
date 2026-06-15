@@ -1,5 +1,116 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.1.0)
+
+- **Features**
+  - Added upgrade guide for plugin-br-pix-indirect-btg v3.0.0.
+  - Added upgrade guide for plugin-br-pix-indirect-btg v3.0.1.
+
+- **Fixes**
+  - Updated plugin-br-pix-indirect-btg to version 1.7.3, including worker components for reconciliation, inbound, and outbound.
+
+- **Improvements**
+  - Aligned upgrade guide format for better consistency.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.1...plugin-br-pix-indirect-btg-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.1.0)
+
+- **Features**
+  - Added upgrade guide for plugin-br-pix-indirect-btg v3.0.0.
+  - Added upgrade guide for plugin-br-pix-indirect-btg v3.0.1.
+
+- **Fixes**
+  - Updated plugin-br-pix-indirect-btg to version 1.7.3, including worker components for reconciliation, inbound, and outbound.
+
+- **Improvements**
+  - Aligned upgrade guide format for better consistency.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.1...plugin-br-pix-indirect-btg-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.1.0)
+
+- **Fixes**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.7.3, including worker components for reconciliation, inbound, and outbound processes.
+
+- **Improvements**
+  - Aligned the upgrade guide format for `plugin-br-pix-indirect-btg`.
+  - Added upgrade guides for `plugin-br-pix-indirect-btg` versions 3.0.0 and 3.0.1.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.1...plugin-br-pix-indirect-btg-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.1.0)
+
+- **Features**
+  - Updated plugin-br-pix-indirect-btg to version 1.7.3, including worker modules for reconciliation, inbound, and outbound processes.
+
+- **Fixes**
+  - Resolved issues related to the upgrade documentation format for plugin-br-pix-indirect-btg.
+
+- **Improvements**
+  - Added upgrade guides for plugin-br-pix-indirect-btg versions 3.0.0 and 3.0.1 to assist users in transitioning smoothly.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.1...plugin-br-pix-indirect-btg-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.1.0)
+
+- **Features**
+  - Added upgrade guide for plugin-br-pix-indirect-btg v3.0.0.
+  - Added upgrade guide for plugin-br-pix-indirect-btg v3.0.1.
+
+- **Fixes**
+  - Updated plugin-br-pix-indirect-btg to version 1.7.3 along with its worker components for reconciliation, inbound, and outbound.
+
+- **Improvements**
+  - Aligned upgrade guide format for better consistency and clarity.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.1...plugin-br-pix-indirect-btg-v3.1.0)
+
+---
+
+## [3.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.0.1)
+
+- Features:
+  - Released version 3.0.0 of plugin-br-pix-indirect-btg.
+
+- Fixes:
+  - Implemented health readiness probe to enhance stability and monitoring.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.0...plugin-br-pix-indirect-btg-v3.0.1)
+
+---
+
+## [3.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.0.1)
+
+- Fixes:
+  - Use health readiness probe to improve system reliability.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.0...plugin-br-pix-indirect-btg-v3.0.1)
+
+---
+
 ## [3.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.0.1)
 
 - Fixes:

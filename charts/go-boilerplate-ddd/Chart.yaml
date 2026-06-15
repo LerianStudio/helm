@@ -1,6 +1,7 @@
 apiVersion: v2
 name: go-boilerplate-ddd-helm
-description: A Helm chart for Go Boilerplate DDD - Lerian reference service template
+description: '[DEPRECATED] Moved to helm-internal. Use
+  oci://ghcr.io/lerianstudio/helm-internal/go-boilerplate-ddd-helm instead.'
 type: application
 annotations:
   lerian.studio/chart-type: single-service
@@ -11,7 +12,8 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 2.0.1
+version: 2.1.0
+deprecated: true
 appVersion: "1.0.0"
 keywords:
   - boilerplate

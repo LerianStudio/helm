@@ -37,6 +37,11 @@ spec:
       serviceAccountName: {{ include "bank-transfer.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.bankTransfer.podSecurityContext | nindent 8 }}
+      {{- $multiTenantEnabled := eq (toString (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
+      {{- if not $multiTenantEnabled }}
+      # In multi-tenant mode the bootstrap does not connect to any static
+      # Postgres / Redis at boot — per-tenant connections are resolved via
+      # tenant-manager at request time. Skip the dependency wait gate.
       initContainers:
         - name: wait-for-dependencies
           image: busybox:1.37
@@ -77,6 +82,7 @@ spec:
               wait_for_service "$REDIS_SVC" "$REDIS_PORT_NUM"
 
               echo "All dependencies are ready!"
+      {{- end }}
       containers:
         - name: {{ include "bank-transfer.fullname" . }}
           securityContext:
@@ -118,8 +124,14 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
+          - name: "POD_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
+          - name: "OTEL_RESOURCE_ATTRIBUTES"
+            value: "k8s.pod.ip=$(POD_IP)"
           {{- end }}
           ports:
             - name: http

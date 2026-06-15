@@ -85,7 +85,7 @@ spec:
 
               {{- if .Values.seaweedfs.enabled }}
               # Wait for SeaweedFS S3 API
-              SEAWEEDFS_HOST=$(echo "$OBJECT_STORAGE_ENDPOINT" | sed 's|http://||' | cut -d: -f1)
+              SEAWEEDFS_HOST=$(echo "$OBJECT_STORAGE_ENDPOINT" | sed -E 's|^https?://||' | cut -d/ -f1 | cut -d: -f1)
               wait_for_service "$SEAWEEDFS_HOST" "8333"
               {{- end }}
 
@@ -128,26 +128,31 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /health/live
+              path: {{ $component.livenessProbe.path | default "/health/live" }}
               port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ $component.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ $component.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ $component.livenessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ $component.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $component.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: /health/ready
+              path: {{ $component.readinessProbe.path | default "/health/ready" }}
               port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ $component.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ $component.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $component.readinessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ $component.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $component.readinessProbe.failureThreshold | default 3 }}
           startupProbe:
             httpGet:
-              path: /health/live
+              path: {{ $component.startupProbe.path | default "/health/live" }}
               port: http
-            failureThreshold: 30
-            periodSeconds: 10
+            initialDelaySeconds: {{ $component.startupProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ $component.startupProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $component.startupProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ $component.startupProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $component.startupProbe.failureThreshold | default 30 }}
           resources:
             {{- toYaml $component.resources | nindent 12 }}
       {{- with $component.nodeSelector }}

@@ -63,6 +63,9 @@ pix:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -164,6 +167,10 @@ pix:
     JD_PIX_CLIENT_ID: ""
     JD_PIX_CLIENT_SECRET: ""
     # Database Configuration
+    # -- Single-source: the bundled postgresql subchart generates the DB password
+    # in its own Secret (<release>-postgresql, key "password"), which the app and
+    # job read via secretKeyRef. Leave these empty for the bundled subchart. Only
+    # set them for an external Postgres that has no existingSecret of its own.
     DATABASE_PASSWORD: ""
     POSTGRES_PASSWORD: ""
     # Twilio Configuration
@@ -171,7 +178,7 @@ pix:
     TWILIO_AUTH_TOKEN: ""
     # SendGrid Configuration
     SENDGRID_API_KEY: ""
-  useExistingSecrets: false
+  useExistingSecret: false
   existingSecretName: ""
 qrcode:
   # Default values
@@ -191,6 +198,17 @@ qrcode:
   imagePullSecrets: {}
   podSecurityContext: {}
   # fsGroup: 2000
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   ingress:
     # -- Enable or disable ingress
@@ -285,6 +303,17 @@ job:
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: {}
   podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   service:
     # -- Kubernetes service type
     type: ClusterIP
@@ -361,7 +390,7 @@ postgresql:
     enabled: true
     enablePostgresUser: false
     username: "pix"
-    password: "lerian"
+    password: ""
     database: "pix"
     persistence:
       size: 8Gi

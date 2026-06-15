@@ -59,15 +59,29 @@ spec:
           {{- end }}
           - configMapRef:
               name: {{ include "midaz-crm.fullname" . }}
-          {{- if or (index .Values "otel-collector-lerian").enabled (index .Values "otel-collector-lerian").external }}
           env:
-          - name: "HOST_IP"
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value: "$(HOST_IP):4317"
-          {{- end }}
+            {{- $secretName := ternary .Values.crm.existingSecretName (include "midaz-crm.fullname" .) .Values.crm.useExistingSecret }}
+            {{/* MongoDB: CRM authenticates as root; MONGO_PASSWORD maps to `mongodb-root-password`. */}}
+            {{- include "midaz.mongodbAuthRequired" . }}
+            {{- $mongo := .Values.mongodb | default dict }}
+            {{- $mongoAuth := $mongo.auth | default dict }}
+            {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_PASSWORD") | nindent 12 }}
+            {{- else if .Values.crm.secrets.MONGO_PASSWORD }}
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: MONGO_PASSWORD
+            {{- end }}
+            {{- if or (index .Values "otel-collector-lerian").enabled (index .Values "otel-collector-lerian").external }}
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+            {{- end }}
           resources:
             {{- toYaml .Values.crm.resources | nindent 12 }}
           readinessProbe:

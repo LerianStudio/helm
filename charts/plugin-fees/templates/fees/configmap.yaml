@@ -22,7 +22,7 @@ data:
 
   # Mongo DB
   MONGO_URI: {{ .Values.fees.configmap.MONGO_URI | default "mongodb" | quote }}
-  MONGO_HOST: {{ .Values.fees.configmap.MONGO_HOST | default (printf "plugin-fees-mongodb.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  MONGO_HOST: {{ .Values.fees.configmap.MONGO_HOST | default (include "plugin-fees.mongoHost" .) | quote }}
   MONGO_PORT: {{ .Values.fees.configmap.MONGO_PORT | default "27017" | quote }}
   MONGO_NAME: {{ .Values.fees.configmap.MONGO_NAME | default "plugin-fees-db" | quote }}
   MONGO_USER: {{ .Values.fees.configmap.MONGO_USER | default "plugin-fees" | quote }}

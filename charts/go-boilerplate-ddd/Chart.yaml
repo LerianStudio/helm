@@ -3,6 +3,8 @@ name: go-boilerplate-ddd-helm
 description: '[DEPRECATED] Moved to helm-internal. Use
   oci://ghcr.io/lerianstudio/helm-internal/go-boilerplate-ddd-helm instead.'
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 home: https://github.com/LerianStudio/go-boilerplate-ddd
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/go-boilerplate-ddd

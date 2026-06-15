@@ -1,5 +1,27 @@
 # Plugin BR Instant Payment Helm Chart
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: `pix.secrets.MIDAZ_CLIENT_SECRET`, `pix.secrets.JD_SECRET`, `pix.secrets.JD_PIX_CLIENT_SECRET`, and `pix.secrets.SECRET_KEY_BASE` (external-boundary credentials). The PostgreSQL password (`DATABASE_PASSWORD`/`POSTGRES_PASSWORD`) is **not** required: it is single-sourced from the bundled `postgresql` subchart Secret and read via `secretKeyRef` (see "Single-source PostgreSQL secret" below).
+- Dependency notes: Uses the bundled Bitnami PostgreSQL dependency chart unless an external PostgreSQL is configured.
+- Production overrides: Provide production JD credentials, certificates, encryption keys, and messaging credentials through chart secrets or existing Secrets where supported; override image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
+### Single-source PostgreSQL secret
+
+The PostgreSQL password lives in exactly one place per deployment mode:
+
+- **Bundled subchart (default, `postgresql.enabled=true`):** the Bitnami `postgresql` subchart generates the Secret `<release>-postgresql` (key `password`). The `pix` Deployment wires both `DATABASE_PASSWORD` and `POSTGRES_PASSWORD`, and the job CronJob wires `DATABASE_PASSWORD`, to that key via `secretKeyRef`. The app Secret carries no DB password keys, and `pix.secrets.DATABASE_PASSWORD`/`POSTGRES_PASSWORD` should be left empty.
+- **External Postgres with `postgresql.auth.existingSecret`:** the refs point at that existing Secret's `password` key. The app Secret carries no DB password keys.
+- **External Postgres inline (`postgresql.enabled=false`, `postgresql.external=true`, no `existingSecret`):** set `pix.secrets.DATABASE_PASSWORD`/`POSTGRES_PASSWORD`; these are stored in the app Secret and the refs point there.
+
+### Release name
+
+The single-source `secretKeyRef` is release-name agnostic: it resolves the subchart Secret through the Bitnami `common.names.dependency.fullname` helper, which honors Bitnami name collapse, `nameOverride` and `fullnameOverride`. Any release name works for the secret reference.
+
+The DB **host**, however, has a hardcoded default. With the bundled subchart, `DATABASE_HOST` defaults to `plugin-br-pix-direct-jd-postgresql.midaz-plugins.svc.cluster.local` in the pix and job ConfigMaps, which only resolves correctly when the release is installed as `plugin-br-pix-direct-jd` in the `midaz-plugins` namespace. Under any other release name or namespace, set `pix.configmap.DATABASE_HOST` (and the job's `DATABASE_HOST`) explicitly to the subchart's primary Service, or switch to an external Postgres.
+
 This Helm chart installs **Plugin BR Instant Payment** for Midaz, a high-performance and open-source ledger.
 
 ---
@@ -105,7 +127,7 @@ pix:
 | `pix.tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `pix.affinity` | Affinity rules for pod scheduling | `{}` |
 | `pix.extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
-| `pix.useExistingSecrets` | Use an existing secret instead of creating a new one | `false` |
+| `pix.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `pix.existingSecretName` | The name of the existing secret to use | `""` |
 
 ### QR Code Service
@@ -161,7 +183,7 @@ pix:
 | `postgresql.auth.enabled` | Enable authentication | `true` |
 | `postgresql.auth.enablePostgresUser` | Create default postgres user | `false` |
 | `postgresql.auth.username` | Application DB user | `pix` |
-| `postgresql.auth.password` | Application DB password | `lerian` |
+| `postgresql.auth.password` | Application DB password (empty → subchart auto-generates it; read via `secretKeyRef`) | `""` |
 | `postgresql.auth.database` | Application DB name | `pix` |
 
 > IMPORTANT: The bundled PostgreSQL is not intended for production. For production, use an external/managed PostgreSQL and set `postgresql.enabled=false`.

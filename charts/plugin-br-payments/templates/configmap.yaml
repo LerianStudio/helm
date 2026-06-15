@@ -13,17 +13,20 @@ data:
   {{- end }}
   {{- end }}
 
-  # PostgreSQL host: explicit value or dynamic default based on release name when in-cluster Postgres is enabled.
-  # The Bitnami subchart exposes the primary at "{release}-postgresql-primary" in replication
-  # architecture and at "{release}-postgresql" in standalone architecture.
+  # PostgreSQL host: explicit value or dynamic default derived from the Bitnami subchart's
+  # own name helper (honors release-name collapse, nameOverride and fullnameOverride) when
+  # in-cluster Postgres is enabled. The subchart exposes the primary Service at
+  # "<dependency.fullname>-primary" in replication architecture and at "<dependency.fullname>"
+  # in standalone architecture.
   {{- if .Values.app.configmap.POSTGRES_HOST }}
   POSTGRES_HOST: {{ .Values.app.configmap.POSTGRES_HOST | quote }}
   {{- else if eq (include "postgresql.enabled" .) "true" }}
   {{- $pgArch := default "replication" .Values.postgresql.architecture }}
+  {{- $pgFullname := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" (index .Values "postgresql") "context" .) }}
   {{- if eq $pgArch "replication" }}
-  POSTGRES_HOST: {{ printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name (include "global.namespace" .) | quote }}
+  POSTGRES_HOST: {{ printf "%s-primary.%s.svc.cluster.local" $pgFullname (include "global.namespace" .) | quote }}
   {{- else }}
-  POSTGRES_HOST: {{ printf "%s-postgresql.%s.svc.cluster.local" .Release.Name (include "global.namespace" .) | quote }}
+  POSTGRES_HOST: {{ printf "%s.%s.svc.cluster.local" $pgFullname (include "global.namespace" .) | quote }}
   {{- end }}
   {{- else }}
   POSTGRES_HOST: ""

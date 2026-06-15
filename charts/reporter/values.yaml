@@ -21,7 +21,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "reporter"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for reporter user created by the job
     reporterCredentials:
       useExistingSecret:
@@ -30,7 +30,7 @@ global:
       # -- App username (ignored if useExistingSecret.name is set)
       username: "reporter"
       # -- Password for reporter user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
       # -- List of roles to grant to the user. Each item is a {role, db} pair.
       roles:
         - role: "readWrite"
@@ -100,6 +100,18 @@ manager:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -257,6 +269,18 @@ worker:
     requests:
       cpu: 100m
       memory: 128Mi
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -443,14 +467,25 @@ common:
     #DATASOURCE_EXTERNAL_SSLROOTCERT:
     #DATASOURCE_EXTERNAL_DB_SCHEMAS: sales,inventory,reporting
 secrets:
-  MONGO_PASSWORD: lerian
-  REDIS_PASSWORD: "lerian"
+  # MONGO_PASSWORD is single-sourced from the Bitnami mongodb subchart Secret
+  # (<release>-mongodb, key mongodb-root-password) and read via secretKeyRef — leave empty
+  # with the bundled subchart; only set for an external MongoDB without
+  # mongodb.auth.existingSecret. See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+  MONGO_PASSWORD: ""
+  # REDIS_PASSWORD intentionally omitted: the bundled valkey runs with auth.enabled=false, so
+  # nothing authenticates with it. Reintroduce this key if valkey.auth is ever enabled.
+  # RabbitMQ is single-sourced here (Pattern B): the broker is pointed at this Secret via
+  # rabbitmq.authentication.existingSecret, so these are the only copies of the broker creds.
   RABBITMQ_DEFAULT_USER: plugin
-  RABBITMQ_DEFAULT_PASS: Lerian@123
-  DATASOURCE_ONBOARDING_PASSWORD: lerian
+  RABBITMQ_DEFAULT_PASS: ""
+  # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
+  # it from this Secret). Must be a STABLE value — changing it across upgrades breaks the
+  # cluster. Generate once with: openssl rand -hex 32
+  RABBITMQ_ERLANG_COOKIE: ""
+  DATASOURCE_ONBOARDING_PASSWORD: ""
   #DATASOURCE_EXTERNAL_PASSWORD: db_password
-  OBJECT_STORAGE_ACCESS_KEY_ID: "any"
-  OBJECT_STORAGE_SECRET_KEY: "any"
+  OBJECT_STORAGE_ACCESS_KEY_ID: ""
+  OBJECT_STORAGE_SECRET_KEY: ""
   # Fetcher Integration - Base64 encoded 32-byte encryption key
   APP_ENC_KEY: ""
 seaweedfs:
@@ -590,7 +625,7 @@ mongodb:
   auth:
     enabled: true
     rootUser: reporter
-    rootPassword: lerian
+    rootPassword: ""
   persistence:
     size: 8Gi
   resources:
@@ -625,14 +660,14 @@ externalRabbitmqDefinitions:
     # -- Admin username (ignored if useExistingSecret.name is set)
     username: "midaz"
     # -- Admin password (ignored if useExistingSecret.name is set)
-    password: "lerian"
+    password: ""
   # -- Credentials for the plugin application user created by the job
   appCredentials:
     useExistingSecret:
       # -- Name of existing secret containing RABBITMQ_DEFAULT_PASS key
       name: ""
     # -- Password for plugin user (ignored if useExistingSecret.name is set)
-    pluginPassword: "Lerian@123"
+    pluginPassword: ""
 rabbitmq:
   enabled: true
   image:
@@ -656,13 +691,23 @@ rabbitmq:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities: {drop: ["ALL"]}
+  # Single-source (Pattern B): the broker reads its credentials from the application
+  # manager Secret (reporter-manager) instead of keeping its own copy. The RabbitMQ
+  # password therefore lives in exactly one place — secrets.RABBITMQ_DEFAULT_PASS — and
+  # the latent user mismatch (broker "midaz" vs app "plugin") is removed. Setting
+  # existingSecret suppresses the inline cookie, so RABBITMQ_ERLANG_COOKIE is required
+  # in the app Secret (see secrets + reporter.rabbitmqErlangCookieRequired).
+  # If the manager Secret name is overridden (manager.name / manager.existingSecretName),
+  # update authentication.existingSecret to match.
+  # See docs/helm-chart-standard.md "Single-Source Infra Secrets".
   authentication:
+    existingSecret: "reporter-manager"
     user:
-      value: "midaz"
+      secretKey: RABBITMQ_DEFAULT_USER
     password:
-      value: "lerian"
+      secretKey: RABBITMQ_DEFAULT_PASS
     erlangCookie:
-      value: "b2a717550ac09676c545fe9d986c7651f7237b2691292961"
+      secretKey: RABBITMQ_ERLANG_COOKIE
   extraSecrets:
     - name: "reporter-manager-load-definitions"
       mountPath: /etc/rabbitmq/definitions

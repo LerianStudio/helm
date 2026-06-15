@@ -2,6 +2,8 @@ apiVersion: v2
 name: plugin-access-manager
 description: A Helm chart for Kubernetes
 type: application
+annotations:
+  lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/helm
 # A list of maintainers who are responsible for the chart
 maintainers:
@@ -29,7 +31,7 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 dependencies:
   - name: postgresql
     alias: auth-database
-    version: "16.3"
+    version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"
     condition: auth-database.enabled
   - name: valkey

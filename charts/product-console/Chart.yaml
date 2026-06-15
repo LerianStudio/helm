@@ -3,6 +3,8 @@ name: product-console-helm
 description: A Helm chart for Product Console - Lerian Studio's web interface
   for managing Midaz ledger
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 
 home: https://github.com/LerianStudio/helm
 

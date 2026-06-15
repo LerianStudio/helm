@@ -54,6 +54,8 @@ flowker:
     # REQUIRED: full mongodb:// URI with password embedded.
     MONGO_URI: ""
     API_KEY: ""
+    # REQUIRED when MULTI_TENANT_ENABLED=false.
+    AUDIT_DB_PASSWORD: ""
 
   useExistingSecret: false
   existingSecretName: ""

@@ -3,9 +3,11 @@ output
 .DS_Store
 .idea
 Chart.lock
+!charts/*/Chart.lock
 **/*.tgz
 **/charts/*/charts
 **/charts/*/lerian-values*
-update-chart-version-readme
-update-readme-matrix
+# Compiled Go script binaries (sources live in same-named subdirectories)
+/.github/scripts/update-chart-version-readme-bin
+/.github/scripts/update-readme-matrix-bin
 docs/plans/

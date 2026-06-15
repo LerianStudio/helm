@@ -2,6 +2,8 @@ apiVersion: v2
 name: otel-collector-lerian
 description: A Helm chart for Kubernetes
 type: application
+annotations:
+  lerian.studio/chart-type: dependency-wrapper
 
 home: https://github.com/LerianStudio/otel-collector-lerian
 

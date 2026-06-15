@@ -2,6 +2,8 @@ apiVersion: v2
 name: reporter-helm
 description: A Helm chart for deploying Golang applications
 type: application
+annotations:
+  lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/reporter/tree/main/deploy/charts/reporter
 sources:
   - https://github.com/LerianStudio/reporter/tree/main/deploy/charts/reporter

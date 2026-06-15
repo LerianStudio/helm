@@ -1,0 +1,3 @@
+matcher:
+  secrets:
+    RABBITMQ_PASSWORD: "sample"

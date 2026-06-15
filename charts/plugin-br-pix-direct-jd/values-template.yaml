@@ -54,7 +54,7 @@ pix:
 
   secrets: {}
 
-  useExistingSecrets: false
+  useExistingSecret: false
   existingSecretName: ""
 
 qrcode:

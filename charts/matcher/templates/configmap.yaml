@@ -34,7 +34,7 @@ data:
   {{- end }}
 
   # PostgreSQL Primary
-  POSTGRES_HOST: {{ .Values.matcher.configmap.POSTGRES_HOST | default (printf "matcher-postgresql-primary.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  POSTGRES_HOST: {{ .Values.matcher.configmap.POSTGRES_HOST | default (printf "%s-%s.%s.svc.cluster.local." (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .)) (.Values.postgresql.primary.name | default "primary") .Release.Namespace) | quote }}
   POSTGRES_PORT: {{ .Values.matcher.configmap.POSTGRES_PORT | default "5432" | quote }}
   POSTGRES_USER: {{ .Values.matcher.configmap.POSTGRES_USER | default "matcher" | quote }}
   POSTGRES_DB: {{ .Values.matcher.configmap.POSTGRES_DB | default "matcher" | quote }}
@@ -48,7 +48,7 @@ data:
   MIGRATIONS_PATH: {{ .Values.matcher.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
 
   # PostgreSQL Replica
-  POSTGRES_REPLICA_HOST: {{ .Values.matcher.configmap.POSTGRES_REPLICA_HOST | default (printf "matcher-postgresql-replication.%s.svc.cluster.local." .Release.Namespace) | quote }}
+  POSTGRES_REPLICA_HOST: {{ .Values.matcher.configmap.POSTGRES_REPLICA_HOST | default (printf "%s-%s.%s.svc.cluster.local." (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .)) (.Values.postgresql.readReplicas.name | default "replication") .Release.Namespace) | quote }}
   POSTGRES_REPLICA_PORT: {{ .Values.matcher.configmap.POSTGRES_REPLICA_PORT | default "5432" | quote }}
   POSTGRES_REPLICA_USER: {{ .Values.matcher.configmap.POSTGRES_REPLICA_USER | default "matcher" | quote }}
   POSTGRES_REPLICA_DB: {{ .Values.matcher.configmap.POSTGRES_REPLICA_DB | default "matcher" | quote }}
@@ -58,7 +58,7 @@ data:
   INFRA_CONNECT_TIMEOUT_SEC: {{ .Values.matcher.configmap.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
 
   # Redis/Valkey Configuration
-  REDIS_HOST: {{ .Values.matcher.configmap.REDIS_HOST | default (printf "matcher-valkey-primary.%s.svc.cluster.local.:6379" .Release.Namespace) | quote }}
+  REDIS_HOST: {{ .Values.matcher.configmap.REDIS_HOST | default (printf "%s-primary.%s.svc.cluster.local.:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) .Release.Namespace) | quote }}
   REDIS_DB: {{ .Values.matcher.configmap.REDIS_DB | default "0" | quote }}
   REDIS_PROTOCOL: {{ .Values.matcher.configmap.REDIS_PROTOCOL | default "3" | quote }}
   REDIS_POOL_SIZE: {{ .Values.matcher.configmap.REDIS_POOL_SIZE | default "10" | quote }}

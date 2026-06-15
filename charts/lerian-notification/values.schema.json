@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "imagePullSecrets": {
+      "type": "array"
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "secretRef": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "configMapNameOverride": {
+      "type": "string"
+    },
+    "migrations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "extraConfig": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "secrets": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "extraSecrets": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "api": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "workerEmail": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "workerSms": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "workerWebhook": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

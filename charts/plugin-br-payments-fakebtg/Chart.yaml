@@ -3,6 +3,8 @@ name: plugin-br-payments-fakebtg-helm
 description: A Helm chart for fakebtg, the BTG provider API stand-in used by
   plugin-br-payments dev/staging environments
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-payments-fakebtg

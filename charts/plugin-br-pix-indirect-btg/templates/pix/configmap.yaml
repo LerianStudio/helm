@@ -18,7 +18,7 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ .Values.pix.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
 
   # VALKEY
-  REDIS_HOST: {{ .Values.pix.configmap.REDIS_HOST | default (printf "plugin-br-pix-indirect-btg-valkey-master.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  REDIS_HOST: {{ .Values.pix.configmap.REDIS_HOST | default (include "plugin-br-pix-indirect-btg.valkeyHost" .) | quote }}
   REDIS_PORT: {{ .Values.pix.configmap.REDIS_PORT | default "6379" | quote }}
   REDIS_USER: {{ .Values.pix.configmap.REDIS_USER | default "plugin" | quote }}
 
@@ -49,7 +49,7 @@ data:
   REDIS_MAX_RETRY_BACKOFF: {{ .Values.pix.configmap.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
 
   # POSTGRES
-  DB_HOST: {{ .Values.pix.configmap.DB_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_HOST: {{ .Values.pix.configmap.DB_HOST | default (include "plugin-br-pix-indirect-btg.postgresHost" .) | quote }}
   DB_USER: {{ .Values.pix.configmap.DB_USER | default "plugin" | quote }}
   DB_NAME: {{ .Values.pix.configmap.DB_NAME | default "pix" | quote }}
   DB_PORT: {{ .Values.pix.configmap.DB_PORT | default "5432" | quote }}
@@ -62,14 +62,14 @@ data:
   REPLICATION_USER: {{ .Values.pix.configmap.REPLICATION_USER | default "replicator" | quote }}
   USER_EXECUTE_COMMAND: {{ .Values.pix.configmap.USER_EXECUTE_COMMAND | default "postgres" | quote }}
 
-  DB_REPLICA_HOST: {{ .Values.pix.configmap.DB_REPLICA_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_HOST: {{ .Values.pix.configmap.DB_REPLICA_HOST | default (include "plugin-br-pix-indirect-btg.postgresHost" .) | quote }}
   DB_REPLICA_USER: {{ .Values.pix.configmap.DB_REPLICA_USER | default "plugin" | quote }}
   DB_REPLICA_NAME: {{ .Values.pix.configmap.DB_REPLICA_NAME | default "pix" | quote }}
   DB_REPLICA_PORT: {{ .Values.pix.configmap.DB_REPLICA_PORT | default "5432" | quote }}
 
   # Mongo DB
   MONGO_URI: {{ .Values.pix.configmap.MONGO_URI | default "mongodb" | quote }}
-  MONGO_HOST: {{ .Values.pix.configmap.MONGO_HOST | default (printf "plugin-br-pix-indirect-btg-mongodb.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  MONGO_HOST: {{ .Values.pix.configmap.MONGO_HOST | default (include "plugin-br-pix-indirect-btg.mongoHost" .) | quote }}
   MONGO_PORT: {{ .Values.pix.configmap.MONGO_PORT | default "27017" | quote }}
   MONGO_NAME: {{ .Values.pix.configmap.MONGO_NAME | default "pix-btg-db" | quote }}
   MONGO_USER: {{ .Values.pix.configmap.MONGO_USER | default "pix-btg" | quote }}

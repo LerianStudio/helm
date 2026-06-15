@@ -23,14 +23,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for bc_correios role created by the job
     bcCorreiosCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_BC_CORREIOS key
         name: ""
       # -- Password for bc_correios role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
   # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
     # -- Enable or disable the RabbitMQ bootstrap job
@@ -55,7 +55,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "admin"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 bc-correios:
   # -- Service name
   name: bc-correios
@@ -93,8 +93,11 @@ bc-correios:
     capabilities:
       drop:
         - ALL
+    allowPrivilegeEscalation: false
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   # -- PodDisruptionBudget configuration
   pdb:
     # -- Enable or disable PodDisruptionBudget
@@ -212,7 +215,8 @@ bc-correios:
     ALLOWED_ORIGINS: "*"
     TRUSTED_PROXIES: "127.0.0.1,::1"
     # PostgreSQL
-    POSTGRES_HOST: "plugin-bc-correios-postgresql"
+    # Chart derives the in-cluster host automatically (collapse-aware). Set only for an external/overridden endpoint.
+    POSTGRES_HOST: ""
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "plugin-bc-correios"
     POSTGRES_NAME: "plugin-bc-correios"
@@ -221,13 +225,16 @@ bc-correios:
     POSTGRES_MIN_CONNS: "5"
     # RabbitMQ
     RABBITMQ_USER: "plugin-bc-correios"
-    RABBITMQ_HOST: "plugin-bc-correios-rabbitmq"
+    # Chart derives the in-cluster host automatically (collapse-aware). Set only for an external/overridden endpoint.
+    RABBITMQ_HOST: ""
     # Cache (Valkey)
-    CACHE_ADDR: "plugin-bc-correios-valkey-master:6379"
+    # Chart derives the in-cluster address automatically (collapse-aware). Set only for an external/overridden endpoint.
+    CACHE_ADDR: ""
     CACHE_TTL_SEC: "60"
     # Object Storage (SeaweedFS S3)
     OBJECT_STORAGE_PROVIDER: "s3"
-    OBJECT_STORAGE_ENDPOINT: "http://plugin-bc-correios-seaweedfs:8333"
+    # Chart derives the in-cluster endpoint automatically. Set only for an external/overridden endpoint.
+    OBJECT_STORAGE_ENDPOINT: ""
     OBJECT_STORAGE_BUCKET: "bc-correios-attachments"
     OBJECT_STORAGE_PATH_STYLE: "true"
     # BC Correio integration
@@ -259,12 +266,17 @@ bc-correios:
   # @default -- templates/secrets.yaml
   secrets:
     # PostgreSQL credentials
-    POSTGRES_PASSWORD: "lerian"
+    POSTGRES_PASSWORD: ""
     # RabbitMQ credentials
-    RABBITMQ_PASS: "lerian"
-    RABBITMQ_URL: "amqp://plugin-bc-correios:lerian@plugin-bc-correios-rabbitmq:5672/"
+    RABBITMQ_PASS: ""
+    RABBITMQ_URL: ""
+    # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
+    # it from this Secret via rabbitmq.authentication.existingSecret + erlangCookie.secretKey).
+    # Must be a STABLE value — changing it across upgrades breaks the cluster.
+    # Generate once with: openssl rand -hex 32
+    RABBITMQ_ERLANG_COOKIE: ""
     # AES-256 encryption key (32 bytes — override with a real key in production)
-    ENCRYPTION_KEY: "01234567890123456789012345678901"
+    ENCRYPTION_KEY: ""
     # Cache (Valkey) credentials
     CACHE_PASSWORD: ""
     # Object storage credentials
@@ -298,7 +310,7 @@ valkey:
   architecture: standalone
   auth:
     enabled: true
-    password: lerian
+    password: ""
     username: bc_correios
   primary:
     kind: Deployment
@@ -324,9 +336,9 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "plugin-bc-correios"
-    password: "lerian"
+    password: ""
     database: "plugin-bc-correios"
   primary:
     persistence:
@@ -359,13 +371,23 @@ rabbitmq:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities: {drop: ["ALL"]}
+  # The broker reads its Erlang cookie from the application Secret (single source) via
+  # authentication.existingSecret + erlangCookie.secretKey. Setting existingSecret only
+  # affects keys that declare a secretKey, so the broker user/password behaviour is
+  # unchanged; the cookie is no longer a deterministic literal shipped in the chart.
+  # RABBITMQ_ERLANG_COOKIE is REQUIRED in the app Secret when rabbitmq.enabled (see
+  # secrets + bc-correios.rabbitmqErlangCookieRequired). Must be a STABLE value — changing
+  # it across upgrades breaks the cluster. Generate once with: openssl rand -hex 32
+  # If the app Secret name is overridden (fullnameOverride/nameOverride), update
+  # authentication.existingSecret to match.
   authentication:
+    existingSecret: "bc-correios"
     user:
       value: "plugin-bc-correios"
     password:
-      value: "lerian"
+      value: ""
     erlangCookie:
-      value: "BcCorreiosErlangCookiePlaceholderChangeMe=="
+      secretKey: RABBITMQ_ERLANG_COOKIE
   extraSecrets:
     - name: "bc-correios-rabbitmq-load-definition"
       mountPath: /etc/rabbitmq/definitions

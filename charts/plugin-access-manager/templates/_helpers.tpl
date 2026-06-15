@@ -2,21 +2,21 @@
 Expand the name of the chart and plugin identity.
 */}}
 {{- define "plugin-identity.name" -}}
-{{- default (default .Values.identity.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-identity" .Values.identity.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Expand the name of the chart and plugin auth.
 */}}
 {{- define "plugin-auth.name" -}}
-{{- default (default .Values.auth.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-auth" .Values.auth.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Expand the name of the chart and plugin auth.
 */}}
 {{- define "plugin-auth-backend.name" -}}
-{{- default (default .Values.auth.backend.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-auth-backend" .Values.auth.backend.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 
@@ -47,7 +47,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-identity.fullname" -}}
-{{- default (default .Values.identity.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-identity" .Values.identity.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -56,7 +56,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-auth.fullname" -}}
-{{- default (default .Values.auth.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-auth" .Values.auth.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -65,7 +65,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-auth-backend.fullname" -}}
-{{- default (default .Values.auth.backend.name) | trunc 63 | trimSuffix "-" }}
+{{- default "plugin-access-manager-auth-backend" .Values.auth.backend.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -136,13 +136,6 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
 {{/*
-Auth dataSourceName
-*/}}
-{{- define "plugin-auth-backend.dataSourceName" -}}
-"user={{ .Values.auth.configmap.DB_USER }} password={{ .Values.auth.secrets.DB_PASSWORD }} host={{ .Values.auth.configmap.DB_HOST }} port={{ .Values.auth.configmap.DB_PORT }} sslmode={{ .Values.auth.configmap.DB_SSLMODE | default "disable" }} dbname={{ .Values.auth.configmap.DB_NAME }}"
-{{- end }}
-
-{{/*
 Create the name of the identity service account to use
 */}}
 {{- define "plugin-identity.serviceAccountName" -}}
@@ -172,21 +165,52 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
+{{/*
+plugin-auth.dbPasswordEnv — emit a single `- name: <envName> valueFrom: secretKeyRef: {name,key}`
+entry for the auth database password, single-sourced. With the bundled `auth-database`
+(aliased Bitnami postgresql) subchart, it reads the generated Secret
+(<release>-auth-database, key "password"); honors auth-database.auth.existingSecret; and
+falls back to the app's plugin-auth Secret (key DB_PASSWORD) only for an external database.
+Input (dict): context (root .), envName (container env var name, e.g. DB_PASSWORD or DB_PASS).
+See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+*/}}
+{{- define "plugin-auth.dbPasswordEnv" -}}
+{{- $ctx := .context -}}
+{{- $db := default dict (index $ctx.Values "auth-database") -}}
+{{- $dbAuth := default dict $db.auth -}}
+{{- $internal := and (ne (toString $db.enabled) "false") (not $db.external) -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+    {{- if $dbAuth.existingSecret }}
+      name: {{ $dbAuth.existingSecret }}
+      key: password
+    {{- else if $internal }}
+      name: {{ include "common.names.dependency.fullname" (dict "chartName" "auth-database" "chartValues" (index $ctx.Values "auth-database") "context" $ctx) }}
+      key: password
+    {{- else }}
+      {{- if not $ctx.Values.auth.useExistingSecret }}{{- $_ := required "\n\nERROR: auth-database is external or disabled.\n   The DB password is no longer single-sourced from the subchart Secret, so you must provide it.\n   Set auth.secrets.DB_PASSWORD, or point auth-database.auth.existingSecret at an external Secret.\n" $ctx.Values.auth.secrets.DB_PASSWORD -}}{{- end }}
+      name: {{ if $ctx.Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding DB_PASSWORD.\n" $ctx.Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" $ctx }}{{ end }}
+      key: DB_PASSWORD
+    {{- end }}
+{{- end }}
+
+
 
 {{/*
-Enable dependencies
+Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
+Secret/Service names render even when all bundled subcharts are disabled
+(external-infra path). Self-contained: no other common.* helpers required.
 */}}
-{{- define "valkey.enabled" -}}
-{{- if not .Values.valkey.external -}}
-true
+{{- define "common.names.dependency.fullname" -}}
+{{- if .chartValues.fullnameOverride -}}
+{{- .chartValues.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-false
-{{- end -}}
-{{- end -}}
-{{- define "postgresql.enabled" -}}
-{{- if not .Values.authdb.external -}}
-true
+{{- $name := default .chartName .chartValues.nameOverride -}}
+{{- if contains $name .context.Release.Name -}}
+{{- .context.Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-false
+{{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

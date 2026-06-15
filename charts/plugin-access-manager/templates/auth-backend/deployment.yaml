@@ -25,6 +25,8 @@ spec:
         {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
       initContainers:
         - name: wait-for-dependencies
+          securityContext:
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
           image: busybox
           envFrom:
           - configMapRef:
@@ -87,15 +89,7 @@ spec:
               configMapKeyRef:
                 name: {{ include "plugin-auth.fullname" . }}
                 key: DB_SSLMODE
-          - name: DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                {{- if .Values.auth.useExistingSecret }}
-                name: {{ .Values.auth.existingSecretName }}
-                {{- else }}
-                name: {{ include "plugin-auth.fullname" . }}
-                {{- end }}
-                key: DB_PASSWORD
+          {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
           {{ if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:

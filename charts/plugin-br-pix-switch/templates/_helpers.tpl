@@ -126,6 +126,17 @@ Usage:
 */}}
 {{- define "plugin-br-pix-switch.waitForDependencies" -}}
 - name: wait-for-dependencies
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
   image: busybox:1.37
   envFrom:
     - configMapRef:

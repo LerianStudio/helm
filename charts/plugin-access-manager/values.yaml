@@ -4,7 +4,6 @@ common:
   # Common secrets and configurations
   authorizer:
     clientId: "ac56c81d4d6d95c0ac12"
-    clientSecret: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
 identity:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -72,6 +71,9 @@ identity:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -136,7 +138,7 @@ identity:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/identity/secrets.yaml
   secrets:
-    AUTHORIZER_CLIENT_SECRET: "{{ .Values.common.authorizer.clientSecret }}"
+    AUTHORIZER_CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
   useExistingSecret: false
@@ -197,18 +199,17 @@ auth:
   podSecurityContext: {}
   # fsGroup: 2000
 
-  securityContext: {}
-  # # -- Defines the group ID for the user running the process inside the container
-  # runAsGroup: 1000
-  # # -- Defines the user ID for the process running inside the container
-  # runAsUser: 1000
-  # # -- Ensures the process does not run as root
-  # runAsNonRoot: true
-  # capabilities:
-  #   drop:
-  #     - ALL
-  # # -- Defines the root filesystem as read-only
-  # readOnlyRootFilesystem: false
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     # -- Enable or disable PodDisruptionBudget
@@ -279,9 +280,13 @@ auth:
   # -- Secrets for storing sensitive data
   # @default -- templates/auth/secrets.yaml
   secrets:
-    DB_PASSWORD: "lerian"
-    AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
-    REDIS_PASSWORD: "lerian"
+    # DB_PASSWORD is single-sourced from the auth-database subchart Secret
+    # (<release>-auth-database, key "password"), read via secretKeyRef. Leave empty with
+    # the bundled subchart. Only set this for an EXTERNAL database (auth-database.external=true)
+    # without auth-database.auth.existingSecret. See docs/helm-chart-standard.md.
+    DB_PASSWORD: ""
+    AUTHORIZER_CLIENT_SECRET: ""
+    REDIS_PASSWORD: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
   useExistingSecret: false
@@ -386,7 +391,7 @@ auth-database:
     enabled: true
     enablePostgresUser: false
     username: "auth"
-    password: "lerian"
+    password: ""
     database: "casdoor"
   primary:
     persistence:

@@ -1,5 +1,13 @@
 # Flowker Helm Chart
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: `flowker.secrets.AUDIT_DB_PASSWORD` for the default non-multi-tenant render. With the bundled MongoDB subchart, `MONGO_URI` is assembled automatically from the subchart-generated Secret; supply `flowker.secrets.MONGO_URI` only when pointing at external MongoDB.
+- Dependency notes: Bundles the Bitnami MongoDB subchart unless external MongoDB is configured. MongoDB credentials are single-sourced from the subchart Secret (`mongodb-root-password`) — operators do not supply them for the bundled instance. The audit PostgreSQL (required when `MULTI_TENANT_ENABLED=false`) is always external — no PostgreSQL dependency chart is bundled.
+- Production overrides: Provide production database credentials through chart secrets or an existing Secret where supported; override image tags, ingress, resources, and dependency persistence for the target environment.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 A Helm chart for deploying Flowker - Workflow orchestration platform for financial validation.
 
 ## Prerequisites
@@ -33,7 +41,7 @@ mongodb:
   enabled: false
 
 flowker:
-  configmap:
+  secrets:
     MONGO_URI: "mongodb://user:password@your-mongo-host:27017/flowker?authSource=admin"
 ```
 
@@ -47,7 +55,7 @@ flowker:
   existingSecretName: "my-flowker-secret"
 ```
 
-The secret must contain the keys defined in `flowker.secrets` (e.g., `MONGO_APP_PASSWORD`, `API_KEY`).
+The secret must contain the keys defined in `flowker.secrets` (e.g., `MONGO_URI`, `AUDIT_DB_PASSWORD`, `API_KEY`).
 
 ## Values
 

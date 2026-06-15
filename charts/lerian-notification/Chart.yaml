@@ -3,6 +3,8 @@ name: lerian-notification-helm
 description: Lerian Notification service - multi-channel delivery (email, SMS,
   webhook) for the Lerian platform
 type: application
+annotations:
+  lerian.studio/chart-type: multi-component
 kubeVersion: ">=1.24.0-0"
 home: https://github.com/LerianStudio/helm
 sources:

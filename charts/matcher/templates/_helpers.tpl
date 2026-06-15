@@ -123,3 +123,21 @@ true
 false
 {{- end -}}
 {{- end -}}
+
+{{/*
+Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
+Secret/Service names render even when all bundled subcharts are disabled
+(external-infra path). Self-contained: no other common.* helpers required.
+*/}}
+{{- define "common.names.dependency.fullname" -}}
+{{- if .chartValues.fullnameOverride -}}
+{{- .chartValues.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .chartName .chartValues.nameOverride -}}
+{{- if contains $name .context.Release.Name -}}
+{{- .context.Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

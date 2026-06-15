@@ -2,6 +2,25 @@
 
 ## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.1.0)
 
+- **Fixes**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.7.3, including updates to `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`.
+
+- **Improvements**
+  - Aligned the format of the upgrade guide for `plugin-br-pix-indirect-btg`.
+
+- **Documentation**
+  - Added an upgrade guide for `plugin-br-pix-indirect-btg` version 3.0.0.
+  - Added an upgrade guide for `plugin-br-pix-indirect-btg` version 3.0.1.
+  - Added a version 2.4 upgrade guide for `plugin-br-pix-indirect-btg`.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.0.1...plugin-br-pix-indirect-btg-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.1.0)
+
 - **Features**
   - Added upgrade guide for plugin-br-pix-indirect-btg v3.0.0.
   - Added upgrade guide for plugin-br-pix-indirect-btg v3.0.1.

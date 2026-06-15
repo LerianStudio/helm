@@ -1,11 +1,11 @@
-Lerian Notification deployed successfully.
+Notifications deployed successfully.
 
 Release:   {{ .Release.Name }}
 Namespace: {{ .Release.Namespace }}
 Chart:     {{ .Chart.Name }} {{ .Chart.Version }} (appVersion {{ .Chart.AppVersion }})
 
 Components:
-  - API              {{ include "lerian-notification.fullname" . }}      :{{ .Values.api.containerPort }}
+  - API              {{ include "notifications.fullname" . }}      :{{ .Values.api.containerPort }}
 {{- if .Values.workerEmail.enabled }}
   - Worker (email)   {{ include "workerEmail.fullname" . }}              :{{ .Values.workerEmail.containerPort }}
 {{- end }}
@@ -19,7 +19,7 @@ Components:
 {{- if .Values.migrations.enabled }}
 
 Migrations ran as a pre-install/pre-upgrade Helm hook:
-  kubectl logs -n {{ .Release.Namespace }} job/{{ include "lerian-notification.fullname" . }}-migrations
+  kubectl logs -n {{ .Release.Namespace }} job/{{ include "notifications.fullname" . }}-migrations
 {{- end }}
 
 External dependencies (NOT bundled):
@@ -37,9 +37,9 @@ Ingress:
 {{- else }}
 
 Local access (ingress disabled):
-  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "lerian-notification.fullname" . }} 8080:{{ .Values.api.service.port }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "notifications.fullname" . }} 8080:{{ .Values.api.service.port }}
   curl http://localhost:8080/health
 {{- end }}
 
 Logs:
-  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/part-of=lerian-notification --tail=200 -f
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/part-of=notifications --tail=200 -f

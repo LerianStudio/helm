@@ -6,7 +6,7 @@
 api:
   replicaCount: 1
   image:
-    repository: docker.io/lerianstudio/lerian-notification
+    repository: docker.io/lerianstudio/notifications
     pullPolicy: Always
     tag: ""  # set per release (e.g. "0.1.0-rc.1")
   ingress:
@@ -28,7 +28,7 @@ workerEmail:
   enabled: true
   replicaCount: 1
   image:
-    repository: docker.io/lerianstudio/lerian-notification-worker-email
+    repository: docker.io/lerianstudio/notifications-worker-email
     pullPolicy: Always
     tag: ""
 
@@ -36,7 +36,7 @@ workerSms:
   enabled: true
   replicaCount: 1
   image:
-    repository: docker.io/lerianstudio/lerian-notification-worker-sms
+    repository: docker.io/lerianstudio/notifications-worker-sms
     pullPolicy: Always
     tag: ""
 
@@ -44,7 +44,7 @@ workerWebhook:
   enabled: true
   replicaCount: 1
   image:
-    repository: docker.io/lerianstudio/lerian-notification-worker-webhook
+    repository: docker.io/lerianstudio/notifications-worker-webhook
     pullPolicy: Always
     tag: ""
 
@@ -61,8 +61,8 @@ config:
   LOG_LEVEL: "info"
   POSTGRES_HOST: ""
   POSTGRES_PORT: "5432"
-  POSTGRES_USER: "lerian-notification"
-  POSTGRES_NAME: "lerian-notification"
+  POSTGRES_USER: "notifications"
+  POSTGRES_NAME: "notifications"
   POSTGRES_SSLMODE: "require"
   REDIS_HOST: ""
   REDIS_PORT: "6379"

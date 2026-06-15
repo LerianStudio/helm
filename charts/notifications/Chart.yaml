@@ -1,6 +1,6 @@
 apiVersion: v2
-name: lerian-notification-helm
-description: Lerian Notification service - multi-channel delivery (email, SMS,
+name: notifications-helm
+description: Notifications service - multi-channel delivery (email, SMS,
   webhook) for the Lerian platform
 type: application
 annotations:
@@ -8,13 +8,13 @@ annotations:
 kubeVersion: ">=1.24.0-0"
 home: https://github.com/LerianStudio/helm
 sources:
-  - https://github.com/LerianStudio/lerian-notification
+  - https://github.com/LerianStudio/notifications
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 1.0.0-beta.4
+version: 1.0.0-beta.5
 # This is the version number of the application being deployed.
 appVersion: "0.1.0"
 keywords:

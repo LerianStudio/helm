@@ -2,10 +2,10 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "lerian-notification.fullname" . }}
-  namespace: {{ include "lerian-notification.namespace" . }}
+  name: {{ include "notifications.fullname" . }}
+  namespace: {{ include "notifications.namespace" . }}
   labels:
-    {{- include "lerian-notification.labels" (dict "context" . "name" .Values.api.name) | nindent 4 }}
+    {{- include "notifications.labels" (dict "context" . "name" .Values.api.name) | nindent 4 }}
   {{- with .Values.api.pdb.annotations }}
   annotations:
     {{- range $key, $value := . }}
@@ -20,5 +20,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "lerian-notification.selectorLabels" (dict "context" . "name" .Values.api.name) | nindent 6 }}
+      {{- include "notifications.selectorLabels" (dict "context" . "name" .Values.api.name) | nindent 6 }}
 {{- end }}

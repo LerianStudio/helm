@@ -144,16 +144,11 @@ mongodb:
 rabbitmq:
   enabled: true
 
+# -- OTEL exporter configuration for midaz services.
+# When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES
+# are injected into every midaz deployment. Port is fixed at 4317.
+# If you need a different collector endpoint, leave enabled=false and configure
+# OTEL env vars directly in the application configmap.
 otel-collector-lerian:
+  # -- Inject OTEL env vars into midaz service deployments
   enabled: true
-
-  extraEnvs:
-  - name: OTEL_API_KEY
-    valueFrom:
-      secretKeyRef:
-        name: otel-api-key
-        key: api-key
-
-  exporters:
-    prometheus/local: # Expose metrics for Client Prometheus
-      endpoint: 0.0.0.0:8889

@@ -676,29 +676,11 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
+# -- OTEL exporter configuration for midaz services.
+# When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES
+# are injected into every midaz deployment. Port is fixed at 4317.
+# If you need a different collector endpoint, leave enabled=false and configure
+# OTEL env vars directly in the application configmap.
 otel-collector-lerian:
-  # -- Enable OTEL collector subchart installation
-  enabled: false
-  # -- Use externally installed OTEL collector (injects HOST_IP env vars without installing subchart)
-  # When true, deployment templates will inject OTEL_EXPORTER_OTLP_ENDPOINT pointing to HOST_IP:4317
-  # This is useful when you have an existing OTEL collector DaemonSet with hostPort
-  external: false
-  opentelemetry-collector:
-    config:
-      processors:
-        resource/add_client_id:
-          attributes:
-            - key: client.id
-              value: "Lerian" # Add your company name here
-              action: upsert
-  extraEnvs:
-    - name: OTEL_API_KEY
-      valueFrom:
-        secretKeyRef:
-          name: otel-api-key
-          key: api-key
-  exporters:
-    otlphttp/server:
-      endpoint: "https://telemetry.lerian.io:443" # Send traces to Lerian Telemetry
-      headers:
-        x-api-key: "${OTEL_API_KEY}"
+  # -- Inject OTEL env vars into midaz service deployments
+  enabled: true

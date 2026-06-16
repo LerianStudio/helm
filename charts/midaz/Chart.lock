@@ -11,8 +11,5 @@ dependencies:
 - name: rabbitmq
   repository: https://groundhog2k.github.io/helm-charts
   version: 2.1.11
-- name: otel-collector-lerian
-  repository: oci://registry-1.docker.io/lerianstudio
-  version: 2.1.0
 digest: sha256:0690e406671e3e15a5324a5e7b43639f9fdbbda2e6d3a0407e858a61e14d17db
 generated: "2026-06-07T13:02:51.771841-03:00"

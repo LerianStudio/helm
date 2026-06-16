@@ -14,8 +14,5 @@ dependencies:
 - name: nginx
   repository: https://charts.bitnami.com/bitnami
   version: 21.0.3
-- name: otel-collector-lerian
-  repository: oci://registry-1.docker.io/lerianstudio
-  version: 1.0.0-beta.1
 digest: sha256:baf0916ca7ce2d28a4727e3cd4ff8b870d05dcc3b3c0680c082ec8224bedb648
 generated: "2025-07-23T11:00:37.07639-03:00"

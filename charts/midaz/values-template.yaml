@@ -160,14 +160,6 @@ nginx:
 
 otel-collector-lerian:
   enabled: true
-
-  extraEnvs:
-  - name: OTEL_API_KEY
-    valueFrom:
-      secretKeyRef:
-        name: otel-api-key
-        key: api-key
-
-  exporters:
-    prometheus/local: # Expose metrics for Client Prometheus
-      endpoint: 0.0.0.0:8889
+  useHostIP: true
+  endpoint: ""
+  port: 4317

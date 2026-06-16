@@ -59,14 +59,26 @@ spec:
           {{- end }}
           - configMapRef:
               name: {{ include "midaz-crm.fullname" . }}
-          {{- if or (index .Values "otel-collector-lerian").enabled (index .Values "otel-collector-lerian").external }}
+          {{- $otel := index .Values "otel-collector-lerian" }}
+          {{- if $otel.enabled }}
           env:
+          - name: "POD_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          {{- if $otel.useHostIP }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value: "$(HOST_IP):4317"
+            value: "$(HOST_IP):{{ $otel.port }}"
+          {{- else }}
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "{{ $otel.endpoint }}:{{ $otel.port }}"
+          {{- end }}
+          - name: "OTEL_RESOURCE_ATTRIBUTES"
+            value: "k8s.pod.ip=$(POD_IP)"
           {{- end }}
           resources:
             {{- toYaml .Values.crm.resources | nindent 12 }}

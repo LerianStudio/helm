@@ -1,13 +1,13 @@
 {{- if .Values.api.ingress.enabled -}}
-{{- $fullName := include "lerian-notification.fullname" . -}}
+{{- $fullName := include "notifications.fullname" . -}}
 {{- $svcPort := .Values.api.service.port -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ $fullName }}
-  namespace: {{ include "lerian-notification.namespace" . }}
+  namespace: {{ include "notifications.namespace" . }}
   labels:
-    {{- include "lerian-notification.labels" (dict "context" . "name" .Values.api.name) | nindent 4 }}
+    {{- include "notifications.labels" (dict "context" . "name" .Values.api.name) | nindent 4 }}
   {{- with .Values.api.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

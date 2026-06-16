@@ -4,7 +4,7 @@
   is applied before the API and workers attempt to connect.
 
   Uses the API image because the service Dockerfile (starting at
-  lerian-notification v1.0.0-beta.2) bundles both /migrations and a
+  notifications v1.0.0-beta.2) bundles both /migrations and a
   static /migrate binary alongside /api. The Job overrides the image
   command to invoke /migrate directly — distroless has no shell, so the
   binary is invoked with a fixed args list and DATABASE_URL is consumed
@@ -22,10 +22,10 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "lerian-notification.fullname" . }}-migrations
-  namespace: {{ include "lerian-notification.namespace" . }}
+  name: {{ include "notifications.fullname" . }}-migrations
+  namespace: {{ include "notifications.namespace" . }}
   labels:
-    {{- include "lerian-notification.labels" (dict "context" . "name" (printf "%s-migrations" (include "lerian-notification.fullname" .))) | nindent 4 }}
+    {{- include "notifications.labels" (dict "context" . "name" (printf "%s-migrations" (include "notifications.fullname" .))) | nindent 4 }}
   annotations:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-weight: "-5"
@@ -36,7 +36,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "lerian-notification.selectorLabels" (dict "context" . "name" (printf "%s-migrations" (include "lerian-notification.fullname" .))) | nindent 8 }}
+        {{- include "notifications.selectorLabels" (dict "context" . "name" (printf "%s-migrations" (include "notifications.fullname" .))) | nindent 8 }}
       {{- with .Values.migrations.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}

@@ -1,4 +1,4 @@
-# lerian-notification
+# notifications
 
 ## Chart Contract
 
@@ -8,7 +8,7 @@
 - Production overrides: Provide provider credentials through chart secrets or existing Secrets where supported; override API/worker image tags, ingress, resources, and provider endpoints.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
-Helm chart for the Lerian Notification service — multi-channel delivery (email, SMS, webhook) for the Lerian platform.
+Helm chart for the Notifications service — multi-channel delivery (email, SMS, webhook) for the Lerian platform.
 
 ## Topology
 
@@ -43,8 +43,8 @@ Two modes:
 ## Install
 
 ```sh
-helm install lerian-notification ./charts/lerian-notification \
-  -n lerian-notification --create-namespace \
+helm install notifications ./charts/notifications \
+  -n notifications --create-namespace \
   -f values-firmino.yaml
 ```
 

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "lerian-notification.configMapName" . }}
-  namespace: {{ include "lerian-notification.namespace" . }}
+  name: {{ include "notifications.configMapName" . }}
+  namespace: {{ include "notifications.namespace" . }}
   labels:
-    {{- include "lerian-notification.labels" (dict "context" . "name" (include "lerian-notification.fullname" .)) | nindent 4 }}
+    {{- include "notifications.labels" (dict "context" . "name" (include "notifications.fullname" .)) | nindent 4 }}
 data:
   # ---- App version (overrides config-supplied value with chart appVersion) ----
   VERSION: {{ .Values.api.image.tag | default .Chart.AppVersion | quote }}

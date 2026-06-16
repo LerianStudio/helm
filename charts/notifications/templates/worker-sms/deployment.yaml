@@ -3,9 +3,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "workerSms.fullname" . }}
-  namespace: {{ include "lerian-notification.namespace" . }}
+  namespace: {{ include "notifications.namespace" . }}
   labels:
-    {{- include "lerian-notification.labels" (dict "context" . "name" .Values.workerSms.name) | nindent 4 }}
+    {{- include "notifications.labels" (dict "context" . "name" .Values.workerSms.name) | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ .Values.workerSms.revisionHistoryLimit | default 10 }}
   strategy:
@@ -15,11 +15,11 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "lerian-notification.selectorLabels" (dict "context" . "name" .Values.workerSms.name) | nindent 6 }}
+      {{- include "notifications.selectorLabels" (dict "context" . "name" .Values.workerSms.name) | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "lerian-notification.labels" (dict "context" . "name" .Values.workerSms.name) | nindent 8 }}
+        {{- include "notifications.labels" (dict "context" . "name" .Values.workerSms.name) | nindent 8 }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- if not .Values.secretRef.name }}
@@ -29,7 +29,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      serviceAccountName: {{ include "lerian-notification.serviceAccountName" . }}
+      serviceAccountName: {{ include "notifications.serviceAccountName" . }}
       {{- with (concat .Values.imagePullSecrets .Values.workerSms.imagePullSecrets) }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -50,9 +50,9 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ include "lerian-notification.configMapName" . }}
+                name: {{ include "notifications.configMapName" . }}
             - secretRef:
-                name: {{ include "lerian-notification.secretName" . }}
+                name: {{ include "notifications.secretName" . }}
           env:
             # Worker binds /health and /readyz on this address (overrides the
             # shared ConfigMap default to match this worker's containerPort).

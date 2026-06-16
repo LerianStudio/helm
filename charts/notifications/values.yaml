@@ -1,4 +1,4 @@
-# Default values for lerian-notification
+# Default values for notifications
 # This is a YAML-formatted file.
 #
 # Topology:
@@ -124,8 +124,8 @@ config:
   # ---- Postgres (external) ----
   POSTGRES_HOST: ""
   POSTGRES_PORT: "5432"
-  POSTGRES_USER: "lerian-notification"
-  POSTGRES_NAME: "lerian-notification"
+  POSTGRES_USER: "notifications"
+  POSTGRES_NAME: "notifications"
   POSTGRES_SSLMODE: "require"
   POSTGRES_MAX_OPEN_CONNS: "25"
   POSTGRES_MAX_IDLE_CONNS: "5"
@@ -199,7 +199,7 @@ config:
 
   # ---- Swagger ----
   SWAGGER_ENABLED: "true"
-  SWAGGER_TITLE: "Lerian Notification"
+  SWAGGER_TITLE: "Notifications"
   SWAGGER_VERSION: "1.0.0"
   SWAGGER_BASE_PATH: "/"
   SWAGGER_LEFT_DELIM: "{{"
@@ -207,8 +207,8 @@ config:
 
   # ---- OpenTelemetry ----
   ENABLE_TELEMETRY: "false"
-  OTEL_LIBRARY_NAME: "lerian-notification"
-  OTEL_RESOURCE_SERVICE_NAME: "lerian-notification"
+  OTEL_LIBRARY_NAME: "github.com/LerianStudio/notifications"
+  OTEL_RESOURCE_SERVICE_NAME: "notifications"
   OTEL_RESOURCE_SERVICE_VERSION: "0.1.0"
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "firmino"
@@ -297,11 +297,11 @@ extraSecrets: {}
 # API (cmd/api)
 #==============================================================================
 api:
-  name: "lerian-notification"
+  name: "notifications"
   replicaCount: 1
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/lerian-notification
+    repository: docker.io/lerianstudio/notifications
     pullPolicy: Always
     tag: ""  # defaults to .Chart.AppVersion
   imagePullSecrets: []
@@ -384,12 +384,12 @@ api:
 # Worker - Email (cmd/worker-email)
 #==============================================================================
 workerEmail:
-  name: "lerian-notification-worker-email"
+  name: "notifications-worker-email"
   enabled: true
   replicaCount: 1
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/lerian-notification-worker-email
+    repository: docker.io/lerianstudio/notifications-worker-email
     pullPolicy: Always
     tag: ""  # defaults to .Chart.AppVersion
   imagePullSecrets: []
@@ -461,12 +461,12 @@ workerEmail:
 # Worker - SMS (cmd/worker-sms)
 #==============================================================================
 workerSms:
-  name: "lerian-notification-worker-sms"
+  name: "notifications-worker-sms"
   enabled: true
   replicaCount: 1
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/lerian-notification-worker-sms
+    repository: docker.io/lerianstudio/notifications-worker-sms
     pullPolicy: Always
     tag: ""
   imagePullSecrets: []
@@ -536,12 +536,12 @@ workerSms:
 # Worker - Webhook (cmd/worker-webhook)
 #==============================================================================
 workerWebhook:
-  name: "lerian-notification-worker-webhook"
+  name: "notifications-worker-webhook"
   enabled: true
   replicaCount: 1
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/lerian-notification-worker-webhook
+    repository: docker.io/lerianstudio/notifications-worker-webhook
     pullPolicy: Always
     tag: ""
   imagePullSecrets: []

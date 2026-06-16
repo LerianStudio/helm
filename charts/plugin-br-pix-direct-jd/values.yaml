@@ -415,3 +415,5 @@ postgresql:
         value: "5"
 otel-collector-lerian:
   enabled: true
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

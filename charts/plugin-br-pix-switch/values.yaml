@@ -1500,3 +1500,5 @@ rabbitmq:
 # OTEL_EXPORTER_OTLP_ENDPOINT to an external collector for production.
 otel-collector-lerian:
   enabled: false
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

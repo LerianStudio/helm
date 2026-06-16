@@ -280,3 +280,5 @@ aws:
         requests:
           cpu: 10m
           memory: 64Mi
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

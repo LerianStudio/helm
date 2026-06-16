@@ -404,3 +404,5 @@ otel-collector-lerian:
 plugin-br-payments:
   image:
     tag: 1.0.0-beta.9
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

@@ -503,3 +503,5 @@ postgresql:
         value: "10"
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
         value: "5"
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

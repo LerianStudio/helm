@@ -46,6 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
+      fail-fast: false
       matrix:
         chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     steps:
@@ -214,6 +215,7 @@ jobs:
     if: needs.get-changed-paths.outputs.matrix != '[]' && github.ref == 'refs/heads/main'
     strategy:
       max-parallel: 1
+      fail-fast: false
       matrix:
         chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     uses: ./.github/workflows/release-notification.yml

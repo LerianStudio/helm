@@ -1,6 +1,6 @@
 {{/*
 ================================================================================
-LERIAN NOTIFICATION - HELM TEMPLATE HELPERS
+NOTIFICATIONS - HELM TEMPLATE HELPERS
 ================================================================================
 Topology:
   - api             (HTTP service + ingress)

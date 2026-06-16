@@ -252,9 +252,9 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.2.0-beta.1` | 1.0.0 |
 -----------------
 
-### Lerian Notification
+### Notifications
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-notification).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/notifications).
 
 #### Application Version Mapping
 

@@ -99,7 +99,9 @@ dictHubVsync:
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
-    RABBITMQ_URI: "amqp://pixswitch:<password>@rabbitmq-host:5672/"
+    # TLS-only: amqps:// on 5671. lib-commons v5.7.0 validates the broker cert
+    # against the system trust store (a private CA needs an app-code change).
+    RABBITMQ_URI: "amqps://pixswitch:<password>@rabbitmq-host:5671/"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------

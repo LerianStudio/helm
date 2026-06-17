@@ -211,9 +211,11 @@ Usage:
       set -- $(parse_url "${MONGO_URL:-}")
       wait_for_service "mongo" "${1:-}" "${2:-27017}"
 
-      # RabbitMQ (RABBITMQ_URI)
+      # RabbitMQ (RABBITMQ_URI) — TLS-only: default to the amqps port (5671).
+      # All documented URIs carry an explicit :5671; this fallback only applies
+      # to a portless amqps:// URI, so it must not assume the plaintext 5672.
       set -- $(parse_url "${RABBITMQ_URI:-}")
-      wait_for_service "rabbitmq" "${1:-}" "${2:-5672}"
+      wait_for_service "rabbitmq" "${1:-}" "${2:-5671}"
 
       echo "all dependencies ready"
 {{- end }}

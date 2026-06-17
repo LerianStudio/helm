@@ -715,6 +715,9 @@ dictHubVsync:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
     VALKEY_URL: ""
+    # RabbitMQ — required (vsync is a queue consumer). Must be amqps:// (TLS) on
+    # 5671; lib-commons v5.7.0 validates the broker cert against the system trust
+    # store. Supplied per environment via secret/Vault. Never set ALLOW_INSECURE_TLS.
     RABBITMQ_URI: ""
     LICENSE_KEY: ""
     CRM_CLIENT_SECRET: ""
@@ -1459,6 +1462,10 @@ mongodb:
 
 # RabbitMQ (groundhog2k chart — same as plugin-br-bank-transfer / matcher)
 # Used only by dict-hub-vsync for RABBITMQ_URI.
+# Chosen path: EXTERNAL broker with a CA-signed TLS cert (trusted by the system
+# trust store) on amqps://:5671. The in-cluster subchart would present a
+# self-signed cert that lib-commons rejects, so it stays disabled — the anacleto
+# chaos/fuzzing overlays also migrate off the embedded broker to external.
 rabbitmq:
   enabled: false
   image:

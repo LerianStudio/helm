@@ -8,6 +8,7 @@ metadata:
     {{- include "flowker.labels" (dict "context" . "component" .Values.flowker.name "name" .Values.flowker.name) | nindent 4 }}
 data:
   # Server
+  ALLOW_INSECURE_TLS: {{ .Values.flowker.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ .Values.flowker.configmap.ENV_NAME | default "development" | quote }}
   VERSION: {{ .Values.flowker.image.tag | default .Chart.AppVersion | quote }}
   SERVER_PORT: {{ .Values.flowker.configmap.SERVER_PORT | default "4021" | quote }}

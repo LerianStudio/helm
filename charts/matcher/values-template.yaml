@@ -26,6 +26,7 @@ matcher:
     tls: []
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # Application Settings
     ENV_NAME: ""  # REQUIRED - Environment name (e.g., production, staging)
     LOG_LEVEL: "info"

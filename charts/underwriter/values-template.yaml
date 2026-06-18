@@ -57,6 +57,7 @@ underwriter:
     targetMemoryUtilizationPercentage: 80
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: ""
     SERVER_ADDRESS: ":4017"
     LOG_LEVEL: "info"

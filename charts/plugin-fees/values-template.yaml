@@ -13,6 +13,7 @@ fees:
     tls: []
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "development"
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"

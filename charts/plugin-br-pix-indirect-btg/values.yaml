@@ -150,6 +150,7 @@ pix:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # Database Configuration
     # Infra hosts are derived collapse-aware in templates/*/configmap.yaml from the bundled
     # subchart Service names when left empty. Set explicitly only for external infra.
@@ -342,6 +343,7 @@ inbound:
     MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
+    ALLOW_INSECURE_TLS: "true"
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
@@ -471,6 +473,7 @@ outbound:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # Environment
     ENV_NAME: "staging"
     # Database Configuration
@@ -636,6 +639,7 @@ reconciliation:
     DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
+    ALLOW_INSECURE_TLS: "true"
     # Redis Configuration
     REDIS_HOST: ""
     # Midaz Configuration

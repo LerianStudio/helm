@@ -23,6 +23,7 @@ app:
         hosts:
           - payments.example.com
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "production"
     DEPLOYMENT_MODE: "saas"
     LOG_LEVEL: "info"

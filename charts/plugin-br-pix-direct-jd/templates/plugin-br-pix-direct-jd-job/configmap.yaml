@@ -11,6 +11,7 @@ data:
   LOG_LEVEL: {{ .Values.job.configmap.LOG_LEVEL | default "debug" | quote }}
 
   # APP
+  ALLOW_INSECURE_TLS: {{ .Values.job.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   APPLICATION_NAME: {{ .Values.job.configmap.APPLICATION_NAME | default "plugin-br-pix-direct-jd" | quote }}
   APPLICATION_BASE_URL: {{ .Values.job.configmap.APPLICATION_BASE_URL | default "http://plugin-br-pix-direct-jd:4011" | quote }}
   API_VERSION: {{ .Values.job.image.tag | default .Chart.AppVersion | quote }}

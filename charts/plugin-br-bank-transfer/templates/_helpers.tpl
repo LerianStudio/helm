@@ -134,6 +134,19 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- end }}
 
 {{/*
+bank-transfer.migrationPostgresPassword — POSTGRES_PASSWORD for the migration-only Secret.
+migration-secret.yaml renders ONLY on the EXTERNAL Postgres path (the bundled subchart path
+never renders it; it reads the subchart Secret via secretKeyRef instead), so there is no
+subchart Secret to single-source from here and the operator MUST supply the password. Kept as
+a named gate helper (not an inline `required` in the Secret template) per
+docs/helm-chart-standard.md "Single-Source Infra Secrets" so the dual-secret static check passes.
+*/}}
+{{- define "bank-transfer.migrationPostgresPassword" -}}
+{{- $secrets := get (.Values.bankTransfer | default dict) "secrets" | default dict -}}
+{{- required "bankTransfer.secrets.POSTGRES_PASSWORD is required when migrations run against external PostgreSQL with a chart-managed Secret" (get $secrets "POSTGRES_PASSWORD") -}}
+{{- end }}
+
+{{/*
 bank-transfer.mongoInternal — true when the bundled Bitnami mongodb subchart provides the DB.
 */}}
 {{- define "bank-transfer.mongoInternal" -}}

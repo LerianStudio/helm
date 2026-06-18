@@ -5,7 +5,8 @@ metadata:
   labels:
     {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 4 }} 
 data:
-  # -- Default Environment variables for the plugin-fees 
+  # -- Default Environment variables for the plugin-fees
+  ALLOW_INSECURE_TLS: {{ .Values.fees.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ .Values.fees.configmap.ENV_NAME | default "development" | quote }}
   APPLICATION_NAME: {{ .Values.fees.configmap.APPLICATION_NAME | default "plugin-fees" | quote }}
   DEPLOYMENT_MODE: {{ .Values.fees.configmap.DEPLOYMENT_MODE | default "local" | quote }}

@@ -51,6 +51,7 @@ ledger:
     tls: []
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Auth configuration
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_HOST: ""

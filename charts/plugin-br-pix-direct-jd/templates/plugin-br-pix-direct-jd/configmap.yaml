@@ -13,6 +13,7 @@ data:
   NEW_TAG: {{ .Values.pix.image.tag | default .Chart.AppVersion | quote }}
   
   # APP
+  ALLOW_INSECURE_TLS: {{ .Values.pix.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   APPLICATION_NAME: {{ .Values.pix.configmap.APPLICATION_NAME | default "plugin-br-pix-direct-jd" | quote }}
   APPLICATION_BASE_URL: {{ .Values.pix.configmap.APPLICATION_BASE_URL | default "http://plugin-br-pix-direct-jd:4011" | quote }}
   API_VERSION: {{ .Values.pix.image.tag | default .Chart.AppVersion | quote }}

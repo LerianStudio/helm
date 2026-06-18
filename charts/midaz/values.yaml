@@ -227,6 +227,7 @@ ledger:
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/ledger/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Otel default configuration
     ENABLE_TELEMETRY: "true"
     # -- Auth Plugin configuration
@@ -455,6 +456,7 @@ crm:
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/crm/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Default Environment
     ENV_NAME: "development"
     # -- Auth Plugin configuration

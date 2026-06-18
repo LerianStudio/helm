@@ -57,6 +57,7 @@ tracer:
     targetMemoryUtilizationPercentage: 80
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "production"
     SERVER_ADDRESS: ":4020"
     LOG_LEVEL: "info"

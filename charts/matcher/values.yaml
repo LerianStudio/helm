@@ -197,6 +197,7 @@ matcher:
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # Application Settings
     ENV_NAME: "production"
     LOG_LEVEL: "info"

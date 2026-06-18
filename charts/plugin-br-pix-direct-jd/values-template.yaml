@@ -27,6 +27,7 @@ pix:
     tls: []
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Default Environment
     #MIDAZ Variables
     MIDAZ_ORGANIZATION_ID: ""
@@ -107,6 +108,7 @@ job:
     tag: ""
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     JOBS_CRON: "*/1 * * * *"
     # -- Default Environment
     #MIDAZ Variables

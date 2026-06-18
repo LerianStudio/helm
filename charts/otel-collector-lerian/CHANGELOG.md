@@ -3,6 +3,25 @@
 ## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.0.0)
 
 - **Features:**
+  - Introduced a per-chart `values.schema.json` generator to streamline schema generation.
+  - Standardized charts to align with the Lerian chart contract.
+
+- **Fixes:**
+  - Addressed CodeRabbit review comments on the revamp PR #1470.
+  - Allowed additional properties in `values.schema.json` files to enhance flexibility.
+
+- **Improvements:**
+  - Aligned the upgrade guide format for better consistency and clarity.
+
+Contributors: @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v3.0.0...otel-collector-lerian-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.0.0)
+
+- **Features:**
   - Introduced per-chart `values.schema.json` generator for improved CI processes.
   - Standardized charts to adhere to the Lerian chart contract.
 

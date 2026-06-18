@@ -1,5 +1,21 @@
 # Plugin-br-pix-direct-jd Changelog
 
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
+- **Improvements:**
+  - Updated CHANGELOGs for plugin-br-pix-direct-jd to version v2.2.11.
+
+- **Contributors:**
+  - @ferr3ira-gabriel
+  - @fredcamaral
+  - @gandalf-at-lerian
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
 ## [2.2.11](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.11)
 
 - Improvements:

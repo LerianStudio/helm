@@ -126,7 +126,8 @@ existingSecret values are the operator's responsibility and pass untouched.
 {{- $rmq := default dict .Values.rabbitmq -}}
 {{- $rmqEnabled := ne (toString $rmq.enabled) "false" -}}
 {{- $auth := default dict $rmq.authentication -}}
-{{- $secretName := include "bc-correios.fullname" . -}}
+{{- $component := index .Values "bc-correios" -}}
+{{- $secretName := ternary $component.existingSecretName (include "bc-correios.fullname" .) $component.useExistingSecret -}}
 {{- if and $rmqEnabled (eq (default "" $auth.existingSecret) "bc-correios") (ne $secretName "bc-correios") -}}
 {{- fail (printf "\n\nERROR: rabbitmq.authentication.existingSecret is still the shipped default \"bc-correios\" but the app Secret renders as %q.\n   The broker would reference a Secret that does not exist.\n   Update rabbitmq.authentication.existingSecret to %q (or set it to your own existing Secret).\n" $secretName $secretName) -}}
 {{- end -}}

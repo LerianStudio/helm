@@ -136,6 +136,8 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
     secretKeyRef:
       name: {{ .secretName }}
       key: MONGO_PASSWORD
+{{- else }}
+{{- fail "flowker.secrets.MONGO_PASSWORD is required when mongodb is external and mongodb.auth.existingSecret is not set" }}
 {{- end }}
 - name: MONGO_URI
   value: {{ printf "mongodb://%s:$(MONGO_PASSWORD)@%s:27017/?authSource=admin" $mongo.auth.rootUser (include "flowker.mongoHost" $ctx) | quote }}

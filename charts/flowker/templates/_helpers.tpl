@@ -83,29 +83,21 @@ flowker.mongoInternal — true when the bundled Bitnami mongodb subchart provide
 {{- end }}
 
 {{/*
-flowker.mongoHost — the bundled subchart Service host. Used by the readiness init container and
-the assembled URI so they stay consistent. When the bundled Bitnami mongodb subchart is enabled,
-resolve the Service name via Bitnami's own helper so it matches the collapse/override rules
-(release name containing "mongodb", nameOverride, fullnameOverride). On the external path the
-subchart templates are not loaded, so common.names.dependency.fullname is out of scope — fall back
-to self-contained logic mirroring it (fullnameOverride, then nameOverride, then the collapse).
+flowker.mongoHost — the MongoDB host used by the readiness init container and the assembled URI,
+kept consistent across both. When the bundled Bitnami mongodb subchart is enabled, resolve the
+in-cluster Service FQDN via Bitnami's own helper (honoring collapse/nameOverride/fullnameOverride).
+On the EXTERNAL path (mongodb.enabled=false) there is no in-cluster Service — return the real
+external host from flowker.configmap.MONGO_HOST so the init container actually probes the external
+MongoDB instead of a non-existent <release>-mongodb Service.
 */}}
 {{- define "flowker.mongoHost" -}}
 {{- $mongo := default dict .Values.mongodb -}}
-{{- $mongoFullname := "" -}}
 {{- if eq (include "flowker.mongoInternal" .) "true" -}}
-{{- $mongoFullname = include "common.names.dependency.fullname" (dict "chartName" "mongodb" "chartValues" $mongo "context" .) -}}
-{{- else if $mongo.fullnameOverride -}}
-{{- $mongoFullname = $mongo.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default "mongodb" $mongo.nameOverride -}}
-{{- if contains $name .Release.Name -}}
-{{- $mongoFullname = .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $mongoFullname = printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
+{{- $mongoFullname := include "common.names.dependency.fullname" (dict "chartName" "mongodb" "chartValues" $mongo "context" .) -}}
 {{- printf "%s.%s.svc.cluster.local" $mongoFullname (include "global.namespace" .) -}}
+{{- else -}}
+{{- required "flowker.configmap.MONGO_HOST is required when mongodb is external (mongodb.enabled=false)" .Values.flowker.configmap.MONGO_HOST -}}
+{{- end -}}
 {{- end }}
 
 {{/*

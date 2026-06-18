@@ -7,10 +7,13 @@
   - Added upgrade guide for plugin-br-pix-indirect-btg v3.0.1.
 
 - **Fixes**
-  - Updated plugin-br-pix-indirect-btg to version 1.7.3, along with worker components for reconciliation, inbound, and outbound.
+  - Updated plugin-br-pix-indirect-btg to version 1.7.3.
+  - Updated plugin-br-pix-indirect-btg-worker-reconciliation to version 1.7.3.
+  - Updated plugin-br-pix-indirect-btg-worker-inbound to version 1.7.3.
+  - Updated plugin-br-pix-indirect-btg-worker-outbound to version 1.7.3.
 
 - **Improvements**
-  - Aligned upgrade guide format for better consistency.
+  - Aligned upgrade guide format for plugin-br-pix-indirect-btg.
 
 Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
 

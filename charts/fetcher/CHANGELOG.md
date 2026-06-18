@@ -2,6 +2,25 @@
 
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.0.0)
 
+- **Features:**
+  - Added ALLOW_INSECURE_TLS configuration to charts and updated image tags.
+  - Introduced per-chart values.schema.json generator.
+
+- **Fixes:**
+  - Allowed additional properties in values.schema.json files.
+
+- **Improvements:**
+  - Standardized charts to adhere to the Lerian chart contract.
+  - Parametrized probe path and timing for charts using /readyz.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.1...fetcher-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.0.0)
+
 - **Features**
   - Added ALLOW_INSECURE_TLS configuration to multiple charts and updated image tags.
   - Parametrized probe path and timing for all charts using /readyz.

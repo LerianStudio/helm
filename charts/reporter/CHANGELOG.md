@@ -4,9 +4,12 @@
 
 - **Features**
   - Released version 2.1.0 of the reporter.
+  - Released version 2.2.0-beta.1 of the reporter.
+  - Released version 2.2.0 of the reporter.
 
 - **Improvements**
-  - Updated CHANGELOG for version 2.1.0 of the reporter.
+  - Updated CHANGELOG for version 2.1.0.
+  - Updated CHANGELOG for version 2.2.0-beta.1.
 
 Contributors: @guimoreirar, @lerian-studio
 

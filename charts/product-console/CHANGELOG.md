@@ -5,7 +5,7 @@
 - **Fixes**
   - Added `MONGO_PARAMETERS` to configmap for MongoDB configuration.
   - Updated readiness probe path to default to root.
-  - Parametrized probes that were missed in the initial commit.
+  - Parameterized probes that were missed in the initial commit.
 
 - **Improvements**
   - Aligned upgrade guide format.

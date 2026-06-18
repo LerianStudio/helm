@@ -214,8 +214,13 @@ Usage:
       # RabbitMQ (RABBITMQ_URI) — TLS-only: default to the amqps port (5671).
       # All documented URIs carry an explicit :5671; this fallback only applies
       # to a portless amqps:// URI, so it must not assume the plaintext 5672.
+      RABBIT_DEFAULT_PORT=5671
+      case "${RABBITMQ_URI:-}" in
+        amqp://*) RABBIT_DEFAULT_PORT=5672 ;;
+        amqps://*) RABBIT_DEFAULT_PORT=5671 ;;
+      esac
       set -- $(parse_url "${RABBITMQ_URI:-}")
-      wait_for_service "rabbitmq" "${1:-}" "${2:-5671}"
+      wait_for_service "rabbitmq" "${1:-}" "${2:-$RABBIT_DEFAULT_PORT}"
 
       echo "all dependencies ready"
 {{- end }}

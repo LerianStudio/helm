@@ -1,5 +1,26 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.2.0)
+
+- **Features**
+  - Added ALLOW_INSECURE_TLS configuration to enhance security settings.
+  - Implemented a per-chart `values.schema.json` generator to streamline CI processes.
+
+- **Fixes**
+  - Addressed CodeRabbit review comments on the revamp PR #1470.
+  - Corrected a typo in value keys and removed outdated README notes.
+  - Ensured infra secrets are single-sourced for better consistency.
+
+- **Improvements**
+  - Standardized charts to align with the Lerian chart contract for consistency.
+  - Pinned Bitnami dependency versions to maintain stability.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.1.0...plugin-br-pix-indirect-btg-v3.2.0)
+
+---
+
 ## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.1.0)
 
 - **Features**

@@ -1,5 +1,25 @@
 # Plugin-fees Changelog
 
+## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.0.0)
+
+- **Features:**
+  - Added ALLOW_INSECURE_TLS configuration to charts.
+  - Introduced single-source MongoDB password refactoring for improved security.
+
+- **Fixes:**
+  - Addressed CodeRabbit review comments on revamp PR.
+  - Fixed schemas to allow additional properties in values.schema.json files.
+
+- **Improvements:**
+  - Standardized charts to align with the Lerian chart contract.
+  - Removed redundant dependency helpers and updated CI processes.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v6.0.0...plugin-fees-v7.0.0)
+
+---
+
 ## [6.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v6.0.0)
 
 - **Features:**

@@ -3,6 +3,32 @@
 ## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.3.0)
 
 - **Features**
+  - Added `ALLOW_INSECURE_TLS` configuration to multiple charts and updated image tags.
+  - Implemented per-chart `values.schema.json` generator.
+
+- **Fixes**
+  - Enhanced validation and error handling for Helm chart processing.
+  - Allowed additional properties in `values.schema.json` files.
+  - Addressed CodeRabbit review on revamp PR #1470.
+  - Fixed stale midaz-helm repo URLs and setup-helm pin comment.
+  - Resolved issues with failing loud on missing infra creds.
+
+- **Improvements**
+  - Pinned Bitnami dependency versions.
+  - Collapsed-safe Bitnami name derivation.
+  - Standardized charts to Lerian chart contract.
+  - Refactored to single-source multi-subchart Bitnami secrets.
+  - Aligned documentation with chart standard revamp.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.2.0...midaz-v8.3.0)
+
+---
+
+## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.3.0)
+
+- **Features**
   - Added ALLOW_INSECURE_TLS configuration to multiple charts and updated image tags.
   - Implemented per-chart values.schema.json generator.
 

@@ -62,11 +62,7 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_USER
-            - name: DB_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "plugin-auth.fullname" . }}
-                  key: DB_PASSWORD
+            {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASS") | nindent 12 }}
             - name: DB_SSLMODE
               valueFrom:
                 configMapKeyRef:

@@ -94,13 +94,13 @@ common:
     DATASOURCE_ONBOARDING_SSLMODE: disable
 
 secrets:
-  MONGO_PASSWORD: lerian
-  REDIS_PASSWORD: lerian
   RABBITMQ_DEFAULT_USER: plugin
-  RABBITMQ_DEFAULT_PASS: Lerian@123
-  DATASOURCE_ONBOARDING_PASSWORD: lerian
-  OBJECT_STORAGE_ACCESS_KEY_ID: any
-  OBJECT_STORAGE_SECRET_KEY: any
+  RABBITMQ_DEFAULT_PASS: ""
+  # RABBITMQ_ERLANG_COOKIE is required when rabbitmq.enabled=true (single-sourced to the broker).
+  RABBITMQ_ERLANG_COOKIE: ""
+  DATASOURCE_ONBOARDING_PASSWORD: ""
+  OBJECT_STORAGE_ACCESS_KEY_ID: ""
+  OBJECT_STORAGE_SECRET_KEY: ""
   # Fetcher Integration - Base64 encoded 32-byte encryption key
   APP_ENC_KEY: ""
 
@@ -127,11 +127,11 @@ externalRabbitmqDefinitions:
     useExistingSecret:
       name: ""
     username: "midaz"
-    password: "lerian"
+    password: ""
   appCredentials:
     useExistingSecret:
       name: ""
-    pluginPassword: "Lerian@123"
+    pluginPassword: ""
 
 rabbitmq:
   enabled: true

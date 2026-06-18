@@ -94,8 +94,32 @@ spec:
               name: {{ if .Values.bankTransfer.useExistingSecret }}{{ required "bankTransfer.existingSecretName is required when bankTransfer.useExistingSecret is true" .Values.bankTransfer.existingSecretName }}{{ else }}{{ include "bank-transfer.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "bank-transfer.fullname" . }}
-          {{- if eq (toString .Values.bankTransfer.configmap.ENABLE_TELEMETRY) "true" }}
           env:
+          {{- $secretName := ternary .Values.bankTransfer.existingSecretName (include "bank-transfer.fullname" .) .Values.bankTransfer.useExistingSecret }}
+          {{- $pg := .Values.postgresql | default dict }}
+          {{- $pgAuth := $pg.auth | default dict }}
+          {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+          {{- include "bank-transfer.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
+          {{- else if .Values.bankTransfer.secrets.POSTGRES_PASSWORD }}
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $secretName }}
+                key: POSTGRES_PASSWORD
+          {{- end }}
+          {{- $vk := .Values.valkey | default dict }}
+          {{- $vkAuth := $vk.auth | default dict }}
+          {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+          {{- include "bank-transfer.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 10 }}
+          {{- else if .Values.bankTransfer.secrets.REDIS_PASSWORD }}
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $secretName }}
+                key: REDIS_PASSWORD
+          {{- end }}
+          {{- include "bank-transfer.mongoEnv" (dict "context" $ "secretName" $secretName) | nindent 10 }}
+          {{- if eq (toString .Values.bankTransfer.configmap.ENABLE_TELEMETRY) "true" }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:

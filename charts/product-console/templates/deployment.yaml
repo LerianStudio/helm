@@ -5,6 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "product-console.fullname" . }}
+  namespace: {{ include "product-console.namespace" . }}
   labels:
     {{- include "product-console.labels" . | nindent 4 }}
 spec:

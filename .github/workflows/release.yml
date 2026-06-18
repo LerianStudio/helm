@@ -46,6 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
+      fail-fast: false
       matrix:
         chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     steps:
@@ -67,7 +68,7 @@ jobs:
 
       - name: Set up Helm
         continue-on-error: true
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
       - name: Set up Homebrew
         id: setup-homebrew
@@ -81,11 +82,29 @@ jobs:
         run: |
           brew install helm
 
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: .github/scripts/go.sum
+
       - name: Helm Dependency Update
-        run: helm dependency update ${{ matrix.chart.working_dir }}
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
+        run: helm dependency update "$CHART_WORKING_DIR"
 
       - name: Helm Lint
-        run: helm lint ${{ matrix.chart.working_dir }}
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
+        run: helm lint "$CHART_WORKING_DIR"
+
+      - name: Render Helm Chart
+        working-directory: .github/scripts
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
+        run: |
+          chart_name="$(basename "$CHART_WORKING_DIR")"
+          go run ./validate-helm-charts --root ../.. --render-gate --charts "$chart_name"
 
       #- name: Run helm unittest
       #  id: unittest
@@ -114,16 +133,10 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-          cache-dependency-path: .github/scripts/go.mod
-
       - name: Build scripts
         run: |
           cd .github/scripts
-          go build -o update-chart-version-readme update-chart-version-readme.go
+          go build -o update-chart-version-readme-bin ./update-chart-version-readme
 
       - name: Generate .releaserc file
         run: |
@@ -140,7 +153,7 @@ jobs:
             --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
             --arg successCmd "helm package $CHART_PATH && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
-            --arg prepareCmd "./.github/scripts/update-chart-version-readme --chart $CHART_NAME --version \${nextRelease.version}" \
+            --arg prepareCmd "./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
             '.plugins[2][1].chartPath = $chartPath |
               .plugins[4][1].assets = [($chartPath + "/Chart.yaml"), "README.md"] |
               .tagFormat = $tagFormat |
@@ -206,6 +219,7 @@ jobs:
     if: needs.get-changed-paths.outputs.matrix != '[]' && github.ref == 'refs/heads/main'
     strategy:
       max-parallel: 1
+      fail-fast: false
       matrix:
         chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     uses: ./.github/workflows/release-notification.yml

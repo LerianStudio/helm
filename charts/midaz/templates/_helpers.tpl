@@ -86,6 +86,46 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- end }}
 
 {{/*
+infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` env entry
+pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+Inputs (dict): context (root .), subchart, key, envName.
+See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+*/}}
+{{- define "midaz.infraSecretRef" -}}
+{{- $ctx := .context -}}
+{{- $sub := .subchart -}}
+{{- $subValues := default dict (index $ctx.Values $sub) -}}
+{{- $auth := default dict (index $subValues "auth") -}}
+{{- $secretName := "" -}}
+{{- if $auth.existingSecret -}}
+{{- $secretName = $auth.existingSecret -}}
+{{- else -}}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" $subValues "context" $ctx) -}}
+{{- end -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: {{ .key }}
+{{- end }}
+
+{{/*
+midaz.mongodbAuthRequired — fail when the bundled Bitnami mongodb subchart is internal
+(enabled and not external) but mongodb.auth.enabled is disabled and no mongodb.auth.existingSecret
+is provided. Bitnami's mongodb emits NO `<release>-mongodb` Secret when auth.enabled=false (its
+secrets.yaml is wrapped in `if .Values.auth.enabled`), yet ledger and crm still reference
+`mongodb-root-password` via secretKeyRef — a dangling ref that yields CreateContainerConfigError.
+Fail loud at render time so the operator fixes the configuration.
+*/}}
+{{- define "midaz.mongodbAuthRequired" -}}
+{{- $mongo := .Values.mongodb | default dict -}}
+{{- $mongoAuth := $mongo.auth | default dict -}}
+{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) (not $mongoAuth.enabled) (not $mongoAuth.existingSecret) -}}
+{{- fail "\n\nERROR: mongodb.auth.enabled is REQUIRED when the bundled mongodb subchart is internal.\n   ledger and crm read MONGO_*_PASSWORD from the mongodb Secret (single source), but Bitnami\n   mongodb creates no Secret when auth.enabled=false, leaving a dangling secretKeyRef.\n   Choose one: set mongodb.auth.enabled=true, or provide mongodb.auth.existingSecret, or set mongodb.external=true.\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name for CRM.
 */}}
 {{- define "midaz-crm.fullname" -}}
@@ -155,5 +195,23 @@ false
 true
 {{- else -}}
 false
+{{- end -}}
+{{- end -}}
+
+{{/*
+Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
+Secret/Service names render even when all bundled subcharts are disabled
+(external-infra path). Self-contained: no other common.* helpers required.
+*/}}
+{{- define "common.names.dependency.fullname" -}}
+{{- if .chartValues.fullnameOverride -}}
+{{- .chartValues.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .chartName .chartValues.nameOverride -}}
+{{- if contains $name .context.Release.Name -}}
+{{- .context.Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

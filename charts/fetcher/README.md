@@ -1,5 +1,13 @@
 # Fetcher Helm Chart
 
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: None for default render; production MongoDB credentials must not be committed in values files.
+- Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
+- Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override manager/worker image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 ## Overview
 
 Fetcher is a data extraction service for Lerian Studio that enables automated data collection from external sources. This plugin consists of two main components:
@@ -77,7 +85,7 @@ The following table lists the configurable parameters and their default values.
 | `manager.name` | Manager component name | `fetcher-manager` |
 | `manager.replicaCount` | Number of manager replicas | `1` |
 | `manager.image.repository` | Manager image repository | `lerianstudio/fetcher-manager` |
-| `manager.image.tag` | Manager image tag | `1.0.0` |
+| `manager.image.tag` | Manager image tag | `1.3.0` |
 | `manager.image.pullPolicy` | Manager image pull policy | `IfNotPresent` |
 | `manager.service.type` | Kubernetes Service type | `ClusterIP` |
 | `manager.service.port` | Service HTTP port | `4006` |
@@ -96,7 +104,7 @@ The following table lists the configurable parameters and their default values.
 | `worker.name` | Worker component name | `fetcher-worker` |
 | `worker.replicaCount` | Number of worker replicas | `1` |
 | `worker.image.repository` | Worker image repository | `lerianstudio/fetcher-worker` |
-| `worker.image.tag` | Worker image tag | `1.0.0` |
+| `worker.image.tag` | Worker image tag | `1.3.0` |
 | `worker.image.pullPolicy` | Worker image pull policy | `IfNotPresent` |
 | `worker.resources.requests.cpu` | CPU request | `100m` |
 | `worker.resources.requests.memory` | Memory request | `256Mi` |
@@ -122,9 +130,9 @@ The following table lists the configurable parameters and their default values.
 | `manager.secrets.APP_ENC_KEY` | **REQUIRED** - Base64 encoded 32-byte encryption key | `""` |
 | `worker.secrets.APP_ENC_KEY` | **REQUIRED** - Base64 encoded 32-byte encryption key | `""` |
 | `secrets.MONGO_USER` | **REQUIRED** - MongoDB username | `fetcher` |
-| `secrets.MONGO_PASSWORD` | **REQUIRED** - MongoDB password | `lerian` |
+| `secrets.MONGO_PASSWORD` | **REQUIRED** - MongoDB password | `""` |
 | `secrets.RABBITMQ_DEFAULT_USER` | **REQUIRED** - RabbitMQ username | `plugin` |
-| `secrets.RABBITMQ_DEFAULT_PASS` | **REQUIRED** - RabbitMQ password | `Lerian@123` |
+| `secrets.RABBITMQ_DEFAULT_PASS` | **REQUIRED** - RabbitMQ password | `""` |
 | `secrets.LICENSE_KEY` | **REQUIRED** - Lerian license key | `""` |
 
 ### External RabbitMQ Bootstrap

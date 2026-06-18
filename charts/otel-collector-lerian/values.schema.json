@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "opentelemetry-collector": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

@@ -59,10 +59,9 @@ global:
   #     For production, store admin password in an external Secret and set
   #     useExistingSecret.name (the Job reads DB_USER_ADMIN + DB_ADMIN_PASSWORD
   #     from that Secret). Never put real admin passwords in values.yaml.
-  #   - pixswitchCredentials: app user the Job creates. Default password
-  #     "lerian" MATCHES the DATABASE_URL defaults in spi/dictHub/cobHub/etc.
-  #     configmap blocks. Override for production with an existing Secret
-  #     (DB_PASSWORD_PIXSWITCH key) AND override each component's DATABASE_URL.
+  #   - pixswitchCredentials: app user the Job creates. Provide the password
+  #     through explicit values or an existing Secret. Component DATABASE_URL
+  #     values live under component `secrets`, not `configmap`.
   externalPostgresDefinitions:
     enabled: false
     # -- Databases to create (one Job per database). pix-switch needs 3.
@@ -84,7 +83,7 @@ global:
       useExistingSecret:
         name: ""   # PRODUCTION: set this, leave password empty
       username: "pixswitch"
-      password: "lerian"   # MATCHES DATABASE_URL defaults (dev only)
+      password: ""
 
   # ---------------------------------------------------------------------------
   # External MongoDB bootstrap
@@ -96,10 +95,9 @@ global:
   # CREDENTIALS:
   #   - mongoAdminLogin: root admin user used by the Job. For production,
   #     store admin password in an external Secret (useExistingSecret.name).
-  #   - pixswitchCredentials: app user the Job creates. Default password
-  #     "lerian" MATCHES the MONGO_URL defaults in dictHub.configmap.
-  #     Override for production with an existing Secret (MONGO_APP_PASSWORD
-  #     key) AND override dictHub.configmap.MONGO_URL.
+  #   - pixswitchCredentials: app user the Job creates. Provide the password
+  #     through explicit values or an existing Secret. dictHub.MONGO_URL lives
+  #     under `dictHub.secrets`, not `dictHub.configmap`.
   externalMongoDefinitions:
     enabled: false
     connection:
@@ -114,7 +112,7 @@ global:
       useExistingSecret:
         name: ""   # PRODUCTION: set this, leave password empty
       username: "pixswitch"
-      password: "lerian"   # MATCHES MONGO_URL defaults (dev only)
+      password: ""
       # -- Roles granted to the pixswitch user
       roles:
         - role: readWrite
@@ -163,6 +161,9 @@ spi:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: true
@@ -223,9 +224,6 @@ spi:
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
-    # Postgres (full DSN — pix apps use DATABASE_URL, not DB_HOST/DB_PORT/...)
-    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-spi?sslmode=disable"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-spi?sslmode=disable"
     # Single-tenant identity
     ORGANIZATION_ID: ""
     ISPB: ""
@@ -243,13 +241,14 @@ spi:
     MIDAZ_CLIENT_ID: ""
     MIDAZ_LEDGER_ID: ""
     MIDAZ_ORGANIZATION_ID: ""
-    # Cache
-    VALKEY_URL: "redis://default:lerian@plugin-br-pix-switch-valkey-primary:6379/0"
     # Multi-tenant
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
 
   secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
     LICENSE_KEY: ""
     DICT_CLIENT_SECRET: ""
     COB_CLIENT_SECRET: ""
@@ -307,6 +306,9 @@ spiSystemplane:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: false
@@ -359,10 +361,10 @@ spiSystemplane:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-spi?sslmode=disable"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-spi?sslmode=disable"
 
   secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
@@ -403,6 +405,9 @@ adapterBtgMock:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: false
@@ -507,6 +512,9 @@ dictHub:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: true
@@ -560,8 +568,6 @@ dictHub:
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
-    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
     ORGANIZATION_ID: ""
     ISPB: ""
     ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
@@ -569,13 +575,15 @@ dictHub:
     CRM_CLIENT_ID: ""
     CRM_ORGANIZATION_ID: ""
     KEY_CACHE_TTL_SEC: "60"
-    MONGO_URL: "mongodb://pixswitch:lerian@plugin-br-pix-switch-mongodb:27017/pix-dict?authSource=pix-dict"
     MONGO_DB_NAME: "pix-dict"
-    VALKEY_URL: "redis://default:lerian@plugin-br-pix-switch-valkey-primary:6379/0"
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
 
   secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    MONGO_URL: ""
+    VALKEY_URL: ""
     LICENSE_KEY: ""
     CRM_CLIENT_SECRET: ""
     MULTI_TENANT_API_KEY: ""
@@ -630,6 +638,9 @@ dictHubVsync:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: false
@@ -682,16 +693,11 @@ dictHubVsync:
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
     ORGANIZATION_ID: ""
     ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
     CRM_BASE_URL: ""
     CRM_CLIENT_ID: ""
     CRM_ORGANIZATION_ID: ""
-    VALKEY_URL: "redis://default:lerian@plugin-br-pix-switch-valkey-primary:6379/0"
-    # RabbitMQ — required (vsync is a queue consumer)
-    RABBITMQ_URI: "amqp://pixswitch:lerian@plugin-br-pix-switch-rabbitmq:5672/"
     MULTI_TENANT_URL: ""
     # VSync tunables
     VSYNC_ENABLED: "true"
@@ -706,6 +712,13 @@ dictHubVsync:
     VSYNC_STUCK_JOB_SWEEP_TICK_SEC: "30"
 
   secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
+    # RabbitMQ — required (vsync is a queue consumer). Must be amqps:// (TLS) on
+    # 5671; lib-commons v5.7.0 validates the broker cert against the system trust
+    # store. Supplied per environment via secret/Vault. Never set ALLOW_INSECURE_TLS.
+    RABBITMQ_URI: ""
     LICENSE_KEY: ""
     CRM_CLIENT_SECRET: ""
 
@@ -746,6 +759,9 @@ dictProxy:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: true
@@ -839,6 +855,9 @@ dictSystemplane:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: false
@@ -891,10 +910,10 @@ dictSystemplane:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-dict?sslmode=disable"
 
   secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
@@ -935,6 +954,9 @@ cobHub:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: true
@@ -988,13 +1010,13 @@ cobHub:
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
-    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-cob?sslmode=disable"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-cob?sslmode=disable"
     ORGANIZATION_ID: ""
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
 
   secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
     MULTI_TENANT_API_KEY: ""
 
@@ -1048,6 +1070,9 @@ cobProxy:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: true
@@ -1141,6 +1166,9 @@ cobSystemplane:
     capabilities:
       drop: ["ALL"]
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
 
   pdb:
     enabled: false
@@ -1193,10 +1221,10 @@ cobSystemplane:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    DATABASE_URL: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-cob?sslmode=disable"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:lerian@plugin-br-pix-switch-postgresql:5432/pix-cob?sslmode=disable"
 
   secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
@@ -1217,18 +1245,14 @@ cobSystemplane:
 #   rabbitmq   dict-hub-vsync only
 #
 # -----------------------------------------------------------------------------
-# DEFAULT CREDENTIALS WARNING
+# CREDENTIALS
 # -----------------------------------------------------------------------------
-# Every credential below (user: pixswitch / password: lerian) is intended
-# ONLY for the in-cluster subcharts started by `<subchart>.enabled=true`
-# during local development and smoke tests. They MATCH the URL defaults
-# baked into each component's configmap block (e.g.
-#   spi.configmap.DATABASE_URL: postgres://pixswitch:lerian@...
-# ) so a fresh `helm install --set postgresql.enabled=true ...` works
-# without any per-URL override.
+# This chart intentionally keeps credential-bearing DSNs in component `secrets`
+# blocks, never in `configmap` blocks. Operators must provide dependency
+# passwords and DSNs through explicit values or existing Kubernetes Secrets.
 #
 # IMPORTANT — for external databases (RDS, DocumentDB, ElastiCache,
-# AmazonMQ, etc.) the operator MUST NOT rely on these defaults. Instead:
+# AmazonMQ, etc.):
 #
 #   1. Set `<subchart>.enabled: false` for every external dependency.
 #   2. Provide real credentials via a Kubernetes Secret created out-of-band
@@ -1238,11 +1262,9 @@ cobSystemplane:
 #        spi:
 #          useExistingSecret: true
 #          existingSecretName: "pix-switch-spi-credentials"
-#          configmap:
-#            # only non-sensitive fields here; URLs that need passwords
-#            # come from the existing Secret keys above.
-#            DATABASE_URL: "postgres://<user>:$(DB_PASSWORD)@managed.example.com:5432/pix-spi?sslmode=require"
-#            VALKEY_URL: "redis://default:$(VALKEY_PASSWORD)@managed.example.com:6379/0"
+#          secrets:
+#            DATABASE_URL: "postgres://<user>:<password>@managed.example.com:5432/pix-spi?sslmode=require"
+#            VALKEY_URL: "redis://default:<password>@managed.example.com:6379/0"
 #
 #   3. Override `global.externalPostgresDefinitions.pixswitchCredentials.useExistingSecret.name`
 #      and `global.externalMongoDefinitions.pixswitchCredentials.useExistingSecret.name`
@@ -1256,8 +1278,6 @@ cobSystemplane:
 
 # PostgreSQL (Bitnami chart)
 # Used by 7 components for DATABASE_URL / SYSTEMPLANE_POSTGRES_DSN.
-# Default creds below feed the URL defaults in spi/dictHub/dictHubVsync/cobHub
-# (and the systemplane variants) configmap blocks.
 # =============================================================================
 # SHARED INGRESSES
 #
@@ -1378,14 +1398,14 @@ postgresql:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
-  # Bitnami subchart credentials. Operator MUST override for production.
+  # Bitnami subchart credentials. Operator MUST override when enabled.
   # For external Postgres set `enabled: false` and configure DATABASE_URL
-  # per component via an existing Kubernetes Secret (see header).
+  # per component via component secrets or an existing Kubernetes Secret.
   auth:
     enablePostgresUser: true
-    postgresPassword: "lerian"   # admin password (used by bootstrap Jobs)
-    username: "pixswitch"        # MATCHES DATABASE_URL default
-    password: "lerian"           # MATCHES DATABASE_URL default
+    postgresPassword: ""
+    username: "pixswitch"
+    password: ""
     database: "postgres"
 
 # Valkey (Bitnami chart, OCI registry)
@@ -1398,12 +1418,12 @@ valkey:
   image:
     repository: bitnamisecure/valkey
     tag: "latest"
-  # Bitnami subchart credentials. Operator MUST override for production.
+  # Bitnami subchart credentials. Operator MUST override when enabled.
   # For external Valkey/ElastiCache set `enabled: false` and configure
   # VALKEY_URL per component via an existing Kubernetes Secret (see header).
   auth:
     enabled: true
-    password: "lerian"           # MATCHES VALKEY_URL default
+    password: ""
 
 # MongoDB (Bitnami chart)
 # Used by dict-hub only for MONGO_URL.
@@ -1416,17 +1436,17 @@ mongodb:
     repository: bitnamisecure/mongodb
     tag: "latest"
   architecture: standalone
-  # Bitnami subchart credentials. Operator MUST override for production.
+  # Bitnami subchart credentials. Operator MUST override when enabled.
   # For external Mongo/DocumentDB/Atlas set `enabled: false` and configure
-  # dictHub.configmap.MONGO_URL via an existing Kubernetes Secret (see header).
+  # dictHub.secrets.MONGO_URL via component secrets or an existing Kubernetes Secret.
   auth:
     enabled: true
     rootUser: "admin"
-    rootPassword: "lerian"
+    rootPassword: ""
     usernames:
-      - "pixswitch"              # MATCHES MONGO_URL default
+      - "pixswitch"
     passwords:
-      - "lerian"                 # MATCHES MONGO_URL default
+      - ""
     databases:
       - "pix-dict"               # only dict-hub uses Mongo
   persistence:
@@ -1442,6 +1462,10 @@ mongodb:
 
 # RabbitMQ (groundhog2k chart — same as plugin-br-bank-transfer / matcher)
 # Used only by dict-hub-vsync for RABBITMQ_URI.
+# Chosen path: EXTERNAL broker with a CA-signed TLS cert (trusted by the system
+# trust store) on amqps://:5671. The in-cluster subchart would present a
+# self-signed cert that lib-commons rejects, so it stays disabled — the anacleto
+# chaos/fuzzing overlays also migrate off the embedded broker to external.
 rabbitmq:
   enabled: false
   image:
@@ -1465,15 +1489,23 @@ rabbitmq:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities: {drop: ["ALL"]}
-  # groundhog2k subchart credentials. Operator MUST override for production.
+  # groundhog2k subchart credentials. Operator MUST override when enabled.
   # For external RabbitMQ / AmazonMQ set `enabled: false` and configure
-  # dictHubVsync.configmap.RABBITMQ_URI via an existing Kubernetes Secret.
+  # dictHubVsync.secrets.RABBITMQ_URI via component secrets or an existing Kubernetes Secret.
   authentication:
     user:
-      value: "pixswitch"         # MATCHES RABBITMQ_URI default
+      value: "pixswitch"
     password:
-      value: "lerian"            # MATCHES RABBITMQ_URI default
+      value: ""
     erlangCookie:
       value: ""                  # MUST be set when enabled=true
                                  # (groundhog2k chart requires it; generate
                                  #  with `openssl rand -base64 32`)
+
+# OpenTelemetry Collector (Lerian)
+# Optional in-cluster collector. Disabled by default — set per-component
+# OTEL_EXPORTER_OTLP_ENDPOINT to an external collector for production.
+otel-collector-lerian:
+  enabled: false
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

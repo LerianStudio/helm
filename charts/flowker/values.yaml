@@ -24,7 +24,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "flowker"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for flowker user created by the job
     flowkerCredentials:
       useExistingSecret:
@@ -33,7 +33,7 @@ global:
       # -- App username (ignored if useExistingSecret.name is set)
       username: "flowker"
       # -- Password for flowker user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
       # -- List of roles to grant to the user. Each item is a {role, db} pair.
       roles:
         - role: "readWrite"
@@ -90,8 +90,11 @@ flowker:
     capabilities:
       drop:
         - ALL
+    allowPrivilegeEscalation: false
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # -- PodDisruptionBudget configuration
   pdb:
@@ -178,6 +181,7 @@ flowker:
     # convention (.env.example SERVER_PORT=4021). Keep these in sync with
     # service.port above (and containerPort) when overriding in environment
     # values.yaml.
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "development"
     VERSION: "v1.0.0"
     SERVER_PORT: "4021"
@@ -281,16 +285,16 @@ flowker:
   # @default -- templates/secrets.yaml
   secrets:
     # -- MongoDB connection URI (REQUIRED — must include the password).
-    # Example: mongodb://flowker:lerian@flowker-mongodb:27017/flowker?authSource=flowker
+    # Example: mongodb://flowker:<password>@flowker-mongodb:27017/flowker?authSource=flowker
     # For AWS DocumentDB add TLS query parameters:
     #   mongodb://user:pass@host:27017/flowker?tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&authSource=flowker
-    MONGO_URI: "mongodb://flowker:lerian@flowker-mongodb:27017/flowker?authSource=flowker"
+    MONGO_URI: ""
     # -- Base64-encoded PEM CA certificate for MongoDB TLS (e.g., AWS DocumentDB). Empty disables TLS CA validation.
     MONGO_TLS_CA_CERT: ""
     # -- API Key secret (if API_KEY_ENABLED is true)
     API_KEY: ""
     # -- Audit DB password (required when MULTI_TENANT_ENABLED=false)
-    AUDIT_DB_PASSWORD: "lerian"
+    AUDIT_DB_PASSWORD: ""
     # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Redis password for tenant Pub/Sub (optional)
@@ -329,7 +333,7 @@ mongodb:
   auth:
     enabled: true
     rootUser: flowker
-    rootPassword: "lerian"
+    rootPassword: ""
 
   resourcesPreset: "medium"
 

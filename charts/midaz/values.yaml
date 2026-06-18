@@ -28,16 +28,16 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "midaz"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for application users created by the job
     appCredentials:
       useExistingSecret:
         # -- Name of existing secret containing RABBITMQ_DEFAULT_PASS and RABBITMQ_CONSUMER_PASS keys
         name: ""
       # -- Password for transaction user (ignored if useExistingSecret.name is set)
-      transactionPassword: "lerian"
+      transactionPassword: ""
       # -- Password for consumer user (ignored if useExistingSecret.name is set)
-      consumerPassword: "lerian"
+      consumerPassword: ""
   # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:
     # -- Enable or disable the PostgreSQL bootstrap job
@@ -56,14 +56,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for midaz role created by the job
     midazCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_MIDAZ key
         name: ""
       # -- Password for midaz role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
@@ -82,7 +82,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "midaz"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for midaz user created by the job
     midazCredentials:
       useExistingSecret:
@@ -91,7 +91,7 @@ global:
       # -- App username (ignored if useExistingSecret.name is set)
       username: "midaz"
       # -- Password for midaz user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
       # -- List of roles to grant to the user. Each item is a {role, db} pair.
       roles:
         - role: "readWrite"
@@ -145,6 +145,9 @@ ledger:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   # -- PodDisruptionBudget configuration
   pdb:
     # -- Enable or disable PodDisruptionBudget
@@ -224,6 +227,7 @@ ledger:
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/ledger/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Otel default configuration
     ENABLE_TELEMETRY: "true"
     # -- Auth Plugin configuration
@@ -299,18 +303,28 @@ ledger:
   # -- Secrets for storing sensitive data
   # @default -- templates/ledger/secrets.yaml
   secrets:
-    # -- Onboarding module passwords
-    DB_ONBOARDING_PASSWORD: "lerian"
-    DB_ONBOARDING_REPLICA_PASSWORD: "lerian"
-    MONGO_ONBOARDING_PASSWORD: "lerian"
-    # -- Transaction module passwords
-    DB_TRANSACTION_PASSWORD: "lerian"
-    DB_TRANSACTION_REPLICA_PASSWORD: "lerian"
-    MONGO_TRANSACTION_PASSWORD: "lerian"
-    # -- Shared passwords
-    REDIS_PASSWORD: "lerian"
-    RABBITMQ_DEFAULT_PASS: "lerian"
-    RABBITMQ_CONSUMER_PASS: "lerian"
+    # -- Onboarding module passwords.
+    # DB_ONBOARDING_PASSWORD / DB_ONBOARDING_REPLICA_PASSWORD are single-sourced from
+    # the Bitnami postgresql subchart Secret (keys `password` / `replication-password`)
+    # and MONGO_ONBOARDING_PASSWORD from the mongodb subchart Secret
+    # (key `mongodb-root-password`). Only set these for an EXTERNAL backend
+    # (subchart disabled / .external=true) without an existingSecret override.
+    DB_ONBOARDING_PASSWORD: ""
+    DB_ONBOARDING_REPLICA_PASSWORD: ""
+    MONGO_ONBOARDING_PASSWORD: ""
+    # -- Transaction module passwords (same single-source rule as onboarding;
+    # both DB_* authenticate as role `midaz`, both MONGO_* as the mongo root user).
+    DB_TRANSACTION_PASSWORD: ""
+    DB_TRANSACTION_REPLICA_PASSWORD: ""
+    MONGO_TRANSACTION_PASSWORD: ""
+    # -- Shared passwords.
+    # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
+    # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an
+    # existingSecret override. RABBITMQ_* remain operator-provided (see README
+    # "Known limitation" — RabbitMQ is not yet single-sourced).
+    REDIS_PASSWORD: ""
+    RABBITMQ_DEFAULT_PASS: ""
+    RABBITMQ_CONSUMER_PASS: ""
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
     create: true
@@ -362,6 +376,9 @@ crm:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   # -- PodDisruptionBudget configuration
   pdb:
     # -- Enable or disable PodDisruptionBudget
@@ -439,6 +456,7 @@ crm:
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/crm/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Default Environment
     ENV_NAME: "development"
     # -- Auth Plugin configuration
@@ -468,9 +486,13 @@ crm:
   # -- Secrets for storing sensitive data
   # @default -- templates/crm/secrets.yaml
   secrets:
-    LCRYPTO_HASH_SECRET_KEY: "8e079fde826ead63b72611324f48e4153868ec5400a8937d74567109fc62b7b3"
-    LCRYPTO_ENCRYPT_SECRET_KEY: "f81d58bc177a003126d2e2f733a4ceca9dda0ccc4b122574471c8ae886cbeeda"
-    MONGO_PASSWORD: "lerian"
+    # -- App crypto material (operator-provided, external boundary).
+    LCRYPTO_HASH_SECRET_KEY: ""
+    LCRYPTO_ENCRYPT_SECRET_KEY: ""
+    # -- MONGO_PASSWORD is single-sourced from the Bitnami mongodb subchart Secret
+    # (key `mongodb-root-password`); only set it for an EXTERNAL MongoDB
+    # (subchart disabled / .external=true) without an existingSecret override.
+    MONGO_PASSWORD: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -510,7 +532,7 @@ valkey:
   architecture: standalone
   auth:
     enabled: true
-    password: lerian
+    password: ""
     username: midaz
   primary:
     kind: Deployment
@@ -541,12 +563,12 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "midaz"
-    password: "lerian"
+    password: ""
     database: "onboarding"
     replicationUsername: "replicator"
-    replicationPassword: "replicator_password"
+    replicationPassword: ""
   primary:
     extraVolumes:
       - name: init-script
@@ -617,7 +639,7 @@ mongodb:
   auth:
     enabled: true
     rootUser: midaz
-    rootPassword: "lerian"
+    rootPassword: ""
   resourcesPreset: "medium"
   persistence:
     size: 8Gi
@@ -648,9 +670,9 @@ rabbitmq:
     user:
       value: "midaz"
     password:
-      value: "lerian"
+      value: ""
     erlangCookie:
-      value: "WCB00CfurKivfNH61hbxPaNg+xtyA/7RI6bEx5RMGvE="
+      value: ""
   extraSecrets:
     - name: "midaz-rabbitmq-load-definition"
       mountPath: /etc/rabbitmq/definitions

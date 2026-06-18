@@ -12,12 +12,12 @@ global:
       useExistingSecret:
         name: ""
       username: "midaz"
-      password: "lerian"
+      password: ""
     appCredentials:
       useExistingSecret:
         name: ""
-      transactionPassword: "lerian"
-      consumerPassword: "lerian"
+      transactionPassword: ""
+      consumerPassword: ""
 
   # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:
@@ -29,11 +29,11 @@ global:
       useExistingSecret:
         name: ""
       username: "postgres"
-      password: "lerian"
+      password: ""
     midazCredentials:
       useExistingSecret:
         name: ""
-      password: "lerian"
+      password: ""
 
 ledger:
   # -- Enable ledger service (unified onboarding + transaction)
@@ -51,6 +51,7 @@ ledger:
     tls: []
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Auth configuration
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_HOST: ""
@@ -115,15 +116,15 @@ ledger:
     ALLOW_RATELIMIT_FAIL_OPEN: ""
 
   secrets:
-    DB_ONBOARDING_PASSWORD: "lerian"
-    DB_ONBOARDING_REPLICA_PASSWORD: "lerian"
-    MONGO_ONBOARDING_PASSWORD: "lerian"
-    DB_TRANSACTION_PASSWORD: "lerian"
-    DB_TRANSACTION_REPLICA_PASSWORD: "lerian"
-    MONGO_TRANSACTION_PASSWORD: "lerian"
-    REDIS_PASSWORD: "lerian"
-    RABBITMQ_DEFAULT_PASS: "lerian"
-    RABBITMQ_CONSUMER_PASS: "lerian"
+    DB_ONBOARDING_PASSWORD: ""
+    DB_ONBOARDING_REPLICA_PASSWORD: ""
+    MONGO_ONBOARDING_PASSWORD: ""
+    DB_TRANSACTION_PASSWORD: ""
+    DB_TRANSACTION_REPLICA_PASSWORD: ""
+    MONGO_TRANSACTION_PASSWORD: ""
+    REDIS_PASSWORD: ""
+    RABBITMQ_DEFAULT_PASS: ""
+    RABBITMQ_CONSUMER_PASS: ""
 
  # -- Existing secrets name
   useExistingSecret: false
@@ -143,20 +144,6 @@ mongodb:
 
 rabbitmq:
   enabled: true
-
-nginx:
-  enabled: false
-
-  ingress:
-    enabled: false
-    className: ""
-    annotations: {}
-    tls: []
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
 
 otel-collector-lerian:
   enabled: true

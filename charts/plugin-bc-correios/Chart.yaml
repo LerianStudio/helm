@@ -3,6 +3,8 @@ name: plugin-bc-correios-helm
 description: Helm chart for BC Correios Plugin — Brazilian Central Bank mail
   system integration
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/plugin-bc-correios
@@ -11,7 +13,7 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 2.1.0
+version: 2.2.0-beta.3
 
 appVersion: "1.2.0"
 keywords:
@@ -26,7 +28,7 @@ keywords:
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 dependencies:
   - name: postgresql
-    version: "16.3"
+    version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
   - name: valkey

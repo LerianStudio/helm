@@ -51,7 +51,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "midaz"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for midaz user (product-console) created by the job
     consoleCredentials:
       useExistingSecret:
@@ -60,7 +60,7 @@ global:
       # -- App username (ignored if useExistingSecret.name is set)
       username: "midaz"
       # -- Password for midaz user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
       # -- List of roles to grant to the user. Each item is a {role, db} pair.
       roles:
         - role: "readWrite"
@@ -82,8 +82,11 @@ securityContext:
   capabilities:
     drop:
       - ALL
+  allowPrivilegeEscalation: false
   # -- Defines the root filesystem as read-only
-  readOnlyRootFilesystem: false
+  readOnlyRootFilesystem: true
+  seccompProfile:
+    type: RuntimeDefault
 
 # -- PodDisruptionBudget configuration
 pdb:
@@ -252,8 +255,8 @@ extraEnvVars: {}
 # All values here will be base64 encoded and set as environment variables
 secrets:
   PLUGIN_AUTH_CLIENT_SECRET: ""
-  NEXTAUTH_SECRET: "change-me-in-production"
-  MONGODB_PASS: "lerian"
+  NEXTAUTH_SECRET: ""
+  MONGODB_PASS: ""
 
 # -- Use existing secret instead of creating one
 useExistingSecret: false
@@ -279,9 +282,11 @@ mongodb:
   auth:
     enabled: true
     rootUser: midaz
-    rootPassword: "lerian"
+    rootPassword: ""
 
   resourcesPreset: "medium"
 
   persistence:
     size: 8Gi
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

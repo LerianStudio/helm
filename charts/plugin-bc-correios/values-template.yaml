@@ -75,6 +75,7 @@ bc-correios:
 
   configmap:
     # Application Settings
+    ALLOW_INSECURE_TLS: "true"
     APP_ENV: ""       # REQUIRED - e.g., production, staging
     APP_NAME: "plugin-bc-correios"
     APP_VERSION: ""   # REQUIRED - matches image tag

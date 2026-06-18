@@ -1,0 +1,4 @@
+secrets:
+  RABBITMQ_DEFAULT_PASS: "sample"
+  RABBITMQ_ERLANG_COOKIE: "sample-stable-cookie"
+  DATASOURCE_ONBOARDING_PASSWORD: "sample"

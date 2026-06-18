@@ -48,15 +48,49 @@ spec:
               name: {{ if .Values.underwriter.useExistingSecret }}{{ .Values.underwriter.existingSecretName }}{{ else }}{{ include "underwriter.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "underwriter.fullname" . }}
-          {{- if eq (toString .Values.underwriter.configmap.ENABLE_TELEMETRY) "true" }}
+          {{- include "underwriter.dbPasswordRequired" . }}
+          {{- include "underwriter.redisPasswordRequired" . }}
           env:
-          - name: "HOST_IP"
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value: "$(HOST_IP):4317"
-          {{- end }}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "underwriter.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- include "underwriter.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "POSTGRES_REPLICA_PASSWORD") | nindent 12 }}
+            {{- else }}
+            {{- if .Values.underwriter.secrets.POSTGRES_PASSWORD }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.underwriter.useExistingSecret }}{{ .Values.underwriter.existingSecretName }}{{ else }}{{ include "underwriter.fullname" . }}{{ end }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+            {{- if .Values.underwriter.secrets.POSTGRES_REPLICA_PASSWORD }}
+            - name: POSTGRES_REPLICA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.underwriter.useExistingSecret }}{{ .Values.underwriter.existingSecretName }}{{ else }}{{ include "underwriter.fullname" . }}{{ end }}
+                  key: POSTGRES_REPLICA_PASSWORD
+            {{- end }}
+            {{- end }}
+            {{- $vk := .Values.valkey | default dict }}
+            {{- $vkAuth := $vk.auth | default dict }}
+            {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+            {{- include "underwriter.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
+            {{- else if .Values.underwriter.secrets.REDIS_PASSWORD }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.underwriter.useExistingSecret }}{{ .Values.underwriter.existingSecretName }}{{ else }}{{ include "underwriter.fullname" . }}{{ end }}
+                  key: REDIS_PASSWORD
+            {{- end }}
+            {{- if eq (toString .Values.underwriter.configmap.ENABLE_TELEMETRY) "true" }}
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.underwriter.service.port }}

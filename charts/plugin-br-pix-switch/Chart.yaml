@@ -2,6 +2,8 @@ apiVersion: v2
 name: plugin-br-pix-switch-helm
 description: A Helm chart for Kubernetes
 type: application
+annotations:
+  lerian.studio/chart-type: multi-component
 
 home: https://github.com/LerianStudio/helm
 
@@ -13,7 +15,7 @@ maintainers:
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 
-version: 1.1.0-beta.10
+version: 2.0.0-beta.3
 
 # This is the version number of the application being deployed.
 appVersion: "1.0.0-beta.101"
@@ -35,7 +37,7 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # https://docs.lerian.studio/docs/midaz-components
 dependencies:
   - name: postgresql
-    version: "16.3"
+    version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
   - name: valkey
@@ -43,7 +45,7 @@ dependencies:
     repository: "oci://registry-1.docker.io/bitnamicharts"
     condition: valkey.enabled
   - name: mongodb
-    version: "16.4"
+    version: "16.4.12"
     repository: "https://charts.bitnami.com/bitnami"
     condition: mongodb.enabled
   - name: rabbitmq

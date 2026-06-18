@@ -3,13 +3,15 @@ name: flowker-helm
 description: A Helm chart for Flowker - Workflow orchestration platform for
   financial validation
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 home: https://github.com/LerianStudio/flowker
 sources:
   - https://github.com/LerianStudio/flowker
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 2.1.0-beta.6
+version: 3.0.0-beta.4
 appVersion: "1.0.0"
 keywords:
   - flowker

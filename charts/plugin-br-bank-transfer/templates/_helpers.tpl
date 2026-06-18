@@ -110,3 +110,111 @@ false
 {{- end -}}
 {{- end -}}
 
+{{/*
+bank-transfer.infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}`
+entry pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret
+override). Inputs (dict): context (root .), subchart, key, envName.
+See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+*/}}
+{{- define "bank-transfer.infraSecretRef" -}}
+{{- $ctx := .context -}}
+{{- $sub := .subchart -}}
+{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
+{{- $secretName := "" -}}
+{{- if $auth.existingSecret -}}
+{{- $secretName = $auth.existingSecret -}}
+{{- else -}}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
+{{- end -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: {{ .key }}
+{{- end }}
+
+{{/*
+bank-transfer.migrationPostgresPassword — POSTGRES_PASSWORD for the migration-only Secret.
+migration-secret.yaml renders ONLY on the EXTERNAL Postgres path (the bundled subchart path
+never renders it; it reads the subchart Secret via secretKeyRef instead), so there is no
+subchart Secret to single-source from here and the operator MUST supply the password. Kept as
+a named gate helper (not an inline `required` in the Secret template) per
+docs/helm-chart-standard.md "Single-Source Infra Secrets" so the dual-secret static check passes.
+*/}}
+{{- define "bank-transfer.migrationPostgresPassword" -}}
+{{- $secrets := get (.Values.bankTransfer | default dict) "secrets" | default dict -}}
+{{- required "bankTransfer.secrets.POSTGRES_PASSWORD is required when migrations run against external PostgreSQL with a chart-managed Secret" (get $secrets "POSTGRES_PASSWORD") -}}
+{{- end }}
+
+{{/*
+bank-transfer.mongoInternal — true when the bundled Bitnami mongodb subchart provides the DB.
+*/}}
+{{- define "bank-transfer.mongoInternal" -}}
+{{- $mongo := default dict .Values.mongodb -}}
+{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) -}}true{{- else -}}false{{- end -}}
+{{- end }}
+
+{{/*
+bank-transfer.mongoEnv — single-source the MongoDB connection.
+Emits a MONGO_PASSWORD env (secretKeyRef) followed by a MONGO_URI env that references it via
+$(MONGO_PASSWORD) shell-style expansion (Kubernetes expands against earlier env entries in the
+same list, so MONGO_PASSWORD MUST precede MONGO_URI). The app is URI-only, so the URI is
+assembled here rather than embedding a plaintext password in the Secret.
+- Bundled subchart: MONGO_PASSWORD <- the mongodb subchart Secret / mongodb-passwords (user bank_transfer).
+- existingSecret override: MONGO_PASSWORD <- <existingSecret> / mongodb-passwords.
+- External inline: MONGO_PASSWORD <- app Secret / MONGO_PASSWORD.
+If the operator sets bankTransfer.secrets.MONGO_URI explicitly, that wins and is emitted verbatim
+(no $(MONGO_PASSWORD) assembly). The host tracks the mongodb subchart's Bitnami fullname (Service and
+Secret names share it, honoring nameOverride/fullnameOverride and the name-collapse rule).
+Input (dict): context (root .), secretName (app Secret name for the external-inline fallback).
+*/}}
+{{- define "bank-transfer.mongoEnv" -}}
+{{- $ctx := .context -}}
+{{- $ns := include "global.namespace" $ctx -}}
+{{- $mongo := default dict $ctx.Values.mongodb -}}
+{{- $mongoAuth := default dict $mongo.auth -}}
+{{- $internal := eq (include "bank-transfer.mongoInternal" $ctx) "true" -}}
+{{- $mongoFullname := include "common.names.dependency.fullname" (dict "chartName" "mongodb" "chartValues" $mongo "context" $ctx) -}}
+{{- if not $ctx.Values.bankTransfer.useExistingSecret }}
+{{- if or $internal $mongoAuth.existingSecret }}
+{{- $secretName := $mongoAuth.existingSecret | default $mongoFullname }}
+- name: MONGO_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: mongodb-passwords
+{{- else if $ctx.Values.bankTransfer.secrets.MONGO_PASSWORD }}
+- name: MONGO_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .secretName }}
+      key: MONGO_PASSWORD
+{{- end }}
+{{- if $ctx.Values.bankTransfer.secrets.MONGO_URI }}
+- name: MONGO_URI
+  value: {{ $ctx.Values.bankTransfer.secrets.MONGO_URI | quote }}
+{{- else if $internal }}
+- name: MONGO_URI
+  value: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=admin" $mongoFullname $ns | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+
+{{/*
+Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
+Secret/Service names render even when all bundled subcharts are disabled
+(external-infra path). Self-contained: no other common.* helpers required.
+*/}}
+{{- define "common.names.dependency.fullname" -}}
+{{- if .chartValues.fullnameOverride -}}
+{{- .chartValues.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .chartName .chartValues.nameOverride -}}
+{{- if contains $name .context.Release.Name -}}
+{{- .context.Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

@@ -5,7 +5,8 @@ metadata:
   labels:
     {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 4 }} 
 data:
-  # -- Default Environment variables for the plugin-identity 
+  # -- Default Environment variables for the plugin-identity
+  ALLOW_INSECURE_TLS: {{ .Values.identity.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ .Values.identity.configmap.ENV_NAME | default "development" | quote }}
 
   # APP 

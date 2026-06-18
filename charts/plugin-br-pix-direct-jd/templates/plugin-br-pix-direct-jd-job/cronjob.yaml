@@ -26,6 +26,8 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: {{ include "plugin-br-pix-direct-jd-job.fullname" . }}
+              securityContext:
+                {{- toYaml .Values.job.securityContext | nindent 16 }}
               image: {{ .Values.job.image.repository }}:{{ .Values.job.image.tag | default (include "plugin.version" .) }}
               imagePullPolicy: {{ .Values.job.image.pullPolicy }}
               envFrom:
@@ -33,15 +35,28 @@ spec:
                   name: {{ if .Values.job.useExistingSecret }}{{ .Values.job.existingSecretName }}{{ else }}{{ include "plugin-br-pix-direct-jd-job.fullname" . }}{{ end }}
               - configMapRef:
                   name: {{ include "plugin-br-pix-direct-jd-job.fullname" . }}
-              {{ if (index .Values "otel-collector-lerian").enabled }}
               env:
+                {{- $pg := .Values.postgresql | default dict }}
+                {{- $pgAuth := $pg.auth | default dict }}
+                {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+                {{- include "plugin-br-pix-direct-jd.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DATABASE_PASSWORD") | nindent 16 }}
+                {{- else }}
+                {{- if .Values.pix.secrets.DATABASE_PASSWORD }}
+                - name: DATABASE_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ if .Values.job.useExistingSecret }}{{ .Values.job.existingSecretName }}{{ else }}{{ include "plugin-br-pix-direct-jd-job.fullname" . }}{{ end }}
+                      key: DATABASE_PASSWORD
+                {{- end }}
+                {{- end }}
+                {{- if (index .Values "otel-collector-lerian").enabled }}
                 - name: "HOST_IP"
                   valueFrom:
                     fieldRef:
                       fieldPath: status.hostIP
                 - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
                   value: "$(HOST_IP):4317"
-              {{ end }}                              
+                {{- end }}
               resources:
                 {{- toYaml .Values.job.resources | nindent 16 }}
           {{- with .Values.job.nodeSelector }}

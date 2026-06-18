@@ -2,6 +2,8 @@ apiVersion: v2
 name: plugin-br-pix-indirect-btg-helm
 description: A Helm chart for Kubernetes
 type: application
+annotations:
+  lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/helm
 # A list of maintainers who are responsible for the chart
 maintainers:
@@ -9,7 +11,7 @@ maintainers:
     email: "support@lerian.studio"
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 3.1.0
+version: 3.2.0-beta.2
 # This is the version number of the application being deployed.
 appVersion: "1.7.3"
 # A list of keywords about the chart. This helps others discover the chart.
@@ -23,7 +25,7 @@ keywords:
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 dependencies:
   - name: postgresql
-    version: "16.3"
+    version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
   - name: valkey

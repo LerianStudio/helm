@@ -28,6 +28,8 @@ spec:
         {{- toYaml .Values.pix.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.pix.securityContext | nindent 12 }}
           image: {{ .Values.pix.image.repository }}:{{ .Values.pix.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.pix.image.pullPolicy }}
           ports:
@@ -39,15 +41,24 @@ spec:
               name: {{ if .Values.pix.useExistingSecrets }}{{ .Values.pix.existingSecretName }}{{ else }}{{ include "plugin-br-pix-indirect-btg.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
+          {{- include "plugin-br-pix-indirect-btg.dbPasswordRequired" (dict "context" . "component" "pix") }}
+          {{- include "plugin-br-pix-indirect-btg.mongoPasswordRequired" (dict "context" . "component" "pix") }}
+          {{- include "plugin-br-pix-indirect-btg.dbHostRequired" (dict "context" . "component" "pix") }}
+          {{- include "plugin-br-pix-indirect-btg.mongoHostRequired" (dict "context" . "component" "pix") }}
+          {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "pix" "secretName" (include "plugin-br-pix-indirect-btg.fullname" .)) }}
+          {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
+          {{- if or (trim $infraEnv) $otelEnabled }}
           env:
+          {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
+          {{- if $otelEnabled }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
-          {{ end }}  
+          {{- end }}
+          {{- end }}
           resources:
             {{- toYaml .Values.pix.resources | nindent 12 }}
           readinessProbe:

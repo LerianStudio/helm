@@ -25,7 +25,9 @@ spec:
         {{- toYaml .Values.inbound.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "inbound.fullname" . }}
-          image: {{ .Values.inbound.image.repository }}:{{ .Values.inbound.image.tag }}
+          securityContext:
+            {{- toYaml .Values.inbound.securityContext | nindent 12 }}
+          image: {{ .Values.inbound.image.repository }}:{{ .Values.inbound.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.inbound.image.pullPolicy }}
           ports:
             - name: http
@@ -36,15 +38,24 @@ spec:
               name: {{ if .Values.inbound.useExistingSecrets }}{{ .Values.inbound.existingSecretName }}{{ else }}{{ include "inbound.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "inbound.fullname" . }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
+          {{- include "plugin-br-pix-indirect-btg.dbPasswordRequired" (dict "context" . "component" "inbound") }}
+          {{- include "plugin-br-pix-indirect-btg.mongoPasswordRequired" (dict "context" . "component" "inbound") }}
+          {{- include "plugin-br-pix-indirect-btg.dbHostRequired" (dict "context" . "component" "inbound") }}
+          {{- include "plugin-br-pix-indirect-btg.mongoHostRequired" (dict "context" . "component" "inbound") }}
+          {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "inbound" "secretName" (include "inbound.fullname" .)) }}
+          {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
+          {{- if or (trim $infraEnv) $otelEnabled }}
           env:
+          {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
+          {{- if $otelEnabled }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
-          {{ end }}  
+          {{- end }}
+          {{- end }}
           resources:
             {{- toYaml .Values.inbound.resources | nindent 12 }}
           readinessProbe:

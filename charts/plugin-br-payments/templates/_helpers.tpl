@@ -106,6 +106,30 @@ NAMESPACE HELPER
 {{- end }}
 
 {{/*
+infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` env entry
+pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+Inputs (dict): context (root .), subchart ("postgresql"|"valkey"),
+key (data key), envName (container env var name).
+See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+*/}}
+{{- define "plugin-br-payments.infraSecretRef" -}}
+{{- $ctx := .context -}}
+{{- $sub := .subchart -}}
+{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
+{{- $secretName := "" -}}
+{{- if $auth.existingSecret -}}
+{{- $secretName = $auth.existingSecret -}}
+{{- else -}}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
+{{- end -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: {{ .key }}
+{{- end }}
+
+{{/*
 ================================================================================
 DEPENDENCY ENABLED HELPER
 ================================================================================
@@ -166,10 +190,11 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.configmap.MIDAZ_TRANSACTION_URL is REQUIRED.\n   Set the Midaz transaction service URL.\n" }}
 {{- end }}
 
-{{/* PostgreSQL password — required */}}
-{{- if not .Values.app.secrets.POSTGRES_PASSWORD }}
-{{- fail "\n\nERROR: app.secrets.POSTGRES_PASSWORD is REQUIRED.\n   Set the PostgreSQL application password.\n" }}
-{{- end }}
+{{/* PostgreSQL password is single-sourced from the postgresql subchart Secret
+     (<release>-postgresql, key "password") via secretKeyRef; see
+     docs/helm-chart-standard.md "Single-Source Infra Secrets". No gate here:
+     for the bundled subchart the value is generated; for external Postgres the
+     operator supplies postgresql.auth.existingSecret or app.secrets.POSTGRES_PASSWORD. */}}
 
 {{/* Multi-tenant required fields when enabled */}}
 {{- if eq (.Values.app.configmap.MULTI_TENANCY_ENABLED | toString) "true" }}
@@ -212,9 +237,6 @@ Generate annotation listing default-value warnings (non-blocking).
 */}}
 {{- define "plugin-br-payments.secretWarnings" -}}
 {{- $warnings := list -}}
-{{- if eq (.Values.app.secrets.POSTGRES_PASSWORD | toString) "lerian" -}}
-{{- $warnings = append $warnings "POSTGRES_PASSWORD is using default value 'lerian'" -}}
-{{- end -}}
 {{- if .Values.postgresql.enabled -}}
 {{- if eq (.Values.postgresql.auth.password | toString) "lerian" -}}
 {{- $warnings = append $warnings "postgresql.auth.password is using default value 'lerian'" -}}
@@ -225,5 +247,23 @@ Generate annotation listing default-value warnings (non-blocking).
 {{- end -}}
 {{- if gt (len $warnings) 0 -}}
 lerian.studio/security-warnings: {{ $warnings | join "; " | quote }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
+Secret/Service names render even when all bundled subcharts are disabled
+(external-infra path). Self-contained: no other common.* helpers required.
+*/}}
+{{- define "common.names.dependency.fullname" -}}
+{{- if .chartValues.fullnameOverride -}}
+{{- .chartValues.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .chartName .chartValues.nameOverride -}}
+{{- if contains $name .context.Release.Name -}}
+{{- .context.Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

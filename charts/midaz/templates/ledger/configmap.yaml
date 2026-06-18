@@ -19,6 +19,7 @@ data:
   # =============================================================================
   # APP CONFIGURATION
   # =============================================================================
+  ALLOW_INSECURE_TLS: {{ .Values.ledger.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ .Values.ledger.configmap.ENV_NAME | default "production" | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
   DEPLOYMENT_MODE: {{ .Values.ledger.configmap.DEPLOYMENT_MODE | default "local" | quote }}

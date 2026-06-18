@@ -7,6 +7,7 @@ metadata:
   namespace: {{ include "global.namespace" . }}
 data:
   # Application Settings
+  ALLOW_INSECURE_TLS: {{ $component.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   APP_ENV: {{ $component.configmap.APP_ENV | default "development" | quote }}
   APP_NAME: {{ $component.configmap.APP_NAME | default "plugin-bc-correios" | quote }}
   APP_VERSION: {{ $component.configmap.APP_VERSION | default "1.0.0" | quote }}
@@ -21,7 +22,7 @@ data:
   TRUSTED_PROXIES: {{ $component.configmap.TRUSTED_PROXIES | default "127.0.0.1,::1" | quote }}
 
   # PostgreSQL
-  POSTGRES_HOST: {{ $component.configmap.POSTGRES_HOST | default (printf "%s-postgresql" .Release.Name) | quote }}
+  POSTGRES_HOST: {{ $component.configmap.POSTGRES_HOST | default (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .)) | quote }}
   POSTGRES_PORT: {{ $component.configmap.POSTGRES_PORT | default "5432" | quote }}
   POSTGRES_USER: {{ $component.configmap.POSTGRES_USER | default "plugin-bc-correios" | quote }}
   POSTGRES_NAME: {{ $component.configmap.POSTGRES_NAME | default "plugin-bc-correios" | quote }}
@@ -32,17 +33,20 @@ data:
   # RabbitMQ
   RABBITMQ_USER: {{ $component.configmap.RABBITMQ_USER | default "plugin-bc-correios" | quote }}
   # RABBITMQ_HOST is used by the init container to wait for RabbitMQ (no credentials needed).
-  # For bundled RabbitMQ, defaults to the subchart service name.
+  # For bundled RabbitMQ, defaults to the groundhog2k subchart service name, replicating its
+  # rabbitmq.fullname collapse: when the release name already contains "rabbitmq" the chart uses
+  # the release name alone, otherwise "<release>-rabbitmq".
   # For external RabbitMQ, set configmap.RABBITMQ_HOST to the external hostname.
-  RABBITMQ_HOST: {{ $component.configmap.RABBITMQ_HOST | default (printf "%s-rabbitmq" .Release.Name) | quote }}
+  RABBITMQ_HOST: {{ $component.configmap.RABBITMQ_HOST | default (ternary .Release.Name (printf "%s-rabbitmq" .Release.Name) (contains "rabbitmq" .Release.Name)) | quote }}
 
   # Cache (Valkey)
-  CACHE_ADDR: {{ $component.configmap.CACHE_ADDR | default (printf "%s-valkey-master:6379" .Release.Name) | quote }}
+  CACHE_ADDR: {{ $component.configmap.CACHE_ADDR | default (printf "%s-primary:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .))) | quote }}
   CACHE_TTL_SEC: {{ $component.configmap.CACHE_TTL_SEC | default "60" | quote }}
 
   # Object Storage (SeaweedFS S3)
   OBJECT_STORAGE_PROVIDER: {{ $component.configmap.OBJECT_STORAGE_PROVIDER | default "s3" | quote }}
-  OBJECT_STORAGE_ENDPOINT: {{ $component.configmap.OBJECT_STORAGE_ENDPOINT | default (printf "http://%s-seaweedfs:8333" .Release.Name) | quote }}
+  # SeaweedFS runs inline (templates/seaweedfs.yaml); its Service is named off bc-correios.fullname, not the release name.
+  OBJECT_STORAGE_ENDPOINT: {{ $component.configmap.OBJECT_STORAGE_ENDPOINT | default (printf "http://%s-seaweedfs:8333" (include "bc-correios.fullname" .)) | quote }}
   OBJECT_STORAGE_BUCKET: {{ $component.configmap.OBJECT_STORAGE_BUCKET | default "bc-correios-attachments" | quote }}
   OBJECT_STORAGE_PATH_STYLE: {{ $component.configmap.OBJECT_STORAGE_PATH_STYLE | default "true" | quote }}
 

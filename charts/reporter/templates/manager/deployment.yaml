@@ -40,6 +40,8 @@ spec:
       {{- end }}
       initContainers:
         - name: wait-for-dependencies
+          securityContext:
+            {{- toYaml .Values.manager.securityContext | nindent 12 }}
           image: busybox
           envFrom:
           - configMapRef:
@@ -59,6 +61,8 @@ spec:
               done; 
       containers:
         - name: {{ include "plugin-manager.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.manager.securityContext | nindent 12 }}
           image: {{ .Values.manager.image.repository }}:{{ .Values.manager.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.manager.image.pullPolicy }}
           ports:
@@ -70,8 +74,8 @@ spec:
               name: {{ if .Values.manager.useExistingSecret }}{{ .Values.manager.existingSecretName }}{{ else }}{{ include "plugin-manager.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-manager.fullname" . }}
-          {{- if or (index .Values "otel-collector-lerian").enabled (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
           env:
+          {{- include "reporter.mongoPasswordEnv" (dict "context" $ "secretName" (ternary .Values.manager.existingSecretName (include "plugin-manager.fullname" .) .Values.manager.useExistingSecret)) | nindent 10 }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:
@@ -85,7 +89,6 @@ spec:
             value: "http://127.0.0.1:{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
           - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
             value: "IPv4"
-          {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.manager.resources | nindent 12 }}

@@ -141,3 +141,5 @@ fakebtg:
 plugin-br-payments-fakebtg:
   image:
     tag: 1.0.0-beta.20
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

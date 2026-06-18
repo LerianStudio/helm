@@ -126,6 +126,17 @@ Usage:
 */}}
 {{- define "plugin-br-pix-switch.waitForDependencies" -}}
 - name: wait-for-dependencies
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
   image: busybox:1.37
   envFrom:
     - configMapRef:
@@ -200,9 +211,16 @@ Usage:
       set -- $(parse_url "${MONGO_URL:-}")
       wait_for_service "mongo" "${1:-}" "${2:-27017}"
 
-      # RabbitMQ (RABBITMQ_URI)
+      # RabbitMQ (RABBITMQ_URI) — TLS-only: default to the amqps port (5671).
+      # All documented URIs carry an explicit :5671; this fallback only applies
+      # to a portless amqps:// URI, so it must not assume the plaintext 5672.
+      RABBIT_DEFAULT_PORT=5671
+      case "${RABBITMQ_URI:-}" in
+        amqp://*) RABBIT_DEFAULT_PORT=5672 ;;
+        amqps://*) RABBIT_DEFAULT_PORT=5671 ;;
+      esac
       set -- $(parse_url "${RABBITMQ_URI:-}")
-      wait_for_service "rabbitmq" "${1:-}" "${2:-5672}"
+      wait_for_service "rabbitmq" "${1:-}" "${2:-$RABBIT_DEFAULT_PORT}"
 
       echo "all dependencies ready"
 {{- end }}

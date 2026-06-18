@@ -17,14 +17,14 @@ data:
   PLUGIN_AUTH_HOST: {{ .Values.inbound.configmap.PLUGIN_AUTH_HOST | default "http://plugin-auth:4000" | quote }}
 
   # POSTGRES
-  DB_HOST: {{ .Values.inbound.configmap.DB_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_HOST: {{ .Values.inbound.configmap.DB_HOST | default (include "plugin-br-pix-indirect-btg.postgresHost" .) | quote }}
   DB_USER: {{ .Values.inbound.configmap.DB_USER | default "plugin" | quote }}
   DB_NAME: {{ .Values.inbound.configmap.DB_NAME | default "pix" | quote }}
   DB_PORT: {{ .Values.inbound.configmap.DB_PORT | default "5432" | quote }}
   MIGRATIONS_PATH: {{ .Values.inbound.configmap.MIGRATIONS_PATH | default "components/infra/migrations" | quote }}
 
   # DB POSTGRESQL REPLICA
-  DB_REPLICA_HOST: {{ .Values.inbound.configmap.DB_REPLICA_HOST | default (printf "plugin-br-pix-indirect-btg-postgresql.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  DB_REPLICA_HOST: {{ .Values.inbound.configmap.DB_REPLICA_HOST | default (include "plugin-br-pix-indirect-btg.postgresHost" .) | quote }}
   DB_REPLICA_USER: {{ .Values.inbound.configmap.DB_REPLICA_USER | default "plugin" | quote }}
   DB_REPLICA_NAME: {{ .Values.inbound.configmap.DB_REPLICA_NAME | default "pix" | quote }}
   DB_REPLICA_PORT: {{ .Values.inbound.configmap.DB_REPLICA_PORT | default "5432" | quote }}
@@ -35,7 +35,7 @@ data:
 
   # Mongo DB
   MONGO_URI: {{ .Values.inbound.configmap.MONGO_URI | default "mongodb" | quote }}
-  MONGO_HOST: {{ .Values.inbound.configmap.MONGO_HOST | default (printf "plugin-br-pix-indirect-btg-mongodb.%s.svc.cluster.local" .Release.Namespace) | quote }}
+  MONGO_HOST: {{ .Values.inbound.configmap.MONGO_HOST | default (include "plugin-br-pix-indirect-btg.mongoHost" .) | quote }}
   MONGO_PORT: {{ .Values.inbound.configmap.MONGO_PORT | default "27017" | quote }}
   MONGO_NAME: {{ .Values.inbound.configmap.MONGO_NAME | default "pix-btg-db" | quote }}
   MONGO_USER: {{ .Values.inbound.configmap.MONGO_USER | default "pix-btg" | quote }}
@@ -232,7 +232,7 @@ data:
   # Security Tier Configuration (lib-commons v4.4.0)
   SECURITY_TIER: {{ .Values.inbound.configmap.SECURITY_TIER | default "" | quote }}
   SECURITY_ENFORCEMENT: {{ .Values.inbound.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}
-  ALLOW_INSECURE_TLS: {{ .Values.inbound.configmap.ALLOW_INSECURE_TLS | default "" | quote }}
+  ALLOW_INSECURE_TLS: {{ .Values.inbound.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ALLOW_CORS_WILDCARD: {{ .Values.inbound.configmap.ALLOW_CORS_WILDCARD | default "" | quote }}
   RATE_LIMIT_ENABLED: {{ .Values.inbound.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.inbound.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}

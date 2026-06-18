@@ -12,6 +12,7 @@ identity:
     tls: []
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "development"
     AUTH_ENABLED: "true"
     AUTH_PORT: "4000"
@@ -22,10 +23,10 @@ identity:
     REDIS_USER: "auth"
 
   secrets:
-    AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    AUTHORIZER_CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
-    REDIS_PASSWORD: "lerian"
+    REDIS_PASSWORD: ""
 
 auth:
   ingress:
@@ -40,6 +41,7 @@ auth:
     tls: []
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     DB_USER: "auth"
     DB_HOST: "plugin-access-manager-auth-database.midaz-plugins.svc.cluster.local"
     DB_PORT: 5432
@@ -51,9 +53,9 @@ auth:
     AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
   secrets:
-    DB_PASSWORD: "lerian"
-    AUTHORIZER_CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
-    REDIS_PASSWORD: "lerian"
+    DB_PASSWORD: ""
+    AUTHORIZER_CLIENT_SECRET: ""
+    REDIS_PASSWORD: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
 

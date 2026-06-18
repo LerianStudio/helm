@@ -41,6 +41,7 @@ flowker:
     targetMemoryUtilizationPercentage: 80
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     SERVER_ADDRESS: ":4021"
     LOG_LEVEL: "info"
     API_KEY_ENABLED: "false"
@@ -54,6 +55,8 @@ flowker:
     # REQUIRED: full mongodb:// URI with password embedded.
     MONGO_URI: ""
     API_KEY: ""
+    # REQUIRED when MULTI_TENANT_ENABLED=false.
+    AUDIT_DB_PASSWORD: ""
 
   useExistingSecret: false
   existingSecretName: ""

@@ -7,6 +7,7 @@ metadata:
     {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
 data:
   # -- Default Environment variables for CRM
+  ALLOW_INSECURE_TLS: {{ .Values.crm.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
 
   # APP

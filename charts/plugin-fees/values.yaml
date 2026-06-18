@@ -21,7 +21,7 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "plugin-fees"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for plugin-fees user created by the job
     pluginFeesCredentials:
       useExistingSecret:
@@ -30,7 +30,7 @@ global:
       # -- App username (ignored if useExistingSecret.name is set)
       username: "plugin-fees"
       # -- Password for plugin-fees user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
       # -- List of roles to grant to the user. Each item is a {role, db} pair.
       roles:
         - role: "readWrite"
@@ -51,7 +51,7 @@ fees:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.2.0"
+    tag: "3.2.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: regcred
@@ -101,6 +101,9 @@ fees:
         - ALL
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -153,13 +156,16 @@ fees:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Default Environment
     ENV_NAME: "development"
     # -- Application name used for service identification in logs/tracing
     APPLICATION_NAME: "plugin-fees"
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    MONGO_HOST: "plugin-fees-mongodb.midaz-plugins.svc.cluster.local"
+    # -- MongoDB host. Leave empty to derive the bundled subchart Service name
+    # (collapse-aware via common.names.dependency.fullname). Set only for an external MongoDB.
+    MONGO_HOST: ""
     MONGO_NAME: "plugin-fees-db"
     MONGO_PORT: "27017"
     MONGO_USER: "plugin-fees"
@@ -226,9 +232,12 @@ fees:
     # @default -- `plugin-fees-frontend.fullname`
     name: ""  
   # -- Default sensitive variables for the plugin-fees
+  # MONGO_PASSWORD is not listed here: with the bundled Bitnami mongodb subchart it is
+  # auto-generated into the plugin-fees-mongodb Secret and read via secretKeyRef. For an
+  # external MongoDB, set mongodb.external=true and either mongodb.auth.existingSecret or
+  # provide MONGO_PASSWORD here. See docs/helm-chart-standard.md "Single-Source Infra Secrets".
   secrets:
-    MONGO_PASSWORD: "lerian"
-    CLIENT_SECRET: "6add4bc64f394456a77fa85708ad8c9b67e39e4c"
+    CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
     # -- API key used to authenticate with the tenant-manager service (required when MULTI_TENANT_ENABLED=true)
@@ -243,7 +252,7 @@ mongodb:
   auth:
     enabled: true
     rootUser: "plugin-fees"
-    rootPassword: "lerian"
+    rootPassword: ""
   persistence:
     size: 8Gi
   resourcesPreset: "medium"
@@ -272,3 +281,5 @@ aws:
         requests:
           cpu: 10m
           memory: 64Mi
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

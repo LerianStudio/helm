@@ -80,8 +80,19 @@ spec:
                 name: {{ include "plugin-br-payments.fullname" . }}
             - secretRef:
                 name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
-          {{- if (index .Values "otel-collector-lerian").enabled }}
           env:
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "plugin-br-payments.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else if .Values.app.secrets.POSTGRES_PASSWORD }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+          {{- if (index .Values "otel-collector-lerian").enabled }}
             - name: HOST_IP
               valueFrom:
                 fieldRef:

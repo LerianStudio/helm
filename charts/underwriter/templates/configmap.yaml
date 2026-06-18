@@ -10,6 +10,7 @@ data:
   # =============================================================================
   # Application
   # =============================================================================
+  ALLOW_INSECURE_TLS: {{ .Values.underwriter.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ .Values.underwriter.configmap.ENV_NAME | default "production" | quote }}
   LOG_LEVEL: {{ .Values.underwriter.configmap.LOG_LEVEL | default "info" | quote }}
   DEPLOYMENT_MODE: {{ .Values.underwriter.configmap.DEPLOYMENT_MODE | default "local" | quote }}
@@ -56,7 +57,7 @@ data:
   # =============================================================================
   # PostgreSQL primary
   # =============================================================================
-  POSTGRES_HOST: {{ .Values.underwriter.configmap.POSTGRES_HOST | default "underwriter-postgresql-primary" | quote }}
+  POSTGRES_HOST: {{ .Values.underwriter.configmap.POSTGRES_HOST | default (include "underwriter.postgresqlHost" .) | quote }}
   POSTGRES_PORT: {{ .Values.underwriter.configmap.POSTGRES_PORT | default "5432" | quote }}
   POSTGRES_NAME: {{ .Values.underwriter.configmap.POSTGRES_NAME | default "underwriter" | quote }}
   POSTGRES_USER: {{ .Values.underwriter.configmap.POSTGRES_USER | default "underwriter" | quote }}
@@ -84,7 +85,7 @@ data:
   # =============================================================================
   # Redis / Valkey
   # =============================================================================
-  REDIS_HOST: {{ .Values.underwriter.configmap.REDIS_HOST | default "underwriter-valkey-primary:6379" | quote }}
+  REDIS_HOST: {{ .Values.underwriter.configmap.REDIS_HOST | default (include "underwriter.valkeyHost" .) | quote }}
   REDIS_DB: {{ .Values.underwriter.configmap.REDIS_DB | default "0" | quote }}
   REDIS_PROTOCOL: {{ .Values.underwriter.configmap.REDIS_PROTOCOL | default "3" | quote }}
   REDIS_TLS: {{ .Values.underwriter.configmap.REDIS_TLS | default "false" | quote }}

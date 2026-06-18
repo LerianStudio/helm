@@ -32,14 +32,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for the plugin_br_payments role created by the job
     paymentsCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_PLUGIN_BR_PAYMENTS key
         name: ""
       # -- Password for plugin_br_payments role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
 # ==============================================================================
 # APPLICATION
@@ -87,6 +87,8 @@ app:
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   # -- PodDisruptionBudget configuration
   pdb:
     enabled: true
@@ -159,6 +161,7 @@ app:
   # @default -- templates/configmap.yaml
   configmap:
     # Application Settings
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "production"
     LOG_LEVEL: "info"
     DEPLOYMENT_MODE: "saas"
@@ -266,10 +269,15 @@ app:
     # Resilience example (repo-local simulation only)
     EXAMPLE_STATUS_PROVIDER_MODE: "healthy"
   # -- Secrets (sensitive environment variables)
-  # @default -- templates/secrets.yml
+  # @default -- templates/secrets.yaml
   secrets:
-    # PostgreSQL credentials
-    POSTGRES_PASSWORD: "lerian"
+    # PostgreSQL password is single-sourced from the postgresql subchart Secret
+    # (name derived collapse-aware via common.names.dependency.fullname, honoring
+    # nameOverride/fullnameOverride; typically "<release>-postgresql"; key "password")
+    # and read via secretKeyRef on the deployment — leave empty with the bundled subchart. Only set this for an
+    # EXTERNAL Postgres without postgresql.auth.existingSecret.
+    # See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+    POSTGRES_PASSWORD: ""
     # POSTGRES_REPLICA_PASSWORD: ""
     # BTG OAuth2 (REQUIRED)
     BTG_CLIENT_ID: ""
@@ -331,12 +339,12 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "plugin_br_payments"
-    password: "lerian"
+    password: ""
     database: "plugin_br_payments"
     replicationUsername: "replicator"
-    replicationPassword: "replicator_password"
+    replicationPassword: ""
   primary:
     persistence:
       size: 8Gi
@@ -397,3 +405,5 @@ otel-collector-lerian:
 plugin-br-payments:
   image:
     tag: 1.0.0-beta.9
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

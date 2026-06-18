@@ -8,6 +8,7 @@ metadata:
     {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
 data:
   # Application Configuration
+  ALLOW_INSECURE_TLS: {{ .Values.tracer.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ .Values.tracer.configmap.ENV_NAME | default "production" | quote }}
   SERVER_PORT: {{ .Values.tracer.configmap.SERVER_PORT | default "4020" | quote }}
   SERVER_ADDRESS: {{ .Values.tracer.configmap.SERVER_ADDRESS | default ":4020" | quote }}

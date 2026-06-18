@@ -3,18 +3,20 @@ name: matcher-helm
 description: A Helm chart for the Matcher reconciliation service
 
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 
-home: https://github.com/LerianStudio/midaz-helm
+home: https://github.com/LerianStudio/helm
 
 sources:
-  - https://github.com/LerianStudio/midaz-helm/tree/main/charts/matcher
+  - https://github.com/LerianStudio/helm/tree/main/charts/matcher
   - https://github.com/LerianStudio/matcher
 
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 2.3.0-beta.2
+version: 3.0.0-beta.3
 
 appVersion: "1.0.0"
 
@@ -33,7 +35,7 @@ dependencies:
     repository: "oci://registry-1.docker.io/bitnamicharts"
     condition: valkey.enabled
   - name: postgresql
-    version: "16.3"
+    version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
   - name: rabbitmq

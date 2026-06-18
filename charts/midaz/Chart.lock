@@ -9,13 +9,10 @@ dependencies:
   repository: https://charts.bitnami.com/bitnami
   version: 16.4.0
 - name: rabbitmq
-  repository: https://charts.bitnami.com/bitnami
-  version: 15.2.5
-- name: nginx
-  repository: https://charts.bitnami.com/bitnami
-  version: 21.0.3
+  repository: https://groundhog2k.github.io/helm-charts
+  version: 2.1.11
 - name: otel-collector-lerian
   repository: oci://registry-1.docker.io/lerianstudio
-  version: 1.0.0-beta.1
-digest: sha256:baf0916ca7ce2d28a4727e3cd4ff8b870d05dcc3b3c0680c082ec8224bedb648
-generated: "2025-07-23T11:00:37.07639-03:00"
+  version: 2.1.0
+digest: sha256:0690e406671e3e15a5324a5e7b43639f9fdbbda2e6d3a0407e858a61e14d17db
+generated: "2026-06-07T13:02:51.771841-03:00"

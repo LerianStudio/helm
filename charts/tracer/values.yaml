@@ -24,14 +24,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for tracer role created by the job
     tracerCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_TRACER key
         name: ""
       # -- Password for tracer role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
 tracer:
   # -- Readiness probe configuration. All fields override chart defaults.
@@ -85,8 +85,11 @@ tracer:
     capabilities:
       drop:
         - ALL
+    allowPrivilegeEscalation: false
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # -- PodDisruptionBudget configuration
   pdb:
@@ -174,6 +177,7 @@ tracer:
     # TenantEventListener fails fast at boot if this (or ENVIRONMENT_NAME) is
     # unset — must be "staging" or "production". GitOps overrides this to
     # "staging" per non-prod environment.
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "production"
     # SERVER_PORT/SERVER_ADDRESS default to 4020 to match the tracer source
     # convention (Dockerfile EXPOSE 4020 + .env.example + Dockerfile.dev). The
@@ -268,7 +272,7 @@ tracer:
   # @default -- templates/secrets.yaml
   secrets:
     # -- PostgreSQL password
-    DB_PASSWORD: "lerian"
+    DB_PASSWORD: ""
     # -- API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true).
     #    The chart previously named this API_KEY_SECRET, which the app never
     #    reads — silently disabling API-key auth even with API_KEY_ENABLED=true.
@@ -294,3 +298,5 @@ tracer:
     # -- Name of the service account
     # @default -- `tracer.fullname`
     name: ""
+
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

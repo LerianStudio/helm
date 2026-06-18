@@ -557,7 +557,7 @@
       "owner": "lerian",
       "name": "admin",
       "type": "normal-user",
-      "password": "Lerian@123",
+      "password": "CHANGE_ME_ON_FIRST_LOGIN",
       "displayName": "Admin",
       "avatar": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToK_-LT9HmxfBNTsC0A8wfvjtfxKh3GjexbQ&s",
       "email": "admin@midaz.tech",

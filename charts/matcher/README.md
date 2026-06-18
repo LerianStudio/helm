@@ -1,5 +1,21 @@
 # Matcher Helm Chart
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: `matcher.secrets.RABBITMQ_PASSWORD` (install fails loud if unset, unless `matcher.useExistingSecret` is enabled). The PostgreSQL primary/replica and Valkey passwords are **single-sourced from their Bitnami subchart Secrets** — `matcher` reads them at runtime from `<release>-postgresql` (keys `password`, `replication-password`) and `<release>-valkey` (key `valkey-password`), so they are not stored in the app Secret. Only set `matcher.secrets.POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, and `REDIS_PASSWORD` when pointing at **external** infra without an `existingSecret`. `RABBITMQ_PASSWORD` remains operator-provided (see Known limitations). Production database and messaging credentials must not be committed in values files.
+- Dependency notes: Uses local PostgreSQL, Valkey, and RabbitMQ dependency charts unless external services are configured.
+- Production overrides: Provide production credentials through chart secrets or existing dependency Secrets where supported; override image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
+### Release name
+
+The PostgreSQL and Valkey hosts (`POSTGRES_HOST`, `POSTGRES_REPLICA_HOST`, `REDIS_HOST`) default to the subchart service names resolved collapse-aware via `common.names.dependency.fullname`, and the single-source secret references resolve to `<release>-postgresql` and `<release>-valkey` the same way — so both follow any release name automatically. The RabbitMQ and object-storage hosts (`matcher-rabbitmq`, `matcher-seaweedfs`), however, are literals carrying a `matcher-` prefix that assume the release is installed as **`matcher`** (`helm install matcher ...`); installing under a different release name requires overriding `matcher.configmap.RABBITMQ_HOST` (and `RABBITMQ_HEALTH_URL`, `OBJECT_STORAGE_ENDPOINT`) accordingly.
+
+### Known limitations
+
+- **RabbitMQ is not yet single-sourced.** `files/rabbitmq/load_definitions.json` bakes a static `password_hash` that the broker imports at boot, so `RABBITMQ_PASSWORD` remains operator-provided and must match that provisioning. Single-sourcing RabbitMQ is a tracked follow-up.
+
 Source code can be found here:
 * https://github.com/LerianStudio/midaz-helm/tree/main/charts/matcher
 * https://github.com/LerianStudio/matcher
@@ -114,7 +130,7 @@ The Matcher Helm chart includes the following dependencies:
 | `valkey.enabled` | Enable or disable Valkey. | `true` |
 | `valkey.architecture` | Valkey architecture. | `"standalone"` |
 | `valkey.auth.enabled` | Enable authentication. | `true` |
-| `valkey.auth.password` | Valkey password. | `"lerian"` |
+| `valkey.auth.password` | Valkey password. Leave empty for internal Valkey — the subchart auto-generates it and `matcher` reads it from `<release>-valkey`. | `""` (auto-generated) |
 | `valkey.auth.username` | Valkey username. | `"matcher"` |
 
 ### PostgreSQL
@@ -123,9 +139,9 @@ The Matcher Helm chart includes the following dependencies:
 |---|---|---|
 | `postgresql.enabled` | Enable or disable PostgreSQL. | `true` |
 | `postgresql.architecture` | PostgreSQL architecture. | `"replication"` |
-| `postgresql.auth.postgresPassword` | PostgreSQL admin password. | `"lerian"` |
+| `postgresql.auth.postgresPassword` | PostgreSQL admin password. Leave empty for internal PostgreSQL — the subchart auto-generates it. | `""` (auto-generated) |
 | `postgresql.auth.username` | PostgreSQL username. | `"matcher"` |
-| `postgresql.auth.password` | PostgreSQL user password. | `"lerian"` |
+| `postgresql.auth.password` | PostgreSQL user password. Leave empty for internal PostgreSQL — the subchart auto-generates it and `matcher` reads it from `<release>-postgresql`. | `""` (auto-generated) |
 | `postgresql.auth.database` | PostgreSQL database name. | `"matcher"` |
 
 ### RabbitMQ
@@ -134,7 +150,7 @@ The Matcher Helm chart includes the following dependencies:
 |---|---|---|
 | `rabbitmq.enabled` | Enable or disable RabbitMQ. | `true` |
 | `rabbitmq.authentication.user.value` | RabbitMQ username. | `"matcher"` |
-| `rabbitmq.authentication.password.value` | RabbitMQ password. | `"lerian"` |
+| `rabbitmq.authentication.password.value` | RabbitMQ password. Operator-provided; must match the `password_hash` baked into `files/rabbitmq/load_definitions.json` (see Known limitations). | `""` |
 
 ---
 
@@ -148,11 +164,11 @@ The following environment variables can be configured via the `matcher.configmap
 | `LOG_LEVEL` | Log level. | `"info"` |
 | `SERVER_ADDRESS` | Server address. | `":8080"` |
 | `HTTP_BODY_LIMIT_BYTES` | HTTP body limit in bytes. | `"104857600"` |
-| `POSTGRES_HOST` | PostgreSQL host. | `"matcher-postgresql-primary.matcher.svc.cluster.local."` |
+| `POSTGRES_HOST` | PostgreSQL host. Derived collapse-aware from the subchart name; shown for release `matcher`. | `"matcher-postgresql-primary.matcher.svc.cluster.local."` |
 | `POSTGRES_PORT` | PostgreSQL port. | `"5432"` |
 | `POSTGRES_USER` | PostgreSQL username. | `"matcher"` |
 | `POSTGRES_DB` | PostgreSQL database. | `"matcher"` |
-| `REDIS_HOST` | Redis/Valkey host. | `"matcher-valkey-primary.matcher.svc.cluster.local.:6379"` |
+| `REDIS_HOST` | Redis/Valkey host. Derived collapse-aware from the subchart name; shown for release `matcher`. | `"matcher-valkey-primary.matcher.svc.cluster.local.:6379"` |
 | `RABBITMQ_HOST` | RabbitMQ host. | `"matcher-rabbitmq.matcher.svc.cluster.local."` |
 | `RABBITMQ_PORT` | RabbitMQ port. | `"5672"` |
 | `AUTH_ENABLED` | Enable authentication. | `"false"` |
@@ -170,10 +186,10 @@ The following secrets can be configured via the `matcher.secrets` section:
 
 | Secret | Description | Default Value |
 |---|---|---|
-| `POSTGRES_PASSWORD` | PostgreSQL password. | `"lerian"` |
-| `POSTGRES_REPLICA_PASSWORD` | PostgreSQL replica password. | `"lerian"` |
-| `REDIS_PASSWORD` | Redis/Valkey password. | `"lerian"` |
-| `RABBITMQ_PASSWORD` | RabbitMQ password. | `"lerian"` |
+| `POSTGRES_PASSWORD` | PostgreSQL password. Single-sourced from `<release>-postgresql` (key `password`) for internal PostgreSQL. Set only for external PostgreSQL without an `existingSecret`. | `""` |
+| `POSTGRES_REPLICA_PASSWORD` | PostgreSQL replica password. Single-sourced from `<release>-postgresql` (key `replication-password`) for internal PostgreSQL. Set only for external PostgreSQL without an `existingSecret`. | `""` |
+| `REDIS_PASSWORD` | Redis/Valkey password. Single-sourced from `<release>-valkey` (key `valkey-password`) for internal Valkey. Set only for external Valkey without an `existingSecret`. | `""` |
+| `RABBITMQ_PASSWORD` | RabbitMQ password. Operator-provided (not single-sourced — see Known limitations). | `""` |
 | `OBJECT_STORAGE_ACCESS_KEY_ID` | Object storage access key. | `""` |
 | `OBJECT_STORAGE_SECRET_ACCESS_KEY` | Object storage secret key. | `""` |
 | `AUTH_JWT_SECRET` | JWT secret for authentication. | `""` |

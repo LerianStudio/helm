@@ -24,8 +24,6 @@ spi:
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
-    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-spi?sslmode=require"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-spi?sslmode=require"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
@@ -40,8 +38,10 @@ spi:
     CRM_BASE_URL: ""
     CRM_CLIENT_ID: ""
     CRM_ORGANIZATION_ID: ""
-    VALKEY_URL: "redis://default:<pwd>@valkey-host:6379/0"
   secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
     LICENSE_KEY: ""                   # use Vault / external-secret reference
     DICT_CLIENT_SECRET: ""
     COB_CLIENT_SECRET: ""
@@ -53,10 +53,10 @@ spi:
 # ------------------------------------------------------------
 spiSystemplane:
   enabled: true
-  configmap:
-    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-spi?sslmode=require"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-spi?sslmode=require"
+  configmap: {}
   secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
@@ -76,16 +76,16 @@ dictHub:
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
-    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
     KEY_CACHE_TTL_SEC: "60"
-    MONGO_URL: "mongodb://user:<pwd>@mongo-host:27017/?authSource=admin"
     MONGO_DB_NAME: "pix-dict"
-    VALKEY_URL: "redis://default:<pwd>@valkey-host:6379/0"
   secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
+    MONGO_URL: "mongodb://user:<password>@mongo-host:27017/?authSource=admin"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
     LICENSE_KEY: ""
     CRM_CLIENT_SECRET: ""
 
@@ -95,11 +95,13 @@ dictHub:
 dictHubVsync:
   enabled: true
   configmap:
-    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
-    VALKEY_URL: "redis://default:<pwd>@valkey-host:6379/0"
-    # RABBITMQ_URI is read by this component
     VSYNC_ENABLED: "true"
   secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    # TLS-only: amqps:// on 5671. lib-commons v5.7.0 validates the broker cert
+    # against the system trust store (a private CA needs an app-code change).
+    RABBITMQ_URI: "amqps://pixswitch:<password>@rabbitmq-host:5671/"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------
@@ -117,10 +119,10 @@ dictProxy:
 # ------------------------------------------------------------
 dictSystemplane:
   enabled: true
-  configmap:
-    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-dict?sslmode=require"
+  configmap: {}
   secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
@@ -134,10 +136,10 @@ cobHub:
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
-    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-cob?sslmode=require"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-cob?sslmode=require"
     ORGANIZATION_ID: "<your-org-id>"
   secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------
@@ -155,10 +157,10 @@ cobProxy:
 # ------------------------------------------------------------
 cobSystemplane:
   enabled: true
-  configmap:
-    DATABASE_URL: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-cob?sslmode=require"
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<pwd>@postgres-host:5432/pix-cob?sslmode=require"
+  configmap: {}
   secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 

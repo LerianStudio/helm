@@ -89,7 +89,6 @@ data:
   MULTI_TENANT_REDIS_HOST: {{ required "boilerplate.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.boilerplate.configmap.MULTI_TENANT_REDIS_HOST | quote }}
   MULTI_TENANT_REDIS_PORT: {{ .Values.boilerplate.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
   MULTI_TENANT_REDIS_TLS: {{ .Values.boilerplate.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
-  MULTI_TENANT_REDIS_PASSWORD: {{ .Values.boilerplate.configmap.MULTI_TENANT_REDIS_PASSWORD | default "" | quote }}
   MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.boilerplate.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
   MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.boilerplate.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
   MULTI_TENANT_TIMEOUT: {{ .Values.boilerplate.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}

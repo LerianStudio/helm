@@ -4,18 +4,20 @@ description: A Helm chart for Underwriter - Risk assessment and underwriting
   service for Lerian Studio
 
 type: application
+annotations:
+  lerian.studio/chart-type: single-service
 
 home: https://github.com/LerianStudio/underwriter
 
 sources:
-  - https://github.com/LerianStudio/midaz-helm/tree/main/charts/underwriter
+  - https://github.com/LerianStudio/helm/tree/main/charts/underwriter
   - https://github.com/LerianStudio/underwriter
 
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 2.1.0-beta.3
+version: 3.0.0-beta.2
 
 appVersion: "1.0.0"
 
@@ -33,6 +35,6 @@ dependencies:
     repository: "oci://registry-1.docker.io/bitnamicharts"
     condition: valkey.enabled
   - name: postgresql
-    version: "16.3"
+    version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled

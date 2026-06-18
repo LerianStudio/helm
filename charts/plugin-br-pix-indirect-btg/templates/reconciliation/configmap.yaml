@@ -11,7 +11,7 @@ data:
   WORKER_PORT: {{ .Values.reconciliation.configmap.WORKER_PORT | default "4017" | quote }}
 
   # Database Configuration (Primary)
-  DB_HOST: {{ .Values.reconciliation.configmap.DB_HOST | default "localhost" | quote }}
+  DB_HOST: {{ .Values.reconciliation.configmap.DB_HOST | default (include "plugin-br-pix-indirect-btg.postgresHost" .) | quote }}
   DB_PORT: {{ .Values.reconciliation.configmap.DB_PORT | default "5432" | quote }}
   DB_USER: {{ .Values.reconciliation.configmap.DB_USER | default "plugin" | quote }}
   DB_NAME: {{ .Values.reconciliation.configmap.DB_NAME | default "pix_btg" | quote }}
@@ -21,7 +21,7 @@ data:
   MIGRATIONS_PATH: {{ .Values.reconciliation.configmap.MIGRATIONS_PATH | default "components/infra/migrations" | quote }}
 
   # Database Configuration (Replica)
-  DB_REPLICA_HOST: {{ .Values.reconciliation.configmap.DB_REPLICA_HOST | default "" | quote }}
+  DB_REPLICA_HOST: {{ .Values.reconciliation.configmap.DB_REPLICA_HOST | default (include "plugin-br-pix-indirect-btg.postgresHost" .) | quote }}
   DB_REPLICA_USER: {{ .Values.reconciliation.configmap.DB_REPLICA_USER | default "" | quote }}
   DB_REPLICA_NAME: {{ .Values.reconciliation.configmap.DB_REPLICA_NAME | default "" | quote }}
   DB_REPLICA_PORT: {{ .Values.reconciliation.configmap.DB_REPLICA_PORT | default "" | quote }}
@@ -80,7 +80,7 @@ data:
   RECONCILIATION_MAX_RETRY_DELAY: {{ .Values.reconciliation.configmap.RECONCILIATION_MAX_RETRY_DELAY | default "30s" | quote }}
 
   # Redis Configuration
-  REDIS_HOST: {{ .Values.reconciliation.configmap.REDIS_HOST | default "localhost:6379" | quote }}
+  REDIS_HOST: {{ .Values.reconciliation.configmap.REDIS_HOST | default (printf "%s:6379" (include "plugin-br-pix-indirect-btg.valkeyHost" .)) | quote }}
   REDIS_USER: {{ .Values.reconciliation.configmap.REDIS_USER | default "plugin" | quote }}
   REDIS_MASTER_NAME: {{ .Values.reconciliation.configmap.REDIS_MASTER_NAME | default "" | quote }}
   REDIS_DB: {{ .Values.reconciliation.configmap.REDIS_DB | default "0" | quote }}
@@ -118,7 +118,7 @@ data:
   # Security Tier Configuration (lib-commons v4.4.0)
   SECURITY_TIER: {{ .Values.reconciliation.configmap.SECURITY_TIER | default "" | quote }}
   SECURITY_ENFORCEMENT: {{ .Values.reconciliation.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}
-  ALLOW_INSECURE_TLS: {{ .Values.reconciliation.configmap.ALLOW_INSECURE_TLS | default "" | quote }}
+  ALLOW_INSECURE_TLS: {{ .Values.reconciliation.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ALLOW_CORS_WILDCARD: {{ .Values.reconciliation.configmap.ALLOW_CORS_WILDCARD | default "" | quote }}
   RATE_LIMIT_ENABLED: {{ .Values.reconciliation.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.reconciliation.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}

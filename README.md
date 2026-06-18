@@ -5,6 +5,15 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-Lerian%20Studio-%237289da.svg?logo=discord)](https://discord.gg/DnhqKwkGv3)
 
+## Chart Maintenance
+
+- Chart contract: [`docs/helm-chart-standard.md`](docs/helm-chart-standard.md)
+- Render inventory (on demand): `cd .github/scripts && go run ./validate-helm-charts --root ../.. --render-inventory --output /tmp/helm-render-inventory.md`
+- Static validation: `cd .github/scripts && go run ./validate-helm-charts --root ../.. --strict`
+- Render validation: `cd .github/scripts && go run ./validate-helm-charts --root ../.. --render-gate --all`
+
+CI enforces the static contract and render gate. Required production secrets are represented by dummy sample values under `.github/configs/helm-render-values/` only so charts can render in CI without publishing credentials.
+
 ### Midaz Helm Chart
 
 See the [official documentation](https://docs.lerian.studio/en/midaz/deploy-midaz-using-helm) for deployment guides.
@@ -15,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.2.0` | 3.7.7 | 3.7.6 |
+| `8.3.0-beta.3` | 3.7.7 | 3.7.6 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -28,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `8.1.0` | 2.6.7 | 2.4.5 |
+| `8.2.0-beta.4` | 2.6.7 | 2.4.5 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -41,7 +50,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `6.0.0` | 3.2.0 | `3.0.0` |
+| `7.0.0-beta.2` | 3.2.1 | `3.0.0` |
 
 -----------------
 
@@ -55,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `2.3.0-beta.1` | 1.2.0 | 1.2.0 |
+| `3.0.0-beta.2` | 2.0.0 | 2.0.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -68,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0 |
+| `1.1.0-beta.4` | 1.0.0 |
 -----------------
 
 
@@ -83,7 +92,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
-| `2.3.0-beta.1` | 1.2.1-beta.11 | 1.2.1-beta.12 |
+| `3.0.0-beta.2` | 1.2.1-beta.11 | 1.2.1-beta.12 |
 -----------------
 
 ### Plugin BR Pix Switch
@@ -94,7 +103,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0-beta.10` | 1.0.0-beta.1 |
+| `2.0.0-beta.3` | 1.0.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
@@ -107,7 +116,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `3.1.0` | 1.7.3 | 1.7.3 | 1.7.3 | 1.7.3 |
+| `3.2.0-beta.2` | 1.7.3 | 1.7.3 | 1.7.3 | 1.7.3 |
 
 -----------------
 
@@ -119,7 +128,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0-beta.9 |
+| `1.1.0-beta.3` | 1.0.0-beta.9 |
 -----------------
 
 ### Plugin BR Payments Fakebtg
@@ -130,7 +139,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0-beta.22 |
+| `1.1.0-beta.1` | 1.0.0-beta.22 |
 -----------------
 
 ### Fetcher
@@ -143,7 +152,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `2.2.0-beta.4` | 1.3.0 | 1.3.0 |
+| `3.0.0-beta.2` | 1.4.2 | 1.4.2 |
 -----------------
 
 ### Underwriter
@@ -156,7 +165,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Underwriter Version |
 | :---: | :---: |
-| `2.1.0-beta.3` | 1.0.0 |
+| `3.0.0-beta.2` | 1.0.0 |
 -----------------
 
 ### Matcher
@@ -169,7 +178,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Matcher Version |
 | :---: | :---: |
-| `2.3.0-beta.2` | 1.0.0 |
+| `3.0.0-beta.3` | 1.0.0 |
 
 ### Flowker
 
@@ -181,7 +190,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Flowker Version |
 | :---: | :---: |
-| `2.1.0-beta.6` | 1.0.0-beta.22 |
+| `3.0.0-beta.4` | 1.0.0-beta.22 |
 -----------------
 
 ### Tracer
@@ -194,7 +203,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Tracer Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0 |
+| `2.1.0-beta.2` | 1.0.0 |
 -----------------
 
 ### Otel Collector Lerian
@@ -205,7 +214,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `3.1.0-beta.2` | 2.1.0 |
+| `4.0.0-beta.1` | 0.142.0 |
 -----------------
 
 ### Product Console
@@ -218,7 +227,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `3.0.0` | 1.6.0 |
+| `3.1.0-beta.1` | 1.6.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -229,7 +238,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.1.0` | 1.0.0 |
+| `2.2.0-beta.3` | 1.0.0 |
 
 
 ### Go Boilerplate DDD
@@ -240,16 +249,16 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.1.0` | 1.0.0 |
+| `2.2.0-beta.1` | 1.0.0 |
 -----------------
 
-### Lerian Notification
+### Notifications
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-notification).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/notifications).
 
 #### Application Version Mapping
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0-beta.3` | 0.1.0 |
+| `1.0.0-beta.4` | 0.1.0 |
 -----------------

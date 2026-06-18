@@ -24,14 +24,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for matcher role created by the job
     matcherCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_MATCHER key
         name: ""
       # -- Password for matcher role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
   # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
@@ -55,14 +55,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "admin"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for matcher user created by the job
     matcherCredentials:
       useExistingSecret:
         # -- Name of existing secret containing RABBITMQ_MATCHER_PASS key
         name: ""
       # -- Password for matcher user (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
 matcher:
   # -- Readiness probe configuration. All fields override chart defaults.
@@ -105,16 +105,19 @@ matcher:
 
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
-    runAsGroup: 0
+    runAsGroup: 1000
     # -- Defines the user ID for the process running inside the container
-    runAsUser: 0
-    # -- Ensures the process does run as root
-    runAsNonRoot: false
+    runAsUser: 1000
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
     capabilities:
       drop:
         - ALL
-    # -- Defines the root filesystem as writable
-    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # -- PodDisruptionBudget configuration
   pdb:
@@ -194,6 +197,7 @@ matcher:
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # Application Settings
     ENV_NAME: "production"
     LOG_LEVEL: "info"
@@ -227,7 +231,8 @@ matcher:
     MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
 
     # PostgreSQL Primary
-    POSTGRES_HOST: "matcher-postgresql-primary.matcher.svc.cluster.local."
+    # -- Leave empty to derive from the postgresql subchart's primary Service name (release-aware)
+    POSTGRES_HOST: ""
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "matcher"
     POSTGRES_DB: "matcher"
@@ -241,7 +246,8 @@ matcher:
     MIGRATIONS_PATH: "migrations"
 
     # PostgreSQL Replica (optional - for CQRS read scaling)
-    POSTGRES_REPLICA_HOST: "matcher-postgresql-replication.matcher.svc.cluster.local."
+    # -- Leave empty to derive from the postgresql subchart's read-replica Service name (release-aware)
+    POSTGRES_REPLICA_HOST: ""
     POSTGRES_REPLICA_PORT: "5432"
     POSTGRES_REPLICA_USER: "matcher"
     POSTGRES_REPLICA_DB: "matcher"
@@ -251,7 +257,8 @@ matcher:
     INFRA_CONNECT_TIMEOUT_SEC: "30"
 
     # Redis/Valkey Configuration
-    REDIS_HOST: "matcher-valkey-primary.matcher.svc.cluster.local.:6379"
+    # -- Leave empty to derive from the valkey subchart's primary Service name (release-aware)
+    REDIS_HOST: ""
     REDIS_DB: "0"
     REDIS_PROTOCOL: "3"
     REDIS_POOL_SIZE: "10"
@@ -350,14 +357,20 @@ matcher:
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
-    # -- PostgreSQL primary password
-    POSTGRES_PASSWORD: "lerian"
-    # -- PostgreSQL replica password
-    POSTGRES_REPLICA_PASSWORD: "lerian"
-    # -- Redis/Valkey password
-    REDIS_PASSWORD: "lerian"
-    # -- RabbitMQ password
-    RABBITMQ_PASSWORD: "lerian"
+    # -- PostgreSQL primary password. Single-sourced from the postgresql subchart Secret
+    # (<release>-postgresql / password). Only set this for external PostgreSQL without an
+    # existingSecret; for internal PostgreSQL leave it empty (the subchart generates it).
+    POSTGRES_PASSWORD: ""
+    # -- PostgreSQL replica password. Single-sourced from the postgresql subchart Secret
+    # (<release>-postgresql / replication-password). Only set this for external PostgreSQL
+    # without an existingSecret; for internal PostgreSQL leave it empty.
+    POSTGRES_REPLICA_PASSWORD: ""
+    # -- Redis/Valkey password. Single-sourced from the valkey subchart Secret
+    # (<release>-valkey / valkey-password). Only set this for external Valkey without an
+    # existingSecret; for internal Valkey leave it empty (the subchart generates it).
+    REDIS_PASSWORD: ""
+    # -- RabbitMQ password (operator-provided; not single-sourced — see README known limitation)
+    RABBITMQ_PASSWORD: ""
     # -- Object Storage access key
     OBJECT_STORAGE_ACCESS_KEY_ID: ""
     # -- Object Storage secret key
@@ -406,7 +419,7 @@ valkey:
 
   auth:
     enabled: true
-    password: lerian
+    password: ""
     username: matcher
 
   primary:
@@ -442,12 +455,12 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "matcher"
-    password: "lerian"
+    password: ""
     database: "matcher"
     replicationUsername: "replicator"
-    replicationPassword: "replicator_password"
+    replicationPassword: ""
 
   primary:
     persistence:
@@ -536,9 +549,9 @@ rabbitmq:
     user:
       value: "matcher"
     password:
-      value: "lerian"
+      value: ""
     erlangCookie:
-      value: "WCB00CfurKivfNH61hbxPaNg+xtyA/7RI6bEx5RMGvE="
+      value: ""
 
   extraSecrets:
     - name: "matcher-rabbitmq-load-definition"
@@ -570,5 +583,3 @@ aws:
         requests:
           cpu: 10m
           memory: 64Mi
-
-

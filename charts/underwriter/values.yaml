@@ -24,14 +24,14 @@ global:
       # -- Admin username (ignored if useExistingSecret.name is set)
       username: "postgres"
       # -- Admin password (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
     # -- Credentials for underwriter role created by the job
     underwriterCredentials:
       useExistingSecret:
         # -- Name of existing secret containing DB_PASSWORD_UNDERWRITER key
         name: ""
       # -- Password for underwriter role (ignored if useExistingSecret.name is set)
-      password: "lerian"
+      password: ""
 
 underwriter:
   # -- Readiness probe configuration. All fields override chart defaults.
@@ -85,8 +85,11 @@ underwriter:
     capabilities:
       drop:
         - ALL
+    allowPrivilegeEscalation: false
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # -- PodDisruptionBudget configuration
   pdb:
@@ -170,6 +173,7 @@ underwriter:
   # the chart template.
   # @default -- templates/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # Application Settings
     ENV_NAME: "production"
     LOG_LEVEL: "info"
@@ -208,7 +212,10 @@ underwriter:
     MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
 
     # PostgreSQL primary
-    POSTGRES_HOST: "underwriter-postgresql-primary"
+    # -- Host of the PostgreSQL primary. Leave empty to default to
+    #    "<release>-postgresql-primary" (the bundled subchart Service). Set
+    #    explicitly for external PostgreSQL.
+    POSTGRES_HOST: ""
     POSTGRES_PORT: "5432"
     POSTGRES_NAME: "underwriter"
     POSTGRES_USER: "underwriter"
@@ -230,7 +237,10 @@ underwriter:
     POSTGRES_CONNECT_TIMEOUT_SEC: "10"
 
     # Redis / Valkey
-    REDIS_HOST: "underwriter-valkey-primary:6379"
+    # -- Host:port of Valkey. Leave empty to default to
+    #    "<release>-valkey-primary:6379" (the bundled subchart Service). Set
+    #    explicitly for external Valkey.
+    REDIS_HOST: ""
     REDIS_DB: "0"
     REDIS_PROTOCOL: "3"
     REDIS_TLS: "false"
@@ -336,11 +346,22 @@ underwriter:
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
-    # -- PostgreSQL primary password
-    POSTGRES_PASSWORD: "lerian"
-    # -- PostgreSQL replica password (defaults to PostgreSQL primary password if unset)
+    # -- PostgreSQL primary password.
+    # Single-source: when the bundled postgresql subchart is enabled, the password lives ONLY in
+    # the subchart-generated Secret (`<release>-postgresql`, key `password`) and is read by the app
+    # via secretKeyRef — leave this empty. Set it ONLY for external PostgreSQL without an
+    # `postgresql.auth.existingSecret` override.
+    POSTGRES_PASSWORD: ""
+    # -- PostgreSQL replica password.
+    # Single-source: when the bundled postgresql subchart is enabled (architecture: replication),
+    # this lives ONLY in the subchart Secret (`<release>-postgresql`, key `replication-password`)
+    # and is read via secretKeyRef — leave empty. Set ONLY for external PostgreSQL without existingSecret.
     POSTGRES_REPLICA_PASSWORD: ""
-    # -- Redis password (empty if auth disabled)
+    # -- Redis/Valkey password.
+    # Single-source: when the bundled valkey subchart is enabled with auth, this lives ONLY in the
+    # subchart Secret (`<release>-valkey`, key `valkey-password`) and is read via secretKeyRef —
+    # leave empty. Set ONLY for external Valkey without `valkey.auth.existingSecret`. If valkey auth
+    # is disabled, no REDIS_PASSWORD env is wired at all.
     REDIS_PASSWORD: ""
     # -- Redis CA certificate path / contents (when REDIS_TLS=true and a custom CA is required)
     REDIS_CA_CERT: ""
@@ -388,7 +409,7 @@ valkey:
 
   auth:
     enabled: true
-    password: lerian
+    password: ""
     username: underwriter
 
   primary:
@@ -423,12 +444,12 @@ postgresql:
   auth:
     enabled: true
     enablePostgresUser: true
-    postgresPassword: "lerian"
+    postgresPassword: ""
     username: "underwriter"
-    password: "lerian"
+    password: ""
     database: "underwriter"
     replicationUsername: "replicator"
-    replicationPassword: "replicator_password"
+    replicationPassword: ""
 
   primary:
     persistence:
@@ -484,3 +505,4 @@ postgresql:
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
         value: "5"
 
+# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

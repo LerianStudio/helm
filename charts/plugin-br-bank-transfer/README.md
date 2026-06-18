@@ -1,5 +1,13 @@
 # Plugin BR Bank Transfer Helm Chart
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: `bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY` and `RECIPIENT_DETAILS_ENCRYPTION_KEY`; JD and webhook fields are required when their non-sandbox features are enabled. The PostgreSQL, Valkey, and MongoDB passwords are **not** operator-provided with the bundled subcharts: each is auto-generated into its `<release>-{postgresql,valkey,mongodb}` Secret and read via `secretKeyRef`. The app is MongoDB-URI-only, so `MONGO_URI` is assembled on the deployment as `mongodb://bank_transfer:$(MONGO_PASSWORD)@<release>-mongodb…` where `MONGO_PASSWORD` is sourced from the subchart Secret (`mongodb-passwords`). For external infra, set the relevant `<subchart>.external=true` plus `<subchart>.auth.existingSecret` (and `bankTransfer.secrets.MONGO_URI` for an external Mongo). See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
+- Dependency notes: Uses local PostgreSQL and MongoDB dependency charts unless external services are configured.
+- Production overrides: Provide bank-transfer credentials through chart secrets or `bankTransfer.useExistingSecret`; override Midaz/CRM/Fees/JD endpoints, image tags, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
 This Helm chart installs **Plugin BR Bank Transfer** for Midaz, a high-performance and open-source ledger.
 
 ---
@@ -78,7 +86,7 @@ bankTransfer:
 | `bankTransfer.replicaCount` | Number of replicas for the deployment | `2` |
 | `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer` |
 | `bankTransfer.image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `bankTransfer.image.tag` | Image tag used for deployment | `1.0.0-beta.1` |
+| `bankTransfer.image.tag` | Image tag used for deployment | `2.4.0` |
 | `bankTransfer.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `bankTransfer.revisionHistoryLimit` | Old ReplicaSets to retain | `10` |
 | `bankTransfer.nameOverride` | Overrides the default generated name by Helm | `""` |
@@ -112,9 +120,9 @@ bankTransfer:
 | --- | --- | --- |
 | `postgresql.enabled` | Enable the PostgreSQL dependency | `true` |
 | `postgresql.external` | Use an external PostgreSQL instance | `false` |
-| `postgresql.auth.postgresPassword` | PostgreSQL admin password | `lerian` |
+| `postgresql.auth.postgresPassword` | PostgreSQL admin password. Leave empty to let the subchart auto-generate it into the `<release>-postgresql` Secret (read via `secretKeyRef`). | `""` |
 | `postgresql.auth.username` | Application DB user | `bank_transfer` |
-| `postgresql.auth.password` | Application DB password | `lerian` |
+| `postgresql.auth.password` | Application DB password. Leave empty to let the subchart auto-generate it. | `""` |
 | `postgresql.auth.database` | Application DB name | `bank_transfer` |
 
 ### Valkey (Redis-compatible) Dependency
@@ -124,7 +132,7 @@ bankTransfer:
 | `valkey.enabled` | Enable the Valkey dependency | `true` |
 | `valkey.architecture` | Valkey architecture | `standalone` |
 | `valkey.auth.enabled` | Enable authentication | `true` |
-| `valkey.auth.password` | Valkey password | `lerian` |
+| `valkey.auth.password` | Valkey password. Leave empty to let the subchart auto-generate it into the `<release>-valkey` Secret (read via `secretKeyRef`). | `""` |
 | `valkey.auth.username` | Valkey username | `bank_transfer` |
 
 ### MongoDB Dependency
@@ -132,10 +140,10 @@ bankTransfer:
 | Parameter | Description | Default |
 | --- | --- | --- |
 | `mongodb.enabled` | Enable the MongoDB dependency | `true` |
-| `mongodb.auth.rootPassword` | MongoDB admin password | `lerian` |
+| `mongodb.auth.rootPassword` | MongoDB admin password. Leave empty to let the subchart auto-generate it into the `<release>-mongodb` Secret. | `""` |
 | `mongodb.auth.usernames` | Application DB users | `["bank_transfer"]` |
-| `mongodb.auth.passwords` | Application DB passwords | `["lerian"]` |
-| `mongodb.auth.databases` | Application databases | `["plugin_br_bank_transfer"]` |
+| `mongodb.auth.passwords` | Application DB passwords. Leave empty to let the subchart auto-generate them (read via `secretKeyRef`, key `mongodb-passwords`). | `[""]` |
+| `mongodb.auth.databases` | Application databases | `["plugin_br_bank_transfer_jd"]` |
 
 ### RabbitMQ Dependency (Optional)
 
@@ -143,13 +151,15 @@ bankTransfer:
 | --- | --- | --- |
 | `rabbitmq.enabled` | Enable the RabbitMQ dependency | `false` |
 | `rabbitmq.authentication.user.value` | RabbitMQ username | `bank_transfer` |
-| `rabbitmq.authentication.password.value` | RabbitMQ password | `lerian` |
+| `rabbitmq.authentication.password.value` | RabbitMQ password (operator-provided). | `""` |
+| `rabbitmq.authentication.erlangCookie.value` | RabbitMQ Erlang cookie (operator-provided; e.g. `openssl rand -base64 32`). Must be set when `rabbitmq.enabled=true`. | `""` |
 
 > **IMPORTANT - Security Warning:**
-> - The bundled dependencies (PostgreSQL, Valkey, MongoDB, RabbitMQ) are **NOT intended for production**
-> - Default passwords (`lerian`) are for **development only** - always override with secure credentials
-> - For production, use external/managed services and set `<dependency>.enabled=false`
-> - Use `useExistingSecret` options to reference pre-created Kubernetes secrets for sensitive data
+> - The bundled dependencies (PostgreSQL, Valkey, MongoDB) are **NOT intended for production**
+> - For the bundled PostgreSQL/Valkey/MongoDB the password is auto-generated by each Bitnami subchart into its own Secret and read by the app via `secretKeyRef` — operators do **not** supply these passwords. Pin them only by setting the `<dependency>.auth.*` values or `<dependency>.auth.existingSecret`.
+> - The RabbitMQ password and Erlang cookie have **no default** and are operator-provided; set them when `rabbitmq.enabled=true`.
+> - For production, use external/managed services and set `<dependency>.enabled=false` plus `<dependency>.external=true`
+> - Use `useExistingSecret` / `<dependency>.auth.existingSecret` options to reference pre-created Kubernetes secrets for sensitive data
 
 ---
 
@@ -184,13 +194,12 @@ Key secrets configured via `bankTransfer.secrets`:
 
 | Secret | Description |
 | --- | --- |
-| `POSTGRES_PASSWORD` | PostgreSQL password |
-| `REDIS_PASSWORD` | Redis/Valkey password |
-| `MONGO_PASSWORD` | MongoDB password |
-| `MONGO_URI` | MongoDB connection URI (auto-generated if not provided) |
-| `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars) |
-| `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars) |
-| `JD_WEBHOOK_NOTIFICATION_RAW_XML_DECRYPTION_KEY_BASE64` | Decryption key (32-byte base64) |
+| `POSTGRES_PASSWORD` | PostgreSQL password. With the bundled subchart it is auto-generated and read via `secretKeyRef`; set only for an external PostgreSQL without `postgresql.auth.existingSecret`. |
+| `REDIS_PASSWORD` | Redis/Valkey password. With the bundled subchart it is auto-generated and read via `secretKeyRef`; set only for an external Valkey without `valkey.auth.existingSecret`. |
+| `MONGO_PASSWORD` | MongoDB password. With the bundled subchart it is read from the subchart Secret (key `mongodb-passwords`); set only for an external MongoDB without `mongodb.auth.existingSecret`. |
+| `MONGO_URI` | MongoDB connection URI. Auto-assembled on the deployment from `MONGO_PASSWORD`; set explicitly only to override (e.g. external MongoDB). |
+| `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
+| `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
 
 ---
 

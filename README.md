@@ -190,7 +190,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Flowker Version |
 | :---: | :---: |
-| `3.0.0-beta.2` | 1.0.0-beta.22 |
+| `3.0.0-beta.3` | 1.0.0-beta.22 |
 -----------------
 
 ### Tracer

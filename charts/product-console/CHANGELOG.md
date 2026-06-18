@@ -3,6 +3,27 @@
 ## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.1.0)
 
 - **Features**
+  - Introduced version 3.1.0 of product-console.
+  - Added per-chart `values.schema.json` generator for continuous integration.
+
+- **Fixes**
+  - Resolved issues in `schemas` to allow additional properties in `values.schema.json` files.
+  - Addressed CodeRabbit review comments on chart revamp.
+
+- **Improvements**
+  - Standardized charts to align with the Lerian chart contract.
+  - Updated documentation to reflect chart standard revamp.
+  - Provided an upgrade guide for product-console v3.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.0.0...product-console-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.1.0)
+
+- **Features**
   - Introduced per-chart `values.schema.json` generator for improved CI processes.
   - Standardized charts to align with the Lerian chart contract.
 

@@ -1,5 +1,25 @@
 # Reporter Changelog
 
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.0.0)
+
+- **Features**
+  - Added ALLOW_INSECURE_TLS configuration.
+  - Parametrized probe path and timing using /readyz.
+  
+- **Fixes**
+  - Dropped KEDA authRef on CPU/memory.
+  - Addressed CodeRabbit review on revamp PR #1470.
+
+- **Improvements**
+  - Single-source MongoDB and RabbitMQ secrets.
+  - Aligned upgrade guide format.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v2.2.0...reporter-v3.0.0)
+
+---
+
 ## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v2.2.0)
 
 - **Features**

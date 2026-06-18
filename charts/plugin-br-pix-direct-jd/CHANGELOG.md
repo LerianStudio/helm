@@ -2,6 +2,20 @@
 
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
 
+- **Improvements:**
+  - Aligned upgrade guide format for better consistency and clarity.
+  - Added a v2.3 upgrade guide to assist users in transitioning to the new version.
+  - Standardized probe field set across charts for uniformity.
+  - Parametrized probe path and timing using /readyz for enhanced configuration flexibility.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
 - **Features**
   - Added ALLOW_INSECURE_TLS configuration.
   - Standardized probe field set across all charts.

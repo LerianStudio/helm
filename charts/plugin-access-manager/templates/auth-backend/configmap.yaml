@@ -18,5 +18,5 @@ data:
   enableErrorMask: "false"
   enableGzip: "true"
   quota: '{"organization": -1, "user": -1, "application": -1, "provider": -1}'
-  logConfig: '{"filename": "logs/casdoor.log", "maxdays": 99999, "perm": "0770"}'
+  logConfig: '{"filename": "/var/log/casdoor/casdoor.log", "maxdays": 99999, "perm": "0770"}'
   initDataFile: {{ .Values.auth.backend.initDataFile | default "./init_data.json" | quote }}

@@ -7,6 +7,7 @@ metadata:
   namespace: {{ include "global.namespace" . }}
 data:
   # Application Settings
+  ALLOW_INSECURE_TLS: {{ .Values.matcher.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ .Values.matcher.configmap.ENV_NAME | default "production" | quote }}
   LOG_LEVEL: {{ .Values.matcher.configmap.LOG_LEVEL | default "info" | quote }}
   SERVER_ADDRESS: {{ .Values.matcher.configmap.SERVER_ADDRESS | default ":8080" | quote }}

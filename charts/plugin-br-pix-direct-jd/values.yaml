@@ -118,6 +118,7 @@ pix:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Default Environment
     #MIDAZ Variables
     MIDAZ_ORGANIZATION_ID: "your-organization"
@@ -329,6 +330,7 @@ job:
       cpu: 100m
       memory: 128Mi
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     JOBS_CRON: "*/1 * * * *"
     # -- Default Environment
     #MIDAZ Variables

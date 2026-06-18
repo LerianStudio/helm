@@ -12,6 +12,7 @@ identity:
     tls: []
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "development"
     AUTH_ENABLED: "true"
     AUTH_PORT: "4000"
@@ -40,6 +41,7 @@ auth:
     tls: []
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     DB_USER: "auth"
     DB_HOST: "plugin-access-manager-auth-database.midaz-plugins.svc.cluster.local"
     DB_PORT: 5432

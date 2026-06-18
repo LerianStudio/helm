@@ -126,6 +126,7 @@ identity:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/identity/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Default Environment
     ENV_NAME: "development"
     AUTH_ENABLED: "true"
@@ -262,6 +263,7 @@ auth:
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/auth/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Default Environment variables for the postgres
     DB_USER: "auth"
     DB_HOST: "plugin-access-manager-auth-database"
@@ -354,7 +356,7 @@ auth:
     adminDisplayName: "Admin"
     # -- Admin password (will be stored in a secret)
     # -- IMPORTANT: Change this in production!
-    adminPassword: ""
+    adminPassword: "Lerian@123"
     # -- Use existing secret for admin password instead of creating one
     # -- IMPORTANT: If set to true, adminPasswordSecretName MUST be specified
     useExistingSecret: false

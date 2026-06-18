@@ -203,6 +203,7 @@ bc-correios:
   # @default -- templates/configmap.yaml
   configmap:
     # Application Settings
+    ALLOW_INSECURE_TLS: "true"
     APP_ENV: "development"
     APP_NAME: "plugin-bc-correios"
     APP_VERSION: "1.0.0"

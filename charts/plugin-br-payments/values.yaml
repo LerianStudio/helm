@@ -161,6 +161,7 @@ app:
   # @default -- templates/configmap.yaml
   configmap:
     # Application Settings
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "production"
     LOG_LEVEL: "info"
     DEPLOYMENT_MODE: "saas"

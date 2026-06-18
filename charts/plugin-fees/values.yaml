@@ -51,7 +51,7 @@ fees:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.2.0"
+    tag: "3.2.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: regcred
@@ -156,6 +156,7 @@ fees:
   # -- All environment variables are declared in the templates/configmap.yaml
   # @default -- templates/configmap.yaml
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     # -- Default Environment
     ENV_NAME: "development"
     # -- Application name used for service identification in logs/tracing

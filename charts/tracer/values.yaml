@@ -177,6 +177,7 @@ tracer:
     # TenantEventListener fails fast at boot if this (or ENVIRONMENT_NAME) is
     # unset — must be "staging" or "production". GitOps overrides this to
     # "staging" per non-prod environment.
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "production"
     # SERVER_PORT/SERVER_ADDRESS default to 4020 to match the tracer source
     # convention (Dockerfile EXPOSE 4020 + .env.example + Dockerfile.dev). The

@@ -181,6 +181,7 @@ flowker:
     # convention (.env.example SERVER_PORT=4021). Keep these in sync with
     # service.port above (and containerPort) when overriding in environment
     # values.yaml.
+    ALLOW_INSECURE_TLS: "true"
     ENV_NAME: "development"
     VERSION: "v1.0.0"
     SERVER_PORT: "4021"

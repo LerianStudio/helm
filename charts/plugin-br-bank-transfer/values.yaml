@@ -375,7 +375,6 @@ bankTransfer:
     # JD_LEGACY_CODE: ""
     JD_SIGNING_MODE: "local_pem" # local_pem | external_provided | disabled
     JD_POLLING_ENABLED: "false"
-    # JD_PRIVATE_KEY_KEYINFO: ""  # key metadata for external signing providers
 
     # =================================================================
     # Single-tenant defaults
@@ -426,6 +425,7 @@ bankTransfer:
     # JD_PASSWORD: ""
     # JD_PRIVATE_KEY_PEM: ""
     # JD_PUBLIC_KEY_PEM: ""  # Required for external_provided mode with signature validation
+    # JD_PRIVATE_KEY_KEYINFO: ""  # key metadata for external signing providers (credential-like → Secret)
 
     # Encryption Keys (REQUIRED - hex-encoded 32-byte AES-256 keys, 64 hex characters)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""

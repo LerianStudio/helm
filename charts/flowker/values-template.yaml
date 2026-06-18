@@ -41,6 +41,7 @@ flowker:
     targetMemoryUtilizationPercentage: 80
 
   configmap:
+    ALLOW_INSECURE_TLS: "true"
     SERVER_ADDRESS: ":4021"
     LOG_LEVEL: "info"
     API_KEY_ENABLED: "false"

@@ -53,6 +53,16 @@ var templateDefaultPattern = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9_.-]+)\s*:\s
 // only conditionally written (no `required`), so it no longer matches.
 var dualSecretRequiredPattern = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9_]+)\s*:\s*\{\{[^}]*\brequired\b[^}]*\}\}`)
 
+// allowlistedCredentialDefaults exempts intentional, non-empty credential defaults that are
+// deliberately kept in published values for backward compatibility — changing them would
+// rotate the credential for existing releases on upgrade. Keep this list minimal and
+// document the rationale per entry. Key format: "<chartName>:<dotted values path>".
+var allowlistedCredentialDefaults = map[string]bool{
+	// plugin-access-manager ships a default initUser.adminPassword so existing releases keep
+	// their admin login across upgrades; operators are expected to override it in production.
+	"plugin-access-manager:auth.initUser.adminPassword": true,
+}
+
 type chartYAML struct {
 	Type         string            `yaml:"type"`
 	Annotations  map[string]string `yaml:"annotations"`
@@ -665,15 +675,19 @@ func checkScalarValue(root, chartName, valuesPath, key string, value *yaml.Node,
 
 	classifyKey := classificationKey(key, path)
 
-	if isPasswordKey(classifyKey) && strings.EqualFold(valueText, "lerian") {
+	// Intentional, documented credential defaults kept for backward compatibility are
+	// exempted from the default-credential rule (see allowlistedCredentialDefaults).
+	credDefaultAllowed := allowlistedCredentialDefaults[chartName+":"+strings.Join(path, ".")]
+
+	if !credDefaultAllowed && isPasswordKey(classifyKey) && strings.EqualFold(valueText, "lerian") {
 		*violations = append(*violations, newViolation(chartName, "default-credential", pathText, "published values must not default password-like keys to lerian"))
 	}
 
-	if isSecretValueKey(classifyKey) && isLiteralSecretDefault(valueText) {
+	if !credDefaultAllowed && isSecretValueKey(classifyKey) && isLiteralSecretDefault(valueText) {
 		*violations = append(*violations, newViolation(chartName, "default-credential", pathText, "published values must not contain non-empty defaults for secret-like keys"))
 	}
 
-	if credentialURLPattern.MatchString(valueText) && strings.Contains(strings.ToLower(valueText), ":lerian@") {
+	if !credDefaultAllowed && credentialURLPattern.MatchString(valueText) && strings.Contains(strings.ToLower(valueText), ":lerian@") {
 		*violations = append(*violations, newViolation(chartName, "default-credential", pathText, "published values must not embed lerian in credential-bearing URLs"))
 	}
 

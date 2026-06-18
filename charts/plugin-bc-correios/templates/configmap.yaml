@@ -7,6 +7,7 @@ metadata:
   namespace: {{ include "global.namespace" . }}
 data:
   # Application Settings
+  ALLOW_INSECURE_TLS: {{ $component.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   APP_ENV: {{ $component.configmap.APP_ENV | default "development" | quote }}
   APP_NAME: {{ $component.configmap.APP_NAME | default "plugin-bc-correios" | quote }}
   APP_VERSION: {{ $component.configmap.APP_VERSION | default "1.0.0" | quote }}

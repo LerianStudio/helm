@@ -2,6 +2,19 @@
 
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.0.0)
 
+- **Fixes**
+  - Added `MONGO_PARAMETERS` to configmap for MongoDB configuration.
+  - Updated readiness probe path to default to root.
+  - Parametrized probes that were missed in the initial commit.
+
+Contributors: @ferr3ira-gabriel, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v2.3.0...product-console-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.0.0)
+
 - **Fixes:**
   - Added `MONGO_PARAMETERS` to configmap for MongoDB configuration.
   - Updated readiness probe path to default to root.

@@ -2,6 +2,27 @@
 
 ## [6.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v6.0.0)
 
+- **Features**
+  - Add deployment mode and readiness timeout settings.
+  - Disable SA create.
+  - Add SA template Fees.
+
+- **Fixes**
+  - Update chart version to 5.4.0 and app version to 3.2.0.
+
+- **Improvements**
+  - Standardize probe field set across all charts.
+  - Parametrize probe path and timing for all charts using /readyz.
+  - Update readiness probe paths to /readyz across multiple deployment templates.
+
+Contributors: @ferr3ira-gabriel, @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v5.4.0...plugin-fees-v6.0.0)
+
+---
+
+## [6.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v6.0.0)
+
 - Features:
   - Added deployment mode and readiness timeout settings.
   - Added SA template for Fees.

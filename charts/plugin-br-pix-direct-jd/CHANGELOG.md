@@ -27,6 +27,17 @@ Contributors: @guimoreirar, @lerian-studio,
 - Improvements:
   - Updated secrets, configmap, and deployment settings for plugin-br-pix-direct-jd.
 
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.10...plugin-br-pix-direct-jd-v2.2.11)
+
+---
+
+## [2.2.11](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v2.2.11)
+
+- Improvements:
+  - Updated secrets, configmap, and deployment settings for plugin-br-pix-direct-jd.
+
 Contributors: @guimoreirar, @lerian-studio
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.10...plugin-br-pix-direct-jd-v2.2.11)

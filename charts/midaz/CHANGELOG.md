@@ -20,6 +20,20 @@ Contributors: @lerian-studio
   - Updated `midaz-ledger` to version 3.7.7 to address compatibility issues.
 
 - **Documentation**
+  - Added an upgrade guide for Midaz v8.1.1.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.1.1...midaz-v8.2.0)
+
+---
+
+## [8.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.2.0)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 3.7.7 to address compatibility issues.
+
+- **Documentation**
   - Added an upgrade guide for midaz v8.1.1.
 
 Contributors: @lerian-studio

@@ -62,7 +62,14 @@
     },
     "otel-collector-lerian": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "When true, inject OTEL env vars (HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_RESOURCE_ATTRIBUTES) into midaz ledger and crm deployments. The endpoint is fixed at $(HOST_IP):4317 — apps require an OTEL collector listening on the node. To use a different endpoint, leave enabled=false and set OTEL_EXPORTER_OTLP_ENDPOINT directly in the application configmap (ledger.configmap / crm.configmap)."
+        }
+      },
+      "required": ["enabled"]
     }
   }
 }

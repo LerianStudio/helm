@@ -50,7 +50,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `7.0.0-beta.2` | 3.2.1 | `3.0.0` |
+| `7.0.0` | 3.2.1 | `3.0.0` |
 
 -----------------
 
@@ -227,7 +227,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `3.1.0-beta.1` | 1.6.0 |
+| `3.1.0` | 1.6.0 |
 -----------------
 
 ### Plugin BC Correios

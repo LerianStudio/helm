@@ -118,6 +118,11 @@ spec:
             timeoutSeconds: {{ .Values.auth.backend.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ .Values.auth.backend.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.auth.backend.livenessProbe.failureThreshold | default 3 }}
+          # casdoor writes logs/casdoor.log; with readOnlyRootFilesystem=true this needs a
+          # writable mount. logConfig points at /var/log/casdoor (see auth-backend configmap).
+          volumeMounts:
+            - name: casdoor-logs
+              mountPath: /var/log/casdoor
       {{- with .Values.auth.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -130,3 +135,6 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - name: casdoor-logs
+          emptyDir: {}

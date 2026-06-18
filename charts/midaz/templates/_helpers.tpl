@@ -94,12 +94,13 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- define "midaz.infraSecretRef" -}}
 {{- $ctx := .context -}}
 {{- $sub := .subchart -}}
-{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
+{{- $subValues := default dict (index $ctx.Values $sub) -}}
+{{- $auth := default dict (index $subValues "auth") -}}
 {{- $secretName := "" -}}
 {{- if $auth.existingSecret -}}
 {{- $secretName = $auth.existingSecret -}}
 {{- else -}}
-{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
+{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" $subValues "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
   valueFrom:

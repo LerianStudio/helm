@@ -21,7 +21,7 @@ data:
   {{- if .Values.app.configmap.POSTGRES_HOST }}
   POSTGRES_HOST: {{ .Values.app.configmap.POSTGRES_HOST | quote }}
   {{- else if eq (include "postgresql.enabled" .) "true" }}
-  {{- $pgArch := default "replication" .Values.postgresql.architecture }}
+  {{- $pgArch := default "standalone" .Values.postgresql.architecture }}
   {{- $pgFullname := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" (index .Values "postgresql") "context" .) }}
   {{- if eq $pgArch "replication" }}
   POSTGRES_HOST: {{ printf "%s-primary.%s.svc.cluster.local" $pgFullname (include "global.namespace" .) | quote }}

@@ -1492,6 +1492,9 @@ func copyDir(src, dst string) error {
 		if err != nil {
 			return err
 		}
+		if d.Type()&os.ModeSymlink != 0 {
+			return fmt.Errorf("symlink entries are not allowed in chart sources: %s", path)
+		}
 
 		relPath, err := filepath.Rel(src, path)
 		if err != nil {
@@ -1512,6 +1515,11 @@ func copyDir(src, dst string) error {
 }
 
 func copyFile(src, dst string, mode os.FileMode) error {
+	if info, err := os.Lstat(src); err != nil {
+		return err
+	} else if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to copy symlink target: %s", src)
+	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}

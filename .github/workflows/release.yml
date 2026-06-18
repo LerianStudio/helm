@@ -89,10 +89,14 @@ jobs:
           cache-dependency-path: .github/scripts/go.sum
 
       - name: Helm Dependency Update
-        run: helm dependency update ${{ matrix.chart.working_dir }}
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
+        run: helm dependency update "$CHART_WORKING_DIR"
 
       - name: Helm Lint
-        run: helm lint ${{ matrix.chart.working_dir }}
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
+        run: helm lint "$CHART_WORKING_DIR"
 
       - name: Render Helm Chart
         working-directory: .github/scripts

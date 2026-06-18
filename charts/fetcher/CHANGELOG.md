@@ -3,6 +3,25 @@
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.0.0)
 
 - **Features**
+  - Add `ALLOW_INSECURE_TLS` configuration to multiple charts and update image tags.
+  - Parametrize probe path and timing for all charts using `/readyz`.
+
+- **Fixes**
+  - Address CodeRabbit review on revamp PR #1470.
+
+- **Improvements**
+  - Align upgrade guide format for fetcher.
+  - Add v2.2 upgrade guide documentation.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v2.1.1...fetcher-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.0.0)
+
+- **Features**
   - Added ALLOW_INSECURE_TLS configuration to multiple charts and updated image tags.
 
 - **Fixes**

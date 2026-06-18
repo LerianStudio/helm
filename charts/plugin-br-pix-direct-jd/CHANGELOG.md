@@ -2,6 +2,28 @@
 
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
 
+- **Features**
+  - Added ALLOW_INSECURE_TLS configuration.
+  - Standardized probe field set across all charts.
+  - Parametrized probe path and timing using /readyz.
+
+- **Fixes**
+  - Addressed CodeRabbit review on revamp PR #1470.
+  - Corrected value key typo and stale README notes.
+
+- **Improvements**
+  - Aligned upgrade guide format.
+  - Aligned documentation with chart standard revamp.
+  - Standardized charts to Lerian chart contract.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
 - Improvements:
   - Aligned upgrade guide format for better consistency.
   - Standardized probe field set and parametrized probe path and timing using `/readyz`.

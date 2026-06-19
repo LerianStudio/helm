@@ -296,14 +296,33 @@ opentelemetry-collector:
             metric_names:
               - ^k8s\.node\..*$
 
-      # Filters metrics to include the 'midaz' and 'midaz-plugins' namespaces.
+      # BYOC privacy filter — restricts telemetry to the 'midaz' and
+      # 'midaz-plugins' namespaces. The same filter is applied across metrics,
+      # logs, and traces so Lerian never receives data from the client's other
+      # workloads (kube-system, app-of-the-client, etc.).
+      #
+      # `metrics` and `logs` sections use the filterprocessor's declarative
+      # `include` form. `traces` uses OTTL syntax — the `span:` list specifies
+      # what to DROP, so the condition is INVERTED (drop spans whose namespace
+      # is NOT in the allowed set, or whose `k8s.namespace.name` is missing
+      # entirely).
       filter/include_midaz_namespaces:
+        error_mode: ignore
         metrics:
           include:
             match_type: regexp
             resource_attributes:
               - key: k8s.namespace.name
                 value: '^(midaz|midaz-plugins)$'
+        logs:
+          include:
+            match_type: regexp
+            resource_attributes:
+              - key: k8s.namespace.name
+                value: '^(midaz|midaz-plugins)$'
+        traces:
+          span:
+            - 'resource.attributes["k8s.namespace.name"] == nil or not IsMatch(resource.attributes["k8s.namespace.name"], "^(midaz|midaz-plugins)$")'
 
       # Enriches all telemetry with Kubernetes metadata (pod name, namespace, etc.).
       k8sattributes:
@@ -365,7 +384,7 @@ opentelemetry-collector:
           - name: http.route
           - name: http.status_code
           - name: http.response.status_code
-        dimensions_cache_size: 50000
+        aggregation_cardinality_limit: 50000
 
     exporters:
       # Disable the default debug exporter
@@ -396,6 +415,7 @@ opentelemetry-collector:
             - memory_limiter
             - k8sattributes
             - resource/add_client_id
+            - filter/include_midaz_namespaces
             - batch
           exporters: [otlphttp/server]
         traces:
@@ -404,15 +424,17 @@ opentelemetry-collector:
           # 2. k8sattributes BEFORE batch — batch drops the connection context that
           #    `pod_association: from connection` relies on.
           # 3. Add the client ID for multi-tenancy.
-          # 4. Sanitize by removing sensitive payloads.
-          # 5. Normalize HTTP semconv (legacy <-> OTel-stable) so the spanmetrics
+          # 4. Drop spans from namespaces outside the allowed set (BYOC privacy).
+          # 5. Sanitize by removing sensitive payloads.
+          # 6. Normalize HTTP semconv (legacy <-> OTel-stable) so the spanmetrics
           #    connector sees both `http.status_code` and `http.response.status_code`.
-          # 6. batch LAST so all enrichment/normalization runs on individual spans.
+          # 7. batch LAST so all enrichment/normalization runs on individual spans.
           receivers: [otlp]
           processors:
               - memory_limiter
               - k8sattributes
               - resource/add_client_id
+              - filter/include_midaz_namespaces
               - transform/remove_sensitive_attributes
               - transform/normalize_http_semconv
               - batch
@@ -448,6 +470,7 @@ opentelemetry-collector:
             - memory_limiter
             - k8sattributes
             - resource/add_client_id
+            - filter/include_midaz_namespaces
             - transform/mask_body_sensitive_data_replace_1
             - transform/mask_body_sensitive_data_replace_2
             - transform/mask_body_sensitive_data_replace_3

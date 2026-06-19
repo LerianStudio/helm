@@ -59,7 +59,7 @@ This chart provides a pre-configured OpenTelemetry Collector with the following 
 - **transform/remove_sensitive_attributes**: Removes sensitive payload data from spans
 - **transform/mask_body_sensitive_data**: Masks PII data in logs (documents, names, emails, addresses, phone numbers, PIX keys)
 - **filter/drop_node_metrics**: Excludes node-level metrics
-- **filter/include_midaz_namespaces**: Filters metrics to include only `midaz` and `midaz-plugins` namespaces
+- **filter/include_midaz_namespaces**: BYOC privacy filter — restricts metrics, logs, and traces to the `midaz` and `midaz-plugins` namespaces only. Telemetry from any other namespace is dropped at the collector before being exported.
 
 ### Connectors
 - **spanmetrics**: Generates RED metrics (Rate, Errors, Duration) from trace spans

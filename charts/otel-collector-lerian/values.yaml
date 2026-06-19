@@ -7,6 +7,24 @@
 opentelemetry-collector:
   mode: daemonset # Changed from deployment to daemonset for kubeletstats
 
+  # hostNetwork enables the FALLBACK pod identity path of the k8sattributes
+  # processor (`pod_association: from connection` — see line ~322). The PRIMARY
+  # path uses the `k8s.pod.ip` resource attribute that applications emit via
+  # `OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP)`, and that works regardless
+  # of hostNetwork. The connection-based fallback is what services that don't
+  # yet emit `k8s.pod.ip` rely on; without hostNetwork, hostPort hairpin NAT
+  # would rewrite the source IP to the node IP and the fallback would fail.
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+
+  # With hostNetwork: true the container binds directly to the node's network stack,
+  # so hostPort is redundant. Setting hostPort: 0 removes the mapping.
+  ports:
+    otlp:
+      hostPort: 0
+    otlp-http:
+      hostPort: 0
+
   # Contrib image is needed for k8scluster, k8sattributes, transform, and loki exporter.
   image:
     repository: otel/opentelemetry-collector-contrib
@@ -140,7 +158,7 @@ opentelemetry-collector:
 
     processors:
       memory_limiter:
-        check_interval: 500ms
+        check_interval: 1s
         limit_percentage: 80
         spike_limit_percentage: 20
       batch:
@@ -154,7 +172,34 @@ opentelemetry-collector:
           - context: span
             statements:
               - delete_key(attributes, "app.request.payload")
-            
+
+      # Bidirectional mirror between legacy HTTP attrs (`http.method`,
+      # `http.status_code`) and OTel semconv stable (`http.request.method`,
+      # `http.response.status_code`). Some services emit legacy (lib-commons v2),
+      # others new (lib-observability); keeping both populated lets dashboards
+      # built on either name keep working during the migration window.
+      #
+      # Method mirror skips when the new attr is "_OTHER" (lib-observability's
+      # cardinality-protection sentinel for non-canonical verbs). Propagating
+      # "_OTHER" to the legacy `http.method` would create a value legacy emitters
+      # never produced (lib-commons v2 emitted the raw verb), so we keep the
+      # legacy attr nil instead. The new attr retains "_OTHER" and the original
+      # verb stays in `http.request.method_original`.
+      #
+      # Logs are not normalized here: lib-observability and lib-commons both
+      # emit access log fields with underscore form (`http_method`,
+      # `http_status_code`) via zap, not dotted attributes, so dashboards parse
+      # them directly via `| json` and need no transform.
+      transform/normalize_http_semconv:
+        error_mode: ignore
+        trace_statements:
+          - context: span
+            statements:
+              - set(attributes["http.method"], attributes["http.request.method"]) where attributes["http.method"] == nil and attributes["http.request.method"] != nil and attributes["http.request.method"] != "_OTHER"
+              - set(attributes["http.request.method"], attributes["http.method"]) where attributes["http.request.method"] == nil and attributes["http.method"] != nil
+              - set(attributes["http.status_code"], attributes["http.response.status_code"]) where attributes["http.status_code"] == nil and attributes["http.response.status_code"] != nil
+              - set(attributes["http.response.status_code"], attributes["http.status_code"]) where attributes["http.response.status_code"] == nil and attributes["http.status_code"] != nil
+
       transform/mask_body_sensitive_data_replace_1:
         error_mode: ignore
         log_statements:
@@ -264,6 +309,21 @@ opentelemetry-collector:
       k8sattributes:
         auth_type: "serviceAccount"
         passthrough: false
+        # Two-tier pod identity resolution:
+        # 1. Prefer the `k8s.pod.ip` resource attribute that the application
+        #    emits via OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP). This works
+        #    regardless of network topology (no hostNetwork required), so it
+        #    covers clients whose PodSecurityPolicy forbids hostNetwork.
+        # 2. Fall back to the connection source IP. Works when hostNetwork is
+        #    enabled on the collector pod (so the connection IP is the real
+        #    pod IP, not the node IP after hostPort hairpin NAT). Required for
+        #    services that don't yet emit the k8s.pod.ip resource attribute.
+        pod_association:
+          - sources:
+              - from: resource_attribute
+                name: k8s.pod.ip
+          - sources:
+              - from: connection
         extract:
           metadata:
             - k8s.pod.name
@@ -292,9 +352,19 @@ opentelemetry-collector:
           - name: k8s.container.name
           - name: k8s.container.ready
           - name: k8s.container.uptime
+          # Migration window: both legacy (`http.method`, `http.status_code`)
+          # and OTel-stable (`http.request.method`, `http.response.status_code`)
+          # forms are kept while services migrate via lib-observability. The
+          # transform/normalize_http_semconv processor mirrors both forms on
+          # every span, so series cardinality is unchanged (both values are
+          # always equal, except `http.method` which stays nil when the new
+          # attr is "_OTHER"). Once migration completes, remove the legacy
+          # dimensions (`http.method`, `http.status_code`).
           - name: http.method
+          - name: http.request.method
           - name: http.route
           - name: http.status_code
+          - name: http.response.status_code
         dimensions_cache_size: 50000
 
     exporters:
@@ -315,22 +385,37 @@ opentelemetry-collector:
           address: "0.0.0.0:8887"
           level: "Basic"
       pipelines:
-        # Disable the default metrics pipeline (uses prometheus receiver we don't want)
-        metrics: null      
+        # Accept OTLP-pushed metrics from applications. Required so apps using
+        # lib-observability (which emits http.server.request.duration and
+        # other OTel-native metrics directly via the OTel SDK) deliver those
+        # to the central backend. Without this pipeline, OTLP metrics from
+        # the application are silently dropped.
+        metrics:
+          receivers: [otlp]
+          processors:
+            - memory_limiter
+            - k8sattributes
+            - resource/add_client_id
+            - batch
+          exporters: [otlphttp/server]
         traces:
           # The order of processors is critical for correct data handling:
-          # 1. Enrich with K8s metadata.
-          # 2. Add the client ID for multi-tenancy.
-          # 3. Sanitize by removing sensitive payloads.
-          # 4. Sample traces, keeping only those with 5xx errors.
-          # 5. Batch the final set of traces for efficient export.
+          # 1. memory_limiter FIRST (admission control).
+          # 2. k8sattributes BEFORE batch — batch drops the connection context that
+          #    `pod_association: from connection` relies on.
+          # 3. Add the client ID for multi-tenancy.
+          # 4. Sanitize by removing sensitive payloads.
+          # 5. Normalize HTTP semconv (legacy <-> OTel-stable) so the spanmetrics
+          #    connector sees both `http.status_code` and `http.response.status_code`.
+          # 6. batch LAST so all enrichment/normalization runs on individual spans.
           receivers: [otlp]
           processors:
               - memory_limiter
-              - batch
               - k8sattributes
               - resource/add_client_id
               - transform/remove_sensitive_attributes
+              - transform/normalize_http_semconv
+              - batch
           exporters: [spanmetrics, otlphttp/server]
 
         # Pipeline for span-derived metrics, sent to central backend.
@@ -338,27 +423,29 @@ opentelemetry-collector:
           receivers: [spanmetrics]
           processors:
             - memory_limiter
-            - batch
             - k8sattributes
             - resource/add_client_id
+            - batch
           exporters: [otlphttp/server]
 
-        # Pipeline for cluster and application metrics, sent to the central backend.
+        # Pipeline for cluster-only metrics (k8s_cluster receiver + kubeletstats).
+        # OTLP is intentionally NOT in this pipeline's receivers — application
+        # OTLP metrics flow exclusively through the `metrics` pipeline above.
+        # Routing OTLP through both pipelines would export every datapoint twice.
         metrics/cluster:
-          receivers: [otlp, k8s_cluster, kubeletstats]
+          receivers: [k8s_cluster, kubeletstats]
           processors:
             - memory_limiter
-            - batch
-            - resource/add_client_id
             - k8sattributes
+            - resource/add_client_id
             - filter/include_midaz_namespaces
             - filter/drop_node_metrics
+            - batch
           exporters: [otlphttp/server]
         logs:
           receivers: [otlp, k8sobjects]
           processors:
             - memory_limiter
-            - batch
             - k8sattributes
             - resource/add_client_id
             - transform/mask_body_sensitive_data_replace_1
@@ -371,4 +458,5 @@ opentelemetry-collector:
             - transform/mask_body_sensitive_data_replace_8
             - transform/mask_body_sensitive_data_replace_09
             - transform/mask_body_sensitive_data_replace_10
+            - batch
           exporters: [otlphttp/server]

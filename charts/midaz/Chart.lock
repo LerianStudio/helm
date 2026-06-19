@@ -11,5 +11,5 @@ dependencies:
 - name: rabbitmq
   repository: https://groundhog2k.github.io/helm-charts
   version: 2.1.11
-digest: sha256:0690e406671e3e15a5324a5e7b43639f9fdbbda2e6d3a0407e858a61e14d17db
-generated: "2026-06-07T13:02:51.771841-03:00"
+digest: sha256:2a2522d76f48d28c4bc86bd4c23226346e921eeeba11a217b89b5a71589a7f92
+generated: "2026-06-19T15:26:51.872268447-03:00"

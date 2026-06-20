@@ -680,9 +680,9 @@ rabbitmq:
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
 # -- OTEL exporter configuration for midaz services.
 # When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES
-# are injected into every midaz deployment. Port is fixed at 4317.
+# are injected into the `ledger` and `crm` deployments only. Port is fixed at 4317.
 # If you need a different collector endpoint, leave enabled=false and configure
-# OTEL env vars directly in the application configmap.
+# OTEL env vars directly in the application configmap (ledger.configmap / crm.configmap).
 otel-collector-lerian:
-  # -- Inject OTEL env vars into midaz service deployments
+  # -- Inject OTEL env vars into the midaz ledger and crm deployments
   enabled: true

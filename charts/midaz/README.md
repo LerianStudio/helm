@@ -554,13 +554,29 @@ ledger:
     RABBITMQ_PROTOCOL: "https" # was "http"
 ```
 
-### OpenTelemetry Collector (Lerian)
+### OpenTelemetry Collector wiring
 
-- **Note:** This OpenTelemetry collector is used to collect and export telemetry data from Midaz components.
- - By default, it is disabled.
- - You can enable it by setting `otel-collector-lerian.enabled` to `true` in the values file.
+Since `8.4.0` the `otel-collector-lerian` subchart is no longer installed as a dependency of this chart (the dependency was removed; see [`UPGRADE-8.4.md`](docs/UPGRADE-8.4.md) for the migration story). The `otel-collector-lerian.enabled` flag now only controls whether `HOST_IP`, `POD_IP`, `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` and `OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP)` are injected into the `ledger` and `crm` deployments.
+
+By default `enabled: true` — Midaz expects a node-local OTel collector listening on `4317` (`hostPort` or `hostNetwork`). Install the [otel-collector-lerian chart](../otel-collector-lerian) separately or point your own collector at the same port.
 
 ```yaml
 otel-collector-lerian:
-  enabled: true
+  enabled: true    # injects OTEL env vars (default)
 ```
+
+If you don't want telemetry exported, or you want to send telemetry to an endpoint that isn't a node-local collector on `:4317`, leave `enabled: false` and configure `OTEL_EXPORTER_OTLP_ENDPOINT` directly in the application configmap:
+
+```yaml
+otel-collector-lerian:
+  enabled: false
+
+ledger:
+  configmap:
+    OTEL_EXPORTER_OTLP_ENDPOINT: "https://your-collector.example.com:4317"
+crm:
+  configmap:
+    OTEL_EXPORTER_OTLP_ENDPOINT: "https://your-collector.example.com:4317"
+```
+
+Schema is strict: only `enabled` is accepted under `otel-collector-lerian:`. Legacy keys (`external`, `extraEnvs`, `exporters`, `opentelemetry-collector`) are rejected at `helm install/upgrade` time.

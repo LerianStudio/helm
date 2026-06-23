@@ -1,5 +1,20 @@
 # Midaz Changelog
 
+## [8.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.4.0)
+
+- **Features:**
+  - Decoupled otel-collector-lerian from midaz helm chart.
+
+- **Improvements:**
+  - Removed manually-added UPGRADE-9.0.md.
+  - Regenerated Chart.lock to match Chart.yaml after dependency removal.
+
+Contributors: @gandalf-at-lerian, @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.3.0...midaz-v8.4.0)
+
+---
+
 ## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.3.0)
 
 - **Features**

@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.3.0` | 3.7.7 | 3.7.6 |
+| `8.4.0-beta.3` | 3.7.7 | 3.7.6 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -214,7 +214,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `4.0.0` | 0.142.0 |
+| `4.1.0-beta.4` | 0.142.0 |
 -----------------
 
 ### Product Console

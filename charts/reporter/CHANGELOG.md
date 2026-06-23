@@ -2,6 +2,27 @@
 
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.0.0)
 
+- **Features**
+  - Added ALLOW_INSECURE_TLS configuration to the reporter.
+  - Parametrized probe path and timing using /readyz.
+
+- **Fixes**
+  - Dropped KEDA authRef on CPU/memory.
+  - Addressed issues with missing infrastructure credentials.
+
+- **Improvements**
+  - Refactored to single-source MongoDB and RabbitMQ secrets.
+  - Standardized charts to align with the Lerian chart contract.
+  - Updated readiness probe paths to /readyz.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v2.2.0...reporter-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.0.0)
+
 - **Features:**
   - Added ALLOW_INSECURE_TLS configuration.
   - Parametrized probe path and timing using /readyz.

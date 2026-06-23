@@ -1,5 +1,22 @@
 # Reporter Changelog
 
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.0)
+
+- Features:
+  - Released reporter v3.0.0 with new functionalities and improvements.
+  
+- Fixes:
+  - Updated reporter-manager and reporter-worker to version 2.1.1 to address existing issues.
+
+- Improvements:
+  - Added upgrade guide for reporter v3.0.0 to assist users in transitioning to the new version.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.0.0...reporter-v3.1.0)
+
+---
+
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.0.0)
 
 - **Features**

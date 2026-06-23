@@ -3,6 +3,29 @@
 ## [8.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.2.0)
 
 - **Features**
+  - Added `ALLOW_INSECURE_TLS` configuration to multiple charts.
+  - Implemented per-chart `values.schema.json` generator.
+
+- **Fixes**
+  - Adjusted security context for Casdoor container.
+  - Updated logConfig path and added volume for log storage.
+  - Addressed CodeRabbit review on revamp PR.
+
+- **Improvements**
+  - Standardized charts to Lerian chart contract.
+  - Pinned Bitnami dependency versions.
+  - Aligned documentation with chart standard revamp.
+  - Removed redundant dependency helpers and updated CI.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.1.0...plugin-access-manager-v8.2.0)
+
+---
+
+## [8.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.2.0)
+
+- **Features**
   - Added ALLOW_INSECURE_TLS configuration to multiple charts and updated image tags.
   - Implemented per-chart values.schema.json generator for CI.
 

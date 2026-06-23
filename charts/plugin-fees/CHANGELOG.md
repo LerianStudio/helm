@@ -2,6 +2,27 @@
 
 ## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.0.0)
 
+- **Features**
+  - Added ALLOW_INSECURE_TLS configuration to charts.
+  - Introduced single-source MongoDB password for improved security.
+
+- **Fixes**
+  - Addressed CodeRabbit review comments related to chart revamp.
+  - Resolved issues with collapse-aware infra host fallbacks.
+  - Fixed collapse-safe Bitnami name derivation.
+
+- **Improvements**
+  - Standardized charts to adhere to the Lerian chart contract.
+  - Removed redundant dependency helpers and updated CI processes.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v6.0.0...plugin-fees-v7.0.0)
+
+---
+
+## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.0.0)
+
 - **Features:**
   - Added ALLOW_INSECURE_TLS configuration to plugin-fees.
   - Introduced a single-source MongoDB password refactor for plugin-fees.

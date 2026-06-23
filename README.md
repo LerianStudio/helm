@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.0.0` | 2.0.0 | 2.0.0 |
+| `3.1.0` | 2.1.1 | 2.1.1 |
 -----------------
 
 ### Plugin BR Bank Transfer 

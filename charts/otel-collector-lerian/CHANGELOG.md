@@ -1,5 +1,21 @@
 # Otel-collector-lerian Changelog
 
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
 ## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.0.0)
 
 - **Features**

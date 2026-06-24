@@ -19,6 +19,17 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "streaming-hub.labels" (dict "context" . "component" "bootstrap") | nindent 4 }}
+  annotations:
+    # PreSync hook at the FRONT of the chain (weight -10 / sync-wave -10): creates
+    # the hub's role+db BEFORE the migration-secret (-5), the migrations Job (-1),
+    # and the app Deployment (main Sync). Idempotent — it creates the role/db only
+    # when absent (see the script), so re-running on every sync is safe.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-10"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1

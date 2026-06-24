@@ -1,0 +1,114 @@
+{{- $streamingHub := .Values.streamingHub | default dict }}
+{{- $migrations := get $streamingHub "migrations" | default dict }}
+{{- $migrationImage := get $migrations "image" | default dict }}
+{{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") }}
+{{- $migrationsEnabled := eq (lower (toString (get $migrations "enabled" | default false))) "true" }}
+{{- if $migrationsEnabled }}
+{{- /*
+OUT-OF-BAND schema migration Job. The hub never migrates itself; this Job applies
+the SQL migrations BEFORE the app rolls out. PreSync hook at weight -1 — after
+bootstrap-postgres (-10, creates role+db) and migration-secret (-5, carries the
+DSN), before the app Deployment (main Sync). Runs ONCE regardless of
+streamingHub.mode (all | split) — it is not per-role.
+
+The runner is the stock migrate/migrate toolchain baked with the hub's migrations/
+dir; its entrypoint runs `migrate -path=/migrations -database="$STREAMING_HUB_POSTGRES_DSN" up`,
+so the ONLY required env is STREAMING_HUB_POSTGRES_DSN (secretKeyRef).
+*/}}
+{{- /* Secret resolution — STREAMING_HUB_POSTGRES_DSN source. */}}
+{{- $migUseExisting := eq (lower (toString (get $migrations "useExistingSecret" | default false))) "true" }}
+{{- $dsnSecretName := "" }}
+{{- if $migUseExisting }}
+{{- $dsnSecretName = required "streamingHub.migrations.existingSecretName is required when streamingHub.migrations.useExistingSecret=true" (get $migrations "existingSecretName") }}
+{{- else }}
+{{- $dsnSecretName = printf "%s-migrations" (include "streaming-hub.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- $namespace := include "global.namespace" . }}
+{{- /* Image resolution — explicit digest > explicit tag > app tag (streamingHub.image.tag) > chart appVersion. */}}
+{{- $migrationTag := get $migrationImage "tag" | default "" }}
+{{- $migrationDigest := get $migrationImage "digest" | default "" }}
+{{- if and (empty $migrationTag) (empty $migrationDigest) }}
+{{- $migrationTag = $streamingHub.image.tag | default .Chart.AppVersion }}
+{{- end }}
+{{- $migrationRepository := get $migrationImage "repository" | default "ghcr.io/lerianstudio/streaming-hub-migrations" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-migrations" (include "streaming-hub.fullname" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "streaming-hub.labels" (dict "context" . "component" "migrations") | nindent 4 }}
+  annotations:
+    # External Postgres host (bootstrap-postgres provisions the role+db at PreSync
+    # weight -10) — run BEFORE the app rolls out (schema-first).
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-1"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
+    {{- with (get $migrations "annotations") }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  backoffLimit: {{ get $migrations "backoffLimit" | default 3 }}
+  activeDeadlineSeconds: {{ get $migrations "activeDeadlineSeconds" | default 600 }}
+  ttlSecondsAfterFinished: {{ get $migrations "ttlSecondsAfterFinished" | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "streaming-hub.labels" (dict "context" . "component" "migrations") | nindent 8 }}
+      {{- with (get $migrations "podAnnotations") }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with (get $streamingHub "imagePullSecrets") }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrations
+          {{- if $migrationDigest }}
+          image: "{{ $migrationRepository }}@{{ $migrationDigest }}"
+          {{- else }}
+          image: "{{ $migrationRepository }}:{{ $migrationTag }}"
+          {{- end }}
+          imagePullPolicy: {{ get $migrationImage "pullPolicy" | default "IfNotPresent" }}
+          env:
+            # The baked migrate/migrate entrypoint runs:
+            #   migrate -path=/migrations -database="$STREAMING_HUB_POSTGRES_DSN" up
+            - name: STREAMING_HUB_POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $dsnSecretName }}
+                  key: STREAMING_HUB_POSTGRES_DSN
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml (get $migrations "resources" | default $defaultMigrationResources) | nindent 12 }}
+      {{- with (get $streamingHub "nodeSelector") }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (get $streamingHub "affinity") }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (get $streamingHub "tolerations") }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

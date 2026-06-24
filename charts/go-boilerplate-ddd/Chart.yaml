@@ -12,7 +12,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 2.2.0-beta.1
+version: 2.2.0-beta.2
 deprecated: true
 appVersion: "1.0.0"
 keywords:

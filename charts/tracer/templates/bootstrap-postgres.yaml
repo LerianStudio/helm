@@ -104,7 +104,7 @@ spec:
               echo "Role 'tracer' already exists. Skipping creation."
             else
               echo "Creating role 'tracer'..."
-              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE tracer LOGIN PASSWORD '$DB_PASSWORD_TRACER'"
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_TRACER" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE tracer LOGIN PASSWORD :'pw'"
             fi
 
             # Create database if not exists

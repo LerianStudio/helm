@@ -241,9 +241,15 @@ spi:
     MIDAZ_CLIENT_ID: ""
     MIDAZ_LEDGER_ID: ""
     MIDAZ_ORGANIZATION_ID: ""
-    # Multi-tenant
+    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
+    # and MULTI_TENANT_API_KEY are seeds for the spi-systemplane store; once
+    # persisted there, env values become optional (a re-deploy without them is
+    # a supported rollback path). Circuit breaker defaults match the binary
+    # (pkg/config: DefaultMultiTenantCBThreshold=5, ...CBTimeoutSec=30).
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
 
   secrets:
     DATABASE_URL: ""
@@ -361,12 +367,21 @@ spiSystemplane:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- Multi-tenant seeds. When MULTI_TENANT_ENABLED=true, MULTI_TENANT_URL
+    # and MULTI_TENANT_API_KEY (masked) are seeded into the systemplane store
+    # at tenant.manager_url / tenant.manager_api_key on first boot. After
+    # the systemplane row exists, env values can be removed.
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
 
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
+    # -- Tenant Manager API key (consumed when MULTI_TENANT_ENABLED=true on
+    # spi-systemplane). Seeded into the systemplane store on first boot.
+    MULTI_TENANT_API_KEY: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -576,8 +591,14 @@ dictHub:
     CRM_ORGANIZATION_ID: ""
     KEY_CACHE_TTL_SEC: "60"
     MONGO_DB_NAME: "pix-dict"
+    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
+    # and MULTI_TENANT_API_KEY are seeds for the dict-systemplane store; the CB
+    # tunables size the tenant-manager client circuit breaker (defaults from
+    # pkg/config: threshold=5, timeoutSec=30).
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
 
   secrets:
     DATABASE_URL: ""
@@ -698,6 +719,10 @@ dictHubVsync:
     CRM_BASE_URL: ""
     CRM_CLIENT_ID: ""
     CRM_ORGANIZATION_ID: ""
+    # -- Multi-tenant (vsync uses the per-tenant DSN resolver only; no
+    # API key here, no CB tunables — the resolver shares the dict-hub
+    # tenant-manager client config).
+    MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
     # VSync tunables
     VSYNC_ENABLED: "true"
@@ -910,6 +935,10 @@ dictSystemplane:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- Multi-tenant flag. dict-systemplane reads only the boolean (URL +
+    # API key live on spi-systemplane). When enabled, the systemplane store
+    # is bootstrapped in MT mode.
+    MULTI_TENANT_ENABLED: "false"
 
   secrets:
     DATABASE_URL: ""
@@ -1011,8 +1040,14 @@ cobHub:
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: ""
+    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
+    # and MULTI_TENANT_API_KEY are seeds for the cob-systemplane store; the CB
+    # tunables size the tenant-manager client circuit breaker (defaults from
+    # pkg/config: threshold=5, timeoutSec=30).
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
 
   secrets:
     DATABASE_URL: ""
@@ -1221,6 +1256,10 @@ cobSystemplane:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- Multi-tenant flag. cob-systemplane reads only the boolean (URL +
+    # API key live on spi-systemplane). When enabled, the systemplane store
+    # is bootstrapped in MT mode.
+    MULTI_TENANT_ENABLED: "false"
 
   secrets:
     DATABASE_URL: ""

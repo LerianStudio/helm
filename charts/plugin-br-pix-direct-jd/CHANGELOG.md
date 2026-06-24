@@ -2,6 +2,27 @@
 
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
 
+- Features:
+  - Added ALLOW_INSECURE_TLS configuration to charts.
+  - Parametrized probe path and timing using /readyz.
+
+- Fixes:
+  - Allowed additional properties in values.schema.json files.
+  - Addressed CodeRabbit review on revamp PR #1470.
+
+- Improvements:
+  - Aligned upgrade guide format.
+  - Standardized probe field set across all charts.
+  - Updated readiness probe paths to /readyz across multiple deployment templates.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
 - **Features**
   - Added ALLOW_INSECURE_TLS configuration.
   - Parametrized probe path and timing using /readyz.

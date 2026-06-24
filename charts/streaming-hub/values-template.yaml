@@ -1,0 +1,50 @@
+# streaming-hub — operator override template.
+#
+# Copy this file, fill the blanks per environment, and pass it with `-f`.
+# It documents only the keys an operator typically sets; every other key keeps
+# the default from values.yaml. See README "Chart Contract" for the full
+# secret/dependency/override contract. Secrets are blank here — provide them
+# inline or via `useExistingSecret` + `existingSecretName`.
+
+streamingHub:
+  # Topology: `all` (one Deployment) or `split` (ingest + delivery). Never both
+  # — the roles compete for one Kafka consumer group. See README.
+  mode: all
+
+  image:
+    tag: ""  # defaults to the chart appVersion
+
+  common:
+    configmap:
+      STREAMING_HUB_ENV: production          # local | staging | production
+      STREAMING_HUB_LOG_LEVEL: info
+      STREAMING_HUB_KAFKA_BROKERS: ""         # e.g. redpanda.dev-st.lerian.net:9092
+      STREAMING_HUB_KAFKA_SCRAM_MECHANISM: "" # e.g. SCRAM-SHA-256 (empty = no SASL)
+      STREAMING_HUB_ALLOW_INSECURE_KAFKA: "false"
+      STREAMING_HUB_KEK_SOURCE: ""            # env | aws-kms | ...
+      PLUGIN_AUTH_ENABLED: "true"
+      PLUGIN_AUTH_ADDRESS: ""
+      STREAMING_HUB_TENANT_ID: default
+      STREAMING_HUB_MULTI_TENANT_ENABLED: "false"
+
+  secrets:
+    STREAMING_HUB_POSTGRES_DSN: ""            # full Postgres DSN, credentials embedded
+    STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""
+    STREAMING_HUB_KAFKA_SCRAM_PASSWORD: ""
+    STREAMING_HUB_KEK_REF: ""                 # KEK reference (KMS key id / ARN / ...)
+    # STREAMING_HUB_DEV_KEK: ""               # dev only
+    # SaaS-only — required when MULTI_TENANT_ENABLED=true:
+    # STREAMING_HUB_TENANT_MANAGER_SERVICE_API_KEY: ""
+    # STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  # Per-role sizing. Honor Σ(replicas × poolMaxOpenConns) ≤ Postgres max_connections.
+  all:
+    replicaCount: 1
+  # mode: split uses these instead:
+  # ingest:
+  #   replicaCount: 2
+  # delivery:
+  #   replicaCount: 2

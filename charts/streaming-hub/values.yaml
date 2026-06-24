@@ -1,0 +1,404 @@
+# Default values for streaming-hub.
+# This is a YAML-formatted file.
+#
+# streaming-hub consumes lib-streaming CloudEvents from Kafka/Redpanda and fans
+# them out to per-tenant subscribers. ONE image, ONE binary, RUNTIME-selected
+# into a role via STREAMING_HUB_ROLE. This chart exposes that via a single
+# `mode` switch (see streamingHub.mode below).
+#
+# External infra (provisioned OUTSIDE this chart): Kafka/Redpanda and PostgreSQL.
+# There are NO database/broker/OTEL subcharts (deliberate — see Chart.yaml).
+
+# -- Override the chart name component of resource names.
+nameOverride: ""
+# -- Override the fully-qualified release name (wins verbatim).
+fullnameOverride: ""
+# -- Override the namespace (defaults to .Release.Namespace).
+namespaceOverride: ""
+
+global:
+  # -- Bootstrap Job for an external/shared PostgreSQL: creates the hub's ONE
+  #    database + role and grants privileges. The hub owns a SINGLE database with
+  #    a tenant_id column (NOT per-tenant DB). Default OFF — dev-st may instead
+  #    point STREAMING_HUB_POSTGRES_DSN at a pre-provisioned managed host.
+  externalPostgresDefinitions:
+    # -- Enable or disable the PostgreSQL bootstrap Job.
+    enabled: false
+    # -- Name of the database the Job creates (must match the DSN dbname).
+    database: "streaming-hub"
+    # -- Name of the login role the Job creates (must match the DSN user).
+    role: "streaming-hub"
+    # -- PostgreSQL connection settings for the bootstrap Job.
+    connection:
+      # -- PostgreSQL host.
+      host: "streaming-hub-postgresql"
+      # -- PostgreSQL port.
+      port: "5432"
+    # -- Admin credentials used by the Job to create the DB/role.
+    postgresAdminLogin:
+      useExistingSecret:
+        # -- Existing secret with DB_USER_ADMIN and DB_ADMIN_PASSWORD keys.
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set).
+      username: "postgres"
+      # -- Admin password (ignored if useExistingSecret.name is set).
+      password: ""
+    # -- Credentials for the hub role created by the Job.
+    hubCredentials:
+      useExistingSecret:
+        # -- Existing secret with DB_PASSWORD_HUB key.
+        name: ""
+      # -- Password for the hub role (ignored if useExistingSecret.name is set).
+      password: ""
+
+# =============================================================================
+# streamingHub — the single root key for everything the hub owns.
+# =============================================================================
+streamingHub:
+  # -- Deployment topology switch. One of: all | split.
+  #    all   (default) -> ONE Deployment with STREAMING_HUB_ROLE=all (ingest +
+  #          delivery co-resident; the dev-st target). Byte-equivalent to the
+  #          historical single binary.
+  #    split           -> TWO Deployments: ingest (role=ingest) and delivery
+  #          (role=delivery), each scaled independently.
+  #
+  #    !!! NEVER run both an `all` Deployment AND ingest/delivery against the same
+  #    Kafka cluster: they join ONE consumer group and DOUBLE-CONSUME every event.
+  #    The mode switch enforces either/or — do not work around it. !!!
+  #    The values.schema.json constrains this to the enum ["all","split"].
+  mode: all
+
+  image:
+    # -- Container image repository.
+    repository: ghcr.io/lerianstudio/streaming-hub
+    # -- Image pull policy.
+    pullPolicy: IfNotPresent
+    # -- Image tag. Empty falls back to Chart.appVersion via the defaultTag helper.
+    tag: ""
+
+  # -- Secrets for pulling the image from a private registry.
+  imagePullSecrets:
+    - name: ghcr-credential
+
+  # -- Number of old ReplicaSets to retain for rollback.
+  revisionHistoryLimit: 10
+
+  # -- Annotations applied to every Deployment resource.
+  annotations: {}
+  # -- Annotations applied to every pod.
+  podAnnotations: {}
+
+  # -- Deployment update strategy (shared by all roles).
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  # -- Pod-level security context. Empty by default (the hub needs no fsGroup).
+  podSecurityContext: {}
+
+  # -- Container-level security context (distroless:nonroot, uid/gid 65532).
+  securityContext:
+    # -- Group ID for the process inside the container.
+    runAsGroup: 65532
+    # -- User ID for the process inside the container.
+    runAsUser: 65532
+    # -- Never run as root.
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    # -- Read-only root filesystem (the image carries no writable state).
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  service:
+    # -- Service type. MUST be ClusterIP (Lerian convention; Ingress fronts external).
+    type: ClusterIP
+    # -- Control-plane HTTP port (the hub listens on :8080; see Dockerfile EXPOSE).
+    port: 8080
+    # -- Annotations for every Service.
+    annotations: {}
+
+  ingress:
+    # -- Enable or disable the control-plane Ingress (opt-in per env in gitops).
+    enabled: false
+    # -- Ingress class name.
+    className: "nginx"
+    # -- Additional ingress annotations.
+    annotations: {}
+    # -- Hosts (default empty; the control API is served on every role).
+    hosts: []
+    #  - host: "streaming-hub.lerian.net"
+    #    paths:
+    #      - path: /
+    #        pathType: Prefix
+    # -- TLS configuration.
+    tls: []
+    #  - secretName: streaming-hub-tls
+    #    hosts:
+    #      - streaming-hub.lerian.net
+
+  serviceAccount:
+    # -- Whether a ServiceAccount is created.
+    create: true
+    # -- Annotations for the ServiceAccount (e.g. AWS IRSA role-arn).
+    annotations: {}
+    # -- ServiceAccount name. Empty defaults to the chart fullname.
+    name: ""
+    # -- Mount the SA API token into pods. Default false — the hub makes no
+    #    in-cluster Kubernetes API calls. (IRSA's projected token is injected by
+    #    the EKS webhook independently of this, so it stays functional.)
+    automountServiceAccountToken: false
+
+  # -- Graceful-shutdown window. Defaults to the hub's derived SIGTERM drain
+  #    ceiling (80s) at STREAMING_HUB_SHUTDOWN_TIMEOUT=30s +
+  #    STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s: 30s HTTP + 5s consumer-commit +
+  #    30s dispatcher + 10s slack = 75s, + 5s pre-stop = 80s (see .env.reference).
+  #    If you tune those knobs up, recompute and keep this AT OR ABOVE the new
+  #    ceiling so the orchestrator never SIGKILLs a still-draining replica. NO
+  #    preStop hook is used — the hub self-drains on SIGTERM (PID 1 receives it
+  #    directly; exec-form ENTRYPOINT).
+  terminationGracePeriodSeconds: 80
+
+  # -- Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).
+  livenessProbe:
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  # -- Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM).
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+
+  # -- Shared default scheduling (per-role blocks may override).
+  nodeSelector: {}
+  tolerations: {}
+  affinity: {}
+
+  # -- Extra non-sensitive env vars injected on every Deployment (list of {name,value}).
+  extraEnvVars: []
+
+  # ===========================================================================
+  # telemetry — CHART-LEVEL OTEL wiring toggle (NOT an app env var; never shipped
+  # to the container). When enabled, each Deployment injects HOST_IP via the
+  # downward API and sets OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317 (node-local
+  # DaemonSet collector pattern; see templates/_deployment.tpl). The hub's own
+  # Prometheus exposition is governed by STREAMING_HUB_METRICS_ENABLED in the
+  # ConfigMap above — a separate, app-read knob.
+  # ===========================================================================
+  telemetry:
+    # -- Inject the per-pod OTLP endpoint override (HOST_IP downward API).
+    enabled: false
+
+  # ===========================================================================
+  # Secret sourcing.
+  # useExistingSecret=false -> the chart renders templates/secret.yaml (inline).
+  # useExistingSecret=true  -> NO Secret is rendered; Deployments reference
+  #                            existingSecretName (the gitops/Vault path).
+  # ===========================================================================
+  useExistingSecret: false
+  existingSecretName: ""
+
+  # ===========================================================================
+  # common.configmap — role-INVARIANT, NON-SENSITIVE env (one shared ConfigMap).
+  # Every key MUST exist verbatim in streaming-hub/.env.reference, EXCEPT the
+  # OTEL_* keys (lib-observability vars, not read by LoadConfig).
+  #
+  # DELIBERATELY ABSENT (injected per-Deployment, see the all/ingest/delivery
+  # blocks below): STREAMING_HUB_ROLE, STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS,
+  # STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS.
+  # ===========================================================================
+  common:
+    configmap:
+      # --- core ---
+      # Deployment environment: local | staging | production.
+      STREAMING_HUB_ENV: "production"
+      STREAMING_HUB_LOG_LEVEL: "info"
+      STREAMING_HUB_HTTP_LISTEN_ADDR: ":8080"
+      STREAMING_HUB_METRICS_ENABLED: "true"
+
+      # --- kafka / redpanda (external) ---
+      STREAMING_HUB_KAFKA_BROKERS: "localhost:19092"
+      STREAMING_HUB_KAFKA_SCRAM_MECHANISM: ""
+      # Plaintext Kafka opt-in. MUST stay "false" for staging/production
+      # (rejected at boot when STREAMING_HUB_ENV=production).
+      STREAMING_HUB_ALLOW_INSECURE_KAFKA: "false"
+
+      # --- crypto / KEK (the material itself is a Secret) ---
+      # env | secretsmanager. KEK material arrives via the var named by KEK_REF.
+      STREAMING_HUB_KEK_SOURCE: "env"
+
+      # --- auth (lib-auth / plugin-auth JWT; PLUGIN_AUTH_ prefix, NOT STREAMING_HUB_) ---
+      PLUGIN_AUTH_ENABLED: "true"
+      PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
+
+      # --- tenancy (F4) ---
+      # default = BYOC single-tenant. A non-default value quarantines all
+      # other ce-tenantid events (zero-delivery risk) — confirm the producer.
+      STREAMING_HUB_TENANT_ID: "default"
+      # SaaS roster off by default (BYOC). When "true" the SaaS-only knobs below
+      # become required-when-SaaS (and several SECRET counterparts in secrets:).
+      STREAMING_HUB_MULTI_TENANT_ENABLED: "false"
+      STREAMING_HUB_TENANT_MANAGER_URL: ""
+      STREAMING_HUB_MULTI_TENANT_ALLOW_INSECURE_TM: "false"
+      STREAMING_HUB_MULTI_TENANT_TM_STALENESS_THRESHOLD: "12h"
+      STREAMING_HUB_MULTI_TENANT_LISTENER_STALENESS_THRESHOLD: "12h"
+      STREAMING_HUB_MULTI_TENANT_RECONCILE_INTERVAL: "6h"
+      STREAMING_HUB_MULTI_TENANT_CACHE_TTL: "12h"
+      STREAMING_HUB_TENANT_MANAGER_CB_THRESHOLD: "0"
+      STREAMING_HUB_TENANT_MANAGER_CB_TIMEOUT: "30s"
+      STREAMING_HUB_MULTI_TENANT_REDIS_HOST: ""
+      STREAMING_HUB_MULTI_TENANT_REDIS_PORT: ""
+      STREAMING_HUB_MULTI_TENANT_REDIS_TLS: "false"
+      STREAMING_HUB_MULTI_TENANT_REDIS_CA_CERT: ""
+      # lib-commons env name (NOT STREAMING_HUB_-prefixed). Required-in-SaaS:
+      # staging | production. Inert under BYOC. Leave empty unless SaaS.
+      ENVIRONMENT_NAME: ""
+
+      # --- reconciler (topic-drift detection; dark-ship, defaults on) ---
+      STREAMING_HUB_RECONCILER_ENABLED: "true"
+      STREAMING_HUB_RECONCILER_INTERVAL: "300"
+
+      # --- partition lifecycle cron ---
+      STREAMING_HUB_PARTITION_CRON_INTERVAL: "6h"
+      STREAMING_HUB_PARTITION_FUTURE_BUFFER_WEEKS: "4"
+      STREAMING_HUB_PARTITION_RETENTION_ENABLED: "false"
+      STREAMING_HUB_PARTITION_RETENTION_HORIZON: "0"
+
+      # --- DLQ visibility ---
+      STREAMING_HUB_DLQ_RETENTION: "168h"
+      STREAMING_HUB_DLQ_PRUNE_INTERVAL: "1h"
+
+      # --- lifecycle / drain (kept coherent with terminationGracePeriodSeconds) ---
+      STREAMING_HUB_SHUTDOWN_TIMEOUT: "30s"
+      STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT: "5s"
+
+      # --- observability (OTEL_* are lib-observability vars, NOT in .env.reference) ---
+      # OTEL_EXPORTER_OTLP_ENDPOINT is overridden per-pod with $(HOST_IP):4317 via
+      # the downward API when streamingHub.telemetry.enabled=true (a CHART-level
+      # toggle, see above — not an app env var; see templates/_deployment.tpl).
+      OTEL_LIBRARY_NAME: "github.com/LerianStudio/streaming-hub"
+      OTEL_RESOURCE_SERVICE_NAME: "streaming-hub"
+      OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+  # ===========================================================================
+  # secrets — role-INVARIANT, SENSITIVE env (one shared Secret). All default "".
+  # Empty values are SKIPPED at render so unset SaaS/dev keys never ship blank.
+  # In gitops these come from Vault via useExistingSecret=true (this map is then
+  # unused). Every key exists verbatim in streaming-hub/.env.reference.
+  # ===========================================================================
+  secrets:
+    # Single hub-owned Postgres DSN (password embedded -> whole DSN is secret).
+    STREAMING_HUB_POSTGRES_DSN: ""
+    # SASL/SCRAM credentials (required when KAFKA_SCRAM_MECHANISM is set).
+    STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""
+    STREAMING_HUB_KAFKA_SCRAM_PASSWORD: ""
+    # KEK reference: the NAME of the env var holding the KEK material.
+    STREAMING_HUB_KEK_REF: ""
+    # DEV-ONLY KEK material holder (local BYOC). Leave empty in real deploys.
+    STREAMING_HUB_DEV_KEK: ""
+    # SaaS tenant-manager X-API-Key (required-when-SaaS).
+    STREAMING_HUB_TENANT_MANAGER_SERVICE_API_KEY: ""
+    # SaaS tenant pub/sub Redis AUTH password (optional even in SaaS).
+    STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD: ""
+
+  # ===========================================================================
+  # Per-role blocks. Each carries replicaCount, resources, autoscaling, pdb, and
+  # the Postgres pool sizing injected as explicit per-Deployment env.
+  #
+  # !!! CONNECTION-BUDGET INVARIANT (the load-bearing operational rule) !!!
+  #   Σ over all running pods of (replicas × poolMaxOpenConns) + headroom
+  #     ≤ PostgreSQL max_connections.
+  #   Under HPA, use maxReplicas (not replicaCount) in the sum. Every open
+  #   connection on every pod draws from the ONE shared Postgres budget.
+  #   NEVER run mode=all alongside split — see streamingHub.mode.
+  # Pool defaults (from .env.reference): all 25/12, ingest 8/4, delivery 16/10.
+  # ===========================================================================
+  all:
+    replicaCount: 1
+    poolMaxOpenConns: 25
+    poolMaxIdleConns: 12
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    autoscaling:
+      # -- HPA off by default; replicaCount governs. maxReplicas × poolMaxOpenConns
+      #    must respect the connection-budget invariant above.
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+    pdb:
+      enabled: false
+      minAvailable: 1
+      annotations: {}
+    nodeSelector: {}
+    tolerations: {}
+    affinity: {}
+
+  ingest:
+    replicaCount: 1
+    poolMaxOpenConns: 8
+    poolMaxIdleConns: 4
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      # -- maxReplicas × 8 (poolMaxOpenConns) must fit the connection budget.
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+    pdb:
+      enabled: false
+      minAvailable: 1
+      annotations: {}
+    nodeSelector: {}
+    tolerations: {}
+    affinity: {}
+
+  delivery:
+    replicaCount: 1
+    poolMaxOpenConns: 16
+    poolMaxIdleConns: 10
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      # -- maxReplicas × 16 (poolMaxOpenConns) must fit the connection budget.
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+    pdb:
+      enabled: false
+      minAvailable: 1
+      annotations: {}
+    nodeSelector: {}
+    tolerations: {}
+    affinity: {}

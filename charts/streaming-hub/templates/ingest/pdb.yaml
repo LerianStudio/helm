@@ -1,0 +1,3 @@
+{{- if and (eq .Values.streamingHub.mode "split") .Values.streamingHub.ingest.pdb.enabled }}
+{{- include "streaming-hub.pdb" (dict "root" . "component" "ingest") }}
+{{- end }}

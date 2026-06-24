@@ -1,0 +1,3 @@
+{{- if and (eq .Values.streamingHub.mode "all") .Values.streamingHub.all.autoscaling.enabled }}
+{{- include "streaming-hub.hpa" (dict "root" . "component" "all") }}
+{{- end }}

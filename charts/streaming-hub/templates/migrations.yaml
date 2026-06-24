@@ -47,8 +47,18 @@ metadata:
     "argocd.argoproj.io/hook": PreSync
     "argocd.argoproj.io/sync-wave": "-1"
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
-    {{- with (get $migrations "annotations") }}
-    {{- toYaml . | nindent 4 }}
+    {{- /*
+    Custom annotations are merged AFTER the fixed set, but the hook/wave keys are
+    filtered out so a user annotation can NEVER knock this Job out of PreSync or
+    shift its wave — that would reintroduce the empty-schema rollout this Job
+    exists to prevent. The fixed hook chain always wins.
+    */}}
+    {{- range $k, $v := (get $migrations "annotations") }}
+    {{- if or (hasPrefix "helm.sh/hook" $k) (hasPrefix "argocd.argoproj.io/hook" $k) (eq $k "argocd.argoproj.io/sync-wave") }}
+    {{- /* reserved hook/wave key — ignored to preserve the schema-first ordering */}}
+    {{- else }}
+    {{ $k | quote }}: {{ $v | quote }}
+    {{- end }}
     {{- end }}
 spec:
   backoffLimit: {{ get $migrations "backoffLimit" | default 3 }}

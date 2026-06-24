@@ -57,7 +57,8 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "streaming-hub.serviceAccountName" $ }}
-      terminationGracePeriodSeconds: {{ $sh.terminationGracePeriodSeconds | default 30 }}
+      automountServiceAccountToken: {{ $sh.serviceAccount.automountServiceAccountToken | default false }}
+      terminationGracePeriodSeconds: {{ $sh.terminationGracePeriodSeconds | default 80 }}
       {{- with $sh.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -239,8 +240,8 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- with $cfg.pdb.maxUnavailable }}
-  maxUnavailable: {{ . }}
+  {{- if and (hasKey $cfg.pdb "maxUnavailable") (ne $cfg.pdb.maxUnavailable nil) }}
+  maxUnavailable: {{ $cfg.pdb.maxUnavailable }}
   {{- else }}
   minAvailable: {{ $cfg.pdb.minAvailable | default 1 }}
   {{- end }}

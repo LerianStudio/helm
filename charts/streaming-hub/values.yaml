@@ -149,14 +149,20 @@ streamingHub:
     annotations: {}
     # -- ServiceAccount name. Empty defaults to the chart fullname.
     name: ""
+    # -- Mount the SA API token into pods. Default false — the hub makes no
+    #    in-cluster Kubernetes API calls. (IRSA's projected token is injected by
+    #    the EKS webhook independently of this, so it stays functional.)
+    automountServiceAccountToken: false
 
-  # -- Graceful-shutdown window. MUST exceed the SIGTERM drain budget:
-  #    the hub's derived drain ceiling at STREAMING_HUB_SHUTDOWN_TIMEOUT=30s +
-  #    STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s is ~80s (see .env.reference).
-  #    Raise this knob to AT LEAST that ceiling so the orchestrator never
-  #    SIGKILLs a still-draining replica. NO preStop hook is used — the hub
-  #    self-drains on SIGTERM (PID 1 receives it directly; exec-form ENTRYPOINT).
-  terminationGracePeriodSeconds: 30
+  # -- Graceful-shutdown window. Defaults to the hub's derived SIGTERM drain
+  #    ceiling (80s) at STREAMING_HUB_SHUTDOWN_TIMEOUT=30s +
+  #    STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s: 30s HTTP + 5s consumer-commit +
+  #    30s dispatcher + 10s slack = 75s, + 5s pre-stop = 80s (see .env.reference).
+  #    If you tune those knobs up, recompute and keep this AT OR ABOVE the new
+  #    ceiling so the orchestrator never SIGKILLs a still-draining replica. NO
+  #    preStop hook is used — the hub self-drains on SIGTERM (PID 1 receives it
+  #    directly; exec-form ENTRYPOINT).
+  terminationGracePeriodSeconds: 80
 
   # -- Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).
   livenessProbe:

@@ -109,12 +109,14 @@ the per-role rationale (all 25/12, ingest 8/4, delivery 16/10).
 - **No `preStop` hook.** The hub **self-drains on SIGTERM**: the exec-form
   ENTRYPOINT delivers SIGTERM straight to PID 1, and the lib-commons Launcher
   runs the HTTP → consumer → dispatcher teardown.
-- **`terminationGracePeriodSeconds` (default 30) MUST exceed the drain ceiling.**
-  The hub's derived ceiling at the default `STREAMING_HUB_SHUTDOWN_TIMEOUT=30s` +
-  `STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s` is ~80s. **Raise
-  `terminationGracePeriodSeconds` to at least that ceiling in any environment
-  that tunes those knobs up**, or the orchestrator SIGKILLs a still-draining
-  replica (risking a duplicate delivery). See `.env.reference`.
+- **`terminationGracePeriodSeconds` defaults to `80` — the hub's derived SIGTERM
+  drain ceiling — and MUST stay at or above it.** At the shipped
+  `STREAMING_HUB_SHUTDOWN_TIMEOUT=30s` + `STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s`
+  the ceiling is `30s` (HTTP) + `5s` (consumer final-commit) + `30s` (dispatcher,
+  `min(ShutdownTimeout, 55s)`) + `10s` slack = `75s`, plus the `5s` pre-stop wait
+  = **`80s`**. If you tune those knobs up, recompute and raise this knob to match,
+  or the orchestrator SIGKILLs a still-draining replica (risking a duplicate
+  delivery). See `.env.reference`.
 
 ---
 
@@ -167,7 +169,7 @@ This chart provisions **none** of the following — they live outside it:
 | `streamingHub.service.port` | `8080` | Control-plane HTTP port. |
 | `streamingHub.ingress.enabled` | `false` | Control-plane API ingress (opt-in per env). |
 | `streamingHub.serviceAccount.create` | `true` | |
-| `streamingHub.terminationGracePeriodSeconds` | `30` | MUST exceed the drain ceiling. |
+| `streamingHub.terminationGracePeriodSeconds` | `80` | Defaults to the ~80s drain ceiling; keep at or above it. |
 | `streamingHub.securityContext` | nonroot 65532, drop ALL, RO rootfs, RuntimeDefault | Distroless:nonroot. |
 | `streamingHub.useExistingSecret` | `false` | `true` = Vault/gitops path. |
 | `streamingHub.existingSecretName` | `""` | Required when `useExistingSecret`. |

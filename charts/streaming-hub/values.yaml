@@ -313,6 +313,68 @@ streamingHub:
     STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD: ""
 
   # ===========================================================================
+  # migrations — OUT-OF-BAND schema migration Job (Helm + ArgoCD PreSync hook).
+  #
+  # The hub NEVER migrates itself (the app refuses to). Without this Job, ingest /
+  # dispatcher / partition workers spin on `relation "event_inbox"/"delivery_jobs"
+  # does not exist (42P01)`. This Job applies the SQL migrations BEFORE the app
+  # rolls out.
+  #
+  # ORDERING (the load-bearing design): the chain is
+  #   bootstrap-postgres (PreSync weight -10, creates role+db)
+  #     -> migration-secret (PreSync weight -5, carries the DSN)
+  #     -> migrations Job   (PreSync weight -1, creates the schema)
+  #     -> app Deployment   (main Sync)
+  #
+  # The runner is the stock `migrate/migrate` toolchain baked with the hub's
+  # `migrations/` dir; its entrypoint runs
+  #   migrate -path=/migrations -database="$STREAMING_HUB_POSTGRES_DSN" up
+  # so the Job's ONLY required env is STREAMING_HUB_POSTGRES_DSN (secretKeyRef).
+  # It runs ONCE regardless of streamingHub.mode (all | split) — it is not per-role.
+  # ===========================================================================
+  migrations:
+    # -- Enable or disable the migrations Job. Default false — opt-in per env
+    #    (consistent with the chart's other optional features).
+    enabled: false
+    # -- Optional. When true, the Job reads STREAMING_HUB_POSTGRES_DSN from a
+    #    pre-existing Secret (existingSecretName) instead of the chart-managed
+    #    migration-secret hook. Independent of streamingHub.useExistingSecret;
+    #    set this to point migrations at the app's existing (e.g. Vault) Secret.
+    useExistingSecret: false
+    # -- Name of the pre-existing Secret holding STREAMING_HUB_POSTGRES_DSN
+    #    (only used when migrations.useExistingSecret=true).
+    existingSecretName: ""
+    image:
+      # -- Migrations image (FROM migrate/migrate + COPY migrations/ /migrations/).
+      repository: ghcr.io/lerianstudio/streaming-hub-migrations
+      # -- Tag for the migrations image. Empty falls back to the app image tag
+      #    (streamingHub.image.tag, or the chart appVersion). An explicit tag
+      #    or digest overrides this.
+      tag: ""
+      # -- Pin by digest (sha256:...) instead of tag. Wins over tag when set.
+      digest: ""
+      # -- Image pull policy.
+      pullPolicy: IfNotPresent
+    # -- Maximum retries before the Job is considered failed.
+    backoffLimit: 3
+    # -- Hard wall-clock cap on the Job (seconds).
+    activeDeadlineSeconds: 600
+    # -- TTL after which a finished Job is garbage-collected (seconds).
+    ttlSecondsAfterFinished: 600
+    # -- Extra annotations on the Job (merged after the hook annotations).
+    annotations: {}
+    # -- Extra annotations on the migration pod.
+    podAnnotations: {}
+    # -- Resource requests/limits for the migration container.
+    resources:
+      limits:
+        cpu: 250m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+  # ===========================================================================
   # Per-role blocks. Each carries replicaCount, resources, autoscaling, pdb, and
   # the Postgres pool sizing injected as explicit per-Deployment env.
   #

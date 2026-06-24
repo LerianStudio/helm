@@ -109,3 +109,16 @@ Input: root context (.).
 {{- include "streaming-hub.fullname" . -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+streaming-hub.migrationDSN — STREAMING_HUB_POSTGRES_DSN for the migration-only
+Secret hook. migration-secret.yaml renders only on the chart-managed credential
+path (NOT migrations.useExistingSecret), and runs as a PreSync hook BEFORE the
+normal app Secret exists, so the operator MUST supply the DSN here. Kept as a
+named gate helper (not an inline `required`) to mirror the bank-transfer pattern.
+Input: root context (.).
+*/}}
+{{- define "streaming-hub.migrationDSN" -}}
+{{- $secrets := get (.Values.streamingHub | default dict) "secrets" | default dict -}}
+{{- required "streamingHub.secrets.STREAMING_HUB_POSTGRES_DSN is required when migrations run with a chart-managed Secret (migrations.useExistingSecret=false)" (get $secrets "STREAMING_HUB_POSTGRES_DSN") -}}
+{{- end -}}

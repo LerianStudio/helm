@@ -21,6 +21,28 @@ infra, and OTEL is env-wired (see [External dependencies](#external-dependencies
 
 ---
 
+## Installing the Chart
+
+```bash
+helm install streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm --version <version> -n streaming-hub --create-namespace
+```
+
+With a custom values file:
+
+```bash
+helm install streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm --version <version> -n streaming-hub -f my-values.yaml
+```
+
+The chart is mirrored to `oci://ghcr.io/lerianstudio/streaming-hub-helm` as well.
+
+## Uninstalling the Chart
+
+```bash
+helm uninstall streaming-hub -n streaming-hub
+```
+
+---
+
 ## The `mode` switch (read this first)
 
 `streamingHub.mode` decides the topology. It is an **either/or**:

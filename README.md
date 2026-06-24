@@ -262,3 +262,14 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: |
 | `1.0.0-beta.4` | 0.1.0 |
 -----------------
+
+### Streaming Hub
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/streaming-hub).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | 1.0.0 |
+-----------------

@@ -141,7 +141,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0-beta.2` | 1.0.0-beta.22 |
+| `1.1.0` | 1.0.0-beta.22 |
 -----------------
 
 ### Fetcher

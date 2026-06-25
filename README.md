@@ -131,7 +131,9 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.1.0-beta.3` | 1.0.0-beta.9 |
 -----------------
 
-### Plugin BR Payments Fakebtg
+### Plugin BR Payments Fakebtg [DEPRECATED → helm-internal]
+
+> **Deprecated.** This chart moved to [helm-internal](https://github.com/LerianStudio/helm-internal/tree/main/charts/plugin-br-payments-fakebtg). Use `oci://ghcr.io/lerianstudio/helm-internal/plugin-br-payments-fakebtg-helm` (version `1.0.0`) instead. See `charts/plugin-br-payments-fakebtg/DEPRECATED.md`.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-payments-fakebtg).
 
@@ -139,7 +141,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0-beta.1` | 1.0.0-beta.22 |
+| `1.1.0-beta.2` | 1.0.0-beta.22 |
 -----------------
 
 ### Fetcher

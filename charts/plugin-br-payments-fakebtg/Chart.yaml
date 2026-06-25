@@ -1,7 +1,8 @@
 apiVersion: v2
 name: plugin-br-payments-fakebtg-helm
-description: A Helm chart for fakebtg, the BTG provider API stand-in used by
-  plugin-br-payments dev/staging environments
+description: '[DEPRECATED] Moved to helm-internal. Use
+  oci://ghcr.io/lerianstudio/helm-internal/plugin-br-payments-fakebtg-helm
+  instead.'
 type: application
 annotations:
   lerian.studio/chart-type: single-service
@@ -13,7 +14,8 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 1.1.0-beta.1
+version: 1.1.0
+deprecated: true
 appVersion: "1.0.0-beta.22"
 
 keywords:

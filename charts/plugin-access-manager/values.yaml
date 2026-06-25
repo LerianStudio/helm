@@ -9,6 +9,13 @@ identity:
   readinessProbe: {}
   # -- Liveness probe configuration. All fields override chart defaults.
   livenessProbe: {}
+  # -- Startup probe configuration. Disabled by default; enable to give slow-starting
+  # pods more time before liveness/readiness probes take over. All fields override chart defaults.
+  startupProbe:
+    enabled: false
+    failureThreshold: 5
+    periodSeconds: 10
+    timeoutSeconds: 10
   # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
@@ -149,6 +156,13 @@ auth:
   readinessProbe: {}
   # -- Liveness probe configuration. All fields override chart defaults.
   livenessProbe: {}
+  # -- Startup probe configuration. Disabled by default; enable to give slow-starting
+  # pods more time before liveness/readiness probes take over. All fields override chart defaults.
+  startupProbe:
+    enabled: false
+    failureThreshold: 5
+    periodSeconds: 10
+    timeoutSeconds: 10
   # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.

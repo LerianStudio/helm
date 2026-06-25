@@ -83,6 +83,17 @@ spec:
             timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ .Values.identity.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold | default 3 }}
+          {{- if .Values.identity.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.identity.startupProbe.path | default "/health" }}
+              port: {{ .Values.identity.service.port }}
+            initialDelaySeconds: {{ .Values.identity.startupProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.identity.startupProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.identity.startupProbe.timeoutSeconds | default 10 }}
+            successThreshold: {{ .Values.identity.startupProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.identity.startupProbe.failureThreshold | default 5 }}
+          {{- end }}
           {{ if (index .Values "otel-collector-lerian").enabled }}
           env:
           - name: "HOST_IP"

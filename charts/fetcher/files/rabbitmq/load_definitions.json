@@ -23,34 +23,16 @@
   ],
   "queues": [
     {
-      "name": "fetcher.generate-fetcher.queue",
-      "vhost": "/",
-      "durable": true,
-      "arguments": {
-        "x-dead-letter-exchange": "fetcher.generate-fetcher.dlx",
-        "x-dead-letter-routing-key": "fetcher.generate-fetcher.dlq.key"
-      }
-    },
-    {
-      "name": "fetcher.generate-fetcher.dlq",
-      "vhost": "/",
-      "durable": true,
-      "arguments": {
-        "x-message-ttl": 604800000,
-        "x-max-length": 10000
-      }
-    },
-    {
       "name": "fetcher.extract-external-data.queue",
       "vhost": "/",
       "durable": true,
       "arguments": {
-        "x-dead-letter-exchange": "fetcher.extract-external-data.dlx",
-        "x-dead-letter-routing-key": "fetcher.extract-external-data.dlq.key"
+        "x-dead-letter-exchange": "fetcher.dlx",
+        "x-dead-letter-routing-key": "fetcher.dlq.key"
       }
     },
     {
-      "name": "fetcher.extract-external-data.dlq",
+      "name": "fetcher.dlq",
       "vhost": "/",
       "durable": true,
       "arguments": {
@@ -61,58 +43,25 @@
   ],
   "exchanges": [
     {
-      "name": "fetcher.generate-fetcher.exchange",
+      "name": "fetcher.dlx",
       "vhost": "/",
       "type": "direct",
       "durable": true
     },
     {
-      "name": "fetcher.generate-fetcher.dlx",
+      "name": "fetcher.job.events",
       "vhost": "/",
-      "type": "direct",
-      "durable": true
-    },
-    {
-      "name": "fetcher.extract-external-data.exchange",
-      "vhost": "/",
-      "type": "direct",
-      "durable": true
-    },
-    {
-      "name": "fetcher.extract-external-data.dlx",
-      "vhost": "/",
-      "type": "direct",
+      "type": "topic",
       "durable": true
     }
   ],
   "bindings": [
     {
-      "source": "fetcher.generate-fetcher.exchange",
+      "source": "fetcher.dlx",
       "vhost": "/",
-      "destination": "fetcher.generate-fetcher.queue",
+      "destination": "fetcher.dlq",
       "destination_type": "queue",
-      "routing_key": "fetcher.generate-fetcher.key"
-    },
-    {
-      "source": "fetcher.generate-fetcher.dlx",
-      "vhost": "/",
-      "destination": "fetcher.generate-fetcher.dlq",
-      "destination_type": "queue",
-      "routing_key": "fetcher.generate-fetcher.dlq.key"
-    },
-    {
-      "source": "fetcher.extract-external-data.exchange",
-      "vhost": "/",
-      "destination": "fetcher.extract-external-data.queue",
-      "destination_type": "queue",
-      "routing_key": "fetcher.extract-external-data.key"
-    },
-    {
-      "source": "fetcher.extract-external-data.dlx",
-      "vhost": "/",
-      "destination": "fetcher.extract-external-data.dlq",
-      "destination_type": "queue",
-      "routing_key": "fetcher.extract-external-data.dlq.key"
+      "routing_key": "fetcher.dlq.key"
     }
   ]
 }

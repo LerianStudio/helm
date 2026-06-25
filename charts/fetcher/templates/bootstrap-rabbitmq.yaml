@@ -70,49 +70,73 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
-              echo "Checking if RabbitMQ definitions already exist..."
+              VHOST="%2F"
 
-              # Check if plugin user already exists
-              PLUGIN_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/users/plugin" 2>/dev/null || echo "not_found")
+              # apply METHOD PATH JSON_BODY
+              # Idempotent: PUT for resources, POST for bindings. 2xx is success,
+              # 4xx with precondition_failed means existing resource has different
+              # arguments (fail loud so drift is not silently masked).
+              apply() {
+                local method="$1" path="$2" data="$3"
+                local http
+                http=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+                  -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                  -H "content-type: application/json" \
+                  -X "$method" --data "$data" \
+                  "$BASE_URL$path")
+                if [ "$http" -lt 200 ] || [ "$http" -ge 300 ]; then
+                  echo "Error on $method $path (HTTP $http):"
+                  cat /tmp/response.txt
+                  return 1
+                fi
+                echo "  $method $path -> $http"
+              }
 
-              # Check if fetcher queue exists
-              QUEUE_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/queues/%2F/fetcher.generate-fetcher.queue" 2>/dev/null || echo "not_found")
+              echo "Ensuring vhost and user..."
+              apply PUT "/api/vhosts/$VHOST" '{}'
+              apply PUT "/api/users/plugin" "{\"password\":\"$RABBITMQ_PLUGIN_PASS\",\"tags\":\"administrator\"}"
+              apply PUT "/api/permissions/$VHOST/plugin" '{"configure":".*","write":".*","read":".*"}'
 
-              if echo "$PLUGIN_EXISTS" | grep -q '"name":"plugin"' && \
-                 echo "$QUEUE_EXISTS" | grep -q '"name":"fetcher.generate-fetcher.queue"'; then
-                echo "RabbitMQ definitions already applied (user plugin and fetcher queues exist). Skipping."
-                exit 0
-              fi
+              # Manager publishes to the default exchange ("") with routing key
+              # equal to the queue name, so no application exchange is needed
+              # for the work queue. Only the shared DLX and the job-events
+              # topic exchange are declared here.
+              #
+              # NOTE: fetcher.job.events is ALSO declared by the Reporter chart
+              # (charts/reporter/templates/common/bootstrap-rabbitmq.yaml) as a
+              # defensive self-bootstrap, so that Reporter can be installed and
+              # become fully operational without depending on Fetcher install
+              # order. Both charts MUST keep these args identical — divergence
+              # will cause the second bootstrap to fail with precondition_failed
+              # at the RabbitMQ Management API. Treat fetcher.job.events as a
+              # shared topology contract: changes here require a matching change
+              # in the Reporter chart in the same PR.
+              echo "Ensuring exchanges..."
+              apply PUT "/api/exchanges/$VHOST/fetcher.dlx" '{"type":"direct","durable":true,"auto_delete":false,"internal":false,"arguments":{}}'
+              apply PUT "/api/exchanges/$VHOST/fetcher.job.events" '{"type":"topic","durable":true,"auto_delete":false,"internal":false,"arguments":{}}'
 
-              echo "Applying RabbitMQ definitions from file..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X POST \
-                --data-binary @/definitions/load_definitions.json \
-                "$BASE_URL/api/definitions")
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error applying definitions (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
-                exit 1
-              fi
-              echo "Done."
+              echo "Ensuring queues..."
+              apply PUT "/api/queues/$VHOST/fetcher.extract-external-data.queue" '{"durable":true,"auto_delete":false,"arguments":{"x-dead-letter-exchange":"fetcher.dlx","x-dead-letter-routing-key":"fetcher.dlq.key"}}'
+              apply PUT "/api/queues/$VHOST/fetcher.dlq" '{"durable":true,"auto_delete":false,"arguments":{"x-message-ttl":604800000,"x-max-length":10000}}'
 
-              echo "Updating RabbitMQ user: plugin..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X PUT \
-                --data "{\"password\":\"$RABBITMQ_PLUGIN_PASS\",\"tags\":\"administrator\"}" \
-                "$BASE_URL/api/users/plugin")
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error updating plugin user (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
-                exit 1
-              fi
-              echo "Done."
+              # Bindings via POST. RabbitMQ accepts duplicate POSTs to the same
+              # binding by creating a separate binding entry; to keep idempotent
+              # behavior, check first and only create when absent.
+              ensure_binding() {
+                local exchange="$1" queue="$2" routing_key="$3"
+                local found
+                found=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                  "$BASE_URL/api/bindings/$VHOST/e/$exchange/q/$queue" \
+                  | grep -c "\"routing_key\":\"$routing_key\"" || true)
+                if [ "$found" -gt 0 ]; then
+                  echo "  binding $exchange -> $queue ($routing_key) already exists"
+                  return 0
+                fi
+                apply POST "/api/bindings/$VHOST/e/$exchange/q/$queue" "{\"routing_key\":\"$routing_key\",\"arguments\":{}}"
+              }
+
+              echo "Ensuring bindings..."
+              ensure_binding fetcher.dlx fetcher.dlq fetcher.dlq.key
 
               echo ""
               echo "=== Fetcher RabbitMQ Bootstrap completed successfully ==="

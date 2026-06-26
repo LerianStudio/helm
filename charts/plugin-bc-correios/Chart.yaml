@@ -1,4 +1,5 @@
 apiVersion: v2
+kubeVersion: ">=1.24.0-0"
 name: plugin-bc-correios-helm
 description: Helm chart for BC Correios Plugin — Brazilian Central Bank mail
   system integration

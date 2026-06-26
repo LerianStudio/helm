@@ -1,4 +1,5 @@
 apiVersion: v2
+kubeVersion: ">=1.24.0-0"
 name: plugin-br-pix-direct-jd-helm
 description: A Helm chart for Kubernetes
 type: application

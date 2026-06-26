@@ -1,4 +1,5 @@
 apiVersion: v2
+kubeVersion: ">=1.24.0-0"
 name: product-console-helm
 description: A Helm chart for Product Console - Lerian Studio's web interface
   for managing Midaz ledger

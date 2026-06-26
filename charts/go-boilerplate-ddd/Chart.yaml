@@ -1,4 +1,5 @@
 apiVersion: v2
+kubeVersion: ">=1.24.0-0"
 name: go-boilerplate-ddd-helm
 description: '[DEPRECATED] Moved to helm-internal. Use
   oci://ghcr.io/lerianstudio/helm-internal/go-boilerplate-ddd-helm instead.'

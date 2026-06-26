@@ -15,7 +15,6 @@ nameOverride: ""
 fullnameOverride: ""
 # -- Override the namespace (defaults to .Release.Namespace).
 namespaceOverride: ""
-
 global:
   # -- Bootstrap Job for an external/shared PostgreSQL: creates the hub's ONE
   #    database + role and grants privileges. The hub owns a SINGLE database with
@@ -50,7 +49,6 @@ global:
         name: ""
       # -- Password for the hub role (ignored if useExistingSecret.name is set).
       password: ""
-
 # =============================================================================
 # streamingHub — the single root key for everything the hub owns.
 # =============================================================================
@@ -67,7 +65,6 @@ streamingHub:
   #    The mode switch enforces either/or — do not work around it. !!!
   #    The values.schema.json constrains this to the enum ["all","split"].
   mode: all
-
   image:
     # -- Container image repository.
     repository: ghcr.io/lerianstudio/streaming-hub
@@ -75,29 +72,23 @@ streamingHub:
     pullPolicy: IfNotPresent
     # -- Image tag. Empty falls back to Chart.appVersion via the defaultTag helper.
     tag: ""
-
   # -- Secrets for pulling the image from a private registry.
   imagePullSecrets:
     - name: ghcr-credential
-
   # -- Number of old ReplicaSets to retain for rollback.
   revisionHistoryLimit: 10
-
   # -- Annotations applied to every Deployment resource.
   annotations: {}
   # -- Annotations applied to every pod.
   podAnnotations: {}
-
   # -- Deployment update strategy (shared by all roles).
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
-
   # -- Pod-level security context. Empty by default (the hub needs no fsGroup).
   podSecurityContext: {}
-
   # -- Container-level security context (distroless:nonroot, uid/gid 65532).
   securityContext:
     # -- Group ID for the process inside the container.
@@ -114,7 +105,6 @@ streamingHub:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   service:
     # -- Service type. MUST be ClusterIP (Lerian convention; Ingress fronts external).
     type: ClusterIP
@@ -122,7 +112,6 @@ streamingHub:
     port: 8080
     # -- Annotations for every Service.
     annotations: {}
-
   ingress:
     # -- Enable or disable the control-plane Ingress (opt-in per env in gitops).
     enabled: false
@@ -141,7 +130,6 @@ streamingHub:
     #  - secretName: streaming-hub-tls
     #    hosts:
     #      - streaming-hub.lerian.net
-
   serviceAccount:
     # -- Whether a ServiceAccount is created.
     create: true
@@ -153,7 +141,6 @@ streamingHub:
     #    in-cluster Kubernetes API calls. (IRSA's projected token is injected by
     #    the EKS webhook independently of this, so it stays functional.)
     automountServiceAccountToken: false
-
   # -- Graceful-shutdown window. Defaults to the hub's derived SIGTERM drain
   #    ceiling (80s) at STREAMING_HUB_SHUTDOWN_TIMEOUT=30s +
   #    STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s: 30s HTTP + 5s consumer-commit +
@@ -163,7 +150,6 @@ streamingHub:
   #    preStop hook is used — the hub self-drains on SIGTERM (PID 1 receives it
   #    directly; exec-form ENTRYPOINT).
   terminationGracePeriodSeconds: 80
-
   # -- Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).
   livenessProbe:
     initialDelaySeconds: 15
@@ -178,15 +164,12 @@ streamingHub:
     timeoutSeconds: 5
     successThreshold: 1
     failureThreshold: 3
-
   # -- Shared default scheduling (per-role blocks may override).
   nodeSelector: {}
   tolerations: {}
   affinity: {}
-
   # -- Extra non-sensitive env vars injected on every Deployment (list of {name,value}).
   extraEnvVars: []
-
   # ===========================================================================
   # telemetry — CHART-LEVEL OTEL wiring toggle (NOT an app env var; never shipped
   # to the container). When enabled, each Deployment injects HOST_IP via the
@@ -198,7 +181,6 @@ streamingHub:
   telemetry:
     # -- Inject the per-pod OTLP endpoint override (HOST_IP downward API).
     enabled: false
-
   # ===========================================================================
   # Secret sourcing.
   # useExistingSecret=false -> the chart renders templates/secret.yaml (inline).
@@ -207,7 +189,6 @@ streamingHub:
   # ===========================================================================
   useExistingSecret: false
   existingSecretName: ""
-
   # ===========================================================================
   # common.configmap — role-INVARIANT, NON-SENSITIVE env (one shared ConfigMap).
   # Every key MUST exist verbatim in streaming-hub/.env.reference, EXCEPT the
@@ -225,22 +206,18 @@ streamingHub:
       STREAMING_HUB_LOG_LEVEL: "info"
       STREAMING_HUB_HTTP_LISTEN_ADDR: ":8080"
       STREAMING_HUB_METRICS_ENABLED: "true"
-
       # --- kafka / redpanda (external) ---
       STREAMING_HUB_KAFKA_BROKERS: "localhost:19092"
       STREAMING_HUB_KAFKA_SCRAM_MECHANISM: ""
       # Plaintext Kafka opt-in. MUST stay "false" for staging/production
       # (rejected at boot when STREAMING_HUB_ENV=production).
       STREAMING_HUB_ALLOW_INSECURE_KAFKA: "false"
-
       # --- crypto / KEK (the material itself is a Secret) ---
       # env | secretsmanager. KEK material arrives via the var named by KEK_REF.
       STREAMING_HUB_KEK_SOURCE: "env"
-
       # --- auth (lib-auth / plugin-auth JWT; PLUGIN_AUTH_ prefix, NOT STREAMING_HUB_) ---
       PLUGIN_AUTH_ENABLED: "true"
       PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-
       # --- tenancy (F4) ---
       # default = BYOC single-tenant. A non-default value quarantines all
       # other ce-tenantid events (zero-delivery risk) — confirm the producer.
@@ -263,25 +240,20 @@ streamingHub:
       # lib-commons env name (NOT STREAMING_HUB_-prefixed). Required-in-SaaS:
       # staging | production. Inert under BYOC. Leave empty unless SaaS.
       ENVIRONMENT_NAME: ""
-
       # --- reconciler (topic-drift detection; dark-ship, defaults on) ---
       STREAMING_HUB_RECONCILER_ENABLED: "true"
       STREAMING_HUB_RECONCILER_INTERVAL: "300"
-
       # --- partition lifecycle cron ---
       STREAMING_HUB_PARTITION_CRON_INTERVAL: "6h"
       STREAMING_HUB_PARTITION_FUTURE_BUFFER_WEEKS: "4"
       STREAMING_HUB_PARTITION_RETENTION_ENABLED: "false"
       STREAMING_HUB_PARTITION_RETENTION_HORIZON: "0"
-
       # --- DLQ visibility ---
       STREAMING_HUB_DLQ_RETENTION: "168h"
       STREAMING_HUB_DLQ_PRUNE_INTERVAL: "1h"
-
       # --- lifecycle / drain (kept coherent with terminationGracePeriodSeconds) ---
       STREAMING_HUB_SHUTDOWN_TIMEOUT: "30s"
       STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT: "5s"
-
       # --- observability (OTEL_* are lib-observability vars, NOT in .env.reference) ---
       # OTEL_EXPORTER_OTLP_ENDPOINT is overridden per-pod with $(HOST_IP):4317 via
       # the downward API when streamingHub.telemetry.enabled=true (a CHART-level
@@ -290,7 +262,6 @@ streamingHub:
       OTEL_RESOURCE_SERVICE_NAME: "streaming-hub"
       OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
       OTEL_EXPORTER_OTLP_ENDPOINT: ""
-
   # ===========================================================================
   # secrets — role-INVARIANT, SENSITIVE env (one shared Secret). All default "".
   # Empty values are SKIPPED at render so unset SaaS/dev keys never ship blank.
@@ -311,7 +282,6 @@ streamingHub:
     STREAMING_HUB_TENANT_MANAGER_SERVICE_API_KEY: ""
     # SaaS tenant pub/sub Redis AUTH password (optional even in SaaS).
     STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD: ""
-
   # ===========================================================================
   # migrations — OUT-OF-BAND schema migration Job (Helm + ArgoCD PreSync hook).
   #
@@ -373,7 +343,6 @@ streamingHub:
       requests:
         cpu: 50m
         memory: 64Mi
-
   # ===========================================================================
   # Per-role blocks. Each carries replicaCount, resources, autoscaling, pdb, and
   # the Postgres pool sizing injected as explicit per-Deployment env.
@@ -412,7 +381,6 @@ streamingHub:
     nodeSelector: {}
     tolerations: {}
     affinity: {}
-
   ingest:
     replicaCount: 1
     poolMaxOpenConns: 8
@@ -438,7 +406,6 @@ streamingHub:
     nodeSelector: {}
     tolerations: {}
     affinity: {}
-
   delivery:
     replicaCount: 1
     poolMaxOpenConns: 16
@@ -464,3 +431,6 @@ streamingHub:
     nodeSelector: {}
     tolerations: {}
     affinity: {}
+streaming-hub:
+  image:
+    tag: 1.0.0

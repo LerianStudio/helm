@@ -1,0 +1,35 @@
+name: Helm Alpha Release
+
+# Caller mínimo. A lógica vive no reusable helm-alpha-release.yml do
+# github-actions-shared-workflows. Gera uma release alpha descartável de um chart
+# no package isolado ghcr.io/lerianstudio/alpha/<chart> (TTL ~3 dias via
+# helm-alpha-cleanup.yml). Autentica com o GITHUB_TOKEN nativo — sem secret.
+#
+# Rode com "Run workflow" selecionando a SUA branch — o checkout usa esse ref,
+# então charts novos que só existem na branch também funcionam.
+
+on:
+  workflow_dispatch:
+    inputs:
+      chart:
+        description: "Chart (dir em charts/) — pode ser um chart novo da sua branch"
+        required: true
+        type: string
+      dry_run:
+        description: "Empacota e valida, mas não publica"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  alpha:
+    permissions:
+      contents: read # checkout do chart (no reusable)
+      packages: write # push do chart alpha pro GHCR
+    # Enquanto testa: @develop. Ao estabilizar: @vX.Y.Z.
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-release.yml@develop
+    with:
+      chart: ${{ inputs.chart }}
+      dry_run: ${{ inputs.dry_run }}

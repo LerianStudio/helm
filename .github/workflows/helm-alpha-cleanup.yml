@@ -1,0 +1,33 @@
+name: Helm Alpha Cleanup
+
+# Caller mínimo. A lógica vive no reusable helm-alpha-cleanup.yml do
+# github-actions-shared-workflows. Aplica o TTL (~3 dias) das releases alpha:
+# apaga do GHCR os packages em lerianstudio/alpha/* com tag *-alpha* mais velhos
+# que 3 dias. Releases reais (lerianstudio/*-helm) ficam fora pelo guard alpha/*.
+# Autentica com token efêmero de GitHub App; se o App não puder deletar package
+# org-level, defina o secret GHCR_CLEANUP_PAT (PAT com delete:packages).
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # diário, 03:00 UTC — deleta de fato
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Só listar o que seria removido (não apaga)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    permissions:
+      packages: write # delete das versões alpha no GHCR
+    # Enquanto testa: @develop. Ao estabilizar: fixar em @vX.Y.Z.
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-cleanup.yml@develop
+    with:
+      # cron deleta de fato; dispatch manual faz preview a menos que desligue dry_run
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+    secrets:
+      GHCR_CLEANUP_PAT: ${{ secrets.GHCR_CLEANUP_PAT }}

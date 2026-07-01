@@ -85,6 +85,17 @@ spec:
             timeoutSeconds: {{ .Values.auth.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ .Values.auth.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.auth.livenessProbe.failureThreshold | default 3 }}
+          {{- if .Values.auth.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.auth.startupProbe.path | default "/health" }}
+              port: {{ .Values.auth.service.port }}
+            initialDelaySeconds: {{ .Values.auth.startupProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.auth.startupProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.auth.startupProbe.timeoutSeconds | default 10 }}
+            successThreshold: {{ .Values.auth.startupProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.auth.startupProbe.failureThreshold | default 5 }}
+          {{- end }}
       {{- with .Values.auth.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

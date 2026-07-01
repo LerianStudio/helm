@@ -1,22 +1,22 @@
 name: Helm Alpha Release
 
-# Caller mínimo. A lógica vive no reusable helm-alpha-release.yml do
-# github-actions-shared-workflows. Gera uma release alpha descartável de um chart
-# no package isolado ghcr.io/lerianstudio/alpha/<chart> (TTL ~3 dias via
-# helm-alpha-cleanup.yml). Autentica com o GITHUB_TOKEN nativo — sem secret.
+# Thin caller. The logic lives in the reusable helm-alpha-release.yml of
+# github-actions-shared-workflows. Publishes a disposable alpha release of a
+# chart to the isolated package ghcr.io/lerianstudio/alpha/<chart> (TTL ~3 days
+# via helm-alpha-cleanup.yml). Authenticates with the built-in GITHUB_TOKEN.
 #
-# Rode com "Run workflow" selecionando a SUA branch — o checkout usa esse ref,
-# então charts novos que só existem na branch também funcionam.
+# Run it via "Run workflow" selecting YOUR working branch — the checkout uses
+# that ref, so charts that only exist on the branch also work.
 
 on:
   workflow_dispatch:
     inputs:
       chart:
-        description: "Chart (dir em charts/) — pode ser um chart novo da sua branch"
+        description: "Chart (dir under charts/) — may be a new chart on your branch"
         required: true
         type: string
       dry_run:
-        description: "Empacota e valida, mas não publica"
+        description: "Package and validate, but do not publish"
         type: boolean
         default: false
 
@@ -26,9 +26,9 @@ permissions:
 jobs:
   alpha:
     permissions:
-      contents: read # checkout do chart (no reusable)
-      packages: write # push do chart alpha pro GHCR
-    # Enquanto testa: @develop. Ao estabilizar: @vX.Y.Z.
+      contents: read # checkout the chart (in the reusable)
+      packages: write # push the alpha chart to GHCR
+    # Testing: @develop. Once stable: @vX.Y.Z.
     uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-release.yml@develop
     with:
       chart: ${{ inputs.chart }}

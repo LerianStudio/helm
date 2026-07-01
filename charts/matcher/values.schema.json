@@ -28,6 +28,18 @@
       },
       "additionalProperties": true
     },
+    "ui": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "migrations": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "valkey": {
       "type": "object",
       "additionalProperties": true

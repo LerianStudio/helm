@@ -1,0 +1,83 @@
+{{- if .Values.mcp.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "matcher-mcp.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher-mcp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.mcp.replicaCount | default 1 }}
+  revisionHistoryLimit: {{ .Values.mcp.revisionHistoryLimit | default 10 }}
+  selector:
+    matchLabels:
+      {{- include "matcher-mcp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.mcp.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "matcher-mcp.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.mcp.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcp.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ include "matcher-mcp.fullname" . }}
+          image: "{{ .Values.mcp.image.repository }}:{{ required "mcp.image.tag is required when mcp.enabled=true" .Values.mcp.image.tag }}"
+          imagePullPolicy: {{ .Values.mcp.image.pullPolicy | default "IfNotPresent" }}
+          securityContext:
+            {{- toYaml .Values.mcp.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.mcp.service.port }}
+              protocol: TCP
+          env:
+            # Stateless bearer-token relay: MCP holds no credentials. It only
+            # forwards to the in-cluster matcher API Service (no hairpin).
+            - name: MATCHER_API_URL
+              value: {{ .Values.mcp.env.MATCHER_API_URL | default (printf "http://%s.%s.svc.cluster.local:%v" (include "matcher.fullname" .) (include "global.namespace" .) .Values.matcher.service.port) | quote }}
+            {{- range $key, $value := omit .Values.mcp.env "MATCHER_API_URL" }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.mcp.livenessProbe.path | default "/healthz" }}
+              port: http
+            initialDelaySeconds: {{ .Values.mcp.livenessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.mcp.livenessProbe.periodSeconds | default 30 }}
+            timeoutSeconds: {{ .Values.mcp.livenessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.mcp.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.mcp.livenessProbe.failureThreshold | default 3 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.mcp.readinessProbe.path | default "/healthz" }}
+              port: http
+            initialDelaySeconds: {{ .Values.mcp.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.mcp.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.mcp.readinessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.mcp.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.mcp.readinessProbe.failureThreshold | default 3 }}
+          resources:
+            {{- toYaml .Values.mcp.resources | nindent 12 }}
+      {{- with .Values.mcp.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcp.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcp.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

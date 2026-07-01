@@ -2,7 +2,7 @@
 
 ## Chart Contract
 
-- Chart type: `single-service`
+- Chart type: `multi-component`
 - Required secrets: `matcher.secrets.RABBITMQ_PASSWORD` (install fails loud if unset, unless `matcher.useExistingSecret` is enabled). The PostgreSQL primary/replica and Valkey passwords are **single-sourced from their Bitnami subchart Secrets** — `matcher` reads them at runtime from `<release>-postgresql` (keys `password`, `replication-password`) and `<release>-valkey` (key `valkey-password`), so they are not stored in the app Secret. Only set `matcher.secrets.POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, and `REDIS_PASSWORD` when pointing at **external** infra without an `existingSecret`. `RABBITMQ_PASSWORD` remains operator-provided (see Known limitations). Production database and messaging credentials must not be committed in values files.
 - Dependency notes: Uses local PostgreSQL, Valkey, and RabbitMQ dependency charts unless external services are configured.
 - Production overrides: Provide production credentials through chart secrets or existing dependency Secrets where supported; override image tags, ingress, resources, and persistence.
@@ -117,6 +117,69 @@ matcher:
 | `matcher.serviceAccount.annotations` | Annotations for the ServiceAccount. | `{}` |
 | `matcher.serviceAccount.name` | Name of the service account. | `""` |
 
+### UI (`matcher-ui`)
+
+Optional web UI (Vite SPA served by nginx-unprivileged). Disabled by default. When enabled, the UI ingress implements a **same-origin proxy** (decision 2026-06-27): the UI image hardcodes a CSP with `connect-src 'self'`, so the API must be served from the **same host** as the UI. On the UI host, `/v1` and `/system` route to the matcher API Service, and `/` routes to the UI Service (single ingress, two backends). This keeps the browser same-origin — no CORS, no CSP violation. Set `ui.env.API_BASE_URL: ""` so the SPA calls `/v1` and `/system` relative.
+
+| Parameter | Description | Default Value |
+|---|---|---|
+| `ui.enabled` | Enable the UI component. | `false` |
+| `ui.replicaCount` | Number of UI replicas. | `1` |
+| `ui.image.repository` | UI image repository. | `"ghcr.io/lerianstudio/matcher-ui"` |
+| `ui.image.tag` | UI image tag (**required** when `ui.enabled=true`). | `""` |
+| `ui.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |
+| `ui.imagePullSecrets` | Pull secrets for the UI image. | `[]` |
+| `ui.securityContext.*` | Container security context. `runAsUser/Group 101`, `readOnlyRootFilesystem: false` (nginx-unprivileged renders `/config.js` at start). | See `values.yaml` |
+| `ui.service.type` / `ui.service.port` | Service type / port (also containerPort). | `ClusterIP` / `8080` |
+| `ui.env.*` | UI runtime env (rendered verbatim; empty values are emitted). `API_BASE_URL: ""` (same-origin), `TRUSTED_API_ORIGINS`, `AUTH_DISABLED`, optional `WORKOS_CLIENT_ID`. | See `values.yaml` |
+| `ui.livenessProbe.path` / `ui.readinessProbe.path` | Probe path. Defaults to `/` (nginx SPA index). Set to `/healthz` only if the deployed UI image exposes it. | `"/"` |
+| `ui.ingress.enabled` | Enable the UI ingress (same-origin proxy). | `false` |
+| `ui.ingress.className` | Ingress class name. | `"nginx"` |
+| `ui.ingress.annotations` | Ingress annotations (e.g. `cert-manager.io/cluster-issuer`). | `{}` |
+| `ui.ingress.host` | UI host (**required** when `ui.ingress.enabled=true`). | `""` |
+| `ui.ingress.apiPaths` | API prefixes routed to the matcher API Service. | `[/v1, /system]` |
+| `ui.ingress.tls.enabled` / `ui.ingress.tls.secretName` | Enable TLS / TLS secret name. | `true` / `"matcher-ui-tls"` |
+
+### MCP (`matcher-mcp`)
+
+Optional Model Context Protocol server (Node, Streamable HTTP). Stateless bearer-token relay that holds **no credentials** and forwards to the in-cluster matcher API Service. Independent version line from the app. Disabled by default.
+
+| Parameter | Description | Default Value |
+|---|---|---|
+| `mcp.enabled` | Enable the MCP component. | `false` |
+| `mcp.replicaCount` | Number of MCP replicas. | `1` |
+| `mcp.image.repository` | MCP image repository. | `"ghcr.io/lerianstudio/matcher-mcp"` |
+| `mcp.image.tag` | MCP image tag (**required** when `mcp.enabled=true`; independent of the app tag). | `""` |
+| `mcp.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |
+| `mcp.imagePullSecrets` | Pull secrets for the MCP image. | `[]` |
+| `mcp.securityContext.*` | Container security context. `runAsUser/Group 65532`, `readOnlyRootFilesystem: true`. | See `values.yaml` |
+| `mcp.service.type` / `mcp.service.port` | Service type / port (also containerPort). | `ClusterIP` / `4019` |
+| `mcp.env.MATCHER_API_URL` | In-cluster matcher API URL. Empty → derived `http://<fullname>.<ns>.svc.cluster.local:<port>`. | `""` (derived) |
+| `mcp.env.*` | Other MCP env: `MCP_PORT`, `ENABLE_TELEMETRY`, `MCP_UPLOAD_ALLOWED_HOSTS` (SSRF allowlist, off), `MCP_UPLOAD_MAX_FETCH_BYTES`, `MATCHER_TIMEOUT_MS`, `MAX_BODY_BYTES`; add `OTEL_*` as needed. | See `values.yaml` |
+| `mcp.livenessProbe.path` / `mcp.readinessProbe.path` | Probe path. | `"/healthz"` |
+| `mcp.ingress.enabled` | Enable the MCP ingress. | `false` |
+| `mcp.ingress.className` | Ingress class name. | `"nginx"` |
+| `mcp.ingress.annotations` | Streaming defaults: `proxy-buffering: "off"`, `proxy-read-timeout: "3600"`. Add issuer as needed. | See `values.yaml` |
+| `mcp.ingress.host` | MCP host (**required** when `mcp.ingress.enabled=true`). | `""` |
+| `mcp.ingress.tls.enabled` / `mcp.ingress.tls.secretName` | Enable TLS / TLS secret name. | `true` / `"matcher-mcp-tls"` |
+
+### Detached migrations (`matcher-migrations`)
+
+Optional ArgoCD **PreSync** Secret + Job that applies the schema (up-only, single-tenant) **before** the app Deployment. matcher v3+ is detached: it refuses to boot against an unmigrated DB, and the app image ships no migration binary. Disabled by default. Requires an operator-provided Postgres password (external PG) or `matcher.useExistingSecret` pointing at a pre-created Secret. **Do not** run this with `MULTI_TENANT_ENABLED=true` (the runner refuses it; the Tenant Manager owns tenant DB migrations).
+
+| Parameter | Description | Default Value |
+|---|---|---|
+| `migrations.enabled` | Enable the detached migration PreSync Job. | `false` |
+| `migrations.image.repository` | Migration runner image. | `"ghcr.io/lerianstudio/matcher-migrations"` |
+| `migrations.image.tag` | Migration image tag. Empty → falls back to `matcher.image.tag`. | `""` |
+| `migrations.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |
+| `migrations.imagePullSecrets` | Pull secrets for the migration image. | `[]` |
+| `migrations.waitImage` | Image for the TCP-wait initContainer. | `busybox` |
+| `migrations.postgres.{host,port,user,database,sslMode}` | Postgres connection. Empty fields fall back to `matcher.configmap.POSTGRES_*` (host derives from the postgresql subchart). | `""` |
+| `migrations.postgres.password` | Password for the PreSync Secret. Empty → `matcher.secrets.POSTGRES_PASSWORD`. Ignored when `matcher.useExistingSecret=true` (Job reads the existing Secret). | `""` |
+| `migrations.backoffLimit` / `migrations.activeDeadlineSeconds` / `migrations.ttlSecondsAfterFinished` | Job retry / deadline / TTL. | `3` / `600` / `600` |
+| `migrations.resources.*` | CPU/Memory requests/limits. | See `values.yaml` |
+
 ---
 
 ## Dependencies
@@ -171,7 +234,7 @@ The following environment variables can be configured via the `matcher.configmap
 | `REDIS_HOST` | Redis/Valkey host. Derived collapse-aware from the subchart name; shown for release `matcher`. | `"matcher-valkey-primary.matcher.svc.cluster.local.:6379"` |
 | `RABBITMQ_HOST` | RabbitMQ host. | `"matcher-rabbitmq.matcher.svc.cluster.local."` |
 | `RABBITMQ_PORT` | RabbitMQ port. | `"5672"` |
-| `AUTH_ENABLED` | Enable authentication. | `"false"` |
+| `PLUGIN_AUTH_ENABLED` | Enable authentication (delegated to plugin-auth). Legacy `AUTH_ENABLED` still honored as a fallback. | `"false"` |
 | `ENABLE_TELEMETRY` | Enable OpenTelemetry. | `"false"` |
 | `OBJECT_STORAGE_ENDPOINT` | Object storage endpoint. | `"http://matcher-seaweedfs.matcher.svc.cluster.local.:8333"` |
 | `EXPORT_WORKER_ENABLED` | Enable export worker. | `"true"` |
@@ -192,7 +255,9 @@ The following secrets can be configured via the `matcher.secrets` section:
 | `RABBITMQ_PASSWORD` | RabbitMQ password. Operator-provided (not single-sourced — see Known limitations). | `""` |
 | `OBJECT_STORAGE_ACCESS_KEY_ID` | Object storage access key. | `""` |
 | `OBJECT_STORAGE_SECRET_ACCESS_KEY` | Object storage secret key. | `""` |
-| `AUTH_JWT_SECRET` | JWT secret for authentication. | `""` |
+| `APP_ENC_KEY` | Engine credential master key (base64 32-byte). **Required in production.** Emitted only when set (opt-in). Generate: `openssl rand -base64 32 \| tr -d '\n'`. | `""` |
+| `ACTOR_PII_ENCRYPTION_KEY` | Actor PII encryption key (optional, base64 32-byte). Emitted only when set. | `""` |
+| `SYSTEMPLANE_SECRET_MASTER_KEY` | AES-256-GCM master key for encrypting secret config values. | `""` |
 
 ---
 

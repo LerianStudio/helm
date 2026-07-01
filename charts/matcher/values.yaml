@@ -203,6 +203,9 @@ matcher:
     LOG_LEVEL: "info"
     SERVER_ADDRESS: ":8080"
     HTTP_BODY_LIMIT_BYTES: "104857600"
+    # -- Go soft memory limit (opt-in). Set ~85% of the pod memory limit; Go 1.26
+    # does not auto-detect cgroup limits. Only emitted when non-empty. e.g. "435MiB"
+    GOMEMLIMIT: ""
 
     # CORS Configuration
     CORS_ALLOWED_ORIGINS: "*"
@@ -276,9 +279,14 @@ matcher:
     RABBITMQ_VHOST: "/"
     RABBITMQ_HEALTH_URL: "http://matcher-rabbitmq.matcher.svc.cluster.local.:15672"
 
-    # Authentication
-    AUTH_ENABLED: "false"
-    AUTH_SERVICE_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    # Authentication (delegated to plugin-auth in app v4). Canonical knobs:
+    # PLUGIN_AUTH_ENABLED (effective default "false") and PLUGIN_AUTH_ADDRESS
+    # (effective default the in-cluster plugin-access-manager URL). Leave EMPTY to
+    # take the default: the configmap template resolves empty -> legacy AUTH_ENABLED /
+    # AUTH_SERVICE_ADDRESS (fallback for migration) -> hard default. Setting a
+    # non-empty value here overrides the legacy fallback.
+    PLUGIN_AUTH_ENABLED: ""
+    PLUGIN_AUTH_ADDRESS: ""
 
     # Swagger Documentation
     SWAGGER_ENABLED: "false"
@@ -375,8 +383,11 @@ matcher:
     OBJECT_STORAGE_ACCESS_KEY_ID: ""
     # -- Object Storage secret key
     OBJECT_STORAGE_SECRET_ACCESS_KEY: ""
-    # -- JWT secret for authentication
-    AUTH_JWT_SECRET: ""
+    # -- Engine credential master key (base64 32-byte). REQUIRED in production.
+    # Generate with: openssl rand -base64 32 | tr -d '\n'. Emitted only when set.
+    APP_ENC_KEY: ""
+    # -- Actor PII encryption key (optional, base64 32-byte). Emitted only when set.
+    ACTOR_PII_ENCRYPTION_KEY: ""
     # -- Systemplane AES-256-GCM master key for encrypting secret config values
     # REQUIRED: Generate with: openssl rand -base64 32 | tr -d '\n'
     # WARNING: Use a unique value per environment. Never use the default in production.
@@ -401,6 +412,244 @@ matcher:
     # -- Name of the service account
     # @default -- `matcher.fullname`
     name: ""
+
+# =============================================================================
+# UI component (matcher-ui) — Vite SPA served by nginx-unprivileged.
+# Disabled by default. When enabled, the ingress implements the same-origin
+# proxy: /v1 and /system route to the matcher API Service, / routes to the UI.
+# =============================================================================
+ui:
+  # -- Enable the matcher UI component
+  enabled: false
+  # -- Number of UI replicas
+  replicaCount: 1
+  # -- Number of old ReplicaSets to retain
+  revisionHistoryLimit: 10
+  image:
+    # -- UI image repository
+    repository: ghcr.io/lerianstudio/matcher-ui
+    # -- UI image tag (REQUIRED when ui.enabled=true)
+    tag: ""
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+  # -- Secrets for pulling the UI image from a private registry
+  imagePullSecrets: []
+  # -- Pod annotations
+  podAnnotations: {}
+  # -- Pod-level security context. fsGroup 101 makes the emptyDir volumes
+  # (html / tmp / cache) group-writable by the non-root nginx user.
+  podSecurityContext:
+    fsGroup: 101
+  # -- Container security context. nginx-unprivileged runs as uid 101 with a
+  # read-only rootfs; emptyDir volumes back /usr/share/nginx/html (seeded by an
+  # initContainer so config.js can be rendered at start), /tmp and /var/cache/nginx.
+  securityContext:
+    runAsUser: 101
+    runAsGroup: 101
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  service:
+    # -- Service type
+    type: ClusterIP
+    # -- Service port (also the containerPort)
+    port: 8080
+    annotations: {}
+  # -- UI runtime env. Rendered verbatim into the container. Empty values are
+  # emitted (API_BASE_URL="" means same-origin).
+  env:
+    # -- Empty -> SPA calls /v1 and /system RELATIVE (same-origin proxy)
+    API_BASE_URL: ""
+    # -- Trusted API origins (set to the UI host, e.g. https://matcher-ui.example.com)
+    TRUSTED_API_ORIGINS: ""
+    # -- Disable UI auth (set "false" when wiring plugin-auth)
+    AUTH_DISABLED: "true"
+    # -- Optional: WORKOS_CLIENT_ID (uncomment to set)
+    # WORKOS_CLIENT_ID: ""
+  # -- Liveness probe (path defaults to "/", the nginx SPA index)
+  livenessProbe:
+    path: "/"
+  # -- Readiness probe (path defaults to "/")
+  readinessProbe:
+    path: "/"
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  ingress:
+    # -- Enable the UI ingress (same-origin proxy)
+    enabled: false
+    # -- Ingress class name
+    className: "nginx"
+    # -- Ingress annotations (e.g. cert-manager.io/cluster-issuer)
+    annotations: {}
+    # -- UI host (REQUIRED when ui.ingress.enabled=true)
+    host: ""
+    # -- API prefixes routed to the matcher API Service (same-origin). nginx
+    # longest-prefix matching ensures these win over "/".
+    apiPaths:
+      - /v1
+      - /system
+    tls:
+      # -- Enable TLS
+      enabled: true
+      # -- TLS secret name
+      secretName: "matcher-ui-tls"
+  # -- Node selector
+  nodeSelector: {}
+  # -- Tolerations
+  tolerations: {}
+  # -- Affinity
+  affinity: {}
+
+# =============================================================================
+# MCP component (matcher-mcp) — Node, Streamable HTTP. Stateless bearer-token
+# relay (holds NO credentials). Independent version line from the app.
+# Disabled by default.
+# =============================================================================
+mcp:
+  # -- Enable the matcher MCP component
+  enabled: false
+  # -- Number of MCP replicas
+  replicaCount: 1
+  # -- Number of old ReplicaSets to retain
+  revisionHistoryLimit: 10
+  image:
+    # -- MCP image repository
+    repository: ghcr.io/lerianstudio/matcher-mcp
+    # -- MCP image tag (REQUIRED when mcp.enabled=true; INDEPENDENT of the app tag)
+    tag: ""
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+  # -- Secrets for pulling the MCP image from a private registry
+  imagePullSecrets: []
+  # -- Pod annotations
+  podAnnotations: {}
+  # -- Pod-level security context (optional)
+  podSecurityContext: {}
+  # -- Container security context. Distroless nonroot (uid 65532), read-only rootfs.
+  securityContext:
+    runAsUser: 65532
+    runAsGroup: 65532
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  service:
+    # -- Service type
+    type: ClusterIP
+    # -- Service port (also the containerPort)
+    port: 4019
+    annotations: {}
+  # -- MCP runtime env. MATCHER_API_URL is derived from the release when empty.
+  env:
+    # -- In-cluster matcher API URL (empty -> derived: http://<fullname>.<ns>.svc.cluster.local:<port>)
+    MATCHER_API_URL: ""
+    # -- MCP listen port (keep in sync with mcp.service.port)
+    MCP_PORT: "4019"
+    # -- Enable telemetry
+    ENABLE_TELEMETRY: "false"
+    # -- SSRF allowlist for upload fetch (empty = off)
+    MCP_UPLOAD_ALLOWED_HOSTS: ""
+    # -- Max bytes fetched for uploads
+    MCP_UPLOAD_MAX_FETCH_BYTES: "10485760"
+    # -- Upstream matcher API request timeout (ms)
+    MATCHER_TIMEOUT_MS: "30000"
+    # -- Max request body bytes
+    MAX_BODY_BYTES: "1048576"
+  # -- Liveness probe (path defaults to /healthz)
+  livenessProbe:
+    path: "/healthz"
+  # -- Readiness probe (path defaults to /healthz)
+  readinessProbe:
+    path: "/healthz"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  ingress:
+    # -- Enable the MCP ingress
+    enabled: false
+    # -- Ingress class name
+    className: "nginx"
+    # -- Ingress annotations. Streaming HTTP defaults: proxy-buffering off,
+    # long read-timeout. Add cert-manager.io/cluster-issuer as needed.
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    # -- MCP host (REQUIRED when mcp.ingress.enabled=true)
+    host: ""
+    tls:
+      # -- Enable TLS
+      enabled: true
+      # -- TLS secret name
+      secretName: "matcher-mcp-tls"
+  # -- Node selector
+  nodeSelector: {}
+  # -- Tolerations
+  tolerations: {}
+  # -- Affinity
+  affinity: {}
+
+# =============================================================================
+# Detached migrations (matcher-migrations) — ArgoCD PreSync Secret + Job that
+# applies the schema (up-only, single-tenant) before the app Deployment.
+# Disabled by default. Requires an operator-provided Postgres password (external
+# PG) or matcher.useExistingSecret pointing at a pre-created Secret.
+# =============================================================================
+migrations:
+  # -- Enable the detached migration PreSync Job
+  enabled: false
+  image:
+    # -- Migration runner image repository
+    repository: ghcr.io/lerianstudio/matcher-migrations
+    # -- Migration image tag (empty -> falls back to matcher.image.tag)
+    tag: ""
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+  # -- Secrets for pulling the migration image from a private registry
+  imagePullSecrets: []
+  # -- Image used by the TCP-wait initContainer
+  waitImage: busybox
+  # -- Postgres connection for the migration Job. Empty fields fall back to
+  # matcher.configmap.POSTGRES_* (host derives from the postgresql subchart).
+  postgres:
+    host: ""
+    port: ""
+    user: ""
+    database: ""
+    sslMode: ""
+    # -- Password for the PreSync Secret (empty -> matcher.secrets.POSTGRES_PASSWORD).
+    # Ignored when matcher.useExistingSecret=true (Job reads the existing Secret).
+    password: ""
+  # -- Job backoff limit
+  backoffLimit: 3
+  # -- Job active deadline (seconds)
+  activeDeadlineSeconds: 600
+  # -- TTL after the Job finishes (seconds)
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
 
 # Valkey (Redis-compatible) configuration
 valkey:

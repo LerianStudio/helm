@@ -125,6 +125,73 @@ false
 {{- end -}}
 
 {{/*
+==============================================================================
+Component helpers (multi-component: ui / mcp / migrations)
+Names are derived from matcher.fullname so cross-references stay deterministic
+and release-aware (e.g. the UI ingress routes /v1 to the API Service by name,
+and the migration Job reads its PreSync Secret by name).
+==============================================================================
+*/}}
+
+{{/* UI fullname (e.g. matcher-ui) */}}
+{{- define "matcher-ui.fullname" -}}
+{{- printf "%s-ui" (include "matcher.fullname" . | trunc 60 | trimSuffix "-") | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/* UI selector labels */}}
+{{- define "matcher-ui.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "matcher-ui.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: ui
+{{- end -}}
+
+{{/* UI labels */}}
+{{- define "matcher-ui.labels" -}}
+helm.sh/chart: {{ include "matcher.chart" . }}
+{{ include "matcher-ui.selectorLabels" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.ui.image.tag }}
+app.kubernetes.io/version: {{ . | quote }}
+{{- end }}
+{{- end -}}
+
+{{/* MCP fullname (e.g. matcher-mcp) */}}
+{{- define "matcher-mcp.fullname" -}}
+{{- printf "%s-mcp" (include "matcher.fullname" . | trunc 59 | trimSuffix "-") | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/* MCP selector labels */}}
+{{- define "matcher-mcp.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "matcher-mcp.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: mcp
+{{- end -}}
+
+{{/* MCP labels */}}
+{{- define "matcher-mcp.labels" -}}
+helm.sh/chart: {{ include "matcher.chart" . }}
+{{ include "matcher-mcp.selectorLabels" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.mcp.image.tag }}
+app.kubernetes.io/version: {{ . | quote }}
+{{- end }}
+{{- end -}}
+
+{{/* Migrations fullname (e.g. matcher-migrations) — Job and PreSync Secret reference this */}}
+{{- define "matcher-migrations.fullname" -}}
+{{- printf "%s-migrations" (include "matcher.fullname" . | trunc 52 | trimSuffix "-") | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/* Migrations labels */}}
+{{- define "matcher-migrations.labels" -}}
+helm.sh/chart: {{ include "matcher.chart" . }}
+app.kubernetes.io/name: {{ include "matcher-migrations.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/component: migrations
+{{- end -}}
+
+{{/*
 Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
 Secret/Service names render even when all bundled subcharts are disabled
 (external-infra path). Self-contained: no other common.* helpers required.

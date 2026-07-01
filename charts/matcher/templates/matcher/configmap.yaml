@@ -12,6 +12,11 @@ data:
   LOG_LEVEL: {{ .Values.matcher.configmap.LOG_LEVEL | default "info" | quote }}
   SERVER_ADDRESS: {{ .Values.matcher.configmap.SERVER_ADDRESS | default ":8080" | quote }}
   HTTP_BODY_LIMIT_BYTES: {{ .Values.matcher.configmap.HTTP_BODY_LIMIT_BYTES | default "104857600" | quote }}
+  {{- if .Values.matcher.configmap.GOMEMLIMIT }}
+  # Go soft memory limit. Set explicitly (~85% of pod memory limit): Go 1.26 does
+  # not auto-detect cgroup memory limits. Only emitted when set (opt-in knob).
+  GOMEMLIMIT: {{ .Values.matcher.configmap.GOMEMLIMIT | quote }}
+  {{- end }}
 
   # CORS Configuration
   CORS_ALLOWED_ORIGINS: {{ .Values.matcher.configmap.CORS_ALLOWED_ORIGINS | default "*" | quote }}
@@ -83,9 +88,12 @@ data:
   RABBITMQ_VHOST: {{ .Values.matcher.configmap.RABBITMQ_VHOST | default "/" | quote }}
   RABBITMQ_HEALTH_URL: {{ .Values.matcher.configmap.RABBITMQ_HEALTH_URL | default (printf "http://matcher-rabbitmq.%s.svc.cluster.local.:15672" .Release.Namespace) | quote }}
 
-  # Authentication
-  AUTH_ENABLED: {{ .Values.matcher.configmap.AUTH_ENABLED | default "false" | quote }}
-  AUTH_SERVICE_ADDRESS: {{ .Values.matcher.configmap.AUTH_SERVICE_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000" | quote }}
+  # Authentication (delegated to plugin-auth in app v4). Canonical names are
+  # PLUGIN_AUTH_*; the legacy AUTH_ENABLED / AUTH_SERVICE_ADDRESS values are still
+  # honored as a fallback so consumers can migrate their values without a lockstep
+  # break. The app also accepts both aliases at runtime.
+  PLUGIN_AUTH_ENABLED: {{ .Values.matcher.configmap.PLUGIN_AUTH_ENABLED | default .Values.matcher.configmap.AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.matcher.configmap.PLUGIN_AUTH_ADDRESS | default .Values.matcher.configmap.AUTH_SERVICE_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000" | quote }}
 
   # Swagger Documentation
   SWAGGER_ENABLED: {{ .Values.matcher.configmap.SWAGGER_ENABLED | default "false" | quote }}

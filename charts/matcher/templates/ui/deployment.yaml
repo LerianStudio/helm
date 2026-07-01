@@ -1,0 +1,112 @@
+{{- if .Values.ui.enabled }}
+{{- $image := printf "%s:%s" .Values.ui.image.repository (required "ui.image.tag is required when ui.enabled=true" .Values.ui.image.tag) -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "matcher-ui.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "matcher-ui.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.ui.replicaCount | default 1 }}
+  revisionHistoryLimit: {{ .Values.ui.revisionHistoryLimit | default 10 }}
+  selector:
+    matchLabels:
+      {{- include "matcher-ui.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.ui.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "matcher-ui.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.ui.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ui.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        # Seed the read-only rootfs: copy the image's built static assets into the
+        # html emptyDir so the entrypoint can render config.js there at start.
+        - name: copy-html
+          image: {{ $image | quote }}
+          imagePullPolicy: {{ .Values.ui.image.pullPolicy | default "IfNotPresent" }}
+          command: ['sh', '-c', 'cp -a /usr/share/nginx/html/. /html-writable/']
+          securityContext:
+            {{- toYaml .Values.ui.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: html
+              mountPath: /html-writable
+      containers:
+        - name: {{ include "matcher-ui.fullname" . }}
+          image: {{ $image | quote }}
+          imagePullPolicy: {{ .Values.ui.image.pullPolicy | default "IfNotPresent" }}
+          securityContext:
+            {{- toYaml .Values.ui.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ui.service.port }}
+              protocol: TCP
+          env:
+            # The UI image is env-agnostic: the entrypoint renders /config.js at
+            # start from these vars into the html emptyDir (rootfs stays read-only).
+            # API_BASE_URL="" -> SPA calls /v1 and /system RELATIVE (same-origin);
+            # the UI ingress proxies those prefixes to the matcher API Service.
+            {{- range $key, $value := .Values.ui.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              # Default "/" (nginx SPA index): the beleriand-proven path. Set to
+              # /healthz only if the deployed UI image exposes it.
+              path: {{ .Values.ui.livenessProbe.path | default "/" }}
+              port: http
+            initialDelaySeconds: {{ .Values.ui.livenessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.ui.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ .Values.ui.livenessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.ui.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.ui.livenessProbe.failureThreshold | default 3 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.ui.readinessProbe.path | default "/" }}
+              port: http
+            initialDelaySeconds: {{ .Values.ui.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.ui.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.ui.readinessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.ui.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.ui.readinessProbe.failureThreshold | default 3 }}
+          resources:
+            {{- toYaml .Values.ui.resources | nindent 12 }}
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+      volumes:
+        - name: html
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+      {{- with .Values.ui.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ui.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ui.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

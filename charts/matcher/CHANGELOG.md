@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0-beta.1]
+
+### Added
+
+- Promote UI, MCP, and detached migrations into the chart as first-class,
+  optional multi-component parts (chart-type `multi-component`). All default to
+  `enabled: false`:
+  - `ui.*` — Vite SPA (nginx-unprivileged). UI ingress implements the same-origin
+    proxy (`/v1` and `/system` → matcher API Service; `/` → UI Service).
+  - `mcp.*` — Streamable-HTTP MCP relay (stateless, no credentials); independent
+    version line from the app tag.
+  - `migrations.*` — ArgoCD PreSync Secret + Job (up-only, single-tenant) applied
+    before the app Deployment; TCP-wait initContainer; `useExistingSecret`-aware.
+- `matcher.secrets.APP_ENC_KEY` (engine credential master key; required in
+  production) and `matcher.secrets.ACTOR_PII_ENCRYPTION_KEY` (optional). Both are
+  emitted only when set, keeping the default render byte-identical.
+- `matcher.configmap.GOMEMLIMIT` opt-in knob (Go 1.26 soft memory limit).
+
+### Changed
+
+- App templates moved into `templates/matcher/` component subdirectory. Rendered
+  Kubernetes objects are unchanged for existing API consumers, modulo the chart
+  version string, `# Source:` provenance, and the auth-key changes below.
+- ConfigMap now emits `PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_ADDRESS` (the app's
+  canonical v4 names) instead of `AUTH_ENABLED` / `AUTH_SERVICE_ADDRESS`. The
+  template still reads the legacy `matcher.configmap.AUTH_ENABLED` /
+  `AUTH_SERVICE_ADDRESS` as a fallback, so an upgrade never silently disables auth.
+
+### Removed
+
+- `matcher.secrets.AUTH_JWT_SECRET` — no-op in app v4 (validation delegated to
+  plugin-auth); no longer emitted into the Secret. Setting it is now ignored
+  (harmless). See `docs/UPGRADE-3.2.md`.
+
 ## [1.2.0] - 2026-02-25
 
 ### Added

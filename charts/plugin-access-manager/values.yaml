@@ -303,6 +303,10 @@ auth:
     name: "plugin-access-manager-auth-backend"
     # -- Whether to create database on startup (requires CREATEDB permission)
     createDatabase: true
+    # -- Casdoor session provider (e.g. memory, redis)
+    sessionProvider: "memory"
+    # -- Casdoor session provider configuration string
+    sessionProviderConfig: ""
     image:
       # -- Repository for the auth backend (casdoor) container image
       repository: ghcr.io/lerianstudio/casdoor

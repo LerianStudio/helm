@@ -16,7 +16,7 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 3.2.0-beta.1
+version: 3.1.0-beta.2
 
 # NOTE: appVersion is a stale placeholder. The real app image tag is set via
 # matcher.image.tag (and per-component ui.image.tag / mcp.image.tag / migrations.image.tag).

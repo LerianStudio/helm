@@ -96,10 +96,6 @@ spec:
                 name: {{ include "plugin-auth.fullname" . }}
                 key: DB_SSLMODE
           {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
-          # Redis session provider (Casdoor beego redisEndpoint) pieces, injected exactly like
-          # the DB pieces above: non-secret parts from the auth ConfigMap via configMapKeyRef,
-          # REDIS_PASSWORD from the auth Secret via secretKeyRef (honoring useExistingSecret).
-          # The redisEndpoint string itself is assembled at runtime in the container command.
           - name: REDIS_HOST
             valueFrom:
               configMapKeyRef:
@@ -118,7 +114,7 @@ spec:
           - name: REDIS_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: {{ if .Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding REDIS_PASSWORD.\n" .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
+                name: {{ include "plugin-auth.fullname" . }}
                 key: REDIS_PASSWORD
           {{ if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"

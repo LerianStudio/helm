@@ -20,8 +20,3 @@ data:
   quota: '{"organization": -1, "user": -1, "application": -1, "provider": -1}'
   logConfig: '{"filename": "logs/casdoor.log", "maxdays": 99999, "perm": "0770"}'
   initDataFile: {{ .Values.auth.backend.initDataFile | default "./init_data.json" | quote }}
-  # redisEndpoint (Casdoor beego redis session provider connection string) is intentionally
-  # NOT set here. Exactly like the DB dataSourceName, it embeds a secret (REDIS_PASSWORD),
-  # so it is assembled at runtime in the Deployment command from the REDIS_HOST/
-  # REDIS_POOL_SIZE/REDIS_DB env vars (auth ConfigMap) and the REDIS_PASSWORD env var
-  # (auth Secret via secretKeyRef), keeping the password out of any ConfigMap.

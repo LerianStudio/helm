@@ -29,6 +29,7 @@ data:
   REDIS_TOKEN_LIFETIME: {{ .Values.auth.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
   REDIS_TOKEN_REFRESH_DURATION: {{ .Values.auth.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
   REDIS_DB: {{ .Values.auth.configmap.REDIS_DB | default "0" | quote }}
+  REDIS_POOL_SIZE: {{ .Values.auth.configmap.REDIS_POOL_SIZE | default "100" | quote }}
   REDIS_PROTOCOL: {{ .Values.auth.configmap.REDIS_PROTOCOL | default "3" | quote }}
   
   # SWAGGER

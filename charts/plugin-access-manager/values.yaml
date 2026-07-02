@@ -294,10 +294,11 @@ auth:
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
   # -- Use an existing Secret for the auth sensitive data instead of the chart-created one.
-  # When true, the chart does not create the auth Secret nor the auth-backend
-  # `<fullname>-casdoor-redis` Secret; the referenced Secret (existingSecretName) must
-  # provide the keys DB_PASSWORD and redisEndpoint (Casdoor redis session connection
-  # string in the form "host:port,poolsize,password,dbnum").
+  # When true, the chart does not create the auth Secret; the referenced Secret
+  # (existingSecretName) must provide the sensitive keys DB_PASSWORD and REDIS_PASSWORD.
+  # The auth-backend assembles the Casdoor redisEndpoint connection string at runtime from
+  # REDIS_HOST/REDIS_POOL_SIZE/REDIS_DB (auth ConfigMap) and REDIS_PASSWORD (this Secret),
+  # exactly like the DB dataSourceName — so no pre-built connection string is required.
   useExistingSecret: false
   # -- Name of the existing Secret. REQUIRED when useExistingSecret is true.
   existingSecretName: ""

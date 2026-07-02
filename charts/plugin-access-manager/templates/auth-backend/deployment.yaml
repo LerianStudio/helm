@@ -64,6 +64,7 @@ spec:
             - -c
             - |
               export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} dbname=${DB_NAME}"
+              export redisEndpoint="${REDIS_HOST},${REDIS_POOL_SIZE},${REDIS_PASSWORD},${REDIS_DB}"
               exec /server --createDatabase={{- if hasKey .Values.auth.backend "createDatabase" }}{{ .Values.auth.backend.createDatabase }}{{- else }}true{{- end }}
           envFrom:
           - configMapRef:
@@ -95,11 +96,30 @@ spec:
                 name: {{ include "plugin-auth.fullname" . }}
                 key: DB_SSLMODE
           {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
-          - name: redisEndpoint
+          # Redis session provider (Casdoor beego redisEndpoint) pieces, injected exactly like
+          # the DB pieces above: non-secret parts from the auth ConfigMap via configMapKeyRef,
+          # REDIS_PASSWORD from the auth Secret via secretKeyRef (honoring useExistingSecret).
+          # The redisEndpoint string itself is assembled at runtime in the container command.
+          - name: REDIS_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: REDIS_HOST
+          - name: REDIS_POOL_SIZE
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: REDIS_POOL_SIZE
+          - name: REDIS_DB
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: REDIS_DB
+          - name: REDIS_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: {{ if .Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding redisEndpoint.\n" .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth-backend.fullname" . }}-casdoor-redis{{ end }}
-                key: redisEndpoint
+                name: {{ if .Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding REDIS_PASSWORD.\n" .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
+                key: REDIS_PASSWORD
           {{ if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:

@@ -69,23 +69,6 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
-plugin-auth-backend.redisEndpoint — compose the Casdoor (beego) redis session provider
-connection string in the form "host:port,poolsize,password,dbnum", reusing the same
-Redis settings as the auth ConfigMap/Secret (auth.configmap.REDIS_HOST/REDIS_PORT/
-REDIS_POOL_SIZE/REDIS_DB and auth.secrets.REDIS_PASSWORD). Rendered into a dedicated
-Secret and injected into the auth-backend Deployment as the `redisEndpoint` env var so
-the password never lands in a ConfigMap.
-*/}}
-{{- define "plugin-auth-backend.redisEndpoint" -}}
-{{- $host := .Values.auth.configmap.REDIS_HOST | default (printf "plugin-access-manager-valkey-primary.%s.svc.cluster.local" .Release.Namespace) -}}
-{{- $port := .Values.auth.configmap.REDIS_PORT | default "6379" | toString -}}
-{{- $poolSize := .Values.auth.configmap.REDIS_POOL_SIZE | default "100" | toString -}}
-{{- $password := .Values.auth.secrets.REDIS_PASSWORD | default "" -}}
-{{- $db := .Values.auth.configmap.REDIS_DB | default "0" | toString -}}
-{{- printf "%s:%s,%s,%s,%s" $host $port $poolSize $password $db -}}
-{{- end }}
-
-{{/*
 Create app version.
 */}}
 {{- define "plugin.version" -}}

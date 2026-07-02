@@ -98,7 +98,7 @@ spec:
           - name: redisEndpoint
             valueFrom:
               secretKeyRef:
-                name: {{ include "plugin-auth-backend.fullname" . }}-casdoor-redis
+                name: {{ if .Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding redisEndpoint.\n" .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth-backend.fullname" . }}-casdoor-redis{{ end }}
                 key: redisEndpoint
           {{ if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"

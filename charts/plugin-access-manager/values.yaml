@@ -293,7 +293,13 @@ auth:
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
+  # -- Use an existing Secret for the auth sensitive data instead of the chart-created one.
+  # When true, the chart does not create the auth Secret nor the auth-backend
+  # `<fullname>-casdoor-redis` Secret; the referenced Secret (existingSecretName) must
+  # provide the keys DB_PASSWORD and redisEndpoint (Casdoor redis session connection
+  # string in the form "host:port,poolsize,password,dbnum").
   useExistingSecret: false
+  # -- Name of the existing Secret. REQUIRED when useExistingSecret is true.
   existingSecretName: ""
   backend:
     # -- Readiness probe configuration. All fields override chart defaults.

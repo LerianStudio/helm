@@ -5,6 +5,23 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0-beta.5] — Unreleased
+
+### Changed
+
+- Renamed the Midaz Ledger configmap key to a single `app.configmap.MIDAZ_LEDGER_URL`,
+  matching the app refactor that reads one Ledger plane URL instead of the former
+  `MIDAZ_ONBOARDING_URL` + `MIDAZ_TRANSACTION_URL` pair. Updated the required-value
+  validation (`_helpers.tpl`), `NOTES.txt`, `values.yaml`, `values-template.yaml`,
+  and `README.md`.
+
+### Deprecated
+
+- `app.configmap.MIDAZ_ONBOARDING_URL` and `app.configmap.MIDAZ_TRANSACTION_URL`
+  are deprecated. They are still accepted as a fallback (validation passes when
+  both are set) for environments that have not yet migrated to `MIDAZ_LEDGER_URL`.
+  Remove once all overlays use the single key.
+
 ## [1.0.0-beta.2] — Unreleased
 
 ### Changed

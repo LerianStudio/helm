@@ -276,6 +276,8 @@ auth:
     REDIS_HOST: "plugin-access-manager-valkey-primary"
     REDIS_PORT: 6379
     REDIS_USER: "auth"
+    REDIS_DB: 0
+    REDIS_POOL_SIZE: 100
     AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
   # -- Extra environment variables
   extraEnvVars: {}
@@ -303,10 +305,6 @@ auth:
     name: "plugin-access-manager-auth-backend"
     # -- Whether to create database on startup (requires CREATEDB permission)
     createDatabase: true
-    # -- Casdoor session provider (e.g. memory, redis)
-    sessionProvider: "memory"
-    # -- Casdoor session provider configuration string
-    sessionProviderConfig: ""
     image:
       # -- Repository for the auth backend (casdoor) container image
       repository: ghcr.io/lerianstudio/casdoor

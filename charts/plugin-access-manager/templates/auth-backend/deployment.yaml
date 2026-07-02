@@ -95,6 +95,11 @@ spec:
                 name: {{ include "plugin-auth.fullname" . }}
                 key: DB_SSLMODE
           {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
+          - name: redisEndpoint
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "plugin-auth-backend.fullname" . }}-casdoor-redis
+                key: redisEndpoint
           {{ if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:

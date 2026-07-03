@@ -181,13 +181,17 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_SECRET is REQUIRED.\n   Set the BTG webhook bearer token in the secrets section.\n" }}
 {{- end }}
 
-{{/* Midaz Ledger URLs — required for production */}}
-{{- if not .Values.app.configmap.MIDAZ_ONBOARDING_URL }}
-{{- fail "\n\nERROR: app.configmap.MIDAZ_ONBOARDING_URL is REQUIRED.\n   Set the Midaz onboarding service URL.\n" }}
+{{/* Midaz Ledger URL — required for production.
+     Preferred: app.configmap.MIDAZ_LEDGER_URL (single Ledger plane URL; the
+     app now serves onboarding + transaction from one plane).
+     DEPRECATED fallback: MIDAZ_ONBOARDING_URL + MIDAZ_TRANSACTION_URL (the
+     former split pair). Still accepted for backward compatibility with
+     environments that have not migrated yet; remove once all overlays use
+     MIDAZ_LEDGER_URL. */}}
+{{- if not .Values.app.configmap.MIDAZ_LEDGER_URL }}
+{{- if not (and .Values.app.configmap.MIDAZ_ONBOARDING_URL .Values.app.configmap.MIDAZ_TRANSACTION_URL) }}
+{{- fail "\n\nERROR: app.configmap.MIDAZ_LEDGER_URL is REQUIRED.\n   Set the Midaz Ledger service URL.\n   (Deprecated: the former MIDAZ_ONBOARDING_URL + MIDAZ_TRANSACTION_URL pair is still accepted as a fallback.)\n" }}
 {{- end }}
-
-{{- if not .Values.app.configmap.MIDAZ_TRANSACTION_URL }}
-{{- fail "\n\nERROR: app.configmap.MIDAZ_TRANSACTION_URL is REQUIRED.\n   Set the Midaz transaction service URL.\n" }}
 {{- end }}
 
 {{/* PostgreSQL password is single-sourced from the postgresql subchart Secret

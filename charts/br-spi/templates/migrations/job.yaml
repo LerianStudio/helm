@@ -1,9 +1,10 @@
 {{- if .Values.migrations.enabled }}
 # PreSync migration Job. Runs the dedicated br-sfn-spi-migrations image, whose
-# entrypoint already applies the full 7-module golang-migrate loop
-# (brcode/core/dict/spi/events/global/systemplane) against the single `brspi`
-# database, using the per-module `x-migrations-table=schema_migrations_<module>`
-# naming that /readyz reads back. The chart's Job only provides the DB
+# entrypoint already applies the 6-module golang-migrate loop in manifest order
+# (global events spi dict brcode core) against the single `brspi` database, using
+# the per-module `x-migrations-table=schema_migrations_<module>` naming that
+# /readyz reads back. systemplane is NOT applied by golang-migrate — it is
+# lib-systemplane-managed at runtime. The chart's Job only provides the DB
 # connection + runs the image; it does NOT build the loop.
 #
 # br-sfn runtime binaries are detached: they verify schema version on boot and

@@ -376,11 +376,12 @@ dict:
     REDIS_PASSWORD: ""
 
 # =============================================================================
-# Detached migrations — ArgoCD PreSync Secret + Job that applies the 7-module
+# Detached migrations — ArgoCD PreSync Secret + Job that applies the 6-module
 # schema to the single `brspi` database before the app boots. The
-# br-sfn-spi-migrations image's entrypoint runs the full golang-migrate loop with
-# the per-module x-migrations-table naming; the chart only supplies the DB
-# connection and runs it.
+# br-sfn-spi-migrations image's entrypoint runs the golang-migrate loop in
+# manifest order (global events spi dict brcode core) with the per-module
+# x-migrations-table naming; systemplane is lib-systemplane-managed at runtime,
+# not golang-migrate. The chart only supplies the DB connection and runs it.
 # =============================================================================
 migrations:
   enabled: true

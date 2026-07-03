@@ -26,6 +26,6 @@ set for core and spi.
 {{- if .Values.migrations.enabled }}
 
 Migrations: an ArgoCD PreSync Job ({{ include "br-spi-migrations.fullname" . }})
-applies the 7-module schema to the `brspi` database before the app boots. Under
+applies the 6-module schema to the `brspi` database before the app boots. Under
 plain `helm install` (no ArgoCD) the PreSync hook Job still runs as a normal Job.
 {{- end }}

@@ -16,7 +16,7 @@ Verify:
   kubectl -n {{ include "global.namespace" . }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
   kubectl -n {{ include "global.namespace" . }} get cm,secret -l app.kubernetes.io/instance={{ .Release.Name }}
 
-{{- if or .Values.core.configmap.STREAMING_ENABLED .Values.spi.configmap.STREAMING_ENABLED }}
+{{- if or (eq (toString .Values.core.configmap.STREAMING_ENABLED) "true") (eq (toString .Values.spi.configmap.STREAMING_ENABLED) "true") }}
 
 Streaming reminder: a component with STREAMING_ENABLED=true fails closed at boot
 if STREAMING_BROKERS or STREAMING_CLOUDEVENTS_SOURCE is empty. Confirm both are

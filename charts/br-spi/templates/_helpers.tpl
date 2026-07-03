@@ -2,7 +2,7 @@
 Expand the name of the chart.
 */}}
 {{- define "br-spi.name" -}}
-{{- default (default "br-spi" .Values.nameOverride) | trunc 63 | trimSuffix "-" }}
+{{- default "br-spi" .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*

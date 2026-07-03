@@ -84,7 +84,9 @@ core:
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
   pdb:
-    enabled: true
+    # Off by default: with replicaCount 1, a PDB (minAvailable 1) blocks all
+    # voluntary evictions and stalls node drains. Enable it once scaled >1.
+    enabled: false
     minAvailable: 1
     annotations: {}
   resources:
@@ -178,7 +180,9 @@ spi:
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
   pdb:
-    enabled: true
+    # Off by default: with replicaCount 1, a PDB (minAvailable 1) blocks all
+    # voluntary evictions and stalls node drains. Enable it once scaled >1.
+    enabled: false
     minAvailable: 1
     annotations: {}
   resources:
@@ -259,7 +263,9 @@ brcode:
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
   pdb:
-    enabled: true
+    # Off by default: with replicaCount 1, a PDB (minAvailable 1) blocks all
+    # voluntary evictions and stalls node drains. Enable it once scaled >1.
+    enabled: false
     minAvailable: 1
     annotations: {}
   resources:
@@ -337,7 +343,9 @@ dict:
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
   pdb:
-    enabled: true
+    # Off by default: with replicaCount 1, a PDB (minAvailable 1) blocks all
+    # voluntary evictions and stalls node drains. Enable it once scaled >1.
+    enabled: false
     minAvailable: 1
     annotations: {}
   resources:
@@ -404,7 +412,11 @@ migrations:
     database: ""
     sslMode: ""
     # -- Password for the PreSync Secret (empty -> core.secrets.POSTGRES_PASSWORD).
-    # Ignored when migrations.useExistingSecret=true.
+    # Ignored when migrations.useExistingSecret=true. NOTE: for a self-contained
+    # install (postgresql.enabled=true) this MUST be set explicitly (or use
+    # useExistingSecret) — the bundled Postgres Secret does not exist yet at
+    # PreSync time, so the fallback cannot read it. External Postgres (the
+    # default) has no such constraint.
     password: ""
   backoffLimit: 3
   activeDeadlineSeconds: 600

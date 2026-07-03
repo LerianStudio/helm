@@ -111,6 +111,9 @@ componentDeployment — the component's Deployment.
 {{- $cv := index $ctx.Values $c -}}
 {{- if $cv.enabled -}}
 {{- $fullname := include "br-spi.componentFullname" (dict "context" $ctx "component" $c) -}}
+{{- if and $cv.useExistingSecret (not $cv.existingSecretName) -}}
+{{- fail (printf "br-spi: %s.existingSecretName must be set when %s.useExistingSecret is true" $c $c) -}}
+{{- end -}}
 {{- $secretName := ternary $cv.existingSecretName $fullname $cv.useExistingSecret -}}
 {{- $pullSecrets := $cv.imagePullSecrets | default $ctx.Values.imagePullSecrets -}}
 {{- $telemetry := eq (toString $cv.configmap.ENABLE_TELEMETRY) "true" -}}

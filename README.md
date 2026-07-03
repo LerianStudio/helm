@@ -54,6 +54,19 @@ For implementation and configuration details, see the [README](https://charts.le
 
 -----------------
 
+### BR SPI Helm Chart
+
+Brazilian SFN — SPI / Pix rail (components: core, spi, brcode, dict, plus a dedicated schema-migration Job).
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-spi).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `0.1.0-beta.1` | `0.1.0` |
+-----------------
+
 ### Reporter
 
 See the [official documentation](https://docs.lerian.studio/en/reporter) for details.

@@ -1,0 +1,1 @@
+{{- include "br-spi.componentHPA" (dict "context" . "component" "core") -}}

@@ -1,0 +1,1 @@
+{{- include "br-spi.componentDeployment" (dict "context" . "component" "brcode") -}}

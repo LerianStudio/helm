@@ -16,18 +16,6 @@
       "type": "object",
       "additionalProperties": true
     },
-    "app": {
-      "type": "object",
-      "properties": {
-        "configmap": {
-          "type": "object"
-        },
-        "secrets": {
-          "type": "object"
-        }
-      },
-      "additionalProperties": true
-    },
     "postgresql": {
       "type": "object",
       "additionalProperties": true
@@ -46,6 +34,14 @@
     },
     "br-sta": {
       "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
       "additionalProperties": true
     }
   }

@@ -1,4 +1,5 @@
-{{- if .Values.app.pdb.enabled }}
+{{- $component := index .Values "br-sta" -}}
+{{- if $component.pdb.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -6,17 +7,17 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-sta.labels" (dict "context" .) | nindent 4 }}
-  {{- with .Values.app.pdb.annotations }}
+  {{- with $component.pdb.annotations }}
   annotations:
     {{- range $key, $value := . }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
   {{- end }}
 spec:
-  {{- if .Values.app.pdb.maxUnavailable }}
-  maxUnavailable: {{ .Values.app.pdb.maxUnavailable }}
+  {{- if $component.pdb.maxUnavailable }}
+  maxUnavailable: {{ $component.pdb.maxUnavailable }}
   {{- else }}
-  minAvailable: {{ .Values.app.pdb.minAvailable | default 1 }}
+  minAvailable: {{ $component.pdb.minAvailable | default 1 }}
   {{- end }}
   selector:
     matchLabels:

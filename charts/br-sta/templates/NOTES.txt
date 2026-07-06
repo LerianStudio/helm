@@ -1,3 +1,4 @@
+{{- $component := index .Values "br-sta" -}}
 # br-sta
 
 Thank you for installing {{ .Chart.Name }} v{{ .Chart.Version }}!
@@ -12,10 +13,10 @@ The chart has been INSTALLED at version {{ .Chart.Version }} (appVersion {{ .Cha
 
 ## Component Deployed
 
-Single Deployment ({{ .Values.app.replicaCount }} replica(s)) running the /service binary
+Single Deployment ({{ $component.replicaCount }} replica(s)) running the /service binary
 (Go/Fiber HTTP server).
 
-  Service: {{ include "br-sta.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ .Values.app.service.port }}
+  Service: {{ include "br-sta.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ $component.service.port }}
   Health:  /health
   API:     /api/v1/...
 
@@ -65,13 +66,13 @@ app.secrets.POSTGRES_PASSWORD / app.secrets.REDIS_PASSWORD (or existingSecret).
 
 ## Accessing the API
 
-{{- if contains "ClusterIP" .Values.app.service.type }}
+{{- if contains "ClusterIP" $component.service.type }}
 
 Port-forward locally:
 
-  kubectl port-forward -n {{ include "global.namespace" . }} svc/{{ include "br-sta.fullname" . }} {{ .Values.app.service.port }}:{{ .Values.app.service.port }}
+  kubectl port-forward -n {{ include "global.namespace" . }} svc/{{ include "br-sta.fullname" . }} {{ $component.service.port }}:{{ $component.service.port }}
 
-Then access: http://localhost:{{ .Values.app.service.port }}/health
+Then access: http://localhost:{{ $component.service.port }}/health
 {{- end }}
 
 ## Useful Commands

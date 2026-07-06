@@ -45,7 +45,7 @@ global:
 # APPLICATION
 # Single Deployment running the /service binary (Go/Fiber HTTP server).
 # ==============================================================================
-app:
+br-sta:
   # -- Service name
   name: "br-sta"
   # -- Number of replicas
@@ -485,7 +485,3 @@ rabbitmq:
 otel-collector-lerian:
   enabled: false
 
-# Tag at end of file for image-update tooling.
-br-sta:
-  image:
-    tag: "1.0.0-beta.5"

@@ -27,7 +27,7 @@ Application name (single deployment).
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- default "br-sta" .Values.app.name | trunc 63 | trimSuffix "-" }}
+{{- default "br-sta" (index .Values "br-sta").name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 
@@ -45,7 +45,7 @@ CHART HELPERS
 Resolve the application image tag (Chart.appVersion if app.image.tag is empty).
 */}}
 {{- define "br-sta.defaultTag" -}}
-{{- default .Chart.AppVersion .Values.app.image.tag }}
+{{- default .Chart.AppVersion (index .Values "br-sta").image.tag }}
 {{- end -}}
 
 {{/*
@@ -88,10 +88,10 @@ SERVICE ACCOUNT HELPER
 */}}
 
 {{- define "br-sta.serviceAccountName" -}}
-{{- if .Values.app.serviceAccount.create }}
-{{- default (include "br-sta.fullname" .) .Values.app.serviceAccount.name }}
+{{- if (index .Values "br-sta").serviceAccount.create }}
+{{- default (include "br-sta.fullname" .) (index .Values "br-sta").serviceAccount.name }}
 {{- else }}
-{{- default "default" .Values.app.serviceAccount.name }}
+{{- default "default" (index .Values "br-sta").serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -183,11 +183,11 @@ operator input for optional integrations that have been toggled on (multi-tenant
      or app.secrets.POSTGRES_PASSWORD. The same reasoning applies to Valkey. */}}
 
 {{/* Multi-tenant required fields when enabled */}}
-{{- if eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true" }}
-{{- if not .Values.app.configmap.MULTI_TENANT_URL }}
+{{- if eq ((index .Values "br-sta").configmap.MULTI_TENANT_ENABLED | toString) "true" }}
+{{- if not (index .Values "br-sta").configmap.MULTI_TENANT_URL }}
 {{- fail "\n\nERROR: app.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
-{{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
+{{- if not (index .Values "br-sta").secrets.MULTI_TENANT_SERVICE_API_KEY }}
 {{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- end }}

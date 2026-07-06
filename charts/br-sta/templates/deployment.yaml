@@ -1,3 +1,4 @@
+{{- $component := index .Values "br-sta" -}}
 {{- include "br-sta.validateRequired" . }}
 apiVersion: apps/v1
 kind: Deployment
@@ -6,19 +7,19 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-sta.labels" (dict "context" .) | nindent 4 }}
-  {{- with .Values.app.annotations }}
+  {{- with $component.annotations }}
   annotations:
     {{- range $key, $value := . }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
   {{- end }}
 spec:
-  revisionHistoryLimit: {{ .Values.app.revisionHistoryLimit | default 10 }}
-  {{- with .Values.app.deploymentStrategy }}
+  revisionHistoryLimit: {{ $component.revisionHistoryLimit | default 10 }}
+  {{- with $component.deploymentStrategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  replicas: {{ .Values.app.replicaCount }}
+  replicas: {{ $component.replicaCount }}
   selector:
     matchLabels:
       {{- include "br-sta.selectorLabels" (dict "context" .) | nindent 6 }}
@@ -26,24 +27,24 @@ spec:
     metadata:
       labels:
         {{- include "br-sta.labels" (dict "context" .) | nindent 8 }}
-      {{- with .Values.app.podAnnotations }}
+      {{- with $component.podAnnotations }}
       annotations:
         {{- range $key, $value := . }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
       {{- end }}
     spec:
-      {{- with .Values.app.imagePullSecrets }}
+      {{- with $component.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "br-sta.serviceAccountName" . }}
-      terminationGracePeriodSeconds: {{ .Values.app.terminationGracePeriodSeconds | default 60 }}
-      {{- with .Values.app.podSecurityContext }}
+      terminationGracePeriodSeconds: {{ $component.terminationGracePeriodSeconds | default 60 }}
+      {{- with $component.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.app.hostAliases }}
+      {{- with $component.hostAliases }}
       hostAliases:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -81,25 +82,25 @@ spec:
       containers:
         - name: {{ include "br-sta.fullname" . }}
           securityContext:
-            {{- toYaml .Values.app.securityContext | nindent 12 }}
-          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default (include "br-sta.defaultTag" .) }}"
-          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+            {{- toYaml $component.securityContext | nindent 12 }}
+          image: "{{ $component.image.repository }}:{{ $component.image.tag | default (include "br-sta.defaultTag" .) }}"
+          imagePullPolicy: {{ $component.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.app.service.port }}
+              containerPort: {{ $component.service.port }}
               protocol: TCP
           envFrom:
             - configMapRef:
                 name: {{ include "br-sta.fullname" . }}
             - secretRef:
-                name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "br-sta.fullname" . }}{{ end }}
+                name: {{ if $component.useExistingSecret }}{{ $component.existingSecretName }}{{ else }}{{ include "br-sta.fullname" . }}{{ end }}
           env:
-            {{- $secretName := ternary .Values.app.existingSecretName (include "br-sta.fullname" .) .Values.app.useExistingSecret }}
+            {{- $secretName := ternary $component.existingSecretName (include "br-sta.fullname" .) $component.useExistingSecret }}
             {{- $pg := .Values.postgresql | default dict }}
             {{- $pgAuth := $pg.auth | default dict }}
             {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
             {{- include "br-sta.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
-            {{- else if .Values.app.secrets.POSTGRES_PASSWORD }}
+            {{- else if $component.secrets.POSTGRES_PASSWORD }}
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -110,7 +111,7 @@ spec:
             {{- $vkAuth := $vk.auth | default dict }}
             {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
             {{- include "br-sta.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
-            {{- else if .Values.app.secrets.REDIS_PASSWORD }}
+            {{- else if $component.secrets.REDIS_PASSWORD }}
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -126,34 +127,34 @@ spec:
               value: "$(HOST_IP):4317"
           {{- end }}
           resources:
-            {{- toYaml .Values.app.resources | nindent 12 }}
+            {{- toYaml $component.resources | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: {{ .Values.app.readinessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.app.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.app.readinessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.app.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.app.readinessProbe.failureThreshold | default 2 }}
+            initialDelaySeconds: {{ $component.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ $component.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ $component.readinessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ $component.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $component.readinessProbe.failureThreshold | default 2 }}
           livenessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds | default 30 }}
-            periodSeconds: {{ .Values.app.livenessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.app.livenessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.app.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.app.livenessProbe.failureThreshold | default 3 }}
-      {{- with .Values.app.nodeSelector }}
+            initialDelaySeconds: {{ $component.livenessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ $component.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $component.livenessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ $component.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $component.livenessProbe.failureThreshold | default 3 }}
+      {{- with $component.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.app.affinity }}
+      {{- with $component.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.app.tolerations }}
+      {{- with $component.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

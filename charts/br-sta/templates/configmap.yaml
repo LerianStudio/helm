@@ -1,3 +1,4 @@
+{{- $component := index .Values "br-sta" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,7 +8,7 @@ metadata:
     {{- include "br-sta.labels" (dict "context" .) | nindent 4 }}
 data:
   # Application environment values
-  {{- range $key, $value := .Values.app.configmap }}
+  {{- range $key, $value := $component.configmap }}
   {{- if and (ne $key "POSTGRES_HOST") (ne $key "REDIS_HOST") (ne $key "RABBITMQ_HOST") }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
@@ -18,8 +19,8 @@ data:
   # in-cluster Postgres is enabled. The subchart exposes the primary Service at
   # "<dependency.fullname>-primary" in replication architecture and at "<dependency.fullname>"
   # in standalone architecture.
-  {{- if .Values.app.configmap.POSTGRES_HOST }}
-  POSTGRES_HOST: {{ .Values.app.configmap.POSTGRES_HOST | quote }}
+  {{- if $component.configmap.POSTGRES_HOST }}
+  POSTGRES_HOST: {{ $component.configmap.POSTGRES_HOST | quote }}
   {{- else if eq (include "postgresql.enabled" .) "true" }}
   {{- $pgArch := default "standalone" .Values.postgresql.architecture }}
   {{- $pgFullname := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" (index .Values "postgresql") "context" .) }}
@@ -36,8 +37,8 @@ data:
   # Explicit value wins; otherwise derive the bundled Valkey subchart's primary
   # Service (collapse-aware) when in-cluster Valkey is enabled. Bitnami Valkey
   # exposes its primary Service at "<dependency.fullname>-primary".
-  {{- if .Values.app.configmap.REDIS_HOST }}
-  REDIS_HOST: {{ .Values.app.configmap.REDIS_HOST | quote }}
+  {{- if $component.configmap.REDIS_HOST }}
+  REDIS_HOST: {{ $component.configmap.REDIS_HOST | quote }}
   {{- else if eq (include "valkey.enabled" .) "true" }}
   {{- $vkFullname := include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" (index .Values "valkey") "context" .) }}
   REDIS_HOST: {{ printf "%s-primary.%s.svc.cluster.local:6379" $vkFullname (include "global.namespace" .) | quote }}
@@ -48,8 +49,8 @@ data:
   # RabbitMQ host: explicit value wins; otherwise, when the bundled broker is
   # enabled, derive the groundhog2k Service name "<release>-rabbitmq" (that
   # subchart names its Service after the release, not collapse-aware Bitnami).
-  {{- if .Values.app.configmap.RABBITMQ_HOST }}
-  RABBITMQ_HOST: {{ .Values.app.configmap.RABBITMQ_HOST | quote }}
+  {{- if $component.configmap.RABBITMQ_HOST }}
+  RABBITMQ_HOST: {{ $component.configmap.RABBITMQ_HOST | quote }}
   {{- else if eq (include "rabbitmq.enabled" .) "true" }}
   RABBITMQ_HOST: {{ printf "%s-rabbitmq.%s.svc.cluster.local" .Release.Name (include "global.namespace" .) | quote }}
   {{- else }}
@@ -61,6 +62,6 @@ data:
   OTEL_RESOURCE_SERVICE_VERSION: {{ include "br-sta.defaultTag" . | quote }}
 
   # Extra environment variables (passthrough from values.app.extraEnvVars)
-  {{- with .Values.app.extraEnvVars }}
+  {{- with $component.extraEnvVars }}
   {{- toYaml . | nindent 2 }}
   {{- end }}

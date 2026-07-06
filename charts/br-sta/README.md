@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `None for default render`. With the bundled PostgreSQL and Valkey subcharts the database and Redis passwords are auto-generated and read via `secretKeyRef`. Only supply `app.secrets.POSTGRES_PASSWORD` / `app.secrets.REDIS_PASSWORD` for external infra without `postgresql.auth.existingSecret` / `valkey.auth.existingSecret`. `app.secrets.MULTI_TENANT_SERVICE_API_KEY` is required only when `MULTI_TENANT_ENABLED=true`.
+- Required secrets: `None for default render`. With the bundled PostgreSQL and Valkey subcharts the database and Redis passwords are auto-generated and read via `secretKeyRef`. Only supply `br-sta.secrets.POSTGRES_PASSWORD` / `br-sta.secrets.REDIS_PASSWORD` for external infra without `postgresql.auth.existingSecret` / `valkey.auth.existingSecret`. `br-sta.secrets.MULTI_TENANT_SERVICE_API_KEY` is required only when `MULTI_TENANT_ENABLED=true`.
 - Dependency notes: Bundles two local subcharts — Bitnami `postgresql` (`postgresql.enabled`, default `true`) and Bitnami `valkey` (`valkey.enabled`, default `true`). RabbitMQ is optional, config-only, and NOT bundled (`RABBITMQ_ENABLED=false`). All can be pointed at external services.
 - Production overrides: Disable the bundled subcharts and point `POSTGRES_HOST` / `REDIS_HOST` at managed services; supply credentials via chart secrets or an existing Secret; override image tag, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/br-sta`; chart license is Apache-2.0.
@@ -53,9 +53,9 @@ The chart deploys **one Deployment, one process** (`/service`, a Go/Fiber HTTP s
 
 Following [`docs/helm-chart-standard.md`](../../docs/helm-chart-standard.md):
 
-- With the bundled **PostgreSQL** subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` (key `password`) — leave `app.secrets.POSTGRES_PASSWORD` empty.
-- With the bundled **Valkey** subchart (default), the password is auto-generated into the subchart's own Secret and read via `secretKeyRef` (key `valkey-password`) — leave `app.secrets.REDIS_PASSWORD` empty.
-- For external infra (subchart disabled), supply `app.secrets.POSTGRES_PASSWORD` / `app.secrets.REDIS_PASSWORD`, or set `postgresql.auth.existingSecret` / `valkey.auth.existingSecret`.
+- With the bundled **PostgreSQL** subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` (key `password`) — leave `br-sta.secrets.POSTGRES_PASSWORD` empty.
+- With the bundled **Valkey** subchart (default), the password is auto-generated into the subchart's own Secret and read via `secretKeyRef` (key `valkey-password`) — leave `br-sta.secrets.REDIS_PASSWORD` empty.
+- For external infra (subchart disabled), supply `br-sta.secrets.POSTGRES_PASSWORD` / `br-sta.secrets.REDIS_PASSWORD`, or set `postgresql.auth.existingSecret` / `valkey.auth.existingSecret`.
 
 ## Required configuration
 
@@ -63,8 +63,8 @@ The chart **fails fast** on `helm install` only when an enabled optional integra
 
 | Field | When required |
 |-------|---------------|
-| `app.configmap.MULTI_TENANT_URL` | `MULTI_TENANT_ENABLED=true` |
-| `app.secrets.MULTI_TENANT_SERVICE_API_KEY` | `MULTI_TENANT_ENABLED=true` |
+| `br-sta.configmap.MULTI_TENANT_URL` | `MULTI_TENANT_ENABLED=true` |
+| `br-sta.secrets.MULTI_TENANT_SERVICE_API_KEY` | `MULTI_TENANT_ENABLED=true` |
 
 ## Probes
 
@@ -77,12 +77,12 @@ The chart **fails fast** on `helm install` only when an enabled optional integra
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `app.replicaCount` | `2` | Number of replicas. |
-| `app.image.repository` | `ghcr.io/lerianstudio/br-sta` | Container image. |
-| `app.image.tag` | `""` (Chart `appVersion`) | Image tag. |
-| `app.service.port` | `8080` | Service port. |
-| `app.ingress.enabled` | `false` | Expose via Ingress. |
-| `app.autoscaling.enabled` | `true` | Enable HPA. |
+| `br-sta.replicaCount` | `2` | Number of replicas. |
+| `br-sta.image.repository` | `ghcr.io/lerianstudio/br-sta` | Container image. |
+| `br-sta.image.tag` | `""` (Chart `appVersion`) | Image tag. |
+| `br-sta.service.port` | `8080` | Service port. |
+| `br-sta.ingress.enabled` | `false` | Expose via Ingress. |
+| `br-sta.autoscaling.enabled` | `true` | Enable HPA. |
 | `postgresql.enabled` | `true` | Deploy the in-cluster PostgreSQL subchart. |
 | `postgresql.architecture` | `replication` | Primary + read replica. |
 | `valkey.enabled` | `true` | Deploy the in-cluster Valkey subchart. |
@@ -141,7 +141,7 @@ helm uninstall my-br-sta -n br-sta
 If the bundled PostgreSQL was used, its PVCs are NOT deleted automatically:
 
 ```bash
-kubectl delete pvc -n br-sta -l app.kubernetes.io/instance=my-br-sta
+kubectl delete pvc -n br-sta -l br-sta.kubernetes.io/instance=my-br-sta
 ```
 
 ## License

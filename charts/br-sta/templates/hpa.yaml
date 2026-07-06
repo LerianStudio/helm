@@ -1,4 +1,5 @@
-{{- if .Values.app.autoscaling.enabled }}
+{{- $component := index .Values "br-sta" -}}
+{{- if $component.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -11,26 +12,26 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "br-sta.fullname" . }}
-  minReplicas: {{ .Values.app.autoscaling.minReplicas }}
-  maxReplicas: {{ .Values.app.autoscaling.maxReplicas }}
+  minReplicas: {{ $component.autoscaling.minReplicas }}
+  maxReplicas: {{ $component.autoscaling.maxReplicas }}
   metrics:
-    {{- if .Values.app.autoscaling.targetCPUUtilizationPercentage }}
+    {{- if $component.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: {{ .Values.app.autoscaling.targetCPUUtilizationPercentage }}
+          averageUtilization: {{ $component.autoscaling.targetCPUUtilizationPercentage }}
     {{- end }}
-    {{- if .Values.app.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- if $component.autoscaling.targetMemoryUtilizationPercentage }}
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: {{ .Values.app.autoscaling.targetMemoryUtilizationPercentage }}
+          averageUtilization: {{ $component.autoscaling.targetMemoryUtilizationPercentage }}
     {{- end }}
   behavior:
     scaleDown:
-      stabilizationWindowSeconds: {{ .Values.app.autoscaling.scaleDownStabilizationSeconds | default 300 }}
+      stabilizationWindowSeconds: {{ $component.autoscaling.scaleDownStabilizationSeconds | default 300 }}
 {{- end }}

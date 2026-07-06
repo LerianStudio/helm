@@ -1,9 +1,10 @@
-{{- if .Values.app.ingress.enabled -}}
+{{- $component := index .Values "br-sta" -}}
+{{- if $component.ingress.enabled -}}
 {{- $fullName := include "br-sta.fullname" . -}}
-{{- $svcPort := .Values.app.service.port -}}
-{{- if and .Values.app.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.app.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.app.ingress.annotations "kubernetes.io/ingress.class" .Values.app.ingress.className }}
+{{- $svcPort := $component.service.port -}}
+{{- if and $component.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey $component.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set $component.ingress.annotations "kubernetes.io/ingress.class" $component.ingress.className }}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -19,17 +20,17 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-sta.labels" (dict "context" .) | nindent 4 }}
-  {{- with .Values.app.ingress.annotations }}
+  {{- with $component.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.app.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.app.ingress.className }}
+  {{- if and $component.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ $component.ingress.className }}
   {{- end }}
-  {{- if .Values.app.ingress.tls }}
+  {{- if $component.ingress.tls }}
   tls:
-    {{- range .Values.app.ingress.tls }}
+    {{- range $component.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -38,7 +39,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.app.ingress.hosts }}
+    {{- range $component.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:

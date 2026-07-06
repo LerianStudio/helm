@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "app": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "postgresql": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "rabbitmq": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "otel-collector-lerian": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "br-sta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

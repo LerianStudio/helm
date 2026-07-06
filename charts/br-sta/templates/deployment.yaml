@@ -1,0 +1,159 @@
+{{- include "br-sta.validateRequired" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "br-sta.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "context" .) | nindent 4 }}
+  {{- with .Values.app.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  revisionHistoryLimit: {{ .Values.app.revisionHistoryLimit | default 10 }}
+  {{- with .Values.app.deploymentStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "br-sta.selectorLabels" (dict "context" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-sta.labels" (dict "context" .) | nindent 8 }}
+      {{- with .Values.app.podAnnotations }}
+      annotations:
+        {{- range $key, $value := . }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      {{- with .Values.app.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "br-sta.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.app.terminationGracePeriodSeconds | default 60 }}
+      {{- with .Values.app.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.app.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if or (eq (include "postgresql.enabled" .) "true") (eq (include "valkey.enabled" .) "true") }}
+      initContainers:
+        - name: wait-for-infra
+          image: busybox:1.37
+          envFrom:
+            - configMapRef:
+                name: {{ include "br-sta.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              {{- if eq (include "postgresql.enabled" .) "true" }}
+              echo "Waiting for PostgreSQL $POSTGRES_HOST:$POSTGRES_PORT...";
+              until nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+                echo "$POSTGRES_HOST:$POSTGRES_PORT not ready, sleeping 5s";
+                sleep 5;
+              done;
+              echo "PostgreSQL is ready";
+              {{- end }}
+              {{- if eq (include "valkey.enabled" .) "true" }}
+              REDIS_SVC=$(echo "$REDIS_HOST" | cut -d: -f1);
+              REDIS_PORT_NUM=$(echo "$REDIS_HOST" | cut -d: -f2);
+              [ -z "$REDIS_PORT_NUM" ] && REDIS_PORT_NUM=6379;
+              echo "Waiting for Redis/Valkey $REDIS_SVC:$REDIS_PORT_NUM...";
+              until nc -z "$REDIS_SVC" "$REDIS_PORT_NUM"; do
+                echo "$REDIS_SVC:$REDIS_PORT_NUM not ready, sleeping 5s";
+                sleep 5;
+              done;
+              echo "Redis/Valkey is ready";
+              {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ include "br-sta.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.app.securityContext | nindent 12 }}
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default (include "br-sta.defaultTag" .) }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.app.service.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "br-sta.fullname" . }}
+            - secretRef:
+                name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "br-sta.fullname" . }}{{ end }}
+          env:
+            {{- $secretName := ternary .Values.app.existingSecretName (include "br-sta.fullname" .) .Values.app.useExistingSecret }}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "br-sta.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else if .Values.app.secrets.POSTGRES_PASSWORD }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+            {{- $vk := .Values.valkey | default dict }}
+            {{- $vkAuth := $vk.auth | default dict }}
+            {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+            {{- include "br-sta.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
+            {{- else if .Values.app.secrets.REDIS_PASSWORD }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: REDIS_PASSWORD
+            {{- end }}
+          {{- if (index .Values "otel-collector-lerian").enabled }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "$(HOST_IP):4317"
+          {{- end }}
+          resources:
+            {{- toYaml .Values.app.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ .Values.app.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.app.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.app.readinessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ .Values.app.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.app.readinessProbe.failureThreshold | default 2 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.app.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.app.livenessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ .Values.app.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.app.livenessProbe.failureThreshold | default 3 }}
+      {{- with .Values.app.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.app.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.app.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -91,7 +91,7 @@ Create a default fully qualified app name for reconciliation worker.
 Create a default fully qualified app name for schedule worker.
 */}}
 {{- define "schedule.fullname" -}}
-{{- default "plugin-br-pix-indirect-btg-worker-schedule" .Values.schedule.name | trunc 63 | trimSuffix "-" }}
+{{- include "schedule.name" . }}
 {{- end }}
 
 {{/*

@@ -35,7 +35,7 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ if .Values.schedule.useExistingSecrets }}{{ .Values.schedule.existingSecretName }}{{ else }}{{ include "schedule.fullname" . }}{{ end }}
+              name: {{ if .Values.schedule.useExistingSecrets }}{{ required "schedule.existingSecretName is required when schedule.useExistingSecrets is true" .Values.schedule.existingSecretName }}{{ else }}{{ include "schedule.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "schedule.fullname" . }}
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}

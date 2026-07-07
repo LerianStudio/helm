@@ -3,6 +3,21 @@
 ## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.3.0)
 
 - **Features:**
+  - Added optional configurable `startupProbe` for identity and auth components.
+
+- **Contributors:**
+  - @gandalf-at-lerian
+  - @guimoreirar
+  - @lerian-studio
+  - @qnen
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.2.0...plugin-access-manager-v8.3.0)
+
+---
+
+## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.3.0)
+
+- **Features:**
   - Added optional, configurable `startupProbe` to the identity and auth components, following the existing readiness/liveness probe pattern. Disabled by default; enable via `identity.startupProbe.enabled` / `auth.startupProbe.enabled`. Defaults: `failureThreshold: 5`, `periodSeconds: 10`, `timeoutSeconds: 10`.
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.2.0...plugin-access-manager-v8.3.0)

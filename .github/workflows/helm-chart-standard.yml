@@ -62,13 +62,21 @@ jobs:
             exit 0
           fi
 
-          charts="$(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed_files" | sort -u | paste -sd, -)"
-          if [[ -z "$charts" ]]; then
+          # Keep only charts whose directory still exists. A deleted chart still
+          # shows up in `git diff --name-only`, but the render-gate errors with
+          # "unknown chart" if asked to render a chart that is no longer present.
+          existing=""
+          for chart in $(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed_files" | sort -u); do
+            if [[ -d "charts/$chart" ]]; then
+              existing="${existing:+$existing,}$chart"
+            fi
+          done
+          if [[ -z "$existing" ]]; then
             echo "args=--all" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "args=--charts $charts" >> "$GITHUB_OUTPUT"
+          echo "args=--charts $existing" >> "$GITHUB_OUTPUT"
 
       - name: Render chart templates
         working-directory: .github/scripts

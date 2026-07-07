@@ -97,6 +97,65 @@ SERVICE ACCOUNT HELPER
 
 {{/*
 ================================================================================
+WORKER HELPERS
+================================================================================
+The worker is a SECOND Deployment running the /worker binary (background jobs:
+audit publisher/consumer, scheduler, credential-recovery sweep, inbound poll).
+It reuses the manager's ConfigMap + Secret (all shared infra config) and layers
+worker-only env on top. It gets its OWN app.kubernetes.io/name so its selector
+never overlaps the manager's (selectors are immutable across upgrades).
+================================================================================
+*/}}
+
+{{/* Worker resource name: "<fullname>-worker". */}}
+{{- define "br-sta.worker.fullname" -}}
+{{- printf "%s-worker" (include "br-sta.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/* Worker app name (distinct from the manager so selectors don't overlap). */}}
+{{- define "br-sta.worker.name" -}}
+{{- printf "%s-worker" (include "br-sta.name" .) | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/* Worker selector labels — distinct name keeps the two Deployments apart. */}}
+{{- define "br-sta.worker.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "br-sta.worker.name" .context }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
+{{/* Worker common labels. */}}
+{{- define "br-sta.worker.labels" -}}
+helm.sh/chart: {{ include "br-sta.chart" .context }}
+{{ include "br-sta.worker.selectorLabels" (dict "context" .context) }}
+app.kubernetes.io/version: {{ include "br-sta.versionLabelValue" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+app.kubernetes.io/part-of: br-sta
+app.kubernetes.io/component: worker
+{{- end }}
+
+{{/* Worker ServiceAccount name (own SA, or reuse the manager's when not creating). */}}
+{{- define "br-sta.worker.serviceAccountName" -}}
+{{- $w := .Values.worker | default dict -}}
+{{- $sa := $w.serviceAccount | default dict -}}
+{{- if $sa.create }}
+{{- default (include "br-sta.worker.fullname" .) $sa.name }}
+{{- else }}
+{{- default (include "br-sta.serviceAccountName" .) $sa.name }}
+{{- end }}
+{{- end }}
+
+{{/* Worker enabled — nil-aware: unset/true enables, explicit false disables. */}}
+{{- define "br-sta.worker.enabled" -}}
+{{- $w := .Values.worker | default dict -}}
+{{- if ne (toString $w.enabled) "false" -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
+================================================================================
 NAMESPACE HELPER
 ================================================================================
 */}}

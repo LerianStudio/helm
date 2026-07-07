@@ -1,0 +1,22 @@
+{{- if eq (include "br-sta.worker.enabled" .) "true" }}
+{{- $w := .Values.worker | default dict -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sta.worker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.worker.labels" (dict "context" .) | nindent 4 }}
+data:
+  # Worker-only environment. Layered on top of the manager ConfigMap + Secret
+  # (envFrom order in the worker Deployment), so keys here win over shared ones.
+  # The worker binds SERVER_ADDRESS only for its probe server (WorkerMode).
+  SERVER_ADDRESS: {{ printf "0.0.0.0:%v" ($w.service.port | default 8081) | quote }}
+  {{- with $w.configmap }}
+  {{- range $key, $value := . }}
+  {{- if ne $key "SERVER_ADDRESS" }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}

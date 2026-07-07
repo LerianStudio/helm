@@ -1,10 +1,10 @@
 apiVersion: v2
 name: br-sta-helm
 description: A Helm chart for br-sta, a Lerian Studio Go/Fiber HTTP service
-  backed by PostgreSQL and Redis/Valkey.
+  (manager) plus its background worker, backed by PostgreSQL and Redis/Valkey.
 type: application
 annotations:
-  lerian.studio/chart-type: single-service
+  lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/br-sta
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/br-sta
@@ -15,10 +15,10 @@ maintainers:
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 1.0.0
+version: 1.1.0
 
 # This is the version number of the application being deployed.
-appVersion: "1.0.0-beta.5"
+appVersion: "1.0.0-beta.32"
 
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:

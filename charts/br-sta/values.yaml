@@ -335,6 +335,129 @@ br-sta:
     name: ""
 
 # ==============================================================================
+# WORKER
+# Second Deployment running the /worker binary from the SAME image as the
+# manager (command override — both binaries ship in one image). It runs the
+# background jobs: audit outbox publisher/consumer, the leader-gated scheduler
+# (credential expiry/rotation, retention, stale-protocol cleanup), the
+# credential-recovery-on-boot sweep, and the inbound BACEN poll loop. It serves
+# ONLY the probe endpoints (WorkerMode — no business HTTP API), reuses the
+# manager ConfigMap + Secret for all shared infra config, and layers the
+# worker-only knobs below on top.
+# ==============================================================================
+worker:
+  # -- Enable the worker Deployment. REQUIRES a br-sta image that ships BOTH
+  # binaries (manager /service + worker /worker in one image, from the
+  # multi-binary Dockerfile). Older single-binary images have no /worker and
+  # the pod will CrashLoop on command:[/worker]; keep this false until such an
+  # image is published.
+  enabled: true
+  # -- Replicas. The background jobs are leader-gated but the worker does NOT
+  # run its own leader election yet — keep this at 1 (and do not add an HPA) to
+  # avoid duplicate processing.
+  replicaCount: 1
+  # -- Number of old ReplicaSets to retain for rollback
+  revisionHistoryLimit: 10
+  # -- Annotations applied to the Deployment resource
+  annotations: {}
+  # -- Annotations applied to the pods
+  podAnnotations: {}
+  # -- Worker image. Empty repository/tag inherit the manager image (same
+  # published image carries both binaries); override only to pin separately.
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: IfNotPresent
+  # -- Image pull secrets (empty inherits the manager's)
+  imagePullSecrets: []
+  # -- Container command — the worker binary baked into the shared image
+  command:
+    - /worker
+  # -- Termination grace period
+  terminationGracePeriodSeconds: 60
+  # -- Pod security context
+  podSecurityContext: {}
+  # -- Container security context (empty inherits the manager's)
+  securityContext: {}
+  # -- ServiceAccount configuration
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+  # -- Probe server port. WorkerMode binds SERVER_ADDRESS here; no Service or
+  # Ingress is created for the worker.
+  service:
+    port: 8081
+  # -- Resource requests and limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # -- Deployment strategy
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  # -- Readiness probe configuration
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 2
+  # -- Liveness probe configuration
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 3
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: []
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+  # -- Host aliases for custom DNS resolution inside the pod
+  hostAliases: []
+  # -- Worker-only environment (layered on top of the manager ConfigMap/Secret).
+  # SetConfigFromEnvVars ignores envDefault, so every knob a background job
+  # needs must be set explicitly. SERVER_ADDRESS is derived from service.port.
+  # @default -- templates/worker/configmap.yaml
+  configmap:
+    # OTEL identity for the worker process
+    OTEL_RESOURCE_SERVICE_NAME: "br-sta-worker"
+    # Leader-gated scheduler (credential expiry/rotation, retention, cleanup)
+    SCHEDULER_ENABLED: "true"
+    # Resolve credentials left mid-rotation by a prior worker death, at boot
+    CREDENTIALS_RECOVERY_ON_BOOT: "true"
+    # Audit outbox publisher (drains audit_outbox -> sta.audit.events).
+    # Requires the shared RABBITMQ_ENABLED="true".
+    AUDIT_PUBLISHER_ENABLED: "true"
+    AUDIT_PUBLISHER_INTERVAL_SEC: "2"
+    AUDIT_PUBLISHER_BATCH_SIZE: "100"
+    AUDIT_PUBLISHER_MAX_ATTEMPTS: "10"
+    AUDIT_PUBLISHER_EXCHANGE: "sta.audit.events"
+    AUDIT_PUBLISHER_LOCK_CLASS_ID: "7700"
+    AUDIT_PUBLISHER_SERVICE_NAME: "br-sta-worker"
+    # Audit consumer (writes hash-chained rows into the audit log tables)
+    AUDIT_CONSUMER_ENABLED: "true"
+    AUDIT_CONSUMER_QUEUE: "br-sta.audit.consume"
+    AUDIT_CONSUMER_EXCHANGE: "sta.audit.events"
+    AUDIT_CONSUMER_DEDUP_TTL_SEC: "5"
+    AUDIT_CONSUMER_LOCK_CLASS_ID: "7701"
+    AUDIT_CONSUMER_MAX_RETRY_ATTEMPTS: "10"
+    AUDIT_CONSUMER_DLQ_EXCHANGE: "sta.audit.dlq"
+    AUDIT_CONSUMER_SERVICE_NAME: "br-sta-worker"
+  # -- Extra environment variables (map of key:value pairs) rendered as inline
+  # container env (wins over both ConfigMaps).
+  extraEnvVars: {}
+
+# ==============================================================================
 # POSTGRESQL SUB-CHART (Bitnami)
 # Default: enabled with replication for in-cluster development/staging.
 # Production: set postgresql.enabled=false and configure

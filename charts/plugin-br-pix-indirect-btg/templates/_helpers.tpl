@@ -42,6 +42,13 @@ Expand the name for reconciliation worker.
 {{- end }}
 
 {{/*
+Expand the name for schedule worker.
+*/}}
+{{- define "schedule.name" -}}
+{{- default "plugin-br-pix-indirect-btg-worker-schedule" .Values.schedule.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 ================================================================================
 FULLNAME HELPERS
 ================================================================================
@@ -81,6 +88,13 @@ Create a default fully qualified app name for reconciliation worker.
 {{- end }}
 
 {{/*
+Create a default fully qualified app name for schedule worker.
+*/}}
+{{- define "schedule.fullname" -}}
+{{- include "schedule.name" . }}
+{{- end }}
+
+{{/*
 ================================================================================
 CHART HELPERS
 ================================================================================
@@ -111,6 +125,13 @@ Create chart name for outbound.
 Create chart name for reconciliation.
 */}}
 {{- define "reconciliation.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create chart name for schedule.
+*/}}
+{{- define "schedule.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -168,6 +189,16 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
 {{/*
+Common labels for schedule
+*/}}
+{{- define "schedule.labels" -}}
+helm.sh/chart: {{ include "schedule.chart" .context }}
+{{ include "schedule.selectorLabels" (dict "context" .context "name" .name) }}
+app.kubernetes.io/version: {{ include "plugin.version" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
 ================================================================================
 SELECTOR LABEL HELPERS
 ================================================================================
@@ -212,6 +243,16 @@ Selector labels for reconciliation
 {{- define "reconciliation.selectorLabels" -}}
 {{- if .name -}}
 app.kubernetes.io/name: {{ include "reconciliation.name" .context }}
+{{- end }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
+{{/*
+Selector labels for schedule
+*/}}
+{{- define "schedule.selectorLabels" -}}
+{{- if .name -}}
+app.kubernetes.io/name: {{ include "schedule.name" .context }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}

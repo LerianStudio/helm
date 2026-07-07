@@ -1,0 +1,23 @@
+{{- if .Values.schedule.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "schedule.fullname" . }}
+  labels:
+    {{- include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | nindent 4 }} 
+  {{- with .Values.schedule.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.schedule.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.schedule.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "schedule.selectorLabels" (dict "context" . "name" .Values.schedule.name) | nindent 6 }}
+{{- end }}

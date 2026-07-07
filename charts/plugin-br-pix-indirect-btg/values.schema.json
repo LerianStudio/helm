@@ -55,6 +55,18 @@
       },
       "additionalProperties": true
     },
+    "schedule": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
     "postgresql": {
       "type": "object",
       "additionalProperties": true

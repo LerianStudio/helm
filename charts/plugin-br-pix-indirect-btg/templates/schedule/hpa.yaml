@@ -1,0 +1,35 @@
+{{- if .Values.schedule.autoscaling.enabled }}
+{{- if not (or .Values.schedule.autoscaling.targetCPUUtilizationPercentage .Values.schedule.autoscaling.targetMemoryUtilizationPercentage) }}
+{{- fail "At least one of targetCPUUtilizationPercentage or targetMemoryUtilizationPercentage must be set when autoscaling is enabled" }}
+{{- end }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "schedule.fullname" . }}
+  labels:
+    {{- include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | nindent 4 }} 
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "schedule.fullname" . }}
+  minReplicas: {{ .Values.schedule.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.schedule.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.schedule.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.schedule.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.schedule.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.schedule.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

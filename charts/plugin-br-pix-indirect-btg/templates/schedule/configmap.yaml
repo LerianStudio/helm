@@ -11,11 +11,9 @@ data:
   WORKER_PORT: {{ .Values.schedule.configmap.WORKER_PORT | default "4018" | quote }}
 
   # Schedule Worker Loop Configuration
-  # Ships dormant: SCHEDULE_WORKER_ENABLED=false. The orchestrator only starts the
-  # polling loop when this is flipped to true, so the worker can be deployed and
-  # enabled by config alone.
-  SCHEDULE_WORKER_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_ENABLED | default "false" | quote }}
-  SCHEDULE_WORKER_INTERVAL: {{ .Values.schedule.configmap.SCHEDULE_WORKER_INTERVAL | default "15s" | quote }}
+  # SCHEDULE_WORKER_ENABLED (default true) and SCHEDULE_WORKER_INTERVAL (default 15m)
+  # are intentionally not set here: the binary already ships those defaults, so the
+  # chart lets the app default apply. Override per-env via extraEnvVars if needed.
   SCHEDULE_WORKER_BATCH_SIZE: {{ .Values.schedule.configmap.SCHEDULE_WORKER_BATCH_SIZE | default "50" | quote }}
   SCHEDULE_WORKER_STALE_THRESHOLD: {{ .Values.schedule.configmap.SCHEDULE_WORKER_STALE_THRESHOLD | default "5m" | quote }}
   SCHEDULE_WORKER_SWEEP_EVERY_N_CYCLES: {{ .Values.schedule.configmap.SCHEDULE_WORKER_SWEEP_EVERY_N_CYCLES | default "10" | quote }}

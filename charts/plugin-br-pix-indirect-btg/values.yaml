@@ -755,9 +755,9 @@ schedule:
   # -- All environment variables are declared in the templates/schedule/configmap.yaml
   # @default -- templates/schedule/configmap.yaml
   configmap:
-    # Loop is dormant by default; flipped on by config alone.
-    SCHEDULE_WORKER_ENABLED: "false"
-    SCHEDULE_WORKER_INTERVAL: "15s"
+    # SCHEDULE_WORKER_ENABLED (default true) and SCHEDULE_WORKER_INTERVAL (default 15m)
+    # are omitted on purpose: the binary already defaults them, so the worker runs
+    # active on the app's own defaults without redundant chart declarations.
     SCHEDULE_WORKER_BATCH_SIZE: "50"
     SCHEDULE_WORKER_STALE_THRESHOLD: "5m"
     SCHEDULE_WORKER_SWEEP_EVERY_N_CYCLES: "10"

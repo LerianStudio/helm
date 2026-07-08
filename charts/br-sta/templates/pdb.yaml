@@ -1,0 +1,25 @@
+{{- $component := index .Values "br-sta" -}}
+{{- if $component.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "br-sta.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "context" .) | nindent 4 }}
+  {{- with $component.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if $component.pdb.maxUnavailable }}
+  maxUnavailable: {{ $component.pdb.maxUnavailable }}
+  {{- else }}
+  minAvailable: {{ $component.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "br-sta.selectorLabels" (dict "context" .) | nindent 6 }}
+{{- end }}

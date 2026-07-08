@@ -1,0 +1,188 @@
+{{- if eq (include "br-sta.worker.enabled" .) "true" }}
+{{- $mgr := index .Values "br-sta" -}}
+{{- $w := .Values.worker | default dict -}}
+{{- $wImage := $w.image | default dict -}}
+{{- $repo := $wImage.repository | default $mgr.image.repository -}}
+{{- $tag := $wImage.tag | default (include "br-sta.defaultTag" .) -}}
+{{- $pullPolicy := $wImage.pullPolicy | default $mgr.image.pullPolicy -}}
+{{- $pullSecrets := $w.imagePullSecrets | default $mgr.imagePullSecrets -}}
+{{- $secCtx := $w.securityContext | default $mgr.securityContext -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "br-sta.worker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.worker.labels" (dict "context" .) | nindent 4 }}
+  {{- with $w.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  revisionHistoryLimit: {{ $w.revisionHistoryLimit | default 10 }}
+  {{- with $w.deploymentStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  # The worker is leader-gated but does NOT run its own leader election yet;
+  # keep this at 1 to avoid duplicate background processing (audit drain,
+  # scheduler, inbound poll). Do NOT add an HPA to the worker.
+  replicas: {{ $w.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "br-sta.worker.selectorLabels" (dict "context" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-sta.worker.labels" (dict "context" .) | nindent 8 }}
+      {{- with $w.podAnnotations }}
+      annotations:
+        {{- range $key, $value := . }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "br-sta.worker.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ $w.terminationGracePeriodSeconds | default 60 }}
+      {{- with $w.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $w.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if or (eq (include "postgresql.enabled" .) "true") (eq (include "valkey.enabled" .) "true") }}
+      initContainers:
+        - name: wait-for-infra
+          image: busybox:1.37
+          envFrom:
+            # POSTGRES_HOST / REDIS_HOST live in the manager ConfigMap.
+            - configMapRef:
+                name: {{ include "br-sta.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              {{- if eq (include "postgresql.enabled" .) "true" }}
+              echo "Waiting for PostgreSQL $POSTGRES_HOST:$POSTGRES_PORT...";
+              until nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+                echo "$POSTGRES_HOST:$POSTGRES_PORT not ready, sleeping 5s";
+                sleep 5;
+              done;
+              echo "PostgreSQL is ready";
+              {{- end }}
+              {{- if eq (include "valkey.enabled" .) "true" }}
+              REDIS_SVC=$(echo "$REDIS_HOST" | cut -d: -f1);
+              REDIS_PORT_NUM=$(echo "$REDIS_HOST" | cut -d: -f2);
+              [ -z "$REDIS_PORT_NUM" ] && REDIS_PORT_NUM=6379;
+              echo "Waiting for Redis/Valkey $REDIS_SVC:$REDIS_PORT_NUM...";
+              until nc -z "$REDIS_SVC" "$REDIS_PORT_NUM"; do
+                echo "$REDIS_SVC:$REDIS_PORT_NUM not ready, sleeping 5s";
+                sleep 5;
+              done;
+              echo "Redis/Valkey is ready";
+              {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ include "br-sta.worker.fullname" . }}
+          securityContext:
+            {{- toYaml $secCtx | nindent 12 }}
+          image: "{{ $repo }}:{{ $tag }}"
+          imagePullPolicy: {{ $pullPolicy }}
+          # Same image as the manager; run the worker binary baked into it.
+          command:
+            {{- toYaml ($w.command | default (list "/worker")) | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ $w.service.port | default 8081 }}
+              protocol: TCP
+          envFrom:
+            # Shared config + secrets from the manager (single source of truth).
+            - configMapRef:
+                name: {{ include "br-sta.fullname" . }}
+            - secretRef:
+                name: {{ if $mgr.useExistingSecret }}{{ $mgr.existingSecretName }}{{ else }}{{ include "br-sta.fullname" . }}{{ end }}
+            # Worker-only overrides (SERVER_ADDRESS, background-job knobs) — last
+            # so its keys win over the shared manager ConfigMap.
+            - configMapRef:
+                name: {{ include "br-sta.worker.fullname" . }}
+          env:
+            {{- $secretName := ternary $mgr.existingSecretName (include "br-sta.fullname" .) $mgr.useExistingSecret }}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "br-sta.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else if $mgr.secrets.POSTGRES_PASSWORD }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+            {{- $vk := .Values.valkey | default dict }}
+            {{- $vkAuth := $vk.auth | default dict }}
+            {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+            {{- include "br-sta.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
+            {{- else if $mgr.secrets.REDIS_PASSWORD }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: REDIS_PASSWORD
+            {{- end }}
+          {{- if (index .Values "otel-collector-lerian").enabled }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "$(HOST_IP):4317"
+          {{- end }}
+          {{- with $w.extraEnvVars }}
+            {{- range $key, $value := . }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml ($w.resources | default $mgr.resources) | nindent 12 }}
+          # The worker binary runs in WorkerMode: it serves ONLY the probe
+          # endpoints on SERVER_ADDRESS (no business HTTP API).
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ (($w.readinessProbe).initialDelaySeconds) | default 5 }}
+            periodSeconds: {{ (($w.readinessProbe).periodSeconds) | default 5 }}
+            timeoutSeconds: {{ (($w.readinessProbe).timeoutSeconds) | default 3 }}
+            successThreshold: {{ (($w.readinessProbe).successThreshold) | default 1 }}
+            failureThreshold: {{ (($w.readinessProbe).failureThreshold) | default 2 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ (($w.livenessProbe).initialDelaySeconds) | default 30 }}
+            periodSeconds: {{ (($w.livenessProbe).periodSeconds) | default 10 }}
+            timeoutSeconds: {{ (($w.livenessProbe).timeoutSeconds) | default 3 }}
+            successThreshold: {{ (($w.livenessProbe).successThreshold) | default 1 }}
+            failureThreshold: {{ (($w.livenessProbe).failureThreshold) | default 3 }}
+      {{- with $w.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $w.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $w.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

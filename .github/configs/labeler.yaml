@@ -69,3 +69,7 @@ flowker:
 underwriter:
   - changed-files:
       - any-glob-to-any-file: charts/underwriter/**
+
+br-ccs:
+  - changed-files:
+      - any-glob-to-any-file: charts/br-ccs/**

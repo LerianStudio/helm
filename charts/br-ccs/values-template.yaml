@@ -1,0 +1,170 @@
+# Template values for br-ccs deployment.
+# Copy this file and fill in the required values for your environment.
+# REQUIRED fields must be set before deployment.
+
+brCcs:
+  name: br-ccs
+  enabled: true
+  replicaCount: 2
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""  # Set your hostname (e.g., br-ccs.example.com)
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  migrations:
+    # -- Enable or disable the migrations job
+    enabled: true
+  configmap:
+    # Chart scope: infrastructure connection + multi-tenant toggle + integration
+    # master switches + object-storage endpoints. Operational tuning (timeouts,
+    # retries, rate limits, poll cadence, detail-message flags) ships with
+    # lib-commons / systemplane defaults or via brCcs.extraEnvVars.
+
+    # =================================================================
+    # Application identity
+    # =================================================================
+    ENV_NAME: ""  # REQUIRED - Environment name (e.g., production, staging)
+    DEPLOYMENT_MODE: "byoc"  # local | byoc | saas (saas enforces TLS on deps)
+    CCS_RUN_MODE: "all"  # manager | worker | all
+    SERVER_ADDRESS: ":4030"
+    SERVER_PORT: "4030"
+
+    # =================================================================
+    # TLS / proxy — TRUSTED_PROXIES REQUIRED when ENV_NAME=production
+    # =================================================================
+    TLS_TERMINATED_UPSTREAM: "true"
+    TRUSTED_PROXIES: ""  # e.g. 10.0.0.0/8,172.16.0.0/12
+
+    # =================================================================
+    # Multi-tenancy
+    # =================================================================
+    DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
+    MULTI_TENANT_ENABLED: "false"
+    # When MULTI_TENANT_ENABLED=true, also set:
+    # MULTI_TENANT_URL: ""
+    # MULTI_TENANT_REDIS_HOST: ""
+
+    # =================================================================
+    # PostgreSQL primary
+    # POSTGRES_HOST is REQUIRED when the bundled postgresql subchart is
+    # disabled or external; leave empty to use the bundled subchart Service.
+    # =================================================================
+    POSTGRES_HOST: ""  # REQUIRED for external infra (postgresql disabled/external)
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "br-ccs"
+    POSTGRES_NAME: "br-ccs"
+    POSTGRES_SSLMODE: "require"
+
+    # =================================================================
+    # Redis/Valkey (app-level)
+    # REDIS_HOST is REQUIRED when the bundled valkey subchart is disabled
+    # or external; leave empty to use the bundled subchart Service.
+    # =================================================================
+    REDIS_HOST: ""  # REQUIRED for external infra (valkey disabled/external); host:port
+
+    # =================================================================
+    # Circuit breaker (prerequisite for object storage)
+    # =================================================================
+    CIRCUIT_BREAKER_ENABLED: "true"
+
+    # =================================================================
+    # Integrations (master switches; URLs required when enabled)
+    # =================================================================
+    FETCHER_ENABLED: "false"
+    # FETCHER_URL: ""
+    STA_ENABLED: "false"
+    # STA_BASE_URL: ""
+    REPORTER_ENABLED: "false"
+    # REPORTER_URL: ""
+
+    # =================================================================
+    # Authentication (inbound)
+    # =================================================================
+    PLUGIN_AUTH_ENABLED: "false"
+    # PLUGIN_AUTH_HOST: ""  # REQUIRED when PLUGIN_AUTH_ENABLED=true
+
+    # =================================================================
+    # OpenTelemetry
+    # =================================================================
+    ENABLE_TELEMETRY: "false"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""  # Set if ENABLE_TELEMETRY=true
+
+    # =================================================================
+    # Object storage (per bucket; empty *_BUCKET marks readyz dep skipped)
+    # =================================================================
+    OBJECT_STORAGE_STA_ENDPOINT: ""
+    OBJECT_STORAGE_STA_BUCKET: ""
+    OBJECT_STORAGE_CCS_ENDPOINT: ""
+    OBJECT_STORAGE_CCS_BUCKET: ""
+    OBJECT_STORAGE_FETCHER_ENDPOINT: ""
+    OBJECT_STORAGE_FETCHER_BUCKET: ""
+
+  secrets:
+    # PostgreSQL - REQUIRED
+    POSTGRES_PASSWORD: ""  # REQUIRED - PostgreSQL primary password
+
+    # Redis/Valkey - REQUIRED
+    REDIS_PASSWORD: ""  # REQUIRED - Redis/Valkey password
+
+    # Crypto keys - REQUIRED in production (empty CCS_CRYPTO_MASTER_KEY fails fast at boot)
+    CCS_CRYPTO_MASTER_KEY: ""  # AES-256-GCM master key, 64 hex chars (openssl rand -hex 32)
+    FETCHER_CRYPTO_KEY: ""     # Fetcher snapshot decryption key (base64; = Fetcher APP_ENC_KEY)
+
+    # Object storage credentials (set alongside the matching *_BUCKET)
+    # OBJECT_STORAGE_STA_ACCESS_KEY: ""
+    # OBJECT_STORAGE_STA_SECRET_KEY: ""
+    # OBJECT_STORAGE_CCS_ACCESS_KEY: ""
+    # OBJECT_STORAGE_CCS_SECRET_KEY: ""
+    # OBJECT_STORAGE_FETCHER_ACCESS_KEY: ""
+    # OBJECT_STORAGE_FETCHER_SECRET_KEY: ""
+
+    # Per-upstream M2M API keys (on-prem / local fallback; SaaS uses OAuth2)
+    # FETCHER_API_KEY: ""
+    # REPORTER_API_KEY: ""
+    # STA_API_KEY: ""
+
+    # Multi-tenant (tenant-manager)
+    # MULTI_TENANT_SERVICE_API_KEY: ""
+
+    # RabbitMQ (when RABBITMQ_ENABLED=true)
+    # RABBITMQ_DEFAULT_PASS: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+# ==============================================================================
+# INFRASTRUCTURE DEPENDENCIES
+# ==============================================================================
+# br-ccs is PostgreSQL-only (no MongoDB):
+#
+# PostgreSQL:
+#   - Database: br-ccs
+#   - User: br-ccs (full privileges on the br-ccs database)
+#   - Schema: public (default). Multi-tenant mode uses schema-per-tenant via
+#     search_path; there is no tenant_id column.
+#
+# Redis/Valkey:
+#   - Used for: rate limiting, idempotency keys, caching. No pre-config needed.
+#
+# RabbitMQ (OPTIONAL - event bus, disabled by default):
+#   - Exchange: events (topic, durable)
+# ==============================================================================
+
+# Disable internal dependencies for external infrastructure
+valkey:
+  enabled: false
+  external: true
+
+postgresql:
+  enabled: false
+  external: true
+
+rabbitmq:
+  enabled: false
+  external: true

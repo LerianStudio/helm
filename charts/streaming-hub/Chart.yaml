@@ -8,7 +8,7 @@ type: application
 # version is a PLACEHOLDER. semantic-release in the `helm` repo owns the real
 # chart version on merge — do NOT hand-pick a final number here.
 
-version: 1.0.0-beta.3
+version: 1.0.0-beta.4
 appVersion: "1.0.0"
 
 annotations:

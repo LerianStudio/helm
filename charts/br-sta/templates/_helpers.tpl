@@ -99,7 +99,7 @@ SERVICE ACCOUNT HELPER
 ================================================================================
 WORKER HELPERS
 ================================================================================
-The worker is a SECOND Deployment running the /worker binary (background jobs:
+The worker is a SECOND Deployment running the /service binary (background jobs:
 audit publisher/consumer, scheduler, credential-recovery sweep, inbound poll).
 It reuses the manager's ConfigMap + Secret (all shared infra config) and layers
 worker-only env on top. It gets its OWN app.kubernetes.io/name so its selector

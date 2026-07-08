@@ -1,0 +1,50 @@
+apiVersion: v2
+name: br-sta-helm
+description: A Helm chart for br-sta, a Lerian Studio Go/Fiber HTTP service
+  (manager) plus its background worker, backed by PostgreSQL and Redis/Valkey.
+type: application
+annotations:
+  lerian.studio/chart-type: multi-component
+home: https://github.com/LerianStudio/br-sta
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/br-sta
+  - https://github.com/LerianStudio/br-sta
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+version: 1.0.0-beta.3
+
+# This is the version number of the application being deployed.
+appVersion: "1.0.0-beta.32"
+
+# A list of keywords about the chart. This helps others discover the chart.
+keywords:
+  - br-sta
+  - lerian
+  - go
+  - fiber
+  - service
+
+# The URL to an icon file for this chart.
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+# Dependencies — br-sta requires PostgreSQL (SQL migrations) and Redis/Valkey
+# (caching + rate limiting). RabbitMQ is OPTIONAL and bundled only when
+# rabbitmq.enabled=true (disabled by default). All subcharts are gated by
+# their `.enabled` condition.
+dependencies:
+  - name: postgresql
+    version: "16.3.5"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: valkey
+    version: "2.4.7"
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    condition: valkey.enabled
+  - name: rabbitmq
+    version: "2.1.11"
+    repository: "https://groundhog2k.github.io/helm-charts"
+    condition: rabbitmq.enabled

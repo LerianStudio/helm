@@ -1,0 +1,162 @@
+{{- $component := index .Values "br-sta" -}}
+{{- include "br-sta.validateRequired" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "br-sta.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "context" .) | nindent 4 }}
+  {{- with $component.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  revisionHistoryLimit: {{ $component.revisionHistoryLimit | default 10 }}
+  {{- with $component.deploymentStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not $component.autoscaling.enabled }}
+  replicas: {{ $component.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "br-sta.selectorLabels" (dict "context" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-sta.labels" (dict "context" .) | nindent 8 }}
+      {{- with $component.podAnnotations }}
+      annotations:
+        {{- range $key, $value := . }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      {{- with $component.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "br-sta.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ $component.terminationGracePeriodSeconds | default 60 }}
+      {{- with $component.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $component.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if or (eq (include "postgresql.enabled" .) "true") (eq (include "valkey.enabled" .) "true") }}
+      initContainers:
+        - name: wait-for-infra
+          image: busybox:1.37
+          envFrom:
+            - configMapRef:
+                name: {{ include "br-sta.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              {{- if eq (include "postgresql.enabled" .) "true" }}
+              echo "Waiting for PostgreSQL $POSTGRES_HOST:$POSTGRES_PORT...";
+              until nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+                echo "$POSTGRES_HOST:$POSTGRES_PORT not ready, sleeping 5s";
+                sleep 5;
+              done;
+              echo "PostgreSQL is ready";
+              {{- end }}
+              {{- if eq (include "valkey.enabled" .) "true" }}
+              REDIS_SVC=$(echo "$REDIS_HOST" | cut -d: -f1);
+              REDIS_PORT_NUM=$(echo "$REDIS_HOST" | cut -d: -f2);
+              [ -z "$REDIS_PORT_NUM" ] && REDIS_PORT_NUM=6379;
+              echo "Waiting for Redis/Valkey $REDIS_SVC:$REDIS_PORT_NUM...";
+              until nc -z "$REDIS_SVC" "$REDIS_PORT_NUM"; do
+                echo "$REDIS_SVC:$REDIS_PORT_NUM not ready, sleeping 5s";
+                sleep 5;
+              done;
+              echo "Redis/Valkey is ready";
+              {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ include "br-sta.fullname" . }}
+          securityContext:
+            {{- toYaml $component.securityContext | nindent 12 }}
+          image: "{{ $component.image.repository }}:{{ $component.image.tag | default (include "br-sta.defaultTag" .) }}"
+          imagePullPolicy: {{ $component.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $component.service.port }}
+              protocol: TCP
+          {{- $secretName := ternary $component.existingSecretName (include "br-sta.fullname" .) $component.useExistingSecret }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "br-sta.fullname" . }}
+            - secretRef:
+                name: {{ $secretName }}
+          env:
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "br-sta.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else if $component.secrets.POSTGRES_PASSWORD }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+            {{- $vk := .Values.valkey | default dict }}
+            {{- $vkAuth := $vk.auth | default dict }}
+            {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+            {{- include "br-sta.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
+            {{- else if $component.secrets.REDIS_PASSWORD }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: REDIS_PASSWORD
+            {{- end }}
+          {{- if (index .Values "otel-collector-lerian").enabled }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "$(HOST_IP):4317"
+          {{- end }}
+          resources:
+            {{- toYaml $component.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ $component.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ $component.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ $component.readinessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ $component.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $component.readinessProbe.failureThreshold | default 2 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ $component.livenessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ $component.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $component.livenessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ $component.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $component.livenessProbe.failureThreshold | default 3 }}
+      {{- with $component.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $component.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $component.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

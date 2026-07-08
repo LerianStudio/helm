@@ -105,10 +105,10 @@ spec:
               ROLE_EXISTS=0
               DB_EXISTS=0
 
-              if PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -At -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "SELECT 1 FROM pg_roles WHERE rolname='${DB_ROLE}'" | grep -q 1; then
+              if PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -At -v ON_ERROR_STOP=1 -v role="${DB_ROLE}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "SELECT 1 FROM pg_roles WHERE rolname=:'role'" | grep -q 1; then
                 ROLE_EXISTS=1
               fi
-              if PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -At -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'" | grep -q 1; then
+              if PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -At -v ON_ERROR_STOP=1 -v db="${DB_NAME}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "SELECT 1 FROM pg_database WHERE datname=:'db'" | grep -q 1; then
                 DB_EXISTS=1
               fi
 

@@ -54,6 +54,7 @@ jobs:
             underwriter
             matcher
             tracer
+            br-sta
             new
             charts
             common

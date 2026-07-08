@@ -119,7 +119,7 @@ spec:
             echo "Role 'midaz' already exists. Skipping creation."
           else
             echo "Creating role 'midaz'..."
-            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE midaz LOGIN PASSWORD '$DB_PASSWORD_MIDAZ'"
+            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_MIDAZ" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE midaz LOGIN PASSWORD :'pw'"
           fi
 
           # Privileges (safe to run repeatedly)

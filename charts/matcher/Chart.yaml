@@ -4,7 +4,7 @@ description: A Helm chart for the Matcher reconciliation service
 
 type: application
 annotations:
-  lerian.studio/chart-type: single-service
+  lerian.studio/chart-type: multi-component
 
 home: https://github.com/LerianStudio/helm
 
@@ -16,8 +16,10 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 3.0.0
+version: 3.1.0-beta.2
 
+# NOTE: appVersion is a stale placeholder. The real app image tag is set via
+# matcher.image.tag (and per-component ui.image.tag / mcp.image.tag / migrations.image.tag).
 appVersion: "1.0.0"
 
 keywords:

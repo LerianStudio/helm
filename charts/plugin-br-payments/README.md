@@ -56,8 +56,7 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.configmap.OUTBOX_ENABLED` | Must be `"true"`. The plugin only registers HTTP routes when the outbox is enabled. |
 | `app.configmap.BTG_API_BASE_URL` | BTG API base URL. |
 | `app.configmap.BTG_AUTH_URL` | BTG OAuth2 token URL. |
-| `app.configmap.MIDAZ_ONBOARDING_URL` | Midaz onboarding service URL. |
-| `app.configmap.MIDAZ_TRANSACTION_URL` | Midaz transaction service URL. |
+| `app.configmap.MIDAZ_LEDGER_URL` | Midaz Ledger service URL (single plane). The deprecated `MIDAZ_ONBOARDING_URL` + `MIDAZ_TRANSACTION_URL` pair is still accepted as a fallback. |
 | `app.secrets.BTG_CLIENT_ID` | BTG OAuth2 client ID. |
 | `app.secrets.BTG_CLIENT_SECRET` | BTG OAuth2 client secret. |
 | `app.secrets.BTG_WEBHOOK_SECRET` | Bearer token for incoming BTG webhooks. |

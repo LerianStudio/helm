@@ -1,5 +1,29 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.4.0)
+
+- **Features:**
+  - Added the `schedule` (Pix recurrence) worker: new `schedule` values section, Deployment, Service, ConfigMap, Secret, HPA and PDB templates, mirroring the reconciliation worker.
+  - The worker listens on port 4018 with probes on `/health` (liveness) and `/readyz` (readiness) and ships active by default (`SCHEDULE_WORKER_ENABLED=true`, 15m interval).
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.3.1...plugin-br-pix-indirect-btg-v3.4.0)
+
+---
+
+## [3.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.3.1)
+
+- **Fixes:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.7.5, along with related worker components for reconciliation, inbound, and outbound processes.
+
+- **Improvements:**
+  - Added an upgrade guide for `plugin-br-pix-indirect-btg` version 3.3.0.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.3.0...plugin-br-pix-indirect-btg-v3.3.1)
+
+---
+
 ## [3.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.3.1)
 
 - Fixes:

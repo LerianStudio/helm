@@ -52,6 +52,21 @@
 {{- $migrationTag := get $migrationImage "tag" | default (get (get $app "image" | default dict) "tag" | default .Chart.AppVersion) -}}
 {{- $migrationDigest := get $migrationImage "digest" | default "" -}}
 {{- $migrationRepository := get $migrationImage "repository" | default "ghcr.io/lerianstudio/br-sta-migrations" -}}
+{{- /* lib-commons' migrator refuses to connect to a non-TLS Postgres unless
+     ALLOW_INSECURE_TLS=true — POSTGRES_SSLMODE=disable alone is not enough. The
+     app deployment gets this via extraEnvVars/configmap; the migration Job must
+     mirror it. Resolution order: migrations.allowInsecureTLS override →
+     app.extraEnvVars → app.configmap. Emitted only when set, so TLS tiers stay
+     secure by default. */}}
+{{- $extraEnv := get $app "extraEnvVars" | default dict -}}
+{{- $allowInsecureTLS := "" -}}
+{{- if get $migrations "allowInsecureTLS" -}}
+{{- $allowInsecureTLS = toString (get $migrations "allowInsecureTLS") -}}
+{{- else if get $extraEnv "ALLOW_INSECURE_TLS" -}}
+{{- $allowInsecureTLS = toString (get $extraEnv "ALLOW_INSECURE_TLS") -}}
+{{- else if get $configmap "ALLOW_INSECURE_TLS" -}}
+{{- $allowInsecureTLS = toString (get $configmap "ALLOW_INSECURE_TLS") -}}
+{{- end -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -156,6 +171,12 @@ spec:
               value: {{ get $configmap "POSTGRES_NAME" | default "br_sta" | quote }}
             - name: POSTGRES_SSLMODE
               value: {{ get $configmap "POSTGRES_SSLMODE" | default "require" | quote }}
+            {{- if $allowInsecureTLS }}
+            # lib-commons migrator bypass for non-TLS Postgres (sslmode=disable
+            # alone is rejected). Mirrors the app's ALLOW_INSECURE_TLS.
+            - name: ALLOW_INSECURE_TLS
+              value: {{ $allowInsecureTLS | quote }}
+            {{- end }}
             - name: POSTGRES_CONNECT_TIMEOUT_SEC
               value: {{ get $configmap "POSTGRES_CONNECT_TIMEOUT_SEC" | default "10" | quote }}
             {{- with (get $migrations "timeoutSeconds") }}

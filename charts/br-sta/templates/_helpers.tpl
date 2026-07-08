@@ -239,15 +239,23 @@ operator input for optional integrations that have been toggled on (multi-tenant
      via secretKeyRef; see docs/helm-chart-standard.md "Single-Source Infra
      Secrets". No gate here: for the bundled subchart the value is generated;
      for external Postgres the operator supplies postgresql.auth.existingSecret
-     or app.secrets.POSTGRES_PASSWORD. The same reasoning applies to Valkey. */}}
+     or br-sta.secrets.POSTGRES_PASSWORD. The same reasoning applies to Valkey. */}}
 
 {{/* Multi-tenant required fields when enabled */}}
 {{- if eq ((index .Values "br-sta").configmap.MULTI_TENANT_ENABLED | toString) "true" }}
 {{- if not (index .Values "br-sta").configmap.MULTI_TENANT_URL }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
+{{- fail "\n\nERROR: br-sta.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- if not (index .Values "br-sta").secrets.MULTI_TENANT_SERVICE_API_KEY }}
-{{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
+{{- fail "\n\nERROR: br-sta.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
+{{- end }}
+{{- end }}
+
+{{/* existingSecretName is required whenever useExistingSecret is enabled,
+     otherwise secretRef.name renders empty and the pod fails to start. */}}
+{{- if (index .Values "br-sta").useExistingSecret }}
+{{- if not (index .Values "br-sta").existingSecretName }}
+{{- fail "\n\nERROR: br-sta.existingSecretName is REQUIRED when br-sta.useExistingSecret=true.\n" }}
 {{- end }}
 {{- end }}
 
@@ -258,12 +266,12 @@ Generate annotation listing default-value warnings (non-blocking).
 */}}
 {{- define "br-sta.secretWarnings" -}}
 {{- $warnings := list -}}
-{{- if .Values.postgresql.enabled -}}
+{{- if eq (include "postgresql.enabled" .) "true" -}}
 {{- if eq (.Values.postgresql.auth.password | toString) "lerian" -}}
 {{- $warnings = append $warnings "postgresql.auth.password is using default value 'lerian'" -}}
 {{- end -}}
 {{- end -}}
-{{- if .Values.valkey.enabled -}}
+{{- if eq (include "valkey.enabled" .) "true" -}}
 {{- if eq (.Values.valkey.auth.password | toString) "lerian" -}}
 {{- $warnings = append $warnings "valkey.auth.password is using default value 'lerian'" -}}
 {{- end -}}

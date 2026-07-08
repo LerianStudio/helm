@@ -19,7 +19,9 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  {{- if not $component.autoscaling.enabled }}
   replicas: {{ $component.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "br-sta.selectorLabels" (dict "context" .) | nindent 6 }}
@@ -89,13 +91,13 @@ spec:
             - name: http
               containerPort: {{ $component.service.port }}
               protocol: TCP
+          {{- $secretName := ternary $component.existingSecretName (include "br-sta.fullname" .) $component.useExistingSecret }}
           envFrom:
             - configMapRef:
                 name: {{ include "br-sta.fullname" . }}
             - secretRef:
-                name: {{ if $component.useExistingSecret }}{{ $component.existingSecretName }}{{ else }}{{ include "br-sta.fullname" . }}{{ end }}
+                name: {{ $secretName }}
           env:
-            {{- $secretName := ternary $component.existingSecretName (include "br-sta.fullname" .) $component.useExistingSecret }}
             {{- $pg := .Values.postgresql | default dict }}
             {{- $pgAuth := $pg.auth | default dict }}
             {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}

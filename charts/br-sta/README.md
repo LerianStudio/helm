@@ -2,13 +2,13 @@
 
 ## Chart Contract
 
-- Chart type: `single-service`
+- Chart type: `multi-component`
 - Required secrets: `None for default render`. With the bundled PostgreSQL and Valkey subcharts the database and Redis passwords are auto-generated and read via `secretKeyRef`. Only supply `br-sta.secrets.POSTGRES_PASSWORD` / `br-sta.secrets.REDIS_PASSWORD` for external infra without `postgresql.auth.existingSecret` / `valkey.auth.existingSecret`. `br-sta.secrets.MULTI_TENANT_SERVICE_API_KEY` is required only when `MULTI_TENANT_ENABLED=true`.
 - Dependency notes: Bundles two local subcharts — Bitnami `postgresql` (`postgresql.enabled`, default `true`) and Bitnami `valkey` (`valkey.enabled`, default `true`). RabbitMQ is optional, config-only, and NOT bundled (`RABBITMQ_ENABLED=false`). All can be pointed at external services.
 - Production overrides: Disable the bundled subcharts and point `POSTGRES_HOST` / `REDIS_HOST` at managed services; supply credentials via chart secrets or an existing Secret; override image tag, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/br-sta`; chart license is Apache-2.0.
 
-A Helm chart for [br-sta](https://github.com/LerianStudio/br-sta) — a Lerian Studio Go/Fiber HTTP service. It ships a single Deployment running the `/service` binary, backed by PostgreSQL (SQL migrations applied at startup) and Redis/Valkey (caching + rate limiting).
+A Helm chart for [br-sta](https://github.com/LerianStudio/br-sta) — a Lerian Studio Go/Fiber HTTP service. It ships a manager Deployment running the `/service` binary and an optional worker Deployment running background jobs, backed by PostgreSQL (SQL migrations applied at startup) and Redis/Valkey (caching + rate limiting).
 
 ## TL;DR
 
@@ -28,7 +28,7 @@ The default render brings up br-sta plus an in-cluster PostgreSQL and Valkey, wi
 
 ## Architecture
 
-The chart deploys **one Deployment, one process** (`/service`, a Go/Fiber HTTP server):
+The chart deploys a **manager Deployment** (`/service`, a Go/Fiber HTTP server) and an optional **worker Deployment** (`/worker`, background jobs):
 
 - HTTP API served on port `8080` (`/health`, `/api/v1/...`).
 - PostgreSQL is the primary datastore; SQL migrations are applied at startup from `MIGRATIONS_PATH` (`migrations`).
@@ -100,7 +100,7 @@ See [`values.yaml`](./values.yaml) for the full list, and [`values-template.yaml
      enabled: false
    valkey:
      enabled: false
-   app:
+   br-sta:
      configmap:
        POSTGRES_HOST: my-rds-instance.example.com
        POSTGRES_SSLMODE: require
@@ -112,7 +112,7 @@ See [`values.yaml`](./values.yaml) for the full list, and [`values-template.yaml
 
 2. **Use an existing Secret** instead of inline values:
    ```yaml
-   app:
+   br-sta:
      useExistingSecret: true
      existingSecretName: br-sta-secrets
    ```
@@ -141,7 +141,7 @@ helm uninstall my-br-sta -n br-sta
 If the bundled PostgreSQL was used, its PVCs are NOT deleted automatically:
 
 ```bash
-kubectl delete pvc -n br-sta -l br-sta.kubernetes.io/instance=my-br-sta
+kubectl delete pvc -n br-sta -l app.kubernetes.io/instance=my-br-sta
 ```
 
 ## License

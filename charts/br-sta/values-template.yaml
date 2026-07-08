@@ -5,7 +5,7 @@
 #     -n <namespace> --create-namespace \
 #     -f values-prod.yaml
 
-app:
+br-sta:
   replicaCount: 2
   image:
     tag: "latest"   # pin to a published immutable tag

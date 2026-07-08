@@ -348,10 +348,11 @@ br-sta:
 worker:
   # -- Enable the worker Deployment. REQUIRES a br-sta image that ships BOTH
   # binaries (manager /service + worker /worker in one image, from the
-  # multi-binary Dockerfile). Older single-binary images have no /worker and
-  # the pod will CrashLoop on command:[/worker]; keep this false until such an
-  # image is published.
-  enabled: true
+  # multi-binary Dockerfile) — or an explicit worker.image override pointing
+  # at a dedicated worker image. Older single-binary images have no /worker
+  # and the pod will CrashLoop on command:[/worker]; keep this false until
+  # a suitable image is confirmed available, then enable per-deployment.
+  enabled: false
   # -- Replicas. The background jobs are leader-gated but the worker does NOT
   # run its own leader election yet — keep this at 1 (and do not add an HPA) to
   # avoid duplicate processing.
@@ -396,12 +397,11 @@ worker:
     requests:
       cpu: 100m
       memory: 128Mi
-  # -- Deployment strategy
+  # -- Deployment strategy. Recreate by default: the worker is leader-gated but
+  # runs no leader election, so a RollingUpdate surge would briefly run two
+  # worker pods and duplicate background processing (audit drain, scheduler).
   deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
   # -- Readiness probe configuration
   readinessProbe:
     initialDelaySeconds: 5
@@ -589,10 +589,10 @@ rabbitmq:
     capabilities: {drop: ["ALL"]}
   authentication:
     user:
-      # Must match app.configmap.RABBITMQ_DEFAULT_USER.
+      # Must match br-sta.configmap.RABBITMQ_DEFAULT_USER.
       value: "br_sta"
     password:
-      # Operators MUST supply this AND the matching app.secrets.RABBITMQ_DEFAULT_PASS
+      # Operators MUST supply this AND the matching br-sta.secrets.RABBITMQ_DEFAULT_PASS
       # when rabbitmq.enabled=true. Both must be the same value.
       value: ""
     erlangCookie:

@@ -71,6 +71,7 @@ data:
   CORS_ALLOW_ORIGINS: {{ .Values.fees.configmap.CORS_ALLOW_ORIGINS | default "http://localhost:3000" | quote }}
   RATE_LIMIT_MAX: {{ .Values.fees.configmap.RATE_LIMIT_MAX | default "100" | quote }}
   RATE_LIMIT_WINDOW_SECONDS: {{ .Values.fees.configmap.RATE_LIMIT_WINDOW_SECONDS | default "60" | quote }}
+  RATE_LIMIT_ENABLED: {{ .Values.fees.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
 
   # CURRENCY
   DEFAULT_CURRENCY: {{ .Values.fees.configmap.DEFAULT_CURRENCY | default "BRL" | quote }}
@@ -108,11 +109,6 @@ data:
   MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
   {{- end }}
 
-  ALLOW_INSECURE_TLS: {{ .Values.fees.configmap.ALLOW_INSECURE_TLS | default "false" | quote }}
-  MONGO_TLS_CA_CERT: {{ .Values.fees.configmap.MONGO_TLS_CA_CERT | default "" | quote }}
-  RATE_LIMIT_ENABLED: {{ .Values.fees.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
-  RATE_LIMIT_MAX: {{ .Values.fees.configmap.RATE_LIMIT_MAX | default "100" | quote }}
-  RATE_LIMIT_WINDOW_SECONDS: {{ .Values.fees.configmap.RATE_LIMIT_WINDOW_SECONDS | default "60" | quote }}
   # Extra Env Vars
   {{- with .Values.fees.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

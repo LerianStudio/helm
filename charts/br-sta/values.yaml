@@ -92,6 +92,11 @@ br-sta:
       pullPolicy: IfNotPresent
     # -- Path inside the image where the SQL migrations live.
     path: "/migrations"
+    # -- Bypass the lib-commons migrator TLS guard for a non-TLS Postgres
+    # (POSTGRES_SSLMODE=disable is rejected without it). When empty, inherits
+    # ALLOW_INSECURE_TLS from br-sta.extraEnvVars, then br-sta.configmap. Leave
+    # empty for a TLS-enabled Postgres.
+    allowInsecureTLS: ""
     # -- Maximum retries before the Job is considered failed.
     backoffLimit: 3
     # -- Hard wall-clock cap for the Job (seconds).

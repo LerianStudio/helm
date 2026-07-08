@@ -40,9 +40,31 @@
         },
         "secrets": {
           "type": "object"
+        },
+        "useExistingSecret": {
+          "type": "boolean"
+        },
+        "existingSecretName": {
+          "type": "string"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": true,
+      "if": {
+        "properties": {
+          "useExistingSecret": {
+            "const": true
+          }
+        },
+        "required": ["useExistingSecret"]
+      },
+      "then": {
+        "properties": {
+          "existingSecretName": {
+            "minLength": 1
+          }
+        },
+        "required": ["existingSecretName"]
+      }
     }
   }
 }

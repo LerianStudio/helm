@@ -336,22 +336,23 @@ br-sta:
 
 # ==============================================================================
 # WORKER
-# Second Deployment running the /worker binary from the SAME image as the
-# manager (command override — both binaries ship in one image). It runs the
-# background jobs: audit outbox publisher/consumer, the leader-gated scheduler
-# (credential expiry/rotation, retention, stale-protocol cleanup), the
-# credential-recovery-on-boot sweep, and the inbound BACEN poll loop. It serves
-# ONLY the probe endpoints (WorkerMode — no business HTTP API), reuses the
-# manager ConfigMap + Secret for all shared infra config, and layers the
-# worker-only knobs below on top.
+# Second Deployment running the br-sta worker component. Upstream builds the
+# manager (cmd/manager) and worker (cmd/worker) as two SEPARATE images, each
+# with its own ENTRYPOINT already set to the right compiled binary (both are
+# named /service inside their respective images by convention — see
+# github.com/LerianStudio/br-sta's per-component Dockerfiles). Set
+# worker.image to the dedicated worker image; do not point it at the manager
+# image. It runs the background jobs: audit outbox publisher/consumer, the
+# leader-gated scheduler (credential expiry/rotation, retention,
+# stale-protocol cleanup), the credential-recovery-on-boot sweep, and the
+# inbound BACEN poll loop. It serves ONLY the probe endpoints (WorkerMode —
+# no business HTTP API), reuses the manager ConfigMap + Secret for all shared
+# infra config, and layers the worker-only knobs below on top.
 # ==============================================================================
 worker:
-  # -- Enable the worker Deployment. REQUIRES a br-sta image that ships BOTH
-  # binaries (manager /service + worker /worker in one image, from the
-  # multi-binary Dockerfile) — or an explicit worker.image override pointing
-  # at a dedicated worker image. Older single-binary images have no /worker
-  # and the pod will CrashLoop on command:[/worker]; keep this false until
-  # a suitable image is confirmed available, then enable per-deployment.
+  # -- Enable the worker Deployment. REQUIRES worker.image to point at a
+  # dedicated worker image (built from cmd/worker) — keep this false until
+  # that image is confirmed available, then enable per-deployment.
   enabled: false
   # -- Replicas. The background jobs are leader-gated but the worker does NOT
   # run its own leader election yet — keep this at 1 (and do not add an HPA) to
@@ -363,17 +364,20 @@ worker:
   annotations: {}
   # -- Annotations applied to the pods
   podAnnotations: {}
-  # -- Worker image. Empty repository/tag inherit the manager image (same
-  # published image carries both binaries); override only to pin separately.
+  # -- Worker image. REQUIRED: point at the dedicated worker image (built
+  # from cmd/worker). Empty repository/tag fall back to the manager image,
+  # which does NOT run the worker's logic — only set for local testing.
   image:
     repository: ""
     tag: ""
     pullPolicy: IfNotPresent
   # -- Image pull secrets (empty inherits the manager's)
   imagePullSecrets: []
-  # -- Container command — the worker binary baked into the shared image
+  # -- Container command. The worker image's own ENTRYPOINT already runs the
+  # correct binary (/service, built from cmd/worker) — this override matches
+  # that ENTRYPOINT rather than replacing it with a different binary name.
   command:
-    - /worker
+    - /service
   # -- Termination grace period
   terminationGracePeriodSeconds: 60
   # -- Pod security context

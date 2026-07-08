@@ -65,6 +65,53 @@ br-sta:
     tag: ""
   # -- Image pull secrets for private registries
   imagePullSecrets: []
+  # -- Database migrations Job (init/postgres-migrations runner image).
+  # Applies the SQL migrations once as an Argo hook — PreSync for external
+  # Postgres (schema-first, before the app rolls out) or PostSync for the
+  # bundled subchart (after the DB is provisioned) — so schema changes are
+  # applied by a dedicated process rather than at application runtime.
+  # Disabled by default; enable per-environment (e.g. the dev-st gitops values).
+  migrations:
+    # -- Enable or disable the migrations Job.
+    enabled: false
+    # -- When true, read POSTGRES_PASSWORD from a pre-existing Secret
+    # (existingSecretName) instead of the chart-managed app Secret.
+    useExistingSecret: false
+    # -- Name of the pre-existing Secret containing POSTGRES_PASSWORD
+    # (only used when useExistingSecret=true).
+    existingSecretName: ""
+    image:
+      # -- Repository for the migrations runner image.
+      repository: ghcr.io/lerianstudio/br-sta-migrations
+      # -- Tag for the migrations image. Defaults to the app image tag
+      # (br-sta.image.tag, or the chart appVersion) when left empty.
+      tag: ""
+      # -- Optional image digest (overrides tag when set).
+      digest: ""
+      # -- Image pull policy.
+      pullPolicy: IfNotPresent
+    # -- Path inside the image where the SQL migrations live.
+    path: "/migrations"
+    # -- Maximum retries before the Job is considered failed.
+    backoffLimit: 3
+    # -- Hard wall-clock cap for the Job (seconds).
+    activeDeadlineSeconds: 600
+    # -- Seconds to retain the finished Job before garbage collection.
+    ttlSecondsAfterFinished: 600
+    # -- Optional MIGRATIONS_TIMEOUT_SEC passed to the runner (per-run deadline).
+    timeoutSeconds: ""
+    # -- Resource requests/limits for the migrations container.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    # -- Extra annotations on the Job resource.
+    annotations: {}
+    # -- Extra annotations on the migration pod.
+    podAnnotations: {}
   # -- Override of the resource name
   nameOverride: ""
   # -- Override of the fully qualified resource name

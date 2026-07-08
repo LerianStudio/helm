@@ -55,6 +55,7 @@ jobs:
             matcher
             tracer
             br-sta
+            br-ccs
             new
             charts
             common

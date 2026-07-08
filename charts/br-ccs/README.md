@@ -10,6 +10,14 @@ judicial secrecy (liminares / LC 105) and LGPD.
 - Chart type: `single-service`
 - Source: https://github.com/LerianStudio/br-ccs
 
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: `brCcs.secrets.CCS_CRYPTO_MASTER_KEY` (AES-256-GCM, 64 hex chars — empty fails fast at boot). `POSTGRES_PASSWORD` and `REDIS_PASSWORD` are single-sourced from the bundled `<release>-{postgresql,valkey}` Secrets via `secretKeyRef` when those subcharts are enabled; supply them (or `<subchart>.auth.existingSecret`) for external infra. `FETCHER_CRYPTO_KEY` is optional (empty = passthrough). See `docs/helm-chart-standard.md`.
+- Dependency notes: Bundled PostgreSQL and Valkey subcharts are used unless external services are configured; RabbitMQ is optional and disabled by default. No MongoDB.
+- Production overrides: Disable the bundled subcharts (`<subchart>.enabled=false`, `.external=true`), set `POSTGRES_HOST`/`REDIS_HOST`, and supply secrets via a secrets manager or `brCcs.useExistingSecret`; override image tags, ingress, resources, and integration endpoints (Fetcher/STA/Reporter).
+- Source/license: Source is in `github.com/LerianStudio/helm` and `github.com/LerianStudio/br-ccs`; license is Apache-2.0.
+
 ## TL;DR
 
 ```bash

@@ -433,4 +433,4 @@ streamingHub:
     affinity: {}
 streaming-hub:
   image:
-    tag: 1.0.0
+    tag: 1.0.1

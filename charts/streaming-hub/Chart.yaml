@@ -7,8 +7,10 @@ description: >-
 type: application
 # version is a PLACEHOLDER. semantic-release in the `helm` repo owns the real
 # chart version on merge — do NOT hand-pick a final number here.
+
 version: 1.0.0-beta.3
 appVersion: "1.0.0"
+
 annotations:
   lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/streaming-hub

@@ -1,5 +1,17 @@
 # Plugin-fees Changelog
 
+## [7.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.1.0)
+
+- **Features**
+  - Update plugin-fees to version 3.3.0 with new environment variables.
+  - Add `RATE_LIMIT_ENABLED` environment variable to configmap.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.0.0...plugin-fees-v7.1.0)
+
+---
+
 ## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.0.0)
 
 - **Features:**

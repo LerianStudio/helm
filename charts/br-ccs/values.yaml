@@ -671,3 +671,5 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
+
+# trigger: retry release after README fix

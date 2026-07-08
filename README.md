@@ -275,3 +275,14 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: |
 | `1.0.0-beta.3` | 1.0.0 |
 -----------------
+
+### BR STA
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sta).
+
+#### Application Version Mapping
+
+| Chart Version | Manager Version | Worker Version |
+| :---: | :---: | :---: |
+| `1.1.0` | 1.0.0-beta.32 | 1.0.0-beta.32 |
+-----------------

@@ -51,18 +51,22 @@ brCcs:
     # MULTI_TENANT_REDIS_HOST: ""
 
     # =================================================================
-    # PostgreSQL primary - REQUIRED
+    # PostgreSQL primary
+    # POSTGRES_HOST is REQUIRED when the bundled postgresql subchart is
+    # disabled or external; leave empty to use the bundled subchart Service.
     # =================================================================
-    POSTGRES_HOST: ""  # REQUIRED - PostgreSQL primary host
+    POSTGRES_HOST: ""  # REQUIRED for external infra (postgresql disabled/external)
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "br-ccs"
     POSTGRES_NAME: "br-ccs"
     POSTGRES_SSLMODE: "require"
 
     # =================================================================
-    # Redis/Valkey (app-level) - REQUIRED
+    # Redis/Valkey (app-level)
+    # REDIS_HOST is REQUIRED when the bundled valkey subchart is disabled
+    # or external; leave empty to use the bundled subchart Service.
     # =================================================================
-    REDIS_HOST: ""  # REQUIRED - Redis/Valkey host:port
+    REDIS_HOST: ""  # REQUIRED for external infra (valkey disabled/external); host:port
 
     # =================================================================
     # Circuit breaker (prerequisite for object storage)

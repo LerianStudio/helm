@@ -51,6 +51,15 @@ spec:
                 ELAPSED=$((ELAPSED + 5));
               done;
               echo "$RABBITMQ_HOST:$RABBITMQ_PORT is ready!";
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
       containers:
         - name: apply-definitions
           image: ghcr.io/jqlang/jq:1.7.1
@@ -59,6 +68,9 @@ spec:
             - -c
             - |
               set -e
+
+              umask 077
+              printf 'user = "%s:%s"\n' "$RABBITMQ_ADMIN_USER" "$RABBITMQ_ADMIN_PASS" > /tmp/curlrc
 
               CURL_OPTS="-sS"
               if [ "$RABBITMQ_SKIP_TLS_VERIFY" = "true" ]; then
@@ -79,13 +91,13 @@ spec:
               echo ""
 
               echo "Checking if RabbitMQ user 'br-ccs' already exists..."
-              BR_CCS_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+              BR_CCS_EXISTS=$(curl $CURL_OPTS -K /tmp/curlrc \
                 "$BASE_URL/api/users/br-ccs" 2>/dev/null || echo "not_found")
 
               SKIP_DEFINITIONS=false
               if echo "$BR_CCS_EXISTS" | grep -q '"name":"br-ccs"'; then
                 echo "RabbitMQ user 'br-ccs' already exists. Checking exchanges..."
-                EXCHANGE_EXISTS=$(curl $CURL_OPTS -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                EXCHANGE_EXISTS=$(curl $CURL_OPTS -K /tmp/curlrc \
                   "$BASE_URL/api/exchanges/%2F/events" 2>/dev/null || echo "not_found")
                 if echo "$EXCHANGE_EXISTS" | grep -q '"name":"events"'; then
                   echo "RabbitMQ definitions already applied (user and exchange exist). Skipping definitions import."
@@ -96,7 +108,7 @@ spec:
               if [ "$SKIP_DEFINITIONS" = "false" ]; then
                 echo "Applying RabbitMQ definitions from file..."
                 HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
-                  -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                  -K /tmp/curlrc \
                   -H "content-type: application/json" \
                   -X POST \
                   --data-binary @/definitions/load_definitions.json \
@@ -112,7 +124,7 @@ spec:
               echo "Updating RabbitMQ user 'br-ccs' password..."
               USER_JSON=$(jq -n --arg pw "$RABBITMQ_BR_CCS_PASS" '{"password": $pw, "tags": ""}')
               HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                -K /tmp/curlrc \
                 -H "content-type: application/json" \
                 -X PUT \
                 --data "$USER_JSON" \
@@ -162,9 +174,19 @@ spec:
               {{- else }}
               value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.username | quote }}
               {{- end }}
+          securityContext:
+            runAsUser: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - name: definitions
               mountPath: /definitions
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: definitions
           configMap:
@@ -172,4 +194,6 @@ spec:
             items:
               - key: load_definitions.json
                 path: load_definitions.json
+        - name: tmp
+          emptyDir: {}
 {{- end }}

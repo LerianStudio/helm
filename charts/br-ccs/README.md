@@ -54,12 +54,12 @@ set via `brCcs.extraEnvVars`.
 
 ### Required secrets
 
-| Key | Notes |
-|-----|-------|
-| `POSTGRES_PASSWORD` | Single-sourced from the bundled subchart Secret when `postgresql.enabled=true`; supply here for external Postgres. |
-| `REDIS_PASSWORD` | Single-sourced from the bundled valkey Secret when `valkey.enabled=true`; supply here for external Redis. |
-| `CCS_CRYPTO_MASTER_KEY` | AES-256-GCM master key, 64 hex chars (`openssl rand -hex 32`). Empty fails fast at boot. |
-| `FETCHER_CRYPTO_KEY` | Fetcher snapshot decryption key (base64; same value as Fetcher `APP_ENC_KEY`). |
+| Key | Required | Notes |
+|-----|----------|-------|
+| `POSTGRES_PASSWORD` | Yes | Single-sourced from the bundled subchart Secret when `postgresql.enabled=true`; supply here for external Postgres. |
+| `REDIS_PASSWORD` | Yes | Single-sourced from the bundled valkey Secret when `valkey.enabled=true`; supply here for external Redis. |
+| `CCS_CRYPTO_MASTER_KEY` | Yes | AES-256-GCM master key, 64 hex chars (`openssl rand -hex 32`). Empty fails fast at boot. |
+| `FETCHER_CRYPTO_KEY` | No | Optional. Empty = passthrough / plaintext (dev/staging); set to the Fetcher `APP_ENC_KEY` to decrypt snapshots. |
 
 ### Migrations
 

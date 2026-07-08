@@ -131,11 +131,15 @@ spec:
               value: {{ get $configmap "POSTGRES_SSLMODE" | default "require" | quote }}
             - name: POSTGRES_CONNECT_TIMEOUT_SEC
               value: {{ get $configmap "POSTGRES_CONNECT_TIMEOUT_SEC" | default "10" | quote }}
+            {{- if $internalPg }}
+            {{- include "br-ccs.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else }}
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ $existingSecretName }}
                   key: POSTGRES_PASSWORD
+            {{- end }}
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000

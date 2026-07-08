@@ -22,7 +22,7 @@ Manager Deployment ({{ $component.replicaCount }} replica(s)) running the /servi
 
 {{- if eq (include "br-sta.worker.enabled" .) "true" }}
 
-Worker Deployment ({{ (.Values.worker | default dict).replicaCount | default 1 }} replica(s)) running the /worker binary
+Worker Deployment ({{ (.Values.worker | default dict).replicaCount | default 1 }} replica(s)) running the /service binary
 (background jobs: audit outbox publisher/consumer, leader-gated scheduler, credential-recovery-on-boot).
 {{- end }}
 

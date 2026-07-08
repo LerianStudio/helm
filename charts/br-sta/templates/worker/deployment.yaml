@@ -96,9 +96,10 @@ spec:
             {{- toYaml $secCtx | nindent 12 }}
           image: "{{ $repo }}:{{ $tag }}"
           imagePullPolicy: {{ $pullPolicy }}
-          # Same image as the manager; run the worker binary baked into it.
+          # Matches the worker image's own ENTRYPOINT (/service, built from
+          # cmd/worker) — see the worker.command comment in values.yaml.
           command:
-            {{- toYaml ($w.command | default (list "/worker")) | nindent 12 }}
+            {{- toYaml ($w.command | default (list "/service")) | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ $w.service.port | default 8081 }}

@@ -55,7 +55,6 @@ data:
   # MULTI-TENANT
   MULTI_TENANT_ENABLED: {{ .Values.crm.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
 
-  ALLOW_INSECURE_TLS: {{ .Values.crm.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   # Extra Env Vars
   {{- with .Values.crm.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

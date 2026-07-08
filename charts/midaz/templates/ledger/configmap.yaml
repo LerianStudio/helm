@@ -250,7 +250,6 @@ data:
   ALLOW_RATELIMIT_DISABLED: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
   ALLOW_RATELIMIT_FAIL_OPEN: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
 
-  ALLOW_INSECURE_TLS: {{ .Values.ledger.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

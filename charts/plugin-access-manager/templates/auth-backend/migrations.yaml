@@ -68,4 +68,36 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_SSLMODE
+            # POSTGRES_* mirrors of the DB_* vars above, mapped from the same
+            # ConfigMap/Secret keys. The caradhras migration runner
+            # (cmd/postgres-migrations) reads POSTGRES_HOST/PORT/USER/PASSWORD/DB/SSLMODE
+            # instead of Casdoor's DB_* contract; keeping both sets lets this single
+            # Job template run either migrations image via auth.backend.migrations.image,
+            # with no functional effect on casdoor-migrations (which ignores POSTGRES_*).
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_USER
+            {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            - name: POSTGRES_SSLMODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_SSLMODE
       restartPolicy: OnFailure

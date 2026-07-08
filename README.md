@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `8.2.0` | 2.6.7 | 2.4.5 |
+| `8.4.0-beta.2` | 2.6.7 | 2.4.5 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -52,6 +52,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: | :---: |
 | `7.0.0` | 3.2.1 | `3.0.0` |
 
+-----------------
+
+### BR SPI Helm Chart
+
+Brazilian SFN — SPI / Pix rail (components: core, spi, brcode, dict, plus a dedicated schema-migration Job).
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-spi).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `0.1.0-beta.1` | `0.1.0` |
 -----------------
 
 ### Reporter
@@ -116,7 +129,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `3.3.1` | 1.7.5 | 1.7.5 | 1.7.5 | 1.7.5 |
+| `3.4.0-beta.1` | 1.7.5 | 1.7.5 | 1.7.5 | 1.7.5 |
 
 -----------------
 
@@ -128,20 +141,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0-beta.4` | 1.0.0-beta.9 |
------------------
-
-### Plugin BR Payments Fakebtg [DEPRECATED → helm-internal]
-
-> **Deprecated.** This chart moved to [helm-internal](https://github.com/LerianStudio/helm-internal/tree/main/charts/plugin-br-payments-fakebtg). Use `oci://ghcr.io/lerianstudio/helm-internal/plugin-br-payments-fakebtg-helm` (version `1.0.0`) instead. See `charts/plugin-br-payments-fakebtg/DEPRECATED.md`.
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-payments-fakebtg).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `1.1.0` | 1.0.0-beta.22 |
+| `1.1.0-beta.5` | 1.0.0-beta.9 |
 -----------------
 
 ### Fetcher
@@ -273,5 +273,16 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0-beta.2` | 1.0.0 |
+| `1.0.0-beta.3` | 1.0.0 |
+-----------------
+
+### BR STA
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sta).
+
+#### Application Version Mapping
+
+| Chart Version | Manager Version | Worker Version |
+| :---: | :---: | :---: |
+| `1.0.0-beta.3` | 1.0.0-beta.32 | 1.0.0-beta.32 |
 -----------------

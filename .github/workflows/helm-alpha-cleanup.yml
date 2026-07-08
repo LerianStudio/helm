@@ -1,0 +1,32 @@
+name: Helm Alpha Cleanup
+
+# Thin caller. The logic lives in the reusable helm-alpha-cleanup.yml of
+# github-actions-shared-workflows. Enforces the TTL (~3 days) of alpha releases:
+# deletes GHCR packages under alpha/* with tag *-alpha* older than 3 days.
+# Real releases (lerianstudio/*-helm) are out of scope via the alpha/ guard.
+# Authenticates with a PAT that has delete:packages (GHCR_CLEANUP_PAT).
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # daily, 03:00 UTC — deletes for real
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only list what would be removed (does not delete)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    permissions:
+      packages: write # delete alpha version packages from GHCR
+    # Testing: @develop. Once stable: @vX.Y.Z.
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-cleanup.yml@develop
+    with:
+      # schedule deletes for real; manual dispatch previews unless you turn dry_run off
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+    secrets:
+      GHCR_CLEANUP_PAT: ${{ secrets.GHCR_CLEANUP_PAT }}

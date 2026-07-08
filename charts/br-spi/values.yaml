@@ -1,0 +1,443 @@
+# Default values for the br-spi (SPI / Pix rail) chart.
+# Four component blocks (core / spi / brcode / dict) share the same workload
+# shape; they differ by image, OTEL resource name, streaming toggle, and a few
+# per-binary env keys. Each component's `configmap` map is emitted VERBATIM into
+# its ConfigMap (not a fixed allowlist), so any extra env — BACEN endpoints,
+# Postgres pool tuning — can be added under `<component>.configmap` without a
+# chart change. STREAMING_* keys are always emitted first-class.
+nameOverride: "br-spi"
+fullnameOverride: ""
+namespaceOverride: ""
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# -- Default pull secret for every component + the migration Job (single GHCR
+# credential). Override per component via <component>.imagePullSecrets.
+imagePullSecrets:
+  - name: ghcr-credential
+
+serviceAccount:
+  # -- Create one ServiceAccount shared by all components
+  create: true
+  # -- Annotations for the ServiceAccount
+  annotations: {}
+  # -- Name of the service account (defaults to the release fullname)
+  name: ""
+
+# -- Pod-level security context (shared by all components)
+podSecurityContext: {}
+
+# -- Container security context (shared by all components + the wait initContainer)
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# =============================================================================
+# core — settlement engine + sole producer of studio.lerian.settlement.* on the
+# br-spi.settlement topic. It emits by CONSUMING the spi->core seam topics, so
+# core AND spi must both stream (same brokers, same Postgres) or no settlement
+# event is emitted at all.
+# =============================================================================
+core:
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sfn-core
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  waitImage: busybox
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 100%
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  pdb:
+    # Off by default: with replicaCount 1, a PDB (minAvailable 1) blocks all
+    # voluntary evictions and stalls node drains. Enable it once scaled >1.
+    enabled: false
+    minAvailable: 1
+    annotations: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  # -- Readiness/liveness probe overrides (path defaults /readyz and /health)
+  readinessProbe: {}
+  livenessProbe: {}
+  # -- Use an operator-provided Secret instead of the chart-managed one
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Raw container env entries appended verbatim (can include valueFrom).
+  # Range-free escape for anything the ConfigMap map cannot carry.
+  extraEnvVars: []
+  # -- ConfigMap env. Emitted verbatim; STREAMING_*/POSTGRES_HOST/REDIS_HOST are
+  # handled first-class by the template.
+  configmap:
+    ENV_NAME: "development"
+    LOG_LEVEL: "info"
+    SERVER_ADDRESS: ":8080"
+    HTTP_BODY_LIMIT_BYTES: "104857600"
+    # PostgreSQL (all four binaries share ONE database: brspi)
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "brspi"
+    POSTGRES_DB: "brspi"
+    POSTGRES_SSLMODE: "disable"
+    # Redis/Valkey (host:port in one var; optional for core)
+    REDIS_HOST: ""
+    # Outbox relay (must stay on for the producer)
+    OUTBOX_ENABLED: "true"
+    # core requires a positive idempotency retry window to boot
+    IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
+    # Streaming — core is a producer
+    STREAMING_ENABLED: "true"
+    STREAMING_BROKERS: ""
+    STREAMING_CLOUDEVENTS_SOURCE: "studio.lerian.core"
+    # OpenTelemetry (gRPC/4317; endpoint overridden to $(HOST_IP):4317 when ENABLE_TELEMETRY=true)
+    ENABLE_TELEMETRY: "false"
+    OTEL_RESOURCE_SERVICE_NAME: "br-spi-core"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  secrets:
+    # -- External-Postgres password. Single-sourced from the postgresql subchart
+    # Secret when it is bundled; set here only for external Postgres without an
+    # existingSecret. On the target environments this comes from GitOps/Vault.
+    POSTGRES_PASSWORD: ""
+    # -- External-Redis password (optional; single-sourced from the valkey subchart when bundled)
+    REDIS_PASSWORD: ""
+
+# =============================================================================
+# spi — the ISO 20022 / BACEN SPI binary. Producer of the spi->core seam topics,
+# so it must stream alongside core. Talks to BACEN SPI (relaxed under ENV_NAME=development).
+# =============================================================================
+spi:
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sfn-spi
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  waitImage: busybox
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 100%
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  pdb:
+    # Off by default: with replicaCount 1, a PDB (minAvailable 1) blocks all
+    # voluntary evictions and stalls node drains. Enable it once scaled >1.
+    enabled: false
+    minAvailable: 1
+    annotations: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  readinessProbe: {}
+  livenessProbe: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  configmap:
+    ENV_NAME: "development"
+    LOG_LEVEL: "info"
+    SERVER_ADDRESS: ":8080"
+    HTTP_BODY_LIMIT_BYTES: "104857600"
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "brspi"
+    POSTGRES_DB: "brspi"
+    POSTGRES_SSLMODE: "disable"
+    REDIS_HOST: ""
+    OUTBOX_ENABLED: "true"
+    # BACEN SPI endpoint. Under ENV_NAME=development a http:// / mock endpoint is
+    # accepted and BACEN mTLS validation is bypassed (not required to boot).
+    # Other BACEN_* / signer knobs can be added here verbatim.
+    BACEN_SPI_ENDPOINT: ""
+    # Streaming — spi writes the spi->core seam that core turns into settlement.*
+    STREAMING_ENABLED: "true"
+    STREAMING_BROKERS: ""
+    STREAMING_CLOUDEVENTS_SOURCE: "studio.lerian.spi"
+    ENABLE_TELEMETRY: "false"
+    OTEL_RESOURCE_SERVICE_NAME: "br-spi-spi"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  secrets:
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+
+# =============================================================================
+# brcode — Pix BR Code (QR) REST binary. NOT a settlement producer; streaming off.
+# =============================================================================
+brcode:
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sfn-brcode
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  waitImage: busybox
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 100%
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  pdb:
+    # Off by default: with replicaCount 1, a PDB (minAvailable 1) blocks all
+    # voluntary evictions and stalls node drains. Enable it once scaled >1.
+    enabled: false
+    minAvailable: 1
+    annotations: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  readinessProbe: {}
+  livenessProbe: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  configmap:
+    ENV_NAME: "development"
+    LOG_LEVEL: "info"
+    SERVER_ADDRESS: ":8080"
+    HTTP_BODY_LIMIT_BYTES: "104857600"
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "brspi"
+    POSTGRES_DB: "brspi"
+    POSTGRES_SSLMODE: "disable"
+    REDIS_HOST: ""
+    OUTBOX_ENABLED: "true"
+    # Not a producer
+    STREAMING_ENABLED: "false"
+    STREAMING_BROKERS: ""
+    STREAMING_CLOUDEVENTS_SOURCE: ""
+    ENABLE_TELEMETRY: "false"
+    OTEL_RESOURCE_SERVICE_NAME: "br-spi-brcode"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  secrets:
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+
+# =============================================================================
+# dict — DICT (Pix directory) REST binary. NOT a settlement producer; streaming
+# off. REQUIRES REDIS_HOST (scheduler / caches).
+# =============================================================================
+dict:
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sfn-dict
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  waitImage: busybox
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 100%
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  pdb:
+    # Off by default: with replicaCount 1, a PDB (minAvailable 1) blocks all
+    # voluntary evictions and stalls node drains. Enable it once scaled >1.
+    enabled: false
+    minAvailable: 1
+    annotations: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  readinessProbe: {}
+  livenessProbe: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  configmap:
+    ENV_NAME: "development"
+    LOG_LEVEL: "info"
+    SERVER_ADDRESS: ":8080"
+    HTTP_BODY_LIMIT_BYTES: "104857600"
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "brspi"
+    POSTGRES_DB: "brspi"
+    POSTGRES_SSLMODE: "disable"
+    # REQUIRED for dict — set to the Redis host:port (e.g. valkey-dev:6379).
+    REDIS_HOST: ""
+    OUTBOX_ENABLED: "true"
+    STREAMING_ENABLED: "false"
+    STREAMING_BROKERS: ""
+    STREAMING_CLOUDEVENTS_SOURCE: ""
+    ENABLE_TELEMETRY: "false"
+    OTEL_RESOURCE_SERVICE_NAME: "br-spi-dict"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  secrets:
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+
+# =============================================================================
+# Detached migrations — ArgoCD PreSync Secret + Job that applies the 6-module
+# schema to the single `brspi` database before the app boots. The
+# br-sfn-spi-migrations image's entrypoint runs the golang-migrate loop in
+# manifest order (global events spi dict brcode core) with the per-module
+# x-migrations-table naming; systemplane is lib-systemplane-managed at runtime,
+# not golang-migrate. The chart only supplies the DB connection and runs it.
+# =============================================================================
+migrations:
+  enabled: true
+  image:
+    repository: ghcr.io/lerianstudio/br-sfn-spi-migrations
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  waitImage: busybox
+  # -- Use an operator-provided Secret (must carry POSTGRES_PASSWORD) instead of
+  # the chart-managed PreSync Secret.
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Postgres connection for the migration Job. Empty fields fall back to
+  # core.configmap.POSTGRES_* (all four binaries share the brspi database).
+  postgres:
+    host: ""
+    port: ""
+    user: ""
+    database: ""
+    sslMode: ""
+    # -- Password for the PreSync Secret (empty -> core.secrets.POSTGRES_PASSWORD).
+    # Ignored when migrations.useExistingSecret=true. NOTE: for a self-contained
+    # install (postgresql.enabled=true) this MUST be set explicitly (or use
+    # useExistingSecret) — the bundled Postgres Secret does not exist yet at
+    # PreSync time, so the fallback cannot read it. External Postgres (the
+    # default) has no such constraint.
+    password: ""
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# =============================================================================
+# Bundled infra subcharts — DISABLED by default. On the target environments
+# Postgres and Redis are external and pre-provisioned; wire hosts via
+# <component>.configmap.POSTGRES_HOST / REDIS_HOST. Enable these only for a
+# self-contained install (then passwords are single-sourced from their Secrets).
+# =============================================================================
+postgresql:
+  enabled: false
+  external: true
+
+valkey:
+  enabled: false
+  external: true

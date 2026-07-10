@@ -173,6 +173,12 @@ flowker:
   # -- Affinity rules for pod scheduling
   affinity: {}
 
+  # -- Enable the WorkOS Tenant Manager token-mint feature (#300). ALL-OR-NONE:
+  # when true, WORKOS_TM_TOKEN_URL + WORKOS_TM_CLIENT_ID (configmap) and
+  # WORKOS_TM_CLIENT_SECRET (secrets) are all required (rejected at template time
+  # if partial). WORKOS_TM_SERVICE_NAME must match FLOWKER_SECRETS_APPLICATION_NAME.
+  workosTmEnabled: false
+
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml
   configmap:
@@ -281,6 +287,61 @@ flowker:
     MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
     MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
 
+    # HTTP egress body cap (bytes). Caps request/response bodies on provider calls.
+    HTTP_MAX_BODY_BYTES: "10485760"
+    # -- Allow CORS wildcard (lib-commons parity). Secure-by-default false; local overrides to true.
+    ALLOW_CORS_WILDCARD: "false"
+
+    # Internal (Lerian-managed) provider base URLs. Empty = stored config doc value used.
+    MIDAZ_BASE_URL: ""
+    TRACER_BASE_URL: ""
+
+    # Schema Registry auth gates (secure default: true)
+    XSD_SCHEMAS_AUTH_ENABLED: "true"
+    OPENAPI_SCHEMAS_AUTH_ENABLED: "true"
+
+    # Schema Registry blob storage (S3). Graceful-off when bucket empty (Mongo-only
+    # boot). AWS creds come from the credential chain (IRSA / Roles Anywhere).
+    SCHEMA_REGISTRY_S3_BUCKET: ""
+    # -- AWS region for the Schema Registry S3 store. Empty = resolved by the AWS SDK chain.
+    SCHEMA_REGISTRY_S3_REGION: ""
+
+    # Shared OAuth2 token cache
+    TOKEN_CACHE_MAX_TTL_SEC: "3600"
+    TOKEN_CACHE_JANITOR_INTERVAL_SEC: "300"
+    TOKEN_CACHE_REFRESH_BUFFER_SEC: "60"
+    TOKEN_CACHE_TENANT_SCOPED_DISABLED: "false"
+
+    # Secrets backend. Empty = disabled (boots fine); "tenant-manager" = AWS Secrets
+    # Manager reader. FLOWKER_SECRETS_APPLICATION_NAME must match WORKOS_TM_SERVICE_NAME.
+    FLOWKER_SECRETS_BACKEND: ""
+    FLOWKER_SECRETS_CACHE_TTL_SEC: ""
+    FLOWKER_SECRETS_APPLICATION_NAME: ""
+
+    # XSD validator (app-side knobs). The in-pod sidecar + loopback URL are wired in
+    # a follow-up phase; empty URL keeps the feature unconfigured (never a boot dep).
+    XSD_VALIDATOR_URL: ""
+    # -- Allow cleartext http:// to the in-pod XSD sidecar. Secure-by-default false.
+    XSD_VALIDATOR_ALLOW_INSECURE_HTTP: "false"
+
+    # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. SCHEDULER_REDIS_HOST is
+    # derived from the valkey subchart in a follow-up phase; empty keeps the scheduler
+    # queue a nil-safe no-op. Keep this queue Redis isolated from MULTI_TENANT_REDIS_*.
+    SCHEDULER_ENABLED: "true"
+    SCHEDULER_REDIS_HOST: ""
+    SCHEDULER_REDIS_PORT: "6379"
+    SCHEDULER_REDIS_TLS: "false"
+    SCHEDULER_REDIS_DB: "0"
+    SCHEDULER_CONCURRENCY: "10"
+
+    # WorkOS Tenant Manager token mint (#300). Emitted only when flowker.workosTmEnabled=true.
+    WORKOS_TM_TOKEN_URL: ""
+    WORKOS_TM_CLIENT_ID: ""
+    # -- Optional space-delimited scope (e.g. backoffice:tm:m2m:write).
+    WORKOS_TM_SCOPE: ""
+    # -- Flowker service name as the Tenant Manager knows it. Must match FLOWKER_SECRETS_APPLICATION_NAME.
+    WORKOS_TM_SERVICE_NAME: "flowker"
+
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
@@ -299,6 +360,11 @@ flowker:
     MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Redis password for tenant Pub/Sub (optional)
     MULTI_TENANT_REDIS_PASSWORD: ""
+    # -- WorkOS Tenant Manager client secret (required when flowker.workosTmEnabled=true)
+    WORKOS_TM_CLIENT_SECRET: ""
+    # -- Scheduler queue Redis password (external-Redis path; the valkey subchart
+    # supplies this via secretKeyRef in a follow-up phase)
+    SCHEDULER_REDIS_PASSWORD: ""
 
   # -- Use an existing secret instead of creating one
   useExistingSecret: false
@@ -315,6 +381,78 @@ flowker:
     annotations: {}
     # -- Name of the service account
     # @default -- `flowker.fullname`
+    name: ""
+
+# -- Scheduler worker: a second Deployment running the SAME flowker image with
+# its command overridden to /worker. Runs the queue-backed scheduler consume
+# server and background jobs. Reuses the api ConfigMap + Secret.
+worker:
+  # -- Enable or disable the worker Deployment
+  enabled: true
+  # -- Number of replicas (fixed; the worker is not leader-gated — do NOT add an HPA)
+  replicaCount: 1
+  # -- Number of old ReplicaSets to retain
+  revisionHistoryLimit: 10
+
+  # -- Image override. Empty repository/tag inherit the api image (flowker.image).
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  # -- Container entrypoint (the worker binary bundled in the flowker image)
+  command:
+    - /worker
+
+  # -- Secrets for pulling images from a private registry (inherits api when empty)
+  imagePullSecrets: []
+
+  # -- Deployment update strategy. Recreate avoids two schedulers overlapping mid-rollout.
+  deploymentStrategy:
+    type: Recreate
+
+  # -- Grace period (s) for the scheduler consume server to drain in-flight jobs on SIGTERM.
+  terminationGracePeriodSeconds: 60
+
+  service:
+    # -- Worker probe port (WORKER_SERVER_PORT). The worker serves only /health + /readyz.
+    port: 4022
+
+  # -- Pod-level security context (inherits flowker.podSecurityContext when empty)
+  podSecurityContext: {}
+  # -- Container-level security context (inherits flowker.securityContext when empty)
+  securityContext: {}
+
+  # -- Resource requests/limits (inherits flowker.resources when empty)
+  resources: {}
+
+  # -- Readiness probe overrides
+  readinessProbe: {}
+  # -- Liveness probe overrides
+  livenessProbe: {}
+
+  # -- Pod annotations
+  podAnnotations: {}
+  # -- Node selector
+  nodeSelector: {}
+  # -- Tolerations
+  tolerations: {}
+  # -- Affinity rules
+  affinity: {}
+
+  # -- Extra environment variables (rendered as literal name/value pairs)
+  extraEnvVars: {}
+
+  # -- Worker-only ConfigMap overrides (layered last; wins over the api ConfigMap)
+  configmap: {}
+
+  serviceAccount:
+    # -- Create a dedicated worker ServiceAccount (false reuses the api SA)
+    create: true
+    # -- Annotations for the worker ServiceAccount (e.g. IRSA role-arn)
+    annotations: {}
+    # -- Name override
+    # @default -- `flowker.worker.fullname`
     name: ""
 
 mongodb:

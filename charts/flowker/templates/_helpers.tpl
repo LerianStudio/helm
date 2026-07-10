@@ -67,6 +67,65 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+================================================================================
+WORKER HELPERS
+The scheduler worker is a SECOND Deployment running the SAME flowker image with
+its command overridden to /worker. It reuses the api ConfigMap + Secret and
+layers worker-only env on top. It gets its OWN app.kubernetes.io/name so its
+(immutable) selector never overlaps the api Deployment's.
+================================================================================
+*/}}
+
+{{/* Worker resource name: "<fullname>-worker". */}}
+{{- define "flowker.worker.fullname" -}}
+{{- printf "%s-worker" (include "flowker.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/* Worker app name (distinct from the api so selectors don't overlap). */}}
+{{- define "flowker.worker.name" -}}
+{{- printf "%s-worker" (include "flowker.name" .) | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/* Worker selector labels — distinct name keeps the two Deployments apart. */}}
+{{- define "flowker.worker.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "flowker.worker.name" .context }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
+{{/* Worker common labels. */}}
+{{/* FIXME(nitpick): app.kubernetes.io/version tracks the api image tag, not
+     worker.image.tag when overridden (ring-helm, 2026-07-10, Cosmetic). */}}
+{{- define "flowker.worker.labels" -}}
+helm.sh/chart: {{ include "flowker.chart" .context }}
+{{ include "flowker.worker.selectorLabels" (dict "context" .context) }}
+app.kubernetes.io/version: {{ include "flowker.versionLabelValue" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+app.kubernetes.io/component: worker
+{{- end }}
+
+{{/* Worker ServiceAccount name (own SA, or reuse the api's when not creating). */}}
+{{- define "flowker.worker.serviceAccountName" -}}
+{{- $w := .Values.worker | default dict -}}
+{{- $sa := $w.serviceAccount | default dict -}}
+{{- if $sa.create }}
+{{- default (include "flowker.worker.fullname" .) $sa.name }}
+{{- else }}
+{{- default (include "flowker.serviceAccountName" .) $sa.name }}
+{{- end }}
+{{- end }}
+
+{{/* Worker enabled — gated by flowker.enabled; nil-aware on worker.enabled
+     (unset/true enables, explicit false disables). */}}
+{{- define "flowker.worker.enabled" -}}
+{{- $w := .Values.worker | default dict -}}
+{{- if and .Values.flowker.enabled (ne (toString $w.enabled) "false") -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
 Expand the namespace of the release.
 Allows overriding it for multi-namespace deployments in combined charts.
 */}}
@@ -141,6 +200,50 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
 {{- end }}
 - name: MONGO_URI
   value: {{ printf "mongodb://%s:$(MONGO_PASSWORD)@%s:27017/?authSource=admin" $mongo.auth.rootUser (include "flowker.mongoHost" $ctx) | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
+flowker.waitForMongoInit — the shared wait-for-mongodb init container, used by
+both the api and worker Deployments so they never drift. Input (dict): context (root .).
+*/}}
+{{- define "flowker.waitForMongoInit" -}}
+{{- $ctx := .context -}}
+- name: wait-for-mongodb
+  image: busybox:1.37
+  command:
+    - /bin/sh
+    - -c
+    - >
+      TIMEOUT=300;
+      ELAPSED=0;
+      {{- $mongoHost := include "flowker.mongoHost" $ctx }}
+      echo "Checking {{ $mongoHost }}:27017...";
+      while ! nc -z "{{ $mongoHost }}" 27017; do
+        if [ $ELAPSED -ge $TIMEOUT ]; then
+          echo "Timeout waiting for MongoDB after ${TIMEOUT}s";
+          exit 1;
+        fi;
+        echo "MongoDB is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)";
+        sleep 5;
+        ELAPSED=$((ELAPSED + 5));
+      done;
+      echo "MongoDB is ready!";
+{{- end }}
+
+{{/*
+flowker.otelHostEnv — HOST_IP + OTEL endpoint env, emitted only when telemetry
+is enabled. Shared by the api and worker Deployments. Input (dict): context (root .).
+*/}}
+{{- define "flowker.otelHostEnv" -}}
+{{- $ctx := .context -}}
+{{- if eq (toString $ctx.Values.flowker.configmap.ENABLE_TELEMETRY) "true" }}
+- name: "HOST_IP"
+  valueFrom:
+    fieldRef:
+      fieldPath: status.hostIP
+- name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+  value: "$(HOST_IP):4317"
 {{- end }}
 {{- end }}
 

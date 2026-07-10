@@ -528,6 +528,36 @@ valkey:
     # on the app side to a credential that matches the ACL. Off by default (in-cluster ClusterIP).
     enabled: false
 
+# -- AWS authentication. On EKS, prefer IRSA: set
+# flowker.serviceAccount.annotations."eks.amazonaws.com/role-arn" (and worker.serviceAccount)
+# and leave this disabled. For non-EKS clusters (e.g. Proxmox), enable IAM Roles Anywhere:
+# an aws-signing-helper sidecar serves a loopback IMDS endpoint (127.0.0.1:9911) that the AWS
+# SDK uses to exchange the client cert (trust anchor/profile/role) for temporary credentials.
+aws:
+  rolesAnywhere:
+    enabled: false
+    # -- Required when enabled (template fails fast if missing).
+    trustAnchorArn: ""
+    profileArn: ""
+    roleArn: ""
+    region: "us-east-2"
+    sessionDuration: 3600
+    # -- Secret holding the Roles Anywhere client cert (tls.crt) and key (tls.key).
+    certificateSecretName: "flowker-iam-tls"
+    sidecar:
+      image:
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        tag: "latest-amd64"
+        pullPolicy: IfNotPresent
+      port: 9911
+      resources:
+        requests:
+          cpu: 10m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+
 mongodb:
   # MongoDB document database for flowker data storage
   enabled: true

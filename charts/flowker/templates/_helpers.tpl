@@ -256,6 +256,114 @@ scheduler queue Redis; an external Redis is used by overriding SCHEDULER_REDIS_H
 {{- end -}}
 
 {{/*
+flowker.awsRolesAnywhere.enabled — true only when aws.rolesAnywhere.enabled is set
+(default off). Used to gate the IAM Roles Anywhere signing sidecar on non-EKS clusters.
+*/}}
+{{- define "flowker.awsRolesAnywhere.enabled" -}}
+{{- $ra := (.Values.aws | default dict).rolesAnywhere | default dict -}}
+{{- eq (toString $ra.enabled) "true" -}}
+{{- end -}}
+
+{{/*
+flowker.podSecurityContext — renders the pod securityContext. When Roles Anywhere is
+enabled it FORCES fsGroup 65532 (the sidecar runs uid/gid 65532 and reads the 0440 cert
+Secret via that group; any other fsGroup would break credential serving) while preserving
+all other base keys. Args: context (root $), base (the map).
+*/}}
+{{- define "flowker.podSecurityContext" -}}
+{{- $base := .base | default dict -}}
+{{- if eq (include "flowker.awsRolesAnywhere.enabled" .context) "true" -}}
+{{- toYaml (merge (dict "fsGroup" 65532) (deepCopy $base)) -}}
+{{- else -}}
+{{- toYaml $base -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+flowker.awsImdsEnv — env pointing the AWS SDK at the local signing-helper IMDS endpoint.
+Args: context (root $).
+*/}}
+{{- define "flowker.awsImdsEnv" -}}
+{{- $ra := (.context.Values.aws | default dict).rolesAnywhere | default dict -}}
+{{- $port := (($ra.sidecar).port | default 9911) -}}
+- name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+  value: "http://127.0.0.1:{{ $port }}"
+- name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
+  value: "IPv4"
+{{- end -}}
+
+{{/*
+flowker.awsSigningSidecar — the aws-signing-helper container serving credentials from the
+Roles Anywhere trust anchor/profile/role over a loopback IMDS endpoint. Args: context (root $).
+*/}}
+{{- define "flowker.awsSigningSidecar" -}}
+{{- $ctx := .context -}}
+{{- $ra := ($ctx.Values.aws | default dict).rolesAnywhere | default dict -}}
+{{- $sc := $ra.sidecar | default dict -}}
+{{- $img := $sc.image | default dict -}}
+{{- $port := ($sc.port | default 9911) -}}
+- name: aws-signing-helper
+  image: "{{ $img.repository | default "public.ecr.aws/rolesanywhere/credential-helper" }}:{{ $img.tag | default "latest-amd64" }}"
+  imagePullPolicy: {{ $img.pullPolicy | default "IfNotPresent" }}
+  args:
+    - serve
+    - --certificate
+    - /certs/tls.crt
+    - --private-key
+    - /certs/tls.key
+    - --trust-anchor-arn
+    - "{{ required "aws.rolesAnywhere.trustAnchorArn is required when aws.rolesAnywhere.enabled=true" $ra.trustAnchorArn }}"
+    - --profile-arn
+    - "{{ required "aws.rolesAnywhere.profileArn is required when aws.rolesAnywhere.enabled=true" $ra.profileArn }}"
+    - --role-arn
+    - "{{ required "aws.rolesAnywhere.roleArn is required when aws.rolesAnywhere.enabled=true" $ra.roleArn }}"
+    - --region
+    - "{{ $ra.region | default "us-east-2" }}"
+    - --session-duration
+    - "{{ $ra.sessionDuration | default 3600 }}"
+    - --port
+    - "{{ $port }}"
+  ports:
+    - name: imds
+      containerPort: {{ $port }}
+      protocol: TCP
+  volumeMounts:
+    - name: iam-certs
+      mountPath: /certs
+      readOnly: true
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+    {{- toYaml ($sc.resources | default dict) | nindent 4 }}
+{{- end -}}
+
+{{/*
+flowker.awsCertsVolume — the iam-certs Secret volume backing the signing sidecar.
+Args: context (root $).
+*/}}
+{{- define "flowker.awsCertsVolume" -}}
+{{- $ra := (.context.Values.aws | default dict).rolesAnywhere | default dict -}}
+- name: iam-certs
+  secret:
+    secretName: {{ $ra.certificateSecretName | default "flowker-iam-tls" }}
+    defaultMode: 0440
+    items:
+      - key: tls.crt
+        path: tls.crt
+      - key: tls.key
+        path: tls.key
+{{- end -}}
+
+{{/*
 flowker.xsdValidator.enabled — nil-aware: unset/true enables, explicit false disables.
 */}}
 {{- define "flowker.xsdValidator.enabled" -}}

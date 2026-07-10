@@ -36,7 +36,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "flowker.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.flowker.podSecurityContext | nindent 8 }}
+        {{- include "flowker.podSecurityContext" (dict "context" $ "base" .Values.flowker.podSecurityContext) | nindent 8 }}
       initContainers:
         {{- include "flowker.waitForMongoInit" (dict "context" $) | nindent 8 }}
       containers:
@@ -54,6 +54,9 @@ spec:
           {{- $secretName := ternary .Values.flowker.existingSecretName (include "flowker.fullname" .) .Values.flowker.useExistingSecret }}
           {{- include "flowker.mongoEnv" (dict "context" $ "secretName" $secretName) | nindent 10 }}
           {{- include "flowker.otelHostEnv" (dict "context" $) | nindent 10 }}
+          {{- if eq (include "flowker.awsRolesAnywhere.enabled" .) "true" }}
+          {{- include "flowker.awsImdsEnv" (dict "context" $) | nindent 10 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.flowker.service.port }}
@@ -81,6 +84,13 @@ spec:
         {{- if eq (include "flowker.xsdValidator.enabled" .) "true" }}
         {{- include "flowker.xsdValidatorContainer" (dict "context" $) | nindent 8 }}
         {{- end }}
+        {{- if eq (include "flowker.awsRolesAnywhere.enabled" .) "true" }}
+        {{- include "flowker.awsSigningSidecar" (dict "context" $) | nindent 8 }}
+        {{- end }}
+      {{- if eq (include "flowker.awsRolesAnywhere.enabled" .) "true" }}
+      volumes:
+        {{- include "flowker.awsCertsVolume" (dict "context" $) | nindent 8 }}
+      {{- end }}
       {{- with .Values.flowker.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

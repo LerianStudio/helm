@@ -4,15 +4,15 @@ description: A Helm chart for Flowker - Workflow orchestration platform for
   financial validation
 type: application
 annotations:
-  lerian.studio/chart-type: single-service
+  lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/flowker
 sources:
   - https://github.com/LerianStudio/flowker
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 3.0.0
-appVersion: "1.0.0"
+version: 3.1.0
+appVersion: "1.2.0-beta.82"
 keywords:
   - flowker
   - workflow
@@ -25,3 +25,7 @@ dependencies:
     version: "16.4.0"
     repository: "https://charts.bitnami.com/bitnami"
     condition: mongodb.enabled
+  - name: valkey
+    version: "0.7.4"
+    repository: "https://valkey.io/valkey-helm"
+    condition: valkey.enabled

@@ -100,6 +100,12 @@ data:
   ## BTG
   BTG_BASE_URL: {{ .Values.pix.configmap.BTG_BASE_URL | default "https://developer.api.btgpactual.com" | quote }}
 
+  # Recurring module (Pix Automático)
+  RECURRING_ANTISPAM_WINDOW: {{ .Values.pix.configmap.RECURRING_ANTISPAM_WINDOW | default "720h" | quote }}
+  RECURRING_REPLY_MAX_ATTEMPTS: {{ .Values.pix.configmap.RECURRING_REPLY_MAX_ATTEMPTS | default "3" | quote }}
+  RECURRING_REPLY_BACKOFF: {{ .Values.pix.configmap.RECURRING_REPLY_BACKOFF | default "150ms" | quote }}
+  RECURRING_SCHEDULE_LEAD_DAYS: {{ .Values.pix.configmap.RECURRING_SCHEDULE_LEAD_DAYS | default "1" | quote }}
+
   ## CRM
   PLUGIN_CRM_BASE_URL: {{ .Values.pix.configmap.PLUGIN_CRM_BASE_URL | default "http://plugin-crm.midaz-plugins.svc.cluster.local:4003" | quote }}
 

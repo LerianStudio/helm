@@ -21,6 +21,13 @@ data:
   SCHEDULE_WORKER_TIME_WINDOW_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_TIME_WINDOW_ENABLED | default "false" | quote }}
   SCHEDULE_WORKER_WINDOW_START: {{ .Values.schedule.configmap.SCHEDULE_WORKER_WINDOW_START | default "" | quote }}
   SCHEDULE_WORKER_WINDOW_END: {{ .Values.schedule.configmap.SCHEDULE_WORKER_WINDOW_END | default "" | quote }}
+  SCHEDULE_WORKER_DISPATCH_CONCURRENCY: {{ .Values.schedule.configmap.SCHEDULE_WORKER_DISPATCH_CONCURRENCY | default "0" | quote }}
+  SCHEDULE_WORKER_JOB_TIMEOUT: {{ .Values.schedule.configmap.SCHEDULE_WORKER_JOB_TIMEOUT | default "0s" | quote }}
+  SCHEDULE_WORKER_NSF_RETRY_HOUR_BRT: {{ .Values.schedule.configmap.SCHEDULE_WORKER_NSF_RETRY_HOUR_BRT | default "0" | quote }}
+  SCHEDULE_WORKER_RECONCILE_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_ENABLED | default "false" | quote }}
+  SCHEDULE_WORKER_RECONCILE_THRESHOLD: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_THRESHOLD | default "30m" | quote }}
+  SCHEDULE_WORKER_RECONCILE_EVERY_N_CYCLES: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_EVERY_N_CYCLES | default "40" | quote }}
+  SCHEDULE_WORKER_RECONCILE_BATCH_SIZE: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_BATCH_SIZE | default "50" | quote }}
 
   # Application (DOMAIN API) Endpoint the worker drives over HTTP.
   # SCHEDULE_APP_BASE_URL and PLUGIN_AUTH_URL are operator/Vault-provided per environment.

@@ -129,7 +129,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `3.4.0-beta.2` | 1.7.5 | 1.7.5 | 1.7.5 | 1.7.5 |
+| `3.4.0-beta.3` | 1.7.5 | 1.7.5 | 1.7.5 | 1.7.5 |
 
 -----------------
 

@@ -12,7 +12,7 @@ A Helm chart for deploying Flowker - Workflow orchestration platform for financi
 
 ## Components
 
-The chart renders these workloads (all but the api are toggleable):
+The chart renders these workloads (all are toggleable; the api via `flowker.enabled`):
 
 | Component | Toggle | Default | Description |
 |-----------|--------|---------|-------------|

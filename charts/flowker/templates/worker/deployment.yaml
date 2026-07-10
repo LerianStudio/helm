@@ -23,7 +23,7 @@ spec:
   {{- end }}
   # Fixed single replica: the scheduler consume server and background jobs are
   # not leader-gated yet, so a second replica would double-process. Do NOT add an HPA.
-  replicas: {{ $w.replicaCount | default 1 }}
+  replicas: 1
   selector:
     matchLabels:
       {{- include "flowker.worker.selectorLabels" (dict "context" .) | nindent 6 }}

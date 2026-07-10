@@ -303,7 +303,7 @@ Roles Anywhere trust anchor/profile/role over a loopback IMDS endpoint. Args: co
 {{- $img := $sc.image | default dict -}}
 {{- $port := ($sc.port | default 9911) -}}
 - name: aws-signing-helper
-  image: "{{ $img.repository | default "public.ecr.aws/rolesanywhere/credential-helper" }}:{{ $img.tag | default "latest-amd64" }}"
+  image: "{{ $img.repository | default "public.ecr.aws/rolesanywhere/credential-helper" }}:{{ $img.tag | default "1.8.4-2026.06.09.14.59" }}"
   imagePullPolicy: {{ $img.pullPolicy | default "IfNotPresent" }}
   args:
     - serve

@@ -177,7 +177,9 @@ flowker:
   # -- Enable the WorkOS Tenant Manager token-mint feature (#300). ALL-OR-NONE:
   # when true, WORKOS_TM_TOKEN_URL + WORKOS_TM_CLIENT_ID (configmap) and
   # WORKOS_TM_CLIENT_SECRET (secrets) are all required (rejected at template time
-  # if partial). WORKOS_TM_SERVICE_NAME must match FLOWKER_SECRETS_APPLICATION_NAME.
+  # if partial). The WORKOS_TM_CLIENT_SECRET check applies only to chart-managed
+  # Secrets (flowker.useExistingSecret=false); with an existing Secret you must
+  # supply that key yourself. WORKOS_TM_SERVICE_NAME must match FLOWKER_SECRETS_APPLICATION_NAME.
   workosTmEnabled: false
 
   # -- In-pod XSD validator sidecar (stateless Go + libxml2). Injected into the api
@@ -364,17 +366,20 @@ flowker:
     # -- AWS region for the Schema Registry S3 store. Empty = resolved by the AWS SDK chain.
     SCHEMA_REGISTRY_S3_REGION: ""
 
-    # Shared OAuth2 token cache
-    TOKEN_CACHE_MAX_TTL_SEC: "3600"
-    TOKEN_CACHE_JANITOR_INTERVAL_SEC: "300"
-    TOKEN_CACHE_REFRESH_BUFFER_SEC: "60"
-    TOKEN_CACHE_TENANT_SCOPED_DISABLED: "false"
+    # Shared OAuth2 token cache (optional tuning). templates/configmap.yaml supplies
+    # these defaults; the values below are shown for reference — uncomment to override.
+    # TOKEN_CACHE_MAX_TTL_SEC: "3600"
+    # TOKEN_CACHE_JANITOR_INTERVAL_SEC: "300"
+    # TOKEN_CACHE_REFRESH_BUFFER_SEC: "60"
+    # TOKEN_CACHE_TENANT_SCOPED_DISABLED: "false"
 
-    # Secrets backend. Empty = disabled (boots fine); "tenant-manager" = AWS Secrets
-    # Manager reader. FLOWKER_SECRETS_APPLICATION_NAME must match WORKOS_TM_SERVICE_NAME.
-    FLOWKER_SECRETS_BACKEND: ""
-    FLOWKER_SECRETS_CACHE_TTL_SEC: ""
-    FLOWKER_SECRETS_APPLICATION_NAME: ""
+    # Secrets backend selector (optional). Empty = disabled (boots fine);
+    # "tenant-manager" = AWS Secrets Manager reader. FLOWKER_SECRETS_APPLICATION_NAME
+    # must match WORKOS_TM_SERVICE_NAME. templates/configmap.yaml defaults these to ""
+    # — uncomment to override.
+    # FLOWKER_SECRETS_BACKEND: ""
+    # FLOWKER_SECRETS_CACHE_TTL_SEC: ""
+    # FLOWKER_SECRETS_APPLICATION_NAME: ""
 
     # XSD validator (app-side knobs). Leave EMPTY to auto-derive from the in-pod
     # sidecar (flowker.xsdValidator.enabled): URL -> http://localhost:<port> and
@@ -396,7 +401,9 @@ flowker:
     SCHEDULER_CONCURRENCY: "10"
 
     # WorkOS Tenant Manager token mint (#300). Emitted only when flowker.workosTmEnabled=true.
-    WORKOS_TM_TOKEN_URL: ""
+    # WORKOS_TM_TOKEN_URL is the OAuth2 token endpoint (required when workosTmEnabled=true);
+    # set it via your override values.
+    # WORKOS_TM_TOKEN_URL: ""
     WORKOS_TM_CLIENT_ID: ""
     # -- Optional space-delimited scope (e.g. backoffice:tm:m2m:write).
     WORKOS_TM_SCOPE: ""
@@ -450,8 +457,9 @@ flowker:
 worker:
   # -- Enable or disable the worker Deployment
   enabled: true
-  # -- Number of replicas (fixed; the worker is not leader-gated — do NOT add an HPA)
-  replicaCount: 1
+  # Replicas are fixed at 1 in the template (the worker is not leader-gated, so a
+  # second replica would double-process). This is intentionally not configurable —
+  # do NOT add an HPA.
   # -- Number of old ReplicaSets to retain
   revisionHistoryLimit: 10
 
@@ -548,7 +556,9 @@ aws:
     sidecar:
       image:
         repository: public.ecr.aws/rolesanywhere/credential-helper
-        tag: "latest-amd64"
+        # Immutable, multi-arch (amd64+arm64) tag. Avoid the mutable `latest-amd64`
+        # so redeploys/rollbacks are reproducible and arm64 nodes are covered.
+        tag: "1.8.4-2026.06.09.14.59"
         pullPolicy: IfNotPresent
       port: 9911
       resources:

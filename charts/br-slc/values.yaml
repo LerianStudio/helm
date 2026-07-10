@@ -1,0 +1,854 @@
+# br-slc Helm values — BYOC single-tenant BASE.
+#
+# This is the hardened, safe-by-default base. Per-environment overrides (dev/hml
+# relaxations, SaaS-only knobs) live in the beleriand gitops overlays (Task
+# 6.0.6) — do NOT add values-<env>.yaml files to this chart.
+#
+# Scope: single tenant, ClusterIP-only Service, no Ingress. Postgres/Redis/
+# RabbitMQ are EXTERNAL, client-managed dependencies in BYOC (this chart does
+# NOT deploy them) — set configmap.data.POSTGRES_HOST / REDIS_HOST (and the
+# RabbitMQ host, if RABBITMQ_ENABLED=true) to your real endpoints before
+# deploying. See README.md for the full env var coverage table.
+
+replicaCount: 1
+revisionHistoryLimit: 5
+
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+
+# Non-secret app config emitted into the app ConfigMap but kept OUT of
+# configmap.data because their env-var names contain the substring "_token_"
+# (a PKCS11 token label and a token-cache TTL — neither is a credential),
+# which the Lerian helm-chart-standard secret-key heuristic would otherwise
+# flag. The ConfigMap template wires them under their real env-var names.
+webhookNotificationsCacheTtlSec: "60"
+# WEBHOOK_HMAC_SECRET_FILE — optional mounted-Secret file PATH (not a secret
+# value). Kept out of configmap.data because its name contains "secret". Empty
+# by default; set it together with extraVolumes/extraVolumeMounts if you prefer
+# the mounted-volume rotation pattern over the inline WEBHOOK_HMAC_SECRET var.
+webhookHmacSecretFile: ""
+
+image:
+  repository: ghcr.io/lerianstudio/br-slc
+  # Empty defaults to .Chart.AppVersion. ASSUMPTION: reconcile the real
+  # published repository/tag with Task 6.0.3 (sidecar + app CI image publish).
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+  # Templatable for IRSA (EKS) / Workload Identity (GKE) / KMS access.
+  # Example (EKS IRSA, so the app can use AWS_REGION + attached role instead of
+  # AWS_ACCESS_KEY_ID/SECRET/SESSION_TOKEN — those stay empty in production):
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::<account-id>:role/<role-name>
+  annotations: {}
+  # Gate 8 FIX 3: this workload never talks to the Kubernetes API, so the
+  # projected SA token is pure unused attack surface if the pod is ever
+  # compromised. Override to true only if you attach a controller/sidecar that
+  # genuinely needs the K8s API (e.g. IRSA's own token projection is separate
+  # from this and unaffected by disabling automount here).
+  automountServiceAccountToken: false
+
+podAnnotations: {}
+podLabels: {}
+
+service:
+  type: ClusterIP
+  port: 4111
+  targetPort: 4111
+
+# Mirrors deployments/helm/slc-signer's hardened posture exactly (Decision 9
+# sidecar precedent): non-root, no privilege escalation, read-only root fs, all
+# capabilities dropped, RuntimeDefault seccomp. /tmp is writable via emptyDir
+# (see deployment.yaml) since readOnlyRootFilesystem is true.
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+resources:
+  limits:
+    cpu: "1"
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Liveness: process viability only (no dependency checks) — /health.
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Readiness: dependency-aware — /readyz. More lenient than liveness: the app
+# has a `draining` state during graceful shutdown (readyz flips 503 first, so
+# it must not be so aggressive that it flaps during normal dependency hiccups).
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+
+# terminationGracePeriodSeconds must stay comfortably above any
+# STREAMING_CLOSE_TIMEOUT_S / outbox drain the app performs on SIGTERM during
+# the readyz `draining` window.
+terminationGracePeriodSeconds: 30
+
+# Extra volumes/mounts for chart consumers who need to attach e.g. a custom CA
+# bundle or a mounted Secret for WEBHOOK_API_KEY_FILE/WEBHOOK_HMAC_SECRET_FILE.
+extraVolumes: []
+extraVolumeMounts: []
+
+# ---------------------------------------------------------------------------
+# Secrets (the app container's 7 secret-bearing vars — NEVER real values here).
+# ---------------------------------------------------------------------------
+# NOTE (ADR-12 same-pod consolidation): SIGNER_SOFTKEY_PFX_PASSPHRASE is NOT
+# here — it is signing-key material and lives ONLY in the signer container's
+# own Secret (signer.secrets.data below), never readable by this app
+# container (ADR-9 custody boundary).
+# create: false (default) — recommended for BYOC: the client manages this
+#   Secret out-of-band (their own K8s Secret, External Secrets Operator, Vault
+#   injector, etc.) and existingSecretName points at it. The Secret MUST expose
+#   these SAME 5 keys (override the chart's data keys to match if your Secret
+#   uses different names — see README).
+# create: true — this chart creates the Secret from secrets.data via
+#   --set-string/-f overrides at install time (still never commit real values
+#   to this file).
+secrets:
+  create: false
+  # Non-empty by default (schema requires it when create=false): the BYOC
+  # operator creates a Secret with THIS name exposing the 5 keys below. When
+  # create=true the chart names its own Secret with this value instead.
+  existingSecretName: "br-slc-secrets"
+  data:
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+    WEBHOOK_API_KEY: ""
+    WEBHOOK_HMAC_SECRET: ""
+    # Moved out of the ConfigMap (Task 6.0.2 reconciliation): these three are
+    # credential material per Lerian's values.md ConfigMap-vs-Secrets
+    # classification and must not live in a ConfigMap. Empty by default —
+    # RABBITMQ_ENABLED is false in this base, so RABBITMQ_DEFAULT_PASS is
+    # inert until an overlay enables RabbitMQ for real; the two AWS_* vars
+    # stay empty in production per the "AWS credentials" note below (prefer
+    # IRSA via serviceAccount.annotations instead).
+    RABBITMQ_DEFAULT_PASS: ""
+    AWS_SECRET_ACCESS_KEY: ""
+    AWS_SESSION_TOKEN: ""
+
+# ---------------------------------------------------------------------------
+# ConfigMap — ALL non-secret env vars.
+# ---------------------------------------------------------------------------
+# 1:1 with config/.env.example's active surface (156 vars) minus the 5 secret
+# vars above, PLUS two vars this hardened base's own defaults require that are
+# NOT in .env.example's active section:
+#   - DEPLOYMENT_MODE: read by config_validation.go / systemplane.go / readyz
+#     TLS enforcement but only present in .env.example as documentation (no
+#     active line) — defaults to "byoc" here (see internal/bootstrap/config.go
+#     SigningConfig.DeploymentMode).
+#   - PLUGIN_AUTH_HOST: .env.example only has it commented out
+#     (# PLUGIN_AUTH_HOST=http://localhost:4000) because PLUGIN_AUTH_ENABLED
+#     defaults to false there. This base flips PLUGIN_AUTH_ENABLED to true
+#     (real auth in BYOC), and config_validation.go's validateAuthConfig FAILS
+#     BOOT when PLUGIN_AUTH_ENABLED=true and PLUGIN_AUTH_HOST is empty — so it
+#     MUST be set. Left empty by design: this chart will fail closed at boot
+#     until the operator/overlay sets the real Access Manager URL. See README.
+#
+# See README.md "Env Var Coverage" for the full 156/156 mapping table.
+configmap:
+  data:
+    # --- Application Settings ---
+    ENV_NAME: "production"
+    LOG_LEVEL: "info"
+    SERVER_ADDRESS: ":4111"
+    HTTP_BODY_LIMIT_BYTES: "104857600"
+    DEPLOYMENT_MODE: "byoc"
+
+    # --- CORS --- MUST override CORS_ALLOWED_ORIGINS with the real client
+    # origin(s) before go-live; empty is a safe deny-all default (harmless
+    # combined with ALLOW_CORS_WILDCARD=false below).
+    CORS_ALLOWED_ORIGINS: ""
+    CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
+    CORS_EXPOSE_HEADERS: ""
+    CORS_ALLOW_CREDENTIALS: "false"
+
+    # --- TLS / hardening bypass flags ---
+    # ASSUMPTION: TLS_TERMINATED_UPSTREAM depends on the client's real BYOC
+    # network topology (mesh mTLS vs. an in-front proxy/LB terminating TLS);
+    # this chart has no Ingress, so it is left false here — flip per
+    # environment in the beleriand overlay once the topology is confirmed.
+    TLS_TERMINATED_UPSTREAM: "false"
+    # These three MUST stay false in production (config_validation.go rejects
+    # boot when ENV_NAME=production and ALLOW_CORS_WILDCARD or
+    # ALLOW_RATELIMIT_FAIL_OPEN is true; ALLOW_INSECURE_TLS is the sovereign
+    # data-store TLS switch and is kept false here as the safe default too).
+    ALLOW_INSECURE_TLS: "false"
+    ALLOW_CORS_WILDCARD: "false"
+    ALLOW_RATELIMIT_FAIL_OPEN: "false"
+
+    # --- Multi-Tenant Starter (tenant-manager) --- single-tenant BYOC: off.
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_REDIS_PORT: "6379"
+    MULTI_TENANT_REDIS_TLS: "false"
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    MULTI_TENANT_TIMEOUT: "30"
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    MULTI_TENANT_CACHE_TTL_SEC: "120"
+    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+
+    # --- PostgreSQL Primary Database --- EXTERNAL/client-managed in BYOC.
+    # ASSUMPTION: POSTGRES_HOST is left empty — MUST be overridden with the
+    # real Postgres endpoint before deploy (this chart does not ship a
+    # postgresql subchart dependency per Task 6.0.1 scope).
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "br-slc"
+    POSTGRES_NAME: "br-slc"
+    # Hardened DEVIATION from .env.example's dev default (disable):
+    # config_validation.go's validateProductionConfig REJECTS
+    # POSTGRES_SSLMODE=disable when ENV_NAME=production, so the BYOC base
+    # default must not be "disable". "require" verifies encryption without
+    # requiring a client-supplied CA bundle; tighten to verify-full once the
+    # client's Postgres cert chain is known.
+    POSTGRES_SSLMODE: "require"
+    MIGRATIONS_PATH: "migrations"
+    SYSTEMPLANE_ENABLED: "false"
+    TENANT_RUNTIME_CONFIG_ENABLED: "false"
+    POSTGRES_MAX_OPEN_CONNS: "25"
+    POSTGRES_MAX_IDLE_CONNS: "5"
+    POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
+    POSTGRES_CONN_MAX_IDLE_TIME_MINS: "5"
+    POSTGRES_CONNECT_TIMEOUT_SEC: "10"
+
+    # --- Infrastructure Boot Timeout ---
+    INFRA_CONNECT_TIMEOUT_SEC: "30"
+
+    # --- Redis --- EXTERNAL/client-managed in BYOC (used regardless of
+    # MULTI_TENANT_ENABLED — idempotency/cache). MUST override REDIS_HOST.
+    REDIS_HOST: ""
+    REDIS_DB: "0"
+    REDIS_PROTOCOL: "3"
+    REDIS_POOL_SIZE: "10"
+    REDIS_MIN_IDLE_CONNS: "2"
+    REDIS_READ_TIMEOUT: "3"
+    REDIS_WRITE_TIMEOUT: "3"
+    REDIS_DIAL_TIMEOUT: "5"
+    REDIS_POOL_TIMEOUT: "2"
+    REDIS_MAX_RETRIES: "3"
+    REDIS_MIN_RETRY_BACKOFF: "8"
+    REDIS_MAX_RETRY_BACKOFF: "1"
+
+    # --- Event-Driven Starter - Circuit Breaker ---
+    CIRCUIT_BREAKER_ENABLED: "false"
+
+    # --- Event-Driven Starter - RabbitMQ --- off by default (readyz-probe-only
+    # dependency, not the main event path — lib-streaming/outbox owns that).
+    # Host/user below are inert while RABBITMQ_ENABLED=false; mirrored from
+    # .env.example rather than blanked because they have no effect disabled.
+    # RABBITMQ_DEFAULT_PASS moved to secrets.data (Task 6.0.2 reconciliation —
+    # it is credential material per Lerian's values.md classification and
+    # must not live in a ConfigMap; empty by default, operator injects if
+    # RabbitMQ is ever enabled for real in an overlay).
+    RABBITMQ_ENABLED: "false"
+    RABBITMQ_HOST: "localhost"
+    RABBITMQ_PORT_AMQP: "5672"
+    RABBITMQ_PORT_HOST: "15672"
+    RABBITMQ_DEFAULT_USER: "guest"
+    RABBITMQ_VHOST: "/"
+    RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: "false"
+    RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: "false"
+    RABBITMQ_ALLOW_INSECURE_TLS: "false"
+
+    # --- Event-Driven Starter - Outbox --- REQUIRED true: the operations
+    # context (POST /v1/operations, cancellation) fails closed at boot without
+    # the outbox repository wired.
+    OUTBOX_ENABLED: "true"
+    OUTBOX_TABLE_NAME: "outbox_events"
+    OUTBOX_DISPATCH_INTERVAL_SEC: "2"
+    OUTBOX_BATCH_SIZE: "50"
+    OUTBOX_PUBLISH_MAX_ATTEMPTS: "3"
+    OUTBOX_PUBLISH_BACKOFF_MS: "200"
+    OUTBOX_RETRY_WINDOW_SEC: "300"
+    OUTBOX_MAX_DISPATCH_ATTEMPTS: "10"
+    OUTBOX_PROCESSING_TIMEOUT_SEC: "600"
+    OUTBOX_MAX_FAILED_PER_BATCH: "25"
+    OUTBOX_INCLUDE_TENANT_METRICS: "false"
+    OUTBOX_ALLOW_EMPTY_TENANT: "true"
+
+    # --- Streaming Starter (lib-streaming outbox relay -> Kafka) --- opt-in;
+    # needs STREAMING_BROKERS (not in the active .env.example surface) set via
+    # an overlay before flipping this to true.
+    STREAMING_ENABLED: "false"
+    STREAMING_HEALTH_CHECK_TIMEOUT: "2s"
+
+    # --- Authentication (lib-auth + plugin-auth) --- hardened default: real
+    # auth ON in BYOC. See PLUGIN_AUTH_HOST note above the configmap block —
+    # this chart intentionally fails closed at boot until PLUGIN_AUTH_HOST is
+    # set to the real Access Manager endpoint.
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_HOST: ""
+
+    # --- API Documentation (Swagger) ---
+    SWAGGER_ENABLED: "true"
+    SWAGGER_TITLE: "BrSlc"
+    SWAGGER_VERSION: "1.0.0"
+    SWAGGER_BASE_PATH: "/"
+    SWAGGER_LEFT_DELIM: "{{"
+    SWAGGER_RIGHT_DELIM: "}}"
+
+    # --- OpenTelemetry --- hardened default: telemetry ON in BYOC.
+    # ASSUMPTION: OTEL_EXPORTER_OTLP_ENDPOINT assumes an in-cluster collector
+    # named "otel-collector-lerian" (the -helm-suffix-exception chart per
+    # ring:helm conventions) on the standard OTLP gRPC port; reconcile with the
+    # client's actual collector Service/release name in the beleriand overlay.
+    ENABLE_TELEMETRY: "true"
+    OTEL_LIBRARY_NAME: "br-slc"
+    OTEL_RESOURCE_SERVICE_NAME: "br-slc"
+    OTEL_RESOURCE_SERVICE_VERSION: "1.0.0"
+    OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector-lerian:4317"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    DB_METRICS_INTERVAL_SEC: "15"
+
+    # --- Rate Limiting ---
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+
+    # --- Idempotency ---
+    IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
+
+    # --- AWS Credentials (shared: slc-signer awskms adapter + M2M provider)
+    # --- MUST stay empty in production: use IRSA (serviceAccount.annotations
+    # above) instead of static credentials. AWS_REGION defaults to the SLC
+    # staging KMS region — confirm/override per real deployment.
+    # AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN moved to secrets.data (Task
+    # 6.0.2 reconciliation — credential material per Lerian's values.md
+    # classification). AWS_ACCESS_KEY_ID stays here: it is the non-secret
+    # half of a static credential pair (analogous to *_USER vars); still
+    # empty by default — prefer IRSA over any static AWS credentials.
+    AWS_REGION: "us-east-2"
+    AWS_ACCESS_KEY_ID: ""
+
+    # --- M2M Credentials ---
+    M2M_CREDENTIAL_CACHE_TTL_SEC: "300"
+
+    # --- Pagination ---
+    MAX_PAGINATION_LIMIT: "100"
+    MAX_PAGINATION_MONTH_DATE_RANGE: "3"
+
+    # --- Operations Intake ---
+    INTAKE_BATCH_MAX_LINES: "50000"
+
+    # --- XSD Validator Sidecar (aslc-xsd-validator — Decision 12 / ADR-12) ---
+    # SAME-POD container (ADR-12: "sidecar no mesmo pod, localhost"): the app
+    # reaches the validator over localhost, NOT cluster DNS. 9091 is the
+    # validator's containerPort inside this shared pod. See the top-level
+    # xsdValidator: section for the container's own image/config.
+    XSD_VALIDATOR_URL: "http://localhost:9091"
+    XSD_VALIDATOR_TIMEOUT_SEC: "10"
+    RSFN_INBOUND_XSD_VALIDATION_ENABLED: "true"
+
+    # --- Signing Sidecar (slc-signer — Decision 9 / ADR-12) ---
+    # SAME-POD container: the app reaches the signer over localhost, NOT
+    # cluster DNS. 9101 is the signer's containerPort inside this shared pod.
+    # Custody (ADR-9): the signing key material (softkey PFX + passphrase,
+    # HSM PIN, Vault token) lives ONLY in the signer container — its own
+    # Secret and softkey volume are never mounted on this app container. See
+    # the top-level signer: section.
+    SIGNER_URL: "http://localhost:9101"
+    SIGNER_TIMEOUT_SEC: "10"
+
+    # --- Mock Núclea (local credit-flow simulator) --- DEV/TEST FIXTURE ONLY;
+    # not consumed by the app in this phase. Left empty in BYOC/production.
+    MOCK_NUCLEA_URL: ""
+
+    # --- Núclea REST online-submission transport (E-2.4) --- transport stays
+    # disabled until NUCLEA_REST_BASE_URL (not in the active .env.example
+    # surface) is set via an overlay.
+    NUCLEA_REST_TIMEOUT_SEC: "30"
+    NUCLEA_REST_CB_CONSECUTIVE_FAILURES: "5"
+    NUCLEA_REST_CB_OPEN_TIMEOUT_SEC: "30"
+    NUCLEA_REST_ALLOW_INSECURE_TLS: "false"
+
+    # --- RSFN inbound consumer (IBM MQ external channel, E-3.3) ---
+    RSFN_CONSUMER_TRANSPORT: "stub"
+    RSFN_CONSUMER_TIMEOUT_SEC: "30"
+    RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES: "5"
+    RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC: "30"
+    RSFN_CONSUMER_ALLOW_INSECURE_TLS: "false"
+
+    # --- MQ Bridge sidecar (mqbridge) --- used only when
+    # RSFN_CONSUMER_TRANSPORT=mq. SAME-POD CONDITIONAL container (ADR-12 +
+    # Decisão 21): default off, rendered only when mqbridge.enabled=true (BYOC
+    # role IF Domicílio). When enabled it co-lives with the monolith in this
+    # pod, so the app reaches it over localhost, NOT cluster DNS — this resolves
+    # the drain/ack affinity risk by construction (same process, localhost). It
+    # keeps a writable /var/mqm rootfs + an amd64 pod pin (libmqm/GSKit); see the
+    # top-level mqbridge: section. Enable it in the same overlay/release that
+    # flips this transport, once a real/HML IBM MQ broker + GSKit keystore are
+    # ready.
+    MQ_BRIDGE_URL: "http://localhost:9121"
+    MQ_BRIDGE_TIMEOUT_SEC: "10"
+    MQ_BRIDGE_MAX_DRAIN: "16"
+
+    # --- Schedule — credit-window dispatch gate + STR grid (E-2.4/E-3.2) ---
+    # v0 window + worker: kept at .env.example's real (non-dev-bypass)
+    # defaults. All the provisional per-driver toggles below default to false
+    # exactly as .env.example ships them (each needs per-tenant Núclea
+    # recipient/custody material from E-4.2 before it is safe to enable — see
+    # config.go doc comments) — this base does not flip any of them on.
+    SCHEDULE_CREDIT_WINDOW_OPEN: "00:30"
+    SCHEDULE_CREDIT_WINDOW_CLOSE: "17:30"
+    SCHEDULE_WORKER_ENABLED: "true"
+    SCHEDULE_WORKER_INTERVAL_SEC: "30"
+    SCHEDULE_CUTOFF_ALERT_LEAD_MIN: "30"
+    SCHEDULE_GRID_GATE_ENABLED: "false"
+    SCHEDULE_HOLIDAYS: ""
+    SCHEDULE_DISPATCH_ENABLED: "false"
+    SCHEDULE_DISPATCH_PAGE_SIZE: "1000"
+    SCHEDULE_RETURN_POLL_ENABLED: "false"
+    SCHEDULE_RELAY_STATUS_ENABLED: "false"
+    SCHEDULE_RSFN_INGEST_ENABLED: "false"
+    SCHEDULE_D1_CONFIRMATION_ENABLED: "false"
+    SCHEDULE_D1_CONFIRMATION_CUTOFF: "19:00"
+    SCHEDULE_SILOC_WINDOWS_ENABLED: "false"
+    SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF: "07:30"
+    SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF: "12:50"
+    SCHEDULE_STR_SETTLED_ENABLED: "false"
+
+    # --- Webhook delivery (BYOC `direct` provider — E-3.5) ---
+    # WEBHOOK_API_KEY_FILE/WEBHOOK_HMAC_SECRET_FILE are optional mounted-Secret
+    # file-path variants; left empty here since this chart wires the inline
+    # WEBHOOK_API_KEY/WEBHOOK_HMAC_SECRET vars via secretKeyRef instead (see
+    # secrets.data above). Set extraVolumes/extraVolumeMounts + these two paths
+    # if you prefer the mounted-volume rotation pattern.
+    WEBHOOK_API_KEY_FILE: ""
+    # WEBHOOK_HMAC_SECRET_FILE is set via the top-level webhookHmacSecretFile
+    # value (see the note there).
+    WEBHOOK_DELIVERY_TIMEOUT_SEC: "10"
+    WEBHOOK_WORKER_ENABLED: "false"
+    WEBHOOK_WORKER_INTERVAL_SEC: "30"
+    WEBHOOK_DELIVERY_PROVIDER: "direct"
+    WEBHOOK_NOTIFICATIONS_BASE_URL: ""
+    # WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC is set via the top-level
+    # webhookNotificationsCacheTtlSec value (see the note there).
+    WEBHOOK_MAX_ATTEMPTS: "6"
+    WEBHOOK_BACKOFF_BASE_SEC: "30"
+    WEBHOOK_CONSUME_BATCH: "100"
+
+# ===========================================================================
+# Same-pod sidecar containers (ADR-12). signer + validator run as ADDITIONAL
+# containers in THIS Deployment's pod (not separate Deployments/Services), so
+# the app talks to them over localhost (see SIGNER_URL/XSD_VALIDATOR_URL). Both
+# are MANDATORY (no enable toggle): the validator is a fail-closed hard
+# dependency for all outbound ASLC, and the signer signs every batch. Shared
+# fate: the pod only reaches Ready when all three containers pass readiness.
+# ===========================================================================
+
+# --- slc-signer container (Decision 9 / ADR-9 crypto+credential boundary) ---
+signer:
+  # SIGNER_PKCS11_TOKEN_LABEL, wired into the signer ConfigMap under its real
+  # env-var name. Kept here (not under signer.configmap.data) because the name
+  # contains "_token_" and would otherwise trip the secret-key heuristic; it is
+  # a pkcs11 token *label*, not a credential. Empty unless a pkcs11 token is set.
+  pkcs11TokenLabel: ""
+  image:
+    repository: ghcr.io/lerianstudio/br-slc-signer
+    # Empty defaults to .Chart.AppVersion (see br-slc.signerImage in
+    # _helpers.tpl). ASSUMPTION: reconcile the published repo/tag with Task
+    # 6.0.3 (sidecar image publish).
+    tag: ""
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: "1"
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  # Per-container hardened posture (identical to the app container): non-root,
+  # no privilege escalation, read-only root fs (its own /tmp emptyDir), all
+  # capabilities dropped, RuntimeDefault seccomp.
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  # Both probes hit the same /health:9101 (no separate readyz for the signer).
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 9101
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 9101
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  # Softkey PFX bundle (BYOC-first custody adapter). The .pfx/.p12 FILE is
+  # mounted read-only from an externally managed Secret ONTO THE SIGNER
+  # CONTAINER ONLY (never the app container — ADR-9 custody). The passphrase
+  # that decrypts it is the separate signer.secrets.SIGNER_SOFTKEY_PFX_PASSPHRASE.
+  softkeySecret:
+    enabled: false
+    # Existing Secret whose key holds the PFX bytes, e.g.:
+    #   kubectl create secret generic slc-signer-softkey --from-file=signer.pfx=./signer.pfx
+    secretName: ""
+    secretKey: "signer.pfx"
+    mountPath: "/certs"
+  # Signer-scoped Secret — key/credential material readable ONLY by the signer
+  # container (ADR-9). Same create/existingSecretName pattern as the app
+  # Secret; BYOC default is an externally managed Secret.
+  secrets:
+    create: false
+    existingSecretName: "br-slc-signer-secrets"
+    data:
+      # Decrypts the softkey PFX bundle. Required only for the softkey adapter.
+      SIGNER_SOFTKEY_PFX_PASSPHRASE: ""
+      # awskms adapter static credentials (prefer IRSA via serviceAccount
+      # annotations so these stay empty).
+      AWS_SECRET_ACCESS_KEY: ""
+      AWS_SESSION_TOKEN: ""
+      # vault adapter token (only when SIGNER_VAULT_ADDR is set).
+      SIGNER_VAULT_TOKEN: ""
+      # pkcs11 adapter PIN (only when a pkcs11 token is configured).
+      SIGNER_PKCS11_PIN: ""
+  configmap:
+    data:
+      SIGNER_ADDR: ":9101"
+      SIGNER_MAX_BODY_BYTES: "65536"
+      ENV_NAME: "production"
+      # --- softkey adapter (BYOC-first custody path) ---
+      SIGNER_SOFTKEY_PFX_PATH: "/certs/signer.pfx"
+      # DELIBERATE, FLAGGED default: softkey holds the key in process memory,
+      # which config.go treats as alert-worthy in production and REFUSES to
+      # start unless acked. BYOC-first ships softkey day-one; flip back to
+      # "false" once a real awskms/pkcs11/vault adapter is configured.
+      SIGNER_SOFTKEY_ALLOW_IN_PRODUCTION: "true"
+      # --- awskms adapter (parameterizable, disabled by default: no region) ---
+      SIGNER_AWSKMS_REGION: ""
+      SIGNER_AWSKMS_DEFAULT_KEY_REF: ""
+      AWS_ACCESS_KEY_ID: ""
+      AWS_REGION: ""
+      # --- pkcs11 adapter (parameterizable, disabled by default: no token) ---
+      # SIGNER_PKCS11_TOKEN_LABEL is set via signer.pkcs11TokenLabel (kept out of
+      # configmap.data because its name matches the "_token_" secret heuristic).
+      SIGNER_PKCS11_MODULE: "/usr/lib/softhsm/libsofthsm2.so"
+      SIGNER_PKCS11_SLOT: ""
+      SIGNER_PKCS11_KEY_LABEL: ""
+      # --- vault adapter (parameterizable, disabled by default: no address) ---
+      SIGNER_VAULT_ADDR: ""
+      SIGNER_VAULT_TRANSIT_MOUNT: "transit"
+      SIGNER_VAULT_NAMESPACE: ""
+      SIGNER_VAULT_CACERT: ""
+      # --- Auth delegation (Access Manager) --- fails closed until the
+      # operator sets the real PLUGIN_AUTH_HOST (validateAuthConfig).
+      PLUGIN_AUTH_ENABLED: "true"
+      PLUGIN_AUTH_HOST: ""
+      PLUGIN_AUTH_ALLOW_INSECURE_HTTP: "false"
+
+# --- aslc-xsd-validator container (Decision 12) ---
+# Stateless: all XSD schemas are go:embedded in the image. No secrets, no
+# persistent volumes. HARD outbound dependency (fail-closed) — but shared fate
+# in the same pod removes the "app Ready, validator absent" window.
+xsdValidator:
+  image:
+    repository: ghcr.io/lerianstudio/br-slc-xsd-validator
+    tag: ""
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: "500m"
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 9091
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 9091
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  configmap:
+    data:
+      XSD_VALIDATOR_ADDR: ":9091"
+      XSD_MAX_BODY_BYTES: "5242880"
+      ENV_NAME: "production"
+      # --- Auth delegation (Access Manager) --- fails closed until the
+      # operator sets the real PLUGIN_AUTH_HOST (validateAuthConfig).
+      PLUGIN_AUTH_ENABLED: "true"
+      PLUGIN_AUTH_HOST: ""
+      PLUGIN_AUTH_ALLOW_INSECURE_HTTP: "false"
+
+# ===========================================================================
+# --- mqbridge container (Decisão 21 — RSFN IBM MQ inbound consumer) ---
+# CONDITIONAL same-pod container, UNLIKE the mandatory signer/validator above.
+# It owns the inbound IBM MQ/RSFN connection of the cards channel; the mTLS
+# identity is per-process (MQSCO.KeyRepository from env MQSSLKEYR), so 1 process
+# = 1 participant (BYOC single-tenant). The SaaS multi-tenant consumer manager
+# is Fase 7 (separate Deployment) — NOT built here.
+#
+# GATED: rendered ONLY when mqbridge.enabled=true, which a client sets when the
+# role is IF Domicílio with RSFN_CONSUMER_TRANSPORT=mq. Default off — a
+# credenciadora-only tenant never carries the container, and a default
+# `helm template`/`helm install` renders NO mqbridge container/configmap/secret
+# and NO amd64 pod pin. When enabled, the app reaches it over localhost:9121
+# (see configmap.data.MQ_BRIDGE_URL). Enabling it hard-caps the monolith
+# replicaCount to 1 (per-process deliveryRef->conn state; see the guard at the
+# top of templates/deployment.yaml).
+# ===========================================================================
+mqbridge:
+  enabled: false
+  image:
+    # ASSUMPTION (flag for CI reconciliation): repository derived from the
+    # module path github.com/LerianStudio/br-slc-mq-bridge and the
+    # docker-compose service — ghcr.io/lerianstudio/{name} per Lerian Helm
+    # conventions.
+    repository: ghcr.io/lerianstudio/br-slc-mq-bridge
+    # Empty defaults to .Chart.AppVersion (see br-slc.mqbridgeImage in
+    # _helpers.tpl).
+    tag: ""
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      memory: 256Mi
+      cpu: "500m"
+    requests:
+      memory: 64Mi
+      cpu: "100m"
+  # Security hardening. UNLIKE the other same-pod containers,
+  # readOnlyRootFilesystem is FALSE here: the IBM MQ C client (libmqm)
+  # conventionally needs a writable location (e.g. /var/mqm) for its own
+  # error/FDC/trace logs, and a read-only rootfs would break it at connect
+  # time. Still non-root, no privilege escalation, all capabilities dropped,
+  # RuntimeDefault seccomp. An explicit emptyDir is mounted at /var/mqm
+  # regardless (see deployment.yaml) so libmqm's writable state never depends
+  # on the base image's own directory permissions.
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    allowPrivilegeEscalation: false
+    # readOnlyRootFilesystem is deliberately FALSE for mqbridge (libmqm needs a
+    # writable /var/mqm). It is set on the container in deployment.yaml rather
+    # than here so values.yaml carries no writable-rootfs default. Do NOT add a
+    # readOnlyRootFilesystem key back to this block.
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  # Liveness ONLY (process viability, /health). There is deliberately NO
+  # readinessProbe (Decisão 21): mqbridge is same-pod and no Service routes to
+  # :9121, so readiness gates no traffic — but /readyz reflects the IBM MQ pool
+  # state, so using it as readiness would pull the whole pod out of the
+  # monolith's :4111 Service on any MQ blip (total outage under replicaCount=1).
+  # MQ connectivity is surfaced to the monolith via the client-side breaker.
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 9121
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  # GSKit keystore (.kdb + .sth/.rdb) — required only when
+  # MQ_BRIDGE_TLS_ENABLED=true (RSFN mandates mTLS in production). Mounted
+  # read-only ONTO THE MQBRIDGE CONTAINER ONLY from an externally managed
+  # Secret; MQSSLKEYR (configmap.data below) must point at the STEM path (no
+  # file extension), e.g. "/keystore/mqbridge" for files
+  # mqbridge.kdb/mqbridge.sth/mqbridge.rdb.
+  keystoreSecret:
+    enabled: false
+    # Name of an existing Secret whose data keys hold the .kdb/.sth/.rdb bytes,
+    # e.g. created out-of-band as:
+    #   kubectl create secret generic br-slc-mqbridge-keystore \
+    #     --from-file=mqbridge.kdb=./mqbridge.kdb \
+    #     --from-file=mqbridge.sth=./mqbridge.sth \
+    #     --from-file=mqbridge.rdb=./mqbridge.rdb
+    secretName: ""
+    mountPath: "/keystore"
+    # Base filename stem (no extension) inside the Secret/mount; combined with
+    # mountPath this yields the MQSSLKEYR value below by convention.
+    stem: "mqbridge"
+  # Mqbridge-scoped Secret — never real values here. Same create/
+  # existingSecretName pattern as the app/signer Secrets; BYOC default is an
+  # externally managed Secret.
+  # create: false (default) — BYOC recommended: the client manages this Secret
+  #   out-of-band and existingSecretName points at it (must expose the same key
+  #   as secrets.data below).
+  # create: true — this chart creates the Secret from secrets.data via
+  #   --set-string/-f at install time.
+  secrets:
+    create: false
+    existingSecretName: "br-slc-mqbridge-secrets"
+    data:
+      # Optional MQCSP password. RSFN authenticates via the client certificate
+      # in the keystore, so this is normally empty.
+      MQ_BRIDGE_MQ_PASSWORD: ""
+  # ConfigMap — all non-secret env vars. The per-request IBM MQ connection
+  # descriptor (queue manager, channel, conn name, queue) is NOT here — it
+  # arrives per call from the monolith on /v1/drain.
+  configmap:
+    data:
+      MQ_BRIDGE_ADDR: ":9121"
+      MQ_BRIDGE_MAX_INFLIGHT: "16"
+      MQ_BRIDGE_ACK_TIMEOUT_SEC: "60"
+      # Derived (half of ack timeout, clamped [1s,30s]) when left at "0".
+      MQ_BRIDGE_SWEEP_INTERVAL_SEC: "0"
+      MQ_BRIDGE_GET_WAIT_MS: "0"
+      MQ_BRIDGE_RECEIVE_BUFFER_BYTES: "1048576"
+      MQ_BRIDGE_MAX_MESSAGE_BYTES: "16777216"
+      MQ_BRIDGE_MAX_BODY_BYTES: "65536"
+
+      # --- RSFN mTLS (terminates INSIDE this container, not the monolith) ---
+      # DELIBERATE, FLAGGED default: production requires TLS (the bridge rejects
+      # boot when ENV_NAME=production and this is false). Left "false" here
+      # since no broker/keystore exists until mqbridge is actually enabled for a
+      # real/HML deployment — flip to "true" together with keystoreSecret.enabled
+      # and MQSSLKEYR below.
+      MQ_BRIDGE_TLS_ENABLED: "false"
+      # Empty by default; set to the keystore stem path (e.g.
+      # "/keystore/mqbridge") once keystoreSecret.enabled=true.
+      MQSSLKEYR: ""
+      # DOUBT-TLS-CIPHER (CodeRabbit PR #99): TLS_RSA_WITH_AES_256_CBC_SHA256
+      # uses static RSA key exchange + CBC. An ECDHE+GCM CipherSpec (e.g.
+      # ECDHE_RSA_AES_256_GCM_SHA384, or TLS 1.3 TLS_AES_256_GCM_SHA384) is
+      # preferred, BUT the CipherSpec MUST match what Nuclea's RSFN MQ manager
+      # actually accepts — RSFN is a regulated endpoint, not our choice, and
+      # selecting a spec it rejects fails the TLS handshake. Confirm the
+      # supported CipherSpec against the Nuclea RSFN MQ manual at the
+      # homologacao gate; keep this CBC value only as a compatibility fallback.
+      MQ_BRIDGE_TLS_CIPHER: "TLS_RSA_WITH_AES_256_CBC_SHA256"
+
+      # Optional MQCSP username (RSFN normally authenticates via the client
+      # cert in the keystore, so this is normally empty).
+      MQ_BRIDGE_MQ_USER: ""
+
+      # Rejected in production; "false" is the safe default so a non-ibmmq
+      # binary never silently boots against a real deployment.
+      MQ_BRIDGE_ALLOW_STUB: "false"
+
+      ENV_NAME: "production"
+      LOG_LEVEL: "info"
+
+      # --- Auth delegation (Access Manager) --- hardened default: real auth ON.
+      # PLUGIN_AUTH_HOST is intentionally empty: the bridge FAILS BOOT when
+      # PLUGIN_AUTH_ENABLED=true and the host is empty — fails closed until the
+      # operator sets the real Access Manager URL.
+      PLUGIN_AUTH_ENABLED: "true"
+      PLUGIN_AUTH_HOST: ""
+      PLUGIN_AUTH_ALLOW_INSECURE_HTTP: "false"
+
+# ---------------------------------------------------------------------------
+# Migration Job (Task 6.0.4) — applies migrations/*.up.sql (golang-migrate)
+# via a pre-install,pre-upgrade Helm hook, before the Deployment rolls.
+# ---------------------------------------------------------------------------
+migrations:
+  enabled: true
+  backoffLimit: 2
+  activeDeadlineSeconds: 600
+  # Gate 8 FIX 6: bounds accumulation of FAILED hook Jobs/pods. A successful
+  # Job is already removed by hook-delete-policy: HookSucceeded — this TTL only
+  # matters on the failure path, where the Job is deliberately left behind for
+  # post-mortem debugging. 259200s = 3 days.
+  ttlSecondsAfterFinished: 259200
+  image:
+    # Dedicated migrations image (br-spi pattern): its entrypoint applies the
+    # golang-migrate loop over the embedded migrations/*.up.sql against the
+    # single br-slc database. Built + published by the br-slc release pipeline.
+    repository: ghcr.io/lerianstudio/br-slc-migrations
+    # Empty defaults to .Chart.AppVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  # PreSync Secret custody. false (default): the chart mints a dedicated PreSync
+  # Secret (br-slc-migrations) carrying only POSTGRES_PASSWORD, sourced from
+  # migrations.postgres.password (falling back to secrets.data.POSTGRES_PASSWORD).
+  # true: the Job reads POSTGRES_PASSWORD from the operator-managed
+  # existingSecretName instead (BYOC out-of-band Secret).
+  useExistingSecret: false
+  existingSecretName: ""
+  # DB connection for the Job. Each field falls back to the app's
+  # configmap.data.POSTGRES_* / secrets.data.POSTGRES_PASSWORD (single source of
+  # truth) when left empty — override only for a migrations-specific endpoint.
+  postgres:
+    host: ""
+    port: ""
+    user: ""
+    database: ""
+    sslMode: ""
+    password: ""
+  resources:
+    limits:
+      cpu: "500m"
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  # A lightweight busybox initContainer waits for POSTGRES_HOST:POSTGRES_PORT to
+  # accept a TCP connection before the migrations container starts (mirrors the
+  # Lerian wait-for-dependencies convention) — avoids a hard Job failure on a
+  # fresh install racing a not-yet-ready Postgres.
+  waitForPostgres:
+    enabled: true
+    image:
+      repository: busybox
+      tag: "1.37"

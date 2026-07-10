@@ -1,0 +1,52 @@
+# Template values for the br-slc (Sistema de Liquidação Centralizada) chart.
+# Copy this file, fill in the values for your environment, and install with -f.
+# Postgres, Redis and (optionally) RabbitMQ are EXTERNAL, client-managed
+# dependencies in BYOC — this chart does not deploy them. See README.md for the
+# full env-var coverage and the Chart Contract.
+
+imagePullSecrets:
+  - name: ghcr-credential
+
+image:
+  tag: ""  # optional — defaults to Chart.appVersion
+
+# App container Secret. create: true mints the Secret from the values below;
+# create: false (recommended for BYOC) references an operator-managed Secret via
+# existingSecretName that must expose these same keys.
+secrets:
+  create: false
+  existingSecretName: "br-slc-secrets"
+  data:
+    POSTGRES_PASSWORD: ""        # REQUIRED — external Postgres password
+    REDIS_PASSWORD: ""           # REQUIRED when the external Redis needs auth
+    WEBHOOK_API_KEY: ""
+    WEBHOOK_HMAC_SECRET: ""
+
+configmap:
+  data:
+    POSTGRES_HOST: ""            # REQUIRED — external Postgres host
+    REDIS_HOST: ""               # REQUIRED — external Redis host:port
+    PLUGIN_AUTH_HOST: ""         # REQUIRED — Access Manager URL (fails closed at boot if empty while auth enabled)
+    CORS_ALLOWED_ORIGINS: ""     # REQUIRED before go-live — real client origin(s)
+
+# Signer container Secret (ADR-9 custody: readable ONLY by the slc-signer
+# container). Same create/existingSecretName pattern.
+signer:
+  secrets:
+    create: false
+    existingSecretName: "br-slc-signer-secrets"
+    data:
+      SIGNER_SOFTKEY_PFX_PASSPHRASE: ""  # decrypts the softkey PFX (softkey custody path)
+
+# Conditional inbound IBM MQ / RSFN consumer (Decisão 21). Enable only for the
+# IF Domicílio role with RSFN_CONSUMER_TRANSPORT=mq; forces replicaCount=1 and an
+# amd64 node pin. Leave disabled otherwise.
+mqbridge:
+  enabled: false
+
+# Detached migrations. The PreSync Job runs the dedicated br-slc-migrations image.
+migrations:
+  enabled: true
+  postgres:
+    host: ""                     # defaults to configmap.data.POSTGRES_HOST
+    password: ""                 # defaults to secrets.data.POSTGRES_PASSWORD

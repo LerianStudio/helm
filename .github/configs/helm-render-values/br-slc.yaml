@@ -1,0 +1,29 @@
+# CI-only render fixture for br-slc. Dummy values, NOT a production example and
+# NOT real credentials. Exercises the external-infra path (Postgres/Redis are
+# external in BYOC) with the app + signer Secrets and the migration Job all
+# rendered in-release, so the render gate's dangling-secret-ref assertion has
+# every referenced Secret present.
+secrets:
+  create: true
+  data:
+    POSTGRES_PASSWORD: "dummy-ci-password"
+    REDIS_PASSWORD: "dummy-ci-redis"
+
+configmap:
+  data:
+    POSTGRES_HOST: "pg.example.svc"
+    REDIS_HOST: "redis.example.svc:6379"
+    PLUGIN_AUTH_HOST: "http://access-manager.example.svc:4000"
+    CORS_ALLOWED_ORIGINS: "https://app.example.com"
+
+signer:
+  secrets:
+    create: true
+    data:
+      SIGNER_SOFTKEY_PFX_PASSPHRASE: "dummy-ci-passphrase"
+
+migrations:
+  enabled: true
+  postgres:
+    host: "pg.example.svc"
+    password: "dummy-ci-password"

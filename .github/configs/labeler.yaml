@@ -73,3 +73,7 @@ underwriter:
 br-ccs:
   - changed-files:
       - any-glob-to-any-file: charts/br-ccs/**
+
+br-slc:
+  - changed-files:
+      - any-glob-to-any-file: charts/br-slc/**

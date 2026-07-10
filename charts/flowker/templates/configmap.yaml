@@ -130,12 +130,18 @@ data:
   {{- /* cleartext is auto-acknowledged ONLY for the in-pod loopback URL; an explicit off-pod override must opt in deliberately */}}
   XSD_VALIDATOR_ALLOW_INSECURE_HTTP: {{ .Values.flowker.configmap.XSD_VALIDATOR_ALLOW_INSECURE_HTTP | default (ternary "true" "false" (and $xsdOn (not $xsdUrlOverridden))) | quote }}
 
-  # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. SCHEDULER_REDIS_HOST
-  # is derived from the valkey subchart in a follow-up phase; empty keeps the
-  # scheduler queue a nil-safe no-op. This dedicated queue Redis MUST stay
-  # isolated from the tenant Pub/Sub Redis (MULTI_TENANT_REDIS_*).
+  # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. When the bundled
+  # valkey subchart is enabled, SCHEDULER_REDIS_HOST auto-derives to its Service
+  # name; empty (valkey off, no override) keeps the scheduler queue a nil-safe
+  # no-op. This dedicated queue Redis MUST stay isolated from the tenant Pub/Sub
+  # Redis (MULTI_TENANT_REDIS_*).
   SCHEDULER_ENABLED: {{ .Values.flowker.configmap.SCHEDULER_ENABLED | default "true" | quote }}
-  SCHEDULER_REDIS_HOST: {{ .Values.flowker.configmap.SCHEDULER_REDIS_HOST | default "" | quote }}
+  {{- /* Derive the queue host from the valkey subchart's actual Service name (<release>-valkey, or fullnameOverride) so it resolves under any release name; an explicit override always wins. */}}
+  {{- $valkeyHost := "" }}
+  {{- if eq (include "flowker.valkey.enabled" .) "true" }}
+  {{- $valkeyHost = include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" (.Values.valkey | default dict) "context" .) }}
+  {{- end }}
+  SCHEDULER_REDIS_HOST: {{ .Values.flowker.configmap.SCHEDULER_REDIS_HOST | default $valkeyHost | quote }}
   SCHEDULER_REDIS_PORT: {{ .Values.flowker.configmap.SCHEDULER_REDIS_PORT | default "6379" | quote }}
   SCHEDULER_REDIS_TLS: {{ .Values.flowker.configmap.SCHEDULER_REDIS_TLS | default "false" | quote }}
   SCHEDULER_REDIS_DB: {{ .Values.flowker.configmap.SCHEDULER_REDIS_DB | default "0" | quote }}

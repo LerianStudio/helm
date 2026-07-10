@@ -248,6 +248,14 @@ is enabled. Shared by the api and worker Deployments. Input (dict): context (roo
 {{- end }}
 
 {{/*
+flowker.valkey.enabled — true only for an explicit enable (default off). Backs the
+scheduler queue Redis; an external Redis is used by overriding SCHEDULER_REDIS_HOST instead.
+*/}}
+{{- define "flowker.valkey.enabled" -}}
+{{- eq (toString (.Values.valkey | default dict).enabled) "true" -}}
+{{- end -}}
+
+{{/*
 flowker.xsdValidator.enabled — nil-aware: unset/true enables, explicit false disables.
 */}}
 {{- define "flowker.xsdValidator.enabled" -}}

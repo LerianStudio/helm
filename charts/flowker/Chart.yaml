@@ -25,3 +25,7 @@ dependencies:
     version: "16.4.0"
     repository: "https://charts.bitnami.com/bitnami"
     condition: mongodb.enabled
+  - name: valkey
+    version: "0.7.4"
+    repository: "https://valkey.io/valkey-helm"
+    condition: valkey.enabled

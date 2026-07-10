@@ -383,9 +383,10 @@ flowker:
     XSD_VALIDATOR_URL: ""
     XSD_VALIDATOR_ALLOW_INSECURE_HTTP: ""
 
-    # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. SCHEDULER_REDIS_HOST is
-    # derived from the valkey subchart in a follow-up phase; empty keeps the scheduler
-    # queue a nil-safe no-op. Keep this queue Redis isolated from MULTI_TENANT_REDIS_*.
+    # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. Leave SCHEDULER_REDIS_HOST
+    # empty to auto-derive the bundled valkey Service name when valkey.enabled=true, or
+    # set it to point at an external/managed Redis; empty with valkey off keeps the
+    # scheduler queue a nil-safe no-op. Keep this queue Redis isolated from MULTI_TENANT_REDIS_*.
     SCHEDULER_ENABLED: "true"
     SCHEDULER_REDIS_HOST: ""
     SCHEDULER_REDIS_PORT: "6379"
@@ -421,8 +422,8 @@ flowker:
     MULTI_TENANT_REDIS_PASSWORD: ""
     # -- WorkOS Tenant Manager client secret (required when flowker.workosTmEnabled=true)
     WORKOS_TM_CLIENT_SECRET: ""
-    # -- Scheduler queue Redis password (external-Redis path; the valkey subchart
-    # supplies this via secretKeyRef in a follow-up phase)
+    # -- Scheduler queue Redis password (optional): set for an external/managed Redis,
+    # or when the bundled valkey subchart has auth enabled (its ACL must match this).
     SCHEDULER_REDIS_PASSWORD: ""
 
   # -- Use an existing secret instead of creating one
@@ -513,6 +514,19 @@ worker:
     # -- Name override
     # @default -- `flowker.worker.fullname`
     name: ""
+
+# -- Valkey (Redis-compatible) in-cluster store backing the scheduler queue.
+# Disabled by default: enable for an in-cluster queue Redis, or leave off and
+# point flowker.configmap.SCHEDULER_REDIS_HOST at an external/managed Redis.
+# When enabled, SCHEDULER_REDIS_HOST auto-derives to the subchart Service (<release>-valkey).
+# This queue Redis MUST stay isolated from the tenant Pub/Sub Redis (MULTI_TENANT_REDIS_*).
+valkey:
+  enabled: false
+  auth:
+    # -- The valkey.io subchart uses inline ACL config (valkey.auth.aclConfig), not a
+    # password Secret; if you enable auth here, also set flowker.secrets.SCHEDULER_REDIS_PASSWORD
+    # on the app side to a credential that matches the ACL. Off by default (in-cluster ClusterIP).
+    enabled: false
 
 mongodb:
   # MongoDB document database for flowker data storage

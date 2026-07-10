@@ -351,6 +351,79 @@ auth:
         pullPolicy: Always
         # -- Image tag used for deployment
         tag: "2.6.3"
+  # -- Auth backend console (SPA). Opt-in: only the caradhras backend ships a
+  # matching UI image today, so this defaults to disabled to keep any other
+  # auth.backend.image consumer of this chart unaffected.
+  ui:
+    # -- Enable or disable the auth backend console Deployment/Service/Ingress
+    enabled: false
+    # -- Readiness probe configuration. All fields override chart defaults.
+    readinessProbe: {}
+    # -- Liveness probe configuration. All fields override chart defaults.
+    livenessProbe: {}
+    replicaCount: 1
+    revisionHistoryLimit: 10
+    name: "plugin-access-manager-auth-ui"
+    image:
+      # -- Repository for the console (SPA) container image
+      repository: ghcr.io/lerianstudio/caradhras-ui
+      # -- Image pull policy
+      pullPolicy: Always
+      # -- Image tag used for deployment
+      tag: ""
+    resources:
+      # -- CPU and memory limits for pods
+      limits:
+        cpu: 200m
+        memory: 128Mi
+      # -- Minimum CPU and memory requests
+      requests:
+        cpu: 50m
+        memory: 32Mi
+    # -- nginx (image entrypoint's envsubst-on-templates) resolves the backend
+    # Service name at request time via this DNS resolver. Defaults to the
+    # common CoreDNS Service name/namespace on kubeadm/EKS/GKE; override for
+    # clusters using a different in-cluster DNS Service.
+    nginxResolverAddr: "kube-dns.kube-system.svc.cluster.local"
+    podSecurityContext: {}
+    securityContext:
+      # -- nginx-unprivileged's default uid/gid (not 1000 like the other
+      # components in this chart)
+      runAsGroup: 101
+      runAsUser: 101
+      runAsNonRoot: true
+      capabilities:
+        drop:
+          - ALL
+      # -- The image's envsubst-on-templates entrypoint writes the rendered
+      # config to /etc/nginx/conf.d/ at container start, so root can't be
+      # read-only (same tradeoff as auth.backend's casdoor container).
+      readOnlyRootFilesystem: false
+      allowPrivilegeEscalation: false
+      seccompProfile:
+        type: RuntimeDefault
+    service:
+      # -- Kubernetes service type
+      type: ClusterIP
+      # -- Service port
+      port: 8080
+    ingress:
+      # -- Enable or disable ingress
+      enabled: false
+      # -- Ingress class name
+      className: ""
+      # -- Additional ingress annotations
+      annotations: {}
+      hosts:
+        - host: ""
+          paths:
+            - path: /
+              pathType: Prefix
+      # -- TLS configuration for ingress
+      tls: []
+      #  - secretName: chart-example-tls
+      #  hosts:
+      #      - chart-example.local
   # -- Init User Job configuration
   # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
   # -- If the admin user is deleted by the customer, it will NOT be recreated

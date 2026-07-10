@@ -19,6 +19,13 @@ Expand the name of the chart and plugin auth.
 {{- default "plugin-access-manager-auth-backend" .Values.auth.backend.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{/*
+Expand the name of the chart and plugin auth ui.
+*/}}
+{{- define "plugin-auth-ui.name" -}}
+{{- default "plugin-access-manager-auth-ui" .Values.auth.ui.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 
 {{/*
 Create chart name and version as used by the chart label for plugin identity.
@@ -38,6 +45,13 @@ Create chart name and version as used by the chart label for plugin auth.
 Create chart name and version as used by the chart label for plugin auth.
 */}}
 {{- define "plugin-auth-backend.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create chart name and version as used by the chart label for plugin auth ui.
+*/}}
+{{- define "plugin-auth-ui.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -66,6 +80,15 @@ If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-auth-backend.fullname" -}}
 {{- default "plugin-access-manager-auth-backend" .Values.auth.backend.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create a default fully qualified app name auth ui.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "plugin-auth-ui.fullname" -}}
+{{- default "plugin-access-manager-auth-ui" .Values.auth.ui.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -106,6 +129,16 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
 {{/*
+Auth UI Selector labels
+*/}}
+{{- define "plugin-auth-ui.selectorLabels" -}}
+{{- if .name -}}
+app.kubernetes.io/name: {{ include "plugin-auth-ui.name" .context }}
+{{- end }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
+{{/*
 Identity Common labels
 */}}
 {{- define "plugin-identity.labels" -}}
@@ -131,6 +164,16 @@ Auth Backend Common labels
 {{- define "plugin-auth-backend.labels" -}}
 helm.sh/chart: {{ include "plugin-auth-backend.chart" .context }}
 {{ include "plugin-auth-backend.selectorLabels" (dict "context" .context "name" .name) }}
+app.kubernetes.io/version: {{ include "plugin.version" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Auth UI Common labels
+*/}}
+{{- define "plugin-auth-ui.labels" -}}
+helm.sh/chart: {{ include "plugin-auth-ui.chart" .context }}
+{{ include "plugin-auth-ui.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}

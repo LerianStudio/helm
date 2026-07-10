@@ -1,0 +1,17 @@
+{{- if .Values.auth.ui.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plugin-auth-ui.fullname" . }}
+  labels:
+    {{- include "plugin-auth-ui.labels" (dict "context" . "name" .Values.auth.ui.name ) | nindent 4 }}
+spec:
+  type: {{ .Values.auth.ui.service.type }}
+  ports:
+    - port: {{ .Values.auth.ui.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "plugin-auth-ui.selectorLabels" (dict "context" . "name" .Values.auth.ui.name) | nindent 4 }}
+{{- end }}

@@ -1,0 +1,77 @@
+{{- if .Values.auth.ui.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-auth-ui.fullname" . }}
+  labels:
+    {{- include "plugin-auth-ui.labels" (dict "context" . "name" .Values.auth.ui.name ) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.auth.ui.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
+  replicas: {{ .Values.auth.ui.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plugin-auth-ui.selectorLabels" (dict "context" . "name" .Values.auth.ui.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-auth-ui.labels" (dict "context" . "name" .Values.auth.ui.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.auth.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.auth.ui.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "plugin-auth-ui.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.auth.ui.securityContext | nindent 12 }}
+          image: "{{ .Values.auth.ui.image.repository }}:{{ .Values.auth.ui.image.tag }}"
+          imagePullPolicy: {{ .Values.auth.ui.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+          # The image's own docker-entrypoint.d/20-envsubst-on-templates.sh
+          # renders ui/nginx.conf.template into /etc/nginx/conf.d/ at
+          # container start, substituting these two vars.
+          - name: CARADHRAS_BACKEND_ADDR
+            value: "{{ include "plugin-auth-backend.fullname" . }}:8000"
+          - name: NGINX_RESOLVER_ADDR
+            value: {{ .Values.auth.ui.nginxResolverAddr | quote }}
+          resources:
+            {{- toYaml .Values.auth.ui.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.auth.ui.readinessProbe.path | default "/healthz" }}
+              port: 8080
+            initialDelaySeconds: {{ .Values.auth.ui.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.auth.ui.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ .Values.auth.ui.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.auth.ui.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.auth.ui.readinessProbe.failureThreshold | default 3 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.auth.ui.livenessProbe.path | default "/healthz" }}
+              port: 8080
+            initialDelaySeconds: {{ .Values.auth.ui.livenessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.auth.ui.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.auth.ui.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.auth.ui.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.auth.ui.livenessProbe.failureThreshold | default 3 }}
+      {{- with .Values.auth.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

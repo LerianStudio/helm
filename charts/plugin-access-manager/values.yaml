@@ -386,6 +386,11 @@ auth:
     # clusters using a different in-cluster DNS Service.
     nginxResolverAddr: "kube-dns.kube-system.svc.cluster.local"
     podSecurityContext: {}
+    # -- readOnlyRootFilesystem here is the honest chart-standard default;
+    # templates/auth/ui/deployment.yaml overrides it to false for the
+    # container (the image's envsubst-on-templates entrypoint writes the
+    # rendered nginx config to /etc/nginx/conf.d/ at start), same pattern as
+    # auth.backend's casdoor container.
     securityContext:
       # -- nginx-unprivileged's default uid/gid (not 1000 like the other
       # components in this chart)
@@ -395,10 +400,7 @@ auth:
       capabilities:
         drop:
           - ALL
-      # -- The image's envsubst-on-templates entrypoint writes the rendered
-      # config to /etc/nginx/conf.d/ at container start, so root can't be
-      # read-only (same tradeoff as auth.backend's casdoor container).
-      readOnlyRootFilesystem: false
+      readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       seccompProfile:
         type: RuntimeDefault

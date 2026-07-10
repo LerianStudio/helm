@@ -26,8 +26,13 @@ spec:
         {{- toYaml .Values.auth.ui.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "plugin-auth-ui.fullname" . }}
+          # The image's envsubst-on-templates entrypoint writes the rendered
+          # nginx config to /etc/nginx/conf.d/ at container start, so root
+          # can't be read-only (same tradeoff as auth.backend's casdoor
+          # container — see values.yaml).
           securityContext:
-            {{- toYaml .Values.auth.ui.securityContext | nindent 12 }}
+            {{- toYaml (omit .Values.auth.ui.securityContext "readOnlyRootFilesystem") | nindent 12 }}
+            readOnlyRootFilesystem: false
           image: "{{ .Values.auth.ui.image.repository }}:{{ .Values.auth.ui.image.tag }}"
           imagePullPolicy: {{ .Values.auth.ui.image.pullPolicy }}
           ports:

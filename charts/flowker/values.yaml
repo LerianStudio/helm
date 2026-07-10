@@ -64,8 +64,9 @@ flowker:
     repository: ghcr.io/lerianstudio/flowker
     # -- Image pull policy
     pullPolicy: IfNotPresent
-    # -- Image tag used for deployment
-    tag: "1.0.0-beta.22"
+    # -- Image tag used for deployment. Must be >= 1.2.0-beta.82: that image bundles
+    # the /worker binary (scheduler worker Deployment) alongside the api entrypoint.
+    tag: "1.2.0-beta.82"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []

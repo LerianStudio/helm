@@ -248,6 +248,84 @@ is enabled. Shared by the api and worker Deployments. Input (dict): context (roo
 {{- end }}
 
 {{/*
+flowker.xsdValidator.enabled — nil-aware: unset/true enables, explicit false disables.
+*/}}
+{{- define "flowker.xsdValidator.enabled" -}}
+{{- $x := .Values.flowker.xsdValidator | default dict -}}
+{{- if and .Values.flowker.enabled (ne (toString $x.enabled) "false") -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
+flowker.xsdValidatorContainer — the in-pod XSD validator sidecar container, shared
+by the api and worker pods. Flowker reaches it over loopback (XSD_VALIDATOR_URL).
+Its own /v1 authorization delegates to the Access Manager (PLUGIN_AUTH_*), defaulting
+to the app's PLUGIN_AUTH_* config. Input (dict): context (root .).
+*/}}
+{{- define "flowker.xsdValidatorContainer" -}}
+{{- $ctx := .context -}}
+{{- $x := $ctx.Values.flowker.xsdValidator | default dict -}}
+{{- $img := $x.image | default dict -}}
+{{- $repo := $img.repository | default "ghcr.io/lerianstudio/flowker-xsd-validator" -}}
+{{- $tag := $img.tag | default (include "flowker.defaultTag" $ctx) -}}
+{{- $pullPolicy := $img.pullPolicy | default $ctx.Values.flowker.image.pullPolicy -}}
+{{- $port := (($x.port) | default 8081) -}}
+{{- $pa := $x.pluginAuth | default dict -}}
+{{- $lp := $x.livenessProbe | default dict -}}
+{{- $rp := $x.readinessProbe | default dict -}}
+- name: xsd-validator
+  image: "{{ $repo }}:{{ $tag }}"
+  imagePullPolicy: {{ $pullPolicy }}
+  securityContext:
+    {{- toYaml $x.securityContext | nindent 4 }}
+  env:
+    - name: PORT
+      value: {{ $port | quote }}
+    - name: ENV_NAME
+      value: {{ $x.envName | default $ctx.Values.flowker.configmap.ENV_NAME | default "development" | quote }}
+    - name: MAX_BODY_BYTES
+      value: {{ $x.maxBodyBytes | default "5242880" | quote }}
+    - name: READ_TIMEOUT
+      value: {{ $x.readTimeout | default "10s" | quote }}
+    - name: WRITE_TIMEOUT
+      value: {{ $x.writeTimeout | default "10s" | quote }}
+    - name: PLUGIN_AUTH_ENABLED
+      {{- /* toString distinguishes set-vs-unset so a typed bool false is honored (not swallowed by default) */}}
+      value: {{ (ne (toString $pa.enabled) "") | ternary (toString $pa.enabled) ($ctx.Values.flowker.configmap.PLUGIN_AUTH_ENABLED | default "false") | quote }}
+    - name: PLUGIN_AUTH_ADDRESS
+      value: {{ $pa.address | default $ctx.Values.flowker.configmap.PLUGIN_AUTH_ADDRESS | default "" | quote }}
+    - name: PLUGIN_AUTH_ALLOW_INSECURE_HTTP
+      value: {{ $pa.allowInsecureHttp | default "false" | quote }}
+  ports:
+    - name: xsd
+      containerPort: {{ $port }}
+      protocol: TCP
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: xsd
+    initialDelaySeconds: {{ $lp.initialDelaySeconds | default 10 }}
+    periodSeconds: {{ $lp.periodSeconds | default 20 }}
+    timeoutSeconds: {{ $lp.timeoutSeconds | default 5 }}
+    successThreshold: {{ $lp.successThreshold | default 1 }}
+    failureThreshold: {{ $lp.failureThreshold | default 3 }}
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: xsd
+    initialDelaySeconds: {{ $rp.initialDelaySeconds | default 5 }}
+    periodSeconds: {{ $rp.periodSeconds | default 10 }}
+    timeoutSeconds: {{ $rp.timeoutSeconds | default 5 }}
+    successThreshold: {{ $rp.successThreshold | default 1 }}
+    failureThreshold: {{ $rp.failureThreshold | default 3 }}
+  resources:
+    {{- toYaml $x.resources | nindent 4 }}
+{{- end }}
+
+{{/*
 Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
 Secret/Service names render even when all bundled subcharts are disabled
 (external-infra path). Self-contained: no other common.* helpers required.

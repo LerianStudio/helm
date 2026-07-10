@@ -179,6 +179,63 @@ flowker:
   # if partial). WORKOS_TM_SERVICE_NAME must match FLOWKER_SECRETS_APPLICATION_NAME.
   workosTmEnabled: false
 
+  # -- In-pod XSD validator sidecar (stateless Go + libxml2). Injected into the api
+  # and worker pods; Flowker reaches it over loopback (XSD_VALIDATOR_URL is wired
+  # automatically when enabled). Its /v1 authorization delegates to the Access
+  # Manager (pluginAuth.*), defaulting to the app's PLUGIN_AUTH_* config.
+  xsdValidator:
+    # -- Enable or disable the sidecar
+    enabled: true
+    image:
+      # -- Sidecar image repository
+      repository: ghcr.io/lerianstudio/flowker-xsd-validator
+      # -- Image tag (empty inherits the flowker app tag)
+      tag: ""
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+    # -- Listen port (also the loopback URL port Flowker targets)
+    port: 8081
+    # -- ENV_NAME (empty inherits flowker.configmap.ENV_NAME)
+    envName: ""
+    # -- Inbound body size cap in bytes (XML + XSD + imports)
+    maxBodyBytes: "5242880"
+    # -- Max time to read a full request (Go duration)
+    readTimeout: "10s"
+    # -- Max time to write the response (Go duration)
+    writeTimeout: "10s"
+    pluginAuth:
+      # -- Delegate /v1 authorization to the Access Manager (empty inherits flowker PLUGIN_AUTH_ENABLED)
+      enabled: ""
+      # -- Access Manager base URL (empty inherits flowker PLUGIN_AUTH_ADDRESS)
+      address: ""
+      # -- Acknowledge cleartext http:// to the Access Manager. Secure-by-default false.
+      allowInsecureHttp: "false"
+    resources:
+      # -- CPU/memory limits
+      limits:
+        cpu: 250m
+        memory: 256Mi
+      # -- CPU/memory requests
+      requests:
+        cpu: 50m
+        memory: 64Mi
+    # -- Hardened container security context (matches the sidecar image: uid/gid 65532, read-only rootfs)
+    securityContext:
+      runAsUser: 65532
+      runAsGroup: 65532
+      runAsNonRoot: true
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
+    # -- Liveness probe overrides (httpGet /health on the sidecar port)
+    livenessProbe: {}
+    # -- Readiness probe overrides
+    readinessProbe: {}
+
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml
   configmap:
@@ -318,11 +375,13 @@ flowker:
     FLOWKER_SECRETS_CACHE_TTL_SEC: ""
     FLOWKER_SECRETS_APPLICATION_NAME: ""
 
-    # XSD validator (app-side knobs). The in-pod sidecar + loopback URL are wired in
-    # a follow-up phase; empty URL keeps the feature unconfigured (never a boot dep).
+    # XSD validator (app-side knobs). Leave EMPTY to auto-derive from the in-pod
+    # sidecar (flowker.xsdValidator.enabled): URL -> http://localhost:<port> and
+    # ALLOW_INSECURE_HTTP -> true (the same-pod cleartext hop). Set a value here to
+    # override (e.g. an external https:// validator). Empty + sidecar disabled keeps
+    # the feature unconfigured (never a hard boot dependency).
     XSD_VALIDATOR_URL: ""
-    # -- Allow cleartext http:// to the in-pod XSD sidecar. Secure-by-default false.
-    XSD_VALIDATOR_ALLOW_INSECURE_HTTP: "false"
+    XSD_VALIDATOR_ALLOW_INSECURE_HTTP: ""
 
     # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. SCHEDULER_REDIS_HOST is
     # derived from the valkey subchart in a follow-up phase; empty keeps the scheduler

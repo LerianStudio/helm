@@ -98,6 +98,9 @@ spec:
             failureThreshold: {{ (($w.readinessProbe).failureThreshold) | default 3 }}
           resources:
             {{- toYaml ($w.resources | default .Values.flowker.resources) | nindent 12 }}
+        {{- if eq (include "flowker.xsdValidator.enabled" .) "true" }}
+        {{- include "flowker.xsdValidatorContainer" (dict "context" $) | nindent 8 }}
+        {{- end }}
       {{- with $w.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

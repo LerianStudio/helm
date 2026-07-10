@@ -119,11 +119,16 @@ data:
   FLOWKER_SECRETS_CACHE_TTL_SEC: {{ .Values.flowker.configmap.FLOWKER_SECRETS_CACHE_TTL_SEC | default "" | quote }}
   FLOWKER_SECRETS_APPLICATION_NAME: {{ .Values.flowker.configmap.FLOWKER_SECRETS_APPLICATION_NAME | default "" | quote }}
 
-  # XSD validator (app-side knobs). The in-pod sidecar container and the loopback
-  # URL are wired in a follow-up phase; empty URL keeps the feature unconfigured
-  # (never a hard boot dependency). ALLOW_INSECURE_HTTP secure-by-default false.
-  XSD_VALIDATOR_URL: {{ .Values.flowker.configmap.XSD_VALIDATOR_URL | default "" | quote }}
-  XSD_VALIDATOR_ALLOW_INSECURE_HTTP: {{ .Values.flowker.configmap.XSD_VALIDATOR_ALLOW_INSECURE_HTTP | default "false" | quote }}
+  # XSD validator (app-side knobs). When the in-pod sidecar is enabled, the URL
+  # defaults to the loopback sidecar and cleartext http is acknowledged for that
+  # same-pod hop; an explicit override always wins. When the sidecar is disabled
+  # the URL is empty (feature unconfigured — never a hard boot dependency).
+  {{- $xsdOn := eq (include "flowker.xsdValidator.enabled" .) "true" }}
+  {{- $xsdPort := ((.Values.flowker.xsdValidator).port | default 8081) }}
+  {{- $xsdUrlOverridden := ne (.Values.flowker.configmap.XSD_VALIDATOR_URL | default "") "" }}
+  XSD_VALIDATOR_URL: {{ .Values.flowker.configmap.XSD_VALIDATOR_URL | default (ternary (printf "http://localhost:%v" $xsdPort) "" $xsdOn) | quote }}
+  {{- /* cleartext is auto-acknowledged ONLY for the in-pod loopback URL; an explicit off-pod override must opt in deliberately */}}
+  XSD_VALIDATOR_ALLOW_INSECURE_HTTP: {{ .Values.flowker.configmap.XSD_VALIDATOR_ALLOW_INSECURE_HTTP | default (ternary "true" "false" (and $xsdOn (not $xsdUrlOverridden))) | quote }}
 
   # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. SCHEDULER_REDIS_HOST
   # is derived from the valkey subchart in a follow-up phase; empty keeps the

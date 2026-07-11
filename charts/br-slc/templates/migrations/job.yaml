@@ -12,6 +12,9 @@
 {{- $pgDb := .Values.migrations.postgres.database | default .Values.configmap.data.POSTGRES_NAME | default "br-slc" }}
 {{- $pgSslMode := .Values.migrations.postgres.sslMode | default .Values.configmap.data.POSTGRES_SSLMODE | default "require" }}
 {{- $secretName := ternary .Values.migrations.existingSecretName (include "br-slc-migrations.fullname" .) .Values.migrations.useExistingSecret }}
+{{- if and .Values.migrations.useExistingSecret (not .Values.migrations.existingSecretName) }}
+{{- fail "migrations.useExistingSecret=true requires migrations.existingSecretName to be set" }}
+{{- end }}
 {{- $pullSecrets := .Values.migrations.imagePullSecrets | default .Values.imagePullSecrets }}
 apiVersion: batch/v1
 kind: Job

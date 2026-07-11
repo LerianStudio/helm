@@ -127,7 +127,7 @@ extraVolumeMounts: []
 # create: false (default) — recommended for BYOC: the client manages this
 #   Secret out-of-band (their own K8s Secret, External Secrets Operator, Vault
 #   injector, etc.) and existingSecretName points at it. The Secret MUST expose
-#   these SAME 5 keys (override the chart's data keys to match if your Secret
+#   these SAME 7 keys (override the chart's data keys to match if your Secret
 #   uses different names — see README).
 # create: true — this chart creates the Secret from secrets.data via
 #   --set-string/-f overrides at install time (still never commit real values
@@ -135,7 +135,7 @@ extraVolumeMounts: []
 secrets:
   create: false
   # Non-empty by default (schema requires it when create=false): the BYOC
-  # operator creates a Secret with THIS name exposing the 5 keys below. When
+  # operator creates a Secret with THIS name exposing the 7 keys below. When
   # create=true the chart names its own Secret with this value instead.
   existingSecretName: "br-slc-secrets"
   data:
@@ -157,7 +157,7 @@ secrets:
 # ---------------------------------------------------------------------------
 # ConfigMap — ALL non-secret env vars.
 # ---------------------------------------------------------------------------
-# 1:1 with config/.env.example's active surface (156 vars) minus the 5 secret
+# 1:1 with config/.env.example's active surface (156 vars) minus the 7 secret
 # vars above, PLUS two vars this hardened base's own defaults require that are
 # NOT in .env.example's active section:
 #   - DEPLOYMENT_MODE: read by config_validation.go / systemplane.go / readyz
@@ -526,6 +526,14 @@ signer:
   # mounted read-only from an externally managed Secret ONTO THE SIGNER
   # CONTAINER ONLY (never the app container — ADR-9 custody). The passphrase
   # that decrypts it is the separate signer.secrets.SIGNER_SOFTKEY_PFX_PASSPHRASE.
+  #
+  # REQUIRED before the signer can become Ready: with the softkey adapter
+  # (SIGNER_SOFTKEY_PFX_PATH set below) the operator MUST set enabled=true and
+  # a valid secretName so /certs/signer.pfx is mounted — otherwise the signer
+  # has no key material and the pod never reaches Ready. Left disabled by
+  # default (fail-closed, like POSTGRES_HOST/PLUGIN_AUTH_HOST) because the chart
+  # cannot ship a real Secret name for BYOC key custody; enable it (or switch to
+  # an awskms/pkcs11/vault adapter) at install time.
   softkeySecret:
     enabled: false
     # Existing Secret whose key holds the PFX bytes, e.g.:
@@ -800,7 +808,7 @@ mqbridge:
 
 # ---------------------------------------------------------------------------
 # Migration Job (Task 6.0.4) — applies migrations/*.up.sql (golang-migrate)
-# via a pre-install,pre-upgrade Helm hook, before the Deployment rolls.
+# via an ArgoCD PreSync hook Job, before the Deployment rolls.
 # ---------------------------------------------------------------------------
 migrations:
   enabled: true

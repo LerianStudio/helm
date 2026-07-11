@@ -88,7 +88,7 @@
           "type": "object",
           "required": ["type"],
           "properties": {
-            "type": { "type": "string" }
+            "type": { "type": "string", "const": "RuntimeDefault" }
           }
         }
       }
@@ -212,7 +212,7 @@
             "seccompProfile": {
               "type": "object",
               "required": ["type"],
-              "properties": { "type": { "type": "string" } }
+              "properties": { "type": { "type": "string", "const": "RuntimeDefault" } }
             }
           }
         },
@@ -304,7 +304,7 @@
             "seccompProfile": {
               "type": "object",
               "required": ["type"],
-              "properties": { "type": { "type": "string" } }
+              "properties": { "type": { "type": "string", "const": "RuntimeDefault" } }
             }
           }
         },
@@ -365,7 +365,7 @@
             "seccompProfile": {
               "type": "object",
               "required": ["type"],
-              "properties": { "type": { "type": "string" } }
+              "properties": { "type": { "type": "string", "const": "RuntimeDefault" } }
             }
           }
         },
@@ -410,6 +410,8 @@
     "migrations": {
       "type": "object",
       "required": ["enabled", "image"],
+      "if": { "properties": { "useExistingSecret": { "const": true } }, "required": ["useExistingSecret"] },
+      "then": { "required": ["existingSecretName"], "properties": { "existingSecretName": { "minLength": 1 } } },
       "properties": {
         "enabled": { "type": "boolean" },
         "backoffLimit": { "type": "integer", "minimum": 0 },

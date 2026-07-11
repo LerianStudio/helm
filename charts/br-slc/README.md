@@ -54,9 +54,11 @@ rendered only when `mqbridge.enabled=true`:
 The signer and validator are **mandatory same-pod containers** (ADR-12,
 "sidecar no mesmo pod, localhost") — no enable toggle. The app talks to them
 over **localhost**, not cluster DNS. **Shared fate**: the pod only reaches
-`Ready` when all its containers pass their own readiness probes, which
-removes the "app Ready but validator absent" window. Each container keeps its
-own hardened `securityContext` and its own `/tmp` `emptyDir`.
+`Ready` when every container that defines a readiness probe passes it, which
+removes the "app Ready but validator absent" window. The `mqbridge` container
+deliberately has **no** readiness probe (see below), so it does not
+independently gate pod readiness. Each container keeps its own hardened
+`securityContext` and its own `/tmp` `emptyDir`.
 
 **Custody (ADR-9):** the signing-key material (softkey PFX + passphrase, HSM
 PIN, Vault token) is mounted/injected **only** on the `slc-signer` container
@@ -102,15 +104,15 @@ When (and only when) `mqbridge.enabled=true`:
 ## Install
 
 ```bash
-helm lint deployments/helm/br-slc
-helm template my-release deployments/helm/br-slc
+helm lint charts/br-slc
+helm template my-release charts/br-slc
 
 # Real install — you MUST override at least:
 #   - configmap.data.POSTGRES_HOST / REDIS_HOST (external, client-managed)
 #   - configmap.data.PLUGIN_AUTH_HOST (required: PLUGIN_AUTH_ENABLED=true by default)
 #   - configmap.data.CORS_ALLOWED_ORIGINS (empty/deny-all by default)
 #   - secrets.* (see "Secrets" below)
-helm install my-release deployments/helm/br-slc -f my-values.yaml
+helm install my-release charts/br-slc -f my-values.yaml
 ```
 
 No `values-<env>.yaml` files live in this chart — per-environment overrides
@@ -231,127 +233,69 @@ This base intentionally hardens a handful of values beyond mirroring
 
 ## Migration Job
 
-A `pre-install,pre-upgrade` Helm hook Job (`templates/migrate-job.yaml`,
-`helm.sh/hook-weight: "-5"`) runs `migrate -path /migrations -database
-"$DATABASE_URL" up` **before** the Deployment rolls, applying all 21
-migrations under `migrations/` (golang-migrate, pinned to `v4.19.1` to match
-`go.mod`'s `github.com/golang-migrate/migrate/v4 v4.19.1`).
+Migrations are applied by a detached **ArgoCD `PreSync` hook** — a dedicated
+Job plus a small companion Secret, both under `templates/migrations/` — that
+runs **before** the main sync wave rolls the Deployment, so the monolith never
+boots against an unmigrated database.
 
-Ordering: `migrate-env-configmap.yaml` / `migrate-secret.yaml` (weight `-7`) →
-`migrate-configmap.yaml` (weight `-6`) → `migrate-job.yaml` (weight `-5`) → the
-Deployment/Service (unweighted, run after all hooks succeed). All hook
-resources use `hook-delete-policy: before-hook-creation,hook-succeeded`, so a
-re-run on `helm upgrade` cleans up the prior hook Job/ConfigMap/Secret and
-creates fresh ones.
+- `templates/migrations/secrets.yaml` — a PreSync Secret
+  (`argocd.argoproj.io/hook-weight: "-2"`) carrying **only** `POSTGRES_PASSWORD`
+  (from `migrations.postgres.password`, falling back to
+  `secrets.data.POSTGRES_PASSWORD`). Its `hook-delete-policy` is
+  `BeforeHookCreation` **only** (not `HookSucceeded`) so it survives the whole
+  PreSync phase for the Job to read, and is replaced on the next sync. It is
+  minted only when `migrations.useExistingSecret=false`.
+- `templates/migrations/job.yaml` — a PreSync Job
+  (`argocd.argoproj.io/hook-weight: "-1"`, so it runs after the Secret) that
+  runs the dedicated `ghcr.io/lerianstudio/br-slc-migrations` image
+  (`migrations.image.tag` defaults to `Chart.appVersion`). That image's
+  entrypoint owns the golang-migrate loop over the `migrations/*.up.sql`
+  **baked into the image** at build time by the br-slc release pipeline — the
+  chart's Job only supplies the DB connection and runs the image; it does not
+  carry the SQL or build the loop. Its `hook-delete-policy` is
+  `BeforeHookCreation,HookSucceeded`.
 
-The `-7` weight matters: the migrate Job (and its `wait-for-postgres`
-initContainer) must never reference a resource that isn't itself a hook at an
-earlier weight. The app's own ConfigMap/Secret (`templates/configmap.yaml`,
-`templates/secret.yaml`) carry **no** hook annotations and don't exist yet on
-a first `helm install` — pulling DB connection vars from them (the pre-Gate-8
-behavior) made the Job hit `CreateContainerConfigError` on every fresh
-install. `migrate-env-configmap.yaml` carries only the 5 non-secret DB
-connection keys the Job needs (mirrored from `configmap.data.POSTGRES_*`, so
-`values.yaml` stays the single source of truth even though the two ConfigMap
-*objects* are distinct); `migrate-secret.yaml` mirrors
-`secrets.data.POSTGRES_PASSWORD` the same way, but only when
-`secrets.create: true`. When `secrets.create: false`, the Job instead
-references `secrets.existingSecretName` directly — that Secret is
-operator-managed and pre-exists before `helm install` runs, so it's already
-visible to pre-install hooks without needing a hook annotation of its own.
+The Job reads the DB connection from plain env vars
+(`POSTGRES_HOST`/`POSTGRES_PORT`/`POSTGRES_USER`/`POSTGRES_NAME`/`POSTGRES_SSLMODE`,
+each defaulting to the app's `configmap.data.POSTGRES_*`) plus
+`POSTGRES_PASSWORD` via `secretKeyRef`. When `migrations.useExistingSecret=true`
+the password comes from the operator-managed `migrations.existingSecretName`
+instead of the chart-minted PreSync Secret (the render **fails fast** if
+`existingSecretName` is left empty in that mode).
 
-### Why a ConfigMap instead of "copy from the app image"
+A lightweight `busybox` initContainer (`migrations.waitForPostgres`, on by
+default) polls `POSTGRES_HOST:POSTGRES_PORT` with `nc -z` before the migrations
+container starts, so a fresh install racing a not-yet-ready Postgres doesn't
+hard-fail the Job.
 
-The app's runtime image is `gcr.io/distroless/static-debian12:nonroot` (see
-`Dockerfile`) — it ships **only** the compiled `/service` binary, CA
-certificates, and the `nonroot` passwd/group entries. There is no shell, no
-`cp`, no busybox. An initContainer cannot `exec` a copy out of that image.
-
-Instead, `templates/migrate-configmap.yaml` embeds `migrations/*.sql`
-(golang-migrate naming, `NNNNNN_description.{up,down}.sql`) directly into a
-ConfigMap via Helm's `.Files.Glob`, mounted read-only at `/migrations` in the
-migrate Job — no initContainer needed for this step at all.
-`deployments/helm/br-slc/migrations` is a **symlink** to the repo-root
-`migrations/` directory (the same source `make check-migrations`/CI validate),
-not a duplicated copy, so there is no drift risk. Verified empirically in this
-worktree: `helm lint`/`helm template`/`helm package` all dereference the
-symlink's content correctly (a `helm package`/`helm lint` "found symbolic link
-in path" notice on stdout is expected, not an error), and `helm template`
-against the resulting `.tgz` renders identically. Total embedded payload is
-~107KB across 42 files — well under the 1MiB ConfigMap/etcd object limit.
-
-A lightweight `busybox:1.37` initContainer (`waitForPostgres`, mirroring the
-Lerian wait-for-dependencies convention) polls `POSTGRES_HOST:POSTGRES_PORT`
-with `nc -z` before the migrate container starts, so a fresh install racing a
-not-yet-ready Postgres doesn't hard-fail the Job.
-
-`DATABASE_URL` is composed **by Helm at template time** from
-`.Values.configmap.data.*` (no shell needed in the scratch-based
-`migrate/migrate` image, and no reliance on kubelet `$(VAR)` expansion of
-envFrom-sourced vars) but **deliberately omits the password**
-(`postgres://<user>@<host>:<port>/<name>?sslmode=<sslmode>`)
-so the password never lands in the container's argv
-(`-database=$(DATABASE_URL)`, visible via `ps`/`/proc/1/cmdline` to anything
-that can see the pod). The password is instead exported as `PGPASSWORD`
-(from the same Secret, via `secretKeyRef`) — golang-migrate's postgres driver
-(`lib/pq`) reads the standard libpq `PG*` environment variables for any DSN
-field missing from the connection string, so `PGPASSWORD` fills in the
-omitted password at connect time. A password containing URL-reserved
-characters (`@ : / ? # %`) would still need percent-encoding if it appeared in
-the DSN — moot now since the password never appears in the DSN string at
-all.
-
-Set `migrations.enabled: false` to skip the Job entirely (e.g. if migrations
+Set `migrations.enabled: false` to skip the hook entirely (e.g. if migrations
 are applied by a separate operational process).
 
 ### Recovering from a dirty migration
 
 If a migration fails partway through, golang-migrate marks
-`schema_migrations.dirty = true` in the database. Every subsequent `helm
-upgrade` re-runs this same (now permanently failing) hook Job, wedging the
-release — the Job keeps refusing to apply the next migration on top of a dirty
-version, so `helm upgrade` never succeeds again on its own.
+`schema_migrations.dirty = true` in the database. Every subsequent sync re-runs
+this PreSync Job, which keeps refusing to apply the next migration on top of a
+dirty version — so the release never converges on its own.
 
 Manual recovery:
 
-1. **Find the failing version.** Inspect the failed hook Job/pod logs
-   (`kubectl logs job/<release>-br-slc-migrate-<revision>` or the pod itself —
-   `hook-delete-policy: before-hook-creation` keeps the failed Job/pod around
-   until the *next* hook run recreates it, so grab the logs before retrying).
-   golang-migrate's error output names the dirty version, e.g. `Dirty database
-   version 7. Fix and force version.`
+1. **Find the failing version.** Inspect the failed PreSync Job/pod logs
+   (`kubectl logs job/<release>-br-slc-migrations`). golang-migrate's error
+   output names the dirty version, e.g. `Dirty database version 7. Fix and
+   force version.`
 2. **Force the version.** Run a one-off `migrate force <version>` against the
-   same database, using the same `migrate/migrate:<tag>` image (see
-   `migrations.image.tag`) and the migrations ConfigMap
-   (`{{ include "br-slc.fullname" . }}-migrations`) mounted at `/migrations`,
-   e.g.:
-   ```bash
-   kubectl run migrate-force --rm -it --restart=Never \
-     --image=migrate/migrate:v4.19.1 \
-     --overrides='{"spec":{"containers":[{"name":"migrate-force","image":"migrate/migrate:v4.19.1","args":["-path=/migrations","-database=postgres://USER@HOST:PORT/NAME?sslmode=require","force","<version>"],"env":[{"name":"PGPASSWORD","valueFrom":{"secretKeyRef":{"name":"<secret>","key":"POSTGRES_PASSWORD"}}}],"volumeMounts":[{"name":"migrations","mountPath":"/migrations"}]}],"volumes":[{"name":"migrations","configMap":{"name":"<release>-br-slc-migrations"}}]}}'
-   ```
-   Substitute the real `USER`/`HOST`/`PORT`/`NAME`/secret name from your
-   release's values, and `<version>` with the version identified in step 1
-   (use the version *before* the failed one if the failed migration's DDL did
-   not actually apply — confirm against the target schema before forcing).
-3. **Re-run the upgrade.** With `dirty` cleared, `helm upgrade` retries the
-   hook Job normally and applies the remaining migrations.
+   same database, pointed at the same Postgres endpoint/credentials the Job
+   uses (any golang-migrate-capable CLI works — the `schema_migrations` table
+   is standard). Set `<version>` to the value identified in step 1 (use the
+   version *before* the failed one if the failed migration's DDL did not
+   actually apply — confirm against the target schema before forcing).
+3. **Re-sync.** With `dirty` cleared, the PreSync Job runs normally and applies
+   the remaining migrations.
 
-This is a manual, deliberately out-of-band recovery path — the hook Job does
-not attempt automatic dirty-state recovery, since forcing the wrong version
-can silently skip or reapply DDL.
-
-### `.helmignore` (Task 6.0.2 reconciliation)
-
-The `migrations/` symlink also drags in three Go integration test files
-(`*_test.go`) and one JSON systemplane DDL manifest
-(`systemplane_ddl_manifest.json`) that live alongside the SQL in the
-repo-root `migrations/` directory. `.helmignore` excludes
-`migrations/*_test.go`, `migrations/*.json`, and `migrations/*.go` so only
-the 42 `.sql` files (21 up + 21 down) are loaded into the chart —
-`.Files.Glob "migrations/*.sql"` in `migrate-configmap.yaml` is unaffected by
-this exclusion (still finds all 42) since `.helmignore` only removes the
-non-SQL files, not the glob's own matches.
+This is a manual, deliberately out-of-band recovery path — the hook does not
+attempt automatic dirty-state recovery, since forcing the wrong version can
+silently skip or reapply DDL.
 
 ## Probes
 

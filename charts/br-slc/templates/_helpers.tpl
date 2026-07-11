@@ -60,7 +60,7 @@ ServiceAccount name to use.
 {{- end -}}
 
 {{/*
-Secret name to use for the 5 secret-bearing env vars: either the chart-created
+Secret name to use for the 7 secret-bearing env vars: either the chart-created
 Secret (secrets.create=true) or an externally managed Secret
 (secrets.existingSecretName) — BYOC default is the latter.
 */}}

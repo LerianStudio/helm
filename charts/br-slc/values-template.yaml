@@ -21,6 +21,9 @@ secrets:
     REDIS_PASSWORD: ""           # REQUIRED when the external Redis needs auth
     WEBHOOK_API_KEY: ""
     WEBHOOK_HMAC_SECRET: ""
+    RABBITMQ_DEFAULT_PASS: ""    # inert while RABBITMQ_ENABLED=false
+    AWS_SECRET_ACCESS_KEY: ""    # keep empty — prefer IRSA
+    AWS_SESSION_TOKEN: ""        # keep empty — prefer IRSA
 
 configmap:
   data:

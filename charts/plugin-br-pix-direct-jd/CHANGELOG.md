@@ -2,6 +2,27 @@
 
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
 
+- Features:
+  - Added ALLOW_INSECURE_TLS configuration.
+  - Parametrized probe path and timing using /readyz.
+
+- Fixes:
+  - Addressed CodeRabbit review on revamp PR #1470.
+  - Corrected value key typo and removed stale README notes.
+
+- Improvements:
+  - Aligned upgrade guide format.
+  - Standardized probe field set across all charts.
+  - Single-sourced Bitnami DB/cache passwords.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
 - **Features:**
   - Added ALLOW_INSECURE_TLS configuration.
   - Parametrized probe path and timing using /readyz.

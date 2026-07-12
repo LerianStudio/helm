@@ -64,8 +64,9 @@ flowker:
     repository: ghcr.io/lerianstudio/flowker
     # -- Image pull policy
     pullPolicy: IfNotPresent
-    # -- Image tag used for deployment
-    tag: "1.0.0-beta.22"
+    # -- Image tag used for deployment. Must be >= 1.2.0-beta.82: that image bundles
+    # the /worker binary (scheduler worker Deployment) alongside the api entrypoint.
+    tag: "1.2.0-beta.82"
 
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
@@ -172,6 +173,71 @@ flowker:
 
   # -- Affinity rules for pod scheduling
   affinity: {}
+
+  # -- Enable the WorkOS Tenant Manager token-mint feature (#300). ALL-OR-NONE:
+  # when true, WORKOS_TM_TOKEN_URL + WORKOS_TM_CLIENT_ID (configmap) and
+  # WORKOS_TM_CLIENT_SECRET (secrets) are all required (rejected at template time
+  # if partial). The WORKOS_TM_CLIENT_SECRET check applies only to chart-managed
+  # Secrets (flowker.useExistingSecret=false); with an existing Secret you must
+  # supply that key yourself. WORKOS_TM_SERVICE_NAME must match FLOWKER_SECRETS_APPLICATION_NAME.
+  workosTmEnabled: false
+
+  # -- In-pod XSD validator sidecar (stateless Go + libxml2). Injected into the api
+  # and worker pods; Flowker reaches it over loopback (XSD_VALIDATOR_URL is wired
+  # automatically when enabled). Its /v1 authorization delegates to the Access
+  # Manager (pluginAuth.*), defaulting to the app's PLUGIN_AUTH_* config.
+  xsdValidator:
+    # -- Enable or disable the sidecar
+    enabled: true
+    image:
+      # -- Sidecar image repository
+      repository: ghcr.io/lerianstudio/flowker-xsd-validator
+      # -- Image tag (empty inherits the flowker app tag)
+      tag: ""
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+    # -- Listen port (also the loopback URL port Flowker targets)
+    port: 8081
+    # -- ENV_NAME (empty inherits flowker.configmap.ENV_NAME)
+    envName: ""
+    # -- Inbound body size cap in bytes (XML + XSD + imports)
+    maxBodyBytes: "5242880"
+    # -- Max time to read a full request (Go duration)
+    readTimeout: "10s"
+    # -- Max time to write the response (Go duration)
+    writeTimeout: "10s"
+    pluginAuth:
+      # -- Delegate /v1 authorization to the Access Manager (empty inherits flowker PLUGIN_AUTH_ENABLED)
+      enabled: ""
+      # -- Access Manager base URL (empty inherits flowker PLUGIN_AUTH_ADDRESS)
+      address: ""
+      # -- Acknowledge cleartext http:// to the Access Manager. Secure-by-default false.
+      allowInsecureHttp: "false"
+    resources:
+      # -- CPU/memory limits
+      limits:
+        cpu: 250m
+        memory: 256Mi
+      # -- CPU/memory requests
+      requests:
+        cpu: 50m
+        memory: 64Mi
+    # -- Hardened container security context (matches the sidecar image: uid/gid 65532, read-only rootfs)
+    securityContext:
+      runAsUser: 65532
+      runAsGroup: 65532
+      runAsNonRoot: true
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
+    # -- Liveness probe overrides (httpGet /health on the sidecar port)
+    livenessProbe: {}
+    # -- Readiness probe overrides
+    readinessProbe: {}
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/configmap.yaml
@@ -281,6 +347,69 @@ flowker:
     MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
     MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
 
+    # HTTP egress body cap (bytes). Caps request/response bodies on provider calls.
+    HTTP_MAX_BODY_BYTES: "10485760"
+    # -- Allow CORS wildcard (lib-commons parity). Secure-by-default false; local overrides to true.
+    ALLOW_CORS_WILDCARD: "false"
+
+    # Internal (Lerian-managed) provider base URLs. Empty = stored config doc value used.
+    MIDAZ_BASE_URL: ""
+    TRACER_BASE_URL: ""
+
+    # Schema Registry auth gates (secure default: true)
+    XSD_SCHEMAS_AUTH_ENABLED: "true"
+    OPENAPI_SCHEMAS_AUTH_ENABLED: "true"
+
+    # Schema Registry blob storage (S3). Graceful-off when bucket empty (Mongo-only
+    # boot). AWS creds come from the credential chain (IRSA / Roles Anywhere).
+    SCHEMA_REGISTRY_S3_BUCKET: ""
+    # -- AWS region for the Schema Registry S3 store. Empty = resolved by the AWS SDK chain.
+    SCHEMA_REGISTRY_S3_REGION: ""
+
+    # Shared OAuth2 token cache (optional tuning). templates/configmap.yaml supplies
+    # these defaults; the values below are shown for reference — uncomment to override.
+    # TOKEN_CACHE_MAX_TTL_SEC: "3600"
+    # TOKEN_CACHE_JANITOR_INTERVAL_SEC: "300"
+    # TOKEN_CACHE_REFRESH_BUFFER_SEC: "60"
+    # TOKEN_CACHE_TENANT_SCOPED_DISABLED: "false"
+
+    # Secrets backend selector (optional). Empty = disabled (boots fine);
+    # "tenant-manager" = AWS Secrets Manager reader. FLOWKER_SECRETS_APPLICATION_NAME
+    # must match WORKOS_TM_SERVICE_NAME. templates/configmap.yaml defaults these to ""
+    # — uncomment to override.
+    # FLOWKER_SECRETS_BACKEND: ""
+    # FLOWKER_SECRETS_CACHE_TTL_SEC: ""
+    # FLOWKER_SECRETS_APPLICATION_NAME: ""
+
+    # XSD validator (app-side knobs). Leave EMPTY to auto-derive from the in-pod
+    # sidecar (flowker.xsdValidator.enabled): URL -> http://localhost:<port> and
+    # ALLOW_INSECURE_HTTP -> true (the same-pod cleartext hop). Set a value here to
+    # override (e.g. an external https:// validator). Empty + sidecar disabled keeps
+    # the feature unconfigured (never a hard boot dependency).
+    XSD_VALIDATOR_URL: ""
+    XSD_VALIDATOR_ALLOW_INSECURE_HTTP: ""
+
+    # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. Leave SCHEDULER_REDIS_HOST
+    # empty to auto-derive the bundled valkey Service name when valkey.enabled=true, or
+    # set it to point at an external/managed Redis; empty with valkey off keeps the
+    # scheduler queue a nil-safe no-op. Keep this queue Redis isolated from MULTI_TENANT_REDIS_*.
+    SCHEDULER_ENABLED: "true"
+    SCHEDULER_REDIS_HOST: ""
+    SCHEDULER_REDIS_PORT: "6379"
+    SCHEDULER_REDIS_TLS: "false"
+    SCHEDULER_REDIS_DB: "0"
+    SCHEDULER_CONCURRENCY: "10"
+
+    # WorkOS Tenant Manager token mint (#300). Emitted only when flowker.workosTmEnabled=true.
+    # WORKOS_TM_TOKEN_URL is the OAuth2 token endpoint (required when workosTmEnabled=true);
+    # set it via your override values.
+    # WORKOS_TM_TOKEN_URL: ""
+    WORKOS_TM_CLIENT_ID: ""
+    # -- Optional space-delimited scope (e.g. backoffice:tm:m2m:write).
+    WORKOS_TM_SCOPE: ""
+    # -- Flowker service name as the Tenant Manager knows it. Must match FLOWKER_SECRETS_APPLICATION_NAME.
+    WORKOS_TM_SERVICE_NAME: "flowker"
+
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
@@ -299,9 +428,11 @@ flowker:
     MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Redis password for tenant Pub/Sub (optional)
     MULTI_TENANT_REDIS_PASSWORD: ""
-    # -- WorkOS M2M client secret for the outbound token flowker mints to call
-    # the Tenant Manager (emitted only when set)
+    # -- WorkOS Tenant Manager client secret (required when flowker.workosTmEnabled=true)
     WORKOS_TM_CLIENT_SECRET: ""
+    # -- Scheduler queue Redis password (optional): set for an external/managed Redis,
+    # or when the bundled valkey subchart has auth enabled (its ACL must match this).
+    SCHEDULER_REDIS_PASSWORD: ""
 
   # -- Use an existing secret instead of creating one
   useExistingSecret: false
@@ -319,6 +450,124 @@ flowker:
     # -- Name of the service account
     # @default -- `flowker.fullname`
     name: ""
+
+# -- Scheduler worker: a second Deployment running the SAME flowker image with
+# its command overridden to /worker. Runs the queue-backed scheduler consume
+# server and background jobs. Reuses the api ConfigMap + Secret.
+worker:
+  # -- Enable or disable the worker Deployment
+  enabled: true
+  # Replicas are fixed at 1 in the template (the worker is not leader-gated, so a
+  # second replica would double-process). This is intentionally not configurable —
+  # do NOT add an HPA.
+  # -- Number of old ReplicaSets to retain
+  revisionHistoryLimit: 10
+
+  # -- Image override. Empty repository/tag inherit the api image (flowker.image).
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  # -- Container entrypoint (the worker binary bundled in the flowker image)
+  command:
+    - /worker
+
+  # -- Secrets for pulling images from a private registry (inherits api when empty)
+  imagePullSecrets: []
+
+  # -- Deployment update strategy. Recreate avoids two schedulers overlapping mid-rollout.
+  deploymentStrategy:
+    type: Recreate
+
+  # -- Grace period (s) for the scheduler consume server to drain in-flight jobs on SIGTERM.
+  terminationGracePeriodSeconds: 60
+
+  service:
+    # -- Worker probe port (WORKER_SERVER_PORT). The worker serves only /health + /readyz.
+    port: 4022
+
+  # -- Pod-level security context (inherits flowker.podSecurityContext when empty)
+  podSecurityContext: {}
+  # -- Container-level security context (inherits flowker.securityContext when empty)
+  securityContext: {}
+
+  # -- Resource requests/limits (inherits flowker.resources when empty)
+  resources: {}
+
+  # -- Readiness probe overrides
+  readinessProbe: {}
+  # -- Liveness probe overrides
+  livenessProbe: {}
+
+  # -- Pod annotations
+  podAnnotations: {}
+  # -- Node selector
+  nodeSelector: {}
+  # -- Tolerations
+  tolerations: {}
+  # -- Affinity rules
+  affinity: {}
+
+  # -- Extra environment variables (rendered as literal name/value pairs)
+  extraEnvVars: {}
+
+  # -- Worker-only ConfigMap overrides (layered last; wins over the api ConfigMap)
+  configmap: {}
+
+  serviceAccount:
+    # -- Create a dedicated worker ServiceAccount (false reuses the api SA)
+    create: true
+    # -- Annotations for the worker ServiceAccount (e.g. IRSA role-arn)
+    annotations: {}
+    # -- Name override
+    # @default -- `flowker.worker.fullname`
+    name: ""
+
+# -- Valkey (Redis-compatible) in-cluster store backing the scheduler queue.
+# Disabled by default: enable for an in-cluster queue Redis, or leave off and
+# point flowker.configmap.SCHEDULER_REDIS_HOST at an external/managed Redis.
+# When enabled, SCHEDULER_REDIS_HOST auto-derives to the subchart Service (<release>-valkey).
+# This queue Redis MUST stay isolated from the tenant Pub/Sub Redis (MULTI_TENANT_REDIS_*).
+valkey:
+  enabled: false
+  auth:
+    # -- The valkey.io subchart uses inline ACL config (valkey.auth.aclConfig), not a
+    # password Secret; if you enable auth here, also set flowker.secrets.SCHEDULER_REDIS_PASSWORD
+    # on the app side to a credential that matches the ACL. Off by default (in-cluster ClusterIP).
+    enabled: false
+
+# -- AWS authentication. On EKS, prefer IRSA: set
+# flowker.serviceAccount.annotations."eks.amazonaws.com/role-arn" (and worker.serviceAccount)
+# and leave this disabled. For non-EKS clusters (e.g. Proxmox), enable IAM Roles Anywhere:
+# an aws-signing-helper sidecar serves a loopback IMDS endpoint (127.0.0.1:9911) that the AWS
+# SDK uses to exchange the client cert (trust anchor/profile/role) for temporary credentials.
+aws:
+  rolesAnywhere:
+    enabled: false
+    # -- Required when enabled (template fails fast if missing).
+    trustAnchorArn: ""
+    profileArn: ""
+    roleArn: ""
+    region: "us-east-2"
+    sessionDuration: 3600
+    # -- Secret holding the Roles Anywhere client cert (tls.crt) and key (tls.key).
+    certificateSecretName: "flowker-iam-tls"
+    sidecar:
+      image:
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        # Immutable, multi-arch (amd64+arm64) tag. Avoid the mutable `latest-amd64`
+        # so redeploys/rollbacks are reproducible and arm64 nodes are covered.
+        tag: "1.8.4-2026.06.09.14.59"
+        pullPolicy: IfNotPresent
+      port: 9911
+      resources:
+        requests:
+          cpu: 10m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
 
 mongodb:
   # MongoDB document database for flowker data storage

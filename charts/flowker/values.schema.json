@@ -24,6 +24,51 @@
         },
         "secrets": {
           "type": "object"
+        },
+        "workosTmEnabled": {
+          "type": "boolean"
+        },
+        "xsdValidator": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "worker": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "aws": {
+      "type": "object",
+      "properties": {
+        "rolesAnywhere": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
         }
       },
       "additionalProperties": true

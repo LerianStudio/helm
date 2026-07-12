@@ -87,6 +87,76 @@ data:
   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.flowker.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
   {{- end }}
 
+  # HTTP egress body cap (bytes). Caps request/response bodies on provider calls.
+  HTTP_MAX_BODY_BYTES: {{ .Values.flowker.configmap.HTTP_MAX_BODY_BYTES | default "10485760" | quote }}
+
+  # CORS wildcard (lib-commons parity). Secure-by-default false; local overrides to true.
+  ALLOW_CORS_WILDCARD: {{ .Values.flowker.configmap.ALLOW_CORS_WILDCARD | default "false" | quote }}
+
+  # Internal (Lerian-managed) provider base URLs. Empty = stored config doc value used.
+  MIDAZ_BASE_URL: {{ .Values.flowker.configmap.MIDAZ_BASE_URL | default "" | quote }}
+  TRACER_BASE_URL: {{ .Values.flowker.configmap.TRACER_BASE_URL | default "" | quote }}
+
+  # Schema Registry auth gates (secure default: true)
+  XSD_SCHEMAS_AUTH_ENABLED: {{ .Values.flowker.configmap.XSD_SCHEMAS_AUTH_ENABLED | default "true" | quote }}
+  OPENAPI_SCHEMAS_AUTH_ENABLED: {{ .Values.flowker.configmap.OPENAPI_SCHEMAS_AUTH_ENABLED | default "true" | quote }}
+
+  # Schema Registry blob storage (S3). Graceful-off: empty bucket disables the S3
+  # backend (boot proceeds Mongo-only). AWS creds come from the credential chain
+  # (IRSA / Roles Anywhere). Empty region resolves via the standard AWS SDK chain.
+  SCHEMA_REGISTRY_S3_BUCKET: {{ .Values.flowker.configmap.SCHEMA_REGISTRY_S3_BUCKET | default "" | quote }}
+  SCHEMA_REGISTRY_S3_REGION: {{ .Values.flowker.configmap.SCHEMA_REGISTRY_S3_REGION | default "" | quote }}
+
+  # Shared OAuth2 token cache
+  TOKEN_CACHE_MAX_TTL_SEC: {{ .Values.flowker.configmap.TOKEN_CACHE_MAX_TTL_SEC | default "3600" | quote }}
+  TOKEN_CACHE_JANITOR_INTERVAL_SEC: {{ .Values.flowker.configmap.TOKEN_CACHE_JANITOR_INTERVAL_SEC | default "300" | quote }}
+  TOKEN_CACHE_REFRESH_BUFFER_SEC: {{ .Values.flowker.configmap.TOKEN_CACHE_REFRESH_BUFFER_SEC | default "60" | quote }}
+  TOKEN_CACHE_TENANT_SCOPED_DISABLED: {{ .Values.flowker.configmap.TOKEN_CACHE_TENANT_SCOPED_DISABLED | default "false" | quote }}
+
+  # Secrets backend. unset = disabled (boots fine); tenant-manager = AWS Secrets
+  # Manager reader. WORKOS_TM_SERVICE_NAME MUST match FLOWKER_SECRETS_APPLICATION_NAME.
+  FLOWKER_SECRETS_BACKEND: {{ .Values.flowker.configmap.FLOWKER_SECRETS_BACKEND | default "" | quote }}
+  FLOWKER_SECRETS_CACHE_TTL_SEC: {{ .Values.flowker.configmap.FLOWKER_SECRETS_CACHE_TTL_SEC | default "" | quote }}
+  FLOWKER_SECRETS_APPLICATION_NAME: {{ .Values.flowker.configmap.FLOWKER_SECRETS_APPLICATION_NAME | default "" | quote }}
+
+  # XSD validator (app-side knobs). When the in-pod sidecar is enabled, the URL
+  # defaults to the loopback sidecar and cleartext http is acknowledged for that
+  # same-pod hop; an explicit override always wins. When the sidecar is disabled
+  # the URL is empty (feature unconfigured — never a hard boot dependency).
+  {{- $xsdOn := eq (include "flowker.xsdValidator.enabled" .) "true" }}
+  {{- $xsdPort := ((.Values.flowker.xsdValidator).port | default 8081) }}
+  {{- $xsdUrlOverridden := ne (.Values.flowker.configmap.XSD_VALIDATOR_URL | default "") "" }}
+  XSD_VALIDATOR_URL: {{ .Values.flowker.configmap.XSD_VALIDATOR_URL | default (ternary (printf "http://localhost:%v" $xsdPort) "" $xsdOn) | quote }}
+  {{- /* cleartext is auto-acknowledged ONLY for the in-pod loopback URL; an explicit off-pod override must opt in deliberately */}}
+  XSD_VALIDATOR_ALLOW_INSECURE_HTTP: {{ .Values.flowker.configmap.XSD_VALIDATOR_ALLOW_INSECURE_HTTP | default (ternary "true" "false" (and $xsdOn (not $xsdUrlOverridden))) | quote }}
+
+  # Scheduler (queue-backed `schedule` trigger). DEFAULT ON. When the bundled
+  # valkey subchart is enabled, SCHEDULER_REDIS_HOST auto-derives to its Service
+  # name; empty (valkey off, no override) keeps the scheduler queue a nil-safe
+  # no-op. This dedicated queue Redis MUST stay isolated from the tenant Pub/Sub
+  # Redis (MULTI_TENANT_REDIS_*).
+  SCHEDULER_ENABLED: {{ .Values.flowker.configmap.SCHEDULER_ENABLED | default "true" | quote }}
+  {{- /* Derive the queue host from the valkey subchart's actual Service name (<release>-valkey, or fullnameOverride) so it resolves under any release name; an explicit override always wins. */}}
+  {{- $valkeyHost := "" }}
+  {{- if eq (include "flowker.valkey.enabled" .) "true" }}
+  {{- $valkeyHost = include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" (.Values.valkey | default dict) "context" .) }}
+  {{- end }}
+  SCHEDULER_REDIS_HOST: {{ .Values.flowker.configmap.SCHEDULER_REDIS_HOST | default $valkeyHost | quote }}
+  SCHEDULER_REDIS_PORT: {{ .Values.flowker.configmap.SCHEDULER_REDIS_PORT | default "6379" | quote }}
+  SCHEDULER_REDIS_TLS: {{ .Values.flowker.configmap.SCHEDULER_REDIS_TLS | default "false" | quote }}
+  SCHEDULER_REDIS_DB: {{ .Values.flowker.configmap.SCHEDULER_REDIS_DB | default "0" | quote }}
+  SCHEDULER_CONCURRENCY: {{ .Values.flowker.configmap.SCHEDULER_CONCURRENCY | default "10" | quote }}
+
+  # WorkOS Tenant Manager token mint (feature #300) — ALL-OR-NONE. When enabled,
+  # URL + CLIENT_ID (here) + CLIENT_SECRET (Secret) are all required; a partial
+  # config is rejected at template time (mirrors the app's fail-fast boot check).
+  {{- if .Values.flowker.workosTmEnabled }}
+  WORKOS_TM_TOKEN_URL: {{ required "flowker.configmap.WORKOS_TM_TOKEN_URL is required when flowker.workosTmEnabled=true" .Values.flowker.configmap.WORKOS_TM_TOKEN_URL | quote }}
+  WORKOS_TM_CLIENT_ID: {{ required "flowker.configmap.WORKOS_TM_CLIENT_ID is required when flowker.workosTmEnabled=true" .Values.flowker.configmap.WORKOS_TM_CLIENT_ID | quote }}
+  WORKOS_TM_SCOPE: {{ .Values.flowker.configmap.WORKOS_TM_SCOPE | default "" | quote }}
+  WORKOS_TM_SERVICE_NAME: {{ .Values.flowker.configmap.WORKOS_TM_SERVICE_NAME | default "flowker" | quote }}
+  {{- end }}
+
   # Extra Env Vars
   {{- with .Values.flowker.extraEnvVars }}
   {{- range $key, $value := . }}

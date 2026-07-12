@@ -1,0 +1,25 @@
+{{- if eq (include "flowker.worker.enabled" .) "true" }}
+{{- $w := .Values.worker | default dict -}}
+{{- $port := (($w.service).port | default 4022) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "flowker.worker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "flowker.worker.labels" (dict "context" .) | nindent 4 }}
+data:
+  # Worker-only environment. Layered on top of the api ConfigMap + Secret (envFrom
+  # order in the worker Deployment), so keys here win over the shared api values.
+  # The worker binary serves its /health + /readyz probes on WORKER_SERVER_*.
+  WORKER_SERVER_PORT: {{ $port | quote }}
+  WORKER_SERVER_ADDRESS: {{ printf ":%v" $port | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ (($w.configmap).OTEL_RESOURCE_SERVICE_NAME) | default "flowker-worker" | quote }}
+  {{- with $w.configmap }}
+  {{- range $key, $value := . }}
+  {{- if not (has $key (list "WORKER_SERVER_PORT" "WORKER_SERVER_ADDRESS" "OTEL_RESOURCE_SERVICE_NAME")) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}

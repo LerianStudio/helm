@@ -8,8 +8,9 @@ flowker:
   replicaCount: 1
 
   image:
-    repository: lerianstudio/flowker
+    repository: ghcr.io/lerianstudio/flowker
     pullPolicy: IfNotPresent
+    # Empty inherits the chart default (>= 1.2.0-beta.82, required for worker + xsd).
     tag: ""
 
   imagePullSecrets: []
@@ -60,6 +61,32 @@ flowker:
 
   useExistingSecret: false
   existingSecretName: ""
+
+  # WorkOS Tenant Manager token mint (all-or-none; requires WORKOS_TM_* config + secret).
+  workosTmEnabled: false
+
+  # In-pod XSD validator sidecar (default on; disable if XML validation is unused).
+  xsdValidator:
+    enabled: true
+
+# Scheduler worker Deployment (runs the /worker binary from the flowker image).
+worker:
+  enabled: true
+
+# In-cluster Redis for the scheduler queue. Enable for a bundled valkey, or leave
+# off and point flowker.configmap.SCHEDULER_REDIS_HOST at an external Redis.
+valkey:
+  enabled: false
+
+# AWS auth. On EKS use IRSA via flowker.serviceAccount.annotations; on non-EKS
+# clusters enable IAM Roles Anywhere and supply the ARNs + certificate secret.
+aws:
+  rolesAnywhere:
+    enabled: false
+    trustAnchorArn: ""
+    profileArn: ""
+    roleArn: ""
+    certificateSecretName: "flowker-iam-tls"
 
 mongodb:
   enabled: true

@@ -299,6 +299,9 @@ flowker:
     MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Redis password for tenant Pub/Sub (optional)
     MULTI_TENANT_REDIS_PASSWORD: ""
+    # -- WorkOS M2M client secret for the outbound token flowker mints to call
+    # the Tenant Manager (emitted only when set)
+    WORKOS_TM_CLIENT_SECRET: ""
 
   # -- Use an existing secret instead of creating one
   useExistingSecret: false

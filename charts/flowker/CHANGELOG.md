@@ -1,3 +1,13 @@
+## [3.0.1] — Unreleased
+
+### Added
+
+- Optional `WORKOS_TM_CLIENT_SECRET` secret passthrough (the WorkOS M2M
+  client secret for the outbound token flowker mints to call the Tenant
+  Manager). Emitted in the Secret only when set. Non-secret WorkOS/
+  SecretsProvider env vars are delivered via the chart's generic
+  `extraEnvVars` passthrough, not the ConfigMap allowlist.
+
 ## [2.1.0-beta.5] — Unreleased
 
 ### Changed

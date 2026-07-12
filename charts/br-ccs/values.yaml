@@ -332,7 +332,9 @@ brCcs:
 
     # =================================================================
     # Event-Driven — RabbitMQ (optional, disabled by default)
-    # RABBITMQ_URL is rendered from chart defaults when RABBITMQ_ENABLED=true.
+    # RABBITMQ_URL (full amqp:// dial string, carries credentials) is a SECRET —
+    # see brCcs.secrets.RABBITMQ_URL. When unset, the app builds the URL from
+    # RABBITMQ_HOST/PORT/USER/PASS.
     # =================================================================
     RABBITMQ_ENABLED: "false"
     RABBITMQ_PORT_AMQP: "5672"
@@ -547,6 +549,10 @@ brCcs:
 
     # RabbitMQ credentials (when RABBITMQ_ENABLED=true)
     # RABBITMQ_DEFAULT_PASS: ""
+    # RABBITMQ_URL — full amqp:// dial string (embeds the password; any '@' in
+    # the password must be percent-encoded as %40). When set, the app dials via
+    # this instead of assembling from RABBITMQ_HOST/PORT/USER/PASS.
+    # RABBITMQ_URL: ""
 
     # Crypto keys (REQUIRED in production)
     # CCS_CRYPTO_MASTER_KEY — AES-256-GCM master key, 64 hex chars (openssl rand -hex 32).

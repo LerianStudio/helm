@@ -439,6 +439,8 @@ brCcs:
     EXPORT_RATE_LIMIT_WINDOW_SEC: "60"
     DISPATCH_RATE_LIMIT_MAX: "30"
     DISPATCH_RATE_LIMIT_WINDOW_SEC: "60"
+    ALLOW_RATELIMIT_DISABLED: ""
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
 
     # =================================================================
     # Observability & metrics

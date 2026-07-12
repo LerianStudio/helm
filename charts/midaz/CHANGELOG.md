@@ -2,6 +2,20 @@
 
 ## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.5.0)
 
+- **Features:**
+  - Updated midaz-crm and midaz-ledger to version 3.7.8 with new environment variables.
+
+- **Improvements:**
+  - Removed `ALLOW_INSECURE_TLS` from CRM and Ledger configmaps.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.4.0...midaz-v8.5.0)
+
+---
+
+## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.5.0)
+
 - **Features**
   - Updated `midaz-crm` and `midaz-ledger` to version 3.7.8, introducing new environment variables.
 

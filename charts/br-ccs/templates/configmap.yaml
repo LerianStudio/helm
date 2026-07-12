@@ -259,6 +259,8 @@ data:
   EXPORT_RATE_LIMIT_WINDOW_SEC: {{ $cm.EXPORT_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
   DISPATCH_RATE_LIMIT_MAX: {{ $cm.DISPATCH_RATE_LIMIT_MAX | default "30" | quote }}
   DISPATCH_RATE_LIMIT_WINDOW_SEC: {{ $cm.DISPATCH_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  # Empty (default) keeps the safe fail-closed posture; "true" permits fail-open.
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
 
   # =====================================================================
   # OBSERVABILITY / IDEMPOTENCY / PAGINATION

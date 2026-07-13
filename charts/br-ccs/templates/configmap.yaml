@@ -137,9 +137,8 @@ data:
   # =====================================================================
   RABBITMQ_ENABLED: {{ $cm.RABBITMQ_ENABLED | default "false" | quote }}
   {{- if eq (toString ($cm.RABBITMQ_ENABLED | default "false")) "true" }}
-  {{- if $cm.RABBITMQ_URL }}
-  RABBITMQ_URL: {{ $cm.RABBITMQ_URL | quote }}
-  {{- end }}
+  {{- /* RABBITMQ_URL carries the password and is rendered as a Secret (see
+         templates/secrets.yaml), never as a ConfigMap value. */}}
   RABBITMQ_HOST: {{ $cm.RABBITMQ_HOST | default (printf "%s-rabbitmq.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
   RABBITMQ_PORT_AMQP: {{ $cm.RABBITMQ_PORT_AMQP | default "5672" | quote }}
   RABBITMQ_PORT_HOST: {{ $cm.RABBITMQ_PORT_HOST | default "15672" | quote }}
@@ -260,6 +259,8 @@ data:
   EXPORT_RATE_LIMIT_WINDOW_SEC: {{ $cm.EXPORT_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
   DISPATCH_RATE_LIMIT_MAX: {{ $cm.DISPATCH_RATE_LIMIT_MAX | default "30" | quote }}
   DISPATCH_RATE_LIMIT_WINDOW_SEC: {{ $cm.DISPATCH_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  # Empty (default) keeps the safe fail-closed posture; "true" permits fail-open.
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
 
   # =====================================================================
   # OBSERVABILITY / IDEMPOTENCY / PAGINATION

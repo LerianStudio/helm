@@ -38,15 +38,15 @@ per component.
 The plugin uses a Proxy/Hub deployment model. A "hub" component owns business
 logic and local state (its own Postgres database, sometimes Mongo+Valkey),
 while a "proxy" component is a stateless pass-through. Both expose identical
-APIs. Three Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`)
-and one Mongo database (`pix-dict`) for `dict-hub` (`pix-cob` is a
+APIs. Four Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`,
+`pix-adapter-lerian`) and one Mongo database (`pix-dict`) for `dict-hub` (`pix-cob` is a
 forward-compat slot the Mongo bootstrap provisions but no component reads yet).
 
 ## Required infrastructure
 
 For a full deployment:
-- **PostgreSQL**: 3 databases (`pix-spi`, `pix-dict`, `pix-cob`) and a role
-  `pixswitch` with full ownership of each
+- **PostgreSQL**: 4 databases (`pix-spi`, `pix-dict`, `pix-cob`,
+  `pix-adapter-lerian`) and a role `pixswitch` with full ownership of each
 - **MongoDB**: 1 database (`pix-dict`) used by `dict-hub`; the bootstrap also
   provisions `pix-cob` as a forward-compat slot, but no component reads it yet
 - **Valkey** (Redis-compatible): used by `spi`, `dict-hub`, `dict-hub-vsync`

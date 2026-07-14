@@ -46,7 +46,7 @@ global:
   #
   # Use cases:
   #   - In-cluster Postgres subchart (postgresql.enabled=true) AND you want
-  #     the chart to create the 3 pix-switch databases for you. Set
+  #     the chart to create the 4 pix-switch databases for you. Set
   #     connection.host to the in-cluster service name
   #     (plugin-br-pix-switch-postgresql).
   #   - External Postgres (RDS, Cloud SQL, etc.) where the operator wants the
@@ -64,7 +64,7 @@ global:
   #     values live under component `secrets`, not `configmap`.
   externalPostgresDefinitions:
     enabled: false
-    # -- Databases to create (one Job per database). pix-switch needs 3.
+    # -- Databases to create (one Job per database). pix-switch needs 4.
     databases:
       - pix-spi
       - pix-dict

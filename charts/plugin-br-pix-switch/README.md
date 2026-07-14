@@ -67,6 +67,8 @@ Default `enabled` values:
 - `spi`, `spiSystemplane`, `dictHub`, `dictHubVsync`, `dictProxy`,
   `dictSystemplane`, `cobHub`, `cobProxy`, `cobSystemplane`: `true`
 - `adapterBtgMock`: `false` (it's a mock — only enable in dev/staging)
+- `adapterLerian`, `adapterLerianConsumer`, `adapterLerianSystemplane`: `false`
+  (Lerian provider adapter — enable per environment)
 
 ## Configuration
 
@@ -90,7 +92,9 @@ The app reads:
 
 Each component publishes and pulls its own image
 (`ghcr.io/lerianstudio/plugin-br-pix-switch-<component>-api`), set per
-component under `<component>.image.repository`. There is no shared
+component under `<component>.image.repository`. Worker components omit the
+`-api` suffix (e.g. `plugin-br-pix-switch-dict-hub-vsync` and
+`plugin-br-pix-switch-adapter-lerian-consumer`). There is no shared
 `global.image.repository`. When a component's `image.tag` is unset it falls
 back to `.Chart.AppVersion`, which keeps the cohort in lockstep by default;
 override `<component>.image.tag` to pin a specific build per component (rare).

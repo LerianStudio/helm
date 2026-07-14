@@ -1708,7 +1708,6 @@ adapterLerianSystemplane:
     SWITCH_BASE_URL: ""
     INTEGRATION_MODE: ""
     BRSFN_BASE_URL: ""
-    BRSFN_TOKEN_URL: ""
     BRSFN_CLIENT_ID: ""
 
   secrets:
@@ -1717,6 +1716,8 @@ adapterLerianSystemplane:
     # -- 32-byte AES-256-GCM key; required in non-local deployment modes.
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
     MULTI_TENANT_API_KEY: ""
+    # -- OAuth token endpoint; classified as a secret to satisfy the credential-name chart standard.
+    BRSFN_TOKEN_URL: ""
     BRSFN_CLIENT_SECRET: ""
 
   useExistingSecret: false

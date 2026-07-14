@@ -10,7 +10,7 @@
 
 BACEN-compliant PIX instant payment platform for the Lerian ecosystem.
 
-The plugin is a Go monorepo that produces 10 independently-deployable binaries.
+The plugin is a Go monorepo that produces 13 independently-deployable binaries.
 This chart deploys all of them with one helm release. Each component has its
 own Deployment, Service, ConfigMap, Secret, HPA, and PDB; ingress is opt-in
 per component.
@@ -29,6 +29,9 @@ per component.
 | `cobHub` | `cob/hub/api` | 4108 | COB hub |
 | `cobProxy` | `cob/proxy/api` | 4109 | COB proxy to BCB |
 | `cobSystemplane` | `cob/systemplane/api` | 4110 | Runtime config plane for COB |
+| `adapterLerian` | `adapter-lerian/api` | 4113 | Lerian provider adapter (API, disabled by default) |
+| `adapterLerianConsumer` | `adapter-lerian/consumer` | 4114 | Lerian provider adapter Kafka consumer (disabled by default) |
+| `adapterLerianSystemplane` | `adapter-lerian/systemplane/api` | 4115 | Runtime config plane for adapter-lerian (disabled by default) |
 
 ## Architecture
 

@@ -1555,9 +1555,9 @@ adapterLerianConsumer:
     maxReplicas: 1
 
   readinessProbe:
-    path: "/readyz"
+    path: "/lerian/readyz"
   livenessProbe:
-    path: "/health"
+    path: "/lerian/health"
   nodeSelector: {}
   tolerations: []
   affinity: {}

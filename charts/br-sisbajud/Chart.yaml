@@ -1,0 +1,46 @@
+apiVersion: v2
+name: br-sisbajud-helm
+description: A Helm chart for br-sisbajud — the Lerian SISBAJUD plugin (judicial asset blocking/unblocking integration with BACEN SISBAJUD)
+
+type: application
+annotations:
+  lerian.studio/chart-type: single-service
+
+home: https://github.com/LerianStudio/helm
+
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/br-sisbajud
+  - https://github.com/LerianStudio/br-sisbajud
+
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+
+version: 0.1.0-beta.1
+
+# NOTE: appVersion is the default image tag for the app and the migration Job.
+# Override via brSisbajud.image.tag when needed.
+appVersion: "0.1.0-beta.1"
+
+keywords:
+  - br-sisbajud
+  - sisbajud
+  - bacen
+  - judicial
+  - blocking
+  - lerian
+
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+# Bitnami subcharts are DECLARED (exact pins, condition-gated) so the chart can
+# optionally bundle infra, but they default to disabled: on the target
+# environments Postgres and Redis are EXTERNAL and pre-provisioned.
+dependencies:
+  - name: postgresql
+    version: "16.3.5"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: valkey
+    version: "2.4.7"
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    condition: valkey.enabled

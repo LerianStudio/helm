@@ -1,0 +1,169 @@
+# Default values for the br-sisbajud (SISBAJUD plugin) chart.
+# Single-service chart: one Go binary (HTTP API + background workers in one
+# process). The configmap map is emitted VERBATIM into the ConfigMap (not a
+# fixed allowlist), so any extra env can be added under brSisbajud.configmap
+# without a chart change.
+nameOverride: "br-sisbajud"
+fullnameOverride: ""
+namespaceOverride: ""
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# -- Default pull secret for the app + migration Job (single GHCR credential).
+imagePullSecrets:
+  - name: ghcr-credential
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# -- Pod-level security context
+podSecurityContext: {}
+
+# -- Container security context (distroless static-debian12:nonroot — UID/GID 65532)
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# =============================================================================
+# brSisbajud — the single SISBAJUD service component.
+# =============================================================================
+brSisbajud:
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sisbajud
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  waitImage: busybox
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 1
+  service:
+    type: ClusterIP
+    # Matches the Dockerfile EXPOSE 4029 and SERVER_ADDRESS=:4029.
+    port: 4029
+    annotations: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  pdb:
+    enabled: true
+    minAvailable: 0
+    maxUnavailable: 1
+    annotations: {}
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  readinessProbe:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  nodeSelector: {}
+  tolerations: {}
+  affinity: {}
+  # -- ConfigMap entries emitted verbatim into the ConfigMap.
+  configmap:
+    ENV_NAME: "development"
+    SERVER_ADDRESS: "0.0.0.0:4029"
+    LOG_LEVEL: "info"
+  # -- Secrets emitted into the app Secret (base64-encoded by the template).
+  # Use AVP <path:...> placeholders in GitOps values, never real credentials.
+  secrets:
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+  # -- Use an operator-provided Secret instead of the chart-managed one.
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Extra env vars rendered as explicit `env:` entries on the pod.
+  extraEnvVars: []
+
+# =============================================================================
+# Detached migrations — ArgoCD PreSync Secret + Job that applies the SQL schema
+# to the br_sisbajud database before the app boots. The br-sisbajud-migrations
+# image runs golang-migrate against the /migrations directory.
+# =============================================================================
+migrations:
+  enabled: true
+  image:
+    repository: ghcr.io/lerianstudio/br-sisbajud-migrations
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  waitImage: busybox
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Postgres connection for the migration Job. Empty fields fall back to
+  # brSisbajud.configmap / brSisbajud.secrets values.
+  postgres:
+    host: ""
+    port: ""
+    user: ""
+    database: ""
+    sslMode: ""
+    password: ""
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# =============================================================================
+# Bundled infra subcharts — DISABLED by default. On the target environments
+# Postgres and Redis are external and pre-provisioned; wire hosts via
+# brSisbajud.configmap.POSTGRES_HOST / REDIS_HOST. Enable these only for a
+# self-contained install.
+# =============================================================================
+postgresql:
+  enabled: false
+  external: true
+
+valkey:
+  enabled: false
+  external: true

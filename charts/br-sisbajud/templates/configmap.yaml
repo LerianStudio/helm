@@ -1,0 +1,23 @@
+{{- if .Values.brSisbajud.enabled -}}
+{{- $pgHost := .Values.brSisbajud.configmap.POSTGRES_HOST -}}
+{{- if and (not $pgHost) (ne (toString .Values.postgresql.enabled) "false") -}}
+{{-   $pgHost = printf "%s.%s.svc.cluster.local." (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .)) (include "global.namespace" .) -}}
+{{- end -}}
+{{- $redisHost := .Values.brSisbajud.configmap.REDIS_HOST -}}
+{{- if and (not $redisHost) (ne (toString .Values.valkey.enabled) "false") -}}
+{{-   $redisHost = printf "%s-primary.%s.svc.cluster.local.:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) (include "global.namespace" .) -}}
+{{- end }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "br-sisbajud.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud.labels" . | nindent 4 }}
+data:
+  POSTGRES_HOST: {{ $pgHost | default "" | quote }}
+  REDIS_HOST: {{ $redisHost | default "" | quote }}
+  {{- range $k, $v := .Values.brSisbajud.configmap }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+{{- end -}}

@@ -1,0 +1,12 @@
+br-sisbajud (SISBAJUD plugin) has been deployed to namespace {{ include "global.namespace" . }}.
+
+Verify:
+  kubectl -n {{ include "global.namespace" . }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl -n {{ include "global.namespace" . }} get cm,secret -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if .Values.migrations.enabled }}
+
+Migrations: an ArgoCD PreSync Job ({{ include "br-sisbajud-migrations.fullname" . }})
+applies the SQL schema to the `br_sisbajud` database before the app boots.
+Under plain `helm install` (no ArgoCD) the PreSync hook Job still runs as a normal Job.
+{{- end }}

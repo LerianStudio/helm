@@ -1,0 +1,97 @@
+{{- if .Values.migrations.enabled }}
+# PreSync migration Job. Runs the dedicated br-sisbajud-migrations image, whose
+# entrypoint applies the golang-migrate SQL migrations against the br_sisbajud
+# database. hook-weight -1 puts this after the PreSync Secret (-2) and before
+# the main-sync Deployment, so the app never boots unmigrated.
+{{- $pgHost := .Values.migrations.postgres.host | default .Values.brSisbajud.configmap.POSTGRES_HOST -}}
+{{- if and (not $pgHost) (ne (toString .Values.postgresql.enabled) "false") -}}
+{{-   $pgHost = printf "%s.%s.svc.cluster.local." (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .)) (include "global.namespace" .) -}}
+{{- end }}
+{{- $pgPort := .Values.migrations.postgres.port | default .Values.brSisbajud.configmap.POSTGRES_PORT | default "5432" }}
+{{- $pgUser := .Values.migrations.postgres.user | default .Values.brSisbajud.configmap.POSTGRES_USER | default "br_sisbajud" }}
+{{- $pgDb := .Values.migrations.postgres.database | default .Values.brSisbajud.configmap.POSTGRES_NAME | default "br_sisbajud" }}
+{{- $pgSslMode := .Values.migrations.postgres.sslMode | default .Values.brSisbajud.configmap.POSTGRES_SSLMODE | default "disable" }}
+{{- $secretName := ternary .Values.migrations.existingSecretName (include "br-sisbajud-migrations.fullname" .) .Values.migrations.useExistingSecret }}
+{{- $pullSecrets := .Values.migrations.imagePullSecrets | default .Values.imagePullSecrets }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "br-sisbajud-migrations.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud-migrations.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit | default 3 }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-sisbajud-migrations.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ .Values.migrations.waitImage | default "busybox" }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              echo "waiting for {{ $pgHost }}:{{ $pgPort }}...";
+              until nc -z {{ $pgHost }} {{ $pgPort }}; do
+                echo "{{ $pgHost }}:{{ $pgPort }} not ready, waiting..."; sleep 5;
+              done;
+              echo "{{ $pgHost }}:{{ $pgPort }} is ready"
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        - name: migrations
+          image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: POSTGRES_HOST
+              value: {{ $pgHost | quote }}
+            - name: POSTGRES_PORT
+              value: {{ $pgPort | quote }}
+            - name: POSTGRES_USER
+              value: {{ $pgUser | quote }}
+            - name: POSTGRES_DB
+              value: {{ $pgDb | quote }}
+            - name: POSTGRES_SSLMODE
+              value: {{ $pgSslMode | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_PASSWORD
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
+{{- end }}

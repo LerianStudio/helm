@@ -1,0 +1,38 @@
+{{- if and .Values.brSisbajud.enabled .Values.brSisbajud.ingress.enabled -}}
+{{- $svcName := include "br-sisbajud.fullname" . -}}
+{{- $svcPort := .Values.brSisbajud.service.port | default 4029 -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $svcName }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud.labels" . | nindent 4 }}
+  {{- with .Values.brSisbajud.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.brSisbajud.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with .Values.brSisbajud.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.brSisbajud.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $svcName }}
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end -}}

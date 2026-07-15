@@ -1,5 +1,7 @@
 # Helm Chart Standard
 
+{% raw %}
+
 This document defines the repository contract for Lerian Helm charts. It exists so charts do not drift by copying the nearest old outlier.
 
 ## Chart Types
@@ -398,3 +400,4 @@ Charts with required production values use dummy CI-only fixtures under `.github
 ## KEDA Autoscaling
 
 KEDA `cpu` and `memory` scalers must **not** carry an `authenticationRef` — those scalers read the metrics server, not an authenticated external source, and a stray `authenticationRef` makes the ScaledObject invalid. Gate it on the trigger type, e.g. `{{- if not (has .type (list "cpu" "memory")) }}` around the `authenticationRef` block. Queue/broker scalers (e.g. rabbitmq) keep their `authenticationRef`.
+{% endraw %}

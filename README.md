@@ -251,3 +251,14 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: |
 | `1.0.0-beta.4` | 0.1.0 |
 -----------------
+
+### BR SISBAJUD
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sisbajud).
+
+#### Application Version Mapping
+
+| Chart Version | App Version | Migrations Version |
+| :---: | :---: | :---: |
+| `0.1.0-beta.1` | `0.1.0-beta.1` | `0.1.0-beta.1` |
+-----------------

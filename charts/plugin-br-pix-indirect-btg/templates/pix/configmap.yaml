@@ -12,6 +12,7 @@ data:
   VERSION: {{ .Values.pix.image.tag | default .Chart.AppVersion | quote }}
   SERVER_PORT: {{ .Values.pix.configmap.SERVER_PORT | default "4014" | quote }}
   SERVER_ADDRESS: {{ .Values.pix.configmap.SERVER_ADDRESS | default ":4014" | quote }}
+  DEPLOYMENT_MODE: {{ .Values.pix.configmap.DEPLOYMENT_MODE | default "local" | quote }}
 
   # AUTH PLUGIN
   PLUGIN_AUTH_ENABLED: {{ .Values.pix.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
@@ -74,6 +75,7 @@ data:
   MONGO_NAME: {{ .Values.pix.configmap.MONGO_NAME | default "pix-btg-db" | quote }}
   MONGO_USER: {{ .Values.pix.configmap.MONGO_USER | default "pix-btg" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.pix.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_TLS: {{ .Values.pix.configmap.MONGO_TLS | default "false" | quote }}
 
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.pix.configmap.SWAGGER_TITLE | default "Plugin BR Pix Indirect BTG" | quote }}
@@ -142,6 +144,12 @@ data:
 
   # RECONCILIATION
   RECONCILIATION_INTERNAL_CIDR: {{ .Values.pix.configmap.RECONCILIATION_INTERNAL_CIDR | default "" | quote }}
+
+  # Schedule Business Rules
+  SCHEDULE_MAX_FUTURE_DAYS: {{ .Values.pix.configmap.SCHEDULE_MAX_FUTURE_DAYS | default "180" | quote }}
+  SCHEDULE_MIN_FUTURE_SECONDS: {{ .Values.pix.configmap.SCHEDULE_MIN_FUTURE_SECONDS | default "60" | quote }}
+  SCHEDULE_DEFAULT_EXECUTE_HOUR_BRT: {{ .Values.pix.configmap.SCHEDULE_DEFAULT_EXECUTE_HOUR_BRT | default "6" | quote }}
+  SCHEDULE_MAX_ATTEMPTS: {{ .Values.pix.configmap.SCHEDULE_MAX_ATTEMPTS | default "2" | quote }}
 
   # BTG Webhook Validation
   BTG_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.BTG_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}

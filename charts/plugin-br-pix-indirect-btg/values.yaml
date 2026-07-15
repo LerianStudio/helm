@@ -151,6 +151,8 @@ pix:
   # @default -- templates/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
+    # Deployment Mode
+    DEPLOYMENT_MODE: "local"
     # Database Configuration
     # Infra hosts are derived collapse-aware in templates/*/configmap.yaml from the bundled
     # subchart Service names when left empty. Set explicitly only for external infra.
@@ -164,6 +166,7 @@ pix:
     MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
+    MONGO_TLS: "false"
     # Redis Configuration
     REDIS_HOST: ""
     # External Services
@@ -190,6 +193,11 @@ pix:
     MTLS_HTTP_TIMEOUT: "10s"
     # BTG Webhook Validation
     BTG_WEBHOOK_VALIDATION_ENABLED: "true"
+    # Schedule Business Rules
+    SCHEDULE_MAX_FUTURE_DAYS: "180"
+    SCHEDULE_MIN_FUTURE_SECONDS: "60"
+    SCHEDULE_DEFAULT_EXECUTE_HOUR_BRT: "6"
+    SCHEDULE_MAX_ATTEMPTS: "2"
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml

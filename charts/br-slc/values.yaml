@@ -860,3 +860,74 @@ migrations:
     image:
       repository: busybox
       tag: "1.37"
+
+# ---------------------------------------------------------------------------
+# mock-nuclea — Núclea clearing-house SIMULATOR. DEV/HML FIXTURE ONLY — NEVER
+# ENABLE IN PRODUCTION/BYOC. A separate, standalone Deployment+Service (NOT a
+# same-pod sidecar like signer/xsdValidator/mqbridge above): the app reaches it
+# over cluster DNS (Service br-slc-mock-nuclea:9190), not localhost. Wiring the
+# consumer side (MOCK_NUCLEA_URL / NUCLEA_REST_BASE_URL /
+# RSFN_CONSUMER_BASE_URL) happens in the dev/hml gitops overlay, not here.
+#
+# enabled: false by default — same precedent as the detached migrations
+# component above: a gated component that defaults ON with an image the
+# registry doesn't have yet (its own ghcr.io/lerianstudio/br-slc-mock-nuclea,
+# published by a separate br-slc release-pipeline workstream) would
+# ImagePullBackOff and block the whole ArgoCD sync. Flip on only in dev/hml
+# overlays once that image is published.
+mockNuclea:
+  enabled: false
+  image:
+    repository: ghcr.io/lerianstudio/br-slc-mock-nuclea
+    # Empty defaults to .Chart.AppVersion (see br-slc.mockNucleaImage in
+    # _helpers.tpl). ASSUMPTION: reconcile the real published tag once the
+    # release-pipeline workstream lands.
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  # ClusterIP only (BYOC/Lerian convention) — no NodePort/LoadBalancer/Ingress.
+  service:
+    type: ClusterIP
+    port: 9190
+    targetPort: 9190
+  # Distroless static nonroot binary (USER 65532) that writes nothing to disk,
+  # so readOnlyRootFilesystem is safe with no /tmp emptyDir needed (unlike the
+  # app/signer/validator containers above).
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  # Lightweight fixture — small resource footprint.
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  # The mock exposes ONLY GET /health — no /readyz. Used for BOTH liveness and
+  # readiness (unlike the app container, which splits process-viability
+  # liveness from dependency-aware readiness).
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3

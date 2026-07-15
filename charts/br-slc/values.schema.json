@@ -14,7 +14,8 @@
     "signer",
     "xsdValidator",
     "mqbridge",
-    "migrations"
+    "migrations",
+    "mockNuclea"
   ],
   "properties": {
     "replicaCount": { "type": "integer", "minimum": 0 },
@@ -459,6 +460,71 @@
             }
           }
         }
+      }
+    },
+    "mockNuclea": {
+      "type": "object",
+      "required": ["enabled", "image", "service", "resources", "securityContext", "livenessProbe", "readinessProbe"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": {
+          "type": "object",
+          "required": ["repository", "pullPolicy"],
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "tag": { "type": "string" },
+            "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+          }
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "service": {
+          "type": "object",
+          "required": ["type", "port", "targetPort"],
+          "properties": {
+            "type": { "type": "string", "enum": ["ClusterIP"] },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "targetPort": { "type": "integer", "minimum": 1, "maximum": 65535 }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "limits": { "type": "object" },
+            "requests": { "type": "object" }
+          }
+        },
+        "securityContext": {
+          "type": "object",
+          "required": ["runAsNonRoot", "allowPrivilegeEscalation", "readOnlyRootFilesystem", "capabilities", "seccompProfile"],
+          "properties": {
+            "runAsNonRoot": { "type": "boolean", "const": true },
+            "runAsUser": { "type": "integer" },
+            "runAsGroup": { "type": "integer" },
+            "allowPrivilegeEscalation": { "type": "boolean", "const": false },
+            "readOnlyRootFilesystem": { "type": "boolean", "const": true },
+            "capabilities": {
+              "type": "object",
+              "required": ["drop"],
+              "properties": {
+                "drop": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "contains": { "const": "ALL" }
+                }
+              }
+            },
+            "seccompProfile": {
+              "type": "object",
+              "required": ["type"],
+              "properties": { "type": { "type": "string", "const": "RuntimeDefault" } }
+            }
+          }
+        },
+        "livenessProbe": { "type": "object" },
+        "readinessProbe": { "type": "object" }
       }
     }
   }

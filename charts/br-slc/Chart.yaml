@@ -18,7 +18,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 0.1.0-beta.1
+version: 0.1.0-beta.2
 # appVersion is the default image tag for the app, the signer/validator/mqbridge
 # sidecars, and the migrations Job. Override per image via <image>.tag when a
 # component needs to pin a different build.

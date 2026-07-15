@@ -199,3 +199,43 @@ periodSeconds: {{ .periodSeconds }}
 timeoutSeconds: {{ .timeoutSeconds }}
 failureThreshold: {{ .failureThreshold }}
 {{- end -}}
+
+{{/*
+mock-nuclea (Núclea clearing-house simulator) — a SEPARATE Deployment+Service,
+NOT a same-pod sidecar: it must be independently gated OFF (safe-by-default) and
+reached over cluster DNS by the app. DEV/HML FIXTURE ONLY — never enable in
+production/BYOC. Mirrors the detached-`migrations` component's own-fullname /
+own-labels convention so the app Service selector never captures the mock pod.
+*/}}
+{{- define "br-slc-mock-nuclea.fullname" -}}
+{{- printf "%s-mock-nuclea" (include "br-slc.fullname" . | trunc 51 | trimSuffix "-") | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+mock-nuclea selector labels — distinct name from the app so the app's Service
+(br-slc.selectorLabels) never routes to the mock and vice-versa.
+*/}}
+{{- define "br-slc-mock-nuclea.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "br-slc-mock-nuclea.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+
+{{/*
+mock-nuclea labels.
+*/}}
+{{- define "br-slc-mock-nuclea.labels" -}}
+helm.sh/chart: {{ include "br-slc.chart" . }}
+{{ include "br-slc-mock-nuclea.selectorLabels" . }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/component: mock-nuclea
+{{- end -}}
+
+{{/*
+mock-nuclea image reference, defaulting tag to .Chart.AppVersion when empty.
+Distinct image from the app (its own release-pipeline artifact).
+*/}}
+{{- define "br-slc.mockNucleaImage" -}}
+{{- $tag := .Values.mockNuclea.image.tag | default .Chart.AppVersion -}}
+{{- printf "%s:%s" .Values.mockNuclea.image.repository $tag -}}
+{{- end -}}

@@ -1,0 +1,71 @@
+{{- if .Values.mockNuclea.enabled }}
+{{- /*
+Núclea clearing-house SIMULATOR — DEV/HML FIXTURE ONLY, never enable in
+production/BYOC. Standalone Deployment (own image ghcr.io/lerianstudio/
+br-slc-mock-nuclea, published by the br-slc release pipeline). Safe-by-default
+OFF (mockNuclea.enabled=false): like the detached migrations image, a gated
+component that defaults ON with an image the registry doesn't have yet would
+ImagePullBackOff and block the whole ArgoCD sync. The app reaches it over
+cluster DNS (Service br-slc-mock-nuclea:port); wire MOCK_NUCLEA_URL /
+NUCLEA_REST_BASE_URL / RSFN_CONSUMER_BASE_URL in the dev/hml gitops overlay.
+*/}}
+{{- $pullSecrets := .Values.mockNuclea.imagePullSecrets | default .Values.imagePullSecrets }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "br-slc-mock-nuclea.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-slc-mock-nuclea.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "br-slc-mock-nuclea.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-slc-mock-nuclea.labels" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mock-nuclea
+          image: {{ include "br-slc.mockNucleaImage" . | quote }}
+          imagePullPolicy: {{ .Values.mockNuclea.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.mockNuclea.service.targetPort }}
+              protocol: TCP
+          env:
+            - name: MOCK_NUCLEA_ADDR
+              value: {{ printf ":%d" (int .Values.mockNuclea.service.targetPort) | quote }}
+            {{- /* GOMAXPROCS from the container CFS cpu limit — same
+            downward-API fix as the app/signer/validator/mqbridge containers
+            (Gate 8 FIX 7). Guarded with `with`+`if .cpu` so a nil-limit
+            override renders. */}}
+            {{- with .Values.mockNuclea.resources.limits }}
+            {{- if .cpu }}
+            - name: GOMAXPROCS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+                  divisor: "1"
+            {{- end }}
+            {{- end }}
+          livenessProbe:
+            {{- include "br-slc.httpProbe" .Values.mockNuclea.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- include "br-slc.httpProbe" .Values.mockNuclea.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.mockNuclea.resources | nindent 12 }}
+          securityContext:
+            {{- include "br-slc.containerSecurityContext" .Values.mockNuclea.securityContext | nindent 12 }}
+{{- end }}

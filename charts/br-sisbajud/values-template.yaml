@@ -20,7 +20,6 @@ brSisbajud:
     VAULT_ADDR: ""               # REQUIRED — Vault address
     VAULT_AUTH_METHOD: "approle"
     VAULT_TRANSIT_MOUNT_PATH: "transit-st"
-    SECRET_STORE_PROVIDER: "local"
     STREAMING_ENABLED: "true"
     STREAMING_BROKERS: ""        # REQUIRED when STREAMING_ENABLED=true
     STREAMING_CLOUDEVENTS_SOURCE: "br-sisbajud"
@@ -28,6 +27,7 @@ brSisbajud:
   secrets:
     POSTGRES_PASSWORD: ""        # REQUIRED for external Postgres
     REDIS_PASSWORD: ""           # set if the external Redis requires auth
+    SECRET_STORE_PROVIDER: "local"  # vault | aws-secrets-manager | local
   extraEnvVars:
     - name: VAULT_APPROLE_ROLE_ID
       value: ""                  # REQUIRED when VAULT_AUTH_METHOD=approle

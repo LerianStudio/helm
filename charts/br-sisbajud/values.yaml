@@ -78,7 +78,9 @@ brSisbajud:
   pdb:
     enabled: true
     minAvailable: 0
-    maxUnavailable: 1
+    # maxUnavailable is intentionally unset so minAvailable takes effect.
+    # Set to an integer (including 0) to switch to maxUnavailable mode.
+    # maxUnavailable: 1
     annotations: {}
   resources:
     requests:

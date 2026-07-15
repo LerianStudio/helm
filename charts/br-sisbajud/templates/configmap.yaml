@@ -7,6 +7,7 @@
 {{- if and (not $redisHost) (ne (toString .Values.valkey.enabled) "false") -}}
 {{-   $redisHost = printf "%s-primary.%s.svc.cluster.local.:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) (include "global.namespace" .) -}}
 {{- end }}
+{{- $reserved := list "POSTGRES_HOST" "REDIS_HOST" }}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -18,6 +19,8 @@ data:
   POSTGRES_HOST: {{ $pgHost | default "" | quote }}
   REDIS_HOST: {{ $redisHost | default "" | quote }}
   {{- range $k, $v := .Values.brSisbajud.configmap }}
+  {{- if not (has $k $reserved) }}
   {{ $k }}: {{ $v | quote }}
+  {{- end }}
   {{- end }}
 {{- end -}}

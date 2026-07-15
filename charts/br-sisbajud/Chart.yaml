@@ -20,7 +20,7 @@ version: 0.1.0-beta.1
 
 # NOTE: appVersion is the default image tag for the app and the migration Job.
 # Override via brSisbajud.image.tag when needed.
-appVersion: "0.1.0-beta.1"
+appVersion: "1.0.0-beta.109"
 
 keywords:
   - br-sisbajud

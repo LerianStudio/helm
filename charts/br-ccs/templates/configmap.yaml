@@ -292,6 +292,19 @@ data:
   {{- end }}
 
   # =====================================================================
+  # FETCHER SNAPSHOT QUARANTINE (optional — br-ccs-140 Phase 2)
+  # Opt-in: skip + classify invalid CRM records instead of aborting the
+  # whole batch, up to an invalid/total ceiling above which it fails HIGH.
+  # Unset = app defaults (disabled; ceiling 0.05). Render only when set so
+  # the chart never overrides the app's fail-closed default.
+  # =====================================================================
+  {{- range $k := (list "CCS_SNAPSHOT_QUARANTINE_INVALID_ENABLED" "CCS_SNAPSHOT_QUARANTINE_MAX_INVALID_RATIO") }}
+  {{- if index $cm $k }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+
+  # =====================================================================
   # READINESS PROBE + GRACEFUL SHUTDOWN
   # =====================================================================
   READYZ_PROBE_TIMEOUT_SEC: {{ $cm.READYZ_PROBE_TIMEOUT_SEC | default "5" | quote }}

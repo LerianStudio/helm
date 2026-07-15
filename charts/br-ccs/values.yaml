@@ -485,6 +485,17 @@ brCcs:
     # CCS_ACCS005_SECRECY_SITUACAO: "01"
 
     # =================================================================
+    # Fetcher snapshot quarantine (optional — br-ccs-140 Phase 2)
+    # Opt-in: skip + classify invalid CRM records instead of aborting the
+    # whole batch. MAX_INVALID_RATIO is the invalid/total ceiling in [0,1]
+    # above which the batch fails HIGH even with quarantine on. Unset keeps
+    # the app default (disabled; ceiling 0.05 / fail-closed). Enable only on
+    # ST test tiers that tolerate other users' invalid data.
+    # =================================================================
+    # CCS_SNAPSHOT_QUARANTINE_INVALID_ENABLED: "false"
+    # CCS_SNAPSHOT_QUARANTINE_MAX_INVALID_RATIO: "0.05"
+
+    # =================================================================
     # Pagination
     # =================================================================
     MAX_PAGINATION_LIMIT: "100"

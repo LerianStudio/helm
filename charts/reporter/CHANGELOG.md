@@ -3,6 +3,18 @@
 ## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
 
 - Fixes:
+  - Update `reporter-manager` to version 2.1.2.
+  - Update `reporter-worker` to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
   - Updated dependencies: reporter-manager to version 2.1.2 and reporter-worker to version 2.1.2.
 
 Contributors: @lerian-studio,

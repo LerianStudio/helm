@@ -335,6 +335,14 @@ because the IBM MQ C client (libmqm) needs a writable `/var/mqm` (mounted as
 an explicit `emptyDir`); it stays non-root, no privilege escalation, all
 capabilities dropped, `RuntimeDefault` seccomp. Service is `ClusterIP` only.
 
+## Installation
+
+The chart is published as an OCI artifact to GitHub Container Registry:
+
+```bash
+helm install my-release oci://ghcr.io/lerianstudio/br-slc-helm --version <chart-version>
+```
+
 ## Port-forward (no Ingress)
 
 ```bash

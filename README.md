@@ -297,3 +297,14 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: |
 | `1.0.0-beta.2` | 1.0.0 |
 -----------------
+
+### BR SLC
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-slc).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | 0.1.0 |
+-----------------

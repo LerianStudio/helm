@@ -1,0 +1,33 @@
+apiVersion: v2
+name: br-slc-helm
+description: |
+  Helm chart for the br-slc monolith (Sistema de Liquidação Centralizada — SLC).
+  BYOC single-tenant deployment: ClusterIP-only Service, no Ingress. Ships one
+  Deployment whose pod runs three mandatory containers (ADR-12): the app plus
+  the same-pod slc-signer and aslc-xsd-validator sidecars reached over
+  localhost, and a fourth conditional mqbridge container (RSFN IBM MQ inbound)
+  rendered only when mqbridge.enabled. A dedicated migrations image applies the
+  golang-migrate SQL via an ArgoCD PreSync hook Job before the rollout.
+type: application
+annotations:
+  lerian.studio/chart-type: single-service
+home: https://github.com/LerianStudio/helm
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/br-slc
+  - https://github.com/LerianStudio/br-slc
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+version: 0.1.0-beta.2
+# appVersion is the default image tag for the app, the signer/validator/mqbridge
+# sidecars, and the migrations Job. Override per image via <image>.tag when a
+# component needs to pin a different build.
+appVersion: "0.1.0"
+keywords:
+  - slc
+  - br-slc
+  - siloc
+  - spb
+  - core-banking
+  - lerian
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4

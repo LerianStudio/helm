@@ -16,6 +16,27 @@
 {{- end -}}
 {{- $secretName := ternary .Values.migrations.existingSecretName (include "br-sisbajud-migrations.fullname" .) .Values.migrations.useExistingSecret }}
 {{- $pullSecrets := .Values.migrations.imagePullSecrets | default .Values.imagePullSecrets }}
+# ALLOW_INSECURE_TLS: lib-commons' migrator refuses non-TLS Postgres unless this
+# is true; sslmode=disable alone is not enough. Mirrors the app deployment's
+# ALLOW_INSECURE_TLS. Resolution: migrations.allowInsecureTLS override →
+# brSisbajud.extraEnvVars → brSisbajud.configmap. Emitted only when set so TLS
+# tiers stay secure by default.
+{{- $extraEnv := .Values.brSisbajud.extraEnvVars | default list -}}
+{{- $allowInsecureTLS := "" -}}
+{{- if hasKey .Values.migrations "allowInsecureTLS" -}}
+{{- $allowInsecureTLS = toString .Values.migrations.allowInsecureTLS -}}
+{{- else -}}
+{{- range $extraEnv -}}
+{{- if eq .name "ALLOW_INSECURE_TLS" -}}
+{{- $allowInsecureTLS = toString .value -}}
+{{- end -}}
+{{- end -}}
+{{- if eq $allowInsecureTLS "" -}}
+{{- if hasKey .Values.brSisbajud.configmap "ALLOW_INSECURE_TLS" -}}
+{{- $allowInsecureTLS = toString (index .Values.brSisbajud.configmap "ALLOW_INSECURE_TLS") -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -71,16 +92,26 @@ spec:
           image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default "IfNotPresent" }}
           env:
+            - name: MIGRATIONS_PATH
+              value: "/migrations"
             - name: POSTGRES_HOST
               value: {{ $pgHost | quote }}
             - name: POSTGRES_PORT
               value: {{ $pgPort | quote }}
             - name: POSTGRES_USER
               value: {{ $pgUser | quote }}
-            - name: POSTGRES_DB
+            - name: POSTGRES_NAME
               value: {{ $pgDb | quote }}
             - name: POSTGRES_SSLMODE
               value: {{ $pgSslMode | quote }}
+            {{- if $allowInsecureTLS }}
+            - name: ALLOW_INSECURE_TLS
+              value: {{ $allowInsecureTLS | quote }}
+            {{- end }}
+            - name: ENV_NAME
+              value: {{ .Values.brSisbajud.configmap.ENV_NAME | default "development" | quote }}
+            - name: POSTGRES_CONNECT_TIMEOUT_SEC
+              value: {{ .Values.migrations.postgres.connectTimeoutSec | default .Values.brSisbajud.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:

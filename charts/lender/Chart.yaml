@@ -11,7 +11,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 1.0.2
+version: 1.0.0-beta.1
 # NOTE: appVersion tracks the lender API image line. The real image tag is set
 # per-component via lender.image.tag and lenderConsole.image.tag.
 appVersion: "1.0.0-beta.49"

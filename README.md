@@ -180,7 +180,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Lender Version |
 | :---: | :---: |
-| `1.0.2` | 1.0.0-beta.49 |
+| `1.0.0-beta.1` | 1.0.0-beta.48 |
 -----------------
 
 ### Matcher

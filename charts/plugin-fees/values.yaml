@@ -9,6 +9,8 @@ global:
   # own extraEnvVars/configmap value overrides the global default.
   # -- Service Discovery (lib-service-discovery)
   serviceDiscovery:
+    # -- Enable trigger for lib-service-discovery (emits SD_ENABLED + derives SD_* config)
+    enabled: false
     # -- Discovery server address host:port (e.g. consul.<env>:443). Empty = SD off.
     address: ""
     # -- Use HTTPS to the discovery server
@@ -25,6 +27,8 @@ global:
     externalPort: 443
   # -- Streaming (lib-streaming / RedPanda)
   streaming:
+    # -- Enable trigger for lib-streaming (emits STREAMING_ENABLED + derives STREAMING_* config)
+    enabled: false
     # -- Broker list host:port (e.g. redpanda.<env>:9092). Empty = streaming off.
     brokers: ""
     # -- Enable TLS to the brokers
@@ -35,6 +39,8 @@ global:
     saslUsername: ""
   # -- Multi-tenant (lib-commons/multitenancy). A component's configmap overrides these.
   multiTenant:
+    # -- Enable trigger for lib-commons/multitenancy (emits MULTI_TENANT_ENABLED + derives config)
+    enabled: false
     # -- Tenant-manager base URL
     url: ""
     # -- Multi-tenant Redis host
@@ -232,9 +238,8 @@ fees:
     M2M_CREDENTIAL_CACHE_TTL_SEC: "30"
     # -- AWS region for IAM Roles Anywhere and other AWS integrations
     AWS_REGION: ""
-    # -- Enable multi-tenant support via tenant-manager
-    MULTI_TENANT_ENABLED: "false"
-    # -- URL of the tenant-manager service (required when MULTI_TENANT_ENABLED=true)
+    # -- Multi-tenant enable moved to global.multiTenant.enabled (see the global block).
+    # -- URL of the tenant-manager service (required when multi-tenant is enabled)
     MULTI_TENANT_URL: ""
     # -- Environment label sent to tenant-manager for tenant scoping
     MULTI_TENANT_ENVIRONMENT: ""
@@ -257,12 +262,8 @@ fees:
     MULTI_TENANT_TIMEOUT: "30"
     # -- TTL in seconds for local tenant config cache (0 = disabled)
     MULTI_TENANT_CACHE_TTL_SEC: "120"
-    # -- Enable lib-streaming (RedPanda). Knob only; all STREAMING_* constants come
-    # from global.streaming (env-wide) + lerian-common.streaming.env, which also
-    # derives STREAMING_CLIENT_ID / STREAMING_CLOUDEVENTS_SOURCE from the app name.
-    # Inert unless true AND global.streaming.brokers set. Override identity, if ever
-    # needed (e.g. env-scoping), via extraEnvVars — same as SD_*.
-    STREAMING_ENABLED: "false"
+    # -- Streaming enable moved to global.streaming.enabled (see the global block).
+    # All STREAMING_* constants derive from global.streaming + lerian-common.streaming.env.
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml

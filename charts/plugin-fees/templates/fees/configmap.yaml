@@ -91,37 +91,42 @@ data:
   # AWS
   AWS_REGION: {{ .Values.fees.configmap.AWS_REGION | default "" | quote }}
 
-  # MULTI TENANT
-  MULTI_TENANT_ENABLED: {{ .Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  # MULTI TENANT — enable trigger from global.multiTenant.enabled (not a configmap knob)
+  {{- $mtEnabled := eq (dig "multiTenant" "enabled" false (.Values.global | default dict) | toString) "true" }}
+  MULTI_TENANT_ENABLED: {{ $mtEnabled | quote }}
   {{- with (include "lerian-common.multiTenant.env" (dict
         "context" $
         "configmap" .Values.fees.configmap
-        "enabled" (eq (.Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true")
+        "enabled" $mtEnabled
         "requiredUrl" true "requiredRedisHost" true
         "emitRedis" true "emitPool" true "emitCache" true
         "emitEnvironment" true "emitAllowInsecure" true
       )) }}{{ . | nindent 2 }}{{- end }}
 
-  # SERVICE DISCOVERY (lib-service-discovery) — derived from lerian-common when
-  # SD_ENABLED=true in extraEnvVars; env-wide constants from global.serviceDiscovery.
-  # Emitted before extraEnvVars so an operator can still override any SD_* key.
+  # SERVICE DISCOVERY (lib-service-discovery) — enable trigger from
+  # global.serviceDiscovery.enabled; env-wide constants from global.serviceDiscovery;
+  # identity derived from name/port/namespace. Emitted before extraEnvVars so an
+  # operator can still override any SD_* key.
+  {{- $sdEnabled := eq (dig "serviceDiscovery" "enabled" false (.Values.global | default dict) | toString) "true" }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
   {{- with (include "lerian-common.serviceDiscovery.env" (dict
         "context" $
-        "enabled" (eq (toString (dig "SD_ENABLED" "false" (.Values.fees.extraEnvVars | default dict))) "true")
+        "enabled" $sdEnabled
         "name" (include "plugin-fees.fullname" .)
         "port" .Values.fees.service.port
         "namespace" (include "global.namespace" $)
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.fees.ingress))
       )) }}{{ . | nindent 2 }}{{- end }}
 
-  # STREAMING (lib-streaming) — all constants come from lerian-common.streaming.env:
-  # brokers/TLS/SASL from global.streaming (env-wide); CLIENT_ID / CLOUDEVENTS_SOURCE
-  # derived from the app name by the helper. Inert unless STREAMING_ENABLED=true AND
-  # global.streaming.brokers is set. Override identity via extraEnvVars if ever needed.
-  STREAMING_ENABLED: {{ .Values.fees.configmap.STREAMING_ENABLED | default "false" | quote }}
+  # STREAMING (lib-streaming) — enable trigger from global.streaming.enabled; all
+  # constants come from lerian-common.streaming.env: brokers/TLS/SASL from
+  # global.streaming (env-wide); CLIENT_ID / CLOUDEVENTS_SOURCE derived from the app
+  # name. Override identity via extraEnvVars if ever needed.
+  {{- $streamEnabled := eq (dig "streaming" "enabled" false (.Values.global | default dict) | toString) "true" }}
+  STREAMING_ENABLED: {{ $streamEnabled | quote }}
   {{- with (include "lerian-common.streaming.env" (dict
         "context" $
-        "enabled" (eq (.Values.fees.configmap.STREAMING_ENABLED | default "false" | toString) "true")
+        "enabled" $streamEnabled
         "name" .Values.fees.name
       )) }}{{ . | nindent 2 }}{{- end }}
 

@@ -77,6 +77,10 @@ spec:
           image: "{{ .Values.topics.image.repository }}:{{ .Values.topics.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.topics.image.pullPolicy | default "IfNotPresent" }}
           env:
+            # rpk needs a writable HOME; under readOnlyRootFilesystem the only
+            # writable path is the /tmp emptyDir mounted below.
+            - name: HOME
+              value: /tmp
             - name: TOPICS
               value: {{ join " " .Values.topics.list | quote }}
             - name: TOPIC_PARTITIONS

@@ -154,7 +154,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.0.0` | 1.4.2 | 1.4.2 |
+| `3.1.0-beta.1` | 2.0.2 | 2.0.2 |
 -----------------
 
 ### Underwriter

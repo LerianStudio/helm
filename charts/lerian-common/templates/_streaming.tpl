@@ -5,9 +5,11 @@ lerian-common — Streaming env (lib-streaming / RedPanda contract).
 Streaming is becoming standard across all Lerian charts. This helper emits the
 env-wide streaming CONSTANTS (broker + SASL/TLS transport) into a ConfigMap
 `data` map from `global.streaming`, set once per environment. Per-app IDENTITY
-(STREAMING_CLIENT_ID, STREAMING_CLOUDEVENTS_SOURCE) and the SECRETS
-(STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT) are NOT env-wide — they stay in
-each component (extraEnvVars / secrets), same split as OTEL service identity.
+(STREAMING_CLIENT_ID, STREAMING_CLOUDEVENTS_SOURCE) stays in each component
+(extraEnvVars), same split as OTEL service identity. The SECRETS
+(STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT) are emitted into the chart's own
+Secret by the companion `lerian-common.streaming.secret` helper below (values are
+per-component; never in the ConfigMap).
 
 Like serviceDiscovery.env:
   - it does NOT emit STREAMING_ENABLED (that is the app's knob, rendered by the
@@ -47,5 +49,64 @@ STREAMING_CLIENT_ID: {{ .clientId | quote }}
 {{- if hasKey . "cloudeventsSource" }}
 STREAMING_CLOUDEVENTS_SOURCE: {{ .cloudeventsSource | quote }}
 {{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+------------------------------------------------------------------------------
+lerian-common.streaming.secret — the uniform streaming Secret keys.
+
+Companion to streaming.env: the .env helper emits the non-secret constants into
+the ConfigMap; this one emits the SECRET keys into the chart's own Secret. Key
+names are uniform across all charts (only the value differs per environment).
+
+Emits nothing (and never fails) unless BOTH: the feature is enabled AND the chart
+is not using an external Secret — the value lives outside the chart when
+useExistingSecret=true, so requiring it inline is wrong. When active:
+STREAMING_SASL_PASSWORD is required only when a SASL mechanism is configured (auth
+in use) — i.e. enabled AND saslMechanism; STREAMING_TLS_CA_CERT is always optional.
+For a required-but-empty key it fails with an actionable message (Bitnami-style),
+on install AND upgrade (these values are operator/Vault-provided, never generated).
+
+`mode` matches the chart's Secret form: "data" (b64enc) | "stringData". Output is
+`KEY: value` lines with no leading/trailing newline; the caller nindents under the
+matching `data:`/`stringData:` key:
+
+  # STREAMING SECRETS
+  {{- with (include "lerian-common.streaming.secret" (dict
+        "context" . "secrets" .Values.ledger.secrets
+        "secretName" (include "midaz.ledger.fullname" .)
+        "valuesPrefix" "ledger.secrets." "mode" "data"
+        "enabled" true "useExistingSecret" .Values.ledger.useExistingSecret
+        "saslMechanism" (dig "streaming" "saslMechanism" "" (.Values.global | default dict)))) }}
+  {{- . | nindent 2 }}
+  {{- end }}
+
+Inputs: context, secrets, secretName, valuesPrefix, mode,
+        enabled (bool — STREAMING_ENABLED),
+        useExistingSecret (bool — skip entirely when true),
+        saslMechanism (string — when non-empty, SASL_PASSWORD becomes required).
+------------------------------------------------------------------------------
+*/}}
+{{- define "lerian-common.streaming.secret" -}}
+{{- if and .enabled (not .useExistingSecret) -}}
+{{- $s := .secrets | default dict -}}
+{{- $b64 := eq (.mode | default "stringData") "data" -}}
+{{- $ns := .context.Release.Namespace -}}
+{{- $lines := list -}}
+{{- /* STREAMING_SASL_PASSWORD — required only when a SASL mechanism is set */ -}}
+{{- $sasl := index $s "STREAMING_SASL_PASSWORD" -}}
+{{- if and .saslMechanism (not $sasl) -}}
+{{- fail (printf "\n[lerian-common] Secret value required but empty: STREAMING_SASL_PASSWORD\n  set:     --set %sSTREAMING_SASL_PASSWORD=<value>   (or configure an existingSecret)\n  recover: kubectl get secret %s -n %s -o jsonpath=\"{.data.STREAMING_SASL_PASSWORD}\" | base64 -d\n" .valuesPrefix .secretName $ns) -}}
+{{- end -}}
+{{- if $sasl -}}
+{{- $lines = append $lines (printf "STREAMING_SASL_PASSWORD: %s" (ternary ($sasl | b64enc | quote) ($sasl | quote) $b64)) -}}
+{{- end -}}
+{{- /* STREAMING_TLS_CA_CERT — optional */ -}}
+{{- $ca := index $s "STREAMING_TLS_CA_CERT" -}}
+{{- if $ca -}}
+{{- $lines = append $lines (printf "STREAMING_TLS_CA_CERT: %s" (ternary ($ca | b64enc | quote) ($ca | quote) $b64)) -}}
+{{- end -}}
+{{- join "\n" $lines -}}
 {{- end -}}
 {{- end -}}

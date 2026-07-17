@@ -13,8 +13,9 @@ block exactly (render-equivalent) while removing the duplicated defaults.
 
 Like the other env helpers, it does NOT emit MULTI_TENANT_ENABLED: that stays
 inline in the component configmap as the knob (and the gate source). This helper
-emits only the gated block. Secrets (MULTI_TENANT_SERVICE_API_KEY,
-MULTI_TENANT_REDIS_PASSWORD) are NOT emitted here — they belong in secrets.yaml.
+emits only the gated ConfigMap block. The SECRETS (MULTI_TENANT_SERVICE_API_KEY,
+MULTI_TENANT_REDIS_PASSWORD) are emitted into the chart's own Secret by the
+companion `lerian-common.multiTenant.secret` helper below (never in the ConfigMap).
 
 plugin-br-payments is intentionally OUT of scope (different contract:
 MULTI_TENANCY_ENABLED + range-generated configmap) — keep it inline.
@@ -93,5 +94,60 @@ MULTI_TENANT_ENVIRONMENT: {{ index $c "MULTI_TENANT_ENVIRONMENT" | default "" | 
 {{- if .emitAllowInsecure }}
 MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ index $c "MULTI_TENANT_ALLOW_INSECURE_HTTP" | default "false" | quote }}
 {{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+------------------------------------------------------------------------------
+lerian-common.multiTenant.secret — the uniform multi-tenant Secret keys.
+
+Companion to multiTenant.env: the .env helper emits the non-secret block into the
+ConfigMap; this one emits the SECRET keys into the chart's own Secret. Key names
+are uniform across all charts (only the value differs per environment).
+
+Emits nothing (and never fails) unless BOTH: the feature is enabled AND the chart
+is not using an external Secret — the value lives outside the chart when
+useExistingSecret=true, so requiring it inline is wrong. When active:
+MULTI_TENANT_SERVICE_API_KEY is required; MULTI_TENANT_REDIS_PASSWORD is optional.
+For a required-but-empty key it fails with an actionable message (Bitnami-style),
+on install AND upgrade (these values are operator/Vault-provided, never generated).
+
+`mode` matches the chart's Secret form: "data" (b64enc) | "stringData". Output is
+`KEY: value` lines with no leading/trailing newline; the caller nindents under the
+matching `data:`/`stringData:` key:
+
+  # Multi-Tenant Secrets
+  {{- with (include "lerian-common.multiTenant.secret" (dict
+        "context" . "secrets" .Values.ledger.secrets
+        "secretName" (include "midaz.ledger.fullname" .)
+        "valuesPrefix" "ledger.secrets." "mode" "data"
+        "enabled" (eq (.Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true")
+        "useExistingSecret" .Values.ledger.useExistingSecret)) }}
+  {{- . | nindent 2 }}
+  {{- end }}
+
+Inputs: context, secrets, secretName, valuesPrefix, mode,
+        enabled (bool — MULTI_TENANT_ENABLED),
+        useExistingSecret (bool — skip entirely when true).
+------------------------------------------------------------------------------
+*/}}
+{{- define "lerian-common.multiTenant.secret" -}}
+{{- if and .enabled (not .useExistingSecret) -}}
+{{- $s := .secrets | default dict -}}
+{{- $b64 := eq (.mode | default "stringData") "data" -}}
+{{- $ns := .context.Release.Namespace -}}
+{{- $lines := list -}}
+{{- /* MULTI_TENANT_SERVICE_API_KEY — required */ -}}
+{{- $apiKey := index $s "MULTI_TENANT_SERVICE_API_KEY" -}}
+{{- if not $apiKey -}}
+{{- fail (printf "\n[lerian-common] Secret value required but empty: MULTI_TENANT_SERVICE_API_KEY\n  set:     --set %sMULTI_TENANT_SERVICE_API_KEY=<value>   (or configure an existingSecret)\n  recover: kubectl get secret %s -n %s -o jsonpath=\"{.data.MULTI_TENANT_SERVICE_API_KEY}\" | base64 -d\n" .valuesPrefix .secretName $ns) -}}
+{{- end -}}
+{{- $lines = append $lines (printf "MULTI_TENANT_SERVICE_API_KEY: %s" (ternary ($apiKey | b64enc | quote) ($apiKey | quote) $b64)) -}}
+{{- /* MULTI_TENANT_REDIS_PASSWORD — optional */ -}}
+{{- $redisPw := index $s "MULTI_TENANT_REDIS_PASSWORD" -}}
+{{- if $redisPw -}}
+{{- $lines = append $lines (printf "MULTI_TENANT_REDIS_PASSWORD: %s" (ternary ($redisPw | b64enc | quote) ($redisPw | quote) $b64)) -}}
+{{- end -}}
+{{- join "\n" $lines -}}
 {{- end -}}
 {{- end -}}

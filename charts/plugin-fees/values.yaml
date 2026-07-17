@@ -257,6 +257,12 @@ fees:
     MULTI_TENANT_TIMEOUT: "30"
     # -- TTL in seconds for local tenant config cache (0 = disabled)
     MULTI_TENANT_CACHE_TTL_SEC: "120"
+    # -- Enable lib-streaming (RedPanda). Knob only; broker/TLS/SASL constants come
+    # from global.streaming (env-wide). Inert unless true AND global.streaming.brokers set.
+    STREAMING_ENABLED: "false"
+    # -- Per-app streaming identity. Default to the app name; override for env-scoping.
+    STREAMING_CLIENT_ID: ""
+    STREAMING_CLOUDEVENTS_SOURCE: ""
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml

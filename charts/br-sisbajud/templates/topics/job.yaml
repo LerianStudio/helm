@@ -9,23 +9,39 @@
 #
 # STREAMING_* config is resolved from brSisbajud.extraEnvVars (wins) then
 # brSisbajud.configmap — the same idiom the migration Job uses for
-# ALLOW_INSECURE_TLS — so gitops needs no duplicated secret refs. The SASL/TLS
-# values are AVP <path:...> placeholders re-emitted as plain env, exactly as the
-# app itself consumes them.
+# ALLOW_INSECURE_TLS — so gitops needs no duplicated secret refs. extraEnvVars
+# entries are rendered VERBATIM, preserving `valueFrom` (secretKeyRef/configMapKeyRef)
+# sources so secret-backed SASL/TLS settings reach this Job exactly as the
+# Deployment receives them; configmap fallbacks and defaults are emitted as plain
+# `value`. STREAMING_BROKERS/STREAMING_TLS_ENABLED always render (with defaults);
+# the optional SASL/CA entries render only when set.
 {{- $extraEnv := .Values.brSisbajud.extraEnvVars | default list -}}
 {{- $cfg := .Values.brSisbajud.configmap | default dict -}}
-{{- $resolved := dict -}}
+{{- $envByName := dict -}}
 {{- range $extraEnv -}}
-{{-   if hasKey . "value" -}}
-{{-     $_ := set $resolved .name (toString .value) -}}
-{{-   end -}}
+{{- if .name -}}
+{{- $_ := set $envByName .name . -}}
 {{- end -}}
-{{- $brokers := index $resolved "STREAMING_BROKERS" | default (index $cfg "STREAMING_BROKERS") | default "" -}}
-{{- $tlsEnabled := index $resolved "STREAMING_TLS_ENABLED" | default (index $cfg "STREAMING_TLS_ENABLED") | default "false" -}}
-{{- $saslMech := index $resolved "STREAMING_SASL_MECHANISM" | default (index $cfg "STREAMING_SASL_MECHANISM") | default "" -}}
-{{- $saslUser := index $resolved "STREAMING_SASL_USERNAME" | default (index $cfg "STREAMING_SASL_USERNAME") | default "" -}}
-{{- $saslPass := index $resolved "STREAMING_SASL_PASSWORD" | default (index $cfg "STREAMING_SASL_PASSWORD") | default "" -}}
-{{- $caCert := index $resolved "STREAMING_TLS_CA_CERT" | default (index $cfg "STREAMING_TLS_CA_CERT") | default "" -}}
+{{- end -}}
+{{- $streamingSpecs := list -}}
+{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_BROKERS" "default" "" "required" true) -}}
+{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_TLS_ENABLED" "default" "false" "required" true) -}}
+{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_SASL_MECHANISM" "default" "" "required" false) -}}
+{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_SASL_USERNAME" "default" "" "required" false) -}}
+{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_SASL_PASSWORD" "default" "" "required" false) -}}
+{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_TLS_CA_CERT" "default" "" "required" false) -}}
+{{- $streamingEnv := list -}}
+{{- range $spec := $streamingSpecs -}}
+{{- $entry := index $envByName $spec.name -}}
+{{- if $entry -}}
+{{- $streamingEnv = append $streamingEnv $entry -}}
+{{- else -}}
+{{- $val := index $cfg $spec.name | default $spec.default -}}
+{{- if or $spec.required $val -}}
+{{- $streamingEnv = append $streamingEnv (dict "name" $spec.name "value" (toString $val)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- $pullSecrets := .Values.topics.imagePullSecrets | default .Values.imagePullSecrets }}
 apiVersion: batch/v1
 kind: Job
@@ -71,25 +87,8 @@ spec:
             - name: TOPIC_RETENTION_MS
               value: {{ .Values.topics.retentionMs | quote }}
             {{- end }}
-            - name: STREAMING_BROKERS
-              value: {{ $brokers | quote }}
-            - name: STREAMING_TLS_ENABLED
-              value: {{ $tlsEnabled | quote }}
-            {{- if $saslMech }}
-            - name: STREAMING_SASL_MECHANISM
-              value: {{ $saslMech | quote }}
-            {{- end }}
-            {{- if $saslUser }}
-            - name: STREAMING_SASL_USERNAME
-              value: {{ $saslUser | quote }}
-            {{- end }}
-            {{- if $saslPass }}
-            - name: STREAMING_SASL_PASSWORD
-              value: {{ $saslPass | quote }}
-            {{- end }}
-            {{- if $caCert }}
-            - name: STREAMING_TLS_CA_CERT
-              value: {{ $caCert | quote }}
+            {{- with $streamingEnv }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           securityContext:
             runAsUser: 65532

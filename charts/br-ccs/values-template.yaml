@@ -128,10 +128,18 @@ brCcs:
     # OBJECT_STORAGE_FETCHER_ACCESS_KEY: ""
     # OBJECT_STORAGE_FETCHER_SECRET_KEY: ""
 
-    # Per-upstream M2M API keys (on-prem / local fallback; SaaS uses OAuth2)
+    # Per-upstream M2M API keys (on-prem / local literal-Bearer fallback)
     # FETCHER_API_KEY: ""
     # REPORTER_API_KEY: ""
     # STA_API_KEY: ""
+
+    # Per-upstream M2M OAuth2 client credentials (single-tenant; via plugin-auth token endpoint)
+    # FETCHER_CLIENT_ID: ""
+    # FETCHER_CLIENT_SECRET: ""
+    # REPORTER_CLIENT_ID: ""
+    # REPORTER_CLIENT_SECRET: ""
+    # STA_CLIENT_ID: ""
+    # STA_CLIENT_SECRET: ""
 
     # Multi-tenant (tenant-manager)
     # MULTI_TENANT_SERVICE_API_KEY: ""

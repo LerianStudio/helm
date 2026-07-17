@@ -116,6 +116,10 @@ brCcs:
     CCS_CRYPTO_MASTER_KEY: ""  # AES-256-GCM master key, 64 hex chars (openssl rand -hex 32)
     FETCHER_CRYPTO_KEY: ""     # Fetcher snapshot decryption key (base64; = Fetcher APP_ENC_KEY)
 
+    # License (lib-license-go; validated at boot, fail-closed)
+    # LICENSE_KEY: ""          # Lerian license key
+    # ORGANIZATION_IDS: ""     # enforcement scope (e.g. "global")
+
     # Object storage credentials (set alongside the matching *_BUCKET)
     # OBJECT_STORAGE_STA_ACCESS_KEY: ""
     # OBJECT_STORAGE_STA_SECRET_KEY: ""

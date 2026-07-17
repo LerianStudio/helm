@@ -564,6 +564,12 @@ brCcs:
     CCS_CRYPTO_MASTER_KEY: ""
     FETCHER_CRYPTO_KEY: ""
 
+    # License (lib-license-go) — validated at boot against the Lerian license
+    # gateway (fail-closed). ORGANIZATION_IDS selects enforcement scope (e.g.
+    # "global"). Held as a Secret; wire via a secrets manager or existing Secret.
+    # LICENSE_KEY: ""
+    # ORGANIZATION_IDS: ""
+
     # Object storage credentials (per bucket)
     OBJECT_STORAGE_STA_ACCESS_KEY: ""
     OBJECT_STORAGE_STA_SECRET_KEY: ""

@@ -728,10 +728,10 @@ schedule:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
+    # -- Maximum number of unavailable pods (unset so minAvailable applies for the single-replica worker)
+    maxUnavailable: null
     # -- Minimum number of available pods
-    minAvailable: 0
+    minAvailable: 1
     # -- Annotations for PodDisruptionBudget
     annotations: {}
   resources:

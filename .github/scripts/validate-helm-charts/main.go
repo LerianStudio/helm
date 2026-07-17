@@ -24,6 +24,7 @@ var allowedChartTypes = map[string]bool{
 	"single-service":     true,
 	"multi-component":    true,
 	"dependency-wrapper": true,
+	"library":            true,
 }
 
 var credentialURLPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/@]+:[^\s/@]+@`)
@@ -246,7 +247,7 @@ func collectViolations(root string) ([]violation, error) {
 			violations = append(violations, newViolation(chartName, "invalid-chart-type", chartRel, "Chart.yaml must set annotations.lerian.studio/chart-type to single-service, multi-component, or dependency-wrapper"))
 		}
 
-		if chart.Type != "application" {
+		if chart.Type != "application" && chart.Type != "library" {
 			violations = append(violations, newViolation(chartName, "invalid-chart-kind", chartRel, "Chart.yaml type must be application"))
 		}
 
@@ -258,7 +259,7 @@ func collectViolations(root string) ([]violation, error) {
 		}
 		violations = append(violations, validateReadmeContract(root, chartDir, chartName, chartType)...)
 
-		if chartType != "dependency-wrapper" {
+		if chartType != "dependency-wrapper" && chartType != "library" {
 			valuesTemplate := filepath.Join(chartDir, "values-template.yaml")
 			if !fileExists(valuesTemplate) {
 				violations = append(violations, newViolation(chartName, "missing-values-template", rel(root, valuesTemplate), "application charts must provide values-template.yaml"))

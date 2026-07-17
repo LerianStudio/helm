@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "schedule.fullname" . }}
+  labels:
+    {{- include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | nindent 4 }}
+data:
+  ENV_NAME: {{ .Values.schedule.configmap.ENV_NAME | default "development" | quote }}
+  VERSION: {{ .Values.schedule.image.tag | default .Chart.AppVersion | quote }}
+  LOG_LEVEL: {{ .Values.schedule.configmap.LOG_LEVEL | default "info" | quote }}
+  WORKER_PORT: {{ .Values.schedule.configmap.WORKER_PORT | default "4018" | quote }}
+
+  # Schedule Worker Loop Configuration
+  # Chart declares explicit defaults: worker runs active with a 15m polling loop.
+  # Overlays per environment may override these via values, but the chart owns the default.
+  SCHEDULE_WORKER_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_ENABLED | default "true" | quote }}
+  SCHEDULE_WORKER_INTERVAL: {{ .Values.schedule.configmap.SCHEDULE_WORKER_INTERVAL | default "15m" | quote }}
+  SCHEDULE_WORKER_BATCH_SIZE: {{ .Values.schedule.configmap.SCHEDULE_WORKER_BATCH_SIZE | default "50" | quote }}
+  SCHEDULE_WORKER_STALE_THRESHOLD: {{ .Values.schedule.configmap.SCHEDULE_WORKER_STALE_THRESHOLD | default "5m" | quote }}
+  SCHEDULE_WORKER_SWEEP_EVERY_N_CYCLES: {{ .Values.schedule.configmap.SCHEDULE_WORKER_SWEEP_EVERY_N_CYCLES | default "10" | quote }}
+  SCHEDULE_WORKER_TIME_WINDOW_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_TIME_WINDOW_ENABLED | default "false" | quote }}
+  SCHEDULE_WORKER_WINDOW_START: {{ .Values.schedule.configmap.SCHEDULE_WORKER_WINDOW_START | default "" | quote }}
+  SCHEDULE_WORKER_WINDOW_END: {{ .Values.schedule.configmap.SCHEDULE_WORKER_WINDOW_END | default "" | quote }}
+  SCHEDULE_WORKER_DISPATCH_CONCURRENCY: {{ .Values.schedule.configmap.SCHEDULE_WORKER_DISPATCH_CONCURRENCY | default "0" | quote }}
+  SCHEDULE_WORKER_JOB_TIMEOUT: {{ .Values.schedule.configmap.SCHEDULE_WORKER_JOB_TIMEOUT | default "0s" | quote }}
+  SCHEDULE_WORKER_NSF_RETRY_HOUR_BRT: {{ .Values.schedule.configmap.SCHEDULE_WORKER_NSF_RETRY_HOUR_BRT | default "0" | quote }}
+  SCHEDULE_WORKER_RECONCILE_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_ENABLED | default "false" | quote }}
+  SCHEDULE_WORKER_RECONCILE_THRESHOLD: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_THRESHOLD | default "30m" | quote }}
+  SCHEDULE_WORKER_RECONCILE_EVERY_N_CYCLES: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_EVERY_N_CYCLES | default "40" | quote }}
+  SCHEDULE_WORKER_RECONCILE_BATCH_SIZE: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_BATCH_SIZE | default "50" | quote }}
+
+  # Application (DOMAIN API) Endpoint the worker drives over HTTP.
+  # SCHEDULE_APP_BASE_URL and PLUGIN_AUTH_URL are operator/Vault-provided per environment.
+  SCHEDULE_APP_BASE_URL: {{ .Values.schedule.configmap.SCHEDULE_APP_BASE_URL | default "http://plugin-br-pix-indirect-btg.midaz-plugins.svc.cluster.local:4014" | quote }}
+  SCHEDULE_APP_HTTP_TIMEOUT: {{ .Values.schedule.configmap.SCHEDULE_APP_HTTP_TIMEOUT | default "30s" | quote }}
+  PLUGIN_AUTH_URL: {{ .Values.schedule.configmap.PLUGIN_AUTH_URL | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000/v1/login/oauth/access_token" | quote }}
+
+  # Observability Configuration
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.schedule.configmap.OTEL_RESOURCE_SERVICE_NAME | default "schedule-worker" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.schedule.configmap.OTEL_LIBRARY_NAME | default "schedule" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.schedule.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.schedule.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.schedule.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.schedule.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.schedule.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.schedule.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

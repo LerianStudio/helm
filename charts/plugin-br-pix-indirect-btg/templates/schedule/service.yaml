@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "schedule.fullname" . }}
+  labels:
+    {{- include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | nindent 4 }} 
+spec:
+  type: {{ .Values.schedule.service.type }}
+  ports:
+    - port: {{ .Values.schedule.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "schedule.selectorLabels" (dict "context" . "name" .Values.schedule.name) | nindent 4 }}

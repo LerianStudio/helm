@@ -303,6 +303,16 @@ data:
   WEBHOOK_RECURRING_RECURRENCE_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_RECURRENCE_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_RECURRING_RECURRENCE_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_RECURRENCE_MAX_CONCURRENT | default "2" | quote }}
 
+  WEBHOOK_SCHEDULE_CASHOUT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_ENABLED | default "true" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_URL: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_URL | default "" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_WORKER_COUNT | default "1" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_POLLING_INTERVAL | default "10s" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_REQUEST_TIMEOUT | default "30s" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_MAX_RETRIES | default "5" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_MAX_CONCURRENT | default "2" | quote }}
+
   # Security Tier Configuration (lib-commons v4.4.0)
   SECURITY_TIER: {{ .Values.outbound.configmap.SECURITY_TIER | default "" | quote }}
   SECURITY_ENFORCEMENT: {{ .Values.outbound.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}

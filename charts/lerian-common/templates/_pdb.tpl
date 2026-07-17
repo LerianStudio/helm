@@ -50,18 +50,23 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  {{- /* hasKey (not truthiness) so an explicit 0 is honored, not treated as absent. */ -}}
+  {{- $miDefault := 1 -}}
+  {{- if hasKey . "minAvailableDefault" }}{{- $miDefault = .minAvailableDefault -}}{{- end }}
   {{- if eq (.specStyle | default "preferMax") "explicit" }}
-  {{- if $pdb.minAvailable }}
+  {{- if hasKey $pdb "minAvailable" }}
   minAvailable: {{ $pdb.minAvailable }}
   {{- end }}
-  {{- if $pdb.maxUnavailable }}
+  {{- if hasKey $pdb "maxUnavailable" }}
   maxUnavailable: {{ $pdb.maxUnavailable }}
   {{- end }}
   {{- else }}
-  {{- with $pdb.maxUnavailable }}
-  maxUnavailable: {{ . }}
+  {{- if hasKey $pdb "maxUnavailable" }}
+  maxUnavailable: {{ $pdb.maxUnavailable }}
+  {{- else if hasKey $pdb "minAvailable" }}
+  minAvailable: {{ $pdb.minAvailable }}
   {{- else }}
-  minAvailable: {{ $pdb.minAvailable | default (.minAvailableDefault | default 1) }}
+  minAvailable: {{ $miDefault }}
   {{- end }}
   {{- end }}
   selector:

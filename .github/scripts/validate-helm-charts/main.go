@@ -1022,6 +1022,18 @@ func buildRenderInventory(root string) ([]renderRow, error) {
 	return buildRenderRows(root, nil, "")
 }
 
+func isLibraryChart(chartDir string) bool {
+	data, err := os.ReadFile(filepath.Join(chartDir, "Chart.yaml"))
+	if err != nil {
+		return false
+	}
+	var c chartYAML
+	if err := yaml.Unmarshal(data, &c); err != nil {
+		return false
+	}
+	return c.Type == "library"
+}
+
 func buildRenderGate(root string, chartSelection map[string]bool, sampleValuesDir string) ([]renderRow, error) {
 	rows, err := buildRenderRows(root, chartSelection, sampleValuesDir)
 	if err != nil {
@@ -1056,6 +1068,16 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 		row := renderRow{Chart: chartName}
+
+		// Library charts are not installable (helm template fails); their helpers
+		// are exercised through the consumer charts, so skip the render gate.
+		if isLibraryChart(chartDir) {
+			row.Status = "ok"
+			row.Class = "skipped-library"
+			row.Detail = "library chart — not installable; helpers validated via consumer charts"
+			rows = append(rows, row)
+			continue
+		}
 
 		deps, err := chartDependencies(chartDir)
 		if err != nil {

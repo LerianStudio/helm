@@ -105,9 +105,10 @@ Inputs: kind, probe (values map), port, path, initialDelay, period, timeout, suc
   httpGet:
     path: {{ $p.path | default .path }}
     port: {{ .port }}
-  initialDelaySeconds: {{ $p.initialDelaySeconds | default .initialDelay }}
-  periodSeconds: {{ $p.periodSeconds | default .period }}
-  timeoutSeconds: {{ $p.timeoutSeconds | default .timeout }}
-  successThreshold: {{ $p.successThreshold | default .success }}
-  failureThreshold: {{ $p.failureThreshold | default .failure }}
+  {{- /* hasKey (not | default) so an explicit 0 override is honored, not treated as absent. */}}
+  initialDelaySeconds: {{ if hasKey $p "initialDelaySeconds" }}{{ $p.initialDelaySeconds }}{{ else }}{{ .initialDelay }}{{ end }}
+  periodSeconds: {{ if hasKey $p "periodSeconds" }}{{ $p.periodSeconds }}{{ else }}{{ .period }}{{ end }}
+  timeoutSeconds: {{ if hasKey $p "timeoutSeconds" }}{{ $p.timeoutSeconds }}{{ else }}{{ .timeout }}{{ end }}
+  successThreshold: {{ if hasKey $p "successThreshold" }}{{ $p.successThreshold }}{{ else }}{{ .success }}{{ end }}
+  failureThreshold: {{ if hasKey $p "failureThreshold" }}{{ $p.failureThreshold }}{{ else }}{{ .failure }}{{ end }}
 {{- end -}}

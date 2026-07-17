@@ -75,6 +75,24 @@ app.kubernetes.io/component: migrations
 {{- end }}
 
 {{/*
+Topics fullname, e.g. br-sisbajud-topics — the PreSync topics Job references this.
+*/}}
+{{- define "br-sisbajud-topics.fullname" -}}
+{{- printf "%s-topics" (include "br-sisbajud.fullname" . | trunc 56 | trimSuffix "-") | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+Topics labels.
+*/}}
+{{- define "br-sisbajud-topics.labels" -}}
+helm.sh/chart: {{ include "br-sisbajud.chart" . }}
+app.kubernetes.io/name: {{ include "br-sisbajud-topics.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/component: topics
+{{- end }}
+
+{{/*
 infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}`
 env entry pointing at a Bitnami subchart's generated Secret (or the operator's
 existingSecret override). Only used on the bundled-subchart path; the external

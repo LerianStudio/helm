@@ -8,7 +8,8 @@ caller owns the enable gate. Two spec styles are supported via `specStyle`:
 
   "preferMax" (default, majority: fees/matcher/underwriter):
       with .maxUnavailable -> maxUnavailable; else -> minAvailable (| default N)
-  "explicit" (tracer): emit minAvailable and/or maxUnavailable only when set
+  "explicit" (tracer): emit minAvailable or maxUnavailable only when set
+      (they are mutually exclusive in policy/v1; setting both fails fast)
 
 annotations render via toYaml; since no chart sets PDB annotations today this is
 byte-identical to the range/quote style those charts used (empty -> nothing).
@@ -54,6 +55,9 @@ spec:
   {{- $miDefault := 1 -}}
   {{- if hasKey . "minAvailableDefault" }}{{- $miDefault = .minAvailableDefault -}}{{- end }}
   {{- if eq (.specStyle | default "preferMax") "explicit" }}
+  {{- if and (hasKey $pdb "minAvailable") (hasKey $pdb "maxUnavailable") }}
+  {{- fail "lerian-common.pdb: minAvailable and maxUnavailable are mutually exclusive (policy/v1) — set only one" }}
+  {{- end }}
   {{- if hasKey $pdb "minAvailable" }}
   minAvailable: {{ $pdb.minAvailable }}
   {{- end }}

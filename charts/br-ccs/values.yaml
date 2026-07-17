@@ -578,10 +578,22 @@ brCcs:
     OBJECT_STORAGE_FETCHER_ACCESS_KEY: ""
     OBJECT_STORAGE_FETCHER_SECRET_KEY: ""
 
-    # Per-upstream M2M API keys (on-prem / local fallback; SaaS uses OAuth2)
+    # Per-upstream M2M API keys (on-prem / local literal-Bearer fallback)
     # FETCHER_API_KEY: ""
     # REPORTER_API_KEY: ""
     # STA_API_KEY: ""
+
+    # Per-upstream M2M OAuth2 client credentials (single-tenant) — the client_id/client_secret
+    # pair that authenticates br-ccs to each upstream (Fetcher / Reporter / STA) via
+    # the plugin-auth token endpoint. Multi-tenant (SaaS) resolves per-tenant credentials
+    # from AWS Secrets Manager instead. Held as a Secret; wire via a secrets manager or
+    # existing Secret.
+    # FETCHER_CLIENT_ID: ""
+    # FETCHER_CLIENT_SECRET: ""
+    # REPORTER_CLIENT_ID: ""
+    # REPORTER_CLIENT_SECRET: ""
+    # STA_CLIENT_ID: ""
+    # STA_CLIENT_SECRET: ""
 
   # -- Existing secrets name
   useExistingSecret: false

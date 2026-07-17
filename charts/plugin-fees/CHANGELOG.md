@@ -1,5 +1,136 @@
 # Plugin-fees Changelog
 
+## [7.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.2.0)
+
+- **Features:**
+  - Render streaming SASL/TLS secrets in plugin-fees Secrets.
+
+- **Documentation:**
+  - Added upgrade guide for plugin-fees v7.1.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.1.0...plugin-fees-v7.2.0)
+
+---
+
+## [7.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.1.0)
+
+- **Features**
+  - Update plugin-fees to version 3.3.0 with new environment variables.
+  - Add `RATE_LIMIT_ENABLED` environment variable to configmap.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.0.0...plugin-fees-v7.1.0)
+
+---
+
+## [7.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.1.0)
+
+- **Features**
+  - Update plugin-fees to version 3.3.0 with new environment variables.
+
+- **Improvements**
+  - Added `RATE_LIMIT_ENABLED` environment variable to the configmap for better configuration management.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.0.0...plugin-fees-v7.1.0)
+
+---
+
+## [7.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.1.0)
+
+- **Features:**
+  - Updated plugin-fees to version 3.3.0 with new environment variables.
+
+- **Improvements:**
+  - Added `RATE_LIMIT_ENABLED` environment variable to the configmap.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.0.0...plugin-fees-v7.1.0)
+
+---
+
+## [7.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.1.0)
+
+- **Features:**
+  - Update plugin-fees to version 3.3.0 with new environment variables.
+  - Add RATE_LIMIT_ENABLED environment variable to configmap.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.0.0...plugin-fees-v7.1.0)
+
+---
+
+## [7.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.1.0)
+
+- **Features**
+  - Update plugin-fees to version 3.3.0 with new environment variables.
+  - Add `RATE_LIMIT_ENABLED` environment variable to configmap.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.0.0...plugin-fees-v7.1.0)
+
+---
+
+## [7.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.1.0)
+
+- **Features**
+  - Update plugin-fees to version 3.3.0 with new environment variables.
+  - Add `RATE_LIMIT_ENABLED` environment variable to configmap.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.0.0...plugin-fees-v7.1.0)
+
+---
+
+## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.0.0)
+
+- **Features:**
+  - Added ALLOW_INSECURE_TLS configuration to enhance security flexibility.
+  - Implemented single-source MongoDB password management for improved security and maintainability.
+
+- **Fixes:**
+  - Addressed CodeRabbit review issues related to chart revamp.
+  - Corrected collapse-aware infra host fallbacks to ensure reliable operation.
+  - Fixed Bitnami name derivation to be collapse-safe.
+
+- **Improvements:**
+  - Standardized charts to align with the Lerian chart contract for consistency.
+  - Removed redundant dependency helpers and updated CI processes for efficiency.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v6.0.0...plugin-fees-v7.0.0)
+
+---
+
+## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.0.0)
+
+- **Features:**
+  - Added ALLOW_INSECURE_TLS configuration to enhance security options.
+  - Implemented single-source MongoDB password management for streamlined configuration.
+
+- **Fixes:**
+  - Addressed issues with collapse-aware infrastructure host fallbacks.
+  - Corrected Bitnami name derivation to be collapse-safe.
+
+- **Improvements:**
+  - Standardized charts to align with the Lerian chart contract.
+  - Removed redundant dependency helpers and updated CI processes.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v6.0.0...plugin-fees-v7.0.0)
+
+---
+
 ## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.0.0)
 
 - **Features:**

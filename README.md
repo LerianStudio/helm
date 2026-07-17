@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.5.0-beta.1` | 3.7.7 | 3.7.6 |
+| `8.6.0` | 3.7.8 | 3.7.8 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -50,7 +50,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `7.0.0` | 3.2.1 | `3.0.0` |
+| `7.2.0` | 3.3.0 | `3.0.0` |
 
 -----------------
 
@@ -90,7 +90,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `1.3.0-beta.1` | 1.0.0 |
+| `1.3.0` | 1.0.0 |
 -----------------
 
 
@@ -129,7 +129,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
 | :---: | :---: | :---: | :---: | :---: |
-| `3.4.0-beta.4` | 1.7.5 | 1.7.5 | 1.7.5 | 1.7.5 |
+| `3.4.0` | 1.7.6 | 1.7.6 | 1.7.6 | 1.7.6 |
 
 -----------------
 
@@ -205,7 +205,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Flowker Version |
 | :---: | :---: |
-| `3.1.0-beta.1` | 1.2.0-beta.82 |
+| `3.1.1` | 1.2.0-beta.82 |
 -----------------
 
 ### Tracer
@@ -278,46 +278,13 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0-beta.4` | 0.1.0 |
 -----------------
 
-### Streaming Hub
+### BR SISBAJUD
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/streaming-hub).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `1.0.0-beta.4` | 1.0.0 |
------------------
-
-### BR STA
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sta).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sisbajud).
 
 #### Application Version Mapping
 
-| Chart Version | Manager Version | Worker Version |
+| Chart Version | App Version | Migrations Version |
 | :---: | :---: | :---: |
-| `1.0.0-beta.5` | 1.0.0-beta.32 | 1.0.0-beta.32 |
------------------
-
-### Br Ccs
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-ccs).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `1.0.0-beta.4` | 1.0.0 |
------------------
-
-### BR SLC
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-slc).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `1.0.0-beta.1` | 0.1.0 |
+| `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
 -----------------

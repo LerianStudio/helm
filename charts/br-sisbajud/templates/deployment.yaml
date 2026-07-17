@@ -1,0 +1,159 @@
+{{- if .Values.brSisbajud.enabled -}}
+{{- $fullname := include "br-sisbajud.fullname" . -}}
+{{- if and .Values.brSisbajud.useExistingSecret (not .Values.brSisbajud.existingSecretName) -}}
+{{- fail (printf "br-sisbajud: existingSecretName must be set when useExistingSecret is true") -}}
+{{- end -}}
+{{- $secretName := ternary .Values.brSisbajud.existingSecretName $fullname .Values.brSisbajud.useExistingSecret -}}
+{{- $pullSecrets := .Values.brSisbajud.imagePullSecrets | default .Values.imagePullSecrets -}}
+{{- $telemetry := eq (toString .Values.brSisbajud.configmap.ENABLE_TELEMETRY) "true" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud.labels" . | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.brSisbajud.revisionHistoryLimit | default 10 }}
+  {{- if not .Values.brSisbajud.autoscaling.enabled }}
+  replicas: {{ .Values.brSisbajud.replicaCount | default 1 }}
+  {{- end }}
+  strategy:
+    type: {{ .Values.brSisbajud.deploymentUpdate.type | default "RollingUpdate" }}
+    {{- if eq (.Values.brSisbajud.deploymentUpdate.type | default "RollingUpdate") "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.brSisbajud.deploymentUpdate.maxSurge | default "100%" }}
+      maxUnavailable: {{ .Values.brSisbajud.deploymentUpdate.maxUnavailable | default 0 }}
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "br-sisbajud.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.brSisbajud.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "br-sisbajud.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "br-sisbajud.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: {{ .Values.brSisbajud.waitImage | default "busybox:1.36" }}
+          envFrom:
+            - configMapRef:
+                name: {{ $fullname }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              if [ -n "$POSTGRES_HOST" ]; then
+                echo "waiting for postgres $POSTGRES_HOST:${POSTGRES_PORT:-5432}...";
+                until nc -z "$POSTGRES_HOST" "${POSTGRES_PORT:-5432}"; do
+                  echo "postgres not ready, waiting..."; sleep 5;
+                done;
+                echo "postgres is ready";
+              fi;
+              if [ -n "$REDIS_HOST" ]; then
+                RH=$(echo "$REDIS_HOST" | cut -d: -f1);
+                RP=$(echo "$REDIS_HOST" | cut -d: -f2);
+                [ -z "$RP" ] && RP=6379;
+                echo "waiting for redis $RH:$RP...";
+                until nc -z "$RH" "$RP"; do
+                  echo "redis not ready, waiting..."; sleep 5;
+                done;
+                echo "redis is ready";
+              fi;
+              echo "dependencies ready"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+      containers:
+        - name: {{ $fullname }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.brSisbajud.image.repository }}:{{ .Values.brSisbajud.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.brSisbajud.image.pullPolicy | default "IfNotPresent" }}
+          envFrom:
+            - secretRef:
+                name: {{ $secretName }}
+            - configMapRef:
+                name: {{ $fullname }}
+          env:
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "br-sisbajud.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else if .Values.brSisbajud.secrets.POSTGRES_PASSWORD }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+            {{- $vk := .Values.valkey | default dict }}
+            {{- $vkAuth := $vk.auth | default dict }}
+            {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+            {{- include "br-sisbajud.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
+            {{- else if .Values.brSisbajud.secrets.REDIS_PASSWORD }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: REDIS_PASSWORD
+            {{- end }}
+            {{- if $telemetry }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(HOST_IP):4317"
+            {{- end }}
+            {{- with .Values.brSisbajud.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.brSisbajud.service.port | default 4029 }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.brSisbajud.livenessProbe.path | default "/health" }}
+              port: http
+            initialDelaySeconds: {{ .Values.brSisbajud.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.brSisbajud.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ .Values.brSisbajud.livenessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.brSisbajud.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.brSisbajud.livenessProbe.failureThreshold | default 3 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.brSisbajud.readinessProbe.path | default "/readyz" }}
+              port: http
+            initialDelaySeconds: {{ .Values.brSisbajud.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.brSisbajud.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.brSisbajud.readinessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.brSisbajud.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.brSisbajud.readinessProbe.failureThreshold | default 3 }}
+          resources:
+            {{- toYaml .Values.brSisbajud.resources | nindent 12 }}
+      {{- with .Values.brSisbajud.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.brSisbajud.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.brSisbajud.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end -}}

@@ -71,6 +71,7 @@ data:
   CORS_ALLOW_ORIGINS: {{ .Values.fees.configmap.CORS_ALLOW_ORIGINS | default "http://localhost:3000" | quote }}
   RATE_LIMIT_MAX: {{ .Values.fees.configmap.RATE_LIMIT_MAX | default "100" | quote }}
   RATE_LIMIT_WINDOW_SECONDS: {{ .Values.fees.configmap.RATE_LIMIT_WINDOW_SECONDS | default "60" | quote }}
+  RATE_LIMIT_ENABLED: {{ .Values.fees.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
 
   # CURRENCY
   DEFAULT_CURRENCY: {{ .Values.fees.configmap.DEFAULT_CURRENCY | default "BRL" | quote }}

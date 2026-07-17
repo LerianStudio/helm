@@ -11,7 +11,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 3.1.0-beta.1
+version: 3.1.1
 appVersion: "1.2.0-beta.82"
 keywords:
   - flowker

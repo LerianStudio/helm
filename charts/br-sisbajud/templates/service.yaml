@@ -1,0 +1,22 @@
+{{- if .Values.brSisbajud.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "br-sisbajud.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud.labels" . | nindent 4 }}
+  {{- with .Values.brSisbajud.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.brSisbajud.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.brSisbajud.service.port | default 4029 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "br-sisbajud.selectorLabels" . | nindent 4 }}
+{{- end -}}

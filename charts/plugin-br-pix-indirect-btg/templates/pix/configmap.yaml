@@ -162,6 +162,14 @@ data:
   RATE_LIMIT_ENABLED: {{ .Values.pix.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.pix.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
+  RECURRING_ANTISPAM_WINDOW: {{ .Values.pix.configmap.RECURRING_ANTISPAM_WINDOW | default "720h" | quote }}
+  RECURRING_REPLY_BACKOFF: {{ .Values.pix.configmap.RECURRING_REPLY_BACKOFF | default "150ms" | quote }}
+  RECURRING_REPLY_MAX_ATTEMPTS: {{ .Values.pix.configmap.RECURRING_REPLY_MAX_ATTEMPTS | default "3" | quote }}
+  RECURRING_SCHEDULE_LEAD_DAYS: {{ .Values.pix.configmap.RECURRING_SCHEDULE_LEAD_DAYS | default "1" | quote }}
+  SCHEDULE_DEFAULT_EXECUTE_HOUR_BRT: {{ .Values.pix.configmap.SCHEDULE_DEFAULT_EXECUTE_HOUR_BRT | default "6" | quote }}
+  SCHEDULE_MAX_ATTEMPTS: {{ .Values.pix.configmap.SCHEDULE_MAX_ATTEMPTS | default "2" | quote }}
+  SCHEDULE_MAX_FUTURE_DAYS: {{ .Values.pix.configmap.SCHEDULE_MAX_FUTURE_DAYS | default "180" | quote }}
+  SCHEDULE_MIN_FUTURE_SECONDS: {{ .Values.pix.configmap.SCHEDULE_MIN_FUTURE_SECONDS | default "60" | quote }}
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -44,6 +44,31 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.schedule.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
   ENABLE_TELEMETRY: {{ .Values.schedule.configmap.ENABLE_TELEMETRY | default "false" | quote }}
 
+  DEPLOYMENT_MODE: {{ .Values.schedule.configmap.DEPLOYMENT_MODE | default "local" | quote }}
+  ENABLE_TELEMETRY: {{ .Values.schedule.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.schedule.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "pix-btg-otel-lgtm:4317" | quote }}
+  OTEL_LIBRARY_NAME: {{ .Values.schedule.configmap.OTEL_LIBRARY_NAME | default "schedule" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.schedule.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.schedule.configmap.OTEL_RESOURCE_SERVICE_NAME | default "schedule-worker" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.schedule.configmap.OTEL_RESOURCE_SERVICE_VERSION | default "1.0.0" | quote }}
+  PLUGIN_AUTH_URL: {{ .Values.schedule.configmap.PLUGIN_AUTH_URL | default "" | quote }}
+  PLUGIN_PIX_BTG_CLIENT_ID: {{ .Values.schedule.configmap.PLUGIN_PIX_BTG_CLIENT_ID | default "" | quote }}
+  SCHEDULE_APP_BASE_URL: {{ .Values.schedule.configmap.SCHEDULE_APP_BASE_URL | default "http://plugin-br-pix-indirect-btg:4014" | quote }}
+  SCHEDULE_APP_HTTP_TIMEOUT: {{ .Values.schedule.configmap.SCHEDULE_APP_HTTP_TIMEOUT | default "30s" | quote }}
+  SCHEDULE_WORKER_BATCH_SIZE: {{ .Values.schedule.configmap.SCHEDULE_WORKER_BATCH_SIZE | default "50" | quote }}
+  SCHEDULE_WORKER_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_ENABLED | default "false" | quote }}
+  SCHEDULE_WORKER_INTERVAL: {{ .Values.schedule.configmap.SCHEDULE_WORKER_INTERVAL | default "15s" | quote }}
+  SCHEDULE_WORKER_RECONCILE_BATCH_SIZE: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_BATCH_SIZE | default "50" | quote }}
+  SCHEDULE_WORKER_RECONCILE_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_ENABLED | default "false" | quote }}
+  SCHEDULE_WORKER_RECONCILE_EVERY_N_CYCLES: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_EVERY_N_CYCLES | default "40" | quote }}
+  SCHEDULE_WORKER_RECONCILE_THRESHOLD: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_THRESHOLD | default "30m" | quote }}
+  SCHEDULE_WORKER_STALE_THRESHOLD: {{ .Values.schedule.configmap.SCHEDULE_WORKER_STALE_THRESHOLD | default "5m" | quote }}
+  SCHEDULE_WORKER_SWEEP_EVERY_N_CYCLES: {{ .Values.schedule.configmap.SCHEDULE_WORKER_SWEEP_EVERY_N_CYCLES | default "10" | quote }}
+  SCHEDULE_WORKER_TIME_WINDOW_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_TIME_WINDOW_ENABLED | default "false" | quote }}
+  SCHEDULE_WORKER_WINDOW_END: {{ .Values.schedule.configmap.SCHEDULE_WORKER_WINDOW_END | default "" | quote }}
+  SCHEDULE_WORKER_WINDOW_START: {{ .Values.schedule.configmap.SCHEDULE_WORKER_WINDOW_START | default "" | quote }}
+  VERSION: {{ .Values.schedule.configmap.VERSION | default "0.0.0" | quote }}
+  WORKER_PORT: {{ .Values.schedule.configmap.WORKER_PORT | default "4018" | quote }}
   # Extra Env Vars
   {{- with .Values.schedule.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

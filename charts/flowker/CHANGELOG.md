@@ -1,3 +1,15 @@
+## [3.1.1]
+
+### Fixed
+
+- Restore 3.1 chart content dropped by the 3.1.0 stable release (scheduler
+  worker Deployment, valkey subchart, XSD-validator + IRSA sidecars,
+  schema/docs, helpers, values.schema); WORKOS_TM_CLIENT_SECRET support
+  retained. The 3.1 work below was published only on the
+  `flowker-v3.1.0-beta.1` tag and never merged to `main`; the stable 3.1.0
+  release was cut from `main` without it, regressing the chart. This restores
+  the full beta.1 superset.
+
 ## [3.1.0] — Unreleased
 
 ### Added

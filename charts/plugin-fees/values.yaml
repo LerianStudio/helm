@@ -3,6 +3,46 @@
 # Declare variables to be passed into your templates.
 
 global:
+  # -- Shared env-wide config consumed by the lerian-common helpers. Set these once
+  # per environment (umbrella/GitOps). Each helper stays inert until its block is
+  # filled (address/brokers empty = off), so defaults below are a no-op; a component's
+  # own extraEnvVars/configmap value overrides the global default.
+  # -- Service Discovery (lib-service-discovery)
+  serviceDiscovery:
+    # -- Discovery server address host:port (e.g. consul.<env>:443). Empty = SD off.
+    address: ""
+    # -- Use HTTPS to the discovery server
+    tls: false
+    # -- Skip TLS cert verification to the discovery server
+    tlsSkipVerify: false
+    # -- Per-env isolation key (provider+consumer must match)
+    workload: ""
+    # -- Endpoint view resolves return: internal | external
+    preferView: external
+    # -- Scheme for the internal (in-cluster) endpoint
+    internalScheme: http
+    # -- Port for the external (ingress) endpoint
+    externalPort: 443
+  # -- Streaming (lib-streaming / RedPanda)
+  streaming:
+    # -- Broker list host:port (e.g. redpanda.<env>:9092). Empty = streaming off.
+    brokers: ""
+    # -- Enable TLS to the brokers
+    tlsEnabled: false
+    # -- SASL mechanism (e.g. SCRAM-SHA-256)
+    saslMechanism: ""
+    # -- SASL username (password/CA are per-component secrets, never here)
+    saslUsername: ""
+  # -- Multi-tenant (lib-commons/multitenancy). A component's configmap overrides these.
+  multiTenant:
+    # -- Tenant-manager base URL
+    url: ""
+    # -- Multi-tenant Redis host
+    redisHost: ""
+    # -- Multi-tenant Redis port
+    redisPort: "6379"
+    # -- Multi-tenant Redis TLS
+    redisTls: "false"
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job

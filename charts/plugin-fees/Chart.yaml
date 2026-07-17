@@ -27,6 +27,9 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # To understand the purpose and configuration of each dependency, visit:
 # https://docs.lerian.studio/docs/midaz-components
 dependencies:
+  - name: lerian-common
+    version: "0.1.0"
+    repository: "file://../lerian-common"
   - name: mongodb
     version: "16.4.0"
     repository: "https://charts.bitnami.com/bitnami"

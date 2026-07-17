@@ -1,0 +1,64 @@
+suite: multi-tenant env (lerian-common.multiTenant.env)
+templates:
+  - templates/fees/configmap.yaml
+release:
+  name: plugin-fees
+  namespace: plugin-fees-dev-st
+tests:
+  - it: emits only MULTI_TENANT_ENABLED when disabled (gated block inert)
+    asserts:
+      - equal:
+          path: data.MULTI_TENANT_ENABLED
+          value: "false"
+      - notExists:
+          path: data.MULTI_TENANT_URL
+      - notExists:
+          path: data.MULTI_TENANT_REDIS_HOST
+
+  - it: emits the full fees group set with canonical defaults when enabled
+    set:
+      fees.configmap.MULTI_TENANT_ENABLED: "true"
+      fees.configmap.MULTI_TENANT_URL: "http://tenant-manager:8080"
+      fees.configmap.MULTI_TENANT_REDIS_HOST: "mt-redis"
+    asserts:
+      - equal:
+          path: data.MULTI_TENANT_URL
+          value: "http://tenant-manager:8080"
+      - equal:
+          path: data.MULTI_TENANT_REDIS_HOST
+          value: "mt-redis"
+      - equal:
+          path: data.MULTI_TENANT_REDIS_PORT
+          value: "6379"
+      - equal:
+          path: data.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD
+          value: "5"
+      - equal:
+          path: data.MULTI_TENANT_MAX_TENANT_POOLS
+          value: "100"
+      - equal:
+          path: data.MULTI_TENANT_CACHE_TTL_SEC
+          value: "120"
+      - equal:
+          path: data.MULTI_TENANT_ALLOW_INSECURE_HTTP
+          value: "false"
+      - exists:
+          path: data.MULTI_TENANT_ENVIRONMENT
+      # fees does not use SERVICE_NAME (that group flag is off)
+      - notExists:
+          path: data.MULTI_TENANT_SERVICE_NAME
+
+  - it: honors component overrides over canonical defaults
+    set:
+      fees.configmap.MULTI_TENANT_ENABLED: "true"
+      fees.configmap.MULTI_TENANT_URL: "http://tm:8080"
+      fees.configmap.MULTI_TENANT_REDIS_HOST: "r"
+      fees.configmap.MULTI_TENANT_REDIS_PORT: "7000"
+      fees.configmap.MULTI_TENANT_CACHE_TTL_SEC: "999"
+    asserts:
+      - equal:
+          path: data.MULTI_TENANT_REDIS_PORT
+          value: "7000"
+      - equal:
+          path: data.MULTI_TENANT_CACHE_TTL_SEC
+          value: "999"

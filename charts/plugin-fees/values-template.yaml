@@ -1,5 +1,28 @@
 # Default values
 
+# -- Shared env-wide config consumed by the lerian-common helpers. Set per environment
+# (umbrella/GitOps). Each helper stays inert until its block is filled (address/brokers
+# empty = off); a component's own extraEnvVars/configmap value overrides these.
+global:
+  serviceDiscovery:
+    address: ""
+    tls: false
+    tlsSkipVerify: false
+    workload: ""
+    preferView: external
+    internalScheme: http
+    externalPort: 443
+  streaming:
+    brokers: ""
+    tlsEnabled: false
+    saslMechanism: ""
+    saslUsername: ""
+  multiTenant:
+    url: ""
+    redisHost: ""
+    redisPort: "6379"
+    redisTls: "false"
+
 fees:
   ingress:
     enabled: false

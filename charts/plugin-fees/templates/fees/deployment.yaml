@@ -23,19 +23,12 @@ spec:
         {{- end }}
     spec:
       {{- with .Values.fees.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
       {{- if .Values.fees.serviceAccount.create }}
       serviceAccountName: {{ include "plugin-fees.serviceAccountName" . }}
       {{- end }}      
-      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
-      securityContext:
-        fsGroup: 65532
-      {{- else }}
-      securityContext:
-        {{- toYaml .Values.fees.podSecurityContext | nindent 8 }}
-      {{- end }}
+      {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" .Values.fees.podSecurityContext) | nindent 6 }}
       containers:
         - name: {{ include "plugin-fees.fullname" . }}
           securityContext:
@@ -73,93 +66,26 @@ spec:
             value: "$(HOST_IP):4317"
           {{- end }}
           {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
-          - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
-            value: "http://127.0.0.1:{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
-          - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
-            value: "IPv4"
+          {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}
           {{- end }}
           resources:
             {{- toYaml .Values.fees.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.fees.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.fees.service.port }}
-            initialDelaySeconds: {{ .Values.fees.readinessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ .Values.fees.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.fees.readinessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.fees.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.fees.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.fees.livenessProbe.path | default "/health" }}
-              port: {{ .Values.fees.service.port }}
-            initialDelaySeconds: {{ .Values.fees.livenessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.fees.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.fees.livenessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.fees.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.fees.livenessProbe.failureThreshold | default 3 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "readinessProbe" "probe" .Values.fees.readinessProbe
+                "port" .Values.fees.service.port
+                "path" "/readyz" "initialDelay" 10 "period" 5 "timeout" 1 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "livenessProbe" "probe" .Values.fees.livenessProbe
+                "port" .Values.fees.service.port
+                "path" "/health" "initialDelay" 5 "period" 5 "timeout" 1 "success" 1 "failure" 3
+              ) | nindent 10 }}
         {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
-        - name: aws-signing-helper
-          image: "{{ .Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ .Values.aws.rolesAnywhere.sidecar.image.tag }}"
-          imagePullPolicy: {{ .Values.aws.rolesAnywhere.sidecar.image.pullPolicy | default "IfNotPresent" }}
-          args:
-            - serve
-            - --certificate
-            - /certs/tls.crt
-            - --private-key
-            - /certs/tls.key
-            - --trust-anchor-arn
-            - "{{ required "aws.rolesAnywhere.trustAnchorArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.trustAnchorArn }}"
-            - --profile-arn
-            - "{{ required "aws.rolesAnywhere.profileArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.profileArn }}"
-            - --role-arn
-            - "{{ required "aws.rolesAnywhere.roleArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.roleArn }}"
-            - --region
-            - "{{ .Values.aws.rolesAnywhere.region | default "us-east-2" }}"
-            - --session-duration
-            - "{{ .Values.aws.rolesAnywhere.sessionDuration | default 3600 }}"
-            - --port
-            - "{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
-          ports:
-            - name: imds
-              containerPort: {{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}
-              protocol: TCP
-          volumeMounts:
-            - name: iam-certs
-              mountPath: /certs
-              readOnly: true
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 65532
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
-          resources:
-            {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
         {{- end }}
       {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
-      volumes:
-        - name: iam-certs
-          secret:
-            secretName: {{ .Values.aws.rolesAnywhere.certificateSecretName | default "plugin-fees-iam-tls" }}
-            defaultMode: 0440
-            items:
-              - key: tls.crt
-                path: tls.crt
-              - key: tls.key
-                path: tls.key
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "plugin-fees-iam-tls") | nindent 6 }}
       {{- end }}
-      {{- with .Values.fees.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.fees.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.fees.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- if or .Values.fees.nodeSelector .Values.fees.affinity .Values.fees.tolerations }}
+      {{- include "lerian-common.scheduling" .Values.fees | nindent 6 }}
       {{- end }}

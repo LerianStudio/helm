@@ -163,20 +163,7 @@ key (data key), envName (container env var name).
 See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 */}}
 {{- define "plugin-fees.infraSecretRef" -}}
-{{- $ctx := .context -}}
-{{- $sub := .subchart -}}
-{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
-{{- $secretName := "" -}}
-{{- if $auth.existingSecret -}}
-{{- $secretName = $auth.existingSecret -}}
-{{- else -}}
-{{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
-{{- end -}}
-- name: {{ .envName }}
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secretName }}
-      key: {{ .key }}
+{{- include "lerian-common.infraSecretRef" . -}}
 {{- end }}
 
 
@@ -187,14 +174,5 @@ Secret/Service names render even when all bundled subcharts are disabled
 (external-infra path). Self-contained: no other common.* helpers required.
 */}}
 {{- define "common.names.dependency.fullname" -}}
-{{- if .chartValues.fullnameOverride -}}
-{{- .chartValues.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default .chartName .chartValues.nameOverride -}}
-{{- if contains $name .context.Release.Name -}}
-{{- .context.Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
+{{- include "lerian-common.dependency.fullname" . -}}
 {{- end -}}

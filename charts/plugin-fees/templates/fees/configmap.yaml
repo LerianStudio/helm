@@ -93,21 +93,26 @@ data:
 
   # MULTI TENANT
   MULTI_TENANT_ENABLED: {{ .Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if eq (.Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
-  MULTI_TENANT_URL: {{ required "fees.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.fees.configmap.MULTI_TENANT_URL | quote }}
-  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.fees.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
-  MULTI_TENANT_ENVIRONMENT: {{ .Values.fees.configmap.MULTI_TENANT_ENVIRONMENT | default "" | quote }}
-  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.fees.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
-  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.fees.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.fees.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
-  MULTI_TENANT_REDIS_HOST: {{ required "fees.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.fees.configmap.MULTI_TENANT_REDIS_HOST | quote }}
-  MULTI_TENANT_REDIS_PORT: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
-  MULTI_TENANT_REDIS_TLS: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
-  MULTI_TENANT_TIMEOUT: {{ .Values.fees.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}
-  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
-  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
-  {{- end }}
+  {{- with (include "lerian-common.multiTenant.env" (dict
+        "context" $
+        "configmap" .Values.fees.configmap
+        "enabled" (eq (.Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true")
+        "requiredUrl" true "requiredRedisHost" true
+        "emitRedis" true "emitPool" true "emitCache" true
+        "emitEnvironment" true "emitAllowInsecure" true
+      )) }}{{ . | nindent 2 }}{{- end }}
+
+  # SERVICE DISCOVERY (lib-service-discovery) — derived from lerian-common when
+  # SD_ENABLED=true in extraEnvVars; env-wide constants from global.serviceDiscovery.
+  # Emitted before extraEnvVars so an operator can still override any SD_* key.
+  {{- with (include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" (eq (toString (dig "SD_ENABLED" "false" (.Values.fees.extraEnvVars | default dict))) "true")
+        "name" (include "plugin-fees.fullname" .)
+        "port" .Values.fees.service.port
+        "namespace" (include "global.namespace" $)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.fees.ingress))
+      )) }}{{ . | nindent 2 }}{{- end }}
 
   # Extra Env Vars
   {{- with .Values.fees.extraEnvVars }}

@@ -1,6 +1,9 @@
 dependencies:
+- name: lerian-common
+  repository: file://../lerian-common
+  version: 0.1.0
 - name: mongodb
   repository: https://charts.bitnami.com/bitnami
   version: 16.4.0
-digest: sha256:9ba722b7a43665565e6d93958986982b93d8714781b099c10e7bad5fde723b72
-generated: "2026-06-06T17:41:01.201474-03:00"
+digest: sha256:2c02ee472b27d5f60a2bc9f7cfc36f68aa7d952b88fccc5c096b5d9646ecb7cd
+generated: "2026-07-17T17:58:48.133146-03:00"

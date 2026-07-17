@@ -1,0 +1,69 @@
+suite: service discovery env (lerian-common.serviceDiscovery.env)
+templates:
+  - templates/fees/configmap.yaml
+release:
+  name: plugin-fees
+  namespace: plugin-fees-dev-st
+tests:
+  - it: inert when SD_ENABLED is unset (no SD_ keys derived)
+    asserts:
+      - notExists:
+          path: data.SD_ADDRESS
+      - notExists:
+          path: data.SD_INTERNAL_ADDRESS
+
+  - it: inert when SD_ENABLED=true but global.serviceDiscovery is absent (backward-compatible)
+    set:
+      fees.extraEnvVars.SD_ENABLED: "true"
+    asserts:
+      - notExists:
+          path: data.SD_ADDRESS
+      - equal:
+          path: data.SD_ENABLED
+          value: "true"   # still present, from the extraEnvVars passthrough
+
+  - it: derives internal-only endpoints when enabled + global set, no ingress
+    set:
+      fees.extraEnvVars.SD_ENABLED: "true"
+      fees.ingress.enabled: false
+      global.serviceDiscovery.address: "consul.example:443"
+      global.serviceDiscovery.tls: true
+      global.serviceDiscovery.tlsSkipVerify: true
+      global.serviceDiscovery.workload: "wl"
+      global.serviceDiscovery.preferView: "internal"
+    asserts:
+      - equal:
+          path: data.SD_ADDRESS
+          value: "consul.example:443"
+      - equal:
+          path: data.SD_TLS
+          value: "true"
+      - equal:
+          path: data.SD_WORKLOAD
+          value: "wl"
+      - equal:
+          path: data.SD_PREFER_VIEW
+          value: "internal"
+      - equal:
+          path: data.SD_INTERNAL_ADDRESS
+          value: "plugin-fees.plugin-fees-dev-st.svc.cluster.local"
+      - equal:
+          path: data.SD_INTERNAL_SCHEME
+          value: "http"
+      - notExists:
+          path: data.SD_EXTERNAL_ADDRESS   # no ingress -> no external view
+
+  - it: derives external endpoint from the ingress host when present
+    set:
+      fees.extraEnvVars.SD_ENABLED: "true"
+      global.serviceDiscovery.address: "consul.example:443"
+      fees.ingress.enabled: true
+      fees.ingress.hosts:
+        - host: "fees.example.com"
+    asserts:
+      - equal:
+          path: data.SD_EXTERNAL_ADDRESS
+          value: "https://fees.example.com"
+      - equal:
+          path: data.SD_EXTERNAL_PORT
+          value: "443"

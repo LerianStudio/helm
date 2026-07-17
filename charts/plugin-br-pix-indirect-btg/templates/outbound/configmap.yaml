@@ -318,7 +318,7 @@ data:
   WEBHOOK_SCHEDULE_CASHOUT_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_MAX_RETRIES | default "10" | quote }}
   WEBHOOK_SCHEDULE_CASHOUT_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_POLLING_INTERVAL | default "1s" | quote }}
   WEBHOOK_SCHEDULE_CASHOUT_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_REQUEST_TIMEOUT | default "5s" | quote }}
-  WEBHOOK_SCHEDULE_CASHOUT_URL: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_URL | default "https://client-api/v1/webhooks/schedule-events" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_URL: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_URL | default "" | quote }}
   WEBHOOK_SCHEDULE_CASHOUT_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_WORKER_COUNT | default "1" | quote }}
   # Extra Env Vars
   {{- with .Values.outbound.extraEnvVars }}

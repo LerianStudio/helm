@@ -244,6 +244,11 @@ fees:
     MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Password for the Redis/Valkey instance used by the multi-tenant cache (required when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_REDIS_PASSWORD: ""
+    # -- Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set
+    # when the streaming backend uses SASL auth and/or a private TLS CA. When set,
+    # they are rendered into the plugin-fees Secret (never the ConfigMap).
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
 mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.
   enabled: true

@@ -47,6 +47,10 @@
       "type": "object",
       "additionalProperties": true
     },
+    "topics": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "postgresql": {
       "type": "object",
       "additionalProperties": true

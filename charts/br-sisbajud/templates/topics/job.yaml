@@ -1,0 +1,113 @@
+{{- if .Values.topics.enabled }}
+# PreSync topics Job. Runs the dedicated br-sisbajud-topics image (rpk), whose
+# entrypoint idempotently ensures the reactive-bridge Redpanda topics and their
+# .dlq siblings exist before the app boots. hook-weight -1 puts it in the same
+# wave as the migration Job (they are independent — Kafka vs Postgres) and
+# before the main-sync Deployment, so the Midaz balance translator never
+# halt-loops (UNKNOWN_TOPIC_OR_PARTITION) and DLQ publishes never fail on a
+# fresh broker.
+#
+# STREAMING_* config is resolved from brSisbajud.extraEnvVars (wins) then
+# brSisbajud.configmap — the same idiom the migration Job uses for
+# ALLOW_INSECURE_TLS — so gitops needs no duplicated secret refs. The SASL/TLS
+# values are AVP <path:...> placeholders re-emitted as plain env, exactly as the
+# app itself consumes them.
+{{- $extraEnv := .Values.brSisbajud.extraEnvVars | default list -}}
+{{- $cfg := .Values.brSisbajud.configmap | default dict -}}
+{{- $resolved := dict -}}
+{{- range $extraEnv -}}
+{{-   if hasKey . "value" -}}
+{{-     $_ := set $resolved .name (toString .value) -}}
+{{-   end -}}
+{{- end -}}
+{{- $brokers := index $resolved "STREAMING_BROKERS" | default (index $cfg "STREAMING_BROKERS") | default "" -}}
+{{- $tlsEnabled := index $resolved "STREAMING_TLS_ENABLED" | default (index $cfg "STREAMING_TLS_ENABLED") | default "false" -}}
+{{- $saslMech := index $resolved "STREAMING_SASL_MECHANISM" | default (index $cfg "STREAMING_SASL_MECHANISM") | default "" -}}
+{{- $saslUser := index $resolved "STREAMING_SASL_USERNAME" | default (index $cfg "STREAMING_SASL_USERNAME") | default "" -}}
+{{- $saslPass := index $resolved "STREAMING_SASL_PASSWORD" | default (index $cfg "STREAMING_SASL_PASSWORD") | default "" -}}
+{{- $caCert := index $resolved "STREAMING_TLS_CA_CERT" | default (index $cfg "STREAMING_TLS_CA_CERT") | default "" -}}
+{{- $pullSecrets := .Values.topics.imagePullSecrets | default .Values.imagePullSecrets }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "br-sisbajud-topics.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud-topics.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: {{ .Values.topics.backoffLimit | default 3 }}
+  activeDeadlineSeconds: {{ .Values.topics.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ .Values.topics.ttlSecondsAfterFinished | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-sisbajud-topics.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: topics
+          image: "{{ .Values.topics.image.repository }}:{{ .Values.topics.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.topics.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: TOPICS
+              value: {{ join " " .Values.topics.list | quote }}
+            - name: TOPIC_PARTITIONS
+              value: {{ .Values.topics.partitions | default 1 | quote }}
+            - name: TOPIC_REPLICAS
+              value: {{ .Values.topics.replicationFactor | default 1 | quote }}
+            {{- if .Values.topics.retentionMs }}
+            - name: TOPIC_RETENTION_MS
+              value: {{ .Values.topics.retentionMs | quote }}
+            {{- end }}
+            - name: STREAMING_BROKERS
+              value: {{ $brokers | quote }}
+            - name: STREAMING_TLS_ENABLED
+              value: {{ $tlsEnabled | quote }}
+            {{- if $saslMech }}
+            - name: STREAMING_SASL_MECHANISM
+              value: {{ $saslMech | quote }}
+            {{- end }}
+            {{- if $saslUser }}
+            - name: STREAMING_SASL_USERNAME
+              value: {{ $saslUser | quote }}
+            {{- end }}
+            {{- if $saslPass }}
+            - name: STREAMING_SASL_PASSWORD
+              value: {{ $saslPass | quote }}
+            {{- end }}
+            {{- if $caCert }}
+            - name: STREAMING_TLS_CA_CERT
+              value: {{ $caCert | quote }}
+            {{- end }}
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            {{- toYaml .Values.topics.resources | nindent 12 }}
+      volumes:
+        # rpk needs a writable HOME/config dir + a place for the decoded CA;
+        # emptyDir keeps readOnlyRootFilesystem: true intact.
+        - name: tmp
+          emptyDir: {}
+{{- end }}

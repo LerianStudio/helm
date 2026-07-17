@@ -157,6 +157,42 @@ migrations:
       memory: 256Mi
 
 # =============================================================================
+# Detached topic provisioning — ArgoCD PreSync Job that idempotently ensures the
+# reactive-bridge Redpanda topics (and their .dlq siblings) exist before the app
+# boots. The br-sisbajud-topics image runs `rpk topic create` (list-then-create)
+# reusing the same STREAMING_* env the app consumes (resolved from
+# brSisbajud.extraEnvVars / brSisbajud.configmap — no duplicated secret refs).
+# midaz.balance.changed is NOT listed: Midaz owns and creates it; br-sisbajud
+# only consumes it.
+# =============================================================================
+topics:
+  enabled: true
+  image:
+    repository: ghcr.io/lerianstudio/br-sisbajud-topics
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  partitions: 1
+  replicationFactor: 1        # per-env; 3 on multi-broker prod
+  retentionMs: ""             # optional; empty = broker default
+  list:
+    - br-sisbajud.ledger.balance.changed
+    - br-sisbajud.ledger.balance.changed.dlq
+    - br-sisbajud.block_account.created
+    - br-sisbajud.block_account.created.dlq
+    - br-sisbajud.kek.rotated
+    - br-sisbajud.kek.rotated.dlq
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# =============================================================================
 # Bundled infra subcharts — DISABLED by default. On the target environments
 # Postgres and Redis are external and pre-provisioned; wire hosts via
 # brSisbajud.configmap.POSTGRES_HOST / REDIS_HOST. Enable these only for a

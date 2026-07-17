@@ -325,6 +325,11 @@ ledger:
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""
     RABBITMQ_CONSUMER_PASS: ""
+    # -- Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set
+    # when the streaming backend uses SASL auth and/or a private TLS CA. When set,
+    # they are rendered into the ledger Secret (never the ConfigMap).
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
     create: true
@@ -493,6 +498,11 @@ crm:
     # (key `mongodb-root-password`); only set it for an EXTERNAL MongoDB
     # (subchart disabled / .external=true) without an existingSecret override.
     MONGO_PASSWORD: ""
+    # -- Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set
+    # when the streaming backend uses SASL auth and/or a private TLS CA. When set,
+    # they are rendered into the CRM Secret (never the ConfigMap).
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

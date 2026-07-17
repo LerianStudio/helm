@@ -1,0 +1,25 @@
+apiVersion: v2
+name: lender-helm
+description: A Helm chart for Lender - Lerian credit journey engine (API + optional console)
+type: application
+annotations:
+  lerian.studio/chart-type: multi-component
+home: https://github.com/LerianStudio/lender
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/lender
+  - https://github.com/LerianStudio/lender
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+version: 1.0.2
+# NOTE: appVersion tracks the lender API image line. The real image tag is set
+# per-component via lender.image.tag and lenderConsole.image.tag.
+appVersion: "1.0.0-beta.49"
+keywords:
+  - lender
+  - credit
+  - underwriter
+  - lerian
+  - ddd
+  - hexagonal
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4

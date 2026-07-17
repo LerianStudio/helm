@@ -45,7 +45,7 @@ manager:
   image:
     repository: lerianstudio/fetcher-manager
     pullPolicy: IfNotPresent
-    tag: "2.0.2"
+    tag: "3.0.1"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -164,7 +164,7 @@ worker:
   image:
     repository: lerianstudio/fetcher-worker
     pullPolicy: IfNotPresent
-    tag: "2.0.2"
+    tag: "3.0.1"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}

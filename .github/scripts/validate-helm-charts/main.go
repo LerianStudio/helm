@@ -24,6 +24,7 @@ var allowedChartTypes = map[string]bool{
 	"single-service":     true,
 	"multi-component":    true,
 	"dependency-wrapper": true,
+	"library":            true,
 }
 
 var credentialURLPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/@]+:[^\s/@]+@`)
@@ -243,11 +244,18 @@ func collectViolations(root string) ([]violation, error) {
 
 		chartType := chart.Annotations[chartTypeAnnotation]
 		if !allowedChartTypes[chartType] {
-			violations = append(violations, newViolation(chartName, "invalid-chart-type", chartRel, "Chart.yaml must set annotations.lerian.studio/chart-type to single-service, multi-component, or dependency-wrapper"))
+			violations = append(violations, newViolation(chartName, "invalid-chart-type", chartRel, "Chart.yaml must set annotations.lerian.studio/chart-type to single-service, multi-component, dependency-wrapper, or library"))
 		}
 
-		if chart.Type != "application" {
-			violations = append(violations, newViolation(chartName, "invalid-chart-kind", chartRel, "Chart.yaml type must be application"))
+		isLibrary := chart.Type == "library"
+		if chart.Type != "application" && !isLibrary {
+			violations = append(violations, newViolation(chartName, "invalid-chart-kind", chartRel, "Chart.yaml type must be application or library"))
+		}
+
+		// The library annotation and the Helm chart kind must agree, so an
+		// application chart cannot claim chart-type: library to skip requirements.
+		if (chartType == "library") != isLibrary {
+			violations = append(violations, newViolation(chartName, "chart-type-mismatch", chartRel, "annotations.lerian.studio/chart-type: library requires (and only applies to) Chart.yaml type: library"))
 		}
 
 		for _, required := range []string{"README.md", "values.yaml"} {
@@ -258,7 +266,7 @@ func collectViolations(root string) ([]violation, error) {
 		}
 		violations = append(violations, validateReadmeContract(root, chartDir, chartName, chartType)...)
 
-		if chartType != "dependency-wrapper" {
+		if chartType != "dependency-wrapper" && !isLibrary {
 			valuesTemplate := filepath.Join(chartDir, "values-template.yaml")
 			if !fileExists(valuesTemplate) {
 				violations = append(violations, newViolation(chartName, "missing-values-template", rel(root, valuesTemplate), "application charts must provide values-template.yaml"))
@@ -1021,6 +1029,18 @@ func buildRenderInventory(root string) ([]renderRow, error) {
 	return buildRenderRows(root, nil, "")
 }
 
+func isLibraryChart(chartDir string) bool {
+	data, err := os.ReadFile(filepath.Join(chartDir, "Chart.yaml"))
+	if err != nil {
+		return false
+	}
+	var c chartYAML
+	if err := yaml.Unmarshal(data, &c); err != nil {
+		return false
+	}
+	return c.Type == "library"
+}
+
 func buildRenderGate(root string, chartSelection map[string]bool, sampleValuesDir string) ([]renderRow, error) {
 	rows, err := buildRenderRows(root, chartSelection, sampleValuesDir)
 	if err != nil {
@@ -1055,6 +1075,16 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 		row := renderRow{Chart: chartName}
+
+		// Library charts are not installable (helm template fails); their helpers
+		// are exercised through the consumer charts, so skip the render gate.
+		if isLibraryChart(chartDir) {
+			row.Status = "ok"
+			row.Class = "skipped-library"
+			row.Detail = "library chart — not installable; helpers validated via consumer charts"
+			rows = append(rows, row)
+			continue
+		}
 
 		deps, err := chartDependencies(chartDir)
 		if err != nil {

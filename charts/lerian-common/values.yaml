@@ -1,0 +1,41 @@
+# lerian-common is a LIBRARY chart: it renders nothing on its own and has no
+# values of its own. This file DOCUMENTS the shared `global.*` contract the
+# helpers read — the STANDARD template every environment fills in ONCE (at the
+# umbrella/GitOps layer). These are environment-specific (BYOC) and MUST NOT be
+# hardcoded in any product chart.
+#
+# All three domains follow the same pattern: env-wide infra constants live under
+# `global.*`, the per-app enable knob stays in the component `extraEnvVars`
+# (`SD_ENABLED` / `STREAMING_ENABLED`) or `configmap` (`MULTI_TENANT_ENABLED`),
+# and a component's own value overrides the global default. Every helper is
+# backward-compatible: with the `global.*` block absent it stays inert and the
+# component's existing values drive the output unchanged.
+
+global: {}
+  # -- Service Discovery (lib-service-discovery). Set once per environment.
+  # serviceDiscovery:
+  #   address: ""            # REQUIRED when SD_ENABLED=true (e.g. consul.<env>:443). No default.
+  #   tls: false             # SD_TLS
+  #   tlsSkipVerify: false   # SD_TLS_SKIP_VERIFY
+  #   workload: ""           # SD_WORKLOAD — per-env isolation key (provider+consumer must match)
+  #   preferView: external   # SD_PREFER_VIEW — internal|external (lib default: external)
+  #   internalScheme: http   # SD_INTERNAL_SCHEME
+  #   externalPort: 443      # SD_EXTERNAL_PORT (emitted only when a component has an ingress host)
+  #
+  # -- Streaming (lib-streaming / RedPanda). Set once per environment.
+  # streaming:
+  #   brokers: ""            # REQUIRED when STREAMING_ENABLED=true (e.g. redpanda.<env>:9092)
+  #   tlsEnabled: false      # STREAMING_TLS_ENABLED
+  #   saslMechanism: ""      # STREAMING_SASL_MECHANISM (e.g. SCRAM-SHA-256)
+  #   saslUsername: ""       # STREAMING_SASL_USERNAME
+  #   # NOTE: STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT are secrets — set them
+  #   # per component under `.secrets`, never here (they render into the Secret).
+  #
+  # -- Multi-tenant (lib-commons/multitenancy). The tenant-manager URL and its
+  #    Redis are environment infra, so they belong here too; a component's
+  #    configmap.MULTI_TENANT_* overrides these.
+  # multiTenant:
+  #   url: ""                # MULTI_TENANT_URL — tenant-manager base URL
+  #   redisHost: ""          # MULTI_TENANT_REDIS_HOST
+  #   redisPort: "6379"      # MULTI_TENANT_REDIS_PORT
+  #   redisTls: "false"      # MULTI_TENANT_REDIS_TLS

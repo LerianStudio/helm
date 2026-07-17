@@ -52,6 +52,7 @@ jobs:
             fetcher
             flowker
             underwriter
+            lender
             matcher
             tracer
             br-sta

@@ -1,0 +1,82 @@
+{{- if .Values.lenderConsole.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lenderConsole.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lender.labels" (dict "context" . "component" .Values.lenderConsole.name "name" .Values.lenderConsole.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ if hasKey .Values.lenderConsole "revisionHistoryLimit" }}{{ .Values.lenderConsole.revisionHistoryLimit }}{{ else }}10{{ end }}
+  replicas: {{ .Values.lenderConsole.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "lender.selectorLabels" (dict "context" . "name" .Values.lenderConsole.name "component" .Values.lenderConsole.name) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.lenderConsole.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "lender.labels" (dict "context" . "component" .Values.lenderConsole.name "name" .Values.lenderConsole.name) | nindent 8 }}
+    spec:
+      {{- with .Values.lenderConsole.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.lenderConsole.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "lenderConsole.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.lenderConsole.securityContext | nindent 12 }}
+          image: "{{ .Values.lenderConsole.image.repository }}:{{ required "lenderConsole.image.tag is required when lenderConsole.enabled=true" .Values.lenderConsole.image.tag }}"
+          imagePullPolicy: {{ .Values.lenderConsole.image.pullPolicy }}
+          {{- if .Values.lenderConsole.configmap }}
+          envFrom:
+          - configMapRef:
+              name: {{ include "lenderConsole.fullname" . }}
+          {{- end }}
+          {{- with .Values.lenderConsole.extraEnvVars }}
+          env:
+            {{- range . }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.lenderConsole.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.lenderConsole.resources | nindent 12 }}
+      {{- with .Values.lenderConsole.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.lenderConsole.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.lenderConsole.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

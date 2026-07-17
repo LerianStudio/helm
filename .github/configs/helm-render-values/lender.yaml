@@ -1,0 +1,13 @@
+# CI-only render fixture for the lender chart. NOT a production example.
+# Enables BOTH components so the render gate exercises the console path, and
+# supplies the required-when-enabled values. No real credentials.
+lender:
+  secrets:
+    # lender.secrets.POSTGRES_PASSWORD is `required` when useExistingSecret=false.
+    POSTGRES_PASSWORD: "ci-dummy-not-a-real-secret"
+
+lenderConsole:
+  enabled: true
+  image:
+    # lenderConsole.image.tag is `required` when lenderConsole.enabled=true.
+    tag: "0.0.0-ci"

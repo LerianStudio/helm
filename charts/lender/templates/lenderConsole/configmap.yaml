@@ -1,0 +1,13 @@
+{{- if and .Values.lenderConsole.enabled .Values.lenderConsole.configmap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lenderConsole.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lender.labels" (dict "context" . "component" .Values.lenderConsole.name "name" .Values.lenderConsole.name) | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.lenderConsole.configmap }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

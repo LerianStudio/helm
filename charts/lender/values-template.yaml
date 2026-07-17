@@ -1,0 +1,90 @@
+# Template values for lender deployment.
+# Copy this file and customize for your environment (GitOps overlay).
+
+namespaceOverride: "lender"
+
+global:
+  externalPostgresDefinitions:
+    enabled: false
+    connection:
+      host: ""
+      port: "5432"
+    postgresAdminLogin:
+      useExistingSecret:
+        name: ""
+      username: ""
+      password: ""
+    lenderCredentials:
+      useExistingSecret:
+        name: ""
+      password: ""
+
+lender:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/lerianstudio/lender
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  imagePullSecrets:
+    - name: ghcr-credential
+
+  ingress:
+    # Disabled in the template overlay so the default cannot render a hostless
+    # Ingress matching arbitrary hostnames. Enable and set a host per environment.
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts: []
+    tls: []
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  configmap:
+    ENV_NAME: ""
+    SERVER_ADDRESS: ":4017"
+    LOG_LEVEL: "info"
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "lender"
+    POSTGRES_NAME: "lender"
+    POSTGRES_SSLMODE: "disable"
+    ALLOW_INSECURE_TLS: "true"
+    REDIS_HOST: ""
+    REDIS_DB: "0"
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: ""
+    ENABLE_TELEMETRY: "false"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    MULTI_TENANT_ENABLED: "false"
+
+  secrets:
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+    AUTH_JWT_SECRET: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+# UI component — keep disabled until a lender-ui image is wired per environment.
+lenderConsole:
+  enabled: false
+  image:
+    repository: ghcr.io/lerianstudio/lender-ui
+    pullPolicy: IfNotPresent
+    tag: ""

@@ -24,13 +24,16 @@ Usage (in a component configmap.yaml, BEFORE the extraEnvVars passthrough):
   {{- include "lerian-common.streaming.env" (dict
         "context" $
         "enabled" (eq (toString (dig "STREAMING_ENABLED" "false" ($cv.extraEnvVars | default dict))) "true")
+        "name" $cv.name
       ) | nindent 2 }}
 
 Inputs (dict):
   context           (req)  root context ($) — reads global.streaming
   enabled           (req)  bool — whether to emit the constants
-  clientId          (opt)  STREAMING_CLIENT_ID — emitted only when provided
-  cloudeventsSource (opt)  STREAMING_CLOUDEVENTS_SOURCE — emitted only when provided
+  name              (opt)  per-app identity; derives STREAMING_CLIENT_ID and
+                           STREAMING_CLOUDEVENTS_SOURCE (both default to it)
+  clientId          (opt)  explicit STREAMING_CLIENT_ID override (else derived from name)
+  cloudeventsSource (opt)  explicit STREAMING_CLOUDEVENTS_SOURCE override (else derived from name)
 
 global.streaming (all optional except brokers, which gates emission):
   brokers, tlsEnabled, saslMechanism, saslUsername
@@ -43,11 +46,14 @@ STREAMING_BROKERS: {{ $s.brokers | quote }}
 STREAMING_TLS_ENABLED: {{ $s.tlsEnabled | default false | quote }}
 STREAMING_SASL_MECHANISM: {{ $s.saslMechanism | default "" | quote }}
 STREAMING_SASL_USERNAME: {{ $s.saslUsername | default "" | quote }}
-{{- if hasKey . "clientId" }}
-STREAMING_CLIENT_ID: {{ .clientId | quote }}
+{{- /* Per-app identity: derive from `name`; `clientId`/`cloudeventsSource` override. */ -}}
+{{- $clientId := .clientId | default .name -}}
+{{- if $clientId }}
+STREAMING_CLIENT_ID: {{ $clientId | quote }}
 {{- end }}
-{{- if hasKey . "cloudeventsSource" }}
-STREAMING_CLOUDEVENTS_SOURCE: {{ .cloudeventsSource | quote }}
+{{- $ceSource := .cloudeventsSource | default .name -}}
+{{- if $ceSource }}
+STREAMING_CLOUDEVENTS_SOURCE: {{ $ceSource | quote }}
 {{- end }}
 {{- end -}}
 {{- end -}}

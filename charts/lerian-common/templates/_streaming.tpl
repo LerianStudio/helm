@@ -28,15 +28,15 @@ Usage (in a component configmap.yaml, BEFORE the extraEnvVars passthrough):
       ) | nindent 2 }}
 
 Inputs (dict):
-  context           (req)  root context ($) — reads global.streaming
-  enabled           (req)  bool — whether to emit the constants
-  name              (opt)  per-app identity; derives STREAMING_CLIENT_ID and
-                           STREAMING_CLOUDEVENTS_SOURCE (both default to it)
-  clientId          (opt)  explicit STREAMING_CLIENT_ID override (else derived from name)
-  cloudeventsSource (opt)  explicit STREAMING_CLOUDEVENTS_SOURCE override (else derived from name)
+  context  (req)  root context ($) — reads global.streaming
+  enabled  (req)  bool — whether to emit the constants
+  name     (opt)  fallback for STREAMING_CLIENT_ID / STREAMING_CLOUDEVENTS_SOURCE
+                  when global.streaming.clientId / .cloudeventsSource are unset
 
 global.streaming (all optional except brokers, which gates emission):
-  brokers, tlsEnabled, saslMechanism, saslUsername
+  brokers, tlsEnabled, saslMechanism, saslUsername,
+  clientId          → STREAMING_CLIENT_ID (else falls back to `name`)
+  cloudeventsSource → STREAMING_CLOUDEVENTS_SOURCE (else falls back to `name`)
 ==============================================================================
 */}}
 {{- define "lerian-common.streaming.env" -}}
@@ -46,12 +46,12 @@ STREAMING_BROKERS: {{ $s.brokers | quote }}
 STREAMING_TLS_ENABLED: {{ $s.tlsEnabled | default false | quote }}
 STREAMING_SASL_MECHANISM: {{ $s.saslMechanism | default "" | quote }}
 STREAMING_SASL_USERNAME: {{ $s.saslUsername | default "" | quote }}
-{{- /* Per-app identity: derive from `name`; `clientId`/`cloudeventsSource` override. */ -}}
-{{- $clientId := .clientId | default .name -}}
+{{- /* Per-app identity: pulled from global.streaming; falls back to `name`. */ -}}
+{{- $clientId := $s.clientId | default .name -}}
 {{- if $clientId }}
 STREAMING_CLIENT_ID: {{ $clientId | quote }}
 {{- end }}
-{{- $ceSource := .cloudeventsSource | default .name -}}
+{{- $ceSource := $s.cloudeventsSource | default .name -}}
 {{- if $ceSource }}
 STREAMING_CLOUDEVENTS_SOURCE: {{ $ceSource | quote }}
 {{- end }}

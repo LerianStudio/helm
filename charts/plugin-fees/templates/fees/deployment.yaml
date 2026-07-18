@@ -58,12 +58,7 @@ spec:
                 key: MONGO_PASSWORD
           {{- end }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
-          - name: "HOST_IP"
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value: "$(HOST_IP):4317"
+          {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 10 }}
           {{- end }}
           {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
           {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}

@@ -263,7 +263,11 @@ fees:
     # -- TTL in seconds for local tenant config cache (0 = disabled)
     MULTI_TENANT_CACHE_TTL_SEC: "120"
     # -- Streaming enable moved to global.streaming.enabled (see the global block).
-    # All STREAMING_* constants derive from global.streaming + lerian-common.streaming.env.
+    # Brokers/TLS/SASL derive from global.streaming. The two keys below are the
+    # optional per-app identity override (default = app name); set them when the org
+    # convention differs (e.g. "midaz-fees" / "lerian.midaz.fees").
+    STREAMING_CLIENT_ID: ""
+    STREAMING_CLOUDEVENTS_SOURCE: ""
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml

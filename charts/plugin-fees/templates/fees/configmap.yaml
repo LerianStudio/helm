@@ -118,16 +118,18 @@ data:
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.fees.ingress))
       )) }}{{ . | nindent 2 }}{{- end }}
 
-  # STREAMING (lib-streaming) — enable trigger from global.streaming.enabled; all
-  # constants come from lerian-common.streaming.env: brokers/TLS/SASL from
-  # global.streaming (env-wide); CLIENT_ID / CLOUDEVENTS_SOURCE derived from the app
-  # name. Override identity via extraEnvVars if ever needed.
+  # STREAMING (lib-streaming) — enable trigger from global.streaming.enabled;
+  # brokers/TLS/SASL from global.streaming (env-wide). CLIENT_ID / CLOUDEVENTS_SOURCE
+  # default to the app name (derived by the helper); override per-app via configmap
+  # when the org convention differs (e.g. "midaz-fees" / "lerian.midaz.fees").
   {{- $streamEnabled := eq (dig "streaming" "enabled" false (.Values.global | default dict) | toString) "true" }}
   STREAMING_ENABLED: {{ $streamEnabled | quote }}
   {{- with (include "lerian-common.streaming.env" (dict
         "context" $
         "enabled" $streamEnabled
         "name" .Values.fees.name
+        "clientId" (.Values.fees.configmap.STREAMING_CLIENT_ID | default "")
+        "cloudeventsSource" (.Values.fees.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "")
       )) }}{{ . | nindent 2 }}{{- end }}
 
   # Extra Env Vars

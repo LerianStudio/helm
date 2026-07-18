@@ -91,8 +91,9 @@ data:
   # AWS
   AWS_REGION: {{ .Values.fees.configmap.AWS_REGION | default "" | quote }}
 
-  # MULTI TENANT — enable trigger from global.multiTenant.enabled (not a configmap knob)
-  {{- $mtEnabled := eq (dig "multiTenant" "enabled" false (.Values.global | default dict) | toString) "true" }}
+  # MULTI TENANT — enable is per-component (.Values.fees.multiTenant.enabled); the
+  # env-wide config (url/redis/...) comes from global.multiTenant via the helper.
+  {{- $mtEnabled := eq (dig "multiTenant" "enabled" false .Values.fees | toString) "true" }}
   MULTI_TENANT_ENABLED: {{ $mtEnabled | quote }}
   {{- with (include "lerian-common.multiTenant.env" (dict
         "context" $
@@ -103,11 +104,11 @@ data:
         "emitEnvironment" true "emitAllowInsecure" true
       )) }}{{ . | nindent 2 }}{{- end }}
 
-  # SERVICE DISCOVERY (lib-service-discovery) — enable trigger from
-  # global.serviceDiscovery.enabled; env-wide constants from global.serviceDiscovery;
-  # identity derived from name/port/namespace. Emitted before extraEnvVars so an
-  # operator can still override any SD_* key.
-  {{- $sdEnabled := eq (dig "serviceDiscovery" "enabled" false (.Values.global | default dict) | toString) "true" }}
+  # SERVICE DISCOVERY (lib-service-discovery) — enable is per-component
+  # (.Values.fees.serviceDiscovery.enabled); env-wide server config from
+  # global.serviceDiscovery; identity derived from name/port/namespace. Emitted
+  # before extraEnvVars so an operator can still override any SD_* key.
+  {{- $sdEnabled := eq (dig "serviceDiscovery" "enabled" false .Values.fees | toString) "true" }}
   SD_ENABLED: {{ $sdEnabled | quote }}
   {{- with (include "lerian-common.serviceDiscovery.env" (dict
         "context" $
@@ -118,15 +119,18 @@ data:
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.fees.ingress))
       )) }}{{ . | nindent 2 }}{{- end }}
 
-  # STREAMING (lib-streaming) — enable trigger from global.streaming.enabled; every
-  # constant (brokers/TLS/SASL + CLIENT_ID / CLOUDEVENTS_SOURCE) is pulled from
-  # global.streaming by the helper. `name` is only the identity fallback.
-  {{- $streamEnabled := eq (dig "streaming" "enabled" false (.Values.global | default dict) | toString) "true" }}
+  # STREAMING (lib-streaming) — enable + identity are per-component
+  # (.Values.fees.streaming.{enabled,clientId,cloudeventsSource}); the env-wide
+  # broker/TLS/SASL config comes from global.streaming via the helper. `name` is the
+  # identity fallback.
+  {{- $streamEnabled := eq (dig "streaming" "enabled" false .Values.fees | toString) "true" }}
   STREAMING_ENABLED: {{ $streamEnabled | quote }}
   {{- with (include "lerian-common.streaming.env" (dict
         "context" $
         "enabled" $streamEnabled
         "name" .Values.fees.name
+        "clientId" (dig "streaming" "clientId" "" .Values.fees)
+        "cloudeventsSource" (dig "streaming" "cloudeventsSource" "" .Values.fees)
       )) }}{{ . | nindent 2 }}{{- end }}
 
   # Extra Env Vars

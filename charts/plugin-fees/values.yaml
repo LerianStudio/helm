@@ -3,14 +3,11 @@
 # Declare variables to be passed into your templates.
 
 global:
-  # -- Shared env-wide config consumed by the lerian-common helpers. Set these once
-  # per environment (umbrella/GitOps). Each helper stays inert until its block is
-  # filled (address/brokers empty = off), so defaults below are a no-op; a component's
-  # own extraEnvVars/configmap value overrides the global default.
-  # -- Service Discovery (lib-service-discovery)
+  # -- Shared env-wide INFRA consumed by the lerian-common helpers. Set once per
+  # environment (umbrella/GitOps). Only env-wide config lives here; per-component
+  # enable + identity live under each component block (.Values.<component>.<feature>).
+  # -- Service Discovery (lib-service-discovery) — env-wide server config
   serviceDiscovery:
-    # -- Enable trigger for lib-service-discovery (emits SD_ENABLED + derives SD_* config)
-    enabled: false
     # -- Discovery server address host:port (e.g. consul.<env>:443). Empty = SD off.
     address: ""
     # -- Use HTTPS to the discovery server
@@ -25,10 +22,9 @@ global:
     internalScheme: http
     # -- Port for the external (ingress) endpoint
     externalPort: 443
-  # -- Streaming (lib-streaming / RedPanda)
+  # -- Streaming (lib-streaming / RedPanda) — env-wide broker/transport config only
+  # (enable + CLIENT_ID/CLOUDEVENTS_SOURCE are per-component, see fees.streaming)
   streaming:
-    # -- Enable trigger for lib-streaming (emits STREAMING_ENABLED + derives STREAMING_* config)
-    enabled: false
     # -- Broker list host:port (e.g. redpanda.<env>:9092). Empty = streaming off.
     brokers: ""
     # -- Enable TLS to the brokers
@@ -37,14 +33,9 @@ global:
     saslMechanism: ""
     # -- SASL username (password/CA are per-component secrets, never here)
     saslUsername: ""
-    # -- STREAMING_CLIENT_ID (else falls back to the chart name)
-    clientId: ""
-    # -- STREAMING_CLOUDEVENTS_SOURCE (else falls back to the chart name)
-    cloudeventsSource: ""
-  # -- Multi-tenant (lib-commons/multitenancy). A component's configmap overrides these.
+  # -- Multi-tenant (lib-commons/multitenancy) — env-wide config only
+  # (enable is per-component, see fees.multiTenant)
   multiTenant:
-    # -- Enable trigger for lib-commons/multitenancy (emits MULTI_TENANT_ENABLED + derives config)
-    enabled: false
     # -- Tenant-manager base URL
     url: ""
     # -- Multi-tenant Redis host
@@ -93,6 +84,21 @@ fees:
   replicaCount: 1
   name: "plugin-fees"
   description: "Plugin Fees for Midaz"
+  # -- Per-component enable + identity for the lerian-common features. Env-wide infra
+  # (broker/consul/tenant-manager addresses) lives in the global.* blocks above.
+  serviceDiscovery:
+    # -- Enable lib-service-discovery for this component (emits SD_ENABLED + SD_* config)
+    enabled: false
+  streaming:
+    # -- Enable lib-streaming for this component (emits STREAMING_ENABLED + config)
+    enabled: false
+    # -- STREAMING_CLIENT_ID for this component (else falls back to fees.name)
+    clientId: ""
+    # -- STREAMING_CLOUDEVENTS_SOURCE for this component (else falls back to fees.name)
+    cloudeventsSource: ""
+  multiTenant:
+    # -- Enable lib-commons/multitenancy for this component (emits MULTI_TENANT_ENABLED + config)
+    enabled: false
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   image:

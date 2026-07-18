@@ -28,10 +28,11 @@ global: {}
   #   tlsEnabled: false      # STREAMING_TLS_ENABLED
   #   saslMechanism: ""      # STREAMING_SASL_MECHANISM (e.g. SCRAM-SHA-256)
   #   saslUsername: ""       # STREAMING_SASL_USERNAME
-  #   clientId: ""           # STREAMING_CLIENT_ID (else falls back to the chart's `name`)
-  #   cloudeventsSource: ""  # STREAMING_CLOUDEVENTS_SOURCE (else falls back to `name`)
-  #   # NOTE: STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT are secrets — set them
-  #   # per component under `.secrets`, never here (they render into the Secret).
+  #   # NOTE: enable + identity (STREAMING_CLIENT_ID / STREAMING_CLOUDEVENTS_SOURCE) are
+  #   # PER-COMPONENT — set them under the component block (.Values.<component>.streaming),
+  #   # not here. Only the env-wide broker/transport config belongs in global.streaming.
+  #   # STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT are secrets — set them per
+  #   # component under `.secrets`, never here (they render into the Secret).
   #
   # -- Multi-tenant (lib-commons/multitenancy). The tenant-manager URL and its
   #    Redis are environment infra, so they belong here too; a component's

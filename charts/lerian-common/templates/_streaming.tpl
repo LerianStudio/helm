@@ -28,15 +28,17 @@ Usage (in a component configmap.yaml, BEFORE the extraEnvVars passthrough):
       ) | nindent 2 }}
 
 Inputs (dict):
-  context  (req)  root context ($) — reads global.streaming
-  enabled  (req)  bool — whether to emit the constants
-  name     (opt)  fallback for STREAMING_CLIENT_ID / STREAMING_CLOUDEVENTS_SOURCE
-                  when global.streaming.clientId / .cloudeventsSource are unset
+  context           (req)  root context ($) — reads global.streaming
+  enabled           (req)  bool — the COMPONENT's enable (per-component, not global)
+  name              (opt)  fallback for the identity keys below
+  clientId          (opt)  per-component STREAMING_CLIENT_ID (else falls back to name)
+  cloudeventsSource (opt)  per-component STREAMING_CLOUDEVENTS_SOURCE (else falls back to name)
 
-global.streaming (all optional except brokers, which gates emission):
-  brokers, tlsEnabled, saslMechanism, saslUsername,
-  clientId          → STREAMING_CLIENT_ID (else falls back to `name`)
-  cloudeventsSource → STREAMING_CLOUDEVENTS_SOURCE (else falls back to `name`)
+enabled + identity are PER-COMPONENT (a multi-component chart passes each component's
+own values). Only the infra below is env-wide.
+
+global.streaming (env-wide; all optional except brokers, which gates emission):
+  brokers, tlsEnabled, saslMechanism, saslUsername
 ==============================================================================
 */}}
 {{- define "lerian-common.streaming.env" -}}
@@ -46,12 +48,14 @@ STREAMING_BROKERS: {{ $s.brokers | quote }}
 STREAMING_TLS_ENABLED: {{ $s.tlsEnabled | default false | quote }}
 STREAMING_SASL_MECHANISM: {{ $s.saslMechanism | default "" | quote }}
 STREAMING_SASL_USERNAME: {{ $s.saslUsername | default "" | quote }}
-{{- /* Per-app identity: pulled from global.streaming; falls back to `name`. */ -}}
-{{- $clientId := $s.clientId | default .name -}}
+{{- /* Per-component identity: caller passes clientId/cloudeventsSource (from its
+       own component values); falls back to `name`. NOT env-wide — a multi-component
+       chart has one global.streaming but distinct identities per component. */ -}}
+{{- $clientId := .clientId | default .name -}}
 {{- if $clientId }}
 STREAMING_CLIENT_ID: {{ $clientId | quote }}
 {{- end }}
-{{- $ceSource := $s.cloudeventsSource | default .name -}}
+{{- $ceSource := .cloudeventsSource | default .name -}}
 {{- if $ceSource }}
 STREAMING_CLOUDEVENTS_SOURCE: {{ $ceSource | quote }}
 {{- end }}

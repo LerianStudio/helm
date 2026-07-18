@@ -37,6 +37,10 @@ global:
     saslMechanism: ""
     # -- SASL username (password/CA are per-component secrets, never here)
     saslUsername: ""
+    # -- STREAMING_CLIENT_ID (else falls back to the chart name)
+    clientId: ""
+    # -- STREAMING_CLOUDEVENTS_SOURCE (else falls back to the chart name)
+    cloudeventsSource: ""
   # -- Multi-tenant (lib-commons/multitenancy). A component's configmap overrides these.
   multiTenant:
     # -- Enable trigger for lib-commons/multitenancy (emits MULTI_TENANT_ENABLED + derives config)
@@ -262,12 +266,8 @@ fees:
     MULTI_TENANT_TIMEOUT: "30"
     # -- TTL in seconds for local tenant config cache (0 = disabled)
     MULTI_TENANT_CACHE_TTL_SEC: "120"
-    # -- Streaming enable moved to global.streaming.enabled (see the global block).
-    # Brokers/TLS/SASL derive from global.streaming. The two keys below are the
-    # optional per-app identity override (default = app name); set them when the org
-    # convention differs (e.g. "midaz-fees" / "lerian.midaz.fees").
-    STREAMING_CLIENT_ID: ""
-    STREAMING_CLOUDEVENTS_SOURCE: ""
+    # -- Streaming moved entirely to global.streaming (enable + brokers/TLS/SASL +
+    # clientId/cloudeventsSource). Nothing streaming-related is declared here.
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml

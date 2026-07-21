@@ -1,9 +1,0 @@
-dependencies:
-- name: mongodb
-  repository: https://charts.bitnami.com/bitnami
-  version: 16.4.0
-- name: valkey
-  repository: https://valkey.io/valkey-helm
-  version: 0.7.4
-digest: sha256:def3a0242b6481c271017af40ec0685770301e0e550979023cd1fc7b3e1712c9
-generated: "2026-07-10T12:46:18.152659-03:00"

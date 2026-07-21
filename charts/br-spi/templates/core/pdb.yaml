@@ -1,1 +1,0 @@
-{{- include "br-spi.componentPDB" (dict "context" . "component" "core") -}}

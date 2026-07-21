@@ -50,10 +50,6 @@ fetcher:
   - changed-files:
       - any-glob-to-any-file: charts/fetcher/**
 
-matcher:
-  - changed-files:
-      - any-glob-to-any-file: charts/matcher/**
-
 pipe:
   - changed-files:
       - any-glob-to-any-file: .github/workflows/**
@@ -61,11 +57,3 @@ pipe:
 doc:
   - changed-files:
       - any-glob-to-any-file: README.md
-
-flowker:
-  - changed-files:
-      - any-glob-to-any-file: charts/flowker/**
-
-underwriter:
-  - changed-files:
-      - any-glob-to-any-file: charts/underwriter/**

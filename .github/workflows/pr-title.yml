@@ -50,9 +50,6 @@ jobs:
             doc
             product-console
             fetcher
-            flowker
-            underwriter
-            matcher
             tracer
             new
             charts

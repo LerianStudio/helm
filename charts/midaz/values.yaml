@@ -295,6 +295,27 @@ ledger:
     RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
     ALLOW_RATELIMIT_DISABLED: ""
     ALLOW_RATELIMIT_FAIL_OPEN: ""
+    # -- CRM module (collapsed into ledger — midaz v4 monorepo). Safe empty defaults.
+    MONGO_CRM_URI: ""
+    MONGO_CRM_HOST: ""
+    MONGO_CRM_NAME: ""
+    MONGO_CRM_USER: ""
+    MONGO_CRM_PORT: ""
+    MONGO_CRM_MAX_POOL_SIZE: ""
+    MONGO_CRM_PARAMETERS: ""
+    KMS_VENDOR: ""
+    # -- Fees module (collapsed into ledger — midaz v4 monorepo). Safe empty defaults.
+    MONGO_FEES_URI: ""
+    MONGO_FEES_HOST: ""
+    MONGO_FEES_NAME: ""
+    MONGO_FEES_USER: ""
+    MONGO_FEES_PORT: ""
+    MONGO_FEES_MAX_POOL_SIZE: ""
+    MONGO_FEES_PARAMETERS: ""
+    # -- Tracer seam (client side); empty TRACER_BASE_URL disables the integration.
+    TRACER_BASE_URL: ""
+    TRACER_TRANSPORT: ""
+    TRACER_TLS_MODE: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -330,6 +351,12 @@ ledger:
     # they are rendered into the ledger Secret (never the ConfigMap).
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
+    # -- Data security + CRM/Fees material (collapsed into ledger — midaz v4
+    # monorepo). Operator-provided; only rendered into the ledger Secret when set.
+    LCRYPTO_HASH_SECRET_KEY: ""
+    LCRYPTO_ENCRYPT_SECRET_KEY: ""
+    MONGO_CRM_PASSWORD: ""
+    MONGO_FEES_PASSWORD: ""
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
     create: true

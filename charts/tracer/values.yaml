@@ -230,6 +230,11 @@ tracer:
     CLEANUP_WORKER_ENABLED: "false"
     CLEANUP_INTERVAL_HOURS: "24"
 
+    # Reservation Reaper + Rule Sync (midaz v4 monorepo)
+    RESERVATION_REAPER_ENABLED: "false"
+    RESERVATION_REAPER_INTERVAL_SECONDS: "30"
+    RULE_SYNC_POLL_INTERVAL_SECONDS: "10"
+
     # Multi-Tenant
     # -- Enable multi-tenant mode. When true, the following fields are required:
     #    MULTI_TENANT_URL, MULTI_TENANT_REDIS_HOST, secrets.MULTI_TENANT_SERVICE_API_KEY.

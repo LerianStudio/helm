@@ -250,6 +250,36 @@ data:
   ALLOW_RATELIMIT_DISABLED: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
   ALLOW_RATELIMIT_FAIL_OPEN: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
 
+  # =============================================================================
+  # CRM MODULE (collapsed into ledger — midaz v4 monorepo)
+  # =============================================================================
+  MONGO_CRM_URI: {{ .Values.ledger.configmap.MONGO_CRM_URI | default "mongodb" | quote }}
+  MONGO_CRM_HOST: {{ .Values.ledger.configmap.MONGO_CRM_HOST | default "" | quote }}
+  MONGO_CRM_NAME: {{ .Values.ledger.configmap.MONGO_CRM_NAME | default "" | quote }}
+  MONGO_CRM_USER: {{ .Values.ledger.configmap.MONGO_CRM_USER | default "" | quote }}
+  MONGO_CRM_PORT: {{ .Values.ledger.configmap.MONGO_CRM_PORT | default "27017" | quote }}
+  MONGO_CRM_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_CRM_MAX_POOL_SIZE | default "20" | quote }}
+  MONGO_CRM_PARAMETERS: {{ .Values.ledger.configmap.MONGO_CRM_PARAMETERS | default "" | quote }}
+  KMS_VENDOR: {{ .Values.ledger.configmap.KMS_VENDOR | default "none" | quote }}
+
+  # =============================================================================
+  # FEES MODULE (collapsed into ledger — midaz v4 monorepo)
+  # =============================================================================
+  MONGO_FEES_URI: {{ .Values.ledger.configmap.MONGO_FEES_URI | default "mongodb" | quote }}
+  MONGO_FEES_HOST: {{ .Values.ledger.configmap.MONGO_FEES_HOST | default "" | quote }}
+  MONGO_FEES_NAME: {{ .Values.ledger.configmap.MONGO_FEES_NAME | default "" | quote }}
+  MONGO_FEES_USER: {{ .Values.ledger.configmap.MONGO_FEES_USER | default "" | quote }}
+  MONGO_FEES_PORT: {{ .Values.ledger.configmap.MONGO_FEES_PORT | default "27017" | quote }}
+  MONGO_FEES_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_FEES_MAX_POOL_SIZE | default "100" | quote }}
+  MONGO_FEES_PARAMETERS: {{ .Values.ledger.configmap.MONGO_FEES_PARAMETERS | default "" | quote }}
+
+  # =============================================================================
+  # TRACER SEAM (client side; empty TRACER_BASE_URL disables the integration)
+  # =============================================================================
+  TRACER_BASE_URL: {{ .Values.ledger.configmap.TRACER_BASE_URL | default "" | quote }}
+  TRACER_TRANSPORT: {{ .Values.ledger.configmap.TRACER_TRANSPORT | default "rest" | quote }}
+  TRACER_TLS_MODE: {{ .Values.ledger.configmap.TRACER_TLS_MODE | default "" | quote }}
+
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -54,6 +54,11 @@ data:
   CLEANUP_WORKER_ENABLED: {{ .Values.tracer.configmap.CLEANUP_WORKER_ENABLED | default "false" | quote }}
   CLEANUP_INTERVAL_HOURS: {{ .Values.tracer.configmap.CLEANUP_INTERVAL_HOURS | default "24" | quote }}
 
+  # Reservation Reaper + Rule Sync (midaz v4 monorepo)
+  RESERVATION_REAPER_ENABLED: {{ .Values.tracer.configmap.RESERVATION_REAPER_ENABLED | default "false" | quote }}
+  RESERVATION_REAPER_INTERVAL_SECONDS: {{ .Values.tracer.configmap.RESERVATION_REAPER_INTERVAL_SECONDS | default "30" | quote }}
+  RULE_SYNC_POLL_INTERVAL_SECONDS: {{ .Values.tracer.configmap.RULE_SYNC_POLL_INTERVAL_SECONDS | default "10" | quote }}
+
   # Multi-Tenant
   MULTI_TENANT_ENABLED: {{ .Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
   {{- if eq (.Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}

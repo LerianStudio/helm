@@ -266,6 +266,36 @@ data:
         "cloudeventsSource" (dig "streaming" "cloudeventsSource" "" .Values.ledger)
       )) }}{{ . | nindent 2 }}{{- end }}
 
+  # =============================================================================
+  # CRM MODULE (collapsed into ledger — midaz v4 monorepo)
+  # =============================================================================
+  MONGO_CRM_URI: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_URI" "params" .Values.ledger.crm "field" "uri" "default" "mongodb") | quote }}
+  MONGO_CRM_HOST: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_HOST" "params" .Values.ledger.crm "field" "host" "default" "") | quote }}
+  MONGO_CRM_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_NAME" "params" .Values.ledger.crm "field" "name" "default" "") | quote }}
+  MONGO_CRM_USER: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_USER" "params" .Values.ledger.crm "field" "user" "default" "") | quote }}
+  MONGO_CRM_PORT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_PORT" "params" .Values.ledger.crm "field" "port" "default" "27017") | quote }}
+  MONGO_CRM_MAX_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_MAX_POOL_SIZE" "params" .Values.ledger.crm "field" "maxPoolSize" "default" "20") | quote }}
+  MONGO_CRM_PARAMETERS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_PARAMETERS" "params" .Values.ledger.crm "field" "parameters" "default" "") | quote }}
+  KMS_VENDOR: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "KMS_VENDOR" "params" .Values.ledger.kms "field" "vendor" "default" "none") | quote }}
+
+  # =============================================================================
+  # FEES MODULE (collapsed into ledger — midaz v4 monorepo)
+  # =============================================================================
+  MONGO_FEES_URI: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_URI" "params" .Values.ledger.fees "field" "uri" "default" "mongodb") | quote }}
+  MONGO_FEES_HOST: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_HOST" "params" .Values.ledger.fees "field" "host" "default" "") | quote }}
+  MONGO_FEES_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_NAME" "params" .Values.ledger.fees "field" "name" "default" "") | quote }}
+  MONGO_FEES_USER: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_USER" "params" .Values.ledger.fees "field" "user" "default" "") | quote }}
+  MONGO_FEES_PORT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_PORT" "params" .Values.ledger.fees "field" "port" "default" "27017") | quote }}
+  MONGO_FEES_MAX_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_MAX_POOL_SIZE" "params" .Values.ledger.fees "field" "maxPoolSize" "default" "100") | quote }}
+  MONGO_FEES_PARAMETERS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_PARAMETERS" "params" .Values.ledger.fees "field" "parameters" "default" "") | quote }}
+
+  # =============================================================================
+  # TRACER SEAM (client side; empty TRACER_BASE_URL disables the integration)
+  # =============================================================================
+  TRACER_BASE_URL: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_BASE_URL" "params" .Values.ledger.tracer "field" "baseUrl" "default" "") | quote }}
+  TRACER_TRANSPORT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_TRANSPORT" "params" .Values.ledger.tracer "field" "transport" "default" "rest") | quote }}
+  TRACER_TLS_MODE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_TLS_MODE" "params" .Values.ledger.tracer "field" "tlsMode" "default" "") | quote }}
+
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

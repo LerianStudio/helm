@@ -362,6 +362,32 @@ ledger:
     # clientId: ""                     # → STREAMING_CLIENT_ID (per-app identity)
     # cloudeventsSource: ""            # → STREAMING_CLOUDEVENTS_SOURCE
 
+  # --- v4 collapsed modules (ledger image v4 serves crm + fees inline) --------
+  # Empty host by default → inert on v3 images; set them when running the v4 ledger.
+  # Passwords → ledger.secrets.{MONGO_CRM_PASSWORD, MONGO_FEES_PASSWORD}.
+  crm:                                 # CRM module (Mongo)
+    uri: "mongodb"                     # → MONGO_CRM_URI
+    host: ""                           # → MONGO_CRM_HOST
+    name: ""                           # → MONGO_CRM_NAME
+    user: ""                           # → MONGO_CRM_USER
+    port: "27017"                      # → MONGO_CRM_PORT
+    maxPoolSize: "20"                  # → MONGO_CRM_MAX_POOL_SIZE
+    parameters: ""                     # → MONGO_CRM_PARAMETERS
+  kms:
+    vendor: "none"                     # → KMS_VENDOR (crm envelope encryption; none|vault|...)
+  fees:                                # Fees module (Mongo)
+    uri: "mongodb"                     # → MONGO_FEES_URI
+    host: ""                           # → MONGO_FEES_HOST
+    name: ""                           # → MONGO_FEES_NAME
+    user: ""                           # → MONGO_FEES_USER
+    port: "27017"                      # → MONGO_FEES_PORT
+    maxPoolSize: "100"                 # → MONGO_FEES_MAX_POOL_SIZE
+    parameters: ""                     # → MONGO_FEES_PARAMETERS
+  tracer:                              # Tracer client seam (empty baseUrl = disabled)
+    baseUrl: ""                        # → TRACER_BASE_URL
+    transport: "rest"                  # → TRACER_TRANSPORT
+    tlsMode: ""                        # → TRACER_TLS_MODE
+
   # -- ConfigMap for environment variables and configurations (raw/legacy format;
   #    still fully supported and takes precedence over the productized params above).
   # @default -- templates/ledger/configmap.yaml
@@ -412,6 +438,13 @@ ledger:
     # they are rendered into the ledger Secret (never the ConfigMap).
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
+    # -- v4 collapsed modules (ledger image v4). Operator-provided; emitted only when set.
+    # LCRYPTO_* = crm crypto material; MONGO_CRM/FEES_PASSWORD authenticate the collapsed
+    # CRM/Fees Mongo connections (ledger.crm.* / ledger.fees.*).
+    LCRYPTO_HASH_SECRET_KEY: ""
+    LCRYPTO_ENCRYPT_SECRET_KEY: ""
+    MONGO_CRM_PASSWORD: ""
+    MONGO_FEES_PASSWORD: ""
   serviceAccount:
     # -- Specifies whether a ServiceAccount should be created
     create: true

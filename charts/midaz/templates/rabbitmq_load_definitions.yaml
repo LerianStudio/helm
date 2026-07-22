@@ -1,3 +1,7 @@
+{{- /* Only the bundled RabbitMQ mounts this (rabbitmq.extraSecrets). The external
+       bootstrap job uses its own configmap, so skip this Secret when the bundled
+       broker is disabled (avoids an orphan Secret in external/umbrella mode). */}}
+{{- if .Values.rabbitmq.enabled }}
 kind: Secret
 apiVersion: v1
 metadata:
@@ -5,3 +9,4 @@ metadata:
 data:
   load_definition.json: |
     {{ .Files.Get "files/rabbitmq/load_definitions.json" | b64enc | nindent 4 }}
+{{- end }}

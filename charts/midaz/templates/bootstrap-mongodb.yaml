@@ -1,5 +1,7 @@
-{{- if .Values.global.externalMongoDefinitions.enabled }}
-{{- $creds := .Values.global.externalMongoDefinitions.midazCredentials -}}
+{{/* Prefer subchart-scoped midaz.externalMongoDefinitions; fall back to global for standalone backward-compat. */}}
+{{- $mongoDef := mergeOverwrite (deepCopy (.Values.global.externalMongoDefinitions | default dict)) (.Values.externalMongoDefinitions | default dict) -}}
+{{- if $mongoDef.enabled }}
+{{- $creds := $mongoDef.midazCredentials -}}
 {{- $rolesJSON := toJson $creds.roles -}}
 apiVersion: batch/v1
 kind: Job
@@ -19,9 +21,9 @@ spec:
         image: busybox:1.37
         env:
         - name: DB_HOST
-          value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}
+          value: {{ $mongoDef.connection.host | quote }}
         - name: DB_PORT
-          value: {{ .Values.global.externalMongoDefinitions.connection.port | quote }}
+          value: {{ $mongoDef.connection.port | quote }}
         command:
         - /bin/sh
         - -c
@@ -44,26 +46,26 @@ spec:
         image: mongo:8
         env:
         - name: DB_HOST
-          value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}
+          value: {{ $mongoDef.connection.host | quote }}
         - name: DB_PORT
-          value: {{ .Values.global.externalMongoDefinitions.connection.port | quote }}
+          value: {{ $mongoDef.connection.port | quote }}
         - name: MONGO_ROOT_USER
-          {{- if .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name }}
+          {{- if $mongoDef.mongoAdminLogin.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name | quote }}
+              name: {{ $mongoDef.mongoAdminLogin.useExistingSecret.name | quote }}
               key: MONGO_ROOT_USER
           {{- else }}
-          value: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.username | quote }}
+          value: {{ $mongoDef.mongoAdminLogin.username | quote }}
           {{- end }}
         - name: MONGO_ROOT_PASSWORD
-          {{- if .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name }}
+          {{- if $mongoDef.mongoAdminLogin.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name | quote }}
+              name: {{ $mongoDef.mongoAdminLogin.useExistingSecret.name | quote }}
               key: MONGO_ROOT_PASSWORD
           {{- else }}
-          value: {{ .Values.global.externalMongoDefinitions.mongoAdminLogin.password | quote }}
+          value: {{ $mongoDef.mongoAdminLogin.password | quote }}
           {{- end }}
         - name: MONGO_APP_USER
           {{- if $creds.useExistingSecret.name }}

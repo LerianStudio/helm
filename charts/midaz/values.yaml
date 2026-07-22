@@ -224,83 +224,103 @@ ledger:
   #         values:
   #         - midaz
 
-  # -- ConfigMap for environment variables and configurations
+  # ===========================================================================
+  # PRODUCTIZED CONFIG — clean, grouped params for the knobs clients tune most.
+  # Backward-compatible: the raw `configmap.<KEY>` below still works and OVERRIDES
+  # these (precedence: configmap.<KEY> > these params > default). Defaults here
+  # match the legacy template defaults, so existing installs render unchanged.
+  # (auth & telemetry are the cross-product contracts global.auth / global.observability.)
+  # ===========================================================================
+  env: "production"           # → ENV_NAME
+  logLevel: "debug"           # → LOG_LEVEL (legacy default; set "info" for production)
+  allowInsecureTls: "true"    # → ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)
+  accounting:
+    accountTypeValidation: ""        # → ACCOUNT_TYPE_VALIDATION ("<organizationId>:<ledgerId>")
+    transactionRouteValidation: ""   # → TRANSACTION_ROUTE_VALIDATION
+  rateLimit:                  # three-tier, Redis-backed → lerian-common.rateLimit.env
+    enabled: true             # → RATE_LIMIT_ENABLED
+    max: "500"                # → RATE_LIMIT_MAX
+    windowSec: "60"           # → RATE_LIMIT_WINDOW_SEC
+    aggressiveMax: "100"      # → AGGRESSIVE_RATE_LIMIT_MAX
+    aggressiveWindowSec: "60" # → AGGRESSIVE_RATE_LIMIT_WINDOW_SEC
+    relaxedMax: "1000"        # → RELAXED_RATE_LIMIT_MAX
+    relaxedWindowSec: "60"    # → RELAXED_RATE_LIMIT_WINDOW_SEC
+    redisTimeoutMs: "500"     # → RATE_LIMIT_REDIS_TIMEOUT_MS
+  audit:
+    enabled: false            # → AUDIT_LOG_ENABLED
+  bulkRecorder:
+    enabled: true             # → BULK_RECORDER_ENABLED
+    size: "0"                 # → BULK_RECORDER_SIZE
+  balanceSync:
+    enabled: false            # → BALANCE_SYNC_WORKER_ENABLED
+    maxWorkers: "5"           # → BALANCE_SYNC_MAX_WORKERS
+  pagination:
+    maxMonthRange: "3"        # → MAX_PAGINATION_MONTH_DATE_RANGE
+  # -- Datastores (per module): db identity + connection pool. Host/user/port/ssl/params
+  #    come from the global.datastores mask (shared) or ledger.datastores (dedicated).
+  database:                   # PostgreSQL, per module
+    onboarding:
+      name: "onboarding"      # → DB_ONBOARDING_NAME
+      replicaName: "onboarding" # → DB_ONBOARDING_REPLICA_NAME
+      maxOpenConns: "3000"    # → DB_ONBOARDING_MAX_OPEN_CONNS
+      maxIdleConns: "3000"    # → DB_ONBOARDING_MAX_IDLE_CONNS
+    transaction:
+      name: "transaction"     # → DB_TRANSACTION_NAME
+      replicaName: "transaction" # → DB_TRANSACTION_REPLICA_NAME
+      maxOpenConns: "3000"    # → DB_TRANSACTION_MAX_OPEN_CONNS
+      maxIdleConns: "3000"    # → DB_TRANSACTION_MAX_IDLE_CONNS
+  mongo:                      # MongoDB, per module
+    onboarding:
+      uri: "mongodb"          # → MONGO_ONBOARDING_URI
+      name: "onboarding"      # → MONGO_ONBOARDING_NAME
+      maxPoolSize: "1000"     # → MONGO_ONBOARDING_MAX_POOL_SIZE
+    transaction:
+      uri: "mongodb"          # → MONGO_TRANSACTION_URI
+      name: "transaction"     # → MONGO_TRANSACTION_NAME
+      maxPoolSize: "1000"     # → MONGO_TRANSACTION_MAX_POOL_SIZE
+  broker:                     # RabbitMQ. Host → global.datastores.broker; password → ledger.secrets.
+    uri: "amqp"               # → RABBITMQ_URI
+    portHost: "5672"          # → RABBITMQ_PORT_HOST
+    portAmqp: "15672"         # → RABBITMQ_PORT_AMQP
+    defaultUser: "transaction" # → RABBITMQ_DEFAULT_USER
+    consumerUser: "consumer"  # → RABBITMQ_CONSUMER_USER
+    transactionAsync: "false" # → RABBITMQ_TRANSACTION_ASYNC
+    workers: "5"              # → RABBITMQ_NUMBERS_OF_WORKERS
+    prefetch: "10"            # → RABBITMQ_NUMBERS_OF_PREFETCH
+  multiTenant:
+    enabled: false            # per-product knob → MULTI_TENANT_ENABLED. The env-wide MT
+                              # config (url / redis / circuit-breaker) comes from
+                              # global.multiTenant via lerian-common.multiTenant.env;
+                              # per-key override via ledger.configmap.MULTI_TENANT_*.
+                              # secrets → ledger.secrets.MULTI_TENANT_{SERVICE_API_KEY,REDIS_PASSWORD}
+  serviceDiscovery:
+    enabled: false            # → SD_ENABLED. Server config from global.serviceDiscovery (inert until set).
+  streaming:
+    enabled: false            # → STREAMING_ENABLED. Broker/SASL/TLS from global.streaming (inert until set).
+    # clientId: ""            # → STREAMING_CLIENT_ID (per-app identity)
+    # cloudeventsSource: ""   # → STREAMING_CLOUDEVENTS_SOURCE
+
+  # -- ConfigMap for environment variables and configurations (raw/legacy format;
+  #    still fully supported and takes precedence over the productized params above).
   # @default -- templates/ledger/configmap.yaml
-  configmap:
-    ALLOW_INSECURE_TLS: "true"
-    # -- Otel default configuration
-    ENABLE_TELEMETRY: "true"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""
-    # -- Accounting config
-    ACCOUNT_TYPE_VALIDATION: ""
-    TRANSACTION_ROUTE_VALIDATION: ""
-    # -- PostgreSQL Onboarding module
-    DB_ONBOARDING_HOST: "midaz-postgresql-primary"
-    DB_ONBOARDING_USER: "midaz"
-    DB_ONBOARDING_NAME: "onboarding"
-    DB_ONBOARDING_PORT: "5432"
-    DB_ONBOARDING_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_ONBOARDING_REPLICA_USER: "midaz"
-    DB_ONBOARDING_REPLICA_NAME: "onboarding"
-    DB_ONBOARDING_REPLICA_PORT: "5432"
-    # -- MongoDB Onboarding module
-    MONGO_ONBOARDING_URI: "mongodb"
-    MONGO_ONBOARDING_HOST: "midaz-mongodb"
-    MONGO_ONBOARDING_NAME: "onboarding"
-    MONGO_ONBOARDING_USER: "midaz"
-    MONGO_ONBOARDING_PORT: "27017"
-    # -- PostgreSQL Transaction module
-    DB_TRANSACTION_HOST: "midaz-postgresql-primary"
-    DB_TRANSACTION_USER: "midaz"
-    DB_TRANSACTION_NAME: "transaction"
-    DB_TRANSACTION_PORT: "5432"
-    DB_TRANSACTION_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_TRANSACTION_REPLICA_USER: "midaz"
-    DB_TRANSACTION_REPLICA_NAME: "transaction"
-    DB_TRANSACTION_REPLICA_PORT: "5432"
-    # -- MongoDB Transaction module
-    MONGO_TRANSACTION_URI: "mongodb"
-    MONGO_TRANSACTION_HOST: "midaz-mongodb"
-    MONGO_TRANSACTION_NAME: "transaction"
-    MONGO_TRANSACTION_USER: "midaz"
-    MONGO_TRANSACTION_PORT: "27017"
-    # -- Redis (shared)
-    REDIS_HOST: "midaz-valkey-primary:6379"
-    # -- RabbitMQ configuration
-    RABBITMQ_URI: "amqp"
-    RABBITMQ_HOST: "midaz-rabbitmq"
-    RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672"
-    RABBITMQ_DEFAULT_USER: "transaction"
-    RABBITMQ_CONSUMER_USER: "consumer"
-    RABBITMQ_TRANSACTION_ASYNC: "false"
-    # -- Audit
-    AUDIT_LOG_ENABLED: "false"
-    # -- Balance Sync Worker
-    BALANCE_SYNC_WORKER_ENABLED: "false"
-    BALANCE_SYNC_MAX_WORKERS: "5"
-    # -- Rate Limiting - Three-tier system with Redis backend
-    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+  configmap: {}
+    # -- Raw env override (advanced escape hatch). EMPTY by default — everything a
+    #    client tunes is a clean param above, and connection host/user/port/ssl/params
+    #    come from the global.datastores mask. Any key you set here WINS over the
+    #    productized params + mask (full backward-compatibility) — e.g.
+    #    ENABLE_TELEMETRY, PLUGIN_AUTH_HOST, DB_ONBOARDING_HOST, REDIS_HOST,
+    #    RABBITMQ_HOST, MONGO_ONBOARDING_PARAMETERS, ALLOW_RATELIMIT_DISABLED,
+    #    SERVER_PORT, SWAGGER_*, REDIS_* tuning, RABBITMQ_CIRCUIT_BREAKER_*, ...
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
   # -- Extra environment variables
   extraEnvVars: []
-  # -- Secrets for storing sensitive data
+  # -- Secrets for storing sensitive data. Three modes:
+  #   1. bundled       → passwords single-source from the Bitnami subchart Secrets (leave "").
+  #   2. managed + ESO → useExistingSecret: true + existingSecretName (External Secrets / Vault);
+  #                      this whole block is skipped — set nothing here.
+  #   3. managed inline → set the per-key password below (EXTERNAL backend, no existingSecret).
   # @default -- templates/ledger/secrets.yaml
   secrets:
     # -- Onboarding module passwords.
@@ -458,34 +478,28 @@ crm:
   #         values:
   #         - midaz
 
+  # -- Productized config (raw configmap.<KEY> still overrides = backward-compat).
+  env: "development"          # → ENV_NAME
+  logLevel: "debug"           # → LOG_LEVEL
+  allowInsecureTls: "true"    # → ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)
+  mongo:                      # MongoDB. Host/user/port/params → global.datastores.mongo
+    uri: "mongodb"            # → MONGO_URI
+    name: "crm"               # → MONGO_NAME
+    maxPoolSize: "1000"       # → MONGO_MAX_POOL_SIZE
+  multiTenant:
+    enabled: false            # → MULTI_TENANT_ENABLED
+  serviceDiscovery:
+    enabled: false            # → SD_ENABLED (config from global.serviceDiscovery, inert until set)
+  streaming:
+    enabled: false            # → STREAMING_ENABLED (config from global.streaming, inert until set)
+
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/crm/configmap.yaml
-  configmap:
-    ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    # -- MongoDB configuration
-    MONGO_HOST: "midaz-mongodb"
-    MONGO_NAME: "crm"
-    MONGO_PORT: "27017"
-    MONGO_USER: "midaz"
-    # -- Rate Limiting - Three-tier system with Redis backend
-    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+  configmap: {}
+    # -- Raw env override (advanced escape hatch). EMPTY by default — everything a
+    #    client tunes is a clean param above, connection comes from global.datastores.
+    #    Any key set here WINS over the params + mask — e.g. PLUGIN_AUTH_ADDRESS,
+    #    MONGO_HOST, MONGO_PARAMETERS, SERVER_PORT, SWAGGER_*, APPLICATION_NAME, ...
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -528,27 +542,55 @@ grafana:
     #  - secretName: chart-example-tls
     #  hosts:
     #      - chart-example.local
+# =============================================================================
+# INFRA / DATASTORES — postgresql · mongodb · valkey · rabbitmq
+# =============================================================================
+# Each datastore runs in one of TWO modes:
+#
+#   BUNDLED  (default) — the chart deploys the datastore as a subchart. Tune the
+#            COMMON knobs marked below: enabled, storage size, resources, replicas,
+#            image. Passwords single-source from the subchart Secret (leave
+#            ledger.secrets.* empty). Best for dev / small / self-contained installs.
+#
+#   MANAGED / EXTERNAL — use a managed service (AWS RDS/Aurora · DocumentDB ·
+#            ElastiCache · Amazon MQ) or any host you run yourself. Recipe:
+#              1. turn the subchart OFF:   <datastore>.enabled: false
+#                 (or keep it deployed but consumed externally: .external: true)
+#              2. point the app at the host via the connection mask (shared across
+#                 products):  global.datastores.<type>.{host,replicaHost,user,port,ssl,params}
+#                 — or per-product: midaz.<component>.datastores.<type>.*
+#              3. supply the password:  ledger.secrets.<KEY>
+#                 or ledger.existingSecretName (+ useExistingSecret: true)
+#              4. (optional) auto-create role/db on the managed host at deploy time:
+#                 externalPostgresDefinitions / externalMongoDefinitions /
+#                 externalRabbitmqDefinitions (see values above). Skip if you
+#                 provision users/dbs via Terraform / the provider console.
+#
+# Backward-compatible: every subchart key below is the raw upstream value and still
+# works verbatim. The COMMON markers just flag what most clients actually tune.
+# =============================================================================
 valkey:
   # Valkey is used to handle scenarios where real-time performance and fast data retrieval are essential.
-  # This component is responsible for providing an in-memory data store
-  enabled: true
+  # This component is responsible for providing an in-memory data store.
+  # MANAGED (ElastiCache/Redis): enabled:false + global.datastores.redis.host + ledger.secrets.REDIS_PASSWORD
+  enabled: true             # -- COMMON: bundled on/off (false → use managed Redis)
+  external: false           # -- COMMON: true → deployed but consumed as external (secrets from app side)
   global:
     security:
       allowInsecureImages: true
-  image:
+  image:                      # -- COMMON: override for arm64 / air-gapped registries
     repository: bitnamisecure/valkey
     tag: "latest"
-  external: false
   architecture: standalone
   auth:
     enabled: true
-    password: ""
+    password: ""              # -- bundled password (leave "" → auto-generated in the subchart Secret)
     username: midaz
   primary:
     kind: Deployment
-    resourcesPreset: "medium"
+    resourcesPreset: "medium" # -- COMMON: resource sizing (nano|micro|small|medium|large|xlarge)
     persistence:
-      enabled: false
+      enabled: false          # -- COMMON: true + size for a durable cache (default: in-memory only)
     extraFlags:
       - "--maxmemory 640mb" # Controls the memory usage limit to prevent OOM (never leave this unset).
       - "--maxmemory-policy allkeys-lru" # Eviction policy when memory limit is reached (LRU works well for caching). Smart eviction strategy for rotating cache.
@@ -556,18 +598,20 @@ valkey:
       - "--maxclients 10000" # Supports a large number of simultaneous connections
 postgresql:
   # PostgreSQL is the backbone of Midaz for managing structured data that demands transactional reliability and consistency.
-  # This component is responsible for providing a robust relational database
-  # For more details, refer to the documentation:
+  # This component is responsible for providing a robust relational database.
   # https://docs.lerian.studio/docs/midaz-components#why-postgresql
-  enabled: true
+  # MANAGED (RDS/Aurora): enabled:false + global.datastores.postgres.{host,replicaHost,user,port,ssl}
+  #   + ledger.secrets.DB_*_PASSWORD (or ledger.existingSecretName). Auto-create the
+  #   `midaz` role/db on RDS at deploy: externalPostgresDefinitions (see values above).
+  enabled: true             # -- COMMON: bundled on/off (false → use managed PostgreSQL)
+  external: false           # -- COMMON: true → deployed but consumed as external
   global:
     security:
       allowInsecureImages: true
-  image:
+  image:                    # -- COMMON: override for arm64 / air-gapped registries
     repository: bitnamisecure/postgresql
     tag: "latest"
-  external: false
-  architecture: replication
+  architecture: replication # -- COMMON: replication (primary+replica) | standalone
   replication:
     numSynchronousReplicas: 1
   auth:
@@ -592,8 +636,8 @@ postgresql:
         mountPath: /docker-entrypoint-initdb.d/init.sql
         subPath: init.sql
     persistence:
-      size: 8Gi
-    resourcesPreset: large
+      size: 8Gi               # -- COMMON: primary disk size
+    resourcesPreset: large    # -- COMMON: resource sizing (nano|micro|small|medium|large|xlarge)
     extendedConfiguration: |
       shared_buffers = 2GB
       max_wal_senders = 20
@@ -614,10 +658,10 @@ postgresql:
         value: "5"
   readReplicas:
     name: replication
-    replicaCount: 1
+    replicaCount: 1           # -- COMMON: number of read replicas
     persistence:
-      size: 8Gi
-    resourcesPreset: large
+      size: 8Gi               # -- COMMON: replica disk size
+    resourcesPreset: large    # -- COMMON: replica resource sizing
     extendedConfiguration: |
       shared_buffers = 2GB
       max_wal_senders = 20
@@ -638,28 +682,36 @@ postgresql:
         value: "5"
 mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.
-  enabled: true
+  # MANAGED (DocumentDB): enabled:false + global.datastores.mongo.{host,user,port,params}
+  #   + ledger.secrets.MONGO_*_PASSWORD (or ledger.existingSecretName). Auto-create the
+  #   app user on the managed host at deploy: externalMongoDefinitions (see values above).
+  enabled: true             # -- COMMON: bundled on/off (false → use managed MongoDB/DocumentDB)
+  external: false           # -- COMMON: true → deployed but consumed as external
   global:
     security:
       allowInsecureImages: true
-  image:
+  image:                    # -- COMMON: override for arm64 / air-gapped registries
     repository: bitnamisecure/mongodb
     tag: "latest"
-  external: false
   auth:
     enabled: true
     rootUser: midaz
-    rootPassword: ""
-  resourcesPreset: "medium"
+    rootPassword: ""        # -- bundled password (leave "" → auto-generated in the subchart Secret)
+  resourcesPreset: "medium" # -- COMMON: resource sizing (nano|micro|small|medium|large|xlarge)
   persistence:
-    size: 8Gi
+    size: 8Gi               # -- COMMON: disk size
 rabbitmq:
-  enabled: true
-  image:
+  # MANAGED (Amazon MQ / external broker): enabled:false + global.datastores.broker.host
+  #   + ledger.secrets.{RABBITMQ_DEFAULT_PASS,RABBITMQ_CONSUMER_PASS}. Declare vhost/users/
+  #   queues on the managed broker at deploy: externalRabbitmqDefinitions (see values above).
+  # NOTE: groundhog2k chart (multi-arch), NOT Bitnami — schema differs from the datastores above.
+  enabled: true             # -- COMMON: bundled on/off (false → use managed broker)
+  external: false           # -- COMMON: true → deployed but consumed as external
+  image:                    # -- COMMON: image tag
     tag: "3.13.6"
   persistence:
-    size: 8Gi
-  resources:
+    size: 8Gi               # -- COMMON: disk size
+  resources:                # -- COMMON: requests/limits (groundhog2k uses explicit resources, not presets)
     requests:
       cpu: 250m
       memory: 512Mi

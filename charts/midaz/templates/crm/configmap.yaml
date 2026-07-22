@@ -7,8 +7,8 @@ metadata:
     {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
 data:
   # -- Default Environment variables for CRM
-  ALLOW_INSECURE_TLS: {{ .Values.crm.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
-  ENV_NAME: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ALLOW_INSECURE_TLS" "params" .Values.crm "field" "allowInsecureTls" "default" "true") | quote }}
+  ENV_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENV_NAME" "params" .Values.crm "field" "env" "default" "development") | quote }}
 
   # APP
   APPLICATION_NAME: {{ .Values.crm.configmap.APPLICATION_NAME | default "crm" | quote }}
@@ -17,13 +17,13 @@ data:
   VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
 
   # Mongo DB
-  MONGO_URI: {{ .Values.crm.configmap.MONGO_URI | default "mongodb" | quote }}
-  MONGO_HOST: {{ .Values.crm.configmap.MONGO_HOST | default "midaz-mongodb" | quote }}
-  MONGO_PORT: {{ .Values.crm.configmap.MONGO_PORT | default "27017" | quote }}
-  MONGO_NAME: {{ .Values.crm.configmap.MONGO_NAME | default "crm" | quote }}
-  MONGO_USER: {{ .Values.crm.configmap.MONGO_USER | default "midaz" | quote }}
-  MONGO_MAX_POOL_SIZE: {{ .Values.crm.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_PARAMETERS: {{ .Values.crm.configmap.MONGO_PARAMETERS | default "" | quote }}
+  MONGO_URI: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "MONGO_URI" "params" .Values.crm.mongo "field" "uri" "default" "mongodb") | quote }}
+  MONGO_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.crm.configmap "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.crm.configmap "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
+  MONGO_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "MONGO_NAME" "params" .Values.crm.mongo "field" "name" "default" "crm") | quote }}
+  MONGO_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.crm.configmap "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "midaz") | quote }}
+  MONGO_MAX_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "MONGO_MAX_POOL_SIZE" "params" .Values.crm.mongo "field" "maxPoolSize" "default" "1000") | quote }}
+  MONGO_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.crm.configmap "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") | quote }}
   MONGO_TLS_CA_CERT: {{ .Values.crm.configmap.MONGO_TLS_CA_CERT | default "" | quote }}
 
   # SWAGGER
@@ -37,7 +37,7 @@ data:
   SWAGGER_RIGHT_DELIMITER: {{ .Values.crm.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
 
   # LOG LEVEL
-  LOG_LEVEL: {{ .Values.crm.configmap.LOG_LEVEL | default "debug" | quote }}
+  LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "LOG_LEVEL" "params" .Values.crm "field" "logLevel" "default" "debug") | quote }}
 
   # OPEN TELEMETRY
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.crm.configmap.OTEL_RESOURCE_SERVICE_NAME | default "midaz-crm" | quote }}
@@ -45,15 +45,34 @@ data:
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.crm.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.crm.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana:4317" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.crm.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+  {{- include "lerian-common.otel.env" (dict "context" $ "configmap" .Values.crm.configmap "enabledDefault" "true") | nindent 2 }}
 
   # AUTH
-  PLUGIN_AUTH_ADDRESS: {{ .Values.crm.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-auth" | quote }}
-  PLUGIN_AUTH_ENABLED: {{ .Values.crm.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" .Values.crm.configmap "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
 
   # MULTI-TENANT
-  MULTI_TENANT_ENABLED: {{ .Values.crm.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  MULTI_TENANT_ENABLED: {{ or (eq (index .Values.crm.configmap "MULTI_TENANT_ENABLED" | default "" | toString) "true") (dig "multiTenant" "enabled" false .Values.crm) | quote }}
+
+  # SERVICE DISCOVERY (lib-service-discovery) — inert until global.serviceDiscovery set.
+  {{- $sdEnabled := eq (dig "serviceDiscovery" "enabled" false .Values.crm | toString) "true" }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
+  {{- with (include "lerian-common.serviceDiscovery.env" (dict
+        "context" $ "enabled" $sdEnabled
+        "name" (include "midaz-crm.fullname" .)
+        "port" .Values.crm.service.port
+        "namespace" (include "global.namespace" $)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.crm.ingress))
+      )) }}{{ . | nindent 2 }}{{- end }}
+
+  # STREAMING (lib-streaming) — inert until global.streaming.brokers set.
+  {{- $streamEnabled := eq (dig "streaming" "enabled" false .Values.crm | toString) "true" }}
+  STREAMING_ENABLED: {{ $streamEnabled | quote }}
+  {{- with (include "lerian-common.streaming.env" (dict
+        "context" $ "enabled" $streamEnabled
+        "name" .Values.crm.name
+        "clientId" (dig "streaming" "clientId" "" .Values.crm)
+        "cloudeventsSource" (dig "streaming" "cloudeventsSource" "" .Values.crm)
+      )) }}{{ . | nindent 2 }}{{- end }}
 
   # Extra Env Vars
   {{- with .Values.crm.extraEnvVars }}

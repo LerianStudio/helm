@@ -1,4 +1,6 @@
-{{- if .Values.global.externalPostgresDefinitions.enabled }}
+{{/* Prefer subchart-scoped midaz.externalPostgresDefinitions; fall back to global for standalone backward-compat. */}}
+{{- $pgDef := mergeOverwrite (deepCopy (.Values.global.externalPostgresDefinitions | default dict)) (.Values.externalPostgresDefinitions | default dict) -}}
+{{- if $pgDef.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -17,9 +19,9 @@ spec:
         image: busybox:1.37
         env:
         - name: DB_HOST
-          value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+          value: {{ $pgDef.connection.host | quote }}
         - name: DB_PORT
-          value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+          value: {{ $pgDef.connection.port | quote }}
         command:
         - /bin/sh
         - -c
@@ -42,35 +44,35 @@ spec:
         image: postgres:16
         env:
         - name: DB_HOST
-          value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+          value: {{ $pgDef.connection.host | quote }}
         - name: DB_PORT
-          value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+          value: {{ $pgDef.connection.port | quote }}
         - name: DB_USER_ADMIN
-          {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
+          {{- if $pgDef.postgresAdminLogin.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name | quote }}
+              name: {{ $pgDef.postgresAdminLogin.useExistingSecret.name | quote }}
               key: DB_USER_ADMIN
           {{- else }}
-          value: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.username | quote }}
+          value: {{ $pgDef.postgresAdminLogin.username | quote }}
           {{- end }}
         - name: DB_PASSWORD_MIDAZ
-          {{- if .Values.global.externalPostgresDefinitions.midazCredentials.useExistingSecret.name }}
+          {{- if $pgDef.midazCredentials.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.global.externalPostgresDefinitions.midazCredentials.useExistingSecret.name | quote }}
+              name: {{ $pgDef.midazCredentials.useExistingSecret.name | quote }}
               key: DB_PASSWORD_MIDAZ
           {{- else }}
-          value: {{ .Values.global.externalPostgresDefinitions.midazCredentials.password | quote }}
+          value: {{ $pgDef.midazCredentials.password | quote }}
           {{- end }}
         - name: DB_ADMIN_PASSWORD
-          {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
+          {{- if $pgDef.postgresAdminLogin.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name | quote }}
+              name: {{ $pgDef.postgresAdminLogin.useExistingSecret.name | quote }}
               key: DB_ADMIN_PASSWORD
           {{- else }}
-          value: {{ .Values.global.externalPostgresDefinitions.postgresAdminLogin.password | quote }}
+          value: {{ $pgDef.postgresAdminLogin.password | quote }}
           {{- end }}
         - name: DB_DATABASE
           value: postgres
@@ -119,7 +121,7 @@ spec:
             echo "Role 'midaz' already exists. Skipping creation."
           else
             echo "Creating role 'midaz'..."
-            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_MIDAZ" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE midaz LOGIN PASSWORD :'pw'"
+            echo "CREATE ROLE midaz LOGIN PASSWORD :'pw'" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_MIDAZ" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
           fi
 
           # Privileges (safe to run repeatedly)

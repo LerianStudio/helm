@@ -1,4 +1,6 @@
-{{- if .Values.global.externalRabbitmqDefinitions.enabled }}
+{{/* Prefer subchart-scoped midaz.externalRabbitmqDefinitions; fall back to global for standalone backward-compat. */}}
+{{- $rmqDef := mergeOverwrite (deepCopy (.Values.global.externalRabbitmqDefinitions | default dict)) (.Values.externalRabbitmqDefinitions | default dict) -}}
+{{- if $rmqDef.enabled }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -27,9 +29,9 @@ spec:
           image: busybox:1.37
           env:
             - name: RABBITMQ_HOST
-              value: {{ .Values.global.externalRabbitmqDefinitions.connection.host | quote }}
+              value: {{ $rmqDef.connection.host | quote }}
             - name: RABBITMQ_PORT
-              value: {{ .Values.global.externalRabbitmqDefinitions.connection.portAmqp | quote }}
+              value: {{ $rmqDef.connection.portAmqp | quote }}
           command:
             - /bin/sh
             - -c
@@ -129,46 +131,46 @@ spec:
               echo "=== RabbitMQ Bootstrap completed successfully ==="
           env:
             - name: RABBITMQ_PROTOCOL
-              value: {{ .Values.global.externalRabbitmqDefinitions.connection.protocol | quote }}
+              value: {{ $rmqDef.connection.protocol | quote }}
             - name: RABBITMQ_HOST
-              value: {{ .Values.global.externalRabbitmqDefinitions.connection.host | quote }}
+              value: {{ $rmqDef.connection.host | quote }}
             - name: RABBITMQ_PORT
-              value: {{ .Values.global.externalRabbitmqDefinitions.connection.port | quote }}
+              value: {{ $rmqDef.connection.port | quote }}
             - name: RABBITMQ_TRANSACTION_PASS
-              {{- if .Values.global.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name }}
+              {{- if $rmqDef.appCredentials.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name | quote }}
+                  name: {{ $rmqDef.appCredentials.useExistingSecret.name | quote }}
                   key: RABBITMQ_DEFAULT_PASS
               {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.transactionPassword | quote }}
+              value: {{ $rmqDef.appCredentials.transactionPassword | quote }}
               {{- end }}
             - name: RABBITMQ_CONSUMER_PASS
-              {{- if .Values.global.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name }}
+              {{- if $rmqDef.appCredentials.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name | quote }}
+                  name: {{ $rmqDef.appCredentials.useExistingSecret.name | quote }}
                   key: RABBITMQ_CONSUMER_PASS
               {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.consumerPassword | quote }}
+              value: {{ $rmqDef.appCredentials.consumerPassword | quote }}
               {{- end }}
             - name: RABBITMQ_ADMIN_PASS
-              {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
+              {{- if $rmqDef.rabbitmqAdminLogin.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name | quote }}
+                  name: {{ $rmqDef.rabbitmqAdminLogin.useExistingSecret.name | quote }}
                   key: RABBITMQ_ADMIN_PASS
               {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.password | quote }}
+              value: {{ $rmqDef.rabbitmqAdminLogin.password | quote }}
               {{- end }}
             - name: RABBITMQ_ADMIN_USER
-              {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
+              {{- if $rmqDef.rabbitmqAdminLogin.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name | quote }}
+                  name: {{ $rmqDef.rabbitmqAdminLogin.useExistingSecret.name | quote }}
                   key: RABBITMQ_ADMIN_USER
               {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.username | quote }}
+              value: {{ $rmqDef.rabbitmqAdminLogin.username | quote }}
               {{- end }}
           volumeMounts:
             - name: definitions

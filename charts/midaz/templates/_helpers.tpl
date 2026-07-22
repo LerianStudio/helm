@@ -126,6 +126,18 @@ Fail loud at render time so the operator fixes the configuration.
 {{- end }}
 
 {{/*
+midaz.ledgerCred — resolve a ledger secret value (nil-safe).
+Reads the per-key `ledger.secrets.<key>`; empty when unset. Only consumed for EXTERNAL
+datastores without an existingSecret (managed backend + inline password). For the ESO/Vault
+path use useExistingSecret + existingSecretName; for bundled, single-source the subchart Secret.
+Inputs (dict): ctx (root $), key (native secret key).
+*/}}
+{{- define "midaz.ledgerCred" -}}
+{{- $sec := ((.ctx.Values.ledger).secrets | default dict) -}}
+{{- index $sec .key | default "" -}}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name for CRM.
 */}}
 {{- define "midaz-crm.fullname" -}}

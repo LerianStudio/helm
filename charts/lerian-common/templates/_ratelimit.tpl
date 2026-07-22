@@ -18,14 +18,16 @@ Inputs (dict):
   params     (opt)  the component's `.rateLimit` map (productized knobs)
 
 Precedence per key: native configmap.<KEY>  >  params.<field>  >  default.
-Note: ALLOW_RATELIMIT_DISABLED / ALLOW_RATELIMIT_FAIL_OPEN stay native in the
-component configmap (free-text reason strings, not tunable knobs).
+Reason strings ALLOW_RATELIMIT_DISABLED / ALLOW_RATELIMIT_FAIL_OPEN are productized
+too (params.allowDisabled / allowFailOpen; default "" = not set).
 ==============================================================================
 */}}
 {{- define "lerian-common.rateLimit.env" -}}
 {{- $cm := .configmap | default dict -}}
 {{- $rl := .params | default dict -}}
 RATE_LIMIT_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_ENABLED" "params" $rl "field" "enabled" "default" "true") | quote }}
+ALLOW_RATELIMIT_DISABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_RATELIMIT_DISABLED" "params" $rl "field" "allowDisabled" "default" "") | quote }}
+ALLOW_RATELIMIT_FAIL_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_RATELIMIT_FAIL_OPEN" "params" $rl "field" "allowFailOpen" "default" "") | quote }}
 RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_MAX" "params" $rl "field" "max" "default" "500") | quote }}
 RATE_LIMIT_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_WINDOW_SEC" "params" $rl "field" "windowSec" "default" "60") | quote }}
 AGGRESSIVE_RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AGGRESSIVE_RATE_LIMIT_MAX" "params" $rl "field" "aggressiveMax" "default" "100") | quote }}

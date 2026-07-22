@@ -135,25 +135,25 @@ data:
   # REDIS (shared between modules)
   # =============================================================================
   REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "midaz-valkey-primary:6379") | quote }}
-  REDIS_MASTER_NAME: {{ .Values.ledger.configmap.REDIS_MASTER_NAME | default "" | quote }}
-  REDIS_TLS: {{ .Values.ledger.configmap.REDIS_TLS | default "false" | quote }}
-  REDIS_CA_CERT: {{ .Values.ledger.configmap.REDIS_CA_CERT | default "" | quote }}
-  REDIS_USE_GCP_IAM: {{ .Values.ledger.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
-  REDIS_SERVICE_ACCOUNT: {{ .Values.ledger.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
-  GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.ledger.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
-  REDIS_TOKEN_LIFETIME: {{ .Values.ledger.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
-  REDIS_TOKEN_REFRESH_DURATION: {{ .Values.ledger.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
-  REDIS_DB: {{ .Values.ledger.configmap.REDIS_DB | default "0" | quote }}
-  REDIS_PROTOCOL: {{ .Values.ledger.configmap.REDIS_PROTOCOL | default "3" | quote }}
-  REDIS_POOL_SIZE: {{ .Values.ledger.configmap.REDIS_POOL_SIZE | default "10" | quote }}
-  REDIS_MIN_IDLE_CONNS: {{ .Values.ledger.configmap.REDIS_MIN_IDLE_CONNS | default "0" | quote }}
-  REDIS_READ_TIMEOUT: {{ .Values.ledger.configmap.REDIS_READ_TIMEOUT | default "3" | quote }}
-  REDIS_WRITE_TIMEOUT: {{ .Values.ledger.configmap.REDIS_WRITE_TIMEOUT | default "3" | quote }}
-  REDIS_DIAL_TIMEOUT: {{ .Values.ledger.configmap.REDIS_DIAL_TIMEOUT | default "5" | quote }}
-  REDIS_POOL_TIMEOUT: {{ .Values.ledger.configmap.REDIS_POOL_TIMEOUT | default "2" | quote }}
-  REDIS_MAX_RETRIES: {{ .Values.ledger.configmap.REDIS_MAX_RETRIES | default "3" | quote }}
-  REDIS_MIN_RETRY_BACKOFF: {{ .Values.ledger.configmap.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
-  REDIS_MAX_RETRY_BACKOFF: {{ .Values.ledger.configmap.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
+  REDIS_MASTER_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_MASTER_NAME" "params" .Values.ledger.redis "field" "masterName" "default" "") | quote }}
+  REDIS_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_TLS" "params" .Values.ledger.redis "field" "tls" "default" "false") | quote }}
+  REDIS_CA_CERT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_CA_CERT" "params" .Values.ledger.redis "field" "caCert" "default" "") | quote }}
+  REDIS_USE_GCP_IAM: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_USE_GCP_IAM" "params" .Values.ledger.redis "field" "useGcpIam" "default" "false") | quote }}
+  REDIS_SERVICE_ACCOUNT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_SERVICE_ACCOUNT" "params" .Values.ledger.redis "field" "serviceAccount" "default" "") | quote }}
+  GOOGLE_APPLICATION_CREDENTIALS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "GOOGLE_APPLICATION_CREDENTIALS" "params" .Values.ledger.redis "field" "googleAppCredentials" "default" "") | quote }}
+  REDIS_TOKEN_LIFETIME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_TOKEN_LIFETIME" "params" .Values.ledger.redis "field" "tokenLifetime" "default" "60") | quote }}
+  REDIS_TOKEN_REFRESH_DURATION: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_TOKEN_REFRESH_DURATION" "params" .Values.ledger.redis "field" "tokenRefreshDuration" "default" "45") | quote }}
+  REDIS_DB: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_DB" "params" .Values.ledger.redis "field" "db" "default" "0") | quote }}
+  REDIS_PROTOCOL: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_PROTOCOL" "params" .Values.ledger.redis "field" "protocol" "default" "3") | quote }}
+  REDIS_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_POOL_SIZE" "params" .Values.ledger.redis "field" "poolSize" "default" "10") | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_MIN_IDLE_CONNS" "params" .Values.ledger.redis "field" "minIdleConns" "default" "0") | quote }}
+  REDIS_READ_TIMEOUT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_READ_TIMEOUT" "params" .Values.ledger.redis "field" "readTimeout" "default" "3") | quote }}
+  REDIS_WRITE_TIMEOUT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_WRITE_TIMEOUT" "params" .Values.ledger.redis "field" "writeTimeout" "default" "3") | quote }}
+  REDIS_DIAL_TIMEOUT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_DIAL_TIMEOUT" "params" .Values.ledger.redis "field" "dialTimeout" "default" "5") | quote }}
+  REDIS_POOL_TIMEOUT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_POOL_TIMEOUT" "params" .Values.ledger.redis "field" "poolTimeout" "default" "2") | quote }}
+  REDIS_MAX_RETRIES: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_MAX_RETRIES" "params" .Values.ledger.redis "field" "maxRetries" "default" "3") | quote }}
+  REDIS_MIN_RETRY_BACKOFF: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_MIN_RETRY_BACKOFF" "params" .Values.ledger.redis "field" "minRetryBackoff" "default" "8") | quote }}
+  REDIS_MAX_RETRY_BACKOFF: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "REDIS_MAX_RETRY_BACKOFF" "params" .Values.ledger.redis "field" "maxRetryBackoff" "default" "1") | quote }}
 
   # =============================================================================
   # OPEN TELEMETRY
@@ -161,7 +161,6 @@ data:
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.ledger.configmap.OTEL_RESOURCE_SERVICE_NAME | default "ledger" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.ledger.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v3/components/ledger" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   {{- include "lerian-common.otel.env" (dict "context" $ "configmap" .Values.ledger.configmap "enabledDefault" "true") | nindent 2 }}
 
@@ -178,10 +177,10 @@ data:
   RABBITMQ_NUMBERS_OF_WORKERS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_NUMBERS_OF_WORKERS" "params" .Values.ledger.broker "field" "workers" "default" "5") | quote }}
   RABBITMQ_NUMBERS_OF_PREFETCH: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_NUMBERS_OF_PREFETCH" "params" .Values.ledger.broker "field" "prefetch" "default" "10") | quote }}
   RABBITMQ_HEALTH_CHECK_URL: {{ .Values.ledger.configmap.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
-  RABBITMQ_BALANCE_CREATE_QUEUE: {{ .Values.ledger.configmap.RABBITMQ_BALANCE_CREATE_QUEUE | default "transaction.balance_create.queue" | quote }}
-  RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE | default "transaction.transaction_balance_operation.exchange" | quote }}
-  RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY | default "transaction.transaction_balance_operation.key" | quote }}
-  RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE | default "transaction.transaction_balance_operation.queue" | quote }}
+  RABBITMQ_BALANCE_CREATE_QUEUE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_BALANCE_CREATE_QUEUE" "params" .Values.ledger.broker "field" "balanceCreateQueue" "default" "transaction.balance_create.queue") | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE" "params" .Values.ledger.broker "field" "balanceOperationExchange" "default" "transaction.transaction_balance_operation.exchange") | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY" "params" .Values.ledger.broker "field" "balanceOperationKey" "default" "transaction.transaction_balance_operation.key") | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE" "params" .Values.ledger.broker "field" "balanceOperationQueue" "default" "transaction.transaction_balance_operation.queue") | quote }}
   RABBITMQ_TRANSACTION_ASYNC: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_TRANSACTION_ASYNC" "params" .Values.ledger.broker "field" "transactionAsync" "default" "false") | quote }}
   RABBITMQ_VHOST: {{ .Values.ledger.configmap.RABBITMQ_VHOST | default "" | quote }}
 
@@ -203,26 +202,26 @@ data:
   # =============================================================================
   BULK_RECORDER_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "BULK_RECORDER_ENABLED" "params" .Values.ledger.bulkRecorder "field" "enabled" "default" "true") | quote }}
   BULK_RECORDER_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "BULK_RECORDER_SIZE" "params" .Values.ledger.bulkRecorder "field" "size" "default" "0") | quote }}
-  BULK_RECORDER_FLUSH_TIMEOUT_MS: {{ .Values.ledger.configmap.BULK_RECORDER_FLUSH_TIMEOUT_MS | default "100" | quote }}
-  BULK_RECORDER_MAX_ROWS_PER_INSERT: {{ .Values.ledger.configmap.BULK_RECORDER_MAX_ROWS_PER_INSERT | default "1000" | quote }}
+  BULK_RECORDER_FLUSH_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "BULK_RECORDER_FLUSH_TIMEOUT_MS" "params" .Values.ledger.bulkRecorder "field" "flushTimeoutMs" "default" "100") | quote }}
+  BULK_RECORDER_MAX_ROWS_PER_INSERT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "BULK_RECORDER_MAX_ROWS_PER_INSERT" "params" .Values.ledger.bulkRecorder "field" "maxRowsPerInsert" "default" "1000") | quote }}
 
   # TRANSACTION EXCHANGE EVENTS
-  RABBITMQ_TRANSACTION_EVENTS_ENABLED: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_EVENTS_ENABLED | default "false" | quote }}
-  RABBITMQ_TRANSACTION_EVENTS_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_EVENTS_EXCHANGE | default "transaction.transaction_events.exchange" | quote }}
+  RABBITMQ_TRANSACTION_EVENTS_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_TRANSACTION_EVENTS_ENABLED" "params" .Values.ledger.broker "field" "transactionEventsEnabled" "default" "false") | quote }}
+  RABBITMQ_TRANSACTION_EVENTS_EXCHANGE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_TRANSACTION_EVENTS_EXCHANGE" "params" .Values.ledger.broker "field" "transactionEventsExchange" "default" "transaction.transaction_events.exchange") | quote }}
 
   # OVERDRAFT EVENTS
-  RABBITMQ_OVERDRAFT_EVENTS_ENABLED: {{ .Values.ledger.configmap.RABBITMQ_OVERDRAFT_EVENTS_ENABLED | default "false" | quote }}
-  RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE | default "transaction.overdraft_events.exchange" | quote }}
+  RABBITMQ_OVERDRAFT_EVENTS_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_OVERDRAFT_EVENTS_ENABLED" "params" .Values.ledger.broker "field" "overdraftEventsEnabled" "default" "false") | quote }}
+  RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE" "params" .Values.ledger.broker "field" "overdraftEventsExchange" "default" "transaction.overdraft_events.exchange") | quote }}
 
   # AUDIT
   AUDIT_LOG_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "AUDIT_LOG_ENABLED" "params" .Values.ledger.audit "field" "enabled" "default" "false") | quote }}
-  RABBITMQ_AUDIT_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_AUDIT_EXCHANGE | default "audit.append_log.exchange" | quote }}
-  RABBITMQ_AUDIT_KEY: {{ .Values.ledger.configmap.RABBITMQ_AUDIT_KEY | default "audit.append_log.key" | quote }}
+  RABBITMQ_AUDIT_EXCHANGE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_AUDIT_EXCHANGE" "params" .Values.ledger.broker "field" "auditExchange" "default" "audit.append_log.exchange") | quote }}
+  RABBITMQ_AUDIT_KEY: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RABBITMQ_AUDIT_KEY" "params" .Values.ledger.broker "field" "auditKey" "default" "audit.append_log.key") | quote }}
 
   # =============================================================================
   # PAGINATION
   # =============================================================================
-  MAX_PAGINATION_LIMIT: {{ .Values.ledger.configmap.MAX_PAGINATION_LIMIT | default "100" | quote }}
+  MAX_PAGINATION_LIMIT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MAX_PAGINATION_LIMIT" "params" .Values.ledger.pagination "field" "maxLimit" "default" "100") | quote }}
   MAX_PAGINATION_MONTH_DATE_RANGE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MAX_PAGINATION_MONTH_DATE_RANGE" "params" .Values.ledger.pagination "field" "maxMonthRange" "default" "3") | quote }}
 
   # =============================================================================
@@ -230,9 +229,9 @@ data:
   # =============================================================================
   BALANCE_SYNC_WORKER_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "BALANCE_SYNC_WORKER_ENABLED" "params" .Values.ledger.balanceSync "field" "enabled" "default" "false") | quote }}
   BALANCE_SYNC_MAX_WORKERS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "BALANCE_SYNC_MAX_WORKERS" "params" .Values.ledger.balanceSync "field" "maxWorkers" "default" "5") | quote }}
-  BALANCE_SYNC_BATCH_SIZE: {{ .Values.ledger.configmap.BALANCE_SYNC_BATCH_SIZE | default "50" | quote }}
-  BALANCE_SYNC_FLUSH_TIMEOUT_MS: {{ .Values.ledger.configmap.BALANCE_SYNC_FLUSH_TIMEOUT_MS | default "500" | quote }}
-  BALANCE_SYNC_POLL_INTERVAL_MS: {{ .Values.ledger.configmap.BALANCE_SYNC_POLL_INTERVAL_MS | default "50" | quote }}
+  BALANCE_SYNC_BATCH_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "BALANCE_SYNC_BATCH_SIZE" "params" .Values.ledger.balanceSync "field" "batchSize" "default" "50") | quote }}
+  BALANCE_SYNC_FLUSH_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "BALANCE_SYNC_FLUSH_TIMEOUT_MS" "params" .Values.ledger.balanceSync "field" "flushTimeoutMs" "default" "500") | quote }}
+  BALANCE_SYNC_POLL_INTERVAL_MS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "BALANCE_SYNC_POLL_INTERVAL_MS" "params" .Values.ledger.balanceSync "field" "pollIntervalMs" "default" "50") | quote }}
 
   # =============================================================================
   # RATE LIMITING
@@ -242,8 +241,6 @@ data:
   # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
   # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
   {{- include "lerian-common.rateLimit.env" (dict "configmap" .Values.ledger.configmap "params" .Values.ledger.rateLimit) | nindent 2 }}
-  ALLOW_RATELIMIT_DISABLED: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
-  ALLOW_RATELIMIT_FAIL_OPEN: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
 
   # SERVICE DISCOVERY (lib-service-discovery) — SD_ENABLED is the app knob; env-wide
   # server config from global.serviceDiscovery (INERT until configured). Emitted before

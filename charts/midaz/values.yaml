@@ -231,74 +231,136 @@ ledger:
   # match the legacy template defaults, so existing installs render unchanged.
   # (auth & telemetry are the cross-product contracts global.auth / global.observability.)
   # ===========================================================================
-  env: "production"           # → ENV_NAME
-  logLevel: "debug"           # → LOG_LEVEL (legacy default; set "info" for production)
-  allowInsecureTls: "true"    # → ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)
+  # --- App -------------------------------------------------------------------
+  env: "production"                    # → ENV_NAME
+  logLevel: "debug"                    # → LOG_LEVEL (legacy default; set "info" for production)
+  allowInsecureTls: "true"             # → ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)
+
+  # --- Accounting ------------------------------------------------------------
   accounting:
-    accountTypeValidation: ""        # → ACCOUNT_TYPE_VALIDATION ("<organizationId>:<ledgerId>")
-    transactionRouteValidation: ""   # → TRANSACTION_ROUTE_VALIDATION
-  rateLimit:                  # three-tier, Redis-backed → lerian-common.rateLimit.env
-    enabled: true             # → RATE_LIMIT_ENABLED
-    max: "500"                # → RATE_LIMIT_MAX
-    windowSec: "60"           # → RATE_LIMIT_WINDOW_SEC
-    aggressiveMax: "100"      # → AGGRESSIVE_RATE_LIMIT_MAX
-    aggressiveWindowSec: "60" # → AGGRESSIVE_RATE_LIMIT_WINDOW_SEC
-    relaxedMax: "1000"        # → RELAXED_RATE_LIMIT_MAX
-    relaxedWindowSec: "60"    # → RELAXED_RATE_LIMIT_WINDOW_SEC
-    redisTimeoutMs: "500"     # → RATE_LIMIT_REDIS_TIMEOUT_MS
+    accountTypeValidation: ""          # → ACCOUNT_TYPE_VALIDATION ("<organizationId>:<ledgerId>")
+    transactionRouteValidation: ""     # → TRANSACTION_ROUTE_VALIDATION
+
+  # --- Rate limiting (three-tier, Redis-backed) ------------------------------
+  rateLimit:
+    enabled: true                      # → RATE_LIMIT_ENABLED
+    max: "500"                         # → RATE_LIMIT_MAX
+    windowSec: "60"                    # → RATE_LIMIT_WINDOW_SEC
+    aggressiveMax: "100"               # → AGGRESSIVE_RATE_LIMIT_MAX
+    aggressiveWindowSec: "60"          # → AGGRESSIVE_RATE_LIMIT_WINDOW_SEC
+    relaxedMax: "1000"                 # → RELAXED_RATE_LIMIT_MAX
+    relaxedWindowSec: "60"             # → RELAXED_RATE_LIMIT_WINDOW_SEC
+    redisTimeoutMs: "500"              # → RATE_LIMIT_REDIS_TIMEOUT_MS
+    allowDisabled: ""                  # → ALLOW_RATELIMIT_DISABLED (reason required when disabled in strict tier)
+    allowFailOpen: ""                  # → ALLOW_RATELIMIT_FAIL_OPEN (reason to allow fail-open in prod)
+
+  # --- Audit -----------------------------------------------------------------
   audit:
-    enabled: false            # → AUDIT_LOG_ENABLED
+    enabled: false                     # → AUDIT_LOG_ENABLED
+
+  # --- Bulk recorder ---------------------------------------------------------
   bulkRecorder:
-    enabled: true             # → BULK_RECORDER_ENABLED
-    size: "0"                 # → BULK_RECORDER_SIZE
+    enabled: true                      # → BULK_RECORDER_ENABLED
+    size: "0"                          # → BULK_RECORDER_SIZE
+    flushTimeoutMs: "100"              # → BULK_RECORDER_FLUSH_TIMEOUT_MS
+    maxRowsPerInsert: "1000"           # → BULK_RECORDER_MAX_ROWS_PER_INSERT
+
+  # --- Balance sync worker ---------------------------------------------------
   balanceSync:
-    enabled: false            # → BALANCE_SYNC_WORKER_ENABLED
-    maxWorkers: "5"           # → BALANCE_SYNC_MAX_WORKERS
+    enabled: false                     # → BALANCE_SYNC_WORKER_ENABLED
+    maxWorkers: "5"                    # → BALANCE_SYNC_MAX_WORKERS
+    batchSize: "50"                    # → BALANCE_SYNC_BATCH_SIZE
+    flushTimeoutMs: "500"              # → BALANCE_SYNC_FLUSH_TIMEOUT_MS
+    pollIntervalMs: "50"               # → BALANCE_SYNC_POLL_INTERVAL_MS
+
+  # --- Pagination ------------------------------------------------------------
   pagination:
-    maxMonthRange: "3"        # → MAX_PAGINATION_MONTH_DATE_RANGE
-  # -- Datastores (per module): db identity + connection pool. Host/user/port/ssl/params
-  #    come from the global.datastores mask (shared) or ledger.datastores (dedicated).
-  database:                   # PostgreSQL, per module
+    maxLimit: "100"                    # → MAX_PAGINATION_LIMIT
+    maxMonthRange: "3"                 # → MAX_PAGINATION_MONTH_DATE_RANGE
+
+  # --- Datastores (per module) -----------------------------------------------
+  # db identity + connection pool. Host/user/port/ssl/params come from the
+  # global.datastores mask (shared) or ledger.datastores (dedicated).
+  database:                            # PostgreSQL, per module
     onboarding:
-      name: "onboarding"      # → DB_ONBOARDING_NAME
-      replicaName: "onboarding" # → DB_ONBOARDING_REPLICA_NAME
-      maxOpenConns: "3000"    # → DB_ONBOARDING_MAX_OPEN_CONNS
-      maxIdleConns: "3000"    # → DB_ONBOARDING_MAX_IDLE_CONNS
+      name: "onboarding"               # → DB_ONBOARDING_NAME
+      replicaName: "onboarding"        # → DB_ONBOARDING_REPLICA_NAME
+      maxOpenConns: "3000"             # → DB_ONBOARDING_MAX_OPEN_CONNS
+      maxIdleConns: "3000"             # → DB_ONBOARDING_MAX_IDLE_CONNS
     transaction:
-      name: "transaction"     # → DB_TRANSACTION_NAME
-      replicaName: "transaction" # → DB_TRANSACTION_REPLICA_NAME
-      maxOpenConns: "3000"    # → DB_TRANSACTION_MAX_OPEN_CONNS
-      maxIdleConns: "3000"    # → DB_TRANSACTION_MAX_IDLE_CONNS
-  mongo:                      # MongoDB, per module
+      name: "transaction"             # → DB_TRANSACTION_NAME
+      replicaName: "transaction"       # → DB_TRANSACTION_REPLICA_NAME
+      maxOpenConns: "3000"             # → DB_TRANSACTION_MAX_OPEN_CONNS
+      maxIdleConns: "3000"             # → DB_TRANSACTION_MAX_IDLE_CONNS
+  mongo:                               # MongoDB, per module
     onboarding:
-      uri: "mongodb"          # → MONGO_ONBOARDING_URI
-      name: "onboarding"      # → MONGO_ONBOARDING_NAME
-      maxPoolSize: "1000"     # → MONGO_ONBOARDING_MAX_POOL_SIZE
+      uri: "mongodb"                   # → MONGO_ONBOARDING_URI
+      name: "onboarding"               # → MONGO_ONBOARDING_NAME
+      maxPoolSize: "1000"              # → MONGO_ONBOARDING_MAX_POOL_SIZE
     transaction:
-      uri: "mongodb"          # → MONGO_TRANSACTION_URI
-      name: "transaction"     # → MONGO_TRANSACTION_NAME
-      maxPoolSize: "1000"     # → MONGO_TRANSACTION_MAX_POOL_SIZE
-  broker:                     # RabbitMQ. Host → global.datastores.broker; password → ledger.secrets.
-    uri: "amqp"               # → RABBITMQ_URI
-    portHost: "5672"          # → RABBITMQ_PORT_HOST
-    portAmqp: "15672"         # → RABBITMQ_PORT_AMQP
-    defaultUser: "transaction" # → RABBITMQ_DEFAULT_USER
-    consumerUser: "consumer"  # → RABBITMQ_CONSUMER_USER
-    transactionAsync: "false" # → RABBITMQ_TRANSACTION_ASYNC
-    workers: "5"              # → RABBITMQ_NUMBERS_OF_WORKERS
-    prefetch: "10"            # → RABBITMQ_NUMBERS_OF_PREFETCH
+      uri: "mongodb"                   # → MONGO_TRANSACTION_URI
+      name: "transaction"              # → MONGO_TRANSACTION_NAME
+      maxPoolSize: "1000"              # → MONGO_TRANSACTION_MAX_POOL_SIZE
+
+  # --- Redis / Valkey (client tuning) ----------------------------------------
+  # Connection host → global.datastores.redis; password → ledger.secrets.REDIS_PASSWORD.
+  redis:
+    masterName: ""                     # → REDIS_MASTER_NAME (sentinel)
+    tls: "false"                       # → REDIS_TLS
+    caCert: ""                         # → REDIS_CA_CERT
+    useGcpIam: "false"                 # → REDIS_USE_GCP_IAM
+    serviceAccount: ""                 # → REDIS_SERVICE_ACCOUNT
+    googleAppCredentials: ""           # → GOOGLE_APPLICATION_CREDENTIALS
+    tokenLifetime: "60"                # → REDIS_TOKEN_LIFETIME
+    tokenRefreshDuration: "45"         # → REDIS_TOKEN_REFRESH_DURATION
+    db: "0"                            # → REDIS_DB
+    protocol: "3"                      # → REDIS_PROTOCOL
+    poolSize: "10"                     # → REDIS_POOL_SIZE
+    minIdleConns: "0"                  # → REDIS_MIN_IDLE_CONNS
+    readTimeout: "3"                   # → REDIS_READ_TIMEOUT
+    writeTimeout: "3"                  # → REDIS_WRITE_TIMEOUT
+    dialTimeout: "5"                   # → REDIS_DIAL_TIMEOUT
+    poolTimeout: "2"                   # → REDIS_POOL_TIMEOUT
+    maxRetries: "3"                    # → REDIS_MAX_RETRIES
+    minRetryBackoff: "8"               # → REDIS_MIN_RETRY_BACKOFF
+    maxRetryBackoff: "1"               # → REDIS_MAX_RETRY_BACKOFF
+
+  # --- Broker (RabbitMQ) -----------------------------------------------------
+  # Host → global.datastores.broker; password → ledger.secrets.
+  broker:
+    uri: "amqp"                        # → RABBITMQ_URI
+    portHost: "5672"                   # → RABBITMQ_PORT_HOST
+    portAmqp: "15672"                  # → RABBITMQ_PORT_AMQP
+    defaultUser: "transaction"         # → RABBITMQ_DEFAULT_USER
+    consumerUser: "consumer"           # → RABBITMQ_CONSUMER_USER
+    transactionAsync: "false"          # → RABBITMQ_TRANSACTION_ASYNC
+    workers: "5"                       # → RABBITMQ_NUMBERS_OF_WORKERS
+    prefetch: "10"                     # → RABBITMQ_NUMBERS_OF_PREFETCH
+    # routing (queue/exchange/key names)
+    balanceCreateQueue: "transaction.balance_create.queue"                         # → RABBITMQ_BALANCE_CREATE_QUEUE
+    balanceOperationExchange: "transaction.transaction_balance_operation.exchange" # → RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE
+    balanceOperationKey: "transaction.transaction_balance_operation.key"           # → RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY
+    balanceOperationQueue: "transaction.transaction_balance_operation.queue"       # → RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE
+    # events + audit routing
+    transactionEventsEnabled: "false"                                             # → RABBITMQ_TRANSACTION_EVENTS_ENABLED
+    transactionEventsExchange: "transaction.transaction_events.exchange"          # → RABBITMQ_TRANSACTION_EVENTS_EXCHANGE
+    overdraftEventsEnabled: "false"                                               # → RABBITMQ_OVERDRAFT_EVENTS_ENABLED
+    overdraftEventsExchange: "transaction.overdraft_events.exchange"              # → RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE
+    auditExchange: "audit.append_log.exchange"                                    # → RABBITMQ_AUDIT_EXCHANGE
+    auditKey: "audit.append_log.key"                                              # → RABBITMQ_AUDIT_KEY
+
+  # --- Feature toggles (env-wide config in global.*, inert until set) ---------
   multiTenant:
-    enabled: false            # per-product knob → MULTI_TENANT_ENABLED. The env-wide MT
-                              # config (url / redis / circuit-breaker) comes from
-                              # global.multiTenant via lerian-common.multiTenant.env;
-                              # per-key override via ledger.configmap.MULTI_TENANT_*.
-                              # secrets → ledger.secrets.MULTI_TENANT_{SERVICE_API_KEY,REDIS_PASSWORD}
+    enabled: false                     # → MULTI_TENANT_ENABLED. Env-wide MT config
+                                       # (url / redis / circuit-breaker) from global.multiTenant;
+                                       # per-key override via ledger.configmap.MULTI_TENANT_*;
+                                       # secrets → ledger.secrets.MULTI_TENANT_{SERVICE_API_KEY,REDIS_PASSWORD}
   serviceDiscovery:
-    enabled: false            # → SD_ENABLED. Server config from global.serviceDiscovery (inert until set).
+    enabled: false                     # → SD_ENABLED. Server config from global.serviceDiscovery.
   streaming:
-    enabled: false            # → STREAMING_ENABLED. Broker/SASL/TLS from global.streaming (inert until set).
-    # clientId: ""            # → STREAMING_CLIENT_ID (per-app identity)
-    # cloudeventsSource: ""   # → STREAMING_CLOUDEVENTS_SOURCE
+    enabled: false                     # → STREAMING_ENABLED. Broker/SASL/TLS from global.streaming.
+    # clientId: ""                     # → STREAMING_CLIENT_ID (per-app identity)
+    # cloudeventsSource: ""            # → STREAMING_CLOUDEVENTS_SOURCE
 
   # -- ConfigMap for environment variables and configurations (raw/legacy format;
   #    still fully supported and takes precedence over the productized params above).
@@ -479,19 +541,25 @@ crm:
   #         - midaz
 
   # -- Productized config (raw configmap.<KEY> still overrides = backward-compat).
-  env: "development"          # → ENV_NAME
-  logLevel: "debug"           # → LOG_LEVEL
-  allowInsecureTls: "true"    # → ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)
-  mongo:                      # MongoDB. Host/user/port/params → global.datastores.mongo
-    uri: "mongodb"            # → MONGO_URI
-    name: "crm"               # → MONGO_NAME
-    maxPoolSize: "1000"       # → MONGO_MAX_POOL_SIZE
+
+  # --- App -------------------------------------------------------------------
+  env: "development"                   # → ENV_NAME
+  logLevel: "debug"                    # → LOG_LEVEL
+  allowInsecureTls: "true"             # → ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)
+
+  # --- Datastore (MongoDB) ---------------------------------------------------
+  mongo:                               # host/user/port/params → global.datastores.mongo
+    uri: "mongodb"                     # → MONGO_URI
+    name: "crm"                        # → MONGO_NAME
+    maxPoolSize: "1000"                # → MONGO_MAX_POOL_SIZE
+
+  # --- Feature toggles (env-wide config in global.*, inert until set) ---------
   multiTenant:
-    enabled: false            # → MULTI_TENANT_ENABLED
+    enabled: false                     # → MULTI_TENANT_ENABLED
   serviceDiscovery:
-    enabled: false            # → SD_ENABLED (config from global.serviceDiscovery, inert until set)
+    enabled: false                     # → SD_ENABLED (config from global.serviceDiscovery)
   streaming:
-    enabled: false            # → STREAMING_ENABLED (config from global.streaming, inert until set)
+    enabled: false                     # → STREAMING_ENABLED (config from global.streaming)
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/crm/configmap.yaml

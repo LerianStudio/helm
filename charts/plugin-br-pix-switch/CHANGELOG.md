@@ -2,6 +2,55 @@
 
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
 
+- **Features:**
+  - Introduced schema migration Jobs to streamline database transitions.
+  - Added providersIngress for outbound-provider adapters.
+  - Implemented shared multi-path ingresses for enhanced routing flexibility.
+  - Defaulted DEPLOYMENT_MODE to 'byoc' for customizable deployment setups.
+  - Auto-wired URLs to in-cluster subcharts for seamless integration.
+
+- **Fixes:**
+  - Corrected providers ingress default path from /mock-btg to /btg-mock.
+  - Adjusted probe paths to match per-component routePrefix for accurate health checks.
+  - Swapped envFrom order to ensure Secret values override ConfigMap settings.
+  - Addressed bootstrap Job issues identified during live install tests.
+  - Set default PLUGIN_AUTH_URL for components utilizing authentication.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features**
+  - Introduced schema migration Jobs for enhanced data handling.
+  - Implemented providersIngress for outbound-provider adapters.
+  - Added per-component image repository defaults for better customization.
+  - Auto-wired URLs to in-cluster subcharts for seamless integration.
+  - Added wait-for-dependencies init container to ensure proper startup sequence.
+
+- **Fixes**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Adjusted probe paths to follow per-component routePrefix for accurate monitoring.
+  - Fixed bootstrap Job issues identified during live install tests.
+  - Ensured Secret overrides ConfigMap by swapping envFrom order.
+  - Set default PLUGIN_AUTH_URL on auth-using components for consistent authentication.
+
+- **Improvements**
+  - Removed dead global.image block to streamline configuration.
+  - Standardized probe field set across all charts for uniformity.
+  - Parametrized probe path and timing using `/readyz` for enhanced readiness checks.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
 - **Features**
   - Introduced schema migration Jobs.
   - Implemented providersIngress for outbound-provider adapters.

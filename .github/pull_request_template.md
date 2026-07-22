@@ -16,9 +16,6 @@
 - [ ] Pipeline
 - [ ] Documentation
 - [ ] Fetcher
-- [ ] Matcher
-- [ ] Flowker
-- [ ] Underwriter
 - [ ] BR STA
 - [ ] BR CCS
 - [ ] BR SLC

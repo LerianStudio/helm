@@ -54,19 +54,6 @@ For implementation and configuration details, see the [README](https://charts.le
 
 -----------------
 
-### BR SPI Helm Chart
-
-Brazilian SFN — SPI / Pix rail (components: core, spi, brcode, dict, plus a dedicated schema-migration Job).
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-spi).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `0.1.0-beta.1` | `0.1.0` |
------------------
-
 ### Reporter
 
 See the [official documentation](https://docs.lerian.studio/en/reporter) for details.
@@ -127,9 +114,9 @@ For implementation and configuration details, see the [README](https://charts.le
 
 #### Application Version Mapping
 
-| Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version |
-| :---: | :---: | :---: | :---: | :---: |
-| `3.5.0-beta.3` | 1.8.0 | 1.8.0 | 1.8.0 | 1.8.0 |
+| Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| `3.5.0` | 1.8.0 | 1.8.0 | 1.8.0 | 1.8.0 | 1.8.0 |
 
 -----------------
 
@@ -157,19 +144,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | `3.1.0-beta.1` | 2.0.2 | 2.0.2 |
 -----------------
 
-### Underwriter
-
-For more details, check out the [official documentation](https://docs.lerian.studio/en/underwriter).
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/underwriter).
-
-#### Application Version Mapping
-
-| Chart Version | Underwriter Version |
-| :---: | :---: |
-| `3.1.0-beta.1` | 1.0.0 |
------------------
-
 ### Lender
 
 For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
@@ -181,31 +155,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Lender Version |
 | :---: | :---: |
 | `1.0.0-beta.1` | 1.0.0-beta.48 |
------------------
-
-### Matcher
-
-For more details, check out the [official documentation](https://docs.lerian.studio/en/matcher#matcher).
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/matcher).
-
-#### Application Version Mapping
-
-| Chart Version | Matcher Version |
-| :---: | :---: |
-| `3.1.0-beta.2` | 1.0.0 |
-
-### Flowker
-
-For more details, check out the [official documentation](https://docs.lerian.studio/en/flowker).
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/flowker).
-
-#### Application Version Mapping
-
-| Chart Version | Flowker Version |
-| :---: | :---: |
-| `3.2.0-beta.1` | 1.2.0-beta.82 |
 -----------------
 
 ### Tracer
@@ -242,7 +191,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `3.2.0-beta.1` | 1.6.0 |
+| `3.2.0` | 1.10.0 |
 -----------------
 
 ### Plugin BC Correios

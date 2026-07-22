@@ -1,3 +1,0 @@
-flowker:
-  secrets:
-    AUDIT_DB_PASSWORD: "sample"

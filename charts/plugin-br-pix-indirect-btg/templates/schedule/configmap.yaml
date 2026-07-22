@@ -44,8 +44,6 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.schedule.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
   ENABLE_TELEMETRY: {{ .Values.schedule.configmap.ENABLE_TELEMETRY | default "false" | quote }}
 
-  DEPLOYMENT_MODE: {{ .Values.schedule.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-  PLUGIN_PIX_BTG_CLIENT_ID: {{ .Values.schedule.configmap.PLUGIN_PIX_BTG_CLIENT_ID | default "" | quote }}
   # Extra Env Vars
   {{- with .Values.schedule.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

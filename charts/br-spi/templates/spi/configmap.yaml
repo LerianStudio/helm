@@ -1,1 +1,0 @@
-{{- include "br-spi.componentConfigMap" (dict "context" . "component" "spi") -}}

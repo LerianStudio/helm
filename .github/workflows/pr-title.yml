@@ -50,10 +50,7 @@ jobs:
             doc
             product-console
             fetcher
-            flowker
-            underwriter
             lender
-            matcher
             tracer
             br-sta
             br-ccs

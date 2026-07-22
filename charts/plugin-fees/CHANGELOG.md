@@ -3,6 +3,34 @@
 ## [7.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.2.0)
 
 - **Features:**
+  - Render streaming SASL/TLS secrets in midaz + plugin-fees Secrets.
+
+- **Documentation:**
+  - Added upgrade guide for plugin-fees v7.1.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.1.0...plugin-fees-v7.2.0)
+
+---
+
+## [7.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.2.0)
+
+- **Features:**
+  - Render streaming SASL/TLS secrets in midaz + plugin-fees Secrets.
+
+- **Documentation:**
+  - Added upgrade guide for plugin-fees v7.1.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.1.0...plugin-fees-v7.2.0)
+
+---
+
+## [7.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.2.0)
+
+- **Features:**
   - Render streaming SASL/TLS secrets in plugin-fees Secrets.
 
 - **Documentation:**

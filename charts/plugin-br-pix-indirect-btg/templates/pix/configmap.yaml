@@ -78,6 +78,7 @@ data:
   MONGO_TLS: {{ .Values.pix.configmap.MONGO_TLS | default "false" | quote }}
 
   # SWAGGER
+  SWAGGER_ENABLED: {{ .Values.pix.configmap.SWAGGER_ENABLED | default "true" | quote }}
   SWAGGER_TITLE: {{ .Values.pix.configmap.SWAGGER_TITLE | default "Plugin BR Pix Indirect BTG" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.pix.configmap.SWAGGER_DESCRIPTION | default "Documentation Plugin PIX BTG" | quote }}
   SWAGGER_VERSION: {{ .Values.pix.image.tag | default .Chart.AppVersion | quote }}

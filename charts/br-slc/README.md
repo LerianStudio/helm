@@ -343,7 +343,28 @@ The chart is published as an OCI artifact to GitHub Container Registry:
 helm install my-release oci://ghcr.io/lerianstudio/br-slc-helm --version <chart-version>
 ```
 
-## Port-forward (no Ingress)
+## Ingress (opt-in, disabled by default)
+
+The chart is `ClusterIP`-only by default (BYOC reaches the app over cluster DNS
+or a manually managed edge). An optional Ingress is available for environments
+that want one — enable it and set the class + host(s):
+
+```yaml
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: br-slc.dev-st.lerian.net
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+```
+
+With `ingress.enabled=false` (the default) no Ingress object is rendered.
+
+### Port-forward (no Ingress)
 
 ```bash
 kubectl port-forward svc/my-release-br-slc 4111:4111

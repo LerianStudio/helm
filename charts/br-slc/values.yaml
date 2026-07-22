@@ -61,6 +61,28 @@ service:
   port: 4111
   targetPort: 4111
 
+# Opt-in Ingress — OFF by default. The BYOC default reaches the app over cluster
+# DNS / a manually managed edge (see service.yaml), so an Ingress object is only
+# rendered when enabled=true. Enable per-environment (e.g. internal dev-st) by
+# setting enabled, className, and hosts.
+ingress:
+  # -- Enable or disable ingress
+  enabled: false
+  # -- Ingress class name (e.g. "nginx")
+  className: ""
+  # -- Additional ingress annotations
+  annotations: {}
+  hosts:
+    - host: ""
+      paths:
+        - path: /
+          pathType: Prefix
+  # -- TLS configuration for ingress
+  tls: []
+  #  - secretName: br-slc-tls
+  #    hosts:
+  #      - br-slc.example.local
+
 # Mirrors deployments/helm/slc-signer's hardened posture exactly (Decision 9
 # sidecar precedent): non-root, no privilege escalation, read-only root fs, all
 # capabilities dropped, RuntimeDefault seccomp. /tmp is writable via emptyDir

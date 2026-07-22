@@ -26,3 +26,35 @@ ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" .contex
 OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" .context "configmap" .configmap "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" (.endpointDefault | default "midaz-grafana:4317")) | quote }}
 OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" .context "configmap" .configmap "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" (.deploymentEnvironmentDefault | default "production")) | quote }}
 {{- end -}}
+
+{{/*
+lerian-common.otel.podEnv — OTEL runtime env for the Deployment container.
+Points OTEL_EXPORTER_OTLP_ENDPOINT at the node-local collector via the downward
+HOST_IP. With podAttributes=true it also adds POD_IP + OTEL_RESOURCE_ATTRIBUTES.
+Caller gates on whether the collector is enabled and nindents (usually 10).
+
+Usage (in a component deployment.yaml, inside `env:`):
+  {{- if (index .Values "otel-collector-lerian").enabled }}
+  {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 10 }}
+  {{- end }}
+
+Inputs (dict):
+  port          (opt)  OTLP port (default 4317)
+  podAttributes (opt)  bool — also emit POD_IP + OTEL_RESOURCE_ATTRIBUTES
+*/}}
+{{- define "lerian-common.otel.podEnv" -}}
+- name: "HOST_IP"
+  valueFrom:
+    fieldRef:
+      fieldPath: status.hostIP
+- name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+  value: "$(HOST_IP):{{ .port | default 4317 }}"
+{{- if .podAttributes }}
+- name: "POD_IP"
+  valueFrom:
+    fieldRef:
+      fieldPath: status.podIP
+- name: "OTEL_RESOURCE_ATTRIBUTES"
+  value: "k8s.pod.ip=$(POD_IP)"
+{{- end }}
+{{- end -}}

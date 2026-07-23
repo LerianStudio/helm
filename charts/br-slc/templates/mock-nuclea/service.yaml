@@ -1,0 +1,27 @@
+{{- if .Values.mockNuclea.enabled }}
+{{- /*
+ClusterIP Service for the mock-nuclea standalone Deployment. DEV/HML FIXTURE
+ONLY (never enabled in production/BYOC). Distinct selector from the app's own
+Service (br-slc-mock-nuclea.selectorLabels vs br-slc.selectorLabels) so the two
+never cross-route. The app reaches this Service over cluster DNS at
+br-slc-mock-nuclea:<service.port> — the actual MOCK_NUCLEA_URL /
+NUCLEA_REST_BASE_URL / RSFN_CONSUMER_BASE_URL wiring happens in the dev/hml
+gitops overlay, not in this chart's base values.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "br-slc-mock-nuclea.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-slc-mock-nuclea.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.mockNuclea.service.type }}
+  selector:
+    {{- include "br-slc-mock-nuclea.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.mockNuclea.service.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

@@ -1,0 +1,27 @@
+{{- if and .Values.lender.enabled .Values.lender.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "lender.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lender.labels" (dict "context" . "component" .Values.lender.name "name" .Values.lender.name) | nindent 4 }}
+  {{- with .Values.lender.pdb.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if hasKey .Values.lender.pdb "maxUnavailable" }}
+  maxUnavailable: {{ .Values.lender.pdb.maxUnavailable }}
+  {{- else }}
+  minAvailable: {{ .Values.lender.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- /* Scope to the API component so disruption budgeting counts only API
+             pods, not lenderConsole (shared name/instance). PDB selector is
+             mutable, so this applies on upgrade. (The Deployment selector needs
+             the same discriminator but is immutable — tracked as a follow-up
+             requiring a recreate; HPA/autoscaling is off on these tiers.) */ -}}
+      {{- include "lender.selectorLabels" (dict "context" . "name" .Values.lender.name "component" .Values.lender.name) | nindent 6 }}
+{{- end }}

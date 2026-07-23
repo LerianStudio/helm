@@ -1,0 +1,44 @@
+{{- if and .Values.lender.enabled .Values.lender.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "lender.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lender.labels" (dict "context" . "component" .Values.lender.name "name" .Values.lender.name) | nindent 4 }}
+  {{- with .Values.lender.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.lender.ingress.className }}
+  ingressClassName: {{ .Values.lender.ingress.className }}
+  {{- end }}
+  {{- if .Values.lender.ingress.tls }}
+  tls:
+    {{- range .Values.lender.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.lender.ingress.hosts }}
+    {{- if .host }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "lender.fullname" $ }}
+                port:
+                  number: {{ $.Values.lender.service.port }}
+          {{- end }}
+    {{- end }}
+    {{- end }}
+{{- end }}

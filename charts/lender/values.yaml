@@ -1,0 +1,483 @@
+# Default values for lender components.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+#
+# Chart is multi-component:
+#   * lender        -> the Go API (main component; image tag lands at lender.image.tag)
+#   * lenderConsole -> the Vite/React "lender-console" UI (disabled by default; no image exists yet)
+nameOverride: "lender"
+fullnameOverride: ""
+namespaceOverride: "lender"
+
+global:
+  # -- Bootstrap job for external PostgreSQL: creates database, role, and grants privileges.
+  # This job ONLY provisions the DB/role idempotently. Schema migrations are operator-driven
+  # (cmd/migrate up) and run out-of-band; the runtime image ships no migrate binary.
+  externalPostgresDefinitions:
+    # -- Enable or disable the PostgreSQL bootstrap job
+    enabled: false
+    # -- PostgreSQL connection settings
+    connection:
+      # -- PostgreSQL host
+      host: "lender-postgresql"
+      # -- PostgreSQL port
+      port: "5432"
+    # -- Admin credentials for PostgreSQL
+    postgresAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_USER_ADMIN and DB_ADMIN_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "postgres"
+      # -- Admin password (ignored if useExistingSecret.name is set).
+      # No default: supply explicitly or use useExistingSecret.name.
+      password: ""
+    # -- Credentials for the lender role created by the job
+    lenderCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_PASSWORD_LENDER key
+        name: ""
+      # -- Password for the lender role (ignored if useExistingSecret.name is set).
+      # No default: supply explicitly or use useExistingSecret.name.
+      password: ""
+
+lender:
+  # -- Service name
+  name: lender
+
+  # -- Service description
+  description: "Lerian credit journey engine (API)"
+
+  # -- Enable or disable the lender API service
+  enabled: true
+
+  # -- Number of replicas for the lender service
+  replicaCount: 1
+
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
+  image:
+    # -- Repository for the lender API container image
+    repository: ghcr.io/lerianstudio/lender
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag used for deployment (release pipeline sets this via lender.tag mapping)
+    tag: "1.0.0-beta.48"
+
+  # -- Secrets for pulling images from a private registry
+  imagePullSecrets:
+    - name: ghcr-credential
+
+  # -- Pod annotations for additional metadata
+  podAnnotations: {}
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext:
+    # -- Defines the group ID for the user running the process inside the container
+    runAsGroup: 1000
+    # -- Defines the user ID for the process running inside the container
+    runAsUser: 1000
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    # -- Blocks privilege escalation inside the container
+    allowPrivilegeEscalation: false
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: true
+    # -- Minimum number of available pods
+    minAvailable: 1
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+
+  # -- Deployment update strategy
+  deploymentUpdate:
+    # -- Type of deployment strategy
+    type: RollingUpdate
+    # -- Maximum number of pods that can be created over the desired number of pods
+    maxSurge: 1
+    # -- Maximum number of pods that can be unavailable during the update
+    maxUnavailable: 1
+
+  service:
+    # -- Kubernetes service type
+    type: ClusterIP
+    # -- Port for the HTTP API (SERVER_ADDRESS binds 0.0.0.0:4017)
+    port: 4017
+    annotations: {}
+
+  ingress:
+    # -- Enable or disable ingress
+    enabled: true
+    # -- Ingress class name
+    className: "nginx"
+    # -- Additional ingress annotations (host/group set by GitOps values)
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Lender"
+      gethomepage.dev/description: "Lerian credit journey engine"
+    hosts:
+      - host: "lender.lerian.net"
+        paths:
+          - path: /
+            pathType: Prefix
+    # -- TLS configuration for ingress
+    tls: []
+
+  resources:
+    # -- CPU and memory limits for pods
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    # -- Minimum CPU and memory requests
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  autoscaling:
+    # -- Enable or disable horizontal pod autoscaling
+    enabled: true
+    # -- Minimum number of replicas
+    minReplicas: 1
+    # -- Maximum number of replicas
+    maxReplicas: 5
+    # -- Target CPU utilization percentage for autoscaling
+    targetCPUUtilizationPercentage: 80
+    # -- Target memory utilization percentage for autoscaling
+    targetMemoryUtilizationPercentage: 80
+
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: {}
+
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+
+  # -- ConfigMap for non-sensitive environment variables.
+  # @default -- templates/configmap.yaml
+  # NOTE: keys mirror config/.env.example (the app config superset). Feature flags default OFF
+  # so the service boots single-tenant with rabbit/streaming/multi-tenant/outbox disabled.
+  configmap:
+    # Application Settings
+    ENV_NAME: "production"
+    LOG_LEVEL: "info"
+    DEPLOYMENT_MODE: "production"
+    SERVER_ADDRESS: ":4017"
+    HTTP_BODY_LIMIT_BYTES: "104857600"
+
+    # CORS (legacy names)
+    CORS_ALLOWED_ORIGINS: "*"
+    CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID,X-Idempotency,Idempotency-Key"
+    CORS_EXPOSE_HEADERS: ""
+    CORS_ALLOW_CREDENTIALS: "false"
+
+    # CORS (active lib-commons ACCESS_CONTROL_* names)
+    ACCESS_CONTROL_ALLOW_ORIGIN: "*"
+    ACCESS_CONTROL_ALLOW_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    ACCESS_CONTROL_ALLOW_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID,X-Idempotency,Idempotency-Key"
+    ACCESS_CONTROL_EXPOSE_HEADERS: ""
+    ACCESS_CONTROL_ALLOW_CREDENTIALS: "false"
+
+    # TLS
+    TLS_TERMINATED_UPSTREAM: "true"
+
+    # Tenancy
+    DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
+
+    # PostgreSQL (primary, non-secret)
+    POSTGRES_HOST: "postgres.lender.lerian.net"
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "lender"
+    POSTGRES_NAME: "lender"
+    POSTGRES_SSLMODE: "disable"
+    # lib-commons refuses a plaintext (sslmode=disable) connection unless this is set.
+    # Managed data tier is plaintext, so default is "true".
+    ALLOW_INSECURE_TLS: "true"
+    MIGRATIONS_PATH: "migrations"
+    MIGRATIONS_BR_PATH: "internal/jurisdictions/br/migrations"
+
+    # PostgreSQL connection pool
+    POSTGRES_MAX_OPEN_CONNS: "25"
+    POSTGRES_MAX_IDLE_CONNS: "5"
+    POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
+    POSTGRES_CONN_MAX_IDLE_TIME_MINS: "5"
+    POSTGRES_CONNECT_TIMEOUT_SEC: "10"
+
+    # Redis / Valkey (non-secret)
+    REDIS_HOST: "valkey.lender.lerian.net:6379"
+    REDIS_DB: "0"
+    REDIS_PROTOCOL: "3"
+    REDIS_POOL_SIZE: "10"
+    REDIS_MIN_IDLE_CONNS: "2"
+    REDIS_READ_TIMEOUT: "3"
+    REDIS_WRITE_TIMEOUT: "3"
+    REDIS_DIAL_TIMEOUT: "5"
+    REDIS_POOL_TIMEOUT: "2"
+    REDIS_MAX_RETRIES: "3"
+    REDIS_MIN_RETRY_BACKOFF: "8"
+    REDIS_MAX_RETRY_BACKOFF: "1"
+
+    # Authentication (lib-auth + plugin-auth)
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth:4000"
+
+    # API Documentation (unified Huma OpenAPI 3.1)
+    SWAGGER_ENABLED: "true"
+
+    # Local resilience sample provider mode
+    EXAMPLE_STATUS_PROVIDER_MODE: "healthy"
+
+    # Infrastructure boot timeout
+    INFRA_CONNECT_TIMEOUT_SEC: "30"
+
+    # OpenTelemetry
+    ENABLE_TELEMETRY: "false"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/lender"
+    OTEL_RESOURCE_SERVICE_NAME: "lender"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    DB_METRICS_INTERVAL_SEC: "15"
+
+    # Rate limiting
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    ALLOW_RUNTIME_RATELIMIT_DISABLE: "true"
+
+    # Idempotency
+    IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
+
+    # Pagination
+    MAX_PAGINATION_LIMIT: "100"
+    MAX_PAGINATION_MONTH_DATE_RANGE: "3"
+
+    # M2M credentials (non-secret; provider stays off until M2M_TARGET_SERVICE is set)
+    M2M_CREDENTIAL_CACHE_TTL_SEC: "300"
+    AWS_REGION: "us-east-1"
+
+    # Circuit breaker starter
+    CIRCUIT_BREAKER_ENABLED: "false"
+
+    # Borrower collection issuance (off)
+    COLLECTION_ENABLED: "false"
+
+    # Bounded raw-body collection webhook listener (off)
+    COLLECTION_WEBHOOK_ENABLED: "false"
+    COLLECTION_WEBHOOK_ADDRESS: ":9081"
+    COLLECTION_WEBHOOK_BODY_LIMIT_BYTES: "1048576"
+    COLLECTION_WEBHOOK_MAX_SKEW_SEC: "300"
+    COLLECTION_WEBHOOK_UPSTREAM_TLS_TERMINATION_VALIDATED: "false"
+
+    # Outbox starter (off; all knobs non-sensitive)
+    OUTBOX_ENABLED: "false"
+    OUTBOX_TABLE_NAME: "outbox_events"
+    OUTBOX_DISPATCH_INTERVAL_SEC: "2"
+    OUTBOX_BATCH_SIZE: "50"
+    OUTBOX_PUBLISH_MAX_ATTEMPTS: "3"
+    OUTBOX_PUBLISH_BACKOFF_MS: "200"
+    OUTBOX_RETRY_WINDOW_SEC: "300"
+    OUTBOX_MAX_DISPATCH_ATTEMPTS: "10"
+    OUTBOX_PROCESSING_TIMEOUT_SEC: "600"
+    OUTBOX_MAX_FAILED_PER_BATCH: "25"
+    OUTBOX_INCLUDE_TENANT_METRICS: "false"
+    OUTBOX_ALLOW_EMPTY_TENANT: "true"
+
+    # Streaming (Redpanda/Kafka) starter (off; non-secret knobs; SASL creds via secrets passthrough)
+    STREAMING_ENABLED: "false"
+    STREAMING_BROKERS: "localhost:9092"
+    STREAMING_CLIENT_ID: "lender"
+    STREAMING_CB_FAILURE_RATIO: "0.5"
+    STREAMING_CB_MIN_REQUESTS: "10"
+    STREAMING_CB_TIMEOUT_S: "30"
+    STREAMING_CLOSE_TIMEOUT_S: "30"
+    STREAMING_TLS_ENABLED: "false"
+
+    # Inbound consignado consumer opt-in flags (all dark by default)
+    CONSUMER_CONSIGNADO_AVERBACAO_CONFIRMED_ENABLED: "false"
+    CONSUMER_CONSIGNADO_AVERBACAO_REJECTED_ENABLED: "false"
+    CONSUMER_CONSIGNADO_EMPLOYMENT_STATUS_REPORTED_ENABLED: "false"
+    CONSUMER_CONSIGNADO_REDIRECTION_OUTCOME_ENABLED: "false"
+    CONSUMER_CONSIGNADO_RECONCILIATION_RECEIVED_ENABLED: "false"
+    CONSUMER_CONSIGNADO_MATCH_RUN_COMPLETED_ENABLED: "false"
+
+    # Consignado exclusion local worker tunables
+    CONSIGNADO_EXCLUSION_LOCAL_BATCH_SIZE: "50"
+    CONSIGNADO_EXCLUSION_LOCAL_TENANT_CONCURRENCY: "4"
+    CONSIGNADO_EXCLUSION_LOCAL_LEASE_SECONDS: "30"
+    CONSIGNADO_EXCLUSION_LOCAL_BACKOFF_BASE_SECONDS: "1"
+    CONSIGNADO_EXCLUSION_LOCAL_BACKOFF_MAX_SECONDS: "300"
+    CONSIGNADO_EXCLUSION_LOCAL_POLL_INTERVAL_MS: "1000"
+
+    # RabbitMQ starter (off; non-secret knobs; RABBITMQ_DEFAULT_PASS via secrets passthrough)
+    RABBITMQ_ENABLED: "false"
+    RABBITMQ_HOST: "localhost"
+    RABBITMQ_PORT_AMQP: "5672"
+    RABBITMQ_PORT_HOST: "15672"
+    RABBITMQ_DEFAULT_USER: "lender"
+    RABBITMQ_VHOST: "/"
+    RABBITMQ_EXCHANGE: "events"
+    RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: "false"
+    RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: "false"
+    RABBITMQ_ALLOW_INSECURE_TLS: "false"
+    RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS: "5000"
+    RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS: "1000"
+    RABBITMQ_PUBLISHER_RECOVERY_MAX_MS: "30000"
+    RABBITMQ_PUBLISHER_MAX_RECOVERIES: "10"
+
+    # Multi-tenant starter (off). When enabled, the block below is rendered and
+    # MULTI_TENANT_URL / MULTI_TENANT_REDIS_HOST become required.
+    MULTI_TENANT_ENABLED: "false"
+
+  # -- Secrets for storing sensitive data (rendered as stringData; AVP substitutes <path:...>).
+  # Range-based: add any additional credential key here (e.g. RABBITMQ_DEFAULT_PASS,
+  # MULTI_TENANT_SERVICE_API_KEY, MULTI_TENANT_REDIS_PASSWORD, STREAMING_SASL_PASSWORD)
+  # to inject it as an env var when you enable the corresponding feature.
+  # @default -- templates/secrets.yaml
+  secrets:
+    # -- PostgreSQL password. No default: supply explicitly (e.g. AVP <path:...>)
+    # or set useExistingSecret=true. Install fails if empty and useExistingSecret=false.
+    POSTGRES_PASSWORD: ""
+    # -- Redis / Valkey password (empty if auth disabled)
+    REDIS_PASSWORD: ""
+    # -- JWT signing secret
+    AUTH_JWT_SECRET: ""
+
+  # -- Use an existing secret instead of rendering the secrets block
+  useExistingSecret: false
+  existingSecretName: ""
+
+  # -- Extra environment variables (name/value) merged into the ConfigMap.
+  # GitOps escape hatch: set any additional key without a chart change.
+  extraEnvVars: []
+
+  serviceAccount:
+    # -- Specifies whether a ServiceAccount should be created
+    create: true
+    # -- Annotations for the ServiceAccount
+    annotations: {}
+    # -- Name of the service account
+    # @default -- `lender.fullname`
+    name: ""
+
+# lender-console (UI) — Vite/React SPA "lender-console".
+# DISABLED by default: there is no UI image published today (no UI Dockerfile;
+# the release pipeline builds only the Go API image). The skeleton below lets a
+# future UI be wired without a chart change; keep enabled=false until an image exists.
+lenderConsole:
+  # -- Enable or disable the lender console (UI) component
+  enabled: false
+
+  # -- Service name
+  name: lender-console
+
+  # -- Number of replicas for the console
+  replicaCount: 1
+
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
+  image:
+    # -- Repository for the console (UI) container image. Published as `lender-ui`
+    #    (Vite SPA -> nginx-unprivileged), matching the matcher-ui convention.
+    repository: ghcr.io/lerianstudio/lender-ui
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag (must be set before enabling the component)
+    tag: ""
+
+  # -- Secrets for pulling images from a private registry
+  imagePullSecrets:
+    - name: ghcr-credential
+
+  # -- Pod annotations for additional metadata
+  podAnnotations: {}
+
+  podSecurityContext: {}
+
+  securityContext:
+    # uid/gid 101 = the nginxinc/nginx-unprivileged runtime user (matches the
+    # lender-ui image and the matcher-ui reference). NOT 1000.
+    runAsGroup: 101
+    runAsUser: 101
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    allowPrivilegeEscalation: false
+    # readOnlyRootFilesystem intentionally NOT defaulted here (repo strict
+    # validator rejects a `false` chart default). nginx-unprivileged needs a
+    # writable root fs (pid/temp/cache under /tmp and /var/cache/nginx, plus the
+    # /config.js render at start), so every environment that enables the console
+    # sets `readOnlyRootFilesystem: false` explicitly in its own values overlay.
+    # With the key unset the container inherits the Kubernetes default (writable),
+    # which matches that behavior. Proper fix (emptyDir mounts + readOnly=true,
+    # as matcher-ui does) is tracked as a follow-up.
+    seccompProfile:
+      type: RuntimeDefault
+
+  service:
+    # -- Kubernetes service type
+    type: ClusterIP
+    # -- Port for the UI HTTP server
+    port: 8080
+    annotations: {}
+
+  ingress:
+    # -- Enable or disable ingress
+    enabled: true
+    # -- Ingress class name
+    className: "nginx"
+    # -- Additional ingress annotations (host/group set by GitOps values)
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    hosts:
+      - host: "lender-console.lerian.net"
+        paths:
+          - path: /
+            pathType: Prefix
+    # -- TLS configuration for ingress
+    tls: []
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: {}
+
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+
+  # -- ConfigMap for the console (non-sensitive UI runtime config)
+  configmap: {}
+
+  # -- Extra environment variables (name/value) for the console
+  extraEnvVars: []

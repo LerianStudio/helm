@@ -1,0 +1,44 @@
+{{- if .Values.lender.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lender.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lender.labels" (dict "context" . "component" .Values.lender.name "name" .Values.lender.name) | nindent 4 }}
+data:
+  # Auto-generated version (from image tag, falls back to Chart.AppVersion)
+  VERSION: {{ .Values.lender.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.lender.image.tag | default .Chart.AppVersion | quote }}
+
+  # Non-sensitive environment (mirrors config/.env.example superset).
+  # MULTI_TENANT_* sub-keys are owned by the gated block below; only
+  # MULTI_TENANT_ENABLED is emitted here to avoid duplicate ConfigMap keys.
+  {{- range $key, $value := .Values.lender.configmap }}
+  {{- if or (not (hasPrefix "MULTI_TENANT_" $key)) (eq $key "MULTI_TENANT_ENABLED") }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+
+  # Multi-tenant starter (rendered only when MULTI_TENANT_ENABLED=true)
+  {{- if eq (.Values.lender.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  MULTI_TENANT_URL: {{ required "lender.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.lender.configmap.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ required "lender.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.lender.configmap.MULTI_TENANT_REDIS_HOST | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ .Values.lender.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ .Values.lender.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.lender.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.lender.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
+  MULTI_TENANT_TIMEOUT: {{ .Values.lender.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.lender.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.lender.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.lender.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.lender.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
+  {{- end }}
+
+  # Extra env vars (GitOps passthrough)
+  {{- with .Values.lender.extraEnvVars }}
+  {{- range . }}
+  {{ .name }}: {{ .value | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

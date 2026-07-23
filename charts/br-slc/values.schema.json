@@ -489,6 +489,19 @@
             "targetPort": { "type": "integer", "minimum": 1, "maximum": 65535 }
           }
         },
+        "spbKeysSecret": {
+          "type": "object",
+          "required": ["enabled"],
+          "if": { "properties": { "enabled": { "const": true } } },
+          "then": { "required": ["secretName"], "properties": { "secretName": { "minLength": 1 } } },
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "secretName": { "type": "string" },
+            "mountPath": { "type": "string", "minLength": 1 },
+            "recipientKeyItem": { "type": "string", "minLength": 1 },
+            "emitterCertItem": { "type": "string", "minLength": 1 }
+          }
+        },
         "resources": {
           "type": "object",
           "properties": {

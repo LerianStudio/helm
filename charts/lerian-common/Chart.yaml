@@ -1,5 +1,5 @@
 apiVersion: v2
-name: lerian-common
+name: lerian-common-helm
 description: >-
   Lerian shared Helm library. Factors the logic duplicated across the product
   charts into render-equivalent helpers consumed via `include`: env contracts

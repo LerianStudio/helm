@@ -1,0 +1,36 @@
+apiVersion: v2
+name: streaming-hub-helm
+description: >-
+  Lerian streaming-hub — consumes lib-streaming CloudEvents from Kafka/Redpanda
+  and fans them out to per-tenant SaaS/BYOC subscribers. Multi-component chart
+  with a runtime STREAMING_HUB_ROLE model (mode: all | split).
+type: application
+# version is a PLACEHOLDER. semantic-release in the `helm` repo owns the real
+# chart version on merge — do NOT hand-pick a final number here.
+
+version: 1.0.0-beta.4
+appVersion: "1.0.0"
+
+annotations:
+  lerian.studio/chart-type: multi-component
+home: https://github.com/LerianStudio/streaming-hub
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/streaming-hub
+  - https://github.com/LerianStudio/streaming-hub
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+keywords:
+  - streaming
+  - cloudevents
+  - kafka
+  - redpanda
+  - fan-out
+  - lerian
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+# NO dependencies block by deliberate design (deviation from reporter/midaz):
+# OTEL is env-wired via the OTEL_EXPORTER_OTLP_ENDPOINT downward-API override,
+# not bundled as an otel-collector-lerian subchart. Declaring it would force an
+# OCI pull on every `helm lint` / `helm template`. Kafka/Redpanda and Postgres
+# are shared external infra, never subcharts here.

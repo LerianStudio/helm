@@ -71,12 +71,7 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           resources:
-            limits:
-              cpu: "100m"
-              memory: 32Mi
-            requests:
-              cpu: "10m"
-              memory: 16Mi
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
       {{- end }}
       containers:
         - name: migrations

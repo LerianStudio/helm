@@ -239,3 +239,25 @@ Distinct image from the app (its own release-pipeline artifact).
 {{- $tag := .Values.mockNuclea.image.tag | default .Chart.AppVersion -}}
 {{- printf "%s:%s" .Values.mockNuclea.image.repository $tag -}}
 {{- end -}}
+
+{{/*
+GOMAXPROCS env entry derived from the container's CFS cpu limit (Gate 8 FIX 7).
+Pass the container's resources map (e.g. .Values.signer.resources) as the
+context. Without this the Go runtime defaults GOMAXPROCS to the NODE core count
+(it can't see the container cpu.limit), causing needless CFS throttling under
+load; the downward-API resourceFieldRef rounds limits.cpu up to the nearest
+whole core (divisor "1"), matching the CFS quota. Guarded with `with`+`if .cpu`
+so a values override that sets resources.limits to nil (a legitimate Burstable /
+no-limit override) renders nothing instead of erroring on `.cpu` of a nil map.
+*/}}
+{{- define "br-slc.gomaxprocsEnv" -}}
+{{- with .limits }}
+{{- if .cpu -}}
+- name: GOMAXPROCS
+  valueFrom:
+    resourceFieldRef:
+      resource: limits.cpu
+      divisor: "1"
+{{- end }}
+{{- end }}
+{{- end -}}

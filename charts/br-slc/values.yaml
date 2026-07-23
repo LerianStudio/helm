@@ -107,6 +107,14 @@ resources:
     cpu: 250m
     memory: 256Mi
 
+# Pod scheduling (applies to the app pod: br-slc + signer + validator + mqbridge).
+# nodeSelector is merged with the mqbridge amd64 arch pin when mqbridge.enabled
+# (the arch constraint wins and cannot be removed here); affinity/tolerations
+# pass through as-is.
+nodeSelector: {}
+affinity: {}
+tolerations: []
+
 # Liveness: process viability only (no dependency checks) — /health.
 livenessProbe:
   httpGet:
@@ -278,8 +286,8 @@ configmap:
     REDIS_DIAL_TIMEOUT: "5"
     REDIS_POOL_TIMEOUT: "2"
     REDIS_MAX_RETRIES: "3"
-    REDIS_MIN_RETRY_BACKOFF: "8"
-    REDIS_MAX_RETRY_BACKOFF: "1"
+    REDIS_MIN_RETRY_BACKOFF: "1"
+    REDIS_MAX_RETRY_BACKOFF: "8"
 
     # --- Event-Driven Starter - Circuit Breaker ---
     CIRCUIT_BREAKER_ENABLED: "false"

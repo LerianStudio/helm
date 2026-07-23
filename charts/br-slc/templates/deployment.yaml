@@ -52,27 +52,8 @@ spec:
             - configMapRef:
                 name: {{ include "br-slc.fullname" . }}
           env:
-            {{- /* Gate 8 FIX 7: without this, the Go runtime defaults
-            GOMAXPROCS to the NODE's core count (it can't see the container's
-            CFS cpu.limit), causing needless CFS throttling under load. The
-            downward API's resourceFieldRef rounds the cpu limit up to the
-            nearest whole core (divisor "1"), matching the CFS quota. Guarded
-            with `with` (not a plain `if .Values.resources.limits.cpu`) so a
-            values override that sets resources.limits to nil (a legitimate
-            way to ship a Burstable/no-limit override, not just an omitted
-            key) doesn't panic the render — dotting straight into `.cpu` on a
-            nil `resources.limits` errors ("nil pointer evaluating
-            interface{}.cpu"), whereas `with` only evaluates `.cpu` once it
-            has already confirmed the piped value is non-nil/non-empty. */}}
-            {{- with .Values.resources.limits }}
-            {{- if .cpu }}
-            - name: GOMAXPROCS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
-                  divisor: "1"
-            {{- end }}
-            {{- end }}
+            {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
+            {{- include "br-slc.gomaxprocsEnv" .Values.resources | nindent 12 }}
             {{- range $key, $value := .Values.secrets.data }}
             - name: {{ $key }}
               valueFrom:
@@ -109,19 +90,8 @@ spec:
             - configMapRef:
                 name: {{ include "br-slc.fullname" . }}-signer
           env:
-            {{- /* GOMAXPROCS from the container CFS cpu limit — same
-            downward-API fix as the br-slc container (Gate 8 FIX 7); the signer
-            is a CPU-limited Go process on the fail-closed ASLC signing hot
-            path. Guarded with `with`+`if .cpu` so a nil-limit override renders. */}}
-            {{- with .Values.signer.resources.limits }}
-            {{- if .cpu }}
-            - name: GOMAXPROCS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
-                  divisor: "1"
-            {{- end }}
-            {{- end }}
+            {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
+            {{- include "br-slc.gomaxprocsEnv" .Values.signer.resources | nindent 12 }}
             {{- range $key, $value := .Values.signer.secrets.data }}
             - name: {{ $key }}
               valueFrom:
@@ -160,19 +130,8 @@ spec:
             - configMapRef:
                 name: {{ include "br-slc.fullname" . }}-validator
           env:
-            {{- /* GOMAXPROCS from the container CFS cpu limit — same
-            downward-API fix as the br-slc container (Gate 8 FIX 7); the
-            validator is a CPU-limited Go process on the fail-closed ASLC XSD
-            hot path. Guarded so a nil-limit override renders. */}}
-            {{- with .Values.xsdValidator.resources.limits }}
-            {{- if .cpu }}
-            - name: GOMAXPROCS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
-                  divisor: "1"
-            {{- end }}
-            {{- end }}
+            {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
+            {{- include "br-slc.gomaxprocsEnv" .Values.xsdValidator.resources | nindent 12 }}
           livenessProbe:
             {{- include "br-slc.httpProbe" .Values.xsdValidator.livenessProbe | nindent 12 }}
           readinessProbe:
@@ -204,18 +163,8 @@ spec:
             - configMapRef:
                 name: {{ include "br-slc.fullname" . }}-mqbridge
           env:
-            {{- /* GOMAXPROCS from the container CFS cpu limit — same
-            downward-API fix as the br-slc container (Gate 8 FIX 7); mqbridge is
-            a CPU-limited Go process. Guarded so a nil-limit override renders. */}}
-            {{- with .Values.mqbridge.resources.limits }}
-            {{- if .cpu }}
-            - name: GOMAXPROCS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
-                  divisor: "1"
-            {{- end }}
-            {{- end }}
+            {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
+            {{- include "br-slc.gomaxprocsEnv" .Values.mqbridge.resources | nindent 12 }}
             {{- range $key, $value := .Values.mqbridge.secrets.data }}
             - name: {{ $key }}
               valueFrom:
@@ -280,12 +229,24 @@ spec:
         {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- /* Decisão 21: pod-level amd64 pin, present ONLY when mqbridge is
-      enabled. The IBM MQ Redistributable Client (libmqm/GSKit) this bridge
-      links is published for Linux x86_64 only, so the whole pod must schedule
-      onto amd64 nodes. Absent when mqbridge is disabled (no arch constraint on
-      the app+signer+validator pod). */}}
+      {{- /* Pod scheduling. Decisão 21: when mqbridge is enabled the whole pod
+      MUST land on amd64 (the IBM MQ Redistributable Client / GSKit it links is
+      Linux x86_64-only), so the arch constraint is merged LAST (dest wins) and
+      cannot be dropped by a nodeSelector override. Generic nodeSelector /
+      affinity / tolerations are otherwise passed through from values. */}}
+      {{- $nodeSelector := .Values.nodeSelector | default dict }}
       {{- if .Values.mqbridge.enabled }}
+      {{- $nodeSelector = merge (dict "kubernetes.io/arch" "amd64") $nodeSelector }}
+      {{- end }}
+      {{- with $nodeSelector }}
       nodeSelector:
-        kubernetes.io/arch: amd64
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
       {{- end }}

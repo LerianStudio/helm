@@ -101,6 +101,124 @@ When (and only when) `mqbridge.enabled=true`:
 > (Decisão 21) — escalate as a DOUBT, do not force multi-replica with the
 > bridge enabled.
 
+## Optional `mock-nuclea` Deployment (ADR-23) — DEV/HML/BYOC-TEST ONLY
+
+`mock-nuclea` is the Núclea clearing-house **simulator**. It ships in this chart
+as a **separate, optional Deployment** (its own pod + `ClusterIP` Service,
+`mockNuclea.enabled: false` by default) — **not** a same-pod sidecar (team
+decision 2026-07-23): keeping it a distinct pod keeps the app pod small and its
+scaling independent, and toggling the fixture never touches the app pod. It lets
+a client validate the **real BYOC deploy flow** (including the signed credit
+round-trip) before they have Núclea access; when they do, it is a simple repoint
+(disable the mock, point the URLs at Núclea).
+
+> **NEVER enabled in production/BYOC-prod.** The Deployment renders a hard `fail`
+> guard when `mockNuclea.enabled=true` under `ENV_NAME=production` or
+> `DEPLOYMENT_MODE=saas` (ADR-23; mirrors the app's own
+> `validateDispatchDevRecipientConfig`). Since the chart's base `ENV_NAME`
+> defaults to `production`, enabling the fixture **requires** an overlay that
+> also sets a non-prod `ENV_NAME` (e.g. `sandbox`/`staging`).
+>
+> **Guard premise (know this before relying on it):** it keys off the chart's
+> **declared** `configmap.data.ENV_NAME` / `configmap.data.DEPLOYMENT_MODE` — the
+> same values the chart feeds the app — and matches the **exact** strings
+> `production` / `saas`, mirroring the app's `isProductionOrSaaS()`. Two
+> consequences: (1) it does not inspect an `ENV_NAME` sourced outside the chart
+> (e.g. an external Secret); because the base default is `production` this stays
+> fail-safe, but keep `configmap.data.*` authoritative. (2) `DEPLOYMENT_MODE`
+> defaults to `byoc`, so a **BYOC-prod** deploy is caught only by the
+> `ENV_NAME=production` half — a real production tier (BYOC included) **must**
+> carry `ENV_NAME=production` for both this guard and the app's own guard to
+> engage. Never run a prod tier under a non-`production` `ENV_NAME`.
+
+When `mockNuclea.enabled=true`:
+
+- A separate `br-slc-mock-nuclea` Deployment + `ClusterIP` Service is rendered.
+  Point the app at it in the overlay: `NUCLEA_REST_BASE_URL` /
+  `RSFN_CONSUMER_BASE_URL=http://br-slc-mock-nuclea:9190` (cluster DNS).
+- **SPB key material is provisioned EXTERNALLY** (the point of this fixture — it
+  exercises the real flow where the client sets the public/private material). All
+  four files must come from ONE self-consistent set (mint one with the mock
+  image's `-gen`), distributed to the three consumers:
+  | Consumer | Needs | Provisioned via |
+  |---|---|---|
+  | `mock-nuclea` (this pod) | `recipient.key` (unwrap C14) + `emitter.crt` (verify C15) | `mockNuclea.spbKeysSecret` (Secret mounted read-only) |
+  | `slc-signer` (app pod) | `signer.pfx` (sign C15) | `signer.softkeySecret` (existing) |
+  | `br-slc` app (app pod) | `recipient.crt` (encrypt C14) | `extraVolumes`/`extraVolumeMounts` + `DISPATCH_DEV_RECIPIENT_CERT_PATH` (overlay) |
+- `mockNuclea.spbKeysSecret.enabled: false` leaves the mock a bare
+  connectivity/health fixture (no keys, no signed round-trip).
+
+### Provisioning the SPB key set (signed round-trip runbook)
+
+> ⚠️ The four files **must all come from a SINGLE `-gen` run**. `-gen` mints fresh
+> RSA keys on every invocation, and each file is independently valid, so mixing
+> files from different runs **boots green and only fails at dispatch time** with
+> an opaque `verify C15 signature failed` / symmetric-key-unwrap error in the
+> **mock's** logs. Mint once, build all three Secrets from that one output dir,
+> and rotate them together.
+
+**1. Mint the set once.** The image is distroless (no shell, non-root uid 65532),
+so run `-gen` as a one-shot container writing to a host dir the uid can write:
+
+```bash
+mkdir -p spb-keys
+# The container runs as uid 65532 and writes the four files into the bind mount,
+# so the host dir must be writable by that uid (throwaway dev keys → world-writable
+# is fine). Without this, `-gen` fails with permission-denied on /spb-keys.
+chmod 777 spb-keys
+docker run --rm -u 65532:65532 -v "$PWD/spb-keys:/spb-keys" \
+  -e SIGNER_SOFTKEY_PFX_PASSPHRASE="$PFX_PASS" \
+  ghcr.io/lerianstudio/br-slc-mock-nuclea:<tag> -gen -out /spb-keys
+# → spb-keys/{recipient.key, recipient.crt, emitter.crt, signer.pfx}
+```
+
+**2. Build the three Secrets from that ONE dir** (exact key names the chart expects):
+
+```bash
+# All three Secrets MUST live in the same namespace as the br-slc release — the
+# chart renders the pods into `global.namespace` (namespaceOverride, else the
+# install namespace), so a Secret in any other namespace simply won't mount.
+NS=<your br-slc release namespace>   # = namespaceOverride if set, else the -n/--namespace you pass to `helm install`
+kubectl create secret generic br-slc-mock-spb-keys --namespace "$NS" \
+  --from-file=recipient.key=spb-keys/recipient.key \
+  --from-file=emitter.crt=spb-keys/emitter.crt      # → mockNuclea.spbKeysSecret
+kubectl create secret generic br-slc-signer-softkey --namespace "$NS" \
+  --from-file=signer.pfx=spb-keys/signer.pfx        # → signer.softkeySecret
+kubectl create secret generic br-slc-dev-recipient --namespace "$NS" \
+  --from-file=recipient.crt=spb-keys/recipient.crt  # → app, via extraVolumes
+```
+
+**3. Wire the overlay** (all under a non-prod `ENV_NAME`, or the guard blocks the render):
+
+```yaml
+mockNuclea:
+  enabled: true
+  spbKeysSecret: { enabled: true, secretName: br-slc-mock-spb-keys }
+signer:
+  softkeySecret: { enabled: true, secretName: br-slc-signer-softkey }
+  secrets:
+    data:
+      # ⚠️ MUST equal the $PFX_PASS used at `-gen` time. Leaving it empty does NOT
+      # fall back to "test-passphrase" (that default is only inside `-gen`); an
+      # empty value here fails the PKCS#12 decode and the signer never gets Ready.
+      SIGNER_SOFTKEY_PFX_PASSPHRASE: "<same as $PFX_PASS>"
+extraVolumes:
+  - name: dev-recipient
+    secret: { secretName: br-slc-dev-recipient }
+extraVolumeMounts:
+  - name: dev-recipient
+    mountPath: /dev-recipient
+    readOnly: true
+configmap:
+  data:
+    # Path MUST equal the mount above + the file name. The app needs a CERTIFICATE
+    # PEM here (not a bare public key). It fails closed at boot if unreadable.
+    DISPATCH_DEV_RECIPIENT_CERT_PATH: /dev-recipient/recipient.crt
+```
+
+Disable everything (or just `spbKeysSecret`) to fall back to a bare
+connectivity/health mock with no signed round-trip.
+
 ## Install
 
 ```bash

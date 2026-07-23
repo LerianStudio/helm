@@ -912,6 +912,28 @@ mockNuclea:
     type: ClusterIP
     port: 9190
     targetPort: 9190
+  # Externally provisioned SPB key material for the signed credit round-trip
+  # (spb_envelope scenario). OFF by default — the mock then runs as a bare
+  # connectivity/health fixture. When enabled, the OPERATOR/CLIENT provides a
+  # Secret (this exercises the REAL BYOC deploy flow: the client sets the
+  # public/private key material themselves, exactly like the ICP-Brasil cert in
+  # production) exposing the recipient PRIVATE key (mock unwraps C14) and the
+  # emitter PUBLIC cert (mock verifies C15). The signer's own signer.pfx is
+  # provisioned separately via signer.softkeySecret; the app's recipient PUBLIC
+  # cert via extraVolumes + DISPATCH_DEV_RECIPIENT_CERT_PATH — all from the SAME
+  # self-consistent set (mint one with the mock image's `-gen`). Reached over
+  # cluster DNS; the mock is a SEPARATE pod, so no in-pod key sharing.
+  spbKeysSecret:
+    enabled: false
+    # Existing Secret holding the SPB key material, e.g.:
+    #   kubectl create secret generic br-slc-mock-spb-keys \
+    #     --from-file=recipient.key=./recipient.key --from-file=emitter.crt=./emitter.crt
+    secretName: ""
+    mountPath: "/spb-keys"
+    # Key names WITHIN the Secret (surfaced to the container as recipient.key /
+    # emitter.crt regardless of the Secret's own key names).
+    recipientKeyItem: "recipient.key"
+    emitterCertItem: "emitter.crt"
   # Distroless static nonroot binary (USER 65532) that writes nothing to disk,
   # so readOnlyRootFilesystem is safe with no /tmp emptyDir needed (unlike the
   # app/signer/validator containers above).

@@ -202,8 +202,23 @@ jobs:
           oras cp "ghcr.io/lerianstudio/${PACKAGE}:${VERSION}" "ghcr.io/lerianstudio/${PACKAGE}:latest"
           oras cp "registry-1.docker.io/lerianstudio/${PACKAGE}:${VERSION}" "registry-1.docker.io/lerianstudio/${PACKAGE}:latest"
 
+      # Library charts (type: library) are consumed by other charts and are not
+      # deployable applications, so they must not be registered in the Plugin
+      # Lifecycle Management. Detect the chart kind to gate the step below.
+      - name: Detect library chart
+        id: chart-kind
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
+        run: |
+          if grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "$CHART_WORKING_DIR/Chart.yaml"; then
+            echo "is_library=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::$CHART_WORKING_DIR is a library chart — skipping Plugin Lifecycle Management."
+          else
+            echo "is_library=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish Release in Plugin Lifecycle Management
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.is_library != 'true'
         uses: LerianStudio/github-actions-lifecycle-management@main
         with:
           chart_name: "${{ matrix.chart.name }}"

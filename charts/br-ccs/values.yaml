@@ -1,0 +1,716 @@
+# Default values for br-ccs.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+#
+# Env-var coverage note: every variable in the application's config/.env.example
+# is mapped either into brCcs.configmap (non-secret) or brCcs.secrets
+# (credentials / keys), or is provided by a bundled subchart. Operational tuning
+# knobs that ship with lib-commons / systemplane defaults are exposed as
+# optional entries and can be set under brCcs.configmap as needed.
+nameOverride: "br-ccs"
+fullnameOverride: ""
+namespaceOverride: ""
+global:
+  # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
+  externalPostgresDefinitions:
+    # -- Enable or disable the PostgreSQL bootstrap job
+    enabled: false
+    # -- PostgreSQL connection settings
+    connection:
+      # -- PostgreSQL host
+      host: "br-ccs-postgresql-primary"
+      # -- PostgreSQL port
+      port: "5432"
+    # -- Admin credentials for PostgreSQL
+    postgresAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_USER_ADMIN and DB_ADMIN_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "postgres"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: ""
+    # -- Credentials for the br-ccs role created by the job
+    brCcsCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_PASSWORD_BR_CCS key
+        name: ""
+      # -- Password for the br-ccs role (ignored if useExistingSecret.name is set)
+      password: ""
+  # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
+  externalRabbitmqDefinitions:
+    # -- Enable or disable the RabbitMQ bootstrap job
+    enabled: false
+    # -- RabbitMQ connection settings
+    connection:
+      # -- RabbitMQ protocol (http or https)
+      protocol: "http"
+      # -- RabbitMQ host (management API endpoint)
+      host: "br-ccs-rabbitmq"
+      # -- RabbitMQ HTTP management port
+      port: "15672"
+      # -- RabbitMQ AMQP port (for connectivity check)
+      portAmqp: "5672"
+      # -- Skip TLS verification for self-signed certificates (not recommended for production)
+      skipTlsVerify: false
+    # -- Admin credentials for RabbitMQ management API
+    rabbitmqAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "admin"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: ""
+    # -- Credentials for the br-ccs user created by the job
+    brCcsCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing RABBITMQ_BR_CCS_PASS key
+        name: ""
+      # -- Password for the br-ccs user (ignored if useExistingSecret.name is set)
+      password: ""
+brCcs:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
+  # -- Service name
+  name: br-ccs
+  # -- Enable or disable the br-ccs service
+  enabled: true
+  # -- Number of replicas for the br-ccs service
+  replicaCount: 2
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+  image:
+    # -- Repository for the br-ccs service container image
+    repository: ghcr.io/lerianstudio/br-ccs
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag used for deployment
+    tag: "1.0.0"
+  # -- PostgreSQL migrations job (Helm hook; ArgoCD PreSync for external PG,
+  # PostSync for the bundled subchart). Runs the dedicated br-ccs-migrations
+  # image (golang-migrate runner; the app image never migrates). The
+  # chart-managed Secret is rendered as an earlier hook so it exists before the
+  # migration hook — migrations run against the chart-managed Secret with NO
+  # pre-existing Secret required. Set useExistingSecret only to read
+  # POSTGRES_PASSWORD from an operator-provisioned Secret instead.
+  migrations:
+    # -- Enable or disable the migrations job.
+    enabled: true
+    # -- Optional. When true, migrations read POSTGRES_PASSWORD from a pre-existing
+    # Secret (existingSecretName) instead of the chart-managed Secret hook.
+    useExistingSecret: false
+    # -- Name of the pre-existing Secret containing POSTGRES_PASSWORD
+    # (only used when useExistingSecret=true).
+    existingSecretName: ""
+    # -- MIGRATIONS_PATH inside the migrations image (embedded at /migrations).
+    path: "/migrations"
+    image:
+      # -- Repository for the migrations runner image
+      repository: ghcr.io/lerianstudio/br-ccs-migrations
+      # -- Tag for the migrations image. Defaults to the app image tag
+      # (brCcs.image.tag, or the chart appVersion) when left empty.
+      tag: ""
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+    # -- Maximum number of retries before the Job is considered failed
+    backoffLimit: 3
+    resources:
+      limits:
+        cpu: 250m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  # -- Secrets for pulling images from a private registry
+  imagePullSecrets: []
+  # -- Overrides the default generated name by Helm
+  nameOverride: ""
+  # -- Overrides the full name generated by Helm
+  fullnameOverride: ""
+  # -- Pod annotations for additional metadata
+  podAnnotations: {}
+  podSecurityContext: {}
+  # fsGroup: 2000
+
+  securityContext:
+    # -- Defines the group ID for the user running the process inside the container
+    runAsGroup: 1000
+    # -- Defines the user ID for the process running inside the container
+    runAsUser: 1000
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    allowPrivilegeEscalation: false
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: true
+    # -- Minimum number of available pods
+    minAvailable: 1
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+  # -- Deployment update strategy
+  deploymentUpdate:
+    # -- Type of deployment strategy
+    type: RollingUpdate
+    # -- Maximum number of pods that can be created over the desired number of pods
+    maxSurge: 100%
+    # -- Maximum number of pods that can be unavailable during the update
+    maxUnavailable: 0
+  service:
+    # -- Kubernetes service type
+    type: ClusterIP
+    # -- Port for the HTTP API
+    port: 4030
+    annotations: {}
+  ingress:
+    # -- Enable or disable ingress
+    enabled: false
+    # -- Ingress class name
+    className: ""
+    # -- Additional ingress annotations
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    # -- TLS configuration for ingress
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  resources:
+    # -- CPU and memory limits for pods
+    limits:
+      cpu: 1500m
+      memory: 512Mi
+    # -- Minimum CPU and memory requests
+    requests:
+      cpu: 500m
+      memory: 256Mi
+  autoscaling:
+    # -- Enable or disable horizontal pod autoscaling
+    enabled: true
+    # -- Minimum number of replicas
+    minReplicas: 2
+    # -- Maximum number of replicas
+    maxReplicas: 5
+    # -- Target CPU utilization percentage for autoscaling
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: []
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+  # -- Host aliases for custom DNS resolution inside the pod
+  hostAliases: []
+  # -- ConfigMap for environment variables and configurations
+  # @default -- templates/configmap.yaml
+  configmap:
+    # =================================================================
+    # Application identity
+    # =================================================================
+    APPLICATION_NAME: "br-ccs"
+    ENV_NAME: "production"
+    VERSION: "1.0.0"
+    LOG_LEVEL: "info"
+    # DEPLOYMENT_MODE: local | byoc | saas. saas enforces TLS on all dependencies.
+    DEPLOYMENT_MODE: "byoc"
+    # CCS_RUN_MODE: manager | worker | all. "all" runs the HTTP API and the
+    # background workers in a single process (chart default: one deployment).
+    CCS_RUN_MODE: "all"
+    SERVER_ADDRESS: ":4030"
+    # SERVER_PORT is consumed by the in-container /healthcheck binary; keep it
+    # aligned with the port half of SERVER_ADDRESS.
+    SERVER_PORT: "4030"
+    GRPC_PORT: "7001"
+    HTTP_BODY_LIMIT_BYTES: "104857600"
+
+    # =================================================================
+    # CORS policy
+    # In production the validator rejects wildcard "*" and localhost origins.
+    # Override CORS_ALLOWED_ORIGINS with the public ingress hostname allowlist.
+    # =================================================================
+    CORS_ALLOWED_ORIGINS: ""
+    CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    CORS_ALLOWED_HEADERS: "Authorization,Content-Type,X-Tenant-ID,X-Idempotency,X-Request-ID"
+    CORS_EXPOSE_HEADERS: ""
+    CORS_ALLOW_CREDENTIALS: "false"
+
+    # =================================================================
+    # TLS / proxy
+    # TRUSTED_PROXIES is REQUIRED when ENV_NAME=production (VPC + ingress CIDR;
+    # never 0.0.0.0/0). Fiber honours X-Forwarded-For only from these ranges.
+    # =================================================================
+    TLS_TERMINATED_UPSTREAM: "true"
+    TRUSTED_PROXIES: ""
+    # SERVER_TLS_CERT_FILE: ""
+    # SERVER_TLS_KEY_FILE: ""
+
+    # =================================================================
+    # Single-tenant defaults
+    # =================================================================
+    DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
+
+    # =================================================================
+    # Multi-tenancy (tenant-manager starter)
+    # Toggle + DEFAULT_TENANT_ID always render. MT infra endpoints only
+    # render when MULTI_TENANT_ENABLED=true.
+    # =================================================================
+    MULTI_TENANT_ENABLED: "false"
+    # MULTI_TENANT_URL: ""
+    # MULTI_TENANT_REDIS_HOST: ""
+    MULTI_TENANT_REDIS_PORT: "6379"
+    MULTI_TENANT_REDIS_TLS: "false"
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    MULTI_TENANT_TIMEOUT: "30"
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    MULTI_TENANT_CACHE_TTL_SEC: "120"
+    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+
+    # =================================================================
+    # PostgreSQL (primary)
+    # POSTGRES_HOST defaults to "<release>-postgresql-primary.<ns>.svc.cluster.local"
+    # =================================================================
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "br-ccs"
+    POSTGRES_NAME: "br-ccs"
+    POSTGRES_SSLMODE: "require"
+    MIGRATIONS_PATH: "migrations"
+    SYSTEMPLANE_ENABLED: "false"
+    POSTGRES_MAX_OPEN_CONNS: "25"
+    POSTGRES_MAX_IDLE_CONNS: "5"
+    POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
+    POSTGRES_CONN_MAX_IDLE_TIME_MINS: "5"
+    POSTGRES_CONNECT_TIMEOUT_SEC: "10"
+    INFRA_CONNECT_TIMEOUT_SEC: "30"
+    # PostgreSQL replica (optional — CQRS read scaling)
+    # POSTGRES_REPLICA_HOST: ""
+    # POSTGRES_REPLICA_PORT: "5432"
+    # POSTGRES_REPLICA_USER: ""
+    # POSTGRES_REPLICA_NAME: ""
+    # POSTGRES_REPLICA_SSLMODE: "require"
+
+    # =================================================================
+    # Redis / Valkey (app-level)
+    # REDIS_HOST defaults to "<release>-valkey-primary.<ns>.svc.cluster.local:6379"
+    # =================================================================
+    REDIS_DB: "0"
+    REDIS_PROTOCOL: "3"
+    REDIS_POOL_SIZE: "10"
+    REDIS_MIN_IDLE_CONNS: "2"
+    REDIS_READ_TIMEOUT: "3"
+    REDIS_WRITE_TIMEOUT: "3"
+    REDIS_DIAL_TIMEOUT: "5"
+    REDIS_POOL_TIMEOUT: "2"
+    REDIS_MAX_RETRIES: "3"
+    REDIS_MIN_RETRY_BACKOFF: "8"
+    REDIS_MAX_RETRY_BACKOFF: "1"
+    # REDIS_TLS: "false"
+    # REDIS_MASTER_NAME: ""
+
+    # =================================================================
+    # Event-Driven — Circuit Breaker (prerequisite for object storage)
+    # =================================================================
+    CIRCUIT_BREAKER_ENABLED: "true"
+
+    # =================================================================
+    # Event-Driven — RabbitMQ (optional, disabled by default)
+    # RABBITMQ_URL (full amqp:// dial string, carries credentials) is a SECRET —
+    # see brCcs.secrets.RABBITMQ_URL. When unset, the app builds the URL from
+    # RABBITMQ_HOST/PORT/USER/PASS.
+    # =================================================================
+    RABBITMQ_ENABLED: "false"
+    RABBITMQ_PORT_AMQP: "5672"
+    RABBITMQ_PORT_HOST: "15672"
+    RABBITMQ_DEFAULT_USER: "br-ccs"
+    RABBITMQ_VHOST: "/"
+    RABBITMQ_EXCHANGE: "events"
+    RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: "false"
+    RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: "false"
+    RABBITMQ_ALLOW_INSECURE_TLS: "false"
+    RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS: "5000"
+    RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS: "1000"
+    RABBITMQ_PUBLISHER_RECOVERY_MAX_MS: "30000"
+    RABBITMQ_PUBLISHER_MAX_RECOVERIES: "10"
+    CCS_STA_DLQ_TTL_SECONDS: "30"
+    # RABBITMQ_QUEUE: "br-ccs.events"
+    # RABBITMQ_HEALTH_CHECK_URL: ""
+    # RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS: ""
+
+    # =================================================================
+    # Event-Driven — Outbox
+    # =================================================================
+    OUTBOX_ENABLED: "false"
+    OUTBOX_TABLE_NAME: "outbox_events"
+    OUTBOX_DISPATCH_INTERVAL_SEC: "2"
+    OUTBOX_BATCH_SIZE: "50"
+    OUTBOX_PUBLISH_MAX_ATTEMPTS: "3"
+    OUTBOX_PUBLISH_BACKOFF_MS: "200"
+    OUTBOX_RETRY_WINDOW_SEC: "300"
+    OUTBOX_MAX_DISPATCH_ATTEMPTS: "10"
+    OUTBOX_PROCESSING_TIMEOUT_SEC: "600"
+    OUTBOX_MAX_FAILED_PER_BATCH: "25"
+    OUTBOX_INCLUDE_TENANT_METRICS: "false"
+    OUTBOX_ALLOW_EMPTY_TENANT: "true"
+    # OUTBOX_PRIORITY_EVENT_TYPES: ""
+
+    # =================================================================
+    # Fetcher integration (HTTP client + AMQP completion consumer)
+    # Master switch — when false the service boots without the Fetcher subsystem.
+    # =================================================================
+    FETCHER_ENABLED: "false"
+    # FETCHER_URL: ""
+    FETCHER_HTTP_TIMEOUT_SEC: "30"
+    CCS_OUTBOX_DISPATCH_INTERVAL_MS: "500"
+    CCS_OUTBOX_BATCH_SIZE: "50"
+    CCS_OUTBOX_MAX_ATTEMPTS: "10"
+    CCS_OUTBOX_DLQ_ROUTING_KEY: "ccs.outbox.dlq"
+
+    # =================================================================
+    # STA integration (HTTP client + outbox StaTransferSubmit handler)
+    # Master switch — independent from FETCHER_ENABLED.
+    # =================================================================
+    STA_ENABLED: "false"
+    # STA_BASE_URL: ""
+    STA_HTTP_TIMEOUT_SEC: "30"
+
+    # =================================================================
+    # Reporter integration (optional async render — HTTP outbox consumer)
+    # Master switch; REPORTER_URL is required only when REPORTER_ENABLED=true.
+    # =================================================================
+    REPORTER_ENABLED: "false"
+    # REPORTER_URL: ""
+    # REPORTER_HTTP_TIMEOUT_SEC: "30"
+
+    # =================================================================
+    # Authentication (lib-auth + plugin-auth)
+    # PLUGIN_AUTH_HOST is required when PLUGIN_AUTH_ENABLED=true.
+    # =================================================================
+    PLUGIN_AUTH_ENABLED: "false"
+    # PLUGIN_AUTH_HOST: ""
+
+    # =================================================================
+    # API Documentation (Swagger)
+    # =================================================================
+    SWAGGER_ENABLED: "true"
+    SWAGGER_TITLE: "br-ccs"
+    SWAGGER_VERSION: "1.0.0"
+    SWAGGER_BASE_PATH: "/"
+    SWAGGER_LEFT_DELIM: "{{"
+    SWAGGER_RIGHT_DELIM: "}}"
+    # SWAGGER_DESCRIPTION: ""
+
+    # =================================================================
+    # OpenTelemetry
+    # =================================================================
+    ENABLE_TELEMETRY: "false"
+    OTEL_LIBRARY_NAME: "br-ccs"
+    OTEL_RESOURCE_SERVICE_NAME: "br-ccs"
+    OTEL_RESOURCE_SERVICE_VERSION: "1.0.0"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+
+    # =================================================================
+    # Rate limiting
+    # =================================================================
+    RATE_LIMIT_ENABLED: "true"
+    RATE_LIMIT_MAX: "500"
+    RATE_LIMIT_WINDOW_SEC: "60"
+    AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    RELAXED_RATE_LIMIT_MAX: "1000"
+    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    EXPORT_RATE_LIMIT_MAX: "60"
+    EXPORT_RATE_LIMIT_WINDOW_SEC: "60"
+    DISPATCH_RATE_LIMIT_MAX: "30"
+    DISPATCH_RATE_LIMIT_WINDOW_SEC: "60"
+    # Security posture: leave empty to keep the safe fail-closed default. Set to
+    # "true" only to permit fail-open (the limiter passes traffic through when
+    # Redis is unreachable). To disable enforcement entirely, use
+    # RATE_LIMIT_ENABLED=false above — ALLOW_RATELIMIT_DISABLED was removed in
+    # lib-commons v5.8.0 and is no longer read.
+    ALLOW_RATELIMIT_FAIL_OPEN: ""
+
+    # =================================================================
+    # Observability & metrics
+    # =================================================================
+    DB_METRICS_INTERVAL_SEC: "15"
+
+    # =================================================================
+    # Idempotency
+    # =================================================================
+    IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
+
+    # =================================================================
+    # M2M credentials (per-upstream — target service / OAuth2 URL / scope).
+    # The *_API_KEY on-prem fallbacks live in brCcs.secrets. AWS Secrets
+    # Manager paths are used in SaaS mode.
+    # =================================================================
+    M2M_CREDENTIAL_CACHE_TTL_SEC: "300"
+    AWS_REGION: "us-east-1"
+    # FETCHER_M2M_TARGET_SERVICE: "fetcher"
+    # FETCHER_OAUTH2_TOKEN_URL: ""
+    # FETCHER_OAUTH2_SCOPE: ""
+    # REPORTER_M2M_TARGET_SERVICE: "reporter"
+    # REPORTER_OAUTH2_TOKEN_URL: ""
+    # REPORTER_OAUTH2_SCOPE: ""
+    # STA_M2M_TARGET_SERVICE: "sta"
+    # STA_OAUTH2_TOKEN_URL: ""
+    # STA_OAUTH2_SCOPE: ""
+
+    # =================================================================
+    # Detail response tuning (all optional — BACEN-inferred defaults apply)
+    # =================================================================
+    # CCS_DETAIL_MESSAGE_EMIT_ENABLED: "false"
+    # CCS_DETAIL_MESSAGE_VALIDATION_ENABLED: "false"
+    # CCS_BACEN_DESTINATARIO_CNPJ_BASE: "00000000"
+    # CCS_ACCS005_OVERFLOW_THRESHOLD: "30720"
+    # CCS_ACCS005_SECRECY_SITUACAO: "01"
+
+    # =================================================================
+    # Fetcher snapshot quarantine (optional — br-ccs-140 Phase 2)
+    # Opt-in: skip + classify invalid CRM records instead of aborting the
+    # whole batch. MAX_INVALID_RATIO is the invalid/total ceiling in [0,1]
+    # above which the batch fails HIGH even with quarantine on. Unset keeps
+    # the app default (disabled; ceiling 0.05 / fail-closed). Enable only on
+    # ST test tiers that tolerate other users' invalid data.
+    # =================================================================
+    # CCS_SNAPSHOT_QUARANTINE_INVALID_ENABLED: "false"
+    # CCS_SNAPSHOT_QUARANTINE_MAX_INVALID_RATIO: "0.05"
+
+    # =================================================================
+    # Pagination
+    # =================================================================
+    MAX_PAGINATION_LIMIT: "100"
+    MAX_PAGINATION_MONTH_DATE_RANGE: "3"
+
+    # =================================================================
+    # Readiness probe (canonical /readyz handler — PROJECT_RULES §13.4)
+    # =================================================================
+    READYZ_PROBE_TIMEOUT_SEC: "5"
+    READYZ_DEP_SLOW_THRESHOLD_MS: "500"
+    STARTUP_SELF_PROBE_MAX_DURATION_SEC: "120"
+    STARTUP_SELF_PROBE_INITIAL_DELAY_MS: "1000"
+    STARTUP_SELF_PROBE_MAX_DELAY_MS: "30000"
+
+    # =================================================================
+    # Graceful shutdown (PROJECT_RULES §13)
+    # =================================================================
+    SHUTDOWN_DRAIN_GRACE_PERIOD_SEC: "15"
+    SHUTDOWN_TOTAL_TIMEOUT_SEC: "30"
+
+    # =================================================================
+    # Object storage — three distinct S3-compatible buckets.
+    # Endpoints/region/bucket/flags are non-secret; access + secret keys
+    # live in brCcs.secrets. Empty *_BUCKET marks that /readyz dep skipped.
+    # =================================================================
+    SEAWEEDFS_S3_PORT: "8342"
+    SEAWEEDFS_MASTER_PORT: "9343"
+    # STA inbound (read-only)
+    OBJECT_STORAGE_STA_ENDPOINT: ""
+    OBJECT_STORAGE_STA_REGION: "us-east-1"
+    OBJECT_STORAGE_STA_BUCKET: "sta-files"
+    OBJECT_STORAGE_STA_USE_PATH_STYLE: "true"
+    OBJECT_STORAGE_STA_DISABLE_SSL: "true"
+    # CCS outbound (write)
+    OBJECT_STORAGE_CCS_ENDPOINT: ""
+    OBJECT_STORAGE_CCS_REGION: "us-east-1"
+    OBJECT_STORAGE_CCS_BUCKET: "lerian-ccs"
+    OBJECT_STORAGE_CCS_USE_PATH_STYLE: "true"
+    OBJECT_STORAGE_CCS_DISABLE_SSL: "true"
+    # Fetcher snapshot (read-only)
+    OBJECT_STORAGE_FETCHER_ENDPOINT: ""
+    OBJECT_STORAGE_FETCHER_REGION: "us-east-1"
+    OBJECT_STORAGE_FETCHER_BUCKET: "lerian-fetcher"
+    OBJECT_STORAGE_FETCHER_USE_PATH_STYLE: "true"
+    OBJECT_STORAGE_FETCHER_DISABLE_SSL: "true"
+    # Retention windows
+    CCS_OUTBOUND_RETENTION_DAYS: "30"
+    CCS_ACCS009_RETENTION_DAYS: "30"
+
+  # -- Secrets for storing sensitive data. Provide real values via an existing
+  # Secret (useExistingSecret) or a secrets manager — NEVER commit real values.
+  # @default -- templates/secrets.yaml
+  secrets:
+    # PostgreSQL credentials
+    POSTGRES_PASSWORD: ""
+    # POSTGRES_REPLICA_PASSWORD: ""
+
+    # Redis / Valkey password
+    REDIS_PASSWORD: ""
+    # REDIS_CA_CERT: ""
+
+    # Multi-tenant (tenant-manager) secrets
+    # MULTI_TENANT_SERVICE_API_KEY: ""
+    # MULTI_TENANT_REDIS_PASSWORD: ""
+    # MULTI_TENANT_REDIS_CA_CERT: ""
+
+    # RabbitMQ credentials (when RABBITMQ_ENABLED=true)
+    # RABBITMQ_DEFAULT_PASS: ""
+    # RABBITMQ_URL — full amqp:// dial string (embeds the password; any '@' in
+    # the password must be percent-encoded as %40). When set, the app dials via
+    # this instead of assembling from RABBITMQ_HOST/PORT/USER/PASS.
+    # RABBITMQ_URL: ""
+
+    # Crypto keys (REQUIRED in production)
+    # CCS_CRYPTO_MASTER_KEY — AES-256-GCM master key, 64 hex chars (openssl rand -hex 32).
+    # FETCHER_CRYPTO_KEY — Fetcher snapshot decryption key (base64; same as Fetcher APP_ENC_KEY).
+    CCS_CRYPTO_MASTER_KEY: ""
+    FETCHER_CRYPTO_KEY: ""
+
+    # License (lib-license-go) — validated at boot against the Lerian license
+    # gateway (fail-closed). ORGANIZATION_IDS selects enforcement scope (e.g.
+    # "global"). Held as a Secret; wire via a secrets manager or existing Secret.
+    # LICENSE_KEY: ""
+    # ORGANIZATION_IDS: ""
+
+    # Object storage credentials (per bucket)
+    OBJECT_STORAGE_STA_ACCESS_KEY: ""
+    OBJECT_STORAGE_STA_SECRET_KEY: ""
+    OBJECT_STORAGE_CCS_ACCESS_KEY: ""
+    OBJECT_STORAGE_CCS_SECRET_KEY: ""
+    OBJECT_STORAGE_FETCHER_ACCESS_KEY: ""
+    OBJECT_STORAGE_FETCHER_SECRET_KEY: ""
+
+    # Per-upstream M2M API keys (on-prem / local literal-Bearer fallback)
+    # FETCHER_API_KEY: ""
+    # REPORTER_API_KEY: ""
+    # STA_API_KEY: ""
+
+    # Per-upstream M2M OAuth2 client credentials (single-tenant) — the client_id/client_secret
+    # pair that authenticates br-ccs to each upstream (Fetcher / Reporter / STA) via
+    # the plugin-auth token endpoint. Multi-tenant (SaaS) resolves per-tenant credentials
+    # from AWS Secrets Manager instead. Held as a Secret; wire via a secrets manager or
+    # existing Secret.
+    # FETCHER_CLIENT_ID: ""
+    # FETCHER_CLIENT_SECRET: ""
+    # REPORTER_CLIENT_ID: ""
+    # REPORTER_CLIENT_SECRET: ""
+    # STA_CLIENT_ID: ""
+    # STA_CLIENT_SECRET: ""
+
+  # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Extra environment variables (map of key: value pairs) — escape hatch for
+  # optional knobs not modeled above (e.g. RELATIONSHIP_SOURCE_*, CCS_REPORTER_POLL_*).
+  extraEnvVars: {}
+  serviceAccount:
+    # -- Specifies whether a ServiceAccount should be created
+    create: true
+    # -- Annotations for the ServiceAccount
+    annotations: {}
+    # -- Name of the service account
+    # @default -- `br-ccs.fullname`
+    name: ""
+# Valkey (Redis-compatible) configuration
+valkey:
+  enabled: true
+  global:
+    security:
+      allowInsecureImages: false
+  image:
+    repository: bitnami/valkey
+    tag: "8.0.2"
+  external: false
+  architecture: standalone
+  auth:
+    enabled: true
+    password: ""
+  primary:
+    kind: Deployment
+    resourcesPreset: "medium"
+    persistence:
+      enabled: false
+    extraFlags:
+      - "--maxmemory 640mb"
+      - "--maxmemory-policy allkeys-lru"
+      - "--hz 100"
+      - "--maxclients 10000"
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  global:
+    security:
+      allowInsecureImages: false
+  image:
+    repository: bitnami/postgresql
+    tag: "17.4.0"
+  external: false
+  architecture: standalone
+  auth:
+    enabled: true
+    enablePostgresUser: true
+    postgresPassword: ""
+    username: "br-ccs"
+    password: ""
+    database: "br-ccs"
+  primary:
+    persistence:
+      size: 8Gi
+    resourcesPreset: large
+    extraEnvVars:
+      - name: POSTGRESQL_MAX_CONNECTIONS
+        value: "500"
+      - name: POSTGRESQL_TCP_KEEPALIVES_IDLE
+        value: "30"
+      - name: POSTGRESQL_TCP_KEEPALIVES_INTERVAL
+        value: "10"
+      - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
+        value: "5"
+# RabbitMQ configuration (optional - disabled by default)
+rabbitmq:
+  enabled: false
+  image:
+    tag: "3.13.6"
+  persistence:
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  podSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile: {type: RuntimeDefault}
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: {drop: ["ALL"]}
+  authentication:
+    user:
+      value: "br-ccs"
+    password:
+      value: ""
+    erlangCookie:
+      # Operators MUST supply a stable cookie (e.g. openssl rand -base64 32) when rabbitmq.enabled=true.
+      value: ""
+  extraSecrets:
+    - name: "br-ccs-rabbitmq-load-definition"
+      mountPath: /etc/rabbitmq/definitions
+  customConfig: |
+    management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
+
+# trigger: retry release after README fix

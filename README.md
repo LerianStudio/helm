@@ -50,7 +50,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `7.3.0-beta.2` | 3.3.0 | `3.0.0` |
+| `7.3.0` | 3.4.0 | `3.0.0` |
 
 -----------------
 
@@ -141,7 +141,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.1.0-beta.2` | 2.0.2 | 2.0.2 |
+| `3.1.0` | 3.0.2 | 3.0.2 |
 -----------------
 
 ### Lender

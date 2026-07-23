@@ -5,6 +5,22 @@
 - **Features**
   - Released product-console version 3.2.0.
   - Released product-console version 3.1.0.
+  - Released product-console version 3.0.0.
+
+- **Improvements**
+  - Updated appVersion and image tag to 1.10.0 for product-console.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.1.0...product-console-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.2.0)
+
+- **Features**
+  - Released product-console version 3.2.0.
+  - Released product-console version 3.1.0.
 
 - **Improvements**
   - Updated appVersion and image tag to 1.10.0.

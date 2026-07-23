@@ -1,5 +1,16 @@
 # Plugin-fees Changelog
 
+## [7.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.3.0)
+
+- **Features**
+  - Updated to plugin-fees@3.4.0
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.2.0...plugin-fees-v7.3.0)
+
+---
+
 ## [7.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.2.0)
 
 - **Features:**

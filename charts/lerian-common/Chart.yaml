@@ -4,9 +4,10 @@ description: >-
   Lerian shared Helm library. Factors the logic duplicated across the product
   charts into render-equivalent helpers consumed via `include`: env contracts
   (service discovery, streaming, multi-tenant), in-cluster host derivation, and
-  (progressively) naming/labels, securityContext, probes and workload boilerplate.
-  Library chart — renders nothing on its own. Adopting it is a refactor, not a
-  breaking change: every helper reproduces the existing rendered output.
+  (progressively) naming/labels, securityContext, probes and workload
+  boilerplate. Library chart — renders nothing on its own. Adopting it is a
+  refactor, not a breaking change: every helper reproduces the existing rendered
+  output.
 type: library
 version: 1.0.0
 appVersion: "1.0.0"

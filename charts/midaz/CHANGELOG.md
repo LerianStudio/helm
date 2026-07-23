@@ -2,6 +2,21 @@
 
 ## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
 
+- **Features:**
+  - Render streaming SASL/TLS secrets in midaz.
+  - Integration with plugin-fees Secrets.
+
+- **Documentation:**
+  - Added upgrade guide for midaz v8.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
+
+---
+
+## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
+
 - **Features**
   - Render streaming SASL/TLS secrets in midaz + plugin-fees Secrets.
 

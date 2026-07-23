@@ -24,15 +24,17 @@ Inputs (dict):
 {{- define "lerian-common.globalValue" -}}
 {{- $cm := .configmap | default dict -}}
 {{- $blk := index (.context.Values.global | default dict) .block | default dict -}}
-{{- $native := index $cm .nativeKey -}}
-{{/* Use presence checks (not sprig `default`) so an explicit boolean `false` in the
-     global block wins instead of falling through to the default. */}}
-{{- if not (empty $native) -}}
-{{- $native -}}
+{{/* Use presence checks (not sprig `default`/`empty`) at every tier so an explicit
+     boolean `false` (native key, global block, or default) wins instead of falling
+     through to a lower-priority value. */}}
+{{- if hasKey $cm .nativeKey -}}
+{{- index $cm .nativeKey -}}
 {{- else if hasKey $blk .field -}}
 {{- index $blk .field -}}
+{{- else if hasKey . "default" -}}
+{{- .default -}}
 {{- else -}}
-{{- .default | default "" -}}
+{{- "" -}}
 {{- end -}}
 {{- end -}}
 
@@ -54,12 +56,13 @@ Inputs (dict):
 {{- define "lerian-common.cfgValue" -}}
 {{- $cm := .configmap | default dict -}}
 {{- $p := .params | default dict -}}
-{{- $native := index $cm .nativeKey -}}
-{{- if not (empty $native) -}}
-{{- $native -}}
+{{- if hasKey $cm .nativeKey -}}
+{{- index $cm .nativeKey -}}
 {{- else if hasKey $p .field -}}
 {{- index $p .field -}}
+{{- else if hasKey . "default" -}}
+{{- .default -}}
 {{- else -}}
-{{- .default | default "" -}}
+{{- "" -}}
 {{- end -}}
 {{- end -}}

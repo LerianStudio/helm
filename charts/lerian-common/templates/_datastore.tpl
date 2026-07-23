@@ -35,5 +35,18 @@ Inputs (dict):
 {{- $cm := .configmap | default dict -}}
 {{- $dedicated := index (.context.Values.datastores | default dict) .type | default dict -}}
 {{- $shared := index ((.context.Values.global | default dict).datastores | default dict) .type | default dict -}}
-{{- index $cm .nativeKey | default (index $dedicated .field) | default (index $shared .field) | default .default | default "" -}}
+{{/* Ordered presence checks (not chained sprig `default`) so an explicit `false`
+     at any tier — native key, dedicated, shared, or default — wins instead of
+     falling through to a lower-priority value. */}}
+{{- if hasKey $cm .nativeKey -}}
+{{- index $cm .nativeKey -}}
+{{- else if hasKey $dedicated .field -}}
+{{- index $dedicated .field -}}
+{{- else if hasKey $shared .field -}}
+{{- index $shared .field -}}
+{{- else if hasKey . "default" -}}
+{{- .default -}}
+{{- else -}}
+{{- "" -}}
+{{- end -}}
 {{- end -}}

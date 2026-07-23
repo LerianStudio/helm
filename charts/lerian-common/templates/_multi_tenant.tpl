@@ -65,7 +65,7 @@ MULTI_TENANT_URL: {{ $url | default "" | quote }}
 {{- if .serviceName }}
 MULTI_TENANT_SERVICE_NAME: {{ index $c "MULTI_TENANT_SERVICE_NAME" | default .serviceName | quote }}
 {{- end }}
-{{- if ne (.circuitBreaker | default true) false }}
+{{- if not (and (hasKey . "circuitBreaker") (eq .circuitBreaker false)) }}
 MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ index $c "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" | default "5" | quote }}
 MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ index $c "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" | default "30" | quote }}
 {{- end }}

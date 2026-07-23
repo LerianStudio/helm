@@ -54,11 +54,10 @@ Inputs (dict):
 {{- $svcPort := .svcPort -}}
 {{- $className := $ing.className | default $g.className -}}
 {{- $annotations := merge (deepCopy ($g.annotations | default dict)) ($ing.annotations | default dict) -}}
-{{- $tls := $ing.tls | default $g.tls -}}
+{{- $tls := $g.tls -}}
+{{- if hasKey $ing "tls" -}}{{- $tls = $ing.tls -}}{{- end -}}
 {{- $hosts := $ing.hosts | default list -}}
-{{- $firstHost := "" -}}
-{{- if gt (len $hosts) 0 }}{{- $firstHost = (index $hosts 0).host -}}{{- end }}
-{{- if and (not $firstHost) $g.domain .subdomain -}}
+{{- if and (eq (len $hosts) 0) $g.domain .subdomain -}}
 {{- $hosts = list (dict "host" (printf "%s.%s" .subdomain $g.domain) "paths" (list (dict "path" "/" "pathType" "Prefix"))) -}}
 {{- end -}}
 {{- if and $className (not (semverCompare ">=1.18-0" $ctx.Capabilities.KubeVersion.GitVersion)) }}

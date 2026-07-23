@@ -1,4 +1,5 @@
-{{- /* ClusterIP-only Service — no NodePort/LoadBalancer, no Ingress (BYOC scope). */ -}}
+{{- /* ClusterIP-only Service — no NodePort/LoadBalancer. Ingress is opt-in and
+       disabled by default (see ingress.yaml / values.yaml ingress.enabled). */ -}}
 apiVersion: v1
 kind: Service
 metadata:

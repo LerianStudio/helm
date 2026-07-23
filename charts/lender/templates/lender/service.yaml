@@ -1,0 +1,27 @@
+{{- if .Values.lender.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lender.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lender.labels" (dict "context" . "component" .Values.lender.name "name" .Values.lender.name) | nindent 4 }}
+  {{- with .Values.lender.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.lender.service.type }}
+  ports:
+    - port: {{ .Values.lender.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- /* Include the component discriminator so this API Service selects ONLY
+           the lender API pods, not the lenderConsole pods (which share
+           name/instance labels). Without it the Service load-balances /api
+           traffic onto the console nginx too, yielding intermittent
+           missing-CORS / SPA-fallback responses. */ -}}
+    {{- include "lender.selectorLabels" (dict "context" . "name" .Values.lender.name "component" .Values.lender.name) | nindent 4 }}
+{{- end }}

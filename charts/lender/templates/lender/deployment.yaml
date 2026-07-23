@@ -1,0 +1,94 @@
+{{- if .Values.lender.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lender.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lender.labels" (dict "context" . "component" .Values.lender.name "name" .Values.lender.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.lender.revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ .Values.lender.deploymentUpdate.type }}
+    {{- if eq .Values.lender.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.lender.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.lender.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not .Values.lender.autoscaling.enabled }}
+  replicas: {{ .Values.lender.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "lender.selectorLabels" (dict "context" . "name" .Values.lender.name) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.lender.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "lender.labels" (dict "context" . "component" .Values.lender.name "name" .Values.lender.name) | nindent 8 }}
+    spec:
+      {{- with .Values.lender.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lender.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.lender.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "lender.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.lender.securityContext | nindent 12 }}
+          image: "{{ .Values.lender.image.repository }}:{{ .Values.lender.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.lender.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.lender.useExistingSecret }}{{ required "lender.existingSecretName is required when lender.useExistingSecret=true" .Values.lender.existingSecretName }}{{ else }}{{ include "lender.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "lender.fullname" . }}
+          {{- if eq (toString .Values.lender.configmap.ENABLE_TELEMETRY) "true" }}
+          env:
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "http://$(HOST_IP):4317"
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.lender.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.lender.resources | nindent 12 }}
+      {{- with .Values.lender.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.lender.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.lender.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

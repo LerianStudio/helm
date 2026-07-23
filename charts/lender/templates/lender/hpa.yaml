@@ -1,0 +1,33 @@
+{{- if and .Values.lender.enabled .Values.lender.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "lender.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lender.labels" (dict "context" . "component" .Values.lender.name "name" .Values.lender.name) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "lender.fullname" . }}
+  minReplicas: {{ .Values.lender.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.lender.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.lender.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.lender.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.lender.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.lender.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

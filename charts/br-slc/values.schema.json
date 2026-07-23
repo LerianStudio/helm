@@ -1,0 +1,544 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "br-slc",
+  "type": "object",
+  "required": [
+    "image",
+    "service",
+    "securityContext",
+    "resources",
+    "livenessProbe",
+    "readinessProbe",
+    "secrets",
+    "configmap",
+    "signer",
+    "xsdValidator",
+    "mqbridge",
+    "migrations",
+    "mockNuclea"
+  ],
+  "properties": {
+    "replicaCount": { "type": "integer", "minimum": 0 },
+    "revisionHistoryLimit": { "type": "integer", "minimum": 0 },
+    "nameOverride": { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "terminationGracePeriodSeconds": { "type": "integer", "minimum": 0 },
+    "image": {
+      "type": "object",
+      "required": ["repository", "pullPolicy"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string" },
+        "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "required": ["create"],
+      "properties": {
+        "create": { "type": "boolean" },
+        "name": { "type": "string" },
+        "annotations": { "type": "object" },
+        "automountServiceAccountToken": { "type": "boolean" }
+      }
+    },
+    "podAnnotations": { "type": "object" },
+    "podLabels": { "type": "object" },
+    "service": {
+      "type": "object",
+      "required": ["type", "port", "targetPort"],
+      "properties": {
+        "type": { "type": "string", "enum": ["ClusterIP"] },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "targetPort": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "securityContext": {
+      "type": "object",
+      "required": [
+        "runAsNonRoot",
+        "runAsUser",
+        "runAsGroup",
+        "allowPrivilegeEscalation",
+        "readOnlyRootFilesystem",
+        "capabilities",
+        "seccompProfile"
+      ],
+      "properties": {
+        "runAsNonRoot": { "type": "boolean", "const": true },
+        "runAsUser": { "type": "integer" },
+        "runAsGroup": { "type": "integer" },
+        "allowPrivilegeEscalation": { "type": "boolean", "const": false },
+        "readOnlyRootFilesystem": { "type": "boolean", "const": true },
+        "capabilities": {
+          "type": "object",
+          "required": ["drop"],
+          "properties": {
+            "drop": {
+              "type": "array",
+              "items": { "type": "string" },
+              "contains": { "const": "ALL" }
+            }
+          }
+        },
+        "seccompProfile": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "type": "string", "const": "RuntimeDefault" }
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "limits": { "type": "object" },
+        "requests": { "type": "object" }
+      }
+    },
+    "livenessProbe": {
+      "type": "object",
+      "properties": {
+        "httpGet": {
+          "type": "object",
+          "required": ["path", "port"],
+          "properties": {
+            "path": { "type": "string" },
+            "port": { "type": ["string", "integer"] }
+          }
+        },
+        "initialDelaySeconds": { "type": "integer", "minimum": 0 },
+        "periodSeconds": { "type": "integer", "minimum": 1 },
+        "timeoutSeconds": { "type": "integer", "minimum": 1 },
+        "failureThreshold": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "readinessProbe": {
+      "type": "object",
+      "properties": {
+        "httpGet": {
+          "type": "object",
+          "required": ["path", "port"],
+          "properties": {
+            "path": { "type": "string" },
+            "port": { "type": ["string", "integer"] }
+          }
+        },
+        "initialDelaySeconds": { "type": "integer", "minimum": 0 },
+        "periodSeconds": { "type": "integer", "minimum": 1 },
+        "timeoutSeconds": { "type": "integer", "minimum": 1 },
+        "failureThreshold": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "extraVolumes": { "type": "array" },
+    "extraVolumeMounts": { "type": "array" },
+    "secrets": {
+      "type": "object",
+      "required": ["create", "data"],
+      "if": { "properties": { "create": { "const": false } } },
+      "then": { "required": ["existingSecretName"], "properties": { "existingSecretName": { "minLength": 1 } } },
+      "properties": {
+        "create": { "type": "boolean" },
+        "existingSecretName": { "type": "string" },
+        "data": {
+          "type": "object",
+          "required": [
+            "POSTGRES_PASSWORD",
+            "REDIS_PASSWORD",
+            "WEBHOOK_API_KEY",
+            "WEBHOOK_HMAC_SECRET",
+            "RABBITMQ_DEFAULT_PASS",
+            "AWS_SECRET_ACCESS_KEY",
+            "AWS_SESSION_TOKEN"
+          ],
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "configmap": {
+      "type": "object",
+      "required": ["data"],
+      "properties": {
+        "data": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "signer": {
+      "type": "object",
+      "required": ["image", "resources", "securityContext", "livenessProbe", "readinessProbe", "softkeySecret", "secrets", "configmap"],
+      "properties": {
+        "image": {
+          "type": "object",
+          "required": ["repository", "pullPolicy"],
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "tag": { "type": "string" },
+            "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "limits": { "type": "object" },
+            "requests": { "type": "object" }
+          }
+        },
+        "securityContext": {
+          "type": "object",
+          "required": ["runAsNonRoot", "allowPrivilegeEscalation", "readOnlyRootFilesystem", "capabilities", "seccompProfile"],
+          "properties": {
+            "runAsNonRoot": { "type": "boolean", "const": true },
+            "runAsUser": { "type": "integer" },
+            "runAsGroup": { "type": "integer" },
+            "allowPrivilegeEscalation": { "type": "boolean", "const": false },
+            "readOnlyRootFilesystem": { "type": "boolean", "const": true },
+            "capabilities": {
+              "type": "object",
+              "required": ["drop"],
+              "properties": {
+                "drop": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "contains": { "const": "ALL" }
+                }
+              }
+            },
+            "seccompProfile": {
+              "type": "object",
+              "required": ["type"],
+              "properties": { "type": { "type": "string", "const": "RuntimeDefault" } }
+            }
+          }
+        },
+        "livenessProbe": { "type": "object" },
+        "readinessProbe": { "type": "object" },
+        "softkeySecret": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "secretName": { "type": "string" },
+            "secretKey": { "type": "string" },
+            "mountPath": { "type": "string" }
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "required": ["create", "data"],
+          "if": { "properties": { "create": { "const": false } } },
+          "then": { "required": ["existingSecretName"], "properties": { "existingSecretName": { "minLength": 1 } } },
+          "properties": {
+            "create": { "type": "boolean" },
+            "existingSecretName": { "type": "string" },
+            "data": {
+              "type": "object",
+              "required": [
+                "SIGNER_SOFTKEY_PFX_PASSPHRASE",
+                "AWS_SECRET_ACCESS_KEY",
+                "AWS_SESSION_TOKEN",
+                "SIGNER_VAULT_TOKEN",
+                "SIGNER_PKCS11_PIN"
+              ],
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        },
+        "configmap": {
+          "type": "object",
+          "required": ["data"],
+          "properties": {
+            "data": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "xsdValidator": {
+      "type": "object",
+      "required": ["image", "resources", "securityContext", "livenessProbe", "readinessProbe", "configmap"],
+      "properties": {
+        "image": {
+          "type": "object",
+          "required": ["repository", "pullPolicy"],
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "tag": { "type": "string" },
+            "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "limits": { "type": "object" },
+            "requests": { "type": "object" }
+          }
+        },
+        "securityContext": {
+          "type": "object",
+          "required": ["runAsNonRoot", "allowPrivilegeEscalation", "readOnlyRootFilesystem", "capabilities", "seccompProfile"],
+          "properties": {
+            "runAsNonRoot": { "type": "boolean", "const": true },
+            "runAsUser": { "type": "integer" },
+            "runAsGroup": { "type": "integer" },
+            "allowPrivilegeEscalation": { "type": "boolean", "const": false },
+            "readOnlyRootFilesystem": { "type": "boolean", "const": true },
+            "capabilities": {
+              "type": "object",
+              "required": ["drop"],
+              "properties": {
+                "drop": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "contains": { "const": "ALL" }
+                }
+              }
+            },
+            "seccompProfile": {
+              "type": "object",
+              "required": ["type"],
+              "properties": { "type": { "type": "string", "const": "RuntimeDefault" } }
+            }
+          }
+        },
+        "livenessProbe": { "type": "object" },
+        "readinessProbe": { "type": "object" },
+        "configmap": {
+          "type": "object",
+          "required": ["data"],
+          "properties": {
+            "data": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "mqbridge": {
+      "type": "object",
+      "required": ["enabled", "image", "resources", "securityContext", "livenessProbe", "keystoreSecret", "secrets", "configmap"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": {
+          "type": "object",
+          "required": ["repository", "pullPolicy"],
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "tag": { "type": "string" },
+            "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "limits": { "type": "object" },
+            "requests": { "type": "object" }
+          }
+        },
+        "securityContext": {
+          "type": "object",
+          "required": ["runAsNonRoot", "allowPrivilegeEscalation", "capabilities", "seccompProfile"],
+          "properties": {
+            "runAsNonRoot": { "type": "boolean", "const": true },
+            "runAsUser": { "type": "integer" },
+            "runAsGroup": { "type": "integer" },
+            "allowPrivilegeEscalation": { "type": "boolean", "const": false },
+            "capabilities": {
+              "type": "object",
+              "required": ["drop"],
+              "properties": {
+                "drop": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "contains": { "const": "ALL" }
+                }
+              }
+            },
+            "seccompProfile": {
+              "type": "object",
+              "required": ["type"],
+              "properties": { "type": { "type": "string", "const": "RuntimeDefault" } }
+            }
+          }
+        },
+        "livenessProbe": { "type": "object" },
+        "keystoreSecret": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "secretName": { "type": "string" },
+            "mountPath": { "type": "string" },
+            "stem": { "type": "string" }
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "required": ["create", "data"],
+          "if": { "properties": { "create": { "const": false } } },
+          "then": { "required": ["existingSecretName"], "properties": { "existingSecretName": { "minLength": 1 } } },
+          "properties": {
+            "create": { "type": "boolean" },
+            "existingSecretName": { "type": "string" },
+            "data": {
+              "type": "object",
+              "required": ["MQ_BRIDGE_MQ_PASSWORD"],
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        },
+        "configmap": {
+          "type": "object",
+          "required": ["data"],
+          "properties": {
+            "data": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "migrations": {
+      "type": "object",
+      "required": ["enabled", "image"],
+      "if": { "properties": { "useExistingSecret": { "const": true } }, "required": ["useExistingSecret"] },
+      "then": { "required": ["existingSecretName"], "properties": { "existingSecretName": { "minLength": 1 } } },
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "backoffLimit": { "type": "integer", "minimum": 0 },
+        "activeDeadlineSeconds": { "type": "integer", "minimum": 1 },
+        "ttlSecondsAfterFinished": { "type": "integer", "minimum": 0 },
+        "useExistingSecret": { "type": "boolean" },
+        "existingSecretName": { "type": "string" },
+        "postgres": {
+          "type": "object",
+          "properties": {
+            "host": { "type": "string" },
+            "port": { "type": "string" },
+            "user": { "type": "string" },
+            "database": { "type": "string" },
+            "sslMode": { "type": "string" },
+            "password": { "type": "string" }
+          }
+        },
+        "image": {
+          "type": "object",
+          "required": ["repository"],
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "tag": { "type": "string" },
+            "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "limits": { "type": "object" },
+            "requests": { "type": "object" }
+          }
+        },
+        "waitForPostgres": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "image": {
+              "type": "object",
+              "properties": {
+                "repository": { "type": "string" },
+                "tag": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mockNuclea": {
+      "type": "object",
+      "required": ["enabled", "image", "service", "resources", "securityContext", "livenessProbe", "readinessProbe"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": {
+          "type": "object",
+          "required": ["repository", "pullPolicy"],
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "tag": { "type": "string" },
+            "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+          }
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "service": {
+          "type": "object",
+          "required": ["type", "port", "targetPort"],
+          "properties": {
+            "type": { "type": "string", "enum": ["ClusterIP"] },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "targetPort": { "type": "integer", "minimum": 1, "maximum": 65535 }
+          }
+        },
+        "spbKeysSecret": {
+          "type": "object",
+          "required": ["enabled"],
+          "if": { "properties": { "enabled": { "const": true } } },
+          "then": { "required": ["secretName"], "properties": { "secretName": { "minLength": 1 } } },
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "secretName": { "type": "string" },
+            "mountPath": { "type": "string", "minLength": 1, "pattern": "^/" },
+            "recipientKeyItem": { "type": "string", "minLength": 1 },
+            "emitterCertItem": { "type": "string", "minLength": 1 }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "limits": { "type": "object" },
+            "requests": { "type": "object" }
+          }
+        },
+        "securityContext": {
+          "type": "object",
+          "required": ["runAsNonRoot", "allowPrivilegeEscalation", "readOnlyRootFilesystem", "capabilities", "seccompProfile"],
+          "properties": {
+            "runAsNonRoot": { "type": "boolean", "const": true },
+            "runAsUser": { "type": "integer" },
+            "runAsGroup": { "type": "integer" },
+            "allowPrivilegeEscalation": { "type": "boolean", "const": false },
+            "readOnlyRootFilesystem": { "type": "boolean", "const": true },
+            "capabilities": {
+              "type": "object",
+              "required": ["drop"],
+              "properties": {
+                "drop": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "contains": { "const": "ALL" }
+                }
+              }
+            },
+            "seccompProfile": {
+              "type": "object",
+              "required": ["type"],
+              "properties": { "type": { "type": "string", "const": "RuntimeDefault" } }
+            }
+          }
+        },
+        "livenessProbe": { "type": "object" },
+        "readinessProbe": { "type": "object" }
+      }
+    }
+  }
+}

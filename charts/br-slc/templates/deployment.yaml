@@ -1,0 +1,252 @@
+{{- /* Decisão 21 hard-cap: when the same-pod mqbridge (RSFN IBM MQ consumer)
+is enabled, the MONOLITH replicaCount governs the consumer count. The bridge
+holds per-process state (/v1/drain mints deliveryRef->conn; /v1/ack must land
+in the SAME process), so 2+ replicas would fan RSFN connections out and break
+drain/ack affinity. Enabling mqbridge couples app scale to the consumer — if a
+client needs app HA + MQ simultaneously that signals the separate-Deployment /
+Fase 7 path, escalate rather than force. */}}
+{{- if .Values.mqbridge.enabled }}
+{{- if ne (int .Values.replicaCount) 1 }}
+{{- fail "mqbridge.enabled requires replicaCount=1 (RSFN consumer is a per-process singleton; ver Decisão 21)" }}
+{{- end }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "br-slc.fullname" . }}
+  labels:
+    {{- include "br-slc.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "br-slc.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-slc.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "br-slc.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      containers:
+        - name: br-slc
+          image: {{ include "br-slc.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "br-slc.fullname" . }}
+          env:
+            {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
+            {{- include "br-slc.gomaxprocsEnv" .Values.resources | nindent 12 }}
+            {{- range $key, $value := .Values.secrets.data }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "br-slc.secretName" $ }}
+                  key: {{ $key }}
+            {{- end }}
+          livenessProbe:
+            {{- include "br-slc.httpProbe" .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- include "br-slc.httpProbe" .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- include "br-slc.containerSecurityContext" .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- /* Same-pod signer container (ADR-12 / Decision 9). Custody
+        (ADR-9): the signing-key Secret and softkey PFX volume are mounted
+        HERE ONLY, never on the app container above. Communicates with the app
+        over localhost:9101 (see configmap.data.SIGNER_URL). */}}
+        - name: slc-signer
+          image: {{ include "br-slc.signerImage" . | quote }}
+          imagePullPolicy: {{ .Values.signer.image.pullPolicy }}
+          ports:
+            - name: signer-http
+              containerPort: 9101
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "br-slc.fullname" . }}-signer
+          env:
+            {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
+            {{- include "br-slc.gomaxprocsEnv" .Values.signer.resources | nindent 12 }}
+            {{- range $key, $value := .Values.signer.secrets.data }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "br-slc.signerSecretName" $ }}
+                  key: {{ $key }}
+            {{- end }}
+          livenessProbe:
+            {{- include "br-slc.httpProbe" .Values.signer.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- include "br-slc.httpProbe" .Values.signer.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.signer.resources | nindent 12 }}
+          securityContext:
+            {{- include "br-slc.containerSecurityContext" .Values.signer.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: signer-tmp
+              mountPath: /tmp
+            {{- if .Values.signer.softkeySecret.enabled }}
+            - name: softkey
+              mountPath: {{ .Values.signer.softkeySecret.mountPath }}
+              readOnly: true
+            {{- end }}
+        {{- /* Same-pod xsd-validator container (ADR-12). Stateless, no
+        secrets. Fail-closed hard dependency for outbound ASLC; shared fate in
+        this pod removes the "app Ready, validator absent" window.
+        Communicates over localhost:9091 (see configmap.data.XSD_VALIDATOR_URL). */}}
+        - name: aslc-xsd-validator
+          image: {{ include "br-slc.validatorImage" . | quote }}
+          imagePullPolicy: {{ .Values.xsdValidator.image.pullPolicy }}
+          ports:
+            - name: xsd-http
+              containerPort: 9091
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "br-slc.fullname" . }}-validator
+          env:
+            {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
+            {{- include "br-slc.gomaxprocsEnv" .Values.xsdValidator.resources | nindent 12 }}
+          livenessProbe:
+            {{- include "br-slc.httpProbe" .Values.xsdValidator.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- include "br-slc.httpProbe" .Values.xsdValidator.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.xsdValidator.resources | nindent 12 }}
+          securityContext:
+            {{- include "br-slc.containerSecurityContext" .Values.xsdValidator.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: validator-tmp
+              mountPath: /tmp
+        {{- if .Values.mqbridge.enabled }}
+        {{- /* Same-pod mqbridge container (ADR-12 / Decisão 21). CONDITIONAL —
+        default off, rendered only when the BYOC client's role is IF Domicílio
+        with RSFN_CONSUMER_TRANSPORT=mq. Owns the inbound IBM MQ/RSFN connection;
+        identity/keystore are per-process (MQSCO.KeyRepository from env MQSSLKEYR),
+        so 1 process = 1 participant (see the replicaCount guard at the top of
+        this template). The app reaches it over localhost:9121 (see
+        configmap.data.MQ_BRIDGE_URL). UNLIKE signer/validator, rootfs is
+        WRITABLE (libmqm needs /var/mqm) and the pod gets an amd64 pin below. */}}
+        - name: mqbridge
+          image: {{ include "br-slc.mqbridgeImage" . | quote }}
+          imagePullPolicy: {{ .Values.mqbridge.image.pullPolicy }}
+          ports:
+            - name: mq-http
+              containerPort: 9121
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "br-slc.fullname" . }}-mqbridge
+          env:
+            {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
+            {{- include "br-slc.gomaxprocsEnv" .Values.mqbridge.resources | nindent 12 }}
+            {{- range $key, $value := .Values.mqbridge.secrets.data }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "br-slc.mqbridgeSecretName" $ }}
+                  key: {{ $key }}
+            {{- end }}
+          livenessProbe:
+            {{- include "br-slc.httpProbe" .Values.mqbridge.livenessProbe | nindent 12 }}
+          # NO readinessProbe on purpose (Decisão 21): mqbridge is same-pod and
+          # nothing routes to :9121 through a Service, so a readiness probe here
+          # buys no traffic gating. Its /readyz reflects the IBM MQ pool state
+          # (mqbridge/pool.go), so wiring it as readiness would drag the WHOLE
+          # pod out of the monolith's :4111 Service on any MQ blip — with the
+          # replicaCount=1 hard-cap that is a total API outage, not a consumer
+          # degradation. Liveness (process /health) is enough to restart a hung
+          # bridge; MQ connectivity is surfaced to the monolith via the client's
+          # breaker instead.
+          resources:
+            {{- toYaml .Values.mqbridge.resources | nindent 12 }}
+          securityContext:
+            {{- include "br-slc.containerSecurityContext" .Values.mqbridge.securityContext | nindent 12 }}
+            # Writable rootfs for libmqm (/var/mqm). Set here, not in values.yaml.
+            readOnlyRootFilesystem: false
+          volumeMounts:
+            # libmqm's writable state (error/FDC/trace logs). Explicit emptyDir
+            # regardless of readOnlyRootFilesystem=false, so the writable
+            # location never depends on the base image's own directory
+            # permissions (see values.yaml mqbridge.securityContext comment).
+            - name: mqbridge-var-mqm
+              mountPath: /var/mqm
+            {{- if .Values.mqbridge.keystoreSecret.enabled }}
+            - name: mqbridge-keystore
+              mountPath: {{ .Values.mqbridge.keystoreSecret.mountPath }}
+              readOnly: true
+            {{- end }}
+        {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: signer-tmp
+          emptyDir: {}
+        - name: validator-tmp
+          emptyDir: {}
+        {{- if .Values.signer.softkeySecret.enabled }}
+        - name: softkey
+          secret:
+            secretName: {{ .Values.signer.softkeySecret.secretName }}
+            items:
+              - key: {{ .Values.signer.softkeySecret.secretKey }}
+                path: signer.pfx
+        {{- end }}
+        {{- if .Values.mqbridge.enabled }}
+        - name: mqbridge-var-mqm
+          emptyDir: {}
+        {{- if .Values.mqbridge.keystoreSecret.enabled }}
+        - name: mqbridge-keystore
+          secret:
+            secretName: {{ .Values.mqbridge.keystoreSecret.secretName }}
+        {{- end }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- /* Pod scheduling. Decisão 21: when mqbridge is enabled the whole pod
+      MUST land on amd64 (the IBM MQ Redistributable Client / GSKit it links is
+      Linux x86_64-only), so the arch constraint is merged LAST (dest wins) and
+      cannot be dropped by a nodeSelector override. Generic nodeSelector /
+      affinity / tolerations are otherwise passed through from values. */}}
+      {{- $nodeSelector := .Values.nodeSelector | default dict }}
+      {{- if .Values.mqbridge.enabled }}
+      {{- $nodeSelector = merge (dict "kubernetes.io/arch" "amd64") $nodeSelector }}
+      {{- end }}
+      {{- with $nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

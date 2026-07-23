@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `8.4.0-beta.4` | 2.6.7 | 2.4.5 |
+| `8.4.0-beta.5` | 2.6.7 | 2.4.5 |
 -----------------
 
 ### Plugin Fees Helm Chart

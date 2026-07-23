@@ -55,6 +55,27 @@ data:
   # MULTI-TENANT
   MULTI_TENANT_ENABLED: {{ .Values.crm.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
 
+  KMS_VAULT_ADDR: {{ .Values.crm.configmap.KMS_VAULT_ADDR | default "http://midaz-hc-vault:8200" | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ .Values.crm.configmap.KMS_VAULT_AUTH_METHOD | default "token" | quote }}
+  KMS_VENDOR: {{ .Values.crm.configmap.KMS_VENDOR | default "hashicorp-vault" | quote }}
+  SD_ADDRESS: {{ .Values.crm.configmap.SD_ADDRESS | default "localhost:8500" | quote }}
+  SD_ALLOW_STALE: {{ .Values.crm.configmap.SD_ALLOW_STALE | default "" | quote }}
+  SD_DIAL_TIMEOUT: {{ .Values.crm.configmap.SD_DIAL_TIMEOUT | default "" | quote }}
+  SD_ENABLED: {{ .Values.crm.configmap.SD_ENABLED | default "false" | quote }}
+  SD_EXTERNAL_ADDRESS: {{ .Values.crm.configmap.SD_EXTERNAL_ADDRESS | default "" | quote }}
+  SD_EXTERNAL_PORT: {{ .Values.crm.configmap.SD_EXTERNAL_PORT | default "" | quote }}
+  SD_INTERNAL_ADDRESS: {{ .Values.crm.configmap.SD_INTERNAL_ADDRESS | default "" | quote }}
+  SD_INTERNAL_PORT: {{ .Values.crm.configmap.SD_INTERNAL_PORT | default "" | quote }}
+  SD_INTERNAL_SCHEME: {{ .Values.crm.configmap.SD_INTERNAL_SCHEME | default "" | quote }}
+  SD_PREFER_VIEW: {{ .Values.crm.configmap.SD_PREFER_VIEW | default "" | quote }}
+  SD_RESPONSE_HEADER_TIMEOUT: {{ .Values.crm.configmap.SD_RESPONSE_HEADER_TIMEOUT | default "" | quote }}
+  SD_SEED_TIMEOUT: {{ .Values.crm.configmap.SD_SEED_TIMEOUT | default "" | quote }}
+  SD_TLS: {{ .Values.crm.configmap.SD_TLS | default "false" | quote }}
+  SD_TLS_HANDSHAKE_TIMEOUT: {{ .Values.crm.configmap.SD_TLS_HANDSHAKE_TIMEOUT | default "" | quote }}
+  SD_TLS_SKIP_VERIFY: {{ .Values.crm.configmap.SD_TLS_SKIP_VERIFY | default "false" | quote }}
+  SD_WATCH_WAIT_TIME: {{ .Values.crm.configmap.SD_WATCH_WAIT_TIME | default "" | quote }}
+  SD_WORKLOAD: {{ .Values.crm.configmap.SD_WORKLOAD | default "" | quote }}
+  STREAMING_ENABLED: {{ .Values.crm.configmap.STREAMING_ENABLED | default "false" | quote }}
   # Extra Env Vars
   {{- with .Values.crm.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

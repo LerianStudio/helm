@@ -94,10 +94,10 @@ spec:
               DB_EXISTS=0
               ROLE_EXISTS=0
 
-              if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_database WHERE datname='$APP_DB'" | grep -q 1; then
+              if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -v db="$APP_DB" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_database WHERE datname=:'db'" | grep -q 1; then
                 DB_EXISTS=1
               fi
-              if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_roles WHERE rolname='$APP_ROLE'" | grep -q 1; then
+              if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -v role="$APP_ROLE" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_roles WHERE rolname=:'role'" | grep -q 1; then
                 ROLE_EXISTS=1
               fi
 

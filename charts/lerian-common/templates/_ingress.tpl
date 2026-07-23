@@ -53,7 +53,8 @@ Inputs (dict):
 {{- $name := .name -}}
 {{- $svcPort := .svcPort -}}
 {{- $className := $ing.className | default $g.className -}}
-{{- $annotations := merge (deepCopy ($g.annotations | default dict)) ($ing.annotations | default dict) -}}
+{{- /* mergeOverwrite (not merge): per-ingress annotations must win over same-key global. */ -}}
+{{- $annotations := mergeOverwrite (deepCopy ($g.annotations | default dict)) ($ing.annotations | default dict) -}}
 {{- $tls := $g.tls -}}
 {{- if hasKey $ing "tls" -}}{{- $tls = $ing.tls -}}{{- end -}}
 {{- $hosts := $ing.hosts | default list -}}

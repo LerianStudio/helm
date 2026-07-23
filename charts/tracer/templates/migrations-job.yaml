@@ -1,0 +1,59 @@
+{{- if and .Values.tracer.enabled .Values.tracer.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "tracer.fullname" . }}-migrate
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "tracer.labels" (dict "context" . "component" "tracer-migrations" "name" .Values.tracer.name) | nindent 4 }}
+  annotations:
+    # Run the schema migrations before the app Deployment on every sync.
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  backoffLimit: {{ .Values.tracer.migrations.backoffLimit | default 3 }}
+  activeDeadlineSeconds: {{ .Values.tracer.migrations.activeDeadlineSeconds | default 300 }}
+  ttlSecondsAfterFinished: {{ .Values.tracer.migrations.ttlSecondsAfterFinished | default 300 }}
+  template:
+    metadata:
+      labels:
+        {{- include "tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with .Values.tracer.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "tracer.migrations.securityContext.pod" . | nindent 8 }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.tracer.migrations.image.repository }}:{{ .Values.tracer.migrations.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.tracer.migrations.image.pullPolicy | default "IfNotPresent" }}
+          securityContext:
+            {{- include "tracer.migrations.securityContext.container" . | nindent 12 }}
+          # Reuse the same DB configuration the tracer Deployment consumes:
+          # DB_HOST / DB_PORT / DB_NAME / DB_USER / DB_SSL_MODE come from the
+          # tracer ConfigMap and DB_PASSWORD from the tracer Secret.
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.tracer.useExistingSecret }}{{ .Values.tracer.existingSecretName }}{{ else }}{{ include "tracer.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "tracer.fullname" . }}
+          resources:
+            {{- toYaml .Values.tracer.migrations.resources | nindent 12 }}
+      {{- with .Values.tracer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

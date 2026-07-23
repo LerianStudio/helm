@@ -1,0 +1,83 @@
+{{- if and .Values.ledger.enabled .Values.ledger.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "midaz-ledger.fullname" . }}-migrate
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" "ledger-migrations" "name" .Values.ledger.name) | nindent 4 }}
+  annotations:
+    # Run the schema migrations before the app Deployment on every sync.
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  backoffLimit: {{ .Values.ledger.migrations.backoffLimit | default 3 }}
+  activeDeadlineSeconds: {{ .Values.ledger.migrations.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ .Values.ledger.migrations.ttlSecondsAfterFinished | default 300 }}
+  template:
+    metadata:
+      labels:
+        {{- include "midaz.selectorLabels" (dict "context" . "component" "ledger-migrations" "name" .Values.ledger.name) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with .Values.ledger.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "midaz.migrations.securityContext.pod" . | nindent 8 }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.ledger.migrations.image.repository }}:{{ .Values.ledger.migrations.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.ledger.migrations.image.pullPolicy | default "IfNotPresent" }}
+          securityContext:
+            {{- include "midaz.migrations.securityContext.container" . | nindent 12 }}
+          # Reuse the same DB configuration the ledger Deployment consumes:
+          # DB_ONBOARDING_* / DB_TRANSACTION_* (host, port, name, user, sslmode)
+          # come from the ledger ConfigMap; passwords are injected below.
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.ledger.useExistingSecret }}{{ .Values.ledger.existingSecretName }}{{ else }}{{ include "midaz-ledger.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "midaz-ledger.fullname" . }}
+          env:
+            {{/* PostgreSQL: single role `midaz` backs both onboarding and transaction;
+                 both module passwords map to Bitnami key `password`. Mirrors the ledger Deployment. */}}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_ONBOARDING_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 12 }}
+            {{- else }}
+            {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
+            {{- if .Values.ledger.secrets.DB_ONBOARDING_PASSWORD }}
+            - name: DB_ONBOARDING_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_ONBOARDING_PASSWORD
+            {{- end }}
+            {{- if .Values.ledger.secrets.DB_TRANSACTION_PASSWORD }}
+            - name: DB_TRANSACTION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_TRANSACTION_PASSWORD
+            {{- end }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.ledger.migrations.resources | nindent 12 }}
+      {{- with .Values.ledger.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ledger.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ledger.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -61,6 +61,37 @@ tracer:
     # -- Image tag used for deployment
     tag: "1.0.0"
 
+  # -- Decoupled schema migrations Job (ArgoCD PreSync hook).
+  #    Runs the midaz-tracer-migrations image before the app rollout to apply
+  #    the tracer DB migrations. DB connection settings are reused from
+  #    tracer.configmap / tracer.secrets (same envFrom sources as the tracer
+  #    Deployment), so no extra DB config is required here.
+  migrations:
+    # -- Enable or disable the tracer migrations PreSync Job
+    enabled: true
+    image:
+      # -- Repository for the tracer migrations image
+      repository: ghcr.io/lerianstudio/midaz-tracer-migrations
+      # -- Image tag (populated by the release pipeline via gitops_yaml_key_mappings;
+      #    falls back to .Chart.AppVersion when empty)
+      tag: ""
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+    # -- Job backoffLimit (retries before the migration is marked failed)
+    backoffLimit: 3
+    # -- Hard time limit for the migration Job
+    activeDeadlineSeconds: 300
+    # -- Retain the finished Job for this many seconds before cleanup
+    ttlSecondsAfterFinished: 300
+    # -- Resource requests/limits for the migration Job
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
+
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
 

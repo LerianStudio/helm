@@ -126,6 +126,27 @@ Fail loud at render time so the operator fixes the configuration.
 {{- end }}
 
 {{/*
+Migration Job security contexts.
+Distroless nonroot images run as UID/GID 65532 (same as the app images).
+Used by the decoupled ledger/tracer migration PreSync Jobs.
+*/}}
+{{- define "midaz.migrations.securityContext.pod" -}}
+runAsNonRoot: true
+runAsUser: 65532
+runAsGroup: 65532
+seccompProfile:
+  type: RuntimeDefault
+{{- end }}
+
+{{- define "midaz.migrations.securityContext.container" -}}
+allowPrivilegeEscalation: false
+readOnlyRootFilesystem: true
+capabilities:
+  drop:
+    - ALL
+{{- end }}
+
+{{/*
 Create a default fully qualified app name for CRM.
 */}}
 {{- define "midaz-crm.fullname" -}}

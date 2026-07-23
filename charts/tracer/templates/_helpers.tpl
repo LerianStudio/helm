@@ -73,3 +73,24 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- define "global.namespace" -}}
 {{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
 {{- end }}
+
+{{/*
+Migration Job security contexts.
+Distroless nonroot images run as UID/GID 65532 (same as the app images).
+Used by the decoupled tracer migration PreSync Job.
+*/}}
+{{- define "tracer.migrations.securityContext.pod" -}}
+runAsNonRoot: true
+runAsUser: 65532
+runAsGroup: 65532
+seccompProfile:
+  type: RuntimeDefault
+{{- end }}
+
+{{- define "tracer.migrations.securityContext.container" -}}
+allowPrivilegeEscalation: false
+readOnlyRootFilesystem: true
+capabilities:
+  drop:
+    - ALL
+{{- end }}

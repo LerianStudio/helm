@@ -122,6 +122,36 @@ ledger:
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
     tag: "3.8.0"
+  # -- Decoupled schema migrations Job (ArgoCD PreSync hook).
+  #    Runs the midaz-ledger-migrations image before the app rollout to apply
+  #    the onboarding + transaction DB migrations. DB connection settings are
+  #    reused from ledger.configmap / ledger.secrets (same envFrom sources as
+  #    the ledger Deployment), so no extra DB config is required here.
+  migrations:
+    # -- Enable or disable the ledger migrations PreSync Job
+    enabled: true
+    image:
+      # -- Repository for the ledger migrations image
+      repository: ghcr.io/lerianstudio/midaz-ledger-migrations
+      # -- Image tag (populated by the release pipeline via gitops_yaml_key_mappings;
+      #    falls back to .Chart.AppVersion when empty)
+      tag: ""
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+    # -- Job backoffLimit (retries before the migration is marked failed)
+    backoffLimit: 3
+    # -- Hard time limit for the migration Job
+    activeDeadlineSeconds: 600
+    # -- Retain the finished Job for this many seconds before cleanup
+    ttlSecondsAfterFinished: 300
+    # -- Resource requests/limits for the migration Job
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

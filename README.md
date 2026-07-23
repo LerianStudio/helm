@@ -144,6 +144,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `3.1.0` | 3.0.2 | 3.0.2 |
 -----------------
 
+### Lender
+
+For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lender).
+
+#### Application Version Mapping
+
+| Chart Version | Lender Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | 1.0.0-beta.48 |
+-----------------
+
 ### Tracer
 
 For more details, check out the [official documentation](https://docs.lerian.studio/en/tracer).

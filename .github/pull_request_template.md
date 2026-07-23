@@ -16,6 +16,9 @@
 - [ ] Pipeline
 - [ ] Documentation
 - [ ] Fetcher
+- [ ] BR STA
+- [ ] BR CCS
+- [ ] BR SLC
 
 ## Checklist
 Please check each item after it's completed.

@@ -50,7 +50,11 @@ jobs:
             doc
             product-console
             fetcher
+            lender
             tracer
+            br-sta
+            br-ccs
+            br-slc
             new
             charts
             common

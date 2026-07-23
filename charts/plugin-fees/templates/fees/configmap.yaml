@@ -109,6 +109,21 @@ data:
   MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
   {{- end }}
 
+  SD_ADDRESS: {{ .Values.fees.configmap.SD_ADDRESS | default "localhost:8500       " | quote }}
+  SD_ENABLED: {{ .Values.fees.configmap.SD_ENABLED | default "false" | quote }}
+  SD_EXTERNAL_ADDRESS: {{ .Values.fees.configmap.SD_EXTERNAL_ADDRESS | default "            " | quote }}
+  SD_EXTERNAL_PORT: {{ .Values.fees.configmap.SD_EXTERNAL_PORT | default "               " | quote }}
+  SD_TLS: {{ .Values.fees.configmap.SD_TLS | default "false" | quote }}
+  SD_TLS_SKIP_VERIFY: {{ .Values.fees.configmap.SD_TLS_SKIP_VERIFY | default "false" | quote }}
+  SD_WORKLOAD: {{ .Values.fees.configmap.SD_WORKLOAD | default "                    " | quote }}
+  STREAMING_CLOUDEVENTS_SOURCE: {{ .Values.fees.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "lerian.midaz.fees" | quote }}
+  STREAMING_ENABLED: {{ .Values.fees.configmap.STREAMING_ENABLED | default "false" | quote }}
+  STREAMING_IMPORTANT_EMIT_TIMEOUT_MS: {{ .Values.fees.configmap.STREAMING_IMPORTANT_EMIT_TIMEOUT_MS | default "5000" | quote }}
+  STREAMING_SASL_ALLOW_PLAINTEXT: {{ .Values.fees.configmap.STREAMING_SASL_ALLOW_PLAINTEXT | default "false" | quote }}
+  STREAMING_SASL_MECHANISM: {{ .Values.fees.configmap.STREAMING_SASL_MECHANISM | default "" | quote }}
+  STREAMING_SASL_USERNAME: {{ .Values.fees.configmap.STREAMING_SASL_USERNAME | default "" | quote }}
+  STREAMING_TLS_CA_CERT: {{ .Values.fees.configmap.STREAMING_TLS_CA_CERT | default "     " | quote }}
+  STREAMING_TLS_ENABLED: {{ .Values.fees.configmap.STREAMING_TLS_ENABLED | default "false" | quote }}
   # Extra Env Vars
   {{- with .Values.fees.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -6,6 +6,9 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
+  annotations:
+    # Deploy the app after the migration Job (wave 1) has completed.
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   revisionHistoryLimit: {{ .Values.tracer.revisionHistoryLimit | default 10 }}
   strategy:

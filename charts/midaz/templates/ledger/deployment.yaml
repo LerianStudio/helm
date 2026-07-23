@@ -5,6 +5,9 @@ metadata:
   name: {{ include "midaz-ledger.fullname" . }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
+  annotations:
+    # Deploy the app after the migration Job (wave 1) has completed.
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   revisionHistoryLimit: {{ .Values.ledger.revisionHistoryLimit | default 10 }}
   strategy:

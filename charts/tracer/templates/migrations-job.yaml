@@ -10,7 +10,7 @@ metadata:
     # Run the schema migrations before the app Deployment on every sync.
     # Use a sync-wave (not a PreSync hook) so the Job runs in the normal sync
     # phase after Secrets/ConfigMaps (wave 0) and before the app Deployment.
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   backoffLimit: {{ .Values.tracer.migrations.backoffLimit }}
   activeDeadlineSeconds: {{ .Values.tracer.migrations.activeDeadlineSeconds | default 300 }}

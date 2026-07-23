@@ -17,8 +17,8 @@ pipeline) — a distinct optional POD, NOT a same-pod sidecar (team decision
 2026-07-23, superseding the ADR-23 Fase-2 sidecar): keeps the app pod small and
 its scaling independent, and enabling/disabling the fixture never touches the
 app pod. Safe-by-default OFF (mockNuclea.enabled=false): like the detached
-migrations image, a gated component defaulting ON with an image the registry
-doesn't have yet would ImagePullBackOff and block the ArgoCD sync. The app
+migrations image — were it instead to default ON with an image the registry
+doesn't have yet, it would ImagePullBackOff and block the ArgoCD sync. The app
 reaches it over cluster DNS (Service br-slc-mock-nuclea:port); wire
 NUCLEA_REST_BASE_URL / RSFN_CONSUMER_BASE_URL to it in the dev/hml/BYOC-test
 overlay.

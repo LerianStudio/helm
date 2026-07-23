@@ -157,18 +157,20 @@ When `mockNuclea.enabled=true`:
 > **mock's** logs. Mint once, build all three Secrets from that one output dir,
 > and rotate them together.
 
-**1. Mint the set once.** The image is distroless (no shell, non-root uid 65532),
-so run `-gen` as a one-shot container writing to a host dir the uid can write:
+**1. Mint the set once.** The image is distroless (no shell). Run `-gen` as a
+one-shot container **as your own host uid**, writing into a dir you own:
 
 ```bash
 mkdir -p spb-keys
-# The container runs as uid 65532 and writes the four files into the bind mount,
-# so the host dir must be writable by that uid (throwaway dev keys → world-writable
-# is fine). Without this, `-gen` fails with permission-denied on /spb-keys.
-chmod 777 spb-keys
-docker run --rm -u 65532:65532 -v "$PWD/spb-keys:/spb-keys" \
+# Run as YOUR host uid (not the image's 65532), so -gen writes into the
+# bind-mounted dir you already own — no world-writable chmod needed. The
+# distroless binary runs fine under any uid; the 65532 baked into the image
+# only matters at deploy time, not for this one-shot local mint.
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD/spb-keys:/spb-keys" \
   -e SIGNER_SOFTKEY_PFX_PASSPHRASE="$PFX_PASS" \
   ghcr.io/lerianstudio/br-slc-mock-nuclea:<tag> -gen -out /spb-keys
+# Tighten the private material to 0600 (throwaway dev keys, but still keys):
+chmod 600 spb-keys/recipient.key spb-keys/signer.pfx
 # → spb-keys/{recipient.key, recipient.crt, emitter.crt, signer.pfx}
 ```
 

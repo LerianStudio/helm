@@ -2,6 +2,22 @@
 
 ## [3.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.5.0)
 
+- **Fixes**
+  - Improved schedule worker Pod Disruption Budget (PDB) to provide real disruption protection.
+
+- **Improvements**
+  - Set stable chart version to 3.5.0 for main release.
+  - Bumped appVersion/image tags to 1.8.0 and added `WEBHOOK_SCHEDULE_CASHOUT` configuration keys.
+  - Updated Helm chart for release 1.8.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.4.0...plugin-br-pix-indirect-btg-v3.5.0)
+
+---
+
+## [3.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.5.0)
+
 - **Fixes:**
   - Give schedule worker PDB real disruption protection.
 

@@ -118,6 +118,18 @@ round-trip) before they have Núclea access; when they do, it is a simple repoin
 > `validateDispatchDevRecipientConfig`). Since the chart's base `ENV_NAME`
 > defaults to `production`, enabling the fixture **requires** an overlay that
 > also sets a non-prod `ENV_NAME` (e.g. `sandbox`/`staging`).
+>
+> **Guard premise (know this before relying on it):** it keys off the chart's
+> **declared** `configmap.data.ENV_NAME` / `configmap.data.DEPLOYMENT_MODE` — the
+> same values the chart feeds the app — and matches the **exact** strings
+> `production` / `saas`, mirroring the app's `isProductionOrSaaS()`. Two
+> consequences: (1) it does not inspect an `ENV_NAME` sourced outside the chart
+> (e.g. an external Secret); because the base default is `production` this stays
+> fail-safe, but keep `configmap.data.*` authoritative. (2) `DEPLOYMENT_MODE`
+> defaults to `byoc`, so a **BYOC-prod** deploy is caught only by the
+> `ENV_NAME=production` half — a real production tier (BYOC included) **must**
+> carry `ENV_NAME=production` for both this guard and the app's own guard to
+> engage. Never run a prod tier under a non-`production` `ENV_NAME`.
 
 When `mockNuclea.enabled=true`:
 
@@ -166,7 +178,7 @@ docker run --rm -u 65532:65532 -v "$PWD/spb-keys:/spb-keys" \
 # All three Secrets MUST live in the same namespace as the br-slc release — the
 # chart renders the pods into `global.namespace` (namespaceOverride, else the
 # install namespace), so a Secret in any other namespace simply won't mount.
-NS=<your br-slc release namespace>   # the -n/--namespace you pass to `helm install`
+NS=<your br-slc release namespace>   # = namespaceOverride if set, else the -n/--namespace you pass to `helm install`
 kubectl create secret generic br-slc-mock-spb-keys --namespace "$NS" \
   --from-file=recipient.key=spb-keys/recipient.key \
   --from-file=emitter.crt=spb-keys/emitter.crt      # → mockNuclea.spbKeysSecret

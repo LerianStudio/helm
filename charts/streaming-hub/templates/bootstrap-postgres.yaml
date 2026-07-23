@@ -1,0 +1,165 @@
+{{- if .Values.global.externalPostgresDefinitions.enabled }}
+{{/*
+Bootstrap Job for an external/shared PostgreSQL host: creates the hub's ONE
+database + role and grants privileges. streaming-hub owns a SINGLE database with
+a tenant_id COLUMN (NOT per-tenant DB), so exactly one DB/role is provisioned.
+
+Default OFF. Whether dev-st uses this Job or a pre-provisioned managed PG is a
+Phase 3 decision — the chart supports both. The created DB/role name is
+configurable (defaults: db "streaming-hub", role "streaming-hub") and must match
+the host/dbname/user encoded in STREAMING_HUB_POSTGRES_DSN.
+*/}}
+{{- $defs := .Values.global.externalPostgresDefinitions -}}
+{{- $dbName := $defs.database | default "streaming-hub" -}}
+{{- $roleName := $defs.role | default "streaming-hub" -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "streaming-hub.fullname" . }}-bootstrap-postgres
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "streaming-hub.labels" (dict "context" . "component" "bootstrap") | nindent 4 }}
+  annotations:
+    # PreSync hook at the FRONT of the chain (weight -10 / sync-wave -10): creates
+    # the hub's role+db BEFORE the migration-secret (-5), the migrations Job (-1),
+    # and the app Deployment (main Sync). Idempotent — it creates the role/db only
+    # when absent (see the script), so re-running on every sync is safe.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-10"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
+spec:
+  ttlSecondsAfterFinished: 300
+  completions: 1
+  parallelism: 1
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.37
+        env:
+        - name: DB_HOST
+          value: {{ $defs.connection.host | quote }}
+        - name: DB_PORT
+          value: {{ $defs.connection.port | quote }}
+        command:
+        - /bin/sh
+        - -c
+        - >
+          TIMEOUT=300;
+          ELAPSED=0;
+          echo "Checking $DB_HOST:$DB_PORT...";
+          while ! nc -z "$DB_HOST" "$DB_PORT"; do
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "Timeout waiting for $DB_HOST:$DB_PORT after ${TIMEOUT}s";
+              exit 1;
+            fi;
+            echo "$DB_HOST:$DB_PORT is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)";
+            sleep 5;
+            ELAPSED=$((ELAPSED + 5));
+          done;
+          echo "$DB_HOST:$DB_PORT is ready!";
+      containers:
+      - name: psql
+        image: postgres:17
+        env:
+        - name: DB_HOST
+          value: {{ $defs.connection.host | quote }}
+        - name: DB_PORT
+          value: {{ $defs.connection.port | quote }}
+        - name: DB_NAME
+          value: {{ $dbName | quote }}
+        - name: DB_ROLE
+          value: {{ $roleName | quote }}
+        - name: DB_USER_ADMIN
+          {{- if $defs.postgresAdminLogin.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $defs.postgresAdminLogin.useExistingSecret.name | quote }}
+              key: DB_USER_ADMIN
+          {{- else }}
+          value: {{ $defs.postgresAdminLogin.username | quote }}
+          {{- end }}
+        - name: DB_ADMIN_PASSWORD
+          {{- if $defs.postgresAdminLogin.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $defs.postgresAdminLogin.useExistingSecret.name | quote }}
+              key: DB_ADMIN_PASSWORD
+          {{- else }}
+          value: {{ $defs.postgresAdminLogin.password | quote }}
+          {{- end }}
+        - name: DB_PASSWORD_HUB
+          {{- if $defs.hubCredentials.useExistingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $defs.hubCredentials.useExistingSecret.name | quote }}
+              key: DB_PASSWORD_HUB
+          {{- else }}
+          value: {{ $defs.hubCredentials.password | quote }}
+          {{- end }}
+        - name: DB_DATABASE
+          value: postgres
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -euo pipefail
+          # Escape single quotes so values embedded in SQL string literals can't
+          # break the statement (a Vault-generated password legitimately may
+          # contain a ' — that would otherwise abort CREATE ROLE).
+          sql_lit() { printf "%s" "$1" | sed "s/'/''/g"; }
+          DB_NAME_LIT="$(sql_lit "$DB_NAME")"
+          DB_ROLE_LIT="$(sql_lit "$DB_ROLE")"
+          DB_PASSWORD_HUB_LIT="$(sql_lit "$DB_PASSWORD_HUB")"
+          echo "=== streaming-hub PostgreSQL Bootstrap ==="
+          echo "Host: $DB_HOST:$DB_PORT  Database: $DB_NAME  Role: $DB_ROLE"
+          echo ""
+
+          echo "Checking existing PostgreSQL objects..."
+          DB_EXISTS=0
+          ROLE_EXISTS=0
+
+          if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_database WHERE datname='${DB_NAME_LIT}'" | grep -q 1; then
+            DB_EXISTS=1
+          fi
+          if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_roles WHERE rolname='${DB_ROLE_LIT}'" | grep -q 1; then
+            ROLE_EXISTS=1
+          fi
+
+          if [ "$DB_EXISTS" = "1" ] && [ "$ROLE_EXISTS" = "1" ]; then
+            echo "PostgreSQL bootstrap already complete (database '$DB_NAME' and role '$DB_ROLE' exist). Skipping creation."
+          else
+            # Create role if not exists
+            if [ "$ROLE_EXISTS" = "1" ]; then
+              echo "Role '$DB_ROLE' already exists. Skipping creation."
+            else
+              echo "Creating role '$DB_ROLE'..."
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE \"$DB_ROLE\" LOGIN PASSWORD '${DB_PASSWORD_HUB_LIT}'"
+            fi
+
+            # Create database if not exists
+            if [ "$DB_EXISTS" = "1" ]; then
+              echo "Database '$DB_NAME' already exists. Skipping creation."
+            else
+              echo "Creating database '$DB_NAME'..."
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_ROLE\""
+            fi
+          fi
+
+          # Privileges (safe to run repeatedly)
+          echo "Ensuring privileges and schema permissions..."
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE \"$DB_NAME\" TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO \"$DB_ROLE\""
+
+          echo ""
+          echo "=== streaming-hub PostgreSQL Bootstrap completed successfully ==="
+{{- end }}

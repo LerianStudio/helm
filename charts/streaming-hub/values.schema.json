@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "streamingHub": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["all", "split"],
+          "description": "Topology switch. 'all' = one Deployment (role=all); 'split' = ingest + delivery. NEVER run both against one Kafka cluster (double-consume)."
+        },
+        "common": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "configmap": {
+              "type": "object"
+            }
+          }
+        },
+        "secrets": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

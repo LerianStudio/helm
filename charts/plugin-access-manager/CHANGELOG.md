@@ -3,6 +3,51 @@
 ## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.3.0)
 
 - **Features:**
+  - Added optional configurable `startupProbe` for identity and auth components. This feature enhances the startup process by allowing more flexibility in configuring health checks.
+
+- **Contributors:**
+  - @gandalf-at-lerian
+  - @guimoreirar
+  - @lerian-studio
+  - @qnen
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.2.0...plugin-access-manager-v8.3.0)
+
+---
+
+## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.3.0)
+
+- **Features**
+  - Added optional configurable startupProbe for identity and auth.
+
+- **Contributors**
+  - @gandalf-at-lerian
+  - @guimoreirar
+  - @lerian-studio
+  - @qnen
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.2.0...plugin-access-manager-v8.3.0)
+
+---
+
+## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.3.0)
+
+- **Features:**
+  - Added optional configurable `startupProbe` for identity and auth components.
+
+- **Contributors:**
+  - @gandalf-at-lerian
+  - @guimoreirar
+  - @lerian-studio
+  - @qnen
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.2.0...plugin-access-manager-v8.3.0)
+
+---
+
+## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.3.0)
+
+- **Features:**
   - Added optional configurable `startupProbe` for identity and auth components.
 
 - **Contributors:**

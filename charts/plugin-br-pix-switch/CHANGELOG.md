@@ -2,6 +2,86 @@
 
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
 
+- **Features**
+  - Use `amqps://` for dict-hub-vsync RabbitMQ connection.
+  - ProvidersIngress for outbound-provider adapters.
+  - Auto-derive OTEL service version and node-IP OTLP endpoint.
+  - Add MongoDB and RabbitMQ subchart dependencies.
+  - Add bootstrap Jobs for PostgreSQL and MongoDB.
+
+- **Fixes**
+  - Providers ingress default path corrected from `/mock-btg` to `/btg-mock`.
+  - Match probe template fallbacks to per-component routePrefix.
+  - Swap `envFrom` order so Secret overrides ConfigMap.
+  - Set default `PLUGIN_AUTH_URL` on auth-using components.
+  - Namespace handling and global image tag override.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features:**
+  - Introduced schema migration Jobs.
+  - Implemented providersIngress for outbound-provider adapters.
+  - Added per-component image repository defaults.
+  - Auto-derive OTEL service version and node-IP OTLP endpoint.
+  - Auto-wire URLs to in-cluster subcharts.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Adjusted probe paths to follow per-component routePrefix.
+  - Ensured Secret overrides ConfigMap by swapping `envFrom` order.
+  - Fixed bootstrap Job issues identified during live install testing.
+  - Set default `PLUGIN_AUTH_URL` on components using authentication.
+
+- **Improvements:**
+  - Standardized charts to adhere to the Lerian chart contract.
+  - Updated documentation to align with chart standard revamp.
+  - Enhanced upgrade guide format for better clarity.
+  - Added wait-for-dependencies init container.
+  - Refactored chart to support multi-component deployment.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features**
+  - Introduced schema migration Jobs to streamline database updates.
+  - Enabled use of `amqps://` for RabbitMQ connections in the dict-hub-vsync.
+  - Added support for per-component image repository defaults.
+  - Implemented auto-derivation of OTEL service version and node-IP OTLP endpoint.
+  - Added MongoDB and RabbitMQ as subchart dependencies for enhanced functionality.
+
+- **Fixes**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Resolved probe paths to follow per-component `routePrefix`.
+  - Ensured `envFrom` order allows Secret to override ConfigMap.
+  - Addressed bootstrap Job issues identified during live install testing.
+  - Fixed default `PLUGIN_AUTH_URL` for components using authentication.
+
+- **Improvements**
+  - Standardized probe field set across all charts.
+  - Aligned documentation with chart standard revamp.
+  - Improved namespace handling and global image tag overrides.
+  - Enhanced upgrade guide format for better clarity.
+  - Updated readiness probe paths to `/readyz` for consistency.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
 - **Features:**
   - Introduced schema migration Jobs for improved data handling.
   - Added support for shared multi-path ingresses.

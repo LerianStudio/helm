@@ -1,5 +1,49 @@
 # Midaz Changelog
 
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
+
+- **Features:**
+  - Render streaming SASL/TLS secrets in midaz.
+  - Integration with plugin-fees Secrets.
+
+- **Documentation:**
+  - Added upgrade guide for midaz v8.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
+
+---
+
+## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
+
+- **Features**
+  - Render streaming SASL/TLS secrets in midaz + plugin-fees Secrets.
+
+- **Documentation**
+  - Add upgrade guide for midaz v8.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
+
+---
+
 ## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
 
 - **Features**

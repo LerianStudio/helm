@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.6.0` | 3.7.8 | 3.7.8 |
+| `8.7.0` | 3.8.0 | 3.8.0 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -236,4 +236,17 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | App Version | Migrations Version |
 | :---: | :---: | :---: |
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
+-----------------
+
+### Lerian Common (Library)
+
+Library chart consumed by other Lerian charts — renders nothing on its own.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-common).
+
+#### Application Version Mapping
+
+| Chart Version |
+| :---: |
+| `1.0.1` |
 -----------------

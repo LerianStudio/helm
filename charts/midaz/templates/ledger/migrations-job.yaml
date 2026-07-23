@@ -7,8 +7,8 @@ metadata:
     {{- include "midaz.labels" (dict "context" . "component" "ledger-migrations" "name" .Values.ledger.name) | nindent 4 }}
   annotations:
     # Run the schema migrations before the app Deployment on every sync.
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    # Use a sync-wave (not a PreSync hook) so the Job runs in the normal sync
+    # phase after Secrets/ConfigMaps (wave 0) and before the app Deployment.
     argocd.argoproj.io/sync-wave: "-1"
 spec:
   backoffLimit: {{ .Values.ledger.migrations.backoffLimit }}

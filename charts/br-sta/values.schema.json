@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "postgresql": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "rabbitmq": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "otel-collector-lerian": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "br-sta": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        },
+        "useExistingSecret": {
+          "type": "boolean"
+        },
+        "existingSecretName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true,
+      "if": {
+        "properties": {
+          "useExistingSecret": {
+            "const": true
+          }
+        },
+        "required": ["useExistingSecret"]
+      },
+      "then": {
+        "properties": {
+          "existingSecretName": {
+            "minLength": 1
+          }
+        },
+        "required": ["existingSecretName"]
+      }
+    }
+  }
+}

@@ -1,0 +1,218 @@
+{{- $app := index .Values "br-sta" -}}
+{{- $migrations := get $app "migrations" | default dict -}}
+{{- $configmap := get $app "configmap" | default dict -}}
+{{- $migrationImage := get $migrations "image" | default dict -}}
+{{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") -}}
+{{- $migrationsEnabled := eq (lower (toString (get $migrations "enabled" | default false))) "true" -}}
+{{- if $migrationsEnabled }}
+{{- /* The standalone runner (init/postgres-migrations) refuses MULTI_TENANT_ENABLED=true:
+     tenant databases are migrated by the tenant-manager, not this chart. Fail fast so the
+     misconfiguration surfaces at render time rather than as a crash-looping Job. */}}
+{{- if eq (lower (toString (get $configmap "MULTI_TENANT_ENABLED" | default "false"))) "true" }}
+{{- fail "br-sta.migrations.enabled cannot be true when br-sta.configmap.MULTI_TENANT_ENABLED=true; tenant-manager owns tenant database migrations" }}
+{{- end }}
+{{- $namespace := include "global.namespace" . -}}
+{{- $pg := .Values.postgresql | default dict -}}
+{{- $pgAuth := $pg.auth | default dict -}}
+{{- /* Internal (chart-managed) Postgres: provisioned during Sync (bitnami subchart), so the
+     migration must run as a POST hook (after the DB exists) with a wait-for-Postgres init.
+     External/pre-existing Postgres keeps the PRE hook (schema-first, DB already exists). This
+     mirrors the "postgresql.enabled" helper (enabled && not external). */}}
+{{- $internalPg := eq (include "postgresql.enabled" .) "true" -}}
+{{- /* POSTGRES_PASSWORD source mirrors deployment.yaml exactly:
+       - bundled subchart OR postgresql.auth.existingSecret → single-source the subchart Secret
+         via secretKeyRef (br-sta.infraSecretRef).
+       - external, chart-managed → the app Secret (secrets.yaml) is itself a pre-install/
+         pre-upgrade hook at weight -5, so it already exists before this Job (weight -1); no
+         separate migration-only Secret is required.
+     A migration-specific or app-level existing Secret overrides the chart-managed name. */}}
+{{- $useInfraSecret := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret -}}
+{{- $migUseExisting := eq (lower (toString (get $migrations "useExistingSecret" | default false))) "true" -}}
+{{- $appUseExisting := eq (lower (toString (get $app "useExistingSecret" | default false))) "true" -}}
+{{- $pwSecretName := include "br-sta.fullname" . -}}
+{{- if $migUseExisting }}
+{{- $pwSecretName = required "br-sta.migrations.existingSecretName is required when br-sta.migrations.useExistingSecret=true" (get $migrations "existingSecretName") -}}
+{{- else if $appUseExisting }}
+{{- $pwSecretName = required "br-sta.existingSecretName is required when br-sta.useExistingSecret=true" (get $app "existingSecretName") -}}
+{{- end }}
+{{- /* Resolve POSTGRES_HOST the same way configmap.yaml does when left empty: derive the
+     collapse-aware subchart primary Service for internal Postgres; external installs set it
+     explicitly. */}}
+{{- $pgHost := get $configmap "POSTGRES_HOST" -}}
+{{- if and (not $pgHost) $internalPg }}
+{{- $pgFullname := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" $pg "context" .) -}}
+{{- if eq (default "standalone" $pg.architecture) "replication" }}
+{{- $pgHost = printf "%s-primary.%s.svc.cluster.local" $pgFullname $namespace -}}
+{{- else }}
+{{- $pgHost = printf "%s.%s.svc.cluster.local" $pgFullname $namespace -}}
+{{- end }}
+{{- end }}
+{{- /* Migration image tag is coupled to the app image tag unless an explicit tag/digest is set;
+     empty tag falls back to br-sta.image.tag, then the chart appVersion. */}}
+{{- $migrationTag := get $migrationImage "tag" | default (get (get $app "image" | default dict) "tag" | default .Chart.AppVersion) -}}
+{{- $migrationDigest := get $migrationImage "digest" | default "" -}}
+{{- $migrationRepository := get $migrationImage "repository" | default "ghcr.io/lerianstudio/br-sta-migrations" -}}
+{{- /* lib-commons' migrator refuses to connect to a non-TLS Postgres unless
+     ALLOW_INSECURE_TLS=true — POSTGRES_SSLMODE=disable alone is not enough. The
+     app deployment gets this via extraEnvVars/configmap; the migration Job must
+     mirror it. Resolution order: migrations.allowInsecureTLS override →
+     app.extraEnvVars → app.configmap. Emitted only when set, so TLS tiers stay
+     secure by default. */}}
+{{- $extraEnv := get $app "extraEnvVars" | default dict -}}
+{{- $allowInsecureTLS := "" -}}
+{{- if get $migrations "allowInsecureTLS" -}}
+{{- $allowInsecureTLS = toString (get $migrations "allowInsecureTLS") -}}
+{{- else if get $extraEnv "ALLOW_INSECURE_TLS" -}}
+{{- $allowInsecureTLS = toString (get $extraEnv "ALLOW_INSECURE_TLS") -}}
+{{- else if get $configmap "ALLOW_INSECURE_TLS" -}}
+{{- $allowInsecureTLS = toString (get $configmap "ALLOW_INSECURE_TLS") -}}
+{{- end -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-migrations" (include "br-sta.fullname" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "br-sta.labels" (dict "context" .) | nindent 4 }}
+    app.kubernetes.io/component: migrations
+  annotations:
+    {{- if $internalPg }}
+    # Internal Postgres is provisioned during Sync — run AFTER it exists and is reachable.
+    "helm.sh/hook": post-install,post-upgrade
+    "argocd.argoproj.io/hook": PostSync
+    {{- else }}
+    # External Postgres already exists — run BEFORE the app rolls out (schema-first). Weight -1
+    # runs after the app Secret hook (weight -5) so its POSTGRES_PASSWORD is available.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "argocd.argoproj.io/hook": PreSync
+    {{- end }}
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
+    {{- with (get $migrations "annotations") }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  backoffLimit: {{ get $migrations "backoffLimit" | default 3 }}
+  activeDeadlineSeconds: {{ get $migrations "activeDeadlineSeconds" | default 600 }}
+  ttlSecondsAfterFinished: {{ get $migrations "ttlSecondsAfterFinished" | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-sta.labels" (dict "context" .) | nindent 8 }}
+        app.kubernetes.io/component: migrations
+      {{- with (get $migrations "podAnnotations") }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with (get $app "imagePullSecrets") }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (get $migrations "serviceAccountName") }}
+      serviceAccountName: {{ . | quote }}
+      {{- end }}
+      {{- if $internalPg }}
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.37
+          command:
+            - /bin/sh
+            - -c
+            - >
+              echo "Waiting for $POSTGRES_HOST:$POSTGRES_PORT...";
+              ELAPSED=0;
+              while ! nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+                if [ $ELAPSED -ge 300 ]; then echo "Timeout after 300s"; exit 1; fi;
+                echo "not ready, waiting (${ELAPSED}s/300s)"; sleep 5; ELAPSED=$((ELAPSED + 5));
+              done;
+              echo "Postgres is ready";
+          env:
+            - name: POSTGRES_HOST
+              value: {{ $pgHost | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+            - name: POSTGRES_PORT
+              value: {{ get $configmap "POSTGRES_PORT" | default "5432" | quote }}
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      {{- end }}
+      containers:
+        - name: migrations
+          {{- if $migrationDigest }}
+          image: "{{ $migrationRepository }}@{{ $migrationDigest }}"
+          {{- else }}
+          image: "{{ $migrationRepository }}:{{ $migrationTag }}"
+          {{- end }}
+          imagePullPolicy: {{ get $migrationImage "pullPolicy" | default "IfNotPresent" }}
+          env:
+            # The runner reads MIGRATIONS_PATH; the image bundles the SQL at /migrations.
+            - name: MIGRATIONS_PATH
+              value: {{ get $migrations "path" | default "/migrations" | quote }}
+            - name: POSTGRES_HOST
+              value: {{ $pgHost | quote }}
+            - name: POSTGRES_PORT
+              value: {{ get $configmap "POSTGRES_PORT" | default "5432" | quote }}
+            - name: POSTGRES_USER
+              value: {{ get $configmap "POSTGRES_USER" | default "br_sta" | quote }}
+            # br-sta's runner reads the database name from POSTGRES_NAME (not POSTGRES_DB).
+            - name: POSTGRES_NAME
+              value: {{ get $configmap "POSTGRES_NAME" | default "br_sta" | quote }}
+            - name: POSTGRES_SSLMODE
+              value: {{ get $configmap "POSTGRES_SSLMODE" | default "require" | quote }}
+            {{- if $allowInsecureTLS }}
+            # lib-commons migrator bypass for non-TLS Postgres (sslmode=disable
+            # alone is rejected). Mirrors the app's ALLOW_INSECURE_TLS.
+            - name: ALLOW_INSECURE_TLS
+              value: {{ $allowInsecureTLS | quote }}
+            {{- end }}
+            - name: POSTGRES_CONNECT_TIMEOUT_SEC
+              value: {{ get $configmap "POSTGRES_CONNECT_TIMEOUT_SEC" | default "10" | quote }}
+            {{- with (get $migrations "timeoutSeconds") }}
+            - name: MIGRATIONS_TIMEOUT_SEC
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if $useInfraSecret }}
+            {{- include "br-sta.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $pwSecretName }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml (get $migrations "resources" | default $defaultMigrationResources) | nindent 12 }}
+      {{- with (get $app "nodeSelector") }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (get $app "affinity") }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (get $app "tolerations") }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

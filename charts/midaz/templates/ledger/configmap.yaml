@@ -250,6 +250,25 @@ data:
   ALLOW_RATELIMIT_DISABLED: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
   ALLOW_RATELIMIT_FAIL_OPEN: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
 
+  SD_ADDRESS: {{ .Values.ledger.configmap.SD_ADDRESS | default "localhost:8500" | quote }}
+  SD_ALLOW_STALE: {{ .Values.ledger.configmap.SD_ALLOW_STALE | default "" | quote }}
+  SD_DIAL_TIMEOUT: {{ .Values.ledger.configmap.SD_DIAL_TIMEOUT | default "" | quote }}
+  SD_ENABLED: {{ .Values.ledger.configmap.SD_ENABLED | default "false" | quote }}
+  SD_EXTERNAL_ADDRESS: {{ .Values.ledger.configmap.SD_EXTERNAL_ADDRESS | default "" | quote }}
+  SD_EXTERNAL_PORT: {{ .Values.ledger.configmap.SD_EXTERNAL_PORT | default "" | quote }}
+  SD_INTERNAL_ADDRESS: {{ .Values.ledger.configmap.SD_INTERNAL_ADDRESS | default "" | quote }}
+  SD_INTERNAL_PORT: {{ .Values.ledger.configmap.SD_INTERNAL_PORT | default "" | quote }}
+  SD_INTERNAL_SCHEME: {{ .Values.ledger.configmap.SD_INTERNAL_SCHEME | default "" | quote }}
+  SD_PREFER_VIEW: {{ .Values.ledger.configmap.SD_PREFER_VIEW | default "" | quote }}
+  SD_RESPONSE_HEADER_TIMEOUT: {{ .Values.ledger.configmap.SD_RESPONSE_HEADER_TIMEOUT | default "" | quote }}
+  SD_SEED_TIMEOUT: {{ .Values.ledger.configmap.SD_SEED_TIMEOUT | default "" | quote }}
+  SD_TLS: {{ .Values.ledger.configmap.SD_TLS | default "false" | quote }}
+  SD_TLS_HANDSHAKE_TIMEOUT: {{ .Values.ledger.configmap.SD_TLS_HANDSHAKE_TIMEOUT | default "" | quote }}
+  SD_TLS_SKIP_VERIFY: {{ .Values.ledger.configmap.SD_TLS_SKIP_VERIFY | default "false" | quote }}
+  SD_WATCH_WAIT_TIME: {{ .Values.ledger.configmap.SD_WATCH_WAIT_TIME | default "" | quote }}
+  SD_WORKLOAD: {{ .Values.ledger.configmap.SD_WORKLOAD | default "" | quote }}
+  STREAMING_ENABLED: {{ .Values.ledger.configmap.STREAMING_ENABLED | default "false" | quote }}
+  SWAGGER_VERSION: {{ .Values.ledger.configmap.SWAGGER_VERSION | default "${VERSION}" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

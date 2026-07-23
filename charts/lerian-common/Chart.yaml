@@ -8,8 +8,8 @@ description: >-
   Library chart — renders nothing on its own. Adopting it is a refactor, not a
   breaking change: every helper reproduces the existing rendered output.
 type: library
-version: 0.1.0
-appVersion: "0.1.0"
+version: 1.0.0
+appVersion: "1.0.0"
 annotations:
   lerian.studio/chart-type: library
 home: https://github.com/LerianStudio/helm

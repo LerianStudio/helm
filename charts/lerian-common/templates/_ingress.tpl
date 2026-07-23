@@ -1,17 +1,34 @@
 {{/*
 ==============================================================================
-lerian-common — Ingress (standard Helm-scaffold shape).
+lerian-common — Ingress (standard Helm-scaffold shape) + shared contract.
 
-23 of ~29 chart ingresses are the standard scaffold: KubeVersion-aware
-apiVersion + backend, ingressClassName (>=1.18), optional tls, and rules over
-hosts/paths. Naming/labels are passed ALREADY RENDERED by the chart; the caller
-owns the enable gate. Charts with a non-standard ingress keep it inline.
+Most chart ingresses are the standard scaffold: KubeVersion-aware apiVersion +
+backend, ingressClassName (>=1.18), optional tls, and rules over hosts/paths.
+Naming/labels are passed ALREADY RENDERED by the chart; the caller owns the
+enable gate. Charts with a non-standard ingress keep it inline.
+
+SHARED CONTRACT (optional): pass `global` (=.Values.global.ingress) and a
+`subdomain`, and each field falls back to the umbrella-level default — so an
+operator declares className/domain/annotations/tls ONCE and every product derives
+its host as "<subdomain>.<domain>". Per-product values always win.
+
+Resolution (per field):
+  className   : <chart>.ingress.className  | global.ingress.className
+  annotations : merge(global.ingress.annotations, <chart>.ingress.annotations)  (chart wins)
+  tls         : <chart>.ingress.tls        | global.ingress.tls
+  hosts       : <chart>.ingress.hosts (explicit list wins)
+                else derived [{ host: "<subdomain>.<global.ingress.domain>", paths: [/ Prefix] }]
+
+Standalone (no `global`): every field falls back to the chart's own ingress.* →
+render is byte-equivalent to the previous hand-written scaffold.
 
 Usage (chart ingress.yaml):
   {{- if .Values.fees.ingress.enabled -}}
   {{- include "lerian-common.ingress" (dict
         "context" .
         "ingress" .Values.fees.ingress
+        "global" (.Values.global).ingress
+        "subdomain" "fees"
         "name" (include "plugin-fees.fullname" .)
         "labels" (include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name))
         "svcPort" .Values.fees.service.port
@@ -24,17 +41,29 @@ Inputs (dict):
   name      (req)  metadata.name + backend service name (already rendered)
   labels    (req)  labels block already rendered (no leading indent)
   svcPort   (req)  backend service port
+  global    (opt)  `.Values.global.ingress` — shared contract defaults
+  subdomain (opt)  host prefix used with global.ingress.domain to derive the host
   namespace (opt)  metadata.namespace (already rendered); omitted when empty
 ==============================================================================
 */}}
 {{- define "lerian-common.ingress" -}}
 {{- $ctx := .context -}}
 {{- $ing := .ingress -}}
+{{- $g := .global | default dict -}}
 {{- $name := .name -}}
 {{- $svcPort := .svcPort -}}
-{{- if and $ing.className (not (semverCompare ">=1.18-0" $ctx.Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey $ing.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set $ing.annotations "kubernetes.io/ingress.class" $ing.className }}
+{{- $className := $ing.className | default $g.className -}}
+{{- $annotations := merge (deepCopy ($g.annotations | default dict)) ($ing.annotations | default dict) -}}
+{{- $tls := $ing.tls | default $g.tls -}}
+{{- $hosts := $ing.hosts | default list -}}
+{{- $firstHost := "" -}}
+{{- if gt (len $hosts) 0 }}{{- $firstHost = (index $hosts 0).host -}}{{- end }}
+{{- if and (not $firstHost) $g.domain .subdomain -}}
+{{- $hosts = list (dict "host" (printf "%s.%s" .subdomain $g.domain) "paths" (list (dict "path" "/" "pathType" "Prefix"))) -}}
+{{- end -}}
+{{- if and $className (not (semverCompare ">=1.18-0" $ctx.Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey $annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set $annotations "kubernetes.io/ingress.class" $className }}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" $ctx.Capabilities.KubeVersion.GitVersion -}}
@@ -52,17 +81,17 @@ metadata:
   {{- end }}
   labels:
     {{- .labels | nindent 4 }}
-  {{- with $ing.annotations }}
+  {{- with $annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and $ing.className (semverCompare ">=1.18-0" $ctx.Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ $ing.className }}
+  {{- if and $className (semverCompare ">=1.18-0" $ctx.Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ $className }}
   {{- end }}
-  {{- if $ing.tls }}
+  {{- if $tls }}
   tls:
-    {{- range $ing.tls }}
+    {{- range $tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -71,7 +100,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range $ing.hosts }}
+    {{- range $hosts }}
     - host: {{ .host | quote }}
       http:
         paths:

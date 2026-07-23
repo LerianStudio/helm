@@ -50,7 +50,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `7.3.0` | 3.4.0 | `3.0.0` |
+| `7.4.0-beta.1` | 3.4.0 | `3.0.0` |
 
 -----------------
 

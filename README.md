@@ -224,3 +224,16 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: | :---: |
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
 -----------------
+
+### Lerian Common (Library)
+
+Library chart consumed by other Lerian charts — renders nothing on its own.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-common).
+
+#### Application Version Mapping
+
+| Chart Version |
+| :---: |
+| `1.0.0` |
+-----------------

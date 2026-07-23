@@ -150,6 +150,10 @@ so run `-gen` as a one-shot container writing to a host dir the uid can write:
 
 ```bash
 mkdir -p spb-keys
+# The container runs as uid 65532 and writes the four files into the bind mount,
+# so the host dir must be writable by that uid (throwaway dev keys → world-writable
+# is fine). Without this, `-gen` fails with permission-denied on /spb-keys.
+chmod 777 spb-keys
 docker run --rm -u 65532:65532 -v "$PWD/spb-keys:/spb-keys" \
   -e SIGNER_SOFTKEY_PFX_PASSPHRASE="$PFX_PASS" \
   ghcr.io/lerianstudio/br-slc-mock-nuclea:<tag> -gen -out /spb-keys
@@ -159,12 +163,16 @@ docker run --rm -u 65532:65532 -v "$PWD/spb-keys:/spb-keys" \
 **2. Build the three Secrets from that ONE dir** (exact key names the chart expects):
 
 ```bash
-kubectl create secret generic br-slc-mock-spb-keys \
+# All three Secrets MUST live in the same namespace as the br-slc release — the
+# chart renders the pods into `global.namespace` (namespaceOverride, else the
+# install namespace), so a Secret in any other namespace simply won't mount.
+NS=<your br-slc release namespace>   # the -n/--namespace you pass to `helm install`
+kubectl create secret generic br-slc-mock-spb-keys --namespace "$NS" \
   --from-file=recipient.key=spb-keys/recipient.key \
   --from-file=emitter.crt=spb-keys/emitter.crt      # → mockNuclea.spbKeysSecret
-kubectl create secret generic br-slc-signer-softkey \
+kubectl create secret generic br-slc-signer-softkey --namespace "$NS" \
   --from-file=signer.pfx=spb-keys/signer.pfx        # → signer.softkeySecret
-kubectl create secret generic br-slc-dev-recipient \
+kubectl create secret generic br-slc-dev-recipient --namespace "$NS" \
   --from-file=recipient.crt=spb-keys/recipient.crt  # → app, via extraVolumes
 ```
 

@@ -497,7 +497,7 @@
           "properties": {
             "enabled": { "type": "boolean" },
             "secretName": { "type": "string" },
-            "mountPath": { "type": "string", "minLength": 1 },
+            "mountPath": { "type": "string", "minLength": 1, "pattern": "^/" },
             "recipientKeyItem": { "type": "string", "minLength": 1 },
             "emitterCertItem": { "type": "string", "minLength": 1 }
           }

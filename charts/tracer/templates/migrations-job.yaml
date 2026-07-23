@@ -12,9 +12,9 @@ metadata:
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  backoffLimit: {{ .Values.tracer.migrations.backoffLimit | default 3 }}
+  backoffLimit: {{ .Values.tracer.migrations.backoffLimit }}
   activeDeadlineSeconds: {{ .Values.tracer.migrations.activeDeadlineSeconds | default 300 }}
-  ttlSecondsAfterFinished: {{ .Values.tracer.migrations.ttlSecondsAfterFinished | default 300 }}
+  ttlSecondsAfterFinished: {{ .Values.tracer.migrations.ttlSecondsAfterFinished }}
   template:
     metadata:
       labels:

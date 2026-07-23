@@ -1,13 +1,34 @@
 {{- if .Values.mockNuclea.enabled }}
+{{- /* ADR-23 fail-closed guard: the Núclea SIMULATOR is a DEV/HML/BYOC-test
+fixture and must NEVER run under a hardened posture. Mirrors the app's own
+central config guard validateDispatchDevRecipientConfig — the same
+isProductionOrSaaS() test (ENV_NAME=production OR DEPLOYMENT_MODE=saas). The
+chart's base ENV_NAME defaults to "production", so enabling the mock REQUIRES an
+overlay that also sets a non-prod ENV_NAME (e.g. sandbox/staging) — fail-closed
+by default, no escape hatch. */}}
+{{- if or (eq (.Values.configmap.data.ENV_NAME | default "") "production") (eq (.Values.configmap.data.DEPLOYMENT_MODE | default "") "saas") }}
+{{- fail "mockNuclea.enabled=true is a DEV/HML/BYOC-test fixture (Núclea simulator) and MUST NOT run under ENV_NAME=production or DEPLOYMENT_MODE=saas (ADR-23; mirrors validateDispatchDevRecipientConfig)" }}
+{{- end }}
 {{- /*
-Núclea clearing-house SIMULATOR — DEV/HML FIXTURE ONLY, never enable in
-production/BYOC. Standalone Deployment (own image ghcr.io/lerianstudio/
-br-slc-mock-nuclea, published by the br-slc release pipeline). Safe-by-default
-OFF (mockNuclea.enabled=false): like the detached migrations image, a gated
-component that defaults ON with an image the registry doesn't have yet would
-ImagePullBackOff and block the whole ArgoCD sync. The app reaches it over
-cluster DNS (Service br-slc-mock-nuclea:port); wire MOCK_NUCLEA_URL /
-NUCLEA_REST_BASE_URL / RSFN_CONSUMER_BASE_URL in the dev/hml gitops overlay.
+Núclea clearing-house SIMULATOR — DEV/HML/BYOC-TEST FIXTURE ONLY (guarded off in
+production/saas above). SEPARATE, standalone Deployment (own image
+ghcr.io/lerianstudio/br-slc-mock-nuclea, published by the br-slc release
+pipeline) — a distinct optional POD, NOT a same-pod sidecar (team decision
+2026-07-23, superseding the ADR-23 Fase-2 sidecar): keeps the app pod small and
+its scaling independent, and enabling/disabling the fixture never touches the
+app pod. Safe-by-default OFF (mockNuclea.enabled=false): like the detached
+migrations image, a gated component defaulting ON with an image the registry
+doesn't have yet would ImagePullBackOff and block the ArgoCD sync. The app
+reaches it over cluster DNS (Service br-slc-mock-nuclea:port); wire
+NUCLEA_REST_BASE_URL / RSFN_CONSUMER_BASE_URL to it in the dev/hml/BYOC-test
+overlay.
+
+SPB key material for the signed credit round-trip (spb_envelope scenario) is
+provisioned EXTERNALLY by the operator/client (mockNuclea.spbKeysSecret below) —
+this exercises the REAL BYOC deploy flow, where the client sets the public/private
+key material themselves. When they get real Núclea access it is a simple repoint
+(disable the mock, point the URLs at Núclea). Off by default, so the mock also
+runs as a bare connectivity/health fixture with no keys.
 */}}
 {{- $pullSecrets := .Values.mockNuclea.imagePullSecrets | default .Values.imagePullSecrets }}
 apiVersion: apps/v1
@@ -47,6 +68,16 @@ spec:
           env:
             - name: MOCK_NUCLEA_ADDR
               value: {{ printf ":%d" (int .Values.mockNuclea.service.targetPort) | quote }}
+            {{- if .Values.mockNuclea.spbKeysSecret.enabled }}
+            {{- /* Externally provisioned SPB key material (spb_envelope scenario,
+            mock/spbenvelope.go): the recipient PRIVATE key (unwrap C14) and the
+            emitter PUBLIC cert (verify C15), mounted read-only from the operator's
+            Secret (mockNuclea.spbKeysSecret). Absent → the mock runs health-only. */}}
+            - name: SPB_RECIPIENT_KEY_PATH
+              value: {{ printf "%s/recipient.key" .Values.mockNuclea.spbKeysSecret.mountPath | quote }}
+            - name: SPB_EMITTER_CERT_PATH
+              value: {{ printf "%s/emitter.crt" .Values.mockNuclea.spbKeysSecret.mountPath | quote }}
+            {{- end }}
             {{- /* GOMAXPROCS from the container CFS cpu limit — same
             downward-API fix as the app/signer/validator/mqbridge containers
             (Gate 8 FIX 7). Guarded with `with`+`if .cpu` so a nil-limit
@@ -68,4 +99,24 @@ spec:
             {{- toYaml .Values.mockNuclea.resources | nindent 12 }}
           securityContext:
             {{- include "br-slc.containerSecurityContext" .Values.mockNuclea.securityContext | nindent 12 }}
+          {{- if .Values.mockNuclea.spbKeysSecret.enabled }}
+          volumeMounts:
+            - name: spb-keys
+              mountPath: {{ .Values.mockNuclea.spbKeysSecret.mountPath }}
+              readOnly: true
+          {{- end }}
+      {{- if .Values.mockNuclea.spbKeysSecret.enabled }}
+      volumes:
+        {{- /* The operator's Secret must expose the recipient PRIVATE key and the
+        emitter PUBLIC cert under the configured item keys; they are surfaced to
+        the container as recipient.key / emitter.crt. */}}
+        - name: spb-keys
+          secret:
+            secretName: {{ .Values.mockNuclea.spbKeysSecret.secretName }}
+            items:
+              - key: {{ .Values.mockNuclea.spbKeysSecret.recipientKeyItem }}
+                path: recipient.key
+              - key: {{ .Values.mockNuclea.spbKeysSecret.emitterCertItem }}
+                path: emitter.crt
+      {{- end }}
 {{- end }}

@@ -1,0 +1,348 @@
+{{- if .Values.brCcs.enabled }}
+{{- $cm := .Values.brCcs.configmap | default dict }}
+{{- $multiTenantEnabled := eq (toString ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+{{- $pg := .Values.postgresql | default dict }}
+{{- $vk := .Values.valkey | default dict }}
+{{- $pgInternal := and (ne (toString $pg.enabled) "false") (not $pg.external) }}
+{{- $vkInternal := and (ne (toString $vk.enabled) "false") (not $vk.external) }}
+{{- $namespace := include "global.namespace" . }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "br-ccs.fullname" . }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "br-ccs.labels" (dict "context" . "component" .Values.brCcs.name "name" .Values.brCcs.name ) | nindent 4 }}
+data:
+  # =====================================================================
+  # APPLICATION IDENTITY
+  # =====================================================================
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "br-ccs" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
+  VERSION: {{ $cm.VERSION | default .Chart.AppVersion | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
+  CCS_RUN_MODE: {{ $cm.CCS_RUN_MODE | default "all" | quote }}
+
+  # =====================================================================
+  # HTTP SERVER
+  # SERVER_PORT is consumed by the in-container /healthcheck binary.
+  # =====================================================================
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4030" | quote }}
+  SERVER_PORT: {{ $cm.SERVER_PORT | default "4030" | quote }}
+  GRPC_PORT: {{ $cm.GRPC_PORT | default "7001" | quote }}
+  HTTP_BODY_LIMIT_BYTES: {{ $cm.HTTP_BODY_LIMIT_BYTES | default "104857600" | quote }}
+  {{- if $cm.SERVER_TLS_CERT_FILE }}
+  SERVER_TLS_CERT_FILE: {{ $cm.SERVER_TLS_CERT_FILE | quote }}
+  {{- end }}
+  {{- if $cm.SERVER_TLS_KEY_FILE }}
+  SERVER_TLS_KEY_FILE: {{ $cm.SERVER_TLS_KEY_FILE | quote }}
+  {{- end }}
+  TLS_TERMINATED_UPSTREAM: {{ $cm.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
+  TRUSTED_PROXIES: {{ $cm.TRUSTED_PROXIES | default "" | quote }}
+
+  # =====================================================================
+  # CORS POLICY
+  # =====================================================================
+  CORS_ALLOWED_ORIGINS: {{ $cm.CORS_ALLOWED_ORIGINS | default "" | quote }}
+  CORS_ALLOWED_METHODS: {{ $cm.CORS_ALLOWED_METHODS | default "GET,POST,PUT,PATCH,DELETE,OPTIONS" | quote }}
+  CORS_ALLOWED_HEADERS: {{ $cm.CORS_ALLOWED_HEADERS | default "Authorization,Content-Type,X-Tenant-ID,X-Idempotency,X-Request-ID" | quote }}
+  CORS_EXPOSE_HEADERS: {{ $cm.CORS_EXPOSE_HEADERS | default "" | quote }}
+  CORS_ALLOW_CREDENTIALS: {{ $cm.CORS_ALLOW_CREDENTIALS | default "false" | quote }}
+
+  # =====================================================================
+  # MULTI-TENANCY
+  # Toggle + DEFAULT_TENANT_ID always render. MT infra endpoints render
+  # only when MULTI_TENANT_ENABLED=true.
+  # =====================================================================
+  DEFAULT_TENANT_ID: {{ $cm.DEFAULT_TENANT_ID | default "11111111-1111-1111-1111-111111111111" | quote }}
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- if $multiTenantEnabled }}
+  MULTI_TENANT_URL: {{ required "brCcs.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" $cm.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ required "brCcs.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" $cm.MULTI_TENANT_REDIS_HOST | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ $cm.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ $cm.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ $cm.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
+  MULTI_TENANT_TIMEOUT: {{ $cm.MULTI_TENANT_TIMEOUT | default "30" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  MULTI_TENANT_CACHE_TTL_SEC: {{ $cm.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $cm.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
+  {{- end }}
+
+  # =====================================================================
+  # POSTGRESQL (primary + control-plane)
+  # POSTGRES_HOST defaults to the bundled subchart primary Service.
+  # =====================================================================
+  {{- if $pgInternal }}
+  POSTGRES_HOST: {{ $cm.POSTGRES_HOST | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+  {{- else }}
+  POSTGRES_HOST: {{ required "brCcs.configmap.POSTGRES_HOST is required when the bundled postgresql subchart is disabled (external infra)" $cm.POSTGRES_HOST | quote }}
+  {{- end }}
+  POSTGRES_PORT: {{ $cm.POSTGRES_PORT | default "5432" | quote }}
+  POSTGRES_USER: {{ $cm.POSTGRES_USER | default "br-ccs" | quote }}
+  POSTGRES_NAME: {{ $cm.POSTGRES_NAME | default "br-ccs" | quote }}
+  POSTGRES_SSLMODE: {{ $cm.POSTGRES_SSLMODE | default "require" | quote }}
+  MIGRATIONS_PATH: {{ $cm.MIGRATIONS_PATH | default "migrations" | quote }}
+  SYSTEMPLANE_ENABLED: {{ $cm.SYSTEMPLANE_ENABLED | default "false" | quote }}
+  POSTGRES_MAX_OPEN_CONNS: {{ $cm.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ $cm.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
+  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ $cm.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ $cm.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
+  POSTGRES_CONNECT_TIMEOUT_SEC: {{ $cm.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
+  INFRA_CONNECT_TIMEOUT_SEC: {{ $cm.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
+  {{- if $cm.POSTGRES_REPLICA_HOST }}
+  POSTGRES_REPLICA_HOST: {{ $cm.POSTGRES_REPLICA_HOST | quote }}
+  POSTGRES_REPLICA_PORT: {{ $cm.POSTGRES_REPLICA_PORT | default "5432" | quote }}
+  POSTGRES_REPLICA_USER: {{ $cm.POSTGRES_REPLICA_USER | quote }}
+  POSTGRES_REPLICA_NAME: {{ $cm.POSTGRES_REPLICA_NAME | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ $cm.POSTGRES_REPLICA_SSLMODE | default "require" | quote }}
+  {{- end }}
+
+  # =====================================================================
+  # REDIS / VALKEY (app-level)
+  # REDIS_HOST is host:port; defaults to the bundled valkey primary Service.
+  # =====================================================================
+  {{- if $vkInternal }}
+  REDIS_HOST: {{ $cm.REDIS_HOST | default (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace) | quote }}
+  {{- else }}
+  REDIS_HOST: {{ required "brCcs.configmap.REDIS_HOST is required when the bundled valkey subchart is disabled (external infra)" $cm.REDIS_HOST | quote }}
+  {{- end }}
+  REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_POOL_SIZE: {{ $cm.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ $cm.REDIS_MIN_IDLE_CONNS | default "2" | quote }}
+  REDIS_READ_TIMEOUT: {{ $cm.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ $cm.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ $cm.REDIS_DIAL_TIMEOUT | default "5" | quote }}
+  REDIS_POOL_TIMEOUT: {{ $cm.REDIS_POOL_TIMEOUT | default "2" | quote }}
+  REDIS_MAX_RETRIES: {{ $cm.REDIS_MAX_RETRIES | default "3" | quote }}
+  REDIS_MIN_RETRY_BACKOFF: {{ $cm.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
+  REDIS_MAX_RETRY_BACKOFF: {{ $cm.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
+  {{- if $cm.REDIS_TLS }}
+  REDIS_TLS: {{ $cm.REDIS_TLS | quote }}
+  {{- end }}
+  {{- if $cm.REDIS_MASTER_NAME }}
+  REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | quote }}
+  {{- end }}
+
+  # =====================================================================
+  # CIRCUIT BREAKER (prerequisite for object storage adapters)
+  # =====================================================================
+  CIRCUIT_BREAKER_ENABLED: {{ $cm.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+
+  # =====================================================================
+  # RABBITMQ (optional)
+  # =====================================================================
+  RABBITMQ_ENABLED: {{ $cm.RABBITMQ_ENABLED | default "false" | quote }}
+  {{- if eq (toString ($cm.RABBITMQ_ENABLED | default "false")) "true" }}
+  {{- /* RABBITMQ_URL carries the password and is rendered as a Secret (see
+         templates/secrets.yaml), never as a ConfigMap value. */}}
+  RABBITMQ_HOST: {{ $cm.RABBITMQ_HOST | default (printf "%s-rabbitmq.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+  RABBITMQ_PORT_AMQP: {{ $cm.RABBITMQ_PORT_AMQP | default "5672" | quote }}
+  RABBITMQ_PORT_HOST: {{ $cm.RABBITMQ_PORT_HOST | default "15672" | quote }}
+  RABBITMQ_DEFAULT_USER: {{ $cm.RABBITMQ_DEFAULT_USER | default "br-ccs" | quote }}
+  RABBITMQ_VHOST: {{ $cm.RABBITMQ_VHOST | default "/" | quote }}
+  RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "events" | quote }}
+  RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: {{ $cm.RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS | default "false" | quote }}
+  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ $cm.RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK | default "false" | quote }}
+  RABBITMQ_ALLOW_INSECURE_TLS: {{ $cm.RABBITMQ_ALLOW_INSECURE_TLS | default "false" | quote }}
+  RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS: {{ $cm.RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS | default "5000" | quote }}
+  RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS: {{ $cm.RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS | default "1000" | quote }}
+  RABBITMQ_PUBLISHER_RECOVERY_MAX_MS: {{ $cm.RABBITMQ_PUBLISHER_RECOVERY_MAX_MS | default "30000" | quote }}
+  RABBITMQ_PUBLISHER_MAX_RECOVERIES: {{ $cm.RABBITMQ_PUBLISHER_MAX_RECOVERIES | default "10" | quote }}
+  CCS_STA_DLQ_TTL_SECONDS: {{ $cm.CCS_STA_DLQ_TTL_SECONDS | default "30" | quote }}
+  {{- if $cm.RABBITMQ_QUEUE }}
+  RABBITMQ_QUEUE: {{ $cm.RABBITMQ_QUEUE | quote }}
+  {{- end }}
+  {{- if $cm.RABBITMQ_HEALTH_CHECK_URL }}
+  RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | quote }}
+  {{- end }}
+  {{- if $cm.RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS }}
+  RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS: {{ $cm.RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS | quote }}
+  {{- end }}
+  {{- end }}
+
+  # =====================================================================
+  # OUTBOX
+  # =====================================================================
+  OUTBOX_ENABLED: {{ $cm.OUTBOX_ENABLED | default "false" | quote }}
+  OUTBOX_TABLE_NAME: {{ $cm.OUTBOX_TABLE_NAME | default "outbox_events" | quote }}
+  OUTBOX_DISPATCH_INTERVAL_SEC: {{ $cm.OUTBOX_DISPATCH_INTERVAL_SEC | default "2" | quote }}
+  OUTBOX_BATCH_SIZE: {{ $cm.OUTBOX_BATCH_SIZE | default "50" | quote }}
+  OUTBOX_PUBLISH_MAX_ATTEMPTS: {{ $cm.OUTBOX_PUBLISH_MAX_ATTEMPTS | default "3" | quote }}
+  OUTBOX_PUBLISH_BACKOFF_MS: {{ $cm.OUTBOX_PUBLISH_BACKOFF_MS | default "200" | quote }}
+  OUTBOX_RETRY_WINDOW_SEC: {{ $cm.OUTBOX_RETRY_WINDOW_SEC | default "300" | quote }}
+  OUTBOX_MAX_DISPATCH_ATTEMPTS: {{ $cm.OUTBOX_MAX_DISPATCH_ATTEMPTS | default "10" | quote }}
+  OUTBOX_PROCESSING_TIMEOUT_SEC: {{ $cm.OUTBOX_PROCESSING_TIMEOUT_SEC | default "600" | quote }}
+  OUTBOX_MAX_FAILED_PER_BATCH: {{ $cm.OUTBOX_MAX_FAILED_PER_BATCH | default "25" | quote }}
+  OUTBOX_INCLUDE_TENANT_METRICS: {{ $cm.OUTBOX_INCLUDE_TENANT_METRICS | default "false" | quote }}
+  OUTBOX_ALLOW_EMPTY_TENANT: {{ $cm.OUTBOX_ALLOW_EMPTY_TENANT | default "true" | quote }}
+  {{- if $cm.OUTBOX_PRIORITY_EVENT_TYPES }}
+  OUTBOX_PRIORITY_EVENT_TYPES: {{ $cm.OUTBOX_PRIORITY_EVENT_TYPES | quote }}
+  {{- end }}
+
+  # =====================================================================
+  # FETCHER INTEGRATION
+  # =====================================================================
+  FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
+  {{- if $cm.FETCHER_URL }}
+  FETCHER_URL: {{ $cm.FETCHER_URL | quote }}
+  {{- end }}
+  FETCHER_HTTP_TIMEOUT_SEC: {{ $cm.FETCHER_HTTP_TIMEOUT_SEC | default "30" | quote }}
+  CCS_OUTBOX_DISPATCH_INTERVAL_MS: {{ $cm.CCS_OUTBOX_DISPATCH_INTERVAL_MS | default "500" | quote }}
+  CCS_OUTBOX_BATCH_SIZE: {{ $cm.CCS_OUTBOX_BATCH_SIZE | default "50" | quote }}
+  CCS_OUTBOX_MAX_ATTEMPTS: {{ $cm.CCS_OUTBOX_MAX_ATTEMPTS | default "10" | quote }}
+  CCS_OUTBOX_DLQ_ROUTING_KEY: {{ $cm.CCS_OUTBOX_DLQ_ROUTING_KEY | default "ccs.outbox.dlq" | quote }}
+
+  # =====================================================================
+  # STA INTEGRATION
+  # =====================================================================
+  STA_ENABLED: {{ $cm.STA_ENABLED | default "false" | quote }}
+  {{- if $cm.STA_BASE_URL }}
+  STA_BASE_URL: {{ $cm.STA_BASE_URL | quote }}
+  {{- end }}
+  STA_HTTP_TIMEOUT_SEC: {{ $cm.STA_HTTP_TIMEOUT_SEC | default "30" | quote }}
+
+  # =====================================================================
+  # REPORTER INTEGRATION (optional)
+  # =====================================================================
+  REPORTER_ENABLED: {{ $cm.REPORTER_ENABLED | default "false" | quote }}
+  {{- if eq (toString ($cm.REPORTER_ENABLED | default "false")) "true" }}
+  REPORTER_URL: {{ required "brCcs.configmap.REPORTER_URL is required when REPORTER_ENABLED=true" $cm.REPORTER_URL | quote }}
+  REPORTER_HTTP_TIMEOUT_SEC: {{ $cm.REPORTER_HTTP_TIMEOUT_SEC | default "30" | quote }}
+  {{- end }}
+
+  # =====================================================================
+  # AUTHENTICATION (inbound)
+  # =====================================================================
+  PLUGIN_AUTH_ENABLED: {{ $cm.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  {{- if $cm.PLUGIN_AUTH_HOST }}
+  PLUGIN_AUTH_HOST: {{ $cm.PLUGIN_AUTH_HOST | quote }}
+  {{- end }}
+
+  # =====================================================================
+  # SWAGGER
+  # =====================================================================
+  SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "true" | quote }}
+  SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "br-ccs" | quote }}
+  SWAGGER_VERSION: {{ $cm.SWAGGER_VERSION | default .Chart.AppVersion | quote }}
+  SWAGGER_BASE_PATH: {{ $cm.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_LEFT_DELIM: {{ $cm.SWAGGER_LEFT_DELIM | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIM: {{ $cm.SWAGGER_RIGHT_DELIM | default "}}" | quote }}
+  {{- if $cm.SWAGGER_DESCRIPTION }}
+  SWAGGER_DESCRIPTION: {{ $cm.SWAGGER_DESCRIPTION | quote }}
+  {{- end }}
+
+  # =====================================================================
+  # OPENTELEMETRY
+  # =====================================================================
+  ENABLE_TELEMETRY: {{ $cm.ENABLE_TELEMETRY | default "false" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "br-ccs" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "br-ccs" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default (.Values.brCcs.image.tag | default .Chart.AppVersion) | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ $cm.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+
+  # =====================================================================
+  # RATE LIMITING
+  # =====================================================================
+  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "500" | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ $cm.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  AGGRESSIVE_RATE_LIMIT_MAX: {{ $cm.AGGRESSIVE_RATE_LIMIT_MAX | default "100" | quote }}
+  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ $cm.AGGRESSIVE_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  RELAXED_RATE_LIMIT_MAX: {{ $cm.RELAXED_RATE_LIMIT_MAX | default "1000" | quote }}
+  RELAXED_RATE_LIMIT_WINDOW_SEC: {{ $cm.RELAXED_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  EXPORT_RATE_LIMIT_MAX: {{ $cm.EXPORT_RATE_LIMIT_MAX | default "60" | quote }}
+  EXPORT_RATE_LIMIT_WINDOW_SEC: {{ $cm.EXPORT_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  DISPATCH_RATE_LIMIT_MAX: {{ $cm.DISPATCH_RATE_LIMIT_MAX | default "30" | quote }}
+  DISPATCH_RATE_LIMIT_WINDOW_SEC: {{ $cm.DISPATCH_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  # Empty (default) keeps the safe fail-closed posture; "true" permits fail-open.
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
+
+  # =====================================================================
+  # OBSERVABILITY / IDEMPOTENCY / PAGINATION
+  # =====================================================================
+  DB_METRICS_INTERVAL_SEC: {{ $cm.DB_METRICS_INTERVAL_SEC | default "15" | quote }}
+  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ $cm.IDEMPOTENCY_RETRY_WINDOW_SEC | default "300" | quote }}
+  MAX_PAGINATION_LIMIT: {{ $cm.MAX_PAGINATION_LIMIT | default "100" | quote }}
+  MAX_PAGINATION_MONTH_DATE_RANGE: {{ $cm.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
+
+  # =====================================================================
+  # M2M CREDENTIALS (non-secret portion — target service / OAuth2 / scope)
+  # API keys live in the Secret; SaaS uses AWS Secrets Manager.
+  # =====================================================================
+  M2M_CREDENTIAL_CACHE_TTL_SEC: {{ $cm.M2M_CREDENTIAL_CACHE_TTL_SEC | default "300" | quote }}
+  AWS_REGION: {{ $cm.AWS_REGION | default "us-east-1" | quote }}
+  {{- range $k := (list "FETCHER_M2M_TARGET_SERVICE" "FETCHER_OAUTH2_TOKEN_URL" "FETCHER_OAUTH2_SCOPE" "REPORTER_M2M_TARGET_SERVICE" "REPORTER_OAUTH2_TOKEN_URL" "REPORTER_OAUTH2_SCOPE" "STA_M2M_TARGET_SERVICE" "STA_OAUTH2_TOKEN_URL" "STA_OAUTH2_SCOPE") }}
+  {{- if index $cm $k }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+
+  # =====================================================================
+  # DETAIL RESPONSE TUNING (optional)
+  # =====================================================================
+  {{- range $k := (list "CCS_DETAIL_MESSAGE_EMIT_ENABLED" "CCS_DETAIL_MESSAGE_VALIDATION_ENABLED" "CCS_BACEN_DESTINATARIO_CNPJ_BASE" "CCS_ACCS005_OVERFLOW_THRESHOLD" "CCS_ACCS005_SECRECY_SITUACAO") }}
+  {{- if index $cm $k }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+
+  # =====================================================================
+  # FETCHER SNAPSHOT QUARANTINE (optional — br-ccs-140 Phase 2)
+  # Opt-in: skip + classify invalid CRM records instead of aborting the
+  # whole batch, up to an invalid/total ceiling above which it fails HIGH.
+  # Unset = app defaults (disabled; ceiling 0.05). Render only when set so
+  # the chart never overrides the app's fail-closed default.
+  # =====================================================================
+  {{- range $k := (list "CCS_SNAPSHOT_QUARANTINE_INVALID_ENABLED" "CCS_SNAPSHOT_QUARANTINE_MAX_INVALID_RATIO") }}
+  {{- if index $cm $k }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+
+  # =====================================================================
+  # READINESS PROBE + GRACEFUL SHUTDOWN
+  # =====================================================================
+  READYZ_PROBE_TIMEOUT_SEC: {{ $cm.READYZ_PROBE_TIMEOUT_SEC | default "5" | quote }}
+  READYZ_DEP_SLOW_THRESHOLD_MS: {{ $cm.READYZ_DEP_SLOW_THRESHOLD_MS | default "500" | quote }}
+  STARTUP_SELF_PROBE_MAX_DURATION_SEC: {{ $cm.STARTUP_SELF_PROBE_MAX_DURATION_SEC | default "120" | quote }}
+  STARTUP_SELF_PROBE_INITIAL_DELAY_MS: {{ $cm.STARTUP_SELF_PROBE_INITIAL_DELAY_MS | default "1000" | quote }}
+  STARTUP_SELF_PROBE_MAX_DELAY_MS: {{ $cm.STARTUP_SELF_PROBE_MAX_DELAY_MS | default "30000" | quote }}
+  SHUTDOWN_DRAIN_GRACE_PERIOD_SEC: {{ $cm.SHUTDOWN_DRAIN_GRACE_PERIOD_SEC | default "15" | quote }}
+  SHUTDOWN_TOTAL_TIMEOUT_SEC: {{ $cm.SHUTDOWN_TOTAL_TIMEOUT_SEC | default "30" | quote }}
+
+  # =====================================================================
+  # OBJECT STORAGE (non-secret — endpoints/region/bucket/flags)
+  # Access + secret keys live in the Secret.
+  # =====================================================================
+  SEAWEEDFS_S3_PORT: {{ $cm.SEAWEEDFS_S3_PORT | default "8342" | quote }}
+  SEAWEEDFS_MASTER_PORT: {{ $cm.SEAWEEDFS_MASTER_PORT | default "9343" | quote }}
+  OBJECT_STORAGE_STA_ENDPOINT: {{ $cm.OBJECT_STORAGE_STA_ENDPOINT | default "" | quote }}
+  OBJECT_STORAGE_STA_REGION: {{ $cm.OBJECT_STORAGE_STA_REGION | default "us-east-1" | quote }}
+  OBJECT_STORAGE_STA_BUCKET: {{ $cm.OBJECT_STORAGE_STA_BUCKET | default "" | quote }}
+  OBJECT_STORAGE_STA_USE_PATH_STYLE: {{ $cm.OBJECT_STORAGE_STA_USE_PATH_STYLE | default "true" | quote }}
+  OBJECT_STORAGE_STA_DISABLE_SSL: {{ $cm.OBJECT_STORAGE_STA_DISABLE_SSL | default "true" | quote }}
+  OBJECT_STORAGE_CCS_ENDPOINT: {{ $cm.OBJECT_STORAGE_CCS_ENDPOINT | default "" | quote }}
+  OBJECT_STORAGE_CCS_REGION: {{ $cm.OBJECT_STORAGE_CCS_REGION | default "us-east-1" | quote }}
+  OBJECT_STORAGE_CCS_BUCKET: {{ $cm.OBJECT_STORAGE_CCS_BUCKET | default "" | quote }}
+  OBJECT_STORAGE_CCS_USE_PATH_STYLE: {{ $cm.OBJECT_STORAGE_CCS_USE_PATH_STYLE | default "true" | quote }}
+  OBJECT_STORAGE_CCS_DISABLE_SSL: {{ $cm.OBJECT_STORAGE_CCS_DISABLE_SSL | default "true" | quote }}
+  OBJECT_STORAGE_FETCHER_ENDPOINT: {{ $cm.OBJECT_STORAGE_FETCHER_ENDPOINT | default "" | quote }}
+  OBJECT_STORAGE_FETCHER_REGION: {{ $cm.OBJECT_STORAGE_FETCHER_REGION | default "us-east-1" | quote }}
+  OBJECT_STORAGE_FETCHER_BUCKET: {{ $cm.OBJECT_STORAGE_FETCHER_BUCKET | default "" | quote }}
+  OBJECT_STORAGE_FETCHER_USE_PATH_STYLE: {{ $cm.OBJECT_STORAGE_FETCHER_USE_PATH_STYLE | default "true" | quote }}
+  OBJECT_STORAGE_FETCHER_DISABLE_SSL: {{ $cm.OBJECT_STORAGE_FETCHER_DISABLE_SSL | default "true" | quote }}
+  CCS_OUTBOUND_RETENTION_DAYS: {{ $cm.CCS_OUTBOUND_RETENTION_DAYS | default "30" | quote }}
+  CCS_ACCS009_RETENTION_DAYS: {{ $cm.CCS_ACCS009_RETENTION_DAYS | default "30" | quote }}
+
+  # =====================================================================
+  # EXTRA OVERRIDES (escape hatch for optional knobs not modeled above)
+  # =====================================================================
+  {{- range $key, $value := .Values.brCcs.extraEnvVars }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

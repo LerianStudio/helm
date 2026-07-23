@@ -1,0 +1,22 @@
+{{- if .Values.brCcs.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "br-ccs.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-ccs.labels" (dict "context" . "component" .Values.brCcs.name "name" .Values.brCcs.name ) | nindent 4 }}
+  {{- with .Values.brCcs.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.brCcs.service.type }}
+  ports:
+    - port: {{ .Values.brCcs.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "br-ccs.selectorLabels" (dict "context" . "name" .Values.brCcs.name) | nindent 4 }}
+{{- end }}

@@ -53,8 +53,8 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.crm.configmap "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth:4000") | quote }}
   PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.crm.configmap "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
 
-  # MULTI-TENANT
-  {{- include "lerian-common.multiTenant.envFlat" (dict "configmap" .Values.crm.configmap "keys" (list)) | nindent 2 }}
+  # MULTI-TENANT — crm exposes only the toggle (no MT client config on this component)
+  MULTI_TENANT_ENABLED: {{ .Values.crm.multiTenant.enabled | default false | quote }}
 
   KMS_VAULT_ADDR: {{ .Values.crm.configmap.KMS_VAULT_ADDR | default "http://midaz-hc-vault:8200" | quote }}
   KMS_VAULT_AUTH_METHOD: {{ .Values.crm.configmap.KMS_VAULT_AUTH_METHOD | default "token" | quote }}
@@ -67,7 +67,12 @@ data:
         "port" .Values.crm.service.port
         "namespace" (include "global.namespace" .)
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.crm.ingress))) | nindent 2 }}
-  STREAMING_ENABLED: {{ .Values.crm.configmap.STREAMING_ENABLED | default "false" | quote }}
+  STREAMING_ENABLED: {{ .Values.crm.streaming.enabled | default false | quote }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" (.Values.crm.streaming.enabled | default false)
+        "clientId" (include "midaz-crm.fullname" .)
+        "cloudeventsSource" "lerian.midaz.crm") | nindent 2 }}
   # Extra Env Vars
   {{- with .Values.crm.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

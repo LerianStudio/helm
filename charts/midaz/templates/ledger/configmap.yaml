@@ -48,13 +48,16 @@ data:
   # =============================================================================
   # MULTI-TENANT
   # =============================================================================
-  {{- include "lerian-common.multiTenant.envFlat" (dict
-        "configmap" .Values.ledger.configmap
-        "keys" (list "MULTI_TENANT_URL" "MULTI_TENANT_SERVICE_NAME" "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS")
-        "defaults" (dict "MULTI_TENANT_SERVICE_NAME" "ledger")
-        "required" (dict
-          "MULTI_TENANT_URL" "ledger.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true"
-          "MULTI_TENANT_REDIS_HOST" "ledger.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true")) | nindent 2 }}
+  # Enable via ledger.multiTenant.enabled; URL + redis come from global.multiTenant
+  # (env-wide). Emitted only when enabled → configmap stays clean when off.
+  MULTI_TENANT_ENABLED: {{ .Values.ledger.multiTenant.enabled | default false | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict
+        "context" $
+        "enabled" (.Values.ledger.multiTenant.enabled | default false)
+        "serviceName" "ledger"
+        "emitRedis" true
+        "requiredUrl" true
+        "requiredRedisHost" true) | nindent 2 }}
 
   # =============================================================================
   # ACCOUNTING CONFIG
@@ -257,7 +260,14 @@ data:
         "port" .Values.ledger.service.port
         "namespace" (include "global.namespace" .)
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.ledger.ingress))) | nindent 2 }}
-  STREAMING_ENABLED: {{ .Values.ledger.configmap.STREAMING_ENABLED | default "false" | quote }}
+  # Enable via ledger.streaming.enabled; brokers/SASL/TLS come from global.streaming
+  # (env-wide). Emitted only when enabled → configmap stays clean when off.
+  STREAMING_ENABLED: {{ .Values.ledger.streaming.enabled | default false | quote }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" (.Values.ledger.streaming.enabled | default false)
+        "clientId" (include "midaz-ledger.fullname" .)
+        "cloudeventsSource" "lerian.midaz.ledger") | nindent 2 }}
   SWAGGER_VERSION: {{ .Values.ledger.configmap.SWAGGER_VERSION | default "${VERSION}" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}

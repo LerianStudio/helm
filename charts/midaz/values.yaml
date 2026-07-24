@@ -371,6 +371,18 @@ ledger:
   serviceDiscovery:
     enabled: false                     # → SD_ENABLED
 
+  # --- Multi-tenant (lib multi-tenant) ------------------------------------------
+  # Enable per-app; the tenant-manager URL + its redis come from global.multiTenant.
+  # Emitted only when enabled → configmap stays clean when off.
+  multiTenant:
+    enabled: false                     # → MULTI_TENANT_ENABLED
+
+  # --- Streaming (lib-streaming) ------------------------------------------------
+  # Enable per-app; brokers/SASL/TLS come from global.streaming. Client identity
+  # (clientId/cloudeventsSource) is derived per component. Emitted only when enabled.
+  streaming:
+    enabled: false                     # → STREAMING_ENABLED
+
   # @default -- templates/ledger/configmap.yaml
   configmap: {}
   # -- Existing secrets name
@@ -564,6 +576,22 @@ crm:
   #    global.datastores.mongo mask; auth from global.auth. Any key set here WINS.
   #    NOTE: RATE_LIMIT_* were dead keys (CRM has no rate-limit config surface) and
   #    were removed; APPLICATION_NAME defaults to "crm" in the template.
+  # --- Service discovery (lib-service-discovery) --------------------------------
+  # Enable per-app; env-wide config from global.serviceDiscovery; endpoints derived
+  # from this chart's own service + ingress. INERT until enabled + global set.
+  serviceDiscovery:
+    enabled: false                     # → SD_ENABLED
+
+  # --- Multi-tenant (lib multi-tenant) ------------------------------------------
+  # crm exposes only the toggle (no MT client config on this component).
+  multiTenant:
+    enabled: false                     # → MULTI_TENANT_ENABLED
+
+  # --- Streaming (lib-streaming) ------------------------------------------------
+  # Enable per-app; brokers/SASL/TLS come from global.streaming.
+  streaming:
+    enabled: false                     # → STREAMING_ENABLED
+
   # @default -- templates/crm/configmap.yaml
   configmap: {}
   # -- Extra environment variables

@@ -574,6 +574,11 @@ brCcs:
     # FETCHER_CRYPTO_KEY — Fetcher snapshot decryption key (base64; same as Fetcher APP_ENC_KEY).
     CCS_CRYPTO_MASTER_KEY: ""
     FETCHER_CRYPTO_KEY: ""
+    # STA_EVENT_HMAC_MASTER_KEYS — STA business-event HMAC master-key catalogue,
+    # format "v1:<hex>,v2:<hex>" (hex per version; must match the key/version the
+    # br-sta business publisher signs with). Only consumed when
+    # STA_EVENT_HMAC_VERIFY_ENABLED=true; leave empty while verification is off.
+    # STA_EVENT_HMAC_MASTER_KEYS: ""
 
     # License (lib-license-go) — validated at boot against the Lerian license
     # gateway (fail-closed). ORGANIZATION_IDS selects enforcement scope (e.g.

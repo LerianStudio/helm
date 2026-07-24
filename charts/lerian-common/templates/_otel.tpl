@@ -130,11 +130,5 @@ Inputs (dict):
       "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
       "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
       "OTEL_EXPORTER_OTLP_ENDPOINT") -}}
-{{- /* Overlay chart-supplied defaults onto the standard set. Use `set` (not sprig
-   `merge`) so an explicit empty-string default from the chart wins (e.g.
-   plugin-fees OTEL_EXPORTER_OTLP_ENDPOINT "") — `merge` would treat an empty dst
-   value as absent and refill it from `$std`. */ -}}
-{{- $defaults := deepCopy $std -}}
-{{- range $k, $v := (.defaults | default dict) -}}{{- $_ := set $defaults $k $v -}}{{- end -}}
-{{- include "lerian-common.env.flatBlock" (dict "configmap" .configmap "keys" $keys "defaults" $defaults) -}}
+{{- include "lerian-common.env.flatBlock" (dict "configmap" .configmap "keys" $keys "defaults" (.defaults | default dict) "stdDefaults" $std) -}}
 {{- end -}}

@@ -205,13 +205,10 @@ Inputs (dict):
       "MULTI_TENANT_TIMEOUT" "30"
       "MULTI_TENANT_CACHE_TTL_SEC" "120"
       "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC" "30" -}}
-{{- /* Overlay chart defaults with `set` (see envFlat helpers) so empty-string
-   overrides win over `$std`. */ -}}
-{{- $defaults := deepCopy $std -}}
-{{- range $k, $v := (.defaults | default dict) -}}{{- $_ := set $defaults $k $v -}}{{- end -}}
+{{- if kindIs "invalid" $enabledVal -}}{{- $enabledVal = "false" -}}{{- end -}}
 MULTI_TENANT_ENABLED: {{ $enabledVal | quote }}
 {{- if eq (toString $enabledVal) "true" }}
-{{ include "lerian-common.env.flatBlock" (dict "configmap" $cm "keys" .keys "defaults" $defaults "required" (.required | default dict)) }}
+{{ include "lerian-common.env.flatBlock" (dict "configmap" $cm "keys" .keys "defaults" (.defaults | default dict) "stdDefaults" $std "required" (.required | default dict)) }}
 {{- end -}}
 {{- end -}}
 

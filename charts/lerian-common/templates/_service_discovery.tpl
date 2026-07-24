@@ -121,15 +121,21 @@ Inputs (dict):
 {{- define "lerian-common.env.flatBlock" -}}
 {{- $cm := .configmap | default dict -}}
 {{- $defaults := .defaults | default dict -}}
+{{- $std := .stdDefaults | default dict -}}
 {{- $required := .required | default dict -}}
 {{- $lines := list -}}
 {{- range $k := .keys -}}
   {{- $v := "" -}}
+  {{- /* Precedence: native configmap key > caller default > standard default > "".
+     Presence-based (hasKey) so an explicit empty-string/false at any tier wins. */ -}}
   {{- if hasKey $cm $k -}}
     {{- $v = index $cm $k -}}
   {{- else if hasKey $defaults $k -}}
     {{- $v = index $defaults $k -}}
+  {{- else if hasKey $std $k -}}
+    {{- $v = index $std $k -}}
   {{- end -}}
+  {{- if kindIs "invalid" $v -}}{{- $v = "" -}}{{- end -}}
   {{- if and (hasKey $required $k) (not $v) -}}
     {{- fail (index $required $k) -}}
   {{- end -}}
@@ -200,10 +206,5 @@ Inputs (dict):
       "SD_RESPONSE_HEADER_TIMEOUT" "SD_SEED_TIMEOUT" "SD_TLS"
       "SD_TLS_HANDSHAKE_TIMEOUT" "SD_TLS_SKIP_VERIFY" "SD_WATCH_WAIT_TIME"
       "SD_WORKLOAD") -}}
-{{- /* Overlay chart-supplied defaults onto the standard set. Use `set` (not sprig
-   `merge`) so an explicit empty-string default from the chart wins — `merge`
-   would treat an empty dst value as absent and refill it from `$std`. */ -}}
-{{- $defaults := deepCopy $std -}}
-{{- range $k, $v := (.defaults | default dict) -}}{{- $_ := set $defaults $k $v -}}{{- end -}}
-{{- include "lerian-common.env.flatBlock" (dict "configmap" .configmap "keys" $keys "defaults" $defaults) -}}
+{{- include "lerian-common.env.flatBlock" (dict "configmap" .configmap "keys" $keys "defaults" (.defaults | default dict) "stdDefaults" $std) -}}
 {{- end -}}

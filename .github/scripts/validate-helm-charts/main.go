@@ -1101,6 +1101,16 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			return nil, err
 		}
 
+		// Local library dependencies referenced via `file://<relpath>` (e.g.
+		// lerian-common) live outside the copied chart, so `helm dependency
+		// build` cannot resolve them in the isolated temp workspace. Materialize
+		// each such sibling at the same relative location so the file:// path
+		// resolves exactly as it does in the source tree.
+		if err := materializeLocalDependencies(chartDir, tmpChart, deps); err != nil {
+			_ = os.RemoveAll(tmpRoot)
+			return nil, err
+		}
+
 		helmEnv, err := isolatedHelmEnv(tmpRoot)
 		if err != nil {
 			_ = os.RemoveAll(tmpRoot)
@@ -1515,6 +1525,30 @@ func writeRenderInventory(path string, rows []renderRow) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(builder.String()), 0o644)
+}
+
+// materializeLocalDependencies copies each `file://<relpath>` dependency source
+// into the temp workspace at the same relative path the chart references, so an
+// isolated `helm dependency build` resolves local library charts (e.g.
+// lerian-common) exactly as it would in the repository tree. Missing sources are
+// left to `helm dependency build` to report as a normal missing-dependency.
+func materializeLocalDependencies(chartDir, tmpChart string, deps []chartDependency) error {
+	for _, dependency := range deps {
+		repository := strings.TrimSpace(dependency.Repository)
+		if !strings.HasPrefix(repository, "file://") {
+			continue
+		}
+		relPath := strings.TrimPrefix(repository, "file://")
+		srcDir := filepath.Clean(filepath.Join(chartDir, relPath))
+		if !dirExists(srcDir) {
+			continue
+		}
+		destDir := filepath.Clean(filepath.Join(tmpChart, relPath))
+		if err := copyDir(srcDir, destDir); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func copyDir(src, dst string) error {

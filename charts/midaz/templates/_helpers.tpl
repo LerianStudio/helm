@@ -236,3 +236,52 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Create a default fully qualified app name for Tracer.
+*/}}
+
+{{/*
+Create a default fully qualified app name for Tracer.
+*/}}
+{{- define "midaz-tracer.fullname" -}}
+{{- printf "%s-%s" (include "midaz.name" .) .Values.tracer.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create Tracer app version
+*/}}
+{{- define "tracer.defaultTag" -}}
+{{- default .Chart.AppVersion .Values.tracer.image.tag }}
+{{- end -}}
+
+{{/*
+Return valid Tracer version label
+*/}}
+{{- define "tracer.versionLabelValue" -}}
+{{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "tracer.defaultTag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}
+{{- end -}}
+
+{{/*
+Tracer Common labels
+*/}}
+{{- define "midaz-tracer.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz-tracer.selectorLabels" (dict "context" .context "name" .name) }}
+app.kubernetes.io/version: {{ include "tracer.versionLabelValue" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Tracer Selector labels
+*/}}
+{{- define "midaz-tracer.selectorLabels" -}}
+{{- if .name -}}
+app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
+{{- end }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
+{{/*
+Enable internal dependencies
+*/}}

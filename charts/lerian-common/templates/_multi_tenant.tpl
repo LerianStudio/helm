@@ -206,9 +206,14 @@ Inputs (dict):
       "MULTI_TENANT_CACHE_TTL_SEC" "120"
       "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC" "30" -}}
 {{- if kindIs "invalid" $enabledVal -}}{{- $enabledVal = "false" -}}{{- end -}}
+{{- /* Guard: only emit non-secret multi-tenant keys from the known contract
+   ($std). Rejects a caller passing MULTI_TENANT_ENABLED again (emitted above)
+   or a secret-only name into the ConfigMap. */ -}}
+{{- $safeKeys := list -}}
+{{- range $k := (.keys | default list) -}}{{- if hasKey $std $k -}}{{- $safeKeys = append $safeKeys $k -}}{{- end -}}{{- end -}}
 MULTI_TENANT_ENABLED: {{ $enabledVal | quote }}
 {{- if eq (toString $enabledVal) "true" }}
-{{ include "lerian-common.env.flatBlock" (dict "configmap" $cm "keys" .keys "defaults" (.defaults | default dict) "stdDefaults" $std "required" (.required | default dict)) }}
+{{ include "lerian-common.env.flatBlock" (dict "configmap" $cm "keys" $safeKeys "defaults" (.defaults | default dict) "stdDefaults" $std "required" (.required | default dict)) }}
 {{- end -}}
 {{- end -}}
 

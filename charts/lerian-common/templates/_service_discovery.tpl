@@ -114,6 +114,8 @@ Inputs (dict):
   configmap (req)  the component's `.configmap` map (native override source)
   keys      (req)  ordered list of env keys to emit (the subset + order)
   defaults  (opt)  dict key->default value, used when configmap lacks the key
+  stdDefaults (opt) dict of standard/baked defaults; lowest precedence. Resolution
+                   order per key: configmap > defaults (caller) > stdDefaults > "".
   required  (opt)  dict key->error message; if the RESOLVED value is empty, fail
                    with that message (mirrors native `required`)
 ==============================================================================

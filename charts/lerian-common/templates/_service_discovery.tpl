@@ -53,9 +53,9 @@ global.serviceDiscovery (all optional except address when enabled):
    would produce a duplicate key. This helper only adds the derived siblings. */ -}}
 SD_ADDRESS: {{ $sd.address | quote }}
 SD_TLS: {{ $sd.tls | default false | quote }}
-SD_TLS_SKIP_VERIFY: {{ $sd.tlsSkipVerify | default false | quote }}
+SD_TLS_SKIP_VERIFY: {{ $sd.tlsSkipVerify | default true | quote }}
 SD_WORKLOAD: {{ $sd.workload | default "" | quote }}
-SD_PREFER_VIEW: {{ $sd.preferView | default "external" | quote }}
+SD_PREFER_VIEW: {{ $sd.preferView | default "internal" | quote }}
 SD_INTERNAL_ADDRESS: {{ include "lerian-common.internalHost" (dict "name" .name "namespace" .namespace) | quote }}
 SD_INTERNAL_PORT: {{ .port | quote }}
 SD_INTERNAL_SCHEME: {{ $sd.internalScheme | default "http" | quote }}

@@ -59,7 +59,14 @@ data:
   KMS_VAULT_ADDR: {{ .Values.crm.configmap.KMS_VAULT_ADDR | default "http://midaz-hc-vault:8200" | quote }}
   KMS_VAULT_AUTH_METHOD: {{ .Values.crm.configmap.KMS_VAULT_AUTH_METHOD | default "token" | quote }}
   KMS_VENDOR: {{ .Values.crm.configmap.KMS_VENDOR | default "hashicorp-vault" | quote }}
-  {{- include "lerian-common.serviceDiscovery.envFlat" (dict "configmap" .Values.crm.configmap) | nindent 2 }}
+  SD_ENABLED: {{ .Values.crm.serviceDiscovery.enabled | default false | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" (.Values.crm.serviceDiscovery.enabled | default false)
+        "name" (include "midaz-crm.fullname" .)
+        "port" .Values.crm.service.port
+        "namespace" (include "global.namespace" .)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.crm.ingress))) | nindent 2 }}
   STREAMING_ENABLED: {{ .Values.crm.configmap.STREAMING_ENABLED | default "false" | quote }}
   # Extra Env Vars
   {{- with .Values.crm.extraEnvVars }}

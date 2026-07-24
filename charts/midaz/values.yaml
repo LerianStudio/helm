@@ -363,6 +363,14 @@ ledger:
   #    Any key set here WINS over the productized params + mask (full backward-
   #    compatibility) — e.g. ENABLE_TELEMETRY, PLUGIN_AUTH_HOST, DB_ONBOARDING_HOST,
   #    REDIS_HOST, RABBITMQ_HOST, MONGO_ONBOARDING_PARAMETERS, ALLOW_RATELIMIT_DISABLED.
+  # --- Service discovery (lib-service-discovery) --------------------------------
+  # Enable per-app here; env-wide server config (Consul address/TLS/workload/
+  # preferView) comes from global.serviceDiscovery, and the internal/external
+  # endpoints are derived from this chart's own service + ingress. INERT until
+  # enabled AND global.serviceDiscovery is configured (backward-compatible).
+  serviceDiscovery:
+    enabled: false                     # → SD_ENABLED
+
   # @default -- templates/ledger/configmap.yaml
   configmap: {}
   # -- Existing secrets name

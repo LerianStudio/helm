@@ -246,7 +246,17 @@ data:
   RATE_LIMIT_REDIS_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "RATE_LIMIT_REDIS_TIMEOUT_MS" "params" .Values.ledger.rateLimit "field" "redisTimeoutMs" "default" "500") | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ALLOW_RATELIMIT_DISABLED" "params" .Values.ledger.rateLimit "field" "allowDisabled" "default" "") | quote }}
   ALLOW_RATELIMIT_FAIL_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ALLOW_RATELIMIT_FAIL_OPEN" "params" .Values.ledger.rateLimit "field" "allowFailOpen" "default" "") | quote }}
-{{ include "lerian-common.serviceDiscovery.envFlat" (dict "configmap" .Values.ledger.configmap) | nindent 2 }}
+  # SERVICE DISCOVERY — enable via ledger.serviceDiscovery.enabled; env-wide server
+  # config derived from global.serviceDiscovery; endpoints derived from this chart's
+  # own service/ingress. Emitted before extraEnvVars so an operator can still override.
+  SD_ENABLED: {{ .Values.ledger.serviceDiscovery.enabled | default false | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" (.Values.ledger.serviceDiscovery.enabled | default false)
+        "name" (include "midaz-ledger.fullname" .)
+        "port" .Values.ledger.service.port
+        "namespace" (include "global.namespace" .)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.ledger.ingress))) | nindent 2 }}
   STREAMING_ENABLED: {{ .Values.ledger.configmap.STREAMING_ENABLED | default "false" | quote }}
   SWAGGER_VERSION: {{ .Values.ledger.configmap.SWAGGER_VERSION | default "${VERSION}" | quote }}
   # Extra Env Vars

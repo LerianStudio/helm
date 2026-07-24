@@ -52,12 +52,14 @@ data:
   SECURE_LOG_FIELDS: {{ .Values.auth.configmap.SECURE_LOG_FIELDS | default "password,clientSecret" | quote }}
 
   # OPEN TELEMETRY
-  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.auth.configmap.OTEL_RESOURCE_SERVICE_NAME | default "auth" | quote }}
-  OTEL_LIBRARY_NAME: {{ .Values.auth.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/auth" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.auth.image.tag | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.auth.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  {{- include "lerian-common.otel.envFlat" (dict
+        "configmap" .Values.auth.configmap
+        "defaults" (dict
+          "OTEL_RESOURCE_SERVICE_NAME" "auth"
+          "OTEL_LIBRARY_NAME" "github.com/LerianStudio/auth"
+          "OTEL_RESOURCE_SERVICE_VERSION" .Values.auth.image.tag
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "dev"
+          "OTEL_EXPORTER_OTLP_ENDPOINT" "")) | nindent 2 }}
   ENABLE_TELEMETRY: {{ .Values.auth.configmap.ENABLE_TELEMETRY | default "true" | quote }}
 
   # AUTHORIZER

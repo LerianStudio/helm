@@ -1,0 +1,74 @@
+{{- if and .Values.tracer.enabled .Values.tracer.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "midaz-tracer.fullname" . }}-migrate
+  labels:
+    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name) | nindent 4 }}
+  annotations:
+    # Run the schema migrations before the app Deployment on every sync.
+    # PreSync hook (sync-wave -1) so the Job runs and completes before the
+    # ConfigMap/Secret/Deployment sync phase applies the tracer app.
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  backoffLimit: {{ .Values.tracer.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.tracer.migrations.activeDeadlineSeconds | default 300 }}
+  ttlSecondsAfterFinished: {{ .Values.tracer.migrations.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with .Values.tracer.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "midaz.migrations.securityContext.pod" . | nindent 8 }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.tracer.migrations.image.repository }}:{{ .Values.tracer.migrations.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.tracer.migrations.image.pullPolicy | default "IfNotPresent" }}
+          securityContext:
+            {{- include "midaz.migrations.securityContext.container" . | nindent 12 }}
+          # Reuse the same DB configuration the tracer Deployment consumes:
+          # DB_HOST / DB_PORT / DB_NAME / DB_USER / DB_SSL_MODE come from the
+          # tracer ConfigMap; DB_PASSWORD is injected below.
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.tracer.useExistingSecret }}{{ .Values.tracer.existingSecretName }}{{ else }}{{ include "midaz-tracer.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "midaz-tracer.fullname" . }}
+          env:
+            {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
+            {{/* PostgreSQL: DB_PASSWORD is single-sourced from the Bitnami postgresql subchart Secret when internal. Mirrors the tracer Deployment. */}}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_PASSWORD") | nindent 12 }}
+            {{- else if .Values.tracer.secrets.DB_PASSWORD }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_PASSWORD
+            {{- end }}
+          resources:
+            {{- toYaml .Values.tracer.migrations.resources | nindent 12 }}
+      {{- with .Values.tracer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

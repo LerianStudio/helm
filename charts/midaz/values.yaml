@@ -224,77 +224,147 @@ ledger:
   #         values:
   #         - midaz
 
-  # -- ConfigMap for environment variables and configurations
+  # ===========================================================================
+  # PRODUCTIZED CONFIG — clean, grouped params for the knobs clients tune most.
+  # Backward-compatible: the raw `configmap.<KEY>` below still works and OVERRIDES
+  # these (precedence: configmap.<KEY> > these params > default). Defaults here
+  # match the legacy template defaults, so existing installs render unchanged.
+  # Connection host/user/port/ssl/params for datastores come from the
+  # global.datastores mask (shared) or ledger.datastores (dedicated); auth &
+  # telemetry are the cross-product contracts global.auth / global.observability.
+  # ===========================================================================
+  # --- App -------------------------------------------------------------------
+  # -- ENV_NAME
+  env: "production"
+  # -- LOG_LEVEL (legacy default; set "info" for production)
+  logLevel: "debug"
+  # -- ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)
+  allowInsecureTls: "true"
+
+  # --- Accounting ------------------------------------------------------------
+  accounting:
+    # -- ACCOUNT_TYPE_VALIDATION ("<organizationId>:<ledgerId>")
+    accountTypeValidation: ""
+    # -- TRANSACTION_ROUTE_VALIDATION
+    transactionRouteValidation: ""
+
+  # --- Rate limiting (three-tier, Redis-backed) ------------------------------
+  rateLimit:
+    enabled: true                      # → RATE_LIMIT_ENABLED
+    max: "500"                         # → RATE_LIMIT_MAX
+    windowSec: "60"                    # → RATE_LIMIT_WINDOW_SEC
+    aggressiveMax: "100"               # → AGGRESSIVE_RATE_LIMIT_MAX
+    aggressiveWindowSec: "60"          # → AGGRESSIVE_RATE_LIMIT_WINDOW_SEC
+    relaxedMax: "1000"                 # → RELAXED_RATE_LIMIT_MAX
+    relaxedWindowSec: "60"             # → RELAXED_RATE_LIMIT_WINDOW_SEC
+    redisTimeoutMs: "500"              # → RATE_LIMIT_REDIS_TIMEOUT_MS
+    allowDisabled: ""                  # → ALLOW_RATELIMIT_DISABLED (reason required when disabled in strict tier)
+    allowFailOpen: ""                  # → ALLOW_RATELIMIT_FAIL_OPEN (reason to allow fail-open in prod)
+
+  # --- Audit -----------------------------------------------------------------
+  audit:
+    enabled: false                     # → AUDIT_LOG_ENABLED
+
+  # --- Bulk recorder ---------------------------------------------------------
+  bulkRecorder:
+    enabled: true                      # → BULK_RECORDER_ENABLED
+    size: "0"                          # → BULK_RECORDER_SIZE
+    flushTimeoutMs: "100"              # → BULK_RECORDER_FLUSH_TIMEOUT_MS
+    maxRowsPerInsert: "1000"           # → BULK_RECORDER_MAX_ROWS_PER_INSERT
+
+  # --- Balance sync worker ---------------------------------------------------
+  balanceSync:
+    enabled: false                     # → BALANCE_SYNC_WORKER_ENABLED
+    maxWorkers: "5"                    # → BALANCE_SYNC_MAX_WORKERS
+    batchSize: "50"                    # → BALANCE_SYNC_BATCH_SIZE
+    flushTimeoutMs: "500"              # → BALANCE_SYNC_FLUSH_TIMEOUT_MS
+    pollIntervalMs: "50"               # → BALANCE_SYNC_POLL_INTERVAL_MS
+
+  # --- Pagination ------------------------------------------------------------
+  pagination:
+    maxLimit: "100"                    # → MAX_PAGINATION_LIMIT
+    maxMonthRange: "3"                 # → MAX_PAGINATION_MONTH_DATE_RANGE
+
+  # --- Datastores (per module) -----------------------------------------------
+  # DB identity + connection pool. Host/user/port/ssl come from the
+  # global.datastores.postgres mask (shared) or ledger.datastores.postgres (dedicated).
+  database:                            # PostgreSQL, per module
+    onboarding:
+      name: "onboarding"               # → DB_ONBOARDING_NAME
+      replicaName: "onboarding"        # → DB_ONBOARDING_REPLICA_NAME
+      maxOpenConns: "3000"             # → DB_ONBOARDING_MAX_OPEN_CONNS
+      maxIdleConns: "3000"             # → DB_ONBOARDING_MAX_IDLE_CONNS
+    transaction:
+      name: "transaction"             # → DB_TRANSACTION_NAME
+      replicaName: "transaction"       # → DB_TRANSACTION_REPLICA_NAME
+      maxOpenConns: "3000"             # → DB_TRANSACTION_MAX_OPEN_CONNS
+      maxIdleConns: "3000"             # → DB_TRANSACTION_MAX_IDLE_CONNS
+  mongo:                               # MongoDB, per module (host/user/port/params → global.datastores.mongo)
+    onboarding:
+      uri: "mongodb"                   # → MONGO_ONBOARDING_URI
+      name: "onboarding"               # → MONGO_ONBOARDING_NAME
+      maxPoolSize: "1000"              # → MONGO_ONBOARDING_MAX_POOL_SIZE
+    transaction:
+      uri: "mongodb"                   # → MONGO_TRANSACTION_URI
+      name: "transaction"              # → MONGO_TRANSACTION_NAME
+      maxPoolSize: "1000"              # → MONGO_TRANSACTION_MAX_POOL_SIZE
+
+  # --- Redis / Valkey (client tuning) ----------------------------------------
+  # Connection host → global.datastores.redis; password → ledger.secrets.REDIS_PASSWORD.
+  redis:
+    masterName: ""                     # → REDIS_MASTER_NAME (sentinel)
+    tls: "false"                       # → REDIS_TLS
+    caCert: ""                         # → REDIS_CA_CERT
+    useGcpIam: "false"                 # → REDIS_USE_GCP_IAM
+    serviceAccount: ""                 # → REDIS_SERVICE_ACCOUNT
+    googleAppCredentials: ""           # → GOOGLE_APPLICATION_CREDENTIALS
+    tokenLifetime: "60"                # → REDIS_TOKEN_LIFETIME
+    tokenRefreshDuration: "45"         # → REDIS_TOKEN_REFRESH_DURATION
+    db: "0"                            # → REDIS_DB
+    protocol: "3"                      # → REDIS_PROTOCOL
+    poolSize: "10"                     # → REDIS_POOL_SIZE
+    minIdleConns: "0"                  # → REDIS_MIN_IDLE_CONNS
+    readTimeout: "3"                   # → REDIS_READ_TIMEOUT
+    writeTimeout: "3"                  # → REDIS_WRITE_TIMEOUT
+    dialTimeout: "5"                   # → REDIS_DIAL_TIMEOUT
+    poolTimeout: "2"                   # → REDIS_POOL_TIMEOUT
+    maxRetries: "3"                    # → REDIS_MAX_RETRIES
+    minRetryBackoff: "8"               # → REDIS_MIN_RETRY_BACKOFF
+    maxRetryBackoff: "1"               # → REDIS_MAX_RETRY_BACKOFF
+
+  # --- Broker (RabbitMQ) -----------------------------------------------------
+  # Host → global.datastores.broker; passwords → ledger.secrets.
+  broker:
+    uri: "amqp"                        # → RABBITMQ_URI
+    portHost: "5672"                   # → RABBITMQ_PORT_HOST
+    portAmqp: "15672"                  # → RABBITMQ_PORT_AMQP
+    defaultUser: "transaction"         # → RABBITMQ_DEFAULT_USER
+    consumerUser: "consumer"           # → RABBITMQ_CONSUMER_USER
+    transactionAsync: "false"          # → RABBITMQ_TRANSACTION_ASYNC
+    workers: "5"                       # → RABBITMQ_NUMBERS_OF_WORKERS
+    prefetch: "10"                     # → RABBITMQ_NUMBERS_OF_PREFETCH
+    # routing (queue/exchange/key names)
+    balanceCreateQueue: "transaction.balance_create.queue"                         # → RABBITMQ_BALANCE_CREATE_QUEUE
+    balanceOperationExchange: "transaction.transaction_balance_operation.exchange" # → RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE
+    balanceOperationKey: "transaction.transaction_balance_operation.key"           # → RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY
+    balanceOperationQueue: "transaction.transaction_balance_operation.queue"       # → RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE
+    # events + audit routing
+    transactionEventsEnabled: "false"                                             # → RABBITMQ_TRANSACTION_EVENTS_ENABLED
+    transactionEventsExchange: "transaction.transaction_events.exchange"          # → RABBITMQ_TRANSACTION_EVENTS_EXCHANGE
+    overdraftEventsEnabled: "false"                                               # → RABBITMQ_OVERDRAFT_EVENTS_ENABLED
+    overdraftEventsExchange: "transaction.overdraft_events.exchange"              # → RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE
+    auditExchange: "audit.append_log.exchange"                                    # → RABBITMQ_AUDIT_EXCHANGE
+    auditKey: "audit.append_log.key"                                              # → RABBITMQ_AUDIT_KEY
+
+  # -- ConfigMap for environment variables and configurations (raw/legacy format;
+  #    still fully supported and takes PRECEDENCE over the productized params above).
+  #    Empty by default — every knob a client tunes is a clean param above, and
+  #    connection host/user/port/ssl/params come from the global.datastores mask.
+  #    Any key set here WINS over the productized params + mask (full backward-
+  #    compatibility) — e.g. ENABLE_TELEMETRY, PLUGIN_AUTH_HOST, DB_ONBOARDING_HOST,
+  #    REDIS_HOST, RABBITMQ_HOST, MONGO_ONBOARDING_PARAMETERS, ALLOW_RATELIMIT_DISABLED.
   # @default -- templates/ledger/configmap.yaml
-  configmap:
-    ALLOW_INSECURE_TLS: "true"
-    # -- Otel default configuration
-    ENABLE_TELEMETRY: "true"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""
-    # -- Accounting config
-    ACCOUNT_TYPE_VALIDATION: ""
-    TRANSACTION_ROUTE_VALIDATION: ""
-    # -- PostgreSQL Onboarding module
-    DB_ONBOARDING_HOST: "midaz-postgresql-primary"
-    DB_ONBOARDING_USER: "midaz"
-    DB_ONBOARDING_NAME: "onboarding"
-    DB_ONBOARDING_PORT: "5432"
-    DB_ONBOARDING_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_ONBOARDING_REPLICA_USER: "midaz"
-    DB_ONBOARDING_REPLICA_NAME: "onboarding"
-    DB_ONBOARDING_REPLICA_PORT: "5432"
-    # -- MongoDB Onboarding module
-    MONGO_ONBOARDING_URI: "mongodb"
-    MONGO_ONBOARDING_HOST: "midaz-mongodb"
-    MONGO_ONBOARDING_NAME: "onboarding"
-    MONGO_ONBOARDING_USER: "midaz"
-    MONGO_ONBOARDING_PORT: "27017"
-    # -- PostgreSQL Transaction module
-    DB_TRANSACTION_HOST: "midaz-postgresql-primary"
-    DB_TRANSACTION_USER: "midaz"
-    DB_TRANSACTION_NAME: "transaction"
-    DB_TRANSACTION_PORT: "5432"
-    DB_TRANSACTION_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_TRANSACTION_REPLICA_USER: "midaz"
-    DB_TRANSACTION_REPLICA_NAME: "transaction"
-    DB_TRANSACTION_REPLICA_PORT: "5432"
-    # -- MongoDB Transaction module
-    MONGO_TRANSACTION_URI: "mongodb"
-    MONGO_TRANSACTION_HOST: "midaz-mongodb"
-    MONGO_TRANSACTION_NAME: "transaction"
-    MONGO_TRANSACTION_USER: "midaz"
-    MONGO_TRANSACTION_PORT: "27017"
-    # -- Redis (shared)
-    REDIS_HOST: "midaz-valkey-primary:6379"
-    # -- RabbitMQ configuration
-    RABBITMQ_URI: "amqp"
-    RABBITMQ_HOST: "midaz-rabbitmq"
-    RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672"
-    RABBITMQ_DEFAULT_USER: "transaction"
-    RABBITMQ_CONSUMER_USER: "consumer"
-    RABBITMQ_TRANSACTION_ASYNC: "false"
-    # -- Audit
-    AUDIT_LOG_ENABLED: "false"
-    # -- Balance Sync Worker
-    BALANCE_SYNC_WORKER_ENABLED: "false"
-    BALANCE_SYNC_MAX_WORKERS: "5"
-    # -- Rate Limiting - Three-tier system with Redis backend
-    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+  configmap: {}
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -461,34 +531,33 @@ crm:
   #         values:
   #         - midaz
 
-  # -- ConfigMap for environment variables and configurations
+  # ===========================================================================
+  # PRODUCTIZED CONFIG — clean, grouped params (see ledger notes above for the
+  # precedence contract: configmap.<KEY> > these params > default; connection
+  # host/user/port/params → global.datastores.mongo; auth → global.auth).
+  # ===========================================================================
+  # --- App -------------------------------------------------------------------
+  # -- ENV_NAME
+  env: "development"
+  # -- LOG_LEVEL
+  logLevel: "debug"
+  # -- ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)
+  allowInsecureTls: "true"
+
+  # --- Datastore · MongoDB (host/user/port/params → global.datastores.mongo) --
+  mongo:
+    uri: "mongodb"                     # → MONGO_URI
+    name: "crm"                        # → MONGO_NAME
+    maxPoolSize: "1000"                # → MONGO_MAX_POOL_SIZE
+
+  # -- ConfigMap for environment variables and configurations (raw/legacy format;
+  #    still fully supported and takes PRECEDENCE over the productized params above).
+  #    Empty by default — connection host/user/port/params come from the
+  #    global.datastores.mongo mask; auth from global.auth. Any key set here WINS.
+  #    NOTE: RATE_LIMIT_* were dead keys (CRM has no rate-limit config surface) and
+  #    were removed; APPLICATION_NAME defaults to "crm" in the template.
   # @default -- templates/crm/configmap.yaml
-  configmap:
-    ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    # -- MongoDB configuration
-    MONGO_HOST: "midaz-mongodb"
-    MONGO_NAME: "crm"
-    MONGO_PORT: "27017"
-    MONGO_USER: "midaz"
-    # -- Rate Limiting - Three-tier system with Redis backend
-    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+  configmap: {}
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data

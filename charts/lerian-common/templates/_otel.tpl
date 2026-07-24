@@ -58,3 +58,77 @@ Inputs (dict):
   value: "k8s.pod.ip=$(POD_IP)"
 {{- end }}
 {{- end -}}
+
+{{/*
+==============================================================================
+lerian-common.otel.envFlat — flat-passthrough OTEL block (no derivation).
+
+Reproduces the chart's EXISTING native OTEL env block byte-for-byte. Unlike
+`lerian-common.otel.env` (which DERIVES from `global.observability`), this is a
+faithful mirror of the per-chart block, driven only by per-chart inputs.
+
+Scope: the 6 OTEL keys every productized chart currently emits, in the shared
+order — OTEL_RESOURCE_SERVICE_NAME, OTEL_LIBRARY_NAME,
+OTEL_RESOURCE_SERVICE_VERSION, OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT,
+OTEL_EXPORTER_OTLP_ENDPOINT_PORT, OTEL_EXPORTER_OTLP_ENDPOINT.
+ENABLE_TELEMETRY is intentionally NOT emitted here — it stays inline in the
+component configmap as its own knob (same split as `lerian-common.otel.env`).
+
+The three OTEL identity values are chart-specific and NOT `configmap.<KEY>`
+driven in the native templates:
+  - OTEL_RESOURCE_SERVICE_NAME / OTEL_LIBRARY_NAME differ per component;
+  - OTEL_RESOURCE_SERVICE_VERSION is `image.tag | default .Chart.AppVersion`
+    (no configmap key at all);
+  - OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT keys off configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
+    for midaz-ledger but off configmap.ENV_NAME for midaz-crm / plugin-fees.
+So the CHART resolves each of these and passes it as the per-key `defaults`
+entry (see uses). Because the corresponding key is absent from `.configmap`
+under real values, `flatBlock` emits the supplied default — byte-identical to
+the native render. See `lerian-common.env.flatBlock` for precedence/quoting.
+
+Usage (component configmap.yaml — replaces the hand-written OTEL block):
+
+  # midaz-ledger:
+  {{- include "lerian-common.otel.envFlat" (dict
+        "configmap" .Values.ledger.configmap
+        "defaults" (dict
+          "OTEL_RESOURCE_SERVICE_NAME" "ledger"
+          "OTEL_LIBRARY_NAME" "github.com/LerianStudio/midaz/v3/components/ledger"
+          "OTEL_RESOURCE_SERVICE_VERSION" (.Values.ledger.image.tag | default .Chart.AppVersion)
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" (.Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production")))
+    | nindent 2 }}
+
+  # plugin-fees (endpoint default "" + deployment-env keyed off ENV_NAME):
+  {{- include "lerian-common.otel.envFlat" (dict
+        "configmap" .Values.fees.configmap
+        "defaults" (dict
+          "OTEL_RESOURCE_SERVICE_NAME" "plugin-fees"
+          "OTEL_LIBRARY_NAME" "github.com/LerianStudio/plugin-fees"
+          "OTEL_RESOURCE_SERVICE_VERSION" (.Values.fees.image.tag | default .Chart.AppVersion)
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" (.Values.fees.configmap.ENV_NAME | default "development")
+          "OTEL_EXPORTER_OTLP_ENDPOINT" "")) | nindent 2 }}
+
+Inputs (dict):
+  configmap (req)  the component's `.configmap` map (native override source)
+  keys      (opt)  ordered subset; defaults to the full 6-key block above
+  defaults  (opt)  per-key default overrides (identity values live here; chart
+                   defaults win over the standard defaults baked in here)
+==============================================================================
+*/}}
+{{- define "lerian-common.otel.envFlat" -}}
+{{- $std := dict
+      "OTEL_RESOURCE_SERVICE_NAME" ""
+      "OTEL_LIBRARY_NAME" ""
+      "OTEL_RESOURCE_SERVICE_VERSION" ""
+      "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "production"
+      "OTEL_EXPORTER_OTLP_ENDPOINT_PORT" "4317"
+      "OTEL_EXPORTER_OTLP_ENDPOINT" "midaz-grafana:4317" -}}
+{{- $keys := .keys | default (list
+      "OTEL_RESOURCE_SERVICE_NAME"
+      "OTEL_LIBRARY_NAME"
+      "OTEL_RESOURCE_SERVICE_VERSION"
+      "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
+      "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
+      "OTEL_EXPORTER_OTLP_ENDPOINT") -}}
+{{- include "lerian-common.env.flatBlock" (dict "configmap" .configmap "keys" $keys "defaults" (.defaults | default dict) "stdDefaults" $std) -}}
+{{- end -}}

@@ -7,11 +7,13 @@ metadata:
     {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name) | nindent 4 }}
   annotations:
     # Run the schema migrations before the app Deployment on every sync.
-    # PreSync hook (sync-wave -1) so the Job runs and completes before the
-    # ConfigMap/Secret/Deployment sync phase applies the tracer app.
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
-    argocd.argoproj.io/sync-wave: "-1"
+    # Use a sync-wave (not a PreSync hook) so the Job runs in the normal sync
+    # phase after Secrets/ConfigMaps (wave 0) and before the app Deployment.
+    # A PreSync hook runs before wave-0 resources (incl. this Secret) are
+    # applied, so on any occasion the Secret needs to be (re)created empty,
+    # the hook reads the stale/empty Secret, fails auth, and the sync can
+    # never converge (same chicken-and-egg previously hit on ledger).
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   backoffLimit: {{ .Values.tracer.migrations.backoffLimit }}
   activeDeadlineSeconds: {{ .Values.tracer.migrations.activeDeadlineSeconds | default 300 }}

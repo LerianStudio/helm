@@ -19,6 +19,15 @@ via `include` by the product charts that declare it as a dependency.
   `configmap.<KEY>` > `defaults.<KEY>` > `""`, presence-based). Each chart opts into
   its own SUBSET + ORDER via `keys` and its per-key defaults via `defaults`; adoption
   is a zero-diff refactor, before optionally migrating to the derivation helpers above.
+  `serviceDiscovery.envFlat` additionally accepts OPTIONAL topology inputs
+  (`serviceName`, `namespace`, `servicePort`, `ingressHost`) that DERIVE
+  `SD_INTERNAL_ADDRESS` (`<serviceName>.<namespace>.svc.cluster.local`, only when both
+  given), `SD_INTERNAL_PORT` (`servicePort | toString`) and `SD_EXTERNAL_ADDRESS`
+  (`ingressHost`); each stays `""` when its inputs are absent. It also bakes the
+  opinionated platform defaults `SD_PREFER_VIEW="internal"`, `SD_TLS_SKIP_VERIFY="true"`,
+  `SD_EXTERNAL_PORT="443"`, `SD_INTERNAL_SCHEME="http"` unconditionally. All of these are
+  lowest precedence — per key: `configmap.SD_<KEY>` (legacy) > `defaults.SD_<KEY>`
+  (grouped param) > derived/opinionated default > `""`.
 - **In-cluster host primitives:** `lerian-common.internalHost`, `lerian-common.internalURL`.
 - **Resource helpers:** `lerian-common.hpa`, `.service`, `.serviceAccount`, `.pdb`, `.ingress`.
 - **Deployment pod-spec fragments:** `lerian-common.scheduling`, `.imagePullSecrets`,

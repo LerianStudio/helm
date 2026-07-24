@@ -148,22 +148,49 @@ Inputs (dict):
 
 {{/*
 ==============================================================================
-lerian-common.serviceDiscovery.envFlat — flat-passthrough SD_* block.
+lerian-common.serviceDiscovery.envFlat — SD_* block with topology abstraction.
 
-Reproduces the chart's EXISTING native SD_* env block byte-for-byte (no
-derivation, no `global.serviceDiscovery`). It encodes the canonical SD contract:
-the known key set + each key's STANDARD default. A chart opts into the SUBSET and
-ORDER it currently emits via `keys`, and overrides any per-key default via
-`defaults` (e.g. plugin-fees' whitespace-padded SD_ADDRESS). See
-`lerian-common.env.flatBlock` (this file) for precedence/quoting semantics.
+Emits the canonical SD_* env block, delegating to `lerian-common.env.flatBlock`
+(this file) for the ordered `KEY: value` rendering, quoting and precedence.
+
+It encodes the platform SD contract in two tiers of baked default:
+
+  1. OPINIONATED SCALAR DEFAULTS (unconditional platform standard, apply even
+     with no topology inputs):
+       SD_PREFER_VIEW      = "internal"
+       SD_TLS_SKIP_VERIFY  = "true"
+       SD_EXTERNAL_PORT    = "443"
+       SD_INTERNAL_SCHEME  = "http"
+       SD_TLS              = "false"
+       SD_ADDRESS          = "localhost:8500"
+       SD_ENABLED          = "false"
+       (timeouts / SD_ALLOW_STALE / SD_WORKLOAD default to "")
+
+  2. TOPOLOGY-DERIVED DEFAULTS (computed from the OPTIONAL topology inputs; each
+     stays "" when its inputs are absent, keeping a topology-less caller working):
+       SD_EXTERNAL_ADDRESS = ingressHost                                (else "")
+       SD_INTERNAL_ADDRESS = "<serviceName>.<namespace>.svc.cluster.local"
+                             (only when BOTH serviceName AND namespace given; else "")
+       SD_INTERNAL_PORT    = servicePort | toString                     (else "")
+
+Both tiers are the LOWEST-precedence source: a caller `defaults.SD_<KEY>` (the
+grouped param) and a `configmap.SD_<KEY>` (legacy override) still WIN over them.
+
+Precedence per key (from `lerian-common.env.flatBlock`, presence-based):
+  configmap.SD_<KEY>  >  defaults.SD_<KEY>  >  derived/opinionated default  >  ""
 
 Usage (component configmap.yaml — replaces the hand-written SD_* block):
 
-  # midaz-ledger / midaz-crm — full 17-key block, standard defaults:
+  # topology-driven, full block, standard defaults:
   {{- include "lerian-common.serviceDiscovery.envFlat" (dict
-        "configmap" .Values.ledger.configmap) | nindent 2 }}
+        "configmap"   .Values.ledger.configmap
+        "serviceName" (include "midaz-ledger.fullname" .)
+        "namespace"   (include "global.namespace" $)
+        "servicePort" .Values.ledger.service.port
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.ledger.ingress))
+      ) | nindent 2 }}
 
-  # plugin-fees — 7-key subset with its padded defaults:
+  # plugin-fees — 7-key subset with its padded defaults (topology optional):
   {{- include "lerian-common.serviceDiscovery.envFlat" (dict
         "configmap" .Values.fees.configmap
         "keys" (list "SD_ADDRESS" "SD_ENABLED" "SD_EXTERNAL_ADDRESS"
@@ -175,30 +202,44 @@ Usage (component configmap.yaml — replaces the hand-written SD_* block):
           "SD_WORKLOAD" "                    ")) | nindent 2 }}
 
 Inputs (dict):
-  configmap (req)  the component's `.configmap` map (native override source)
-  keys      (opt)  ordered subset to emit; defaults to the full 17-key block in
-                   the canonical (alphabetical) order midaz emits
-  defaults  (opt)  per-key default overrides (chart-specific defaults win over
-                   the standard defaults baked in here)
+  configmap   (req)  the component's `.configmap` map (legacy override source, WINS)
+  keys        (opt)  ordered subset to emit; defaults to the full 17-key block in
+                     the canonical (alphabetical) order midaz emits
+  defaults    (opt)  per-key default overrides (grouped param; win over the
+                     derived/opinionated defaults baked in here, lose to configmap)
+  serviceName (opt)  in-cluster service name — with `namespace`, derives SD_INTERNAL_ADDRESS
+  namespace   (opt)  resolved namespace — with `serviceName`, derives SD_INTERNAL_ADDRESS
+  servicePort (opt)  in-cluster port — derives SD_INTERNAL_PORT (via toString)
+  ingressHost (opt)  external host — derives SD_EXTERNAL_ADDRESS
 ==============================================================================
 */}}
 {{- define "lerian-common.serviceDiscovery.envFlat" -}}
+{{- /* Topology-derived defaults (lowest precedence; "" when inputs absent). */ -}}
+{{- $externalAddress := .ingressHost | default "" -}}
+{{- $internalAddress := "" -}}
+{{- if and .serviceName .namespace -}}
+{{- $internalAddress = printf "%s.%s.svc.cluster.local" .serviceName .namespace -}}
+{{- end -}}
+{{- $internalPort := "" -}}
+{{- if .servicePort -}}
+{{- $internalPort = .servicePort | toString -}}
+{{- end -}}
 {{- $std := dict
       "SD_ADDRESS" "localhost:8500"
       "SD_ALLOW_STALE" ""
       "SD_DIAL_TIMEOUT" ""
       "SD_ENABLED" "false"
-      "SD_EXTERNAL_ADDRESS" ""
-      "SD_EXTERNAL_PORT" ""
-      "SD_INTERNAL_ADDRESS" ""
-      "SD_INTERNAL_PORT" ""
-      "SD_INTERNAL_SCHEME" ""
-      "SD_PREFER_VIEW" ""
+      "SD_EXTERNAL_ADDRESS" $externalAddress
+      "SD_EXTERNAL_PORT" "443"
+      "SD_INTERNAL_ADDRESS" $internalAddress
+      "SD_INTERNAL_PORT" $internalPort
+      "SD_INTERNAL_SCHEME" "http"
+      "SD_PREFER_VIEW" "internal"
       "SD_RESPONSE_HEADER_TIMEOUT" ""
       "SD_SEED_TIMEOUT" ""
       "SD_TLS" "false"
       "SD_TLS_HANDSHAKE_TIMEOUT" ""
-      "SD_TLS_SKIP_VERIFY" "false"
+      "SD_TLS_SKIP_VERIFY" "true"
       "SD_WATCH_WAIT_TIME" ""
       "SD_WORKLOAD" "" -}}
 {{- $keys := .keys | default (list

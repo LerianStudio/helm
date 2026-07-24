@@ -19,5 +19,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.ledger.name ) | nindent 6 }}
+      {{- include "midaz.selectorLabels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 6 }}
 {{- end }}

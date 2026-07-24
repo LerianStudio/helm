@@ -267,7 +267,7 @@ Tracer Common labels
 */}}
 {{- define "midaz-tracer.labels" -}}
 helm.sh/chart: {{ include "midaz.chart" .context }}
-{{ include "midaz-tracer.selectorLabels" (dict "context" .context "name" .name) }}
+{{ include "midaz-tracer.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "tracer.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -280,6 +280,9 @@ Tracer Selector labels
 app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- if .component }}
+app.kubernetes.io/component: {{ .component }}
+{{- end }}
 {{- end }}
 
 {{/*

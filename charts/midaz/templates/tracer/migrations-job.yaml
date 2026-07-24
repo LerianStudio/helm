@@ -4,7 +4,7 @@ kind: Job
 metadata:
   name: {{ include "midaz-tracer.fullname" . }}-migrate
   labels:
-    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name) | nindent 4 }}
+    {{- include "midaz-tracer.labels" (dict "context" . "component" "tracer-migrations" "name" .Values.tracer.name) | nindent 4 }}
   annotations:
     # Run the schema migrations before the app Deployment on every sync.
     # Use a sync-wave (not a PreSync hook) so the Job runs in the normal sync
@@ -21,7 +21,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 8 }}
+        {{- include "midaz-tracer.selectorLabels" (dict "context" . "component" "tracer-migrations" "name" .Values.tracer.name) | nindent 8 }}
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false

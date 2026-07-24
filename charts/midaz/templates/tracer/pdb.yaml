@@ -19,5 +19,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 6 }}
+      {{- include "midaz-tracer.selectorLabels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 6 }}
 {{- end }}

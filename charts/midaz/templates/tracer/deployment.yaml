@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "midaz-tracer.fullname" . }}
   labels:
-    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+    {{- include "midaz-tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name ) | nindent 4 }}
   annotations:
     # Deploy the app after the migration Job (wave 1) has completed.
     argocd.argoproj.io/sync-wave: "2"
@@ -26,7 +26,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 8 }}
+        {{- include "midaz-tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name ) | nindent 8 }}
       {{- with .Values.tracer.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}

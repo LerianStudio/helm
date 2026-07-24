@@ -136,7 +136,6 @@ data:
   MONGO_CRM_NAME: {{ .Values.ledger.configmap.MONGO_CRM_NAME | default "crm" | quote }}
   MONGO_CRM_USER: {{ .Values.ledger.configmap.MONGO_CRM_USER | default "midaz" | quote }}
   MONGO_CRM_PORT: {{ .Values.ledger.configmap.MONGO_CRM_PORT | default "27017" | quote }}
-  MONGO_CRM_PASSWORD: {{ .Values.ledger.configmap.MONGO_CRM_PASSWORD | default "" | quote }}
   MONGO_CRM_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_CRM_MAX_POOL_SIZE | default "1000" | quote }}
   MONGO_CRM_PARAMETERS: {{ .Values.ledger.configmap.MONGO_CRM_PARAMETERS | default "" | quote }}
   MONGO_CRM_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_CRM_TLS_CA_CERT | default "" | quote }}
@@ -149,7 +148,6 @@ data:
   MONGO_FEES_NAME: {{ .Values.ledger.configmap.MONGO_FEES_NAME | default "fees" | quote }}
   MONGO_FEES_USER: {{ .Values.ledger.configmap.MONGO_FEES_USER | default "midaz" | quote }}
   MONGO_FEES_PORT: {{ .Values.ledger.configmap.MONGO_FEES_PORT | default "27017" | quote }}
-  MONGO_FEES_PASSWORD: {{ .Values.ledger.configmap.MONGO_FEES_PASSWORD | default "" | quote }}
   MONGO_FEES_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_FEES_MAX_POOL_SIZE | default "100" | quote }}
   MONGO_FEES_PARAMETERS: {{ .Values.ledger.configmap.MONGO_FEES_PARAMETERS | default "" | quote }}
   MONGO_FEES_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_FEES_TLS_CA_CERT | default "" | quote }}

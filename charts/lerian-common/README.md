@@ -11,6 +11,14 @@ via `include` by the product charts that declare it as a dependency.
   (set once per environment); the per-app enable knob stays in the component's
   `extraEnvVars`/`configmap`; a component value overrides the global default; and
   each helper stays **inert until `global.*` is set** (backward-compatible).
+- **Env contracts (flat-passthrough):** `lerian-common.serviceDiscovery.envFlat`,
+  `lerian-common.otel.envFlat`, `lerian-common.multiTenant.envFlat` — reproduce a
+  chart's EXISTING native env block **byte-for-byte** (same keys, defaults, quoting
+  and line order) with **no derivation** from `global.*`. The generic primitive
+  behind them is `lerian-common.env.flatBlock` (ordered `KEY: value` emitter,
+  `configmap.<KEY>` > `defaults.<KEY>` > `""`, presence-based). Each chart opts into
+  its own SUBSET + ORDER via `keys` and its per-key defaults via `defaults`; adoption
+  is a zero-diff refactor, before optionally migrating to the derivation helpers above.
 - **In-cluster host primitives:** `lerian-common.internalHost`, `lerian-common.internalURL`.
 - **Resource helpers:** `lerian-common.hpa`, `.service`, `.serviceAccount`, `.pdb`, `.ingress`.
 - **Deployment pod-spec fragments:** `lerian-common.scheduling`, `.imagePullSecrets`,

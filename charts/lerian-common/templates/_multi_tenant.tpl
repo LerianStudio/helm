@@ -131,6 +131,90 @@ Inputs: context, secrets, secretName, valuesPrefix, mode,
         useExistingSecret (bool — skip entirely when true).
 ------------------------------------------------------------------------------
 */}}
+{{/*
+==============================================================================
+lerian-common.multiTenant.envFlat — flat-passthrough MULTI_TENANT_* block.
+
+Reproduces the chart's EXISTING native multi-tenant env block byte-for-byte (no
+derivation, no `global.multiTenant`). Complements `lerian-common.multiTenant.env`
+(the derivation-model helper): this one is a faithful mirror of the per-chart
+block for charts adopting lerian-common with zero render diff.
+
+Always emits `MULTI_TENANT_ENABLED` first (the knob) — UNLIKE
+`lerian-common.multiTenant.env`, which leaves it inline. Then, ONLY when enabled
+(`MULTI_TENANT_ENABLED == "true"`), emits the gated subset the chart opts into
+via `keys`, in that order, with `flatBlock` precedence/quoting. The gate is
+computed from the resolved MULTI_TENANT_ENABLED using presence (hasKey) over the
+configmap, falling back to `enabledDefault`.
+
+The SECRET keys (MULTI_TENANT_SERVICE_API_KEY / MULTI_TENANT_REDIS_PASSWORD) are
+NOT emitted here — use the companion `lerian-common.multiTenant.secret`.
+
+Usage (component configmap.yaml — replaces the hand-written MT block):
+
+  # midaz-ledger (8 keys: ENABLED + 7 gated; SERVICE_NAME default "ledger"):
+  {{- include "lerian-common.multiTenant.envFlat" (dict
+        "configmap" .Values.ledger.configmap
+        "keys" (list "MULTI_TENANT_URL" "MULTI_TENANT_SERVICE_NAME"
+                     "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
+                     "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS")
+        "defaults" (dict "MULTI_TENANT_SERVICE_NAME" "ledger")
+        "required" (dict
+          "MULTI_TENANT_URL" "ledger.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true"
+          "MULTI_TENANT_REDIS_HOST" "ledger.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true"))
+    | nindent 2 }}
+
+  # plugin-fees (14 keys: ENABLED + 13 gated; all standard defaults):
+  {{- include "lerian-common.multiTenant.envFlat" (dict
+        "configmap" .Values.fees.configmap
+        "keys" (list "MULTI_TENANT_URL" "MULTI_TENANT_ALLOW_INSECURE_HTTP" "MULTI_TENANT_ENVIRONMENT"
+                     "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC"
+                     "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
+                     "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS"
+                     "MULTI_TENANT_TIMEOUT" "MULTI_TENANT_CACHE_TTL_SEC" "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC")
+        "required" (dict
+          "MULTI_TENANT_URL" "fees.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true"
+          "MULTI_TENANT_REDIS_HOST" "fees.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true"))
+    | nindent 2 }}
+
+Inputs (dict):
+  configmap      (req)  the component's `.configmap` map (native override source)
+  keys           (req)  ordered gated subset (WITHOUT MULTI_TENANT_ENABLED)
+  enabledDefault (opt)  default for MULTI_TENANT_ENABLED (default "false")
+  defaults       (opt)  per-key default overrides (e.g. SERVICE_NAME "ledger");
+                        chart defaults win over the standard defaults baked here
+  required       (opt)  dict key->message; fail if the resolved value is empty
+==============================================================================
+*/}}
+{{- define "lerian-common.multiTenant.envFlat" -}}
+{{- $cm := .configmap | default dict -}}
+{{- $enabledVal := .enabledDefault | default "false" -}}
+{{- if hasKey $cm "MULTI_TENANT_ENABLED" -}}{{- $enabledVal = index $cm "MULTI_TENANT_ENABLED" -}}{{- end -}}
+{{- $std := dict
+      "MULTI_TENANT_URL" ""
+      "MULTI_TENANT_SERVICE_NAME" ""
+      "MULTI_TENANT_ALLOW_INSECURE_HTTP" "false"
+      "MULTI_TENANT_ENVIRONMENT" ""
+      "MULTI_TENANT_MAX_TENANT_POOLS" "100"
+      "MULTI_TENANT_IDLE_TIMEOUT_SEC" "300"
+      "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "5"
+      "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" "30"
+      "MULTI_TENANT_REDIS_HOST" ""
+      "MULTI_TENANT_REDIS_PORT" "6379"
+      "MULTI_TENANT_REDIS_TLS" "false"
+      "MULTI_TENANT_TIMEOUT" "30"
+      "MULTI_TENANT_CACHE_TTL_SEC" "120"
+      "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC" "30" -}}
+{{- /* Overlay chart defaults with `set` (see envFlat helpers) so empty-string
+   overrides win over `$std`. */ -}}
+{{- $defaults := deepCopy $std -}}
+{{- range $k, $v := (.defaults | default dict) -}}{{- $_ := set $defaults $k $v -}}{{- end -}}
+MULTI_TENANT_ENABLED: {{ $enabledVal | quote }}
+{{- if eq (toString $enabledVal) "true" }}
+{{ include "lerian-common.env.flatBlock" (dict "configmap" $cm "keys" .keys "defaults" $defaults "required" (.required | default dict)) }}
+{{- end -}}
+{{- end -}}
+
 {{- define "lerian-common.multiTenant.secret" -}}
 {{- if and .enabled (not .useExistingSecret) -}}
 {{- $s := .secrets | default dict -}}

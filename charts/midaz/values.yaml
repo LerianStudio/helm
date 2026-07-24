@@ -100,6 +100,27 @@ global:
           db: "transaction"
         - role: "readWrite"
           db: "crm"
+
+  # -- Service discovery (lib-service-discovery) — env-wide, shared by every
+  #    component; each app opts in via <component>.serviceDiscovery.enabled.
+  serviceDiscovery:
+    address: ""                        # Consul host:port → SD_ADDRESS
+    tls: false                         # → SD_TLS
+    tlsSkipVerify: true                # → SD_TLS_SKIP_VERIFY
+    workload: ""                       # per-env isolation key → SD_WORKLOAD
+    preferView: "internal"             # internal|external → SD_PREFER_VIEW
+  # -- Streaming (lib-streaming) — env-wide broker/SASL/TLS config.
+  streaming:
+    brokers: ""                        # host:port → STREAMING_BROKERS
+    tlsEnabled: false                  # → STREAMING_TLS_ENABLED
+    saslMechanism: ""                  # e.g. SCRAM-SHA-256 → STREAMING_SASL_MECHANISM
+    saslUsername: ""                   # → STREAMING_SASL_USERNAME
+  # -- Multi-tenant — env-wide tenant-manager endpoint + its redis.
+  multiTenant:
+    url: ""                            # → MULTI_TENANT_URL
+    redisHost: ""                      # → MULTI_TENANT_REDIS_HOST
+    redisPort: "6379"                  # → MULTI_TENANT_REDIS_PORT
+    redisTls: false                    # → MULTI_TENANT_REDIS_TLS
 ledger:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}

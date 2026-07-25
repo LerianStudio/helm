@@ -502,6 +502,16 @@
             "emitterCertItem": { "type": "string", "minLength": 1 }
           }
         },
+        "license": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "secretName": { "type": "string" },
+            "secretKey": { "type": "string", "minLength": 1 },
+            "organizationIDs": { "type": "string", "minLength": 1 }
+          }
+        },
         "resources": {
           "type": "object",
           "properties": {

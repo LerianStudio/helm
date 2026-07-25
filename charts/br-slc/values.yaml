@@ -929,7 +929,8 @@ mockNuclea:
   # emitter PUBLIC cert (mock verifies C15). The signer's own signer.pfx is
   # provisioned separately via signer.softkeySecret; the app's recipient PUBLIC
   # cert via extraVolumes + DISPATCH_DEV_RECIPIENT_CERT_PATH — all from the SAME
-  # self-consistent set (mint one with the mock image's `-gen`). Reached over
+  # self-consistent set (mint one with br-slc's mock/scripts/gen-spb-keys.sh —
+  # the in-binary `-gen` was removed in br-slc #207). Reached over
   # cluster DNS; the mock is a SEPARATE pod, so no in-pod key sharing.
   spbKeysSecret:
     enabled: false
@@ -942,6 +943,36 @@ mockNuclea:
     # emitter.crt regardless of the Secret's own key names).
     recipientKeyItem: "recipient.key"
     emitterCertItem: "emitter.crt"
+  # Lerian license validation (lib-license-go/v2) for the fixture ITSELF. OFF by
+  # default: with no LICENSE_KEY in its env the mock skips the check entirely and
+  # calls no gateway at all. Enable it only where the release already carries a
+  # license — the mock's compiled application identity is `br-slc`, the SAME as
+  # the monolith, so the app's own LICENSE_KEY licenses the mock too and nothing
+  # separate is issued. When enabled, the mock pod needs EGRESS to the license
+  # gateway, and a key/organization set the gateway rejects FAILS the mock's boot
+  # (CrashLoopBackOff) rather than serving unlicensed — so wire it fully or leave
+  # it off.
+  license:
+    enabled: false
+    # Secret holding the license key. Empty → the release's OWN app Secret
+    # (secrets.existingSecretName, else <fullname>-secrets — see br-slc.secretName
+    # in _helpers.tpl), which is exactly where the app's LICENSE_KEY already
+    # lives. That Secret MUST expose secretKey below; otherwise the pod never
+    # starts (CreateContainerConfigError). Set this only to point at a different,
+    # operator-managed Secret.
+    secretName: ""
+    secretKey: "LICENSE_KEY"
+    # Literal organization set, injected as ORGANIZATION_IDS. KEEP the `global`
+    # sentinel: any other value puts lib-license-go in multi-org mode, where every
+    # request is expected to carry an X-Organization-Id header that no SLC client
+    # sends. NEVER point this at the app's real ORGANIZATION_IDS (an AVP-resolved
+    # Vault value that may hold real organization IDs).
+    organizationIDs: "global"
+    # IS_DEVELOPMENT (which license gateway: the exact string "true" → dev
+    # gateway, anything else → production) is deliberately NOT a value here — the
+    # Deployment reads it from the app's ConfigMap with optional: true, so the
+    # fixture never disagrees with the app about the gateway, and environments
+    # that don't declare it (only dev-st does) still render.
   # Distroless static nonroot binary (USER 65532) that writes nothing to disk,
   # so readOnlyRootFilesystem is safe with no /tmp emptyDir needed (unlike the
   # app/signer/validator containers above).

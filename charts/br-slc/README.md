@@ -147,6 +147,9 @@ When `mockNuclea.enabled=true`:
   | `br-slc` app (app pod) | `recipient.crt` (encrypt C14) | `extraVolumes`/`extraVolumeMounts` + `DISPATCH_DEV_RECIPIENT_CERT_PATH` (overlay) |
 - `mockNuclea.spbKeysSecret.enabled: false` leaves the mock a bare
   connectivity/health fixture (no keys, no signed round-trip).
+- `mockNuclea.license.enabled: false` leaves the fixture unlicensed and calling
+  no license gateway. Flip it on to have the mock validate the **release's own**
+  Lerian license at boot — see "Licensing the fixture" below.
 
 ### Provisioning the SPB key set (signed round-trip runbook)
 
@@ -220,6 +223,50 @@ configmap:
 
 Disable everything (or just `spbKeysSecret`) to fall back to a bare
 connectivity/health mock with no signed round-trip.
+
+### Licensing the fixture (`mockNuclea.license.*`)
+
+The mock validates a Lerian license at boot (`lib-license-go/v2`), and it reuses
+what the release already has in the same namespace — **off by default**, so
+nothing changes for an existing deploy.
+
+| Value | Default | Purpose |
+|---|---|---|
+| `mockNuclea.license.enabled` | `false` | Injects the three license env vars below. Off ⇒ the mock gets no `LICENSE_KEY`, skips the check entirely, and calls no gateway. |
+| `mockNuclea.license.secretName` | `""` | Secret holding the key. **Empty ⇒ the release's own app Secret** (`secrets.existingSecretName`, else `<fullname>-secrets`) — the same one the app reads its `LICENSE_KEY` from. Set it only to point at a different, operator-managed Secret. |
+| `mockNuclea.license.secretKey` | `LICENSE_KEY` | Key **within** that Secret. It must exist, or the pod never starts (`CreateContainerConfigError`). |
+| `mockNuclea.license.organizationIDs` | `global` | Literal value for `ORGANIZATION_IDS`. Keep the sentinel. |
+
+Why it is wired this way:
+
+- **Same `LICENSE_KEY` as the app.** The mock's compiled application identity is
+  `br-slc` — identical to the monolith — so the monolith's key licenses the mock
+  too. Nothing separate is issued, and by default the chart does not even name a
+  second Secret.
+- **`ORGANIZATION_IDS` is the literal `global`, never the app's value.** Any
+  non-`global` value puts `lib-license-go` in multi-org mode, where every request
+  is expected to carry an `X-Organization-Id` header that no SLC client sends. The
+  app's own `ORGANIZATION_IDS` is an AVP-resolved Vault value that may hold real
+  organization IDs, so it is deliberately **not** mirrored here.
+- **`IS_DEVELOPMENT` is mirrored from the app's ConfigMap, optionally.** It only
+  selects the gateway (`lib-license-go` compares it to the exact string `"true"`
+  ⇒ dev gateway; anything else ⇒ production), so reading it from the app's
+  ConfigMap keeps the fixture from disagreeing with the app. The `configMapKeyRef`
+  carries `optional: true` because only some environments declare
+  `configmap.data.IS_DEVELOPMENT` (dev-st does; staging/sandbox/prod deliberately
+  do not) — those still render and simply fall through to the production gateway.
+- **Fail-closed, so wire it fully or leave it off.** With `enabled: true` the mock
+  pod needs **egress to the license gateway**, and a key or organization set the
+  gateway rejects **fails the boot** (CrashLoopBackOff) rather than serving
+  unlicensed. A half-wired values file crashloops the fixture; it never runs
+  silently unlicensed.
+
+```yaml
+mockNuclea:
+  enabled: true
+  license:
+    enabled: true        # reuses the app Secret's LICENSE_KEY; ORGANIZATION_IDS=global
+```
 
 ## Install
 

@@ -78,6 +78,35 @@ spec:
             - name: SPB_EMITTER_CERT_PATH
               value: {{ printf "%s/emitter.crt" .Values.mockNuclea.spbKeysSecret.mountPath | quote }}
             {{- end }}
+            {{- if .Values.mockNuclea.license.enabled }}
+            {{- /* Lerian license validation (lib-license-go/v2), off by default.
+            The mock's compiled application identity is `br-slc` — the SAME as the
+            monolith — so it reuses the release's own LICENSE_KEY (secretName
+            empty → the app Secret, br-slc.secretName); nothing separate is
+            issued. The org set is a LITERAL (`global`) and must NEVER be the
+            app's own ORGANIZATION_IDS: any non-`global` value flips
+            lib-license-go into multi-org mode, which then expects an
+            X-Organization-Id header on every request that no SLC client sends.
+            IS_DEVELOPMENT only selects the gateway (exact string "true" → dev
+            gateway, anything else → production) and is mirrored from the app's
+            ConfigMap with optional: true — only some environments declare it
+            (e.g. dev-st), and the rest must still render and fall through to the
+            production gateway. Enabling this needs egress to that gateway: a key
+            it rejects FAILS the mock's boot instead of serving unlicensed. */}}
+            - name: LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mockNuclea.license.secretName | default (include "br-slc.secretName" .) }}
+                  key: {{ .Values.mockNuclea.license.secretKey }}
+            - name: ORGANIZATION_IDS
+              value: {{ .Values.mockNuclea.license.organizationIDs | quote }}
+            - name: IS_DEVELOPMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "br-slc.fullname" . }}
+                  key: IS_DEVELOPMENT
+                  optional: true
+            {{- end }}
             {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
             {{- include "br-slc.gomaxprocsEnv" .Values.mockNuclea.resources | nindent 12 }}
           livenessProbe:

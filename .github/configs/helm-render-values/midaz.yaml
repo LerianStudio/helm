@@ -1,10 +1,21 @@
 crm:
   secrets:
-    # App crypto material — operator-provided (external boundary).
+    # App crypto material — operator-provided (external boundary), consumed
+    # by the standalone CRM microservice (crm.enabled=true deployments, e.g.
+    # benedita stg-*). templates/crm/secrets.yaml requires these independently
+    # of the ledger block below — standalone CRM and CRM-folded-into-ledger
+    # coexist, both need their own copy of these keys.
     LCRYPTO_HASH_SECRET_KEY: "sample"
     LCRYPTO_ENCRYPT_SECRET_KEY: "sample"
 ledger:
   secrets:
+    # App crypto material — operator-provided (external boundary). The CRM
+    # module was folded into the unified ledger binary and
+    # templates/ledger/secrets.yaml requires these unconditionally whenever
+    # ledger.enabled=true, regardless of whether the standalone CRM service
+    # (above) is also enabled.
+    LCRYPTO_HASH_SECRET_KEY: "sample"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "sample"
     # RabbitMQ — operator-provided; not yet single-sourced (see chart README
     # "Known limitation"). The infra passwords (Postgres/Mongo/Valkey) are now
     # single-sourced from the Bitnami subchart Secrets, so they are intentionally

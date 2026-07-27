@@ -565,7 +565,7 @@ tracer:
     enabled: true
     image:
       # -- Repository for the tracer migrations image
-      repository: ghcr.io/lerianstudio/tracer
+      repository: ghcr.io/lerianstudio/midaz-tracer
       # -- Image tag (populated by the release pipeline via gitops_yaml_key_mappings;
       #    falls back to .Chart.AppVersion when empty)
       tag: ""

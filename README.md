@@ -190,9 +190,13 @@ For implementation and configuration details, see the [README](https://charts.le
 
 #### Application Version Mapping
 
-| Chart Version | Tracer Version |
-| :---: | :---: |
-| `2.1.0` | 1.0.0 |
+<!-- BEGIN COMPAT:tracer-helm -->
+| Chart Version | Tracer Version | Released | Support |
+| :---: | :---: | :---: | :---: |
+| `2.1.0` | 1.0.0 | 2026-06-18 | 🟢 Full (N) |
+| `2.0.0` | — | 2026-06-09 | 🔵 Security (N-1) |
+| `1.0.0` | — | 2026-01-30 | 🟡 Extended (N-2) |
+<!-- END COMPAT:tracer-helm -->
 -----------------
 
 ### Otel Collector Lerian

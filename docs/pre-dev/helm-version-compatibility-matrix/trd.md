@@ -90,8 +90,8 @@ annotations:
   lerian.studio/compatibility: |                   # NOVO — string YAML embutida
     requires:            # OPCIONAL no v1 — relação técnica (validada, vira coluna "Requires")
       midaz-helm: ">=8.4.0 <9.0.0"
-    testedWith:          # preenchido no v1 (derivável) — informativo
-      midaz-helm: "8.6.0"
+    # testedWith: NÃO usado no v1 (removido — ver BACKLOG). A ferramenta aceita
+    # o campo p/ forward-compat, mas ele volta só na v2, preenchido via E2E.
 ```
 - Chave em reverse-DNS namespaced (segue precedente `lerian.studio/chart-type`; alinhado a Artifact Hub).
 - Valores de `requires` são **ranges semver Masterminds** (`>=x <y`, `~`, `^`, `||`).

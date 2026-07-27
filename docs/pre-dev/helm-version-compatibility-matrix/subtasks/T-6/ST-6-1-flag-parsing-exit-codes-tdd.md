@@ -94,9 +94,10 @@ func main() {
 }
 
 // run parses flags and executes the requested mode, returning the process exit
-// code (api-design §II.2): 0 success (incl. WARN), 1 operational error, 2 usage error
-// (unreadable root), 2 conflicting flags. stdout carries the operation result;
-// stderr carries diagnostics.
+// code (api-design §II.2): 0 success (incl. WARN); 1 operational error
+// (unreadable root, unwritable file, unreadable README); 2 usage error
+// (invalid/conflicting flags, unknown --chart). stdout carries the operation
+// result; stderr carries diagnostics.
 func run(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("generate-compatibility", flag.ContinueOnError)
 	fs.SetOutput(stderr)

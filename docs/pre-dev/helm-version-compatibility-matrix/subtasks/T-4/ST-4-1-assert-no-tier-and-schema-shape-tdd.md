@@ -82,7 +82,7 @@ Saída esperada: `ok  ...`.
 
 ## Verification (copiável) — grep no JSON real por `tier`
 ```bash
-cd "$(git rev-parse --show-toplevel)/.github/scripts" && go run ./generate-compatibility --root ../.. --output /tmp/compat-t4.json 2>/dev/null && ! grep -q '"tier"' /tmp/compat-t4.json && echo "NO_TIER_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go run ./generate-compatibility --root ../.. --output docs/compat-t4.json 2>/dev/null && ! grep -q '"tier"' docs/compat-t4.json && echo "NO_TIER_OK"
 ```
 Saída esperada: `NO_TIER_OK` (o grep NÃO encontra `tier`).
 

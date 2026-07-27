@@ -69,11 +69,8 @@ func resolveWindow(chartVersion string, tagVersions []*semver.Version, releaseDa
 	}
 	nKey := minorKey(nVer)
 
-	// Group stable tag versions by minor cycle. stableCyclesFromTags is the count
-	// of real cycles the published tags contributed, BEFORE forcing N — used to
-	// detect the degraded "only pre-release tags" state below.
+	// Group stable tag versions by minor cycle.
 	byMinor := groupByMinor(segregateStable(tagVersions))
-	stableCyclesFromTags := len(byMinor)
 
 	// The N cycle is ALWAYS sourced from Chart.yaml (authority): N wins its own
 	// minor slot unconditionally. This is deliberate — if a stray tag with a
@@ -104,14 +101,25 @@ func resolveWindow(chartVersion string, tagVersions []*semver.Version, releaseDa
 		})
 	}
 
-	// Degraded window: the tags produced no stable cycle, so the window is only
-	// the forced N. Distinguish "no tags at all" from "only pre-release tags" so
-	// the diagnostic is accurate.
-	if stableCyclesFromTags == 0 {
+	// Degraded window: count the cycles that ACTUALLY entered the window besides
+	// the always-forced N cycle. This must be measured AFTER the "never exceed N"
+	// filter — counting byMinor earlier would miss the case where every stable
+	// tag is a cycle above N (all dropped by the filter), leaving only N but a
+	// non-zero pre-filter count (same class as bug #8: counting at the wrong
+	// moment). When nothing but N survived, the window is degraded → emit INFO.
+	nonNCycles := 0
+	for _, v := range latests {
+		if minorKey(v) != nKey {
+			nonNCycles++
+		}
+	}
+	if nonNCycles == 0 {
 		if len(tagVersions) == 0 {
 			warnings = append(warnings, Warning{SevInfo, chartVersion, "N", "no published tags; window = only N (Chart.yaml)"})
 		} else {
-			warnings = append(warnings, Warning{SevInfo, chartVersion, "N", "only pre-release tags; window = only N (Chart.yaml)"})
+			// Tags exist but none produced a usable cycle at or below N (all
+			// pre-release, or all above N). More precise than "only pre-release".
+			warnings = append(warnings, Warning{SevInfo, chartVersion, "N", "no usable tags below N; window = only N (Chart.yaml)"})
 		}
 	}
 

@@ -28,6 +28,8 @@ cd "$(git rev-parse --show-toplevel)" && for s in ci charts doc; do grep -qiE "(
 ```
 Saída esperada: idealmente todos `PRESENTE`. Anote os que faltam.
 
+> Nota: esta verificação é por busca textual (suficiente para um subtask de planejamento — confirma que o token existe na allowlist). Para checagem estrutural rigorosa (garantir que o token está de fato sob a chave `scopes:` da action, e não em outro lugar do YAML), use `yq '.jobs.*.steps[].with.scopes' .github/workflows/pr-title.yml` no lugar do grep.
+
 ### Passo 3 — Adicionar os scopes faltantes (só se algum FALTA)
 Se algum scope apareceu como `FALTA`, edite a lista de `scopes` no `pr-title.yml` adicionando-o. Exemplo (formato depende da action; NÃO invente — case ao que o Passo 1 mostrou). Se a lista for multi-linha do tipo:
 ```yaml

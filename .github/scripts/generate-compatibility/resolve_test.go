@@ -180,11 +180,11 @@ func TestResolveWindow(t *testing.T) {
 		}
 	})
 
-	t.Run("only pre-release tags => INFO with pre-release message, window = only N", func(t *testing.T) {
+	t.Run("only pre-release tags => INFO (degraded), window = only N", func(t *testing.T) {
 		// N=2.0.0 but every tag is a pre-release: segregateStable filters them all,
 		// leaving only the forced N cycle. This is the same degraded state as "0
-		// tags" and must emit an INFO — with a message that says pre-release, not
-		// "no published tags".
+		// tags" and must emit an INFO — but NOT the "no published tags" message,
+		// because tags do exist.
 		cs, ws := resolveWindow("2.0.0", tagVers(t, "2.0.0-beta.1", "1.0.0-beta.2"), nil)
 		if len(cs) != 1 || cs[0].Cycle != "2.0" || cs[0].Latest != "2.0.0" || !cs[0].Supported {
 			t.Fatalf("expected single N cycle, got %+v", cs)
@@ -192,27 +192,32 @@ func TestResolveWindow(t *testing.T) {
 		if !hasINFO(ws) {
 			t.Fatalf("expected INFO for all-pre-release tags, got %+v", ws)
 		}
-		var infoMsg string
-		for _, w := range ws {
-			if w.Severity == SevInfo {
-				infoMsg = w.Detail
-			}
+		if strings.Contains(infoDetail(ws), "no published tags") {
+			t.Errorf("should NOT use 'no published tags' when tags exist, got %q", infoDetail(ws))
 		}
-		if !strings.Contains(infoMsg, "pre-release") {
-			t.Errorf("INFO message should mention pre-release, got %q", infoMsg)
+	})
+
+	t.Run("all STABLE tags above N => INFO (degraded), window = only N", func(t *testing.T) {
+		// N=8.6.0 but the only stable tags are 8.7.0 and 8.8.0 (both above N).
+		// byMinor has 2 entries, yet the "never exceed N" filter drops both, so the
+		// window is only the forced N cycle. The INFO MUST fire (regression of the
+		// same class as bug #8: counting cycles at the wrong moment).
+		cs, ws := resolveWindow("8.6.0", tagVers(t, "8.7.0", "8.8.0"), nil)
+		if len(cs) != 1 || cs[0].Cycle != "8.6" || cs[0].Latest != "8.6.0" || !cs[0].Supported {
+			t.Fatalf("expected single N cycle 8.6, got %+v", cs)
+		}
+		if !hasINFO(ws) {
+			t.Fatalf("expected INFO when all stable tags are above N, got %+v", ws)
+		}
+		if strings.Contains(infoDetail(ws), "no published tags") {
+			t.Errorf("should NOT use 'no published tags' when tags exist, got %q", infoDetail(ws))
 		}
 	})
 
 	t.Run("0 tags keeps the 'no published tags' message", func(t *testing.T) {
 		_, ws := resolveWindow("1.0.0", tagVers(t), nil)
-		var infoMsg string
-		for _, w := range ws {
-			if w.Severity == SevInfo {
-				infoMsg = w.Detail
-			}
-		}
-		if !strings.Contains(infoMsg, "no published tags") {
-			t.Errorf("expected 'no published tags' message, got %q", infoMsg)
+		if !strings.Contains(infoDetail(ws), "no published tags") {
+			t.Errorf("expected 'no published tags' message, got %q", infoDetail(ws))
 		}
 	})
 
@@ -281,6 +286,17 @@ func hasINFO(ws []Warning) bool {
 		}
 	}
 	return false
+}
+
+// infoDetail returns the Detail of the last INFO warning (or "" if none).
+func infoDetail(ws []Warning) string {
+	var d string
+	for _, w := range ws {
+		if w.Severity == SevInfo {
+			d = w.Detail
+		}
+	}
+	return d
 }
 
 func assertNoINFO(t *testing.T, ws []Warning) {

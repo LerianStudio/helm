@@ -123,10 +123,10 @@ Ferramenta batch determinística. Duas operações mutuamente exclusivas, seleci
 | Código | Significado (v1) |
 |---|---|
 | 0 | Sucesso — inclui casos com WARN (dado malformado, produto inexistente, drift) |
-| 1 | Falha **operacional** apenas (não conteúdo): `--root` inexistente, sem permissão de escrita, flag inválida, README ilegível |
-| 2 | Uso incorreto (flags conflitantes, ex.: `--write` + `--check`) |
+| 1 | Falha **operacional** apenas (não conteúdo, não uso): `--root` inexistente, sem permissão de escrita, README ilegível |
+| 2 | **Uso incorreto**: flags conflitantes (`--write` + `--check`), flag inválida/malformada, `--chart` inexistente |
 
-> Princípio v1: **problema de dado do usuário = WARN + exit 0** (não trava CI). **Problema do ambiente/uso = exit ≠ 0**.
+> Princípio v1: **problema de dado do usuário = WARN + exit 0** (não trava CI). **Problema operacional = exit 1. Uso incorreto = exit 2.** (flag inválida é uso → exit 2, não 1.)
 
 ### II.3 Contrato de mensagens (stderr)
 Formato estável, uma linha por ocorrência, prefixo de severidade:

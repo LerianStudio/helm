@@ -58,6 +58,15 @@ func TestRun_ExitCodes(t *testing.T) {
 
 	t.Run("unknown --chart => exit 2, nothing written", func(t *testing.T) {
 		root := seedRepo(t)
+		// Snapshot the README before the run so we can prove it stays byte-identical
+		// (a future partial-write bug that touched README before validating --chart
+		// would be caught here).
+		readmePath := filepath.Join(root, "README.md")
+		before, err := os.ReadFile(readmePath)
+		if err != nil {
+			t.Fatalf("read README before: %v", err)
+		}
+
 		var out, errb bytes.Buffer
 		code := run([]string{"--root", root, "--chart", "does-not-exist-helm", "--output", "docs/compatibility.json"}, &out, &errb)
 		if code != 2 {
@@ -69,6 +78,13 @@ func TestRun_ExitCodes(t *testing.T) {
 		// Neither the JSON nor the README must be written on a usage error.
 		if _, err := os.Stat(filepath.Join(root, "docs", "compatibility.json")); err == nil {
 			t.Error("JSON must NOT be written on unknown --chart")
+		}
+		after, err := os.ReadFile(readmePath)
+		if err != nil {
+			t.Fatalf("read README after: %v", err)
+		}
+		if string(after) != string(before) {
+			t.Fatalf("README must NOT change on unknown --chart:\n--before--\n%s\n--after--\n%s", before, after)
 		}
 	})
 }

@@ -94,7 +94,7 @@ func main() {
 }
 
 // run parses flags and executes the requested mode, returning the process exit
-// code (api-design §II.2): 0 success (incl. WARN), 1 environment/usage error
+// code (api-design §II.2): 0 success (incl. WARN), 1 operational error, 2 usage error
 // (unreadable root), 2 conflicting flags. stdout carries the operation result;
 // stderr carries diagnostics.
 func run(args []string, stdout, stderr io.Writer) int {

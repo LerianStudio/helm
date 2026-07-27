@@ -20,8 +20,14 @@ var supportLabel = []string{
 // eolSupportLabel is the single summary cell for all end-of-life cycles.
 const eolSupportLabel = "🔴 EOL"
 
-// requiresHeaderPrefix labels the optional cross-compat column.
-const requiresHeaderPrefix = "Requer"
+// requiresHeaderPrefix labels the optional cross-compat column. English, to
+// match the other generated headers (Chart Version, Released, Support).
+const requiresHeaderPrefix = "Requires"
+
+// legacyRequiresHeaderPrefix is the pre-i18n-fix Portuguese label. Kept only as
+// a sentinel so appLabelsFromHeader ignores a legacy generated header during the
+// in-place migration to "Requires".
+const legacyRequiresHeaderPrefix = "Requer"
 
 // cellUnknown is the placeholder ("—") used wherever we do not have a confident
 // value: historical/EOL app versions, historical/EOL requires cells, and extra
@@ -34,7 +40,7 @@ const cellUnknown = "—"
 // column labels already present in the chart's README section (e.g. ["Tracer"]
 // or ["Fees", "UI"]) so the enriched table never drops an existing column:
 //
-//	| Chart Version | <App1> Version | [<AppN> Version...] | Support | [Requer <target>...] |
+//	| Chart Version | <App1> Version | [<AppN> Version...] | Support | [Requires <target>...] |
 //
 // Rows are one per cycle (ordered descending, index 0 = N), Support driven by
 // position (Full/Security/Extended), and a single collapsed EOL row that
@@ -45,7 +51,7 @@ const cellUnknown = "—"
 //     appVersions[label] (resolved from values.yaml {component}.image.tag by the
 //     shared tableutil extractor); a column with no resolved tag stays "—".
 //   - Historical/EOL app versions are "—".
-//   - The Requer column carries the declared range only on the N row; N-1..N-3
+//   - The Requires column carries the declared range only on the N row; N-1..N-3
 //     and EOL are "—" (in v1 the dev declares requires for the current version
 //     only; history is filled by E2E in v2).
 //
@@ -79,7 +85,7 @@ func renderCompatTable(p Product, appLabels []string, appVersions map[string]str
 	}
 	sort.Strings(targets)
 
-	// Header: Chart Version | <App> Version... | Released | Support | [Requer <target>...]
+	// Header: Chart Version | <App> Version... | Released | Support | [Requires <target>...]
 	headers := []string{"Chart Version"}
 	for _, lbl := range appLabels {
 		headers = append(headers, lbl+" Version")
@@ -107,7 +113,7 @@ func renderCompatTable(p Product, appLabels []string, appVersions map[string]str
 		return cells
 	}
 
-	// requiresCells builds the Requer cells for a row. Only the N row carries the
+	// requiresCells builds the Requires cells for a row. Only the N row carries the
 	// declared range; N-1..N-3 (and EOL) are "—".
 	requiresCells := func(c *Cycle) []string {
 		cells := make([]string, len(targets))

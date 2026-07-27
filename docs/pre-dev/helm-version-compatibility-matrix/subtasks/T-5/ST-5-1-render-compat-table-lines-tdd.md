@@ -3,7 +3,7 @@
 > **For Agents:** REQUIRED SUB-SKILL: executing-plans
 
 ## Goal
-Função pura `renderCompatTable(product Product) []string`: recebe o `Product` (com cycles ordenados desc) e devolve as linhas markdown do bloco COMPAT — cabeçalho, separador e uma linha por cycle SUPORTADO com badge por posição (🟢N 🔵N-1 🟡N-2 🟠N-3), coluna "Requer &lt;produto&gt;" SÓ quando `requires` declarado no cycle, e os cycles EOL (`supported:false`) colapsados numa ÚNICA linha-resumo com 🔴. NÃO toca arquivos; só gera linhas. Reusa a estética de `tableutil.FormatTable` (separador `:---:`).
+Função pura `renderCompatTable(product Product) []string`: recebe o `Product` (com cycles ordenados desc) e devolve as linhas markdown do bloco COMPAT — cabeçalho, separador e uma linha por cycle SUPORTADO com badge por posição (🟢N 🔵N-1 🟡N-2 🟠N-3), coluna "Requires &lt;produto&gt;" SÓ quando `requires` declarado no cycle, e os cycles EOL (`supported:false`) colapsados numa ÚNICA linha-resumo com 🔴. NÃO toca arquivos; só gera linhas. Reusa a estética de `tableutil.FormatTable` (separador `:---:`).
 
 ## Prerequisites
 ```bash

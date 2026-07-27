@@ -81,7 +81,7 @@ func sectionHeaderIndex(lines []string, chart string) int {
 // header it finds — which, after the first run, is the header INSIDE the COMPAT
 // block (the original table was replaced in place). To stay idempotent it stops
 // collecting labels at the generated "Support" column (and never treats
-// "Support"/"Requer ..." as app columns), so run 1 (original table) and run 2+
+// "Support"/"Requires ..." as app columns), so run 1 (original table) and run 2+
 // (generated block) yield the identical label set. Returns the fallback
 // (title-cased chart name) when no mapping header exists.
 func appLabelsFor(lines []string, chart string) []string {
@@ -111,8 +111,13 @@ func appLabelsFor(lines []string, chart string) []string {
 // ... |" header row. It reads every column after "Chart Version" and stops at
 // the first generated column ("Released" or "Support", whichever comes first),
 // so a previously generated block header (which appends Released, Support and
-// optional "Requer <target>" columns) yields exactly the same labels as the
+// optional "Requires <target>" columns) yields exactly the same labels as the
 // original mapping table — the key to idempotency.
+//
+// It also treats the legacy Portuguese "Requer <target>" column as a generated
+// sentinel: a README whose block was produced before the "Requer"->"Requires"
+// rename must migrate cleanly (in-place rewrite) without the stale "Requer"
+// header ever being mistaken for an app-version column.
 func appLabelsFromHeader(headerRow string) []string {
 	cells := splitTableCells(headerRow)
 	var labels []string
@@ -121,8 +126,10 @@ func appLabelsFromHeader(headerRow string) []string {
 		if cell == "" {
 			continue
 		}
-		if cell == releasedHeader || cell == "Support" || strings.HasPrefix(cell, requiresHeaderPrefix+" ") {
-			break // generated columns are not app labels
+		if cell == releasedHeader || cell == "Support" ||
+			strings.HasPrefix(cell, requiresHeaderPrefix+" ") ||
+			strings.HasPrefix(cell, legacyRequiresHeaderPrefix+" ") {
+			break // generated columns (incl. legacy "Requer") are not app labels
 		}
 		// Prefer the "<X> Version" convention; keep verbatim otherwise so we
 		// never silently drop a column we don't recognize.

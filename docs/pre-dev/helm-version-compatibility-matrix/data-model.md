@@ -18,14 +18,14 @@ A feature tem **dois conceitos ortogonais** que NÃO devem ser confundidos:
 | Eixo | O que responde | Fonte | Vale pra | Coluna README |
 |---|---|---|---|---|
 | **#1 Suporte de versões** | "quais versões da PRÓPRIA app têm suporte" (N/N-1/N-2/N-3) | `version` + tags git | **TODOS os charts, sempre** | **Support** (sempre presente) |
-| **#2 Compatibilidade cruzada** | "com qual versão de OUTRO produto combina" | annotation `requires`/`testedWith` | só charts que dependem de outro | **Requer &lt;produto&gt;** (condicional) |
+| **#2 Compatibilidade cruzada** | "com qual versão de OUTRO produto combina" | annotation `requires`/`testedWith` | só charts que dependem de outro | **Requires &lt;produto&gt;** (condicional) |
 
 - **#1 é universal e 100% automático** — dev não mantém nada; atualiza no release (version bump + tags).
 - **#2 é opcional e manual (v1)** — só multi-component com dependência real de produto Lerian. `requires` = conhecimento humano.
 
 **Regra de auto-avaliação (usa o `lerian.studio/chart-type` que JÁ existe em todos os 21 charts):**
 ```
-chart-type == single-service   → standalone: NÃO espera #2. Sem coluna Requer. Script NÃO cobra (sem INFO).
+chart-type == single-service   → standalone: NÃO espera #2. Sem coluna Requires. Script NÃO cobra (sem INFO).
 chart-type == multi-component
    ou dependency-wrapper        → PODE ter #2. Se não declarar requires → INFO (lembrete suave, não bloqueia).
 ```
@@ -90,7 +90,7 @@ Ausência do objeto inteiro = válida (chart sem compatibilidade declarada).
 | minorCycle | String | sim | `MAJOR.MINOR` | Ciclo (ex.: `8.6`) |
 | tier | TierEnum | sim | §1 | Nível de suporte |
 | isEOL | Boolean | sim | — | true → agrupado na linha-resumo |
-| requires | Map&lt;ProductKey, SemverRange&gt; | não | — | Copiado de compat p/ render "Requer" |
+| requires | Map&lt;ProductKey, SemverRange&gt; | não | — | Copiado de compat p/ render "Requires" |
 
 **Regra de derivação (C-2):** segregar pre-releases → agrupar por `minorCycle` → ordenar desc → N = `version` do Chart.yaml, N-1..N-3 = 3 minors distintas imediatamente inferiores nas tags → resto = `eol` (colapsado em 1 linha-resumo). `<4` minors ⇒ menos linhas; `0` tags ⇒ só a linha N.
 

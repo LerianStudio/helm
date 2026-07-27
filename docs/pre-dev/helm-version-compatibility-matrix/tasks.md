@@ -62,13 +62,13 @@
 - **Effort:** S (3 pts, ~2d). **Risco:** baixo.
 
 ## T-5 — README mostra a matriz por produto (o entregável ao cliente)
-- **Deliverable:** bloco entre `<!-- BEGIN/END COMPAT:<chart> -->` no README de cada produto, tabela com badge de tier (🟢N…🔴EOL), coluna "Requer" quando declarada, EOL como linha-resumo. **É o valor visível ao cliente (US-1,US-2,US-4).**
+- **Deliverable:** bloco entre `<!-- BEGIN/END COMPAT:<chart> -->` no README de cada produto, tabela com badge de tier (🟢N…🔴EOL), coluna "Requires" quando declarada, EOL como linha-resumo. **É o valor visível ao cliente (US-1,US-2,US-4).**
 - **Scope inclui:** reuso de `tableutil`, markers idempotentes, respeitar boundaries irregulares (2–6 colunas; Matcher/BC Correios sem separador), **ADR-5: criar seção mínima p/ br-spi** (sem seção hoje). **Exclui:** edição de prosa existente.
 - **Success criteria:**
   - Só o conteúdo entre markers muda; prosa/separadores intactos (diff review).
   - Todos os ~21 charts (incl. br-spi) têm bloco COMPAT; 0 seções corrompidas.
   - Idempotente (2× = mesmo README).
-  - Badges e coluna "Requer" corretos vs. o JSON.
+  - Badges e coluna "Requires" corretos vs. o JSON.
 - **Value:** ⭐ o cliente lê e decide migração em segundos.
 - **Deps:** Requires: T-2,T-3. Blocks: T-8.
 - **Effort:** L (13 pts, ~1-2sem — é o mais arriscado). **Risco:** ALTO (corromper README em massa) → **obrigatório**: testar em clone descartável, golden-files por chart cobrindo os layouts irregulares, review de diff antes de qualquer commit.

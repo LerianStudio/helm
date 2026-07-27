@@ -46,7 +46,7 @@ Novo diretório: `.github/scripts/generate-compatibility/` (`package main`), + r
 - **Owns:** a política N..N-3. **Consumes:** C-1 + tags. **Provides:** `[]VersionRow{ version, minorCycle, tier, isEOL }`.
 
 ### C-3 — Renderers (Domínio C)
-- **C-3a Markdown/README:** reusa `tableutil.ParseTableForChart`/`FormatTable`. Escreve **entre markers** `<!-- BEGIN COMPAT:<chart> -->` / `<!-- END COMPAT:<chart> -->` (padrão terraform-docs: só toca entre markers, idempotente). Tabela com badge de tier (🟢N 🔵N-1 🟡N-2 🟠N-3 🔴EOL), coluna "Requer &lt;produto&gt;" **só quando** `requires` declarado, EOL como **linha-resumo única**. Respeita boundaries irregulares (2–6 colunas; Matcher/BC Correios sem separador final; `br-spi` sem seção → **pula ou cria seção**, ver ADR-5).
+- **C-3a Markdown/README:** reusa `tableutil.ParseTableForChart`/`FormatTable`. Escreve **entre markers** `<!-- BEGIN COMPAT:<chart> -->` / `<!-- END COMPAT:<chart> -->` (padrão terraform-docs: só toca entre markers, idempotente). Tabela com badge de tier (🟢N 🔵N-1 🟡N-2 🟠N-3 🔴EOL), coluna "Requires &lt;produto&gt;" **só quando** `requires` declarado, EOL como **linha-resumo única**. Respeita boundaries irregulares (2–6 colunas; Matcher/BC Correios sem separador final; `br-spi` sem seção → **pula ou cria seção**, ver ADR-5).
 - **C-3b JSON:** escreve `docs/compatibility.json`, `schemaVersion: 1`, modelado em endoflife.date (linha por ciclo minor + campo de suporte). Determinístico (chaves ordenadas), espelha `generate-values-schemas`.
 - **Owns:** formato das saídas. **Consumes:** C-1+C-2. **Provides:** artefatos.
 
@@ -88,14 +88,14 @@ helm-chart-standard.yml (PR toca charts/**)
 annotations:
   lerian.studio/chart-type: multi-component        # existente
   lerian.studio/compatibility: |                   # NOVO — string YAML embutida
-    requires:            # OPCIONAL no v1 — relação técnica (validada, vira coluna "Requer")
+    requires:            # OPCIONAL no v1 — relação técnica (validada, vira coluna "Requires")
       midaz-helm: ">=8.4.0 <9.0.0"
     testedWith:          # preenchido no v1 (derivável) — informativo
       midaz-helm: "8.6.0"
 ```
 - Chave em reverse-DNS namespaced (segue precedente `lerian.studio/chart-type`; alinhado a Artifact Hub).
 - Valores de `requires` são **ranges semver Masterminds** (`>=x <y`, `~`, `^`, `||`).
-- Ausência da annotation ou de `requires` é **válida** (v1): chart sem seção "Requer".
+- Ausência da annotation ou de `requires` é **válida** (v1): chart sem seção "Requires".
 
 ---
 

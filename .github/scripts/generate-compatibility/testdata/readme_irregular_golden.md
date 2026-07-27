@@ -7,7 +7,7 @@ Fees prose.
 #### Application Version Mapping
 
 <!-- BEGIN COMPAT:plugin-fees-helm -->
-| Chart Version | Fees Version | UI Version | Released | Support | Requer midaz-helm |
+| Chart Version | Fees Version | UI Version | Released | Support | Requires midaz-helm |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | `7.2.0` | 3.3.0 | — | — | 🟢 Full (N) | >=8.4.0 <9.0.0 |
 <!-- END COMPAT:plugin-fees-helm -->

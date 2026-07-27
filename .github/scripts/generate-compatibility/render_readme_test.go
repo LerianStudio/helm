@@ -45,7 +45,7 @@ func TestRenderCompatTable(t *testing.T) {
 		}
 	})
 
-	t.Run("multi app cols + Released + Requer coexist", func(t *testing.T) {
+	t.Run("multi app cols + Released + Requires coexist", func(t *testing.T) {
 		p := Product{
 			Dir: "plugin-fees", Current: "7.2.0",
 			Cycles: []Cycle{
@@ -55,14 +55,14 @@ func TestRenderCompatTable(t *testing.T) {
 			},
 		}
 		out := joined(renderCompatTable(p, []string{"Fees", "UI"}, map[string]string{"Fees": "3.3.0", "UI": "3.0.0"}))
-		if !strings.Contains(out, "| Chart Version | Fees Version | UI Version | Released | Support | Requer midaz-helm |") {
-			t.Errorf("multi-app + Released + Requer header wrong:\n%s", out)
+		if !strings.Contains(out, "| Chart Version | Fees Version | UI Version | Released | Support | Requires midaz-helm |") {
+			t.Errorf("multi-app + Released + Requires header wrong:\n%s", out)
 		}
-		// N row: both app cols filled, Released set, Requer = real range.
+		// N row: both app cols filled, Released set, Requires = real range.
 		if !strings.Contains(out, "| `7.2.0` | 3.3.0 | 3.0.0 | 2026-06-15 | 🟢 Full (N) | >=8.4.0 <9.0.0 |") {
 			t.Errorf("N row wrong:\n%s", out)
 		}
-		// N-1 row: app cols —, Released set (its own tag date), Requer —.
+		// N-1 row: app cols —, Released set (its own tag date), Requires —.
 		if !strings.Contains(out, "| `7.1.0` | — | — | 2026-05-10 | 🔵 Security (N-1) | — |") {
 			t.Errorf("N-1 row wrong:\n%s", out)
 		}
@@ -79,7 +79,7 @@ func TestRenderCompatTable(t *testing.T) {
 		}
 	})
 
-	t.Run("no requires => no Requer column (tracer pilot shape) with Released", func(t *testing.T) {
+	t.Run("no requires => no Requires column (tracer pilot shape) with Released", func(t *testing.T) {
 		p := Product{
 			Dir: "tracer", Current: "2.1.0",
 			Cycles: []Cycle{
@@ -89,8 +89,8 @@ func TestRenderCompatTable(t *testing.T) {
 			},
 		}
 		out := joined(renderCompatTable(p, []string{"Tracer"}, map[string]string{"Tracer": "1.0.0"}))
-		if strings.Contains(out, "Requer") {
-			t.Errorf("did not expect Requer column, got:\n%s", out)
+		if strings.Contains(out, "Requires") {
+			t.Errorf("did not expect Requires column, got:\n%s", out)
 		}
 		if !strings.Contains(out, "| Chart Version | Tracer Version | Released | Support |") {
 			t.Errorf("expected Tracer header with Released, got:\n%s", out)

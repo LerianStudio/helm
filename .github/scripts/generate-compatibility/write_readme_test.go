@@ -107,7 +107,7 @@ func TestWriteReadme_IrregularLayoutsGolden(t *testing.T) {
 	}
 	// Multi-app fees: Fees Version resolved from values.yaml; UI Version has no
 	// values source so it stays "—" even on the N row (no invention).
-	if !strings.Contains(s, "| Chart Version | Fees Version | UI Version | Released | Support | Requer midaz-helm |") {
+	if !strings.Contains(s, "| Chart Version | Fees Version | UI Version | Released | Support | Requires midaz-helm |") {
 		t.Errorf("Plugin Fees COMPAT block missing multi-app rich header:\n%s", s)
 	}
 	if !strings.Contains(s, "| `7.2.0` | 3.3.0 | — | — | 🟢 Full (N) | >=8.4.0 <9.0.0 |") {
@@ -148,5 +148,83 @@ func TestWriteReadme_Idempotent(t *testing.T) {
 	}
 	if string(first) != string(second) {
 		t.Fatalf("writeReadme not idempotent:\n--first--\n%s\n--second--\n%s", first, second)
+	}
+}
+
+// TestWriteReadme_MigratesLegacyRequerLabel proves a README whose COMPAT block
+// was generated with the old Portuguese "Requer" label migrates cleanly to
+// "Requires" on the next run: in-place rewrite, one table, no leftover "Requer",
+// and the app columns are NOT inflated by the stale generated header.
+func TestWriteReadme_MigratesLegacyRequerLabel(t *testing.T) {
+	root := t.TempDir()
+	readmePath := filepath.Join(root, "README.md")
+	// Legacy README: the COMPAT block already carries the old "Requer" header.
+	legacy := `# Charts
+
+### Plugin Fees Helm Chart
+
+Fees prose.
+
+#### Application Version Mapping
+
+<!-- BEGIN COMPAT:plugin-fees-helm -->
+| Chart Version | Fees Version | UI Version | Released | Support | Requer midaz-helm |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| ` + "`7.2.0`" + ` | 3.3.0 | — | 2026-06-15 | 🟢 Full (N) | >=8.4.0 <9.0.0 |
+<!-- END COMPAT:plugin-fees-helm -->
+
+-----------------
+`
+	if err := os.WriteFile(readmePath, []byte(legacy), 0o644); err != nil {
+		t.Fatalf("seed legacy README: %v", err)
+	}
+	seedValues(t, root, "plugin-fees", "fees:\n  image:\n    tag: \"3.3.0\"\n")
+
+	doc := CompatDoc{SchemaVersion: 1, Products: map[string]Product{
+		"plugin-fees-helm": {Dir: "plugin-fees", Current: "7.2.0", Cycles: []Cycle{
+			{Cycle: "7.2", Latest: "7.2.0", Released: "2026-06-15", Supported: true,
+				Requires: map[string]string{"midaz-helm": ">=8.4.0 <9.0.0"}},
+		}},
+	}}
+
+	if err := writeReadme(root, doc, io.Discard); err != nil {
+		t.Fatalf("writeReadme (migrate): %v", err)
+	}
+	got, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	s := string(got)
+
+	// New label present, old label gone.
+	if !strings.Contains(s, "| Chart Version | Fees Version | UI Version | Released | Support | Requires midaz-helm |") {
+		t.Errorf("migrated header wrong:\n%s", s)
+	}
+	if strings.Contains(s, "Requer ") || strings.Contains(s, "| Requer midaz-helm |") {
+		t.Errorf("legacy 'Requer' label leaked after migration:\n%s", s)
+	}
+	// App columns not inflated: exactly one COMPAT block, exactly two app cols
+	// (Fees, UI) — the stale generated columns must not have been read as apps.
+	if strings.Count(s, "<!-- BEGIN COMPAT:plugin-fees-helm -->") != 1 {
+		t.Errorf("expected exactly one block after migration:\n%s", s)
+	}
+	if !strings.Contains(s, "| `7.2.0` | 3.3.0 | — | 2026-06-15 | 🟢 Full (N) | >=8.4.0 <9.0.0 |") {
+		t.Errorf("migrated N row wrong (columns inflated?):\n%s", s)
+	}
+	// Prose + separator preserved.
+	if !strings.Contains(s, "Fees prose.") || !strings.Contains(s, "-----------------") {
+		t.Errorf("surrounding content disturbed:\n%s", s)
+	}
+
+	// And it is now idempotent under the new label.
+	if err := writeReadme(root, doc, io.Discard); err != nil {
+		t.Fatalf("writeReadme (second): %v", err)
+	}
+	again, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatalf("read again: %v", err)
+	}
+	if string(again) != s {
+		t.Fatalf("not idempotent after migration:\n--first--\n%s\n--second--\n%s", s, again)
 	}
 }

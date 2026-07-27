@@ -16,7 +16,7 @@
 ### I.1 Localização e forma
 - Vive em `Chart.yaml` → `annotations["lerian.studio/compatibility"]`.
 - É uma **string** cujo conteúdo é um **documento YAML embutido** (block scalar `|`). Não é nesting YAML nativo (Helm exige annotations = `map[string]string`).
-- **Ausência é válida.** Chart sem a annotation → tratado como "sem compatibilidade declarada" (só janela de suporte derivada; sem coluna "Requer").
+- **Ausência é válida.** Chart sem a annotation → tratado como "sem compatibilidade declarada" (só janela de suporte derivada; sem coluna "Requires").
 
 ### I.2 Gramática (v1)
 ```

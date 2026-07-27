@@ -113,3 +113,45 @@ whatever
 		}
 	})
 }
+
+func TestAppLabelsFromHeader(t *testing.T) {
+	tests := []struct {
+		name   string
+		header string
+		want   []string
+	}{
+		{
+			name:   "original mapping table (no generated columns)",
+			header: "| Chart Version | Fees Version | UI Version |",
+			want:   []string{"Fees", "UI"},
+		},
+		{
+			name:   "generated header with Released+Support cuts before them",
+			header: "| Chart Version | Fees Version | UI Version | Released | Support | Requires midaz-helm |",
+			want:   []string{"Fees", "UI"},
+		},
+		{
+			name:   "LEGACY generated header with Requer cuts before it (migration)",
+			header: "| Chart Version | Fees Version | UI Version | Released | Support | Requer midaz-helm |",
+			want:   []string{"Fees", "UI"},
+		},
+		{
+			name:   "malformed legacy header without Released/Support still ignores Requer",
+			header: "| Chart Version | Fees Version | Requer midaz-helm |",
+			want:   []string{"Fees"},
+		},
+		{
+			name:   "malformed header without Released/Support still ignores Requires",
+			header: "| Chart Version | Fees Version | Requires midaz-helm |",
+			want:   []string{"Fees"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := appLabelsFromHeader(tt.header)
+			if strings.Join(got, "|") != strings.Join(tt.want, "|") {
+				t.Errorf("got %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

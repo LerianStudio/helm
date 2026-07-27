@@ -20,17 +20,26 @@ func replaceCompatBlock(lines []string, chart string, blockBody []string) ([]str
 	begin, end := beginMarker(chart), endMarker(chart)
 
 	beginIdx, endIdx := -1, -1
+	beginCount, endCount := 0, 0
 	for i, line := range lines {
 		switch strings.TrimSpace(line) {
 		case begin:
 			beginIdx = i
+			beginCount++
 		case end:
 			endIdx = i
+			endCount++
 		}
 	}
 
 	if beginIdx == -1 && endIdx == -1 {
 		return lines, false, nil
+	}
+	// Duplicate markers leave an orphan block on rewrite (last-wins overwrites),
+	// silently corrupting the section. Require exactly one pair; anything else is
+	// malformed and must be surfaced as an error, not papered over.
+	if beginCount > 1 || endCount > 1 {
+		return nil, false, fmt.Errorf("duplicate COMPAT markers for %q (begin=%d end=%d)", chart, beginCount, endCount)
 	}
 	if beginIdx == -1 || endIdx == -1 || endIdx < beginIdx {
 		return nil, false, fmt.Errorf("malformed COMPAT markers for %q (begin=%d end=%d)", chart, beginIdx, endIdx)

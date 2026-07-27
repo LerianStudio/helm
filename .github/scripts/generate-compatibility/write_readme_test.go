@@ -117,20 +117,35 @@ func TestWriteReadme_IrregularLayoutsGolden(t *testing.T) {
 
 // TestWriteReadme_Idempotent proves running twice yields identical bytes.
 func TestWriteReadme_Idempotent(t *testing.T) {
-	in, _ := os.ReadFile(filepath.Join("testdata", "readme_irregular_in.md"))
+	in, err := os.ReadFile(filepath.Join("testdata", "readme_irregular_in.md"))
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
 	root := t.TempDir()
 	readmePath := filepath.Join(root, "README.md")
-	_ = os.WriteFile(readmePath, in, 0o644)
+	if err := os.WriteFile(readmePath, in, 0o644); err != nil {
+		t.Fatalf("seed README: %v", err)
+	}
 	seedValues(t, root, "matcher", "matcher:\n  image:\n    tag: \"1.0.0\"\n")
 
 	doc := CompatDoc{SchemaVersion: 1, Products: map[string]Product{
 		"matcher-helm": {Dir: "matcher", Current: "3.0.0", Cycles: []Cycle{{Cycle: "3.0", Latest: "3.0.0", Supported: true}}},
 	}}
 
-	_ = writeReadme(root, doc, io.Discard)
-	first, _ := os.ReadFile(readmePath)
-	_ = writeReadme(root, doc, io.Discard)
-	second, _ := os.ReadFile(readmePath)
+	if err := writeReadme(root, doc, io.Discard); err != nil {
+		t.Fatalf("writeReadme (first): %v", err)
+	}
+	first, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatalf("read first: %v", err)
+	}
+	if err := writeReadme(root, doc, io.Discard); err != nil {
+		t.Fatalf("writeReadme (second): %v", err)
+	}
+	second, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatalf("read second: %v", err)
+	}
 	if string(first) != string(second) {
 		t.Fatalf("writeReadme not idempotent:\n--first--\n%s\n--second--\n%s", first, second)
 	}

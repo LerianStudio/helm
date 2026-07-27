@@ -44,7 +44,10 @@ jobs:
 
       - name: Check compatibility matrix drift (non-blocking)
         working-directory: .github/scripts
-        run: go run ./generate-compatibility --root ../.. --check || true
+        # Drift is non-blocking by design: --check returns exit 0 on drift (ADR-4),
+        # exit 1/2 only on operational/usage errors (compile, module, FS). No
+        # `|| true` — that would also swallow those real failures.
+        run: go run ./generate-compatibility --root ../.. --check
 
       - name: Determine render scope
         id: render-scope

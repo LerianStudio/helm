@@ -85,4 +85,31 @@ whatever
 			t.Fatal("expected error for END-without-BEGIN")
 		}
 	})
+
+	t.Run("duplicate BEGIN markers => error (malformed)", func(t *testing.T) {
+		doc := lns("<!-- BEGIN COMPAT:x -->\nA\n<!-- END COMPAT:x -->\n<!-- BEGIN COMPAT:x -->\nB\n<!-- END COMPAT:x -->")
+		_, _, err := replaceCompatBlock(doc, "x", []string{"NEW"})
+		if err == nil {
+			t.Fatal("expected error for duplicate COMPAT markers")
+		}
+		if !strings.Contains(err.Error(), "duplicate") {
+			t.Errorf("error should mention 'duplicate', got: %v", err)
+		}
+	})
+
+	t.Run("duplicate END markers => error (malformed)", func(t *testing.T) {
+		doc := lns("<!-- BEGIN COMPAT:x -->\nA\n<!-- END COMPAT:x -->\n<!-- END COMPAT:x -->")
+		_, _, err := replaceCompatBlock(doc, "x", []string{"NEW"})
+		if err == nil {
+			t.Fatal("expected error for duplicate END markers")
+		}
+	})
+
+	t.Run("exactly one pair => ok", func(t *testing.T) {
+		doc := lns("<!-- BEGIN COMPAT:x -->\nOLD\n<!-- END COMPAT:x -->")
+		_, found, err := replaceCompatBlock(doc, "x", []string{"NEW"})
+		if err != nil || !found {
+			t.Fatalf("single pair should be ok, got found=%v err=%v", found, err)
+		}
+	})
 }

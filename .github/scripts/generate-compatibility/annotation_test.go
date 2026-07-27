@@ -43,6 +43,16 @@ testedWith:
 			raw:       "requires:\n  midaz-helm \">=8.4.0\"\n", // missing colon
 			wantError: true,
 		},
+		{
+			name:      "unknown top-level field (typo 'testedWih') => error, not silent",
+			raw:       "testedWih:\n  midaz-helm: \"8.6.0\"\n",
+			wantError: true,
+		},
+		{
+			name:      "unknown top-level field (typo 'require') => error, not silent",
+			raw:       "require:\n  midaz-helm: \">=8.4.0\"\n",
+			wantError: true,
+		},
 	}
 
 	for _, tt := range tests {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -52,6 +53,22 @@ func TestRun_ExitCodes(t *testing.T) {
 		}
 		if _, err := os.Stat(filepath.Join(root, "docs", "compatibility.json")); err != nil {
 			t.Fatalf("expected JSON written: %v", err)
+		}
+	})
+
+	t.Run("unknown --chart => exit 2, nothing written", func(t *testing.T) {
+		root := seedRepo(t)
+		var out, errb bytes.Buffer
+		code := run([]string{"--root", root, "--chart", "does-not-exist-helm", "--output", "docs/compatibility.json"}, &out, &errb)
+		if code != 2 {
+			t.Fatalf("exit = %d, want 2 (usage). stderr=%s", code, errb.String())
+		}
+		if !strings.Contains(errb.String(), "unknown chart") {
+			t.Errorf("stderr should mention unknown chart, got %q", errb.String())
+		}
+		// Neither the JSON nor the README must be written on a usage error.
+		if _, err := os.Stat(filepath.Join(root, "docs", "compatibility.json")); err == nil {
+			t.Error("JSON must NOT be written on unknown --chart")
 		}
 	})
 }

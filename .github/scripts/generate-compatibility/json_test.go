@@ -79,7 +79,10 @@ func TestRenderJSON_OmitsEmptyRequiresTestedWith(t *testing.T) {
 			"matcher-helm": {Dir: "matcher", Current: "3.0.0", Cycles: []Cycle{{Cycle: "3.0", Latest: "3.0.0", Supported: true}}},
 		},
 	}
-	out, _ := renderJSON(doc)
+	out, err := renderJSON(doc)
+	if err != nil {
+		t.Fatalf("renderJSON: %v", err)
+	}
 	s := string(out)
 	if strings.Contains(s, `"requires"`) || strings.Contains(s, `"testedWith"`) {
 		t.Fatalf("empty maps must be omitted (omitempty)\n%s", s)

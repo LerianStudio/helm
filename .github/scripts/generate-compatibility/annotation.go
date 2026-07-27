@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -36,14 +38,21 @@ type CompatAnnotation struct {
 // parseCompatAnnotation is the SECOND step of the two-step unmarshal: the caller
 // has already pulled the annotation string out of Chart.yaml.annotations; here
 // we unmarshal that embedded YAML document. An empty/whitespace-only string
-// means "no annotation declared" and returns (nil, nil). Broken YAML returns an
-// error so the caller can emit a V1 WARN and continue (never aborts).
+// means "no annotation declared" and returns (nil, nil).
+//
+// KnownFields(true) makes unknown/typo top-level keys (e.g. "testedWih",
+// "require") a parse error instead of being silently dropped — otherwise a typo
+// would erase the declaration without warning. The caller surfaces the error as
+// a V1 WARN and continues (never aborts). An empty document yields io.EOF from
+// Decode, which we treat as "nothing declared" (empty ann, no error).
 func parseCompatAnnotation(raw string) (*CompatAnnotation, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, nil
 	}
 	var ann CompatAnnotation
-	if err := yaml.Unmarshal([]byte(raw), &ann); err != nil {
+	dec := yaml.NewDecoder(bytes.NewReader([]byte(raw)))
+	dec.KnownFields(true)
+	if err := dec.Decode(&ann); err != nil && err != io.EOF {
 		return nil, err
 	}
 	return &ann, nil

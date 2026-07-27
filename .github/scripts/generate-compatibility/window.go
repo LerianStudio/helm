@@ -69,14 +69,19 @@ func resolveWindow(chartVersion string, tagVersions []*semver.Version, releaseDa
 	}
 	nKey := minorKey(nVer)
 
-	// Group stable tag versions by minor cycle.
+	// Group stable tag versions by minor cycle. stableCyclesFromTags is the count
+	// of real cycles the published tags contributed, BEFORE forcing N — used to
+	// detect the degraded "only pre-release tags" state below.
 	byMinor := groupByMinor(segregateStable(tagVersions))
+	stableCyclesFromTags := len(byMinor)
 
-	// Force the N cycle to exist, sourced from Chart.yaml (authority). If a tag
-	// for the N cycle also exists, keep the greater of the two as latest.
-	if existing, ok := byMinor[nKey]; !ok || nVer.GreaterThan(existing) {
-		byMinor[nKey] = nVer
-	}
+	// The N cycle is ALWAYS sourced from Chart.yaml (authority): N wins its own
+	// minor slot unconditionally. This is deliberate — if a stray tag with a
+	// patch ABOVE N in the same minor exists (e.g. N=8.6.0 with a tag 8.6.1),
+	// letting that tag occupy the 8.6 slot would then get it dropped by the
+	// "never exceed N" filter below, deleting the N cycle entirely. Overwriting
+	// with nVer keeps the N cycle present and correct (latest = the declared N).
+	byMinor[nKey] = nVer
 
 	// Collect the "latest" version of each minor, drop any cycle above N, then
 	// sort descending by that latest version.
@@ -99,8 +104,15 @@ func resolveWindow(chartVersion string, tagVersions []*semver.Version, releaseDa
 		})
 	}
 
-	if len(tagVersions) == 0 {
-		warnings = append(warnings, Warning{SevInfo, chartVersion, "N", "no published tags; window = only N (Chart.yaml)"})
+	// Degraded window: the tags produced no stable cycle, so the window is only
+	// the forced N. Distinguish "no tags at all" from "only pre-release tags" so
+	// the diagnostic is accurate.
+	if stableCyclesFromTags == 0 {
+		if len(tagVersions) == 0 {
+			warnings = append(warnings, Warning{SevInfo, chartVersion, "N", "no published tags; window = only N (Chart.yaml)"})
+		} else {
+			warnings = append(warnings, Warning{SevInfo, chartVersion, "N", "only pre-release tags; window = only N (Chart.yaml)"})
+		}
 	}
 
 	return cycles, warnings

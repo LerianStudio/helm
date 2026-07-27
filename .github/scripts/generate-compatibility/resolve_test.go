@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
@@ -97,6 +98,35 @@ func TestResolveWindow(t *testing.T) {
 		}
 	})
 
+	t.Run("patch ABOVE N in the same minor must NOT erase the N cycle", func(t *testing.T) {
+		// N=8.6.0 (nKey 8.6). A stray tag 8.6.1 (patch above N, same minor) must
+		// not hijack the 8.6 slot and then get dropped, which would delete the N
+		// cycle entirely. N is authoritative from Chart.yaml: the 8.6 cycle must
+		// exist with latest=8.6.0.
+		cs, _ := resolveWindow("8.6.0", tagVers(t, "8.6.1", "8.6.0", "8.5.0"), nil)
+		var found *Cycle
+		for i := range cs {
+			if cs[i].Cycle == "8.6" {
+				found = &cs[i]
+			}
+		}
+		if found == nil {
+			t.Fatalf("N cycle 8.6 disappeared: %+v", cs)
+		}
+		if found.Latest != "8.6.0" || !found.Supported {
+			t.Fatalf("N cycle wrong (want latest=8.6.0 supported=true): %+v", *found)
+		}
+		if cs[0].Cycle != "8.6" {
+			t.Fatalf("top cycle should be N=8.6, got %q", cs[0].Cycle)
+		}
+		// 8.6.1 must never surface as its own cycle.
+		for _, c := range cs {
+			if c.Latest == "8.6.1" {
+				t.Fatalf("patch above N leaked as latest: %+v", cs)
+			}
+		}
+	})
+
 	t.Run("higher tag than N is dropped (never exceeds N)", func(t *testing.T) {
 		// A tag 8.7.0 exists but Chart.yaml says N=8.6.0: 8.7 must NOT appear.
 		cs, _ := resolveWindow("8.6.0", tagVers(t, "8.7.0", "8.6.0", "8.5.0"), nil)
@@ -147,6 +177,42 @@ func TestResolveWindow(t *testing.T) {
 			if c.Released != want[c.Cycle] {
 				t.Errorf("cycle %s Released = %q, want %q", c.Cycle, c.Released, want[c.Cycle])
 			}
+		}
+	})
+
+	t.Run("only pre-release tags => INFO with pre-release message, window = only N", func(t *testing.T) {
+		// N=2.0.0 but every tag is a pre-release: segregateStable filters them all,
+		// leaving only the forced N cycle. This is the same degraded state as "0
+		// tags" and must emit an INFO — with a message that says pre-release, not
+		// "no published tags".
+		cs, ws := resolveWindow("2.0.0", tagVers(t, "2.0.0-beta.1", "1.0.0-beta.2"), nil)
+		if len(cs) != 1 || cs[0].Cycle != "2.0" || cs[0].Latest != "2.0.0" || !cs[0].Supported {
+			t.Fatalf("expected single N cycle, got %+v", cs)
+		}
+		if !hasINFO(ws) {
+			t.Fatalf("expected INFO for all-pre-release tags, got %+v", ws)
+		}
+		var infoMsg string
+		for _, w := range ws {
+			if w.Severity == SevInfo {
+				infoMsg = w.Detail
+			}
+		}
+		if !strings.Contains(infoMsg, "pre-release") {
+			t.Errorf("INFO message should mention pre-release, got %q", infoMsg)
+		}
+	})
+
+	t.Run("0 tags keeps the 'no published tags' message", func(t *testing.T) {
+		_, ws := resolveWindow("1.0.0", tagVers(t), nil)
+		var infoMsg string
+		for _, w := range ws {
+			if w.Severity == SevInfo {
+				infoMsg = w.Detail
+			}
+		}
+		if !strings.Contains(infoMsg, "no published tags") {
+			t.Errorf("expected 'no published tags' message, got %q", infoMsg)
 		}
 	})
 

@@ -58,6 +58,15 @@ func run(args []string, stdout, stderr io.Writer) int {
 // runWrite writes the JSON and README (chart filter applies to README only; the
 // JSON is always regenerated in full for determinism — api-design §II.1).
 func runWrite(root, output, chart string, doc CompatDoc, stdout, stderr io.Writer) int {
+	// Validate --chart BEFORE writing anything: an unknown chart is a usage error
+	// (exit 2), and must not leave a JSON written with no README touched.
+	if chart != "" {
+		if _, ok := doc.Products[chart]; !ok {
+			fmt.Fprintf(stderr, "ERROR unknown chart %q\n", chart)
+			return 2
+		}
+	}
+
 	data, err := renderJSON(doc)
 	if err != nil {
 		fmt.Fprintf(stderr, "ERROR marshal compatibility.json: %v\n", err)

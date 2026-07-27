@@ -7,22 +7,22 @@ Criar `writeReadme(root string, doc CompatDoc) error` que lê `<root>/README.md`
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run 'TestEnsureCompatBlock|TestRenderCompatTable' 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run 'TestEnsureCompatBlock|TestRenderCompatTable' 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete ST-5-1..ST-5-4.)
 
 ## Files
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/write_readme.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/write_readme_test.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/testdata/readme_irregular_in.md`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/testdata/readme_irregular_golden.md`
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go` (chamar `writeReadme`)
+- create: `./.github/scripts/generate-compatibility/write_readme.go`
+- create: `./.github/scripts/generate-compatibility/write_readme_test.go`
+- create: `./.github/scripts/generate-compatibility/testdata/readme_irregular_in.md`
+- create: `./.github/scripts/generate-compatibility/testdata/readme_irregular_golden.md`
+- modify: `./.github/scripts/generate-compatibility/main.go` (chamar `writeReadme`)
 
 ## Steps
 
 ### Passo 1 — Criar a fixture de entrada com layouts irregulares
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/testdata/readme_irregular_in.md` com este conteúdo EXATO:
+Crie `./.github/scripts/generate-compatibility/testdata/readme_irregular_in.md` com este conteúdo EXATO:
 ```markdown
 # Charts
 
@@ -55,7 +55,7 @@ Flowker prose.
 (Note: Matcher NÃO tem `-----------------` após sua tabela — vai direto para `### Flowker`. Plugin Fees tem linha em branco antes do separador. Estes são os boundaries irregulares reais do README.)
 
 ### Passo 2 (RED) — Golden test
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/write_readme_test.go`:
+Crie `./.github/scripts/generate-compatibility/write_readme_test.go`:
 ```go
 package main
 
@@ -150,12 +150,12 @@ func TestWriteReadme_Idempotent(t *testing.T) {
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestWriteReadme 2>&1 | head -8
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestWriteReadme 2>&1 | head -8
 ```
 Saída esperada: `undefined: writeReadme` e `[build failed]`.
 
 ### Passo 3 (GREEN) — Implementar write_readme.go
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/write_readme.go`:
+Crie `./.github/scripts/generate-compatibility/write_readme.go`:
 ```go
 package main
 
@@ -198,7 +198,7 @@ func writeReadme(root string, doc CompatDoc) error {
 ```
 
 ### Passo 4 (GREEN) — Chamar writeReadme em main()
-Em `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go`, após escrever o JSON (`os.WriteFile(outPath, ...)`) e antes do `fmt.Printf` final, adicione:
+Em `./.github/scripts/generate-compatibility/main.go`, após escrever o JSON (`os.WriteFile(outPath, ...)`) e antes do `fmt.Printf` final, adicione:
 ```go
 	if err := writeReadme(*root, doc); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR write README.md: %v\n", err)
@@ -208,27 +208,27 @@ Em `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go`, 
 
 ### Passo 5 (GREEN) — Gerar o golden e revisar
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && UPDATE_GOLDEN=1 go test ./generate-compatibility/ -run TestWriteReadme_IrregularLayoutsGolden 2>&1 | tail -3 && echo "--- GOLDEN ---" && cat generate-compatibility/testdata/readme_irregular_golden.md
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && UPDATE_GOLDEN=1 go test ./generate-compatibility/ -run TestWriteReadme_IrregularLayoutsGolden 2>&1 | tail -3 && echo "--- GOLDEN ---" && cat generate-compatibility/testdata/readme_irregular_golden.md
 ```
 Saída esperada: `ok ...` e o golden impresso. REVISE À MÃO: o `-----------------` do Plugin Fees deve continuar presente; a tabela `| Chart Version | Matcher Version |` intacta; blocos COMPAT injetados logo após cada `### <header>`; `### Flowker` intacto.
 
 ### Passo 6 — Rodar o golden SEM update + idempotência
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestWriteReadme 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestWriteReadme 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...` (golden bate do disco; idempotência verde).
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-5-5_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-5-5_OK"
 ```
 Saída esperada: termina com `ST-5-5_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/write_readme.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/write_readme_test.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/testdata/readme_irregular_in.md \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/testdata/readme_irregular_golden.md
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/main.go 2>/dev/null || true
+rm -f ./.github/scripts/generate-compatibility/write_readme.go \
+      ./.github/scripts/generate-compatibility/write_readme_test.go \
+      ./.github/scripts/generate-compatibility/testdata/readme_irregular_in.md \
+      ./.github/scripts/generate-compatibility/testdata/readme_irregular_golden.md
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/main.go 2>/dev/null || true
 ```

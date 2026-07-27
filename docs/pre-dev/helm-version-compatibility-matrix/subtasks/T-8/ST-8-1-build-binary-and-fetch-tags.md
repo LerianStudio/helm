@@ -7,13 +7,13 @@ Preparar o terreno no `release.yml`: (1) compilar o binário `generate-compatibi
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go build -o /tmp/gc-bin ./generate-compatibility && echo "BUILD_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go build -o /tmp/gc-bin ./generate-compatibility && echo "BUILD_OK"
 ```
 Saída esperada: `BUILD_OK` (a ferramenta compila; complete T-1..T-6 se falhar).
 
 Confirme o step "Build scripts" atual:
 ```bash
-cd /home/gauchito/lerian/helm && sed -n '136,140p' .github/workflows/release.yml
+cd "$(git rev-parse --show-toplevel)" && sed -n '136,140p' .github/workflows/release.yml
 ```
 Saída esperada:
 ```
@@ -24,7 +24,7 @@ Saída esperada:
 ```
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/workflows/release.yml` (step "Build scripts" + novo fetch de tags)
+- modify: `./.github/workflows/release.yml` (step "Build scripts" + novo fetch de tags)
 
 ## Steps
 
@@ -48,17 +48,17 @@ Justificativa: N vem do Chart.yaml (ADR-3), mas N-1..N-3 vêm das tags `<dir>-v*
 
 ### Passo 3 — Validar sintaxe do YAML do workflow
 ```bash
-cd /home/gauchito/lerian/helm && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release.yml')); print('YAML_OK')"
+cd "$(git rev-parse --show-toplevel)" && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release.yml')); print('YAML_OK')"
 ```
 Saída esperada: `YAML_OK`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm && grep -q 'go build -o generate-compatibility-bin ./generate-compatibility' .github/workflows/release.yml && grep -q 'Fetch tags for compatibility window' .github/workflows/release.yml && echo "ST-8-1_OK"
+cd "$(git rev-parse --show-toplevel)" && grep -q 'go build -o generate-compatibility-bin ./generate-compatibility' .github/workflows/release.yml && grep -q 'Fetch tags for compatibility window' .github/workflows/release.yml && echo "ST-8-1_OK"
 ```
 Saída esperada: `ST-8-1_OK`.
 
 ## Rollback
 ```bash
-cd /home/gauchito/lerian/helm && git checkout .github/workflows/release.yml
+cd "$(git rev-parse --show-toplevel)" && git checkout .github/workflows/release.yml
 ```

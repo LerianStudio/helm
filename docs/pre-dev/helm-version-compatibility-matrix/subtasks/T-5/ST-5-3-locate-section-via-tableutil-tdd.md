@@ -7,18 +7,18 @@ Função `sectionHeaderIndex(lines []string, chart string) int` que reusa a lóg
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go doc ./tableutil ParseTableForChart 2>&1 | head -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go doc ./tableutil ParseTableForChart 2>&1 | head -3
 ```
 Saída esperada: assinatura `func ParseTableForChart(lines []string, chartName string) (int, int, []string, []map[string]string)`.
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/markers.go` (add `sectionHeaderIndex` + import tableutil)
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/section_test.go`
+- modify: `./.github/scripts/generate-compatibility/markers.go` (add `sectionHeaderIndex` + import tableutil)
+- create: `./.github/scripts/generate-compatibility/section_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Testes de localização de seção
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/section_test.go`:
+Crie `./.github/scripts/generate-compatibility/section_test.go`:
 ```go
 package main
 
@@ -64,12 +64,12 @@ prose`, "\n")
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestSectionHeaderIndex 2>&1 | head -8
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestSectionHeaderIndex 2>&1 | head -8
 ```
 Saída esperada: `undefined: sectionHeaderIndex` e `[build failed]`.
 
 ### Passo 2 (GREEN) — Implementar reusando a normalização do tableutil
-Adicione ao bloco de imports de `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/markers.go`:
+Adicione ao bloco de imports de `./.github/scripts/generate-compatibility/markers.go`:
 ```go
 import (
 	"fmt"
@@ -114,23 +114,23 @@ var _ = tableutil.ParseTableForChart
 
 ### Passo 3 — Rodar os testes
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestSectionHeaderIndex 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestSectionHeaderIndex 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...`.
 
 ## Verification (copiável) — bate com o README real
 ```bash
-cd /home/gauchito/lerian/helm && grep -n '^### Matcher' README.md | head -1
+cd "$(git rev-parse --show-toplevel)" && grep -n '^### Matcher' README.md | head -1
 ```
 Saída esperada: uma linha `160:### Matcher` (ou similar) — confirma que a seção existe e o matcher normalizado `matcher` casa.
 
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-5-3_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-5-3_OK"
 ```
 Saída esperada: termina com `ST-5-3_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/section_test.go
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/markers.go 2>/dev/null || true
+rm -f ./.github/scripts/generate-compatibility/section_test.go
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/markers.go 2>/dev/null || true
 ```

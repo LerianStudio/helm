@@ -7,12 +7,12 @@ Prova executiva do step 2B ANTES de qualquer push real (DoD obrigatório do TRD 
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go build -o /tmp/gc-bin ./generate-compatibility && echo "BUILD_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go build -o /tmp/gc-bin ./generate-compatibility && echo "BUILD_OK"
 ```
 Saída esperada: `BUILD_OK`.
 
 ```bash
-cd /home/gauchito/lerian/helm && grep -q 'Write-back compatibility matrix' .github/workflows/release.yml && echo "STEP_EXISTS"
+cd "$(git rev-parse --show-toplevel)" && grep -q 'Write-back compatibility matrix' .github/workflows/release.yml && echo "STEP_EXISTS"
 ```
 Saída esperada: `STEP_EXISTS` (ST-8-2 concluído).
 
@@ -24,7 +24,7 @@ Saída esperada: `STEP_EXISTS` (ST-8-2 concluído).
 ### Passo 1 — Montar remote bare local + clone de trabalho
 ```bash
 rm -rf /tmp/helm-bare.git /tmp/helm-wb && \
-git clone --bare /home/gauchito/lerian/helm /tmp/helm-bare.git && \
+git clone --bare . /tmp/helm-bare.git && \
 git clone /tmp/helm-bare.git /tmp/helm-wb && \
 cd /tmp/helm-wb && git fetch --tags --force 2>/dev/null; echo "setup=$?"
 ```
@@ -81,7 +81,7 @@ Saída esperada: `dry_run_exit=0` e o git lista o range de commits que SERIA emp
 
 ### Passo 7 — Confirmar que o repo REAL não foi tocado
 ```bash
-cd /home/gauchito/lerian/helm && git status --porcelain | head; echo "real_repo_clean_check_done"
+cd "$(git rev-parse --show-toplevel)" && git status --porcelain | head; echo "real_repo_clean_check_done"
 ```
 Saída esperada: nenhuma linha referente a esta simulação (o trabalho todo foi em /tmp).
 

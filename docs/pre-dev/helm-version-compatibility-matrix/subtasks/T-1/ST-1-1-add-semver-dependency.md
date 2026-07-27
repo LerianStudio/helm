@@ -8,7 +8,7 @@ Adicionar a dependência semver ao módulo Go em `.github/scripts` na versão EX
 ## Prerequisites
 Rode e confirme a saída:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && head -3 go.mod
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && head -3 go.mod
 ```
 Saída esperada (exata):
 ```
@@ -23,14 +23,14 @@ go version
 Saída esperada: uma linha começando com `go version go1.` e minor `>= 21` (ex.: `go version go1.24.x linux/amd64`).
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/scripts/go.mod` (bloco `require`)
-- modify: `/home/gauchito/lerian/helm/.github/scripts/go.sum` (gerado por `go mod tidy` — não editar à mão)
+- modify: `./.github/scripts/go.mod` (bloco `require`)
+- modify: `./.github/scripts/go.sum` (gerado por `go mod tidy` — não editar à mão)
 
 ## Steps
 
 ### Passo 1 — Adicionar a dependência na versão exata
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go get github.com/Masterminds/semver/v3@v3.2.1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go get github.com/Masterminds/semver/v3@v3.2.1
 ```
 Saída esperada (contém a linha):
 ```
@@ -39,7 +39,7 @@ go: added github.com/Masterminds/semver/v3 v3.2.1
 
 ### Passo 2 — Confirmar a versão pinada no go.mod
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && grep 'Masterminds/semver' go.mod
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && grep 'Masterminds/semver' go.mod
 ```
 Saída esperada (EXATA, versão v3.2.1, não v3.4+):
 ```
@@ -49,7 +49,7 @@ Se aparecer qualquer versão diferente de `v3.2.1`, PARE e refaça o Passo 1 com
 
 ### Passo 3 — Confirmar que o piso Go NÃO subiu
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && grep -E '^go |^toolchain ' go.mod
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && grep -E '^go |^toolchain ' go.mod
 ```
 Saída esperada (EXATA — só a diretiva `go 1.21`, SEM linha `toolchain`):
 ```
@@ -59,18 +59,18 @@ Se aparecer uma linha `toolchain goX.Y.Z` ou `go` diferente de `1.21`, PARE: a v
 
 ### Passo 4 — Confirmar que o go.sum foi atualizado
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && grep -c 'Masterminds/semver/v3 v3.2.1' go.sum
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && grep -c 'Masterminds/semver/v3 v3.2.1' go.sum
 ```
 Saída esperada: um número `>= 1` (tipicamente `2` — a linha do módulo e a do `/go.mod`).
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go build ./... && echo "BUILD_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go build ./... && echo "BUILD_OK"
 ```
 Saída esperada: `BUILD_OK` (o módulo ainda compila com a nova dep; nenhum código a usa ainda).
 
 ## Rollback
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout go.mod go.sum
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout go.mod go.sum
 ```
 Isso remove a dependência recém-adicionada, restaurando o estado anterior do manifest e do lock.

@@ -10,7 +10,7 @@
 | deployment.model | CI/CD tooling (build-time; **não** é runtime/serviço) |
 | tech_stack.primary | Go (CLI/ferramental) |
 | tech_stack.standards_loaded | golang.md, devops.md |
-| project_rules | Ausente (`docs/PROJECT_RULES.md` não existe — repo de charts, não serviço). Gate 6 pode criar um mínimo se necessário. |
+| project_rules | `docs/PROJECT_RULES.md` (criado no Gate 6 — mínimo, escopado ao ferramental; repo de charts, não serviço). |
 | confidence | 86 / 100 (padrão existente no repo; complexidade moderada; risco baixo e mitigado) |
 
 > **Nota sobre abstração de tecnologia:** o gate TRD normalmente exige abstrair nomes de produto. Aqui a feature **é ferramental de build de um repositório concreto** — o "produto" é o próprio repo `LerianStudio/helm`, e o stack (Go, a lib `tableutil`, os workflows, a lib semver) já foi decidido com o usuário e ancorado no `research.md`. Abstrair "Go" para "linguagem compilada" seria teatro e prejudicaria a execução. Portanto este TRD **nomeia** as ferramentas do repo, mas mantém a disciplina do gate onde ela agrega: fronteiras de componente, contratos, ADRs, quality attributes e riscos. As **versões exatas** de dependências novas são formalizadas no Gate 6 (Dependency Map).
@@ -101,19 +101,17 @@ annotations:
 
 ## 5. Write-back & Loop Prevention (integração CI)
 
-**Decisão do usuário: Opção 2B — step dedicado** (não pegar carona nos `assets` do semantic-release). Racional: separar responsabilidades, geração com vida própria (permite gatilhos futuros fora do release), mesmo custando mais YAML. A infra de GPG/token da pipe **é reutilizada**, não recriada.
+**DECISÃO FINAL: Opção 2A — commit único via `@semantic-release/git`** (revisão posterior à 2B; ver ADR-1b atualizado). Motivo da mudança: a 2B geraria **dois commits** no mesmo release (o do semantic-release + o do step dedicado), com risco real de colisão no push. A 2A elimina isso — a geração pega carona no commit que o release **já faz**.
 
-Step novo em `release.yml`, **após** o Semantic Release, que gera e commita a matriz por conta própria:
-- **Reusa** o App-token (`steps.app-token.outputs.token`) e a identidade/chave GPG CI já importadas no job (`crazy-max/ghaction-import-gpg`) — não reimportar.
-- Commit GPG-assinado (mantém commits *verified* — regra de git identity do usuário).
-- Bot: `lerian-studio-midaz-push-bot[bot]`.
+Como foi implementado em `release.yml`:
+- No `prepareCmd` do semantic-release, `generate-compatibility --root . --chart $COMPAT_CHART --write` **substitui** a antiga `update-chart-version-readme` (que fazia um subconjunto — só a versão atual). Nossa ferramenta faz tudo que ela fazia + a matriz.
+- `docs/compatibility.json` é adicionado aos `assets` do `@semantic-release/git`, junto de `Chart.yaml` e `README.md` → **um único commit** de release carrega os três.
+- Step `git fetch --tags --force` antes, para o histórico N-1..N-3 e as datas Released.
+- Commit é o do semantic-release: já **GPG-assinado** (verified) e com `[skip ci]`.
 
-App-token **dispara CI** → **3 camadas anti-loop obrigatórias** no step:
-1. **`paths-ignore`** — `README.md` e `**/docs/**` já ignorados no trigger do release (`:8-14`) → escrever a matriz **não re-dispara**.
-2. **`[skip ci]`** na mensagem do commit gerado.
-3. **Guard de actor** — `if: github.actor != 'lerian-studio-midaz-push-bot[bot]'`.
+Anti-loop (mantido, agora herdado do mecanismo existente): `paths-ignore` (`README.md`, `**/docs/**`), `[skip ci]` no commit do release, e o guard de actor `github.actor != 'lerian-studio-midaz-push-bot[bot]'`. **Sem segundo commit → sem risco de colisão.**
 
-**Cuidado técnico (2B):** dois commits no mesmo release (o do semantic-release + este) → o step deve rodar `git pull --rebase` (ou commitar só se houver diff) antes do push pra evitar colisão. Testar esse encadeamento (ver §10).
+O `--check` (drift) roda no PR via `helm-chart-standard.yml`, não-bloqueante.
 
 ---
 
@@ -140,11 +138,12 @@ App-token **dispara CI** → **3 camadas anti-loop obrigatórias** no step:
 - Rationale: a saída depende de `version`/tags que só existem no momento do release; exigir regeneração manual local reintroduz o drift que a feature elimina. O repo já resolveu loop-prevention para esse padrão (3 camadas).
 - Consequência: divergência consciente do standard, documentada. O modo `--check` (drift warning no PR) preserva o espírito Ring de "CI detecta desatualização" sem bloquear.
 
-**ADR-1b: Write-back via step dedicado (2B), não via assets do semantic-release (2A).**
+**ADR-1b: Write-back via commit único do semantic-release (2A) — REVISADO de 2B para 2A.**
 - Contexto: duas formas de commitar as saídas — somar aos `assets` do semantic-release (2A, ~4 linhas) ou um step próprio pós-release (2B, ~15 linhas).
-- Decisão: **2B — step dedicado** (confirmada pelo usuário), reusando token+GPG já existentes no job.
-- Rationale: separação de responsabilidades e geração com vida própria (habilita gatilhos futuros, ex. cron, fora do release), ao custo de mais YAML. GPG/token não são recriados, são reutilizados.
-- Consequência: precisa tratar 2 commits no mesmo release (rebase/commit-only-if-diff antes do push). Coberto por teste (§10).
+- Decisão inicial (2B) foi **revertida**: ao implementar, ficou claro que 2B gera **dois commits** no mesmo release (semantic-release + step dedicado) com risco real de colisão no push. Isso pesou mais que o ganho de "separação de responsabilidades".
+- **Decisão final: 2A** — `generate-compatibility` roda no `prepareCmd` (substituindo `update-chart-version-readme`) e `docs/compatibility.json` entra nos `assets`. **Um commit só**, o que o release já fazia.
+- Rationale: elimina a colisão de dois commits; menos YAML; herda GPG + `[skip ci]` + anti-loop já existentes. A flexibilidade da 2B (gatilhos fora do release) era teórica e sem uso no v1 — reintroduzível depois se necessário.
+- Consequência: a geração fica acoplada ao ciclo do semantic-release (aceitável). A ferramenta-irmã `update-chart-version-readme` deixa de ser chamada no release (nossa faz superconjunto).
 
 **ADR-2: Ferramenta irmã, não flag do validador.**
 - Contexto: validador ≠ gerador de README (Surpresa 1 do research).

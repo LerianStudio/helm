@@ -11,19 +11,19 @@ Este passo NÃO preenche `requires`/`testedWith` (isso é T-4/ST-3-4 wiring). Fo
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run 'TestSegregateStable|TestGroupByMinor' 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run 'TestSegregateStable|TestGroupByMinor' 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete ST-3-2.)
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/window.go` (add `resolveWindow`)
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/resolve_test.go`
+- modify: `./.github/scripts/generate-compatibility/window.go` (add `resolveWindow`)
+- create: `./.github/scripts/generate-compatibility/resolve_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Testes exaustivos (0/1/2/3/4+ minors, N ausente das tags, pre-release)
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/resolve_test.go`:
+Crie `./.github/scripts/generate-compatibility/resolve_test.go`:
 ```go
 package main
 
@@ -193,12 +193,12 @@ func assertNoINFO(t *testing.T, ws []Warning) {
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestResolveWindow 2>&1 | head -8
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestResolveWindow 2>&1 | head -8
 ```
 Saída esperada: `undefined: resolveWindow` e `[build failed]`.
 
 ### Passo 2 (GREEN) — Implementar resolveWindow em window.go
-Adicione ao final de `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/window.go`:
+Adicione ao final de `./.github/scripts/generate-compatibility/window.go`:
 ```go
 // supportedWindowSize is the number of most-recent minor cycles that are marked
 // supported (N..N-3). Cycles below that are supported=false.
@@ -228,11 +228,11 @@ func resolveWindow(chartVersion string, tagVersions []*semver.Version) ([]Cycle,
 	// Group stable tag versions by minor cycle.
 	byMinor := groupByMinor(segregateStable(tagVersions))
 
-	// Force the N cycle to exist, sourced from Chart.yaml (authority). If a tag
-	// for the N cycle also exists, keep the greater of the two as latest.
-	if existing, ok := byMinor[nKey]; !ok || nVer.GreaterThan(existing) {
-		byMinor[nKey] = nVer
-	}
+	// Force the N cycle to exist, sourced from Chart.yaml (authority), UNCONDITIONALLY.
+	// N always wins for its own minor cycle — even if a higher patch tag exists
+	// (e.g. tag 8.6.1 while Chart.yaml N=8.6.0), so the N cycle is never sequestered
+	// by a > N patch and then dropped by the "never exceed N" filter below.
+	byMinor[nKey] = nVer
 
 	// Collect the "latest" version of each minor, drop any cycle above N, then
 	// sort descending by that latest version.
@@ -292,18 +292,18 @@ Substitua, em `resolveWindow`, a chamada `sortVersionsDesc(latests)` por `sortSe
 
 ### Passo 4 — Rodar os testes
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestResolveWindow 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestResolveWindow 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-3-3_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-3-3_OK"
 ```
 Saída esperada: termina com `ST-3-3_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/resolve_test.go
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/window.go 2>/dev/null || true
+rm -f ./.github/scripts/generate-compatibility/resolve_test.go
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/window.go 2>/dev/null || true
 ```

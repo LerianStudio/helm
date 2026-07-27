@@ -7,18 +7,18 @@ Adicionar ao `helm-chart-standard.yml` um step que roda `generate-compatibility 
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm && test -f .github/workflows/helm-chart-standard.yml && echo "WF_EXISTS"
+cd "$(git rev-parse --show-toplevel)" && test -f .github/workflows/helm-chart-standard.yml && echo "WF_EXISTS"
 ```
 Saída esperada: `WF_EXISTS`. Se não existir, PARE e reporte (nome do workflow pode diferir; procure com `ls .github/workflows/ | grep -i standard`).
 
 Inspecione o trigger `paths` atual:
 ```bash
-cd /home/gauchito/lerian/helm && sed -n '1,40p' .github/workflows/helm-chart-standard.yml
+cd "$(git rev-parse --show-toplevel)" && sed -n '1,40p' .github/workflows/helm-chart-standard.yml
 ```
 Anote a estrutura de `on:`/`paths:` e onde ficam os steps do job de validação.
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/workflows/helm-chart-standard.yml` (trigger `paths` + novo step de check)
+- modify: `./.github/workflows/helm-chart-standard.yml` (trigger `paths` + novo step de check)
 
 ## Steps
 
@@ -44,17 +44,17 @@ Justificativa: `--check` já retorna exit 0 no v1 mesmo com drift; `continue-on-
 
 ### Passo 3 — Validar sintaxe
 ```bash
-cd /home/gauchito/lerian/helm && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/helm-chart-standard.yml')); print('YAML_OK')"
+cd "$(git rev-parse --show-toplevel)" && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/helm-chart-standard.yml')); print('YAML_OK')"
 ```
 Saída esperada: `YAML_OK`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm && grep -q 'generate-compatibility --check' .github/workflows/helm-chart-standard.yml && grep -q 'generate-compatibility' .github/workflows/helm-chart-standard.yml && echo "ST-8-3_OK"
+cd "$(git rev-parse --show-toplevel)" && grep -q 'generate-compatibility --check' .github/workflows/helm-chart-standard.yml && grep -q 'generate-compatibility' .github/workflows/helm-chart-standard.yml && echo "ST-8-3_OK"
 ```
 Saída esperada: `ST-8-3_OK`.
 
 ## Rollback
 ```bash
-cd /home/gauchito/lerian/helm && git checkout .github/workflows/helm-chart-standard.yml
+cd "$(git rev-parse --show-toplevel)" && git checkout .github/workflows/helm-chart-standard.yml
 ```

@@ -7,20 +7,20 @@ Injetar um `tagLister` no `buildDoc`, resolver a janela por produto e preencher 
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestResolveWindow 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestResolveWindow 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete ST-3-3.)
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go` (`buildDoc` recebe `tagLister`)
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/builddoc_test.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/testdata/golden_two_products.json`
+- modify: `./.github/scripts/generate-compatibility/main.go` (`buildDoc` recebe `tagLister`)
+- create: `./.github/scripts/generate-compatibility/builddoc_test.go`
+- create: `./.github/scripts/generate-compatibility/testdata/golden_two_products.json`
 
 ## Steps
 
 ### Passo 1 (RED) — Golden test com fixture lister
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/builddoc_test.go`:
+Crie `./.github/scripts/generate-compatibility/builddoc_test.go`:
 ```go
 package main
 
@@ -100,12 +100,12 @@ annotations:
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestBuildDoc_Golden 2>&1 | head -8
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestBuildDoc_Golden 2>&1 | head -8
 ```
 Saída esperada: `too many arguments in call to buildDoc` (a assinatura ainda é `buildDoc(root)`), `[build failed]`.
 
 ### Passo 2 (GREEN) — `buildDoc` recebe `tagLister` e preenche cycles
-Em `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go`:
+Em `./.github/scripts/generate-compatibility/main.go`:
 
 Atualize a chamada em `main()` para construir o lister real e passá-lo:
 ```go
@@ -174,31 +174,31 @@ func tagChart(name string, ws []Warning) []Warning {
 
 ### Passo 3 (GREEN) — Gerar o golden
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && mkdir -p generate-compatibility/testdata && UPDATE_GOLDEN=1 go test ./generate-compatibility/ -run TestBuildDoc_Golden 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && mkdir -p generate-compatibility/testdata && UPDATE_GOLDEN=1 go test ./generate-compatibility/ -run TestBuildDoc_Golden 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...` (o golden foi escrito).
 
 ### Passo 4 — Inspecionar e sanity-check do golden
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && cat generate-compatibility/testdata/golden_two_products.json
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && cat generate-compatibility/testdata/golden_two_products.json
 ```
 Saída esperada (verifique os pontos-chave): `midaz-helm` com 5 cycles (8.6..8.2, sendo 8.2 `"supported": false`, sem `8.6.0-beta.11` como ciclo); `plugin-fees-helm` com 1 cycle `7.2` carregando `requires` e `testedWith`. Confira que `midaz-helm` aparece ANTES de `plugin-fees-helm` (ordenação de chaves).
 
 ### Passo 5 — Rodar o golden test SEM UPDATE (deve passar do disco)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestBuildDoc_Golden 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestBuildDoc_Golden 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-3-4_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-3-4_OK"
 ```
 Saída esperada: termina com `ST-3-4_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/builddoc_test.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/testdata/golden_two_products.json
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/main.go 2>/dev/null || true
+rm -f ./.github/scripts/generate-compatibility/builddoc_test.go \
+      ./.github/scripts/generate-compatibility/testdata/golden_two_products.json
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/main.go 2>/dev/null || true
 ```

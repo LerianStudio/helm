@@ -7,7 +7,7 @@ Criar a struct `ChartState` (data-model §A.2, campos deste passo apenas) e a fu
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -1
 ```
 Saída esperada (contém `ok`):
 ```
@@ -16,13 +16,13 @@ ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility	0.0...s
 (Se falhar, execute ST-1-2 primeiro.)
 
 ## Files
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state_test.go`
+- create: `./.github/scripts/generate-compatibility/state.go`
+- create: `./.github/scripts/generate-compatibility/state_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Teste que FALHA
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state_test.go`:
+Crie `./.github/scripts/generate-compatibility/state_test.go`:
 ```go
 package main
 
@@ -84,12 +84,12 @@ func TestReadChartState_MissingFile(t *testing.T) {
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestReadChartState 2>&1 | head -10
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestReadChartState 2>&1 | head -10
 ```
 Saída esperada: `undefined: readChartState` e `FAIL ... [build failed]`.
 
 ### Passo 2 (GREEN) — Implementar
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state.go`:
+Crie `./.github/scripts/generate-compatibility/state.go`:
 ```go
 package main
 
@@ -143,18 +143,18 @@ func readChartState(root, dir string) (ChartState, error) {
 
 ### Passo 3 — Rodar o teste
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestReadChartState 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestReadChartState 2>&1 | tail -3
 ```
 Saída esperada: `ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility ...`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ && echo "ST-1-3_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ && echo "ST-1-3_OK"
 ```
 Saída esperada: termina com `ST-1-3_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state_test.go
+rm -f ./.github/scripts/generate-compatibility/state.go \
+      ./.github/scripts/generate-compatibility/state_test.go
 ```

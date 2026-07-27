@@ -7,19 +7,19 @@ Isolar o acesso ao git atrás de uma interface testável. Criar `tagLister` (int
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete T-2.)
 
 ## Files
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/tags.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/tags_test.go`
+- create: `./.github/scripts/generate-compatibility/tags.go`
+- create: `./.github/scripts/generate-compatibility/tags_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Teste table-driven de parseTags
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/tags_test.go`:
+Crie `./.github/scripts/generate-compatibility/tags_test.go`:
 ```go
 package main
 
@@ -100,12 +100,12 @@ func TestParseTags(t *testing.T) {
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestParseTags 2>&1 | head -8
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestParseTags 2>&1 | head -8
 ```
 Saída esperada: `undefined: parseTags` e `[build failed]`.
 
 ### Passo 2 (GREEN) — Implementar tags.go
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/tags.go`:
+Crie `./.github/scripts/generate-compatibility/tags.go`:
 ```go
 package main
 
@@ -171,23 +171,23 @@ Remova o helper não usado `versionStrings` do teste se `go vet` reclamar — n�
 
 ### Passo 3 — Rodar o teste
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestParseTags 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestParseTags 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...`.
 
 ## Verification (copiável) — impl real contra o repo
 ```bash
-cd /home/gauchito/lerian/helm && git tag --list 'midaz-v*' | head -3
+cd "$(git rev-parse --show-toplevel)" && git tag --list 'midaz-v*' | head -3
 ```
 Saída esperada: tags reais como `midaz-v1.0.0`, `midaz-v1.0.0-HELM-94.1`, etc. (confirma que o glob `<dir>-v*` funciona no repo).
 
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-3-1_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-3-1_OK"
 ```
 Saída esperada: termina com `ST-3-1_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/tags.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/tags_test.go
+rm -f ./.github/scripts/generate-compatibility/tags.go \
+      ./.github/scripts/generate-compatibility/tags_test.go
 ```

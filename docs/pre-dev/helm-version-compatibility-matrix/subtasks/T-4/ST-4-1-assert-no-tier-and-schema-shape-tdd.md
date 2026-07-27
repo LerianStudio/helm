@@ -7,18 +7,18 @@ Travar o contrato do `compatibility.json` com um teste: `schemaVersion:1`, `prod
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestBuildDoc_Golden 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestBuildDoc_Golden 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete T-3.)
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/json_test.go` (novos casos)
+- modify: `./.github/scripts/generate-compatibility/json_test.go` (novos casos)
 
 ## Steps
 
 ### Passo 1 (RED) — Teste de contrato (no-tier + campos obrigatórios)
-Adicione ao final de `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/json_test.go`:
+Adicione ao final de `./.github/scripts/generate-compatibility/json_test.go`:
 ```go
 func TestRenderJSON_NoTierField(t *testing.T) {
 	doc := CompatDoc{
@@ -67,7 +67,7 @@ func TestRenderJSON_OmitsEmptyRequiresTestedWith(t *testing.T) {
 
 Rode:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run 'TestRenderJSON_NoTierField|TestRenderJSON_OmitsEmpty' 2>&1 | tail -6
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run 'TestRenderJSON_NoTierField|TestRenderJSON_OmitsEmpty' 2>&1 | tail -6
 ```
 Se PASSAR de primeira: o contrato já está correto (structs de T-1 não têm `tier` e usam `omitempty`). Registre o pass como confirmação. Se FALHAR: siga o Passo 2.
 
@@ -76,17 +76,17 @@ Se o teste falhou por conter `tier`, remova qualquer campo `Tier` das structs `C
 
 ### Passo 3 — Rodar os testes
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...`.
 
 ## Verification (copiável) — grep no JSON real por `tier`
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go run ./generate-compatibility --root ../.. --output /tmp/compat-t4.json 2>/dev/null && ! grep -q '"tier"' /tmp/compat-t4.json && echo "NO_TIER_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go run ./generate-compatibility --root ../.. --output /tmp/compat-t4.json 2>/dev/null && ! grep -q '"tier"' /tmp/compat-t4.json && echo "NO_TIER_OK"
 ```
 Saída esperada: `NO_TIER_OK` (o grep NÃO encontra `tier`).
 
 ## Rollback
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/json_test.go 2>/dev/null || true
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/json_test.go 2>/dev/null || true
 ```

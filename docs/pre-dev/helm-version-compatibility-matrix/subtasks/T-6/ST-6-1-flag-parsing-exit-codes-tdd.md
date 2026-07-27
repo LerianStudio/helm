@@ -7,19 +7,19 @@ Refatorar o `main` para uma função testável `run(args []string, stdout, stder
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete T-5.)
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/run_test.go`
+- modify: `./.github/scripts/generate-compatibility/main.go`
+- create: `./.github/scripts/generate-compatibility/run_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Testes de exit code
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/run_test.go`:
+Crie `./.github/scripts/generate-compatibility/run_test.go`:
 ```go
 package main
 
@@ -82,12 +82,12 @@ func TestRun_ExitCodes(t *testing.T) {
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestRun_ExitCodes 2>&1 | head -8
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestRun_ExitCodes 2>&1 | head -8
 ```
 Saída esperada: `undefined: run` e `[build failed]`.
 
 ### Passo 2 (GREEN) — Refatorar main.go para `run`
-Substitua a função `main()` de `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go` por:
+Substitua a função `main()` de `./.github/scripts/generate-compatibility/main.go` por:
 ```go
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
@@ -184,18 +184,18 @@ Adicione `"io"` ao bloco de imports de `main.go` (ordem: `errors`, `flag`, `fmt`
 
 ### Passo 3 — Rodar os testes
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestRun_ExitCodes 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestRun_ExitCodes 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-6-1_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-6-1_OK"
 ```
 Saída esperada: termina com `ST-6-1_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/run_test.go
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/main.go 2>/dev/null || true
+rm -f ./.github/scripts/generate-compatibility/run_test.go
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/main.go 2>/dev/null || true
 ```

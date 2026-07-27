@@ -7,20 +7,20 @@ Amarrar `chartDirectories` + `readChartState` num `main()` executável que produ
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -1
 ```
 Saída esperada: `ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility ...`
 (Se falhar, execute ST-1-2 e ST-1-3 primeiro.)
 
 ## Files
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/json.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/json_test.go`
+- create: `./.github/scripts/generate-compatibility/main.go`
+- create: `./.github/scripts/generate-compatibility/json.go`
+- create: `./.github/scripts/generate-compatibility/json_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Teste de serialização determinística
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/json_test.go`:
+Crie `./.github/scripts/generate-compatibility/json_test.go`:
 ```go
 package main
 
@@ -69,12 +69,12 @@ func TestRenderJSON_DeterministicAndSchemaV1(t *testing.T) {
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestRenderJSON 2>&1 | head -10
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestRenderJSON 2>&1 | head -10
 ```
 Saída esperada: `undefined: CompatDoc` / `undefined: renderJSON` e `FAIL ... [build failed]`.
 
 ### Passo 2 (GREEN) — Structs do JSON + render determinístico
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/json.go`:
+Crie `./.github/scripts/generate-compatibility/json.go`:
 ```go
 package main
 
@@ -123,7 +123,7 @@ func renderJSON(doc CompatDoc) ([]byte, error) {
 ```
 
 ### Passo 3 (GREEN) — `main()` que amarra tudo
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go`:
+Crie `./.github/scripts/generate-compatibility/main.go`:
 ```go
 package main
 
@@ -199,13 +199,13 @@ func buildDoc(root string) (CompatDoc, error) {
 
 ### Passo 4 — Rodar testes
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -3
 ```
 Saída esperada: `ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility ...`.
 
 ### Passo 5 — DEMO: rodar contra o repo real
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go run ./generate-compatibility --root ../.. --output docs/compatibility.json && head -12 ../../docs/compatibility.json
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go run ./generate-compatibility --root ../.. --output docs/compatibility.json && head -12 ../../docs/compatibility.json
 ```
 Saída esperada: uma linha `wrote ../../docs/compatibility.json (N products)` (N ~= 21) seguida do início do JSON:
 ```
@@ -222,7 +222,7 @@ Saída esperada: uma linha `wrote ../../docs/compatibility.json (N products)` (N
 
 ## Verification (copiável) — determinismo 2×
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && \
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && \
   go run ./generate-compatibility --root ../.. --output /tmp/compat-a.json && \
   go run ./generate-compatibility --root ../.. --output /tmp/compat-b.json && \
   diff /tmp/compat-a.json /tmp/compat-b.json && echo "DETERMINISTIC_OK"
@@ -231,8 +231,8 @@ Saída esperada: `DETERMINISTIC_OK` (sem linhas de diff).
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/json.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/json_test.go
-cd /home/gauchito/lerian/helm && git checkout docs/compatibility.json 2>/dev/null || rm -f docs/compatibility.json
+rm -f ./.github/scripts/generate-compatibility/main.go \
+      ./.github/scripts/generate-compatibility/json.go \
+      ./.github/scripts/generate-compatibility/json_test.go
+cd "$(git rev-parse --show-toplevel)" && git checkout docs/compatibility.json 2>/dev/null || rm -f docs/compatibility.json
 ```

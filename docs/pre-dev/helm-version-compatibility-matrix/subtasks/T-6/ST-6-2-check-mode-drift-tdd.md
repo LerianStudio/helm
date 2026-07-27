@@ -7,19 +7,19 @@ Implementar `runCheck` (substituindo o stub de ST-6-1): gera JSON+README esperad
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestRun_ExitCodes 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestRun_ExitCodes 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete ST-6-1.)
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go` (substituir stub `runCheck`)
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/check_test.go`
+- modify: `./.github/scripts/generate-compatibility/main.go` (substituir stub `runCheck`)
+- create: `./.github/scripts/generate-compatibility/check_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Testes de drift/em-dia
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/check_test.go`:
+Crie `./.github/scripts/generate-compatibility/check_test.go`:
 ```go
 package main
 
@@ -68,12 +68,12 @@ func TestRun_Check(t *testing.T) {
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestRun_Check 2>&1 | head -12
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestRun_Check 2>&1 | head -12
 ```
 Saída esperada: FALHA nos asserts (o stub sempre imprime "ok" e nunca detecta drift) — ex.: `expected drift WARN with 'stale'`.
 
 ### Passo 2 (GREEN) — Implementar runCheck de verdade
-Substitua o stub `runCheck` em `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go` por:
+Substitua o stub `runCheck` em `./.github/scripts/generate-compatibility/main.go` por:
 ```go
 // runCheck compares the expected JSON + README against what is on disk without
 // writing. Drift is reported as WARN on stderr but never fails the build in v1
@@ -140,23 +140,23 @@ Adicione `"sort"` e `"strings"` ao bloco de imports de `main.go` (se ainda não 
 
 ### Passo 3 — Rodar os testes
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestRun_Check 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestRun_Check 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...`.
 
 ## Verification (copiável) — check contra o repo real
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go run ./generate-compatibility --check --root ../.. ; echo "exit=$?"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go run ./generate-compatibility --check --root ../.. ; echo "exit=$?"
 ```
 Saída esperada: `exit=0`. stdout diz `ok` (se README/JSON já gerados e commitados) ou `drift detected (non-blocking v1)` com WARN em stderr (se ainda não gerados). NUNCA exit≠0.
 
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-6-2_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-6-2_OK"
 ```
 Saída esperada: termina com `ST-6-2_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/check_test.go
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/main.go 2>/dev/null || true
+rm -f ./.github/scripts/generate-compatibility/check_test.go
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/main.go 2>/dev/null || true
 ```

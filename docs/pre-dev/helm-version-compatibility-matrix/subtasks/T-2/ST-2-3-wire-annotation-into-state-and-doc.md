@@ -7,20 +7,20 @@ Primeiro passo do two-step no leitor: ler `annotations["lerian.studio/compatibil
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run 'TestParseCompatAnnotation|TestValidateCompat' 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run 'TestParseCompatAnnotation|TestValidateCompat' 2>&1 | tail -1
 ```
 Saída esperada: `ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility ...`
 (Se falhar, complete ST-2-1 e ST-2-2.)
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state.go` (add `Compat` + parse da annotation)
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state_test.go` (novo caso)
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go` (buildDoc coleta produtos + valida)
+- modify: `./.github/scripts/generate-compatibility/state.go` (add `Compat` + parse da annotation)
+- modify: `./.github/scripts/generate-compatibility/state_test.go` (novo caso)
+- modify: `./.github/scripts/generate-compatibility/main.go` (buildDoc coleta produtos + valida)
 
 ## Steps
 
 ### Passo 1 (RED) — Novo teste em state_test.go
-Adicione ao FINAL de `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state_test.go`:
+Adicione ao FINAL de `./.github/scripts/generate-compatibility/state_test.go`:
 ```go
 func TestReadChartState_ParsesCompatAnnotation(t *testing.T) {
 	root := t.TempDir()
@@ -72,12 +72,12 @@ version: 3.0.0
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestReadChartState_ParsesCompatAnnotation 2>&1 | head -8
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestReadChartState_ParsesCompatAnnotation 2>&1 | head -8
 ```
 Saída esperada: `got.Compat undefined (type ChartState has no field or method Compat)` e `[build failed]`.
 
 ### Passo 2 (GREEN) — Estender ChartState + chartYAML e fazer o parse
-Em `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/state.go`:
+Em `./.github/scripts/generate-compatibility/state.go`:
 
 Substitua a struct `ChartState` por:
 ```go
@@ -150,7 +150,7 @@ import (
 (`errors` é usado no Passo 3 via `errors.As`; mantenha-o mesmo que o linter não reclame agora — o buildDoc importará via este arquivo? Não: cada arquivo importa o que usa. Se `errors` ficar sem uso em state.go, REMOVA-o daqui e deixe só em main.go. Rode `go build` para confirmar.)
 
 ### Passo 3 (GREEN) — buildDoc: coletar produtos, tratar bad annotation, validar
-Em `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/main.go`, substitua a função `buildDoc` inteira por:
+Em `./.github/scripts/generate-compatibility/main.go`, substitua a função `buildDoc` inteira por:
 ```go
 // buildDoc reads every chart under <root>/charts and assembles the document,
 // emitting WARN/INFO diagnostics to stderr. It never aborts on data problems
@@ -214,17 +214,17 @@ import (
 
 ### Passo 4 — Rodar testes
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -3
 ```
 Saída esperada: `ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility ...`.
 
 ## Verification (copiável) — rodar contra repo real, ver WARN/INFO em stderr
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go run ./generate-compatibility --root ../.. --output /tmp/compat-t2.json 2> /tmp/compat-t2.stderr; echo "exit=$?"; echo "--- stderr (primeiras linhas) ---"; head -5 /tmp/compat-t2.stderr
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go run ./generate-compatibility --root ../.. --output /tmp/compat-t2.json 2> /tmp/compat-t2.stderr; echo "exit=$?"; echo "--- stderr (primeiras linhas) ---"; head -5 /tmp/compat-t2.stderr
 ```
 Saída esperada: `exit=0` (nunca ≠0 por dado). stderr contém linhas `INFO <chart>: V6 — ...` para charts sem annotation (a maioria no v1 pré-backfill). Nenhuma alteração no `compatibility.json` do repo (usamos /tmp).
 
 ## Rollback
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/state.go generate-compatibility/state_test.go generate-compatibility/main.go
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/state.go generate-compatibility/state_test.go generate-compatibility/main.go
 ```

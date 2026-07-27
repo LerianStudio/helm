@@ -7,7 +7,7 @@ Criar o package `generate-compatibility` e a função pura testável `chartDirec
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && grep 'Masterminds/semver' go.mod
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && grep 'Masterminds/semver' go.mod
 ```
 Saída esperada:
 ```
@@ -16,13 +16,13 @@ Saída esperada:
 (Se falhar, execute ST-1-1 primeiro.)
 
 ## Files
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/chart.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/chart_test.go`
+- create: `./.github/scripts/generate-compatibility/chart.go`
+- create: `./.github/scripts/generate-compatibility/chart_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Escrever o teste table-driven que FALHA
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/chart_test.go` com este conteúdo COMPLETO:
+Crie `./.github/scripts/generate-compatibility/chart_test.go` com este conteúdo COMPLETO:
 ```go
 package main
 
@@ -104,7 +104,7 @@ func TestChartDirectories_MissingRoot(t *testing.T) {
 
 Rode o teste e CAPTURE a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | head -20
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | head -20
 ```
 Saída esperada (falha de compilação — a função ainda não existe):
 ```
@@ -114,7 +114,7 @@ FAIL	github.com/LerianStudio/helm/.github/scripts/generate-compatibility [build 
 ```
 
 ### Passo 2 (GREEN) — Implementar a função mínima
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/chart.go` com este conteúdo COMPLETO:
+Crie `./.github/scripts/generate-compatibility/chart.go` com este conteúdo COMPLETO:
 ```go
 // Command generate-compatibility produces the per-product support-window matrix
 // (README blocks + docs/compatibility.json) for the charts in this repo.
@@ -156,7 +156,7 @@ func chartDirectories(root string) ([]string, error) {
 
 ### Passo 3 — Rodar o teste (deve passar)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -5
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -5
 ```
 Saída esperada (contém):
 ```
@@ -165,12 +165,12 @@ ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility	0.0...s
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-1-2_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-1-2_OK"
 ```
 Saída esperada: termina com `ST-1-2_OK`.
 
 ## Rollback
 ```bash
-rm -rf /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/chart.go \
-       /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/chart_test.go
+rm -rf ./.github/scripts/generate-compatibility/chart.go \
+       ./.github/scripts/generate-compatibility/chart_test.go
 ```

@@ -121,7 +121,7 @@ Ciclo: major anual, minor trimestral, patches conforme necessidade, notificaçã
 - Representação por máquina, versionada, derivada da mesma fonte.
 - Geração automática na publicação de versão.
 - Avisos não bloqueantes de inconsistência e de divergência.
-- Preenchimento inicial automático do que é derivável (a combinação testada da release atual) para todos os produtos ativos.
+- ~~Preenchimento inicial automático do `testedWith` derivável para todos os produtos ativos.~~ **REMOVIDO do v1** (decisão posterior — ver BACKLOG): `testedWith` manual saiu do v1; volta na v2 preenchido via E2E. No v1, `requires` é declarado pelo dev por chart, sob demanda; nenhum backfill automático.
 
 ### Out-of-scope (v1 — fases futuras)
 - **Bloqueio** de publicação por incompatibilidade (v1 só avisa).

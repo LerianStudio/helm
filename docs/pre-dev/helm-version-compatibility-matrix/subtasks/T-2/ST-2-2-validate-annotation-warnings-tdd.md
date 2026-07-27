@@ -7,19 +7,19 @@ Implementar `validateCompat(chart string, ann *CompatAnnotation, knownProducts m
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && grep -c compatAnnotationKey generate-compatibility/annotation.go
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && grep -c compatAnnotationKey generate-compatibility/annotation.go
 ```
 Saída esperada: número `>= 1` (ST-2-1 concluído).
 
 ## Files
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/warn.go`
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/annotation.go` (adiciona `validateCompat`)
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/warn_test.go`
+- create: `./.github/scripts/generate-compatibility/warn.go`
+- modify: `./.github/scripts/generate-compatibility/annotation.go` (adiciona `validateCompat`)
+- create: `./.github/scripts/generate-compatibility/warn_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Teste table-driven das regras
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/warn_test.go`:
+Crie `./.github/scripts/generate-compatibility/warn_test.go`:
 ```go
 package main
 
@@ -109,12 +109,12 @@ func TestValidateCompat(t *testing.T) {
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestValidateCompat 2>&1 | head -10
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestValidateCompat 2>&1 | head -10
 ```
 Saída esperada: `undefined: Warning` / `undefined: validateCompat` e `[build failed]`.
 
 ### Passo 2 (GREEN) — Tipo `Warning` + emissor de mensagem estável
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/warn.go`:
+Crie `./.github/scripts/generate-compatibility/warn.go`:
 ```go
 package main
 
@@ -168,11 +168,12 @@ func emitWarnings(stderr io.Writer, ws []Warning) int {
 ```
 
 ### Passo 3 (GREEN) — `validateCompat` em annotation.go
-Adicione ao FINAL de `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/annotation.go` (mantenha o import existente e ACRESCENTE os novos):
+Adicione ao FINAL de `./.github/scripts/generate-compatibility/annotation.go` (mantenha o import existente e ACRESCENTE os novos):
 
 Primeiro, ajuste o bloco de imports no topo do arquivo para:
 ```go
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -228,19 +229,19 @@ Note: `fmt` já não estava importado em annotation.go — o `strings` estava. S
 
 ### Passo 4 — Rodar o teste
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestValidateCompat 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestValidateCompat 2>&1 | tail -3
 ```
 Saída esperada: `ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility ...`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-2-2_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-2-2_OK"
 ```
 Saída esperada: termina com `ST-2-2_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/warn.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/warn_test.go
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/annotation.go 2>/dev/null || true
+rm -f ./.github/scripts/generate-compatibility/warn.go \
+      ./.github/scripts/generate-compatibility/warn_test.go
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/annotation.go 2>/dev/null || true
 ```

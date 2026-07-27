@@ -21,8 +21,9 @@
 ### I.2 Gramática (v1)
 ```
 compatibility   := requires? testedWith?
-requires        := "requires:"    mapping<productKey, semverRange>     # OPCIONAL no v1
-testedWith      := "testedWith:"  mapping<productKey, exactVersion>    # preenchido no v1
+requires        := "requires:"    mapping<productKey, semverRange>     # OPCIONAL no v1 (dev declara)
+testedWith      := "testedWith:"  mapping<productKey, exactVersion>    # ACEITO p/ forward-compat, mas NÃO usado no v1
+                                                                       # (removido do v1; volta na v2 via E2E — ver BACKLOG)
 productKey      := nome do chart-alvo tal como publicado (ex.: "midaz-helm", "plugin-access-manager")
 semverRange     := constraint Masterminds/semver  (ex.: ">=8.4.0 <9.0.0", "~8.4", "^8.4.0", "8.x || 9.x")
 exactVersion    := versão semver exata (ex.: "8.6.0", "1.2.1-beta.11")

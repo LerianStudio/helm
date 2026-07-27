@@ -1,5 +1,7 @@
 # ST-8-2 — Step dedicado 2B pós-release: gera + commita com `[skip ci]`, guard de actor, rebase
 
+> ⚠️ **SUPERADO — não implementar.** A decisão de write-back foi revertida de **2B (step dedicado)** para **2A (commit único via `@semantic-release/git`)** — ver ADR-1b atualizado e §5 do TRD. O motivo: 2B gera dois commits no mesmo release (colisão de push). A implementação real está no `prepareCmd` + `assets` do semantic-release (nenhum step dedicado, nenhum `git pull --rebase`). Este arquivo fica só como registro histórico do caminho não seguido.
+
 > **For Agents:** REQUIRED SUB-SKILL: executing-plans
 
 ## Goal
@@ -7,18 +9,18 @@ Adicionar o STEP DEDICADO (Opção 2B, ADR-1b) ao `release.yml`, APÓS o Semanti
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm && grep -q 'go build -o generate-compatibility-bin' .github/workflows/release.yml && echo "PREREQ_OK"
+cd "$(git rev-parse --show-toplevel)" && grep -q 'go build -o generate-compatibility-bin' .github/workflows/release.yml && echo "PREREQ_OK"
 ```
 Saída esperada: `PREREQ_OK` (ST-8-1 concluído).
 
 Confirme os âncoras reutilizados:
 ```bash
-cd /home/gauchito/lerian/helm && sed -n '23p;54,58p' .github/workflows/release.yml
+cd "$(git rev-parse --show-toplevel)" && sed -n '23p;54,58p' .github/workflows/release.yml
 ```
 Saída esperada: linha 23 = o guard `if: github.actor != 'lerian-studio-midaz-push-bot[bot]'`; linhas 54-58 = o step `Generate GitHub App Token` (`id: app-token`).
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/workflows/release.yml` (novo step após "Semantic Release", dentro do job `release-helm-chart`)
+- modify: `./.github/workflows/release.yml` (novo step após "Semantic Release", dentro do job `release-helm-chart`)
 
 ## Steps
 
@@ -66,23 +68,23 @@ Notas de ancoragem:
 
 ### Passo 2 — Validar sintaxe do YAML
 ```bash
-cd /home/gauchito/lerian/helm && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release.yml')); print('YAML_OK')"
+cd "$(git rev-parse --show-toplevel)" && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release.yml')); print('YAML_OK')"
 ```
 Saída esperada: `YAML_OK`.
 
 ### Passo 3 — Conferir as 3 camadas anti-loop presentes
 ```bash
-cd /home/gauchito/lerian/helm && echo "1) paths-ignore README/docs:" && sed -n '8,14p' .github/workflows/release.yml | grep -Ec "README.md|docs" && echo "2) skip ci (>=2: back-merge + write-back):" && grep -c 'skip ci' .github/workflows/release.yml && echo "3) actor guards (>=2):" && grep -c "github.actor != 'lerian-studio-midaz-push-bot" .github/workflows/release.yml
+cd "$(git rev-parse --show-toplevel)" && echo "1) paths-ignore README/docs:" && sed -n '8,14p' .github/workflows/release.yml | grep -Ec "README.md|docs" && echo "2) skip ci (>=2: back-merge + write-back):" && grep -c 'skip ci' .github/workflows/release.yml && echo "3) actor guards (>=2):" && grep -c "github.actor != 'lerian-studio-midaz-push-bot" .github/workflows/release.yml
 ```
 Saída esperada: item 1 retorna `2` (README.md e docs ignorados); item 2 retorna `>= 2`; item 3 retorna `>= 2` (o guard do job em :23 + o do step 2B).
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release.yml')); print('YAML_OK')" && grep -q 'Write-back compatibility matrix' .github/workflows/release.yml && grep -q 'git pull --rebase origin' .github/workflows/release.yml && echo "ST-8-2_OK"
+cd "$(git rev-parse --show-toplevel)" && python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release.yml')); print('YAML_OK')" && grep -q 'Write-back compatibility matrix' .github/workflows/release.yml && grep -q 'git pull --rebase origin' .github/workflows/release.yml && echo "ST-8-2_OK"
 ```
 Saída esperada: `YAML_OK` seguido de `ST-8-2_OK`.
 
 ## Rollback
 ```bash
-cd /home/gauchito/lerian/helm && git checkout .github/workflows/release.yml
+cd "$(git rev-parse --show-toplevel)" && git checkout .github/workflows/release.yml
 ```

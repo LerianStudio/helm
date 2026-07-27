@@ -11,19 +11,19 @@ Idempotente nos 3 caminhos.
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run 'TestReplaceCompatBlock|TestSectionHeaderIndex' 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run 'TestReplaceCompatBlock|TestSectionHeaderIndex' 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete ST-5-2 e ST-5-3.)
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/markers.go` (add `ensureCompatBlock` + `sectionTitle`; remover o placeholder `var _ = tableutil...` de ST-5-3)
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/ensure_test.go`
+- modify: `./.github/scripts/generate-compatibility/markers.go` (add `ensureCompatBlock` + `sectionTitle`; remover o placeholder `var _ = tableutil...` de ST-5-3)
+- create: `./.github/scripts/generate-compatibility/ensure_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Testes dos 3 caminhos + idempotência
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/ensure_test.go`:
+Crie `./.github/scripts/generate-compatibility/ensure_test.go`:
 ```go
 package main
 
@@ -114,7 +114,7 @@ func indexOfLine(lines []string, want string) int {
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestEnsureCompatBlock 2>&1 | head -8
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestEnsureCompatBlock 2>&1 | head -8
 ```
 Saída esperada: `undefined: ensureCompatBlock` e `[build failed]`.
 
@@ -186,18 +186,18 @@ func wrapBlock(chart string, blockBody []string) []string {
 
 ### Passo 3 — Rodar os testes
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestEnsureCompatBlock 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestEnsureCompatBlock 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-5-4_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-5-4_OK"
 ```
 Saída esperada: termina com `ST-5-4_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/ensure_test.go
-cd /home/gauchito/lerian/helm/.github/scripts && git checkout generate-compatibility/markers.go 2>/dev/null || true
+rm -f ./.github/scripts/generate-compatibility/ensure_test.go
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && git checkout generate-compatibility/markers.go 2>/dev/null || true
 ```

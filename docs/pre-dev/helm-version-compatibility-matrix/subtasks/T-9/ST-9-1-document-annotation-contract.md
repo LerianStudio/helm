@@ -7,18 +7,18 @@ Adicionar uma subseção NOVA em `docs/helm-chart-standard.md` formalizando a an
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm && test -f docs/helm-chart-standard.md && grep -c 'lerian.studio/chart-type' docs/helm-chart-standard.md
+cd "$(git rev-parse --show-toplevel)" && test -f docs/helm-chart-standard.md && grep -c 'lerian.studio/chart-type' docs/helm-chart-standard.md
 ```
 Saída esperada: o arquivo existe e retorna um número `>= 1` (a doc já menciona o precedente `chart-type`). Se o arquivo não existir, PARE e reporte ao orquestrador (path pode ter mudado).
 
 ## Files
-- modify: `/home/gauchito/lerian/helm/docs/helm-chart-standard.md` (adicionar subseção ao final da seção de annotations)
+- modify: `./docs/helm-chart-standard.md` (adicionar subseção ao final da seção de annotations)
 
 ## Steps
 
 ### Passo 1 — Localizar onde inserir (após a doc de `chart-type`)
 ```bash
-cd /home/gauchito/lerian/helm && grep -n 'lerian.studio/chart-type' docs/helm-chart-standard.md
+cd "$(git rev-parse --show-toplevel)" && grep -n 'lerian.studio/chart-type' docs/helm-chart-standard.md
 ```
 Saída esperada: número(s) de linha da menção existente. Insira a nova subseção logo APÓS o fim do bloco que documenta `chart-type` (próximo cabeçalho `##`/`###`).
 
@@ -102,17 +102,17 @@ annotations:
 
 ### Passo 3 — Conferir que não quebrou markdown existente
 ```bash
-cd /home/gauchito/lerian/helm && grep -c '^### Annotation `lerian.studio/compatibility`' docs/helm-chart-standard.md
+cd "$(git rev-parse --show-toplevel)" && grep -c '^### Annotation `lerian.studio/compatibility`' docs/helm-chart-standard.md
 ```
 Saída esperada: `1` (a subseção foi inserida exatamente uma vez).
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm && grep -q 'testedWith' docs/helm-chart-standard.md && grep -q 'block scalar' docs/helm-chart-standard.md && echo "ST-9-1_OK"
+cd "$(git rev-parse --show-toplevel)" && grep -q 'testedWith' docs/helm-chart-standard.md && grep -q 'block scalar' docs/helm-chart-standard.md && echo "ST-9-1_OK"
 ```
 Saída esperada: `ST-9-1_OK`.
 
 ## Rollback
 ```bash
-cd /home/gauchito/lerian/helm && git checkout docs/helm-chart-standard.md
+cd "$(git rev-parse --show-toplevel)" && git checkout docs/helm-chart-standard.md
 ```

@@ -7,7 +7,7 @@ Prova executiva do risco #1 antes de qualquer commit: rodar o gerador contra um 
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete ST-5-5.)
@@ -19,7 +19,7 @@ Saída esperada: `ok  ...`
 
 ### Passo 1 — Criar o clone descartável
 ```bash
-rm -rf /tmp/helm-dryrun && git clone --local /home/gauchito/lerian/helm /tmp/helm-dryrun && cd /tmp/helm-dryrun && git fetch --tags --force origin 2>/dev/null; echo "clone_ready=$?"
+rm -rf /tmp/helm-dryrun && git clone --local . /tmp/helm-dryrun && cd /tmp/helm-dryrun && git fetch --tags --force origin 2>/dev/null; echo "clone_ready=$?"
 ```
 Saída esperada: `clone_ready=0`. (O `--local` copia o repo; `git clone` local traz as tags. Se o remoto não estiver acessível, o fetch pode falhar sem problema — as tags locais já vieram no clone.)
 

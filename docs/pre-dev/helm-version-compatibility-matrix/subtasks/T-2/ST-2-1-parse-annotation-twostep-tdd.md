@@ -7,19 +7,19 @@ Ler a annotation `lerian.studio/compatibility` (string YAML embutida) via TWO-ST
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ 2>&1 | tail -1
 ```
 Saída esperada: `ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility ...`
 (Se falhar, complete T-1 primeiro.)
 
 ## Files
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/annotation.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/annotation_test.go`
+- create: `./.github/scripts/generate-compatibility/annotation.go`
+- create: `./.github/scripts/generate-compatibility/annotation_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Teste table-driven cobrindo válido/ausente/quebrado
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/annotation_test.go`:
+Crie `./.github/scripts/generate-compatibility/annotation_test.go`:
 ```go
 package main
 
@@ -87,12 +87,12 @@ testedWith:
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestParseCompatAnnotation 2>&1 | head -10
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestParseCompatAnnotation 2>&1 | head -10
 ```
 Saída esperada: `undefined: CompatAnnotation` / `undefined: parseCompatAnnotation` e `FAIL ... [build failed]`.
 
 ### Passo 2 (GREEN) — Implementar o parse (segundo passo do two-step)
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/annotation.go`:
+Crie `./.github/scripts/generate-compatibility/annotation.go`:
 ```go
 package main
 
@@ -134,18 +134,18 @@ func parseCompatAnnotation(raw string) (*CompatAnnotation, error) {
 
 ### Passo 3 — Rodar o teste
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestParseCompatAnnotation 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestParseCompatAnnotation 2>&1 | tail -3
 ```
 Saída esperada: `ok  	github.com/LerianStudio/helm/.github/scripts/generate-compatibility ...`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ && echo "ST-2-1_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ && echo "ST-2-1_OK"
 ```
 Saída esperada: termina com `ST-2-1_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/annotation.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/annotation_test.go
+rm -f ./.github/scripts/generate-compatibility/annotation.go \
+      ./.github/scripts/generate-compatibility/annotation_test.go
 ```

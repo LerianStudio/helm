@@ -7,19 +7,19 @@ Função pura `replaceCompatBlock(lines []string, chart string, blockBody []stri
 
 ## Prerequisites
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestRenderCompatTable 2>&1 | tail -1
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestRenderCompatTable 2>&1 | tail -1
 ```
 Saída esperada: `ok  ...`
 (Se falhar, complete ST-5-1.)
 
 ## Files
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/markers.go`
-- create: `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/markers_test.go`
+- create: `./.github/scripts/generate-compatibility/markers.go`
+- create: `./.github/scripts/generate-compatibility/markers_test.go`
 
 ## Steps
 
 ### Passo 1 (RED) — Testes: substituição confinada + idempotência + boundary irregular
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/markers_test.go`:
+Crie `./.github/scripts/generate-compatibility/markers_test.go`:
 ```go
 package main
 
@@ -113,12 +113,12 @@ whatever
 
 Rode e capture a falha:
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestReplaceCompatBlock 2>&1 | head -8
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestReplaceCompatBlock 2>&1 | head -8
 ```
 Saída esperada: `undefined: replaceCompatBlock` e `[build failed]`.
 
 ### Passo 2 (GREEN) — Implementar markers.go
-Crie `/home/gauchito/lerian/helm/.github/scripts/generate-compatibility/markers.go`:
+Crie `./.github/scripts/generate-compatibility/markers.go`:
 ```go
 package main
 
@@ -168,18 +168,18 @@ func replaceCompatBlock(lines []string, chart string, blockBody []string) ([]str
 
 ### Passo 3 — Rodar os testes
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go test ./generate-compatibility/ -run TestReplaceCompatBlock 2>&1 | tail -3
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go test ./generate-compatibility/ -run TestReplaceCompatBlock 2>&1 | tail -3
 ```
 Saída esperada: `ok  ...`.
 
 ## Verification (copiável)
 ```bash
-cd /home/gauchito/lerian/helm/.github/scripts && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-5-2_OK"
+cd "$(git rev-parse --show-toplevel)/.github/scripts" && go vet ./generate-compatibility/ && go test ./generate-compatibility/ && echo "ST-5-2_OK"
 ```
 Saída esperada: termina com `ST-5-2_OK`.
 
 ## Rollback
 ```bash
-rm -f /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/markers.go \
-      /home/gauchito/lerian/helm/.github/scripts/generate-compatibility/markers_test.go
+rm -f ./.github/scripts/generate-compatibility/markers.go \
+      ./.github/scripts/generate-compatibility/markers_test.go
 ```

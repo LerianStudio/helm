@@ -564,8 +564,11 @@ tracer:
     # -- Enable or disable the tracer migrations PreSync Job
     enabled: true
     image:
-      # -- Repository for the tracer migrations image
-      repository: ghcr.io/lerianstudio/midaz-tracer
+      # -- Repository for the tracer migrations image (dedicated migration
+      # binary, NOT the app image -- the app image has no migration command
+      # and would run its full HTTP server/workers until activeDeadlineSeconds
+      # kills it, never completing the Job)
+      repository: ghcr.io/lerianstudio/midaz-tracer-migrations
       # -- Image tag (populated by the release pipeline via gitops_yaml_key_mappings;
       #    falls back to .Chart.AppVersion when empty)
       tag: ""

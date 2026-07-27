@@ -1,0 +1,88 @@
+package main
+
+import (
+	"strings"
+	"testing"
+)
+
+func lns(s string) []string  { return strings.Split(s, "\n") }
+func str(ls []string) string { return strings.Join(ls, "\n") }
+
+func TestReplaceCompatBlock(t *testing.T) {
+	t.Run("replaces only between markers, prose untouched", func(t *testing.T) {
+		doc := lns(`### Midaz Helm Chart
+
+Intro prose that must survive.
+
+<!-- BEGIN COMPAT:midaz-helm -->
+OLD CONTENT
+<!-- END COMPAT:midaz-helm -->
+
+-----------------
+
+### Next Chart`)
+		body := []string{"| Version | Support |", "| :---: | :---: |", "| `8.6.0` | 🟢 |"}
+		out, found, err := replaceCompatBlock(doc, "midaz-helm", body)
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if !found {
+			t.Fatal("expected found=true")
+		}
+		s := str(out)
+		if !strings.Contains(s, "Intro prose that must survive.") {
+			t.Error("prose above block was lost")
+		}
+		if !strings.Contains(s, "-----------------") {
+			t.Error("separator below block was lost")
+		}
+		if !strings.Contains(s, "### Next Chart") {
+			t.Error("next section header was lost")
+		}
+		if strings.Contains(s, "OLD CONTENT") {
+			t.Error("old content not replaced")
+		}
+		if !strings.Contains(s, "8.6.0") {
+			t.Error("new body not inserted")
+		}
+		// Markers themselves must be preserved exactly once each.
+		if strings.Count(s, "<!-- BEGIN COMPAT:midaz-helm -->") != 1 ||
+			strings.Count(s, "<!-- END COMPAT:midaz-helm -->") != 1 {
+			t.Errorf("markers duplicated/lost:\n%s", s)
+		}
+	})
+
+	t.Run("idempotent: applying twice yields identical output", func(t *testing.T) {
+		doc := lns(`<!-- BEGIN COMPAT:x -->
+whatever
+<!-- END COMPAT:x -->`)
+		body := []string{"NEW"}
+		once, _, _ := replaceCompatBlock(doc, "x", body)
+		twice, _, _ := replaceCompatBlock(once, "x", body)
+		if str(once) != str(twice) {
+			t.Fatalf("not idempotent:\n--once--\n%s\n--twice--\n%s", str(once), str(twice))
+		}
+	})
+
+	t.Run("markers absent => found=false, doc unchanged", func(t *testing.T) {
+		doc := lns("### Some Chart\n\nno markers here")
+		out, found, err := replaceCompatBlock(doc, "some-chart", []string{"BODY"})
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if found {
+			t.Fatal("expected found=false")
+		}
+		if str(out) != str(doc) {
+			t.Fatal("doc changed despite absent markers")
+		}
+	})
+
+	t.Run("only END marker => error (malformed)", func(t *testing.T) {
+		doc := lns("<!-- END COMPAT:x -->")
+		_, _, err := replaceCompatBlock(doc, "x", []string{"B"})
+		if err == nil {
+			t.Fatal("expected error for END-without-BEGIN")
+		}
+	})
+}

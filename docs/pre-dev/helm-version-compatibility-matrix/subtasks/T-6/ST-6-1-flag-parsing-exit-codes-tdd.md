@@ -3,7 +3,7 @@
 > **For Agents:** REQUIRED SUB-SKILL: executing-plans
 
 ## Goal
-Refatorar o `main` para uma função testável `run(args []string, stdout, stderr io.Writer) int` que devolve o exit code, e adicionar as flags do contrato (api-design §II): `--write` (default), `--check`, `--chart`, `--root` (default `../..`), `--output` (default `docs/compatibility.json`). Exit codes: 2 se `--write`+`--check` juntos (uso); 1 se `--root` inexistente (ambiente); 0 caso contrário (inclui WARN). `main()` vira um wrapper fino.
+Refatorar o `main` para uma função testável `run(args []string, stdout, stderr io.Writer) int` que devolve o exit code, e adicionar as flags do contrato (api-design §II): `--write` (default), `--check`, `--chart`, `--root` (default `../..`), `--output` (default `docs/compatibility.json`). Exit codes: **2 (uso)** se `--write`+`--check` juntos OU `--chart` desconhecido (nada é escrito nesse caso); **1 (operacional)** se `--root` inexistente/README ilegível; **0** caso contrário (inclui WARN). `main()` vira um wrapper fino.
 
 ## Prerequisites
 ```bash
@@ -63,6 +63,24 @@ func TestRun_ExitCodes(t *testing.T) {
 		code := run([]string{"--root", "/no/such/dir/xyz"}, &out, &errb)
 		if code != 1 {
 			t.Fatalf("exit = %d, want 1. stderr=%s", code, errb.String())
+		}
+	})
+
+	t.Run("unknown --chart => exit 2, nothing written", func(t *testing.T) {
+		root := seedRepo(t)
+		readmeBefore, _ := os.ReadFile(filepath.Join(root, "README.md"))
+		var out, errb bytes.Buffer
+		code := run([]string{"--root", root, "--chart", "does-not-exist"}, &out, &errb)
+		if code != 2 {
+			t.Fatalf("exit = %d, want 2. stderr=%s", code, errb.String())
+		}
+		// Neither artifact may be written when the selector is invalid.
+		if _, err := os.Stat(filepath.Join(root, "docs", "compatibility.json")); err == nil {
+			t.Fatal("JSON must NOT be written for unknown --chart")
+		}
+		readmeAfter, _ := os.ReadFile(filepath.Join(root, "README.md"))
+		if !bytes.Equal(readmeBefore, readmeAfter) {
+			t.Fatal("README must stay unchanged for unknown --chart")
 		}
 	})
 

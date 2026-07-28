@@ -1,5 +1,14 @@
 {{- if or .Values.keda.enabled .Values.keda.external }}
-{{- if .Values.worker.keda.scaledJob.enabled }}
+{{- if and .Values.worker.enabled .Values.worker.keda.scaledJob.enabled }}
+{{- /* Resolve the RabbitMQ trigger endpoint through the SAME productized precedence
+   as the worker ConfigMap (merged legacy configmap > grouped common.broker param >
+   default) so the ScaledJob stays behavior-equivalent after config productization. */ -}}
+{{- $cm := merge (deepCopy (.Values.worker.configmap | default dict)) (.Values.common.configmap | default dict) -}}
+{{- $broker := .Values.common.broker | default dict -}}
+{{- $rmqQueue := include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_GENERATE_REPORT_QUEUE" "params" $broker "field" "generateReportQueue" "default" "reporter.generate-report.queue") -}}
+{{- $rmqUri := include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_URI" "params" $broker "field" "uri" "default" "amqp") -}}
+{{- $rmqHost := include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq.reporter.svc.cluster.local") -}}
+{{- $rmqPortAmqp := include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_PORT_AMQP" "params" $broker "field" "portAmqp" "default" "5672") -}}
 apiVersion: keda.sh/v1alpha1
 kind: ScaledJob
 metadata:
@@ -139,8 +148,8 @@ spec:
   {{- range .Values.worker.keda.scaledJob.triggers }}
   - type: {{ .type }}
     metadata:
-      queueName: {{ $.Values.common.configmap.RABBITMQ_GENERATE_REPORT_QUEUE | quote }}
-      host: "{{ $.Values.common.configmap.RABBITMQ_URI | default "amqp" }}://{{ $.Values.common.configmap.RABBITMQ_HOST }}:{{ $.Values.common.configmap.RABBITMQ_PORT_AMQP }}"
+      queueName: {{ $rmqQueue | quote }}
+      host: "{{ $rmqUri }}://{{ $rmqHost }}:{{ $rmqPortAmqp }}"
       queueLength: {{ .metadata.queueLength | quote }}
       protocol: {{ .metadata.protocol | quote }}
       vhost: {{ .metadata.vhost }}

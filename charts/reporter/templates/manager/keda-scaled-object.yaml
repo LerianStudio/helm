@@ -1,5 +1,5 @@
 {{- if or .Values.keda.enabled .Values.keda.external }}
-{{- if .Values.manager.keda.scaledObject.enabled }}
+{{- if and .Values.manager.enabled .Values.manager.keda.scaledObject.enabled }}
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:

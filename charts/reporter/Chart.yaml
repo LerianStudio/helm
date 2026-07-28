@@ -27,6 +27,9 @@ keywords:
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # Dependencies
 dependencies:
+  - name: lerian-common-helm
+    version: ">=1.0.0 <2.0.0"
+    repository: "file://../lerian-common"
   - name: keda
     version: "2.17.1"
     repository: "https://kedacore.github.io/charts"

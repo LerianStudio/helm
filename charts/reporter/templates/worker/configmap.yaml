@@ -1,3 +1,13 @@
+{{- if .Values.worker.enabled }}
+{{- /* Merged legacy override map: component `worker.configmap` WINS over the
+   shared `common.configmap` (reproduces the old range order). Passed as the
+   `configmap` (native-key, top precedence) to every helper. */ -}}
+{{- $cm := merge (deepCopy (.Values.worker.configmap | default dict)) (.Values.common.configmap | default dict) -}}
+{{- $app := .Values.worker.app | default dict -}}
+{{- $pdf := .Values.worker.pdf | default dict -}}
+{{- $rl := .Values.worker.rateLimit | default dict -}}
+{{- $otel := .Values.common.otel | default dict -}}
+{{- $wkrOtel := .Values.worker.otel | default dict -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,24 +19,64 @@ metadata:
     {{- range $key, $value := . }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
-  {{- end }} 
+  {{- end }}
 data:
-  # Common shared values
-  {{- range $key, $value := .Values.common.configmap }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
-  # Worker specific values
-  {{- range $key, $value := .Values.worker.configmap }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
-  # Rate Limiting - Three-tier system with Redis backend
-  # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-  # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
-  # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-  # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag
+  # =============================================================================
+  # SHARED CONFIG (manager + worker) — grouped params under `common.*`; legacy
+  # `common.configmap.<KEY>` / `worker.configmap.<KEY>` still override.
+  # =============================================================================
+  {{- include "reporter.commonConfigData" (dict "context" . "cm" $cm) | nindent 2 }}
+  # =============================================================================
+  # OPEN TELEMETRY (flat passthrough; SERVICE_VERSION + VERSION come from image tag)
+  # =============================================================================
+  {{- include "lerian-common.otel.envFlat" (dict
+        "configmap" $cm
+        "keys" (list
+          "OTEL_RESOURCE_SERVICE_NAME"
+          "OTEL_LIBRARY_NAME"
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
+          "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
+          "OTEL_EXPORTER_OTLP_ENDPOINT")
+        "defaults" (dict
+          "OTEL_RESOURCE_SERVICE_NAME" ($wkrOtel.serviceName | default "reporter-worker")
+          "OTEL_LIBRARY_NAME" ($otel.libraryName | default "github.com/LerianStudio/reporter")
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" ($otel.deploymentEnvironment | default "production")
+          "OTEL_EXPORTER_OTLP_ENDPOINT_PORT" ($otel.otlpEndpointPort | default "4317")
+          "OTEL_EXPORTER_OTLP_ENDPOINT" ($otel.otlpEndpoint | default "otlp://midaz-otel-lgtm:4317"))) | nindent 2 }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ENABLE_TELEMETRY" "params" $otel "field" "enableTelemetry" "default" "true") | quote }}
+  OTEL_INSECURE_EXPORTER: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OTEL_INSECURE_EXPORTER" "params" $otel "field" "insecureExporter" "default" "false") | quote }}
+  # =============================================================================
+  # WORKER-SPECIFIC CONFIG
+  # =============================================================================
+  HEALTH_PORT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "HEALTH_PORT" "params" $app "field" "healthPort" "default" "4006") | quote }}
+  LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "LOG_LEVEL" "params" $app "field" "logLevel" "default" "debug") | quote }}
+  # PDF RENDERING
+  PDF_POOL_WORKERS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PDF_POOL_WORKERS" "params" $pdf "field" "poolWorkers" "default" "5") | quote }}
+  PDF_TIMEOUT_SECONDS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PDF_TIMEOUT_SECONDS" "params" $pdf "field" "timeoutSeconds" "default" "30") | quote }}
+  # =============================================================================
+  # RATE LIMITING — Three-tier system with Redis backend
+  # =============================================================================
+  RATE_LIMIT_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_ENABLED" "params" $rl "field" "enabled" "default" "true") | quote }}
+  RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_MAX" "params" $rl "field" "max" "default" "500") | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_WINDOW_SEC" "params" $rl "field" "windowSec" "default" "60") | quote }}
+  AGGRESSIVE_RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AGGRESSIVE_RATE_LIMIT_MAX" "params" $rl "field" "aggressiveMax" "default" "100") | quote }}
+  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC" "params" $rl "field" "aggressiveWindowSec" "default" "60") | quote }}
+  RELAXED_RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RELAXED_RATE_LIMIT_MAX" "params" $rl "field" "relaxedMax" "default" "1000") | quote }}
+  RELAXED_RATE_LIMIT_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RELAXED_RATE_LIMIT_WINDOW_SEC" "params" $rl "field" "relaxedWindowSec" "default" "60") | quote }}
+  RATE_LIMIT_REDIS_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_REDIS_TIMEOUT_MS" "params" $rl "field" "redisTimeoutMs" "default" "500") | quote }}
+  ALLOW_RATELIMIT_DISABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_RATELIMIT_DISABLED" "params" $rl "field" "allowDisabled" "default" "") | quote }}
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_RATELIMIT_FAIL_OPEN" "params" $rl "field" "allowFailOpen" "default" "") | quote }}
+  # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from the image tag
   VERSION: {{ .Values.worker.image.tag | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.worker.image.tag | quote }}
+  # =============================================================================
+  # LEGACY PASSTHROUGH — any raw configmap key not covered above (e.g.
+  # DATASOURCE_EXTERNAL_*) stays supported. Empty by default.
+  # =============================================================================
+  {{- $reserved := printf "%s HEALTH_PORT LOG_LEVEL PDF_POOL_WORKERS PDF_TIMEOUT_SECONDS RATE_LIMIT_ENABLED RATE_LIMIT_MAX RATE_LIMIT_WINDOW_SEC AGGRESSIVE_RATE_LIMIT_MAX AGGRESSIVE_RATE_LIMIT_WINDOW_SEC RELAXED_RATE_LIMIT_MAX RELAXED_RATE_LIMIT_WINDOW_SEC RATE_LIMIT_REDIS_TIMEOUT_MS ALLOW_RATELIMIT_DISABLED ALLOW_RATELIMIT_FAIL_OPEN" (include "reporter.commonConfigKeys" .) -}}
+  {{- include "reporter.legacyConfigPassthrough" (dict "cm" $cm "reserved" $reserved) | nindent 2 }}
   # Extra Env Vars
   {{- with .Values.worker.extraEnvVars }}
   {{- toYaml . | nindent 2 }}
   {{- end }}
+{{- end }}

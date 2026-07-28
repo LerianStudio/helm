@@ -243,6 +243,119 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- end }}
 
 {{/*
+==============================================================================
+reporter.commonConfigData — the SHARED (common) ConfigMap block, emitted
+identically by both the manager and worker ConfigMaps (mirrors the legacy
+`common.configmap` map that both components ranged over).
+
+Every key routes through lerian-common helpers so the productized grouped params
+(`common.<group>.<field>`) work while the legacy raw key still WINS:
+  precedence: <merged configmap native key>  >  common.<group>.<field>  >  default
+The `default` for each key equals the pre-productization render, so a default
+install stays byte-identical. Datastore hosts/user/port go through the
+`lerian-common.datastore.value` mask (global.datastores / <chart>.datastores).
+
+Inputs (dict):
+  context (req)  product root ($)
+  cm      (req)  the component's MERGED legacy override map
+                 (`merge <component>.configmap common.configmap`, component wins)
+==============================================================================
+*/}}
+{{- define "reporter.commonConfigData" -}}
+{{- $ := .context -}}
+{{- $cm := .cm | default dict -}}
+{{- $common := $.Values.common | default dict -}}
+{{- $broker := $common.broker | default dict -}}
+{{- $redis := $common.redis | default dict -}}
+{{- $os := $common.objectStorage | default dict -}}
+{{- $mongo := $common.mongo | default dict -}}
+{{- $fetcher := $common.fetcher | default dict -}}
+{{- $mt := $common.multiTenant | default dict -}}
+{{- $ds := ($common.datasource | default dict).onboarding | default dict -}}
+{{- $rabbitHost := include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq.reporter.svc.cluster.local") -}}
+{{- $portHost := include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_PORT_HOST" "params" $broker "field" "portHost" "default" "15672") -}}
+# ENV
+ENV_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ENV_NAME" "params" $common "field" "env" "default" "development") | quote }}
+# RABBITMQ
+RABBITMQ_URI: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_URI" "params" $broker "field" "uri" "default" "amqp") | quote }}
+RABBITMQ_PORT_HOST: {{ $portHost | quote }}
+RABBITMQ_HOST: {{ $rabbitHost | quote }}
+RABBITMQ_PORT_AMQP: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_PORT_AMQP" "params" $broker "field" "portAmqp" "default" "5672") | quote }}
+RABBITMQ_NUMBERS_OF_WORKERS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_NUMBERS_OF_WORKERS" "params" $broker "field" "workers" "default" "5") | quote }}
+RABBITMQ_EXCHANGE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_EXCHANGE" "params" $broker "field" "exchange" "default" "reporter.generate-report.exchange") | quote }}
+RABBITMQ_GENERATE_REPORT_QUEUE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_GENERATE_REPORT_QUEUE" "params" $broker "field" "generateReportQueue" "default" "reporter.generate-report.queue") | quote }}
+RABBITMQ_GENERATE_REPORT_KEY: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_GENERATE_REPORT_KEY" "params" $broker "field" "generateReportKey" "default" "reporter.generate-report.key") | quote }}
+RABBITMQ_HEALTH_CHECK_URL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_HEALTH_CHECK_URL" "params" $broker "field" "healthCheckUrl" "default" "http://reporter-rabbitmq.reporter.svc.cluster.local:15672") | quote }}
+# REDIS
+REDIS_MASTER_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_MASTER_NAME" "params" $redis "field" "masterName" "default" "") | quote }}
+REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "reporter-valkey.reporter.svc.cluster.local:6379") | quote }}
+REDIS_DB: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_DB" "params" $redis "field" "db" "default" "0") | quote }}
+REDIS_PROTOCOL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_PROTOCOL" "params" $redis "field" "protocol" "default" "3") | quote }}
+REDIS_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_TLS" "params" $redis "field" "tls" "default" "false") | quote }}
+REDIS_CA_CERT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_CA_CERT" "params" $redis "field" "caCert" "default" "") | quote }}
+GOOGLE_APPLICATION_CREDENTIALS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "GOOGLE_APPLICATION_CREDENTIALS" "params" $redis "field" "googleAppCredentials" "default" "") | quote }}
+REDIS_SERVICE_ACCOUNT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_SERVICE_ACCOUNT" "params" $redis "field" "serviceAccount" "default" "") | quote }}
+# OBJECT STORAGE (SeaweedFS by default; endpoint via the datastore mask)
+OBJECT_STORAGE_ENDPOINT: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "objectStorage" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "http://seaweedfs-s3.reporter.svc.cluster.local:8333") | quote }}
+OBJECT_STORAGE_REGION: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OBJECT_STORAGE_REGION" "params" $os "field" "region" "default" "us-east-1") | quote }}
+OBJECT_STORAGE_USE_PATH_STYLE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OBJECT_STORAGE_USE_PATH_STYLE" "params" $os "field" "usePathStyle" "default" "true") | quote }}
+OBJECT_STORAGE_DISABLE_SSL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OBJECT_STORAGE_DISABLE_SSL" "params" $os "field" "disableSsl" "default" "true") | quote }}
+OBJECT_STORAGE_BUCKET: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OBJECT_STORAGE_BUCKET" "params" $os "field" "bucket" "default" "reporter-storage") | quote }}
+# MONGO DB (host/user/port via the datastore mask; identity/tuning via grouped params)
+MONGO_URI: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MONGO_URI" "params" $mongo "field" "uri" "default" "mongodb") | quote }}
+MONGO_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "reporter-mongodb.reporter.svc.cluster.local") | quote }}
+MONGO_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MONGO_NAME" "params" $mongo "field" "name" "default" "reporter-db") | quote }}
+MONGO_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "reporter") | quote }}
+MONGO_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
+MONGO_MAX_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MONGO_MAX_POOL_SIZE" "params" $mongo "field" "maxPoolSize" "default" "1000") | quote }}
+MONGO_TLS_CA_CERT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MONGO_TLS_CA_CERT" "params" $mongo "field" "tlsCaCert" "default" "") | quote }}
+MONGO_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") | quote }}
+# FETCHER INTEGRATION
+FETCHER_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "FETCHER_ENABLED" "params" $fetcher "field" "enabled" "default" "false") | quote }}
+FETCHER_URL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "FETCHER_URL" "params" $fetcher "field" "url" "default" "") | quote }}
+# MULTI-TENANT (reporter exposes only the ENABLED knob; no gated MT block today)
+MULTI_TENANT_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" $mt "field" "enabled" "default" "false") | quote }}
+# MIDAZ ONBOARDING DATASOURCE (host/port/user/ssl via the postgres datastore mask)
+DATASOURCE_ONBOARDING_CONFIG_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DATASOURCE_ONBOARDING_CONFIG_NAME" "params" $ds "field" "configName" "default" "midaz_onboarding") | quote }}
+DATASOURCE_ONBOARDING_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DATASOURCE_ONBOARDING_HOST" "default" "midaz-postgresql-replication.midaz.svc.cluster.local") | quote }}
+DATASOURCE_ONBOARDING_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DATASOURCE_ONBOARDING_PORT" "default" "5432") | quote }}
+DATASOURCE_ONBOARDING_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DATASOURCE_ONBOARDING_USER" "default" "midaz") | quote }}
+DATASOURCE_ONBOARDING_DATABASE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DATASOURCE_ONBOARDING_DATABASE" "params" $ds "field" "database" "default" "onboarding") | quote }}
+DATASOURCE_ONBOARDING_TYPE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DATASOURCE_ONBOARDING_TYPE" "params" $ds "field" "type" "default" "postgresql") | quote }}
+DATASOURCE_ONBOARDING_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DATASOURCE_ONBOARDING_SSLMODE" "default" "disable") | quote }}
+DATASOURCE_ONBOARDING_SSLROOTCERT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DATASOURCE_ONBOARDING_SSLROOTCERT" "params" $ds "field" "sslRootCert" "default" "") | quote }}
+{{- end }}
+
+{{/*
+reporter.commonConfigKeys — space-separated list of every SHARED env key that
+`reporter.commonConfigData` (+ the OTEL block) emits explicitly. Each component
+ConfigMap uses it to build the "reserved" set so its legacy passthrough range
+(preserving arbitrary keys like DATASOURCE_EXTERNAL_*) never double-emits a key
+already rendered by the enumerated block.
+*/}}
+{{- define "reporter.commonConfigKeys" -}}
+ENV_NAME RABBITMQ_URI RABBITMQ_PORT_HOST RABBITMQ_HOST RABBITMQ_PORT_AMQP RABBITMQ_NUMBERS_OF_WORKERS RABBITMQ_EXCHANGE RABBITMQ_GENERATE_REPORT_QUEUE RABBITMQ_GENERATE_REPORT_KEY RABBITMQ_HEALTH_CHECK_URL REDIS_MASTER_NAME REDIS_HOST REDIS_DB REDIS_PROTOCOL REDIS_TLS REDIS_CA_CERT GOOGLE_APPLICATION_CREDENTIALS REDIS_SERVICE_ACCOUNT OBJECT_STORAGE_ENDPOINT OBJECT_STORAGE_REGION OBJECT_STORAGE_USE_PATH_STYLE OBJECT_STORAGE_DISABLE_SSL OBJECT_STORAGE_BUCKET MONGO_URI MONGO_HOST MONGO_NAME MONGO_USER MONGO_PORT MONGO_MAX_POOL_SIZE MONGO_TLS_CA_CERT MONGO_PARAMETERS FETCHER_ENABLED FETCHER_URL MULTI_TENANT_ENABLED DATASOURCE_ONBOARDING_CONFIG_NAME DATASOURCE_ONBOARDING_HOST DATASOURCE_ONBOARDING_PORT DATASOURCE_ONBOARDING_USER DATASOURCE_ONBOARDING_DATABASE DATASOURCE_ONBOARDING_TYPE DATASOURCE_ONBOARDING_SSLMODE DATASOURCE_ONBOARDING_SSLROOTCERT OTEL_RESOURCE_SERVICE_NAME OTEL_LIBRARY_NAME OTEL_RESOURCE_SERVICE_VERSION OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT OTEL_EXPORTER_OTLP_ENDPOINT_PORT OTEL_EXPORTER_OTLP_ENDPOINT ENABLE_TELEMETRY OTEL_INSECURE_EXPORTER VERSION annotations
+{{- end }}
+
+{{/*
+reporter.legacyConfigPassthrough — emit any leftover key in the merged legacy
+override map (`merge <component>.configmap common.configmap`) that the enumerated
+block did NOT already render. Preserves full backward-compat for arbitrary raw
+keys (e.g. DATASOURCE_EXTERNAL_*). Emits nothing when configmap is empty (default).
+Inputs (dict): cm (merged map), reserved (space-separated reserved key list).
+*/}}
+{{- define "reporter.legacyConfigPassthrough" -}}
+{{- $cm := .cm | default dict -}}
+{{- $reserved := dict -}}
+{{- range (splitList " " .reserved) -}}{{- $reserved = set $reserved . true -}}{{- end -}}
+{{- range $k, $v := $cm -}}
+{{- if not (hasKey $reserved $k) }}
+{{ $k }}: {{ $v | quote }}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
 Secret/Service names render even when all bundled subcharts are disabled
 (external-infra path). Self-contained: no other common.* helpers required.

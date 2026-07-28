@@ -1,3 +1,4 @@
+{{- if .Values.manager.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -19,3 +20,4 @@ spec:
       name: http
   selector:
     {{- include "plugin-manager.selectorLabels" (dict "context" . "name" .Values.manager.name) | nindent 4 }}
+{{- end }}

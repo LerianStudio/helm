@@ -35,8 +35,21 @@ global:
       roles:
         - role: "readWrite"
           db: "reporter-db"
+  # -- Datastore host/connection mask (lerian-common). Set a field ONCE here to
+  #    override the in-cluster default host/port/user/ssl for every component
+  #    (SHARED mode). A raw `common.configmap.<KEY>` still wins over the mask.
+  #    Leave empty to keep the shipped in-cluster defaults. Example:
+  #    datastores:
+  #      broker: { host: "my-rabbit.example.com" }        # → RABBITMQ_HOST
+  #      mongo:  { host: "my-mongo", user: "app", port: "27017", params: "" }
+  #      redis:  { host: "my-redis:6379" }                # → REDIS_HOST
+  #      postgres: { host: "pg", port: "5432", user: "app", ssl: "require" }  # DATASOURCE_ONBOARDING_*
+  #      objectStorage: { endpoint: "https://s3.example.com" }  # → OBJECT_STORAGE_ENDPOINT
+  datastores: {}
 manager:
   name: "reporter-manager"
+  # -- Enable or disable the manager (API) component
+  enabled: true
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   # -- Annotations for the manager deployment resource
@@ -164,47 +177,56 @@ manager:
     # Example for AWS IRSA:
     # annotations:
     #   eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/my-role"
-  configmap:
-    # -- Annotations for the configmap
-    annotations: {}
-    # APP'
-    VERSION: "v1.0.0"
-    APP_CONTEXT: "/manager/v1"
-    SERVER_PORT: "4005"
-    SERVER_ADDRESS: ":4005" #":{{ .Values.manager.configmap.SERVER_PORT }}"
-    # LOG LEVEL
-    LOG_LEVEL: debug
-    # AUTH CONFIGS
-    PLUGIN_AUTH_ENABLED: false
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    # OPEN TELEMETRY
-    OTEL_RESOURCE_SERVICE_NAME: reporter-manager
-    OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0" #"{{ .Values.manager.configmap.VERSION }}"
-    # SWAGGER
-    SWAGGER_TITLE: 'Reporter'
-    SWAGGER_DESCRIPTION: 'Documentation for reporter'
-    SWAGGER_VERSION: "v4.0.0" #"{{ .Values.manager.configmap.VERSION }}"
-    SWAGGER_HOST: ":4005" #"{{ .Values.manager.configmap.SERVER_ADDRESS }}"
-    SWAGGER_BASE_PATH: /
-    SWAGGER_SCHEMES: http
-    SWAGGER_LEFT_DELIMITER: "{{"
-    SWAGGER_RIGHT_DELIMITER: "}}"
-    PDF_POOL_WORKERS: "3"
-    PDF_TIMEOUT_SECONDS: "60"
-    # Rate Limiting - Three-tier system with Redis backend
-    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+  # ===========================================================================
+  # PRODUCTIZED CONFIG (manager) — clean, grouped params for the knobs clients
+  # tune most. Backward-compatible: the raw `configmap.<KEY>` (and shared
+  # `common.configmap.<KEY>`) still work and OVERRIDE these
+  # (precedence: configmap.<KEY> > these params > default). Defaults here match
+  # the legacy template defaults, so existing installs render unchanged.
+  # ===========================================================================
+  # --- App -------------------------------------------------------------------
+  app:
+    appContext: "/manager/v1"          # → APP_CONTEXT
+    serverPort: "4005"                 # → SERVER_PORT
+    serverAddress: ":4005"             # → SERVER_ADDRESS
+    logLevel: "debug"                  # → LOG_LEVEL
+  # --- Auth (plugin-access-manager) ------------------------------------------
+  auth:
+    enabled: "false"                   # → PLUGIN_AUTH_ENABLED
+    address: "http://plugin-access-manager-auth:4000"  # → PLUGIN_AUTH_ADDRESS
+  # --- OpenTelemetry identity (service name; version comes from image.tag) ---
+  otel:
+    serviceName: "reporter-manager"    # → OTEL_RESOURCE_SERVICE_NAME
+  # --- Swagger ---------------------------------------------------------------
+  swagger:
+    title: "Reporter"                  # → SWAGGER_TITLE
+    description: "Documentation for reporter"  # → SWAGGER_DESCRIPTION
+    version: "v4.0.0"                  # → SWAGGER_VERSION
+    host: ":4005"                      # → SWAGGER_HOST
+    basePath: "/"                      # → SWAGGER_BASE_PATH
+    schemes: "http"                    # → SWAGGER_SCHEMES
+    leftDelimiter: "{{"                # → SWAGGER_LEFT_DELIMITER
+    rightDelimiter: "}}"               # → SWAGGER_RIGHT_DELIMITER
+  # --- PDF rendering ---------------------------------------------------------
+  pdf:
+    poolWorkers: "3"                   # → PDF_POOL_WORKERS
+    timeoutSeconds: "60"               # → PDF_TIMEOUT_SECONDS
+  # --- Rate limiting (three-tier, Redis-backed) ------------------------------
+  rateLimit:
+    enabled: "true"                    # → RATE_LIMIT_ENABLED
+    max: "500"                         # → RATE_LIMIT_MAX
+    windowSec: "60"                    # → RATE_LIMIT_WINDOW_SEC
+    aggressiveMax: "100"               # → AGGRESSIVE_RATE_LIMIT_MAX
+    aggressiveWindowSec: "60"          # → AGGRESSIVE_RATE_LIMIT_WINDOW_SEC
+    relaxedMax: "1000"                 # → RELAXED_RATE_LIMIT_MAX
+    relaxedWindowSec: "60"             # → RELAXED_RATE_LIMIT_WINDOW_SEC
+    redisTimeoutMs: "500"              # → RATE_LIMIT_REDIS_TIMEOUT_MS
+    allowDisabled: ""                  # → ALLOW_RATELIMIT_DISABLED
+    allowFailOpen: ""                  # → ALLOW_RATELIMIT_FAIL_OPEN
+  # -- ConfigMap for environment variables (raw/legacy format; still fully
+  #    supported and takes PRECEDENCE over the productized params above).
+  #    Empty by default. Use `annotations` here to annotate the ConfigMap.
+  configmap: {}
   # Extra Env Vars
   extraEnvVars: {}
   # -- HPA configuration (used when KEDA is disabled)
@@ -236,6 +258,8 @@ manager:
 # Worker configuration
 worker:
   name: "reporter-worker"
+  # -- Enable or disable the worker component
+  enabled: true
   # -- Annotations for worker job resources
   annotations: {}
   # -- Number of replicas (used when KEDA is disabled and worker runs as a Deployment)
@@ -312,34 +336,37 @@ worker:
     # Example for AWS IRSA:
     # annotations:
     #   eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/my-role"
-  configmap:
-    # -- Annotations for the configmap
-    annotations: {}
-    # APP
-    VERSION: v1.0.0
-    # HEALTH SERVER
-    HEALTH_PORT: "4006"
-    # LOG LEVEL
-    LOG_LEVEL: debug
-    # OPEN TELEMETRY
-    OTEL_RESOURCE_SERVICE_NAME: reporter-worker
-    OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0"
-    PDF_POOL_WORKERS: "5"
-    PDF_TIMEOUT_SECONDS: "30"
-    # Rate Limiting - Three-tier system with Redis backend
-    # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+  # ===========================================================================
+  # PRODUCTIZED CONFIG (worker) — same precedence rules as the manager block:
+  # configmap.<KEY> (and shared common.configmap.<KEY>) > these params > default.
+  # ===========================================================================
+  # --- App -------------------------------------------------------------------
+  app:
+    healthPort: "4006"                 # → HEALTH_PORT
+    logLevel: "debug"                  # → LOG_LEVEL
+  # --- OpenTelemetry identity (service name; version comes from image.tag) ---
+  otel:
+    serviceName: "reporter-worker"     # → OTEL_RESOURCE_SERVICE_NAME
+  # --- PDF rendering ---------------------------------------------------------
+  pdf:
+    poolWorkers: "5"                   # → PDF_POOL_WORKERS
+    timeoutSeconds: "30"               # → PDF_TIMEOUT_SECONDS
+  # --- Rate limiting (three-tier, Redis-backed) ------------------------------
+  rateLimit:
+    enabled: "true"                    # → RATE_LIMIT_ENABLED
+    max: "500"                         # → RATE_LIMIT_MAX
+    windowSec: "60"                    # → RATE_LIMIT_WINDOW_SEC
+    aggressiveMax: "100"               # → AGGRESSIVE_RATE_LIMIT_MAX
+    aggressiveWindowSec: "60"          # → AGGRESSIVE_RATE_LIMIT_WINDOW_SEC
+    relaxedMax: "1000"                 # → RELAXED_RATE_LIMIT_MAX
+    relaxedWindowSec: "60"             # → RELAXED_RATE_LIMIT_WINDOW_SEC
+    redisTimeoutMs: "500"              # → RATE_LIMIT_REDIS_TIMEOUT_MS
+    allowDisabled: ""                  # → ALLOW_RATELIMIT_DISABLED
+    allowFailOpen: ""                  # → ALLOW_RATELIMIT_FAIL_OPEN
+  # -- ConfigMap for environment variables (raw/legacy format; still fully
+  #    supported and takes PRECEDENCE over the productized params above).
+  #    Empty by default. Use `annotations` here to annotate the ConfigMap.
+  configmap: {}
   # -- Pod annotations for the worker deployment (used when KEDA is disabled)
   podAnnotations: {}
   # -- Deployment strategy (used when KEDA is disabled)
@@ -392,80 +419,84 @@ worker:
             queueLength: "1"
             protocol: "amqp"
             vhost: "/"
+# ===========================================================================
+# SHARED CONFIG (manager + worker) — PRODUCTIZED grouped params.
+# Both components consume this block. Backward-compatible: the raw
+# `common.configmap.<KEY>` (and per-component `<component>.configmap.<KEY>`)
+# still work and OVERRIDE these params (precedence: configmap.<KEY> > these
+# params > default). Connection hosts/users/ports come from the
+# `global.datastores` mask (see `global.datastores` below) with the legacy
+# in-cluster FQDNs as defaults, so a default install renders unchanged.
+# ===========================================================================
 common:
-  configmap:
-    # WORKER
-    ENV_NAME: development
-    # RABBITMQ
-    RABBITMQ_URI: amqp
-    RABBITMQ_PORT_HOST: 15672
-    RABBITMQ_HOST: reporter-rabbitmq.reporter.svc.cluster.local
-    RABBITMQ_PORT_AMQP: 5672
-    RABBITMQ_NUMBERS_OF_WORKERS: 5
-    RABBITMQ_EXCHANGE: "reporter.generate-report.exchange"
-    RABBITMQ_GENERATE_REPORT_QUEUE: "reporter.generate-report.queue"
-    RABBITMQ_GENERATE_REPORT_KEY: "reporter.generate-report.key"
-    RABBITMQ_HEALTH_CHECK_URL: "http://reporter-rabbitmq.reporter.svc.cluster.local:15672"
-    # Redis Configs
-    REDIS_MASTER_NAME: ""
-    REDIS_HOST: reporter-valkey.reporter.svc.cluster.local:6379
-    REDIS_DB: 0
-    REDIS_PROTOCOL: "3"
-    REDIS_TLS: "false"
-    REDIS_CA_CERT: ""
-    GOOGLE_APPLICATION_CREDENTIALS: ""
-    REDIS_SERVICE_ACCOUNT: ""
-    # Object Storage endpoint (default for local development with SeaweedFS)
-    OBJECT_STORAGE_ENDPOINT: http://seaweedfs-s3.reporter.svc.cluster.local:8333
-    OBJECT_STORAGE_REGION: us-east-1
-    OBJECT_STORAGE_USE_PATH_STYLE: "true"
-    OBJECT_STORAGE_DISABLE_SSL: "true"
-    OBJECT_STORAGE_BUCKET: "reporter-storage"
-    # MONGO DB
-    #MONGO_URI=mongo+srv
-    MONGO_URI: mongodb
-    MONGO_HOST: reporter-mongodb.reporter.svc.cluster.local
-    MONGO_NAME: reporter-db
-    MONGO_USER: reporter
-    MONGO_PORT: 27017
-    MONGO_MAX_POOL_SIZE: 1000
-    # OPEN TELEMETRY
-    OTEL_LIBRARY_NAME: github.com/LerianStudio/reporter
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: production
-    OTEL_EXPORTER_OTLP_ENDPOINT_PORT: 4317
-    OTEL_EXPORTER_OTLP_ENDPOINT: otlp://midaz-otel-lgtm:4317
-    ENABLE_TELEMETRY: true
-    OTEL_INSECURE_EXPORTER: "false"
-    # MongoDB TLS
-    MONGO_TLS_CA_CERT: ""
-    MONGO_PARAMETERS: ""
-    # Fetcher Integration
-    FETCHER_ENABLED: "false"
-    FETCHER_URL: ""
-    # Multi-Tenant
-    MULTI_TENANT_ENABLED: "false"
-    # MIDAZ ONBOARDING
-    DATASOURCE_ONBOARDING_CONFIG_NAME: midaz_onboarding
-    DATASOURCE_ONBOARDING_HOST: midaz-postgresql-replication.midaz.svc.cluster.local
-    DATASOURCE_ONBOARDING_PORT: 5432
-    DATASOURCE_ONBOARDING_USER: midaz
-    DATASOURCE_ONBOARDING_DATABASE: onboarding
-    DATASOURCE_ONBOARDING_TYPE: postgresql
-    DATASOURCE_ONBOARDING_SSLMODE: disable
-    DATASOURCE_ONBOARDING_SSLROOTCERT: ""
-    # EXTERNAL DATABASE WITH MULTIPLE SCHEMAS
-    # Use DATASOURCE_<NAME>_SCHEMAS to specify which schemas to query (comma-separated)
-    # If not set, defaults to "public" schema only
-    # In templates, use explicit schema syntax: external_db:sales.orders
-    #DATASOURCE_EXTERNAL_CONFIG_NAME: external_db
-    #DATASOURCE_EXTERNAL_HOST: external-postgres
-    #DATASOURCE_EXTERNAL_PORT: 5432
-    #DATASOURCE_EXTERNAL_USER: db_user
-    #DATASOURCE_EXTERNAL_DATABASE: external_database
-    #DATASOURCE_EXTERNAL_TYPE: postgresql
-    #DATASOURCE_EXTERNAL_SSLMODE: disable
-    #DATASOURCE_EXTERNAL_SSLROOTCERT:
-    #DATASOURCE_EXTERNAL_DB_SCHEMAS: sales,inventory,reporting
+  # -- ENV_NAME
+  env: "development"
+  # --- Broker (RabbitMQ) — host via global.datastores.broker; passwords via secrets
+  broker:
+    uri: "amqp"                        # → RABBITMQ_URI
+    portHost: "15672"                  # → RABBITMQ_PORT_HOST
+    portAmqp: "5672"                   # → RABBITMQ_PORT_AMQP
+    workers: "5"                       # → RABBITMQ_NUMBERS_OF_WORKERS
+    exchange: "reporter.generate-report.exchange"          # → RABBITMQ_EXCHANGE
+    generateReportQueue: "reporter.generate-report.queue"  # → RABBITMQ_GENERATE_REPORT_QUEUE
+    generateReportKey: "reporter.generate-report.key"      # → RABBITMQ_GENERATE_REPORT_KEY
+    # healthCheckUrl default "http://reporter-rabbitmq.reporter.svc.cluster.local:15672" # → RABBITMQ_HEALTH_CHECK_URL
+  # --- Redis / Valkey — host via global.datastores.redis
+  redis:
+    masterName: ""                     # → REDIS_MASTER_NAME
+    db: "0"                            # → REDIS_DB
+    protocol: "3"                      # → REDIS_PROTOCOL
+    tls: "false"                       # → REDIS_TLS
+    caCert: ""                         # → REDIS_CA_CERT
+    serviceAccount: ""                 # → REDIS_SERVICE_ACCOUNT
+    googleAppCredentials: ""           # → GOOGLE_APPLICATION_CREDENTIALS
+  # --- Object storage (SeaweedFS by default) — endpoint via global.datastores.objectStorage
+  objectStorage:
+    region: "us-east-1"                # → OBJECT_STORAGE_REGION
+    usePathStyle: "true"               # → OBJECT_STORAGE_USE_PATH_STYLE
+    disableSsl: "true"                 # → OBJECT_STORAGE_DISABLE_SSL
+    bucket: "reporter-storage"         # → OBJECT_STORAGE_BUCKET
+  # --- MongoDB — host/user/port/params via global.datastores.mongo; password via secrets
+  mongo:
+    uri: "mongodb"                     # → MONGO_URI
+    name: "reporter-db"                # → MONGO_NAME
+    maxPoolSize: "1000"                # → MONGO_MAX_POOL_SIZE
+    tlsCaCert: ""                      # → MONGO_TLS_CA_CERT
+  # --- OpenTelemetry (shared; per-component service name lives under manager/worker.otel)
+  otel:
+    libraryName: "github.com/LerianStudio/reporter"  # → OTEL_LIBRARY_NAME
+    deploymentEnvironment: "production"              # → OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
+    otlpEndpointPort: "4317"                         # → OTEL_EXPORTER_OTLP_ENDPOINT_PORT
+    otlpEndpoint: "otlp://midaz-otel-lgtm:4317"      # → OTEL_EXPORTER_OTLP_ENDPOINT
+    enableTelemetry: "true"                          # → ENABLE_TELEMETRY
+    insecureExporter: "false"                        # → OTEL_INSECURE_EXPORTER
+  # --- Fetcher integration
+  fetcher:
+    enabled: "false"                   # → FETCHER_ENABLED
+    url: ""                            # → FETCHER_URL
+  # --- Multi-tenant (reporter exposes only the ENABLED knob today)
+  multiTenant:
+    enabled: "false"                   # → MULTI_TENANT_ENABLED
+  # --- Midaz onboarding datasource — host/port/user/ssl via global.datastores.postgres
+  datasource:
+    onboarding:
+      configName: "midaz_onboarding"   # → DATASOURCE_ONBOARDING_CONFIG_NAME
+      database: "onboarding"           # → DATASOURCE_ONBOARDING_DATABASE
+      type: "postgresql"               # → DATASOURCE_ONBOARDING_TYPE
+      sslRootCert: ""                  # → DATASOURCE_ONBOARDING_SSLROOTCERT
+  # -- Shared raw/legacy ConfigMap. Still fully supported and takes PRECEDENCE
+  #    over the grouped params above. Empty by default. Any arbitrary key set here
+  #    is passed through to both components' ConfigMaps — this is where external
+  #    datasources with multiple schemas are still configured, e.g.:
+  #    DATASOURCE_EXTERNAL_CONFIG_NAME: external_db
+  #    DATASOURCE_EXTERNAL_HOST: external-postgres
+  #    DATASOURCE_EXTERNAL_PORT: "5432"
+  #    DATASOURCE_EXTERNAL_USER: db_user
+  #    DATASOURCE_EXTERNAL_DATABASE: external_database
+  #    DATASOURCE_EXTERNAL_TYPE: postgresql
+  #    DATASOURCE_EXTERNAL_SSLMODE: disable
+  #    DATASOURCE_EXTERNAL_DB_SCHEMAS: sales,inventory,reporting
+  configmap: {}
 secrets:
   # MONGO_PASSWORD is single-sourced from the Bitnami mongodb subchart Secret
   # (<release>-mongodb, key mongodb-root-password) and read via secretKeyRef — leave empty

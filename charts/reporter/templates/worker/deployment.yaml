@@ -1,4 +1,4 @@
-{{- if not (or .Values.keda.enabled .Values.keda.external) }}
+{{- if and .Values.worker.enabled (not (or .Values.keda.enabled .Values.keda.external)) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

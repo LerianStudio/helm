@@ -1,5 +1,5 @@
 {{- if not (or .Values.keda.enabled .Values.keda.external) }}
-{{- if .Values.manager.autoscaling.enabled }}
+{{- if and .Values.manager.enabled .Values.manager.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

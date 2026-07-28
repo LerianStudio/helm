@@ -266,10 +266,14 @@ data:
   # SERVICE DISCOVERY — enable via ledger.serviceDiscovery.enabled; env-wide server
   # config derived from global.serviceDiscovery; endpoints derived from this chart's
   # own service/ingress. Emitted before extraEnvVars so an operator can still override.
-  SD_ENABLED: {{ .Values.ledger.serviceDiscovery.enabled | default false | quote }}
+  {{- /* Legacy configmap.SD_ENABLED wins over the grouped param (presence-based);
+     compare to "true" so a legacy "false" string does not evaluate truthy. Same
+     resolved bool gates both the env var and the helper. */ -}}
+  {{- $sdEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "SD_ENABLED" "params" .Values.ledger.serviceDiscovery "field" "enabled" "default" "false")) "true" }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
   {{- include "lerian-common.serviceDiscovery.env" (dict
         "context" $
-        "enabled" (.Values.ledger.serviceDiscovery.enabled | default false)
+        "enabled" $sdEnabled
         "name" (include "midaz-ledger.fullname" .)
         "port" .Values.ledger.service.port
         "namespace" (include "global.namespace" .)

@@ -4,6 +4,7 @@
    `configmap` (native-key, top precedence) to every helper. */ -}}
 {{- $cm := merge (deepCopy (.Values.worker.configmap | default dict)) (.Values.common.configmap | default dict) -}}
 {{- $app := .Values.worker.app | default dict -}}
+{{- $broker := .Values.common.broker | default dict -}}
 {{- $pdf := .Values.worker.pdf | default dict -}}
 {{- $rl := .Values.worker.rateLimit | default dict -}}
 {{- $otel := .Values.common.otel | default dict -}}
@@ -50,6 +51,8 @@ data:
   # =============================================================================
   HEALTH_PORT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "HEALTH_PORT" "params" $app "field" "healthPort" "default" "4006") | quote }}
   LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "LOG_LEVEL" "params" $app "field" "logLevel" "default" "debug") | quote }}
+  # RABBITMQ (worker surface only)
+  RABBITMQ_DLQ_QUEUE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_DLQ_QUEUE" "params" $broker "field" "dlqQueue" "default" "reporter.dlq") | quote }}
   # PDF RENDERING
   PDF_POOL_WORKERS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PDF_POOL_WORKERS" "params" $pdf "field" "poolWorkers" "default" "5") | quote }}
   PDF_TIMEOUT_SECONDS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PDF_TIMEOUT_SECONDS" "params" $pdf "field" "timeoutSeconds" "default" "30") | quote }}
@@ -73,7 +76,7 @@ data:
   # LEGACY PASSTHROUGH — any raw configmap key not covered above (e.g.
   # DATASOURCE_EXTERNAL_*) stays supported. Empty by default.
   # =============================================================================
-  {{- $reserved := printf "%s HEALTH_PORT LOG_LEVEL PDF_POOL_WORKERS PDF_TIMEOUT_SECONDS RATE_LIMIT_ENABLED RATE_LIMIT_MAX RATE_LIMIT_WINDOW_SEC AGGRESSIVE_RATE_LIMIT_MAX AGGRESSIVE_RATE_LIMIT_WINDOW_SEC RELAXED_RATE_LIMIT_MAX RELAXED_RATE_LIMIT_WINDOW_SEC RATE_LIMIT_REDIS_TIMEOUT_MS ALLOW_RATELIMIT_DISABLED ALLOW_RATELIMIT_FAIL_OPEN" (include "reporter.commonConfigKeys" .) -}}
+  {{- $reserved := printf "%s HEALTH_PORT LOG_LEVEL RABBITMQ_DLQ_QUEUE PDF_POOL_WORKERS PDF_TIMEOUT_SECONDS RATE_LIMIT_ENABLED RATE_LIMIT_MAX RATE_LIMIT_WINDOW_SEC AGGRESSIVE_RATE_LIMIT_MAX AGGRESSIVE_RATE_LIMIT_WINDOW_SEC RELAXED_RATE_LIMIT_MAX RELAXED_RATE_LIMIT_WINDOW_SEC RATE_LIMIT_REDIS_TIMEOUT_MS ALLOW_RATELIMIT_DISABLED ALLOW_RATELIMIT_FAIL_OPEN" (include "reporter.commonConfigKeys" .) -}}
   {{- include "reporter.legacyConfigPassthrough" (dict "cm" $cm "reserved" $reserved) | nindent 2 }}
   # Extra Env Vars
   {{- with .Values.worker.extraEnvVars }}

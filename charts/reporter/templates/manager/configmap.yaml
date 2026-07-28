@@ -7,6 +7,7 @@
 {{- $app := .Values.manager.app | default dict -}}
 {{- $auth := .Values.manager.auth | default dict -}}
 {{- $swagger := .Values.manager.swagger | default dict -}}
+{{- $cors := .Values.manager.cors | default dict -}}
 {{- $pdf := .Values.manager.pdf | default dict -}}
 {{- $rl := .Values.manager.rateLimit | default dict -}}
 {{- $otel := .Values.common.otel | default dict -}}
@@ -55,10 +56,16 @@ data:
   SERVER_PORT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SERVER_PORT" "params" $app "field" "serverPort" "default" "4005") | quote }}
   SERVER_ADDRESS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SERVER_ADDRESS" "params" $app "field" "serverAddress" "default" ":4005") | quote }}
   LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "LOG_LEVEL" "params" $app "field" "logLevel" "default" "debug") | quote }}
+  # CORS + TRUSTED PROXIES (API surface only)
+  CORS_ALLOWED_ORIGINS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CORS_ALLOWED_ORIGINS" "params" $cors "field" "allowedOrigins" "default" "*") | quote }}
+  CORS_ALLOWED_METHODS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CORS_ALLOWED_METHODS" "params" $cors "field" "allowedMethods" "default" "GET,POST,PUT,PATCH,DELETE,OPTIONS") | quote }}
+  CORS_ALLOWED_HEADERS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CORS_ALLOWED_HEADERS" "params" $cors "field" "allowedHeaders" "default" "Origin,Content-Type,Accept,Authorization,X-Request-ID") | quote }}
+  TRUSTED_PROXIES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRUSTED_PROXIES" "params" $app "field" "trustedProxies" "default" "") | quote }}
   # AUTH
   PLUGIN_AUTH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PLUGIN_AUTH_ENABLED" "params" $auth "field" "enabled" "default" "false") | quote }}
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PLUGIN_AUTH_ADDRESS" "params" $auth "field" "address" "default" "http://plugin-access-manager-auth:4000") | quote }}
   # SWAGGER
+  SWAGGER_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_ENABLED" "params" $swagger "field" "enabled" "default" "true") | quote }}
   SWAGGER_TITLE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_TITLE" "params" $swagger "field" "title" "default" "Reporter") | quote }}
   SWAGGER_DESCRIPTION: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_DESCRIPTION" "params" $swagger "field" "description" "default" "Documentation for reporter") | quote }}
   SWAGGER_VERSION: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_VERSION" "params" $swagger "field" "version" "default" "v4.0.0") | quote }}
@@ -93,7 +100,7 @@ data:
   # LEGACY PASSTHROUGH — any raw configmap key not covered above (e.g.
   # DATASOURCE_EXTERNAL_*) stays supported. Empty by default.
   # =============================================================================
-  {{- $reserved := printf "%s APP_CONTEXT SERVER_PORT SERVER_ADDRESS LOG_LEVEL PLUGIN_AUTH_ENABLED PLUGIN_AUTH_ADDRESS SWAGGER_TITLE SWAGGER_DESCRIPTION SWAGGER_VERSION SWAGGER_HOST SWAGGER_BASE_PATH SWAGGER_SCHEMES SWAGGER_LEFT_DELIMITER SWAGGER_RIGHT_DELIMITER PDF_POOL_WORKERS PDF_TIMEOUT_SECONDS RATE_LIMIT_ENABLED RATE_LIMIT_MAX RATE_LIMIT_WINDOW_SEC AGGRESSIVE_RATE_LIMIT_MAX AGGRESSIVE_RATE_LIMIT_WINDOW_SEC RELAXED_RATE_LIMIT_MAX RELAXED_RATE_LIMIT_WINDOW_SEC RATE_LIMIT_REDIS_TIMEOUT_MS ALLOW_RATELIMIT_DISABLED ALLOW_RATELIMIT_FAIL_OPEN" (include "reporter.commonConfigKeys" .) -}}
+  {{- $reserved := printf "%s APP_CONTEXT SERVER_PORT SERVER_ADDRESS LOG_LEVEL CORS_ALLOWED_ORIGINS CORS_ALLOWED_METHODS CORS_ALLOWED_HEADERS TRUSTED_PROXIES PLUGIN_AUTH_ENABLED PLUGIN_AUTH_ADDRESS SWAGGER_ENABLED SWAGGER_TITLE SWAGGER_DESCRIPTION SWAGGER_VERSION SWAGGER_HOST SWAGGER_BASE_PATH SWAGGER_SCHEMES SWAGGER_LEFT_DELIMITER SWAGGER_RIGHT_DELIMITER PDF_POOL_WORKERS PDF_TIMEOUT_SECONDS RATE_LIMIT_ENABLED RATE_LIMIT_MAX RATE_LIMIT_WINDOW_SEC AGGRESSIVE_RATE_LIMIT_MAX AGGRESSIVE_RATE_LIMIT_WINDOW_SEC RELAXED_RATE_LIMIT_MAX RELAXED_RATE_LIMIT_WINDOW_SEC RATE_LIMIT_REDIS_TIMEOUT_MS ALLOW_RATELIMIT_DISABLED ALLOW_RATELIMIT_FAIL_OPEN" (include "reporter.commonConfigKeys" .) -}}
   {{- include "reporter.legacyConfigPassthrough" (dict "cm" $cm "reserved" $reserved) | nindent 2 }}
   # Extra Env Vars
   {{- with .Values.manager.extraEnvVars }}

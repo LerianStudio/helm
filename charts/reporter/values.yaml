@@ -67,6 +67,17 @@ global:
     tlsEnabled: false                       # → STREAMING_TLS_ENABLED
     saslMechanism: ""                       # e.g. SCRAM-SHA-256 → STREAMING_SASL_MECHANISM
     saslUsername: ""                        # → STREAMING_SASL_USERNAME
+  # -- Multi-tenant (lib-commons/multitenancy) — env-wide tenant-manager endpoint +
+  #    its redis, shared by manager + worker. Consumed by lerian-common.multiTenant.env
+  #    ONLY when a component enables MT (common.multiTenant.enabled=true). The remaining
+  #    MT knobs (timeout/cache/pool/circuit-breaker/environment/allowInsecure) use the
+  #    helper's canonical defaults (which match reporter's .env) and are overridable via
+  #    the raw common.configmap.MULTI_TENANT_* keys.
+  multiTenant:
+    url: ""                                 # → MULTI_TENANT_URL (required when MT enabled)
+    redisHost: ""                           # → MULTI_TENANT_REDIS_HOST (required when MT enabled)
+    redisPort: "6379"                       # → MULTI_TENANT_REDIS_PORT
+    redisTls: false                         # → MULTI_TENANT_REDIS_TLS
 manager:
   name: "reporter-manager"
   # -- Enable or disable the manager (API) component
@@ -211,6 +222,12 @@ manager:
     serverPort: "4005"                 # → SERVER_PORT
     serverAddress: ":4005"             # → SERVER_ADDRESS
     logLevel: "debug"                  # → LOG_LEVEL
+    trustedProxies: ""                 # → TRUSTED_PROXIES (comma-separated IPs/CIDRs for X-Forwarded-For)
+  # --- CORS (API surface) — wildcard origins only in development -------------
+  cors:
+    allowedOrigins: "*"                # → CORS_ALLOWED_ORIGINS
+    allowedMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"                  # → CORS_ALLOWED_METHODS
+    allowedHeaders: "Origin,Content-Type,Accept,Authorization,X-Request-ID"  # → CORS_ALLOWED_HEADERS
   # --- Auth (plugin-access-manager) ------------------------------------------
   auth:
     enabled: "false"                   # → PLUGIN_AUTH_ENABLED
@@ -220,6 +237,7 @@ manager:
     serviceName: "reporter-manager"    # → OTEL_RESOURCE_SERVICE_NAME
   # --- Swagger ---------------------------------------------------------------
   swagger:
+    enabled: "true"                    # → SWAGGER_ENABLED
     title: "Reporter"                  # → SWAGGER_TITLE
     description: "Documentation for reporter"  # → SWAGGER_DESCRIPTION
     version: "v4.0.0"                  # → SWAGGER_VERSION
@@ -452,6 +470,13 @@ worker:
 common:
   # -- ENV_NAME
   env: "development"
+  # -- DEPLOYMENT_MODE (local|byoc|saas) — drives boot TLS enforcement + /readyz.
+  #    Default "local" matches the app .env and the self-contained plaintext infra.
+  deploymentMode: "local"              # → DEPLOYMENT_MODE
+  # -- ALLOW_INSECURE_TLS — bypass SaaS/production TLS enforcement. Default "true"
+  #    so the bundled plaintext infra (rabbitmq/mongo/valkey/seaweedfs) connects,
+  #    matching the app .env local default. NEVER set true in production.
+  allowInsecureTls: "true"             # → ALLOW_INSECURE_TLS
   # --- Broker (RabbitMQ) — host via global.datastores.broker; passwords via secrets
   broker:
     uri: "amqp"                        # → RABBITMQ_URI
@@ -462,6 +487,11 @@ common:
     generateReportQueue: "reporter.generate-report.queue"  # → RABBITMQ_GENERATE_REPORT_QUEUE
     generateReportKey: "reporter.generate-report.key"      # → RABBITMQ_GENERATE_REPORT_KEY
     # healthCheckUrl default "http://reporter-rabbitmq.reporter.svc.cluster.local:15672" # → RABBITMQ_HEALTH_CHECK_URL
+    tls: "false"                       # → RABBITMQ_TLS
+    dlqQueue: "reporter.dlq"           # → RABBITMQ_DLQ_QUEUE (worker surface only)
+    reportEventsExchange: "reporter.events"  # → RABBITMQ_REPORT_EVENTS_EXCHANGE (lib-streaming business events)
+    multiTenantDiscoveryTimeout: "500" # → RABBITMQ_MULTI_TENANT_DISCOVERY_TIMEOUT
+    multiTenantSyncInterval: "30"      # → RABBITMQ_MULTI_TENANT_SYNC_INTERVAL
   # --- Redis / Valkey — host via global.datastores.redis
   redis:
     masterName: ""                     # → REDIS_MASTER_NAME
@@ -471,6 +501,7 @@ common:
     caCert: ""                         # → REDIS_CA_CERT
     serviceAccount: ""                 # → REDIS_SERVICE_ACCOUNT
     googleAppCredentials: ""           # → GOOGLE_APPLICATION_CREDENTIALS
+    useGcpIam: "false"                 # → REDIS_USE_GCP_IAM
   # --- Object storage (SeaweedFS by default) — endpoint via global.datastores.objectStorage
   objectStorage:
     region: "us-east-1"                # → OBJECT_STORAGE_REGION
@@ -495,16 +526,38 @@ common:
   fetcher:
     enabled: "false"                   # → FETCHER_ENABLED
     url: ""                            # → FETCHER_URL
-  # --- Multi-tenant (reporter exposes only the ENABLED knob today)
+  # --- Multi-tenant — full block wired via lerian-common.multiTenant.env, gated on
+  #     `enabled`. When enabled, MULTI_TENANT_URL + MULTI_TENANT_REDIS_HOST come from
+  #     global.multiTenant (required); the rest use the helper's canonical defaults
+  #     (match reporter's .env). Secrets: MULTI_TENANT_SERVICE_API_KEY (required),
+  #     MULTI_TENANT_REDIS_PASSWORD (optional) — set under `secrets` (see below).
   multiTenant:
     enabled: "false"                   # → MULTI_TENANT_ENABLED
-  # --- Midaz onboarding datasource — host/port/user/ssl via global.datastores.postgres
+    redisCaCert: ""                    # → MULTI_TENANT_REDIS_CA_CERT (base64 PEM; used when MULTI_TENANT_REDIS_TLS=true)
+  # --- Datasources (direct single-tenant query mode)
   datasource:
+    # -- Midaz onboarding datasource — host/port/user/ssl via global.datastores.postgres
     onboarding:
       configName: "midaz_onboarding"   # → DATASOURCE_ONBOARDING_CONFIG_NAME
       database: "onboarding"           # → DATASOURCE_ONBOARDING_DATABASE
       type: "postgresql"               # → DATASOURCE_ONBOARDING_TYPE
       sslRootCert: ""                  # → DATASOURCE_ONBOARDING_SSLROOTCERT
+    # -- External datasource — a distinct Postgres (NOT the shared cluster infra).
+    #    OFF by default: when disabled the DATASOURCE_EXTERNAL_* keys are NOT emitted
+    #    (so the app registers no external datasource), and legacy flat
+    #    common.configmap.DATASOURCE_EXTERNAL_* still passes through. Set enabled=true
+    #    to emit the grouped block below. Password → secrets.DATASOURCE_EXTERNAL_PASSWORD.
+    external:
+      enabled: false                   # gate (chart-only; NOT emitted as an env var)
+      configName: "external_db"        # → DATASOURCE_EXTERNAL_CONFIG_NAME
+      host: "external-postgres"        # → DATASOURCE_EXTERNAL_HOST
+      port: "5432"                     # → DATASOURCE_EXTERNAL_PORT
+      user: "db_user"                  # → DATASOURCE_EXTERNAL_USER
+      database: "external_database"    # → DATASOURCE_EXTERNAL_DATABASE
+      type: "postgresql"               # → DATASOURCE_EXTERNAL_TYPE
+      sslMode: "disable"               # → DATASOURCE_EXTERNAL_SSLMODE
+      sslRootCert: ""                  # → DATASOURCE_EXTERNAL_SSLROOTCERT
+      dbSchemas: "sales,inventory,reporting"  # → DATASOURCE_EXTERNAL_DB_SCHEMAS (comma-separated)
   # --- Service discovery (lib-service-discovery) — SHARED by manager + worker.
   #     enabled=false (default) => only `SD_ENABLED: "false"` is emitted; the derived
   #     SD_* block stays INERT until enabled AND global.serviceDiscovery.address is set.
@@ -524,6 +577,8 @@ common:
     enabled: "false"                   # → STREAMING_ENABLED
     clientId: "reporter"               # → STREAMING_CLIENT_ID
     cloudeventsSource: "//lerian.reporter"  # → STREAMING_CLOUDEVENTS_SOURCE
+    compression: "lz4"                 # → STREAMING_COMPRESSION (reporter-specific; not in the generic helper)
+    requiredAcks: "all"                # → STREAMING_REQUIRED_ACKS (reporter-specific; not in the generic helper)
   # -- Shared raw/legacy ConfigMap. Still fully supported and takes PRECEDENCE
   #    over the grouped params above. Empty by default. Any arbitrary key set here
   #    is passed through to both components' ConfigMaps — this is where external
@@ -554,11 +609,29 @@ secrets:
   # cluster. Generate once with: openssl rand -hex 32
   RABBITMQ_ERLANG_COOKIE: ""
   DATASOURCE_ONBOARDING_PASSWORD: ""
-  #DATASOURCE_EXTERNAL_PASSWORD: db_password
+  # External datasource password — used only when common.datasource.external.enabled=true.
+  DATASOURCE_EXTERNAL_PASSWORD: ""
   OBJECT_STORAGE_ACCESS_KEY_ID: ""
   OBJECT_STORAGE_SECRET_KEY: ""
   # Fetcher Integration - Base64 encoded 32-byte encryption key
   APP_ENC_KEY: ""
+  # REDIS_PASSWORD — the bundled valkey runs with auth.enabled=false so nothing
+  # authenticates with it; kept as an (empty) key for env parity. Set it when
+  # valkey.auth (or an external Redis) is enabled.
+  REDIS_PASSWORD: ""
+  # Service Discovery — Consul ACL token. Empty for the ACL-less local dev Consul;
+  # MANDATORY in any real environment with SD enabled. Inject from your secrets manager.
+  SD_TOKEN: ""
+  # CRM crypto — decryption keys for the crm datasource. OPTIONAL: only needed when a
+  # crm datasource is configured; leave empty otherwise (empty = feature inactive).
+  CRYPTO_HASH_SECRET_KEY_CRM: ""
+  CRYPTO_ENCRYPT_SECRET_KEY_CRM: ""
+  # Multi-Tenant secrets — emitted by lerian-common.multiTenant.secret ONLY when
+  # common.multiTenant.enabled=true. MULTI_TENANT_SERVICE_API_KEY is then REQUIRED
+  # (render fails if empty); MULTI_TENANT_REDIS_PASSWORD is optional. Left unset here
+  # so a default (MT-off) install emits neither; set them when enabling multi-tenancy:
+  #   --set secrets.MULTI_TENANT_SERVICE_API_KEY=<value>
+  #   --set secrets.MULTI_TENANT_REDIS_PASSWORD=<value>   # optional
 seaweedfs:
   enabled: true
   master:

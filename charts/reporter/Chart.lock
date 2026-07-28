@@ -17,5 +17,8 @@ dependencies:
 - name: valkey
   repository: https://valkey.io/valkey-helm
   version: 0.7.4
-digest: sha256:ce4a711a34900b24f03f1e59becba15d125e49f3fdca0875a11ed3f52fef1485
-generated: "2026-07-28T15:00:35.715573-03:00"
+- name: consul
+  repository: https://helm.releases.hashicorp.com
+  version: 1.9.10
+digest: sha256:f1b47d71d8a7eb7faea73a1186ea76839d070e2d110d75d2042772914ee21481
+generated: "2026-07-28T17:39:41.269399-03:00"

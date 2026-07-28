@@ -46,6 +46,27 @@ global:
   #      postgres: { host: "pg", port: "5432", user: "app", ssl: "require" }  # DATASOURCE_ONBOARDING_*
   #      objectStorage: { endpoint: "https://s3.example.com" }  # → OBJECT_STORAGE_ENDPOINT
   datastores: {}
+  # -- Service discovery (lib-service-discovery) — env-wide, shared by manager +
+  #    worker. Opt in via `common.serviceDiscovery.enabled`. The per-app SD_* block
+  #    is INERT until enabled AND `address` is set, so a default install (SD off)
+  #    renders unchanged. `address` defaults to the bundled Consul Service
+  #    (`reporter-consul-server:8500`, see the top-level `consul` block) so the
+  #    self-contained SD stack works with no extra wiring — analogous to the reporter
+  #    infra compose injecting `reporter-consul:8500`.
+  serviceDiscovery:
+    address: "reporter-consul-server:8500"  # Consul host:port → SD_ADDRESS
+    tls: false                              # → SD_TLS
+    tlsSkipVerify: false                    # → SD_TLS_SKIP_VERIFY (true only to opt out of TLS verification)
+    workload: ""                            # per-env isolation key → SD_WORKLOAD
+    preferView: "internal"                  # internal|external → SD_PREFER_VIEW
+  # -- Streaming (lib-streaming) — env-wide broker/SASL/TLS config, shared by
+  #    manager + worker. Opt in via `common.streaming.enabled`. INERT until enabled
+  #    AND `brokers` is set, so a default install (streaming off) renders unchanged.
+  streaming:
+    brokers: ""                             # host:port → STREAMING_BROKERS
+    tlsEnabled: false                       # → STREAMING_TLS_ENABLED
+    saslMechanism: ""                       # e.g. SCRAM-SHA-256 → STREAMING_SASL_MECHANISM
+    saslUsername: ""                        # → STREAMING_SASL_USERNAME
 manager:
   name: "reporter-manager"
   # -- Enable or disable the manager (API) component
@@ -484,6 +505,25 @@ common:
       database: "onboarding"           # → DATASOURCE_ONBOARDING_DATABASE
       type: "postgresql"               # → DATASOURCE_ONBOARDING_TYPE
       sslRootCert: ""                  # → DATASOURCE_ONBOARDING_SSLROOTCERT
+  # --- Service discovery (lib-service-discovery) — SHARED by manager + worker.
+  #     enabled=false (default) => only `SD_ENABLED: "false"` is emitted; the derived
+  #     SD_* block stays INERT until enabled AND global.serviceDiscovery.address is set.
+  #     Legacy raw `common.configmap.SD_ENABLED` (or `<component>.configmap.SD_ENABLED`)
+  #     still WINS. Env-wide server config comes from global.serviceDiscovery; the
+  #     advertise endpoints (SD_INTERNAL_*/SD_EXTERNAL_*, which lib-service-discovery
+  #     accepts in place of legacy SD_ADVERTISE_*) derive from the reporter API
+  #     (manager) Service + ingress — reporter registers under that identity.
+  serviceDiscovery:
+    enabled: "false"                   # → SD_ENABLED
+  # --- Streaming (lib-streaming) — SHARED by manager + worker.
+  #     enabled=false (default) => only `STREAMING_ENABLED: "false"` is emitted; the
+  #     derived STREAMING_* block stays INERT until enabled AND global.streaming.brokers
+  #     is set. Legacy raw `common.configmap.STREAMING_ENABLED` still WINS. Client
+  #     identity below is shared across both components.
+  streaming:
+    enabled: "false"                   # → STREAMING_ENABLED
+    clientId: "reporter"               # → STREAMING_CLIENT_ID
+    cloudeventsSource: "//lerian.reporter"  # → STREAMING_CLOUDEVENTS_SOURCE
   # -- Shared raw/legacy ConfigMap. Still fully supported and takes PRECEDENCE
   #    over the grouped params above. Empty by default. Any arbitrary key set here
   #    is passed through to both components' ConfigMaps — this is where external
@@ -751,6 +791,63 @@ valkey:
   # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
   auth:
+    enabled: false
+# ===========================================================================
+# CONSUL (service-discovery backend) — OPTIONAL, DISABLED BY DEFAULT.
+# Bundles a minimal single-node HashiCorp Consul server so the free / self-contained
+# stack can run lib-service-discovery, mirroring the reporter infra compose's
+# `reporter-consul` service. OFF by default (SD is opt-in) so an idle Consul does not
+# run. Mirrors the midaz productization's bundled Vault: an upstream HashiCorp chart,
+# condition-gated, with the Service name PINNED so the app's default SD_ADDRESS
+# resolves with no extra wiring.
+#
+# To turn on a working self-contained SD stack:
+#   --set consul.enabled=true \
+#   --set common.serviceDiscovery.enabled=true
+# The server Service renders as `reporter-consul-server` (from global.name below);
+# `global.serviceDiscovery.address` defaults to `reporter-consul-server:8500` to match
+# (analogous to compose's `reporter-consul:8500`). Dev posture: ACLs + TLS disabled and
+# a single non-HA server, matching reporter's docs ("the local dev Consul runs ACL-less
+# and plaintext on purpose"). For a real environment, front SD with an external Consul
+# (leave consul.enabled=false, point global.serviceDiscovery.address at it, set SD_TLS
+# + SD_TOKEN).
+# ===========================================================================
+consul:
+  enabled: false
+  global:
+    # -- Pins the Consul resource names; the server Service becomes
+    #    `reporter-consul-server` (matches global.serviceDiscovery.address default).
+    name: reporter-consul
+    datacenter: dc1
+    # -- Dev posture: no TLS, no ACLs (local/self-contained only).
+    tls:
+      enabled: false
+    acls:
+      manageSystemACLs: false
+    metrics:
+      enabled: false
+  server:
+    # -- Single non-HA server for the self-contained dev stack.
+    replicas: 1
+    bootstrapExpect: 1
+    # -- Small footprint (shares the node with mongo/rabbit/valkey/seaweedfs).
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+  # -- No client DaemonSet: apps dial the server Service directly on :8500.
+  client:
+    enabled: false
+  # -- No service mesh / sidecar injection (discovery-only).
+  connectInject:
+    enabled: false
+  # -- No UI / DNS service in the minimal dev stack.
+  ui:
+    enabled: false
+  dns:
     enabled: false
 otel-collector-lerian:
   enabled: true

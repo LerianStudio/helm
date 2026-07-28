@@ -52,3 +52,11 @@ dependencies:
     version: "0.7.4"
     repository: "https://valkey.io/valkey-helm"
     condition: valkey.enabled
+  # Optional bundled Consul (service-discovery backend for lib-service-discovery).
+  # DISABLED by default (SD is opt-in) so an idle Consul does not run; enable it for
+  # the self-contained SD stack (see values.yaml `consul` block). Upstream HashiCorp
+  # chart — mirrors the midaz productization's bundled Vault dependency.
+  - name: consul
+    version: "1.9.10"
+    repository: "https://helm.releases.hashicorp.com"
+    condition: consul.enabled

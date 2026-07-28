@@ -324,6 +324,42 @@ DATASOURCE_ONBOARDING_DATABASE: {{ include "lerian-common.cfgValue" (dict "confi
 DATASOURCE_ONBOARDING_TYPE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DATASOURCE_ONBOARDING_TYPE" "params" $ds "field" "type" "default" "postgresql") | quote }}
 DATASOURCE_ONBOARDING_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DATASOURCE_ONBOARDING_SSLMODE" "default" "disable") | quote }}
 DATASOURCE_ONBOARDING_SSLROOTCERT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DATASOURCE_ONBOARDING_SSLROOTCERT" "params" $ds "field" "sslRootCert" "default" "") | quote }}
+{{- $sd := $common.serviceDiscovery | default dict }}
+{{- $streaming := $common.streaming | default dict }}
+# SERVICE DISCOVERY (lib-service-discovery) — shared by manager + worker.
+# Env-wide server config (Consul address/TLS/workload/preferView) comes from
+# global.serviceDiscovery; the advertise endpoints (SD_INTERNAL_*/SD_EXTERNAL_*,
+# which the lib accepts in place of legacy SD_ADVERTISE_*) derive from the reporter
+# API (manager) Service + ingress — reporter registers under that identity.
+# SD_ENABLED resolves via cfgValue (legacy configmap.SD_ENABLED WINS over the
+# grouped param; compared to "true" so a legacy "false" is not truthy). The SAME
+# resolved bool gates both the emitted SD_ENABLED and the helper. INERT until
+# enabled AND global.serviceDiscovery.address is set (backward-compatible).
+{{- $sdEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SD_ENABLED" "params" $sd "field" "enabled" "default" "false")) "true" }}
+SD_ENABLED: {{ $sdEnabled | quote }}
+{{- with (include "lerian-common.serviceDiscovery.env" (dict
+      "context" $
+      "enabled" $sdEnabled
+      "name" (include "plugin-manager.fullname" $)
+      "port" $.Values.manager.service.port
+      "namespace" (include "global.namespace" $)
+      "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" $.Values.manager.ingress)))) }}
+{{ . }}
+{{- end }}
+# STREAMING (lib-streaming) — shared by manager + worker. Brokers/SASL/TLS come
+# from global.streaming; client identity (clientId/cloudeventsSource) is shared.
+# STREAMING_ENABLED resolves via cfgValue (legacy configmap.STREAMING_ENABLED WINS);
+# the SAME resolved bool gates the env var and the helper. INERT until enabled AND
+# global.streaming.brokers is set (backward-compatible).
+{{- $streamingEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_ENABLED" "params" $streaming "field" "enabled" "default" "false")) "true" }}
+STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+{{- with (include "lerian-common.streaming.env" (dict
+      "context" $
+      "enabled" $streamingEnabled
+      "clientId" ($streaming.clientId | default "reporter")
+      "cloudeventsSource" ($streaming.cloudeventsSource | default "//lerian.reporter"))) }}
+{{ . }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -334,7 +370,7 @@ ConfigMap uses it to build the "reserved" set so its legacy passthrough range
 already rendered by the enumerated block.
 */}}
 {{- define "reporter.commonConfigKeys" -}}
-ENV_NAME RABBITMQ_URI RABBITMQ_PORT_HOST RABBITMQ_HOST RABBITMQ_PORT_AMQP RABBITMQ_NUMBERS_OF_WORKERS RABBITMQ_EXCHANGE RABBITMQ_GENERATE_REPORT_QUEUE RABBITMQ_GENERATE_REPORT_KEY RABBITMQ_HEALTH_CHECK_URL REDIS_MASTER_NAME REDIS_HOST REDIS_DB REDIS_PROTOCOL REDIS_TLS REDIS_CA_CERT GOOGLE_APPLICATION_CREDENTIALS REDIS_SERVICE_ACCOUNT OBJECT_STORAGE_ENDPOINT OBJECT_STORAGE_REGION OBJECT_STORAGE_USE_PATH_STYLE OBJECT_STORAGE_DISABLE_SSL OBJECT_STORAGE_BUCKET MONGO_URI MONGO_HOST MONGO_NAME MONGO_USER MONGO_PORT MONGO_MAX_POOL_SIZE MONGO_TLS_CA_CERT MONGO_PARAMETERS FETCHER_ENABLED FETCHER_URL MULTI_TENANT_ENABLED DATASOURCE_ONBOARDING_CONFIG_NAME DATASOURCE_ONBOARDING_HOST DATASOURCE_ONBOARDING_PORT DATASOURCE_ONBOARDING_USER DATASOURCE_ONBOARDING_DATABASE DATASOURCE_ONBOARDING_TYPE DATASOURCE_ONBOARDING_SSLMODE DATASOURCE_ONBOARDING_SSLROOTCERT OTEL_RESOURCE_SERVICE_NAME OTEL_LIBRARY_NAME OTEL_RESOURCE_SERVICE_VERSION OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT OTEL_EXPORTER_OTLP_ENDPOINT_PORT OTEL_EXPORTER_OTLP_ENDPOINT ENABLE_TELEMETRY OTEL_INSECURE_EXPORTER VERSION annotations
+ENV_NAME RABBITMQ_URI RABBITMQ_PORT_HOST RABBITMQ_HOST RABBITMQ_PORT_AMQP RABBITMQ_NUMBERS_OF_WORKERS RABBITMQ_EXCHANGE RABBITMQ_GENERATE_REPORT_QUEUE RABBITMQ_GENERATE_REPORT_KEY RABBITMQ_HEALTH_CHECK_URL REDIS_MASTER_NAME REDIS_HOST REDIS_DB REDIS_PROTOCOL REDIS_TLS REDIS_CA_CERT GOOGLE_APPLICATION_CREDENTIALS REDIS_SERVICE_ACCOUNT OBJECT_STORAGE_ENDPOINT OBJECT_STORAGE_REGION OBJECT_STORAGE_USE_PATH_STYLE OBJECT_STORAGE_DISABLE_SSL OBJECT_STORAGE_BUCKET MONGO_URI MONGO_HOST MONGO_NAME MONGO_USER MONGO_PORT MONGO_MAX_POOL_SIZE MONGO_TLS_CA_CERT MONGO_PARAMETERS FETCHER_ENABLED FETCHER_URL MULTI_TENANT_ENABLED DATASOURCE_ONBOARDING_CONFIG_NAME DATASOURCE_ONBOARDING_HOST DATASOURCE_ONBOARDING_PORT DATASOURCE_ONBOARDING_USER DATASOURCE_ONBOARDING_DATABASE DATASOURCE_ONBOARDING_TYPE DATASOURCE_ONBOARDING_SSLMODE DATASOURCE_ONBOARDING_SSLROOTCERT SD_ENABLED SD_ADDRESS SD_TLS SD_TLS_SKIP_VERIFY SD_WORKLOAD SD_PREFER_VIEW SD_INTERNAL_ADDRESS SD_INTERNAL_PORT SD_INTERNAL_SCHEME SD_EXTERNAL_ADDRESS SD_EXTERNAL_PORT STREAMING_ENABLED STREAMING_BROKERS STREAMING_TLS_ENABLED STREAMING_SASL_MECHANISM STREAMING_SASL_USERNAME STREAMING_CLIENT_ID STREAMING_CLOUDEVENTS_SOURCE OTEL_RESOURCE_SERVICE_NAME OTEL_LIBRARY_NAME OTEL_RESOURCE_SERVICE_VERSION OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT OTEL_EXPORTER_OTLP_ENDPOINT_PORT OTEL_EXPORTER_OTLP_ENDPOINT ENABLE_TELEMETRY OTEL_INSECURE_EXPORTER VERSION annotations
 {{- end }}
 
 {{/*

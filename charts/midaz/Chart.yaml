@@ -47,3 +47,7 @@ dependencies:
     version: "2.1.11"
     repository: "https://groundhog2k.github.io/helm-charts"
     condition: rabbitmq.enabled
+  - name: vault
+    version: "0.28.1"
+    repository: "https://helm.releases.hashicorp.com"
+    condition: vault.enabled

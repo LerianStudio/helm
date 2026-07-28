@@ -820,6 +820,51 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
+# -- HashiCorp Vault (bundled, dev-mode) — KMS Transit backend for CRM envelope
+# encryption. Mirrors midaz components/infra/docker-compose.yml (midaz-hc-vault +
+# midaz-hc-vault-init). Self-contained default (enabled: true) so the free stack
+# needs no external Vault. For production set vault.enabled=false and point
+# crm.configmap.KMS_VAULT_ADDR at an external Vault (and switch to approle auth).
+vault:
+  # -- Toggle the bundled Vault subchart. true = self-contained dev Vault.
+  enabled: true
+  # -- Pin the Vault Service name to `midaz-hc-vault` so the crm/ledger KMS default
+  #    KMS_VAULT_ADDR (http://midaz-hc-vault:8200) resolves with no extra config.
+  fullnameOverride: "midaz-hc-vault"
+  # -- No Agent Injector sidecar in the self-contained stack (app uses token auth).
+  injector:
+    enabled: false
+  # -- No CSI Secrets Store provider.
+  csi:
+    enabled: false
+  # -- No Vault UI.
+  ui:
+    enabled: false
+  server:
+    # -- Dev mode: in-memory, auto-unsealed, single node, root token preset.
+    #    Matches the docker-compose `hashicorp/vault ... -dev` service.
+    dev:
+      enabled: true
+      # -- Dev root token — matches the midaz KMS token-auth default ("root").
+      #    Kept in sync with the transit-init Job's VAULT_TOKEN.
+      devRootToken: "root"
+    # -- Dev mode is in-memory: disable HA, standalone and persistent storage.
+    ha:
+      enabled: false
+    standalone:
+      enabled: false
+    dataStorage:
+      enabled: false
+    auditStorage:
+      enabled: false
+    # -- Small footprint for minikube (shared with pg/mongo/rabbit/valkey).
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
 # -- OTEL exporter configuration for midaz services.
 # When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES
 # are injected into the `ledger` and `crm` deployments only. Port is fixed at 4317.

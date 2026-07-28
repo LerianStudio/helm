@@ -1,0 +1,111 @@
+{{- if .Values.vault.enabled }}
+{{- /*
+  Vault Transit init — mirrors the `midaz-hc-vault-init` service in
+  midaz components/infra/docker-compose.yml. Runs as a post-install/post-upgrade
+  Helm hook (after the bundled Vault pod is up) and enables the Transit secrets
+  engine at the mode-derived mount: `transit-mt` when multi-tenancy is on, else
+  `transit-st`. Idempotent: skips if the engine is already enabled.
+
+  Multi-tenant toggle uses the SAME cfgValue precedence as the CRM ConfigMap
+  (legacy configmap.MULTI_TENANT_ENABLED wins over the grouped crm.multiTenant
+  param) — CRM is the KMS consumer and docker-compose sources this from crm/.env.
+*/}}
+{{- $vaultAddr := printf "http://%s:8200" (.Values.vault.fullnameOverride | default "midaz-hc-vault") }}
+{{- $devToken := .Values.vault.server.dev.devRootToken | default "root" }}
+{{- $mtEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "MULTI_TENANT_ENABLED" "params" .Values.crm.multiTenant "field" "enabled" "default" "false")) "true" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "midaz.name" . }}-vault-transit-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" "vault-transit-init" "name" "vault-transit-init") | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    # Keep the completed Job for inspection; the next install/upgrade deletes the
+    # prior one before re-creating (so success and failure logs both survive).
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  completions: 1
+  parallelism: 1
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        {{- include "midaz.selectorLabels" (dict "context" . "component" "vault-transit-init" "name" "vault-transit-init") | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: vault-transit-init
+        image: hashicorp/vault:1.15
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        env:
+        - name: VAULT_ADDR
+          value: {{ $vaultAddr | quote }}
+        - name: VAULT_TOKEN
+          value: {{ $devToken | quote }}
+        # Resolved at render time from the CRM multi-tenant toggle; the shell then
+        # selects the shared Transit mount for the mode (transit-mt vs transit-st).
+        - name: MULTI_TENANT_ENABLED
+          value: {{ $mtEnabled | quote }}
+        - name: HOME
+          value: /tmp
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          if [ "${MULTI_TENANT_ENABLED}" = "true" ]; then
+            MOUNT="transit-mt"
+          else
+            MOUNT="transit-st"
+          fi
+
+          echo "Waiting for Vault at ${VAULT_ADDR} to be ready..."
+          ELAPSED=0
+          TIMEOUT=300
+          until vault status >/dev/null 2>&1; do
+            if [ "${ELAPSED}" -ge "${TIMEOUT}" ]; then
+              echo "Timeout waiting for Vault after ${TIMEOUT}s" >&2
+              exit 1
+            fi
+            echo "Vault not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)"
+            sleep 3
+            ELAPSED=$((ELAPSED + 3))
+          done
+          echo "Vault is ready."
+
+          echo "Checking if Transit is already enabled at ${MOUNT}..."
+          EXISTING_TYPE=$(vault secrets list | awk -v m="${MOUNT}/" '$1 == m { print $2 }')
+          if [ -n "${EXISTING_TYPE}" ]; then
+            if [ "${EXISTING_TYPE}" != "transit" ]; then
+              echo "ERROR: ${MOUNT}/ exists but is type '${EXISTING_TYPE}', not 'transit'" >&2
+              exit 1
+            fi
+            echo "Transit already enabled at ${MOUNT}"
+          else
+            echo "Enabling Transit secrets engine at ${MOUNT}..."
+            vault secrets enable -path="${MOUNT}" transit
+            echo "Transit enabled successfully"
+          fi
+          echo "Vault initialization complete"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+{{- end }}

@@ -1,5 +1,5 @@
 {{- $gIng := (.Values.global | default dict).ingress | default dict -}}
-{{- if and .Values.crm.enabled (or .Values.crm.ingress.enabled $gIng.enabled) -}}
+{{- if and .Values.crm.enabled .Values.crm.ingress.enabled -}}
 {{- include "lerian-common.ingress" (dict
       "context" .
       "ingress" .Values.crm.ingress

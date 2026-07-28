@@ -46,7 +46,7 @@ data:
           "OTEL_RESOURCE_SERVICE_NAME" "midaz-crm"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/plugin-crm"
           "OTEL_RESOURCE_SERVICE_VERSION" (.Values.crm.image.tag | default .Chart.AppVersion)
-          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" (.Values.crm.configmap.ENV_NAME | default "development"))) | nindent 2 }}
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" (include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENV_NAME" "params" .Values.crm "field" "env" "default" "development")))) | nindent 2 }}
   ENABLE_TELEMETRY: {{ .Values.crm.configmap.ENABLE_TELEMETRY | default "true" | quote }}
 
   # AUTH
@@ -54,7 +54,8 @@ data:
   PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.crm.configmap "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
 
   # MULTI-TENANT — crm exposes only the toggle (no MT client config on this component)
-  MULTI_TENANT_ENABLED: {{ .Values.crm.multiTenant.enabled | default false | quote }}
+  # Legacy configmap.MULTI_TENANT_ENABLED wins over the grouped param (presence-based).
+  MULTI_TENANT_ENABLED: {{ eq (include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "MULTI_TENANT_ENABLED" "params" .Values.crm.multiTenant "field" "enabled" "default" "false")) "true" | quote }}
 
   KMS_VAULT_ADDR: {{ .Values.crm.configmap.KMS_VAULT_ADDR | default "http://midaz-hc-vault:8200" | quote }}
   KMS_VAULT_AUTH_METHOD: {{ .Values.crm.configmap.KMS_VAULT_AUTH_METHOD | default "token" | quote }}
@@ -67,10 +68,14 @@ data:
         "port" .Values.crm.service.port
         "namespace" (include "global.namespace" .)
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.crm.ingress))) | nindent 2 }}
-  STREAMING_ENABLED: {{ .Values.crm.streaming.enabled | default false | quote }}
+  {{- /* Legacy configmap.STREAMING_ENABLED wins over the grouped param
+     (presence-based); compare to "true" so a legacy "false" string does not
+     evaluate truthy. Same resolved bool gates both the env var and the helper. */ -}}
+  {{- $streamingEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "STREAMING_ENABLED" "params" .Values.crm.streaming "field" "enabled" "default" "false")) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
   {{- include "lerian-common.streaming.env" (dict
         "context" $
-        "enabled" (.Values.crm.streaming.enabled | default false)
+        "enabled" $streamingEnabled
         "clientId" (include "midaz-crm.fullname" .)
         "cloudeventsSource" "lerian.midaz.crm") | nindent 2 }}
   # Extra Env Vars

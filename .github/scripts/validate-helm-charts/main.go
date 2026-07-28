@@ -1106,7 +1106,7 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 		// build` cannot resolve them in the isolated temp workspace. Materialize
 		// each such sibling at the same relative location so the file:// path
 		// resolves exactly as it does in the source tree.
-		if err := materializeLocalDependencies(chartDir, tmpChart, deps); err != nil {
+		if err := materializeLocalDependencies(root, chartDir, tmpRoot, tmpChart, deps); err != nil {
 			_ = os.RemoveAll(tmpRoot)
 			return nil, err
 		}
@@ -1532,7 +1532,7 @@ func writeRenderInventory(path string, rows []renderRow) error {
 // isolated `helm dependency build` resolves local library charts (e.g.
 // lerian-common) exactly as it would in the repository tree. Missing sources are
 // left to `helm dependency build` to report as a normal missing-dependency.
-func materializeLocalDependencies(chartDir, tmpChart string, deps []chartDependency) error {
+func materializeLocalDependencies(root, chartDir, tmpRoot, tmpChart string, deps []chartDependency) error {
 	for _, dependency := range deps {
 		repository := strings.TrimSpace(dependency.Repository)
 		if !strings.HasPrefix(repository, "file://") {
@@ -1540,15 +1540,36 @@ func materializeLocalDependencies(chartDir, tmpChart string, deps []chartDepende
 		}
 		relPath := strings.TrimPrefix(repository, "file://")
 		srcDir := filepath.Clean(filepath.Join(chartDir, relPath))
+		// Containment: a crafted `file://../../..` path in Chart.yaml must not let
+		// the copy read outside the repository tree or write outside the isolated
+		// render workspace. Legitimate local libraries (e.g. file://../lerian-common)
+		// still resolve to a sibling under root/tmpRoot and pass the check.
+		if !withinDir(root, srcDir) {
+			return fmt.Errorf("local dependency %q resolves outside the repository root (%s)", repository, srcDir)
+		}
 		if !dirExists(srcDir) {
 			continue
 		}
 		destDir := filepath.Clean(filepath.Join(tmpChart, relPath))
+		if !withinDir(tmpRoot, destDir) {
+			return fmt.Errorf("local dependency %q resolves outside the render workspace (%s)", repository, destDir)
+		}
 		if err := copyDir(srcDir, destDir); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// withinDir reports whether target is base itself or nested under it (after path
+// cleaning), used to contain `file://` dependency paths so a crafted Chart.yaml
+// cannot escape the repo/workspace via `..` traversal.
+func withinDir(base, target string) bool {
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
 }
 
 func copyDir(src, dst string) error {

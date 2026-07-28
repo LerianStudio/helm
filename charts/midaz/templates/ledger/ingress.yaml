@@ -1,5 +1,5 @@
 {{- $gIng := (.Values.global | default dict).ingress | default dict -}}
-{{- if and .Values.ledger.enabled (or .Values.ledger.ingress.enabled $gIng.enabled) -}}
+{{- if and .Values.ledger.enabled .Values.ledger.ingress.enabled -}}
 {{- include "lerian-common.ingress" (dict
       "context" .
       "ingress" .Values.ledger.ingress

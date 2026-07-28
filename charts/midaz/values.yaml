@@ -106,7 +106,7 @@ global:
   serviceDiscovery:
     address: ""                        # Consul host:port → SD_ADDRESS
     tls: false                         # → SD_TLS
-    tlsSkipVerify: true                # → SD_TLS_SKIP_VERIFY
+    tlsSkipVerify: false               # → SD_TLS_SKIP_VERIFY (set true only to opt out of TLS verification)
     workload: ""                       # per-env isolation key → SD_WORKLOAD
     preferView: "internal"             # internal|external → SD_PREFER_VIEW
   # -- Streaming (lib-streaming) — env-wide broker/SASL/TLS config.

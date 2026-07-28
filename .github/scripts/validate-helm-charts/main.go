@@ -62,6 +62,12 @@ var allowlistedCredentialDefaults = map[string]bool{
 	// plugin-access-manager ships a default initUser.adminPassword so existing releases keep
 	// their admin login across upgrades; operators are expected to override it in production.
 	"plugin-access-manager:auth.initUser.adminPassword": true,
+	// midaz bundles an optional dev-mode Vault (vault.enabled, default on) so the standalone
+	// stack is self-contained like the compose infra. Its dev root token must be "root" to match
+	// the app's built-in DefaultVaultDevToken (KMS_VAULT_AUTH_METHOD=token, DEPLOYMENT_MODE=local);
+	// it is a throwaway in-memory dev token, not a real credential. Production sets vault.enabled=false
+	// and points KMS_VAULT_ADDR at an external Vault.
+	"midaz:vault.server.dev.devRootToken": true,
 }
 
 type chartYAML struct {

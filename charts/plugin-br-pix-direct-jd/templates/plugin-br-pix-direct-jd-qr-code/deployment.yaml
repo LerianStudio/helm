@@ -7,7 +7,9 @@ metadata:
 spec:
   strategy:
     {{- toYaml .Values.qrcode.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.qrcode.autoscaling.enabled }}
   replicas: {{ .Values.qrcode.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-br-pix-direct-jd-qr-code.selectorLabels" (dict "context" . "name" .Values.qrcode.name) | nindent 6 }}

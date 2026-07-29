@@ -8,7 +8,9 @@ spec:
   revisionHistoryLimit: {{ .Values.auth.backend.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.auth.backend.autoscaling.enabled }}
   replicas: {{ .Values.auth.backend.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-auth-backend.selectorLabels" (dict "context" . "name" .Values.auth.backend.name) | nindent 6 }}

@@ -1,5 +1,16 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [3.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.6.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled to prevent potential issues.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.5.0...plugin-br-pix-indirect-btg-v3.6.0)
+
+---
+
 ## [3.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.5.0)
 
 - **Fixes:**

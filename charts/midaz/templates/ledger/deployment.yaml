@@ -124,8 +124,6 @@ spec:
             {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_ONBOARDING_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_TRANSACTION_PASSWORD") | nindent 12 }}
-            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_CRM_PASSWORD") | nindent 12 }}
-            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_FEES_PASSWORD") | nindent 12 }}
             {{- else }}
             {{- if .Values.ledger.secrets.MONGO_ONBOARDING_PASSWORD }}
             - name: MONGO_ONBOARDING_PASSWORD
@@ -140,20 +138,6 @@ spec:
                 secretKeyRef:
                   name: {{ $secretName }}
                   key: MONGO_TRANSACTION_PASSWORD
-            {{- end }}
-            {{- if .Values.ledger.secrets.MONGO_CRM_PASSWORD }}
-            - name: MONGO_CRM_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secretName }}
-                  key: MONGO_CRM_PASSWORD
-            {{- end }}
-            {{- if .Values.ledger.secrets.MONGO_FEES_PASSWORD }}
-            - name: MONGO_FEES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secretName }}
-                  key: MONGO_FEES_PASSWORD
             {{- end }}
             {{- end }}
             {{/* Valkey: REDIS_PASSWORD maps to Bitnami key `valkey-password`. */}}

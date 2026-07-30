@@ -1,5 +1,9 @@
 # Midaz Helm Chart
 
+## About Midaz
+
+Midaz is Lerian's high-performance, source-available double-entry accounting ledger — the financial engine the rest of the platform is built on. Its domain model is a strict hierarchy: **Organization → Ledger → Account → Transaction → Operation**. This chart is deployment- and configuration-focused; for the product concepts, APIs, and data model see the official documentation at [docs.lerian.studio/midaz](https://docs.lerian.studio/midaz).
+
 ## Chart Contract
 
 - Chart type: `multi-component`
@@ -16,7 +20,7 @@ Source code can be found here:
 * https://github.com/LerianStudio/helm/tree/main/charts/midaz
 * https://github.com/LerianStudio/midaz
 
-This helm chart installs [Midaz](https://lerian.studio/midaz#about), a high-performance and open-source ledger.
+This helm chart installs [Midaz](https://docs.lerian.studio/midaz), a high-performance and open-source ledger.
 
 The default installation is similar to the one provided in the [Midaz repo](https://github.com/LerianStudio/midaz?tab=readme-ov-file#quick-installation-guide-localhost).
 
@@ -114,6 +118,23 @@ ingress:
 ```
 
 
+## Productized Configuration Model
+
+This chart exposes a **grouped, productized values API** for the knobs clients tune most, layered over a fully backward-compatible raw configmap. Three concepts drive it:
+
+1. **Env-wide contracts under `global.*`.** Cross-cutting integration config is declared once and shared by every component. The chart ships:
+   - `global.serviceDiscovery` — Consul address/TLS/workload/`preferView` for lib-service-discovery (`SD_*`).
+   - `global.streaming` — broker/SASL/TLS for lib-streaming (`STREAMING_*`).
+   - `global.multiTenant` — tenant-manager URL and its Redis (`MULTI_TENANT_*`).
+
+   These, plus the datastore/auth/observability contracts consumed by the bundled `lerian-common-helm` library (`global.datastores`, `global.auth`, `global.observability`), are turned into environment variables by the `lerian-common.*` derivation helpers (`_service_discovery.tpl`, `_streaming.tpl`, `_multi_tenant.tpl`, `_datastore.tpl`, `_auth.tpl`, `_otel.tpl`). See the `lerian-common` chart for those contracts.
+
+2. **Per-component opt-in toggles.** Each env-wide feature is inert until the component enables it: `ledger.serviceDiscovery.enabled`, `ledger.streaming.enabled`, `ledger.multiTenant.enabled` (and the same under `crm.*`). This keeps configmaps clean and preserves backward compatibility — nothing is emitted for a feature that is off.
+
+3. **Grouped params per block.** Instead of raw env vars, tune clean nested params — e.g. `ledger.broker.*` (RabbitMQ client + routing + circuit breaker), `ledger.database.*` and `ledger.mongo.*` (per-module DB identity/pool), `ledger.redis.*`, `ledger.server.*`, `ledger.rateLimit.*`, `ledger.swagger.*`, and for the CRM `crm.kms.*` (Vault KMS), `crm.mongo.*`, and `crm.swagger.*`. Every block is documented inline in `values.yaml` with `# --` comments; consult it for the full key list and defaults.
+
+**Backward-compatibility (precedence).** Any legacy flat key still works: `cfgValue` resolves as **`<component>.configmap.<KEY>` → grouped param → default**. A value set under `configmap.<KEY>` therefore always **wins** over the grouped param and the mask, so existing installs render unchanged. `configmap: {}` (empty by default) is the legacy escape hatch — put any raw env var there to override the productized surface (e.g. `DB_ONBOARDING_HOST`, `REDIS_HOST`, `RABBITMQ_HOST`, `PLUGIN_AUTH_HOST`, `ENABLE_TELEMETRY`).
+
 ## Midaz Components
 
 Midaz deploys the following core services:
@@ -140,7 +161,7 @@ Midaz deploys the following core services:
 | `ledger.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
 | `ledger.deploymentUpdate.*` | Deployment update strategy. | See `values.yaml` |
 | `ledger.service.type` | Kubernetes service type. | `"ClusterIP"` |
-| `ledger.service.port` | Port for the HTTP API. | `3000` |
+| `ledger.service.port` | Port for the HTTP API. | `3002` |
 | `ledger.service.annotations` | Annotations for the service. | `{}` |
 | `ledger.ingress.enabled` | Specifies whether Ingress is enabled. | `false` |
 | `ledger.ingress.className` | Ingress class name. | `""` |
@@ -343,6 +364,13 @@ grafana:
 ## Dependencies
 
 This chart includes the following dependencies for the default installation. All dependencies are enabled by default.
+
+### lerian-common (library)
+
+- **Version:** `>=1.0.0 <2.0.0` (currently `1.2.1`)
+- **Repository:** `file://../lerian-common`
+- **How to disable:** Not disableable — it is a Helm **library** chart that renders no resources of its own.
+- **Note:** Provides the derivation helpers that turn the `global.*` contracts (service discovery, streaming, multi-tenant, datastores, auth, observability) into component env vars. See the [Productized Configuration Model](#productized-configuration-model) section.
 
 ### Valkey
 
@@ -553,6 +581,26 @@ ledger:
     RABBITMQ_URI: "amqps"      # was "amqp"
     RABBITMQ_PROTOCOL: "https" # was "http"
 ```
+
+### Vault (HashiCorp)
+
+- **Version:** 0.28.1
+- **Repository:** https://helm.releases.hashicorp.com
+- **How to disable:** Set `vault.enabled` to `false` in the values file (default is `true`).
+- **Note:** Bundled **dev-mode** Vault (in-memory, auto-unsealed, single node, preset root token `root`), pinned to the Service name `midaz-hc-vault` via `fullnameOverride`. It mirrors the `midaz-hc-vault` + `midaz-hc-vault-init` services in the midaz `docker-compose`, so the free/self-contained stack needs no external Vault. The Agent Injector, CSI provider, and UI are disabled.
+- A one-shot Job (`templates/vault/transit-init-job.yaml`, gated on `vault.enabled`) enables the **Transit** secrets engine used for CRM envelope encryption (KMS), at the mode-derived mount `transit-st` (single-tenant) or `transit-mt` (when multi-tenancy is on). It is idempotent.
+- The CRM KMS default `crm.kms.vaultAddr` (`KMS_VAULT_ADDR`) is `http://midaz-hc-vault:8200`, resolving against the bundled Vault with no extra config.
+- **Production:** set `vault.enabled=false` and point `crm.kms.vaultAddr` (`KMS_VAULT_ADDR`) at an external Vault, switching `crm.kms.vaultAuthMethod` away from `token` (e.g. `approle`) as appropriate.
+
+  ```yaml
+  vault:
+    enabled: false  # disable the bundled dev Vault to use an external one
+
+  crm:
+    kms:
+      vaultAddr: "https://vault.example.com:8200"  # → KMS_VAULT_ADDR
+      vaultAuthMethod: "approle"                    # → KMS_VAULT_AUTH_METHOD
+  ```
 
 ### OpenTelemetry Collector wiring
 

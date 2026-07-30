@@ -31,6 +31,11 @@ Inputs (dict):
   namespace   (req)  resolved namespace string
   ingressHost (opt)  external host; when non-empty, emits SD_EXTERNAL_*
                      (omit for consumer-only / internal-only instances)
+  configmap   (opt)  the component's legacy `.configmap` map. When a key is
+                     present here, its flat `configmap.SD_*` value WINS over the
+                     global/derived value below (backward-compat for the flat
+                     configmap API). Defaults to an empty dict → every key falls
+                     through to the derived value (byte-identical to no-configmap).
 
 global.serviceDiscovery (all optional except address when enabled):
   address, tls, tlsSkipVerify, workload, preferView, internalScheme, externalPort
@@ -38,6 +43,10 @@ global.serviceDiscovery (all optional except address when enabled):
 */}}
 {{- define "lerian-common.serviceDiscovery.env" -}}
 {{- $sd := (.context.Values.global | default dict).serviceDiscovery | default dict -}}
+{{- /* Legacy flat configmap source: a present `configmap.SD_*` key WINS over the
+   global/derived value (mirrors multiTenant.env). Empty dict when omitted, so a
+   no-configmap caller renders byte-identical to before. */ -}}
+{{- $c := .configmap | default dict -}}
 {{- /*
   Derive ONLY when enabled AND global.serviceDiscovery.address is configured.
   This keeps adoption backward-compatible: a chart carrying this helper but
@@ -51,17 +60,17 @@ global.serviceDiscovery (all optional except address when enabled):
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is
    rendered by the component's own extraEnvVars passthrough. Emitting it again
    would produce a duplicate key. This helper only adds the derived siblings. */ -}}
-SD_ADDRESS: {{ $sd.address | quote }}
-SD_TLS: {{ $sd.tls | default false | quote }}
-SD_TLS_SKIP_VERIFY: {{ $sd.tlsSkipVerify | default false | quote }}
-SD_WORKLOAD: {{ $sd.workload | default "" | quote }}
-SD_PREFER_VIEW: {{ $sd.preferView | default "internal" | quote }}
-SD_INTERNAL_ADDRESS: {{ include "lerian-common.internalHost" (dict "name" .name "namespace" .namespace) | quote }}
-SD_INTERNAL_PORT: {{ .port | quote }}
-SD_INTERNAL_SCHEME: {{ $sd.internalScheme | default "http" | quote }}
+SD_ADDRESS: {{ index $c "SD_ADDRESS" | default $sd.address | quote }}
+SD_TLS: {{ index $c "SD_TLS" | default ($sd.tls | default false) | quote }}
+SD_TLS_SKIP_VERIFY: {{ index $c "SD_TLS_SKIP_VERIFY" | default ($sd.tlsSkipVerify | default false) | quote }}
+SD_WORKLOAD: {{ index $c "SD_WORKLOAD" | default ($sd.workload | default "") | quote }}
+SD_PREFER_VIEW: {{ index $c "SD_PREFER_VIEW" | default ($sd.preferView | default "internal") | quote }}
+SD_INTERNAL_ADDRESS: {{ index $c "SD_INTERNAL_ADDRESS" | default (include "lerian-common.internalHost" (dict "name" .name "namespace" .namespace)) | quote }}
+SD_INTERNAL_PORT: {{ index $c "SD_INTERNAL_PORT" | default .port | quote }}
+SD_INTERNAL_SCHEME: {{ index $c "SD_INTERNAL_SCHEME" | default ($sd.internalScheme | default "http") | quote }}
 {{- if .ingressHost }}
-SD_EXTERNAL_ADDRESS: {{ printf "https://%s" .ingressHost | quote }}
-SD_EXTERNAL_PORT: {{ $sd.externalPort | default 443 | quote }}
+SD_EXTERNAL_ADDRESS: {{ index $c "SD_EXTERNAL_ADDRESS" | default (printf "https://%s" .ingressHost) | quote }}
+SD_EXTERNAL_PORT: {{ index $c "SD_EXTERNAL_PORT" | default ($sd.externalPort | default 443) | quote }}
 {{- end }}
 {{- end -}}
 {{- end -}}

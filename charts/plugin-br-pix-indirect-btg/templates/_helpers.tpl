@@ -698,3 +698,48 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Outbound BTG client mTLS — ConfigMap data keys.
+Only the enable flag and file PATHS live here (non-secret). The cert material is
+mounted from `mtls.secretName` as a read-only volume (see the mtls volume helpers),
+so rotating the Secret updates the files in place WITHOUT a pod rollout. The env
+vars are static paths, so their values never change on rotation.
+`CLIENT_TLS_CA_FILE` is only emitted when `mtls.caFileName` is set (it is optional:
+it verifies BTG's server cert, not the CA that issued ours).
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mtlsConfig" -}}
+{{- if .Values.mtls.enabled -}}
+{{- $mp := .Values.mtls.mountPath | default "/etc/btg/mtls" -}}
+BTG_OUTBOUND_MTLS_ENABLED: "true"
+CLIENT_TLS_CERT_FILE: {{ printf "%s/%s" $mp (.Values.mtls.certFileName | default "tls.crt") | quote }}
+CLIENT_TLS_KEY_FILE: {{ printf "%s/%s" $mp (.Values.mtls.keyFileName | default "tls.key") | quote }}
+{{- with .Values.mtls.caFileName }}
+CLIENT_TLS_CA_FILE: {{ printf "%s/%s" $mp . | quote }}
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Outbound BTG client mTLS — pod volume carrying the client cert/key/CA.
+defaultMode 0400 satisfies the "0600 or stricter" key-permission requirement.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mtlsVolume" -}}
+{{- if .Values.mtls.enabled -}}
+- name: btg-outbound-mtls
+  secret:
+    secretName: {{ required "mtls.secretName is required when mtls.enabled=true" .Values.mtls.secretName }}
+    defaultMode: 0400
+{{- end -}}
+{{- end -}}
+
+{{/*
+Outbound BTG client mTLS — read-only volumeMount for the cert volume above.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mtlsVolumeMount" -}}
+{{- if .Values.mtls.enabled -}}
+- name: btg-outbound-mtls
+  mountPath: {{ .Values.mtls.mountPath | default "/etc/btg/mtls" | quote }}
+  readOnly: true
+{{- end -}}
+{{- end -}}

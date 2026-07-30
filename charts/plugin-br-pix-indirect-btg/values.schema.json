@@ -7,6 +7,18 @@
       "type": "object",
       "additionalProperties": true
     },
+    "mtls": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "secretName": { "type": "string" },
+        "mountPath": { "type": "string" },
+        "certFileName": { "type": "string" },
+        "keyFileName": { "type": "string" },
+        "caFileName": { "type": "string" }
+      }
+    },
     "pix": {
       "type": "object",
       "properties": {

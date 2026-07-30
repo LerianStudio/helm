@@ -81,6 +81,10 @@ spec:
             timeoutSeconds: {{ .Values.pix.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ .Values.pix.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.pix.livenessProbe.failureThreshold | default 3 }}
+          {{- if .Values.mtls.enabled }}
+          volumeMounts:
+            {{- include "plugin-br-pix-indirect-btg.mtlsVolumeMount" . | nindent 12 }}
+          {{- end }}
       {{- with .Values.pix.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -92,4 +96,8 @@ spec:
       {{- with .Values.pix.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mtls.enabled }}
+      volumes:
+        {{- include "plugin-br-pix-indirect-btg.mtlsVolume" . | nindent 8 }}
       {{- end }}

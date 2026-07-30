@@ -76,6 +76,10 @@ spec:
             timeoutSeconds: {{ .Values.reconciliation.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ .Values.reconciliation.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.reconciliation.livenessProbe.failureThreshold | default 3 }}
+          {{- if .Values.mtls.enabled }}
+          volumeMounts:
+            {{- include "plugin-br-pix-indirect-btg.mtlsVolumeMount" . | nindent 12 }}
+          {{- end }}
       {{- with .Values.reconciliation.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -87,4 +91,8 @@ spec:
       {{- with .Values.reconciliation.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mtls.enabled }}
+      volumes:
+        {{- include "plugin-br-pix-indirect-btg.mtlsVolume" . | nindent 8 }}
       {{- end }}

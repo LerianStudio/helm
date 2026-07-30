@@ -35,6 +35,24 @@ global:
       roles:
         - role: "readWrite"
           db: "plugin-br-pix-indirect-btg-db"
+
+# -- Outbound (client) mTLS to the BTG API, shared by the components that call
+# BTG directly (pix and reconciliation). Independent of the inbound webhook
+# `MTLS_ENABLED` toggle. The referenced Secret is mounted as a read-only volume,
+# so rotating it updates the certs in place WITHOUT a pod rollout.
+mtls:
+  # -- Enable outbound client mTLS (sets BTG_OUTBOUND_MTLS_ENABLED=true and mounts the cert volume)
+  enabled: false
+  # -- Name of an existing Secret holding the client cert/key (+ optional CA). Required when enabled.
+  secretName: ""
+  # -- Mount path for the cert volume. Do NOT use /etc/ssl/certs (shadows the OS trust store).
+  mountPath: "/etc/btg/mtls"
+  # -- Key in the Secret (and file name) for the client certificate -> CLIENT_TLS_CERT_FILE
+  certFileName: "tls.crt"
+  # -- Key in the Secret (and file name) for the private key -> CLIENT_TLS_KEY_FILE
+  keyFileName: "tls.key"
+  # -- OPTIONAL key/file for the CA that verifies BTG's SERVER cert -> CLIENT_TLS_CA_FILE. Empty = omit.
+  caFileName: ""
 pix:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe:

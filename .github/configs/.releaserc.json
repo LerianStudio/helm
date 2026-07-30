@@ -1,5 +1,10 @@
 {
   "branches": [
+    {
+      "name": "hotfix/pix-btg-3.4.x",
+      "range": "3.4.x",
+      "channel": "3.4.x"
+    },
     "main",
     {
       "name": "develop",

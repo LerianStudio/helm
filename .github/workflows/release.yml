@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - hotfix/pix-btg-3.4.x
     paths-ignore:
       - 'README.md'
       - '**/CHANGELOG.md'

@@ -890,12 +890,15 @@ rabbitmq:
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
 # -- HashiCorp Vault (bundled, dev-mode) — KMS Transit backend for CRM envelope
 # encryption. Mirrors midaz components/infra/docker-compose.yml (midaz-hc-vault +
-# midaz-hc-vault-init). Self-contained default (enabled: true) so the free stack
-# needs no external Vault. For production set vault.enabled=false and point
-# crm.configmap.KMS_VAULT_ADDR at an external Vault (and switch to approle auth).
+# midaz-hc-vault-init). OPT-IN (enabled: false by default): the bundled Vault is a
+# dev-mode server (root token, :8200, a system:auth-delegator ClusterRoleBinding
+# and the transit-init Job) intended ONLY for the self-contained/dev stack. Enable
+# it together with crm (vault.enabled=true + crm.enabled=true) so the free stack
+# needs no external Vault. Production leaves this off and points KMS at an external
+# Vault via crm.configmap.KMS_VAULT_ADDR (and switches to approle auth).
 vault:
-  # -- Toggle the bundled Vault subchart. true = self-contained dev Vault.
-  enabled: true
+  # -- Toggle the bundled Vault subchart. Default false (opt-in). true = self-contained dev Vault.
+  enabled: false
   # -- Pin the Vault Service name to `midaz-hc-vault` so the crm/ledger KMS default
   #    KMS_VAULT_ADDR (http://midaz-hc-vault:8200) resolves with no extra config.
   fullnameOverride: "midaz-hc-vault"

@@ -69,6 +69,7 @@ data:
   MULTI_TENANT_ENABLED: {{ $mtEnabled | quote }}
   {{- include "lerian-common.multiTenant.env" (dict
         "context" $
+        "configmap" .Values.ledger.configmap
         "enabled" $mtEnabled
         "serviceName" "ledger"
         "emitRedis" true

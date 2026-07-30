@@ -133,7 +133,11 @@ This chart exposes a **grouped, productized values API** for the knobs clients t
 
 3. **Grouped params per block.** Instead of raw env vars, tune clean nested params — e.g. `ledger.broker.*` (RabbitMQ client + routing + circuit breaker), `ledger.database.*` and `ledger.mongo.*` (per-module DB identity/pool), `ledger.redis.*`, `ledger.server.*`, `ledger.rateLimit.*`, `ledger.swagger.*`, and for the CRM `crm.kms.*` (Vault KMS), `crm.mongo.*`, and `crm.swagger.*`. Every block is documented inline in `values.yaml` with `# --` comments; consult it for the full key list and defaults.
 
-**Backward-compatibility (precedence).** Any legacy flat key still works: `cfgValue` resolves as **`<component>.configmap.<KEY>` → grouped param → default**. A value set under `configmap.<KEY>` therefore always **wins** over the grouped param and the mask, so existing installs render unchanged. `configmap: {}` (empty by default) is the legacy escape hatch — put any raw env var there to override the productized surface (e.g. `DB_ONBOARDING_HOST`, `REDIS_HOST`, `RABBITMQ_HOST`, `PLUGIN_AUTH_HOST`, `ENABLE_TELEMETRY`).
+**Backward-compatibility (precedence).** Every `cfgValue`/`datastore`-derived key honors the legacy flat override: it resolves as **`<component>.configmap.<KEY>` → grouped param → default**, so a value set under `configmap.<KEY>` always **wins** over the grouped param and the mask, and those installs render unchanged. This covers the datastore keys, the app/server/swagger/rate-limit/telemetry keys, the feature **toggles** (`MULTI_TENANT_ENABLED`, `SD_ENABLED`, `STREAMING_ENABLED`), and — as of this release — the whole **multi-tenant block** (`MULTI_TENANT_URL`, `MULTI_TENANT_REDIS_*`, circuit-breaker, etc.), which the `multiTenant.env` helper now reads from `<component>.configmap`.
+
+> **Service Discovery / Streaming server keys are a partial exception.** Their env is produced by the `serviceDiscovery.env` / `streaming.env` helpers, which do **not** yet accept a `configmap` passthrough. The SD/streaming **server** configuration (Consul endpoint/token wiring, broker/SASL/TLS) is therefore sourced from `global.serviceDiscovery` / `global.streaming` (or overridden via `extraEnvVars`), **not** from per-key `configmap.SD_*` / `configmap.STREAMING_*`. Per-key `configmap` passthrough for these blocks is a follow-up (tracked in `lerian-common`); until then, do not rely on byte-identical `configmap.*` backward-compat for SD/streaming server keys — use `global.*` or `extraEnvVars`.
+
+`configmap: {}` (empty by default) remains the legacy escape hatch for the `cfgValue`-backed surface — put any raw env var there to override it (e.g. `DB_ONBOARDING_HOST`, `REDIS_HOST`, `RABBITMQ_HOST`, `PLUGIN_AUTH_HOST`, `ENABLE_TELEMETRY`).
 
 ## Midaz Components
 
@@ -586,11 +590,11 @@ ledger:
 
 - **Version:** 0.28.1
 - **Repository:** https://helm.releases.hashicorp.com
-- **How to disable:** Set `vault.enabled` to `false` in the values file (default is `true`).
-- **Note:** Bundled **dev-mode** Vault (in-memory, auto-unsealed, single node, preset root token `root`), pinned to the Service name `midaz-hc-vault` via `fullnameOverride`. It mirrors the `midaz-hc-vault` + `midaz-hc-vault-init` services in the midaz `docker-compose`, so the free/self-contained stack needs no external Vault. The Agent Injector, CSI provider, and UI are disabled.
+- **How to enable:** Set `vault.enabled` to `true` in the values file (default is `false`, opt-in). Enable it together with `crm.enabled=true` for the self-contained/dev stack.
+- **Note:** OPT-IN and **off by default**. When enabled it provisions a bundled **dev-mode** Vault (in-memory, auto-unsealed, single node, preset root token `root`, listening on `:8200`), plus a `system:auth-delegator` ClusterRoleBinding and the transit-init Job — intended ONLY for the self-contained/dev stack, never for production. It is pinned to the Service name `midaz-hc-vault` via `fullnameOverride` and mirrors the `midaz-hc-vault` + `midaz-hc-vault-init` services in the midaz `docker-compose`, so the free/self-contained stack needs no external Vault. The Agent Injector, CSI provider, and UI are disabled. Because the default is `false`, existing environments that never mention `vault` render **zero** vault objects.
 - A one-shot Job (`templates/vault/transit-init-job.yaml`, gated on `vault.enabled`) enables the **Transit** secrets engine used for CRM envelope encryption (KMS), at the mode-derived mount `transit-st` (single-tenant) or `transit-mt` (when multi-tenancy is on). It is idempotent.
 - The CRM KMS default `crm.kms.vaultAddr` (`KMS_VAULT_ADDR`) is `http://midaz-hc-vault:8200`, resolving against the bundled Vault with no extra config.
-- **Production:** set `vault.enabled=false` and point `crm.kms.vaultAddr` (`KMS_VAULT_ADDR`) at an external Vault, switching `crm.kms.vaultAuthMethod` away from `token` (e.g. `approle`) as appropriate.
+- **Production:** leave `vault.enabled=false` (the default) and point `crm.kms.vaultAddr` (`KMS_VAULT_ADDR`) at an external Vault, switching `crm.kms.vaultAuthMethod` away from `token` (e.g. `approle`) as appropriate.
 
   ```yaml
   vault:

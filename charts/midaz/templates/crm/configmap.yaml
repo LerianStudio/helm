@@ -11,9 +11,9 @@ data:
   ENV_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENV_NAME" "params" .Values.crm "field" "env" "default" "development") | quote }}
 
   # APP
-  APPLICATION_NAME: {{ .Values.crm.configmap.APPLICATION_NAME | default "crm" | quote }}
-  SERVER_PORT: {{ .Values.crm.configmap.SERVER_PORT | default "4003" | quote }}
-  SERVER_ADDRESS: {{ .Values.crm.configmap.SERVER_ADDRESS | default ":4003" | quote }}
+  APPLICATION_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "APPLICATION_NAME" "params" .Values.crm "field" "applicationName" "default" "crm") | quote }}
+  SERVER_PORT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "SERVER_PORT" "params" .Values.crm.server "field" "port" "default" "4003") | quote }}
+  SERVER_ADDRESS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "SERVER_ADDRESS" "params" .Values.crm.server "field" "address" "default" ":4003") | quote }}
   VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
 
   # Mongo DB
@@ -24,17 +24,17 @@ data:
   MONGO_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.crm.configmap "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "midaz") | quote }}
   MONGO_MAX_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "MONGO_MAX_POOL_SIZE" "params" .Values.crm.mongo "field" "maxPoolSize" "default" "1000") | quote }}
   MONGO_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.crm.configmap "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") | quote }}
-  MONGO_TLS_CA_CERT: {{ .Values.crm.configmap.MONGO_TLS_CA_CERT | default "" | quote }}
+  MONGO_TLS_CA_CERT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "MONGO_TLS_CA_CERT" "params" .Values.crm.mongo "field" "tlsCaCert" "default" "") | quote }}
 
   # SWAGGER
-  SWAGGER_TITLE: {{ .Values.crm.configmap.SWAGGER_TITLE | default "CRM" | quote }}
-  SWAGGER_DESCRIPTION: {{ .Values.crm.configmap.SWAGGER_DESCRIPTION | default "The CRM API provides a set of endpoints for managing holder data, including information related to their ledger accounts." | quote }}
+  SWAGGER_TITLE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "SWAGGER_TITLE" "params" .Values.crm.swagger "field" "title" "default" "CRM") | quote }}
+  SWAGGER_DESCRIPTION: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "SWAGGER_DESCRIPTION" "params" .Values.crm.swagger "field" "description" "default" "The CRM API provides a set of endpoints for managing holder data, including information related to their ledger accounts.") | quote }}
   SWAGGER_VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
-  SWAGGER_HOST: {{ .Values.crm.configmap.SWAGGER_HOST | default ":4003" | quote }}
-  SWAGGER_BASE_PATH: {{ .Values.crm.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
-  SWAGGER_SCHEMES: {{ .Values.crm.configmap.SWAGGER_SCHEMES | default "http" | quote }}
-  SWAGGER_LEFT_DELIMITER: {{ .Values.crm.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
-  SWAGGER_RIGHT_DELIMITER: {{ .Values.crm.configmap.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
+  SWAGGER_HOST: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "SWAGGER_HOST" "params" .Values.crm.swagger "field" "host" "default" ":4003") | quote }}
+  SWAGGER_BASE_PATH: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "SWAGGER_BASE_PATH" "params" .Values.crm.swagger "field" "basePath" "default" "/") | quote }}
+  SWAGGER_SCHEMES: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "SWAGGER_SCHEMES" "params" .Values.crm.swagger "field" "schemes" "default" "http") | quote }}
+  SWAGGER_LEFT_DELIMITER: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "SWAGGER_LEFT_DELIMITER" "params" .Values.crm.swagger "field" "leftDelim" "default" "{{") | quote }}
+  SWAGGER_RIGHT_DELIMITER: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "SWAGGER_RIGHT_DELIMITER" "params" .Values.crm.swagger "field" "rightDelim" "default" "}}") | quote }}
 
   # LOG LEVEL
   LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "LOG_LEVEL" "params" .Values.crm "field" "logLevel" "default" "debug") | quote }}
@@ -47,7 +47,7 @@ data:
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/plugin-crm"
           "OTEL_RESOURCE_SERVICE_VERSION" (.Values.crm.image.tag | default .Chart.AppVersion)
           "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" (include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENV_NAME" "params" .Values.crm "field" "env" "default" "development")))) | nindent 2 }}
-  ENABLE_TELEMETRY: {{ .Values.crm.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENABLE_TELEMETRY" "params" .Values.crm.telemetry "field" "enabled" "default" "true") | quote }}
 
   # AUTH
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.crm.configmap "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth:4000") | quote }}
@@ -57,9 +57,9 @@ data:
   # Legacy configmap.MULTI_TENANT_ENABLED wins over the grouped param (presence-based).
   MULTI_TENANT_ENABLED: {{ eq (include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "MULTI_TENANT_ENABLED" "params" .Values.crm.multiTenant "field" "enabled" "default" "false")) "true" | quote }}
 
-  KMS_VAULT_ADDR: {{ .Values.crm.configmap.KMS_VAULT_ADDR | default "http://midaz-hc-vault:8200" | quote }}
-  KMS_VAULT_AUTH_METHOD: {{ .Values.crm.configmap.KMS_VAULT_AUTH_METHOD | default "token" | quote }}
-  KMS_VENDOR: {{ .Values.crm.configmap.KMS_VENDOR | default "hashicorp-vault" | quote }}
+  KMS_VAULT_ADDR: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "KMS_VAULT_ADDR" "params" .Values.crm.kms "field" "vaultAddr" "default" "http://midaz-hc-vault:8200") | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "KMS_VAULT_AUTH_METHOD" "params" .Values.crm.kms "field" "vaultAuthMethod" "default" "token") | quote }}
+  KMS_VENDOR: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "KMS_VENDOR" "params" .Values.crm.kms "field" "vendor" "default" "hashicorp-vault") | quote }}
   {{- /* Legacy configmap.SD_ENABLED wins over the grouped param (presence-based);
      compare to "true" so a legacy "false" string does not evaluate truthy. Same
      resolved bool gates both the env var and the helper. */ -}}

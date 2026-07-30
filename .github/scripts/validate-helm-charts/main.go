@@ -1545,6 +1545,13 @@ func materializeLocalDependencies(root, chartDir, tmpRoot, tmpChart string, deps
 			continue
 		}
 		relPath := strings.TrimPrefix(repository, "file://")
+		// Reject absolute paths (e.g. file:///tmp/lib → "/tmp/lib"): Helm resolves
+		// them verbatim at render time, escaping the repo, whereas filepath.Join
+		// below would fold the leading slash and pass the containment check — a
+		// mismatch that would let an absolute dependency read outside root.
+		if filepath.IsAbs(relPath) {
+			return fmt.Errorf("local dependency %q uses an absolute path, which is not supported", repository)
+		}
 		srcDir := filepath.Clean(filepath.Join(chartDir, relPath))
 		// Containment: a crafted `file://../../..` path in Chart.yaml must not let
 		// the copy read outside the repository tree or write outside the isolated

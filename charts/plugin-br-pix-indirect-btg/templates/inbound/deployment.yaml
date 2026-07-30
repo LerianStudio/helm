@@ -8,7 +8,9 @@ spec:
   revisionHistoryLimit: {{ .Values.inbound.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.inbound.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.inbound.autoscaling.enabled }}
   replicas: {{ .Values.inbound.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "inbound.selectorLabels" (dict "context" . "name" .Values.inbound.name) | nindent 6 }}

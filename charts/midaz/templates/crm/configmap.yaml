@@ -68,6 +68,7 @@ data:
   {{- include "lerian-common.serviceDiscovery.env" (dict
         "context" $
         "enabled" $sdEnabled
+        "configmap" .Values.crm.configmap
         "name" (include "midaz-crm.fullname" .)
         "port" .Values.crm.service.port
         "namespace" (include "global.namespace" .)
@@ -80,6 +81,7 @@ data:
   {{- include "lerian-common.streaming.env" (dict
         "context" $
         "enabled" $streamingEnabled
+        "configmap" .Values.crm.configmap
         "clientId" (include "midaz-crm.fullname" .)
         "cloudeventsSource" "lerian.midaz.crm") | nindent 2 }}
   # Extra Env Vars

@@ -429,6 +429,7 @@ ledger:
   # preferView) comes from global.serviceDiscovery, and the internal/external
   # endpoints are derived from this chart's own service + ingress. INERT until
   # enabled AND global.serviceDiscovery is configured (backward-compatible).
+  # A legacy flat configmap.SD_* key wins over global.serviceDiscovery.
   serviceDiscovery:
     enabled: false                     # → SD_ENABLED
 
@@ -441,6 +442,7 @@ ledger:
   # --- Streaming (lib-streaming) ------------------------------------------------
   # Enable per-app; brokers/SASL/TLS come from global.streaming. Client identity
   # (clientId/cloudeventsSource) is derived per component. Emitted only when enabled.
+  # A legacy flat configmap.STREAMING_* key wins over global.streaming.
   streaming:
     enabled: false                     # → STREAMING_ENABLED
 
@@ -668,6 +670,7 @@ crm:
   # --- Service discovery (lib-service-discovery) --------------------------------
   # Enable per-app; env-wide config from global.serviceDiscovery; endpoints derived
   # from this chart's own service + ingress. INERT until enabled + global set.
+  # A legacy flat configmap.SD_* key wins over global.serviceDiscovery.
   serviceDiscovery:
     enabled: false                     # → SD_ENABLED
 
@@ -678,6 +681,7 @@ crm:
 
   # --- Streaming (lib-streaming) ------------------------------------------------
   # Enable per-app; brokers/SASL/TLS come from global.streaming.
+  # A legacy flat configmap.STREAMING_* key wins over global.streaming.
   streaming:
     enabled: false                     # → STREAMING_ENABLED
 

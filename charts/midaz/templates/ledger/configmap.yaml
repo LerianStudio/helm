@@ -277,6 +277,7 @@ data:
   {{- include "lerian-common.serviceDiscovery.env" (dict
         "context" $
         "enabled" $sdEnabled
+        "configmap" .Values.ledger.configmap
         "name" (include "midaz-ledger.fullname" .)
         "port" .Values.ledger.service.port
         "namespace" (include "global.namespace" .)
@@ -291,6 +292,7 @@ data:
   {{- include "lerian-common.streaming.env" (dict
         "context" $
         "enabled" $streamingEnabled
+        "configmap" .Values.ledger.configmap
         "clientId" (include "midaz-ledger.fullname" .)
         "cloudeventsSource" "lerian.midaz.ledger") | nindent 2 }}
   SWAGGER_VERSION: {{ .Values.ledger.configmap.SWAGGER_VERSION | default "${VERSION}" | quote }}

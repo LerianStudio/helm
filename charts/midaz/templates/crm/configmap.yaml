@@ -12,6 +12,7 @@ data:
 
   # APP
   APPLICATION_NAME: {{ .Values.crm.configmap.APPLICATION_NAME | default "crm" | quote }}
+  DEPLOYMENT_MODE: {{ .Values.crm.configmap.DEPLOYMENT_MODE | default "local" | quote }}
   SERVER_PORT: {{ .Values.crm.configmap.SERVER_PORT | default "4003" | quote }}
   SERVER_ADDRESS: {{ .Values.crm.configmap.SERVER_ADDRESS | default ":4003" | quote }}
   VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}

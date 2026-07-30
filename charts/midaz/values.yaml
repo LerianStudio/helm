@@ -268,6 +268,8 @@ ledger:
     accountTypeValidation: ""
     # -- TRANSACTION_ROUTE_VALIDATION
     transactionRouteValidation: ""
+    # -- Fallback currency for fee legs with no explicit currency (→ DEFAULT_CURRENCY)
+    defaultCurrency: "USD"
 
   # --- Rate limiting (three-tier, Redis-backed) ------------------------------
   rateLimit:
@@ -329,6 +331,39 @@ ledger:
       uri: "mongodb"                   # → MONGO_TRANSACTION_URI
       name: "transaction"              # → MONGO_TRANSACTION_NAME
       maxPoolSize: "1000"              # → MONGO_TRANSACTION_MAX_POOL_SIZE
+    # CRM/FEES logical DBs on the same bundled mongodb (host/user/port/params →
+    # global.datastores.mongo mask); passwords → ledger.secrets (single-sourced).
+    crm:
+      uri: "mongodb"                   # → MONGO_CRM_URI
+      name: "crm"                      # → MONGO_CRM_NAME
+      maxPoolSize: "1000"              # → MONGO_CRM_MAX_POOL_SIZE
+    fees:
+      uri: "mongodb"                   # → MONGO_FEES_URI
+      name: "fees"                     # → MONGO_FEES_NAME
+      maxPoolSize: "100"               # → MONGO_FEES_MAX_POOL_SIZE
+
+  # --- KMS / envelope encryption (CRM field encryption) ----------------------
+  # KMS_VENDOR default "none" → the ledger boots WITHOUT Vault (lib-commons
+  # LCRYPTO crypto), behaviour unchanged from before this block existed. Set
+  # vendor "hashicorp-vault" to enable Tink + Vault Transit against the bundled
+  # midaz-hc-vault. AppRole role/secret IDs live in ledger.secrets.
+  kms:
+    vaultAddr: "http://midaz-hc-vault:8200"  # → KMS_VAULT_ADDR
+    vaultAuthMethod: "token"                 # → KMS_VAULT_AUTH_METHOD
+    vendor: "none"                           # → KMS_VENDOR (none = no Vault at boot)
+
+  # --- Tracer reservation seam (lib-observability tracer client) -------------
+  # Ledger→Tracer transaction-capacity reservation. INERT by default: an empty
+  # baseUrl injects a nil reserver, so the transaction create path is unchanged.
+  # TLS cert/key/CA are file paths (non-secret) mounted by the operator.
+  tracer:
+    baseUrl: ""                        # → TRACER_BASE_URL (empty = integration off)
+    timeoutMs: "250"                   # → TRACER_TIMEOUT_MS
+    transport: "grpc"                  # → TRACER_TRANSPORT (grpc | rest)
+    tlsMode: ""                        # → TRACER_TLS_MODE (empty/mesh | mtls)
+    tlsCertFile: ""                    # → TRACER_TLS_CERT_FILE
+    tlsKeyFile: ""                     # → TRACER_TLS_KEY_FILE
+    tlsCaFile: ""                      # → TRACER_TLS_CA_FILE
 
   # --- Redis / Valkey (client tuning) ----------------------------------------
   # Connection host → global.datastores.redis; password → ledger.secrets.REDIS_PASSWORD.
@@ -403,6 +438,14 @@ ledger:
   # (clientId/cloudeventsSource) is derived per component. Emitted only when enabled.
   streaming:
     enabled: false                     # → STREAMING_ENABLED
+    # Optional producer tuning — emitted only when streaming is enabled (the
+    # lerian-common.streaming.env helper v1.2.1 does not yet own these; a
+    # follow-up lib-common PR should fold them in — same gap exists for reporter).
+    compression: "lz4"                 # → STREAMING_COMPRESSION (snappy|lz4|zstd|gzip|none)
+    requiredAcks: "all"                # → STREAMING_REQUIRED_ACKS (all|leader|none)
+    batchLingerMs: "5"                 # → STREAMING_BATCH_LINGER_MS
+    importantEmitTimeoutMs: "5000"     # → STREAMING_IMPORTANT_EMIT_TIMEOUT_MS
+    saslAllowPlaintext: "false"        # → STREAMING_SASL_ALLOW_PLAINTEXT (dev only)
 
   # @default -- templates/ledger/configmap.yaml
   configmap: {}
@@ -428,6 +471,21 @@ ledger:
     DB_TRANSACTION_PASSWORD: ""
     DB_TRANSACTION_REPLICA_PASSWORD: ""
     MONGO_TRANSACTION_PASSWORD: ""
+    # -- CRM/FEES module mongo passwords. Same single-source rule as onboarding/
+    # transaction: injected via secretKeyRef from the mongodb subchart Secret
+    # (key `mongodb-root-password`). Only set these for an EXTERNAL mongo
+    # (subchart disabled / .external=true) without an existingSecret override.
+    MONGO_CRM_PASSWORD: ""
+    MONGO_FEES_PASSWORD: ""
+    # -- CRM field-crypto material (lib-commons LCRYPTO), used when KMS_VENDOR=none.
+    # Operator-provided; rendered into the ledger Secret ONLY when set (never a
+    # placeholder), so the default render is unchanged.
+    LCRYPTO_HASH_SECRET_KEY: ""
+    LCRYPTO_ENCRYPT_SECRET_KEY: ""
+    # -- KMS Vault AppRole credentials. Used only when KMS_VENDOR=hashicorp-vault
+    # with approle auth; empty by default (vendor=none → ledger boots without Vault).
+    KMS_VAULT_ROLE_ID: ""
+    KMS_VAULT_SECRET_ID: ""
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
     # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an

@@ -20,6 +20,10 @@
 {{- $dbTransaction := $ledgerDb.transaction | default dict }}
 {{- $mongoOnboarding := $ledgerMongo.onboarding | default dict }}
 {{- $mongoTransaction := $ledgerMongo.transaction | default dict }}
+{{- $mongoCrm := $ledgerMongo.crm | default dict }}
+{{- $mongoFees := $ledgerMongo.fees | default dict }}
+{{- $ledgerKms := .Values.ledger.kms | default dict }}
+{{- $ledgerTracer := .Values.ledger.tracer | default dict }}
 
 kind: ConfigMap
 apiVersion: v1
@@ -78,6 +82,8 @@ data:
   # =============================================================================
   ACCOUNT_TYPE_VALIDATION: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ACCOUNT_TYPE_VALIDATION" "params" .Values.ledger.accounting "field" "accountTypeValidation" "default" "") | quote }}
   TRANSACTION_ROUTE_VALIDATION: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRANSACTION_ROUTE_VALIDATION" "params" .Values.ledger.accounting "field" "transactionRouteValidation" "default" "") | quote }}
+  # Fallback currency for fee legs that do not specify one (→ DEFAULT_CURRENCY).
+  DEFAULT_CURRENCY: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "DEFAULT_CURRENCY" "params" .Values.ledger.accounting "field" "defaultCurrency" "default" "USD") | quote }}
 
   # =============================================================================
   # DB POSTGRESQL - ONBOARDING MODULE
@@ -140,6 +146,58 @@ data:
   MONGO_TRANSACTION_MAX_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_TRANSACTION_MAX_POOL_SIZE" "params" $mongoTransaction "field" "maxPoolSize" "default" "1000") | quote }}
   MONGO_TRANSACTION_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "mongo" "field" "params" "nativeKey" "MONGO_TRANSACTION_PARAMETERS" "default" "") | quote }}
   MONGO_TRANSACTION_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_TRANSACTION_TLS_CA_CERT | default "" | quote }}
+
+  # =============================================================================
+  # MONGO DB - CRM (holder/alias collections, collapsed into the unified ledger)
+  # =============================================================================
+  # Host/user/port/params resolve via the shared mongo mask (bundled midaz-mongodb);
+  # uri/name/pool from ledger.mongo.crm.*. MAY share the mongo deployment (separate
+  # logical DB `crm`) or point at a dedicated host. Password → ledger Secret.
+  MONGO_CRM_URI: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_URI" "params" $mongoCrm "field" "uri" "default" "mongodb") | quote }}
+  MONGO_CRM_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "mongo" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_CRM_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_NAME" "params" $mongoCrm "field" "name" "default" "crm") | quote }}
+  MONGO_CRM_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "mongo" "field" "user" "nativeKey" "MONGO_CRM_USER" "default" "midaz") | quote }}
+  MONGO_CRM_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "mongo" "field" "port" "nativeKey" "MONGO_CRM_PORT" "default" "27017") | quote }}
+  MONGO_CRM_MAX_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_CRM_MAX_POOL_SIZE" "params" $mongoCrm "field" "maxPoolSize" "default" "1000") | quote }}
+  MONGO_CRM_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "mongo" "field" "params" "nativeKey" "MONGO_CRM_PARAMETERS" "default" "") | quote }}
+  MONGO_CRM_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_CRM_TLS_CA_CERT | default "" | quote }}
+
+  # =============================================================================
+  # MONGO DB - FEES (fee/billing-package collections, collapsed into the ledger)
+  # =============================================================================
+  # Same treatment as CRM; separate logical DB `fees`. Password → ledger Secret.
+  MONGO_FEES_URI: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_URI" "params" $mongoFees "field" "uri" "default" "mongodb") | quote }}
+  MONGO_FEES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "mongo" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_FEES_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_NAME" "params" $mongoFees "field" "name" "default" "fees") | quote }}
+  MONGO_FEES_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "mongo" "field" "user" "nativeKey" "MONGO_FEES_USER" "default" "midaz") | quote }}
+  MONGO_FEES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "mongo" "field" "port" "nativeKey" "MONGO_FEES_PORT" "default" "27017") | quote }}
+  MONGO_FEES_MAX_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "MONGO_FEES_MAX_POOL_SIZE" "params" $mongoFees "field" "maxPoolSize" "default" "100") | quote }}
+  MONGO_FEES_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" .Values.ledger.configmap "type" "mongo" "field" "params" "nativeKey" "MONGO_FEES_PARAMETERS" "default" "") | quote }}
+  MONGO_FEES_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_FEES_TLS_CA_CERT | default "" | quote }}
+
+  # =============================================================================
+  # KMS / ENVELOPE ENCRYPTION (CRM field encryption)
+  # =============================================================================
+  # KMS_VENDOR default is "none" → the ledger boots WITHOUT Vault (lib-commons
+  # LCRYPTO crypto). Set vendor "hashicorp-vault" to enable Tink + Vault Transit
+  # against the bundled midaz-hc-vault. ROLE_ID/SECRET_ID (AppRole) → ledger Secret.
+  KMS_VAULT_ADDR: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "KMS_VAULT_ADDR" "params" $ledgerKms "field" "vaultAddr" "default" "http://midaz-hc-vault:8200") | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "KMS_VAULT_AUTH_METHOD" "params" $ledgerKms "field" "vaultAuthMethod" "default" "token") | quote }}
+  KMS_VENDOR: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "KMS_VENDOR" "params" $ledgerKms "field" "vendor" "default" "none") | quote }}
+
+  # =============================================================================
+  # TRACER RESERVATION SEAM (lib-observability tracer client)
+  # =============================================================================
+  # Ledger→Tracer transaction-capacity reservation. INERT by default: an empty
+  # TRACER_BASE_URL injects a nil reserver so the transaction create path is
+  # unchanged. TLS cert/key/CA are file paths (non-secret) mounted by the operator.
+  TRACER_BASE_URL: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_BASE_URL" "params" $ledgerTracer "field" "baseUrl" "default" "") | quote }}
+  TRACER_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_TIMEOUT_MS" "params" $ledgerTracer "field" "timeoutMs" "default" "250") | quote }}
+  TRACER_TRANSPORT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_TRANSPORT" "params" $ledgerTracer "field" "transport" "default" "grpc") | quote }}
+  TRACER_TLS_MODE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_TLS_MODE" "params" $ledgerTracer "field" "tlsMode" "default" "") | quote }}
+  TRACER_TLS_CERT_FILE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_TLS_CERT_FILE" "params" $ledgerTracer "field" "tlsCertFile" "default" "") | quote }}
+  TRACER_TLS_KEY_FILE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_TLS_KEY_FILE" "params" $ledgerTracer "field" "tlsKeyFile" "default" "") | quote }}
+  TRACER_TLS_CA_FILE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "TRACER_TLS_CA_FILE" "params" $ledgerTracer "field" "tlsCaFile" "default" "") | quote }}
 
   # =============================================================================
   # REDIS (shared between modules)
@@ -290,6 +348,19 @@ data:
         "enabled" $streamingEnabled
         "clientId" (include "midaz-ledger.fullname" .)
         "cloudeventsSource" "lerian.midaz.ledger") | nindent 2 }}
+  {{- /* Optional producer tuning knobs the lerian-common.streaming.env helper
+     (v1.2.1) does not yet emit. Emitted inline under the SAME $streamingEnabled
+     gate so the configmap stays clean when streaming is off (no regression).
+     TODO(lib-common): fold these into lerian-common.streaming.env (the same gap
+     exists for reporter) and drop this inline block once the helper owns them. */ -}}
+  {{- if $streamingEnabled }}
+  {{- $ledgerStreaming := .Values.ledger.streaming | default dict }}
+  STREAMING_COMPRESSION: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "STREAMING_COMPRESSION" "params" $ledgerStreaming "field" "compression" "default" "lz4") | quote }}
+  STREAMING_REQUIRED_ACKS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "STREAMING_REQUIRED_ACKS" "params" $ledgerStreaming "field" "requiredAcks" "default" "all") | quote }}
+  STREAMING_BATCH_LINGER_MS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "STREAMING_BATCH_LINGER_MS" "params" $ledgerStreaming "field" "batchLingerMs" "default" "5") | quote }}
+  STREAMING_IMPORTANT_EMIT_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" "params" $ledgerStreaming "field" "importantEmitTimeoutMs" "default" "5000") | quote }}
+  STREAMING_SASL_ALLOW_PLAINTEXT: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "STREAMING_SASL_ALLOW_PLAINTEXT" "params" $ledgerStreaming "field" "saslAllowPlaintext" "default" "false") | quote }}
+  {{- end }}
   SWAGGER_VERSION: {{ .Values.ledger.configmap.SWAGGER_VERSION | default "${VERSION}" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}

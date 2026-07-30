@@ -31,23 +31,39 @@ Inputs (dict):
   enabled           (req)  bool — whether to emit the constants
   clientId          (opt)  STREAMING_CLIENT_ID — emitted only when provided
   cloudeventsSource (opt)  STREAMING_CLOUDEVENTS_SOURCE — emitted only when provided
+  configmap         (opt)  the component's legacy `.configmap` map. When a key is
+                           present here, its flat `configmap.STREAMING_*` value
+                           WINS over the global value below (backward-compat for
+                           the flat configmap API). Defaults to an empty dict → every
+                           key falls through to global/default (byte-identical to
+                           a no-configmap caller, aside from the new knobs below).
 
 global.streaming (all optional except brokers, which gates emission):
-  brokers, tlsEnabled, saslMechanism, saslUsername
+  brokers, tlsEnabled, saslMechanism, saslUsername, saslAllowPlaintext,
+  compression, requiredAcks, batchLingerMs, importantEmitTimeoutMs
 ==============================================================================
 */}}
 {{- define "lerian-common.streaming.env" -}}
 {{- $s := (.context.Values.global | default dict).streaming | default dict -}}
+{{- /* Legacy flat configmap source: a present `configmap.STREAMING_*` key WINS
+   over the global value (mirrors multiTenant.env / serviceDiscovery.env). Empty
+   dict when omitted. */ -}}
+{{- $c := .configmap | default dict -}}
 {{- if and .enabled $s.brokers -}}
-STREAMING_BROKERS: {{ $s.brokers | quote }}
-STREAMING_TLS_ENABLED: {{ $s.tlsEnabled | default false | quote }}
-STREAMING_SASL_MECHANISM: {{ $s.saslMechanism | default "" | quote }}
-STREAMING_SASL_USERNAME: {{ $s.saslUsername | default "" | quote }}
+STREAMING_BROKERS: {{ index $c "STREAMING_BROKERS" | default $s.brokers | quote }}
+STREAMING_TLS_ENABLED: {{ index $c "STREAMING_TLS_ENABLED" | default ($s.tlsEnabled | default false) | quote }}
+STREAMING_SASL_MECHANISM: {{ index $c "STREAMING_SASL_MECHANISM" | default ($s.saslMechanism | default "") | quote }}
+STREAMING_SASL_USERNAME: {{ index $c "STREAMING_SASL_USERNAME" | default ($s.saslUsername | default "") | quote }}
+STREAMING_SASL_ALLOW_PLAINTEXT: {{ index $c "STREAMING_SASL_ALLOW_PLAINTEXT" | default ($s.saslAllowPlaintext | default "false") | quote }}
+STREAMING_COMPRESSION: {{ index $c "STREAMING_COMPRESSION" | default ($s.compression | default "lz4") | quote }}
+STREAMING_REQUIRED_ACKS: {{ index $c "STREAMING_REQUIRED_ACKS" | default ($s.requiredAcks | default "all") | quote }}
+STREAMING_BATCH_LINGER_MS: {{ index $c "STREAMING_BATCH_LINGER_MS" | default ($s.batchLingerMs | default "5") | quote }}
+STREAMING_IMPORTANT_EMIT_TIMEOUT_MS: {{ index $c "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" | default ($s.importantEmitTimeoutMs | default "5000") | quote }}
 {{- if hasKey . "clientId" }}
-STREAMING_CLIENT_ID: {{ .clientId | quote }}
+STREAMING_CLIENT_ID: {{ index $c "STREAMING_CLIENT_ID" | default .clientId | quote }}
 {{- end }}
 {{- if hasKey . "cloudeventsSource" }}
-STREAMING_CLOUDEVENTS_SOURCE: {{ .cloudeventsSource | quote }}
+STREAMING_CLOUDEVENTS_SOURCE: {{ index $c "STREAMING_CLOUDEVENTS_SOURCE" | default .cloudeventsSource | quote }}
 {{- end }}
 {{- end -}}
 {{- end -}}

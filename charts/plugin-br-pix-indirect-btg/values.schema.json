@@ -16,7 +16,8 @@
         "mountPath": { "type": "string" },
         "certFileName": { "type": "string" },
         "keyFileName": { "type": "string" },
-        "caFileName": { "type": "string" }
+        "caFileName": { "type": "string" },
+        "stagingImage": { "type": "string" }
       }
     },
     "pix": {

@@ -38,14 +38,18 @@ global:
 
 # -- Outbound (client) mTLS to the BTG API, shared by the components that call
 # BTG directly (pix and reconciliation). Independent of the inbound webhook
-# `MTLS_ENABLED` toggle. The referenced Secret is mounted as a read-only volume,
-# so rotating it updates the certs in place WITHOUT a pod rollout.
+# `MTLS_ENABLED` toggle. An init container stages the referenced Secret into an
+# ephemeral emptyDir as owner-only (0400) files owned by the app uid, so the
+# non-root app can read a key with NO group/other permission bit (its certificate
+# loader rejects those). NOTE: rotating the Secret requires a pod restart — the
+# app loads the cert once at startup (no hot-reload wired), so a live mount would
+# not help. No PersistentVolume is used (emptyDir, rebuilt from the Secret on boot).
 mtls:
-  # -- Enable outbound client mTLS (sets BTG_OUTBOUND_MTLS_ENABLED=true and mounts the cert volume)
+  # -- Enable outbound client mTLS (sets BTG_OUTBOUND_MTLS_ENABLED=true, stages + mounts the cert)
   enabled: false
   # -- Name of an existing Secret holding the client cert/key (+ optional CA). Required when enabled.
   secretName: ""
-  # -- Mount path for the cert volume. Do NOT use /etc/ssl/certs (shadows the OS trust store).
+  # -- Mount path for the staged cert dir. Do NOT use /etc/ssl/certs (shadows the OS trust store).
   mountPath: "/etc/btg/mtls"
   # -- Key in the Secret (and file name) for the client certificate -> CLIENT_TLS_CERT_FILE
   certFileName: "tls.crt"
@@ -53,6 +57,8 @@ mtls:
   keyFileName: "tls.key"
   # -- OPTIONAL key/file for the CA that verifies BTG's SERVER cert -> CLIENT_TLS_CA_FILE. Empty = omit.
   caFileName: ""
+  # -- Image for the init container that stages the certs. Override to an internal mirror if needed.
+  stagingImage: "busybox:1.36"
 pix:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe:

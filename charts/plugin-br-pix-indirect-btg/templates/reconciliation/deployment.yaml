@@ -25,6 +25,10 @@ spec:
     {{- end }}
       securityContext:
         {{- toYaml .Values.reconciliation.podSecurityContext | nindent 8 }}
+      {{- if .Values.mtls.enabled }}
+      initContainers:
+        {{- include "plugin-br-pix-indirect-btg.mtlsInitContainer" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ include "reconciliation.fullname" . }}
           securityContext:
@@ -94,5 +98,5 @@ spec:
       {{- end }}
       {{- if .Values.mtls.enabled }}
       volumes:
-        {{- include "plugin-br-pix-indirect-btg.mtlsVolume" . | nindent 8 }}
+        {{- include "plugin-br-pix-indirect-btg.mtlsVolumes" . | nindent 8 }}
       {{- end }}

@@ -110,14 +110,16 @@ matching `data:`/`stringData:` key:
         "secretName" (include "midaz.ledger.fullname" .)
         "valuesPrefix" "ledger.secrets." "mode" "data"
         "enabled" true "useExistingSecret" .Values.ledger.useExistingSecret
-        "saslMechanism" (dig "streaming" "saslMechanism" "" (.Values.global | default dict)))) }}
+        "saslMechanism" (dig "streaming" "saslMechanism" "" (.Values.global | default dict))
+        "saslUsername" (dig "streaming" "saslUsername" "" (.Values.global | default dict)))) }}
   {{- . | nindent 2 }}
   {{- end }}
 
 Inputs: context, secrets, secretName, valuesPrefix, mode,
         enabled (bool — STREAMING_ENABLED),
         useExistingSecret (bool — skip entirely when true),
-        saslMechanism (string — when non-empty, SASL_PASSWORD becomes required).
+        saslMechanism (string — when non-empty, both SASL_USERNAME and SASL_PASSWORD become required),
+        saslUsername (string — the resolved STREAMING_SASL_USERNAME; required when saslMechanism is set).
 ------------------------------------------------------------------------------
 */}}
 {{- define "lerian-common.streaming.secret" -}}
@@ -126,6 +128,14 @@ Inputs: context, secrets, secretName, valuesPrefix, mode,
 {{- $b64 := eq (.mode | default "stringData") "data" -}}
 {{- $ns := .context.Release.Namespace -}}
 {{- $lines := list -}}
+{{- /* STREAMING_SASL_USERNAME — required (with the password) whenever a SASL mechanism
+   is set; lib-streaming rejects a mechanism without BOTH credentials. The username is a
+   ConfigMap value (not a secret), resolved by the caller with the same precedence
+   (configmap.STREAMING_SASL_USERNAME -> global.streaming.saslUsername) and passed here so
+   the render fails fast instead of shipping a boot-crashing config. */ -}}
+{{- if and .saslMechanism (not .saslUsername) -}}
+{{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires both a username and a password.\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" .saslMechanism) -}}
+{{- end -}}
 {{- /* STREAMING_SASL_PASSWORD — required only when a SASL mechanism is set */ -}}
 {{- $sasl := index $s "STREAMING_SASL_PASSWORD" -}}
 {{- if and .saslMechanism (not $sasl) -}}

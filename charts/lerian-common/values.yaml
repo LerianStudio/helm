@@ -22,7 +22,7 @@ global: {}
   #   workload: ""           # SD_WORKLOAD — per-env isolation key (provider+consumer must match)
   #   preferView: external   # SD_PREFER_VIEW — internal|external (lib default: external)
   #   internalScheme: http   # SD_INTERNAL_SCHEME
-  #   externalPort: 443      # SD_EXTERNAL_PORT (emitted only when a component has an ingress host)
+  #   externalPort: 443      # SD_EXTERNAL_PORT (emitted when a component has an ingress host OR sets legacy configmap.SD_EXTERNAL_*)
   #
   # -- Streaming (lib-streaming / RedPanda). Set once per environment.
   # streaming:

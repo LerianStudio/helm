@@ -178,14 +178,21 @@ data:
   # =============================================================================
   # OPEN TELEMETRY
   # =============================================================================
+  {{- /* Static/local OTEL identity keys stay flat (configmap override or default). */ -}}
   {{- include "lerian-common.otel.envFlat" (dict
         "configmap" .Values.ledger.configmap
+        "keys" (list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION" "OTEL_EXPORTER_OTLP_ENDPOINT_PORT")
         "defaults" (dict
           "OTEL_RESOURCE_SERVICE_NAME" "ledger"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/midaz/v3/components/ledger"
-          "OTEL_RESOURCE_SERVICE_VERSION" (.Values.ledger.image.tag | default .Chart.AppVersion)
-          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $env)) | nindent 2 }}
-  ENABLE_TELEMETRY: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ENABLE_TELEMETRY" "params" .Values.ledger.telemetry "field" "enabled" "default" "false") | quote }}
+          "OTEL_RESOURCE_SERVICE_VERSION" (.Values.ledger.image.tag | default .Chart.AppVersion))) | nindent 2 }}
+  {{/* Env-wide observability contract: endpoint, deployment env and enable derive
+     from global.observability with configmap.<KEY> winning. The deployment-env
+     default is $env (global.environment), so it stays single-sourced with ENV_NAME
+     unless global.observability.deploymentEnvironment (or configmap) overrides it. */ -}}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.ledger.configmap "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "midaz-grafana:4317") | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.ledger.configmap "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" $env) | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.ledger.configmap "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" (include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ENABLE_TELEMETRY" "params" .Values.ledger.telemetry "field" "enabled" "default" "true"))) | quote }}
 
   # =============================================================================
   # RABBITMQ (used by transaction module)

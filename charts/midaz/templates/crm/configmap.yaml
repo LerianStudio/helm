@@ -46,14 +46,21 @@ data:
   LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "LOG_LEVEL" "params" .Values.crm "field" "logLevel" "default" "debug") | quote }}
 
   # OPEN TELEMETRY
+  {{- /* Static/local OTEL identity keys stay flat (configmap override or default). */ -}}
   {{- include "lerian-common.otel.envFlat" (dict
         "configmap" .Values.crm.configmap
+        "keys" (list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION" "OTEL_EXPORTER_OTLP_ENDPOINT_PORT")
         "defaults" (dict
           "OTEL_RESOURCE_SERVICE_NAME" "midaz-crm"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/plugin-crm"
-          "OTEL_RESOURCE_SERVICE_VERSION" (.Values.crm.image.tag | default .Chart.AppVersion)
-          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $env)) | nindent 2 }}
-  ENABLE_TELEMETRY: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENABLE_TELEMETRY" "params" .Values.crm.telemetry "field" "enabled" "default" "true") | quote }}
+          "OTEL_RESOURCE_SERVICE_VERSION" (.Values.crm.image.tag | default .Chart.AppVersion))) | nindent 2 }}
+  {{/* Env-wide observability contract: endpoint, deployment env and enable derive
+     from global.observability with configmap.<KEY> winning. The deployment-env
+     default is $env (global.environment), so it stays single-sourced with ENV_NAME
+     unless global.observability.deploymentEnvironment (or configmap) overrides it. */ -}}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.crm.configmap "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "midaz-grafana:4317") | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.crm.configmap "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" $env) | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.crm.configmap "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" (include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENABLE_TELEMETRY" "params" .Values.crm.telemetry "field" "enabled" "default" "true"))) | quote }}
 
   # AUTH
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.crm.configmap "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth:4000") | quote }}

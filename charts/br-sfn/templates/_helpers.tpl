@@ -218,10 +218,16 @@ spec:
       {{- include "br-sfn.componentSelectorLabels" $id | nindent 6 }}
   template:
     metadata:
-      {{- with .comp.podAnnotations }}
       annotations:
+        {{- with .comp.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
+        {{- if $configData }}
+        checksum/config: {{ $configData | sha256sum }}
+        {{- end }}
+        {{- if $secretData }}
+        checksum/secret: {{ $secretData | sha256sum }}
+        {{- end }}
       labels:
         {{- include "br-sfn.componentSelectorLabels" $id | nindent 8 }}
     spec:
@@ -240,14 +246,16 @@ spec:
           image: {{ include "br-sfn.componentImage" (dict "root" .root "comp" .comp) | quote }}
           imagePullPolicy: {{ .comp.image.pullPolicy | default "IfNotPresent" }}
           {{- if or $configData $hasSecret }}
+          # Secret LAST: envFrom resolves duplicate keys to the last source, so
+          # a key in both maps takes the credentialed value, never the ConfigMap.
           envFrom:
-            {{- if $hasSecret }}
-            - secretRef:
-                name: {{ include "br-sfn.componentSecretName" (dict "root" .root "name" .name "comp" .comp "sharedCfg" $sharedCfg) }}
-            {{- end }}
             {{- if $configData }}
             - configMapRef:
                 name: {{ $fullname }}
+            {{- end }}
+            {{- if $hasSecret }}
+            - secretRef:
+                name: {{ include "br-sfn.componentSecretName" (dict "root" .root "name" .name "comp" .comp "sharedCfg" $sharedCfg) }}
             {{- end }}
           {{- end }}
           {{- with .comp.extraEnvVars }}
@@ -477,8 +485,49 @@ Input dict: root, name (component), comp, shared, sharedCfg, flavor
 {{- end -}}
 {{- $pgSsl := include "br-sfn.migrationPgValue" (dict "mig" $mig "key" "sslMode" "cfg" $cfg "cfgKey" "POSTGRES_SSLMODE" "fallback" "disable") -}}
 {{- $pwSecret := ($mig.passwordSecret | default dict) -}}
-{{- $pwName := $pwSecret.name | default (include "br-sfn.componentSecretName" (dict "root" .root "name" (.secretComponent | default .name) "comp" .comp "sharedCfg" (.sharedCfg | default dict))) -}}
 {{- $pwKey := $pwSecret.key | default "POSTGRES_PASSWORD" -}}
+{{- $sharedCfgM := .sharedCfg | default dict -}}
+{{- $mergedSecrets := mergeOverwrite (deepCopy (.sharedSecrets | default dict)) (.comp.secrets | default dict) -}}
+{{- $pwName := "" -}}
+{{- $mintSecret := false -}}
+{{- if $pwSecret.name -}}
+{{- /* Operator-owned Secret: name + key are the operator's contract. */ -}}
+{{- $pwName = $pwSecret.name -}}
+{{- else if or .comp.useExistingSecret $sharedCfgM.useExistingSecret -}}
+{{- /* Existing-secret override: resolve the SAME name the component resolves
+       (component-level flag first, then the family-level one), so the Job and
+       the Deployment always read one Secret. */ -}}
+{{- $pwName = include "br-sfn.componentSecretName" (dict "root" .root "name" (.secretComponent | default .name) "comp" .comp "sharedCfg" $sharedCfgM) -}}
+{{- else -}}
+{{- /* Generated path: the component Secret is a MAIN-SYNC resource, so a
+       PreSync Job racing it would sit in CreateContainerConfigError. Mint a
+       dedicated PreSync hook Secret (weight -2, created before the Job at -1,
+       BeforeHookCreation only so it survives the whole PreSync phase) carrying
+       just the password. Fail loud when the key is missing — a Job pointing at
+       an absent key would otherwise hang until activeDeadlineSeconds. */ -}}
+{{- if not (hasKey $mergedSecrets $pwKey) -}}
+{{- fail (printf "br-sfn: %s migrations need %s in %s.secrets (or set %s.migrations.passwordSecret.name to an operator-provided Secret)" .name $pwKey .name .name) -}}
+{{- end -}}
+{{- $pwName = include "br-sfn.componentFullname" $id -}}
+{{- $mintSecret = true -}}
+{{- end -}}
+{{- if $mintSecret }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $pwName }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" $id | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "-2"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+type: Opaque
+stringData:
+  {{ $pwKey }}: {{ index $mergedSecrets $pwKey | quote }}
+---
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:

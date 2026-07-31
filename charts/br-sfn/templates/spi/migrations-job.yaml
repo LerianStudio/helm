@@ -3,16 +3,18 @@
 image owns module ordering (global → events → spi → dict → brcode → core) and
 the per-module bookkeeping tables every /readyz schema probe reads. The comp
 dict is assembled so Postgres fallbacks read the api component's effective
-configmap and the password defaults to the spi-api Secret (the shared
-spi.secrets map renders into each component Secret, api included). */ -}}
+configmap and the password resolves EXACTLY like spi-api's own Secret does:
+api-level useExistingSecret/existingSecretName first, then the family-level
+spi.* flags (sharedCfg), then the generated path — which mints a dedicated
+PreSync Secret from the merged spi.secrets + spi.api.secrets maps. */ -}}
 {{- $comp := dict
       "migrations" .Values.spi.migrations
       "configmap" .Values.spi.api.configmap
       "secrets" .Values.spi.api.secrets
       "image" .Values.spi.api.image
       "imagePullSecrets" .Values.spi.api.imagePullSecrets
-      "useExistingSecret" .Values.spi.useExistingSecret
-      "existingSecretName" .Values.spi.existingSecretName
+      "useExistingSecret" .Values.spi.api.useExistingSecret
+      "existingSecretName" .Values.spi.api.existingSecretName
 -}}
-{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "spi" "secretComponent" "spi-api" "comp" $comp "shared" .Values.spi.configmap "sharedCfg" .Values.spi "flavor" "dedicated") }}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "spi" "secretComponent" "spi-api" "comp" $comp "shared" .Values.spi.configmap "sharedSecrets" .Values.spi.secrets "sharedCfg" .Values.spi "flavor" "dedicated") }}
 {{- end -}}

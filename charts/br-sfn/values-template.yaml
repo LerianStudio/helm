@@ -16,7 +16,11 @@
 
 # spi:
 #   enabled: true
-#   configmap: {}            # shared by api/dict/brcode/core (component maps win)
+#   configmap:               # shared by api/dict/brcode/core (component maps win)
+#     POSTGRES_HOST: ""
+#     POSTGRES_PORT: "5432"
+#     POSTGRES_USER: ""
+#     POSTGRES_DB: ""
 #   secrets:
 #     POSTGRES_PASSWORD: ""  # required when spi.enabled (URL-safe)
 #   api:
@@ -31,6 +35,11 @@
 
 # siloc:
 #   enabled: true
+#   configmap:
+#     POSTGRES_HOST: ""
+#     POSTGRES_PORT: "5432"
+#     POSTGRES_USER: ""
+#     POSTGRES_DB: ""
 #   secrets:
 #     POSTGRES_PASSWORD: ""
 #   migrations:

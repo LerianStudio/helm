@@ -468,10 +468,11 @@ aws:
     # -- Name of the kubernetes.io/tls Secret holding tls.crt / tls.key.
     #    Left empty on purpose so the template fallback in _deployment.tpl actually
     #    fires: it resolves to "<streaming-hub.fullname>-iam-tls". Note that fullname
-    #    is the CHART name (or fullnameOverride) — NOT the Helm release name — so the
-    #    fallback yields "streaming-hub-iam-tls" unless fullnameOverride is set. A
-    #    non-empty default here made that branch unreachable and pinned every install
-    #    to one literal name, ignoring fullnameOverride.
+    #    is fullnameOverride if set, else nameOverride if set, else the CHART name
+    #    (never the Helm release name), so the fallback yields "streaming-hub-iam-tls"
+    #    unless one of those overrides is set (e.g. nameOverride: foo -> "foo-iam-tls").
+    #    A non-empty default here made that branch unreachable and pinned every install
+    #    to one literal name, ignoring the overrides.
     certificateSecretName: ""
     sidecar:
       image:

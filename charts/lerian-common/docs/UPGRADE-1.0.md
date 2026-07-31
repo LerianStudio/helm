@@ -63,7 +63,7 @@ The `lerian-common.serviceDiscovery.env` helper emits environment variables for 
 | `SD_WORKLOAD` | `""` | Workload isolation key (provider and consumer must match) |
 | `SD_PREFER_VIEW` | `external` | Preferred view for service resolution (`internal` or `external`) |
 | `SD_INTERNAL_SCHEME` | `http` | Scheme for internal service URLs |
-| `SD_EXTERNAL_PORT` | `443` | Port for external service URLs (emitted only when component has ingress) |
+| `SD_EXTERNAL_PORT` | `443` | Port for external service URLs (emitted when component has ingress OR sets legacy `configmap.SD_EXTERNAL_*`) |
 
 **Configuration block (umbrella `values.yaml`):**
 

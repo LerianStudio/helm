@@ -55,29 +55,34 @@ Inputs (dict):
 {{- $g := dict -}}
 {{- with .context }}{{- $g = ((.Values.global | default dict).multiTenant | default dict) -}}{{- end -}}
 {{- if .enabled -}}
-{{- /* URL: universal. Component overrides global; then required or default "". */ -}}
-{{- $url := index $c "MULTI_TENANT_URL" | default $g.url -}}
+{{- /* URL: universal. Component overrides global; then required or default "".
+   Resolve by PRESENCE (hasKey) so an explicit configmap value survives even as a
+   YAML false / 0 / "" — sprig `default` would drop those to the global value. */ -}}
+{{- $url := ($g.url | default "") -}}{{- if hasKey $c "MULTI_TENANT_URL" -}}{{- $url = index $c "MULTI_TENANT_URL" -}}{{- end -}}
 {{- if .requiredUrl }}
 MULTI_TENANT_URL: {{ required "lerian-common: MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true (set component configmap.MULTI_TENANT_URL or global.multiTenant.url)" $url | quote }}
 {{- else }}
-MULTI_TENANT_URL: {{ $url | default "" | quote }}
+MULTI_TENANT_URL: {{ $url | quote }}
 {{- end }}
 {{- if .serviceName }}
-MULTI_TENANT_SERVICE_NAME: {{ index $c "MULTI_TENANT_SERVICE_NAME" | default .serviceName | quote }}
+{{- $svcName := .serviceName -}}{{- if hasKey $c "MULTI_TENANT_SERVICE_NAME" -}}{{- $svcName = index $c "MULTI_TENANT_SERVICE_NAME" -}}{{- end }}
+MULTI_TENANT_SERVICE_NAME: {{ $svcName | quote }}
 {{- end }}
 {{- if not (and (hasKey . "circuitBreaker") (eq .circuitBreaker false)) }}
 MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ index $c "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" | default "5" | quote }}
 MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ index $c "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" | default "30" | quote }}
 {{- end }}
 {{- if .emitRedis }}
-{{- $redisHost := index $c "MULTI_TENANT_REDIS_HOST" | default $g.redisHost -}}
+{{- $redisHost := ($g.redisHost | default "") -}}{{- if hasKey $c "MULTI_TENANT_REDIS_HOST" -}}{{- $redisHost = index $c "MULTI_TENANT_REDIS_HOST" -}}{{- end -}}
 {{- if .requiredRedisHost }}
 MULTI_TENANT_REDIS_HOST: {{ required "lerian-common: MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true (set component configmap.MULTI_TENANT_REDIS_HOST or global.multiTenant.redisHost)" $redisHost | quote }}
 {{- else }}
-MULTI_TENANT_REDIS_HOST: {{ $redisHost | default "" | quote }}
+MULTI_TENANT_REDIS_HOST: {{ $redisHost | quote }}
 {{- end }}
-MULTI_TENANT_REDIS_PORT: {{ index $c "MULTI_TENANT_REDIS_PORT" | default $g.redisPort | default "6379" | quote }}
-MULTI_TENANT_REDIS_TLS: {{ index $c "MULTI_TENANT_REDIS_TLS" | default $g.redisTls | default (.redisTlsDefault | default "false") | quote }}
+{{- $redisPort := ($g.redisPort | default "6379") -}}{{- if hasKey $c "MULTI_TENANT_REDIS_PORT" -}}{{- $redisPort = index $c "MULTI_TENANT_REDIS_PORT" -}}{{- end }}
+MULTI_TENANT_REDIS_PORT: {{ $redisPort | quote }}
+{{- $redisTls := ($g.redisTls | default (.redisTlsDefault | default "false")) -}}{{- if hasKey $c "MULTI_TENANT_REDIS_TLS" -}}{{- $redisTls = index $c "MULTI_TENANT_REDIS_TLS" -}}{{- end }}
+MULTI_TENANT_REDIS_TLS: {{ $redisTls | quote }}
 {{- end }}
 {{- if .emitPool }}
 MULTI_TENANT_MAX_TENANT_POOLS: {{ index $c "MULTI_TENANT_MAX_TENANT_POOLS" | default "100" | quote }}

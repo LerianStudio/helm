@@ -22,6 +22,9 @@ block (dedicated) and `.Values.global.datastores` = the shared mask.
 lerian-common.datastore.value — resolve ONE datastore field via the mask.
 Inputs (dict):
   context   (req)  product root ($)
+  dedicated (opt)  the component's dedicated datastores map (`<component>.datastores`)
+                   for a monolithic parent chart; when omitted, `.context.Values.
+                   datastores` is used (subchart mode)
   configmap (req)  the component's `.configmap` map (native key — top precedence)
   type      (req)  mask block: postgres | mongo | redis | redisMt | broker | <role>
   field     (req)  canonical field. Shared across a product's modules:
@@ -33,7 +36,11 @@ Inputs (dict):
 */}}
 {{- define "lerian-common.datastore.value" -}}
 {{- $cm := .configmap | default dict -}}
-{{- $dedicated := index (.context.Values.datastores | default dict) .type | default dict -}}
+{{- /* Dedicated source: an explicit `dedicated` map (passed by a MONOLITHIC parent
+   chart whose per-component masks live at `<component>.datastores`, e.g. midaz's
+   `ledger.datastores` / `crm.datastores`) takes precedence; otherwise fall back to
+   `.context.Values.datastores`, which in a SUBCHART is that product's own block. */ -}}
+{{- $dedicated := index (.dedicated | default (.context.Values.datastores | default dict)) .type | default dict -}}
 {{- $shared := index ((.context.Values.global | default dict).datastores | default dict) .type | default dict -}}
 {{/* Ordered presence checks (not chained sprig `default`) so an explicit `false`
      at any tier — native key, dedicated, shared, or default — wins instead of

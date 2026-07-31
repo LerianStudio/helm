@@ -49,21 +49,37 @@ global.streaming (all optional except brokers, which gates emission):
    over the global value (mirrors multiTenant.env / serviceDiscovery.env). Empty
    dict when omitted. */ -}}
 {{- $c := .configmap | default dict -}}
-{{- if and .enabled $s.brokers -}}
-STREAMING_BROKERS: {{ index $c "STREAMING_BROKERS" | default $s.brokers | quote }}
-STREAMING_TLS_ENABLED: {{ index $c "STREAMING_TLS_ENABLED" | default ($s.tlsEnabled | default false) | quote }}
-STREAMING_SASL_MECHANISM: {{ index $c "STREAMING_SASL_MECHANISM" | default ($s.saslMechanism | default "") | quote }}
-STREAMING_SASL_USERNAME: {{ index $c "STREAMING_SASL_USERNAME" | default ($s.saslUsername | default "") | quote }}
-STREAMING_SASL_ALLOW_PLAINTEXT: {{ index $c "STREAMING_SASL_ALLOW_PLAINTEXT" | default ($s.saslAllowPlaintext | default "false") | quote }}
-STREAMING_COMPRESSION: {{ index $c "STREAMING_COMPRESSION" | default ($s.compression | default "lz4") | quote }}
-STREAMING_REQUIRED_ACKS: {{ index $c "STREAMING_REQUIRED_ACKS" | default ($s.requiredAcks | default "all") | quote }}
-STREAMING_BATCH_LINGER_MS: {{ index $c "STREAMING_BATCH_LINGER_MS" | default ($s.batchLingerMs | default "5") | quote }}
-STREAMING_IMPORTANT_EMIT_TIMEOUT_MS: {{ index $c "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" | default ($s.importantEmitTimeoutMs | default "5000") | quote }}
+{{- /* Activate when enabled AND brokers are configured — via EITHER the env-wide
+   global.streaming.brokers OR a legacy flat configmap.STREAMING_BROKERS (mirrors
+   serviceDiscovery.env). Each key resolves by PRESENCE (hasKey) so an explicit
+   configmap value survives even when it is a YAML false / 0 / "" — sprig `default`
+   would treat those as empty and wrongly fall back to the global/derived value. */ -}}
+{{- if and .enabled (or $s.brokers (hasKey $c "STREAMING_BROKERS")) -}}
+{{- $brokers := $s.brokers -}}{{- if hasKey $c "STREAMING_BROKERS" -}}{{- $brokers = index $c "STREAMING_BROKERS" -}}{{- end -}}
+{{- $tlsEnabled := ($s.tlsEnabled | default false) -}}{{- if hasKey $c "STREAMING_TLS_ENABLED" -}}{{- $tlsEnabled = index $c "STREAMING_TLS_ENABLED" -}}{{- end -}}
+{{- $saslMechanism := ($s.saslMechanism | default "") -}}{{- if hasKey $c "STREAMING_SASL_MECHANISM" -}}{{- $saslMechanism = index $c "STREAMING_SASL_MECHANISM" -}}{{- end -}}
+{{- $saslUsername := ($s.saslUsername | default "") -}}{{- if hasKey $c "STREAMING_SASL_USERNAME" -}}{{- $saslUsername = index $c "STREAMING_SASL_USERNAME" -}}{{- end -}}
+{{- $saslAllowPlaintext := ($s.saslAllowPlaintext | default "false") -}}{{- if hasKey $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- $saslAllowPlaintext = index $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- end -}}
+{{- $compression := ($s.compression | default "lz4") -}}{{- if hasKey $c "STREAMING_COMPRESSION" -}}{{- $compression = index $c "STREAMING_COMPRESSION" -}}{{- end -}}
+{{- $requiredAcks := ($s.requiredAcks | default "all") -}}{{- if hasKey $c "STREAMING_REQUIRED_ACKS" -}}{{- $requiredAcks = index $c "STREAMING_REQUIRED_ACKS" -}}{{- end -}}
+{{- $batchLingerMs := ($s.batchLingerMs | default "5") -}}{{- if hasKey $c "STREAMING_BATCH_LINGER_MS" -}}{{- $batchLingerMs = index $c "STREAMING_BATCH_LINGER_MS" -}}{{- end -}}
+{{- $importantEmitTimeoutMs := ($s.importantEmitTimeoutMs | default "5000") -}}{{- if hasKey $c "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" -}}{{- $importantEmitTimeoutMs = index $c "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" -}}{{- end -}}
+STREAMING_BROKERS: {{ $brokers | quote }}
+STREAMING_TLS_ENABLED: {{ $tlsEnabled | quote }}
+STREAMING_SASL_MECHANISM: {{ $saslMechanism | quote }}
+STREAMING_SASL_USERNAME: {{ $saslUsername | quote }}
+STREAMING_SASL_ALLOW_PLAINTEXT: {{ $saslAllowPlaintext | quote }}
+STREAMING_COMPRESSION: {{ $compression | quote }}
+STREAMING_REQUIRED_ACKS: {{ $requiredAcks | quote }}
+STREAMING_BATCH_LINGER_MS: {{ $batchLingerMs | quote }}
+STREAMING_IMPORTANT_EMIT_TIMEOUT_MS: {{ $importantEmitTimeoutMs | quote }}
 {{- if hasKey . "clientId" }}
-STREAMING_CLIENT_ID: {{ index $c "STREAMING_CLIENT_ID" | default .clientId | quote }}
+{{- $clientId := .clientId -}}{{- if hasKey $c "STREAMING_CLIENT_ID" -}}{{- $clientId = index $c "STREAMING_CLIENT_ID" -}}{{- end }}
+STREAMING_CLIENT_ID: {{ $clientId | quote }}
 {{- end }}
 {{- if hasKey . "cloudeventsSource" }}
-STREAMING_CLOUDEVENTS_SOURCE: {{ index $c "STREAMING_CLOUDEVENTS_SOURCE" | default .cloudeventsSource | quote }}
+{{- $cloudeventsSource := .cloudeventsSource -}}{{- if hasKey $c "STREAMING_CLOUDEVENTS_SOURCE" -}}{{- $cloudeventsSource = index $c "STREAMING_CLOUDEVENTS_SOURCE" -}}{{- end }}
+STREAMING_CLOUDEVENTS_SOURCE: {{ $cloudeventsSource | quote }}
 {{- end }}
 {{- end -}}
 {{- end -}}

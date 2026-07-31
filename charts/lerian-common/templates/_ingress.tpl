@@ -52,7 +52,9 @@ Inputs (dict):
 {{- $g := .global | default dict -}}
 {{- $name := .name -}}
 {{- $svcPort := .svcPort -}}
-{{- $className := $ing.className | default $g.className -}}
+{{- /* Presence-based (hasKey) so an explicit component className "" (deliberately no
+   class) is honored instead of falling back to the global class. */ -}}
+{{- $className := $g.className -}}{{- if hasKey $ing "className" -}}{{- $className = index $ing "className" -}}{{- end -}}
 {{- /* mergeOverwrite (not merge): per-ingress annotations must win over same-key global. */ -}}
 {{- $annotations := mergeOverwrite (deepCopy ($g.annotations | default dict)) ($ing.annotations | default dict) -}}
 {{- $tls := $g.tls -}}

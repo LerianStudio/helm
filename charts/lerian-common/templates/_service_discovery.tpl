@@ -48,15 +48,20 @@ global.serviceDiscovery (all optional except address when enabled):
    no-configmap caller renders byte-identical to before. */ -}}
 {{- $c := .configmap | default dict -}}
 {{- /*
-  Derive ONLY when enabled AND global.serviceDiscovery.address is configured.
+  Derive ONLY when enabled AND an SD address is configured — via EITHER the
+  environment-wide `global.serviceDiscovery.address` OR the legacy flat
+  `configmap.SD_ADDRESS` (on-prem/client values that predate global). Gating on
+  both preserves the documented backward-compat contract: a chart deployed with
+  `configmap.SD_ENABLED=true` + `configmap.SD_ADDRESS` (no global) still derives
+  the full sibling block, matching pre-refactor output.
   This keeps adoption backward-compatible: a chart carrying this helper but
   deployed against a not-yet-migrated environment (SD_* still hand-set in
-  extraEnvVars, no global.serviceDiscovery) stays INERT — extraEnvVars drives
-  SD exactly as before, no duplicate keys, no render break. The environment
-  opts into derivation by setting global.serviceDiscovery + stripping the
-  per-app SD_* block down to just SD_ENABLED.
+  extraEnvVars, no global.serviceDiscovery, no configmap.SD_ADDRESS) stays
+  INERT — extraEnvVars drives SD exactly as before, no duplicate keys, no render
+  break. The environment opts into derivation by setting global.serviceDiscovery
+  (or configmap.SD_ADDRESS) + stripping the per-app SD_* block down to SD_ENABLED.
 */ -}}
-{{- if and .enabled $sd.address -}}
+{{- if and .enabled (or $sd.address (index $c "SD_ADDRESS")) -}}
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is
    rendered by the component's own extraEnvVars passthrough. Emitting it again
    would produce a duplicate key. This helper only adds the derived siblings. */ -}}

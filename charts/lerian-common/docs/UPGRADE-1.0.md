@@ -91,7 +91,7 @@ Product chart maintainers include this helper in their ConfigMap template:
 # templates/configmap.yaml
 data:
   # SD_ENABLED is the app's own knob — resolve it to a strict bool and pass it as `enabled`.
-  {{- $sdEnabled := eq (index .Values.myapp.configmap "SD_ENABLED" | default "false" | toString) "true" }}
+  {{- $sdEnabled := eq (index (.Values.myapp.configmap | default dict) "SD_ENABLED" | default "false" | toString) "true" }}
   SD_ENABLED: {{ $sdEnabled | quote }}
   {{- include "lerian-common.serviceDiscovery.env" (dict
         "context" $ "enabled" $sdEnabled "configmap" .Values.myapp.configmap

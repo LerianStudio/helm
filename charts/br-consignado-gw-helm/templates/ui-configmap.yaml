@@ -1,0 +1,14 @@
+{{- if .Values.ui.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-consignado-gw.uiFullname" . }}
+  namespace: {{ include "br-consignado-gw.namespace" . }}
+  labels:
+    {{- include "br-consignado-gw.componentLabels" (dict "root" . "name" "ui") | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.ui.configmap }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+  VERSION: {{ .Values.ui.image.tag | default .Chart.AppVersion | quote }}
+{{- end }}

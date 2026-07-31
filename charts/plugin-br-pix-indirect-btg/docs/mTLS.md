@@ -95,13 +95,67 @@ Leave `tls.crt` empty and point `secretName` at a Secret provisioned by whatever
 your cluster uses. The chart does **not** render any backend-specific object
 (keeping it portable across clusters):
 
-- **External Secrets Operator** — author an `ExternalSecret` that writes a Secret
-  named `mtls`; the chart consumes it.
-- **cert-manager** — a `Certificate` whose `secretName` is `mtls`.
+- **External Secrets Operator** — author an `ExternalSecret` that writes the Secret
+  (named `<fullname>-mtls` by default); the chart consumes it.
+- **cert-manager** — a `Certificate` whose `secretName` is `<fullname>-mtls`.
 - **Vault CSI / sealed-secrets / manual `kubectl create secret`** — same idea.
 
 The Secret must carry the keys named by `certFileName` / `keyFileName`
 (default `tls.crt` / `tls.key`) and, if used, `caFileName`.
+
+#### Creating the Secret with `kubectl`
+
+Name it `<fullname>-mtls` (e.g. `plugin-br-pix-indirect-btg-mtls`) to match the
+default, or use any name and set `mtls.secretName`.
+
+Cert + key only — `kubectl create secret tls` produces a `kubernetes.io/tls` Secret
+whose keys are exactly `tls.crt` / `tls.key` (matching the chart defaults):
+
+```bash
+kubectl -n <namespace> create secret tls plugin-br-pix-indirect-btg-mtls \
+  --cert=client.crt \
+  --key=client.key
+```
+
+With an optional CA (to verify BTG's **server** cert) — use a generic Secret so you
+can add `ca.crt`:
+
+```bash
+kubectl -n <namespace> create secret generic plugin-br-pix-indirect-btg-mtls \
+  --from-file=tls.crt=client.crt \
+  --from-file=tls.key=client.key \
+  --from-file=ca.crt=btg-ca.crt
+```
+
+Then reference it — **leave `mtls.tls.crt` empty** so the chart does NOT try to
+create its own Secret:
+
+```yaml
+mtls:
+  enabled: true
+  # secretName defaults to <fullname>-mtls; set it only if you named the Secret differently.
+  # caFileName: ca.crt   # set ONLY if you added ca.crt above, to emit CLIENT_TLS_CA_FILE
+```
+
+> In Mode B the CA env is **not** auto-derived (that only happens when the chart
+> creates the Secret from `mtls.ca.crt`). If your Secret has a `ca.crt` key and you
+> want it used, set `mtls.caFileName: ca.crt` explicitly.
+
+### Recommendation — do not keep cert/key as plaintext in `values.yaml`
+
+**We do not recommend putting the certificate — and especially the private key —
+as literal PEM in `values.yaml` (Mode A with inline PEM).** It ends up in git,
+`helm get values`, ArgoCD, and CI logs. Inline PEM is for **throwaway test
+material only**.
+
+For real deployments prefer, in order:
+
+1. **Mode B** — create the Secret out-of-band (`kubectl create secret tls`,
+   cert-manager, External Secrets, Vault CSI, sealed-secrets) and let the chart
+   reference it. The key never touches Helm values.
+2. **Mode A with a placeholder** — set `mtls.tls.crt`/`tls.key` to a secret-manager
+   reference (e.g. AVP `<path:secret/...#tls.crt>`) that resolves at render time.
+   Git holds only the reference, not the material.
 
 ---
 

@@ -87,6 +87,25 @@ scenarios:
     expect:
       - 'STREAMING_SASL_PASSWORD:'
 
+  # A SASL mechanism needs BOTH credentials — a mechanism + password but no username is
+  # a boot-crashing config; the render must FAIL fast (Ledger).
+  - name: streaming-sasl-without-username-fails-ledger
+    set:
+      ledger.configmap.STREAMING_ENABLED: "true"
+      ledger.configmap.STREAMING_BROKERS: "kafka:9092"
+      global.streaming.saslMechanism: "SCRAM-SHA-512"
+      ledger.secrets.STREAMING_SASL_PASSWORD: "s3cr3t"
+    expectRenderError: "STREAMING_SASL_USERNAME"
+
+  # ...same for CRM.
+  - name: streaming-sasl-without-username-fails-crm
+    set:
+      crm.configmap.STREAMING_ENABLED: "true"
+      crm.configmap.STREAMING_BROKERS: "kafka:9092"
+      global.streaming.saslMechanism: "SCRAM-SHA-512"
+      crm.secrets.STREAMING_SASL_PASSWORD: "s3cr3t"
+    expectRenderError: "STREAMING_SASL_USERNAME"
+
   # CRM DEPLOYMENT_MODE knob (was ledger-only) — CRM can now go byoc/saas.
   - name: crm-deployment-mode-knob
     set:

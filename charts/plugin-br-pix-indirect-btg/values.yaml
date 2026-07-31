@@ -48,7 +48,8 @@ global:
 mtls:
   # -- Enable outbound client mTLS (sets BTG_OUTBOUND_MTLS_ENABLED=true and mounts the cert)
   enabled: false
-  # -- Secret name. If `tls.crt` below is set, the chart CREATES this Secret; otherwise it must already exist.
+  # -- Secret name. OPTIONAL — defaults to `<fullname>-mtls`. If `tls.crt` below is set, the chart CREATES this
+  #    Secret; otherwise it must already exist. Override only to consume an external Secret with another name.
   secretName: ""
   # -- Client certificate PEM. Set it to have the chart create the Secret — a literal PEM for tests, or a
   #    placeholder your GitOps tool resolves (e.g. AVP `<path:secret/...#tls.crt>`). Leave EMPTY to consume an

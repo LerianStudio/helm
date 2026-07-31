@@ -742,11 +742,20 @@ allowed) — the same way cert-manager/Istio ship keys. No init container, no
 PersistentVolume. NOTE: the app snapshots the cert at startup (no hot-reload wired),
 so rotating the Secret requires a pod restart.
 */}}
+{{/*
+Outbound BTG client mTLS — the Secret name. Optional in values: defaults to
+"<fullname>-mtls" (matches the chart's naming and is collision-safe). Override
+`mtls.secretName` only to consume an externally-managed Secret with a different name.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mtlsSecretName" -}}
+{{- .Values.mtls.secretName | default (printf "%s-mtls" (include "plugin-br-pix-indirect-btg.fullname" .)) -}}
+{{- end -}}
+
 {{- define "plugin-br-pix-indirect-btg.mtlsVolume" -}}
 {{- if .Values.mtls.enabled -}}
 - name: btg-outbound-mtls
   secret:
-    secretName: {{ required "mtls.secretName is required when mtls.enabled=true" .Values.mtls.secretName }}
+    secretName: {{ include "plugin-br-pix-indirect-btg.mtlsSecretName" . }}
     defaultMode: 0440
 {{- end -}}
 {{- end -}}

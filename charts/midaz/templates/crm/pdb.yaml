@@ -12,10 +12,14 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  {{- with .Values.crm.pdb.maxUnavailable }}
-  maxUnavailable: {{ . }}
+  {{- /* Presence-based so an explicit 0 (maxUnavailable: 0 = block all disruptions,
+     minAvailable: 0 = allow all) is honored; a PDB must carry exactly one of the two. */ -}}
+  {{- if hasKey .Values.crm.pdb "maxUnavailable" }}
+  maxUnavailable: {{ .Values.crm.pdb.maxUnavailable }}
+  {{- else if hasKey .Values.crm.pdb "minAvailable" }}
+  minAvailable: {{ .Values.crm.pdb.minAvailable }}
   {{- else }}
-  minAvailable: {{ .Values.crm.pdb.minAvailable | default 1 }}
+  minAvailable: 1
   {{- end }}
   selector:
     matchLabels:

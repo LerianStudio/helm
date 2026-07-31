@@ -645,11 +645,15 @@ crm:
   telemetry:
     enabled: "true"                    # → ENABLE_TELEMETRY
 
+  # -- Deployment posture; `saas`/`byoc` enforce TLS and reject token KMS auth
+  deploymentMode: "local"              # → DEPLOYMENT_MODE
+
   # --- KMS (secrets/crypto vault) --------------------------------------------
   kms:
     vaultAddr: "http://midaz-hc-vault:8200"  # → KMS_VAULT_ADDR
-    vaultAuthMethod: "token"           # → KMS_VAULT_AUTH_METHOD
+    vaultAuthMethod: "token"           # → KMS_VAULT_AUTH_METHOD (approle for saas/byoc)
     vendor: "hashicorp-vault"          # → KMS_VENDOR
+    vaultRoleId: ""                    # → KMS_VAULT_ROLE_ID (required with approle; non-secret)
 
   # --- Swagger / OpenAPI metadata (cosmetic) ---------------------------------
   swagger:
@@ -714,6 +718,10 @@ crm:
     # they are rendered into the CRM Secret (never the ConfigMap).
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
+    # -- KMS HashiCorp Vault AppRole secret id. Operator-provided; REQUIRED (with
+    # crm.kms.vaultRoleId) when kms.vendor=hashicorp-vault and kms.vaultAuthMethod=approle.
+    # Rendered into the CRM Secret (never the ConfigMap).
+    KMS_VAULT_SECRET_ID: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

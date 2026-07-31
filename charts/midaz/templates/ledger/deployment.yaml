@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
 spec:
-  revisionHistoryLimit: {{ .Values.ledger.revisionHistoryLimit | default 10 }}
+  revisionHistoryLimit: {{ dig "revisionHistoryLimit" 10 .Values.ledger }}
   strategy:
     type: {{ .Values.ledger.deploymentUpdate.type }}
     {{- if eq .Values.ledger.deploymentUpdate.type "RollingUpdate" }}

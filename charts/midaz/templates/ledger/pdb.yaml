@@ -12,10 +12,14 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  {{- with .Values.ledger.pdb.maxUnavailable }}
-  maxUnavailable: {{ . }}
+  {{- /* Presence-based so an explicit 0 (maxUnavailable: 0 = block all disruptions,
+     minAvailable: 0 = allow all) is honored; a PDB must carry exactly one of the two. */ -}}
+  {{- if hasKey .Values.ledger.pdb "maxUnavailable" }}
+  maxUnavailable: {{ .Values.ledger.pdb.maxUnavailable }}
+  {{- else if hasKey .Values.ledger.pdb "minAvailable" }}
+  minAvailable: {{ .Values.ledger.pdb.minAvailable }}
   {{- else }}
-  minAvailable: {{ .Values.ledger.pdb.minAvailable | default 1 }}
+  minAvailable: 1
   {{- end }}
   selector:
     matchLabels:

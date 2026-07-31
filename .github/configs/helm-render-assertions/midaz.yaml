@@ -86,3 +86,50 @@ scenarios:
       ledger.secrets.STREAMING_SASL_PASSWORD: "s3cr3t"
     expect:
       - 'STREAMING_SASL_PASSWORD:'
+
+  # CRM DEPLOYMENT_MODE knob (was ledger-only) — CRM can now go byoc/saas.
+  - name: crm-deployment-mode-knob
+    set:
+      crm.deploymentMode: "byoc"
+    expect:
+      - 'DEPLOYMENT_MODE: "byoc"'
+
+  # CRM KMS AppRole — a Vault approle posture without the secret id is a boot-crashing
+  # config (app fails closed); the render must FAIL fast.
+  - name: crm-kms-approle-without-secret-id-fails
+    set:
+      crm.kms.vaultAuthMethod: "approle"
+      crm.kms.vaultRoleId: "role-abc"
+    expectRenderError: "KMS_VAULT_SECRET_ID"
+
+  # ...and a missing role id also fails.
+  - name: crm-kms-approle-without-role-id-fails
+    set:
+      crm.kms.vaultAuthMethod: "approle"
+      crm.secrets.KMS_VAULT_SECRET_ID: "secret-xyz"
+    expectRenderError: "KMS_VAULT_ROLE_ID is required"
+
+  # ...with both, the role id (ConfigMap) and secret id (Secret) render.
+  - name: crm-kms-approle-renders
+    set:
+      crm.kms.vaultAuthMethod: "approle"
+      crm.kms.vaultRoleId: "role-abc"
+      crm.secrets.KMS_VAULT_SECRET_ID: "secret-xyz"
+    expect:
+      - 'KMS_VAULT_ROLE_ID: "role-abc"'
+      - 'KMS_VAULT_SECRET_ID:'
+
+  # PDB accepts an explicit 0 (maxUnavailable: 0 = block all voluntary disruptions).
+  - name: pdb-maxunavailable-zero
+    set:
+      ledger.pdb.enabled: "true"
+      ledger.pdb.maxUnavailable: "0"
+    expect:
+      - 'maxUnavailable: 0'
+
+  # revisionHistoryLimit accepts an explicit 0.
+  - name: revision-history-limit-zero
+    set:
+      ledger.revisionHistoryLimit: "0"
+    expect:
+      - 'revisionHistoryLimit: 0'

@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
 spec:
-  revisionHistoryLimit: {{ .Values.crm.revisionHistoryLimit | default 10 }}
+  revisionHistoryLimit: {{ dig "revisionHistoryLimit" 10 .Values.crm }}
   strategy:
     type: {{ .Values.crm.deploymentUpdate.type }}
     {{- if eq .Values.crm.deploymentUpdate.type "RollingUpdate" }}

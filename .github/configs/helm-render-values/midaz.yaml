@@ -1,8 +1,14 @@
 crm:
+  # Render both components in the gate (CRM is off by default) so the CRM manifests
+  # are exercised too.
+  enabled: true
   secrets:
     # App crypto material — operator-provided (external boundary).
     LCRYPTO_HASH_SECRET_KEY: "sample"
     LCRYPTO_ENCRYPT_SECRET_KEY: "sample"
+    # RabbitMQ — operator-provided (same as ledger).
+    RABBITMQ_DEFAULT_PASS: "sample"
+    RABBITMQ_CONSUMER_PASS: "sample"
 ledger:
   secrets:
     # RabbitMQ — operator-provided; not yet single-sourced (see chart README

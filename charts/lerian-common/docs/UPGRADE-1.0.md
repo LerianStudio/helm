@@ -57,7 +57,7 @@ The `lerian-common.serviceDiscovery.env` helper emits environment variables for 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SD_ENABLED` | `false` | Enable service discovery for this component |
-| `SD_ADDRESS` | `""` | Service discovery server address (e.g. `consul.prod:443`) |
+| `SD_ADDRESS` | `localhost:8500` | Service discovery server address (e.g. `consul.prod:443`); defaults to `localhost:8500` when neither `global.serviceDiscovery.address` nor legacy `configmap.SD_ADDRESS` is set |
 | `SD_TLS` | `false` | Enable TLS for service discovery connection |
 | `SD_TLS_SKIP_VERIFY` | `false` | Skip TLS certificate verification |
 | `SD_WORKLOAD` | `""` | Workload isolation key (provider and consumer must match) |

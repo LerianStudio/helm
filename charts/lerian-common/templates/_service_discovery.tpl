@@ -62,10 +62,13 @@ global.serviceDiscovery (all optional except address when enabled):
   Discovery.address` or a legacy flat `configmap.SD_ADDRESS` override that default
   (configmap wins). When SD is DISABLED the block stays inert (no derived keys).
 
-  Adoption note: a chart that renders this helper MUST drive SD through it, not also
-  hand-set SD_* in extraEnvVars — enabling both would duplicate keys. The migration is
-  to strip the per-app flat SD_* block down to SD_ENABLED and let the helper derive
-  the rest (from global.serviceDiscovery, legacy configmap.SD_*, or the defaults).
+  Ownership: the caller supplies exactly ONE SD key — `SD_ENABLED` (the app's knob,
+  via the component's extraEnvVars/configmap) — and this helper owns every DERIVED
+  SD_* sibling (SD_ADDRESS, SD_TLS, SD_INTERNAL_*, SD_EXTERNAL_*, tuning). Adoption
+  means stripping those derived SD_* keys out of extraEnvVars and letting the helper
+  render them (from global.serviceDiscovery, legacy configmap.SD_*, or the defaults);
+  keeping a derived key in extraEnvVars too would duplicate it. SD_ENABLED stays with
+  the caller and is never emitted here.
 */ -}}
 {{- if .enabled -}}
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is

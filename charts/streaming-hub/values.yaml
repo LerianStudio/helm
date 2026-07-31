@@ -445,8 +445,10 @@ streamingHub:
 # kubernetes.io/tls (keys tls.crt / tls.key) named by certificateSecretName —
 # in the Lerian environments a cert-manager Certificate in the deploying overlay
 # creates it. fsGroup 65532 is applied to the pod so the sidecar's non-root user
-# can read the 0440 projection; that REPLACES streamingHub.podSecurityContext
-# while rolesAnywhere is enabled.
+# can read the 0440 projection; it is MERGED into streamingHub.podSecurityContext
+# while rolesAnywhere is enabled — fsGroup wins, and every other pod-level setting
+# you configured (runAsNonRoot, seccompProfile, supplementalGroups, ...) survives.
+# It used to replace the block wholesale, silently dropping all of them.
 #
 # trustAnchorArn / profileArn / roleArn are `required` when enabled — the chart
 # fails to render rather than starting a sidecar that cannot authenticate.

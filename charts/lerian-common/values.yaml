@@ -9,12 +9,14 @@
 # (`SD_ENABLED` / `STREAMING_ENABLED`) or `configmap` (`MULTI_TENANT_ENABLED`),
 # and a component's own value overrides the global default. Every helper is
 # backward-compatible: with the `global.*` block absent it stays inert and the
-# component's existing values drive the output unchanged.
+# component's existing values drive the output unchanged. Exception:
+# `serviceDiscovery.env` also activates from a legacy `configmap.SD_ADDRESS`
+# (a component `configmap.SD_*` value takes precedence over the `global.*` default).
 
 global: {}
   # -- Service Discovery (lib-service-discovery). Set once per environment.
   # serviceDiscovery:
-  #   address: ""            # REQUIRED when SD_ENABLED=true (e.g. consul.<env>:443). No default.
+  #   address: ""            # SD_ADDRESS when SD_ENABLED=true (e.g. consul.<env>:443), unless supplied via legacy configmap.SD_ADDRESS (which wins). No default.
   #   tls: false             # SD_TLS
   #   tlsSkipVerify: false   # SD_TLS_SKIP_VERIFY
   #   workload: ""           # SD_WORKLOAD — per-env isolation key (provider+consumer must match)

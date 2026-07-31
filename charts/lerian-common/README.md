@@ -10,7 +10,9 @@ via `include` by the product charts that declare it as a dependency.
   `lerian-common.multiTenant.env` — env-wide constants come from `global.*`
   (set once per environment); the per-app enable knob stays in the component's
   `extraEnvVars`/`configmap`; a component value overrides the global default; and
-  each helper stays **inert until `global.*` is set** (backward-compatible).
+  each helper stays **inert until `global.*` is set** (backward-compatible);
+  `serviceDiscovery.env` additionally activates from a legacy `configmap.SD_ADDRESS`,
+  and a component `configmap.SD_*` value takes precedence over the `global.*` default.
 - **Env contracts (flat-passthrough):** `lerian-common.serviceDiscovery.envFlat`,
   `lerian-common.otel.envFlat`, `lerian-common.multiTenant.envFlat` — reproduce a
   chart's EXISTING native env block **byte-for-byte** (same keys, defaults, quoting

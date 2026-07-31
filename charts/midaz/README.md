@@ -371,7 +371,7 @@ This chart includes the following dependencies for the default installation. All
 
 ### lerian-common (library)
 
-- **Version:** `>=1.0.0 <2.0.0` (currently `1.2.1`)
+- **Version:** pinned exactly to the `lerian-common` chart version the pipeline publishes (currently `1.3.0`)
 - **Repository:** `file://../lerian-common`
 - **How to disable:** Not disableable — it is a Helm **library** chart that renders no resources of its own.
 - **Note:** Provides the derivation helpers that turn the `global.*` contracts (service discovery, streaming, multi-tenant, datastores, auth, observability) into component env vars. See the [Productized Configuration Model](#productized-configuration-model) section.

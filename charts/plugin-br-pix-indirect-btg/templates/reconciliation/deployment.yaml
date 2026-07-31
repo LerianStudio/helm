@@ -24,11 +24,11 @@ spec:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       securityContext:
-        {{- toYaml .Values.reconciliation.podSecurityContext | nindent 8 }}
-      {{- if .Values.mtls.enabled }}
-      initContainers:
-        {{- include "plugin-br-pix-indirect-btg.mtlsInitContainer" . | nindent 8 }}
-      {{- end }}
+        {{- $psc := .Values.reconciliation.podSecurityContext | default dict }}
+        {{- if .Values.mtls.enabled }}
+        {{- $psc = mergeOverwrite (dict "fsGroup" (.Values.mtls.fsGroup | default 1000)) (deepCopy $psc) }}
+        {{- end }}
+        {{- toYaml $psc | nindent 8 }}
       containers:
         - name: {{ include "reconciliation.fullname" . }}
           securityContext:
@@ -98,5 +98,5 @@ spec:
       {{- end }}
       {{- if .Values.mtls.enabled }}
       volumes:
-        {{- include "plugin-br-pix-indirect-btg.mtlsVolumes" . | nindent 8 }}
+        {{- include "plugin-br-pix-indirect-btg.mtlsVolume" . | nindent 8 }}
       {{- end }}

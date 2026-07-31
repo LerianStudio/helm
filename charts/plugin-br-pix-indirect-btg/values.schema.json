@@ -17,7 +17,7 @@
         "certFileName": { "type": "string" },
         "keyFileName": { "type": "string" },
         "caFileName": { "type": "string" },
-        "stagingImage": { "type": "string" }
+        "fsGroup": { "type": "integer" }
       }
     },
     "pix": {

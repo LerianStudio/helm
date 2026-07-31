@@ -721,59 +721,21 @@ CLIENT_TLS_CA_FILE: {{ printf "%s/%s" $mp . | quote }}
 {{- end -}}
 
 {{/*
-Outbound BTG client mTLS — pod volumes.
-A plain Secret volume can't satisfy the app's certificate loader for a non-root
-pod: kubelet owns Secret files as root, so an owner-only mode (0400) is unreadable
-by uid 1000, and making it readable needs a group/other bit — which the loader
-rejects. So the raw Secret is mounted 0444 into the init container ONLY, and the
-init stages it into this emptyDir as 0400 files owned by the app uid (see
-mtlsInitContainer). No PersistentVolume: the emptyDir is ephemeral and rebuilt
-from the Secret (source of truth) on every pod start.
+Outbound BTG client mTLS — pod volume carrying the client cert/key/CA.
+Mounted read-only at 0440. With the pod's fsGroup set (see the deployment), kubelet
+makes the files root:fsGroup and group-readable, so the non-root app (uid 1000, in
+that group) can read them. group-read is accepted by lib-commons v6's certificate
+loader (>=6.1.1, forbidden-bits mask 0o027 = group-write + all other bits; group-READ
+allowed) — the same way cert-manager/Istio ship keys. No init container, no
+PersistentVolume. NOTE: the app snapshots the cert at startup (no hot-reload wired),
+so rotating the Secret requires a pod restart.
 */}}
-{{- define "plugin-br-pix-indirect-btg.mtlsVolumes" -}}
+{{- define "plugin-br-pix-indirect-btg.mtlsVolume" -}}
 {{- if .Values.mtls.enabled -}}
-- name: btg-outbound-mtls-raw
+- name: btg-outbound-mtls
   secret:
     secretName: {{ required "mtls.secretName is required when mtls.enabled=true" .Values.mtls.secretName }}
-    defaultMode: 0444
-- name: btg-outbound-mtls
-  emptyDir: {}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Outbound BTG client mTLS — init container that stages the certs into the emptyDir
-as owner-only (0400) files owned by the app uid (1000). Runs non-root; `cp -L`
-dereferences the Secret's atomic-update symlinks and the `*` glob skips its hidden
-`..data` entries. This is what lets a non-root app read a key with no group/other
-permission bit — which its certificate loader requires.
-*/}}
-{{- define "plugin-br-pix-indirect-btg.mtlsInitContainer" -}}
-{{- if .Values.mtls.enabled -}}
-{{- $mp := .Values.mtls.mountPath | default "/etc/btg/mtls" -}}
-- name: stage-btg-mtls
-  image: {{ .Values.mtls.stagingImage | default "busybox:1.36" | quote }}
-  command:
-    - sh
-    - -c
-    - 'set -e; cp -L /btg-mtls-raw/* {{ $mp }}/; chmod 0400 {{ $mp }}/*'
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    runAsGroup: 1000
-    readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-        - ALL
-    seccompProfile:
-      type: RuntimeDefault
-  volumeMounts:
-    - name: btg-outbound-mtls-raw
-      mountPath: /btg-mtls-raw
-      readOnly: true
-    - name: btg-outbound-mtls
-      mountPath: {{ $mp | quote }}
+    defaultMode: 0440
 {{- end -}}
 {{- end -}}
 

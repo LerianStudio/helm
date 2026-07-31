@@ -90,7 +90,12 @@ Product chart maintainers include this helper in their ConfigMap template:
 ```yaml
 # templates/configmap.yaml
 data:
-  {{- include "lerian-common.serviceDiscovery.env" (dict "context" $ "configmap" .Values.myapp.configmap) | nindent 2 }}
+  # SD_ENABLED is the app's own knob — resolve it to a strict bool and pass it as `enabled`.
+  {{- $sdEnabled := eq (index .Values.myapp.configmap "SD_ENABLED" | default "false" | toString) "true" }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $ "enabled" $sdEnabled "configmap" .Values.myapp.configmap
+        "name" (include "myapp.fullname" .) "port" 8080 "namespace" .Release.Namespace) | nindent 2 }}
 ```
 
 ### 2. Streaming Environment Variables

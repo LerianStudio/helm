@@ -70,7 +70,10 @@ global.serviceDiscovery (all optional except address when enabled):
   keeping a derived key in extraEnvVars too would duplicate it. SD_ENABLED stays with
   the caller and is never emitted here.
 */ -}}
-{{- if .enabled -}}
+{{- /* Normalize .enabled to a strict bool: a raw string "false" (e.g. passed straight
+   from a configmap value) would otherwise be truthy under `if`. */ -}}
+{{- $enabled := eq (toString (.enabled | default false)) "true" -}}
+{{- if $enabled -}}
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is
    rendered by the component's own extraEnvVars passthrough. Emitting it again
    would produce a duplicate key. This helper only adds the derived siblings.

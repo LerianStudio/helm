@@ -313,6 +313,15 @@ lender:
     STREAMING_CLOSE_TIMEOUT_S: "30"
     STREAMING_TLS_ENABLED: "false"
 
+    # Consignado contratação master switch. Dark by default: the contratação path
+    # wires an in-memory fake CCB signer, and the app's boot guard refuses to
+    # start any hardened deployment that would wire it — and DEPLOYMENT_MODE
+    # above makes every deployment hardened. CCB issuance and signing moved to
+    # the client (D-CCB-CLIENT, 2026-07-28), so the route stays dark until the
+    # emission path is deleted. Enabling this on a hardened deployment is a boot
+    # refusal, not a degradation.
+    CONSIGNADO_ENABLED: "false"
+
     # Inbound consignado consumer opt-in flags (all dark by default)
     CONSUMER_CONSIGNADO_AVERBACAO_CONFIRMED_ENABLED: "false"
     CONSUMER_CONSIGNADO_AVERBACAO_REJECTED_ENABLED: "false"

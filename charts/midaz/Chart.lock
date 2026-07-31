@@ -1,7 +1,7 @@
 dependencies:
 - name: lerian-common-helm
   repository: file://../lerian-common
-  version: 1.3.0
+  version: 1.3.1
 - name: valkey
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 2.4.7
@@ -17,5 +17,5 @@ dependencies:
 - name: vault
   repository: https://helm.releases.hashicorp.com
   version: 0.28.1
-digest: sha256:30a703c4744c1a54a0c34bb9e9352e0c9bd2a24ccf49e22772c670930f4c328d
-generated: "2026-07-31T14:37:28.084201-03:00"
+digest: sha256:5a3ccca01029e31b204b88ab675d80057083936c66ebb7b7de0fa01ae26d7fc6
+generated: "2026-07-31T16:19:42.950906-03:00"

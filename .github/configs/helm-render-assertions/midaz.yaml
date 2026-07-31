@@ -1,0 +1,66 @@
+# Render assertions for midaz — verified by `validate-helm-charts --render-gate`.
+# Each scenario renders the chart with the base fixture values
+# (.github/configs/helm-render-values/midaz.yaml) plus its `set` overrides, then
+# asserts every `expect` substring is present (and every `absent` one is missing) in
+# the rendered manifest. Overrides go through `helm --set`, so bare `false` / `0`
+# reach the template as YAML boolean/number — exactly the presence-vs-truthiness case
+# the productized helpers must preserve.
+scenarios:
+  # RED 1 — the full legacy Service Discovery contract must survive, including the
+  # external endpoint WITHOUT an Ingress (on-prem) and the advanced tuning knobs.
+  - name: sd-legacy-full-contract-on-prem-no-ingress
+    set:
+      ledger.ingress.enabled: "false"
+      ledger.configmap.SD_ENABLED: "true"
+      ledger.configmap.SD_ADDRESS: "consul.onprem:8500"
+      ledger.configmap.SD_TLS: "true"
+      ledger.configmap.SD_WORKLOAD: "midaz-stg"
+      ledger.configmap.SD_EXTERNAL_ADDRESS: "https://ledger.onprem.local"
+      ledger.configmap.SD_EXTERNAL_PORT: "8443"
+      ledger.configmap.SD_DIAL_TIMEOUT: "5s"
+      ledger.configmap.SD_WATCH_WAIT_TIME: "10s"
+      ledger.configmap.SD_ALLOW_STALE: "false"
+    expect:
+      - 'SD_ADDRESS: "consul.onprem:8500"'
+      - 'SD_EXTERNAL_ADDRESS: "https://ledger.onprem.local"'
+      - 'SD_EXTERNAL_PORT: "8443"'
+      - 'SD_DIAL_TIMEOUT: "5s"'
+      - 'SD_WATCH_WAIT_TIME: "10s"'
+      - 'SD_ALLOW_STALE: "false"'
+      - 'SD_WORKLOAD: "midaz-stg"'
+
+  # RED 2 — the documented per-component dedicated datastore mask must resolve
+  # (previously ignored because the helper only read .context.Values.datastores).
+  - name: datastore-dedicated-mask-ledger
+    set:
+      ledger.datastores.postgres.host: "ledger-dedicated-db"
+    expect:
+      - 'DB_ONBOARDING_HOST: "ledger-dedicated-db"'
+      - 'DB_TRANSACTION_HOST: "ledger-dedicated-db"'
+
+  # RED 3 — streaming activates from legacy configmap.STREAMING_BROKERS (no global
+  # broker), and an explicit configmap boolean `false` wins over a global `true`
+  # (presence-based precedence, not sprig-default truthiness).
+  - name: streaming-configmap-activation-and-false-precedence
+    set:
+      global.streaming.tlsEnabled: "true"
+      ledger.configmap.STREAMING_ENABLED: "true"
+      ledger.configmap.STREAMING_BROKERS: "kafka.onprem:9092"
+      ledger.configmap.STREAMING_TLS_ENABLED: "false"
+    expect:
+      - 'STREAMING_BROKERS: "kafka.onprem:9092"'
+      - 'STREAMING_TLS_ENABLED: "false"'
+
+  # Same presence-based precedence for multi-tenant: an explicit configmap boolean
+  # `false` for REDIS_TLS must survive a global `true`.
+  - name: multitenant-configmap-false-precedence
+    set:
+      global.multiTenant.url: "http://mt-svc:8080"
+      global.multiTenant.redisHost: "redis"
+      global.multiTenant.redisTls: "true"
+      ledger.multiTenant.enabled: "true"
+      ledger.configmap.MULTI_TENANT_REDIS_TLS: "false"
+      ledger.secrets.MULTI_TENANT_SERVICE_API_KEY: "sample"
+    expect:
+      - 'MULTI_TENANT_REDIS_TLS: "false"'
+      - 'MULTI_TENANT_ENABLED: "true"'

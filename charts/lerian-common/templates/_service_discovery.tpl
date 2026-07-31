@@ -110,6 +110,14 @@ SD_INTERNAL_SCHEME: {{ $internalScheme | quote }}
 SD_EXTERNAL_ADDRESS: {{ $externalAddr | quote }}
 SD_EXTERNAL_PORT: {{ $externalPort | quote }}
 {{- end }}
+{{- /* Advanced tuning knobs: no grouped param / no global default — pure legacy
+   configmap passthrough. Emitted only when the operator sets them (clean when
+   absent), preserving backward-compat with the flat configmap.SD_* API. */ -}}
+{{- range $tk := (list "SD_DIAL_TIMEOUT" "SD_TLS_HANDSHAKE_TIMEOUT" "SD_RESPONSE_HEADER_TIMEOUT" "SD_SEED_TIMEOUT" "SD_WATCH_WAIT_TIME" "SD_ALLOW_STALE") }}
+{{- if hasKey $c $tk }}
+{{ $tk }}: {{ index $c $tk | quote }}
+{{- end }}
+{{- end }}
 {{- end -}}
 {{- end -}}
 

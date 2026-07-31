@@ -431,6 +431,63 @@ streamingHub:
     nodeSelector: {}
     tolerations: {}
     affinity: {}
+
+# =============================================================================
+# aws — AWS IAM Roles Anywhere (X.509 -> short-lived AWS credentials).
+#
+# Default OFF. When enabled, every role's pod (all / ingest / delivery) gets an
+# `aws-signing-helper` sidecar serving an IMDS-compatible endpoint on
+# 127.0.0.1:<port>; the app's AWS SDK is pointed at it via
+# AWS_EC2_METADATA_SERVICE_ENDPOINT. Same shape and sidecar contract used by
+# fetcher, reporter, matcher and plugin-fees.
+#
+# The X.509 cert/key are NOT produced by this chart: mount a Secret of type
+# kubernetes.io/tls (keys tls.crt / tls.key) named by certificateSecretName —
+# in the Lerian environments a cert-manager Certificate in the deploying overlay
+# creates it. fsGroup 65532 is applied to the pod so the sidecar's non-root user
+# can read the 0440 projection; that REPLACES streamingHub.podSecurityContext
+# while rolesAnywhere is enabled.
+#
+# trustAnchorArn / profileArn / roleArn are `required` when enabled — the chart
+# fails to render rather than starting a sidecar that cannot authenticate.
+# =============================================================================
+aws:
+  rolesAnywhere:
+    # -- Enable the IAM Roles Anywhere credential sidecar.
+    enabled: false
+    # -- Trust anchor ARN (required when enabled).
+    trustAnchorArn: ""
+    # -- Profile ARN (required when enabled).
+    profileArn: ""
+    # -- Role ARN the sidecar assumes (required when enabled).
+    roleArn: ""
+    # -- AWS region for the credential exchange.
+    region: "us-east-2"
+    # -- Credential session duration in seconds.
+    sessionDuration: 3600
+    # -- Name of the kubernetes.io/tls Secret holding tls.crt / tls.key.
+    #    Left empty on purpose so the template fallback in _deployment.tpl actually
+    #    fires: it resolves to "<streaming-hub.fullname>-iam-tls". Note that fullname
+    #    is fullnameOverride if set, else nameOverride if set, else the CHART name
+    #    (never the Helm release name), so the fallback yields "streaming-hub-iam-tls"
+    #    unless one of those overrides is set (e.g. nameOverride: foo -> "foo-iam-tls").
+    #    A non-empty default here made that branch unreachable and pinned every install
+    #    to one literal name, ignoring the overrides.
+    certificateSecretName: ""
+    sidecar:
+      image:
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        tag: "latest-amd64"
+        pullPolicy: IfNotPresent
+      # -- Port the sidecar serves the IMDS-compatible endpoint on.
+      port: 9911
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
 streaming-hub:
   image:
     tag: 1.0.1

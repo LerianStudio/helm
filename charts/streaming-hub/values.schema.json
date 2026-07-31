@@ -3,6 +3,10 @@
   "type": "object",
   "additionalProperties": true,
   "properties": {
+    "aws": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "nameOverride": {
       "type": "string"
     },
@@ -22,7 +26,10 @@
       "properties": {
         "mode": {
           "type": "string",
-          "enum": ["all", "split"],
+          "enum": [
+            "all",
+            "split"
+          ],
           "description": "Topology switch. 'all' = one Deployment (role=all); 'split' = ingest + delivery. NEVER run both against one Kafka cluster (double-consume)."
         },
         "common": {

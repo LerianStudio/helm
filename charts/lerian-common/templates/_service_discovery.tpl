@@ -61,21 +61,45 @@ global.serviceDiscovery (all optional except address when enabled):
   break. The environment opts into derivation by setting global.serviceDiscovery
   (or configmap.SD_ADDRESS) + stripping the per-app SD_* block down to SD_ENABLED.
 */ -}}
-{{- if and .enabled (or $sd.address (index $c "SD_ADDRESS")) -}}
+{{- /* Activation gate is PRESENCE-based on the configmap key (hasKey), not its
+   truthiness: a present-but-empty `configmap.SD_ADDRESS` must still activate the
+   block. Sprig `index ... | default` (and `or`) would treat "" / false / 0 as
+   empty and wrongly fall through to global — the footgun this fix removes. */ -}}
+{{- if and .enabled (or $sd.address (hasKey $c "SD_ADDRESS")) -}}
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is
    rendered by the component's own extraEnvVars passthrough. Emitting it again
-   would produce a duplicate key. This helper only adds the derived siblings. */ -}}
-SD_ADDRESS: {{ index $c "SD_ADDRESS" | default $sd.address | quote }}
-SD_TLS: {{ index $c "SD_TLS" | default ($sd.tls | default false) | quote }}
-SD_TLS_SKIP_VERIFY: {{ index $c "SD_TLS_SKIP_VERIFY" | default ($sd.tlsSkipVerify | default false) | quote }}
-SD_WORKLOAD: {{ index $c "SD_WORKLOAD" | default ($sd.workload | default "") | quote }}
-SD_PREFER_VIEW: {{ index $c "SD_PREFER_VIEW" | default ($sd.preferView | default "internal") | quote }}
-SD_INTERNAL_ADDRESS: {{ index $c "SD_INTERNAL_ADDRESS" | default (include "lerian-common.internalHost" (dict "name" .name "namespace" .namespace)) | quote }}
-SD_INTERNAL_PORT: {{ index $c "SD_INTERNAL_PORT" | default .port | quote }}
-SD_INTERNAL_SCHEME: {{ index $c "SD_INTERNAL_SCHEME" | default ($sd.internalScheme | default "http") | quote }}
+   would produce a duplicate key. This helper only adds the derived siblings.
+
+   Precedence per key is PRESENCE-based: a PRESENT `configmap.SD_*` key WINS
+   even when its value is empty / false / 0; the global/derived value is the
+   fallback only when the key is ABSENT (hasKey false). Do NOT reintroduce
+   sprig `default` here — it collapses explicit empty/false/0 to the fallback.
+
+   Resolution is done up-front (each assignment line fully whitespace-trimmed so
+   it emits nothing), then the KEY: value lines below are plain literals — this
+   keeps the rendered block byte-identical to the pre-fix output when no
+   configmap.SD_* key is present. */ -}}
+{{- $addr := $sd.address -}}{{- if hasKey $c "SD_ADDRESS" -}}{{- $addr = index $c "SD_ADDRESS" -}}{{- end -}}
+{{- $tls := ($sd.tls | default false) -}}{{- if hasKey $c "SD_TLS" -}}{{- $tls = index $c "SD_TLS" -}}{{- end -}}
+{{- $tlsSkip := ($sd.tlsSkipVerify | default false) -}}{{- if hasKey $c "SD_TLS_SKIP_VERIFY" -}}{{- $tlsSkip = index $c "SD_TLS_SKIP_VERIFY" -}}{{- end -}}
+{{- $workload := ($sd.workload | default "") -}}{{- if hasKey $c "SD_WORKLOAD" -}}{{- $workload = index $c "SD_WORKLOAD" -}}{{- end -}}
+{{- $preferView := ($sd.preferView | default "internal") -}}{{- if hasKey $c "SD_PREFER_VIEW" -}}{{- $preferView = index $c "SD_PREFER_VIEW" -}}{{- end -}}
+{{- $internalAddr := (include "lerian-common.internalHost" (dict "name" .name "namespace" .namespace)) -}}{{- if hasKey $c "SD_INTERNAL_ADDRESS" -}}{{- $internalAddr = index $c "SD_INTERNAL_ADDRESS" -}}{{- end -}}
+{{- $internalPort := .port -}}{{- if hasKey $c "SD_INTERNAL_PORT" -}}{{- $internalPort = index $c "SD_INTERNAL_PORT" -}}{{- end -}}
+{{- $internalScheme := ($sd.internalScheme | default "http") -}}{{- if hasKey $c "SD_INTERNAL_SCHEME" -}}{{- $internalScheme = index $c "SD_INTERNAL_SCHEME" -}}{{- end -}}
+{{- $externalAddr := (printf "https://%s" .ingressHost) -}}{{- if hasKey $c "SD_EXTERNAL_ADDRESS" -}}{{- $externalAddr = index $c "SD_EXTERNAL_ADDRESS" -}}{{- end -}}
+{{- $externalPort := ($sd.externalPort | default 443) -}}{{- if hasKey $c "SD_EXTERNAL_PORT" -}}{{- $externalPort = index $c "SD_EXTERNAL_PORT" -}}{{- end -}}
+SD_ADDRESS: {{ $addr | quote }}
+SD_TLS: {{ $tls | quote }}
+SD_TLS_SKIP_VERIFY: {{ $tlsSkip | quote }}
+SD_WORKLOAD: {{ $workload | quote }}
+SD_PREFER_VIEW: {{ $preferView | quote }}
+SD_INTERNAL_ADDRESS: {{ $internalAddr | quote }}
+SD_INTERNAL_PORT: {{ $internalPort | quote }}
+SD_INTERNAL_SCHEME: {{ $internalScheme | quote }}
 {{- if .ingressHost }}
-SD_EXTERNAL_ADDRESS: {{ index $c "SD_EXTERNAL_ADDRESS" | default (printf "https://%s" .ingressHost) | quote }}
-SD_EXTERNAL_PORT: {{ index $c "SD_EXTERNAL_PORT" | default ($sd.externalPort | default 443) | quote }}
+SD_EXTERNAL_ADDRESS: {{ $externalAddr | quote }}
+SD_EXTERNAL_PORT: {{ $externalPort | quote }}
 {{- end }}
 {{- end -}}
 {{- end -}}

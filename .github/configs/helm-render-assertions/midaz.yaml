@@ -64,3 +64,25 @@ scenarios:
     expect:
       - 'MULTI_TENANT_REDIS_TLS: "false"'
       - 'MULTI_TENANT_ENABLED: "true"'
+
+  # RED (SASL) — a SASL mechanism without a password is a boot-crashing config;
+  # the render must FAIL fast (lib-streaming requires username+password for SASL)
+  # rather than emit a Secret with no STREAMING_SASL_PASSWORD.
+  - name: streaming-sasl-without-password-fails
+    set:
+      ledger.configmap.STREAMING_ENABLED: "true"
+      ledger.configmap.STREAMING_BROKERS: "kafka:9092"
+      global.streaming.saslMechanism: "SCRAM-SHA-512"
+      global.streaming.saslUsername: "user"
+    expectRenderError: "STREAMING_SASL_PASSWORD"
+
+  # ...and with the password supplied, the Ledger Secret renders it.
+  - name: streaming-sasl-with-password-renders-secret
+    set:
+      ledger.configmap.STREAMING_ENABLED: "true"
+      ledger.configmap.STREAMING_BROKERS: "kafka:9092"
+      global.streaming.saslMechanism: "SCRAM-SHA-512"
+      global.streaming.saslUsername: "user"
+      ledger.secrets.STREAMING_SASL_PASSWORD: "s3cr3t"
+    expect:
+      - 'STREAMING_SASL_PASSWORD:'

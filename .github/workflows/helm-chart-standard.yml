@@ -7,6 +7,7 @@ on:
       - 'docs/helm-chart-standard.md'
       - '.github/configs/helm-chart-standard-baseline.yaml'
       - '.github/configs/helm-render-values/**'
+      - '.github/configs/helm-render-assertions/**'
       - '.github/scripts/validate-helm-charts/**'
       - '.github/workflows/helm-chart-standard.yml'
   workflow_dispatch:
@@ -57,7 +58,7 @@ jobs:
 
           changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
 
-          if grep -Eq '^(\.github/scripts/validate-helm-charts/|\.github/configs/helm-render-values/|\.github/workflows/helm-chart-standard\.yml|docs/helm-chart-standard\.md)' <<< "$changed_files"; then
+          if grep -Eq '^(\.github/scripts/validate-helm-charts/|\.github/configs/helm-render-values/|\.github/configs/helm-render-assertions/|\.github/workflows/helm-chart-standard\.yml|docs/helm-chart-standard\.md)' <<< "$changed_files"; then
             echo "args=--all" >> "$GITHUB_OUTPUT"
             exit 0
           fi

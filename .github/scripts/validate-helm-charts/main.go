@@ -1253,6 +1253,10 @@ type renderAssertionScenario struct {
 	Set    map[string]string `yaml:"set"`
 	Expect []string          `yaml:"expect"`
 	Absent []string          `yaml:"absent"`
+	// ExpectRenderError, when set, inverts the scenario: the render MUST fail and its
+	// output must contain this substring (a fail-fast contract, e.g. SASL mechanism
+	// configured without a password). expect/absent are ignored in that case.
+	ExpectRenderError string `yaml:"expectRenderError"`
 }
 
 type renderAssertionsFile struct {
@@ -1271,8 +1275,21 @@ func loadRenderAssertions(root, chartName string) (*renderAssertionsFile, error)
 		return nil, err
 	}
 	var f renderAssertionsFile
-	if err := yaml.Unmarshal(data, &f); err != nil {
+	dec := yaml.NewDecoder(strings.NewReader(string(data)))
+	dec.KnownFields(true) // reject unknown keys (e.g. a typo'd `expext:`) instead of silently ignoring them
+	if err := dec.Decode(&f); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
+	}
+	// Guard against a silently vacuous config: every scenario must have a name and at
+	// least one expect/absent check, so a scenario can never count as passed without
+	// actually asserting anything.
+	for i, sc := range f.Scenarios {
+		if sc.Name == "" {
+			return nil, fmt.Errorf("%s: scenario %d has no name", path, i)
+		}
+		if len(sc.Expect) == 0 && len(sc.Absent) == 0 && sc.ExpectRenderError == "" {
+			return nil, fmt.Errorf("%s: scenario %q has no expect/absent/expectRenderError checks", path, sc.Name)
+		}
 	}
 	return &f, nil
 }
@@ -1302,6 +1319,15 @@ func runRenderAssertions(root, chartName, workDir, chartPath string, env []strin
 			args = append(args, "--set", k+"="+sc.Set[k])
 		}
 		out, err := runHelmWithEnv(workDir, env, args...)
+		if sc.ExpectRenderError != "" {
+			if err == nil {
+				return fmt.Sprintf("render assertion %q: expected render to fail with %q, but it succeeded", sc.Name, sc.ExpectRenderError), true
+			}
+			if !strings.Contains(out, sc.ExpectRenderError) {
+				return fmt.Sprintf("render assertion %q: expected render error to contain %q, got: %s", sc.Name, sc.ExpectRenderError, oneLine(out)), true
+			}
+			continue
+		}
 		if err != nil {
 			return fmt.Sprintf("render assertion %q: helm template failed: %s", sc.Name, oneLine(out)), true
 		}

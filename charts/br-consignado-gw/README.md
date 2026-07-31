@@ -42,7 +42,7 @@ Passwords must be URL-safe for the PostgreSQL migration DSN.
 ## Validation
 
 ```sh
-helm lint charts/br-consignado-gw-helm
-helm template br-consignado-gw charts/br-consignado-gw-helm \
+helm lint charts/br-consignado-gw
+helm template br-consignado-gw charts/br-consignado-gw \
   -f .github/configs/helm-render-values/br-consignado-gw.yaml
 ```

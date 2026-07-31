@@ -277,7 +277,7 @@ ledger:
 
   # --- Telemetry (OTEL export toggle; endpoints → global.observability) -------
   telemetry:
-    enabled: "false"                   # → ENABLE_TELEMETRY
+    enabled: "true"                    # → ENABLE_TELEMETRY (matches main default)
 
   # --- Swagger / OpenAPI metadata (cosmetic; empty = derived by the app) ------
   swagger:

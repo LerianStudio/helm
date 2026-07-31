@@ -11,3 +11,12 @@ ledger:
     # omitted here.
     RABBITMQ_DEFAULT_PASS: "sample"
     RABBITMQ_CONSUMER_PASS: "sample"
+  # Regression guard: on-prem service-discovery WITHOUT an Ingress. The legacy
+  # flat configmap.SD_EXTERNAL_* keys must survive to the rendered ConfigMap even
+  # though ledger.ingress.enabled=false (no derivable external host). Exercises
+  # the lerian-common external-endpoint precedence fix through this consumer.
+  configmap:
+    SD_ENABLED: "true"
+    SD_ADDRESS: "consul.onprem:8500"
+    SD_EXTERNAL_ADDRESS: "https://ledger.onprem.local"
+    SD_EXTERNAL_PORT: "8443"

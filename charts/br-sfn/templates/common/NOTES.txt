@@ -1,0 +1,31 @@
+br-sfn — Brazilian SFN rails ({{ .Chart.Version }})
+
+Enabled components:
+{{- $any := false }}
+{{- if .Values.spb.enabled }}{{ $any = true }}
+  - spb (SPB/STR)          → svc {{ include "br-sfn.componentFullname" (dict "root" . "name" "spb") }}:{{ .Values.spb.service.port }}
+{{- end }}
+{{- if .Values.spi.enabled }}{{ $any = true }}
+  - spi (Pix: api/dict/brcode/core) → svc {{ include "br-sfn.componentFullname" (dict "root" . "name" "spi-api") }}:{{ .Values.spi.api.service.port }} (+dict/brcode/core)
+{{- end }}
+{{- if .Values.siloc.enabled }}{{ $any = true }}
+  - siloc                  → svc {{ include "br-sfn.componentFullname" (dict "root" . "name" "siloc") }}:{{ .Values.siloc.service.port }}
+{{- end }}
+{{- if .Values.scr.enabled }}{{ $any = true }}
+  - scr                    → svc {{ include "br-sfn.componentFullname" (dict "root" . "name" "scr") }}:{{ .Values.scr.service.port }}
+{{- end }}
+{{- if .Values.desk.enabled }}{{ $any = true }}
+  - desk                   → svc {{ include "br-sfn.componentFullname" (dict "root" . "name" "desk") }}:{{ .Values.desk.service.port }}
+{{- end }}
+{{- if .Values.slcEdge.enabled }}{{ $any = true }}
+  - slc-edge               → svc {{ include "br-sfn.componentFullname" (dict "root" . "name" "slc-edge") }}:{{ .Values.slcEdge.service.port }}
+{{- end }}
+{{- if .Values.cockpit.enabled }}{{ $any = true }}
+  - cockpit (SPA)          → svc {{ include "br-sfn.componentFullname" (dict "root" . "name" "cockpit") }}:{{ .Values.cockpit.service.port }}
+{{- end }}
+{{- if not $any }}
+  (none — this chart is modular; enable rails via <component>.enabled=true)
+{{- end }}
+
+Infra (Postgres/Valkey/RabbitMQ/RedPanda/IBM MQ) is external by contract.
+RedPanda topics for spb/spi are an environment concern (not created here).

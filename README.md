@@ -238,6 +238,30 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
 -----------------
 
+### BR SFN
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sfn).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0` | `1.0.0-beta.1` |
+-----------------
+
+### BR Consignado GW
+
+API gateway and same-origin operator console for the Dataprev consignado rail.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-consignado-gw).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0` | `1.3.0-beta.36` |
+-----------------
+
 ### Lerian Common (Library)
 
 Library chart consumed by other Lerian charts — renders nothing on its own.
@@ -248,5 +272,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `1.2.2` |
+| `1.3.0` |
 -----------------

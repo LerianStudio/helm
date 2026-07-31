@@ -1,0 +1,3 @@
+{{- if $.Values.cockpit.enabled -}}
+{{ include "br-sfn.componentHpa" (dict "root" $ "name" "cockpit" "comp" $.Values.cockpit) }}
+{{- end -}}

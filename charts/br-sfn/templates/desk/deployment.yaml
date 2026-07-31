@@ -1,0 +1,3 @@
+{{- if $.Values.desk.enabled -}}
+{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "desk" "comp" $.Values.desk "defaultPort" 3002 "livenessPath" "/health" "readyPath" "/readyz") }}
+{{- end -}}

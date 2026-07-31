@@ -105,13 +105,20 @@ on install AND upgrade (these values are operator/Vault-provided, never generate
 matching `data:`/`stringData:` key:
 
   # STREAMING SECRETS
+  # Resolve mechanism + username with the SAME configmap-over-global precedence the
+  # ConfigMap uses (streaming.env), so a ConfigMap-only mechanism is still validated and
+  # a ConfigMap-only username does not cause a false failure. An explicit empty ConfigMap
+  # value is preserved (hasKey) so validation still fails when it should.
+  {{- $saslMech := (((.Values.global | default dict).streaming | default dict).saslMechanism | default "") }}
+  {{- if hasKey .Values.ledger.configmap "STREAMING_SASL_MECHANISM" }}{{- $saslMech = index .Values.ledger.configmap "STREAMING_SASL_MECHANISM" }}{{- end }}
+  {{- $saslUser := (((.Values.global | default dict).streaming | default dict).saslUsername | default "") }}
+  {{- if hasKey .Values.ledger.configmap "STREAMING_SASL_USERNAME" }}{{- $saslUser = index .Values.ledger.configmap "STREAMING_SASL_USERNAME" }}{{- end }}
   {{- with (include "lerian-common.streaming.secret" (dict
         "context" . "secrets" .Values.ledger.secrets
         "secretName" (include "midaz.ledger.fullname" .)
         "valuesPrefix" "ledger.secrets." "mode" "data"
         "enabled" true "useExistingSecret" .Values.ledger.useExistingSecret
-        "saslMechanism" (dig "streaming" "saslMechanism" "" (.Values.global | default dict))
-        "saslUsername" (dig "streaming" "saslUsername" "" (.Values.global | default dict)))) }}
+        "saslMechanism" $saslMech "saslUsername" $saslUser)) }}
   {{- . | nindent 2 }}
   {{- end }}
 

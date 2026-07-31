@@ -2,7 +2,7 @@
 api:
   enabled: true
   image:
-    tag: "1.3.0-beta.33"
+    tag: "1.3.0-beta.36"
   configmap:
     ENV_NAME: "development"
     POSTGRES_HOST: "postgres.example.internal"
@@ -16,7 +16,7 @@ api:
 ui:
   enabled: true
   image:
-    tag: "1.3.0-beta.33"
+    tag: "1.3.0-beta.36"
   configmap:
     API_BASE_URL: ""
     CASDOOR_CSP_ORIGIN: "https://casdoor.example.internal"

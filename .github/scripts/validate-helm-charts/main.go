@@ -1203,11 +1203,30 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 
+		// Render assertions: when .github/configs/helm-render-assertions/<chart>.yaml
+		// exists, render each scenario (base template args + --set overrides) in the
+		// same isolated env and check expected/absent substrings. This turns the render
+		// gate from "does it template" into "does the documented contract actually
+		// render" — e.g. the full legacy SD contract, the dedicated datastore mask, and
+		// presence-based streaming/multi-tenant precedence (explicit false/0 survives).
+		assertDetail, assertFailed := runRenderAssertions(root, chartName, tmpRoot, tmpChart, helmEnv, templateArgs)
+		if assertFailed {
+			row.Status = "fail"
+			row.Class = "render-assertion"
+			row.Detail = appendDetail(row.Detail, assertDetail)
+			rows = append(rows, row)
+			_ = os.RemoveAll(tmpRoot)
+			continue
+		}
+
 		row.Status = "ok"
 		row.Class = "render-ok"
 		successDetail := "helm dependency build and helm template succeeded"
 		if collapseDetail != "" {
 			successDetail += "; " + collapseDetail
+		}
+		if assertDetail != "" {
+			successDetail += "; " + assertDetail
 		}
 		row.Detail = appendDetail(row.Detail, successDetail)
 		rows = append(rows, row)
@@ -1224,6 +1243,80 @@ func appendDetail(existing, detail string) string {
 		return detail
 	}
 	return existing + "; " + detail
+}
+
+// renderAssertionScenario is one render-and-check case: render the chart with the
+// base fixture values plus the Set overrides, then assert every Expect substring is
+// present and every Absent substring is missing from the rendered manifest.
+type renderAssertionScenario struct {
+	Name   string            `yaml:"name"`
+	Set    map[string]string `yaml:"set"`
+	Expect []string          `yaml:"expect"`
+	Absent []string          `yaml:"absent"`
+}
+
+type renderAssertionsFile struct {
+	Scenarios []renderAssertionScenario `yaml:"scenarios"`
+}
+
+// loadRenderAssertions reads .github/configs/helm-render-assertions/<chart>.yaml.
+// Returns (nil, nil) when the chart has no assertions file.
+func loadRenderAssertions(root, chartName string) (*renderAssertionsFile, error) {
+	path := filepath.Join(root, ".github", "configs", "helm-render-assertions", chartName+".yaml")
+	if !fileExists(path) {
+		return nil, nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var f renderAssertionsFile
+	if err := yaml.Unmarshal(data, &f); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", path, err)
+	}
+	return &f, nil
+}
+
+// runRenderAssertions renders each scenario for a chart (base template args plus the
+// scenario's --set overrides) in the already-materialized isolated workspace and
+// checks its expect/absent substrings. Returns a detail string and whether any
+// assertion failed. Values are passed via --set (not --set-string) so a scenario can
+// exercise YAML boolean/number overrides (e.g. STREAMING_TLS_ENABLED=false), which is
+// exactly the presence-vs-truthiness case these assertions guard.
+func runRenderAssertions(root, chartName, workDir, chartPath string, env []string, baseArgs []string) (string, bool) {
+	af, err := loadRenderAssertions(root, chartName)
+	if err != nil {
+		return err.Error(), true
+	}
+	if af == nil || len(af.Scenarios) == 0 {
+		return "", false
+	}
+	for _, sc := range af.Scenarios {
+		args := append([]string{}, baseArgs...)
+		setKeys := make([]string, 0, len(sc.Set))
+		for k := range sc.Set {
+			setKeys = append(setKeys, k)
+		}
+		sort.Strings(setKeys)
+		for _, k := range setKeys {
+			args = append(args, "--set", k+"="+sc.Set[k])
+		}
+		out, err := runHelmWithEnv(workDir, env, args...)
+		if err != nil {
+			return fmt.Sprintf("render assertion %q: helm template failed: %s", sc.Name, oneLine(out)), true
+		}
+		for _, exp := range sc.Expect {
+			if !strings.Contains(out, exp) {
+				return fmt.Sprintf("render assertion %q: expected %q in render, not found", sc.Name, exp), true
+			}
+		}
+		for _, abs := range sc.Absent {
+			if strings.Contains(out, abs) {
+				return fmt.Sprintf("render assertion %q: expected %q to be absent, but it was rendered", sc.Name, abs), true
+			}
+		}
+	}
+	return fmt.Sprintf("%d render assertion(s) passed", len(af.Scenarios)), false
 }
 
 // bitnamiReleaseNames returns the release names that trigger the Bitnami

@@ -110,7 +110,7 @@ The Secret must carry the keys named by `certFileName` / `keyFileName`
 | Key | Default | Description |
 |---|---|---|
 | `mtls.enabled` | `false` | Master switch. Off → nothing rendered. |
-| `mtls.secretName` | `""` | Secret name. **Created** by the chart if `tls.crt` is set; otherwise **referenced** (must pre-exist). Required when enabled. |
+| `mtls.secretName` | `""` → `<fullname>-mtls` | **Optional.** Secret name; defaults to `<fullname>-mtls`. **Created** by the chart if `tls.crt` is set; otherwise **referenced** (must pre-exist). Override only to consume an external Secret with a different name. |
 | `mtls.tls.crt` | `""` | Client cert PEM (or a resolver placeholder). Setting it switches on Mode A. |
 | `mtls.tls.key` | `""` | Private key PEM. Required when `tls.crt` is set. |
 | `mtls.ca.crt` | `""` | Optional CA (verifies BTG's **server** cert). When set, `CLIENT_TLS_CA_FILE` is emitted. Empty → system trust store. |

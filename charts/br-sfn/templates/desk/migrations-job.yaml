@@ -1,0 +1,3 @@
+{{- if $.Values.desk.enabled -}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "desk" "comp" $.Values.desk "flavor" "baked") }}
+{{- end -}}

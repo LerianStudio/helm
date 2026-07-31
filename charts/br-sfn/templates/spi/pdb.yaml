@@ -1,0 +1,9 @@
+{{- if $.Values.spi.enabled -}}
+{{ include "br-sfn.componentPdb" (dict "root" $ "name" "spi-api" "comp" $.Values.spi.api) }}
+---
+{{ include "br-sfn.componentPdb" (dict "root" $ "name" "spi-dict" "comp" $.Values.spi.dict) }}
+---
+{{ include "br-sfn.componentPdb" (dict "root" $ "name" "spi-brcode" "comp" $.Values.spi.brcode) }}
+---
+{{ include "br-sfn.componentPdb" (dict "root" $ "name" "spi-core" "comp" $.Values.spi.core) }}
+{{- end -}}

@@ -1,0 +1,18 @@
+{{- if .Values.spi.enabled -}}
+{{- /* One PreSync Job for the whole Pix family: the dedicated br-spi-migrations
+image owns module ordering (global → events → spi → dict → brcode → core) and
+the per-module bookkeeping tables every /readyz schema probe reads. The comp
+dict is assembled so Postgres fallbacks read the api component's effective
+configmap and the password defaults to the spi-api Secret (the shared
+spi.secrets map renders into each component Secret, api included). */ -}}
+{{- $comp := dict
+      "migrations" .Values.spi.migrations
+      "configmap" .Values.spi.api.configmap
+      "secrets" .Values.spi.api.secrets
+      "image" .Values.spi.api.image
+      "imagePullSecrets" .Values.spi.api.imagePullSecrets
+      "useExistingSecret" .Values.spi.useExistingSecret
+      "existingSecretName" .Values.spi.existingSecretName
+-}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "spi" "secretComponent" "spi-api" "comp" $comp "shared" .Values.spi.configmap "sharedCfg" .Values.spi "flavor" "dedicated") }}
+{{- end -}}

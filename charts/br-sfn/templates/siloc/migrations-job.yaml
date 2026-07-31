@@ -1,0 +1,3 @@
+{{- if $.Values.siloc.enabled -}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "siloc" "comp" $.Values.siloc "flavor" "dedicated") }}
+{{- end -}}

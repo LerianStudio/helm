@@ -711,13 +711,25 @@ it verifies BTG's server cert, not the CA that issued ours).
 {{- define "plugin-br-pix-indirect-btg.mtlsConfig" -}}
 {{- if .Values.mtls.enabled -}}
 {{- $mp := .Values.mtls.mountPath | default "/etc/btg/mtls" -}}
+{{- $ca := .Values.mtls.caFileName -}}
+{{- if and (not $ca) (index .Values.mtls "ca.crt") -}}{{- $ca = "ca.crt" -}}{{- end -}}
 BTG_OUTBOUND_MTLS_ENABLED: "true"
 CLIENT_TLS_CERT_FILE: {{ printf "%s/%s" $mp (.Values.mtls.certFileName | default "tls.crt") | quote }}
 CLIENT_TLS_KEY_FILE: {{ printf "%s/%s" $mp (.Values.mtls.keyFileName | default "tls.key") | quote }}
-{{- with .Values.mtls.caFileName }}
+{{- with $ca }}
 CLIENT_TLS_CA_FILE: {{ printf "%s/%s" $mp . | quote }}
 {{- end }}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Outbound BTG client mTLS — checksum of the chart-managed cert material, used as a
+pod annotation so a `helm upgrade` that changes the cert triggers a rollout (the
+app snapshots the cert at startup, so it needs a restart to pick up a new one).
+Only meaningful when the chart creates the Secret (mtls.tls.crt set).
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mtlsChecksum" -}}
+{{- printf "%s|%s|%s" (index .Values.mtls "tls.crt" | default "") (index .Values.mtls "tls.key" | default "") (index .Values.mtls "ca.crt" | default "") | sha256sum -}}
 {{- end -}}
 
 {{/*

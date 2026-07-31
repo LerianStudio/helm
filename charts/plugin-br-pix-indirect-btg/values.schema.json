@@ -13,6 +13,9 @@
       "properties": {
         "enabled": { "type": "boolean" },
         "secretName": { "type": "string" },
+        "tls.crt": { "type": "string" },
+        "tls.key": { "type": "string" },
+        "ca.crt": { "type": "string" },
         "mountPath": { "type": "string" },
         "certFileName": { "type": "string" },
         "keyFileName": { "type": "string" },

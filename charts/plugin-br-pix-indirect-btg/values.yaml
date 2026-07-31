@@ -38,7 +38,8 @@ global:
 
 # -- Outbound (client) mTLS to the BTG API, shared by the components that call
 # BTG directly (pix and reconciliation). Independent of the inbound webhook
-# `MTLS_ENABLED` toggle. The referenced Secret is mounted read-only at 0440; the
+# `MTLS_ENABLED` toggle. The Secret (created by the chart from `tls.crt`/`tls.key`
+# below, OR pre-existing) is mounted read-only at 0440; the
 # pod's `fsGroup` makes the key group-readable so the non-root app can load it
 # (lib-commons v6's certificate loader, >=6.1.1, accepts group-read — like
 # cert-manager/Istio). No init container, no PersistentVolume. NOTE: the app
@@ -47,8 +48,16 @@ global:
 mtls:
   # -- Enable outbound client mTLS (sets BTG_OUTBOUND_MTLS_ENABLED=true and mounts the cert)
   enabled: false
-  # -- Name of an existing Secret holding the client cert/key (+ optional CA). Required when enabled.
+  # -- Secret name. If `tls.crt` below is set, the chart CREATES this Secret; otherwise it must already exist.
   secretName: ""
+  # -- Client certificate PEM. Set it to have the chart create the Secret — a literal PEM for tests, or a
+  #    placeholder your GitOps tool resolves (e.g. AVP `<path:secret/...#tls.crt>`). Leave EMPTY to consume an
+  #    externally-managed Secret named `secretName` (cert-manager, External Secrets, Vault CSI, manual, ...).
+  tls.crt: ""
+  # -- Private key PEM. Required when `tls.crt` is set.
+  tls.key: ""
+  # -- OPTIONAL CA verifying BTG's SERVER cert. When set, CLIENT_TLS_CA_FILE is emitted. Empty = system roots.
+  ca.crt: ""
   # -- Mount path for the cert volume. Do NOT use /etc/ssl/certs (shadows the OS trust store).
   mountPath: "/etc/btg/mtls"
   # -- Key in the Secret (and file name) for the client certificate -> CLIENT_TLS_CERT_FILE

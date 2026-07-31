@@ -20,6 +20,8 @@ STREAMING_HUB_ROLE / the pool vars.
 {{- $component := .component -}}
 {{- $cfg := index $.Values.streamingHub $component -}}
 {{- $sh := $.Values.streamingHub -}}
+{{/* Hoisted so the four Roles Anywhere sites below cannot drift apart. */}}
+{{- $rolesAnywhere := and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -59,11 +61,12 @@ spec:
       serviceAccountName: {{ include "streaming-hub.serviceAccountName" $ }}
       automountServiceAccountToken: {{ $sh.serviceAccount.automountServiceAccountToken | default false }}
       terminationGracePeriodSeconds: {{ $sh.terminationGracePeriodSeconds | default 80 }}
-      {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+      {{- if $rolesAnywhere }}
       # IAM Roles Anywhere: fsGroup lets the sidecar's non-root user (65532) read the
-      # 0440 iam-certs projection. REPLACES the chart's podSecurityContext while on.
+      # 0440 iam-certs projection. MERGED into the chart's podSecurityContext — fsGroup
+      # is enforced, every other pod-level setting the deployer configured survives.
       securityContext:
-        fsGroup: 65532
+        {{- toYaml (merge (dict "fsGroup" 65532) (default (dict) $sh.podSecurityContext)) | nindent 8 }}
       {{- else }}
       {{- with $sh.podSecurityContext }}
       securityContext:
@@ -109,7 +112,7 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
             {{- end }}
-            {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+            {{- if $rolesAnywhere }}
             # Point the AWS SDK's IMDS lookup at the aws-signing-helper sidecar, which
             # vends short-lived credentials from the IAM Roles Anywhere exchange.
             - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
@@ -137,7 +140,7 @@ spec:
             failureThreshold: {{ $sh.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml $cfg.resources | nindent 12 }}
-        {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+        {{- if $rolesAnywhere }}
         # IAM Roles Anywhere credential sidecar. Serves an IMDS-compatible endpoint on
         # 127.0.0.1:<port>, exchanging the X.509 client cert (mounted from iam-certs)
         # for short-lived AWS credentials. Shared by every role, since this define
@@ -182,7 +185,7 @@ spec:
           resources:
             {{- toYaml $.Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
         {{- end }}
-      {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
+      {{- if $rolesAnywhere }}
       # X.509 client cert/key for the Roles Anywhere exchange. Produced outside the
       # chart (a cert-manager Certificate in the deploying overlay) and mounted 0440
       # so only the sidecar's fsGroup can read it.

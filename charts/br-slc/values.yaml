@@ -973,6 +973,41 @@ mockNuclea:
     # Deployment reads it from the app's ConfigMap with optional: true, so the
     # fixture never disagrees with the app about the gateway, and environments
     # that don't declare it (only dev-st does) still render.
+  # Boot-time scenario seeding (br-slc mock/scenarios.go, issue #211 / F-3). The
+  # scenario store is IN-MEMORY and, absent these envs, is only writable at
+  # runtime via `PUT /admin/scenarios/{ispb}` — so every pod restart silently
+  # reverted every participant back to `happy`, and correlation then broke with
+  # NO signal at all (the operation just sat in SENT with lastError null). These
+  # two envs let a gitops overlay pin the posture DECLARATIVELY so it survives a
+  # restart; an unrecognized scenario name in EITHER one FAILS THE BOOT (closed
+  # set) instead of degrading to a wrong-but-quiet default. Empty defaults for
+  # both ⇒ zero change from today's behavior (mock boots on the compiled-in
+  # `happy` default, exactly as before this chart exposed the knobs).
+  #
+  # ⚠️ COUPLING WITH spbKeysSecret ABOVE: seeding any SPB-family scenario (e.g.
+  # `spb_envelope`, `spb_envelope_forward_confirm`, `debit_spb_envelope`,
+  # `anticipation_spb_envelope`, ...) — via EITHER defaultScenario or
+  # scenarioSeed — WITHOUT `mockNuclea.spbKeysSecret.enabled: true` fails the
+  # boot closed with "SPB scenario seeded without SPB key material"
+  # (validateSPBSeeding in mock/main.go): the mock refuses to seed a posture it
+  # cannot actually execute (it would otherwise 200 on the plain-content path
+  # with nothing decrypted/verified — a green e2e for the wrong reason). Enable
+  # spbKeysSecret first when seeding an SPB-family scenario.
+  scenarios:
+    # MOCK_NUCLEA_DEFAULT_SCENARIO — applied to any ISPB with NO explicit entry
+    # in scenarioSeed below. Empty/unset keeps today's behavior (`happy`, the
+    # mock's compiled default). An unrecognized name FAILS THE BOOT, listing the
+    # closed set of valid scenario names.
+    defaultScenario: ""
+    # MOCK_NUCLEA_SCENARIO_SEED — OPTIONAL per-ISPB pin, format
+    # "<ispb>=<scenario>[,<ispb>=<scenario>]", e.g.
+    # "29011780=spb_envelope_forward_confirm" to pin Núclea's own ISPB (the one
+    # this incident needed) without changing the default for every other
+    # participant. Whitespace around entries and around each side of "=" is
+    # tolerated; a trailing comma (empty entry) is ignored. Empty/unset seeds
+    # nothing. A malformed entry — missing "=", a non-8-digit ISPB, an
+    # unrecognized scenario name, or a repeated ISPB — FAILS THE BOOT.
+    scenarioSeed: ""
   # Distroless static nonroot binary (USER 65532) that writes nothing to disk,
   # so readOnlyRootFilesystem is safe with no /tmp emptyDir needed (unlike the
   # app/signer/validator containers above).

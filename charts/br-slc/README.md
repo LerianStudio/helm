@@ -150,6 +150,10 @@ When `mockNuclea.enabled=true`:
 - `mockNuclea.license.enabled: false` leaves the fixture unlicensed and calling
   no license gateway. Flip it on to have the mock validate the **release's own**
   Lerian license at boot — see "Licensing the fixture" below.
+- `mockNuclea.scenarios.defaultScenario` / `.scenarioSeed` are empty by default
+  (today's behavior: the mock boots on its compiled-in `happy` scenario). Set
+  them to pin a posture declaratively so it survives a pod restart — see
+  "Scenario seeding" below.
 
 ### Provisioning the SPB key set (signed round-trip runbook)
 
@@ -266,6 +270,40 @@ mockNuclea:
   enabled: true
   license:
     enabled: true        # reuses the app Secret's LICENSE_KEY; ORGANIZATION_IDS=global
+```
+
+### Scenario seeding (`mockNuclea.scenarios.*`)
+
+The mock's scenario store (which posture — `happy`, `spb_envelope`,
+`reject_eslc`, ..., closed set in `mock/scenarios.go`) is **in-memory** and,
+absent these envs, only writable at runtime via `PUT /admin/scenarios/{ispb}` —
+so every pod restart silently reverted every participant back to `happy`, and
+correlation then broke with **no signal at all** (the operation just sat in
+`SENT` with `lastError` null). These two envs let a gitops overlay pin the
+posture declaratively so it survives a restart.
+
+| Value | Default | Purpose |
+|---|---|---|
+| `mockNuclea.scenarios.defaultScenario` | `""` | `MOCK_NUCLEA_DEFAULT_SCENARIO` — the scenario applied to any ISPB with **no** explicit `scenarioSeed` entry. Empty keeps today's behavior (`happy`). An unrecognized name **fails the boot**, listing the closed scenario set. |
+| `mockNuclea.scenarios.scenarioSeed` | `""` | `MOCK_NUCLEA_SCENARIO_SEED` — OPTIONAL per-ISPB pin, `"<ispb>=<scenario>[,<ispb>=<scenario>]"`, e.g. `"29011780=spb_envelope_forward_confirm"`. Whitespace around entries/`=` is tolerated; empty entries are skipped. A malformed entry (missing `=`, non-8-digit ISPB, unrecognized scenario, duplicate ISPB) **fails the boot**. |
+
+> ⚠️ **Coupled with `mockNuclea.spbKeysSecret` above.** Seeding any SPB-family
+> scenario (`spb_envelope`, `spb_envelope_forward_confirm`,
+> `debit_spb_envelope`, `anticipation_spb_envelope`, ...) — via either value —
+> **without** `mockNuclea.spbKeysSecret.enabled: true` fails the boot closed
+> with `SPB scenario seeded without SPB key material`: the mock refuses to
+> seed a posture it cannot execute (it would otherwise answer 200 on the
+> plain-content path with nothing decrypted/verified — a green e2e for the
+> wrong reason). Enable `spbKeysSecret` first.
+
+```yaml
+mockNuclea:
+  enabled: true
+  spbKeysSecret:
+    enabled: true
+    secretName: br-slc-mock-spb-keys
+  scenarios:
+    scenarioSeed: "29011780=spb_envelope_forward_confirm"
 ```
 
 ## Install

@@ -1,6 +1,6 @@
 {{- if .Values.api.enabled }}
 {{- $fullname := include "br-consignado-gw.apiFullname" . }}
-{{- $pullSecrets := .Values.api.imagePullSecrets | default .Values.imagePullSecrets }}
+{{- $pullSecrets := include "br-consignado-gw.componentPullSecrets" (dict "root" . "comp" .Values.api) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,7 +29,7 @@ spec:
       serviceAccountName: {{ include "br-consignado-gw.serviceAccountName" . }}
       {{- with $pullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+        {{- . | nindent 8 }}
       {{- end }}
       containers:
         - name: api

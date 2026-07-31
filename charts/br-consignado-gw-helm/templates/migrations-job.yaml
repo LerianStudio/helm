@@ -11,7 +11,7 @@
 {{- if not $database }}{{ fail "migrations need a Postgres database: set migrations.postgres.database or api.configmap.POSTGRES_NAME" }}{{ end }}
 {{- $secretName := $pg.passwordSecret.name | default (include "br-consignado-gw.migrationsFullname" .) }}
 {{- $secretKey := $pg.passwordSecret.key | default "POSTGRES_PASSWORD" }}
-{{- $pullSecrets := .Values.migrations.imagePullSecrets | default .Values.imagePullSecrets }}
+{{- $pullSecrets := include "br-consignado-gw.componentPullSecrets" (dict "root" . "comp" .Values.migrations) }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -36,7 +36,7 @@ spec:
       automountServiceAccountToken: false
       {{- with $pullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+        {{- . | nindent 8 }}
       {{- end }}
       initContainers:
         - name: wait-for-postgres
@@ -58,10 +58,23 @@ spec:
             - /bin/sh
             - -ec
           args:
-            - >-
-              migrate -path /migrations
-              -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_NAME}?sslmode=${POSTGRES_SSLMODE}"
-              up
+            # Percent-encode the password byte-by-byte before building the DSN:
+            # reserved URL characters in the raw Secret value would otherwise
+            # break golang-migrate's URL parsing.
+            - |
+              encoded=""
+              rest="${POSTGRES_PASSWORD}"
+              while [ -n "${rest}" ]; do
+                char="${rest%"${rest#?}"}"
+                rest="${rest#?}"
+                case "${char}" in
+                  [A-Za-z0-9.~_-]) encoded="${encoded}${char}" ;;
+                  *) encoded="${encoded}$(printf '%%%02X' "'${char}")" ;;
+                esac
+              done
+              migrate -path /migrations \
+                -database "postgres://${POSTGRES_USER}:${encoded}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_NAME}?sslmode=${POSTGRES_SSLMODE}" \
+                up
           env:
             - name: POSTGRES_HOST
               value: {{ $host | quote }}

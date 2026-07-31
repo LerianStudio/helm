@@ -512,6 +512,16 @@
             "organizationIDs": { "type": "string", "minLength": 1 }
           }
         },
+        "scenarios": {
+          "type": "object",
+          "properties": {
+            "defaultScenario": { "type": "string" },
+            "scenarioSeed": {
+              "type": "string",
+              "pattern": "^\\s*(\\d{8}\\s*=\\s*[A-Za-z0-9_]+\\s*)?(,\\s*(\\d{8}\\s*=\\s*[A-Za-z0-9_]+\\s*)?)*$"
+            }
+          }
+        },
         "resources": {
           "type": "object",
           "properties": {

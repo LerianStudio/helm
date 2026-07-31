@@ -107,6 +107,22 @@ spec:
                   key: IS_DEVELOPMENT
                   optional: true
             {{- end }}
+            {{- if .Values.mockNuclea.scenarios.defaultScenario }}
+            {{- /* Boot-time scenario seeding (issue #211, F-3, mock/scenarios.go). Pins
+            the fallback scenario for any ISPB with no explicit scenarioSeed entry, so a
+            pod restart no longer silently reverts every participant to happy. An
+            unrecognized name FAILS THE BOOT (closed set) — see mockNuclea.scenarios in
+            values.yaml for the full rationale and the spbKeysSecret coupling. */}}
+            - name: MOCK_NUCLEA_DEFAULT_SCENARIO
+              value: {{ .Values.mockNuclea.scenarios.defaultScenario | quote }}
+            {{- end }}
+            {{- if .Values.mockNuclea.scenarios.scenarioSeed }}
+            {{- /* OPTIONAL per-ISPB scenario pin, "<ispb>=<scenario>[,...]" — e.g. pinning
+            Núclea's own 29011780 without changing the default for everyone else. A
+            malformed entry FAILS THE BOOT. */}}
+            - name: MOCK_NUCLEA_SCENARIO_SEED
+              value: {{ .Values.mockNuclea.scenarios.scenarioSeed | quote }}
+            {{- end }}
             {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
             {{- include "br-slc.gomaxprocsEnv" .Values.mockNuclea.resources | nindent 12 }}
           livenessProbe:

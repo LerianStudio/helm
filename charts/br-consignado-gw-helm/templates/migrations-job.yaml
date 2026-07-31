@@ -58,22 +58,28 @@ spec:
             - /bin/sh
             - -ec
           args:
-            # Percent-encode the password byte-by-byte before building the DSN:
-            # reserved URL characters in the raw Secret value would otherwise
-            # break golang-migrate's URL parsing.
+            # Percent-encode user, password, and database byte-by-byte before
+            # building the DSN: reserved URL characters in the raw values would
+            # otherwise break golang-migrate's URL parsing.
             - |
-              encoded=""
-              rest="${POSTGRES_PASSWORD}"
-              while [ -n "${rest}" ]; do
-                char="${rest%"${rest#?}"}"
-                rest="${rest#?}"
-                case "${char}" in
-                  [A-Za-z0-9.~_-]) encoded="${encoded}${char}" ;;
-                  *) encoded="${encoded}$(printf '%%%02X' "'${char}")" ;;
-                esac
-              done
+              urlenc() {
+                encoded=""
+                rest="$1"
+                while [ -n "${rest}" ]; do
+                  char="${rest%"${rest#?}"}"
+                  rest="${rest#?}"
+                  case "${char}" in
+                    [A-Za-z0-9.~_-]) encoded="${encoded}${char}" ;;
+                    *) encoded="${encoded}$(printf '%%%02X' "'${char}")" ;;
+                  esac
+                done
+                printf '%s' "${encoded}"
+              }
+              user="$(urlenc "${POSTGRES_USER}")"
+              password="$(urlenc "${POSTGRES_PASSWORD}")"
+              database="$(urlenc "${POSTGRES_NAME}")"
               migrate -path /migrations \
-                -database "postgres://${POSTGRES_USER}:${encoded}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_NAME}?sslmode=${POSTGRES_SSLMODE}" \
+                -database "postgres://${user}:${password}@${POSTGRES_HOST}:${POSTGRES_PORT}/${database}?sslmode=${POSTGRES_SSLMODE}" \
                 up
           env:
             - name: POSTGRES_HOST

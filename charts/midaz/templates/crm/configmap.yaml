@@ -1,4 +1,10 @@
 {{- if .Values.crm.enabled }}
+{{- /* Resolve the environment name ONCE and reuse it for every environment-dependent
+   key (ENV_NAME, OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT) so they can never drift apart.
+   Cascade (highest precedence first): configmap.ENV_NAME (legacy) -> crm.env (param)
+   -> global.environment (env-wide) -> "development" (component default). global.environment
+   slots just above the hardcoded default via cfgValue's `default` argument. */ -}}
+{{- $env := include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENV_NAME" "params" .Values.crm "field" "env" "default" (default "development" (.Values.global | default dict).environment)) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,7 +14,7 @@ metadata:
 data:
   # -- Default Environment variables for CRM
   ALLOW_INSECURE_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ALLOW_INSECURE_TLS" "params" .Values.crm "field" "allowInsecureTls" "default" "true") | quote }}
-  ENV_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENV_NAME" "params" .Values.crm "field" "env" "default" "development") | quote }}
+  ENV_NAME: {{ $env | quote }}
 
   # APP
   APPLICATION_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "APPLICATION_NAME" "params" .Values.crm "field" "applicationName" "default" "crm") | quote }}
@@ -46,7 +52,7 @@ data:
           "OTEL_RESOURCE_SERVICE_NAME" "midaz-crm"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/plugin-crm"
           "OTEL_RESOURCE_SERVICE_VERSION" (.Values.crm.image.tag | default .Chart.AppVersion)
-          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" (include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENV_NAME" "params" .Values.crm "field" "env" "default" "development")))) | nindent 2 }}
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $env)) | nindent 2 }}
   ENABLE_TELEMETRY: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.crm.configmap "nativeKey" "ENABLE_TELEMETRY" "params" .Values.crm.telemetry "field" "enabled" "default" "true") | quote }}
 
   # AUTH

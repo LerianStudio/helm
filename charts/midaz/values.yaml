@@ -6,6 +6,11 @@ nameOverride: "midaz"
 fullnameOverride: ""
 namespaceOverride: "midaz"
 global:
+  # -- Env-wide environment name (e.g. `production`/`staging`); single source consumed by
+  # every environment-dependent key (ENV_NAME, OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT) across
+  # components. Per-component `<comp>.env` and legacy `configmap.ENV_NAME` override it. Empty
+  # by default so component defaults still apply (ledger `production`, crm `development`).
+  environment: ""
   # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
     # -- Enable or disable the RabbitMQ bootstrap job
@@ -255,8 +260,9 @@ ledger:
   # telemetry are the cross-product contracts global.auth / global.observability.
   # ===========================================================================
   # --- App -------------------------------------------------------------------
-  # -- ENV_NAME
-  env: "production"
+  # -- ENV_NAME override for this component (optional). When unset it falls back to
+  #    `global.environment`, then the chart default (`production`). Uncomment to pin.
+  # env: "production"
   # -- LOG_LEVEL (legacy default; set "info" for production)
   logLevel: "debug"
   # -- ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)
@@ -271,7 +277,7 @@ ledger:
 
   # --- Telemetry (OTEL export toggle; endpoints → global.observability) -------
   telemetry:
-    enabled: "true"                    # → ENABLE_TELEMETRY
+    enabled: "false"                   # → ENABLE_TELEMETRY
 
   # --- Swagger / OpenAPI metadata (cosmetic; empty = derived by the app) ------
   swagger:
@@ -620,8 +626,9 @@ crm:
   # host/user/port/params → global.datastores.mongo; auth → global.auth).
   # ===========================================================================
   # --- App -------------------------------------------------------------------
-  # -- ENV_NAME
-  env: "development"
+  # -- ENV_NAME override for this component (optional). When unset it falls back to
+  #    `global.environment`, then the chart default (`development`). Uncomment to pin.
+  # env: "development"
   # -- LOG_LEVEL
   logLevel: "debug"
   # -- ALLOW_INSECURE_TLS (set "false" for strict TLS in prod)

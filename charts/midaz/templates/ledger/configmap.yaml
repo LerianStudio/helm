@@ -23,6 +23,13 @@
 {{- $ledgerBroker := .Values.ledger.broker | default dict }}
 {{- $brokerCircuitBreaker := $ledgerBroker.circuitBreaker | default dict }}
 
+{{- /* Resolve the environment name ONCE and reuse it for every environment-dependent
+   key (ENV_NAME, OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT) so they can never drift apart.
+   Cascade (highest precedence first): configmap.ENV_NAME (legacy) -> ledger.env (param)
+   -> global.environment (env-wide) -> "production" (component default). global.environment
+   slots just above the hardcoded default via cfgValue's `default` argument. */ -}}
+{{- $env := include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ENV_NAME" "params" .Values.ledger "field" "env" "default" (default "production" (.Values.global | default dict).environment)) }}
+
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -32,7 +39,7 @@ data:
   # APP CONFIGURATION
   # =============================================================================
   ALLOW_INSECURE_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ALLOW_INSECURE_TLS" "params" .Values.ledger "field" "allowInsecureTls" "default" "true") | quote }}
-  ENV_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ENV_NAME" "params" .Values.ledger "field" "env" "default" "production") | quote }}
+  ENV_NAME: {{ $env | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
   DEPLOYMENT_MODE: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "DEPLOYMENT_MODE" "params" .Values.ledger "field" "deploymentMode" "default" "local") | quote }}
   LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "LOG_LEVEL" "params" .Values.ledger "field" "logLevel" "default" "debug") | quote }}
@@ -177,8 +184,8 @@ data:
           "OTEL_RESOURCE_SERVICE_NAME" "ledger"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/midaz/v3/components/ledger"
           "OTEL_RESOURCE_SERVICE_VERSION" (.Values.ledger.image.tag | default .Chart.AppVersion)
-          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" (.Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production"))) | nindent 2 }}
-  ENABLE_TELEMETRY: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ENABLE_TELEMETRY" "params" .Values.ledger.telemetry "field" "enabled" "default" "true") | quote }}
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $env)) | nindent 2 }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.cfgValue" (dict "configmap" .Values.ledger.configmap "nativeKey" "ENABLE_TELEMETRY" "params" .Values.ledger.telemetry "field" "enabled" "default" "false") | quote }}
 
   # =============================================================================
   # RABBITMQ (used by transaction module)

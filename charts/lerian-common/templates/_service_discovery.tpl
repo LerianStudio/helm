@@ -66,11 +66,12 @@ global.serviceDiscovery (all optional except address when enabled):
   break. The environment opts into derivation by setting global.serviceDiscovery
   (or configmap.SD_ADDRESS) + stripping the per-app SD_* block down to SD_ENABLED.
 */ -}}
-{{- /* Activation gate is PRESENCE-based on the configmap key (hasKey), not its
-   truthiness: a present-but-empty `configmap.SD_ADDRESS` must still activate the
-   block. Sprig `index ... | default` (and `or`) would treat "" / false / 0 as
-   empty and wrongly fall through to global — the footgun this fix removes. */ -}}
-{{- if and .enabled (or $sd.address (hasKey $c "SD_ADDRESS")) -}}
+{{- /* Activation is the app's own SD_ENABLED knob (.enabled). When SD is enabled the
+   full derived block is emitted with sensible defaults (SD_ADDRESS falls back to
+   localhost:8500), matching the pre-productization chart where enabling SD alone —
+   with no global.serviceDiscovery and no configmap.SD_ADDRESS — still rendered the
+   whole SD_* contract. When SD is disabled the block stays inert (no keys). */ -}}
+{{- if .enabled -}}
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is
    rendered by the component's own extraEnvVars passthrough. Emitting it again
    would produce a duplicate key. This helper only adds the derived siblings.
@@ -84,7 +85,7 @@ global.serviceDiscovery (all optional except address when enabled):
    it emits nothing), then the KEY: value lines below are plain literals — this
    keeps the rendered block byte-identical to the pre-fix output when no
    configmap.SD_* key is present. */ -}}
-{{- $addr := $sd.address -}}{{- if hasKey $c "SD_ADDRESS" -}}{{- $addr = index $c "SD_ADDRESS" -}}{{- end -}}
+{{- $addr := ($sd.address | default "localhost:8500") -}}{{- if hasKey $c "SD_ADDRESS" -}}{{- $addr = index $c "SD_ADDRESS" -}}{{- end -}}
 {{- $tls := ($sd.tls | default false) -}}{{- if hasKey $c "SD_TLS" -}}{{- $tls = index $c "SD_TLS" -}}{{- end -}}
 {{- $tlsSkip := ($sd.tlsSkipVerify | default false) -}}{{- if hasKey $c "SD_TLS_SKIP_VERIFY" -}}{{- $tlsSkip = index $c "SD_TLS_SKIP_VERIFY" -}}{{- end -}}
 {{- $workload := ($sd.workload | default "") -}}{{- if hasKey $c "SD_WORKLOAD" -}}{{- $workload = index $c "SD_WORKLOAD" -}}{{- end -}}

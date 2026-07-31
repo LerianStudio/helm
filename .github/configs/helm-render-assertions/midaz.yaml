@@ -133,3 +133,25 @@ scenarios:
       ledger.revisionHistoryLimit: "0"
     expect:
       - 'revisionHistoryLimit: 0'
+
+  # SD_ENABLED alone (no address, no global.serviceDiscovery) must render the full SD
+  # contract with SD_ADDRESS defaulting to localhost:8500 (pre-productization parity).
+  - name: sd-enabled-alone-emits-full-contract
+    set:
+      ledger.configmap.SD_ENABLED: "true"
+    expect:
+      - 'SD_ADDRESS: "localhost:8500"'
+      - 'SD_TLS: "false"'
+      - 'SD_INTERNAL_SCHEME: "http"'
+
+  # Multi-tenant circuit-breaker threshold accepts an explicit 0 (presence-based, not
+  # sprig-default) — proves the remaining MT tuning-key footgun is closed.
+  - name: multitenant-circuit-breaker-threshold-zero
+    set:
+      ledger.multiTenant.enabled: "true"
+      global.multiTenant.url: "http://mt-svc:8080"
+      global.multiTenant.redisHost: "redis"
+      ledger.secrets.MULTI_TENANT_SERVICE_API_KEY: "sample"
+      ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "0"
+    expect:
+      - 'MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "0"'

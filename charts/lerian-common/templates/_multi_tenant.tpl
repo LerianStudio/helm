@@ -69,8 +69,10 @@ MULTI_TENANT_URL: {{ $url | quote }}
 MULTI_TENANT_SERVICE_NAME: {{ $svcName | quote }}
 {{- end }}
 {{- if not (and (hasKey . "circuitBreaker") (eq .circuitBreaker false)) }}
-MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ index $c "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" | default "5" | quote }}
-MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ index $c "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" | default "30" | quote }}
+{{- $cbThreshold := "5" -}}{{- if hasKey $c "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" -}}{{- $cbThreshold = index $c "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" -}}{{- end }}
+MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ $cbThreshold | quote }}
+{{- $cbTimeout := "30" -}}{{- if hasKey $c "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" -}}{{- $cbTimeout = index $c "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" -}}{{- end }}
+MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ $cbTimeout | quote }}
 {{- end }}
 {{- if .emitRedis }}
 {{- $redisHost := ($g.redisHost | default "") -}}{{- if hasKey $c "MULTI_TENANT_REDIS_HOST" -}}{{- $redisHost = index $c "MULTI_TENANT_REDIS_HOST" -}}{{- end -}}
@@ -85,13 +87,18 @@ MULTI_TENANT_REDIS_PORT: {{ $redisPort | quote }}
 MULTI_TENANT_REDIS_TLS: {{ $redisTls | quote }}
 {{- end }}
 {{- if .emitPool }}
-MULTI_TENANT_MAX_TENANT_POOLS: {{ index $c "MULTI_TENANT_MAX_TENANT_POOLS" | default "100" | quote }}
-MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ index $c "MULTI_TENANT_IDLE_TIMEOUT_SEC" | default "300" | quote }}
+{{- $maxPools := "100" -}}{{- if hasKey $c "MULTI_TENANT_MAX_TENANT_POOLS" -}}{{- $maxPools = index $c "MULTI_TENANT_MAX_TENANT_POOLS" -}}{{- end }}
+MULTI_TENANT_MAX_TENANT_POOLS: {{ $maxPools | quote }}
+{{- $idleTimeout := "300" -}}{{- if hasKey $c "MULTI_TENANT_IDLE_TIMEOUT_SEC" -}}{{- $idleTimeout = index $c "MULTI_TENANT_IDLE_TIMEOUT_SEC" -}}{{- end }}
+MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ $idleTimeout | quote }}
 {{- end }}
 {{- if .emitCache }}
-MULTI_TENANT_TIMEOUT: {{ index $c "MULTI_TENANT_TIMEOUT" | default "30" | quote }}
-MULTI_TENANT_CACHE_TTL_SEC: {{ index $c "MULTI_TENANT_CACHE_TTL_SEC" | default "120" | quote }}
-MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ index $c "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC" | default "30" | quote }}
+{{- $mtTimeout := "30" -}}{{- if hasKey $c "MULTI_TENANT_TIMEOUT" -}}{{- $mtTimeout = index $c "MULTI_TENANT_TIMEOUT" -}}{{- end }}
+MULTI_TENANT_TIMEOUT: {{ $mtTimeout | quote }}
+{{- $cacheTtl := "120" -}}{{- if hasKey $c "MULTI_TENANT_CACHE_TTL_SEC" -}}{{- $cacheTtl = index $c "MULTI_TENANT_CACHE_TTL_SEC" -}}{{- end }}
+MULTI_TENANT_CACHE_TTL_SEC: {{ $cacheTtl | quote }}
+{{- $connCheck := "30" -}}{{- if hasKey $c "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC" -}}{{- $connCheck = index $c "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC" -}}{{- end }}
+MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $connCheck | quote }}
 {{- end }}
 {{- if .emitEnvironment }}
 MULTI_TENANT_ENVIRONMENT: {{ index $c "MULTI_TENANT_ENVIRONMENT" | default "" | quote }}

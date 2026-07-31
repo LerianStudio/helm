@@ -57,7 +57,7 @@ The `lerian-common.serviceDiscovery.env` helper emits environment variables for 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SD_ENABLED` | `false` | Enable service discovery for this component |
-| `SD_ADDRESS` | `""` | Service discovery server address (e.g. `consul.prod:443`) |
+| `SD_ADDRESS` | `localhost:8500` | Service discovery server address (e.g. `consul.prod:443`); defaults to `localhost:8500` when neither `global.serviceDiscovery.address` nor legacy `configmap.SD_ADDRESS` is set |
 | `SD_TLS` | `false` | Enable TLS for service discovery connection |
 | `SD_TLS_SKIP_VERIFY` | `false` | Skip TLS certificate verification |
 | `SD_WORKLOAD` | `""` | Workload isolation key (provider and consumer must match) |
@@ -90,7 +90,12 @@ Product chart maintainers include this helper in their ConfigMap template:
 ```yaml
 # templates/configmap.yaml
 data:
-  {{- include "lerian-common.serviceDiscovery.env" (dict "context" $ "configmap" .Values.myapp.configmap) | nindent 2 }}
+  # SD_ENABLED is the app's own knob — resolve it to a strict bool and pass it as `enabled`.
+  {{- $sdEnabled := eq (index (.Values.myapp.configmap | default dict) "SD_ENABLED" | default "false" | toString) "true" }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $ "enabled" $sdEnabled "configmap" .Values.myapp.configmap
+        "name" (include "myapp.fullname" .) "port" 8080 "namespace" .Release.Namespace) | nindent 2 }}
 ```
 
 ### 2. Streaming Environment Variables

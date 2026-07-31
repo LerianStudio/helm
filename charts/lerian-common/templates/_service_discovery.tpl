@@ -53,24 +53,27 @@ global.serviceDiscovery (all optional except address when enabled):
    no-configmap caller renders byte-identical to before. */ -}}
 {{- $c := .configmap | default dict -}}
 {{- /*
-  Derive ONLY when enabled AND an SD address is configured — via EITHER the
-  environment-wide `global.serviceDiscovery.address` OR the legacy flat
-  `configmap.SD_ADDRESS` (on-prem/client values that predate global). Gating on
-  both preserves the documented backward-compat contract: a chart deployed with
-  `configmap.SD_ENABLED=true` + `configmap.SD_ADDRESS` (no global) still derives
-  the full sibling block, matching pre-refactor output.
-  This keeps adoption backward-compatible: a chart carrying this helper but
-  deployed against a not-yet-migrated environment (SD_* still hand-set in
-  extraEnvVars, no global.serviceDiscovery, no configmap.SD_ADDRESS) stays
-  INERT — extraEnvVars drives SD exactly as before, no duplicate keys, no render
-  break. The environment opts into derivation by setting global.serviceDiscovery
-  (or configmap.SD_ADDRESS) + stripping the per-app SD_* block down to SD_ENABLED.
+  Activation is the app's own SD_ENABLED knob, passed in as `.enabled` (the consumer
+  resolves it, typically from `configmap.SD_ENABLED` / a grouped `serviceDiscovery.
+  enabled` param). When SD is ENABLED the full derived sibling block is emitted with
+  sensible defaults — `SD_ADDRESS` falls back to `localhost:8500`, matching the pre-
+  productization chart where enabling SD alone (no global.serviceDiscovery, no
+  configmap.SD_ADDRESS) still rendered the whole SD_* contract. `global.service
+  Discovery.address` or a legacy flat `configmap.SD_ADDRESS` override that default
+  (configmap wins). When SD is DISABLED the block stays inert (no derived keys).
+
+  Ownership: the caller supplies exactly ONE SD key — `SD_ENABLED` (the app's knob,
+  via the component's extraEnvVars/configmap) — and this helper owns every DERIVED
+  SD_* sibling (SD_ADDRESS, SD_TLS, SD_INTERNAL_*, SD_EXTERNAL_*, tuning). Adoption
+  means stripping those derived SD_* keys out of extraEnvVars and letting the helper
+  render them (from global.serviceDiscovery, legacy configmap.SD_*, or the defaults);
+  keeping a derived key in extraEnvVars too would duplicate it. SD_ENABLED stays with
+  the caller and is never emitted here.
 */ -}}
-{{- /* Activation gate is PRESENCE-based on the configmap key (hasKey), not its
-   truthiness: a present-but-empty `configmap.SD_ADDRESS` must still activate the
-   block. Sprig `index ... | default` (and `or`) would treat "" / false / 0 as
-   empty and wrongly fall through to global — the footgun this fix removes. */ -}}
-{{- if and .enabled (or $sd.address (hasKey $c "SD_ADDRESS")) -}}
+{{- /* Normalize .enabled to a strict bool: a raw string "false" (e.g. passed straight
+   from a configmap value) would otherwise be truthy under `if`. */ -}}
+{{- $enabled := eq (toString (.enabled | default false)) "true" -}}
+{{- if $enabled -}}
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is
    rendered by the component's own extraEnvVars passthrough. Emitting it again
    would produce a duplicate key. This helper only adds the derived siblings.
@@ -84,7 +87,7 @@ global.serviceDiscovery (all optional except address when enabled):
    it emits nothing), then the KEY: value lines below are plain literals — this
    keeps the rendered block byte-identical to the pre-fix output when no
    configmap.SD_* key is present. */ -}}
-{{- $addr := $sd.address -}}{{- if hasKey $c "SD_ADDRESS" -}}{{- $addr = index $c "SD_ADDRESS" -}}{{- end -}}
+{{- $addr := ($sd.address | default "localhost:8500") -}}{{- if hasKey $c "SD_ADDRESS" -}}{{- $addr = index $c "SD_ADDRESS" -}}{{- end -}}
 {{- $tls := ($sd.tls | default false) -}}{{- if hasKey $c "SD_TLS" -}}{{- $tls = index $c "SD_TLS" -}}{{- end -}}
 {{- $tlsSkip := ($sd.tlsSkipVerify | default false) -}}{{- if hasKey $c "SD_TLS_SKIP_VERIFY" -}}{{- $tlsSkip = index $c "SD_TLS_SKIP_VERIFY" -}}{{- end -}}
 {{- $workload := ($sd.workload | default "") -}}{{- if hasKey $c "SD_WORKLOAD" -}}{{- $workload = index $c "SD_WORKLOAD" -}}{{- end -}}

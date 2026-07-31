@@ -10,9 +10,14 @@ via `include` by the product charts that declare it as a dependency.
   `lerian-common.multiTenant.env` — env-wide constants come from `global.*`
   (set once per environment); the per-app enable knob stays in the component's
   `extraEnvVars`/`configmap`; a component value overrides the global default; and
-  each helper stays **inert until `global.*` is set** (backward-compatible);
-  `serviceDiscovery.env` additionally activates from a legacy `configmap.SD_ADDRESS`,
-  and a component `configmap.SD_*` value takes precedence over the `global.*` default.
+  each helper stays **inert until enabled** (backward-compatible); `serviceDiscovery.env`
+  activates on the app's `SD_ENABLED` knob (`.enabled`) and, when enabled, emits the full
+  SD_* contract with `SD_ADDRESS` defaulting to `localhost:8500`; `global.serviceDiscovery.
+  address` or a legacy `configmap.SD_ADDRESS` override that default, and a component
+  `configmap.SD_*` value takes precedence over the `global.*` default. Ownership: the caller
+  supplies exactly one SD key — `SD_ENABLED` (via `extraEnvVars`/`configmap`) — and the helper
+  owns every derived `SD_*` sibling; keep those derived keys out of `extraEnvVars` (leaving one
+  there too would duplicate it).
   The external endpoint (`SD_EXTERNAL_ADDRESS`/`SD_EXTERNAL_PORT`) is derived from
   the Ingress host when present, **and** is preserved when supplied explicitly via
   legacy `configmap.SD_EXTERNAL_*` even with no Ingress (on-prem) — honoring the

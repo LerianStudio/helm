@@ -53,24 +53,20 @@ global.serviceDiscovery (all optional except address when enabled):
    no-configmap caller renders byte-identical to before. */ -}}
 {{- $c := .configmap | default dict -}}
 {{- /*
-  Derive ONLY when enabled AND an SD address is configured — via EITHER the
-  environment-wide `global.serviceDiscovery.address` OR the legacy flat
-  `configmap.SD_ADDRESS` (on-prem/client values that predate global). Gating on
-  both preserves the documented backward-compat contract: a chart deployed with
-  `configmap.SD_ENABLED=true` + `configmap.SD_ADDRESS` (no global) still derives
-  the full sibling block, matching pre-refactor output.
-  This keeps adoption backward-compatible: a chart carrying this helper but
-  deployed against a not-yet-migrated environment (SD_* still hand-set in
-  extraEnvVars, no global.serviceDiscovery, no configmap.SD_ADDRESS) stays
-  INERT — extraEnvVars drives SD exactly as before, no duplicate keys, no render
-  break. The environment opts into derivation by setting global.serviceDiscovery
-  (or configmap.SD_ADDRESS) + stripping the per-app SD_* block down to SD_ENABLED.
+  Activation is the app's own SD_ENABLED knob, passed in as `.enabled` (the consumer
+  resolves it, typically from `configmap.SD_ENABLED` / a grouped `serviceDiscovery.
+  enabled` param). When SD is ENABLED the full derived sibling block is emitted with
+  sensible defaults — `SD_ADDRESS` falls back to `localhost:8500`, matching the pre-
+  productization chart where enabling SD alone (no global.serviceDiscovery, no
+  configmap.SD_ADDRESS) still rendered the whole SD_* contract. `global.service
+  Discovery.address` or a legacy flat `configmap.SD_ADDRESS` override that default
+  (configmap wins). When SD is DISABLED the block stays inert (no derived keys).
+
+  Adoption note: a chart that renders this helper MUST drive SD through it, not also
+  hand-set SD_* in extraEnvVars — enabling both would duplicate keys. The migration is
+  to strip the per-app flat SD_* block down to SD_ENABLED and let the helper derive
+  the rest (from global.serviceDiscovery, legacy configmap.SD_*, or the defaults).
 */ -}}
-{{- /* Activation is the app's own SD_ENABLED knob (.enabled). When SD is enabled the
-   full derived block is emitted with sensible defaults (SD_ADDRESS falls back to
-   localhost:8500), matching the pre-productization chart where enabling SD alone —
-   with no global.serviceDiscovery and no configmap.SD_ADDRESS — still rendered the
-   whole SD_* contract. When SD is disabled the block stays inert (no keys). */ -}}
 {{- if .enabled -}}
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is
    rendered by the component's own extraEnvVars passthrough. Emitting it again

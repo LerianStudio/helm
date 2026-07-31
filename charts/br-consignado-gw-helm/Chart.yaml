@@ -1,0 +1,26 @@
+apiVersion: v2
+name: br-consignado-gw-helm
+description: Helm chart for br-consignado-gw and its same-origin operator console
+
+type: application
+annotations:
+  lerian.studio/chart-type: multi-component
+
+home: https://github.com/LerianStudio/helm
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/br-consignado-gw-helm
+  - https://github.com/LerianStudio/br-consignado-gw
+maintainers:
+  - name: Lerian Studio
+    email: support@lerian.studio
+
+# Semantic-release owns the OCI package version. This source version documents
+# the initial chart line only; consumers must pin the version actually published.
+version: 1.0.0-beta.1
+appVersion: "1.3.0-beta.33"
+keywords:
+  - consignado
+  - br-consignado-gw
+  - dataprev
+  - credit
+  - lerian

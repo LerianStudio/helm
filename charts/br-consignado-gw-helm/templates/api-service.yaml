@@ -1,0 +1,22 @@
+{{- if .Values.api.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "br-consignado-gw.apiFullname" . }}
+  namespace: {{ include "br-consignado-gw.namespace" . }}
+  labels:
+    {{- include "br-consignado-gw.componentLabels" (dict "root" . "name" "api") | nindent 4 }}
+  {{- with .Values.api.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.api.service.type }}
+  selector:
+    {{- include "br-consignado-gw.componentSelectorLabels" (dict "root" . "name" "api") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.api.service.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

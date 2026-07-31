@@ -29,8 +29,13 @@ Inputs (dict):
   name        (req)  internal service DNS name (SD_INTERNAL_ADDRESS host)
   port        (req)  internal service port
   namespace   (req)  resolved namespace string
-  ingressHost (opt)  external host; when non-empty, emits SD_EXTERNAL_*
-                     (omit for consumer-only / internal-only instances)
+  ingressHost (opt)  external host; when non-empty, derives SD_EXTERNAL_*
+                     from it. The external endpoint is ALSO emitted (regardless
+                     of ingressHost) when the operator supplies it explicitly via
+                     legacy configmap.SD_EXTERNAL_ADDRESS / SD_EXTERNAL_PORT —
+                     the on-prem-without-Ingress case. Omitted only for
+                     consumer-only / internal-only instances (no ingressHost and
+                     no legacy SD_EXTERNAL_* keys).
   configmap   (opt)  the component's legacy `.configmap` map. When a key is
                      present here, its flat `configmap.SD_*` value WINS over the
                      global/derived value below (backward-compat for the flat
@@ -87,7 +92,7 @@ global.serviceDiscovery (all optional except address when enabled):
 {{- $internalAddr := (include "lerian-common.internalHost" (dict "name" .name "namespace" .namespace)) -}}{{- if hasKey $c "SD_INTERNAL_ADDRESS" -}}{{- $internalAddr = index $c "SD_INTERNAL_ADDRESS" -}}{{- end -}}
 {{- $internalPort := .port -}}{{- if hasKey $c "SD_INTERNAL_PORT" -}}{{- $internalPort = index $c "SD_INTERNAL_PORT" -}}{{- end -}}
 {{- $internalScheme := ($sd.internalScheme | default "http") -}}{{- if hasKey $c "SD_INTERNAL_SCHEME" -}}{{- $internalScheme = index $c "SD_INTERNAL_SCHEME" -}}{{- end -}}
-{{- $externalAddr := (printf "https://%s" .ingressHost) -}}{{- if hasKey $c "SD_EXTERNAL_ADDRESS" -}}{{- $externalAddr = index $c "SD_EXTERNAL_ADDRESS" -}}{{- end -}}
+{{- $externalAddr := "" -}}{{- if .ingressHost -}}{{- $externalAddr = (printf "https://%s" .ingressHost) -}}{{- end -}}{{- if hasKey $c "SD_EXTERNAL_ADDRESS" -}}{{- $externalAddr = index $c "SD_EXTERNAL_ADDRESS" -}}{{- end -}}
 {{- $externalPort := ($sd.externalPort | default 443) -}}{{- if hasKey $c "SD_EXTERNAL_PORT" -}}{{- $externalPort = index $c "SD_EXTERNAL_PORT" -}}{{- end -}}
 SD_ADDRESS: {{ $addr | quote }}
 SD_TLS: {{ $tls | quote }}
@@ -97,7 +102,11 @@ SD_PREFER_VIEW: {{ $preferView | quote }}
 SD_INTERNAL_ADDRESS: {{ $internalAddr | quote }}
 SD_INTERNAL_PORT: {{ $internalPort | quote }}
 SD_INTERNAL_SCHEME: {{ $internalScheme | quote }}
-{{- if .ingressHost }}
+{{- /* Emit the external endpoint when it can be derived from an Ingress host
+   OR when the operator supplied it explicitly via legacy configmap.SD_EXTERNAL_*
+   keys (on-prem without Ingress). Honors the configmap.SD_* -> global -> default
+   precedence contract; omitted only for internal-only / consumer-only instances. */ -}}
+{{- if or .ingressHost (hasKey $c "SD_EXTERNAL_ADDRESS") (hasKey $c "SD_EXTERNAL_PORT") }}
 SD_EXTERNAL_ADDRESS: {{ $externalAddr | quote }}
 SD_EXTERNAL_PORT: {{ $externalPort | quote }}
 {{- end }}

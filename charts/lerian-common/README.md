@@ -13,6 +13,10 @@ via `include` by the product charts that declare it as a dependency.
   each helper stays **inert until `global.*` is set** (backward-compatible);
   `serviceDiscovery.env` additionally activates from a legacy `configmap.SD_ADDRESS`,
   and a component `configmap.SD_*` value takes precedence over the `global.*` default.
+  The external endpoint (`SD_EXTERNAL_ADDRESS`/`SD_EXTERNAL_PORT`) is derived from
+  the Ingress host when present, **and** is preserved when supplied explicitly via
+  legacy `configmap.SD_EXTERNAL_*` even with no Ingress (on-prem) — honoring the
+  `configmap.SD_*` → `global.*` → default precedence in that case too.
 - **Env contracts (flat-passthrough):** `lerian-common.serviceDiscovery.envFlat`,
   `lerian-common.otel.envFlat`, `lerian-common.multiTenant.envFlat` — reproduce a
   chart's EXISTING native env block **byte-for-byte** (same keys, defaults, quoting

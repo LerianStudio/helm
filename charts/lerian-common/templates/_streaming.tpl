@@ -64,6 +64,23 @@ global.streaming (all optional except brokers, which gates emission):
 {{- $requiredAcks := ($s.requiredAcks | default "all") -}}{{- if hasKey $c "STREAMING_REQUIRED_ACKS" -}}{{- $requiredAcks = index $c "STREAMING_REQUIRED_ACKS" -}}{{- end -}}
 {{- $batchLingerMs := ($s.batchLingerMs | default "5") -}}{{- if hasKey $c "STREAMING_BATCH_LINGER_MS" -}}{{- $batchLingerMs = index $c "STREAMING_BATCH_LINGER_MS" -}}{{- end -}}
 {{- $importantEmitTimeoutMs := ($s.importantEmitTimeoutMs | default "5000") -}}{{- if hasKey $c "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" -}}{{- $importantEmitTimeoutMs = index $c "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" -}}{{- end -}}
+{{- /* SASL contract validation — lib-streaming fails closed at bootstrap otherwise.
+   Enforced here in the ConfigMap (which ALWAYS renders, even when the Secret is external
+   via useExistingSecret), so mechanism/username/TLS are validated regardless of the secret
+   source. When a mechanism is set it must be a supported one, a username is required, and
+   TLS must be on unless plaintext SASL is explicitly opted into. */ -}}
+{{- if $saslMechanism -}}
+{{- $allowedSasl := list "PLAIN" "SCRAM-SHA-256" "SCRAM-SHA-512" -}}
+{{- if not (has $saslMechanism $allowedSasl) -}}
+{{- fail (printf "\n[lerian-common] Unsupported STREAMING_SASL_MECHANISM %q — lib-streaming accepts only PLAIN, SCRAM-SHA-256, SCRAM-SHA-512.\n" $saslMechanism) -}}
+{{- end -}}
+{{- if not $saslUsername -}}
+{{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires a username (and a password).\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" $saslMechanism) -}}
+{{- end -}}
+{{- if not (or (eq (toString $tlsEnabled) "true") (eq (toString $saslAllowPlaintext) "true")) -}}
+{{- fail (printf "\n[lerian-common] SASL requires TLS: mechanism %s is set but STREAMING_TLS_ENABLED is not true.\n  set:     STREAMING_TLS_ENABLED=true (recommended), or opt into plaintext SASL with STREAMING_SASL_ALLOW_PLAINTEXT=true.\n" $saslMechanism) -}}
+{{- end -}}
+{{- end -}}
 STREAMING_BROKERS: {{ $brokers | quote }}
 STREAMING_TLS_ENABLED: {{ $tlsEnabled | quote }}
 STREAMING_SASL_MECHANISM: {{ $saslMechanism | quote }}

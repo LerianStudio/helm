@@ -57,8 +57,8 @@ global.streaming (all optional except brokers, which gates emission):
 {{- if and .enabled (or $s.brokers (hasKey $c "STREAMING_BROKERS")) -}}
 {{- $brokers := $s.brokers -}}{{- if hasKey $c "STREAMING_BROKERS" -}}{{- $brokers = index $c "STREAMING_BROKERS" -}}{{- end -}}
 {{- $tlsEnabled := ($s.tlsEnabled | default false) -}}{{- if hasKey $c "STREAMING_TLS_ENABLED" -}}{{- $tlsEnabled = index $c "STREAMING_TLS_ENABLED" -}}{{- end -}}
-{{- $saslMechanism := ($s.saslMechanism | default "") -}}{{- if hasKey $c "STREAMING_SASL_MECHANISM" -}}{{- $saslMechanism = index $c "STREAMING_SASL_MECHANISM" -}}{{- end -}}
-{{- $saslUsername := ($s.saslUsername | default "") -}}{{- if hasKey $c "STREAMING_SASL_USERNAME" -}}{{- $saslUsername = index $c "STREAMING_SASL_USERNAME" -}}{{- end -}}
+{{- $saslMechanism := ($s.saslMechanism | default "") -}}{{- if hasKey $c "STREAMING_SASL_MECHANISM" -}}{{- $saslMechanism = (index $c "STREAMING_SASL_MECHANISM" | default "") -}}{{- end -}}
+{{- $saslUsername := ($s.saslUsername | default "") -}}{{- if hasKey $c "STREAMING_SASL_USERNAME" -}}{{- $saslUsername = (index $c "STREAMING_SASL_USERNAME" | default "") -}}{{- end -}}
 {{- $saslAllowPlaintext := ($s.saslAllowPlaintext | default "false") -}}{{- if hasKey $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- $saslAllowPlaintext = index $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- end -}}
 {{- $compression := ($s.compression | default "lz4") -}}{{- if hasKey $c "STREAMING_COMPRESSION" -}}{{- $compression = index $c "STREAMING_COMPRESSION" -}}{{- end -}}
 {{- $requiredAcks := ($s.requiredAcks | default "all") -}}{{- if hasKey $c "STREAMING_REQUIRED_ACKS" -}}{{- $requiredAcks = index $c "STREAMING_REQUIRED_ACKS" -}}{{- end -}}
@@ -73,19 +73,23 @@ global.streaming (all optional except brokers, which gates emission):
    TrimSpace'd, and an all-whitespace value means "no SASL" (disabled). The booleans
    follow strconv.ParseBool (case-insensitive true/1/t). Validate on the normalized
    values so a valid lowercase/whitespace-padded config is not falsely rejected. */ -}}
-{{- $saslMechNorm := upper (trim (toString $saslMechanism)) -}}
+{{- /* `| default ""` coerces an explicit null override (configmap.STREAMING_SASL_* : ~)
+   before toString — otherwise sprig renders nil as the literal "<nil>", which would make a
+   null mechanism look "unsupported" and a null username pass the non-empty check. */ -}}
+{{- $saslMechNorm := upper (trim (toString ($saslMechanism | default ""))) -}}
 {{- if $saslMechNorm -}}
 {{- $allowedSasl := list "PLAIN" "SCRAM-SHA-256" "SCRAM-SHA-512" -}}
 {{- if not (has $saslMechNorm $allowedSasl) -}}
 {{- fail (printf "\n[lerian-common] Unsupported STREAMING_SASL_MECHANISM %q — lib-streaming accepts only PLAIN, SCRAM-SHA-256, SCRAM-SHA-512 (case-insensitive).\n" $saslMechanism) -}}
 {{- end -}}
-{{- if not (trim (toString $saslUsername)) -}}
+{{- if not (trim (toString ($saslUsername | default ""))) -}}
 {{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires a username (and a password).\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" $saslMechanism) -}}
 {{- end -}}
-{{- /* Match strconv.ParseBool EXACTLY (what the runtime's GetenvBoolOrDefault uses): the
-   true set is 1/t/T/TRUE/true/True with no trimming — anything else (e.g. "TrUe", " true ")
-   parses as an error and the runtime falls back to false. Using lower()/trim() here would
-   wrongly accept those and ship a SASL-without-TLS config that crashes at bootstrap. */ -}}
+{{- /* Match strconv.ParseBool EXACTLY (what the runtime's GetenvBoolOrDefault uses). The
+   true set is 1/t/T/TRUE/true/True (no trimming); the false set 0/f/F/FALSE/False/false
+   parses to false, and any OTHER spelling (e.g. "TrUe", " true ") errors and falls back to
+   the default (false). For "TLS on?" we only need the true set. Using lower()/trim() here
+   would wrongly accept "TrUe" and ship a SASL-without-TLS config that crashes at bootstrap. */ -}}
 {{- $parseBoolTrue := list "1" "t" "T" "TRUE" "true" "True" -}}
 {{- $tlsOn := has (toString $tlsEnabled) $parseBoolTrue -}}
 {{- $plaintextOn := has (toString $saslAllowPlaintext) $parseBoolTrue -}}

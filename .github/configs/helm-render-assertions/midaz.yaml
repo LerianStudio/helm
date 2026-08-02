@@ -74,6 +74,7 @@ scenarios:
       ledger.configmap.STREAMING_BROKERS: "kafka:9092"
       global.streaming.saslMechanism: "SCRAM-SHA-512"
       global.streaming.saslUsername: "user"
+      global.streaming.tlsEnabled: "true"
     expectRenderError: "STREAMING_SASL_PASSWORD"
 
   # ...and with the password supplied, the Ledger Secret renders it.
@@ -83,6 +84,7 @@ scenarios:
       ledger.configmap.STREAMING_BROKERS: "kafka:9092"
       global.streaming.saslMechanism: "SCRAM-SHA-512"
       global.streaming.saslUsername: "user"
+      global.streaming.tlsEnabled: "true"
       ledger.secrets.STREAMING_SASL_PASSWORD: "s3cr3t"
     expect:
       - 'STREAMING_SASL_PASSWORD:'
@@ -174,3 +176,66 @@ scenarios:
       ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "0"
     expect:
       - 'MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "0"'
+
+  # ===========================================================================
+  # SASL contract — lib-streaming fails closed; the render must fail fast.
+  # Three scenarios × two components (Ledger + CRM).
+  # ===========================================================================
+  # 1) Unsupported mechanism (only PLAIN / SCRAM-SHA-256 / SCRAM-SHA-512).
+  - name: streaming-sasl-invalid-mechanism-fails-ledger
+    set:
+      ledger.configmap.STREAMING_ENABLED: "true"
+      ledger.configmap.STREAMING_BROKERS: "kafka:9092"
+      ledger.configmap.STREAMING_SASL_MECHANISM: "GSSAPI"
+      ledger.configmap.STREAMING_SASL_USERNAME: "u"
+      ledger.configmap.STREAMING_TLS_ENABLED: "true"
+      ledger.secrets.STREAMING_SASL_PASSWORD: "s3cr3t"
+    expectRenderError: "Unsupported STREAMING_SASL_MECHANISM"
+  - name: streaming-sasl-invalid-mechanism-fails-crm
+    set:
+      crm.configmap.STREAMING_ENABLED: "true"
+      crm.configmap.STREAMING_BROKERS: "kafka:9092"
+      crm.configmap.STREAMING_SASL_MECHANISM: "GSSAPI"
+      crm.configmap.STREAMING_SASL_USERNAME: "u"
+      crm.configmap.STREAMING_TLS_ENABLED: "true"
+      crm.secrets.STREAMING_SASL_PASSWORD: "s3cr3t"
+    expectRenderError: "Unsupported STREAMING_SASL_MECHANISM"
+
+  # 2) SASL without TLS and without the explicit plaintext opt-in.
+  - name: streaming-sasl-without-tls-fails-ledger
+    set:
+      ledger.configmap.STREAMING_ENABLED: "true"
+      ledger.configmap.STREAMING_BROKERS: "kafka:9092"
+      ledger.configmap.STREAMING_SASL_MECHANISM: "SCRAM-SHA-512"
+      ledger.configmap.STREAMING_SASL_USERNAME: "u"
+      ledger.configmap.STREAMING_TLS_ENABLED: "false"
+      ledger.secrets.STREAMING_SASL_PASSWORD: "s3cr3t"
+    expectRenderError: "SASL requires TLS"
+  - name: streaming-sasl-without-tls-fails-crm
+    set:
+      crm.configmap.STREAMING_ENABLED: "true"
+      crm.configmap.STREAMING_BROKERS: "kafka:9092"
+      crm.configmap.STREAMING_SASL_MECHANISM: "SCRAM-SHA-512"
+      crm.configmap.STREAMING_SASL_USERNAME: "u"
+      crm.configmap.STREAMING_TLS_ENABLED: "false"
+      crm.secrets.STREAMING_SASL_PASSWORD: "s3cr3t"
+    expectRenderError: "SASL requires TLS"
+
+  # 3) useExistingSecret bypasses the Secret, but the username (a ConfigMap value)
+  #    is still validated — a mechanism without a username must fail.
+  - name: streaming-sasl-existingsecret-without-username-fails-ledger
+    set:
+      ledger.useExistingSecret: "true"
+      ledger.configmap.STREAMING_ENABLED: "true"
+      ledger.configmap.STREAMING_BROKERS: "kafka:9092"
+      ledger.configmap.STREAMING_SASL_MECHANISM: "SCRAM-SHA-512"
+      ledger.configmap.STREAMING_TLS_ENABLED: "true"
+    expectRenderError: "STREAMING_SASL_USERNAME"
+  - name: streaming-sasl-existingsecret-without-username-fails-crm
+    set:
+      crm.useExistingSecret: "true"
+      crm.configmap.STREAMING_ENABLED: "true"
+      crm.configmap.STREAMING_BROKERS: "kafka:9092"
+      crm.configmap.STREAMING_SASL_MECHANISM: "SCRAM-SHA-512"
+      crm.configmap.STREAMING_TLS_ENABLED: "true"
+    expectRenderError: "STREAMING_SASL_USERNAME"

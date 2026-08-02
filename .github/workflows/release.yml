@@ -22,7 +22,7 @@ jobs:
   get-changed-paths:
     if: github.actor != 'lerian-studio-midaz-push-bot[bot]'
     name: Get Changed Paths
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       matrix: ${{ steps.changed-paths.outputs.matrix }}
     steps:
@@ -43,7 +43,7 @@ jobs:
     needs: get-changed-paths
     name: Release Helm Chart
     if: needs.get-changed-paths.outputs.matrix != '[]'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       max-parallel: 1
       fail-fast: false
@@ -252,7 +252,7 @@ jobs:
       - release-helm-chart
     name: 🔀 Back Merge to Develop
     if: needs.get-changed-paths.outputs.matrix != '[]' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Generate GitHub App Token
         id: app-token

@@ -82,8 +82,13 @@ global.streaming (all optional except brokers, which gates emission):
 {{- if not (trim (toString $saslUsername)) -}}
 {{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires a username (and a password).\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" $saslMechanism) -}}
 {{- end -}}
-{{- $tlsOn := has (lower (trim (toString $tlsEnabled))) (list "true" "1" "t") -}}
-{{- $plaintextOn := has (lower (trim (toString $saslAllowPlaintext))) (list "true" "1" "t") -}}
+{{- /* Match strconv.ParseBool EXACTLY (what the runtime's GetenvBoolOrDefault uses): the
+   true set is 1/t/T/TRUE/true/True with no trimming — anything else (e.g. "TrUe", " true ")
+   parses as an error and the runtime falls back to false. Using lower()/trim() here would
+   wrongly accept those and ship a SASL-without-TLS config that crashes at bootstrap. */ -}}
+{{- $parseBoolTrue := list "1" "t" "T" "TRUE" "true" "True" -}}
+{{- $tlsOn := has (toString $tlsEnabled) $parseBoolTrue -}}
+{{- $plaintextOn := has (toString $saslAllowPlaintext) $parseBoolTrue -}}
 {{- if not (or $tlsOn $plaintextOn) -}}
 {{- fail (printf "\n[lerian-common] SASL requires TLS: mechanism %s is set but STREAMING_TLS_ENABLED is not true.\n  set:     STREAMING_TLS_ENABLED=true (recommended), or opt into plaintext SASL with STREAMING_SASL_ALLOW_PLAINTEXT=true.\n" $saslMechanism) -}}
 {{- end -}}

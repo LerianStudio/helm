@@ -69,15 +69,22 @@ global.streaming (all optional except brokers, which gates emission):
    via useExistingSecret), so mechanism/username/TLS are validated regardless of the secret
    source. When a mechanism is set it must be a supported one, a username is required, and
    TLS must be on unless plaintext SASL is explicitly opted into. */ -}}
-{{- if $saslMechanism -}}
+{{- /* Normalize like lib-streaming does: the mechanism is case-insensitive and
+   TrimSpace'd, and an all-whitespace value means "no SASL" (disabled). The booleans
+   follow strconv.ParseBool (case-insensitive true/1/t). Validate on the normalized
+   values so a valid lowercase/whitespace-padded config is not falsely rejected. */ -}}
+{{- $saslMechNorm := upper (trim (toString $saslMechanism)) -}}
+{{- if $saslMechNorm -}}
 {{- $allowedSasl := list "PLAIN" "SCRAM-SHA-256" "SCRAM-SHA-512" -}}
-{{- if not (has $saslMechanism $allowedSasl) -}}
-{{- fail (printf "\n[lerian-common] Unsupported STREAMING_SASL_MECHANISM %q — lib-streaming accepts only PLAIN, SCRAM-SHA-256, SCRAM-SHA-512.\n" $saslMechanism) -}}
+{{- if not (has $saslMechNorm $allowedSasl) -}}
+{{- fail (printf "\n[lerian-common] Unsupported STREAMING_SASL_MECHANISM %q — lib-streaming accepts only PLAIN, SCRAM-SHA-256, SCRAM-SHA-512 (case-insensitive).\n" $saslMechanism) -}}
 {{- end -}}
-{{- if not $saslUsername -}}
+{{- if not (trim (toString $saslUsername)) -}}
 {{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires a username (and a password).\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" $saslMechanism) -}}
 {{- end -}}
-{{- if not (or (eq (toString $tlsEnabled) "true") (eq (toString $saslAllowPlaintext) "true")) -}}
+{{- $tlsOn := has (lower (trim (toString $tlsEnabled))) (list "true" "1" "t") -}}
+{{- $plaintextOn := has (lower (trim (toString $saslAllowPlaintext))) (list "true" "1" "t") -}}
+{{- if not (or $tlsOn $plaintextOn) -}}
 {{- fail (printf "\n[lerian-common] SASL requires TLS: mechanism %s is set but STREAMING_TLS_ENABLED is not true.\n  set:     STREAMING_TLS_ENABLED=true (recommended), or opt into plaintext SASL with STREAMING_SASL_ALLOW_PLAINTEXT=true.\n" $saslMechanism) -}}
 {{- end -}}
 {{- end -}}

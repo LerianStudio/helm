@@ -1,3 +1,10 @@
+# Outbound (client) mTLS to the BTG API (pix + reconciliation). Off by default.
+# Only the two common knobs here; cert source (tls.crt/tls.key/ca.crt) and the
+# rest default in the chart. See values.yaml for the full interface.
+mtls:
+  enabled: false
+  secretName: ""
+
 pix:
   replicaCount: 1
   autoscaling:

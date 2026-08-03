@@ -123,6 +123,10 @@ data:
   RATE_LIMIT_ENABLED: {{ .Values.reconciliation.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.reconciliation.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
+  BTG_OUTBOUND_MTLS_ENABLED: {{ .Values.reconciliation.configmap.BTG_OUTBOUND_MTLS_ENABLED | default "false" | quote }}
+  CLIENT_TLS_CA_FILE: {{ .Values.reconciliation.configmap.CLIENT_TLS_CA_FILE | default "" | quote }}
+  CLIENT_TLS_CERT_FILE: {{ .Values.reconciliation.configmap.CLIENT_TLS_CERT_FILE | default "" | quote }}
+  CLIENT_TLS_KEY_FILE: {{ .Values.reconciliation.configmap.CLIENT_TLS_KEY_FILE | default "" | quote }}
   # Extra Env Vars
   {{- with .Values.reconciliation.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -163,6 +163,10 @@ data:
   RATE_LIMIT_ENABLED: {{ .Values.pix.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.pix.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
+  BTG_OUTBOUND_MTLS_ENABLED: {{ .Values.pix.configmap.BTG_OUTBOUND_MTLS_ENABLED | default "false" | quote }}
+  CLIENT_TLS_CA_FILE: {{ .Values.pix.configmap.CLIENT_TLS_CA_FILE | default "" | quote }}
+  CLIENT_TLS_CERT_FILE: {{ .Values.pix.configmap.CLIENT_TLS_CERT_FILE | default "" | quote }}
+  CLIENT_TLS_KEY_FILE: {{ .Values.pix.configmap.CLIENT_TLS_KEY_FILE | default "" | quote }}
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

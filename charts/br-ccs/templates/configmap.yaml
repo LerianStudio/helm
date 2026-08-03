@@ -3,6 +3,7 @@
 {{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" (.Values.brCcs.multiTenant | default dict) "field" "enabled" "default" "false")) "true" }}
 {{- $pg := .Values.postgresql | default dict }}
 {{- $vk := .Values.valkey | default dict }}
+{{- $ds := .Values.brCcs.datastores | default dict }}
 {{- $pgInternal := and (ne (toString $pg.enabled) "false") (not $pg.external) }}
 {{- $vkInternal := and (ne (toString $vk.enabled) "false") (not $vk.external) }}
 {{- $namespace := include "global.namespace" . }}
@@ -69,15 +70,19 @@ data:
   # POSTGRESQL (primary + control-plane)
   # POSTGRES_HOST defaults to the bundled subchart primary Service.
   # =====================================================================
+  {{- /* HOST/PORT/USER/SSL derive from the datastore mask (brCcs.datastores.postgres
+     → global.datastores.postgres) with a component configmap.<KEY> override. When the
+     bundled subchart is enabled, HOST defaults to its primary Service DNS; when the
+     subchart is disabled (external infra) HOST is required (mask or native key). */ -}}
   {{- if $pgInternal }}
-  POSTGRES_HOST: {{ $cm.POSTGRES_HOST | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
   {{- else }}
-  POSTGRES_HOST: {{ required "brCcs.configmap.POSTGRES_HOST is required when the bundled postgresql subchart is disabled (external infra)" $cm.POSTGRES_HOST | quote }}
+  POSTGRES_HOST: {{ required "brCcs.configmap.POSTGRES_HOST (or brCcs.datastores.postgres.host / global.datastores.postgres.host) is required when the bundled postgresql subchart is disabled (external infra)" (include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST")) | quote }}
   {{- end }}
-  POSTGRES_PORT: {{ $cm.POSTGRES_PORT | default "5432" | quote }}
-  POSTGRES_USER: {{ $cm.POSTGRES_USER | default "br-ccs" | quote }}
+  POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "br-ccs") | quote }}
   POSTGRES_NAME: {{ $cm.POSTGRES_NAME | default "br-ccs" | quote }}
-  POSTGRES_SSLMODE: {{ $cm.POSTGRES_SSLMODE | default "require" | quote }}
+  POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
   MIGRATIONS_PATH: {{ $cm.MIGRATIONS_PATH | default "migrations" | quote }}
   SYSTEMPLANE_ENABLED: {{ $cm.SYSTEMPLANE_ENABLED | default "false" | quote }}
   POSTGRES_MAX_OPEN_CONNS: {{ $cm.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
@@ -86,8 +91,9 @@ data:
   POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ $cm.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
   POSTGRES_CONNECT_TIMEOUT_SEC: {{ $cm.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
   INFRA_CONNECT_TIMEOUT_SEC: {{ $cm.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
-  {{- if $cm.POSTGRES_REPLICA_HOST }}
-  POSTGRES_REPLICA_HOST: {{ $cm.POSTGRES_REPLICA_HOST | quote }}
+  {{- $replicaHost := include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST") }}
+  {{- if $replicaHost }}
+  POSTGRES_REPLICA_HOST: {{ $replicaHost | quote }}
   POSTGRES_REPLICA_PORT: {{ $cm.POSTGRES_REPLICA_PORT | default "5432" | quote }}
   POSTGRES_REPLICA_USER: {{ $cm.POSTGRES_REPLICA_USER | quote }}
   POSTGRES_REPLICA_NAME: {{ $cm.POSTGRES_REPLICA_NAME | quote }}
@@ -98,10 +104,13 @@ data:
   # REDIS / VALKEY (app-level)
   # REDIS_HOST is host:port; defaults to the bundled valkey primary Service.
   # =====================================================================
+  {{- /* HOST (host:port) derives from the datastore mask (brCcs.datastores.redis →
+     global.datastores.redis) with a component configmap.REDIS_HOST override. Bundled
+     subchart → default primary Service DNS; external → required. */ -}}
   {{- if $vkInternal }}
-  REDIS_HOST: {{ $cm.REDIS_HOST | default (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace) | quote }}
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace)) | quote }}
   {{- else }}
-  REDIS_HOST: {{ required "brCcs.configmap.REDIS_HOST is required when the bundled valkey subchart is disabled (external infra)" $cm.REDIS_HOST | quote }}
+  REDIS_HOST: {{ required "brCcs.configmap.REDIS_HOST (or brCcs.datastores.redis.host / global.datastores.redis.host) is required when the bundled valkey subchart is disabled (external infra)" (include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST")) | quote }}
   {{- end }}
   REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
   REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
@@ -133,10 +142,13 @@ data:
   {{- if eq (toString ($cm.RABBITMQ_ENABLED | default "false")) "true" }}
   {{- /* RABBITMQ_URL carries the password and is rendered as a Secret (see
          templates/secrets.yaml), never as a ConfigMap value. */}}
-  RABBITMQ_HOST: {{ $cm.RABBITMQ_HOST | default (printf "%s-rabbitmq.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
-  RABBITMQ_PORT_AMQP: {{ $cm.RABBITMQ_PORT_AMQP | default "5672" | quote }}
+  {{- /* HOST/PORT/USER derive from the datastore mask (brCcs.datastores.broker →
+     global.datastores.broker) with a component configmap.<KEY> override; HOST
+     defaults to the bundled subchart Service DNS. */}}
+  RABBITMQ_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" (printf "%s-rabbitmq.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
+  RABBITMQ_PORT_AMQP: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
   RABBITMQ_PORT_HOST: {{ $cm.RABBITMQ_PORT_HOST | default "15672" | quote }}
-  RABBITMQ_DEFAULT_USER: {{ $cm.RABBITMQ_DEFAULT_USER | default "br-ccs" | quote }}
+  RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "br-ccs") | quote }}
   RABBITMQ_VHOST: {{ $cm.RABBITMQ_VHOST | default "/" | quote }}
   RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "events" | quote }}
   RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: {{ $cm.RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS | default "false" | quote }}

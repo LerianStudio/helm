@@ -168,17 +168,19 @@ Inputs: context, secrets, secretName, valuesPrefix, mode,
 {{- $b64 := eq (.mode | default "stringData") "data" -}}
 {{- $ns := .context.Release.Namespace -}}
 {{- $lines := list -}}
-{{- /* STREAMING_SASL_USERNAME — required (with the password) whenever a SASL mechanism
-   is set; lib-streaming rejects a mechanism without BOTH credentials. The username is a
-   ConfigMap value (not a secret), resolved by the caller with the same precedence
-   (configmap.STREAMING_SASL_USERNAME -> global.streaming.saslUsername) and passed here so
-   the render fails fast instead of shipping a boot-crashing config. */ -}}
-{{- if and .saslMechanism (not .saslUsername) -}}
+{{- /* Normalize the mechanism EXACTLY like streaming.env's "is SASL on?" test:
+   `trim (toString (mechanism | default ""))`. This keeps the Secret and the ConfigMap
+   in agreement — otherwise a whitespace-only mechanism ("   ") is disabled by the
+   ConfigMap yet raw-truthy here, wrongly forcing STREAMING_SASL_USERNAME/PASSWORD; and a
+   YAML null/false collapses to "" (off) on both sides. Gate the credential requirements
+   on the normalized value; the fail messages still show the operator's original input. */ -}}
+{{- $mech := trim (toString (.saslMechanism | default "")) -}}
+{{- if and $mech (not .saslUsername) -}}
 {{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires both a username and a password.\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" .saslMechanism) -}}
 {{- end -}}
 {{- /* STREAMING_SASL_PASSWORD — required only when a SASL mechanism is set */ -}}
 {{- $sasl := index $s "STREAMING_SASL_PASSWORD" -}}
-{{- if and .saslMechanism (not $sasl) -}}
+{{- if and $mech (not $sasl) -}}
 {{- fail (printf "\n[lerian-common] Secret value required but empty: STREAMING_SASL_PASSWORD\n  set:     --set %sSTREAMING_SASL_PASSWORD=<value>   (or configure an existingSecret)\n  recover: kubectl get secret %s -n %s -o jsonpath=\"{.data.STREAMING_SASL_PASSWORD}\" | base64 -d\n" .valuesPrefix .secretName $ns) -}}
 {{- end -}}
 {{- if $sasl -}}

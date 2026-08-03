@@ -272,5 +272,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `1.3.4` |
+| `1.4.0` |
 -----------------

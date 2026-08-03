@@ -237,6 +237,15 @@ kubectl create secret generic btg-client-cert \
   -n <release-namespace>
 ```
 
+For the common cert + key only case (no CA), `kubectl create secret tls` is more idiomatic — it produces a `kubernetes.io/tls` Secret whose keys are already `tls.crt` / `tls.key` (matching the chart defaults):
+
+```bash
+kubectl create secret tls btg-client-cert \
+  --cert=/path/to/client.crt \
+  --key=/path/to/client.key \
+  -n <release-namespace>
+```
+
 2. Add the following to your custom values file:
 
 ```yaml
@@ -293,6 +302,11 @@ helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianst
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
+
+> The chart is published to both registries — use whichever you prefer:
+> `oci://ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-helm` or
+> `oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm`.
+> The commands in this guide use the Docker Hub mirror.
 
 ```bash
 helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.7.0 -n <release-namespace>

@@ -266,347 +266,69 @@ brCcs:
   affinity: {}
   # -- Host aliases for custom DNS resolution inside the pod
   hostAliases: []
-  # -- ConfigMap for environment variables and configurations
+  # -- Raw ConfigMap env-var escape hatch. The clean, grouped API lives in the
+  # brCcs.<group> blocks below (server, cors, postgres, redis, broker, outbox,
+  # fetcher, sta, reporter, swagger, rateLimit, pagination, observability, m2m,
+  # readiness, shutdown, objectStorage) — each key resolves via cfgValue:
+  #   brCcs.configmap.<NATIVE_KEY> (here) > brCcs.<group>.<field> > chart default.
+  # Set a raw NATIVE_KEY here only to override a value not exposed as a grouped
+  # field, or to pass an optional/opt-in key (e.g. SERVER_TLS_CERT_FILE,
+  # RABBITMQ_QUEUE, FETCHER_URL, *_OAUTH2_*, CCS_DETAIL_*). Defaults live in the
+  # template, so leaving this {} renders the documented defaults.
   # @default -- templates/configmap.yaml
-  configmap:
-    # =================================================================
-    # Application identity
-    # =================================================================
-    APPLICATION_NAME: "br-ccs"
-    ENV_NAME: "production"
-    VERSION: "1.0.0"
-    LOG_LEVEL: "info"
-    # DEPLOYMENT_MODE: local | byoc | saas. saas enforces TLS on all dependencies.
-    DEPLOYMENT_MODE: "byoc"
-    # CCS_RUN_MODE: manager | worker | all. "all" runs the HTTP API and the
-    # background workers in a single process (chart default: one deployment).
-    CCS_RUN_MODE: "all"
-    SERVER_ADDRESS: ":4030"
-    # SERVER_PORT is consumed by the in-container /healthcheck binary; keep it
-    # aligned with the port half of SERVER_ADDRESS.
-    SERVER_PORT: "4030"
-    GRPC_PORT: "7001"
-    HTTP_BODY_LIMIT_BYTES: "104857600"
-
-    # =================================================================
-    # CORS policy
-    # In production the validator rejects wildcard "*" and localhost origins.
-    # Override CORS_ALLOWED_ORIGINS with the public ingress hostname allowlist.
-    # =================================================================
-    CORS_ALLOWED_ORIGINS: ""
-    CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-    CORS_ALLOWED_HEADERS: "Authorization,Content-Type,X-Tenant-ID,X-Idempotency,X-Request-ID"
-    CORS_EXPOSE_HEADERS: ""
-    CORS_ALLOW_CREDENTIALS: "false"
-
-    # =================================================================
-    # TLS / proxy
-    # TRUSTED_PROXIES is REQUIRED when ENV_NAME=production (VPC + ingress CIDR;
-    # never 0.0.0.0/0). Fiber honours X-Forwarded-For only from these ranges.
-    # =================================================================
-    TLS_TERMINATED_UPSTREAM: "true"
-    TRUSTED_PROXIES: ""
-    # SERVER_TLS_CERT_FILE: ""
-    # SERVER_TLS_KEY_FILE: ""
-
-    # =================================================================
-    # Single-tenant defaults
-    # =================================================================
-    DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
-
-    # =================================================================
-    # Multi-tenancy (tenant-manager starter)
-    # Enable via brCcs.multiTenant.enabled (grouped API). URL + Redis infra
-    # come from global.multiTenant; the rest are emitted by
-    # lerian-common.multiTenant.env with the standard defaults shown below.
-    # Uncomment any key here to override per-service. MT infra endpoints only
-    # render when multi-tenancy is enabled.
-    # =================================================================
-    # MULTI_TENANT_ENABLED: "false"   # prefer brCcs.multiTenant.enabled
-    # MULTI_TENANT_URL: ""            # prefer global.multiTenant.url (required when MT on)
-    # MULTI_TENANT_REDIS_HOST: ""     # prefer global.multiTenant.redisHost (required when MT on)
-    # MULTI_TENANT_REDIS_PORT: "6379"     # prefer global.multiTenant.redisPort
-    # MULTI_TENANT_REDIS_TLS: "false"     # prefer global.multiTenant.redisTls
-    # MULTI_TENANT_MAX_TENANT_POOLS: "100"
-    # MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
-    # MULTI_TENANT_TIMEOUT: "30"
-    # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    # MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-    # MULTI_TENANT_CACHE_TTL_SEC: "120"
-    # MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
-
-    # =================================================================
-    # PostgreSQL (primary)
-    # HOST/PORT/USER/SSLMODE come from the datastore mask (brCcs.datastores.postgres
-    # → global.datastores.postgres); override per-service by uncommenting below.
-    # HOST defaults to "<release>-postgresql-primary.<ns>.svc.cluster.local".
-    # =================================================================
-    # POSTGRES_HOST: ""
-    # POSTGRES_PORT: "5432"
-    # POSTGRES_USER: "br-ccs"
-    # POSTGRES_SSLMODE: "require"
-    POSTGRES_NAME: "br-ccs"
-    MIGRATIONS_PATH: "migrations"
-    SYSTEMPLANE_ENABLED: "false"
-    POSTGRES_MAX_OPEN_CONNS: "25"
-    POSTGRES_MAX_IDLE_CONNS: "5"
-    POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
-    POSTGRES_CONN_MAX_IDLE_TIME_MINS: "5"
-    POSTGRES_CONNECT_TIMEOUT_SEC: "10"
-    INFRA_CONNECT_TIMEOUT_SEC: "30"
-    # PostgreSQL replica (optional — CQRS read scaling)
-    # POSTGRES_REPLICA_HOST: ""
-    # POSTGRES_REPLICA_PORT: "5432"
-    # POSTGRES_REPLICA_USER: ""
-    # POSTGRES_REPLICA_NAME: ""
-    # POSTGRES_REPLICA_SSLMODE: "require"
-
-    # =================================================================
-    # Redis / Valkey (app-level)
-    # REDIS_HOST defaults to "<release>-valkey-primary.<ns>.svc.cluster.local:6379"
-    # =================================================================
-    REDIS_DB: "0"
-    REDIS_PROTOCOL: "3"
-    REDIS_POOL_SIZE: "10"
-    REDIS_MIN_IDLE_CONNS: "2"
-    REDIS_READ_TIMEOUT: "3"
-    REDIS_WRITE_TIMEOUT: "3"
-    REDIS_DIAL_TIMEOUT: "5"
-    REDIS_POOL_TIMEOUT: "2"
-    REDIS_MAX_RETRIES: "3"
-    REDIS_MIN_RETRY_BACKOFF: "8"
-    REDIS_MAX_RETRY_BACKOFF: "1"
-    # REDIS_TLS: "false"
-    # REDIS_MASTER_NAME: ""
-
-    # =================================================================
-    # Event-Driven — Circuit Breaker (prerequisite for object storage)
-    # =================================================================
-    CIRCUIT_BREAKER_ENABLED: "true"
-
-    # =================================================================
-    # Event-Driven — RabbitMQ (optional, disabled by default)
-    # RABBITMQ_URL (full amqp:// dial string, carries credentials) is a SECRET —
-    # see brCcs.secrets.RABBITMQ_URL. When unset, the app builds the URL from
-    # RABBITMQ_HOST/PORT/USER/PASS.
-    # =================================================================
-    RABBITMQ_ENABLED: "false"
-    # HOST/PORT_AMQP/DEFAULT_USER come from the datastore mask
-    # (brCcs.datastores.broker → global.datastores.broker); override below if needed.
-    # RABBITMQ_HOST: ""
-    # RABBITMQ_PORT_AMQP: "5672"
-    # RABBITMQ_DEFAULT_USER: "br-ccs"
-    RABBITMQ_PORT_HOST: "15672"
-    RABBITMQ_VHOST: "/"
-    RABBITMQ_EXCHANGE: "events"
-    RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: "false"
-    RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: "false"
-    RABBITMQ_ALLOW_INSECURE_TLS: "false"
-    RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS: "5000"
-    RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS: "1000"
-    RABBITMQ_PUBLISHER_RECOVERY_MAX_MS: "30000"
-    RABBITMQ_PUBLISHER_MAX_RECOVERIES: "10"
-    CCS_STA_DLQ_TTL_SECONDS: "30"
-    # RABBITMQ_QUEUE: "br-ccs.events"
-    # RABBITMQ_HEALTH_CHECK_URL: ""
-    # RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS: ""
-
-    # =================================================================
-    # Event-Driven — Outbox
-    # =================================================================
-    OUTBOX_ENABLED: "false"
-    OUTBOX_TABLE_NAME: "outbox_events"
-    OUTBOX_DISPATCH_INTERVAL_SEC: "2"
-    OUTBOX_BATCH_SIZE: "50"
-    OUTBOX_PUBLISH_MAX_ATTEMPTS: "3"
-    OUTBOX_PUBLISH_BACKOFF_MS: "200"
-    OUTBOX_RETRY_WINDOW_SEC: "300"
-    OUTBOX_MAX_DISPATCH_ATTEMPTS: "10"
-    OUTBOX_PROCESSING_TIMEOUT_SEC: "600"
-    OUTBOX_MAX_FAILED_PER_BATCH: "25"
-    OUTBOX_INCLUDE_TENANT_METRICS: "false"
-    OUTBOX_ALLOW_EMPTY_TENANT: "true"
-    # OUTBOX_PRIORITY_EVENT_TYPES: ""
-
-    # =================================================================
-    # Fetcher integration (HTTP client + AMQP completion consumer)
-    # Master switch — when false the service boots without the Fetcher subsystem.
-    # =================================================================
-    FETCHER_ENABLED: "false"
-    # FETCHER_URL: ""
-    FETCHER_HTTP_TIMEOUT_SEC: "30"
-    CCS_OUTBOX_DISPATCH_INTERVAL_MS: "500"
-    CCS_OUTBOX_BATCH_SIZE: "50"
-    CCS_OUTBOX_MAX_ATTEMPTS: "10"
-    CCS_OUTBOX_DLQ_ROUTING_KEY: "ccs.outbox.dlq"
-
-    # =================================================================
-    # STA integration (HTTP client + outbox StaTransferSubmit handler)
-    # Master switch — independent from FETCHER_ENABLED.
-    # =================================================================
-    STA_ENABLED: "false"
-    # STA_BASE_URL: ""
-    STA_HTTP_TIMEOUT_SEC: "30"
-
-    # =================================================================
-    # Reporter integration (optional async render — HTTP outbox consumer)
-    # Master switch; REPORTER_URL is required only when REPORTER_ENABLED=true.
-    # =================================================================
-    REPORTER_ENABLED: "false"
-    # REPORTER_URL: ""
-    # REPORTER_HTTP_TIMEOUT_SEC: "30"
-
-    # =================================================================
-    # Authentication (lib-auth + plugin-auth)
-    # PLUGIN_AUTH_HOST is required when PLUGIN_AUTH_ENABLED=true.
-    # =================================================================
-    PLUGIN_AUTH_ENABLED: "false"
-    # PLUGIN_AUTH_HOST: ""
-
-    # =================================================================
-    # API Documentation (Swagger)
-    # =================================================================
-    SWAGGER_ENABLED: "true"
-    SWAGGER_TITLE: "br-ccs"
-    SWAGGER_VERSION: "1.0.0"
-    SWAGGER_BASE_PATH: "/"
-    SWAGGER_LEFT_DELIM: "{{"
-    SWAGGER_RIGHT_DELIM: "}}"
-    # SWAGGER_DESCRIPTION: ""
-
-    # =================================================================
-    # OpenTelemetry
-    # ENABLE_TELEMETRY, OTEL_EXPORTER_OTLP_ENDPOINT and
-    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT are env-wide: set them under
-    # global.observability (or override per-service by uncommenting below).
-    # OTEL identity (name/library) and SERVICE_VERSION are chart-derived
-    # (SERVICE_VERSION tracks image.tag | .Chart.AppVersion). Override any
-    # of them here only if you must pin a value.
-    # =================================================================
-    # ENABLE_TELEMETRY: "false"
-    # OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
-    # OTEL_LIBRARY_NAME: "br-ccs"
-    # OTEL_RESOURCE_SERVICE_NAME: "br-ccs"
-    # OTEL_RESOURCE_SERVICE_VERSION: "1.0.0"
-
-    # =================================================================
-    # Rate limiting
-    # =================================================================
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    EXPORT_RATE_LIMIT_MAX: "60"
-    EXPORT_RATE_LIMIT_WINDOW_SEC: "60"
-    DISPATCH_RATE_LIMIT_MAX: "30"
-    DISPATCH_RATE_LIMIT_WINDOW_SEC: "60"
-    # Security posture: leave empty to keep the safe fail-closed default. Set to
-    # "true" only to permit fail-open (the limiter passes traffic through when
-    # Redis is unreachable). To disable enforcement entirely, use
-    # RATE_LIMIT_ENABLED=false above — ALLOW_RATELIMIT_DISABLED was removed in
-    # lib-commons v5.8.0 and is no longer read.
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
-
-    # =================================================================
-    # Observability & metrics
-    # =================================================================
-    DB_METRICS_INTERVAL_SEC: "15"
-
-    # =================================================================
-    # Idempotency
-    # =================================================================
-    IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
-
-    # =================================================================
-    # M2M credentials (per-upstream — target service / OAuth2 URL / scope).
-    # The *_API_KEY on-prem fallbacks live in brCcs.secrets. AWS Secrets
-    # Manager paths are used in SaaS mode.
-    # =================================================================
-    M2M_CREDENTIAL_CACHE_TTL_SEC: "300"
-    AWS_REGION: "us-east-1"
-    # FETCHER_M2M_TARGET_SERVICE: "fetcher"
-    # FETCHER_OAUTH2_TOKEN_URL: ""
-    # FETCHER_OAUTH2_SCOPE: ""
-    # REPORTER_M2M_TARGET_SERVICE: "reporter"
-    # REPORTER_OAUTH2_TOKEN_URL: ""
-    # REPORTER_OAUTH2_SCOPE: ""
-    # STA_M2M_TARGET_SERVICE: "sta"
-    # STA_OAUTH2_TOKEN_URL: ""
-    # STA_OAUTH2_SCOPE: ""
-
-    # =================================================================
-    # Detail response tuning (all optional — BACEN-inferred defaults apply)
-    # =================================================================
-    # CCS_DETAIL_MESSAGE_EMIT_ENABLED: "false"
-    # CCS_DETAIL_MESSAGE_VALIDATION_ENABLED: "false"
-    # CCS_BACEN_DESTINATARIO_CNPJ_BASE: "00000000"
-    # CCS_ACCS005_OVERFLOW_THRESHOLD: "30720"
-    # CCS_ACCS005_SECRECY_SITUACAO: "01"
-
-    # =================================================================
-    # Fetcher snapshot quarantine (optional — br-ccs-140 Phase 2)
-    # Opt-in: skip + classify invalid CRM records instead of aborting the
-    # whole batch. MAX_INVALID_RATIO is the invalid/total ceiling in [0,1]
-    # above which the batch fails HIGH even with quarantine on. Unset keeps
-    # the app default (disabled; ceiling 0.05 / fail-closed). Enable only on
-    # ST test tiers that tolerate other users' invalid data.
-    # =================================================================
-    # CCS_SNAPSHOT_QUARANTINE_INVALID_ENABLED: "false"
-    # CCS_SNAPSHOT_QUARANTINE_MAX_INVALID_RATIO: "0.05"
-
-    # =================================================================
-    # Pagination
-    # =================================================================
-    MAX_PAGINATION_LIMIT: "100"
-    MAX_PAGINATION_MONTH_DATE_RANGE: "3"
-
-    # =================================================================
-    # Readiness probe (canonical /readyz handler — PROJECT_RULES §13.4)
-    # =================================================================
-    READYZ_PROBE_TIMEOUT_SEC: "5"
-    READYZ_DEP_SLOW_THRESHOLD_MS: "500"
-    STARTUP_SELF_PROBE_MAX_DURATION_SEC: "120"
-    STARTUP_SELF_PROBE_INITIAL_DELAY_MS: "1000"
-    STARTUP_SELF_PROBE_MAX_DELAY_MS: "30000"
-
-    # =================================================================
-    # Graceful shutdown (PROJECT_RULES §13)
-    # =================================================================
-    SHUTDOWN_DRAIN_GRACE_PERIOD_SEC: "15"
-    SHUTDOWN_TOTAL_TIMEOUT_SEC: "30"
-
-    # =================================================================
-    # Object storage — three distinct S3-compatible buckets.
-    # Endpoints/region/bucket/flags are non-secret; access + secret keys
-    # live in brCcs.secrets. Empty *_BUCKET marks that /readyz dep skipped.
-    # =================================================================
-    SEAWEEDFS_S3_PORT: "8342"
-    SEAWEEDFS_MASTER_PORT: "9343"
-    # STA inbound (read-only)
-    OBJECT_STORAGE_STA_ENDPOINT: ""
-    OBJECT_STORAGE_STA_REGION: "us-east-1"
-    OBJECT_STORAGE_STA_BUCKET: "sta-files"
-    OBJECT_STORAGE_STA_USE_PATH_STYLE: "true"
-    OBJECT_STORAGE_STA_DISABLE_SSL: "true"
-    # CCS outbound (write)
-    OBJECT_STORAGE_CCS_ENDPOINT: ""
-    OBJECT_STORAGE_CCS_REGION: "us-east-1"
-    OBJECT_STORAGE_CCS_BUCKET: "lerian-ccs"
-    OBJECT_STORAGE_CCS_USE_PATH_STYLE: "true"
-    OBJECT_STORAGE_CCS_DISABLE_SSL: "true"
-    # Fetcher snapshot (read-only)
-    OBJECT_STORAGE_FETCHER_ENDPOINT: ""
-    OBJECT_STORAGE_FETCHER_REGION: "us-east-1"
-    OBJECT_STORAGE_FETCHER_BUCKET: "lerian-fetcher"
-    OBJECT_STORAGE_FETCHER_USE_PATH_STYLE: "true"
-    OBJECT_STORAGE_FETCHER_DISABLE_SSL: "true"
-    # Retention windows
-    CCS_OUTBOUND_RETENTION_DAYS: "30"
-    CCS_ACCS009_RETENTION_DAYS: "30"
+  configmap: {}
+  # -- Application identity: name / env / version / logLevel / deploymentMode / runMode
+  app: {}
+  # -- HTTP server: address / port / grpcPort / bodyLimitBytes / tlsTerminatedUpstream / trustedProxies
+  server: {}
+  # -- CORS: allowedOrigins / allowedMethods / allowedHeaders / exposeHeaders / allowCredentials
+  cors: {}
+  # -- PostgreSQL tuning (host/port/user/ssl come from datastores): name / migrationsPath /
+  #    systemplaneEnabled / maxOpenConns / maxIdleConns / connMaxLifetimeMins / connMaxIdleTimeMins /
+  #    connectTimeoutSec / infraConnectTimeoutSec
+  postgres: {}
+  # -- Redis tuning (host from datastores): db / protocol / poolSize / minIdleConns / readTimeout /
+  #    writeTimeout / dialTimeout / poolTimeout / maxRetries / minRetryBackoff / maxRetryBackoff
+  redis: {}
+  # -- RabbitMQ (host/port/user from datastores): enabled / circuitBreakerEnabled / portHost / vhost /
+  #    exchange / requireHealthAllowedHosts / allowInsecureHealthCheck / allowInsecureTls /
+  #    publisherConfirmTimeoutMs / publisherRecoveryInitialMs / publisherRecoveryMaxMs /
+  #    publisherMaxRecoveries / staDlqTtlSeconds
+  broker: {}
+  # -- Outbox: enabled / tableName / dispatchIntervalSec / batchSize / publishMaxAttempts /
+  #    publishBackoffMs / retryWindowSec / maxDispatchAttempts / processingTimeoutSec /
+  #    maxFailedPerBatch / includeTenantMetrics / allowEmptyTenant
+  outbox: {}
+  # -- Fetcher integration: enabled / httpTimeoutSec / ccsOutboxDispatchIntervalMs /
+  #    ccsOutboxBatchSize / ccsOutboxMaxAttempts / ccsOutboxDlqRoutingKey
+  fetcher: {}
+  # -- STA integration: enabled / httpTimeoutSec
+  sta: {}
+  # -- Reporter integration: enabled / httpTimeoutSec
+  reporter: {}
+  # -- Swagger: enabled / title / version / basePath / leftDelim / rightDelim
+  swagger: {}
+  # -- Rate limiting: enabled / max / windowSec / aggressiveMax / aggressiveWindowSec /
+  #    relaxedMax / relaxedWindowSec / exportMax / exportWindowSec / dispatchMax /
+  #    dispatchWindowSec / allowFailOpen
+  rateLimit: {}
+  # -- Pagination: limit / monthDateRange
+  pagination: {}
+  # -- Observability: dbMetricsIntervalSec / idempotencyRetryWindowSec
+  observability: {}
+  # -- M2M (non-secret): credentialCacheTtlSec / awsRegion
+  m2m: {}
+  # -- Readiness / startup probes: probeTimeoutSec / depSlowThresholdMs / startupMaxDurationSec /
+  #    startupInitialDelayMs / startupMaxDelayMs
+  readiness: {}
+  # -- Graceful shutdown: drainGracePeriodSec / totalTimeoutSec
+  shutdown: {}
+  # -- Object storage (non-secret): seaweedfsS3Port / seaweedfsMasterPort / {sta,ccs,fetcher}{Endpoint,
+  #    Region,Bucket,UsePathStyle,DisableSsl} / outboundRetentionDays / accs009RetentionDays
+  objectStorage:
+    staBucket: "sta-files"
+    ccsBucket: "lerian-ccs"
+    fetcherBucket: "lerian-fetcher"
 
   # -- Secrets for storing sensitive data. Provide real values via an existing
   # Secret (useExistingSecret) or a secrets manager — NEVER commit real values.

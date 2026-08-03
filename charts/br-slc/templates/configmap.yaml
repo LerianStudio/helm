@@ -1,3 +1,22 @@
+{{- $cm := .Values.configmap.data | default dict -}}
+{{- $ds := .Values.datastores | default dict -}}
+{{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" (.Values.multiTenant | default dict) "field" "enabled" "default" "false")) "true" -}}
+{{- /* Keys single-sourced through the lerian-common helpers below (multiTenant.env,
+   otel.env/envFlat, datastore.value) — excluded from the generic passthrough range
+   so they are never double-emitted. Everything else in configmap.data still passes
+   through unchanged. */ -}}
+{{- $managed := dict -}}
+{{- range $k := (list
+      "POSTGRES_HOST" "POSTGRES_PORT" "POSTGRES_USER" "POSTGRES_SSLMODE"
+      "REDIS_HOST" "RABBITMQ_HOST" "RABBITMQ_PORT_AMQP" "RABBITMQ_DEFAULT_USER"
+      "MULTI_TENANT_ENABLED" "MULTI_TENANT_URL" "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS"
+      "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC" "MULTI_TENANT_TIMEOUT"
+      "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
+      "MULTI_TENANT_CACHE_TTL_SEC" "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC"
+      "ENABLE_TELEMETRY" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_NAME" "OTEL_RESOURCE_SERVICE_VERSION"
+      "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT") -}}
+{{- $_ := set $managed $k true -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,6 +26,54 @@ metadata:
 data:
   WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC: {{ .Values.webhookNotificationsCacheTtlSec | default "60" | quote }}
   WEBHOOK_HMAC_SECRET_FILE: {{ .Values.webhookHmacSecretFile | default "" | quote }}
-  {{- range $key, $value := .Values.configmap.data }}
+  {{- /* Generic passthrough (configmap.data). Keys handled by the lerian-common
+     helpers below are excluded so each is single-sourced. */ -}}
+  {{- range $key, $value := $cm }}
+  {{- if not (hasKey $managed $key) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  {{- end }}
+
+  # =====================================================================
+  # MULTI-TENANCY (lerian-common.multiTenant.env). Toggle via
+  # .Values.multiTenant.enabled; URL + Redis infra from global.multiTenant.
+  # MT infra keys render only when enabled; URL/REDIS_HOST required then.
+  # =====================================================================
+  MULTI_TENANT_ENABLED: {{ $multiTenantEnabled | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict
+        "context" $ "configmap" $cm "enabled" $multiTenantEnabled
+        "emitRedis" true "emitPool" true "emitCache" true
+        "requiredUrl" true "requiredRedisHost" true) | nindent 2 }}
+
+  # =====================================================================
+  # OPENTELEMETRY. Shared keys (ENABLE_TELEMETRY / OTLP endpoint /
+  # deployment-environment) derive from global.observability with a
+  # configmap.<KEY> override; identity (name/library/version) per-service.
+  # =====================================================================
+  {{- include "lerian-common.otel.env" (dict
+        "context" $ "configmap" $cm
+        "enabledDefault" "true"
+        "endpointDefault" "otel-collector-lerian:4317"
+        "deploymentEnvironmentDefault" "production") | nindent 2 }}
+  {{- include "lerian-common.otel.envFlat" (dict
+        "configmap" $cm
+        "keys" (list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION")
+        "defaults" (dict
+          "OTEL_RESOURCE_SERVICE_NAME" "br-slc"
+          "OTEL_LIBRARY_NAME" "br-slc"
+          "OTEL_RESOURCE_SERVICE_VERSION" "1.0.0")) | nindent 2 }}
+
+  # =====================================================================
+  # DATASTORES (external / client-managed in BYOC). HOST/PORT/USER/SSL from
+  # the datastore mask (.datastores.<type> → global.datastores.<type>) with a
+  # configmap.<KEY> override. No bundled subcharts, so no DNS derivation —
+  # POSTGRES_HOST / REDIS_HOST default "" (operator must set).
+  # =====================================================================
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" "") | quote }}
+  POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "br-slc") | quote }}
+  POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "") | quote }}
+  RABBITMQ_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "localhost") | quote }}
+  RABBITMQ_PORT_AMQP: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
+  RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "guest") | quote }}

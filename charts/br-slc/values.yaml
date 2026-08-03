@@ -17,6 +17,52 @@ nameOverride: ""
 fullnameOverride: ""
 namespaceOverride: ""
 
+# ---------------------------------------------------------------------------
+# Env-wide config consumed by the lerian-common helpers (grouped/global API).
+# Declare cross-product concerns ONCE here; a raw configmap.data.<KEY> still
+# overrides per-service. Precedence everywhere:
+#   configmap.data.<KEY> > (dedicated) datastores.<type> > global.<...> > default.
+# ---------------------------------------------------------------------------
+global:
+  # -- Observability (lerian-common.otel.env). br-slc defaults telemetry ON.
+  observability:
+    # -- ENABLE_TELEMETRY
+    enabled: true
+    # -- OTEL_EXPORTER_OTLP_ENDPOINT
+    otlpEndpoint: "otel-collector-lerian:4317"
+    # -- OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
+    deploymentEnvironment: "production"
+  # -- Multi-tenant infra (tenant-manager URL + its Redis), used only when MT is
+  # enabled (see .multiTenant.enabled). Empty ({}) → native-key / chart defaults.
+  multiTenant: {}
+    # url: ""             # MULTI_TENANT_URL (required when MT enabled)
+    # redisHost: ""       # MULTI_TENANT_REDIS_HOST (required when MT enabled)
+    # redisPort: "6379"   # MULTI_TENANT_REDIS_PORT
+    # redisTls: "false"   # MULTI_TENANT_REDIS_TLS
+  # -- Shared datastore mask. A DEDICATED per-service instance goes under the
+  # top-level `datastores:` key. Empty ({}) → native-key / chart defaults.
+  datastores: {}
+    # postgres:
+    #   host: ""          # POSTGRES_HOST (external in BYOC; operator must set)
+    #   port: "5432"      # POSTGRES_PORT
+    #   user: "br-slc"    # POSTGRES_USER
+    #   ssl: "require"    # POSTGRES_SSLMODE
+    # redis:
+    #   host: ""          # REDIS_HOST (host:port; external in BYOC)
+    # broker:
+    #   host: "localhost" # RABBITMQ_HOST
+    #   port: "5672"      # RABBITMQ_PORT_AMQP
+    #   user: "guest"     # RABBITMQ_DEFAULT_USER
+# -- Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). URL + Redis
+# infra come from global.multiTenant (or configmap.data.MULTI_TENANT_*).
+# Precedence: configmap.data.MULTI_TENANT_ENABLED > multiTenant.enabled > "false".
+multiTenant:
+  # -- Enable multi-tenancy (MULTI_TENANT_ENABLED)
+  enabled: false
+# -- Dedicated datastore mask for THIS service (same fields as global.datastores;
+# wins over global, loses to configmap.data.<KEY>). Empty ({}) keeps defaults.
+datastores: {}
+
 # Non-secret app config emitted into the app ConfigMap but kept OUT of
 # configmap.data because their env-var names contain the substring "_token_"
 # (a PKCS11 token label and a token-cache TTL — neither is a credential),
@@ -236,24 +282,32 @@ configmap:
     ALLOW_RATELIMIT_FAIL_OPEN: "false"
 
     # --- Multi-Tenant Starter (tenant-manager) --- single-tenant BYOC: off.
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_REDIS_PORT: "6379"
-    MULTI_TENANT_REDIS_TLS: "false"
-    MULTI_TENANT_MAX_TENANT_POOLS: "100"
-    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
-    MULTI_TENANT_TIMEOUT: "30"
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-    MULTI_TENANT_CACHE_TTL_SEC: "120"
-    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+    # Enable via .multiTenant.enabled (grouped API). URL + Redis infra come from
+    # global.multiTenant; the rest are emitted by lerian-common.multiTenant.env
+    # with the standard defaults shown below (only when enabled). Uncomment to
+    # override per-service.
+    # MULTI_TENANT_ENABLED: "false"   # prefer .multiTenant.enabled
+    # MULTI_TENANT_URL: ""            # prefer global.multiTenant.url (required when MT on)
+    # MULTI_TENANT_REDIS_HOST: ""     # prefer global.multiTenant.redisHost (required when MT on)
+    # MULTI_TENANT_REDIS_PORT: "6379"     # prefer global.multiTenant.redisPort
+    # MULTI_TENANT_REDIS_TLS: "false"     # prefer global.multiTenant.redisTls
+    # MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    # MULTI_TENANT_TIMEOUT: "30"
+    # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    # MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # MULTI_TENANT_CACHE_TTL_SEC: "120"
+    # MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
 
     # --- PostgreSQL Primary Database --- EXTERNAL/client-managed in BYOC.
     # ASSUMPTION: POSTGRES_HOST is left empty — MUST be overridden with the
     # real Postgres endpoint before deploy (this chart does not ship a
     # postgresql subchart dependency per Task 6.0.1 scope).
-    POSTGRES_HOST: ""
-    POSTGRES_PORT: "5432"
-    POSTGRES_USER: "br-slc"
+    # HOST/PORT/USER/SSLMODE come from the datastore mask (datastores.postgres →
+    # global.datastores.postgres); override per-service by uncommenting below.
+    # POSTGRES_HOST: ""
+    # POSTGRES_PORT: "5432"
+    # POSTGRES_USER: "br-slc"
     POSTGRES_NAME: "br-slc"
     # Hardened DEVIATION from .env.example's dev default (disable):
     # config_validation.go's validateProductionConfig REJECTS
@@ -261,7 +315,8 @@ configmap:
     # default must not be "disable". "require" verifies encryption without
     # requiring a client-supplied CA bundle; tighten to verify-full once the
     # client's Postgres cert chain is known.
-    POSTGRES_SSLMODE: "require"
+    # POSTGRES_SSLMODE via datastore mask (default "require"); uncomment to override.
+    # POSTGRES_SSLMODE: "require"
     MIGRATIONS_PATH: "migrations"
     SYSTEMPLANE_ENABLED: "false"
     TENANT_RUNTIME_CONFIG_ENABLED: "false"
@@ -276,7 +331,9 @@ configmap:
 
     # --- Redis --- EXTERNAL/client-managed in BYOC (used regardless of
     # MULTI_TENANT_ENABLED — idempotency/cache). MUST override REDIS_HOST.
-    REDIS_HOST: ""
+    # REDIS_HOST via datastore mask (datastores.redis → global.datastores.redis);
+    # external in BYOC, operator must set. Uncomment to override.
+    # REDIS_HOST: ""
     REDIS_DB: "0"
     REDIS_PROTOCOL: "3"
     REDIS_POOL_SIZE: "10"
@@ -301,10 +358,12 @@ configmap:
     # must not live in a ConfigMap; empty by default, operator injects if
     # RabbitMQ is ever enabled for real in an overlay).
     RABBITMQ_ENABLED: "false"
-    RABBITMQ_HOST: "localhost"
-    RABBITMQ_PORT_AMQP: "5672"
+    # HOST/PORT_AMQP/DEFAULT_USER come from the datastore mask
+    # (datastores.broker → global.datastores.broker); override below if needed.
+    # RABBITMQ_HOST: "localhost"
+    # RABBITMQ_PORT_AMQP: "5672"
     RABBITMQ_PORT_HOST: "15672"
-    RABBITMQ_DEFAULT_USER: "guest"
+    # RABBITMQ_DEFAULT_USER: "guest"
     RABBITMQ_VHOST: "/"
     RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: "false"
     RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: "false"
@@ -352,12 +411,17 @@ configmap:
     # named "otel-collector-lerian" (the -helm-suffix-exception chart per
     # ring:helm conventions) on the standard OTLP gRPC port; reconcile with the
     # client's actual collector Service/release name in the beleriand overlay.
-    ENABLE_TELEMETRY: "true"
-    OTEL_LIBRARY_NAME: "br-slc"
-    OTEL_RESOURCE_SERVICE_NAME: "br-slc"
-    OTEL_RESOURCE_SERVICE_VERSION: "1.0.0"
-    OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector-lerian:4317"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    # ENABLE_TELEMETRY, OTEL_EXPORTER_OTLP_ENDPOINT and
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT are env-wide: set them under
+    # global.observability (br-slc defaults telemetry ON with the collector
+    # endpoint below). OTEL identity (name/library/version) is chart-derived.
+    # Uncomment any key here to override per-service.
+    # ENABLE_TELEMETRY: "true"
+    # OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector-lerian:4317"
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    # OTEL_LIBRARY_NAME: "br-slc"
+    # OTEL_RESOURCE_SERVICE_NAME: "br-slc"
+    # OTEL_RESOURCE_SERVICE_VERSION: "1.0.0"
     DB_METRICS_INTERVAL_SEC: "15"
 
     # --- Rate Limiting ---

@@ -231,13 +231,23 @@ data:
 
   # =====================================================================
   # OPENTELEMETRY
+  # ENABLE_TELEMETRY + OTLP endpoint + deployment-environment derive from
+  # global.observability (env-wide) with a component configmap.<KEY> override
+  # (defaults keep the pre-contract render byte-identical). OTEL identity
+  # (name/library/version) stays per-component.
   # =====================================================================
-  ENABLE_TELEMETRY: {{ $cm.ENABLE_TELEMETRY | default "false" | quote }}
-  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "br-ccs" | quote }}
-  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "br-ccs" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default (.Values.brCcs.image.tag | default .Chart.AppVersion) | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ $cm.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+  {{- include "lerian-common.otel.env" (dict
+        "context" $ "configmap" $cm
+        "enabledDefault" "false"
+        "endpointDefault" ""
+        "deploymentEnvironmentDefault" "production") | nindent 2 }}
+  {{- include "lerian-common.otel.envFlat" (dict
+        "configmap" $cm
+        "keys" (list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION")
+        "defaults" (dict
+          "OTEL_RESOURCE_SERVICE_NAME" "br-ccs"
+          "OTEL_LIBRARY_NAME" "br-ccs"
+          "OTEL_RESOURCE_SERVICE_VERSION" (.Values.brCcs.image.tag | default .Chart.AppVersion))) | nindent 2 }}
 
   # =====================================================================
   # RATE LIMITING

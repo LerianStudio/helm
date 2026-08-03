@@ -69,6 +69,16 @@ global:
         name: ""
       # -- Password for the br-ccs user (ignored if useExistingSecret.name is set)
       password: ""
+  # -- Env-wide observability, consumed by lerian-common.otel.env. Declare once at
+  # the umbrella level; a component brCcs.configmap.<KEY> still overrides per-service.
+  # Precedence: brCcs.configmap.<KEY> > global.observability.<field> > chart default.
+  observability:
+    # -- Enable telemetry export (ENABLE_TELEMETRY). Unset → chart default "false".
+    enabled: false
+    # -- OTLP collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT). Unset → chart default "".
+    otlpEndpoint: ""
+    # -- Deployment environment tag (OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT). Unset → "production".
+    deploymentEnvironment: "production"
 brCcs:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -419,13 +429,19 @@ brCcs:
 
     # =================================================================
     # OpenTelemetry
+    # ENABLE_TELEMETRY, OTEL_EXPORTER_OTLP_ENDPOINT and
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT are env-wide: set them under
+    # global.observability (or override per-service by uncommenting below).
+    # OTEL identity (name/library) and SERVICE_VERSION are chart-derived
+    # (SERVICE_VERSION tracks image.tag | .Chart.AppVersion). Override any
+    # of them here only if you must pin a value.
     # =================================================================
-    ENABLE_TELEMETRY: "false"
-    OTEL_LIBRARY_NAME: "br-ccs"
-    OTEL_RESOURCE_SERVICE_NAME: "br-ccs"
-    OTEL_RESOURCE_SERVICE_VERSION: "1.0.0"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    # ENABLE_TELEMETRY: "false"
+    # OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    # OTEL_LIBRARY_NAME: "br-ccs"
+    # OTEL_RESOURCE_SERVICE_NAME: "br-ccs"
+    # OTEL_RESOURCE_SERVICE_VERSION: "1.0.0"
 
     # =================================================================
     # Rate limiting

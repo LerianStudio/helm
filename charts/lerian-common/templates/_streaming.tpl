@@ -57,7 +57,7 @@ global.streaming (all optional except brokers, which gates emission):
 {{- if and .enabled (or $s.brokers (hasKey $c "STREAMING_BROKERS")) -}}
 {{- $brokers := $s.brokers -}}{{- if hasKey $c "STREAMING_BROKERS" -}}{{- $brokers = index $c "STREAMING_BROKERS" -}}{{- end -}}
 {{- $tlsEnabled := ($s.tlsEnabled | default false) -}}{{- if hasKey $c "STREAMING_TLS_ENABLED" -}}{{- $tlsEnabled = index $c "STREAMING_TLS_ENABLED" -}}{{- end -}}
-{{- $saslMechanism := ($s.saslMechanism | default "") -}}{{- if hasKey $c "STREAMING_SASL_MECHANISM" -}}{{- $saslMechanism = (index $c "STREAMING_SASL_MECHANISM" | default "") -}}{{- end -}}
+{{- $saslMechanism := $s.saslMechanism -}}{{- if hasKey $c "STREAMING_SASL_MECHANISM" -}}{{- $saslMechanism = index $c "STREAMING_SASL_MECHANISM" -}}{{- end -}}{{- if kindIs "invalid" $saslMechanism -}}{{- $saslMechanism = "" -}}{{- end -}}
 {{- $saslUsername := ($s.saslUsername | default "") -}}{{- if hasKey $c "STREAMING_SASL_USERNAME" -}}{{- $saslUsername = (index $c "STREAMING_SASL_USERNAME" | default "") -}}{{- end -}}
 {{- $saslAllowPlaintext := ($s.saslAllowPlaintext | default "false") -}}{{- if hasKey $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- $saslAllowPlaintext = index $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- end -}}
 {{- $compression := ($s.compression | default "lz4") -}}{{- if hasKey $c "STREAMING_COMPRESSION" -}}{{- $compression = index $c "STREAMING_COMPRESSION" -}}{{- end -}}
@@ -73,14 +73,16 @@ global.streaming (all optional except brokers, which gates emission):
    TrimSpace'd, and an all-whitespace value means "no SASL" (disabled). The booleans
    follow strconv.ParseBool (case-insensitive true/1/t). Validate on the normalized
    values so a valid lowercase/whitespace-padded config is not falsely rejected. */ -}}
-{{- /* `| default ""` coerces an explicit null override (configmap.STREAMING_SASL_* : ~)
-   before toString — otherwise sprig renders nil as the literal "<nil>", which would make a
-   null mechanism look "unsupported" and a null username pass the non-empty check. */ -}}
-{{- $saslMechNorm := upper (trim (toString ($saslMechanism | default ""))) -}}
+{{- /* NIL-ONLY coercion for the mechanism (resolved above): a YAML null becomes ""
+   (SASL off) so toString does not render the literal "<nil>", but a NON-null non-string
+   like a YAML false / 0 is PRESERVED so toString gives "false"/"0" → it fails the allowlist
+   below instead of sprig `default` silently collapsing it to "" (which would DISABLE SASL —
+   an auth downgrade). Whitespace/case are handled by trim/upper. */ -}}
+{{- $saslMechNorm := upper (trim (toString $saslMechanism)) -}}
 {{- if $saslMechNorm -}}
 {{- $allowedSasl := list "PLAIN" "SCRAM-SHA-256" "SCRAM-SHA-512" -}}
 {{- if not (has $saslMechNorm $allowedSasl) -}}
-{{- fail (printf "\n[lerian-common] Unsupported STREAMING_SASL_MECHANISM %q — lib-streaming accepts only PLAIN, SCRAM-SHA-256, SCRAM-SHA-512 (case-insensitive).\n" $saslMechanism) -}}
+{{- fail (printf "\n[lerian-common] Unsupported STREAMING_SASL_MECHANISM %q — lib-streaming accepts only PLAIN, SCRAM-SHA-256, SCRAM-SHA-512 (case-insensitive).\n" (toString $saslMechanism)) -}}
 {{- end -}}
 {{- if not (trim (toString ($saslUsername | default ""))) -}}
 {{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires a username (and a password).\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" $saslMechanism) -}}

@@ -142,13 +142,13 @@ If you do not need client mTLS for BTG API calls, no action is required. The upg
 3. Verify all pods are running and healthy after the upgrade.
 
 ```bash
-kubectl get pods -n plugin-br-pix-indirect-btg
+kubectl get pods -n <release-namespace>
 ```
 
 4. Check service logs for any startup errors.
 
 ```bash
-kubectl logs -n plugin-br-pix-indirect-btg -l app.kubernetes.io/name=plugin-br-pix-indirect-btg --tail=50
+kubectl logs -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg --tail=50
 ```
 
 > **Note:** The upgrade triggers a rolling restart of all five deployments (`pix`, `inbound`, `outbound`, `reconciliation`, `schedule`) because the application version changes from `1.8.0` to `1.9.0`. Depending on your replica count, this may cause brief service interruptions.
@@ -196,27 +196,27 @@ mtls:
 5. Run the upgrade command with your custom values file:
 
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.7.0 -n plugin-br-pix-indirect-btg -f custom-values.yaml
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.7.0 -n <release-namespace> -f custom-values.yaml
 ```
 
 6. Verify the Secret was created:
 
 ```bash
-kubectl get secret -n plugin-br-pix-indirect-btg -l app.kubernetes.io/name=plugin-br-pix-indirect-btg
+kubectl get secret -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg
 ```
 
 7. Verify the `pix` and `reconciliation` pods are running and have the certificate volume mounted:
 
 ```bash
-kubectl describe pod -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=pix
-kubectl describe pod -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=reconciliation
+kubectl describe pod -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg
+kubectl describe pod -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg-worker-reconciliation
 ```
 
 8. Check the logs for successful certificate loading:
 
 ```bash
-kubectl logs -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=pix --tail=50
-kubectl logs -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=reconciliation --tail=50
+kubectl logs -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg --tail=50
+kubectl logs -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg-worker-reconciliation --tail=50
 ```
 
 > **Warning:** The certificate and key are stored in the Helm release values. If you use a GitOps tool, ensure the values file is encrypted (e.g., using SOPS, Sealed Secrets, or a secret management tool like ArgoCD Vault Plugin).
@@ -234,7 +234,7 @@ kubectl create secret generic btg-client-cert \
   --from-file=tls.crt=/path/to/client.crt \
   --from-file=tls.key=/path/to/client.key \
   --from-file=ca.crt=/path/to/ca.crt \
-  -n plugin-br-pix-indirect-btg
+  -n <release-namespace>
 ```
 
 2. Add the following to your custom values file:
@@ -260,34 +260,34 @@ mtls:
 5. Run the upgrade command with your custom values file:
 
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.7.0 -n plugin-br-pix-indirect-btg -f custom-values.yaml
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.7.0 -n <release-namespace> -f custom-values.yaml
 ```
 
 6. Verify the `pix` and `reconciliation` pods are running and have the certificate volume mounted:
 
 ```bash
-kubectl describe pod -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=pix
-kubectl describe pod -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=reconciliation
+kubectl describe pod -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg
+kubectl describe pod -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg-worker-reconciliation
 ```
 
 7. Check the logs for successful certificate loading:
 
 ```bash
-kubectl logs -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=pix --tail=50
-kubectl logs -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=reconciliation --tail=50
+kubectl logs -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg --tail=50
+kubectl logs -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg-worker-reconciliation --tail=50
 ```
 
 > **Important:** When using an externally-managed Secret, rotating the certificate does **not** automatically trigger a pod rollout. You must manually restart the pods after updating the Secret:
 
 ```bash
-kubectl rollout restart deployment -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=pix
-kubectl rollout restart deployment -n plugin-br-pix-indirect-btg -l app.kubernetes.io/component=reconciliation
+kubectl rollout restart deployment -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg
+kubectl rollout restart deployment -n <release-namespace> -l app.kubernetes.io/name=plugin-br-pix-indirect-btg-worker-reconciliation
 ```
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.7.0 -n plugin-br-pix-indirect-btg
+helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.7.0 -n <release-namespace>
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -295,5 +295,5 @@ helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianst
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.7.0 -n plugin-br-pix-indirect-btg
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.7.0 -n <release-namespace>
 ```

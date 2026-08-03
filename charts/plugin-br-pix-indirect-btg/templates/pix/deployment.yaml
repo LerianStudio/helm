@@ -11,7 +11,9 @@ spec:
   revisionHistoryLimit: {{ .Values.pix.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.pix.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.pix.autoscaling.enabled }}
   replicas: {{ .Values.pix.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-br-pix-indirect-btg.selectorLabels" (dict "context" . "name" .Values.pix.name) | nindent 6 }}

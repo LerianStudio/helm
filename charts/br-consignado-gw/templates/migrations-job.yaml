@@ -1,0 +1,104 @@
+{{- if .Values.migrations.enabled }}
+{{- if not .Values.api.enabled }}{{ fail "migrations.enabled requires api.enabled" }}{{ end }}
+{{- $pg := .Values.migrations.postgres }}
+{{- $host := $pg.host | default .Values.api.configmap.POSTGRES_HOST }}
+{{- $port := $pg.port | default .Values.api.configmap.POSTGRES_PORT | default "5432" }}
+{{- $user := $pg.user | default .Values.api.configmap.POSTGRES_USER }}
+{{- $database := $pg.database | default .Values.api.configmap.POSTGRES_NAME }}
+{{- $sslMode := $pg.sslMode | default .Values.api.configmap.POSTGRES_SSLMODE | default "disable" }}
+{{- if not $host }}{{ fail "migrations need a Postgres host: set migrations.postgres.host or api.configmap.POSTGRES_HOST" }}{{ end }}
+{{- if not $user }}{{ fail "migrations need a Postgres user: set migrations.postgres.user or api.configmap.POSTGRES_USER" }}{{ end }}
+{{- if not $database }}{{ fail "migrations need a Postgres database: set migrations.postgres.database or api.configmap.POSTGRES_NAME" }}{{ end }}
+{{- $secretName := $pg.passwordSecret.name | default (include "br-consignado-gw.migrationsFullname" .) }}
+{{- $secretKey := $pg.passwordSecret.key | default "POSTGRES_PASSWORD" }}
+{{- $pullSecrets := include "br-consignado-gw.componentPullSecrets" (dict "root" . "comp" .Values.migrations) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "br-consignado-gw.migrationsFullname" . }}
+  namespace: {{ include "br-consignado-gw.namespace" . }}
+  labels:
+    {{- include "br-consignado-gw.componentLabels" (dict "root" . "name" "migrations") | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-consignado-gw.componentSelectorLabels" (dict "root" . "name" "migrations") | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -ec
+            - >-
+              until nc -z {{ $host }} {{ $port }}; do
+                echo "waiting for postgres {{ $host }}:{{ $port }}"; sleep 5;
+              done
+          securityContext:
+            {{- toYaml .Values.apiSecurityContext | nindent 12 }}
+      containers:
+        - name: migrations
+          image: {{ include "br-consignado-gw.componentImage" (dict "root" . "comp" .Values.migrations) | quote }}
+          imagePullPolicy: {{ .Values.migrations.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            # Percent-encode user, password, and database byte-by-byte before
+            # building the DSN: reserved URL characters in the raw values would
+            # otherwise break golang-migrate's URL parsing.
+            - |
+              urlenc() {
+                encoded=""
+                rest="$1"
+                while [ -n "${rest}" ]; do
+                  char="${rest%"${rest#?}"}"
+                  rest="${rest#?}"
+                  case "${char}" in
+                    [A-Za-z0-9.~_-]) encoded="${encoded}${char}" ;;
+                    *) encoded="${encoded}$(printf '%%%02X' "'${char}")" ;;
+                  esac
+                done
+                printf '%s' "${encoded}"
+              }
+              user="$(urlenc "${POSTGRES_USER}")"
+              password="$(urlenc "${POSTGRES_PASSWORD}")"
+              database="$(urlenc "${POSTGRES_NAME}")"
+              migrate -path /migrations \
+                -database "postgres://${user}:${password}@${POSTGRES_HOST}:${POSTGRES_PORT}/${database}?sslmode=${POSTGRES_SSLMODE}" \
+                up
+          env:
+            - name: POSTGRES_HOST
+              value: {{ $host | quote }}
+            - name: POSTGRES_PORT
+              value: {{ $port | quote }}
+            - name: POSTGRES_USER
+              value: {{ $user | quote }}
+            - name: POSTGRES_NAME
+              value: {{ $database | quote }}
+            - name: POSTGRES_SSLMODE
+              value: {{ $sslMode | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: {{ $secretKey }}
+          securityContext:
+            {{- toYaml .Values.apiSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
+{{- end }}

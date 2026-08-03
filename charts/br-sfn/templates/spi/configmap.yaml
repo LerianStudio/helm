@@ -1,0 +1,9 @@
+{{- if $.Values.spi.enabled -}}
+{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "spi-api" "comp" $.Values.spi.api "shared" $.Values.spi.configmap) }}
+---
+{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "spi-dict" "comp" $.Values.spi.dict "shared" $.Values.spi.configmap) }}
+---
+{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "spi-brcode" "comp" $.Values.spi.brcode "shared" $.Values.spi.configmap) }}
+---
+{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "spi-core" "comp" $.Values.spi.core "shared" $.Values.spi.configmap) }}
+{{- end -}}

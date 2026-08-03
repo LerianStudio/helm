@@ -8,7 +8,9 @@ spec:
   revisionHistoryLimit: {{ .Values.reconciliation.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.reconciliation.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.reconciliation.autoscaling.enabled }}
   replicas: {{ .Values.reconciliation.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "reconciliation.selectorLabels" (dict "context" . "name" .Values.reconciliation.name) | nindent 6 }}

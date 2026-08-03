@@ -1,6 +1,6 @@
 {{- if .Values.brCcs.enabled }}
 {{- $cm := .Values.brCcs.configmap | default dict }}
-{{- $multiTenantEnabled := eq (toString ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+{{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" (.Values.brCcs.multiTenant | default dict) "field" "enabled" "default" "false")) "true" }}
 {{- $pg := .Values.postgresql | default dict }}
 {{- $vk := .Values.valkey | default dict }}
 {{- $pgInternal := and (ne (toString $pg.enabled) "false") (not $pg.external) }}
@@ -56,20 +56,14 @@ data:
   # only when MULTI_TENANT_ENABLED=true.
   # =====================================================================
   DEFAULT_TENANT_ID: {{ $cm.DEFAULT_TENANT_ID | default "11111111-1111-1111-1111-111111111111" | quote }}
-  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if $multiTenantEnabled }}
-  MULTI_TENANT_URL: {{ required "brCcs.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" $cm.MULTI_TENANT_URL | quote }}
-  MULTI_TENANT_REDIS_HOST: {{ required "brCcs.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" $cm.MULTI_TENANT_REDIS_HOST | quote }}
-  MULTI_TENANT_REDIS_PORT: {{ $cm.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
-  MULTI_TENANT_REDIS_TLS: {{ $cm.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
-  MULTI_TENANT_MAX_TENANT_POOLS: {{ $cm.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
-  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
-  MULTI_TENANT_TIMEOUT: {{ $cm.MULTI_TENANT_TIMEOUT | default "30" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
-  MULTI_TENANT_CACHE_TTL_SEC: {{ $cm.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
-  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $cm.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
-  {{- end }}
+  MULTI_TENANT_ENABLED: {{ $multiTenantEnabled | quote }}
+  {{- /* Multi-tenant infra endpoints derive from global.multiTenant (env-wide) with a
+     component configmap.MULTI_TENANT_* override; emitted only when enabled. URL and
+     REDIS_HOST are required when enabled (fail-fast). */ -}}
+  {{- include "lerian-common.multiTenant.env" (dict
+        "context" $ "configmap" $cm "enabled" $multiTenantEnabled
+        "emitRedis" true "emitPool" true "emitCache" true
+        "requiredUrl" true "requiredRedisHost" true) | nindent 2 }}
 
   # =====================================================================
   # POSTGRESQL (primary + control-plane)

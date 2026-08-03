@@ -1,0 +1,22 @@
+# Render-gate fixture for br-sta — exercises the productized (lerian-common)
+# paths in their ENABLED state so the render gate catches regressions there:
+#   - multiTenant.env + fail-fast multiTenant.secret (MT on, API key supplied)
+#   - otel.env driven by global.observability
+#   - datastore.value broker mask + RABBITMQ_DEFAULT_PASS fail-fast (rmq on)
+# Values are placeholders; the gate only checks that the chart renders.
+br-sta:
+  multiTenant:
+    enabled: true
+  configmap:
+    RABBITMQ_ENABLED: "true"
+  secrets:
+    MULTI_TENANT_SERVICE_API_KEY: "render-fixture-mt-api-key"
+    RABBITMQ_DEFAULT_PASS: "render-fixture-rmq-pass"
+global:
+  observability:
+    enabled: true
+    otlpEndpoint: "otel-collector:4317"
+    deploymentEnvironment: "staging"
+  multiTenant:
+    url: "http://tenant-manager:8080"
+    redisHost: "tenant-manager-redis"

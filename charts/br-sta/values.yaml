@@ -40,12 +40,58 @@ global:
         name: ""
       # -- Password for br_sta role (ignored if useExistingSecret.name is set)
       password: ""
+  # -- Env-wide observability, consumed by lerian-common.otel.env. Declare once at
+  # the umbrella level; a component configmap.<KEY> still overrides per-service.
+  # Precedence: br-sta.configmap.<KEY> > global.observability.<field> > chart default.
+  observability:
+    # -- Enable telemetry export (ENABLE_TELEMETRY). Unset → chart default "false".
+    enabled: false
+    # -- OTLP collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT). Unset → chart default "".
+    otlpEndpoint: ""
+    # -- Deployment environment tag (OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT). Unset → "production".
+    deploymentEnvironment: "production"
+  # -- Env-wide multi-tenant infra (tenant-manager URL + its Redis), consumed by
+  # lerian-common.multiTenant.env. Only used when MT is enabled (see
+  # br-sta.multiTenant.enabled). A component configmap.<KEY> still overrides.
+  multiTenant: {}
+    # url: ""             # MULTI_TENANT_URL (required when MT enabled)
+    # redisHost: ""       # MULTI_TENANT_REDIS_HOST (required when MT enabled)
+    # redisPort: "6379"   # MULTI_TENANT_REDIS_PORT
+    # redisTls: "false"   # MULTI_TENANT_REDIS_TLS
+  # -- Env-wide datastore mask, consumed by lerian-common.datastore.value. Declare a
+  # SHARED instance once here; a DEDICATED per-service instance goes under
+  # br-sta.datastores; a component configmap.<KEY> still overrides everything.
+  # Precedence: br-sta.configmap.<KEY> > br-sta.datastores.<type>.<field>
+  #             > global.datastores.<type>.<field> > chart default.
+  datastores: {}
+    # postgres:
+    #   host: ""          # POSTGRES_HOST (host only)
+    #   port: "5432"      # POSTGRES_PORT
+    #   user: "br_sta"    # POSTGRES_USER
+    #   ssl: "require"    # POSTGRES_SSLMODE
+    #   replicaHost: ""   # POSTGRES_REPLICA_HOST (enables the replica block when set)
+    # redis:
+    #   host: ""          # REDIS_HOST (host:port)
+    # broker:
+    #   host: ""          # RABBITMQ_HOST
+    #   port: "5672"      # RABBITMQ_PORT_AMQP
+    #   user: "br_sta"    # RABBITMQ_DEFAULT_USER
 
 # ==============================================================================
 # APPLICATION
 # Single Deployment running the /service binary (Go/Fiber HTTP server).
 # ==============================================================================
 br-sta:
+  # -- Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). Tenant-manager
+  # URL + Redis infra come from global.multiTenant (or configmap.MULTI_TENANT_*).
+  # Precedence: configmap.MULTI_TENANT_ENABLED > br-sta.multiTenant.enabled > "false".
+  multiTenant:
+    # -- Enable multi-tenancy (MULTI_TENANT_ENABLED)
+    enabled: false
+  # -- Dedicated datastore mask for THIS service (see global.datastores for the shared
+  # form + precedence). Same fields as global.datastores; wins over global, loses to
+  # configmap.<KEY>. Leave empty ({}) to keep the bundled-subchart / native defaults.
+  datastores: {}
   # -- Service name
   name: "br-sta"
   # -- Number of replicas
@@ -223,25 +269,31 @@ br-sta:
     # Single-tenant default tenant ID (must be a valid UUID)
     DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
     # Multi-Tenant Starter (tenant-manager) — OPTIONAL
-    # When enabled, MULTI_TENANT_URL and MULTI_TENANT_SERVICE_API_KEY become required.
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    MULTI_TENANT_REDIS_HOST: ""
-    MULTI_TENANT_REDIS_PORT: "6379"
-    MULTI_TENANT_REDIS_TLS: "false"
-    MULTI_TENANT_MAX_TENANT_POOLS: "100"
-    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
-    MULTI_TENANT_TIMEOUT: "30"
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-    MULTI_TENANT_CACHE_TTL_SEC: "120"
-    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
-    # PostgreSQL Primary (host defaults dynamically in configmap when empty)
-    POSTGRES_HOST: ""  # Empty -> dynamic default in configmap template
-    POSTGRES_PORT: "5432"
-    POSTGRES_USER: "br_sta"
+    # Enable via br-sta.multiTenant.enabled (grouped API). URL + Redis infra come
+    # from global.multiTenant; the rest are emitted by lerian-common.multiTenant.env
+    # with the standard defaults shown below. Uncomment any key to override
+    # per-service. When enabled, MULTI_TENANT_URL and MULTI_TENANT_SERVICE_API_KEY
+    # become required.
+    # MULTI_TENANT_ENABLED: "false"   # prefer br-sta.multiTenant.enabled
+    # MULTI_TENANT_URL: ""            # prefer global.multiTenant.url (required when MT on)
+    # MULTI_TENANT_REDIS_HOST: ""     # prefer global.multiTenant.redisHost (required when MT on)
+    # MULTI_TENANT_REDIS_PORT: "6379"     # prefer global.multiTenant.redisPort
+    # MULTI_TENANT_REDIS_TLS: "false"     # prefer global.multiTenant.redisTls
+    # MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    # MULTI_TENANT_TIMEOUT: "30"
+    # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    # MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # MULTI_TENANT_CACHE_TTL_SEC: "120"
+    # MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+    # PostgreSQL Primary. HOST/PORT/USER/SSLMODE come from the datastore mask
+    # (br-sta.datastores.postgres → global.datastores.postgres); override per-service
+    # by uncommenting below. HOST empty/unset → dynamic subchart DNS default.
+    # POSTGRES_HOST: ""
+    # POSTGRES_PORT: "5432"
+    # POSTGRES_USER: "br_sta"
+    # POSTGRES_SSLMODE: "require"
     POSTGRES_NAME: "br_sta"
-    POSTGRES_SSLMODE: "require"
     # Migrations path (applied at startup by the /service binary)
     MIGRATIONS_PATH: "migrations"
     # Runtime config plane (operational knobs only; disabled preserves env-only mode)
@@ -261,7 +313,9 @@ br-sta:
     # Infrastructure boot timeout
     INFRA_CONNECT_TIMEOUT_SEC: "30"
     # Redis / Valkey (host defaults dynamically in configmap when empty)
-    REDIS_HOST: ""  # Empty -> dynamic default "<valkey>-primary.<ns>.svc.cluster.local:6379"
+    # REDIS_HOST comes from the datastore mask (br-sta.datastores.redis →
+    # global.datastores.redis); empty/unset → dynamic "<valkey>-primary.<ns>.svc.cluster.local:6379".
+    # REDIS_HOST: ""
     REDIS_DB: "0"
     REDIS_PROTOCOL: "3"
     REDIS_POOL_SIZE: "10"
@@ -283,13 +337,15 @@ br-sta:
     # (bottom of this file) to bundle the groundhog2k broker as a subchart.
     RABBITMQ_ENABLED: "false"
     # RABBITMQ_URL: ""
-    # RABBITMQ_HOST: empty -> dynamic default "<release>-rabbitmq.<ns>.svc.cluster.local"
-    # when the bundled broker is enabled; set explicitly for an external broker.
-    RABBITMQ_HOST: ""
-    RABBITMQ_PORT_AMQP: "5672"
+    # RABBITMQ HOST/PORT_AMQP/DEFAULT_USER come from the datastore mask
+    # (br-sta.datastores.broker → global.datastores.broker); override below if needed.
+    # HOST empty/unset → dynamic "<release>-rabbitmq.<ns>.svc.cluster.local" when the
+    # bundled broker is enabled; set explicitly for an external broker.
+    # RABBITMQ_HOST: ""
+    # RABBITMQ_PORT_AMQP: "5672"
     RABBITMQ_PORT_HOST: "15672"
-    # Must match rabbitmq.authentication.user.value when the bundled broker is enabled.
-    RABBITMQ_DEFAULT_USER: "br_sta"
+    # DEFAULT_USER must match rabbitmq.authentication.user.value when the bundled broker is enabled.
+    # RABBITMQ_DEFAULT_USER: "br_sta"
     RABBITMQ_VHOST: "/"
     # RABBITMQ_QUEUE: ""
     RABBITMQ_EXCHANGE: "events"
@@ -330,11 +386,16 @@ br-sta:
     SWAGGER_LEFT_DELIM: "{{"
     SWAGGER_RIGHT_DELIM: "}}"
     # OpenTelemetry — OPTIONAL
-    ENABLE_TELEMETRY: "false"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/br-sta"
-    OTEL_RESOURCE_SERVICE_NAME: "br-sta"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    # ENABLE_TELEMETRY, OTEL_EXPORTER_OTLP_ENDPOINT and
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT are env-wide: set them under
+    # global.observability (or override per-service by uncommenting below).
+    # OTEL identity (name/library) and SERVICE_VERSION are chart-derived
+    # (SERVICE_VERSION tracks the resolved image tag).
+    # ENABLE_TELEMETRY: "false"
+    # OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    # OTEL_LIBRARY_NAME: "github.com/LerianStudio/br-sta"
+    # OTEL_RESOURCE_SERVICE_NAME: "br-sta"
     # Rate Limiting
     RATE_LIMIT_ENABLED: "true"
     RATE_LIMIT_MAX: "500"

@@ -2,6 +2,23 @@
 
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
 
+- **Improvements:**
+  - Updated CHANGELOG for version v2.2.11.
+  - Aligned upgrade guide format for better clarity.
+
+- **Contributors:**
+  - @ferr3ira-gabriel
+  - @fredcamaral
+  - @gandalf-at-lerian
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
 - **Improvements**
   - Updated the changelog for version 2.2.11.
   - Aligned the upgrade guide format for better consistency.

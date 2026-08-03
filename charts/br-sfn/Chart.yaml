@@ -1,0 +1,45 @@
+apiVersion: v2
+name: br-sfn-helm
+description: A Helm chart for br-sfn — the Lerian Brazilian SFN rails monorepo
+  (SPB/STR, SPI/Pix, SILOC, SCR, desk, slc-edge, cockpit). Modular by design —
+  every component ships disabled; operators enable only the rails they run.
+
+type: application
+annotations:
+  lerian.studio/chart-type: multi-component
+
+home: https://github.com/LerianStudio/helm
+
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/br-sfn
+  - https://github.com/LerianStudio/br-sfn
+
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+
+version: 1.0.0
+
+# NOTE: appVersion is the default image tag for every component and migration
+# Job. Components version independently in the monorepo (svc/vX.Y.Z tags), so
+# production values pin <component>.image.tag explicitly; appVersion is only
+# the tag of the release train the chart was cut against.
+appVersion: "1.0.0-beta.1"
+
+keywords:
+  - br-sfn
+  - spb
+  - str
+  - spi
+  - pix
+  - siloc
+  - scr
+  - bacen
+  - rsfn
+  - lerian
+
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+# No dependencies on purpose: Postgres, Valkey/Redis, RabbitMQ, RedPanda and
+# IBM MQ are EXTERNAL, pre-provisioned services on every target environment
+# (benedita tiers and BYOC alike). This chart ships application workloads only.

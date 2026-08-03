@@ -3,6 +3,239 @@
 ## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
 
 - **Features:**
+  - Applied Midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention (semconv) transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Added an upgrade guide for otel-collector-lerian v4.0.0.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Added an upgrade guide for otel-collector-lerian v4.0.0.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope in documentation.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention (semconv) transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename. (Commit: 6521ba7d)
+  - Standardized processors, pod identity, and semantic convention transformation. (Commit: 3e18fa66)
+
+- **Improvements:**
+  - Refreshed the otel-collector-lerian README for the 4.1 release. (Commit: 52c8f603)
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and performed a deprecation rename in otel-collector-lerian.
+  - Standardized processors, pod identity, and semantic convention (semconv) transform for otel-collector-lerian.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope in documentation.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed README for otel-collector-lerian for version 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope in documentation.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Added an upgrade guide for otel-collector-lerian v4.0.0.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic conventions transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and deprecated certain names.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for version 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and renamed deprecated elements in otel-collector-lerian.
+  - Standardized processors, pod identity, and semantic convention (semconv) transformations in otel-collector-lerian.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment variable injection scope and transform/normalize_http_semconv scope in documentation.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
   - Applied midaz namespace filter across all signals and implemented deprecation rename.
   - Standardized processors, pod identity, and semantic convention transformation.
 

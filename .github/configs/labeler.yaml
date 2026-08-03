@@ -50,6 +50,10 @@ fetcher:
   - changed-files:
       - any-glob-to-any-file: charts/fetcher/**
 
+common:
+  - changed-files:
+      - any-glob-to-any-file: charts/lerian-common/**
+      
 pipe:
   - changed-files:
       - any-glob-to-any-file: .github/workflows/**
@@ -57,3 +61,11 @@ pipe:
 doc:
   - changed-files:
       - any-glob-to-any-file: README.md
+
+br-ccs:
+  - changed-files:
+      - any-glob-to-any-file: charts/br-ccs/**
+
+br-slc:
+  - changed-files:
+      - any-glob-to-any-file: charts/br-slc/**

@@ -1,0 +1,3 @@
+{{- if $.Values.slcEdge.enabled -}}
+{{ include "br-sfn.componentService" (dict "root" $ "name" "slc-edge" "comp" $.Values.slcEdge "defaultPort" 3005) }}
+{{- end -}}

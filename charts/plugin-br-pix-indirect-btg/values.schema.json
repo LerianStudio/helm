@@ -20,7 +20,7 @@
         "certFileName": { "type": "string" },
         "keyFileName": { "type": "string" },
         "caFileName": { "type": "string" },
-        "fsGroup": { "type": "integer" }
+        "fsGroup": { "type": "integer", "minimum": 0 }
       }
     },
     "pix": {

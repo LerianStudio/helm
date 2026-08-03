@@ -753,10 +753,22 @@ Outbound BTG client mTLS — the Secret name. Optional in values: defaults to
 
 {{- define "plugin-br-pix-indirect-btg.mtlsVolume" -}}
 {{- if .Values.mtls.enabled -}}
+{{- $ca := .Values.mtls.caFileName -}}
+{{- if and (not $ca) (index .Values.mtls "ca.crt") -}}{{- $ca = "ca.crt" -}}{{- end -}}
 - name: btg-outbound-mtls
   secret:
     secretName: {{ include "plugin-br-pix-indirect-btg.mtlsSecretName" . }}
     defaultMode: 0440
+    # Project only the cert/key (+ optional CA), never other keys the Secret may hold.
+    items:
+      - key: {{ .Values.mtls.certFileName | default "tls.crt" | quote }}
+        path: {{ .Values.mtls.certFileName | default "tls.crt" | quote }}
+      - key: {{ .Values.mtls.keyFileName | default "tls.key" | quote }}
+        path: {{ .Values.mtls.keyFileName | default "tls.key" | quote }}
+      {{- with $ca }}
+      - key: {{ . | quote }}
+        path: {{ . | quote }}
+      {{- end }}
 {{- end -}}
 {{- end -}}
 

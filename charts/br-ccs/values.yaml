@@ -316,21 +316,24 @@ brCcs:
 
     # =================================================================
     # Multi-tenancy (tenant-manager starter)
-    # Toggle + DEFAULT_TENANT_ID always render. MT infra endpoints only
-    # render when MULTI_TENANT_ENABLED=true.
+    # Enable via brCcs.multiTenant.enabled (grouped API). URL + Redis infra
+    # come from global.multiTenant; the rest are emitted by
+    # lerian-common.multiTenant.env with the standard defaults shown below.
+    # Uncomment any key here to override per-service. MT infra endpoints only
+    # render when multi-tenancy is enabled.
     # =================================================================
-    MULTI_TENANT_ENABLED: "false"
-    # MULTI_TENANT_URL: ""
-    # MULTI_TENANT_REDIS_HOST: ""
-    MULTI_TENANT_REDIS_PORT: "6379"
-    MULTI_TENANT_REDIS_TLS: "false"
-    MULTI_TENANT_MAX_TENANT_POOLS: "100"
-    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
-    MULTI_TENANT_TIMEOUT: "30"
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-    MULTI_TENANT_CACHE_TTL_SEC: "120"
-    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+    # MULTI_TENANT_ENABLED: "false"   # prefer brCcs.multiTenant.enabled
+    # MULTI_TENANT_URL: ""            # prefer global.multiTenant.url (required when MT on)
+    # MULTI_TENANT_REDIS_HOST: ""     # prefer global.multiTenant.redisHost (required when MT on)
+    # MULTI_TENANT_REDIS_PORT: "6379"     # prefer global.multiTenant.redisPort
+    # MULTI_TENANT_REDIS_TLS: "false"     # prefer global.multiTenant.redisTls
+    # MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    # MULTI_TENANT_TIMEOUT: "30"
+    # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    # MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # MULTI_TENANT_CACHE_TTL_SEC: "120"
+    # MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
 
     # =================================================================
     # PostgreSQL (primary)

@@ -168,15 +168,17 @@ Inputs: context, secrets, secretName, valuesPrefix, mode,
 {{- $b64 := eq (.mode | default "stringData") "data" -}}
 {{- $ns := .context.Release.Namespace -}}
 {{- $lines := list -}}
-{{- /* Normalize the mechanism EXACTLY like streaming.env's "is SASL on?" test:
-   `trim (toString (mechanism | default ""))`. This keeps the Secret and the ConfigMap
-   in agreement — otherwise a whitespace-only mechanism ("   ") is disabled by the
-   ConfigMap yet raw-truthy here, wrongly forcing STREAMING_SASL_USERNAME/PASSWORD; and a
-   YAML null/false collapses to "" (off) on both sides. Gate the credential requirements
-   on the normalized value; the fail messages still show the operator's original input. */ -}}
+{{- /* Normalize mechanism AND username EXACTLY like streaming.env's tests:
+   `trim (toString (x | default ""))`. This keeps the Secret and the ConfigMap in
+   agreement — otherwise a whitespace-only mechanism ("   ") is disabled by the ConfigMap
+   yet raw-truthy here (wrongly forcing the credentials), and a whitespace-only username
+   would satisfy the Secret while streaming.env rejects it. A YAML null/false collapses to
+   "" (off) on both sides. Gate on the normalized values; the fail messages still show the
+   operator's original input (%v so a non-string mechanism prints as-is, not %!s(...)). */ -}}
 {{- $mech := trim (toString (.saslMechanism | default "")) -}}
-{{- if and $mech (not .saslUsername) -}}
-{{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires both a username and a password.\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" .saslMechanism) -}}
+{{- $user := trim (toString (.saslUsername | default "")) -}}
+{{- if and $mech (not $user) -}}
+{{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%v) is set, which requires both a username and a password.\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" .saslMechanism) -}}
 {{- end -}}
 {{- /* STREAMING_SASL_PASSWORD — required only when a SASL mechanism is set */ -}}
 {{- $sasl := index $s "STREAMING_SASL_PASSWORD" -}}

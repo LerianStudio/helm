@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "imagePullSecrets": {
+      "type": "array"
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "api": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "migrations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "apiSecurityContext": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "uiSecurityContext": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

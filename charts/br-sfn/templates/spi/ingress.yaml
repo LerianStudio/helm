@@ -1,0 +1,9 @@
+{{- if $.Values.spi.enabled -}}
+{{ include "br-sfn.componentIngress" (dict "root" $ "name" "spi-api" "comp" $.Values.spi.api "defaultPort" 9800) }}
+---
+{{ include "br-sfn.componentIngress" (dict "root" $ "name" "spi-dict" "comp" $.Values.spi.dict "defaultPort" 9801) }}
+---
+{{ include "br-sfn.componentIngress" (dict "root" $ "name" "spi-brcode" "comp" $.Values.spi.brcode "defaultPort" 9802) }}
+---
+{{ include "br-sfn.componentIngress" (dict "root" $ "name" "spi-core" "comp" $.Values.spi.core "defaultPort" 9803) }}
+{{- end -}}

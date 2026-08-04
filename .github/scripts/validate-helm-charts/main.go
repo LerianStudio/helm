@@ -24,6 +24,7 @@ var allowedChartTypes = map[string]bool{
 	"single-service":     true,
 	"multi-component":    true,
 	"dependency-wrapper": true,
+	"library":            true,
 }
 
 var credentialURLPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/@]+:[^\s/@]+@`)
@@ -243,11 +244,18 @@ func collectViolations(root string) ([]violation, error) {
 
 		chartType := chart.Annotations[chartTypeAnnotation]
 		if !allowedChartTypes[chartType] {
-			violations = append(violations, newViolation(chartName, "invalid-chart-type", chartRel, "Chart.yaml must set annotations.lerian.studio/chart-type to single-service, multi-component, or dependency-wrapper"))
+			violations = append(violations, newViolation(chartName, "invalid-chart-type", chartRel, "Chart.yaml must set annotations.lerian.studio/chart-type to single-service, multi-component, dependency-wrapper, or library"))
 		}
 
-		if chart.Type != "application" {
-			violations = append(violations, newViolation(chartName, "invalid-chart-kind", chartRel, "Chart.yaml type must be application"))
+		isLibrary := chart.Type == "library"
+		if chart.Type != "application" && !isLibrary {
+			violations = append(violations, newViolation(chartName, "invalid-chart-kind", chartRel, "Chart.yaml type must be application or library"))
+		}
+
+		// The library annotation and the Helm chart kind must agree, so an
+		// application chart cannot claim chart-type: library to skip requirements.
+		if (chartType == "library") != isLibrary {
+			violations = append(violations, newViolation(chartName, "chart-type-mismatch", chartRel, "annotations.lerian.studio/chart-type: library requires (and only applies to) Chart.yaml type: library"))
 		}
 
 		for _, required := range []string{"README.md", "values.yaml"} {
@@ -258,7 +266,7 @@ func collectViolations(root string) ([]violation, error) {
 		}
 		violations = append(violations, validateReadmeContract(root, chartDir, chartName, chartType)...)
 
-		if chartType != "dependency-wrapper" {
+		if chartType != "dependency-wrapper" && !isLibrary {
 			valuesTemplate := filepath.Join(chartDir, "values-template.yaml")
 			if !fileExists(valuesTemplate) {
 				violations = append(violations, newViolation(chartName, "missing-values-template", rel(root, valuesTemplate), "application charts must provide values-template.yaml"))
@@ -1021,6 +1029,18 @@ func buildRenderInventory(root string) ([]renderRow, error) {
 	return buildRenderRows(root, nil, "")
 }
 
+func isLibraryChart(chartDir string) bool {
+	data, err := os.ReadFile(filepath.Join(chartDir, "Chart.yaml"))
+	if err != nil {
+		return false
+	}
+	var c chartYAML
+	if err := yaml.Unmarshal(data, &c); err != nil {
+		return false
+	}
+	return c.Type == "library"
+}
+
 func buildRenderGate(root string, chartSelection map[string]bool, sampleValuesDir string) ([]renderRow, error) {
 	rows, err := buildRenderRows(root, chartSelection, sampleValuesDir)
 	if err != nil {
@@ -1056,6 +1076,16 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 		}
 		row := renderRow{Chart: chartName}
 
+		// Library charts are not installable (helm template fails); their helpers
+		// are exercised through the consumer charts, so skip the render gate.
+		if isLibraryChart(chartDir) {
+			row.Status = "ok"
+			row.Class = "skipped-library"
+			row.Detail = "library chart — not installable; helpers validated via consumer charts"
+			rows = append(rows, row)
+			continue
+		}
+
 		deps, err := chartDependencies(chartDir)
 		if err != nil {
 			return nil, err
@@ -1067,6 +1097,16 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 		}
 		tmpChart := filepath.Join(tmpRoot, chartName)
 		if err := copyDir(chartDir, tmpChart); err != nil {
+			_ = os.RemoveAll(tmpRoot)
+			return nil, err
+		}
+
+		// Local library dependencies referenced via `file://<relpath>` (e.g.
+		// lerian-common) live outside the copied chart, so `helm dependency
+		// build` cannot resolve them in the isolated temp workspace. Materialize
+		// each such sibling at the same relative location so the file:// path
+		// resolves exactly as it does in the source tree.
+		if err := materializeLocalDependencies(root, chartDir, tmpRoot, tmpChart, deps); err != nil {
 			_ = os.RemoveAll(tmpRoot)
 			return nil, err
 		}
@@ -1485,6 +1525,58 @@ func writeRenderInventory(path string, rows []renderRow) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(builder.String()), 0o644)
+}
+
+// materializeLocalDependencies copies each `file://<relpath>` dependency source
+// into the temp workspace at the same relative path the chart references, so an
+// isolated `helm dependency build` resolves local library charts (e.g.
+// lerian-common) exactly as it would in the repository tree. Missing sources are
+// left to `helm dependency build` to report as a normal missing-dependency.
+func materializeLocalDependencies(root, chartDir, tmpRoot, tmpChart string, deps []chartDependency) error {
+	for _, dependency := range deps {
+		repository := strings.TrimSpace(dependency.Repository)
+		if !strings.HasPrefix(repository, "file://") {
+			continue
+		}
+		relPath := strings.TrimPrefix(repository, "file://")
+		// Reject absolute paths (e.g. file:///tmp/lib → "/tmp/lib"): Helm resolves
+		// them verbatim at render time, escaping the repo, whereas filepath.Join
+		// below would fold the leading slash and pass the containment check — a
+		// mismatch that would let an absolute dependency read outside root.
+		if filepath.IsAbs(relPath) {
+			return fmt.Errorf("local dependency %q uses an absolute path, which is not supported", repository)
+		}
+		srcDir := filepath.Clean(filepath.Join(chartDir, relPath))
+		// Containment: a crafted `file://../../..` path in Chart.yaml must not let
+		// the copy read outside the repository tree or write outside the isolated
+		// render workspace. Legitimate local libraries (e.g. file://../lerian-common)
+		// still resolve to a sibling under root/tmpRoot and pass the check.
+		if !withinDir(root, srcDir) {
+			return fmt.Errorf("local dependency %q resolves outside the repository root (%s)", repository, srcDir)
+		}
+		if !dirExists(srcDir) {
+			continue
+		}
+		destDir := filepath.Clean(filepath.Join(tmpChart, relPath))
+		if !withinDir(tmpRoot, destDir) {
+			return fmt.Errorf("local dependency %q resolves outside the render workspace (%s)", repository, destDir)
+		}
+		if err := copyDir(srcDir, destDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// withinDir reports whether target is base itself or nested under it (after path
+// cleaning), used to contain `file://` dependency paths so a crafted Chart.yaml
+// cannot escape the repo/workspace via `..` traversal.
+func withinDir(base, target string) bool {
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
 }
 
 func copyDir(src, dst string) error {

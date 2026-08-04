@@ -22,7 +22,7 @@ jobs:
   get-changed-paths:
     if: github.actor != 'lerian-studio-midaz-push-bot[bot]'
     name: Get Changed Paths
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       matrix: ${{ steps.changed-paths.outputs.matrix }}
     steps:
@@ -43,7 +43,7 @@ jobs:
     needs: get-changed-paths
     name: Release Helm Chart
     if: needs.get-changed-paths.outputs.matrix != '[]'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       max-parallel: 1
       fail-fast: false
@@ -180,30 +180,24 @@ jobs:
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
 
 
-      - name: Install oras
-        if: steps.semantic_changelog.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
-        uses: oras-project/setup-oras@v1.2.4
 
-      - name: Tag chart as latest
-        if: steps.semantic_changelog.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
+      # Library charts (type: library) are consumed by other charts and are not
+      # deployable applications, so they must not be registered in the Plugin
+      # Lifecycle Management. Detect the chart kind to gate the step below.
+      - name: Detect library chart
+        id: chart-kind
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
         run: |
-          CHART="${{ matrix.chart.name }}"
-          VERSION="${{ steps.semantic_changelog.outputs.new_release_version }}"
-
-          if [ "$CHART" == "plugin-access-manager" ] || [ "$CHART" == "otel-collector-lerian" ]; then
-            PACKAGE="$CHART"
+          if grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "$CHART_WORKING_DIR/Chart.yaml"; then
+            echo "is_library=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::$CHART_WORKING_DIR is a library chart — skipping Plugin Lifecycle Management."
           else
-            PACKAGE="${CHART}-helm"
+            echo "is_library=false" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u lerianstudio --password-stdin
-          echo "${{ secrets.DOCKER_PASSWORD }}" | oras login registry-1.docker.io -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-
-          oras cp "ghcr.io/lerianstudio/${PACKAGE}:${VERSION}" "ghcr.io/lerianstudio/${PACKAGE}:latest"
-          oras cp "registry-1.docker.io/lerianstudio/${PACKAGE}:${VERSION}" "registry-1.docker.io/lerianstudio/${PACKAGE}:latest"
-
       - name: Publish Release in Plugin Lifecycle Management
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.is_library != 'true'
         uses: LerianStudio/github-actions-lifecycle-management@main
         with:
           chart_name: "${{ matrix.chart.name }}"
@@ -230,81 +224,3 @@ jobs:
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
       SLACK_CHANNEL_DEVOPS: ${{ secrets.SLACK_CHANNEL_DEVOPS }}
       SLACK_GROUP_TECH_SUPPORT: ${{ secrets.SLACK_GROUP_TECH_SUPPORT }}
-
-  back-merge:
-    needs:
-      - get-changed-paths
-      - release-helm-chart
-    name: 🔀 Back Merge to Develop
-    if: needs.get-changed-paths.outputs.matrix != '[]' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
-          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
-          passphrase: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
-          git_committer_name: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
-          git_committer_email: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
-          git_config_global: true
-          git_user_signingkey: true
-          git_commit_gpgsign: true
-
-      - name: Back Merge main into develop
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          GIT_AUTHOR_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
-          GIT_AUTHOR_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
-          GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
-          GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
-        run: |
-          git fetch origin main develop
-
-          # Check if there are differences between main and develop
-          if git diff --quiet origin/main origin/develop; then
-            echo "No differences between main and develop. Skipping back-merge."
-            exit 0
-          fi
-
-          # Checkout develop and merge main directly (no PR)
-          # This way the merge is done by the bot, triggering the actor check
-          git checkout develop
-          git pull origin develop
-
-          # Merge main into develop
-          if git merge origin/main --no-edit -m "chore: back merge main into develop [skip ci]"; then
-            echo "Merge successful, pushing to develop..."
-            git push origin develop
-            echo "Back-merge completed successfully."
-          else
-            echo "Merge conflict detected. Creating PR for manual resolution."
-            git merge --abort
-
-            # Check if a back-merge PR already exists
-            EXISTING_PR=$(gh pr list --base develop --head main --state open --json number --jq '.[0].number')
-
-            if [ -n "$EXISTING_PR" ]; then
-              echo "Back-merge PR #$EXISTING_PR already exists. Skipping PR creation."
-              exit 0
-            fi
-
-            # Create PR for manual conflict resolution
-            gh pr create \
-              --base develop \
-              --head main \
-              --title "chore: back merge main into develop (conflicts)" \
-              --body "## Back Merge"$'\n\n'"This PR merges the latest changes from main back into develop."$'\n\n'"⚠️ **Manual intervention required**: There are merge conflicts that need to be resolved manually."$'\n\n'"### Auto-generated"$'\n'"This PR was automatically created by the release pipeline."
-          fi

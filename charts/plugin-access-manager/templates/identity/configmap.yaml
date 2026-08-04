@@ -99,6 +99,24 @@ data:
   HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST: {{ .Values.identity.configmap.HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST | default "100" | quote }}
   HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC: {{ .Values.identity.configmap.HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC | default "90" | quote }}
 
+  # AUTHORIZER (casbin model/enforcer names — kept consistent with the auth component's Casdoor)
+  AUTHORIZER_ENFORCER_NAME: {{ .Values.identity.configmap.AUTHORIZER_ENFORCER_NAME | default "lerian-user-enforcer" | quote }}
+  AUTHORIZER_MODEL_NAME: {{ .Values.identity.configmap.AUTHORIZER_MODEL_NAME | default "api-model" | quote }}
+
+  # RUNTIME
+  DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}
+  TRUSTED_PROXIES: {{ .Values.identity.configmap.TRUSTED_PROXIES | default "" | quote }}
+
+  # M2M (lib-auth/v3 middleware — identity authorizes inbound M2M calls)
+  AUTH_M2M_INVERSION_ENABLED: {{ .Values.identity.configmap.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
+
+  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false)
+  SD_ENABLED: {{ .Values.identity.configmap.SD_ENABLED | default "false" | quote }}
+  SD_ADDRESS: {{ .Values.identity.configmap.SD_ADDRESS | default "localhost:8500" | quote }}
+  SD_EXTERNAL_ADDRESS: {{ .Values.identity.configmap.SD_EXTERNAL_ADDRESS | default "" | quote }}
+  SD_EXTERNAL_PORT: {{ .Values.identity.configmap.SD_EXTERNAL_PORT | default "0" | quote }}
+  SD_TLS: {{ .Values.identity.configmap.SD_TLS | default "false" | quote }}
+
   # Extra Env Vars
   {{- with .Values.identity.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

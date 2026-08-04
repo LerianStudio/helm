@@ -47,10 +47,33 @@ def template_group_fields(chart_dir):
     # $grp := .Values.<path>   (path may be brCcs.rateLimit or, for flat charts, rateLimit)
     short2path = {m.group(1): m.group(2)
                   for m in re.finditer(r"\$(\w+)\s*:=\s*\.Values\.([\w.]+)\s*\|\s*default dict", src)}
+    # Component indirection (br-sta): $component := index .Values "br-sta"; $grp := $component.<group>
+    compvars = {m.group(1): m.group(2)
+                for m in re.finditer(r'\$(\w+)\s*:=\s*index\s+\.Values\s+"([\w-]+)"', src)}
+    for m in re.finditer(r"\$(\w+)\s*:=\s*\$(\w+)\.(\w+)\s*\|\s*default dict", src):
+        grp_var, comp_var, group = m.group(1), m.group(2), m.group(3)
+        if comp_var in compvars:
+            short2path[grp_var] = f"{compvars[comp_var]}.{group}"
     groups = {}
+    # params expressed as a $var: "params" $rl "field" "max" "default" "500"
     for m in re.finditer(r'"params"\s*\$(\w+)\s*"field"\s*"(\w+)"\s*"default"\s*("([^"]*)"|[^)\s]+)', src):
         grp, field, default = m.group(1), m.group(2), m.group(4) if m.group(4) is not None else ""
         path = short2path.get(grp)
+        if path:
+            groups.setdefault(path, {})[field] = default
+    # params expressed INLINE: "params" ($component.multiTenant | default dict) "field" "enabled" ...
+    #   or "params" (.Values.brCcs.rateLimit | default dict) "field" ...
+    for m in re.finditer(
+            r'"params"\s*\((?:\$(\w+)|\.Values)\.([\w.]+?)\s*\|\s*default dict\)\s*"field"\s*"(\w+)"\s*"default"\s*("([^"]*)"|[^)\s]+)',
+            src):
+        comp_var, tail, field = m.group(1), m.group(2), m.group(3)
+        default = m.group(5) if m.group(5) is not None else ""
+        if comp_var and comp_var in compvars:
+            path = f"{compvars[comp_var]}.{tail}"
+        elif not comp_var:
+            path = tail                      # .Values.<path>
+        else:
+            path = None
         if path:
             groups.setdefault(path, {})[field] = default
     return groups
@@ -132,7 +155,10 @@ def build(node, path, desc, tgroups):
     if path in tgroups and isinstance(node, dict) and all(IDENT.match(str(k)) for k in node):
         props = {}
         for f, dflt in sorted(tgroups[path].items()):
-            fs = {"type": "string", "default": dflt}
+            # No `type`: cfgValue config is stringly-typed but YAML/helm coerce a toggle to a
+            # bool or a number to an int — constraining the scalar TYPE breaks legitimate values.
+            # The guardrail is `additionalProperties:false` on the parent (catches typo'd KEYS).
+            fs = {"default": dflt}
             fd = desc.get(f"{path}.{f}", (None, None))[0]
             if fd:
                 fs["description"] = fd

@@ -174,7 +174,7 @@ streamingHub:
     failureThreshold: 3
   # -- Shared default scheduling (per-role blocks may override).
   nodeSelector: {}
-  tolerations: {}
+  tolerations: []
   affinity: {}
   # -- Extra non-sensitive env vars injected on every Deployment (list of {name,value}).
   extraEnvVars: []
@@ -372,7 +372,7 @@ streamingHub:
       minAvailable: 1
       annotations: {}
     nodeSelector: {}
-    tolerations: {}
+    tolerations: []
     affinity: {}
   ingest:
     replicaCount: 1
@@ -397,7 +397,7 @@ streamingHub:
       minAvailable: 1
       annotations: {}
     nodeSelector: {}
-    tolerations: {}
+    tolerations: []
     affinity: {}
   delivery:
     replicaCount: 1
@@ -422,7 +422,7 @@ streamingHub:
       minAvailable: 1
       annotations: {}
     nodeSelector: {}
-    tolerations: {}
+    tolerations: []
     affinity: {}
 streaming-hub:
   image:

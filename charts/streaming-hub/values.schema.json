@@ -26,7 +26,6 @@
       "type": "object",
       "properties": {
         "mode": {
-          "type": "string",
           "default": "all",
           "description": "Deployment topology switch. One of: all | split.",
           "enum": [
@@ -38,29 +37,25 @@
           "type": "object",
           "properties": {
             "repository": {
-              "type": "string",
               "default": "ghcr.io/lerianstudio/streaming-hub",
               "description": "Container image repository."
             },
             "pullPolicy": {
-              "type": "string",
               "default": "IfNotPresent",
               "description": "Image pull policy."
             },
             "tag": {
-              "type": "string",
               "default": "",
               "description": "Image tag. Empty falls back to Chart.appVersion via the defaultTag helper."
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "imagePullSecrets": {
           "type": "array",
           "description": "Secrets for pulling the image from a private registry."
         },
         "revisionHistoryLimit": {
-          "type": "integer",
           "default": 10,
           "description": "Number of old ReplicaSets to retain for rollback."
         },
@@ -79,25 +74,22 @@
           "description": "Deployment update strategy (shared by all roles).",
           "properties": {
             "type": {
-              "type": "string",
               "default": "RollingUpdate"
             },
             "rollingUpdate": {
               "type": "object",
               "properties": {
                 "maxSurge": {
-                  "type": "integer",
                   "default": 1
                 },
                 "maxUnavailable": {
-                  "type": "integer",
                   "default": 0
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "podSecurityContext": {
           "type": "object",
@@ -109,17 +101,14 @@
           "description": "Container-level security context (distroless:nonroot, uid/gid 65532).",
           "properties": {
             "runAsGroup": {
-              "type": "integer",
               "default": 65532,
               "description": "Group ID for the process inside the container."
             },
             "runAsUser": {
-              "type": "integer",
               "default": 65532,
               "description": "User ID for the process inside the container."
             },
             "runAsNonRoot": {
-              "type": "boolean",
               "default": true,
               "description": "Never run as root."
             },
@@ -130,40 +119,35 @@
                   "type": "array"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "readOnlyRootFilesystem": {
-              "type": "boolean",
               "default": true,
               "description": "Read-only root filesystem (the image carries no writable state)."
             },
             "allowPrivilegeEscalation": {
-              "type": "boolean",
               "default": false
             },
             "seccompProfile": {
               "type": "object",
               "properties": {
                 "type": {
-                  "type": "string",
                   "default": "RuntimeDefault"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "service": {
           "type": "object",
           "properties": {
             "type": {
-              "type": "string",
               "default": "ClusterIP",
               "description": "Service type. MUST be ClusterIP (Lerian convention; Ingress fronts external)."
             },
             "port": {
-              "type": "integer",
               "default": 8080,
               "description": "Control-plane HTTP port (the hub listens on :8080; see Dockerfile EXPOSE)."
             },
@@ -173,18 +157,16 @@
               "description": "Annotations for every Service."
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "ingress": {
           "type": "object",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": false,
               "description": "Enable or disable the control-plane Ingress (opt-in per env in gitops)."
             },
             "className": {
-              "type": "string",
               "default": "nginx",
               "description": "Ingress class name."
             },
@@ -202,13 +184,12 @@
               "description": "TLS configuration."
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "serviceAccount": {
           "type": "object",
           "properties": {
             "create": {
-              "type": "boolean",
               "default": true,
               "description": "Whether a ServiceAccount is created."
             },
@@ -218,20 +199,17 @@
               "description": "Annotations for the ServiceAccount (e.g. AWS IRSA role-arn)."
             },
             "name": {
-              "type": "string",
               "default": "",
               "description": "ServiceAccount name. Empty defaults to the chart fullname."
             },
             "automountServiceAccountToken": {
-              "type": "boolean",
               "default": false,
               "description": "Mount the SA API token into pods. Default false — the hub makes no"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
           "default": 80,
           "description": "Graceful-shutdown window. Defaults to the hub's derived SIGTERM drain"
         },
@@ -240,54 +218,44 @@
           "description": "Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).",
           "properties": {
             "initialDelaySeconds": {
-              "type": "integer",
               "default": 15
             },
             "periodSeconds": {
-              "type": "integer",
               "default": 20
             },
             "timeoutSeconds": {
-              "type": "integer",
               "default": 5
             },
             "successThreshold": {
-              "type": "integer",
               "default": 1
             },
             "failureThreshold": {
-              "type": "integer",
               "default": 3
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "readinessProbe": {
           "type": "object",
           "description": "Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM).",
           "properties": {
             "initialDelaySeconds": {
-              "type": "integer",
               "default": 10
             },
             "periodSeconds": {
-              "type": "integer",
               "default": 10
             },
             "timeoutSeconds": {
-              "type": "integer",
               "default": 5
             },
             "successThreshold": {
-              "type": "integer",
               "default": 1
             },
             "failureThreshold": {
-              "type": "integer",
               "default": 3
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "nodeSelector": {
           "type": "object",
@@ -295,8 +263,7 @@
           "description": "Shared default scheduling (per-role blocks may override)."
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true
+          "type": "array"
         },
         "affinity": {
           "type": "object",
@@ -311,19 +278,16 @@
           "type": "object",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": false,
               "description": "Inject the per-pod OTLP endpoint override (HOST_IP downward API)."
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "useExistingSecret": {
-          "type": "boolean",
           "default": false
         },
         "existingSecretName": {
-          "type": "string",
           "default": ""
         },
         "common": {
@@ -646,17 +610,14 @@
           "type": "object",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": false,
               "description": "Enable or disable the migrations Job. Default false — opt-in per env"
             },
             "useExistingSecret": {
-              "type": "boolean",
               "default": false,
               "description": "Optional. When true, the Job reads STREAMING_HUB_POSTGRES_DSN from a"
             },
             "existingSecretName": {
-              "type": "string",
               "default": "",
               "description": "Name of the pre-existing Secret holding STREAMING_HUB_POSTGRES_DSN"
             },
@@ -664,40 +625,33 @@
               "type": "object",
               "properties": {
                 "repository": {
-                  "type": "string",
                   "default": "ghcr.io/lerianstudio/streaming-hub-migrations",
                   "description": "Migrations image (FROM migrate/migrate + COPY migrations/ /migrations/)."
                 },
                 "tag": {
-                  "type": "string",
                   "default": "",
                   "description": "Tag for the migrations image. Empty falls back to the app image tag"
                 },
                 "digest": {
-                  "type": "string",
                   "default": "",
                   "description": "Pin by digest (sha256:...) instead of tag. Wins over tag when set."
                 },
                 "pullPolicy": {
-                  "type": "string",
                   "default": "IfNotPresent",
                   "description": "Image pull policy."
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "backoffLimit": {
-              "type": "integer",
               "default": 3,
               "description": "Maximum retries before the Job is considered failed."
             },
             "activeDeadlineSeconds": {
-              "type": "integer",
               "default": 600,
               "description": "Hard wall-clock cap on the Job (seconds)."
             },
             "ttlSecondsAfterFinished": {
-              "type": "integer",
               "default": 600,
               "description": "TTL after which a finished Job is garbage-collected (seconds)."
             },
@@ -719,49 +673,42 @@
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "250m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "256Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 },
                 "requests": {
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "50m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "64Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "all": {
           "type": "object",
           "properties": {
             "replicaCount": {
-              "type": "integer",
               "default": 1
             },
             "poolMaxOpenConns": {
-              "type": "integer",
               "default": 25
             },
             "poolMaxIdleConns": {
-              "type": "integer",
               "default": 12
             },
             "resources": {
@@ -771,69 +718,58 @@
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "500m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "512Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 },
                 "requests": {
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "100m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "128Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "autoscaling": {
               "type": "object",
               "properties": {
                 "enabled": {
-                  "type": "boolean",
                   "default": false,
                   "description": "HPA off by default; replicaCount governs. maxReplicas × poolMaxOpenConns"
                 },
                 "minReplicas": {
-                  "type": "integer",
                   "default": 1
                 },
                 "maxReplicas": {
-                  "type": "integer",
                   "default": 3
                 },
                 "targetCPUUtilizationPercentage": {
-                  "type": "integer",
                   "default": 80
                 },
                 "targetMemoryUtilizationPercentage": {
-                  "type": "integer",
                   "default": 80
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "pdb": {
               "type": "object",
               "properties": {
                 "enabled": {
-                  "type": "boolean",
                   "default": false
                 },
                 "minAvailable": {
-                  "type": "integer",
                   "default": 1
                 },
                 "annotations": {
@@ -841,36 +777,32 @@
                   "additionalProperties": true
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "nodeSelector": {
               "type": "object",
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "object",
-              "additionalProperties": true
+              "type": "array"
             },
             "affinity": {
               "type": "object",
               "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "ingest": {
           "type": "object",
           "properties": {
             "replicaCount": {
-              "type": "integer",
               "default": 1
             },
             "poolMaxOpenConns": {
-              "type": "integer",
               "default": 8
             },
             "poolMaxIdleConns": {
-              "type": "integer",
               "default": 4
             },
             "resources": {
@@ -880,69 +812,58 @@
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "500m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "512Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 },
                 "requests": {
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "100m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "128Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "autoscaling": {
               "type": "object",
               "properties": {
                 "enabled": {
-                  "type": "boolean",
                   "default": false
                 },
                 "minReplicas": {
-                  "type": "integer",
                   "default": 1
                 },
                 "maxReplicas": {
-                  "type": "integer",
                   "default": 4,
                   "description": "maxReplicas × 8 (poolMaxOpenConns) must fit the connection budget."
                 },
                 "targetCPUUtilizationPercentage": {
-                  "type": "integer",
                   "default": 80
                 },
                 "targetMemoryUtilizationPercentage": {
-                  "type": "integer",
                   "default": 80
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "pdb": {
               "type": "object",
               "properties": {
                 "enabled": {
-                  "type": "boolean",
                   "default": false
                 },
                 "minAvailable": {
-                  "type": "integer",
                   "default": 1
                 },
                 "annotations": {
@@ -950,36 +871,32 @@
                   "additionalProperties": true
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "nodeSelector": {
               "type": "object",
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "object",
-              "additionalProperties": true
+              "type": "array"
             },
             "affinity": {
               "type": "object",
               "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "delivery": {
           "type": "object",
           "properties": {
             "replicaCount": {
-              "type": "integer",
               "default": 1
             },
             "poolMaxOpenConns": {
-              "type": "integer",
               "default": 16
             },
             "poolMaxIdleConns": {
-              "type": "integer",
               "default": 10
             },
             "resources": {
@@ -989,69 +906,58 @@
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "500m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "512Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 },
                 "requests": {
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "100m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "128Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "autoscaling": {
               "type": "object",
               "properties": {
                 "enabled": {
-                  "type": "boolean",
                   "default": false
                 },
                 "minReplicas": {
-                  "type": "integer",
                   "default": 1
                 },
                 "maxReplicas": {
-                  "type": "integer",
                   "default": 4,
                   "description": "maxReplicas × 16 (poolMaxOpenConns) must fit the connection budget."
                 },
                 "targetCPUUtilizationPercentage": {
-                  "type": "integer",
                   "default": 80
                 },
                 "targetMemoryUtilizationPercentage": {
-                  "type": "integer",
                   "default": 80
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "pdb": {
               "type": "object",
               "properties": {
                 "enabled": {
-                  "type": "boolean",
                   "default": false
                 },
                 "minAvailable": {
-                  "type": "integer",
                   "default": 1
                 },
                 "annotations": {
@@ -1059,25 +965,24 @@
                   "additionalProperties": true
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "nodeSelector": {
               "type": "object",
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "object",
-              "additionalProperties": true
+              "type": "array"
             },
             "affinity": {
               "type": "object",
               "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "streaming-hub": {
       "type": "object",
@@ -1086,14 +991,13 @@
           "type": "object",
           "properties": {
             "tag": {
-              "type": "string",
               "default": "1.0.1"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     }
   },
   "additionalProperties": true

@@ -219,6 +219,9 @@ secrets:
     REDIS_PASSWORD: ""
     WEBHOOK_API_KEY: ""
     WEBHOOK_HMAC_SECRET: ""
+    # License gateway (lib-license-go): key material + enforcement scope. Fail-closed at boot.
+    LICENSE_KEY: ""
+    ORGANIZATION_IDS: ""
     # Moved out of the ConfigMap (Task 6.0.2 reconciliation): these three are
     # credential material per Lerian's values.md ConfigMap-vs-Secrets
     # classification and must not live in a ConfigMap. Empty by default —
@@ -271,6 +274,13 @@ server: {}
 streaming: {}
 swagger: {}
 webhook: {}
+# -- Grouped config (see templates/configmap.yaml for field names).
+schedule: {}   # settlement/dispatch scheduler windows + toggles (SCHEDULE_*)
+sfn: {}        # SFN bus/kafka ingest (SFN_*)
+signing: {}    # signing custody adapter / fail-closed / require-signature (SIGNING_*)
+intake: {}     # batch intake spool/chunk (INTAKE_*)
+dispatch: {}   # dispatch dev cert path etc. (DISPATCH_*)
+nuclea: {}     # NUCLEA/RSFN/ASLC REST + XSD validation knobs
 signer:
   # SIGNER_PKCS11_TOKEN_LABEL, wired into the signer ConfigMap under its real
   # env-var name. Kept here (not under signer.configmap.data) because the name

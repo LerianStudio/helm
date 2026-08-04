@@ -14,6 +14,12 @@
 {{- $server := .Values.server | default dict -}}
 {{- $streaming := .Values.streaming | default dict -}}
 {{- $swagger := .Values.swagger | default dict -}}
+{{- $schedule := .Values.schedule | default dict -}}
+{{- $sfn := .Values.sfn | default dict -}}
+{{- $signing := .Values.signing | default dict -}}
+{{- $intake := .Values.intake | default dict -}}
+{{- $dispatch := .Values.dispatch | default dict -}}
+{{- $nuclea := .Values.nuclea | default dict -}}
 {{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" (.Values.multiTenant | default dict) "field" "enabled" "default" "false")) "true" -}}
 apiVersion: v1
 kind: ConfigMap
@@ -196,3 +202,47 @@ data:
   RABBITMQ_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "localhost") | quote }}
   RABBITMQ_PORT_AMQP: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
   RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "guest") | quote }}
+
+  # =====================================================================
+  # ADDITIONAL CONFIG — schedule / sfn / signing / intake / dispatch / nuclea / misc.
+  # Each resolves via cfgValue (configmap.data.<KEY> > .Values.<group>.<field> > default).
+  # =====================================================================
+  ASLC_INBOUND_XSD_VALIDATION_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ASLC_INBOUND_XSD_VALIDATION_ENABLED" "params" $nuclea "field" "aslcInboundXsdValidationEnabled" "default" "true") | quote }}
+  DISPATCH_DEV_RECIPIENT_CERT_PATH: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DISPATCH_DEV_RECIPIENT_CERT_PATH" "params" $dispatch "field" "devRecipientCertPath" "default" "") | quote }}
+  INTAKE_BATCH_BULK_CHUNK_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "INTAKE_BATCH_BULK_CHUNK_SIZE" "params" $intake "field" "batchBulkChunkSize" "default" "500") | quote }}
+  INTAKE_BATCH_SPOOL_DIR: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "INTAKE_BATCH_SPOOL_DIR" "params" $intake "field" "batchSpoolDir" "default" "") | quote }}
+  INTAKE_BATCH_SPOOL_MAX_BYTES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "INTAKE_BATCH_SPOOL_MAX_BYTES" "params" $intake "field" "batchSpoolMaxBytes" "default" "268435456") | quote }}
+  IS_DEVELOPMENT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "IS_DEVELOPMENT" "params" $app "field" "isDevelopment" "default" "true") | quote }}
+  SCHEDULE_ANTICIPATION_DISPATCH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_ANTICIPATION_DISPATCH_ENABLED" "params" $schedule "field" "anticipationDispatchEnabled" "default" "false") | quote }}
+  SCHEDULE_ANTICIPATION_FORWARD_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_ANTICIPATION_FORWARD_ENABLED" "params" $schedule "field" "anticipationForwardEnabled" "default" "false") | quote }}
+  SCHEDULE_ANTICIPATION_SETTLE_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_ANTICIPATION_SETTLE_ENABLED" "params" $schedule "field" "anticipationSettleEnabled" "default" "false") | quote }}
+  SCHEDULE_CANCELLATION_DISPATCH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_CANCELLATION_DISPATCH_ENABLED" "params" $schedule "field" "cancellationDispatchEnabled" "default" "false") | quote }}
+  SCHEDULE_CANCELLATION_FORWARD_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_CANCELLATION_FORWARD_ENABLED" "params" $schedule "field" "cancellationForwardEnabled" "default" "false") | quote }}
+  SCHEDULE_CERT_EXPIRY_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_CERT_EXPIRY_ENABLED" "params" $schedule "field" "certExpiryEnabled" "default" "false") | quote }}
+  SCHEDULE_DEBIT_DISPATCH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DEBIT_DISPATCH_ENABLED" "params" $schedule "field" "debitDispatchEnabled" "default" "false") | quote }}
+  SCHEDULE_DEBIT_FORWARD_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DEBIT_FORWARD_ENABLED" "params" $schedule "field" "debitForwardEnabled" "default" "false") | quote }}
+  SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK" "params" $schedule "field" "dispatchMaxPagesPerTick" "default" "100") | quote }}
+  SCHEDULE_DISPATCH_MAX_RECORDS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DISPATCH_MAX_RECORDS" "params" $schedule "field" "dispatchMaxRecords" "default" "50000") | quote }}
+  SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS" "params" $schedule "field" "dispatchMaxTransmitAttempts" "default" "20") | quote }}
+  SCHEDULE_DOMICILE_RETURN_CLOSE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DOMICILE_RETURN_CLOSE" "params" $schedule "field" "domicileReturnClose" "default" "10:00") | quote }}
+  SCHEDULE_DOMICILE_RETURN_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DOMICILE_RETURN_OPEN" "params" $schedule "field" "domicileReturnOpen" "default" "08:50") | quote }}
+  SCHEDULE_DOMICILE_RETURN_PM_CLOSE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DOMICILE_RETURN_PM_CLOSE" "params" $schedule "field" "domicileReturnPmClose" "default" "18:30") | quote }}
+  SCHEDULE_DOMICILE_RETURN_PM_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DOMICILE_RETURN_PM_OPEN" "params" $schedule "field" "domicileReturnPmOpen" "default" "14:10") | quote }}
+  SCHEDULE_FORWARD_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_FORWARD_ENABLED" "params" $schedule "field" "forwardEnabled" "default" "false") | quote }}
+  SCHEDULE_OPERATION_STUCK_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_OPERATION_STUCK_ENABLED" "params" $schedule "field" "operationStuckEnabled" "default" "false") | quote }}
+  SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC" "params" $schedule "field" "operationStuckThresholdExternalSec" "default" "7200") | quote }}
+  SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC" "params" $schedule "field" "operationStuckThresholdInternalSec" "default" "21600") | quote }}
+  SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC" "params" $schedule "field" "operationStuckThresholdSettledSec" "default" "93600") | quote }}
+  SCHEDULE_SPECIAL_GRADE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_SPECIAL_GRADE" "params" $schedule "field" "specialGrade" "default" "none") | quote }}
+  SCHEDULE_VARREDURA_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_VARREDURA_ENABLED" "params" $schedule "field" "varreduraEnabled" "default" "false") | quote }}
+  SFN_BUS_PROVIDER: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_BUS_PROVIDER" "params" $sfn "field" "busProvider" "default" "kafka") | quote }}
+  SFN_INGEST_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_INGEST_ENABLED" "params" $sfn "field" "ingestEnabled" "default" "false") | quote }}
+  SFN_KAFKA_BATCH_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_KAFKA_BATCH_SIZE" "params" $sfn "field" "kafkaBatchSize" "default" "100") | quote }}
+  SFN_KAFKA_GROUP_ID: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_KAFKA_GROUP_ID" "params" $sfn "field" "kafkaGroupId" "default" "br-slc-sfn") | quote }}
+  SFN_KAFKA_TOPIC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_KAFKA_TOPIC" "params" $sfn "field" "kafkaTopic" "default" "siloc.inbound") | quote }}
+  SFN_STUB_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_STUB_TIMEOUT_SEC" "params" $sfn "field" "stubTimeoutSec" "default" "30") | quote }}
+  SIGNING_CUSTODY_ADAPTER: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SIGNING_CUSTODY_ADAPTER" "params" $signing "field" "custodyAdapter" "default" "softkey") | quote }}
+  SIGNING_FAIL_CLOSED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SIGNING_FAIL_CLOSED" "params" $signing "field" "failClosed" "default" "true") | quote }}
+  SIGNING_REQUIRE_SIGNATURE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SIGNING_REQUIRE_SIGNATURE" "params" $signing "field" "requireSignature" "default" "true") | quote }}
+  WEBHOOK_ALLOW_PRIVATE_NETWORK: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_ALLOW_PRIVATE_NETWORK" "params" $webhook "field" "allowPrivateNetwork" "default" "false") | quote }}
+  WEBHOOK_RETRY_BATCH: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_RETRY_BATCH" "params" $webhook "field" "retryBatch" "default" "100") | quote }}

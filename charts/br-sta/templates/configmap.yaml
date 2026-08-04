@@ -14,8 +14,17 @@
 {{- $redis := $component.redis | default dict -}}
 {{- $server := $component.server | default dict -}}
 {{- $swagger := $component.swagger | default dict -}}
+{{- $audit := $component.audit | default dict -}}
+{{- $transfer := $component.transfer | default dict -}}
+{{- $truststore := $component.truststore | default dict -}}
+{{- $masterKey := $component.masterKey | default dict -}}
+{{- $m2m := $component.m2m | default dict -}}
+{{- $sd := $component.serviceDiscovery | default dict -}}
+{{- $strm := $component.streaming | default dict -}}
 {{- $namespace := include "global.namespace" . -}}
 {{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" ($component.multiTenant | default dict) "field" "enabled" "default" "false")) "true" -}}
+{{- $sdEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SD_ENABLED" "params" $sd "field" "enabled" "default" "false")) "true" -}}
+{{- $streamingEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_ENABLED" "params" $strm "field" "enabled" "default" "false")) "true" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -117,7 +126,12 @@ data:
   {{- include "lerian-common.multiTenant.env" (dict
         "context" $ "configmap" $cm "enabled" $multiTenantEnabled
         "emitRedis" true "emitPool" true "emitCache" true
+        "emitAllowInsecure" true
         "requiredUrl" true "requiredRedisHost" true) | nindent 2 }}
+  {{- if $multiTenantEnabled }}
+  MULTI_TENANT_POOL_MAX_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_POOL_MAX_CONNS" "params" $multiTenant "field" "poolMaxConns" "default" "20") | quote }}
+  MULTI_TENANT_POOL_MAX_IDLE_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_POOL_MAX_IDLE_CONNS" "params" $multiTenant "field" "poolMaxIdleConns" "default" "5") | quote }}
+  {{- end }}
 
   # =====================================================================
   # OPENTELEMETRY. Shared keys (ENABLE_TELEMETRY / OTLP endpoint /
@@ -136,6 +150,61 @@ data:
           "OTEL_RESOURCE_SERVICE_NAME" "br-sta"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/br-sta"
           "OTEL_RESOURCE_SERVICE_VERSION" (include "br-sta.defaultTag" .))) | nindent 2 }}
+
+  # =====================================================================
+  # SERVICE DISCOVERY (serviceDiscovery.env + global.serviceDiscovery). Toggle via
+  # br-sta.serviceDiscovery.enabled; SD_TOKEN (ACL) is a Secret. Full block when enabled.
+  # =====================================================================
+  SD_ENABLED: {{ $sdEnabled | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" $sdEnabled
+        "configmap" $cm
+        "name" (include "br-sta.fullname" .)
+        "port" ($component.service).port
+        "namespace" $namespace
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" ($component.ingress | default dict)))) | nindent 2 }}
+
+  # =====================================================================
+  # STREAMING (streaming.env + global.streaming). Toggle via br-sta.streaming.enabled;
+  # STREAMING_SASL_PASSWORD is a Secret. Full SASL/broker block when enabled.
+  # =====================================================================
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $cm
+        "clientId" (include "br-sta.fullname" .)
+        "cloudeventsSource" "lerian.br-sta") | nindent 2 }}
+
+  # =====================================================================
+  # ADDITIONAL CONFIG (audit / transfer / trust-store / crypto provider / misc).
+  # Each resolves via cfgValue (configmap.<KEY> > br-sta.<group>.<field> > default).
+  # =====================================================================
+  AUDIT_EXPORT_RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AUDIT_EXPORT_RATE_LIMIT_MAX" "params" $audit "field" "exportRateLimitMax" "default" "10") | quote }}
+  AUDIT_EXPORT_RATE_LIMIT_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AUDIT_EXPORT_RATE_LIMIT_WINDOW_SEC" "params" $audit "field" "exportRateLimitWindowSec" "default" "60") | quote }}
+  AUDIT_PUBLISHER_ALTERNATE_EXCHANGE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AUDIT_PUBLISHER_ALTERNATE_EXCHANGE" "params" $audit "field" "publisherAlternateExchange" "default" "sta.audit.dlq") | quote }}
+  AUDIT_PUBLISHER_CONFIRM_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AUDIT_PUBLISHER_CONFIRM_TIMEOUT_SEC" "params" $audit "field" "publisherConfirmTimeoutSec" "default" "5") | quote }}
+  BACEN_ENVIRONMENT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "BACEN_ENVIRONMENT" "params" $app "field" "bacenEnvironment" "default" "homologation") | quote }}
+  CREDENTIALS_RECOVERY_ON_BOOT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CREDENTIALS_RECOVERY_ON_BOOT" "params" $app "field" "credentialsRecoveryOnBoot" "default" "true") | quote }}
+  MASTER_KEY_PROVIDER: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MASTER_KEY_PROVIDER" "params" $masterKey "field" "provider" "default" "envvar") | quote }}
+  MASTER_KEY_VERSION: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MASTER_KEY_VERSION" "params" $masterKey "field" "version" "default" "v1") | quote }}
+  POSTGRES_MAX_CONNECTIONS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_MAX_CONNECTIONS" "params" $postgres "field" "maxConnections" "default" "100") | quote }}
+  POSTGRES_SHARED_BUFFERS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_SHARED_BUFFERS" "params" $postgres "field" "sharedBuffers" "default" "128MB") | quote }}
+  RABBITMQ_SCHEME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_SCHEME" "params" $broker "field" "scheme" "default" "amqp") | quote }}
+  SERVER_TRUSTED_PROXIES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SERVER_TRUSTED_PROXIES" "params" $server "field" "trustedProxies" "default" "") | quote }}
+  TRANSFER_INBOUND_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRANSFER_INBOUND_ENABLED" "params" $transfer "field" "inboundEnabled" "default" "false") | quote }}
+  TRANSFER_INBOUND_MAX_FILE_SIZE_BYTES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRANSFER_INBOUND_MAX_FILE_SIZE_BYTES" "params" $transfer "field" "inboundMaxFileSizeBytes" "default" "5368709120") | quote }}
+  TRANSFER_OBJECT_STORAGE_BUCKET: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRANSFER_OBJECT_STORAGE_BUCKET" "params" $transfer "field" "objectStorageBucket" "default" "") | quote }}
+  TRUST_STORE_DEFAULT_PAGE_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRUST_STORE_DEFAULT_PAGE_SIZE" "params" $truststore "field" "defaultPageSize" "default" "25") | quote }}
+  TRUST_STORE_EXPIRING_SOON_DAYS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRUST_STORE_EXPIRING_SOON_DAYS" "params" $truststore "field" "expiringSoonDays" "default" "30") | quote }}
+  TRUST_STORE_MAX_CERT_SIZE_BYTES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "params" $truststore "field" "maxCertSizeBytes" "default" "65536") | quote }}
+  TRUST_STORE_MAX_PAGE_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRUST_STORE_MAX_PAGE_SIZE" "params" $truststore "field" "maxPageSize" "default" "100") | quote }}
+  TRUST_STORE_S3_BUCKET: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRUST_STORE_S3_BUCKET" "params" $truststore "field" "s3Bucket" "default" "br-sta-truststore") | quote }}
+  TRUST_STORE_S3_ENDPOINT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRUST_STORE_S3_ENDPOINT" "params" $truststore "field" "s3Endpoint" "default" "http://localhost:8333") | quote }}
+  TRUST_STORE_S3_PATH_STYLE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRUST_STORE_S3_PATH_STYLE" "params" $truststore "field" "s3PathStyle" "default" "true") | quote }}
+  TRUST_STORE_S3_REGION: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TRUST_STORE_S3_REGION" "params" $truststore "field" "s3Region" "default" "us-east-1") | quote }}
+  AWS_ACCESS_KEY_ID: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AWS_ACCESS_KEY_ID" "params" $m2m "field" "awsAccessKeyId" "default" "any") | default "" | quote }}
 
   # =====================================================================
   # POSTGRESQL. HOST/PORT/USER/SSL from the datastore mask (br-sta.datastores.postgres

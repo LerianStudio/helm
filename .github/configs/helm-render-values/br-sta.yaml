@@ -7,10 +7,20 @@
 br-sta:
   multiTenant:
     enabled: true
+  serviceDiscovery:
+    enabled: true
+  streaming:
+    enabled: true
   configmap:
     RABBITMQ_ENABLED: "true"
+    STREAMING_BROKERS: "kafka:9092"
+    STREAMING_SASL_MECHANISM: "PLAIN"
+    STREAMING_SASL_USERNAME: "u"
+    STREAMING_TLS_ENABLED: "true"
   secrets:
     MULTI_TENANT_SERVICE_API_KEY: "render-fixture-mt-api-key"
+    STREAMING_SASL_PASSWORD: "p"
+    SD_TOKEN: "t"
     RABBITMQ_DEFAULT_PASS: "render-fixture-rmq-pass"
 global:
   observability:
@@ -20,3 +30,7 @@ global:
   multiTenant:
     url: "http://tenant-manager:8080"
     redisHost: "tenant-manager-redis"
+  serviceDiscovery:
+    address: "consul:8500"
+  streaming:
+    brokers: "kafka:9092"

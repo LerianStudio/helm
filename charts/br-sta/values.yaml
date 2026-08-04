@@ -76,6 +76,12 @@ global:
     #   host: ""          # RABBITMQ_HOST
     #   port: "5672"      # RABBITMQ_PORT_AMQP
     #   user: "br_sta"    # RABBITMQ_DEFAULT_USER
+  # -- Env-wide service discovery (Consul), consumed by lerian-common.serviceDiscovery.env.
+  # Only used when SD is enabled (br-sta.serviceDiscovery.enabled). Leave {} for defaults.
+  serviceDiscovery: {}
+  # -- Env-wide streaming (lib-streaming → Kafka), consumed by lerian-common.streaming.env.
+  # Only used when streaming is enabled (br-sta.streaming.enabled). Leave {} for defaults.
+  streaming: {}
 
 # ==============================================================================
 # APPLICATION
@@ -273,6 +279,17 @@ br-sta:
   rateLimit: {}    # enabled / max / windowSec / aggressive* / relaxed* / allowFailOpen
   pagination: {}   # limit / monthDateRange
   idempotency: {}  # retryWindowSec
+  audit: {}        # exportRateLimitMax/WindowSec / publisherAlternateExchange / publisherConfirmTimeoutSec
+  transfer: {}     # inboundEnabled / inboundMaxFileSizeBytes / objectStorageBucket
+  truststore: {}   # defaultPageSize / expiringSoonDays / maxCertSizeBytes / maxPageSize / s3Bucket/Endpoint/PathStyle/Region
+  masterKey: {}    # provider / version (MASTER_KEYS material is a Secret)
+  m2m: {}          # awsAccessKeyId (AWS_SECRET_ACCESS_KEY is a Secret)
+  # -- Service discovery toggle (grouped API for SD_ENABLED). SD_TOKEN (ACL) is a Secret.
+  serviceDiscovery:
+    enabled: false
+  # -- Streaming toggle (grouped API for STREAMING_ENABLED). SASL password is a Secret.
+  streaming:
+    enabled: false
   # -- Secrets (sensitive environment variables)
   # @default -- templates/secrets.yaml
   secrets:
@@ -293,6 +310,14 @@ br-sta:
     # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_SERVICE_API_KEY: ""
     # MULTI_TENANT_REDIS_PASSWORD: ""
+    # Crypto master-key catalogue (MASTER_KEY_PROVIDER=envvar) — key material, provide via a secrets manager.
+    MASTER_KEYS: ""
+    # Object-storage credential (the non-secret AWS_ACCESS_KEY_ID lives in the ConfigMap / m2m group).
+    AWS_SECRET_ACCESS_KEY: ""
+    # Service-discovery ACL token (only when SD is enabled).
+    SD_TOKEN: ""
+    # Streaming SASL password (REQUIRED when streaming is enabled with a SASL mechanism).
+    STREAMING_SASL_PASSWORD: ""
   # -- Use an externally managed Secret instead of generating one
   useExistingSecret: false
   # -- Name of the externally managed Secret

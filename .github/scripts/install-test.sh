@@ -45,6 +45,16 @@ do_install() { # <release> <chart-dir>
 deployed() { [[ "$(helm status "$1" -n "$NS" -o json 2>/dev/null | tr -d ' \n' | grep -o '"status":"[a-z]*"' | head -1)" == '"status":"deployed"' ]]; }
 
 echo "===== [$CHART] dependency build ====="
+# `helm dependency build` needs every HTTP dependency repo registered first
+# (oci:// and file:// deps don't). Mirror what the render-gate's Go tool does:
+# register each `repository: https://…` from Chart.yaml before building.
+depn=0
+while IFS= read -r repo_url; do
+  [[ -z "$repo_url" ]] && continue
+  helm repo add "dep${depn}" "$repo_url" >/dev/null 2>&1 || true
+  depn=$((depn + 1))
+done < <(grep -E 'repository:[[:space:]]*"?https?://' "$CHART_DIR/Chart.yaml" | grep -Eo 'https?://[^"[:space:]]+' | sort -u)
+[[ "$depn" -gt 0 ]] && helm repo update >/dev/null 2>&1
 helm dependency build "$CHART_DIR" >/dev/null 2>&1 || fail "helm dependency build failed"
 
 # Lerian charts pin their own namespaces (namespaceOverride / global.namespace), so

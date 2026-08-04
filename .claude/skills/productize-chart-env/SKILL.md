@@ -22,9 +22,18 @@ Every ACTIVE env var the app reads must be covered by the chart as exactly one o
 - **gap** → recorded backlog (app declares it, chart can't cover it yet)
 - **omitted** → with a written reason
 
-The chart's `configmap` / `configmap.data` ends up **`{}`** (an override escape-hatch);
-all defaults live in the template. Result: the operator configures a clean typed API
-(`<comp>.redis.poolSize`), never a raw env var, and `configmap.<KEY>` still wins as an override.
+The chart's `configmap` / `configmap.data` ends up **`{}`** — `{}` means "no DEFAULTS shipped
+here", NOT "overrides forbidden". Defaults live in the template. Result: the operator configures
+a clean typed API (`<comp>.redis.poolSize`), never a raw env var.
+
+**Two escape hatches stay open (every mature chart keeps one — do NOT remove them):**
+- `configmap.<KEY>` — overrides an ENUMERATED key (top of `cfgValue` precedence:
+  `configmap.<KEY>` › `<comp>.<group>.<field>` › default).
+- `<comp>.extraEnvVars` (a `range`-emitted map at the end of the ConfigMap) — injects ANY
+  UN-enumerated var, so a var the app adds before the chart re-syncs is still settable.
+This is why enumeration is safe: the typed groups are the *documented* surface, the hatches are
+the *safety valve*. Enumerating a finite, app-owned `.env` (unlike Grafana/NGINX wrapping a
+foreign open-ended config) is the deliberate divergence — see "Market alignment" at the end.
 
 ## Inputs
 
@@ -72,6 +81,12 @@ The helpers already exist; you are only WIRING them.
 Everything NOT in this map is **config** (long-tail: rate-limit, outbox, swagger, cors, pagination,
 object-storage, service-specific knobs) → route each via `cfgValue` into a grouped block.
 
+**Two `global.*` tiers (P1 #4):** the domain blocks above (`global.observability`,
+`global.multiTenant`, `global.datastores`, `global.serviceDiscovery`, `global.streaming`,
+`global.auth`) are the env-wide CONFIG tier. Additionally ensure the k8s-INFRA tier exists for
+the umbrella: `global.imageRegistry`, `global.imagePullSecrets`, `global.storageClass`,
+`commonLabels` — shared once at the umbrella and read by every component subchart.
+
 ## Classification (config vs secret)
 
 Per Lerian `values.md`: a var is a **secret** if it carries credential material
@@ -96,11 +111,34 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
    Declare `{{- $group := .Values.<comp>.<group> | default dict -}}` vars at the top. Group by
    prefix (`CORS_`→cors, `REDIS_`→redis, `OUTBOX_`→outbox, `RATE_LIMIT`→rateLimit, `SWAGGER_`→swagger,
    `OBJECT_STORAGE_`→objectStorage, …); field = camelCase of the key minus the group prefix.
+   Keep nesting ≤ 3 levels (`<comp>.<group>.<field>`) — deeper only for native k8s structs
+   (securityContext). Do not nest single, unrelated knobs (Helm favours flat for simplicity).
 6. **Empty the raw config** in values.yaml (`configmap: {}` / `data: {}`) and add the grouped
-   blocks (`<group>: {}` with a field-list comment). Carry any value that DIFFERED from the
-   template default into the group default (Rule 3).
-7. **Secrets** → `secrets.yaml`: passthrough emit-when-set for the long tail, `required` /
-   `multiTenant.secret` fail-fast when the owning feature is enabled.
+   blocks. Each grouped param carries a **`# -- <description>`** helm-docs annotation (P0 #2)
+   so the README table auto-generates and never drifts. Keep `<comp>.extraEnvVars` as the
+   documented injection hatch. Carry any value that DIFFERED from the template default into the
+   group default (Rule 3).
+7. **Secrets** → `secrets.yaml`. Prefer the `existingSecret` reference model; then per var:
+   - **fail-fast** (`required` / `multiTenant.secret`) when the owning feature is enabled — for
+     money-path credentials that must be operator-provided.
+   - **generate-or-reuse** for chart-owned generated secrets: use the lerian-common
+     `secrets.manage` helper (existingSecret › `lookup` the live Secret to REUSE on upgrade ›
+     random generate on first install › fail-on-empty-upgrade). This prevents password churn on
+     `helm upgrade`. (If the helper is missing, record it as a lerian-common gap — do not
+     hand-roll `lookup`.)
+   - Emit-when-set passthrough for the optional long tail.
+   Backstop: a leaked-secret guard — a value classified secret must NEVER land in a plaintext
+   ConfigMap; route it to the Secret (fail the render if it would leak).
+8. **Ship a strict `values.schema.json`** (P0 #1). Generate it from the grouped blocks:
+   `additionalProperties: false` on the CLOSED component/group objects (catches typo'd keys at
+   `helm install`), `patternProperties: {"^[A-Z0-9_]+$": {...}}` on the OPEN maps
+   (`configmap`, `extraEnvVars`), `enum` for closed sets (logLevel, sslmode, pullPolicy), `type`
+   everywhere, `default` per field. Follow cert-manager: DEFAULT-everything, use `required`
+   sparingly. Our "everything known is typed" premise lets us be stricter than Bitnami's lax schema.
+9. **Naming + hatches baseline** (verify present): `nameOverride`/`fullnameOverride`, camelCase
+   keys, `enabled` toggles, and the standard escape hatches (`extraEnvVars`, `extraVolumes`/
+   `extraVolumeMounts`, `extraContainers`, `podAnnotations`/`podLabels`, `resources`,
+   `nodeSelector`/`tolerations`/`affinity`, `extraObjects`).
 
 ## RULES (the gotchas — every one cost real debugging; bake them in)
 
@@ -132,6 +170,9 @@ Run `scripts/coverage.py` (renders the chart, diffs vs the `.env` + the manifest
 - **No raw drift**: every emitted ConfigMap key is accounted for (in a group/helper) — none raw.
 - **Byte-identical** (regression guard, NOT completeness): default render == prior productized
   render, except intentionally-gated keys (MT/streaming infra now only render when enabled).
+- **Schema**: `helm lint`/`template` validates against the shipped `values.schema.json` — a
+  typo'd key under a closed block is rejected (that is the user-facing half of the coverage check).
+- **Docs**: the README parameter table regenerates from the `# --` annotations with no diff.
 - `helm lint` + the repo render-gate + strict standard all green.
 
 Emit a **coverage report** at the end: N config / N secret / N helper / N datastore / gaps list.
@@ -140,6 +181,34 @@ so the human confirms in the PR — the skill proposes, the reviewer decides.
 
 ## Output
 
-Modified `templates/configmap.yaml`, `templates/secrets.yaml`, `values.yaml`, a render fixture
-(`.github/configs/helm-render-values/<chart>.yaml` enabling the productized paths), and the
-coverage report. One chart per PR.
+Modified `templates/configmap.yaml`, `templates/secrets.yaml`, `values.yaml`, `values.schema.json`,
+a render fixture (`.github/configs/helm-render-values/<chart>.yaml` enabling the productized paths),
+and the coverage report. One chart per PR.
+
+## Market alignment (why we diverge, and where we adopt)
+
+Studied against consolidated OSS charts (Bitnami `common`/postgresql/redis, Grafana/Loki/
+kube-prometheus-stack, cert-manager, ingress-nginx) + the Helm Chart Best Practices.
+
+**Where our premise is JUSTIFIED (keep):** the market splits into "enumerate every knob"
+(Bitnami) and "pass a structured config blob" (Grafana `grafana.ini`, ingress-nginx
+`controller.config`). The blob exists because those charts wrap FOREIGN apps with hundreds of
+fast-churning config keys they don't own — it decouples the chart from that churn. **That reason
+does not apply to us**: our `.env.example` is a finite, versioned, app-owned 12-factor contract,
+so enumerate-and-type buys typing, validation, per-key defaults, grouping and fail-fast secrets.
+Copying the blob would be cargo-culting. The coverage check is what makes enumeration
+sustainable (our substitute for the "stay-in-sync" the blob dodges).
+
+**Where we were WRONG / adopt from the market:**
+- Every mature chart — even 100%-typed Bitnami and 100%-blob Grafana — keeps an env escape hatch.
+  Never remove `extraEnvVars` / the `configmap.<KEY>` override. `configmap: {}` = "no defaults",
+  not "locked". (Premise section.)
+- Ship a strict `values.schema.json` (`additionalProperties:false`) — the single biggest gap; it
+  is the user-facing guardrail our "everything typed" premise earns. (Step 8.)
+- Annotation-driven docs (`# --` / `@param`) + auto-generated README — never hand-write tables. (Step 6.)
+- Secrets: `lookup`+manage (reuse-on-upgrade), not only fail-fast; + a leaked-secret guard. (Step 7.)
+- A k8s-infra `global.*` tier for the umbrella (registry/pullSecrets/storageClass/commonLabels). (Domain map.)
+
+**Exception:** if an app ever ships a genuinely NESTED config file (not flat env), model it as a
+structured passthrough map rendered to a ConfigMap (grafana.ini pattern) — do NOT flatten every
+leaf into a grouped param. Full enumeration is for the flat 12-factor `.env` surface only.

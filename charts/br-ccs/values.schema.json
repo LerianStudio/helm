@@ -77,22 +77,18 @@
           "description": "Streaming toggle (grouped API for STREAMING_ENABLED). Broker/SASL infra comes"
         },
         "name": {
-          "type": "string",
           "default": "br-ccs",
           "description": "Service name"
         },
         "enabled": {
-          "type": "boolean",
           "default": true,
           "description": "Enable or disable the br-ccs service"
         },
         "replicaCount": {
-          "type": "integer",
           "default": 2,
           "description": "Number of replicas for the br-ccs service"
         },
         "revisionHistoryLimit": {
-          "type": "integer",
           "default": 10,
           "description": "Number of old ReplicaSets to retain for deployment rollback"
         },
@@ -100,44 +96,37 @@
           "type": "object",
           "properties": {
             "repository": {
-              "type": "string",
               "default": "ghcr.io/lerianstudio/br-ccs",
               "description": "Repository for the br-ccs service container image"
             },
             "pullPolicy": {
-              "type": "string",
               "default": "IfNotPresent",
               "description": "Image pull policy"
             },
             "tag": {
-              "type": "string",
               "default": "1.0.0",
               "description": "Image tag used for deployment"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "migrations": {
           "type": "object",
           "description": "PostgreSQL migrations job (Helm hook; ArgoCD PreSync for external PG,",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": true,
               "description": "Enable or disable the migrations job."
             },
             "useExistingSecret": {
-              "type": "boolean",
               "default": false,
               "description": "Optional. When true, migrations read POSTGRES_PASSWORD from a pre-existing"
             },
             "existingSecretName": {
-              "type": "string",
               "default": "",
               "description": "Name of the pre-existing Secret containing POSTGRES_PASSWORD"
             },
             "path": {
-              "type": "string",
               "default": "/migrations",
               "description": "MIGRATIONS_PATH inside the migrations image (embedded at /migrations)."
             },
@@ -145,25 +134,21 @@
               "type": "object",
               "properties": {
                 "repository": {
-                  "type": "string",
                   "default": "ghcr.io/lerianstudio/br-ccs-migrations",
                   "description": "Repository for the migrations runner image"
                 },
                 "tag": {
-                  "type": "string",
                   "default": "",
                   "description": "Tag for the migrations image. Defaults to the app image tag"
                 },
                 "pullPolicy": {
-                  "type": "string",
                   "default": "IfNotPresent",
                   "description": "Image pull policy"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "backoffLimit": {
-              "type": "integer",
               "default": 3,
               "description": "Maximum number of retries before the Job is considered failed"
             },
@@ -174,47 +159,41 @@
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "250m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "256Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 },
                 "requests": {
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "50m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "64Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "imagePullSecrets": {
           "type": "array",
           "description": "Secrets for pulling images from a private registry"
         },
         "nameOverride": {
-          "type": "string",
           "default": "",
           "description": "Overrides the default generated name by Helm"
         },
         "fullnameOverride": {
-          "type": "string",
           "default": "",
           "description": "Overrides the full name generated by Helm"
         },
@@ -231,17 +210,14 @@
           "type": "object",
           "properties": {
             "runAsGroup": {
-              "type": "integer",
               "default": 1000,
               "description": "Defines the group ID for the user running the process inside the container"
             },
             "runAsUser": {
-              "type": "integer",
               "default": 1000,
               "description": "Defines the user ID for the process running inside the container"
             },
             "runAsNonRoot": {
-              "type": "boolean",
               "default": true,
               "description": "Ensures the process does not run as root"
             },
@@ -252,14 +228,12 @@
                   "type": "array"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "allowPrivilegeEscalation": {
-              "type": "boolean",
               "default": false
             },
             "readOnlyRootFilesystem": {
-              "type": "boolean",
               "default": true,
               "description": "Defines the root filesystem as read-only"
             },
@@ -267,31 +241,27 @@
               "type": "object",
               "properties": {
                 "type": {
-                  "type": "string",
                   "default": "RuntimeDefault"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "pdb": {
           "type": "object",
           "description": "PodDisruptionBudget configuration",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
             "minAvailable": {
-              "type": "integer",
               "default": 1,
               "description": "Minimum number of available pods"
             },
             "maxUnavailable": {
-              "type": "integer",
               "default": 1,
               "description": "Maximum number of unavailable pods"
             },
@@ -301,40 +271,35 @@
               "description": "Annotations for the PodDisruptionBudget"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "deploymentUpdate": {
           "type": "object",
           "description": "Deployment update strategy",
           "properties": {
             "type": {
-              "type": "string",
               "default": "RollingUpdate",
               "description": "Type of deployment strategy"
             },
             "maxSurge": {
-              "type": "string",
               "default": "100%",
               "description": "Maximum number of pods that can be created over the desired number of pods"
             },
             "maxUnavailable": {
-              "type": "integer",
               "default": 0,
               "description": "Maximum number of pods that can be unavailable during the update"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "service": {
           "type": "object",
           "properties": {
             "type": {
-              "type": "string",
               "default": "ClusterIP",
               "description": "Kubernetes service type"
             },
             "port": {
-              "type": "integer",
               "default": 4030,
               "description": "Port for the HTTP API"
             },
@@ -343,18 +308,16 @@
               "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "ingress": {
           "type": "object",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": false,
               "description": "Enable or disable ingress"
             },
             "className": {
-              "type": "string",
               "default": "",
               "description": "Ingress class name"
             },
@@ -371,7 +334,7 @@
               "description": "TLS configuration for ingress"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "resources": {
           "type": "object",
@@ -381,63 +344,54 @@
               "description": "CPU and memory limits for pods",
               "properties": {
                 "cpu": {
-                  "type": "string",
                   "default": "1500m"
                 },
                 "memory": {
-                  "type": "string",
                   "default": "512Mi"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "requests": {
               "type": "object",
               "description": "Minimum CPU and memory requests",
               "properties": {
                 "cpu": {
-                  "type": "string",
                   "default": "500m"
                 },
                 "memory": {
-                  "type": "string",
                   "default": "256Mi"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "autoscaling": {
           "type": "object",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": true,
               "description": "Enable or disable horizontal pod autoscaling"
             },
             "minReplicas": {
-              "type": "integer",
               "default": 2,
               "description": "Minimum number of replicas"
             },
             "maxReplicas": {
-              "type": "integer",
               "default": 5,
               "description": "Maximum number of replicas"
             },
             "targetCPUUtilizationPercentage": {
-              "type": "integer",
               "default": 80,
               "description": "Target CPU utilization percentage for autoscaling"
             },
             "targetMemoryUtilizationPercentage": {
-              "type": "integer",
               "default": 80
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "nodeSelector": {
           "type": "object",
@@ -969,12 +923,10 @@
           "description": "Secrets for storing sensitive data. Provide real values via an existing"
         },
         "useExistingSecret": {
-          "type": "boolean",
           "default": false,
           "description": "Existing secrets name"
         },
         "existingSecretName": {
-          "type": "string",
           "default": ""
         },
         "extraEnvVars": {
@@ -986,7 +938,6 @@
           "type": "object",
           "properties": {
             "create": {
-              "type": "boolean",
               "default": true,
               "description": "Specifies whether a ServiceAccount should be created"
             },
@@ -996,15 +947,14 @@
               "description": "Annotations for the ServiceAccount"
             },
             "name": {
-              "type": "string",
               "default": "",
               "description": "Name of the service account"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "valkey": {
       "type": "object",

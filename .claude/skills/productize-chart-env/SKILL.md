@@ -114,8 +114,9 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
    Keep nesting ≤ 3 levels (`<comp>.<group>.<field>`) — deeper only for native k8s structs
    (securityContext). Do not nest single, unrelated knobs (Helm favours flat for simplicity).
 6. **Empty the raw config** in values.yaml (`configmap: {}` / `data: {}`) and add the grouped
-   blocks. Each grouped param carries a **`# -- <description>`** helm-docs annotation (P0 #2)
-   so the README table auto-generates and never drifts. Keep `<comp>.extraEnvVars` as the
+   blocks. Each documented value carries a **`# -- <description>`** helm-docs annotation (P0 #2);
+   the README table auto-generates via `scripts/gen-docs.py --values <v.yaml> --out <chart>/
+   README.params.md` (run `--check` in CI to fail on drift). Keep `<comp>.extraEnvVars` as the
    documented injection hatch. Carry any value that DIFFERED from the template default into the
    group default (Rule 3).
 7. **Secrets** → `secrets.yaml`. Prefer the `existingSecret` reference model; then per var:
@@ -129,12 +130,17 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
    - Emit-when-set passthrough for the optional long tail.
    Backstop: a leaked-secret guard — a value classified secret must NEVER land in a plaintext
    ConfigMap; route it to the Secret (fail the render if it would leak).
-8. **Ship a strict `values.schema.json`** (P0 #1). Generate it from the grouped blocks:
-   `additionalProperties: false` on the CLOSED component/group objects (catches typo'd keys at
-   `helm install`), `patternProperties: {"^[A-Z0-9_]+$": {...}}` on the OPEN maps
-   (`configmap`, `extraEnvVars`), `enum` for closed sets (logLevel, sslmode, pullPolicy), `type`
-   everywhere, `default` per field. Follow cert-manager: DEFAULT-everything, use `required`
-   sparingly. Our "everything known is typed" premise lets us be stricter than Bitnami's lax schema.
+8. **Ship a strict `values.schema.json`** (P0 #1) — run `scripts/gen-schema.py --values <v.yaml>
+   --chart-dir <chart> --out <chart>/values.schema.json`. It parses BOTH values.yaml AND
+   `templates/configmap.yaml` (the grouped blocks ship empty `{}`, so the group FIELDS are read
+   from the `cfgValue "field"/"default"` args — template-as-source-of-truth). Output is
+   strict-where-safe: `additionalProperties:false` on the CLOSED typed group blocks (a typo like
+   `<comp>.redis.poolSizeX` is rejected at `helm template`), permissive (`true`) on ROOT,
+   subcharts, `global`, and OPEN maps (`configmap`/`extraEnvVars`) so legitimate keys never break.
+   Config fields are typed `string` (env vars are strings) → operators use `--set-string` or quote
+   in values; `default`-everything, `required` sparingly (like cert-manager). Add a
+   `# -- (enum: a|b|c) desc` annotation to emit an `enum` for a closed set. Verify: `helm lint`
+   passes AND a deliberate typo is rejected.
 9. **Naming + hatches baseline** (verify present): `nameOverride`/`fullnameOverride`, camelCase
    keys, `enabled` toggles, and the standard escape hatches (`extraEnvVars`, `extraVolumes`/
    `extraVolumeMounts`, `extraContainers`, `podAnnotations`/`podLabels`, `resources`,

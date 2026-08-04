@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""
+gen-schema.py — generate a values.schema.json from a chart's values.yaml.
+
+Strict WHERE it is safe, permissive WHERE it must be. The whole point of the
+productize premise ("everything known is typed") is that our grouped config blocks
+are closed sets — so a typo'd key under `<comp>.redis.<typo>` should be REJECTED at
+`helm install`. But subcharts (postgresql/valkey/...), `global`, and open passthrough
+maps (`configmap`, `extraEnvVars`, podAnnotations, ...) are NOT ours to close — forcing
+`additionalProperties:false` there would reject legitimate keys and break the render.
+
+Policy per object node:
+  - OPEN  (additionalProperties: true / {type:string}) when: key is a known subchart /
+    `global`, OR key is in OPEN_MAPS, OR the node is empty {}, OR any child key is
+    UPPER_SNAKE (env-var-like) or non-identifier. No strict recursion.
+  - CLOSED (additionalProperties: false, properties enumerated) otherwise — the typed
+    camelCase grouped blocks. This is where typos get caught.
+  - ROOT is always OPEN (allows subcharts). Strictness only kicks in on nested typed blocks.
+
+Scalars get `type` + `default` (+ `enum` from a `# -- (enum: a|b|c)` annotation hint).
+Descriptions come from the `# --` annotations (shared parse with gen-docs). `required` is
+deliberately NOT emitted — default-everything, like cert-manager.
+
+Because our grouped blocks ship EMPTY (`<comp>.redis: {}` — defaults live in the template),
+values.yaml alone can't tell the generator the group's fields. So with `--chart-dir` the
+generator also parses `templates/configmap.yaml`: it reads every
+`cfgValue (... "params" $grp ... "field" "f" ... "default" "d")` plus the
+`$grp := .Values.<comp>.<group>` var decls, and ENUMERATES those fields (type string,
+default d) under the group block with `additionalProperties:false` — so a typo like
+`<comp>.redis.poolSizeX` is rejected even though values ships `redis: {}`. This is the
+template-as-source-of-truth rule the coverage check already relies on.
+
+Usage:
+  gen-schema.py --values charts/br-ccs/values.yaml --chart-dir charts/br-ccs \
+      [--out charts/br-ccs/values.schema.json]
+  gen-schema.py --values ... --chart-dir ... --check   # exit 1 if out would change
+"""
+import argparse, json, re, sys, os
+
+
+def template_group_fields(chart_dir):
+    """Parse templates/configmap.yaml → {values-path: {field: default}} for grouped blocks."""
+    tpl = os.path.join(chart_dir, "templates", "configmap.yaml")
+    if not os.path.exists(tpl):
+        return {}
+    src = open(tpl).read()
+    # $grp := .Values.<path>   (path may be brCcs.rateLimit or, for flat charts, rateLimit)
+    short2path = {m.group(1): m.group(2)
+                  for m in re.finditer(r"\$(\w+)\s*:=\s*\.Values\.([\w.]+)\s*\|\s*default dict", src)}
+    groups = {}
+    for m in re.finditer(r'"params"\s*\$(\w+)\s*"field"\s*"(\w+)"\s*"default"\s*("([^"]*)"|[^)\s]+)', src):
+        grp, field, default = m.group(1), m.group(2), m.group(4) if m.group(4) is not None else ""
+        path = short2path.get(grp)
+        if path:
+            groups.setdefault(path, {})[field] = default
+    return groups
+
+try:
+    import yaml
+except ImportError:
+    sys.stderr.write("gen-schema needs PyYAML (pip install pyyaml)\n"); sys.exit(2)
+
+SUBCHARTS = {"postgresql", "valkey", "redis", "rabbitmq", "mongodb", "kafka",
+             "lerian-common-helm", "lerian-common", "common"}
+OPEN_MAPS = {"configmap", "data", "extraEnvVars", "extraEnvVarsCM", "extraEnvVarsSecret",
+             "podAnnotations", "podLabels", "annotations", "commonLabels", "labels",
+             "matchLabels", "selectorLabels", "nodeSelector", "extraObjects", "secrets",
+             "config", "grafana.ini", "structuredConfig"}
+IDENT = re.compile(r"^[a-z][A-Za-z0-9]*$")          # camelCase leaf key
+ENVLIKE = re.compile(r"^[A-Z][A-Z0-9_]+$")          # env-var-like key
+
+
+def descriptions(values_path):
+    """Reuse the # -- annotation parse for path -> (description, enum)."""
+    out, stack, pend, penum = {}, [], None, None
+    for raw in open(values_path):
+        line = raw.rstrip("\n"); indent = len(line) - len(line.lstrip(" "))
+        m = re.match(r"^\s*#\s?--\s?(.*)$", line)
+        if m:
+            body = m.group(1)
+            mt = re.match(r"\(enum:\s*([^)]+)\)\s*(.*)$", body)
+            if mt:
+                penum = [x.strip() for x in mt.group(1).split("|")]; body = mt.group(2)
+            else:
+                mt2 = re.match(r"\([^)]*\)\s*(.*)$", body)
+                if mt2:
+                    body = mt2.group(1)
+            pend = body.strip(); continue
+        if re.match(r"^\s*#", line) or not line.strip():
+            continue
+        mk = re.match(r"^(\s*)([A-Za-z0-9_.\-]+):", line)
+        if not mk:
+            pend, penum = None, None; continue
+        while stack and stack[-1][0] >= indent:
+            stack.pop()
+        stack.append((indent, mk.group(2)))
+        if pend is not None or penum is not None:
+            out[".".join(k for _, k in stack)] = (pend, penum)
+        pend, penum = None, None
+    return out
+
+
+def scalar_schema(v):
+    if isinstance(v, bool):
+        return {"type": "boolean"}
+    if isinstance(v, int):
+        return {"type": "integer"}
+    if isinstance(v, float):
+        return {"type": "number"}
+    if v is None:
+        return {"type": ["string", "null"]}
+    return {"type": "string"}
+
+
+def is_open(key, node):
+    if key in SUBCHARTS or key == "global":
+        return True
+    if key in OPEN_MAPS:
+        return True
+    if isinstance(node, dict):
+        if not node:
+            return True
+        for k in node:
+            if ENVLIKE.match(str(k)) or not IDENT.match(str(k)):
+                return True
+    return False
+
+
+def build(node, path, desc, tgroups):
+    d, enum = desc.get(path, (None, None))
+    # Grouped config block: values ships it empty, the template defines its fields.
+    if path in tgroups and isinstance(node, dict) and all(IDENT.match(str(k)) for k in node):
+        props = {}
+        for f, dflt in sorted(tgroups[path].items()):
+            fs = {"type": "string", "default": dflt}
+            fd = desc.get(f"{path}.{f}", (None, None))[0]
+            if fd:
+                fs["description"] = fd
+            props[f] = fs
+        # merge any real values.yaml children (override the template-derived stub)
+        for k, v in (node or {}).items():
+            props[k] = build(v, f"{path}.{k}", desc, tgroups)
+        s = {"type": "object", "properties": props, "additionalProperties": False}
+        if d:
+            s["description"] = d
+        return s
+    if isinstance(node, dict):
+        # OPEN node → permissive object, no strict recursion
+        # (decision made by caller via key; here handle empty/env-like)
+        s = {"type": "object"}
+        if d:
+            s["description"] = d
+        props = {}
+        open_here = (not node) or any(ENVLIKE.match(str(k)) or not IDENT.match(str(k)) for k in node)
+        if open_here:
+            s["additionalProperties"] = {"type": "string"} if node == {} or all(
+                not isinstance(v, (dict, list)) for v in node.values()) else True
+            return s
+        for k, v in node.items():
+            child_path = f"{path}.{k}" if path else k
+            if is_open(k, v) and child_path not in tgroups:
+                cs = {"type": "object", "additionalProperties": True}
+                cd = desc.get(child_path, (None, None))[0]
+                if cd:
+                    cs["description"] = cd
+                props[k] = cs
+            else:
+                props[k] = build(v, child_path, desc, tgroups)
+        s["properties"] = props
+        s["additionalProperties"] = False           # CLOSED typed block — catches typos
+        return s
+    if isinstance(node, list):
+        s = {"type": "array"}
+        if d:
+            s["description"] = d
+        return s
+    s = scalar_schema(node)
+    if node is not None and not isinstance(node, bool):
+        s["default"] = node
+    elif isinstance(node, bool):
+        s["default"] = node
+    if d:
+        s["description"] = d
+    if enum:
+        s["enum"] = enum
+    return s
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--values", required=True)
+    ap.add_argument("--chart-dir", default=None,
+                    help="chart dir; parses templates/configmap.yaml to type the empty grouped blocks")
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--check", action="store_true")
+    a = ap.parse_args()
+
+    values = yaml.safe_load(open(a.values)) or {}
+    desc = descriptions(a.values)
+    tgroups = template_group_fields(a.chart_dir) if a.chart_dir else {}
+    # ROOT: always open (subcharts/global live here); enumerate top-level for docs but permit extras
+    props = {}
+    for k, v in values.items():
+        cp = k
+        if is_open(k, v) and cp not in tgroups:
+            cs = {"type": "object", "additionalProperties": True}
+            cd = desc.get(cp, (None, None))[0]
+            if cd:
+                cs["description"] = cd
+            props[k] = cs
+        else:
+            props[k] = build(v, cp, desc, tgroups)
+    schema = {
+        "$schema": "https://json-schema.org/draft-07/schema#",
+        "title": f"Values schema (generated by productize-chart-env/gen-schema.py)",
+        "type": "object",
+        "properties": props,
+        "additionalProperties": True,     # ROOT open — never reject subchart/unknown top-level keys
+    }
+    out = json.dumps(schema, indent=2, ensure_ascii=False) + "\n"
+    if a.check and a.out:
+        cur = open(a.out).read() if os.path.exists(a.out) else ""
+        if cur != out:
+            print(f"[gen-schema] {a.out} is STALE — regenerate", file=sys.stderr); return 1
+        print(f"[gen-schema] {a.out} up to date"); return 0
+    if a.out:
+        open(a.out, "w").write(out)
+        print(f"[gen-schema] wrote {a.out}")
+    else:
+        sys.stdout.write(out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

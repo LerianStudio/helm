@@ -193,10 +193,29 @@ def build(node, path, desc, tgroups):
                 if cd:
                     cs["description"] = cd
                 props[k] = cs
+            elif not isinstance(v, (dict, list)):
+                # Scalar leaf of an OPEN operational block: emit NO `type` (default only),
+                # same as cfgValue config-group fields. A default like pdb.maxUnavailable ""
+                # or minAvailable 1 picks ONE type, but these are k8s int-or-string fields —
+                # YAML/helm coerce, so locking the scalar type rejects the other valid form.
+                fs = {} if v is None else {"default": v}
+                fd, fenum = desc.get(child_path, (None, None))
+                if fd:
+                    fs["description"] = fd
+                if fenum:
+                    fs["enum"] = fenum
+                props[k] = fs
             else:
                 props[k] = build(v, child_path, desc, tgroups)
         s["properties"] = props
-        s["additionalProperties"] = False           # CLOSED typed block — catches typos
+        # Strictness (additionalProperties:false) is ONLY correct on our finite cfgValue
+        # config groups (tgroups) — those are handled by the branch above. A generic
+        # camelCase dict reaching HERE is an OPERATIONAL/structural block (role configs
+        # like all/ingest/delivery, autoscaling, pdb, resources, image, service, ...) —
+        # k8s passthrough where operators legitimately add fields (pdb.maxUnavailable,
+        # resources.limits, affinity, ...). Closing those rejected valid input, so keep
+        # them OPEN. Typo protection stays where the contract is finite: the config groups.
+        s["additionalProperties"] = True
         return s
     if isinstance(node, list):
         s = {"type": "array"}

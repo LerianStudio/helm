@@ -47,9 +47,12 @@ def template_group_fields(chart_dir):
     # $grp := .Values.<path>   (path may be brCcs.rateLimit or, for flat charts, rateLimit)
     short2path = {m.group(1): m.group(2)
                   for m in re.finditer(r"\$(\w+)\s*:=\s*\.Values\.([\w.]+)\s*\|\s*default dict", src)}
-    # Component indirection (br-sta): $component := index .Values "br-sta"; $grp := $component.<group>
+    # Component var: $component := index .Values "br-sta"  OR  $component := .Values.brSta
+    # (the direct camelCase form has NO `| default dict`, so it won't collide with group vars).
     compvars = {m.group(1): m.group(2)
                 for m in re.finditer(r'\$(\w+)\s*:=\s*index\s+\.Values\s+"([\w-]+)"', src)}
+    compvars.update({m.group(1): m.group(2)
+                     for m in re.finditer(r'\$(\w+)\s*:=\s*\.Values\.(\w+)\s*-?\}\}', src)})
     for m in re.finditer(r"\$(\w+)\s*:=\s*\$(\w+)\.(\w+)\s*\|\s*default dict", src):
         grp_var, comp_var, group = m.group(1), m.group(2), m.group(3)
         if comp_var in compvars:

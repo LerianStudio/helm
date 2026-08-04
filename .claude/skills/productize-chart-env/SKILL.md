@@ -35,6 +35,38 @@ This is why enumeration is safe: the typed groups are the *documented* surface, 
 the *safety valve*. Enumerating a finite, app-owned `.env` (unlike Grafana/NGINX wrapping a
 foreign open-ended config) is the deliberate divergence — see "Market alignment" at the end.
 
+## Values structure (STANDARD)
+
+Top-level tiers:
+
+1. **`global:`** — config shared across MORE THAN ONE component (env-wide). Helm-special (propagates
+   to subcharts). Holds: `observability`, `multiTenant` (infra), `datastores` (SHARED mask),
+   `serviceDiscovery`, `streaming`, plus k8s-infra `imageRegistry` / `imagePullSecrets` / `commonLabels`.
+2. **One `<componentName>:` block PER INDEPENDENT DEPLOYMENT.** `componentName` = the deployment's
+   name in **camelCase, NO hyphen** (`brCcs`, `brSta`, `worker`) — access via `.Values.brSta`,
+   NEVER `index .Values "br-sta"`. Holds that deployment's cfgValue config groups (`redis`,
+   `rateLimit`, …), `datastores` (DEDICATED mask), `externalXDefinitions` (our bootstrap-for-external
+   deps), `image`/`service`/`resources`/`replicaCount`/`ingress` (k8s), `configmap: {}` (escape hatch),
+   `extraEnvVars`, `secrets`. Example: br-ccs → `brCcs:`; br-sta → `brSta:` + `worker:`.
+3. **Subchart dependencies** (`postgresql`/`valkey`/`rabbitmq`/…): Helm REQUIRES subchart values at
+   the ROOT under the subchart name — they CANNOT be nested (Helm passes `.Values.postgresql` to the
+   `postgresql` subchart by name). Group them visually with a `# --- dependencies ---` comment. Our
+   ABSTRACTION over them (the `datastores` mask + `externalXDefinitions` bootstrap) lives inside the
+   `<componentName>`, not at root.
+
+**EXCEPTION — single-deployment chart with in-pod sidecars stays FLAT.** A chart that is ONE
+Deployment whose extra containers are SIDECARS in the same pod (br-slc: app + signer + xsd-validator
++ mqbridge + a migrations Job) does NOT wrap under a component key. Its sidecars/jobs share pod-level
+config (`securityContext`, `serviceAccount`, `nodeSelector`, `resources`, the app `image`) — nesting
+the app under `<componentName>` while the sidecars reference `.Values.securityContext` breaks them.
+Keep it FLAT: config groups + k8s at root, sidecars/migrations as their own top-level blocks. The
+chart IS the component; the umbrella's subchart-name namespacing already scopes it (`br-slc.redis`).
+
+**Still non-conformant (fix on sight):** a hyphenated component key needing `index .Values "br-sta"`
+(early br-sta) — always camelCase. Note the umbrella cost: a wrapped chart is `br-ccs.brCcs.redis`
+(double level) vs a flat one `br-slc.redis` (single) — the wrapper is the accepted price of one
+block per deployment when a chart genuinely has more than one.
+
 ## Inputs
 
 - The chart dir (e.g. `charts/br-ccs`).

@@ -22,7 +22,11 @@
 {{- $rdy := .Values.brCcs.readiness | default dict }}
 {{- $shd := .Values.brCcs.shutdown | default dict }}
 {{- $os := .Values.brCcs.objectStorage | default dict }}
+{{- $sd := .Values.brCcs.serviceDiscovery | default dict }}
+{{- $strm := .Values.brCcs.streaming | default dict }}
 {{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" $mt "field" "enabled" "default" "false")) "true" }}
+{{- $sdEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SD_ENABLED" "params" $sd "field" "enabled" "default" "false")) "true" }}
+{{- $streamingEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_ENABLED" "params" $strm "field" "enabled" "default" "false")) "true" }}
 {{- $pg := .Values.postgresql | default dict }}
 {{- $vk := .Values.valkey | default dict }}
 {{- $ds := .Values.brCcs.datastores | default dict }}
@@ -212,6 +216,8 @@ data:
   CCS_OUTBOX_BATCH_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CCS_OUTBOX_BATCH_SIZE" "params" $fet "field" "ccsOutboxBatchSize" "default" "50") | quote }}
   CCS_OUTBOX_MAX_ATTEMPTS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CCS_OUTBOX_MAX_ATTEMPTS" "params" $fet "field" "ccsOutboxMaxAttempts" "default" "10") | quote }}
   CCS_OUTBOX_DLQ_ROUTING_KEY: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CCS_OUTBOX_DLQ_ROUTING_KEY" "params" $fet "field" "ccsOutboxDlqRoutingKey" "default" "ccs.outbox.dlq") | quote }}
+  CCS_FETCHER_MAX_REDELIVERIES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CCS_FETCHER_MAX_REDELIVERIES" "params" $fet "field" "maxRedeliveries" "default" "5") | quote }}
+  CCS_FETCHER_RETRY_BACKOFF_MS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CCS_FETCHER_RETRY_BACKOFF_MS" "params" $fet "field" "retryBackoffMs" "default" "5000") | quote }}
 
   # =====================================================================
   # STA INTEGRATION (brCcs.sta)
@@ -270,6 +276,34 @@ data:
           "OTEL_RESOURCE_SERVICE_NAME" "br-ccs"
           "OTEL_LIBRARY_NAME" "br-ccs"
           "OTEL_RESOURCE_SERVICE_VERSION" (.Values.brCcs.image.tag | default .Chart.AppVersion))) | nindent 2 }}
+
+  # =====================================================================
+  # SERVICE DISCOVERY (lerian-common.serviceDiscovery.env + global.serviceDiscovery).
+  # Toggle via brCcs.serviceDiscovery.enabled; SD_TOKEN (ACL) is a Secret. The full
+  # SD_* sibling block derives only when enabled.
+  # =====================================================================
+  SD_ENABLED: {{ $sdEnabled | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" $sdEnabled
+        "configmap" $cm
+        "name" (include "br-ccs.fullname" .)
+        "port" .Values.brCcs.service.port
+        "namespace" $namespace
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.brCcs.ingress))) | nindent 2 }}
+
+  # =====================================================================
+  # STREAMING (lerian-common.streaming.env + global.streaming). Toggle via
+  # brCcs.streaming.enabled; the full SASL/broker block derives only when enabled.
+  # STREAMING_SASL_PASSWORD is a Secret (see templates/secrets.yaml).
+  # =====================================================================
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $cm
+        "clientId" (include "br-ccs.fullname" .)
+        "cloudeventsSource" "lerian.br-ccs") | nindent 2 }}
 
   # =====================================================================
   # RATE LIMITING (brCcs.rateLimit). br-ccs has a bespoke surface (EXPORT/

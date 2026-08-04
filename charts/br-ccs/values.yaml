@@ -107,6 +107,21 @@ global:
     # redisHost: ""       # MULTI_TENANT_REDIS_HOST (required when MT enabled)
     # redisPort: "6379"   # MULTI_TENANT_REDIS_PORT
     # redisTls: "false"   # MULTI_TENANT_REDIS_TLS
+  # -- Env-wide service discovery (Consul), consumed by lerian-common.serviceDiscovery.env.
+  # Only used when SD is enabled (brCcs.serviceDiscovery.enabled). A component
+  # brCcs.configmap.SD_* still overrides. Leave empty ({}) for the chart defaults.
+  serviceDiscovery: {}
+    # address: "localhost:8500"   # SD_ADDRESS
+    # tls: "false"                # SD_TLS
+    # workload: ""                # SD_WORKLOAD (per-env isolation)
+  # -- Env-wide streaming (lib-streaming → Kafka), consumed by lerian-common.streaming.env.
+  # Only used when streaming is enabled (brCcs.streaming.enabled). SASL/broker contract;
+  # STREAMING_SASL_PASSWORD is a secret. Leave empty ({}) for the chart defaults.
+  streaming: {}
+    # brokers: ""                 # STREAMING_BROKERS (required when enabled)
+    # tlsEnabled: "false"         # STREAMING_TLS_ENABLED
+    # saslMechanism: ""           # STREAMING_SASL_MECHANISM (PLAIN|SCRAM-SHA-256|SCRAM-SHA-512)
+    # saslUsername: ""            # STREAMING_SASL_USERNAME
 brCcs:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -122,6 +137,16 @@ brCcs:
   # form + precedence). Same fields as global.datastores; wins over global, loses to
   # brCcs.configmap.<KEY>. Leave empty ({}) to keep the bundled-subchart / native defaults.
   datastores: {}
+  # -- Service discovery toggle (grouped API for SD_ENABLED). Infra comes from
+  # global.serviceDiscovery (or brCcs.configmap.SD_*). SD_TOKEN (ACL) is a secret.
+  serviceDiscovery:
+    # -- Enable Consul service discovery (SD_ENABLED)
+    enabled: false
+  # -- Streaming toggle (grouped API for STREAMING_ENABLED). Broker/SASL infra comes
+  # from global.streaming (or brCcs.configmap.STREAMING_*). SASL password is a secret.
+  streaming:
+    # -- Enable lib-streaming (STREAMING_ENABLED)
+    enabled: false
   # -- Service name
   name: br-ccs
   # -- Enable or disable the br-ccs service

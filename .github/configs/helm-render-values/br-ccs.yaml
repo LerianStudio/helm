@@ -3,16 +3,27 @@
 #   - multiTenant.env + fail-fast multiTenant.secret (MT on, API key supplied)
 #   - otel.env driven by global.observability
 #   - datastore.value broker mask + RABBITMQ_DEFAULT_PASS fail-fast (rmq on)
+#   - serviceDiscovery.env (SD on) and streaming.env + streaming.secret (streaming on, SASL)
 # Values are placeholders; the gate only checks that the chart renders.
 brCcs:
   multiTenant:
     enabled: true
+  serviceDiscovery:
+    enabled: true
+  streaming:
+    enabled: true
   configmap:
     RABBITMQ_ENABLED: "true"
+    STREAMING_BROKERS: "kafka:9092"
+    STREAMING_SASL_MECHANISM: "PLAIN"
+    STREAMING_SASL_USERNAME: "render-fixture-user"
+    STREAMING_TLS_ENABLED: "true"
   secrets:
     CCS_CRYPTO_MASTER_KEY: "render-fixture-crypto-key"
     MULTI_TENANT_SERVICE_API_KEY: "render-fixture-mt-api-key"
     RABBITMQ_DEFAULT_PASS: "render-fixture-rmq-pass"
+    STREAMING_SASL_PASSWORD: "render-fixture-stream-pass"
+    SD_TOKEN: "render-fixture-sd-token"
 global:
   observability:
     enabled: true
@@ -21,3 +32,8 @@ global:
   multiTenant:
     url: "http://tenant-manager:8080"
     redisHost: "tenant-manager-redis"
+  serviceDiscovery:
+    address: "consul.prod:8500"
+    tls: "true"
+  streaming:
+    brokers: "kafka:9092"

@@ -55,7 +55,11 @@ while IFS= read -r repo_url; do
   depn=$((depn + 1))
 done < <(grep -E 'repository:[[:space:]]*"?https?://' "$CHART_DIR/Chart.yaml" | grep -Eo 'https?://[^"[:space:]]+' | sort -u)
 [[ "$depn" -gt 0 ]] && helm repo update >/dev/null 2>&1
-helm dependency build "$CHART_DIR" >/dev/null 2>&1 || fail "helm dependency build failed"
+# Build with one retry (dependency fetches are network-flaky) and surface the real
+# error on final failure instead of a bare "build failed".
+db_out="$(helm dependency build "$CHART_DIR" 2>&1)" \
+  || db_out="$(helm dependency update "$CHART_DIR" 2>&1)" \
+  || { echo "$db_out" | tail -8 | sed 's/^/    /'; fail "helm dependency build failed"; }
 
 # Lerian charts pin their own namespaces (namespaceOverride / global.namespace), so
 # resources land there regardless of `-n` — and some charts even span MORE than one

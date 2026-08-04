@@ -1,0 +1,107 @@
+name: Helm Install Test
+
+# Installs each changed chart into a throwaway kind cluster and exercises the
+# upgrade path. The value over the render-gate (which only runs `helm template`)
+# is that the real API server VALIDATES every manifest server-side — it rejects
+# invalid field values, bad API versions, and immutable-field changes on upgrade
+# that `helm template` renders happily. Hook Jobs (migrations/bootstrap) are
+# skipped (--no-hooks in the script): they pull private images and need real
+# backing services, so they cannot complete in a credential-less CI cluster.
+# App pods are NOT waited on for the same reason — steady-state manifest
+# validation + the upgrade path are what this gate proves.
+
+on:
+  pull_request:
+    paths:
+      - "charts/**"
+      - ".github/configs/helm-render-values/**"
+      - ".github/scripts/install-test.sh"
+      - ".github/workflows/helm-install-test.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: helm-install-test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  install-test:
+    name: Install + upgrade (kind)
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 30 # a full --all sweep (workflow/lib change) installs every app chart sequentially
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0 # full history so the script can `git archive origin/main` for the baseline upgrade
+
+      - name: Fetch base branch
+        run: git fetch --no-tags --depth=1 origin main
+
+      - name: Setup Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+
+      - name: Create kind cluster
+        uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.10.0
+        with:
+          cluster_name: chart-install-test
+
+      - name: Determine chart scope
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          all_app_charts() {
+            for d in charts/*/; do
+              c="$(basename "$d")"
+              grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "charts/$c/Chart.yaml" 2>/dev/null && continue
+              printf '%s ' "$c"
+            done
+          }
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "charts=$(all_app_charts)" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          # An infra change (script/workflow/shared library/fixtures) can affect every
+          # chart, so test them all; otherwise only the charts whose files changed.
+          if grep -Eq '^(\.github/scripts/install-test\.sh|\.github/workflows/helm-install-test\.yml|charts/lerian-common/)' <<< "$changed"; then
+            echo "charts=$(all_app_charts)" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          scope=""
+          for c in $(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed" | sort -u); do
+            [[ -d "charts/$c" ]] || continue                                  # skip deleted charts
+            grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "charts/$c/Chart.yaml" && continue
+            scope="${scope:+$scope }$c"
+          done
+          echo "charts=$scope" >> "$GITHUB_OUTPUT"
+
+      - name: Install + upgrade each chart
+        shell: bash
+        env:
+          CHARTS: ${{ steps.scope.outputs.charts }}
+        run: |
+          set -uo pipefail
+          if [[ -z "${CHARTS// }" ]]; then
+            echo "No installable charts in scope — nothing to test."; exit 0
+          fi
+          echo "Charts in scope: $CHARTS"
+          fails=""
+          for c in $CHARTS; do
+            echo "::group::install-test $c"
+            if bash .github/scripts/install-test.sh "charts/$c"; then
+              echo "::endgroup::"
+            else
+              echo "::endgroup::"; fails="${fails:+$fails }$c"
+            fi
+          done
+          if [[ -n "$fails" ]]; then
+            echo "::error::Install/upgrade test failed for: $fails"
+            exit 1
+          fi
+          echo "All charts in scope installed and upgraded cleanly."

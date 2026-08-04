@@ -75,17 +75,21 @@ def render_all(chart_dir, fixture):
     return {m.group(1) for m in re.finditer(r"^  ([A-Z][A-Z0-9_]+):", r.stdout, re.M)}
 
 
-def domain_of(k):
+def domain_of(k, applies):
+    """A key belongs to a domain only if the domain APPLIES to this chart — i.e. the
+    domain's ANCHOR key (STREAMING_ENABLED, MULTI_TENANT_ENABLED, ...) is in the .env.
+    This stops an app-prefix like STREAMING_HUB_* from matching the STREAMING_ domain
+    when the app uses its OWN naming (not lib-streaming's env contract)."""
     for rx, dom, anchor in DOMAIN:
-        if rx.match(k):
+        if rx.match(k) and applies.get(dom):
             return dom, anchor
     return None, None
 
 
-def classify(k, emitted, wired):
+def classify(k, emitted, wired, applies):
     """Return (kind, covered:bool). kind is for the report; covered decides gap."""
     if k in emitted:
-        dom, _ = domain_of(k)
+        dom, _ = domain_of(k, applies)
         if dom:
             return f"helper:{dom}", True
         if k in DATASTORE:
@@ -94,7 +98,7 @@ def classify(k, emitted, wired):
             return "secret", True
         return "config", True
     # NOT emitted:
-    dom, anchor = domain_of(k)
+    dom, anchor = domain_of(k, applies)
     if dom:
         if wired.get(dom):
             return f"helper:{dom}", True          # sibling renders only when the domain is enabled
@@ -120,10 +124,12 @@ def main():
     if emitted is None:
         print("FAIL: chart did not render"); return 1
 
-    # which domain helpers are actually wired (anchor key emitted)?
+    # a domain APPLIES only if the app declares its ANCHOR key (else an app-prefix like
+    # STREAMING_HUB_* is app config, not the STREAMING_ domain); WIRED = anchor emitted.
+    applies = {dom: (anchor in allenv or anchor in emitted) for _, dom, anchor in DOMAIN}
     wired = {dom: (anchor in emitted) for _, dom, anchor in DOMAIN}
 
-    rows = {k: classify(k, emitted, wired) for k in sorted(allenv | emitted)}
+    rows = {k: classify(k, emitted, wired, applies) for k in sorted(allenv | emitted)}
     fails, warns, review = [], [], []
 
     for k in sorted(active):

@@ -14,7 +14,9 @@ spec:
   revisionHistoryLimit: {{ .Values.manager.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.manager.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.manager.autoscaling.enabled }}
   replicas: {{ .Values.manager.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-manager.selectorLabels" (dict "context" . "name" .Values.manager.name) | nindent 6 }}

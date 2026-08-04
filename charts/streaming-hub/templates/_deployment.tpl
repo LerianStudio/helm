@@ -53,8 +53,7 @@ spec:
       {{- end }}
     spec:
       {{- with $sh.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
       serviceAccountName: {{ include "streaming-hub.serviceAccountName" $ }}
       automountServiceAccountToken: {{ $sh.serviceAccount.automountServiceAccountToken | default false }}
@@ -102,26 +101,17 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
             {{- end }}
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: {{ $sh.livenessProbe.initialDelaySeconds | default 15 }}
-            periodSeconds: {{ $sh.livenessProbe.periodSeconds | default 20 }}
-            timeoutSeconds: {{ $sh.livenessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ $sh.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ $sh.livenessProbe.failureThreshold | default 3 }}
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: http
-            initialDelaySeconds: {{ $sh.readinessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ $sh.readinessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ $sh.readinessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ $sh.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ $sh.readinessProbe.failureThreshold | default 3 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "livenessProbe" "probe" $sh.livenessProbe "port" "http" "path" "/healthz"
+                "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "readinessProbe" "probe" $sh.readinessProbe "port" "http" "path" "/readyz"
+                "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
           resources:
             {{- toYaml $cfg.resources | nindent 12 }}
+      {{- /* scheduling stays inline: lerian-common.scheduling emits a leading newline
+         that becomes a trailing-whitespace blank line under `| nindent`, and the inline
+         form cleanly expresses the per-role `$cfg.X | default $sh.X` fallback. */ -}}
       {{- with $cfg.nodeSelector | default $sh.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -148,26 +138,13 @@ that role's pods via componentSelectorLabels.
 {{- $ := .root -}}
 {{- $component := .component -}}
 {{- $sh := $.Values.streamingHub -}}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "streaming-hub.componentFullname" (dict "context" $ "component" $component) }}
-  namespace: {{ include "global.namespace" $ }}
-  labels:
-    {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 4 }}
-  {{- with $sh.service.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  type: {{ $sh.service.type }}
-  ports:
-    - port: {{ $sh.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    {{- include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component) | nindent 4 }}
+{{- include "lerian-common.service" (dict
+      "service" $sh.service
+      "name" (include "streaming-hub.componentFullname" (dict "context" $ "component" $component))
+      "namespace" (include "global.namespace" $)
+      "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
+      "selector" (include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component))
+    ) }}
 {{- end -}}
 
 
@@ -183,37 +160,12 @@ Postgres connection draw — Σ(maxReplicas × poolMaxOpenConns) ≤ max_connect
 {{- $ := .root -}}
 {{- $component := .component -}}
 {{- $cfg := index $.Values.streamingHub $component -}}
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: {{ include "streaming-hub.componentFullname" (dict "context" $ "component" $component) }}
-  namespace: {{ include "global.namespace" $ }}
-  labels:
-    {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 4 }}
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: {{ include "streaming-hub.componentFullname" (dict "context" $ "component" $component) }}
-  minReplicas: {{ $cfg.autoscaling.minReplicas }}
-  maxReplicas: {{ $cfg.autoscaling.maxReplicas }}
-  metrics:
-    {{- if $cfg.autoscaling.targetCPUUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: {{ $cfg.autoscaling.targetCPUUtilizationPercentage }}
-    {{- end }}
-    {{- if $cfg.autoscaling.targetMemoryUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: {{ $cfg.autoscaling.targetMemoryUtilizationPercentage }}
-    {{- end }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" $cfg.autoscaling
+      "name" (include "streaming-hub.componentFullname" (dict "context" $ "component" $component))
+      "namespace" (include "global.namespace" $)
+      "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
+    ) }}
 {{- end -}}
 
 
@@ -228,24 +180,11 @@ maxUnavailable wins over minAvailable when both are set (mirrors the template).
 {{- $ := .root -}}
 {{- $component := .component -}}
 {{- $cfg := index $.Values.streamingHub $component -}}
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: {{ include "streaming-hub.componentFullname" (dict "context" $ "component" $component) }}
-  namespace: {{ include "global.namespace" $ }}
-  labels:
-    {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 4 }}
-  {{- with $cfg.pdb.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  {{- if and (hasKey $cfg.pdb "maxUnavailable") (ne $cfg.pdb.maxUnavailable nil) }}
-  maxUnavailable: {{ $cfg.pdb.maxUnavailable }}
-  {{- else }}
-  minAvailable: {{ $cfg.pdb.minAvailable | default 1 }}
-  {{- end }}
-  selector:
-    matchLabels:
-      {{- include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component) | nindent 6 }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" $cfg.pdb
+      "name" (include "streaming-hub.componentFullname" (dict "context" $ "component" $component))
+      "namespace" (include "global.namespace" $)
+      "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
+      "selector" (include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component))
+    ) }}
 {{- end -}}

@@ -29,7 +29,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.4.5"
+    tag: "3.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -149,6 +149,8 @@ identity:
     AUTHORIZER_CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
+    # -- Consul ACL token for service discovery (empty = no ACL)
+    SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
 auth:
@@ -175,7 +177,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.6.7"
+    tag: "3.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -305,6 +307,10 @@ auth:
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
+    # -- TOTP/MFA signing secret (empty = feature dormant)
+    MFA_SECRET: ""
+    # -- Consul ACL token for service discovery (empty = no ACL)
+    SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
   backend:
@@ -323,7 +329,7 @@ auth:
       # -- Image pull policy
       pullPolicy: Always
       # -- Image tag used for deployment
-      tag: "2.6.7"
+      tag: "3.1.0"
     resources:
       # -- CPU and memory limits for pods
       limits:
@@ -350,7 +356,7 @@ auth:
         # -- Image pull policy
         pullPolicy: Always
         # -- Image tag used for deployment
-        tag: "2.6.3"
+        tag: "3.1.0"
   # -- Init User Job configuration
   # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
   # -- If the admin user is deleted by the customer, it will NOT be recreated
@@ -363,7 +369,7 @@ auth:
       # -- Image pull policy
       pullPolicy: Always
       # -- Image tag used for deployment
-      tag: "2.6.1"
+      tag: "3.1.0"
     # -- Admin user email (default: admin@midaz.tech)
     adminEmail: "admin@midaz.tech"
     # -- Admin user display name

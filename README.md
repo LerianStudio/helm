@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `8.3.0` | 2.6.7 | 2.4.5 |
+| `8.4.0` | 3.1.0 | 3.1.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.1.1` | 2.1.2 | 2.1.2 |
+| `3.2.0` | 2.3.0 | 2.3.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -116,7 +116,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `3.6.0` | 1.8.0 | 1.8.0 | 1.8.0 | 1.8.0 | 1.8.0 |
+| `3.7.0` | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 |
 
 -----------------
 
@@ -128,7 +128,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0-beta.3` | 1.0.0-beta.9 |
+| `1.1.0` | 1.0.0-beta.9 |
 -----------------
 
 ### Fetcher
@@ -213,7 +213,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.2.0-beta.1` | 1.0.0 |
+| `2.2.0` | 1.0.0 |
 -----------------
 
 ### Notifications
@@ -272,5 +272,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `1.3.4` |
+| `1.4.0` |
 -----------------

@@ -698,3 +698,87 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Outbound BTG client mTLS — ConfigMap data keys.
+Only the enable flag and file PATHS live here (non-secret). The cert material is
+mounted from `mtls.secretName` as a read-only volume (see the mtls volume helpers),
+so rotating the Secret updates the files in place WITHOUT a pod rollout. The env
+vars are static paths, so their values never change on rotation.
+`CLIENT_TLS_CA_FILE` is only emitted when `mtls.caFileName` is set (it is optional:
+it verifies BTG's server cert, not the CA that issued ours).
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mtlsConfig" -}}
+{{- if .Values.mtls.enabled -}}
+{{- $mp := .Values.mtls.mountPath | default "/etc/btg/mtls" -}}
+{{- $ca := .Values.mtls.caFileName -}}
+{{- if and (not $ca) (index .Values.mtls "ca.crt") -}}{{- $ca = "ca.crt" -}}{{- end -}}
+BTG_OUTBOUND_MTLS_ENABLED: "true"
+CLIENT_TLS_CERT_FILE: {{ printf "%s/%s" $mp (.Values.mtls.certFileName | default "tls.crt") | quote }}
+CLIENT_TLS_KEY_FILE: {{ printf "%s/%s" $mp (.Values.mtls.keyFileName | default "tls.key") | quote }}
+{{- with $ca }}
+CLIENT_TLS_CA_FILE: {{ printf "%s/%s" $mp . | quote }}
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Outbound BTG client mTLS — checksum of the chart-managed cert material, used as a
+pod annotation so a `helm upgrade` that changes the cert triggers a rollout (the
+app snapshots the cert at startup, so it needs a restart to pick up a new one).
+Only meaningful when the chart creates the Secret (mtls.tls.crt set).
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mtlsChecksum" -}}
+{{- printf "%s|%s|%s" (index .Values.mtls "tls.crt" | default "") (index .Values.mtls "tls.key" | default "") (index .Values.mtls "ca.crt" | default "") | sha256sum -}}
+{{- end -}}
+
+{{/*
+Outbound BTG client mTLS — pod volume carrying the client cert/key/CA.
+Mounted read-only at 0440. With the pod's fsGroup set (see the deployment), kubelet
+makes the files root:fsGroup and group-readable, so the non-root app (uid 1000, in
+that group) can read them. group-read is accepted by lib-commons v6's certificate
+loader (>=6.1.1, forbidden-bits mask 0o027 = group-write + all other bits; group-READ
+allowed) — the same way cert-manager/Istio ship keys. No init container, no
+PersistentVolume. NOTE: the app snapshots the cert at startup (no hot-reload wired),
+so rotating the Secret requires a pod restart.
+*/}}
+{{/*
+Outbound BTG client mTLS — the Secret name. Optional in values: defaults to
+"<fullname>-mtls" (matches the chart's naming and is collision-safe). Override
+`mtls.secretName` only to consume an externally-managed Secret with a different name.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mtlsSecretName" -}}
+{{- .Values.mtls.secretName | default (printf "%s-mtls" (include "plugin-br-pix-indirect-btg.fullname" .)) -}}
+{{- end -}}
+
+{{- define "plugin-br-pix-indirect-btg.mtlsVolume" -}}
+{{- if .Values.mtls.enabled -}}
+{{- $ca := .Values.mtls.caFileName -}}
+{{- if and (not $ca) (index .Values.mtls "ca.crt") -}}{{- $ca = "ca.crt" -}}{{- end -}}
+- name: btg-outbound-mtls
+  secret:
+    secretName: {{ include "plugin-br-pix-indirect-btg.mtlsSecretName" . }}
+    defaultMode: 0440
+    # Project only the cert/key (+ optional CA), never other keys the Secret may hold.
+    items:
+      - key: {{ .Values.mtls.certFileName | default "tls.crt" | quote }}
+        path: {{ .Values.mtls.certFileName | default "tls.crt" | quote }}
+      - key: {{ .Values.mtls.keyFileName | default "tls.key" | quote }}
+        path: {{ .Values.mtls.keyFileName | default "tls.key" | quote }}
+      {{- with $ca }}
+      - key: {{ . | quote }}
+        path: {{ . | quote }}
+      {{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Outbound BTG client mTLS — read-only volumeMount for the cert volume above.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.mtlsVolumeMount" -}}
+{{- if .Values.mtls.enabled -}}
+- name: btg-outbound-mtls
+  mountPath: {{ .Values.mtls.mountPath | default "/etc/btg/mtls" | quote }}
+  readOnly: true
+{{- end -}}
+{{- end -}}

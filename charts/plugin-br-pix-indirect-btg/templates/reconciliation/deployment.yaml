@@ -16,6 +16,11 @@ spec:
       {{- include "reconciliation.selectorLabels" (dict "context" . "name" .Values.reconciliation.name) | nindent 6 }}
   template:
     metadata:
+      {{- if and .Values.mtls.enabled (index .Values.mtls "tls.crt") }}
+      annotations:
+        # Roll the pods when the chart-managed mTLS cert changes (app snapshots it at startup).
+        checksum/mtls: {{ include "plugin-br-pix-indirect-btg.mtlsChecksum" . }}
+      {{- end }}
       labels:
         {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 8 }}
     spec:
@@ -24,7 +29,11 @@ spec:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       securityContext:
-        {{- toYaml .Values.reconciliation.podSecurityContext | nindent 8 }}
+        {{- $psc := .Values.reconciliation.podSecurityContext | default dict }}
+        {{- if .Values.mtls.enabled }}
+        {{- $psc = mergeOverwrite (dict "fsGroup" (.Values.mtls.fsGroup | default 1000)) (deepCopy $psc) }}
+        {{- end }}
+        {{- toYaml $psc | nindent 8 }}
       containers:
         - name: {{ include "reconciliation.fullname" . }}
           securityContext:
@@ -76,6 +85,10 @@ spec:
             timeoutSeconds: {{ .Values.reconciliation.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ .Values.reconciliation.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.reconciliation.livenessProbe.failureThreshold | default 3 }}
+          {{- if .Values.mtls.enabled }}
+          volumeMounts:
+            {{- include "plugin-br-pix-indirect-btg.mtlsVolumeMount" . | nindent 12 }}
+          {{- end }}
       {{- with .Values.reconciliation.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -87,4 +100,8 @@ spec:
       {{- with .Values.reconciliation.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mtls.enabled }}
+      volumes:
+        {{- include "plugin-br-pix-indirect-btg.mtlsVolume" . | nindent 8 }}
       {{- end }}

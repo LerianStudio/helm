@@ -75,11 +75,13 @@ n=0; for x in "$NS" $TARGETS; do n=$((n + $(kubectl get all -n "$x" --no-headers
 echo "  created $n objects"
 [[ "$n" -gt 0 ]] || fail "install produced no objects"
 
-# ---- 2. Upgrade the PR chart in place (upgrade code path + hook re-run) ----
-echo "===== [$CHART] upgrade (PR -> PR, benign change) ====="
-helm upgrade "$REL" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} "${HOOKS[@]}" -n "$NS" --timeout "$TIMEOUT" \
-  --set-string podAnnotations.helm-install-test="upgrade" >/dev/null 2>&1 && deployed "$REL" \
-  || fail "in-place upgrade failed"
+# ---- 2. Upgrade the PR chart in place (upgrade code path) ----
+# Same values on purpose: a no-change upgrade still re-renders and re-applies
+# (new revision, STATUS deployed). Forcing a value change is unsafe — a strict
+# root-closed schema (e.g. br-sfn) rejects an injected podAnnotations key.
+echo "===== [$CHART] upgrade (PR -> PR) ====="
+helm upgrade "$REL" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} "${HOOKS[@]}" -n "$NS" --timeout "$TIMEOUT" >/dev/null 2>&1 \
+  && deployed "$REL" || fail "in-place upgrade failed"
 
 # Free the PR release before the baseline so only ONE release is ever installed at
 # a time — two full installs of a subchart-heavy chart exhaust a single-node kind

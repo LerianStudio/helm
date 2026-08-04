@@ -1,5 +1,19 @@
 # Plugin-access-manager Changelog
 
+## [8.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.4.0)
+
+- **Features**
+  - Bumped app version to 3.1.0 and synchronized environment variables.
+
+- **Fixes**
+  - Added guard for replicas when autoscaling is enabled to prevent potential issues.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.3.0...plugin-access-manager-v8.4.0)
+
+---
+
 ## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.3.0)
 
 - **Features:**

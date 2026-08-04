@@ -27,7 +27,7 @@ Application name (single deployment).
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- default "br-sta" (index .Values "br-sta").name | trunc 63 | trimSuffix "-" }}
+{{- default "br-sta" (.Values.brSta).name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 
@@ -45,7 +45,7 @@ CHART HELPERS
 Resolve the application image tag (Chart.appVersion if app.image.tag is empty).
 */}}
 {{- define "br-sta.defaultTag" -}}
-{{- default .Chart.AppVersion (index .Values "br-sta").image.tag }}
+{{- default .Chart.AppVersion (.Values.brSta).image.tag }}
 {{- end -}}
 
 {{/*
@@ -88,10 +88,10 @@ SERVICE ACCOUNT HELPER
 */}}
 
 {{- define "br-sta.serviceAccountName" -}}
-{{- if (index .Values "br-sta").serviceAccount.create }}
-{{- default (include "br-sta.fullname" .) (index .Values "br-sta").serviceAccount.name }}
+{{- if (.Values.brSta).serviceAccount.create }}
+{{- default (include "br-sta.fullname" .) (.Values.brSta).serviceAccount.name }}
 {{- else }}
-{{- default "default" (index .Values "br-sta").serviceAccount.name }}
+{{- default "default" (.Values.brSta).serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -239,22 +239,22 @@ operator input for optional integrations that have been toggled on (multi-tenant
      via secretKeyRef; see docs/helm-chart-standard.md "Single-Source Infra
      Secrets". No gate here: for the bundled subchart the value is generated;
      for external Postgres the operator supplies postgresql.auth.existingSecret
-     or br-sta.secrets.POSTGRES_PASSWORD. The same reasoning applies to Valkey. */}}
+     or brSta.secrets.POSTGRES_PASSWORD. The same reasoning applies to Valkey. */}}
 
 {{/* Multi-tenant required fields when enabled */}}
-{{- if eq ((index .Values "br-sta").configmap.MULTI_TENANT_ENABLED | toString) "true" }}
-{{- if not (index .Values "br-sta").configmap.MULTI_TENANT_URL }}
-{{- fail "\n\nERROR: br-sta.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
+{{- if eq ((.Values.brSta).configmap.MULTI_TENANT_ENABLED | toString) "true" }}
+{{- if not (.Values.brSta).configmap.MULTI_TENANT_URL }}
+{{- fail "\n\nERROR: brSta.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
-{{- if not (index .Values "br-sta").secrets.MULTI_TENANT_SERVICE_API_KEY }}
-{{- fail "\n\nERROR: br-sta.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
+{{- if not (.Values.brSta).secrets.MULTI_TENANT_SERVICE_API_KEY }}
+{{- fail "\n\nERROR: brSta.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- end }}
 
 {{/* existingSecretName is required whenever useExistingSecret is enabled,
      otherwise secretRef.name renders empty and the pod fails to start. */}}
-{{- if (index .Values "br-sta").useExistingSecret }}
-{{- if not (index .Values "br-sta").existingSecretName }}
+{{- if (.Values.brSta).useExistingSecret }}
+{{- if not (.Values.brSta).existingSecretName }}
 {{- fail "\n\nERROR: br-sta.existingSecretName is REQUIRED when br-sta.useExistingSecret=true.\n" }}
 {{- end }}
 {{- end }}

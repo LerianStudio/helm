@@ -1,4 +1,4 @@
-{{- $app := index .Values "br-sta" -}}
+{{- $app := .Values.brSta -}}
 {{- $migrations := get $app "migrations" | default dict -}}
 {{- $configmap := get $app "configmap" | default dict -}}
 {{- $migrationImage := get $migrations "image" | default dict -}}
@@ -9,7 +9,7 @@
      tenant databases are migrated by the tenant-manager, not this chart. Fail fast so the
      misconfiguration surfaces at render time rather than as a crash-looping Job. */}}
 {{- if eq (lower (toString (get $configmap "MULTI_TENANT_ENABLED" | default "false"))) "true" }}
-{{- fail "br-sta.migrations.enabled cannot be true when br-sta.configmap.MULTI_TENANT_ENABLED=true; tenant-manager owns tenant database migrations" }}
+{{- fail "br-sta.migrations.enabled cannot be true when brSta.configmap.MULTI_TENANT_ENABLED=true; tenant-manager owns tenant database migrations" }}
 {{- end }}
 {{- $namespace := include "global.namespace" . -}}
 {{- $pg := .Values.postgresql | default dict -}}
@@ -48,7 +48,7 @@
 {{- end }}
 {{- end }}
 {{- /* Migration image tag is coupled to the app image tag unless an explicit tag/digest is set;
-     empty tag falls back to br-sta.image.tag, then the chart appVersion. */}}
+     empty tag falls back to brSta.image.tag, then the chart appVersion. */}}
 {{- $migrationTag := get $migrationImage "tag" | default (get (get $app "image" | default dict) "tag" | default .Chart.AppVersion) -}}
 {{- $migrationDigest := get $migrationImage "digest" | default "" -}}
 {{- $migrationRepository := get $migrationImage "repository" | default "ghcr.io/lerianstudio/br-sta-migrations" -}}

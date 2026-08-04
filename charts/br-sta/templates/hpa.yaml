@@ -1,4 +1,4 @@
-{{- $component := index .Values "br-sta" -}}
+{{- $component := .Values.brSta -}}
 {{- if $component.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

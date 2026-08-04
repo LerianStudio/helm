@@ -1,4 +1,4 @@
-{{- $component := index .Values "br-sta" -}}
+{{- $component := .Values.brSta -}}
 {{- if $component.pdb.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget

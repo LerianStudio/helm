@@ -1,4 +1,4 @@
-{{- $component := index .Values "br-sta" -}}
+{{- $component := .Values.brSta -}}
 {{- $cm := $component.configmap | default dict -}}
 {{- $ds := $component.datastores | default dict -}}
 {{- $app := $component.app | default dict -}}
@@ -119,7 +119,7 @@ data:
 
   # =====================================================================
   # MULTI-TENANCY (lerian-common.multiTenant.env). Toggle via
-  # br-sta.multiTenant.enabled; URL + Redis infra from global.multiTenant.
+  # brSta.multiTenant.enabled; URL + Redis infra from global.multiTenant.
   # MT infra keys render only when enabled; URL/REDIS_HOST required then.
   # =====================================================================
   MULTI_TENANT_ENABLED: {{ $multiTenantEnabled | quote }}
@@ -153,7 +153,7 @@ data:
 
   # =====================================================================
   # SERVICE DISCOVERY (serviceDiscovery.env + global.serviceDiscovery). Toggle via
-  # br-sta.serviceDiscovery.enabled; SD_TOKEN (ACL) is a Secret. Full block when enabled.
+  # brSta.serviceDiscovery.enabled; SD_TOKEN (ACL) is a Secret. Full block when enabled.
   # =====================================================================
   SD_ENABLED: {{ $sdEnabled | quote }}
   {{- include "lerian-common.serviceDiscovery.env" (dict
@@ -166,7 +166,7 @@ data:
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" ($component.ingress | default dict)))) | nindent 2 }}
 
   # =====================================================================
-  # STREAMING (streaming.env + global.streaming). Toggle via br-sta.streaming.enabled;
+  # STREAMING (streaming.env + global.streaming). Toggle via brSta.streaming.enabled;
   # STREAMING_SASL_PASSWORD is a Secret. Full SASL/broker block when enabled.
   # =====================================================================
   STREAMING_ENABLED: {{ $streamingEnabled | quote }}
@@ -207,7 +207,7 @@ data:
   AWS_ACCESS_KEY_ID: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AWS_ACCESS_KEY_ID" "params" $m2m "field" "awsAccessKeyId" "default" "any") | default "" | quote }}
 
   # =====================================================================
-  # POSTGRESQL. HOST/PORT/USER/SSL from the datastore mask (br-sta.datastores.postgres
+  # POSTGRESQL. HOST/PORT/USER/SSL from the datastore mask (brSta.datastores.postgres
   # → global.datastores.postgres) with a configmap.<KEY> override. When the mask
   # yields no HOST and the bundled subchart is enabled, HOST defaults to the
   # subchart primary Service DNS; otherwise "".

@@ -1,4 +1,4 @@
-{{- $component := index .Values "br-sta" -}}
+{{- $component := .Values.brSta -}}
 apiVersion: v1
 kind: Service
 metadata:

@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `None for default render`. With the bundled PostgreSQL and Valkey subcharts the database and Redis passwords are auto-generated and read via `secretKeyRef`. Only supply `br-sta.secrets.POSTGRES_PASSWORD` / `br-sta.secrets.REDIS_PASSWORD` for external infra without `postgresql.auth.existingSecret` / `valkey.auth.existingSecret`. `br-sta.secrets.MULTI_TENANT_SERVICE_API_KEY` is required only when `MULTI_TENANT_ENABLED=true`.
+- Required secrets: `None for default render`. With the bundled PostgreSQL and Valkey subcharts the database and Redis passwords are auto-generated and read via `secretKeyRef`. Only supply `brSta.secrets.POSTGRES_PASSWORD` / `brSta.secrets.REDIS_PASSWORD` for external infra without `postgresql.auth.existingSecret` / `valkey.auth.existingSecret`. `brSta.secrets.MULTI_TENANT_SERVICE_API_KEY` is required only when `MULTI_TENANT_ENABLED=true`.
 - Dependency notes: Bundles two local subcharts — Bitnami `postgresql` (`postgresql.enabled`, default `true`) and Bitnami `valkey` (`valkey.enabled`, default `true`). RabbitMQ is optional, config-only, and NOT bundled (`RABBITMQ_ENABLED=false`). All can be pointed at external services.
 - Production overrides: Disable the bundled subcharts and point `POSTGRES_HOST` / `REDIS_HOST` at managed services; supply credentials via chart secrets or an existing Secret; override image tag, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/br-sta`; chart license is Apache-2.0.
@@ -53,9 +53,9 @@ The chart deploys a **manager Deployment** (`/service`, a Go/Fiber HTTP server) 
 
 Following [`docs/helm-chart-standard.md`](../../docs/helm-chart-standard.md):
 
-- With the bundled **PostgreSQL** subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` (key `password`) — leave `br-sta.secrets.POSTGRES_PASSWORD` empty.
-- With the bundled **Valkey** subchart (default), the password is auto-generated into the subchart's own Secret and read via `secretKeyRef` (key `valkey-password`) — leave `br-sta.secrets.REDIS_PASSWORD` empty.
-- For external infra (subchart disabled), supply `br-sta.secrets.POSTGRES_PASSWORD` / `br-sta.secrets.REDIS_PASSWORD`, or set `postgresql.auth.existingSecret` / `valkey.auth.existingSecret`.
+- With the bundled **PostgreSQL** subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` (key `password`) — leave `brSta.secrets.POSTGRES_PASSWORD` empty.
+- With the bundled **Valkey** subchart (default), the password is auto-generated into the subchart's own Secret and read via `secretKeyRef` (key `valkey-password`) — leave `brSta.secrets.REDIS_PASSWORD` empty.
+- For external infra (subchart disabled), supply `brSta.secrets.POSTGRES_PASSWORD` / `brSta.secrets.REDIS_PASSWORD`, or set `postgresql.auth.existingSecret` / `valkey.auth.existingSecret`.
 
 ## Required configuration
 
@@ -63,8 +63,8 @@ The chart **fails fast** on `helm install` only when an enabled optional integra
 
 | Field | When required |
 |-------|---------------|
-| `br-sta.configmap.MULTI_TENANT_URL` | `MULTI_TENANT_ENABLED=true` |
-| `br-sta.secrets.MULTI_TENANT_SERVICE_API_KEY` | `MULTI_TENANT_ENABLED=true` |
+| `brSta.configmap.MULTI_TENANT_URL` | `MULTI_TENANT_ENABLED=true` |
+| `brSta.secrets.MULTI_TENANT_SERVICE_API_KEY` | `MULTI_TENANT_ENABLED=true` |
 
 ## Probes
 
@@ -78,8 +78,8 @@ The chart **fails fast** on `helm install` only when an enabled optional integra
 | Key | Default | Description |
 |-----|---------|-------------|
 | `br-sta.replicaCount` | `2` | Number of replicas. |
-| `br-sta.image.repository` | `ghcr.io/lerianstudio/br-sta` | Container image. |
-| `br-sta.image.tag` | `""` (Chart `appVersion`) | Image tag. |
+| `brSta.image.repository` | `ghcr.io/lerianstudio/br-sta` | Container image. |
+| `brSta.image.tag` | `""` (Chart `appVersion`) | Image tag. |
 | `br-sta.service.port` | `8080` | Service port. |
 | `br-sta.ingress.enabled` | `false` | Expose via Ingress. |
 | `br-sta.autoscaling.enabled` | `true` | Enable HPA. |

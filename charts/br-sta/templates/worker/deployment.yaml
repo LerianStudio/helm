@@ -1,5 +1,5 @@
 {{- if eq (include "br-sta.worker.enabled" .) "true" }}
-{{- $mgr := index .Values "br-sta" -}}
+{{- $mgr := .Values.brSta -}}
 {{- $w := .Values.worker | default dict -}}
 {{- $wImage := $w.image | default dict -}}
 {{- $repo := $wImage.repository | default $mgr.image.repository -}}

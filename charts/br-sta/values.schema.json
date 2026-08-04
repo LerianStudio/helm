@@ -22,7 +22,7 @@
       "type": "object",
       "additionalProperties": true
     },
-    "br-sta": {
+    "brSta": {
       "type": "object",
       "properties": {
         "multiTenant": {

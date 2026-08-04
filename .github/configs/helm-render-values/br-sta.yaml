@@ -4,7 +4,7 @@
 #   - otel.env driven by global.observability
 #   - datastore.value broker mask + RABBITMQ_DEFAULT_PASS fail-fast (rmq on)
 # Values are placeholders; the gate only checks that the chart renders.
-br-sta:
+brSta:
   multiTenant:
     enabled: true
   serviceDiscovery:

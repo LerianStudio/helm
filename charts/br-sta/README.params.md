@@ -19,69 +19,69 @@
 | `global.externalPostgresDefinitions.appCredentials` | string | `{}` | Credentials for the br_sta role created by the job |
 | `global.externalPostgresDefinitions.appCredentials.useExistingSecret.name` | string | `""` | Name of existing secret containing DB_PASSWORD_BR_STA key |
 | `global.externalPostgresDefinitions.appCredentials.password` | string | `""` | Password for br_sta role (ignored if useExistingSecret.name is set) |
-| `global.observability` | string | `{}` | Env-wide observability, consumed by lerian-common.otel.env. Declare once at the umbrella level; a component configmap.<KEY> still overrides per-service. Precedence: br-sta.configmap.<KEY> > global.observability.<field> > chart default. |
+| `global.observability` | string | `{}` | Env-wide observability, consumed by lerian-common.otel.env. Declare once at the umbrella level; a component configmap.<KEY> still overrides per-service. Precedence: brSta.configmap.<KEY> > global.observability.<field> > chart default. |
 | `global.observability.enabled` | bool | `false` | Enable telemetry export (ENABLE_TELEMETRY). Unset → chart default "false". |
 | `global.observability.otlpEndpoint` | string | `""` | OTLP collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT). Unset → chart default "". |
 | `global.observability.deploymentEnvironment` | string | `"production"` | Deployment environment tag (OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT). Unset → "production". |
-| `global.multiTenant` | object | `{}` | Env-wide multi-tenant infra (tenant-manager URL + its Redis), consumed by lerian-common.multiTenant.env. Only used when MT is enabled (see br-sta.multiTenant.enabled). A component configmap.<KEY> still overrides. |
-| `global.datastores` | object | `{}` | Env-wide datastore mask, consumed by lerian-common.datastore.value. Declare a SHARED instance once here; a DEDICATED per-service instance goes under br-sta.datastores; a component configmap.<KEY> still overrides everything. Precedence: br-sta.configmap.<KEY> > br-sta.datastores.<type>.<field> > global.datastores.<type>.<field> > chart default. |
-| `global.serviceDiscovery` | object | `{}` | Env-wide service discovery (Consul), consumed by lerian-common.serviceDiscovery.env. Only used when SD is enabled (br-sta.serviceDiscovery.enabled). Leave {} for defaults. |
-| `global.streaming` | object | `{}` | Env-wide streaming (lib-streaming → Kafka), consumed by lerian-common.streaming.env. Only used when streaming is enabled (br-sta.streaming.enabled). Leave {} for defaults. |
-| `br-sta.multiTenant` | string | `{}` | Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). Tenant-manager URL + Redis infra come from global.multiTenant (or configmap.MULTI_TENANT_*). Precedence: configmap.MULTI_TENANT_ENABLED > br-sta.multiTenant.enabled > "false". |
-| `br-sta.multiTenant.enabled` | bool | `false` | Enable multi-tenancy (MULTI_TENANT_ENABLED) |
-| `br-sta.datastores` | object | `{}` | Dedicated datastore mask for THIS service (see global.datastores for the shared form + precedence). Same fields as global.datastores; wins over global, loses to configmap.<KEY>. Leave empty ({}) to keep the bundled-subchart / native defaults. |
-| `br-sta.name` | string | `"br-sta"` | Service name |
-| `br-sta.replicaCount` | int | `2` | Number of replicas |
-| `br-sta.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for rollback |
-| `br-sta.annotations` | object | `{}` | Annotations applied to the Deployment resource |
-| `br-sta.podAnnotations` | object | `{}` | Annotations applied to the pods |
-| `br-sta.image.repository` | string | `ghcr.io/lerianstudio/br-sta` | Repository for the br-sta image |
-| `br-sta.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
-| `br-sta.image.tag` | string | `""` | Image tag (defaults to Chart.appVersion if empty) |
-| `br-sta.imagePullSecrets` | list | `[]` | Image pull secrets for private registries |
-| `br-sta.migrations` | string | `{}` | Database migrations Job (init/postgres-migrations runner image). Applies the SQL migrations once as an Argo hook — PreSync for external Postgres (schema-first, before the app rolls out) or PostSync for the bundled subchart (after the DB is provisioned) — so schema changes are applied by a dedicated process rather than at application runtime. Disabled by default; enable per-environment (e.g. the dev-st gitops values). |
-| `br-sta.migrations.enabled` | bool | `false` | Enable or disable the migrations Job. |
-| `br-sta.migrations.useExistingSecret` | bool | `false` | When true, read POSTGRES_PASSWORD from a pre-existing Secret (existingSecretName) instead of the chart-managed app Secret. |
-| `br-sta.migrations.existingSecretName` | string | `""` | Name of the pre-existing Secret containing POSTGRES_PASSWORD (only used when useExistingSecret=true). |
-| `br-sta.migrations.image.repository` | string | `ghcr.io/lerianstudio/br-sta-migrations` | Repository for the migrations runner image. |
-| `br-sta.migrations.image.tag` | string | `""` | Tag for the migrations image. Defaults to the app image tag (br-sta.image.tag, or the chart appVersion) when left empty. |
-| `br-sta.migrations.image.digest` | string | `""` | Optional image digest (overrides tag when set). |
-| `br-sta.migrations.image.pullPolicy` | string | `IfNotPresent` | Image pull policy. |
-| `br-sta.migrations.path` | string | `"/migrations"` | Path inside the image where the SQL migrations live. |
-| `br-sta.migrations.allowInsecureTLS` | string | `""` | Bypass the lib-commons migrator TLS guard for a non-TLS Postgres (POSTGRES_SSLMODE=disable is rejected without it). When empty, inherits ALLOW_INSECURE_TLS from br-sta.extraEnvVars, then br-sta.configmap. Leave empty for a TLS-enabled Postgres. |
-| `br-sta.migrations.backoffLimit` | int | `3` | Maximum retries before the Job is considered failed. |
-| `br-sta.migrations.activeDeadlineSeconds` | int | `600` | Hard wall-clock cap for the Job (seconds). |
-| `br-sta.migrations.ttlSecondsAfterFinished` | int | `600` | Seconds to retain the finished Job before garbage collection. |
-| `br-sta.migrations.timeoutSeconds` | string | `""` | Optional MIGRATIONS_TIMEOUT_SEC passed to the runner (per-run deadline). |
-| `br-sta.migrations.resources` | string | `{}` | Resource requests/limits for the migrations container. |
-| `br-sta.migrations.annotations` | object | `{}` | Extra annotations on the Job resource. |
-| `br-sta.migrations.podAnnotations` | object | `{}` | Extra annotations on the migration pod. |
-| `br-sta.nameOverride` | string | `""` | Override of the resource name |
-| `br-sta.fullnameOverride` | string | `""` | Override of the fully qualified resource name |
-| `br-sta.terminationGracePeriodSeconds` | int | `60` | Termination grace period. |
-| `br-sta.podSecurityContext` | object | `{}` | Pod security context |
-| `br-sta.securityContext` | string | `{}` | Container security context (Distroless nonroot UID/GID is 65532) |
-| `br-sta.pdb` | string | `{}` | PodDisruptionBudget configuration |
-| `br-sta.deploymentStrategy` | string | `{}` | Deployment strategy |
-| `br-sta.service` | string | `{}` | Service configuration |
-| `br-sta.ingress` | string | `{}` | Ingress configuration |
-| `br-sta.resources` | string | `{}` | Resource requests and limits |
-| `br-sta.autoscaling` | string | `{}` | HorizontalPodAutoscaler configuration |
-| `br-sta.readinessProbe` | string | `{}` | Readiness probe configuration |
-| `br-sta.livenessProbe` | string | `{}` | Liveness probe configuration |
-| `br-sta.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
-| `br-sta.tolerations` | list | `[]` | Tolerations for scheduling on tainted nodes |
-| `br-sta.affinity` | object | `{}` | Affinity rules for pod scheduling |
-| `br-sta.hostAliases` | list | `[]` | Host aliases for custom DNS resolution inside the pod |
-| `br-sta.configmap` | object | `templates/configmap.yaml` | Raw ConfigMap env-var escape hatch. The clean, grouped API lives in the br-sta.<group> blocks below. Each key resolves via cfgValue: configmap.<NATIVE_KEY> (here) > br-sta.<group>.<field> > chart default. Defaults live in the template, so leaving this {} renders the documented defaults. Set a raw key here only to override a value or pass an opt-in key. |
-| `br-sta.app` | string | `{}          # ENV_NAME(envName) / LOG_LEVEL(logLevel) / DEPLOYMENT_MODE / etc.` | Grouped config API (see templates/configmap.yaml for field names). Postgres/ Redis/RabbitMQ HOST/PORT/USER come from the datastores mask; MT/OTEL from the global.* blocks. These groups hold the remaining per-service knobs. |
-| `br-sta.serviceDiscovery` | string | `{}` | Service discovery toggle (grouped API for SD_ENABLED). SD_TOKEN (ACL) is a Secret. |
-| `br-sta.streaming` | string | `{}` | Streaming toggle (grouped API for STREAMING_ENABLED). SASL password is a Secret. |
-| `br-sta.secrets` | string | `templates/secrets.yaml` | Secrets (sensitive environment variables) |
-| `br-sta.useExistingSecret` | bool | `false` | Use an externally managed Secret instead of generating one |
-| `br-sta.existingSecretName` | string | `""` | Name of the externally managed Secret |
-| `br-sta.extraEnvVars` | object | `{}` | Extra environment variables (map of key:value pairs) |
-| `br-sta.serviceAccount` | string | `{}` | ServiceAccount configuration |
+| `global.multiTenant` | object | `{}` | Env-wide multi-tenant infra (tenant-manager URL + its Redis), consumed by lerian-common.multiTenant.env. Only used when MT is enabled (see brSta.multiTenant.enabled). A component configmap.<KEY> still overrides. |
+| `global.datastores` | object | `{}` | Env-wide datastore mask, consumed by lerian-common.datastore.value. Declare a SHARED instance once here; a DEDICATED per-service instance goes under brSta.datastores; a component configmap.<KEY> still overrides everything. Precedence: brSta.configmap.<KEY> > brSta.datastores.<type>.<field> > global.datastores.<type>.<field> > chart default. |
+| `global.serviceDiscovery` | object | `{}` | Env-wide service discovery (Consul), consumed by lerian-common.serviceDiscovery.env. Only used when SD is enabled (brSta.serviceDiscovery.enabled). Leave {} for defaults. |
+| `global.streaming` | object | `{}` | Env-wide streaming (lib-streaming → Kafka), consumed by lerian-common.streaming.env. Only used when streaming is enabled (brSta.streaming.enabled). Leave {} for defaults. |
+| `brSta.multiTenant` | string | `{}` | Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). Tenant-manager URL + Redis infra come from global.multiTenant (or configmap.MULTI_TENANT_*). Precedence: configmap.MULTI_TENANT_ENABLED > brSta.multiTenant.enabled > "false". |
+| `brSta.multiTenant.enabled` | bool | `false` | Enable multi-tenancy (MULTI_TENANT_ENABLED) |
+| `brSta.datastores` | object | `{}` | Dedicated datastore mask for THIS service (see global.datastores for the shared form + precedence). Same fields as global.datastores; wins over global, loses to configmap.<KEY>. Leave empty ({}) to keep the bundled-subchart / native defaults. |
+| `brSta.name` | string | `"br-sta"` | Service name |
+| `brSta.replicaCount` | int | `2` | Number of replicas |
+| `brSta.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for rollback |
+| `brSta.annotations` | object | `{}` | Annotations applied to the Deployment resource |
+| `brSta.podAnnotations` | object | `{}` | Annotations applied to the pods |
+| `brSta.image.repository` | string | `ghcr.io/lerianstudio/br-sta` | Repository for the br-sta image |
+| `brSta.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
+| `brSta.image.tag` | string | `""` | Image tag (defaults to Chart.appVersion if empty) |
+| `brSta.imagePullSecrets` | list | `[]` | Image pull secrets for private registries |
+| `brSta.migrations` | string | `{}` | Database migrations Job (init/postgres-migrations runner image). Applies the SQL migrations once as an Argo hook — PreSync for external Postgres (schema-first, before the app rolls out) or PostSync for the bundled subchart (after the DB is provisioned) — so schema changes are applied by a dedicated process rather than at application runtime. Disabled by default; enable per-environment (e.g. the dev-st gitops values). |
+| `brSta.migrations.enabled` | bool | `false` | Enable or disable the migrations Job. |
+| `brSta.migrations.useExistingSecret` | bool | `false` | When true, read POSTGRES_PASSWORD from a pre-existing Secret (existingSecretName) instead of the chart-managed app Secret. |
+| `brSta.migrations.existingSecretName` | string | `""` | Name of the pre-existing Secret containing POSTGRES_PASSWORD (only used when useExistingSecret=true). |
+| `brSta.migrations.image.repository` | string | `ghcr.io/lerianstudio/br-sta-migrations` | Repository for the migrations runner image. |
+| `brSta.migrations.image.tag` | string | `""` | Tag for the migrations image. Defaults to the app image tag (brSta.image.tag, or the chart appVersion) when left empty. |
+| `brSta.migrations.image.digest` | string | `""` | Optional image digest (overrides tag when set). |
+| `brSta.migrations.image.pullPolicy` | string | `IfNotPresent` | Image pull policy. |
+| `brSta.migrations.path` | string | `"/migrations"` | Path inside the image where the SQL migrations live. |
+| `brSta.migrations.allowInsecureTLS` | string | `""` | Bypass the lib-commons migrator TLS guard for a non-TLS Postgres (POSTGRES_SSLMODE=disable is rejected without it). When empty, inherits ALLOW_INSECURE_TLS from brSta.extraEnvVars, then brSta.configmap. Leave empty for a TLS-enabled Postgres. |
+| `brSta.migrations.backoffLimit` | int | `3` | Maximum retries before the Job is considered failed. |
+| `brSta.migrations.activeDeadlineSeconds` | int | `600` | Hard wall-clock cap for the Job (seconds). |
+| `brSta.migrations.ttlSecondsAfterFinished` | int | `600` | Seconds to retain the finished Job before garbage collection. |
+| `brSta.migrations.timeoutSeconds` | string | `""` | Optional MIGRATIONS_TIMEOUT_SEC passed to the runner (per-run deadline). |
+| `brSta.migrations.resources` | string | `{}` | Resource requests/limits for the migrations container. |
+| `brSta.migrations.annotations` | object | `{}` | Extra annotations on the Job resource. |
+| `brSta.migrations.podAnnotations` | object | `{}` | Extra annotations on the migration pod. |
+| `brSta.nameOverride` | string | `""` | Override of the resource name |
+| `brSta.fullnameOverride` | string | `""` | Override of the fully qualified resource name |
+| `brSta.terminationGracePeriodSeconds` | int | `60` | Termination grace period. |
+| `brSta.podSecurityContext` | object | `{}` | Pod security context |
+| `brSta.securityContext` | string | `{}` | Container security context (Distroless nonroot UID/GID is 65532) |
+| `brSta.pdb` | string | `{}` | PodDisruptionBudget configuration |
+| `brSta.deploymentStrategy` | string | `{}` | Deployment strategy |
+| `brSta.service` | string | `{}` | Service configuration |
+| `brSta.ingress` | string | `{}` | Ingress configuration |
+| `brSta.resources` | string | `{}` | Resource requests and limits |
+| `brSta.autoscaling` | string | `{}` | HorizontalPodAutoscaler configuration |
+| `brSta.readinessProbe` | string | `{}` | Readiness probe configuration |
+| `brSta.livenessProbe` | string | `{}` | Liveness probe configuration |
+| `brSta.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
+| `brSta.tolerations` | list | `[]` | Tolerations for scheduling on tainted nodes |
+| `brSta.affinity` | object | `{}` | Affinity rules for pod scheduling |
+| `brSta.hostAliases` | list | `[]` | Host aliases for custom DNS resolution inside the pod |
+| `brSta.configmap` | object | `templates/configmap.yaml` | Raw ConfigMap env-var escape hatch. The clean, grouped API lives in the br-sta.<group> blocks below. Each key resolves via cfgValue: configmap.<NATIVE_KEY> (here) > br-sta.<group>.<field> > chart default. Defaults live in the template, so leaving this {} renders the documented defaults. Set a raw key here only to override a value or pass an opt-in key. |
+| `brSta.app` | string | `{}          # ENV_NAME(envName) / LOG_LEVEL(logLevel) / DEPLOYMENT_MODE / etc.` | Grouped config API (see templates/configmap.yaml for field names). Postgres/ Redis/RabbitMQ HOST/PORT/USER come from the datastores mask; MT/OTEL from the global.* blocks. These groups hold the remaining per-service knobs. |
+| `brSta.serviceDiscovery` | string | `{}` | Service discovery toggle (grouped API for SD_ENABLED). SD_TOKEN (ACL) is a Secret. |
+| `brSta.streaming` | string | `{}` | Streaming toggle (grouped API for STREAMING_ENABLED). SASL password is a Secret. |
+| `brSta.secrets` | string | `templates/secrets.yaml` | Secrets (sensitive environment variables) |
+| `brSta.useExistingSecret` | bool | `false` | Use an externally managed Secret instead of generating one |
+| `brSta.existingSecretName` | string | `""` | Name of the externally managed Secret |
+| `brSta.extraEnvVars` | object | `{}` | Extra environment variables (map of key:value pairs) |
+| `brSta.serviceAccount` | string | `{}` | ServiceAccount configuration |
 | `worker.enabled` | bool | `false` | Enable the worker Deployment. REQUIRES worker.image to point at a dedicated worker image (built from cmd/worker) — keep this false until that image is confirmed available, then enable per-deployment. |
 | `worker.replicaCount` | int | `1` | Replicas. The background jobs are leader-gated but the worker does NOT run its own leader election yet — keep this at 1 (and do not add an HPA) to avoid duplicate processing. |
 | `worker.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for rollback |

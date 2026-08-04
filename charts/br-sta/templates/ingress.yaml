@@ -1,4 +1,4 @@
-{{- $component := index .Values "br-sta" -}}
+{{- $component := .Values.brSta -}}
 {{- if $component.ingress.enabled -}}
 {{- $fullName := include "br-sta.fullname" . -}}
 {{- $svcPort := $component.service.port -}}

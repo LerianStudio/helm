@@ -3,6 +3,54 @@
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
 
 - **Improvements**
+  - Aligned upgrade guide format for better consistency.
+  - Added v2.3 upgrade guide documentation.
+  - Standardized probe field set across all charts.
+  - Parametrized probe path and timing using /readyz.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
+- **Improvements:**
+  - Aligned upgrade guide format for better consistency and clarity.
+  - Added a v2.3 upgrade guide to assist users with the transition.
+  - Standardized probe field set across all charts, including parametrization of probe path and timing using /readyz.
+  - Updated readiness probe paths to /readyz across multiple deployment templates for consistency.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
+- **Features:**
+  - Added ALLOW_INSECURE_TLS configuration for enhanced security flexibility.
+  - Parametrized probe path and timing using /readyz for improved monitoring.
+
+- **Fixes:**
+  - Addressed CodeRabbit review comments on revamp PR to improve code quality.
+  - Corrected value key typo and updated stale README notes for better documentation accuracy.
+
+- **Improvements:**
+  - Aligned upgrade guide format for consistency in documentation.
+  - Standardized probe field set across all charts for uniformity.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
+- **Improvements**
   - Updated the changelog for version 2.2.11.
   - Aligned the upgrade guide format for better consistency.
 

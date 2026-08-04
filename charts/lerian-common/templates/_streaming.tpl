@@ -57,8 +57,8 @@ global.streaming (all optional except brokers, which gates emission):
 {{- if and .enabled (or $s.brokers (hasKey $c "STREAMING_BROKERS")) -}}
 {{- $brokers := $s.brokers -}}{{- if hasKey $c "STREAMING_BROKERS" -}}{{- $brokers = index $c "STREAMING_BROKERS" -}}{{- end -}}
 {{- $tlsEnabled := ($s.tlsEnabled | default false) -}}{{- if hasKey $c "STREAMING_TLS_ENABLED" -}}{{- $tlsEnabled = index $c "STREAMING_TLS_ENABLED" -}}{{- end -}}
-{{- $saslMechanism := ($s.saslMechanism | default "") -}}{{- if hasKey $c "STREAMING_SASL_MECHANISM" -}}{{- $saslMechanism = index $c "STREAMING_SASL_MECHANISM" -}}{{- end -}}
-{{- $saslUsername := ($s.saslUsername | default "") -}}{{- if hasKey $c "STREAMING_SASL_USERNAME" -}}{{- $saslUsername = index $c "STREAMING_SASL_USERNAME" -}}{{- end -}}
+{{- $saslMechanism := $s.saslMechanism -}}{{- if hasKey $c "STREAMING_SASL_MECHANISM" -}}{{- $saslMechanism = index $c "STREAMING_SASL_MECHANISM" -}}{{- end -}}{{- if kindIs "invalid" $saslMechanism -}}{{- $saslMechanism = "" -}}{{- end -}}
+{{- $saslUsername := ($s.saslUsername | default "") -}}{{- if hasKey $c "STREAMING_SASL_USERNAME" -}}{{- $saslUsername = (index $c "STREAMING_SASL_USERNAME" | default "") -}}{{- end -}}
 {{- $saslAllowPlaintext := ($s.saslAllowPlaintext | default "false") -}}{{- if hasKey $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- $saslAllowPlaintext = index $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- end -}}
 {{- $compression := ($s.compression | default "lz4") -}}{{- if hasKey $c "STREAMING_COMPRESSION" -}}{{- $compression = index $c "STREAMING_COMPRESSION" -}}{{- end -}}
 {{- $requiredAcks := ($s.requiredAcks | default "all") -}}{{- if hasKey $c "STREAMING_REQUIRED_ACKS" -}}{{- $requiredAcks = index $c "STREAMING_REQUIRED_ACKS" -}}{{- end -}}
@@ -69,15 +69,33 @@ global.streaming (all optional except brokers, which gates emission):
    via useExistingSecret), so mechanism/username/TLS are validated regardless of the secret
    source. When a mechanism is set it must be a supported one, a username is required, and
    TLS must be on unless plaintext SASL is explicitly opted into. */ -}}
-{{- if $saslMechanism -}}
+{{- /* Normalize like lib-streaming does: the mechanism is case-insensitive and
+   TrimSpace'd, and an all-whitespace value means "no SASL" (disabled). The booleans
+   follow strconv.ParseBool (case-insensitive true/1/t). Validate on the normalized
+   values so a valid lowercase/whitespace-padded config is not falsely rejected. */ -}}
+{{- /* NIL-ONLY coercion for the mechanism (resolved above): a YAML null becomes ""
+   (SASL off) so toString does not render the literal "<nil>", but a NON-null non-string
+   like a YAML false / 0 is PRESERVED so toString gives "false"/"0" → it fails the allowlist
+   below instead of sprig `default` silently collapsing it to "" (which would DISABLE SASL —
+   an auth downgrade). Whitespace/case are handled by trim/upper. */ -}}
+{{- $saslMechNorm := upper (trim (toString $saslMechanism)) -}}
+{{- if $saslMechNorm -}}
 {{- $allowedSasl := list "PLAIN" "SCRAM-SHA-256" "SCRAM-SHA-512" -}}
-{{- if not (has $saslMechanism $allowedSasl) -}}
-{{- fail (printf "\n[lerian-common] Unsupported STREAMING_SASL_MECHANISM %q — lib-streaming accepts only PLAIN, SCRAM-SHA-256, SCRAM-SHA-512.\n" $saslMechanism) -}}
+{{- if not (has $saslMechNorm $allowedSasl) -}}
+{{- fail (printf "\n[lerian-common] Unsupported STREAMING_SASL_MECHANISM %q — lib-streaming accepts only PLAIN, SCRAM-SHA-256, SCRAM-SHA-512 (case-insensitive).\n" (toString $saslMechanism)) -}}
 {{- end -}}
-{{- if not $saslUsername -}}
+{{- if not (trim (toString ($saslUsername | default ""))) -}}
 {{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires a username (and a password).\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" $saslMechanism) -}}
 {{- end -}}
-{{- if not (or (eq (toString $tlsEnabled) "true") (eq (toString $saslAllowPlaintext) "true")) -}}
+{{- /* Match strconv.ParseBool EXACTLY (what the runtime's GetenvBoolOrDefault uses). The
+   true set is 1/t/T/TRUE/true/True (no trimming); the false set 0/f/F/FALSE/False/false
+   parses to false, and any OTHER spelling (e.g. "TrUe", " true ") errors and falls back to
+   the default (false). For "TLS on?" we only need the true set. Using lower()/trim() here
+   would wrongly accept "TrUe" and ship a SASL-without-TLS config that crashes at bootstrap. */ -}}
+{{- $parseBoolTrue := list "1" "t" "T" "TRUE" "true" "True" -}}
+{{- $tlsOn := has (toString $tlsEnabled) $parseBoolTrue -}}
+{{- $plaintextOn := has (toString $saslAllowPlaintext) $parseBoolTrue -}}
+{{- if not (or $tlsOn $plaintextOn) -}}
 {{- fail (printf "\n[lerian-common] SASL requires TLS: mechanism %s is set but STREAMING_TLS_ENABLED is not true.\n  set:     STREAMING_TLS_ENABLED=true (recommended), or opt into plaintext SASL with STREAMING_SASL_ALLOW_PLAINTEXT=true.\n" $saslMechanism) -}}
 {{- end -}}
 {{- end -}}
@@ -152,17 +170,21 @@ Inputs: context, secrets, secretName, valuesPrefix, mode,
 {{- $b64 := eq (.mode | default "stringData") "data" -}}
 {{- $ns := .context.Release.Namespace -}}
 {{- $lines := list -}}
-{{- /* STREAMING_SASL_USERNAME — required (with the password) whenever a SASL mechanism
-   is set; lib-streaming rejects a mechanism without BOTH credentials. The username is a
-   ConfigMap value (not a secret), resolved by the caller with the same precedence
-   (configmap.STREAMING_SASL_USERNAME -> global.streaming.saslUsername) and passed here so
-   the render fails fast instead of shipping a boot-crashing config. */ -}}
-{{- if and .saslMechanism (not .saslUsername) -}}
-{{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%s) is set, which requires both a username and a password.\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" .saslMechanism) -}}
+{{- /* Normalize mechanism AND username EXACTLY like streaming.env's tests:
+   `trim (toString (x | default ""))`. This keeps the Secret and the ConfigMap in
+   agreement — otherwise a whitespace-only mechanism ("   ") is disabled by the ConfigMap
+   yet raw-truthy here (wrongly forcing the credentials), and a whitespace-only username
+   would satisfy the Secret while streaming.env rejects it. A YAML null/false collapses to
+   "" (off) on both sides. Gate on the normalized values; the fail messages still show the
+   operator's original input (%v so a non-string mechanism prints as-is, not %!s(...)). */ -}}
+{{- $mech := trim (toString (.saslMechanism | default "")) -}}
+{{- $user := trim (toString (.saslUsername | default "")) -}}
+{{- if and $mech (not $user) -}}
+{{- fail (printf "\n[lerian-common] Value required but empty: STREAMING_SASL_USERNAME\n  a SASL mechanism (%v) is set, which requires both a username and a password.\n  set:     configmap.STREAMING_SASL_USERNAME (or global.streaming.saslUsername)\n" .saslMechanism) -}}
 {{- end -}}
 {{- /* STREAMING_SASL_PASSWORD — required only when a SASL mechanism is set */ -}}
 {{- $sasl := index $s "STREAMING_SASL_PASSWORD" -}}
-{{- if and .saslMechanism (not $sasl) -}}
+{{- if and $mech (not $sasl) -}}
 {{- fail (printf "\n[lerian-common] Secret value required but empty: STREAMING_SASL_PASSWORD\n  set:     --set %sSTREAMING_SASL_PASSWORD=<value>   (or configure an existingSecret)\n  recover: kubectl get secret %s -n %s -o jsonpath=\"{.data.STREAMING_SASL_PASSWORD}\" | base64 -d\n" .valuesPrefix .secretName $ns) -}}
 {{- end -}}
 {{- if $sasl -}}

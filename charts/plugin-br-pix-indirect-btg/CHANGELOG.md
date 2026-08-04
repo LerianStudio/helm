@@ -2,6 +2,72 @@
 
 ## [3.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.7.0)
 
+- **Features**
+  - Bumped app to version 1.9.0 (stable).
+  - Added outbound BTG client mTLS via mounted secret.
+  - Default `mtls.secretName` to `<fullname>-mtls`.
+  - Chart can create the mTLS Secret from values with a minimal interface.
+
+- **Fixes**
+  - Scoped mTLS volume to cert keys and bound `fsGroup`.
+
+- **Improvements**
+  - Refactored mTLS to use `fsGroup` and `0440` direct mount, removing the need for an init container.
+  - Added mTLS block to values-template.
+  - Dropped hand-written `mTLS.md` documentation, now auto-generated on release.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.6.0...plugin-br-pix-indirect-btg-v3.7.0)
+
+---
+
+## [3.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.7.0)
+
+- **Features**
+  - Added outbound BTG client mTLS via mounted secret.
+  - Chart can create the mTLS Secret from values with a minimal interface.
+  - Default `mtls.secretName` to `<fullname>-mtls`.
+  - Bumped app to version 1.9.0 (stable).
+
+- **Fixes**
+  - Scoped mTLS volume to cert keys and bound `fsGroup`.
+
+- **Improvements**
+  - Refactored mTLS to use `fsGroup` and 0440 direct mount, eliminating the need for an init container.
+  - Added mTLS block to values-template.
+  - Dropped hand-written mTLS.md as it is now auto-generated on release.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.6.0...plugin-br-pix-indirect-btg-v3.7.0)
+
+---
+
+## [3.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.7.0)
+
+- **Features:**
+  - Added outbound BTG client mTLS via mounted secret.
+  - Chart can now create the mTLS Secret from values with a minimal interface.
+  - Default `mtls.secretName` to `<fullname>-mtls`.
+  - Bumped app version to 1.9.0 (stable).
+
+- **Fixes:**
+  - Scoped mTLS volume to cert keys and bounded `fsGroup`.
+
+- **Improvements:**
+  - Refactored mTLS to use `fsGroup` and `0440` direct mount, eliminating the need for an init container.
+  - Added mTLS block to values-template for better configuration management.
+  - Dropped hand-written mTLS.md as it is now auto-generated on release.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.6.0...plugin-br-pix-indirect-btg-v3.7.0)
+
+---
+
+## [3.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.7.0)
+
 - **Features:**
   - Added outbound BTG client mTLS via mounted secret.
   - Chart can create the mTLS Secret from values with a minimal interface.

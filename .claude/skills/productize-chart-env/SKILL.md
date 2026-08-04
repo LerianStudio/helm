@@ -170,10 +170,17 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
 
 ## Self-check (the skill refuses to finish unless all pass)
 
-Run `scripts/coverage.py` (renders the chart, diffs vs the `.env` + the manifest it writes):
+Run `scripts/coverage.py --chart-dir <chart> --env <app>.env --fixture <enable-all>` — it
+renders the WHOLE chart (one `helm template`, so worker / signer / mqbridge / sub-component
+ConfigMaps are all included) and reconciles emitted keys vs the `.env`:
 
-- **Coverage**: every ACTIVE `.env` var is config/datastore/helper/secret/gap/omitted — none unhandled.
-- **No raw drift**: every emitted ConfigMap key is accounted for (in a group/helper) — none raw.
+- **Coverage**: every ACTIVE `.env` var is emitted, an emit-when-set secret, or belongs to a
+  WIRED domain — else it is a gap.
+- **Helper actually wired** (not just prefix-matched): a domain (SD/streaming/MT/OTEL/auth) counts
+  as covered only when its ANCHOR key (`SD_ENABLED`, `STREAMING_ENABLED`, …) renders. An `SD_*`
+  var in the `.env` with the helper UNWIRED is a hard FAIL ("domain helper not wired") — this is
+  what catches a whole domain the chart forgot (byte-identical to the prior chart would hide it).
+- **No raw drift**: an emitted key not in the `.env` is flagged chart-only (dead config or `.env` gap).
 - **Byte-identical** (regression guard, NOT completeness): default render == prior productized
   render, except intentionally-gated keys (MT/streaming infra now only render when enabled).
 - **Schema**: `helm lint`/`template` validates against the shipped `values.schema.json` — a

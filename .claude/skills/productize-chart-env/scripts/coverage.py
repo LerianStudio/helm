@@ -2,14 +2,18 @@
 """
 coverage.py — the productize-chart-env self-check + coverage report.
 
-Renders a chart and reconciles what it emits against the app's config/.env.example
-(the contract). Classifies every var (config / datastore / helper / secret / gap /
-omitted) by the domain map, then reports coverage and FAILS if:
-  - an ACTIVE .env var is left unhandled (nothing productizes it), or
-  - the chart emits a ConfigMap key that maps to nothing (raw / undocumented drift).
+Renders the WHOLE chart and reconciles what it emits against the app's
+config/.env.example (the contract). A var is COVERED when the chart actually
+emits it (any ConfigMap/Secret, incl. worker & sub-component templates), OR it
+is an emit-when-set secret, OR it belongs to a domain whose helper is WIRED.
 
-It is a REPORT + GATE, not a generator: it tells you what is covered and what is
-still a gap, so the productization is provably complete against the .env.
+Truth = emission, not name. Two lessons baked in:
+  1. A domain prefix (SD_/STREAMING_/MULTI_TENANT_/OTEL_/PLUGIN_AUTH_) counts as
+     covered ONLY when its helper is wired — detected by the domain's ANCHOR key
+     (e.g. SD_ENABLED) actually rendering. A prefix alone does NOT imply coverage
+     (that hid unwired SD/streaming before).
+  2. Render the whole chart (one `helm template`, no `-s`) so worker / signer /
+     mqbridge / etc. ConfigMaps are all included — no false worker-only gaps.
 
 Usage:
   coverage.py --chart-dir charts/br-ccs --env <br-ccs.env> \
@@ -20,26 +24,28 @@ Fetch the .env first:
     | base64 -d > <app>.env
 """
 import argparse, re, subprocess, sys
+from collections import Counter
 
-# cross-cutting domains → the lerian-common helper that owns them (Rule: never cfgValue)
+# domain prefix -> (domain, ANCHOR key that proves the helper is wired)
 DOMAIN = [
-    (re.compile(r"^MULTI_TENANT_"), "helper:multiTenant"),
-    (re.compile(r"^(ENABLE_TELEMETRY|OTEL_)"), "helper:otel"),
-    (re.compile(r"^SD_"), "helper:serviceDiscovery"),
-    (re.compile(r"^STREAMING_"), "helper:streaming"),
-    (re.compile(r"^PLUGIN_AUTH_"), "helper:auth"),
+    (re.compile(r"^MULTI_TENANT_"), "multiTenant", "MULTI_TENANT_ENABLED"),
+    (re.compile(r"^(ENABLE_TELEMETRY$|OTEL_)"), "otel", "ENABLE_TELEMETRY"),
+    (re.compile(r"^SD_"), "serviceDiscovery", "SD_ENABLED"),
+    (re.compile(r"^STREAMING_"), "streaming", "STREAMING_ENABLED"),
+    (re.compile(r"^PLUGIN_AUTH_"), "auth", "PLUGIN_AUTH_ENABLED"),
 ]
-# host/conn fields the datastore mask owns (tuning stays config)
 DATASTORE = {
     "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_USER", "POSTGRES_SSLMODE",
     "POSTGRES_REPLICA_HOST", "REDIS_HOST",
     "RABBITMQ_HOST", "RABBITMQ_PORT_AMQP", "RABBITMQ_DEFAULT_USER",
 }
-SECRET = re.compile(
-    r"(PASSWORD|_SECRET\b|_SECRET_|API_KEY|CLIENT_SECRET|CRYPTO|LICENSE_KEY|"
-    r"ACCESS_KEY|SECRET_KEY|ORGANIZATION_IDS|_TOKEN$)"
-)
-# credential-NAMED but actually config/path (Rule 1) — never classified secret
+# emit-when-set credentials/secret-adjacent — the Secret range renders them only when
+# the operator provides a value, so "not emitted with the fixture" is NOT a gap.
+# CLIENT_ID rides along with CLIENT_SECRET in the app Secret (not a credential itself).
+SECRET_OPTIONAL = re.compile(
+    r"(PASSWORD|_SECRET\b|_SECRET_|API_KEY|CLIENT_SECRET|CLIENT_ID|CRYPTO|LICENSE_KEY|"
+    r"ORGANIZATION_IDS|ACCESS_KEY|SECRET_KEY|MASTER_KEYS?|_TOKEN$)")
+# credential-NAMED but actually config/path (kept as config) — flagged for review, not secret
 SECRET_FALSE_POSITIVE = {"WEBHOOK_API_KEY_FILE", "AWS_ACCESS_KEY_ID", "SD_TOKEN"}
 
 
@@ -55,8 +61,11 @@ def env_vars(path):
     return active, commented
 
 
-def render(chart_dir, fixture, tmpl):
-    cmd = ["helm", "template", "cov", chart_dir, "-s", tmpl]
+def render_all(chart_dir, fixture):
+    """Render the whole chart; return the set of ConfigMap/Secret data keys.
+    A data key is an UPPER_SNAKE key at exactly 2-space indent (under data:/stringData:);
+    metadata (name/labels, lowercase) and container env (`- name:`, deeper) don't match."""
+    cmd = ["helm", "template", "cov", chart_dir]
     if fixture:
         cmd += ["-f", fixture]
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -66,17 +75,35 @@ def render(chart_dir, fixture, tmpl):
     return {m.group(1) for m in re.finditer(r"^  ([A-Z][A-Z0-9_]+):", r.stdout, re.M)}
 
 
-def classify(k, emitted):
-    for rx, dom in DOMAIN:
+def domain_of(k):
+    for rx, dom, anchor in DOMAIN:
         if rx.match(k):
-            return dom
-    if k in DATASTORE:
-        return "datastore"
-    if k not in SECRET_FALSE_POSITIVE and SECRET.search(k):
-        return "secret"
+            return dom, anchor
+    return None, None
+
+
+def classify(k, emitted, wired):
+    """Return (kind, covered:bool). kind is for the report; covered decides gap."""
     if k in emitted:
-        return "config"
-    return "gap"  # in .env, not covered, not a known secret → backlog
+        dom, _ = domain_of(k)
+        if dom:
+            return f"helper:{dom}", True
+        if k in DATASTORE:
+            return "datastore", True
+        if k not in SECRET_FALSE_POSITIVE and SECRET_OPTIONAL.search(k):
+            return "secret", True
+        return "config", True
+    # NOT emitted:
+    dom, anchor = domain_of(k)
+    if dom:
+        if wired.get(dom):
+            return f"helper:{dom}", True          # sibling renders only when the domain is enabled
+        return f"gap:helper-not-wired:{dom}", False
+    if k not in SECRET_FALSE_POSITIVE and SECRET_OPTIONAL.search(k):
+        return "secret", True                     # emit-when-set — operator provides it
+    if k in DATASTORE:
+        return "datastore", True                  # conditional (external infra)
+    return "gap", False
 
 
 def main():
@@ -89,32 +116,36 @@ def main():
 
     active, commented = env_vars(a.env)
     allenv = active | commented
-    cm = render(a.chart_dir, a.fixture, "templates/configmap.yaml")
-    sec = render(a.chart_dir, a.fixture, "templates/secrets.yaml") or set()
-    if cm is None:
-        print("FAIL: ConfigMap did not render"); return 1
-    emitted = cm | sec
+    emitted = render_all(a.chart_dir, a.fixture)
+    if emitted is None:
+        print("FAIL: chart did not render"); return 1
 
-    rows = {k: classify(k, emitted) for k in sorted(allenv | emitted)}
+    # which domain helpers are actually wired (anchor key emitted)?
+    wired = {dom: (anchor in emitted) for _, dom, anchor in DOMAIN}
+
+    rows = {k: classify(k, emitted, wired) for k in sorted(allenv | emitted)}
     fails, warns, review = [], [], []
 
     for k in sorted(active):
-        if rows[k] == "gap":
+        kind, covered = rows[k]
+        if covered:
+            continue
+        if kind.startswith("gap:helper-not-wired:"):
+            fails.append(f"{k}: domain helper '{kind.split(':')[-1]}' is NOT wired "
+                         f"(the app declares {kind.split(':')[-1].upper()}_* but the chart never emits it)")
+        else:
             warns.append(f"gap: '{k}' declared in .env, chart does not cover it yet")
-    for k in sorted(cm):
-        kind = rows.get(k, "gap")
-        if kind == "gap" and k not in allenv:
-            warns.append(f"chart-only: '{k}' emitted but not in the app .env (dead config or .env incomplete?)")
-    for k in sorted(allenv):
-        kind = rows[k]
-        if kind == "config" and k not in emitted and k in active:
-            fails.append(f"'{k}' classified config but NOT emitted by the render")
-    for k in sorted(SECRET_FALSE_POSITIVE & set(cm)):
+    for k in sorted(emitted - allenv):
+        if not re.match(r"^[A-Z]", k):
+            continue
+        warns.append(f"chart-only: '{k}' emitted but not in the app .env (dead config or .env incomplete?)")
+    for k in sorted(SECRET_FALSE_POSITIVE & emitted):
         review.append(f"'{k}' is credential-NAMED but kept as config (path/empty-default) — confirm")
 
-    from collections import Counter
-    counts = Counter(rows[k] for k in active)
+    counts = Counter(rows[k][0].split(":")[0] if not rows[k][0].startswith("helper") else rows[k][0]
+                     for k in active)
     print(f"[coverage] {a.chart_dir}: {len(active)} active .env vars — {dict(counts)}")
+    print(f"[coverage] domain helpers wired: {wired}")
     for r in review:
         print(f"  REVIEW {r}")
     for w in warns:
@@ -122,20 +153,24 @@ def main():
     for f in fails:
         print(f"  FAIL   {f}")
 
-    report_lines = [f"# Coverage — {a.chart_dir}", "", f"Active .env vars: {len(active)}", ""]
-    for kind in ["config", "datastore", "helper:multiTenant", "helper:otel",
-                 "helper:serviceDiscovery", "helper:streaming", "helper:auth", "secret", "gap"]:
-        ks = [k for k in sorted(allenv) if rows[k] == kind]
-        if ks:
-            report_lines.append(f"## {kind} ({len(ks)})")
-            report_lines += [f"- {k}" for k in ks]
-            report_lines.append("")
     if a.report:
-        open(a.report, "w").write("\n".join(report_lines) + "\n")
+        lines = [f"# Coverage — {a.chart_dir}", "", f"Active .env vars: {len(active)}", ""]
+        order = ["config", "datastore", "helper:multiTenant", "helper:otel",
+                 "helper:serviceDiscovery", "helper:streaming", "helper:auth", "secret"]
+        for kind in order:
+            ks = [k for k in sorted(allenv) if rows[k][0] == kind]
+            if ks:
+                lines.append(f"## {kind} ({len(ks)})")
+                lines += [f"- {k}" for k in ks]; lines.append("")
+        gaps = [k for k in sorted(active) if not rows[k][1]]
+        if gaps:
+            lines.append(f"## GAPS ({len(gaps)})")
+            lines += [f"- {k} — {rows[k][0]}" for k in gaps]; lines.append("")
+        open(a.report, "w").write("\n".join(lines) + "\n")
         print(f"[coverage] report → {a.report}")
 
     if fails:
-        print(f"[coverage] FAILED ({len(fails)} hard)"); return 1
+        print(f"[coverage] FAILED ({len(fails)} unwired-helper / hard)"); return 1
     print(f"[coverage] OK ({len(warns)} warn, {len(review)} review)")
     return 0
 

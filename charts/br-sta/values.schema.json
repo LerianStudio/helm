@@ -51,17 +51,14 @@
           "description": "Dedicated datastore mask for THIS service (see global.datastores for the shared"
         },
         "name": {
-          "type": "string",
           "default": "br-sta",
           "description": "Service name"
         },
         "replicaCount": {
-          "type": "integer",
           "default": 2,
           "description": "Number of replicas"
         },
         "revisionHistoryLimit": {
-          "type": "integer",
           "default": 10,
           "description": "Number of old ReplicaSets to retain for rollback"
         },
@@ -79,22 +76,19 @@
           "type": "object",
           "properties": {
             "repository": {
-              "type": "string",
               "default": "ghcr.io/lerianstudio/br-sta",
               "description": "Repository for the br-sta image"
             },
             "pullPolicy": {
-              "type": "string",
               "default": "IfNotPresent",
               "description": "Image pull policy"
             },
             "tag": {
-              "type": "string",
               "default": "",
               "description": "Image tag (defaults to Chart.appVersion if empty)"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "imagePullSecrets": {
           "type": "array",
@@ -105,17 +99,14 @@
           "description": "Database migrations Job (init/postgres-migrations runner image).",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": false,
               "description": "Enable or disable the migrations Job."
             },
             "useExistingSecret": {
-              "type": "boolean",
               "default": false,
               "description": "When true, read POSTGRES_PASSWORD from a pre-existing Secret"
             },
             "existingSecretName": {
-              "type": "string",
               "default": "",
               "description": "Name of the pre-existing Secret containing POSTGRES_PASSWORD"
             },
@@ -123,55 +114,45 @@
               "type": "object",
               "properties": {
                 "repository": {
-                  "type": "string",
                   "default": "ghcr.io/lerianstudio/br-sta-migrations",
                   "description": "Repository for the migrations runner image."
                 },
                 "tag": {
-                  "type": "string",
                   "default": "",
                   "description": "Tag for the migrations image. Defaults to the app image tag"
                 },
                 "digest": {
-                  "type": "string",
                   "default": "",
                   "description": "Optional image digest (overrides tag when set)."
                 },
                 "pullPolicy": {
-                  "type": "string",
                   "default": "IfNotPresent",
                   "description": "Image pull policy."
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "path": {
-              "type": "string",
               "default": "/migrations",
               "description": "Path inside the image where the SQL migrations live."
             },
             "allowInsecureTLS": {
-              "type": "string",
               "default": "",
               "description": "Bypass the lib-commons migrator TLS guard for a non-TLS Postgres"
             },
             "backoffLimit": {
-              "type": "integer",
               "default": 3,
               "description": "Maximum retries before the Job is considered failed."
             },
             "activeDeadlineSeconds": {
-              "type": "integer",
               "default": 600,
               "description": "Hard wall-clock cap for the Job (seconds)."
             },
             "ttlSecondsAfterFinished": {
-              "type": "integer",
               "default": 600,
               "description": "Seconds to retain the finished Job before garbage collection."
             },
             "timeoutSeconds": {
-              "type": "string",
               "default": "",
               "description": "Optional MIGRATIONS_TIMEOUT_SEC passed to the runner (per-run deadline)."
             },
@@ -183,32 +164,28 @@
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "50m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "64Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 },
                 "limits": {
                   "type": "object",
                   "properties": {
                     "cpu": {
-                      "type": "string",
                       "default": "250m"
                     },
                     "memory": {
-                      "type": "string",
                       "default": "256Mi"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "annotations": {
               "type": "object",
@@ -221,20 +198,17 @@
               "description": "Extra annotations on the migration pod."
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "nameOverride": {
-          "type": "string",
           "default": "",
           "description": "Override of the resource name"
         },
         "fullnameOverride": {
-          "type": "string",
           "default": "",
           "description": "Override of the fully qualified resource name"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
           "default": 60,
           "description": "Termination grace period."
         },
@@ -248,19 +222,15 @@
           "description": "Container security context (Distroless nonroot UID/GID is 65532)",
           "properties": {
             "runAsGroup": {
-              "type": "integer",
               "default": 65532
             },
             "runAsUser": {
-              "type": "integer",
               "default": 65532
             },
             "runAsNonRoot": {
-              "type": "boolean",
               "default": true
             },
             "allowPrivilegeEscalation": {
-              "type": "boolean",
               "default": false
             },
             "capabilities": {
@@ -270,39 +240,34 @@
                   "type": "array"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "readOnlyRootFilesystem": {
-              "type": "boolean",
               "default": true
             },
             "seccompProfile": {
               "type": "object",
               "properties": {
                 "type": {
-                  "type": "string",
                   "default": "RuntimeDefault"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "pdb": {
           "type": "object",
           "description": "PodDisruptionBudget configuration",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": true
             },
             "minAvailable": {
-              "type": "integer",
               "default": 1
             },
             "maxUnavailable": {
-              "type": "string",
               "default": ""
             },
             "annotations": {
@@ -310,43 +275,38 @@
               "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "deploymentStrategy": {
           "type": "object",
           "description": "Deployment strategy",
           "properties": {
             "type": {
-              "type": "string",
               "default": "RollingUpdate"
             },
             "rollingUpdate": {
               "type": "object",
               "properties": {
                 "maxSurge": {
-                  "type": "integer",
                   "default": 1
                 },
                 "maxUnavailable": {
-                  "type": "integer",
                   "default": 0
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "service": {
           "type": "object",
           "description": "Service configuration",
           "properties": {
             "type": {
-              "type": "string",
               "default": "ClusterIP"
             },
             "port": {
-              "type": "integer",
               "default": 8080
             },
             "annotations": {
@@ -354,18 +314,16 @@
               "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "ingress": {
           "type": "object",
           "description": "Ingress configuration",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": false
             },
             "className": {
-              "type": "string",
               "default": ""
             },
             "annotations": {
@@ -379,7 +337,7 @@
               "type": "array"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "resources": {
           "type": "object",
@@ -389,117 +347,97 @@
               "type": "object",
               "properties": {
                 "cpu": {
-                  "type": "string",
                   "default": "1000m"
                 },
                 "memory": {
-                  "type": "string",
                   "default": "512Mi"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "requests": {
               "type": "object",
               "properties": {
                 "cpu": {
-                  "type": "string",
                   "default": "100m"
                 },
                 "memory": {
-                  "type": "string",
                   "default": "128Mi"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "autoscaling": {
           "type": "object",
           "description": "HorizontalPodAutoscaler configuration",
           "properties": {
             "enabled": {
-              "type": "boolean",
               "default": true
             },
             "minReplicas": {
-              "type": "integer",
               "default": 2
             },
             "maxReplicas": {
-              "type": "integer",
               "default": 5
             },
             "targetCPUUtilizationPercentage": {
-              "type": "integer",
               "default": 80
             },
             "targetMemoryUtilizationPercentage": {
-              "type": "integer",
               "default": 80
             },
             "scaleDownStabilizationSeconds": {
-              "type": "integer",
               "default": 300
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "readinessProbe": {
           "type": "object",
           "description": "Readiness probe configuration",
           "properties": {
             "initialDelaySeconds": {
-              "type": "integer",
               "default": 5
             },
             "periodSeconds": {
-              "type": "integer",
               "default": 5
             },
             "timeoutSeconds": {
-              "type": "integer",
               "default": 3
             },
             "successThreshold": {
-              "type": "integer",
               "default": 1
             },
             "failureThreshold": {
-              "type": "integer",
               "default": 2
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "livenessProbe": {
           "type": "object",
           "description": "Liveness probe configuration",
           "properties": {
             "initialDelaySeconds": {
-              "type": "integer",
               "default": 30
             },
             "periodSeconds": {
-              "type": "integer",
               "default": 10
             },
             "timeoutSeconds": {
-              "type": "integer",
               "default": 3
             },
             "successThreshold": {
-              "type": "integer",
               "default": 1
             },
             "failureThreshold": {
-              "type": "integer",
               "default": 3
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "nodeSelector": {
           "type": "object",
@@ -962,12 +900,10 @@
           "description": "Secrets (sensitive environment variables)"
         },
         "useExistingSecret": {
-          "type": "boolean",
           "default": false,
           "description": "Use an externally managed Secret instead of generating one"
         },
         "existingSecretName": {
-          "type": "string",
           "default": "",
           "description": "Name of the externally managed Secret"
         },
@@ -981,7 +917,6 @@
           "description": "ServiceAccount configuration",
           "properties": {
             "create": {
-              "type": "boolean",
               "default": true
             },
             "annotations": {
@@ -989,30 +924,26 @@
               "additionalProperties": true
             },
             "name": {
-              "type": "string",
               "default": ""
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "worker": {
       "type": "object",
       "properties": {
         "enabled": {
-          "type": "boolean",
           "default": false,
           "description": "Enable the worker Deployment. REQUIRES worker.image to point at a"
         },
         "replicaCount": {
-          "type": "integer",
           "default": 1,
           "description": "Replicas. The background jobs are leader-gated but the worker does NOT"
         },
         "revisionHistoryLimit": {
-          "type": "integer",
           "default": 10,
           "description": "Number of old ReplicaSets to retain for rollback"
         },
@@ -1031,19 +962,16 @@
           "description": "Worker image. REQUIRED: point at the dedicated worker image (built",
           "properties": {
             "repository": {
-              "type": "string",
               "default": ""
             },
             "tag": {
-              "type": "string",
               "default": ""
             },
             "pullPolicy": {
-              "type": "string",
               "default": "IfNotPresent"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "imagePullSecrets": {
           "type": "array",
@@ -1054,7 +982,6 @@
           "description": "Container command. The worker image's own ENTRYPOINT already runs the"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
           "default": 60,
           "description": "Termination grace period"
         },
@@ -1073,7 +1000,6 @@
           "description": "ServiceAccount configuration",
           "properties": {
             "create": {
-              "type": "boolean",
               "default": true
             },
             "annotations": {
@@ -1081,22 +1007,20 @@
               "additionalProperties": true
             },
             "name": {
-              "type": "string",
               "default": ""
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "service": {
           "type": "object",
           "description": "Probe server port. WorkerMode binds SERVER_ADDRESS here; no Service or",
           "properties": {
             "port": {
-              "type": "integer",
               "default": 8081
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "resources": {
           "type": "object",
@@ -1106,97 +1030,82 @@
               "type": "object",
               "properties": {
                 "cpu": {
-                  "type": "string",
                   "default": "500m"
                 },
                 "memory": {
-                  "type": "string",
                   "default": "512Mi"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "requests": {
               "type": "object",
               "properties": {
                 "cpu": {
-                  "type": "string",
                   "default": "100m"
                 },
                 "memory": {
-                  "type": "string",
                   "default": "128Mi"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "deploymentStrategy": {
           "type": "object",
           "description": "Deployment strategy. Recreate by default: the worker is leader-gated but",
           "properties": {
             "type": {
-              "type": "string",
               "default": "Recreate"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "readinessProbe": {
           "type": "object",
           "description": "Readiness probe configuration",
           "properties": {
             "initialDelaySeconds": {
-              "type": "integer",
               "default": 5
             },
             "periodSeconds": {
-              "type": "integer",
               "default": 5
             },
             "timeoutSeconds": {
-              "type": "integer",
               "default": 3
             },
             "successThreshold": {
-              "type": "integer",
               "default": 1
             },
             "failureThreshold": {
-              "type": "integer",
               "default": 2
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "livenessProbe": {
           "type": "object",
           "description": "Liveness probe configuration",
           "properties": {
             "initialDelaySeconds": {
-              "type": "integer",
               "default": 30
             },
             "periodSeconds": {
-              "type": "integer",
               "default": 10
             },
             "timeoutSeconds": {
-              "type": "integer",
               "default": 3
             },
             "successThreshold": {
-              "type": "integer",
               "default": 1
             },
             "failureThreshold": {
-              "type": "integer",
               "default": 3
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "nodeSelector": {
           "type": "object",
@@ -1227,7 +1136,7 @@
           "description": "Extra environment variables (map of key:value pairs) rendered as inline"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "postgresql": {
       "type": "object",
@@ -1245,11 +1154,10 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "type": "boolean",
           "default": false
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     }
   },
   "additionalProperties": true

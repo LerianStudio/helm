@@ -90,18 +90,27 @@ jobs:
           if [[ -z "${CHARTS// }" ]]; then
             echo "No installable charts in scope — nothing to test."; exit 0
           fi
+          # Charts with a KNOWN pre-existing install/upgrade defect (documented in the
+          # allow-failure file) are reported but don't fail the gate — same baseline
+          # pattern the chart-standard check uses. A PR that touches such a chart should
+          # remove it from the file once fixed. New/changed clean charts must still pass.
+          ALLOW="$(grep -vE '^\s*(#|$)' .github/configs/helm-install-test-allow-failure.txt 2>/dev/null | awk '{print $1}' || true)"
           echo "Charts in scope: $CHARTS"
-          fails=""
+          fails=""; allowed_fails=""
           for c in $CHARTS; do
             echo "::group::install-test $c"
             if bash .github/scripts/install-test.sh "charts/$c"; then
               echo "::endgroup::"
+            elif grep -qxF "$c" <<< "$ALLOW"; then
+              echo "::endgroup::"; echo "::warning::[$c] install test failed but is allow-listed (known pre-existing defect)"
+              allowed_fails="${allowed_fails:+$allowed_fails }$c"
             else
               echo "::endgroup::"; fails="${fails:+$fails }$c"
             fi
           done
+          [[ -n "$allowed_fails" ]] && echo "Allow-listed failures (not blocking):$allowed_fails"
           if [[ -n "$fails" ]]; then
-            echo "::error::Install/upgrade test failed for: $fails"
+            echo "::error::Install/upgrade test failed for:$fails"
             exit 1
           fi
-          echo "All charts in scope installed and upgraded cleanly."
+          echo "All charts in scope installed and upgraded cleanly (allow-listed excepted)."

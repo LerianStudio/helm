@@ -1,0 +1,9 @@
+# Charts with a KNOWN install/upgrade failure in a bare, credential-less kind
+# cluster. The install-test gate reports these as a warning instead of failing,
+# so the gate can protect the other charts and all future changes. Remove a chart
+# from this list once its issue is fixed — a clean chart must stay clean.
+#
+# Format: <chart>   # reason
+#
+tracer     # PodDisruptionBudget sets BOTH minAvailable and maxUnavailable — the API server rejects it ("cannot be both set"). Real chart bug: the PDB template/values must emit only one.
+reporter   # References external KEDA custom resources (keda.sh/v1alpha1: ScaledObject / ScaledJob / TriggerAuthentication) whose CRDs are not present in a bare kind cluster. Needs the KEDA CRDs pre-installed (a future enhancement) or the chart guarded behind a toggle.

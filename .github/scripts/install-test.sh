@@ -14,9 +14,9 @@ CHART="$(basename "$CHART_DIR")"
 VALUES_FILE="${2:-}"
 [[ -z "$VALUES_FILE" && -f ".github/configs/helm-render-values/${CHART}.yaml" ]] \
   && VALUES_FILE=".github/configs/helm-render-values/${CHART}.yaml"
-NS="it-${CHART}"
-NSB="it-${CHART}-base"   # isolated namespace for the origin/main -> PR baseline upgrade
 REL="$CHART"
+NS="it-${CHART}"          # release namespace (helm -n); also created
+TARGETS=""                # every distinct namespace the chart's manifests reference (created too)
 TIMEOUT="${IT_TIMEOUT:-180s}"
 VARGS=()
 [[ -n "$VALUES_FILE" && -f "$VALUES_FILE" ]] && { VARGS=(-f "$VALUES_FILE"); echo "  values: $VALUES_FILE"; }
@@ -34,47 +34,57 @@ fi
 fail() { echo "::error::[$CHART] $1"; kubectl get events -n "$NS" --sort-by=.lastTimestamp 2>/dev/null | tail -15; cleanup; exit 1; }
 cleanup() {
   helm uninstall "$REL" -n "$NS" >/dev/null 2>&1 || true
-  helm uninstall "${REL}-base" -n "$NSB" >/dev/null 2>&1 || true
-  kubectl delete ns "$NS" "$NSB" --wait=false >/dev/null 2>&1 || true
+  helm uninstall "${REL}-base" -n "$NS" >/dev/null 2>&1 || true
+  for x in "$NS" $TARGETS; do kubectl delete ns "$x" --wait=false >/dev/null 2>&1 || true; done
 }
-
-cleanup  # idempotent: clear any stale release/namespace from a prior aborted run
+# (Re)create the release namespace + every namespace the chart pins, then install.
+do_install() { # <release> <chart-dir>
+  for x in "$NS" $TARGETS; do kubectl create ns "$x" >/dev/null 2>&1 || true; done
+  helm install "$1" "$2" ${VARGS[@]+"${VARGS[@]}"} "${HOOKS[@]}" -n "$NS" --timeout "$TIMEOUT" 2>&1
+}
+deployed() { [[ "$(helm status "$1" -n "$NS" -o json 2>/dev/null | tr -d ' \n' | grep -o '"status":"[a-z]*"' | head -1)" == '"status":"deployed"' ]]; }
 
 echo "===== [$CHART] dependency build ====="
 helm dependency build "$CHART_DIR" >/dev/null 2>&1 || fail "helm dependency build failed"
 
+# Lerian charts pin their own namespaces (namespaceOverride / global.namespace), so
+# resources land there regardless of `-n` — and some charts even span MORE than one
+# (most in the release ns, a few in a fixed one). Create EVERY namespace the render
+# references instead of fighting it; the release itself lives in $NS.
+TARGETS="$(helm template "$REL" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} "${HOOKS[@]}" -n "$NS" 2>/dev/null \
+            | awk '/^  namespace:/{gsub(/"/,"",$2); print $2}' | awk 'NF' | sort -u | grep -vxF "$NS" | tr '\n' ' ')"
+echo "  namespaces: $NS${TARGETS:+ + $TARGETS}"
+
+cleanup  # idempotent: clear any stale release/namespace from a prior aborted run
+
 # ---- 1. Fresh install of the PR chart (server-side manifest validation) ----
 echo "===== [$CHART] install (PR) ====="
-if ! helm install "$REL" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} "${HOOKS[@]}" -n "$NS" --create-namespace --timeout "$TIMEOUT" 2>&1; then
-  fail "helm install failed (invalid manifest / admission / hook)"
-fi
-[[ "$(helm status "$REL" -n "$NS" -o json | grep -o '"status":"[a-z]*"' | head -1)" == '"status":"deployed"' ]] \
-  || fail "release not in deployed state"
-n=$(kubectl get all -n "$NS" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+do_install "$REL" "$CHART_DIR" || fail "helm install failed (invalid manifest / admission / hook)"
+deployed "$REL" || fail "release not in deployed state"
+n=0; for x in "$NS" $TARGETS; do n=$((n + $(kubectl get all -n "$x" --no-headers 2>/dev/null | wc -l))); done
 echo "  created $n objects"
 [[ "$n" -gt 0 ]] || fail "install produced no objects"
 
 # ---- 2. Upgrade the PR chart in place (upgrade code path + hook re-run) ----
 echo "===== [$CHART] upgrade (PR -> PR, benign change) ====="
 helm upgrade "$REL" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} "${HOOKS[@]}" -n "$NS" --timeout "$TIMEOUT" \
-  --set-string podAnnotations.helm-install-test="$(date +%s 2>/dev/null || echo x)" 2>&1 \
-  | grep -qE 'STATUS: deployed' || fail "in-place upgrade failed"
+  --set-string podAnnotations.helm-install-test="upgrade" >/dev/null 2>&1 && deployed "$REL" \
+  || fail "in-place upgrade failed"
 
-# Free the PR release before the baseline test so only ONE release is ever
-# installed at a time — two full installs of a subchart-heavy chart exhaust a
-# single-node kind cluster's memory and make the baseline flaky.
-helm uninstall "$REL" -n "$NS" >/dev/null 2>&1 || true
-kubectl delete ns "$NS" --wait=false >/dev/null 2>&1 || true
+# Free the PR release before the baseline so only ONE release is ever installed at
+# a time — two full installs of a subchart-heavy chart exhaust a single-node kind
+# cluster's memory. The baseline reuses the same (chart-pinned) namespace.
+cleanup
 
 # ---- 3. Real upgrade path: base (origin/main) -> PR, when the chart exists on main ----
 if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
   echo "===== [$CHART] upgrade (origin/main -> PR) ====="
   BASE_DIR="$(mktemp -d)/$CHART"; mkdir -p "$BASE_DIR"
   git archive "origin/main" "charts/${CHART}" | tar -x --strip-components=2 -C "$BASE_DIR" 2>/dev/null
-  helm dependency build "$BASE_DIR" >/dev/null 2>&1 || echo "  (base dep build failed — skipping baseline upgrade)"
-  if helm install "${REL}-base" "$BASE_DIR" ${VARGS[@]+"${VARGS[@]}"} "${HOOKS[@]}" -n "$NSB" --create-namespace --timeout "$TIMEOUT" >/dev/null 2>&1; then
-    helm upgrade "${REL}-base" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} "${HOOKS[@]}" -n "$NSB" --timeout "$TIMEOUT" 2>&1 \
-      | grep -qE 'STATUS: deployed' || fail "upgrade from origin/main failed (immutable-field break?)"
+  helm dependency build "$BASE_DIR" >/dev/null 2>&1 || echo "  (base dep build failed — skipping baseline)"
+  if do_install "${REL}-base" "$BASE_DIR" >/dev/null 2>&1 && deployed "${REL}-base"; then
+    helm upgrade "${REL}-base" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} "${HOOKS[@]}" -n "$NS" --timeout "$TIMEOUT" >/dev/null 2>&1 \
+      && deployed "${REL}-base" || fail "upgrade from origin/main failed (immutable-field break?)"
     echo "  origin/main -> PR upgrade OK"
   else
     echo "  (baseline install failed — likely unrelated to this PR; skipping)"

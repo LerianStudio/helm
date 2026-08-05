@@ -199,6 +199,31 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
    post-regex to restore `| quote }}`.
 7. **Optional/opt-in keys** (`{{- if $cm.X }}`, `if REPORTER_ENABLED`, `range` over lists) stay
    conditional — do not force them into unconditional cfgValue.
+8. **A Go-template comment `{{/* … */}}` breaks if its TEXT contains `*/`** ("comment ends before
+   closing delimiter"). Listing keys like `OTEL_RESOURCE_*/OTEL_LIBRARY_NAME` in a comment closes
+   it early — write `OTEL_RESOURCE_* and OTEL_LIBRARY_NAME` instead.
+9. **`additionalProperties:false` only on finite cfgValue config-groups.** Never close k8s
+   OPERATIONAL blocks (role/autoscaling/pdb/resources/tolerations/scheduling) — operators pass
+   valid keys the generator never saw (`pdb.maxUnavailable`, `resources.limits`), and a closed
+   block rejects them at `helm install`. `gen-schema.py` leaves generic dicts
+   `additionalProperties:true` and operational scalars untyped (default/enum only) — verify after
+   regen that a config typo is still rejected AND valid operator input is still accepted.
+10. **Byte-identity validation is FALSE unless the schema is OFF on both sides.** A schema failure
+    renders empty, so two empty renders diff as "identical". When comparing template changes,
+    `mv values.schema.json` aside on BOTH the baseline (`git worktree add --detach <pre-commit>`
+    or `git stash`) and the new tree, and make the fixture respect each default's TYPE
+    (`tolerations: []` not `{}`; a map-vs-array `coalesce` silently renders empty).
+11. **Resource-template partials aren't all byte-safe.** `lerian-common.service/.hpa/.pdb/
+    .serviceAccount/.ingress` and `imagePullSecrets/.httpProbe` migrate cleanly, but
+    `lerian-common.scheduling` emits a LEADING newline → trailing whitespace under `| nindent`,
+    and `deploymentStrategy`'s `toYaml` reorders keys — keep those two INLINE (documented lib bugs
+    to report, not work around). Ingress backend that points at a per-role service needs the lib's
+    `backendName` param (name ≠ metadata.name).
+12. **When lerian-common bumps, EVERY consumer must refresh** its `Chart.yaml` pin + `Chart.lock`
+    (`git merge origin/main` → bump pin → `helm dependency update`), or the base=main merge-check
+    fails `missing-dependency` in the render-gate. And for a NEW chart, productize INSIDE the
+    add-PR — a productization branch stacked on an add-branch that lacks `charts/lerian-common`
+    can never `helm dep build`.
 
 ## Self-check (the skill refuses to finish unless all pass)
 

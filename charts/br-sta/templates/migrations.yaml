@@ -47,6 +47,11 @@
 {{- $pgHost = printf "%s.%s.svc.cluster.local" $pgFullname $namespace -}}
 {{- end }}
 {{- end }}
+{{- /* External Postgres with no resolvable host would render POSTGRES_HOST="" and the Job
+     would only fail after burning its retry/deadline budget — fail fast at render instead. */}}
+{{- if not $pgHost }}
+{{- fail "brSta.configmap.POSTGRES_HOST is required when brSta.migrations.enabled=true and PostgreSQL is external" }}
+{{- end }}
 {{- /* Migration image tag is coupled to the app image tag unless an explicit tag/digest is set;
      empty tag falls back to brSta.image.tag, then the chart appVersion. */}}
 {{- $migrationTag := get $migrationImage "tag" | default (get (get $app "image" | default dict) "tag" | default .Chart.AppVersion) -}}
@@ -93,9 +98,11 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
-  backoffLimit: {{ get $migrations "backoffLimit" | default 3 }}
-  activeDeadlineSeconds: {{ get $migrations "activeDeadlineSeconds" | default 600 }}
-  ttlSecondsAfterFinished: {{ get $migrations "ttlSecondsAfterFinished" | default 600 }}
+  {{- /* hasKey (not `default`) so an explicit 0 renders as 0 — sprig `default` treats 0 as
+     empty and would silently fall back to 3/600. */}}
+  backoffLimit: {{ if hasKey $migrations "backoffLimit" }}{{ get $migrations "backoffLimit" }}{{ else }}3{{ end }}
+  activeDeadlineSeconds: {{ if hasKey $migrations "activeDeadlineSeconds" }}{{ get $migrations "activeDeadlineSeconds" }}{{ else }}600{{ end }}
+  ttlSecondsAfterFinished: {{ if hasKey $migrations "ttlSecondsAfterFinished" }}{{ get $migrations "ttlSecondsAfterFinished" }}{{ else }}600{{ end }}
   template:
     metadata:
       labels:

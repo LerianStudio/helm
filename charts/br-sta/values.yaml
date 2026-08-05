@@ -268,8 +268,9 @@ brSta:
   app: {}          # ENV_NAME(envName) / LOG_LEVEL(logLevel) / DEPLOYMENT_MODE / etc.
   server: {}       # SERVER_ADDRESS / HTTP_BODY_LIMIT_BYTES / TLS_TERMINATED_UPSTREAM ...
   cors: {}         # allowedOrigins / allowedMethods / allowedHeaders / exposeHeaders / allowCredentials
-  multiTenant: {}  # defaultTenantId (enabled lives in brSta.multiTenant.enabled)
-  postgres: {}     # name / migrationsPath / systemplaneEnabled / maxOpenConns / ... (tuning)
+  # multiTenant grouped fields (defaultTenantId / poolMaxConns / poolMaxIdleConns)
+  # live under brSta.multiTenant above (alongside enabled).
+  postgres: {}     # name / connectTimeoutSec / migrationsPath / systemplaneEnabled / maxOpenConns / ... (tuning)
   redis: {}        # db / protocol / poolSize / minIdleConns / readTimeout / ... (tuning)
   broker: {}       # vhost / exchange / publisher* / allowInsecure* / ... (non-mask RabbitMQ)
   outbox: {}       # enabled / tableName / dispatchIntervalSec / batchSize / ...
@@ -607,4 +608,3 @@ rabbitmq:
 # ==============================================================================
 otel-collector-lerian:
   enabled: false
-

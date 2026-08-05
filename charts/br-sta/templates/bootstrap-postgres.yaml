@@ -19,9 +19,17 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-dependencies
           image: busybox:1.37
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: DB_HOST
               value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
@@ -47,6 +55,11 @@ spec:
       containers:
         - name: psql
           image: postgres:17
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: DB_HOST
               value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}

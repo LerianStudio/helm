@@ -32,7 +32,8 @@
               "default": "11111111-1111-1111-1111-111111111111"
             },
             "enabled": {
-              "default": "false",
+              "type": "boolean",
+              "default": false,
               "description": "Enable multi-tenancy (MULTI_TENANT_ENABLED)"
             },
             "poolMaxConns": {
@@ -535,6 +536,15 @@
         "postgres": {
           "type": "object",
           "properties": {
+            "connMaxIdleTimeMins": {
+              "default": "5"
+            },
+            "connMaxLifetimeMins": {
+              "default": "30"
+            },
+            "connectTimeoutSec": {
+              "default": "10"
+            },
             "dbMetricsIntervalSec": {
               "default": "15"
             },
@@ -544,25 +554,16 @@
             "maxConnections": {
               "default": "100"
             },
+            "maxIdleConns": {
+              "default": "5"
+            },
+            "maxOpenConns": {
+              "default": "25"
+            },
             "migrationsPath": {
               "default": "migrations"
             },
-            "postgresConnMaxIdleTimeMins": {
-              "default": "5"
-            },
-            "postgresConnMaxLifetimeMins": {
-              "default": "30"
-            },
-            "postgresConnectTimeoutSec": {
-              "default": "10"
-            },
-            "postgresMaxIdleConns": {
-              "default": "5"
-            },
-            "postgresMaxOpenConns": {
-              "default": "25"
-            },
-            "postgresName": {
+            "name": {
               "default": "br_sta"
             },
             "sharedBuffers": {
@@ -587,13 +588,13 @@
               "default": "3"
             },
             "maxRetryBackoff": {
-              "default": "1"
+              "default": "8"
             },
             "minIdleConns": {
               "default": "2"
             },
             "minRetryBackoff": {
-              "default": "8"
+              "default": "1"
             },
             "poolSize": {
               "default": "10"

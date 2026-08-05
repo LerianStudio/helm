@@ -29,8 +29,10 @@ Worker Deployment ({{ (.Values.worker | default dict).replicaCount | default 1 }
 ## Dependencies
 
 {{- if eq (include "postgresql.enabled" .) "true" }}
+{{- $pgArch := default "standalone" .Values.postgresql.architecture }}
+{{- $pgFullname := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" (index .Values "postgresql") "context" .) }}
 1. PostgreSQL (in-cluster, Bitnami subchart)
-   - Primary: {{ include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" (index .Values "postgresql") "context" .) }}-primary.{{ include "global.namespace" . }}.svc.cluster.local:5432
+   - Primary: {{ $pgFullname }}{{ if eq $pgArch "replication" }}-primary{{ end }}.{{ include "global.namespace" . }}.svc.cluster.local:5432
    - Database: {{ .Values.postgresql.auth.database }}
    - User:     {{ .Values.postgresql.auth.username }}
 {{- else if .Values.global.externalPostgresDefinitions.enabled }}

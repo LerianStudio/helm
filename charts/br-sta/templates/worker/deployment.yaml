@@ -29,6 +29,9 @@ spec:
   # The worker is leader-gated but does NOT run its own leader election yet;
   # keep this at 1 to avoid duplicate background processing (audit drain,
   # scheduler, inbound poll). Do NOT add an HPA to the worker.
+  {{- if gt (int ($w.replicaCount | default 1)) 1 }}
+  {{- fail "worker.replicaCount must be 1: the worker has no leader election yet, so >1 duplicates background processing" }}
+  {{- end }}
   replicas: {{ $w.replicaCount | default 1 }}
   selector:
     matchLabels:
@@ -62,6 +65,8 @@ spec:
       initContainers:
         - name: wait-for-infra
           image: busybox:1.37
+          securityContext:
+            {{- toYaml $secCtx | nindent 12 }}
           envFrom:
             # POSTGRES_HOST / REDIS_HOST live in the manager ConfigMap.
             - configMapRef:

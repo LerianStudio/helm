@@ -22,6 +22,7 @@
 {{- $sd := $component.serviceDiscovery | default dict -}}
 {{- $strm := $component.streaming | default dict -}}
 {{- $namespace := include "global.namespace" . -}}
+{{- $pgName := include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_NAME" "params" $postgres "field" "name" "default" "br_sta") -}}
 {{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" ($component.multiTenant | default dict) "field" "enabled" "default" "false")) "true" -}}
 {{- $sdEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SD_ENABLED" "params" $sd "field" "enabled" "default" "false")) "true" -}}
 {{- $streamingEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_ENABLED" "params" $strm "field" "enabled" "default" "false")) "true" -}}
@@ -70,12 +71,12 @@ data:
   OUTBOX_TABLE_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_TABLE_NAME" "params" $outbox "field" "tableName" "default" "outbox_events") | quote }}
   PLUGIN_AUTH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PLUGIN_AUTH_ENABLED" "params" $auth "field" "pluginAuthEnabled" "default" "false") | quote }}
   PLUGIN_AUTH_HOST: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PLUGIN_AUTH_HOST" "params" $auth "field" "pluginAuthHost" "default" "") | quote }}
-  POSTGRES_CONNECT_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_CONNECT_TIMEOUT_SEC" "params" $postgres "field" "postgresConnectTimeoutSec" "default" "10") | quote }}
-  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_CONN_MAX_IDLE_TIME_MINS" "params" $postgres "field" "postgresConnMaxIdleTimeMins" "default" "5") | quote }}
-  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_CONN_MAX_LIFETIME_MINS" "params" $postgres "field" "postgresConnMaxLifetimeMins" "default" "30") | quote }}
-  POSTGRES_MAX_IDLE_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_MAX_IDLE_CONNS" "params" $postgres "field" "postgresMaxIdleConns" "default" "5") | quote }}
-  POSTGRES_MAX_OPEN_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_MAX_OPEN_CONNS" "params" $postgres "field" "postgresMaxOpenConns" "default" "25") | quote }}
-  POSTGRES_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_NAME" "params" $postgres "field" "postgresName" "default" "br_sta") | quote }}
+  POSTGRES_CONNECT_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_CONNECT_TIMEOUT_SEC" "params" $postgres "field" "connectTimeoutSec" "default" "10") | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_CONN_MAX_IDLE_TIME_MINS" "params" $postgres "field" "connMaxIdleTimeMins" "default" "5") | quote }}
+  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_CONN_MAX_LIFETIME_MINS" "params" $postgres "field" "connMaxLifetimeMins" "default" "30") | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_MAX_IDLE_CONNS" "params" $postgres "field" "maxIdleConns" "default" "5") | quote }}
+  POSTGRES_MAX_OPEN_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_MAX_OPEN_CONNS" "params" $postgres "field" "maxOpenConns" "default" "25") | quote }}
+  POSTGRES_NAME: {{ $pgName | quote }}
   RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK" "params" $broker "field" "allowInsecureHealthCheck" "default" "false") | quote }}
   RABBITMQ_ALLOW_INSECURE_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_ALLOW_INSECURE_TLS" "params" $broker "field" "allowInsecureTls" "default" "false") | quote }}
   RABBITMQ_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_ENABLED" "params" $broker "field" "enabled" "default" "false") | quote }}
@@ -232,10 +233,10 @@ data:
   {{- $replicaHost := include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST") }}
   {{- if $replicaHost }}
   POSTGRES_REPLICA_HOST: {{ $replicaHost | quote }}
-  POSTGRES_REPLICA_PORT: {{ $cm.POSTGRES_REPLICA_PORT | default "5432" | quote }}
-  POSTGRES_REPLICA_USER: {{ $cm.POSTGRES_REPLICA_USER | quote }}
-  POSTGRES_REPLICA_NAME: {{ $cm.POSTGRES_REPLICA_NAME | quote }}
-  POSTGRES_REPLICA_SSLMODE: {{ $cm.POSTGRES_REPLICA_SSLMODE | default "require" | quote }}
+  POSTGRES_REPLICA_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_REPLICA_PORT" "default" "5432") | quote }}
+  POSTGRES_REPLICA_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_REPLICA_USER" "default" "br_sta") | quote }}
+  POSTGRES_REPLICA_NAME: {{ $cm.POSTGRES_REPLICA_NAME | default $pgName | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_REPLICA_SSLMODE" "default" "require") | quote }}
   {{- end }}
 
   # =====================================================================

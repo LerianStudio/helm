@@ -189,7 +189,11 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
    trim markers eat the surrounding newlines and glue two keys onto one line.
 3. **Non-default shipped values**: any key whose values.yaml value differed from the template's
    default (e.g. br-ccs `OBJECT_STORAGE_*_BUCKET`) MUST be carried into the grouped param default,
-   or emptying `configmap` breaks byte-identity.
+   or emptying `configmap` breaks byte-identity. **The `.env.example` is the authority for the
+   default's VALUE** — mirror it verbatim even when a value looks wrong (br-sta ships
+   `REDIS_MIN_RETRY_BACKOFF=8` > `REDIS_MAX_RETRY_BACKOFF=1`; the chart must match, not "fix" it —
+   an inverted default is an APP bug to report upstream, never silently corrected in the chart,
+   which would drift the chart from the app's own default).
 4. **Source of truth = MANAGER render**, not `awk` over values.yaml — a naive `^  configmap:`
    match also captures `worker.configmap`, injecting worker-only keys into the manager.
 5. **`rateLimit.env` / `auth.env` emit a FIXED key set** that may not match the chart
@@ -208,6 +212,9 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
    block rejects them at `helm install`. `gen-schema.py` leaves generic dicts
    `additionalProperties:true` and operational scalars untyped (default/enum only) — verify after
    regen that a config typo is still rejected AND valid operator input is still accepted.
+   CAVEAT: adding `items: {type: object}` to a `tolerations`/array field (so `["NoSchedule"]` is
+   rejected) is a MANUAL delta — `gen-schema.py` can't infer array item types and will DROP it on
+   the next regen. Either re-apply it after regen, or teach the generator the known array fields.
 10. **Byte-identity validation is FALSE unless the schema is OFF on both sides.** A schema failure
     renders empty, so two empty renders diff as "identical". When comparing template changes,
     `mv values.schema.json` aside on BOTH the baseline (`git worktree add --detach <pre-commit>`

@@ -20,3 +20,13 @@ data:
   quota: '{"organization": -1, "user": -1, "application": -1, "provider": -1}'
   logConfig: '{"filename": "logs/casdoor.log", "maxdays": 99999, "perm": "0770"}'
   initDataFile: {{ .Values.auth.backend.initDataFile | default "./init_data.json" | quote }}
+  # Allows the backend's outbox Postgres client to connect without a valid
+  # certificate. Same default and rationale as auth.configmap.ALLOW_INSECURE_TLS
+  # and identity.configmap.ALLOW_INSECURE_TLS. Casdoor ignores this key; only
+  # caradhras' outbox client reads it, and it fails closed without it.
+  ALLOW_INSECURE_TLS: {{ .Values.auth.backend.allowInsecureTLS | default "true" | quote }}
+
+  # Extra Env Vars
+  {{- with .Values.auth.backend.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

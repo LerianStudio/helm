@@ -38,6 +38,7 @@ table is a snapshot of **lerian-common 1.4.0** — verify before relying on it).
 | **Service discovery** (Consul) | `SD_*` | `serviceDiscovery.env` / `.envFlat` | `global.serviceDiscovery.*` | `SD_ENABLED` (extraEnvVars knob); endpoints derived from `<comp>.{name,service.port,ingress}` | `SD_TOKEN` |
 | **Auth** (access-manager) | `PLUGIN_AUTH_*` | `auth.env` (via `globalValue`) | `global.auth.{enabled,host}` | `<comp>.configmap.PLUGIN_AUTH_*` override; caller passes `hostKey` (`PLUGIN_AUTH_HOST`\|`_ADDRESS`) | — |
 | **Observability** (OTel collector) | `ENABLE_TELEMETRY`, `OTEL_*` | `otel.env` / `.envFlat` / `.podEnv` | `global.observability.{enabled,otlpEndpoint,deploymentEnvironment}` | per-service identity inline (`OTEL_RESOURCE_SERVICE_NAME/VERSION`, `OTEL_LIBRARY_NAME`) | — |
+| **Object storage** (S3/SeaweedFS) | `OBJECT_STORAGE_*` | `objectStorage.value` (≥ lerian-common 1.5.0) | `global.objectStorage.<name>.{endpoint,region,bucket,disableSSL,usePathStyle}` | `<comp>.objectStorage.<name>.*` (dedicated) | `*_ACCESS_KEY_ID`, `*_SECRET_ACCESS_KEY` |
 | **AWS IAM Roles Anywhere** | `AWS_*` (roles-anywhere) | `rolesAnywhere.{sidecar,volume,imdsEnv,podSecurityContext}` | — | `<comp>.aws.rolesAnywhere.{enabled,…}` | (cert material via volume) |
 | **Inter-service** (sibling Lerian services) | `*_URL` / `*_HOST` of another service | `internalHost` / `internalURL` / `firstIngressHost` / `dependency.fullname` | (derived from names / SD) | derived; or a passthrough URL when SD is off | — |
 
@@ -48,23 +49,25 @@ retention, pool/client tuning, service-specific business knobs — is **escape-h
 
 ---
 
-## Open gap: object storage (S3 / SeaweedFS)
+## Closed gap: object storage (S3 / SeaweedFS) — the worked example
 
 `OBJECT_STORAGE_*` (endpoint / region / bucket / path-style) IS a dependency connection by NATURE
-— it is how the app reaches an S3/SeaweedFS backend — but lerian-common has **no helper** for it
-today, so it currently falls to the escape hatch. That is the tell that the vocabulary is
-incomplete, NOT a signal to hand-roll a per-chart knob.
+— how the app reaches an S3/SeaweedFS backend — but lerian-common originally had NO helper, so it
+fell to the escape hatch. That was the tell that the vocabulary was incomplete, NOT a signal to
+hand-roll a per-chart knob. It is the reference example of "extend the library, not the chart":
 
-**Fix (close it once, globally):** add a `lerian-common.objectStorage.value` mask modeled on
+**Closed in lerian-common 1.5.0** — `lerian-common.objectStorage.value`, a mask modeled on
 `datastore.value`:
 
 - Env-wide: `global.objectStorage.<name>.{endpoint,region,bucket,disableSSL,usePathStyle}`
 - Per-component dedicated: `<comp>.objectStorage.<name>.*`
-- Precedence: native `configmap.<KEY>` › dedicated › shared › default
-- Secrets (`*_ACCESS_KEY`, `*_SECRET_KEY`) → `secrets.yaml`, fail-fast when the backend is used.
-- `<name>` handles apps with multiple buckets (br-ccs: `ccs` / `fetcher` / `sta`).
+- Precedence: native `configmap.<KEY>` › dedicated › shared › default (presence-based, false wins)
+- Keyed by `<name>` for apps with multiple buckets (br-ccs: `ccs` / `fetcher` / `sta`)
+- Masks only the non-secret fields; credentials (`*_ACCESS_KEY_ID`, `*_SECRET_ACCESS_KEY`) → the
+  chart's Secret, fail-fast when the backend is used.
 
-Until that helper lands, object storage stays in the escape hatch (allowlisted like any other key).
+Charts on lerian-common < 1.5.0 keep object storage in the escape hatch (allowlisted) until they
+bump the dependency and adopt the mask.
 
 ---
 

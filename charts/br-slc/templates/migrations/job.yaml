@@ -28,9 +28,13 @@ metadata:
     argocd.argoproj.io/hook-weight: "-1"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: {{ .Values.migrations.backoffLimit | default 2 }}
+  # dig (not | default) so an explicit 0 is honored: backoffLimit=0 (never retry)
+  # and ttlSecondsAfterFinished=0 (delete immediately) are valid operator choices that
+  # Sprig's default would silently clobber. activeDeadlineSeconds keeps default (0 is not
+  # a meaningful deadline).
+  backoffLimit: {{ dig "backoffLimit" 2 .Values.migrations }}
   activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds | default 600 }}
-  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished | default 259200 }}
+  ttlSecondsAfterFinished: {{ dig "ttlSecondsAfterFinished" 259200 .Values.migrations }}
   template:
     metadata:
       labels:

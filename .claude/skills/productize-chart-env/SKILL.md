@@ -2,9 +2,10 @@
 name: productize-chart-env
 description: >-
   Productize a Lerian Helm chart's configuration from the app's config/.env.example
-  onto lerian-common — every env var becomes a grouped cfgValue param, a domain helper
-  (multiTenant/otel/datastore/serviceDiscovery/streaming/auth), or a fail-fast secret;
-  NO raw env vars remain in values.yaml. Use when productizing a chart, or when the app
+  onto lerian-common. Typed KNOBS are reserved for DEPENDENCY CONNECTIONS (db/cache/broker/
+  streaming/service-discovery/tenant-manager/auth/object-storage) via domain helpers/masks;
+  ALL other app config stays an escape-hatch passthrough with the default in the template;
+  credentials become fail-fast secrets. Use when productizing a chart, or when the app
   added/renamed env vars and the chart must re-sync to the .env contract.
 ---
 
@@ -12,28 +13,44 @@ description: >-
 
 ## Premise (non-negotiable)
 
-The app's **`config/.env.example` is the authority** — NOT the chart's prior render.
-Every ACTIVE env var the app reads must be covered by the chart as exactly one of:
+The app's **`config/.env.example` is the authority** — NOT the chart's prior render. Every
+ACTIVE env var must be COVERED (settable + defaulted), but coverage is TIERED — a typed knob is
+NOT the goal for every key. **Reserve typed knobs for DEPENDENCY CONNECTIONS; everything else is
+an escape-hatch passthrough with the default in the template.**
 
-- **config** → grouped `lerian-common.cfgValue` param (`configmap.<KEY>` › `<comp>.<group>.<field>` › default)
-- **datastore** → `lerian-common.datastore.value` mask (host/port/user/ssl/replicaHost)
-- **helper** → a domain env helper + `global.*` block (see the domain map)
+**The dividing question is by NATURE, not by helper: "is this how the app reaches a DEPENDENCY?"**
+Databases, cache, broker, streaming, service-discovery, tenant-manager/auth, object storage — the
+things a non-expert MUST wire to get running. Those get a masked, typed, validated knob. All the
+rest — rate-limit, outbox, swagger, cors, pagination, probes, timeouts, retention, pool tuning —
+has a sensible default and is reached only by the rare expert, via the escape hatch.
+
+Every ACTIVE var is therefore exactly one of:
+
+- **dependency knob** → `lerian-common.datastore.value` mask (db/cache/broker: host/port/user/ssl)
+  OR a domain helper (`multiTenant.env`, `streaming.env`, `serviceDiscovery.env`, `otel.env`,
+  `globalValue` auth) + `global.*` block OR a small typed mask for a dependency the lib doesn't
+  cover yet (object storage: endpoint/region/bucket). This is the DOCUMENTED, schema-guarded surface.
+- **passthrough config** → `{{ $cm.KEY | default "<.env value>" | quote }}` — default in the
+  template, overridable via `configmap.<KEY>`. NOT a grouped param, NOT a `<comp>.<group>` block.
 - **secret** → `secrets.yaml` + a fail-fast (`multiTenant.secret`, or a `required` guard)
 - **gap** → recorded backlog (app declares it, chart can't cover it yet)
 - **omitted** → with a written reason
 
-The chart's `configmap` / `configmap.data` ends up **`{}`** — `{}` means "no DEFAULTS shipped
-here", NOT "overrides forbidden". Defaults live in the template. Result: the operator configures
-a clean typed API (`<comp>.redis.poolSize`), never a raw env var.
+Why this is not overengineering: the old model routed all ~120 keys through `cfgValue` grouped
+params. That MASKS THE NAME but never REDUCES THE COUNT — a non-expert facing 120
+`redis.connMaxIdleTimeMins` is no better off than facing 120 env vars, and each grouped param is a
+hand-maintained PARALLEL contract that can silently diverge from the env key (the `postgresName`
+vs `postgres.name` bug) with the schema unable to catch it. Tiering cuts the typed surface ~90→~15
+knobs and the schema ~50% while staying byte-identical (the grouped params were freshly invented,
+not the app's contract — dropping them changes nothing that shipped).
 
 **Two escape hatches stay open (every mature chart keeps one — do NOT remove them):**
-- `configmap.<KEY>` — overrides an ENUMERATED key (top of `cfgValue` precedence:
-  `configmap.<KEY>` › `<comp>.<group>.<field>` › default).
-- `<comp>.extraEnvVars` (a `range`-emitted map at the end of the ConfigMap) — injects ANY
-  UN-enumerated var, so a var the app adds before the chart re-syncs is still settable.
-This is why enumeration is safe: the typed groups are the *documented* surface, the hatches are
-the *safety valve*. Enumerating a finite, app-owned `.env` (unlike Grafana/NGINX wrapping a
-foreign open-ended config) is the deliberate divergence — see "Market alignment" at the end.
+- `<comp>.configmap.<KEY>` — the PRIMARY override surface now: sets/overrides any passthrough key
+  (`$cm.KEY` reads it first, before the template default).
+- `<comp>.extraEnvVars` — injects ANY var, incl. one the app added before the chart re-synced.
+The typed dependency knobs are the *documented, must-set* surface; the hatches carry the long tail.
+See "Market alignment" at the end for why we still enumerate the .env (for the schema allowlist)
+without turning every key into a knob.
 
 ## Values structure (STANDARD)
 
@@ -109,9 +126,15 @@ The helpers already exist; you are only WIRING them.
 | `SD_*` | `serviceDiscovery.env` or `.envFlat` | `global.serviceDiscovery` | envFlat (flat passthrough) is the simplest for a consumer chart |
 | `STREAMING_*` | `streaming.env` + `streaming.secret` | `global.streaming` | full SASL/broker contract; `STREAMING_SASL_PASSWORD` is a secret |
 | `PLUGIN_AUTH_*` | `globalValue` (block `auth`) | `global.auth` | ENABLED always; HOST emitted only when non-empty |
+| `OBJECT_STORAGE_*` (endpoint/region/bucket) | small typed mask under `<comp>.objectStorage` | — | S3/SeaweedFS IS a dependency connection → knob by NATURE even though the lib has no helper yet; access/secret keys go to `secrets`. Raise a lerian-common gap to add a real `objectStorage` mask helper. |
 
-Everything NOT in this map is **config** (long-tail: rate-limit, outbox, swagger, cors, pagination,
-object-storage, service-specific knobs) → route each via `cfgValue` into a grouped block.
+Everything NOT in this map is **passthrough config** (rate-limit, outbox, swagger, cors, pagination,
+probes, timeouts, retention, pool/client tuning, service-specific knobs) → `{{ $cm.KEY | default
+"X" }}`, NOT a grouped param. **Classify by NATURE, not by which helper exists:** a dependency
+connection with no helper yet (object storage) still gets a knob (add a mask); a non-dependency
+key never gets one even though `cfgValue` could route it. `cfgValue` is now used ONLY for the rare
+case where a dependency knob needs the `configmap.<KEY>` › knob › default precedence (e.g. a
+toggle the render-gate drives); prefer the plain passthrough otherwise.
 
 **Two `global.*` tiers (P1 #4):** the domain blocks above (`global.observability`,
 `global.multiTenant`, `global.datastores`, `global.serviceDiscovery`, `global.streaming`,
@@ -138,19 +161,25 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
 3. **Classify** every var via the domain map + secret rules above.
 4. **Emit the domain helpers** (MT/OTEL/datastore/SD/streaming/auth) exactly as their Usage docs
    show, gated + `global.*`, adding the matching `global.<block>` + `<comp>.<group>` values.
-5. **Emit config via cfgValue**, one line per key:
-   `{{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "KEY" "params" $group "field" "camelField" "default" "<.env value>") | quote }}`
-   Declare `{{- $group := .Values.<comp>.<group> | default dict -}}` vars at the top. Group by
-   prefix (`CORS_`→cors, `REDIS_`→redis, `OUTBOX_`→outbox, `RATE_LIMIT`→rateLimit, `SWAGGER_`→swagger,
-   `OBJECT_STORAGE_`→objectStorage, …); field = camelCase of the key minus the group prefix.
-   Keep nesting ≤ 3 levels (`<comp>.<group>.<field>`) — deeper only for native k8s structs
-   (securityContext). Do not nest single, unrelated knobs (Helm favours flat for simplicity).
-6. **Empty the raw config** in values.yaml (`configmap: {}` / `data: {}`) and add the grouped
-   blocks. Each documented value carries a **`# -- <description>`** helm-docs annotation (P0 #2);
-   the README table auto-generates via `scripts/gen-docs.py --values <v.yaml> --out <chart>/
-   README.params.md` (run `--check` in CI to fail on drift). Keep `<comp>.extraEnvVars` as the
-   documented injection hatch. Carry any value that DIFFERED from the template default into the
-   group default (Rule 3).
+5. **Emit each key by its tier** (declare `{{- $cm := .Values.<comp>.configmap | default dict -}}`
+   at the top):
+   - **Passthrough (the default — every non-dependency key):**
+     `{{ $cm.KEY | default "<.env value>" | quote }}`. No group var, no `<comp>.<group>` block.
+     Keep any `{{- if ... }}` / `range` conditional exactly. This is 80–90% of the keys.
+   - **Dependency knob:** wire the domain helper/mask (Step 4) for db/cache/broker/streaming/SD/
+     MT/auth; for object storage add a small typed `<comp>.objectStorage` mask (endpoint/region/
+     bucket). Use `cfgValue` ONLY when a dependency knob genuinely needs the
+     `configmap.<KEY>` › knob › default precedence (rare — e.g. a toggle the fixture drives).
+   - Carry any value that DIFFERED from the template default into the passthrough `| default "X"`
+     (Rule 3) — e.g. br-ccs `OBJECT_STORAGE_*_BUCKET` shipped real bucket names, so
+     `| default "lerian-ccs"`, not `| default ""`.
+6. **values.yaml holds ONLY the tiered surface:** `global.*`, the datastore mask + `external*Definitions`,
+   the dependency toggles/blocks (`multiTenant`/`serviceDiscovery`/`streaming`/`objectStorage`), the
+   k8s blocks, `configmap: {}` (now the PRIMARY override surface — document it prominently), and
+   `extraEnvVars`. **No `<comp>.<group>` blocks for non-dependency config** — those defaults live in
+   the template. Each kept knob carries a **`# -- <description>`** helm-docs annotation (P0 #2);
+   `scripts/gen-docs.py --values <v.yaml> --out <chart>/README.params.md` regenerates the table
+   (`--check` in CI). Also produce **`values-quickstart.yaml`** (Step 10) — the layperson layer.
 7. **Secrets** → `secrets.yaml`. Prefer the `existingSecret` reference model; then per var:
    - **fail-fast** (`required` / `multiTenant.secret`) when the owning feature is enabled — for
      money-path credentials that must be operator-provided.
@@ -166,17 +195,29 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
    --chart-dir <chart> --out <chart>/values.schema.json`. It parses BOTH values.yaml AND
    `templates/configmap.yaml` (the grouped blocks ship empty `{}`, so the group FIELDS are read
    from the `cfgValue "field"/"default"` args — template-as-source-of-truth). Output is
-   strict-where-safe: `additionalProperties:false` on the CLOSED typed group blocks (a typo like
-   `<comp>.redis.poolSizeX` is rejected at `helm template`), permissive (`true`) on ROOT,
-   subcharts, `global`, and OPEN maps (`configmap`/`extraEnvVars`) so legitimate keys never break.
-   Config fields are typed `string` (env vars are strings) → operators use `--set-string` or quote
-   in values; `default`-everything, `required` sparingly (like cert-manager). Add a
-   `# -- (enum: a|b|c) desc` annotation to emit an `enum` for a closed set. Verify: `helm lint`
-   passes AND a deliberate typo is rejected.
+   strict-where-safe: `additionalProperties:false` on the CLOSED typed DEPENDENCY blocks (a typo like
+   `<comp>.redis.poolSizeX` is rejected at `helm template`), permissive on ROOT, subcharts, `global`.
+   **The `configmap` escape hatch is now the primary surface — guard it with `propertyNames.enum`**
+   = the flat allowlist of valid NATIVE_KEYs read from the app `.env` (the generator already knows
+   them via coverage). This restores typo protection the tiering would otherwise lose: `configmap.
+   RATE_LIMIT_MAXX` is rejected (unknown key) while `configmap.RATE_LIMIT_MAX` is accepted — WITHOUT
+   re-enumerating types or groups. Keep `extraEnvVars` fully open (that IS the un-enumerated hatch).
+   Values are typed `string` (env vars are strings) → operators use `--set-string` or quote;
+   `default`-everything, `required` sparingly. `# -- (enum: a|b|c) desc` emits an `enum` for a
+   closed set. Verify: `helm lint` passes, a dependency-block typo is rejected, AND an unknown
+   `configmap.<KEY>` is rejected while a real one is accepted.
 9. **Naming + hatches baseline** (verify present): `nameOverride`/`fullnameOverride`, camelCase
    keys, `enabled` toggles, and the standard escape hatches (`extraEnvVars`, `extraVolumes`/
    `extraVolumeMounts`, `extraContainers`, `podAnnotations`/`podLabels`, `resources`,
    `nodeSelector`/`tolerations`/`affinity`, `extraObjects`).
+10. **`values-quickstart.yaml` — the layperson layer (the "two layers" model).** The full chart is
+    the power-user / wizard API; ship a tiny quickstart the non-expert copies and fills. It holds
+    ONLY the dependency-connection knobs to get running: db/cache/broker host+user, the enable
+    toggles (`multiTenant`/`serviceDiscovery`/`streaming`), `image.tag`, `ingress` host, object
+    storage endpoint/bucket, and the `secrets` (with `CHANGE_ME`), each with a `# comment` +
+    example. Aim ~15–25 knob lines. A couple of common overrides may go under `configmap:` as
+    examples. This is the artifact for "sees the chart from outside without reading templates" —
+    the docs/README lead with it. (Do NOT base it on a stale `values-template.yaml`; those drift.)
 
 ## RULES (the gotchas — every one cost real debugging; bake them in)
 
@@ -202,16 +243,19 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
 6. **If you generate lines with a Python f-string, `}}` becomes `}`** — use a normal string or a
    post-regex to restore `| quote }}`.
 7. **Optional/opt-in keys** (`{{- if $cm.X }}`, `if REPORTER_ENABLED`, `range` over lists) stay
-   conditional — do not force them into unconditional cfgValue.
+   conditional — keep the guard when demoting to a passthrough (`{{- if $cm.X }}...{{- end }}`).
 8. **A Go-template comment `{{/* … */}}` breaks if its TEXT contains `*/`** ("comment ends before
    closing delimiter"). Listing keys like `OTEL_RESOURCE_*/OTEL_LIBRARY_NAME` in a comment closes
    it early — write `OTEL_RESOURCE_* and OTEL_LIBRARY_NAME` instead.
-9. **`additionalProperties:false` only on finite cfgValue config-groups.** Never close k8s
+9. **`additionalProperties:false` only on the finite typed DEPENDENCY blocks.** Never close k8s
    OPERATIONAL blocks (role/autoscaling/pdb/resources/tolerations/scheduling) — operators pass
    valid keys the generator never saw (`pdb.maxUnavailable`, `resources.limits`), and a closed
-   block rejects them at `helm install`. `gen-schema.py` leaves generic dicts
+   block rejects them at `helm install`. The `configmap` escape hatch is NOT closed either — it is
+   an open map guarded by `propertyNames.enum` (the .env allowlist), so unknown keys are rejected
+   but any real NATIVE_KEY is accepted. `gen-schema.py` leaves generic dicts
    `additionalProperties:true` and operational scalars untyped (default/enum only) — verify after
-   regen that a config typo is still rejected AND valid operator input is still accepted.
+   regen that a dependency-block typo AND an unknown `configmap.<KEY>` are both rejected, while
+   valid operator input is accepted.
    CAVEAT: adding `items: {type: object}` to a `tolerations`/array field (so `["NoSchedule"]` is
    rejected) is a MANUAL delta — `gen-schema.py` can't infer array item types and will DROP it on
    the next regen. Either re-apply it after regen, or teach the generator the known array fields.
@@ -238,8 +282,10 @@ Run `scripts/coverage.py --chart-dir <chart> --env <app>.env --fixture <enable-a
 renders the WHOLE chart (one `helm template`, so worker / signer / mqbridge / sub-component
 ConfigMaps are all included) and reconciles emitted keys vs the `.env`:
 
-- **Coverage**: every ACTIVE `.env` var is emitted, an emit-when-set secret, or belongs to a
-  WIRED domain — else it is a gap.
+- **Coverage**: every ACTIVE `.env` var is emitted (as a dependency knob or a passthrough), an
+  emit-when-set secret, or belongs to a WIRED domain — else it is a gap. A passthrough key still
+  renders its default, so it counts as covered; it must also appear in the `propertyNames.enum`
+  allowlist.
 - **Helper actually wired** (not just prefix-matched): a domain (SD/streaming/MT/OTEL/auth) counts
   as covered only when its ANCHOR key (`SD_ENABLED`, `STREAMING_ENABLED`, …) renders. An `SD_*`
   var in the `.env` with the helper UNWIRED is a hard FAIL ("domain helper not wired") — this is
@@ -258,30 +304,37 @@ so the human confirms in the PR — the skill proposes, the reviewer decides.
 
 ## Output
 
-Modified `templates/configmap.yaml`, `templates/secrets.yaml`, `values.yaml`, `values.schema.json`,
-a render fixture (`.github/configs/helm-render-values/<chart>.yaml` enabling the productized paths),
-and the coverage report. One chart per PR.
+Modified `templates/configmap.yaml` (dependency keys via helpers/masks; everything else a
+`$cm.KEY | default` passthrough), `templates/secrets.yaml`, `values.yaml` (only the tiered
+surface — no `<comp>.<group>` blocks for non-dependency config), `values.schema.json` (closed
+dependency blocks + `propertyNames.enum` allowlist on `configmap`), **`values-quickstart.yaml`**
+(the layperson layer), a render fixture (`.github/configs/helm-render-values/<chart>.yaml`
+enabling the dependency paths), and the coverage report. One chart per PR.
 
 ## Market alignment (why we diverge, and where we adopt)
 
 Studied against consolidated OSS charts (Bitnami `common`/postgresql/redis, Grafana/Loki/
 kube-prometheus-stack, cert-manager, ingress-nginx) + the Helm Chart Best Practices.
 
-**Where our premise is JUSTIFIED (keep):** the market splits into "enumerate every knob"
-(Bitnami) and "pass a structured config blob" (Grafana `grafana.ini`, ingress-nginx
-`controller.config`). The blob exists because those charts wrap FOREIGN apps with hundreds of
-fast-churning config keys they don't own — it decouples the chart from that churn. **That reason
-does not apply to us**: our `.env.example` is a finite, versioned, app-owned 12-factor contract,
-so enumerate-and-type buys typing, validation, per-key defaults, grouping and fail-fast secrets.
-Copying the blob would be cargo-culting. The coverage check is what makes enumeration
-sustainable (our substitute for the "stay-in-sync" the blob dodges).
+**Where we land (a deliberate MIDDLE):** the market splits into "type every knob" (Bitnami) and
+"pass a structured config blob" (Grafana `grafana.ini`, ingress-nginx `controller.config`). We
+reject both extremes. Full typing (our earlier model) masks the NAME but not the COUNT — 120
+grouped params overwhelm a non-expert exactly as 120 env vars do, and each is a hand-maintained
+parallel contract that silently drifts. The opaque blob throws away typing where it matters. Our
+finite, app-owned `.env` lets us do better: **type only the dependency connections** (the must-set
+surface a non-expert wires) and leave the long tail as a passthrough with template defaults —
+Bitnami-style typing where it earns its keep, blob-style passthrough where it doesn't. We still
+ENUMERATE the whole `.env`, but for the SCHEMA ALLOWLIST (`propertyNames.enum` on the escape hatch
+→ typo protection) and the coverage check, NOT to mint a knob per key. `coverage.py` is what keeps
+the allowlist in sync with the app.
 
 **Where we were WRONG / adopt from the market:**
 - Every mature chart — even 100%-typed Bitnami and 100%-blob Grafana — keeps an env escape hatch.
   Never remove `extraEnvVars` / the `configmap.<KEY>` override. `configmap: {}` = "no defaults",
   not "locked". (Premise section.)
-- Ship a strict `values.schema.json` (`additionalProperties:false`) — the single biggest gap; it
-  is the user-facing guardrail our "everything typed" premise earns. (Step 8.)
+- Ship a strict `values.schema.json` — `additionalProperties:false` on the typed dependency blocks
+  + `propertyNames.enum` on the `configmap` escape hatch (typo protection without per-key typing).
+  The user-facing guardrail. (Step 8.)
 - Annotation-driven docs (`# --` / `@param`) + auto-generated README — never hand-write tables. (Step 6.)
 - Secrets: `lookup`+manage (reuse-on-upgrade), not only fail-fast; + a leaked-secret guard. (Step 7.)
 - A k8s-infra `global.*` tier for the umbrella (registry/pullSecrets/storageClass/commonLabels). (Domain map.)

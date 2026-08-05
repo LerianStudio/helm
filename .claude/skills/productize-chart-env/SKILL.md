@@ -198,10 +198,16 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
    strict-where-safe: `additionalProperties:false` on the CLOSED typed DEPENDENCY blocks (a typo like
    `<comp>.redis.poolSizeX` is rejected at `helm template`), permissive on ROOT, subcharts, `global`.
    **The `configmap` escape hatch is now the primary surface — guard it with `propertyNames.enum`**
-   = the flat allowlist of valid NATIVE_KEYs read from the app `.env` (the generator already knows
-   them via coverage). This restores typo protection the tiering would otherwise lose: `configmap.
-   RATE_LIMIT_MAXX` is rejected (unknown key) while `configmap.RATE_LIMIT_MAX` is accepted — WITHOUT
-   re-enumerating types or groups. Keep `extraEnvVars` fully open (that IS the un-enumerated hatch).
+   = the flat allowlist of valid NATIVE_KEYs (`gen-schema.py --env <app>.env --rendered-keys <file>`).
+   This restores typo protection the tiering would otherwise lose: `configmap.RATE_LIMIT_MAXX` is
+   rejected while `configmap.RATE_LIMIT_MAX` is accepted — WITHOUT re-enumerating types or groups.
+   **CRITICAL: the allowlist is the UNION of the `.env` keys AND the keys the chart RENDERS** — the
+   `.env.example` alone is TOO STRICT (the app reads, and helpers emit, keys the .env omits: e.g.
+   `STREAMING_SASL_MECHANISM` is an SD/streaming gap the streaming.env helper still emits — a
+   .env-only enum wrongly rejects it and breaks the render-gate). Produce `--rendered-keys` with the
+   schema DISABLED (chicken-and-egg — the strict schema would reject the fixture and render empty):
+   `mv values.schema.json /tmp && helm template t <chart> -f <enable-all-fixture> -s templates/configmap.yaml | grep -oE '^  [A-Z][A-Z0-9_]+:' | tr -d ' :' | sort -u > keys.txt`.
+   Keep `extraEnvVars` fully open (that IS the un-enumerated hatch).
    Values are typed `string` (env vars are strings) → operators use `--set-string` or quote;
    `default`-everything, `required` sparingly. `# -- (enum: a|b|c) desc` emits an `enum` for a
    closed set. Verify: `helm lint` passes, a dependency-block typo is rejected, AND an unknown

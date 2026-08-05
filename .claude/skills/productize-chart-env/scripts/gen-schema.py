@@ -32,8 +32,12 @@ template-as-source-of-truth rule the coverage check already relies on.
 
 Usage:
   gen-schema.py --values charts/br-ccs/values.yaml --chart-dir charts/br-ccs \
+      [--env config/.env.example] [--rendered-keys keys.txt] \
       [--out charts/br-ccs/values.schema.json]
   gen-schema.py --values ... --chart-dir ... --check   # exit 1 if out would change
+
+--env + --rendered-keys guard the `configmap` escape hatch with `propertyNames.enum` (the UNION
+of both — see the ENV_KEYS note). Omit both to leave `configmap` fully open (no typo protection).
 """
 import argparse, json, re, sys, os
 
@@ -94,6 +98,57 @@ OPEN_MAPS = {"configmap", "data", "extraEnvVars", "extraEnvVarsCM", "extraEnvVar
              "config", "grafana.ini", "structuredConfig"}
 IDENT = re.compile(r"^[a-z][A-Za-z0-9]*$")          # camelCase leaf key
 ENVLIKE = re.compile(r"^[A-Z][A-Z0-9_]+$")          # env-var-like key
+
+# The valid NATIVE_KEY allowlist guarding the `configmap`/`data` escape hatch with
+# `propertyNames.enum`: a typo'd override (configmap.RATE_LIMIT_MAXX) is rejected while any real
+# key is accepted — typo protection for the tiered model WITHOUT typing every key as a knob.
+# CRITICAL: the allowlist is the UNION of the app .env keys (--env) AND the keys the chart
+# actually RENDERS (--rendered-keys). The .env alone is too strict — the app reads (and the
+# helpers emit) keys the .env.example omits (e.g. STREAMING_SASL_MECHANISM, an SD_*/streaming
+# gap): those are legitimate escape-hatch overrides and a .env-only enum would wrongly reject
+# them. When neither source is given, `configmap` stays fully open (no enum).
+ENV_KEYS = set()
+_ENV_KEY = re.compile(r"^#?\s*([A-Z][A-Z0-9_]+)\s*=")   # active OR commented-optional env var
+_KEY = re.compile(r"^([A-Z][A-Z0-9_]+)\s*$")            # bare key (one per line) for --rendered-keys
+
+
+def parse_env_keys(path):
+    keys = set()
+    for line in open(path):
+        m = _ENV_KEY.match(line)
+        if m:
+            keys.add(m.group(1))
+    return keys
+
+
+def parse_key_list(path):
+    keys = set()
+    for line in open(path):
+        m = _KEY.match(line.strip())
+        if m:
+            keys.add(m.group(1))
+    return keys
+
+
+def open_map_schema(child_path, node, desc):
+    """Open passthrough object. For the `configmap`/`data` escape hatch, guard the KEYS with the
+    .env allowlist (propertyNames.enum) — handles both the wrapped style (keys directly under
+    `configmap`) and the flat style (keys under `configmap.data`)."""
+    cs = {"type": "object", "additionalProperties": True}
+    cd = desc.get(child_path, (None, None))[0]
+    if cd:
+        cs["description"] = cd
+    leaf = child_path.split(".")[-1]
+    if ENV_KEYS and leaf in ("configmap", "data"):
+        allow = {"enum": sorted(ENV_KEYS)}
+        if leaf == "configmap" and isinstance(node, dict) and "data" in node:
+            # flat chart: the escape hatch is `configmap.data` — guard the nested map's keys.
+            cs["properties"] = {"data": {"type": "object", "additionalProperties": True,
+                                         "propertyNames": allow}}
+        else:
+            # wrapped chart: keys live directly under `configmap` — guard them here.
+            cs["propertyNames"] = allow
+    return cs
 
 
 def descriptions(values_path):
@@ -188,11 +243,7 @@ def build(node, path, desc, tgroups):
         for k, v in node.items():
             child_path = f"{path}.{k}" if path else k
             if is_open(k, v) and child_path not in tgroups:
-                cs = {"type": "object", "additionalProperties": True}
-                cd = desc.get(child_path, (None, None))[0]
-                if cd:
-                    cs["description"] = cd
-                props[k] = cs
+                props[k] = open_map_schema(child_path, v, desc)
             elif not isinstance(v, (dict, list)):
                 # Scalar leaf of an OPEN operational block: emit NO `type` (default only),
                 # same as cfgValue config-group fields. A default like pdb.maxUnavailable ""
@@ -240,8 +291,21 @@ def main():
     ap.add_argument("--chart-dir", default=None,
                     help="chart dir; parses templates/configmap.yaml to type the empty grouped blocks")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--env", default=None,
+                    help="app .env(.example); its keys seed the propertyNames.enum allowlist "
+                         "guarding the configmap escape hatch (typo protection)")
+    ap.add_argument("--rendered-keys", default=None,
+                    help="file of NATIVE_KEYs the chart RENDERS (one per line; e.g. "
+                         "`helm template <enable-all> | yq '..data|keys'`). UNIONed with --env so "
+                         "the allowlist covers helper-emitted keys the .env.example omits.")
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args()
+
+    global ENV_KEYS
+    if a.env:
+        ENV_KEYS |= parse_env_keys(a.env)
+    if a.rendered_keys:
+        ENV_KEYS |= parse_key_list(a.rendered_keys)
 
     values = yaml.safe_load(open(a.values)) or {}
     desc = descriptions(a.values)
@@ -251,11 +315,7 @@ def main():
     for k, v in values.items():
         cp = k
         if is_open(k, v) and cp not in tgroups:
-            cs = {"type": "object", "additionalProperties": True}
-            cd = desc.get(cp, (None, None))[0]
-            if cd:
-                cs["description"] = cd
-            props[k] = cs
+            props[k] = open_map_schema(cp, v, desc)
         else:
             props[k] = build(v, cp, desc, tgroups)
     schema = {

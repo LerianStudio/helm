@@ -32,6 +32,7 @@ table is a snapshot of **lerian-common 1.4.0** — verify before relying on it).
 |---|---|---|---|---|---|
 | **PostgreSQL** | `POSTGRES_*` (host/conn) | `datastore.value` (type `postgres`) | `global.datastores.postgres.{host,port,user,ssl,replicaHost}` | `<comp>.datastores.postgres.*` (dedicated) | `POSTGRES_PASSWORD` |
 | **Redis / Valkey** | `REDIS_*` (host/conn) | `datastore.value` (type `redis`) | `global.datastores.redis.{host,port,user,ssl}` | `<comp>.datastores.redis.*` | `REDIS_PASSWORD` |
+| **MongoDB** | `MONGO_*` (host/conn) | `datastore.value` (type `mongo`) | `global.datastores.mongo.{host,port,user,uri,…}` | `<comp>.datastores.mongo.*` | `MONGO_PASSWORD` |
 | **RabbitMQ** | `RABBITMQ_*` (host/conn) | `datastore.value` (type `broker`) | `global.datastores.broker.{host,port,user}` | `<comp>.datastores.broker.*` | `RABBITMQ_DEFAULT_PASS` |
 | **Tenant-manager** (multi-tenancy) | `MULTI_TENANT_*` | `multiTenant.env` / `.secret` | `global.multiTenant.{url,redisHost,…}` | `<comp>.configmap.MULTI_TENANT_ENABLED` (the gate/knob, stays inline) + opt-in groups `<comp>.multiTenant.*` | `MULTI_TENANT_SERVICE_API_KEY`, `MULTI_TENANT_REDIS_PASSWORD` |
 | **Streaming** (Kafka/RedPanda) | `STREAMING_*` | `streaming.env` / `.secret` | `global.streaming.{brokers,saslUsername,tls,…}` | `STREAMING_ENABLED` (extraEnvVars knob) + per-app identity `STREAMING_CLIENT_ID`/`_CLOUDEVENTS_SOURCE` (inline) | `STREAMING_SASL_PASSWORD`, `STREAMING_TLS_CA_CERT` |
@@ -46,6 +47,26 @@ Supporting (not a domain, but dependency-adjacent): `infraSecretRef` (reference 
 
 Everything NOT in this table — rate-limit, outbox, swagger, cors, pagination, probes, timeouts,
 retention, pool/client tuning, service-specific business knobs — is **escape-hatch passthrough**.
+
+### Per-module datastores (N instances of one dependency)
+
+A service may reach **several instances of the same dependency**, one per internal module. The
+mask absorbs this with a sub-key — the same shape as object-storage's `<name>`:
+
+- **midaz** (modular monolith) keys its native env by MODULE: two Postgres
+  (`DB_ONBOARDING_*`, `DB_TRANSACTION_*`) and four Mongo
+  (`MONGO_ONBOARDING_*` / `_TRANSACTION_*` / `_CRM_*` / `_FEES_*`).
+- Each instance is its own mask block: `datastore.value` per `type` sub-key
+  (`<comp>.datastores.postgresOnboarding.host`, `…mongoCrm.host`, …), one `datastore.value` call
+  per (module, field). The operator still sees a typed knob per instance; the divergent native key
+  (`DB_ONBOARDING_HOST`) is absorbed by the call's `nativeKey` and never leaks.
+
+**Native-key naming is NOT uniform across the fleet — and that is fine, because the mask hides it.**
+Services scaffolded from `go-boilerplate-ddd` + lib-commons share a de-facto standard
+(`POSTGRES_*` / `REDIS_*` / `RABBITMQ_*` / `MULTI_TENANT_REDIS_*`, ~1:1 with the canonical field),
+so the mask is nearly free there. The older core (midaz) uses the per-module `DB_<MODULE>_*` /
+`MONGO_<MODULE>_*` scheme above. Either way the OPERATOR-facing knob (`datastores.postgres.host`)
+is identical — the `nativeKey` param is where the per-app/per-module difference lives.
 
 ---
 

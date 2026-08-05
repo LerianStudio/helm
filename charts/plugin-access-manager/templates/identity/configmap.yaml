@@ -43,11 +43,19 @@ data:
   SECURE_LOG_FIELDS: {{ .Values.identity.configmap.SECURE_LOG_FIELDS | default "password,clientSecret" | quote }}
 
   # OPEN TELEMETRY
-  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.identity.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-identity" | quote }}
-  OTEL_LIBRARY_NAME: {{ .Values.identity.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/identity" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.identity.image.tag | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.identity.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  {{- include "lerian-common.otel.envFlat" (dict
+        "configmap" .Values.identity.configmap
+        "keys" (list
+          "OTEL_RESOURCE_SERVICE_NAME"
+          "OTEL_LIBRARY_NAME"
+          "OTEL_RESOURCE_SERVICE_VERSION"
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
+          "OTEL_EXPORTER_OTLP_ENDPOINT_PORT")
+        "defaults" (dict
+          "OTEL_RESOURCE_SERVICE_NAME" "plugin-identity"
+          "OTEL_LIBRARY_NAME" "github.com/LerianStudio/identity"
+          "OTEL_RESOURCE_SERVICE_VERSION" .Values.identity.image.tag
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "dev")) | nindent 2 }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }} 
   ENABLE_TELEMETRY: {{ .Values.identity.configmap.ENABLE_TELEMETRY | default "true" | quote }}
   # REDIS

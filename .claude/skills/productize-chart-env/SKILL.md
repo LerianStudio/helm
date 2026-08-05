@@ -114,8 +114,14 @@ raise it so lerian-common gains the helper first. Confirm the lib version in the
 
 ## Domain map (cross-cutting → lerian-common helper + global block)
 
+**The closed dependency vocabulary — the STANDARD — lives in `references/dependency-contract.md`:
+the full table (per domain: helper, `global.*` block, per-component knob, secrets), the
+object-storage gap, and the rule for adding a new domain (extend lerian-common, never a per-chart
+knob). Read it — it is what makes "knob IFF it matches a declared dependency domain" mechanical
+instead of per-app judgment.** The quick table below is a summary; the contract is canonical.
+
 Current at time of writing — **verify against Step 0**, the introspection is the source of truth.
-These ALWAYS go to a helper (never cfgValue) — that is where `global.*` env-wide config lives.
+These ALWAYS go to a helper (never a passthrough) — that is where `global.*` env-wide config lives.
 The helpers already exist; you are only WIRING them.
 
 | .env prefix | helper | global block | notes |

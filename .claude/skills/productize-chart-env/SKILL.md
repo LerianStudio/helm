@@ -13,8 +13,18 @@ description: >-
 
 ## Premise (non-negotiable)
 
-The app's **`config/.env.example` is the authority** — NOT the chart's prior render. Every
-ACTIVE env var must be COVERED (settable + defaulted), but coverage is TIERED — a typed knob is
+The **app's config is the authority — NOT the chart's prior render.** Use the `config/.env.example`
+as the working surface, BUT the true authority is what the app actually READS — the config struct
+(`config.go` / `config.ts` / `LoadConfig`). The `.env.example` is the *documented* surface and can
+LAG the struct (real example: `STREAMING_SASL_MECHANISM` is read by the app + emitted by the
+streaming helper but absent from br-ccs's `.env.example`). So: cross-check the `.env.example`
+against the config struct, and never let a missing `.env` line hide a key the app reads — this is
+exactly why the schema allowlist unions the `.env` keys with the chart's RENDERED keys (Step 8) and
+why `coverage.py` FAILS on a struct/emitted key that the surface misses. (Aligns with
+`ring-dev-team:creating-helm-charts`, which measures coverage against the config struct, not the
+example file.)
+
+Every ACTIVE env var must be COVERED (settable + defaulted), but coverage is TIERED — a typed knob is
 NOT the goal for every key. **Reserve typed knobs for DEPENDENCY CONNECTIONS; everything else is
 an escape-hatch passthrough with the default in the template.**
 

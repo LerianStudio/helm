@@ -80,7 +80,8 @@ streamingHub:
     pullPolicy: IfNotPresent
     # -- Image tag. Empty falls back to Chart.appVersion via the defaultTag helper.
     tag: ""
-  # -- Secrets for pulling the image from a private registry.
+  # -- (list) Secrets for pulling the image from a private registry.
+  # @default -- [{name: ghcr-credential}]
   imagePullSecrets:
     - name: ghcr-credential
   # -- Number of old ReplicaSets to retain for rollback.
@@ -89,7 +90,7 @@ streamingHub:
   annotations: {}
   # -- Annotations applied to every pod.
   podAnnotations: {}
-  # -- Deployment update strategy (shared by all roles).
+  # -- (object) Deployment update strategy (shared by all roles).
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
@@ -97,7 +98,7 @@ streamingHub:
       maxUnavailable: 0
   # -- Pod-level security context. Empty by default (the hub needs no fsGroup).
   podSecurityContext: {}
-  # -- Container-level security context (distroless:nonroot, uid/gid 65532).
+  # -- (object) Container-level security context (distroless:nonroot, uid/gid 65532).
   securityContext:
     # -- Group ID for the process inside the container.
     runAsGroup: 65532
@@ -158,14 +159,14 @@ streamingHub:
   #    preStop hook is used — the hub self-drains on SIGTERM (PID 1 receives it
   #    directly; exec-form ENTRYPOINT).
   terminationGracePeriodSeconds: 80
-  # -- Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).
+  # -- (object) Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).
   livenessProbe:
     initialDelaySeconds: 15
     periodSeconds: 20
     timeoutSeconds: 5
     successThreshold: 1
     failureThreshold: 3
-  # -- Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM).
+  # -- (object) Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM).
   readinessProbe:
     initialDelaySeconds: 10
     periodSeconds: 10
@@ -176,8 +177,6 @@ streamingHub:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-  # -- Extra non-sensitive env vars injected on every Deployment (list of {name,value}).
-  extraEnvVars: []
   # ===========================================================================
   # telemetry — CHART-LEVEL OTEL wiring toggle (NOT an app env var; never shipped
   # to the container). When enabled, each Deployment injects HOST_IP via the
@@ -211,7 +210,7 @@ streamingHub:
   # blocks below): STREAMING_HUB_ROLE, STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS,
   # STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS, STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME.
   # ===========================================================================
-  # -- Native per-key escape hatch (highest precedence). Any UPPER_SNAKE app env
+  # -- (object) Native per-key escape hatch (highest precedence). Any UPPER_SNAKE app env
   #    var can be pinned here verbatim, overriding the grouped field + default.
   common:
     configmap: {}
@@ -328,7 +327,7 @@ streamingHub:
     annotations: {}
     # -- Extra annotations on the migration pod.
     podAnnotations: {}
-    # -- Resource requests/limits for the migration container.
+    # -- (object) Resource requests/limits for the migration container.
     resources:
       limits:
         cpu: 250m
@@ -424,6 +423,3 @@ streamingHub:
     nodeSelector: {}
     tolerations: []
     affinity: {}
-streaming-hub:
-  image:
-    tag: 1.0.1

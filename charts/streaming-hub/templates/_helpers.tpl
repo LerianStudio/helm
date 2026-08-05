@@ -42,7 +42,11 @@ Used by every per-role Deployment/Service/HPA/PDB so the three role variants
 never collide on a name.
 */}}
 {{- define "streaming-hub.componentFullname" -}}
-{{- $fullname := include "streaming-hub.fullname" .context -}}
+{{- /* Truncate the base to 54 BEFORE appending "-<component>" so the component
+       suffix (longest: "delivery"=8, plus the "-") always survives the 63-char cap.
+       Appending first and truncating the whole would drop/shorten the suffix for a
+       long fullname, letting ingest/delivery collide on one name. */ -}}
+{{- $fullname := include "streaming-hub.fullname" .context | trunc 54 | trimSuffix "-" -}}
 {{- printf "%s-%s" $fullname .component | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 

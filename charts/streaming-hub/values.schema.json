@@ -263,16 +263,14 @@
           "description": "Shared default scheduling (per-role blocks may override)."
         },
         "tolerations": {
-          "type": "array"
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
         },
         "affinity": {
           "type": "object",
           "additionalProperties": true
-        },
-        "extraEnvVars": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Unmodeled extra env vars appended verbatim to the ConfigMap."
         },
         "telemetry": {
           "type": "object",
@@ -294,6 +292,11 @@
           "type": "object",
           "additionalProperties": true,
           "description": "Native per-key escape hatch (highest precedence). Any UPPER_SNAKE app env"
+        },
+        "extraEnvVars": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Unmodeled extra env vars appended verbatim to the ConfigMap."
         },
         "app": {
           "type": "object",
@@ -784,7 +787,10 @@
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "array"
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
             },
             "affinity": {
               "type": "object",
@@ -878,7 +884,10 @@
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "array"
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
             },
             "affinity": {
               "type": "object",
@@ -972,26 +981,14 @@
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "array"
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
             },
             "affinity": {
               "type": "object",
               "additionalProperties": true
-            }
-          },
-          "additionalProperties": true
-        }
-      },
-      "additionalProperties": true
-    },
-    "streaming-hub": {
-      "type": "object",
-      "properties": {
-        "image": {
-          "type": "object",
-          "properties": {
-            "tag": {
-              "default": "1.0.1"
             }
           },
           "additionalProperties": true

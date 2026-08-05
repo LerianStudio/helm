@@ -85,12 +85,6 @@ spec:
               value: {{ $cfg.poolMaxOpenConns | quote }}
             - name: STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS
               value: {{ $cfg.poolMaxIdleConns | quote }}
-            {{- with $sh.extraEnvVars }}
-            {{- range . }}
-            - name: {{ .name }}
-              value: {{ .value | quote }}
-            {{- end }}
-            {{- end }}
             {{- if $sh.telemetry.enabled }}
             # OTEL endpoint is overridden per-pod via the node host IP (DaemonSet
             # collector pattern). Gated on the CHART-level streamingHub.telemetry.enabled.

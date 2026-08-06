@@ -20,6 +20,10 @@
       "type": "object",
       "additionalProperties": true
     },
+    "aws": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "podSecurityContext": {
       "type": "object",
       "additionalProperties": true

@@ -49,6 +49,56 @@ serviceAccount:
   # -- Use an existing ServiceAccount by name instead of creating one
   name: ""
 
+# -- AWS credential source for the multi-tenant M2M path, which resolves each
+# tenant's Midaz / CRM / JD credentials from Secrets Manager at runtime.
+#
+# TWO MUTUALLY EXCLUSIVE OPTIONS — pick by cluster, never enable both:
+#
+#   EKS            -> IRSA. Leave rolesAnywhere.enabled=false and put the role ARN
+#                     in serviceAccount.annotations["eks.amazonaws.com/role-arn"].
+#                     The EKS webhook injects the credentials; nothing else needed.
+#   anywhere else  -> IAM Roles Anywhere (below). IRSA does not exist off EKS, so an
+#                     aws-signing-helper sidecar trades an X.509 client certificate
+#                     for temporary credentials and serves them on a loopback IMDS
+#                     endpoint that the AWS SDK inside the app picks up.
+#
+# Enabling this adds a sidecar to BOTH the api and the worker pods, mounts the
+# certificate Secret read-only, and forces the pod fsGroup to 65532 so the sidecar
+# can read it. The certificate itself is NOT created by this chart — provision it
+# (cert-manager or otherwise) into a Secret with tls.crt / tls.key keys.
+aws:
+  rolesAnywhere:
+    # -- Enable the aws-signing-helper sidecar. Keep false on EKS.
+    enabled: false
+    # -- Required when enabled; the render fails without them.
+    trustAnchorArn: ""
+    profileArn: ""
+    roleArn: ""
+    # -- Region the credentials are minted in.
+    region: "us-east-2"
+    # -- Credential lifetime in seconds; the helper refreshes before expiry.
+    sessionDuration: 3600
+    # -- Secret holding tls.crt / tls.key. Defaults to <fullname>-iam-tls.
+    certificateSecretName: ""
+    sidecar:
+      image:
+        # NOTE: this is the tag every sibling chart (plugin-fees, fetcher, reporter)
+        # uses, kept identical on purpose. Be aware it is BOTH floating and
+        # arch-pinned: `latest-amd64` will not schedule on arm64 nodes, and it can
+        # change under a running deployment. Pin a digest for production.
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        tag: latest-amd64
+        pullPolicy: IfNotPresent
+      # -- Loopback port the IMDS shim listens on.
+      port: 9911
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
+
 podSecurityContext:
   fsGroup: 1000
 

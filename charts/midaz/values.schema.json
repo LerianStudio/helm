@@ -517,7 +517,6 @@
               "MONGO_ONBOARDING_URI",
               "MONGO_ONBOARDING_USER",
               "MONGO_PARAMETERS",
-              "MONGO_PASSWORD",
               "MONGO_PORT",
               "MONGO_TLS_CA_CERT",
               "MONGO_TRANSACTION_HOST",
@@ -550,6 +549,7 @@
               "OPENAPI_DOCS_ENABLED",
               "OTEL_EXPORTER_OTLP_ENDPOINT",
               "OTEL_EXPORTER_OTLP_ENDPOINT_PORT",
+              "OTEL_EXPORTER_OTLP_INSECURE",
               "OTEL_LIBRARY_NAME",
               "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
               "OTEL_RESOURCE_SERVICE_NAME",
@@ -680,6 +680,7 @@
               "TRACER_TLS_MODE",
               "TRACER_TRANSPORT",
               "TRANSACTION_ROUTE_VALIDATION",
+              "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
               "VERSION"
             ]
@@ -693,7 +694,9 @@
           "default": ""
         },
         "extraEnvVars": {
-          "$comment": "open hatch: list of {name,value} or a map; type unconstrained"
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Extra environment variables"
         },
         "secrets": {
           "type": "object",
@@ -1110,7 +1113,6 @@
               "MONGO_ONBOARDING_URI",
               "MONGO_ONBOARDING_USER",
               "MONGO_PARAMETERS",
-              "MONGO_PASSWORD",
               "MONGO_PORT",
               "MONGO_TLS_CA_CERT",
               "MONGO_TRANSACTION_HOST",
@@ -1143,6 +1145,7 @@
               "OPENAPI_DOCS_ENABLED",
               "OTEL_EXPORTER_OTLP_ENDPOINT",
               "OTEL_EXPORTER_OTLP_ENDPOINT_PORT",
+              "OTEL_EXPORTER_OTLP_INSECURE",
               "OTEL_LIBRARY_NAME",
               "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
               "OTEL_RESOURCE_SERVICE_NAME",
@@ -1273,13 +1276,16 @@
               "TRACER_TLS_MODE",
               "TRACER_TRANSPORT",
               "TRANSACTION_ROUTE_VALIDATION",
+              "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
               "VERSION"
             ]
           }
         },
         "extraEnvVars": {
-          "$comment": "open hatch: list of {name,value} or a map; type unconstrained"
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Extra environment variables"
         },
         "secrets": {
           "type": "object",
@@ -1791,7 +1797,6 @@
               "MONGO_ONBOARDING_URI",
               "MONGO_ONBOARDING_USER",
               "MONGO_PARAMETERS",
-              "MONGO_PASSWORD",
               "MONGO_PORT",
               "MONGO_TLS_CA_CERT",
               "MONGO_TRANSACTION_HOST",
@@ -1824,6 +1829,7 @@
               "OPENAPI_DOCS_ENABLED",
               "OTEL_EXPORTER_OTLP_ENDPOINT",
               "OTEL_EXPORTER_OTLP_ENDPOINT_PORT",
+              "OTEL_EXPORTER_OTLP_INSECURE",
               "OTEL_LIBRARY_NAME",
               "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
               "OTEL_RESOURCE_SERVICE_NAME",
@@ -1954,13 +1960,16 @@
               "TRACER_TLS_MODE",
               "TRACER_TRANSPORT",
               "TRANSACTION_ROUTE_VALIDATION",
+              "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
               "VERSION"
             ]
           }
         },
         "extraEnvVars": {
-          "$comment": "open hatch: list of {name,value} or a map; type unconstrained"
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Extra environment variables"
         },
         "secrets": {
           "type": "object",

@@ -310,7 +310,7 @@ ledger:
   useExistingSecret: false
   existingSecretName: ""
   # -- Extra environment variables
-  extraEnvVars: []
+  extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # @default -- templates/ledger/secrets.yaml
   secrets:

@@ -1,0 +1,98 @@
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "worker") }}
+  namespace: {{ include "plugin-br-pix-jd.namespace" $ }}
+  labels:
+    {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "worker") | nindent 4 }}
+  {{- with (include "plugin-br-pix-jd.commonAnnotations" (dict "root" $)) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  revisionHistoryLimit: {{ .Values.worker.revisionHistoryLimit }}
+  {{- /* Recreate, not RollingUpdate: every job takes a cross-replica Postgres advisory
+     lock, so two overlapping workers during a rollout contend for the same locks with
+     nothing to gain. There is no availability target to protect either — a cron tick
+     missed during a 10-second rollout is picked up by the next tick. */}}
+  strategy:
+    type: {{ .Values.worker.deploymentStrategy.type }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-pix-jd.componentSelectorLabels" (dict "root" $ "name" "worker") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/worker/configmap.yaml") . | sha256sum }}
+        {{- if include "plugin-br-pix-jd.rendersOwnSecret" (dict "comp" .Values.worker) }}
+        checksum/secret: {{ include (print $.Template.BasePath "/worker/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with (include "plugin-br-pix-jd.commonAnnotations" (dict "root" $)) }}
+        {{- . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "worker") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "plugin-br-pix-jd.serviceAccountName" . }}
+      {{- with (.Values.worker.imagePullSecrets | default (.Values.api.imagePullSecrets | default (.Values.global).imagePullSecrets)) }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- /* Above the lib-streaming close timeout, same coupling as the api: the worker
+         publishes lifecycle events through the outbox relay too. */}}
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      {{- /* Wait for Postgres but do NOT migrate here. The api pod owns the migration
+         (one migrator is enough, and golang-migrate would serialize a second one on its
+         advisory lock for no benefit). Waiting still matters: without it a cold
+         StatefulSet makes the worker crashloop until Postgres accepts connections. */}}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ (.Values.migrations | default dict).waitImage | default "busybox:1.36" | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              until nc -z {{ include "plugin-br-pix-jd.postgresHost" . }} {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_PORT" "default" "5432") }}; do
+                echo "postgres not ready, waiting..."; sleep 3;
+              done
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+      containers:
+        - name: worker
+          image: {{ include "plugin-br-pix-jd.componentImage" (dict "root" $ "comp" (dict "image" (dict "repository" (.Values.worker.image.repository | default .Values.api.image.repository) "tag" (.Values.worker.image.tag | default .Values.api.image.tag)))) | quote }}
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy | default .Values.api.image.pullPolicy }}
+          {{- /* THE ONLY DIFFERENCE FROM THE API. Same image, second entry point — the
+             pattern the plugin's own Dockerfile.smoke and docker-compose.smoke.yml
+             already use, precisely so the two processes can never come from different
+             builds. `command` overrides the image ENTRYPOINT (/service). */}}
+          command: ["/worker"]
+          {{- /* No ports and no probes: cmd/worker exposes no HTTP surface, so an
+             httpGet probe would fail forever and a tcpSocket probe would have nothing
+             to connect to. Liveness for a cron process is its own exit. */}}
+          envFrom:
+            - configMapRef:
+                name: {{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "worker") }}
+            - secretRef:
+                name: {{ include "plugin-br-pix-jd.componentSecretName" (dict "root" $ "name" "worker" "comp" .Values.worker) }}
+          env:
+            {{- include "plugin-br-pix-jd.dbPasswordEnv" . | nindent 12 }}
+            {{- with .Values.worker.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.worker.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if or .Values.worker.nodeSelector .Values.worker.affinity .Values.worker.tolerations }}
+      {{- include "lerian-common.scheduling" .Values.worker | nindent 6 }}
+      {{- end }}
+{{- end }}

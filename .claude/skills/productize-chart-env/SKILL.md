@@ -71,10 +71,13 @@ Top-level tiers:
    `serviceDiscovery`, `streaming`, plus k8s-infra `imageRegistry` / `imagePullSecrets` / `commonLabels`.
 2. **One `<componentName>:` block PER INDEPENDENT DEPLOYMENT.** `componentName` = the deployment's
    name in **camelCase, NO hyphen** (`brCcs`, `brSta`, `worker`) — access via `.Values.brSta`,
-   NEVER `index .Values "br-sta"`. Holds that deployment's cfgValue config groups (`redis`,
-   `rateLimit`, …), `datastores` (DEDICATED mask), `externalXDefinitions` (our bootstrap-for-external
-   deps), `image`/`service`/`resources`/`replicaCount`/`ingress` (k8s), `configmap: {}` (escape hatch),
-   `extraEnvVars`, `secrets`. Example: br-ccs → `brCcs:`; br-sta → `brSta:` + `worker:`.
+   NEVER `index .Values "br-sta"`. Holds that deployment's DEPENDENCY masks/toggles only —
+   `datastores` (DEDICATED mask), `multiTenant`/`serviceDiscovery`/`streaming` toggles,
+   `externalXDefinitions` (bootstrap-for-external) — plus `configmap: {}` (the escape hatch where
+   ALL non-dependency app config is overridden), `extraEnvVars`, `image`/`service`/`resources`/
+   `replicaCount`/`ingress` (k8s), `secrets`. **NO `<comp>.<group>` cfgValue blocks** (rateLimit/
+   outbox/swagger/…): under the tiered model those are passthrough with the default in the template,
+   reached via `configmap.<KEY>`. Example: br-ccs → `brCcs:`; br-sta → `brSta:` + `worker:`.
 3. **Subchart dependencies** (`postgresql`/`valkey`/`rabbitmq`/…): Helm REQUIRES subchart values at
    the ROOT under the subchart name — they CANNOT be nested (Helm passes `.Values.postgresql` to the
    `postgresql` subchart by name). Group them visually with a `# --- dependencies ---` comment. Our
@@ -142,7 +145,8 @@ The helpers already exist; you are only WIRING them.
 | `SD_*` | `serviceDiscovery.env` or `.envFlat` | `global.serviceDiscovery` | envFlat (flat passthrough) is the simplest for a consumer chart |
 | `STREAMING_*` | `streaming.env` + `streaming.secret` | `global.streaming` | full SASL/broker contract; `STREAMING_SASL_PASSWORD` is a secret |
 | `PLUGIN_AUTH_*` | `globalValue` (block `auth`) | `global.auth` | ENABLED always; HOST emitted only when non-empty |
-| `OBJECT_STORAGE_*` (endpoint/region/bucket) | small typed mask under `<comp>.objectStorage` | — | S3/SeaweedFS IS a dependency connection → knob by NATURE even though the lib has no helper yet; access/secret keys go to `secrets`. Raise a lerian-common gap to add a real `objectStorage` mask helper. |
+| `OBJECT_STORAGE_*` (endpoint/region/bucket) | `objectStorage.value` mask (**lerian-common ≥1.5.0**) | `global.objectStorage.<name>` / `<comp>.objectStorage.<name>` | S3/SeaweedFS dependency; access/secret keys → `secrets`. On charts pinned to **1.4.0** the helper is unavailable → keep the keys as escape-hatch passthrough with a `# TODO 1.5.0` note, wire the mask when the pin bumps. |
+| `KMS_*` (Vault) | `kms.value` mask (**lerian-common ≥1.5.0**) | `global.kms` / `<comp>.kms` | Envelope-encryption dependency; `KMS_VAULT_SECRET_ID` → `secrets` (fail-fast when vendor=hashicorp-vault). Same 1.4.0 → escape-hatch rule as object storage. |
 
 Everything NOT in this map is **passthrough config** (rate-limit, outbox, swagger, cors, pagination,
 probes, timeouts, retention, pool/client tuning, service-specific knobs) → `{{ $cm.KEY | default
@@ -183,8 +187,10 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
      `{{ $cm.KEY | default "<.env value>" | quote }}`. No group var, no `<comp>.<group>` block.
      Keep any `{{- if ... }}` / `range` conditional exactly. This is 80–90% of the keys.
    - **Dependency knob:** wire the domain helper/mask (Step 4) for db/cache/broker/streaming/SD/
-     MT/auth; for object storage add a small typed `<comp>.objectStorage` mask (endpoint/region/
-     bucket). Use `cfgValue` ONLY when a dependency knob genuinely needs the
+     MT/auth, and — on lerian-common **≥1.5.0** — `objectStorage.value` / `kms.value` for object
+     storage / KMS. On a chart still pinned to **1.4.0** those two helpers do not exist: leave
+     `OBJECT_STORAGE_*` / `KMS_*` as escape-hatch passthrough with a `# TODO 1.5.0` note and wire
+     them when the pin bumps. Use `cfgValue` ONLY when a dependency knob genuinely needs the
      `configmap.<KEY>` › knob › default precedence (rare — e.g. a toggle the fixture drives).
    - Carry any value that DIFFERED from the template default into the passthrough `| default "X"`
      (Rule 3) — e.g. br-ccs `OBJECT_STORAGE_*_BUCKET` shipped real bucket names, so
@@ -323,6 +329,22 @@ ConfigMaps are all included) and reconciles emitted keys vs the `.env`:
 Emit a **coverage report** at the end: N config / N secret / N helper / N datastore / gaps list.
 For any judgment call the heuristics were unsure about, print `REVIEW: <key> classified as <kind>`
 so the human confirms in the PR — the skill proposes, the reviewer decides.
+
+### Known limitations of the checks (deferred, by design)
+- **`coverage.py` treats a plain gap as a WARN, not a hard FAIL** (only a `helper-not-wired` domain
+  gap fails). This is deliberate for the tiered model: a non-dependency key the chart does not emit
+  is legitimate when the app internally defaults it and it is in the schema allowlist (settable via
+  `configmap.<KEY>`) — e.g. the tracer keys midaz never emitted. Hard-failing would forbid the
+  byte-identity-preserving conversions. Gaps are printed so the human triages them in the PR.
+- **`coverage.py` secret coverage is name-based** — it confirms a `*_PASSWORD`/`*_SECRET` key is
+  classified secret, not that a `secrets.yaml` template actually maps it into `Secret.data`. Verify
+  wiring by eye when adding a new secret. (Rendering-and-grepping the Secret is a future hardening.)
+- **`gen-schema.py` leaves the dependency-mask blocks OPEN** (`datastores.<type>`,
+  `objectStorage.<name>`, `kms`) — a mask-field typo (`datastores.postgres.buket`) is NOT caught, it
+  silently falls to the default. The masks ship EMPTY (`{}`, operator-filled), so the generic
+  values-driven generator can't enumerate their fields without hardcoding the lerian-common contract
+  into it. Typo protection lives on the finite `configmap` `propertyNames.enum` instead; closing the
+  masks with contract-defined field sets is deferred. (Matches the midaz/br-* schemas.)
 
 ## Output
 

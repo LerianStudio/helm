@@ -97,7 +97,9 @@ def parse(values_path):
             pending_desc, pending_type, pending_default = [], None, None
             continue
         if pending_desc:
-            typ = pending_type or infer_type(val)
+            # An annotated key with no inline value is a mapping/parent (children follow) →
+            # type "object", matching the "{}" default below (not "string" from an empty val).
+            typ = pending_type or (infer_type(val) if val.strip() else "object")
             default = pending_default if pending_default is not None else (val if val.strip() else "{}")
             desc = " ".join(pending_desc).strip()
             rows.append((section, path, typ, default, desc))

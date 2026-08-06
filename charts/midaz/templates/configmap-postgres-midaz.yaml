@@ -3,5 +3,8 @@ kind: ConfigMap
 metadata:
   name: midaz-init-sql
 data:
+  {{- /* Rendered through tpl so the tracer database it creates tracks
+         tracer.configmap.DB_NAME, the same name the external bootstrap Job,
+         the tracer Deployment and its migration Job use. */}}
   init.sql: |
-{{ (.Files.Get "files/midaz/init.sql") | indent 4 }}
+{{ tpl (.Files.Get "files/midaz/init.sql") . | indent 4 }}

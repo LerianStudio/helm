@@ -19,8 +19,23 @@ tracks progress in the schema_migrations table.
 {{- $pgAuth := $pg.auth | default dict }}
 {{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
 {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
-{{- $dbHost := $cm.DB_ONBOARDING_HOST | default "midaz-postgresql-primary" }}
-{{- $dbPort := $cm.DB_ONBOARDING_PORT | default "5432" }}
+{{- /* Resolve DB connection through the SAME datastore masks the ledger ConfigMap uses, so an
+   operator who sets global/ledger.datastores.postgres{Onboarding,Transaction} migrates the SAME
+   host/db the app then connects to — not the hardcoded midaz-postgresql-primary default. */ -}}
+{{- $dsl := .Values.ledger.datastores }}
+{{- $dv := "lerian-common.datastore.value" }}
+{{- $onbHost := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "host" "nativeKey" "DB_ONBOARDING_HOST" "default" "midaz-postgresql-primary") }}
+{{- $onbPort := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "port" "nativeKey" "DB_ONBOARDING_PORT" "default" "5432") }}
+{{- $onbName := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "name" "nativeKey" "DB_ONBOARDING_NAME" "default" "onboarding") }}
+{{- $onbUser := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "user" "nativeKey" "DB_ONBOARDING_USER" "default" "midaz") }}
+{{- $onbSsl := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "ssl" "nativeKey" "DB_ONBOARDING_SSLMODE" "default" "disable") }}
+{{- $txHost := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "host" "nativeKey" "DB_TRANSACTION_HOST" "default" $onbHost) }}
+{{- $txPort := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") }}
+{{- $txName := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") }}
+{{- $txUser := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") }}
+{{- $txSsl := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") }}
+{{- $dbHost := $onbHost }}
+{{- $dbPort := $onbPort }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -92,21 +107,21 @@ spec:
             - name: DB_ONBOARDING_PORT
               value: {{ $dbPort | quote }}
             - name: DB_ONBOARDING_NAME
-              value: {{ $cm.DB_ONBOARDING_NAME | default "onboarding" | quote }}
+              value: {{ $onbName | quote }}
             - name: DB_ONBOARDING_USER
-              value: {{ $cm.DB_ONBOARDING_USER | default "midaz" | quote }}
+              value: {{ $onbUser | quote }}
             - name: DB_ONBOARDING_SSLMODE
-              value: {{ $cm.DB_ONBOARDING_SSLMODE | default "disable" | quote }}
+              value: {{ $onbSsl | quote }}
             - name: DB_TRANSACTION_HOST
-              value: {{ $cm.DB_TRANSACTION_HOST | default $dbHost | quote }}
+              value: {{ $txHost | quote }}
             - name: DB_TRANSACTION_PORT
-              value: {{ $cm.DB_TRANSACTION_PORT | default "5432" | quote }}
+              value: {{ $txPort | quote }}
             - name: DB_TRANSACTION_NAME
-              value: {{ $cm.DB_TRANSACTION_NAME | default "transaction" | quote }}
+              value: {{ $txName | quote }}
             - name: DB_TRANSACTION_USER
-              value: {{ $cm.DB_TRANSACTION_USER | default "midaz" | quote }}
+              value: {{ $txUser | quote }}
             - name: DB_TRANSACTION_SSLMODE
-              value: {{ $cm.DB_TRANSACTION_SSLMODE | default "disable" | quote }}
+              value: {{ $txSsl | quote }}
             {{/* Same single-source rule as the ledger Deployment: the bundled
                  PostgreSQL Secret when internal, the ledger Secret when external. */}}
             {{- if $pgInternal }}

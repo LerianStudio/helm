@@ -17,7 +17,7 @@ spec:
       protocol: TCP
       name: http
     {{- if .Values.tracer.configmap.TRACER_GRPC_PORT }}
-    - port: {{ .Values.tracer.service.grpcPort | default 4021 }}
+    - port: {{ include "midaz-tracer.grpcPort" . }}
       targetPort: grpc
       protocol: TCP
       name: grpc

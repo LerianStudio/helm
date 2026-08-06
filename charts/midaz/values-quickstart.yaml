@@ -65,9 +65,11 @@ ledger:
     RABBITMQ_DEFAULT_PASS: "CHANGE_ME"
     RABBITMQ_CONSUMER_PASS: "CHANGE_ME"
     # -- CRM holder-PII crypto keys. REQUIRED for midaz 4.x ledger images when
-    #    KMS_VENDOR=none; hex-encoded AES key (32/48/64 hex chars).
-    # LCRYPTO_HASH_SECRET_KEY: "CHANGE_ME"
-    # LCRYPTO_ENCRYPT_SECRET_KEY: "CHANGE_ME"
+    #    KMS_VENDOR=none (the default). Hex-encoded AES key — regenerate with
+    #    `openssl rand -hex 32`; the all-zero value below is a placeholder so the
+    #    documented `helm install` renders — CHANGE IT before any real deploy.
+    LCRYPTO_HASH_SECRET_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
     # -- Only for EXTERNAL infra (subchart disabled / .external=true):
     # DB_ONBOARDING_PASSWORD: "CHANGE_ME"
     # MONGO_ONBOARDING_PASSWORD: "CHANGE_ME"

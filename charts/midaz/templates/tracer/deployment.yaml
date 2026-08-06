@@ -64,7 +64,7 @@ spec:
             {{/* TRACER_GRPC_PORT is a listen address (":4021"); the container port is
                  its numeric half, kept in sync with the Service via service.grpcPort. */}}
             - name: grpc
-              containerPort: {{ .Values.tracer.service.grpcPort | default 4021 }}
+              containerPort: {{ include "midaz-tracer.grpcPort" . }}
               protocol: TCP
             {{- end }}
           envFrom:

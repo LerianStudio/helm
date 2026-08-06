@@ -35,7 +35,12 @@ data:
   {{- end }}
 
   # PostgreSQL Database (host/user/port/ssl via lerian-common datastore mask)
-  DB_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" (include "midaz-tracer.dbHost" .)) | quote }}
+  {{- /* Resolve host through the mask FIRST (tracer.datastores.postgres.host › global.datastores.postgres
+     › configmap.DB_HOST › bundled primary). fail ONLY if the resolved host is empty — the old default
+     `include "midaz-tracer.dbHost"` was evaluated eagerly and failed even when the mask supplied a host. */ -}}
+  {{- $tracerDbHost := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" (include "midaz.postgresqlPrimaryHost" .)) -}}
+  {{- if not $tracerDbHost }}{{- fail "tracer Postgres host is required when PostgreSQL is external: set tracer.datastores.postgres.host, global.datastores.postgres.host, or tracer.configmap.DB_HOST" -}}{{- end }}
+  DB_HOST: {{ $tracerDbHost | quote }}
   DB_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
   DB_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "tracer") | quote }}
   DB_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "midaz") | quote }}

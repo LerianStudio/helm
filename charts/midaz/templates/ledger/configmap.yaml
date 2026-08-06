@@ -34,7 +34,7 @@ data:
   # =============================================================================
   SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "" | quote }}
   SWAGGER_DESCRIPTION: {{ $cm.SWAGGER_DESCRIPTION | default "" | quote }}
-  SWAGGER_VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
+  SWAGGER_VERSION: {{ $cm.SWAGGER_VERSION | default (.Values.ledger.image.tag | default .Chart.AppVersion) | quote }}
   SWAGGER_HOST: {{ $cm.SWAGGER_HOST | default "" | quote }}
   SWAGGER_BASE_PATH: {{ $cm.SWAGGER_BASE_PATH | default "" | quote }}
   SWAGGER_SCHEMES: {{ $cm.SWAGGER_SCHEMES | default "" | quote }}
@@ -354,7 +354,6 @@ data:
   # CASDOOR
   # =============================================================================
   CASDOOR_JWK_ADDRESS: {{ $cm.CASDOOR_JWK_ADDRESS | default "" | quote }}
-  SWAGGER_VERSION: {{ $cm.SWAGGER_VERSION | default "${VERSION}" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

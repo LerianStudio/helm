@@ -406,6 +406,7 @@
           "description": "Escape hatch: any native env var (e.g. DB_ONBOARDING_MAX_OPEN_CONNS) overrides the template default.",
           "propertyNames": {
             "enum": [
+              "ACCOUNT_TYPE_VALIDATION",
               "AGGRESSIVE_RATE_LIMIT_MAX",
               "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
               "ALLOW_INSECURE_TLS",
@@ -1098,6 +1099,7 @@
           "description": "Escape hatch: any native env var overrides the template default.",
           "propertyNames": {
             "enum": [
+              "ACCOUNT_TYPE_VALIDATION",
               "AGGRESSIVE_RATE_LIMIT_MAX",
               "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
               "ALLOW_INSECURE_TLS",

@@ -18,8 +18,18 @@ the schema_migrations table, not on disk.
 {{- $pgAuth := $pg.auth | default dict }}
 {{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
 {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
-{{- $dbHost := include "midaz-tracer.dbHost" . }}
-{{- $dbPort := $cm.DB_PORT | default "5432" }}
+{{- /* Resolve DB connection through the SAME datastore mask the tracer ConfigMap uses, so an
+   operator who sets tracer.datastores.postgres.{host,name,...} migrates the SAME db the app then
+   connects to. Host via mask first, fail only if the resolved host is empty (the old
+   midaz-tracer.dbHost default was evaluated eagerly and failed even when the mask supplied one). */ -}}
+{{- $dst := .Values.tracer.datastores }}
+{{- $dvt := "lerian-common.datastore.value" }}
+{{- $dbHost := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" (include "midaz.postgresqlPrimaryHost" .)) }}
+{{- if not $dbHost }}{{- fail "tracer Postgres host is required when PostgreSQL is external: set tracer.datastores.postgres.host, global.datastores.postgres.host, or tracer.configmap.DB_HOST" -}}{{- end }}
+{{- $dbPort := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") }}
+{{- $dbName := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "tracer") }}
+{{- $dbUser := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "midaz") }}
+{{- $dbSsl := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSL_MODE" "default" "disable") }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -97,11 +107,11 @@ spec:
             - name: DB_PORT
               value: {{ $dbPort | quote }}
             - name: DB_NAME
-              value: {{ $cm.DB_NAME | default "tracer" | quote }}
+              value: {{ $dbName | quote }}
             - name: DB_USER
-              value: {{ $cm.DB_USER | default "midaz" | quote }}
+              value: {{ $dbUser | quote }}
             - name: DB_SSL_MODE
-              value: {{ $cm.DB_SSL_MODE | default "disable" | quote }}
+              value: {{ $dbSsl | quote }}
             {{/* Same single-source rule as the tracer Deployment: the bundled
                  PostgreSQL Secret when internal, the tracer Secret when external. */}}
             {{- if $pgInternal }}

@@ -40,18 +40,22 @@
       "additionalProperties": false,
       "description": "Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). URL + Redis"
     },
+    "streaming": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the lib-streaming producer (STREAMING_ENABLED)"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Streaming toggle (dependency knob for STREAMING_ENABLED). Broker/SASL config"
+    },
     "datastores": {
       "type": "object",
       "additionalProperties": true,
       "description": "Dedicated datastore mask for THIS service (same fields as global.datastores;"
-    },
-    "webhookNotificationsCacheTtlSec": {
-      "type": "string",
-      "default": "60"
-    },
-    "webhookHmacSecretFile": {
-      "type": "string",
-      "default": ""
     },
     "image": {
       "type": "object",
@@ -297,615 +301,327 @@
     "configmap": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Raw ConfigMap env-var escape hatch (configmap.data). The clean grouped API is"
-    },
-    "app": {
-      "type": "object",
+      "description": "PRIMARY override surface: the raw ConfigMap env-var escape hatch. Every",
       "properties": {
-        "awsAccessKeyId": {
-          "default": ""
-        },
-        "awsRegion": {
-          "default": "us-east-2"
-        },
-        "envName": {
-          "default": "production"
-        },
-        "idempotencyRetryWindowSec": {
-          "default": "300"
-        },
-        "intakeBatchMaxLines": {
-          "default": "50000"
-        },
-        "isDevelopment": {
-          "default": "true"
-        },
-        "logLevel": {
-          "default": "info"
-        },
-        "m2mCredentialCacheTtlSec": {
-          "default": "300"
-        },
-        "maxPaginationLimit": {
-          "default": "100"
-        },
-        "maxPaginationMonthDateRange": {
-          "default": "3"
-        },
-        "mockNucleaUrl": {
-          "default": ""
-        },
-        "mqBridgeMaxDrain": {
-          "default": "16"
-        },
-        "mqBridgeTimeoutSec": {
-          "default": "10"
-        },
-        "mqBridgeUrl": {
-          "default": "http://localhost:9121"
-        },
-        "nucleaRestAllowInsecureTls": {
-          "default": "false"
-        },
-        "nucleaRestCbConsecutiveFailures": {
-          "default": "5"
-        },
-        "nucleaRestCbOpenTimeoutSec": {
-          "default": "30"
-        },
-        "nucleaRestTimeoutSec": {
-          "default": "30"
-        },
-        "rsfnConsumerAllowInsecureTls": {
-          "default": "false"
-        },
-        "rsfnConsumerCbConsecutiveFailures": {
-          "default": "5"
-        },
-        "rsfnConsumerCbOpenTimeoutSec": {
-          "default": "30"
-        },
-        "rsfnConsumerTimeoutSec": {
-          "default": "30"
-        },
-        "rsfnConsumerTransport": {
-          "default": "stub"
-        },
-        "rsfnInboundXsdValidationEnabled": {
-          "default": "true"
-        },
-        "scheduleCreditWindowClose": {
-          "default": "17:30"
-        },
-        "scheduleCreditWindowOpen": {
-          "default": "00:30"
-        },
-        "scheduleCutoffAlertLeadMin": {
-          "default": "30"
-        },
-        "scheduleD1ConfirmationCutoff": {
-          "default": "19:00"
-        },
-        "scheduleD1ConfirmationEnabled": {
-          "default": "false"
-        },
-        "scheduleDispatchEnabled": {
-          "default": "false"
-        },
-        "scheduleDispatchPageSize": {
-          "default": "1000"
-        },
-        "scheduleGridGateEnabled": {
-          "default": "false"
-        },
-        "scheduleHolidays": {
-          "default": ""
-        },
-        "scheduleRelayStatusEnabled": {
-          "default": "false"
-        },
-        "scheduleReturnPollEnabled": {
-          "default": "false"
-        },
-        "scheduleRsfnIngestEnabled": {
-          "default": "false"
-        },
-        "scheduleSilocDepositCycle1Cutoff": {
-          "default": "07:30"
-        },
-        "scheduleSilocDepositCycle2Cutoff": {
-          "default": "12:50"
-        },
-        "scheduleSilocWindowsEnabled": {
-          "default": "false"
-        },
-        "scheduleStrSettledEnabled": {
-          "default": "false"
-        },
-        "scheduleWorkerEnabled": {
-          "default": "true"
-        },
-        "scheduleWorkerIntervalSec": {
-          "default": "30"
-        },
-        "signerTimeoutSec": {
-          "default": "10"
-        },
-        "signerUrl": {
-          "default": "http://localhost:9101"
-        },
-        "xsdValidatorTimeoutSec": {
-          "default": "10"
-        },
-        "xsdValidatorUrl": {
-          "default": "http://localhost:9091"
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "propertyNames": {
+            "enum": [
+              "AGGRESSIVE_RATE_LIMIT_MAX",
+              "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+              "ALLOW_CORS_WILDCARD",
+              "ALLOW_INSECURE_TLS",
+              "ALLOW_RATELIMIT_FAIL_OPEN",
+              "ASLC_INBOUND_XSD_VALIDATION_ENABLED",
+              "AWS_ACCESS_KEY_ID",
+              "AWS_REGION",
+              "AWS_SECRET_ACCESS_KEY",
+              "AWS_SESSION_TOKEN",
+              "CGO_ENABLED",
+              "CIRCUIT_BREAKER_ENABLED",
+              "CORS_ALLOWED_HEADERS",
+              "CORS_ALLOWED_METHODS",
+              "CORS_ALLOWED_ORIGINS",
+              "CORS_ALLOW_CREDENTIALS",
+              "CORS_EXPOSE_HEADERS",
+              "DB_METRICS_INTERVAL_SEC",
+              "DEPLOYMENT_MODE",
+              "DISPATCH_DEV_RECIPIENT_CERT_PATH",
+              "E2E_APP_PORT",
+              "E2E_CABINE_EDGE_PORT",
+              "E2E_IBM_MQ_PORT",
+              "E2E_MOCK_NUCLEA_PORT",
+              "E2E_RABBITMQ_PORT",
+              "E2E_XSD_VALIDATOR_PORT",
+              "ENABLE_TELEMETRY",
+              "ENV_NAME",
+              "HTTP_BODY_LIMIT_BYTES",
+              "IDEMPOTENCY_RETRY_WINDOW_SEC",
+              "INFRA_CONNECT_TIMEOUT_SEC",
+              "INTAKE_BATCH_BULK_CHUNK_SIZE",
+              "INTAKE_BATCH_MAX_LINES",
+              "INTAKE_BATCH_SPOOL_DIR",
+              "INTAKE_BATCH_SPOOL_MAX_BYTES",
+              "IS_DEVELOPMENT",
+              "KMS_SIGNING_KEY_ARN",
+              "LICENSE_KEY",
+              "LICENSE_SERVICE_ADDRESS",
+              "LOG_LEVEL",
+              "M2M_CREDENTIAL_CACHE_TTL_SEC",
+              "M2M_TARGET_SERVICE",
+              "MAX_PAGINATION_LIMIT",
+              "MAX_PAGINATION_MONTH_DATE_RANGE",
+              "MIGRATIONS_PATH",
+              "MOCK_NUCLEA_LICENSE_KEY",
+              "MOCK_NUCLEA_LICENSE_ORG_MODE",
+              "MOCK_NUCLEA_LOG_LEVEL",
+              "MOCK_NUCLEA_ORGANIZATION_IDS",
+              "MOCK_NUCLEA_URL",
+              "MQSSLKEYR",
+              "MQ_BRIDGE_ACK_TIMEOUT_SEC",
+              "MQ_BRIDGE_ADDR",
+              "MQ_BRIDGE_ALLOW_STUB",
+              "MQ_BRIDGE_CHANNEL",
+              "MQ_BRIDGE_CONN_NAME",
+              "MQ_BRIDGE_GET_WAIT_MS",
+              "MQ_BRIDGE_MAX_BODY_BYTES",
+              "MQ_BRIDGE_MAX_DRAIN",
+              "MQ_BRIDGE_MAX_INFLIGHT",
+              "MQ_BRIDGE_MAX_INFLIGHT_PER_DESCRIPTOR",
+              "MQ_BRIDGE_MAX_MESSAGE_BYTES",
+              "MQ_BRIDGE_MQ_USER",
+              "MQ_BRIDGE_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+              "MQ_BRIDGE_PLUGIN_AUTH_ENABLED",
+              "MQ_BRIDGE_PLUGIN_AUTH_HOST",
+              "MQ_BRIDGE_QUEUE",
+              "MQ_BRIDGE_QUEUE_MANAGER",
+              "MQ_BRIDGE_RECEIVE_BUFFER_BYTES",
+              "MQ_BRIDGE_SWEEP_INTERVAL_SEC",
+              "MQ_BRIDGE_TENANT",
+              "MQ_BRIDGE_TIMEOUT_SEC",
+              "MQ_BRIDGE_TLS_CIPHER",
+              "MQ_BRIDGE_TLS_ENABLED",
+              "MQ_BRIDGE_URL",
+              "MULTI_TENANT_CACHE_TTL_SEC",
+              "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD",
+              "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC",
+              "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
+              "MULTI_TENANT_ENABLED",
+              "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+              "MULTI_TENANT_MAX_TENANT_POOLS",
+              "MULTI_TENANT_REDIS_HOST",
+              "MULTI_TENANT_REDIS_PASSWORD",
+              "MULTI_TENANT_REDIS_PORT",
+              "MULTI_TENANT_REDIS_TLS",
+              "MULTI_TENANT_SERVICE_API_KEY",
+              "MULTI_TENANT_TIMEOUT",
+              "MULTI_TENANT_URL",
+              "NUCLEA_REST_ALLOW_INSECURE_TLS",
+              "NUCLEA_REST_BASE_URL",
+              "NUCLEA_REST_CB_CONSECUTIVE_FAILURES",
+              "NUCLEA_REST_CB_OPEN_TIMEOUT_SEC",
+              "NUCLEA_REST_CLIENT_CERT_PATH",
+              "NUCLEA_REST_CLIENT_KEY_PATH",
+              "NUCLEA_REST_REQUIRE_JOSE_CERT",
+              "NUCLEA_REST_TIMEOUT_SEC",
+              "ORGANIZATION_IDS",
+              "OTEL_EXPORTER_OTLP_ENDPOINT",
+              "OTEL_LIBRARY_NAME",
+              "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+              "OTEL_RESOURCE_SERVICE_NAME",
+              "OTEL_RESOURCE_SERVICE_VERSION",
+              "OUTBOX_ALLOW_EMPTY_TENANT",
+              "OUTBOX_BATCH_SIZE",
+              "OUTBOX_DISPATCH_INTERVAL_SEC",
+              "OUTBOX_ENABLED",
+              "OUTBOX_INCLUDE_TENANT_METRICS",
+              "OUTBOX_MAX_DISPATCH_ATTEMPTS",
+              "OUTBOX_MAX_FAILED_PER_BATCH",
+              "OUTBOX_PRIORITY_EVENT_TYPES",
+              "OUTBOX_PROCESSING_TIMEOUT_SEC",
+              "OUTBOX_PUBLISH_BACKOFF_MS",
+              "OUTBOX_PUBLISH_MAX_ATTEMPTS",
+              "OUTBOX_RETRY_WINDOW_SEC",
+              "OUTBOX_TABLE_NAME",
+              "PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+              "PLUGIN_AUTH_ENABLED",
+              "PLUGIN_AUTH_HOST",
+              "POSTGRES_CONNECT_TIMEOUT_SEC",
+              "POSTGRES_CONN_MAX_IDLE_TIME_MINS",
+              "POSTGRES_CONN_MAX_LIFETIME_MINS",
+              "POSTGRES_HOST",
+              "POSTGRES_MAX_IDLE_CONNS",
+              "POSTGRES_MAX_OPEN_CONNS",
+              "POSTGRES_NAME",
+              "POSTGRES_PASSWORD",
+              "POSTGRES_PORT",
+              "POSTGRES_REPLICA_HOST",
+              "POSTGRES_REPLICA_NAME",
+              "POSTGRES_REPLICA_PASSWORD",
+              "POSTGRES_REPLICA_PORT",
+              "POSTGRES_REPLICA_SSLMODE",
+              "POSTGRES_REPLICA_USER",
+              "POSTGRES_SSLMODE",
+              "POSTGRES_USER",
+              "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK",
+              "RABBITMQ_ALLOW_INSECURE_TLS",
+              "RABBITMQ_DEFAULT_PASS",
+              "RABBITMQ_DEFAULT_USER",
+              "RABBITMQ_ENABLED",
+              "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS",
+              "RABBITMQ_HEALTH_CHECK_URL",
+              "RABBITMQ_HOST",
+              "RABBITMQ_PORT_AMQP",
+              "RABBITMQ_PORT_HOST",
+              "RABBITMQ_QUEUE",
+              "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS",
+              "RABBITMQ_URL",
+              "RABBITMQ_VHOST",
+              "RATE_LIMIT_ENABLED",
+              "RATE_LIMIT_MAX",
+              "RATE_LIMIT_WINDOW_SEC",
+              "REDIS_CA_CERT",
+              "REDIS_DB",
+              "REDIS_DIAL_TIMEOUT",
+              "REDIS_HOST",
+              "REDIS_MASTER_NAME",
+              "REDIS_MAX_RETRIES",
+              "REDIS_MAX_RETRY_BACKOFF",
+              "REDIS_MIN_IDLE_CONNS",
+              "REDIS_MIN_RETRY_BACKOFF",
+              "REDIS_PASSWORD",
+              "REDIS_POOL_SIZE",
+              "REDIS_POOL_TIMEOUT",
+              "REDIS_PROTOCOL",
+              "REDIS_READ_TIMEOUT",
+              "REDIS_TLS",
+              "REDIS_WRITE_TIMEOUT",
+              "RELAXED_RATE_LIMIT_MAX",
+              "RELAXED_RATE_LIMIT_WINDOW_SEC",
+              "RSFN_CONSUMER_ALLOW_INSECURE_TLS",
+              "RSFN_CONSUMER_BASE_URL",
+              "RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES",
+              "RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC",
+              "RSFN_CONSUMER_TIMEOUT_SEC",
+              "RSFN_CONSUMER_TRANSPORT",
+              "RSFN_INBOUND_XSD_VALIDATION_ENABLED",
+              "SCHEDULE_ANTICIPATION_DISPATCH_ENABLED",
+              "SCHEDULE_ANTICIPATION_FORWARD_ENABLED",
+              "SCHEDULE_ANTICIPATION_SETTLE_ENABLED",
+              "SCHEDULE_CANCELLATION_DISPATCH_ENABLED",
+              "SCHEDULE_CANCELLATION_FORWARD_ENABLED",
+              "SCHEDULE_CERT_EXPIRY_ENABLED",
+              "SCHEDULE_CREDIT_WINDOW_CLOSE",
+              "SCHEDULE_CREDIT_WINDOW_OPEN",
+              "SCHEDULE_CUTOFF_ALERT_LEAD_MIN",
+              "SCHEDULE_D1_CONFIRMATION_CUTOFF",
+              "SCHEDULE_D1_CONFIRMATION_ENABLED",
+              "SCHEDULE_DEBIT_DISPATCH_ENABLED",
+              "SCHEDULE_DEBIT_FORWARD_ENABLED",
+              "SCHEDULE_DISPATCH_ENABLED",
+              "SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK",
+              "SCHEDULE_DISPATCH_MAX_RECORDS",
+              "SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS",
+              "SCHEDULE_DISPATCH_PAGE_SIZE",
+              "SCHEDULE_DOMICILE_RETURN_CLOSE",
+              "SCHEDULE_DOMICILE_RETURN_OPEN",
+              "SCHEDULE_DOMICILE_RETURN_PM_CLOSE",
+              "SCHEDULE_DOMICILE_RETURN_PM_OPEN",
+              "SCHEDULE_FORWARD_ENABLED",
+              "SCHEDULE_GRID_GATE_ENABLED",
+              "SCHEDULE_HOLIDAYS",
+              "SCHEDULE_OPERATION_STUCK_ENABLED",
+              "SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC",
+              "SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC",
+              "SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC",
+              "SCHEDULE_RELAY_STATUS_ENABLED",
+              "SCHEDULE_RETURN_POLL_ENABLED",
+              "SCHEDULE_RSFN_INGEST_ENABLED",
+              "SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF",
+              "SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF",
+              "SCHEDULE_SILOC_WINDOWS_ENABLED",
+              "SCHEDULE_SPECIAL_GRADE",
+              "SCHEDULE_STR_SETTLED_ENABLED",
+              "SCHEDULE_VARREDURA_ENABLED",
+              "SCHEDULE_WORKER_ENABLED",
+              "SCHEDULE_WORKER_INTERVAL_SEC",
+              "SERVER_ADDRESS",
+              "SERVER_TLS_CERT_FILE",
+              "SERVER_TLS_KEY_FILE",
+              "SFN_BUS_PROVIDER",
+              "SFN_INGEST_ENABLED",
+              "SFN_KAFKA_BATCH_SIZE",
+              "SFN_KAFKA_BROKERS",
+              "SFN_KAFKA_GROUP_ID",
+              "SFN_KAFKA_TOPIC",
+              "SFN_STUB_BASE_URL",
+              "SFN_STUB_TIMEOUT_SEC",
+              "SIGNER_ADDR",
+              "SIGNER_AWSKMS_DEFAULT_KEY_REF",
+              "SIGNER_AWSKMS_REGION",
+              "SIGNER_MAX_BODY_BYTES",
+              "SIGNER_PKCS11_KEY_LABEL",
+              "SIGNER_PKCS11_MODULE",
+              "SIGNER_PKCS11_SLOT",
+              "SIGNER_PKCS11_TOKEN_LABEL",
+              "SIGNER_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+              "SIGNER_PLUGIN_AUTH_ENABLED",
+              "SIGNER_PLUGIN_AUTH_HOST",
+              "SIGNER_SOFTKEY_ALLOW_IN_PRODUCTION",
+              "SIGNER_SOFTKEY_PFX_PASSPHRASE",
+              "SIGNER_SOFTKEY_PFX_PATH",
+              "SIGNER_TIMEOUT_SEC",
+              "SIGNER_URL",
+              "SIGNER_VAULT_ADDR",
+              "SIGNER_VAULT_CACERT",
+              "SIGNER_VAULT_NAMESPACE",
+              "SIGNER_VAULT_TRANSIT_MOUNT",
+              "SIGNING_CUSTODY_ADAPTER",
+              "SIGNING_FAIL_CLOSED",
+              "SIGNING_REQUIRE_SIGNATURE",
+              "SPB_EMITTER_CERT_PATH",
+              "SPB_RECIPIENT_KEY_PATH",
+              "STREAMING_BATCH_LINGER_MS",
+              "STREAMING_BATCH_MAX_BYTES",
+              "STREAMING_BROKERS",
+              "STREAMING_CB_FAILURE_RATIO",
+              "STREAMING_CB_MIN_REQUESTS",
+              "STREAMING_CB_TIMEOUT_S",
+              "STREAMING_CLIENT_ID",
+              "STREAMING_CLOSE_TIMEOUT_S",
+              "STREAMING_CLOUDEVENTS_SOURCE",
+              "STREAMING_COMPRESSION",
+              "STREAMING_ENABLED",
+              "STREAMING_HEALTH_CHECK_TIMEOUT",
+              "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS",
+              "STREAMING_MAX_BUFFERED_RECORDS",
+              "STREAMING_RECORD_DELIVERY_TIMEOUT_S",
+              "STREAMING_RECORD_RETRIES",
+              "STREAMING_REQUIRED_ACKS",
+              "STREAMING_SASL_ALLOW_PLAINTEXT",
+              "STREAMING_SASL_MECHANISM",
+              "STREAMING_SASL_PASSWORD",
+              "STREAMING_SASL_USERNAME",
+              "STREAMING_TLS_ENABLED",
+              "SWAGGER_BASE_PATH",
+              "SWAGGER_DESCRIPTION",
+              "SWAGGER_ENABLED",
+              "SWAGGER_HOST",
+              "SWAGGER_LEFT_DELIM",
+              "SWAGGER_RIGHT_DELIM",
+              "SWAGGER_SCHEMES",
+              "SWAGGER_TITLE",
+              "SWAGGER_VERSION",
+              "SYSTEMPLANE_ENABLED",
+              "TENANT_RUNTIME_CONFIG_ENABLED",
+              "TLS_TERMINATED_UPSTREAM",
+              "WEBHOOK_ALLOW_PRIVATE_NETWORK",
+              "WEBHOOK_API_KEY",
+              "WEBHOOK_API_KEY_FILE",
+              "WEBHOOK_BACKOFF_BASE_SEC",
+              "WEBHOOK_CONSUME_BATCH",
+              "WEBHOOK_DELIVERY_PROVIDER",
+              "WEBHOOK_DELIVERY_TIMEOUT_SEC",
+              "WEBHOOK_HMAC_SECRET",
+              "WEBHOOK_HMAC_SECRET_FILE",
+              "WEBHOOK_MAX_ATTEMPTS",
+              "WEBHOOK_NOTIFICATIONS_BASE_URL",
+              "WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC",
+              "WEBHOOK_RETRY_BATCH",
+              "WEBHOOK_WORKER_ENABLED",
+              "WEBHOOK_WORKER_INTERVAL_SEC",
+              "XSD_MAX_BODY_BYTES",
+              "XSD_VALIDATOR_ADDR",
+              "XSD_VALIDATOR_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+              "XSD_VALIDATOR_PLUGIN_AUTH_ENABLED",
+              "XSD_VALIDATOR_PLUGIN_AUTH_HOST",
+              "XSD_VALIDATOR_TIMEOUT_SEC",
+              "XSD_VALIDATOR_URL"
+            ]
+          }
         }
-      },
-      "additionalProperties": false,
-      "description": "Grouped config API (field names in templates/configmap.yaml). Postgres/Redis/"
-    },
-    "auth": {
-      "type": "object",
-      "properties": {
-        "pluginAuthEnabled": {
-          "default": "true"
-        },
-        "pluginAuthHost": {
-          "default": ""
-        }
-      },
-      "additionalProperties": false
-    },
-    "broker": {
-      "type": "object",
-      "properties": {
-        "allowInsecureHealthCheck": {
-          "default": "false"
-        },
-        "allowInsecureTls": {
-          "default": "false"
-        },
-        "enabled": {
-          "default": "false"
-        },
-        "portHost": {
-          "default": "15672"
-        },
-        "requireHealthAllowedHosts": {
-          "default": "false"
-        },
-        "vhost": {
-          "default": "/"
-        }
-      },
-      "additionalProperties": false
-    },
-    "circuitBreaker": {
-      "type": "object",
-      "properties": {
-        "circuitBreakerEnabled": {
-          "default": "false"
-        }
-      },
-      "additionalProperties": false
-    },
-    "cors": {
-      "type": "object",
-      "properties": {
-        "allowCredentials": {
-          "default": "false"
-        },
-        "allowedHeaders": {
-          "default": "Origin,Content-Type,Accept,Authorization,X-Request-ID"
-        },
-        "allowedMethods": {
-          "default": "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-        },
-        "allowedOrigins": {
-          "default": ""
-        },
-        "exposeHeaders": {
-          "default": ""
-        }
-      },
-      "additionalProperties": false
-    },
-    "outbox": {
-      "type": "object",
-      "properties": {
-        "allowEmptyTenant": {
-          "default": "true"
-        },
-        "batchSize": {
-          "default": "50"
-        },
-        "dispatchIntervalSec": {
-          "default": "2"
-        },
-        "enabled": {
-          "default": "true"
-        },
-        "includeTenantMetrics": {
-          "default": "false"
-        },
-        "maxDispatchAttempts": {
-          "default": "10"
-        },
-        "maxFailedPerBatch": {
-          "default": "25"
-        },
-        "processingTimeoutSec": {
-          "default": "600"
-        },
-        "publishBackoffMs": {
-          "default": "200"
-        },
-        "publishMaxAttempts": {
-          "default": "3"
-        },
-        "retryWindowSec": {
-          "default": "300"
-        },
-        "tableName": {
-          "default": "outbox_events"
-        }
-      },
-      "additionalProperties": false
-    },
-    "postgres": {
-      "type": "object",
-      "properties": {
-        "dbMetricsIntervalSec": {
-          "default": "15"
-        },
-        "infraConnectTimeoutSec": {
-          "default": "30"
-        },
-        "migrationsPath": {
-          "default": "migrations"
-        },
-        "postgresConnMaxIdleTimeMins": {
-          "default": "5"
-        },
-        "postgresConnMaxLifetimeMins": {
-          "default": "30"
-        },
-        "postgresConnectTimeoutSec": {
-          "default": "10"
-        },
-        "postgresMaxIdleConns": {
-          "default": "5"
-        },
-        "postgresMaxOpenConns": {
-          "default": "25"
-        },
-        "postgresName": {
-          "default": "br-slc"
-        },
-        "systemplaneEnabled": {
-          "default": "false"
-        },
-        "tenantRuntimeConfigEnabled": {
-          "default": "false"
-        }
-      },
-      "additionalProperties": false
-    },
-    "rateLimit": {
-      "type": "object",
-      "properties": {
-        "aggressiveRateLimitMax": {
-          "default": "100"
-        },
-        "aggressiveRateLimitWindowSec": {
-          "default": "60"
-        },
-        "allowRatelimitFailOpen": {
-          "default": "false"
-        },
-        "rateLimitEnabled": {
-          "default": "true"
-        },
-        "rateLimitMax": {
-          "default": "500"
-        },
-        "rateLimitWindowSec": {
-          "default": "60"
-        },
-        "relaxedRateLimitMax": {
-          "default": "1000"
-        },
-        "relaxedRateLimitWindowSec": {
-          "default": "60"
-        }
-      },
-      "additionalProperties": false
-    },
-    "redis": {
-      "type": "object",
-      "properties": {
-        "db": {
-          "default": "0"
-        },
-        "dialTimeout": {
-          "default": "5"
-        },
-        "maxRetries": {
-          "default": "3"
-        },
-        "maxRetryBackoff": {
-          "default": "8"
-        },
-        "minIdleConns": {
-          "default": "2"
-        },
-        "minRetryBackoff": {
-          "default": "1"
-        },
-        "poolSize": {
-          "default": "10"
-        },
-        "poolTimeout": {
-          "default": "2"
-        },
-        "protocol": {
-          "default": "3"
-        },
-        "readTimeout": {
-          "default": "3"
-        },
-        "writeTimeout": {
-          "default": "3"
-        }
-      },
-      "additionalProperties": false
-    },
-    "security": {
-      "type": "object",
-      "properties": {
-        "allowCorsWildcard": {
-          "default": "false"
-        },
-        "allowInsecureTls": {
-          "default": "false"
-        }
-      },
-      "additionalProperties": false
-    },
-    "server": {
-      "type": "object",
-      "properties": {
-        "deploymentMode": {
-          "default": "byoc"
-        },
-        "httpBodyLimitBytes": {
-          "default": "104857600"
-        },
-        "serverAddress": {
-          "default": ":4111"
-        },
-        "tlsTerminatedUpstream": {
-          "default": "false"
-        }
-      },
-      "additionalProperties": false
-    },
-    "streaming": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "default": "false"
-        },
-        "healthCheckTimeout": {
-          "default": "2s"
-        }
-      },
-      "additionalProperties": false
-    },
-    "swagger": {
-      "type": "object",
-      "properties": {
-        "basePath": {
-          "default": "/"
-        },
-        "enabled": {
-          "default": "true"
-        },
-        "leftDelim": {
-          "default": "{{"
-        },
-        "rightDelim": {
-          "default": "}}"
-        },
-        "title": {
-          "default": "BrSlc"
-        },
-        "version": {
-          "default": "1.0.0"
-        }
-      },
-      "additionalProperties": false
-    },
-    "webhook": {
-      "type": "object",
-      "properties": {
-        "allowPrivateNetwork": {
-          "default": "false"
-        },
-        "retryBatch": {
-          "default": "100"
-        },
-        "webhookBackoffBaseSec": {
-          "default": "30"
-        },
-        "webhookConsumeBatch": {
-          "default": "100"
-        },
-        "webhookDeliveryProvider": {
-          "default": "direct"
-        },
-        "webhookDeliveryTimeoutSec": {
-          "default": "10"
-        },
-        "webhookMaxAttempts": {
-          "default": "6"
-        },
-        "webhookNotificationsBaseUrl": {
-          "default": ""
-        },
-        "webhookWorkerEnabled": {
-          "default": "false"
-        },
-        "webhookWorkerIntervalSec": {
-          "default": "30"
-        }
-      },
-      "additionalProperties": false
-    },
-    "schedule": {
-      "type": "object",
-      "properties": {
-        "anticipationDispatchEnabled": {
-          "default": "false"
-        },
-        "anticipationForwardEnabled": {
-          "default": "false"
-        },
-        "anticipationSettleEnabled": {
-          "default": "false"
-        },
-        "cancellationDispatchEnabled": {
-          "default": "false"
-        },
-        "cancellationForwardEnabled": {
-          "default": "false"
-        },
-        "certExpiryEnabled": {
-          "default": "false"
-        },
-        "debitDispatchEnabled": {
-          "default": "false"
-        },
-        "debitForwardEnabled": {
-          "default": "false"
-        },
-        "dispatchMaxPagesPerTick": {
-          "default": "100"
-        },
-        "dispatchMaxRecords": {
-          "default": "50000"
-        },
-        "dispatchMaxTransmitAttempts": {
-          "default": "20"
-        },
-        "domicileReturnClose": {
-          "default": "10:00"
-        },
-        "domicileReturnOpen": {
-          "default": "08:50"
-        },
-        "domicileReturnPmClose": {
-          "default": "18:30"
-        },
-        "domicileReturnPmOpen": {
-          "default": "14:10"
-        },
-        "forwardEnabled": {
-          "default": "false"
-        },
-        "operationStuckEnabled": {
-          "default": "false"
-        },
-        "operationStuckThresholdExternalSec": {
-          "default": "7200"
-        },
-        "operationStuckThresholdInternalSec": {
-          "default": "21600"
-        },
-        "operationStuckThresholdSettledSec": {
-          "default": "93600"
-        },
-        "specialGrade": {
-          "default": "none"
-        },
-        "varreduraEnabled": {
-          "default": "false"
-        }
-      },
-      "additionalProperties": false,
-      "description": "Grouped config (see templates/configmap.yaml for field names)."
-    },
-    "sfn": {
-      "type": "object",
-      "properties": {
-        "busProvider": {
-          "default": "kafka"
-        },
-        "ingestEnabled": {
-          "default": "false"
-        },
-        "kafkaBatchSize": {
-          "default": "100"
-        },
-        "kafkaGroupId": {
-          "default": "br-slc-sfn"
-        },
-        "kafkaTopic": {
-          "default": "siloc.inbound"
-        },
-        "stubTimeoutSec": {
-          "default": "30"
-        }
-      },
-      "additionalProperties": false
-    },
-    "signing": {
-      "type": "object",
-      "properties": {
-        "custodyAdapter": {
-          "default": "softkey"
-        },
-        "failClosed": {
-          "default": "true"
-        },
-        "requireSignature": {
-          "default": "true"
-        }
-      },
-      "additionalProperties": false
-    },
-    "intake": {
-      "type": "object",
-      "properties": {
-        "batchBulkChunkSize": {
-          "default": "500"
-        },
-        "batchSpoolDir": {
-          "default": ""
-        },
-        "batchSpoolMaxBytes": {
-          "default": "268435456"
-        }
-      },
-      "additionalProperties": false
-    },
-    "dispatch": {
-      "type": "object",
-      "properties": {
-        "devRecipientCertPath": {
-          "default": ""
-        }
-      },
-      "additionalProperties": false
-    },
-    "nuclea": {
-      "type": "object",
-      "properties": {
-        "aslcInboundXsdValidationEnabled": {
-          "default": "true"
-        }
-      },
-      "additionalProperties": false
+      }
     },
     "signer": {
       "type": "object",
@@ -1081,7 +797,327 @@
         },
         "configmap": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "properties": {
+            "data": {
+              "type": "object",
+              "additionalProperties": true,
+              "propertyNames": {
+                "enum": [
+                  "AGGRESSIVE_RATE_LIMIT_MAX",
+                  "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+                  "ALLOW_CORS_WILDCARD",
+                  "ALLOW_INSECURE_TLS",
+                  "ALLOW_RATELIMIT_FAIL_OPEN",
+                  "ASLC_INBOUND_XSD_VALIDATION_ENABLED",
+                  "AWS_ACCESS_KEY_ID",
+                  "AWS_REGION",
+                  "AWS_SECRET_ACCESS_KEY",
+                  "AWS_SESSION_TOKEN",
+                  "CGO_ENABLED",
+                  "CIRCUIT_BREAKER_ENABLED",
+                  "CORS_ALLOWED_HEADERS",
+                  "CORS_ALLOWED_METHODS",
+                  "CORS_ALLOWED_ORIGINS",
+                  "CORS_ALLOW_CREDENTIALS",
+                  "CORS_EXPOSE_HEADERS",
+                  "DB_METRICS_INTERVAL_SEC",
+                  "DEPLOYMENT_MODE",
+                  "DISPATCH_DEV_RECIPIENT_CERT_PATH",
+                  "E2E_APP_PORT",
+                  "E2E_CABINE_EDGE_PORT",
+                  "E2E_IBM_MQ_PORT",
+                  "E2E_MOCK_NUCLEA_PORT",
+                  "E2E_RABBITMQ_PORT",
+                  "E2E_XSD_VALIDATOR_PORT",
+                  "ENABLE_TELEMETRY",
+                  "ENV_NAME",
+                  "HTTP_BODY_LIMIT_BYTES",
+                  "IDEMPOTENCY_RETRY_WINDOW_SEC",
+                  "INFRA_CONNECT_TIMEOUT_SEC",
+                  "INTAKE_BATCH_BULK_CHUNK_SIZE",
+                  "INTAKE_BATCH_MAX_LINES",
+                  "INTAKE_BATCH_SPOOL_DIR",
+                  "INTAKE_BATCH_SPOOL_MAX_BYTES",
+                  "IS_DEVELOPMENT",
+                  "KMS_SIGNING_KEY_ARN",
+                  "LICENSE_KEY",
+                  "LICENSE_SERVICE_ADDRESS",
+                  "LOG_LEVEL",
+                  "M2M_CREDENTIAL_CACHE_TTL_SEC",
+                  "M2M_TARGET_SERVICE",
+                  "MAX_PAGINATION_LIMIT",
+                  "MAX_PAGINATION_MONTH_DATE_RANGE",
+                  "MIGRATIONS_PATH",
+                  "MOCK_NUCLEA_LICENSE_KEY",
+                  "MOCK_NUCLEA_LICENSE_ORG_MODE",
+                  "MOCK_NUCLEA_LOG_LEVEL",
+                  "MOCK_NUCLEA_ORGANIZATION_IDS",
+                  "MOCK_NUCLEA_URL",
+                  "MQSSLKEYR",
+                  "MQ_BRIDGE_ACK_TIMEOUT_SEC",
+                  "MQ_BRIDGE_ADDR",
+                  "MQ_BRIDGE_ALLOW_STUB",
+                  "MQ_BRIDGE_CHANNEL",
+                  "MQ_BRIDGE_CONN_NAME",
+                  "MQ_BRIDGE_GET_WAIT_MS",
+                  "MQ_BRIDGE_MAX_BODY_BYTES",
+                  "MQ_BRIDGE_MAX_DRAIN",
+                  "MQ_BRIDGE_MAX_INFLIGHT",
+                  "MQ_BRIDGE_MAX_INFLIGHT_PER_DESCRIPTOR",
+                  "MQ_BRIDGE_MAX_MESSAGE_BYTES",
+                  "MQ_BRIDGE_MQ_USER",
+                  "MQ_BRIDGE_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "MQ_BRIDGE_PLUGIN_AUTH_ENABLED",
+                  "MQ_BRIDGE_PLUGIN_AUTH_HOST",
+                  "MQ_BRIDGE_QUEUE",
+                  "MQ_BRIDGE_QUEUE_MANAGER",
+                  "MQ_BRIDGE_RECEIVE_BUFFER_BYTES",
+                  "MQ_BRIDGE_SWEEP_INTERVAL_SEC",
+                  "MQ_BRIDGE_TENANT",
+                  "MQ_BRIDGE_TIMEOUT_SEC",
+                  "MQ_BRIDGE_TLS_CIPHER",
+                  "MQ_BRIDGE_TLS_ENABLED",
+                  "MQ_BRIDGE_URL",
+                  "MULTI_TENANT_CACHE_TTL_SEC",
+                  "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD",
+                  "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC",
+                  "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
+                  "MULTI_TENANT_ENABLED",
+                  "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+                  "MULTI_TENANT_MAX_TENANT_POOLS",
+                  "MULTI_TENANT_REDIS_HOST",
+                  "MULTI_TENANT_REDIS_PASSWORD",
+                  "MULTI_TENANT_REDIS_PORT",
+                  "MULTI_TENANT_REDIS_TLS",
+                  "MULTI_TENANT_SERVICE_API_KEY",
+                  "MULTI_TENANT_TIMEOUT",
+                  "MULTI_TENANT_URL",
+                  "NUCLEA_REST_ALLOW_INSECURE_TLS",
+                  "NUCLEA_REST_BASE_URL",
+                  "NUCLEA_REST_CB_CONSECUTIVE_FAILURES",
+                  "NUCLEA_REST_CB_OPEN_TIMEOUT_SEC",
+                  "NUCLEA_REST_CLIENT_CERT_PATH",
+                  "NUCLEA_REST_CLIENT_KEY_PATH",
+                  "NUCLEA_REST_REQUIRE_JOSE_CERT",
+                  "NUCLEA_REST_TIMEOUT_SEC",
+                  "ORGANIZATION_IDS",
+                  "OTEL_EXPORTER_OTLP_ENDPOINT",
+                  "OTEL_LIBRARY_NAME",
+                  "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+                  "OTEL_RESOURCE_SERVICE_NAME",
+                  "OTEL_RESOURCE_SERVICE_VERSION",
+                  "OUTBOX_ALLOW_EMPTY_TENANT",
+                  "OUTBOX_BATCH_SIZE",
+                  "OUTBOX_DISPATCH_INTERVAL_SEC",
+                  "OUTBOX_ENABLED",
+                  "OUTBOX_INCLUDE_TENANT_METRICS",
+                  "OUTBOX_MAX_DISPATCH_ATTEMPTS",
+                  "OUTBOX_MAX_FAILED_PER_BATCH",
+                  "OUTBOX_PRIORITY_EVENT_TYPES",
+                  "OUTBOX_PROCESSING_TIMEOUT_SEC",
+                  "OUTBOX_PUBLISH_BACKOFF_MS",
+                  "OUTBOX_PUBLISH_MAX_ATTEMPTS",
+                  "OUTBOX_RETRY_WINDOW_SEC",
+                  "OUTBOX_TABLE_NAME",
+                  "PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "PLUGIN_AUTH_ENABLED",
+                  "PLUGIN_AUTH_HOST",
+                  "POSTGRES_CONNECT_TIMEOUT_SEC",
+                  "POSTGRES_CONN_MAX_IDLE_TIME_MINS",
+                  "POSTGRES_CONN_MAX_LIFETIME_MINS",
+                  "POSTGRES_HOST",
+                  "POSTGRES_MAX_IDLE_CONNS",
+                  "POSTGRES_MAX_OPEN_CONNS",
+                  "POSTGRES_NAME",
+                  "POSTGRES_PASSWORD",
+                  "POSTGRES_PORT",
+                  "POSTGRES_REPLICA_HOST",
+                  "POSTGRES_REPLICA_NAME",
+                  "POSTGRES_REPLICA_PASSWORD",
+                  "POSTGRES_REPLICA_PORT",
+                  "POSTGRES_REPLICA_SSLMODE",
+                  "POSTGRES_REPLICA_USER",
+                  "POSTGRES_SSLMODE",
+                  "POSTGRES_USER",
+                  "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK",
+                  "RABBITMQ_ALLOW_INSECURE_TLS",
+                  "RABBITMQ_DEFAULT_PASS",
+                  "RABBITMQ_DEFAULT_USER",
+                  "RABBITMQ_ENABLED",
+                  "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS",
+                  "RABBITMQ_HEALTH_CHECK_URL",
+                  "RABBITMQ_HOST",
+                  "RABBITMQ_PORT_AMQP",
+                  "RABBITMQ_PORT_HOST",
+                  "RABBITMQ_QUEUE",
+                  "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS",
+                  "RABBITMQ_URL",
+                  "RABBITMQ_VHOST",
+                  "RATE_LIMIT_ENABLED",
+                  "RATE_LIMIT_MAX",
+                  "RATE_LIMIT_WINDOW_SEC",
+                  "REDIS_CA_CERT",
+                  "REDIS_DB",
+                  "REDIS_DIAL_TIMEOUT",
+                  "REDIS_HOST",
+                  "REDIS_MASTER_NAME",
+                  "REDIS_MAX_RETRIES",
+                  "REDIS_MAX_RETRY_BACKOFF",
+                  "REDIS_MIN_IDLE_CONNS",
+                  "REDIS_MIN_RETRY_BACKOFF",
+                  "REDIS_PASSWORD",
+                  "REDIS_POOL_SIZE",
+                  "REDIS_POOL_TIMEOUT",
+                  "REDIS_PROTOCOL",
+                  "REDIS_READ_TIMEOUT",
+                  "REDIS_TLS",
+                  "REDIS_WRITE_TIMEOUT",
+                  "RELAXED_RATE_LIMIT_MAX",
+                  "RELAXED_RATE_LIMIT_WINDOW_SEC",
+                  "RSFN_CONSUMER_ALLOW_INSECURE_TLS",
+                  "RSFN_CONSUMER_BASE_URL",
+                  "RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES",
+                  "RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC",
+                  "RSFN_CONSUMER_TIMEOUT_SEC",
+                  "RSFN_CONSUMER_TRANSPORT",
+                  "RSFN_INBOUND_XSD_VALIDATION_ENABLED",
+                  "SCHEDULE_ANTICIPATION_DISPATCH_ENABLED",
+                  "SCHEDULE_ANTICIPATION_FORWARD_ENABLED",
+                  "SCHEDULE_ANTICIPATION_SETTLE_ENABLED",
+                  "SCHEDULE_CANCELLATION_DISPATCH_ENABLED",
+                  "SCHEDULE_CANCELLATION_FORWARD_ENABLED",
+                  "SCHEDULE_CERT_EXPIRY_ENABLED",
+                  "SCHEDULE_CREDIT_WINDOW_CLOSE",
+                  "SCHEDULE_CREDIT_WINDOW_OPEN",
+                  "SCHEDULE_CUTOFF_ALERT_LEAD_MIN",
+                  "SCHEDULE_D1_CONFIRMATION_CUTOFF",
+                  "SCHEDULE_D1_CONFIRMATION_ENABLED",
+                  "SCHEDULE_DEBIT_DISPATCH_ENABLED",
+                  "SCHEDULE_DEBIT_FORWARD_ENABLED",
+                  "SCHEDULE_DISPATCH_ENABLED",
+                  "SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK",
+                  "SCHEDULE_DISPATCH_MAX_RECORDS",
+                  "SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS",
+                  "SCHEDULE_DISPATCH_PAGE_SIZE",
+                  "SCHEDULE_DOMICILE_RETURN_CLOSE",
+                  "SCHEDULE_DOMICILE_RETURN_OPEN",
+                  "SCHEDULE_DOMICILE_RETURN_PM_CLOSE",
+                  "SCHEDULE_DOMICILE_RETURN_PM_OPEN",
+                  "SCHEDULE_FORWARD_ENABLED",
+                  "SCHEDULE_GRID_GATE_ENABLED",
+                  "SCHEDULE_HOLIDAYS",
+                  "SCHEDULE_OPERATION_STUCK_ENABLED",
+                  "SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC",
+                  "SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC",
+                  "SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC",
+                  "SCHEDULE_RELAY_STATUS_ENABLED",
+                  "SCHEDULE_RETURN_POLL_ENABLED",
+                  "SCHEDULE_RSFN_INGEST_ENABLED",
+                  "SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF",
+                  "SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF",
+                  "SCHEDULE_SILOC_WINDOWS_ENABLED",
+                  "SCHEDULE_SPECIAL_GRADE",
+                  "SCHEDULE_STR_SETTLED_ENABLED",
+                  "SCHEDULE_VARREDURA_ENABLED",
+                  "SCHEDULE_WORKER_ENABLED",
+                  "SCHEDULE_WORKER_INTERVAL_SEC",
+                  "SERVER_ADDRESS",
+                  "SERVER_TLS_CERT_FILE",
+                  "SERVER_TLS_KEY_FILE",
+                  "SFN_BUS_PROVIDER",
+                  "SFN_INGEST_ENABLED",
+                  "SFN_KAFKA_BATCH_SIZE",
+                  "SFN_KAFKA_BROKERS",
+                  "SFN_KAFKA_GROUP_ID",
+                  "SFN_KAFKA_TOPIC",
+                  "SFN_STUB_BASE_URL",
+                  "SFN_STUB_TIMEOUT_SEC",
+                  "SIGNER_ADDR",
+                  "SIGNER_AWSKMS_DEFAULT_KEY_REF",
+                  "SIGNER_AWSKMS_REGION",
+                  "SIGNER_MAX_BODY_BYTES",
+                  "SIGNER_PKCS11_KEY_LABEL",
+                  "SIGNER_PKCS11_MODULE",
+                  "SIGNER_PKCS11_SLOT",
+                  "SIGNER_PKCS11_TOKEN_LABEL",
+                  "SIGNER_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "SIGNER_PLUGIN_AUTH_ENABLED",
+                  "SIGNER_PLUGIN_AUTH_HOST",
+                  "SIGNER_SOFTKEY_ALLOW_IN_PRODUCTION",
+                  "SIGNER_SOFTKEY_PFX_PASSPHRASE",
+                  "SIGNER_SOFTKEY_PFX_PATH",
+                  "SIGNER_TIMEOUT_SEC",
+                  "SIGNER_URL",
+                  "SIGNER_VAULT_ADDR",
+                  "SIGNER_VAULT_CACERT",
+                  "SIGNER_VAULT_NAMESPACE",
+                  "SIGNER_VAULT_TRANSIT_MOUNT",
+                  "SIGNING_CUSTODY_ADAPTER",
+                  "SIGNING_FAIL_CLOSED",
+                  "SIGNING_REQUIRE_SIGNATURE",
+                  "SPB_EMITTER_CERT_PATH",
+                  "SPB_RECIPIENT_KEY_PATH",
+                  "STREAMING_BATCH_LINGER_MS",
+                  "STREAMING_BATCH_MAX_BYTES",
+                  "STREAMING_BROKERS",
+                  "STREAMING_CB_FAILURE_RATIO",
+                  "STREAMING_CB_MIN_REQUESTS",
+                  "STREAMING_CB_TIMEOUT_S",
+                  "STREAMING_CLIENT_ID",
+                  "STREAMING_CLOSE_TIMEOUT_S",
+                  "STREAMING_CLOUDEVENTS_SOURCE",
+                  "STREAMING_COMPRESSION",
+                  "STREAMING_ENABLED",
+                  "STREAMING_HEALTH_CHECK_TIMEOUT",
+                  "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS",
+                  "STREAMING_MAX_BUFFERED_RECORDS",
+                  "STREAMING_RECORD_DELIVERY_TIMEOUT_S",
+                  "STREAMING_RECORD_RETRIES",
+                  "STREAMING_REQUIRED_ACKS",
+                  "STREAMING_SASL_ALLOW_PLAINTEXT",
+                  "STREAMING_SASL_MECHANISM",
+                  "STREAMING_SASL_PASSWORD",
+                  "STREAMING_SASL_USERNAME",
+                  "STREAMING_TLS_ENABLED",
+                  "SWAGGER_BASE_PATH",
+                  "SWAGGER_DESCRIPTION",
+                  "SWAGGER_ENABLED",
+                  "SWAGGER_HOST",
+                  "SWAGGER_LEFT_DELIM",
+                  "SWAGGER_RIGHT_DELIM",
+                  "SWAGGER_SCHEMES",
+                  "SWAGGER_TITLE",
+                  "SWAGGER_VERSION",
+                  "SYSTEMPLANE_ENABLED",
+                  "TENANT_RUNTIME_CONFIG_ENABLED",
+                  "TLS_TERMINATED_UPSTREAM",
+                  "WEBHOOK_ALLOW_PRIVATE_NETWORK",
+                  "WEBHOOK_API_KEY",
+                  "WEBHOOK_API_KEY_FILE",
+                  "WEBHOOK_BACKOFF_BASE_SEC",
+                  "WEBHOOK_CONSUME_BATCH",
+                  "WEBHOOK_DELIVERY_PROVIDER",
+                  "WEBHOOK_DELIVERY_TIMEOUT_SEC",
+                  "WEBHOOK_HMAC_SECRET",
+                  "WEBHOOK_HMAC_SECRET_FILE",
+                  "WEBHOOK_MAX_ATTEMPTS",
+                  "WEBHOOK_NOTIFICATIONS_BASE_URL",
+                  "WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC",
+                  "WEBHOOK_RETRY_BATCH",
+                  "WEBHOOK_WORKER_ENABLED",
+                  "WEBHOOK_WORKER_INTERVAL_SEC",
+                  "XSD_MAX_BODY_BYTES",
+                  "XSD_VALIDATOR_ADDR",
+                  "XSD_VALIDATOR_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "XSD_VALIDATOR_PLUGIN_AUTH_ENABLED",
+                  "XSD_VALIDATOR_PLUGIN_AUTH_HOST",
+                  "XSD_VALIDATOR_TIMEOUT_SEC",
+                  "XSD_VALIDATOR_URL"
+                ]
+              }
+            }
+          }
         }
       },
       "additionalProperties": true
@@ -1236,7 +1272,327 @@
         },
         "configmap": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "properties": {
+            "data": {
+              "type": "object",
+              "additionalProperties": true,
+              "propertyNames": {
+                "enum": [
+                  "AGGRESSIVE_RATE_LIMIT_MAX",
+                  "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+                  "ALLOW_CORS_WILDCARD",
+                  "ALLOW_INSECURE_TLS",
+                  "ALLOW_RATELIMIT_FAIL_OPEN",
+                  "ASLC_INBOUND_XSD_VALIDATION_ENABLED",
+                  "AWS_ACCESS_KEY_ID",
+                  "AWS_REGION",
+                  "AWS_SECRET_ACCESS_KEY",
+                  "AWS_SESSION_TOKEN",
+                  "CGO_ENABLED",
+                  "CIRCUIT_BREAKER_ENABLED",
+                  "CORS_ALLOWED_HEADERS",
+                  "CORS_ALLOWED_METHODS",
+                  "CORS_ALLOWED_ORIGINS",
+                  "CORS_ALLOW_CREDENTIALS",
+                  "CORS_EXPOSE_HEADERS",
+                  "DB_METRICS_INTERVAL_SEC",
+                  "DEPLOYMENT_MODE",
+                  "DISPATCH_DEV_RECIPIENT_CERT_PATH",
+                  "E2E_APP_PORT",
+                  "E2E_CABINE_EDGE_PORT",
+                  "E2E_IBM_MQ_PORT",
+                  "E2E_MOCK_NUCLEA_PORT",
+                  "E2E_RABBITMQ_PORT",
+                  "E2E_XSD_VALIDATOR_PORT",
+                  "ENABLE_TELEMETRY",
+                  "ENV_NAME",
+                  "HTTP_BODY_LIMIT_BYTES",
+                  "IDEMPOTENCY_RETRY_WINDOW_SEC",
+                  "INFRA_CONNECT_TIMEOUT_SEC",
+                  "INTAKE_BATCH_BULK_CHUNK_SIZE",
+                  "INTAKE_BATCH_MAX_LINES",
+                  "INTAKE_BATCH_SPOOL_DIR",
+                  "INTAKE_BATCH_SPOOL_MAX_BYTES",
+                  "IS_DEVELOPMENT",
+                  "KMS_SIGNING_KEY_ARN",
+                  "LICENSE_KEY",
+                  "LICENSE_SERVICE_ADDRESS",
+                  "LOG_LEVEL",
+                  "M2M_CREDENTIAL_CACHE_TTL_SEC",
+                  "M2M_TARGET_SERVICE",
+                  "MAX_PAGINATION_LIMIT",
+                  "MAX_PAGINATION_MONTH_DATE_RANGE",
+                  "MIGRATIONS_PATH",
+                  "MOCK_NUCLEA_LICENSE_KEY",
+                  "MOCK_NUCLEA_LICENSE_ORG_MODE",
+                  "MOCK_NUCLEA_LOG_LEVEL",
+                  "MOCK_NUCLEA_ORGANIZATION_IDS",
+                  "MOCK_NUCLEA_URL",
+                  "MQSSLKEYR",
+                  "MQ_BRIDGE_ACK_TIMEOUT_SEC",
+                  "MQ_BRIDGE_ADDR",
+                  "MQ_BRIDGE_ALLOW_STUB",
+                  "MQ_BRIDGE_CHANNEL",
+                  "MQ_BRIDGE_CONN_NAME",
+                  "MQ_BRIDGE_GET_WAIT_MS",
+                  "MQ_BRIDGE_MAX_BODY_BYTES",
+                  "MQ_BRIDGE_MAX_DRAIN",
+                  "MQ_BRIDGE_MAX_INFLIGHT",
+                  "MQ_BRIDGE_MAX_INFLIGHT_PER_DESCRIPTOR",
+                  "MQ_BRIDGE_MAX_MESSAGE_BYTES",
+                  "MQ_BRIDGE_MQ_USER",
+                  "MQ_BRIDGE_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "MQ_BRIDGE_PLUGIN_AUTH_ENABLED",
+                  "MQ_BRIDGE_PLUGIN_AUTH_HOST",
+                  "MQ_BRIDGE_QUEUE",
+                  "MQ_BRIDGE_QUEUE_MANAGER",
+                  "MQ_BRIDGE_RECEIVE_BUFFER_BYTES",
+                  "MQ_BRIDGE_SWEEP_INTERVAL_SEC",
+                  "MQ_BRIDGE_TENANT",
+                  "MQ_BRIDGE_TIMEOUT_SEC",
+                  "MQ_BRIDGE_TLS_CIPHER",
+                  "MQ_BRIDGE_TLS_ENABLED",
+                  "MQ_BRIDGE_URL",
+                  "MULTI_TENANT_CACHE_TTL_SEC",
+                  "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD",
+                  "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC",
+                  "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
+                  "MULTI_TENANT_ENABLED",
+                  "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+                  "MULTI_TENANT_MAX_TENANT_POOLS",
+                  "MULTI_TENANT_REDIS_HOST",
+                  "MULTI_TENANT_REDIS_PASSWORD",
+                  "MULTI_TENANT_REDIS_PORT",
+                  "MULTI_TENANT_REDIS_TLS",
+                  "MULTI_TENANT_SERVICE_API_KEY",
+                  "MULTI_TENANT_TIMEOUT",
+                  "MULTI_TENANT_URL",
+                  "NUCLEA_REST_ALLOW_INSECURE_TLS",
+                  "NUCLEA_REST_BASE_URL",
+                  "NUCLEA_REST_CB_CONSECUTIVE_FAILURES",
+                  "NUCLEA_REST_CB_OPEN_TIMEOUT_SEC",
+                  "NUCLEA_REST_CLIENT_CERT_PATH",
+                  "NUCLEA_REST_CLIENT_KEY_PATH",
+                  "NUCLEA_REST_REQUIRE_JOSE_CERT",
+                  "NUCLEA_REST_TIMEOUT_SEC",
+                  "ORGANIZATION_IDS",
+                  "OTEL_EXPORTER_OTLP_ENDPOINT",
+                  "OTEL_LIBRARY_NAME",
+                  "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+                  "OTEL_RESOURCE_SERVICE_NAME",
+                  "OTEL_RESOURCE_SERVICE_VERSION",
+                  "OUTBOX_ALLOW_EMPTY_TENANT",
+                  "OUTBOX_BATCH_SIZE",
+                  "OUTBOX_DISPATCH_INTERVAL_SEC",
+                  "OUTBOX_ENABLED",
+                  "OUTBOX_INCLUDE_TENANT_METRICS",
+                  "OUTBOX_MAX_DISPATCH_ATTEMPTS",
+                  "OUTBOX_MAX_FAILED_PER_BATCH",
+                  "OUTBOX_PRIORITY_EVENT_TYPES",
+                  "OUTBOX_PROCESSING_TIMEOUT_SEC",
+                  "OUTBOX_PUBLISH_BACKOFF_MS",
+                  "OUTBOX_PUBLISH_MAX_ATTEMPTS",
+                  "OUTBOX_RETRY_WINDOW_SEC",
+                  "OUTBOX_TABLE_NAME",
+                  "PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "PLUGIN_AUTH_ENABLED",
+                  "PLUGIN_AUTH_HOST",
+                  "POSTGRES_CONNECT_TIMEOUT_SEC",
+                  "POSTGRES_CONN_MAX_IDLE_TIME_MINS",
+                  "POSTGRES_CONN_MAX_LIFETIME_MINS",
+                  "POSTGRES_HOST",
+                  "POSTGRES_MAX_IDLE_CONNS",
+                  "POSTGRES_MAX_OPEN_CONNS",
+                  "POSTGRES_NAME",
+                  "POSTGRES_PASSWORD",
+                  "POSTGRES_PORT",
+                  "POSTGRES_REPLICA_HOST",
+                  "POSTGRES_REPLICA_NAME",
+                  "POSTGRES_REPLICA_PASSWORD",
+                  "POSTGRES_REPLICA_PORT",
+                  "POSTGRES_REPLICA_SSLMODE",
+                  "POSTGRES_REPLICA_USER",
+                  "POSTGRES_SSLMODE",
+                  "POSTGRES_USER",
+                  "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK",
+                  "RABBITMQ_ALLOW_INSECURE_TLS",
+                  "RABBITMQ_DEFAULT_PASS",
+                  "RABBITMQ_DEFAULT_USER",
+                  "RABBITMQ_ENABLED",
+                  "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS",
+                  "RABBITMQ_HEALTH_CHECK_URL",
+                  "RABBITMQ_HOST",
+                  "RABBITMQ_PORT_AMQP",
+                  "RABBITMQ_PORT_HOST",
+                  "RABBITMQ_QUEUE",
+                  "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS",
+                  "RABBITMQ_URL",
+                  "RABBITMQ_VHOST",
+                  "RATE_LIMIT_ENABLED",
+                  "RATE_LIMIT_MAX",
+                  "RATE_LIMIT_WINDOW_SEC",
+                  "REDIS_CA_CERT",
+                  "REDIS_DB",
+                  "REDIS_DIAL_TIMEOUT",
+                  "REDIS_HOST",
+                  "REDIS_MASTER_NAME",
+                  "REDIS_MAX_RETRIES",
+                  "REDIS_MAX_RETRY_BACKOFF",
+                  "REDIS_MIN_IDLE_CONNS",
+                  "REDIS_MIN_RETRY_BACKOFF",
+                  "REDIS_PASSWORD",
+                  "REDIS_POOL_SIZE",
+                  "REDIS_POOL_TIMEOUT",
+                  "REDIS_PROTOCOL",
+                  "REDIS_READ_TIMEOUT",
+                  "REDIS_TLS",
+                  "REDIS_WRITE_TIMEOUT",
+                  "RELAXED_RATE_LIMIT_MAX",
+                  "RELAXED_RATE_LIMIT_WINDOW_SEC",
+                  "RSFN_CONSUMER_ALLOW_INSECURE_TLS",
+                  "RSFN_CONSUMER_BASE_URL",
+                  "RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES",
+                  "RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC",
+                  "RSFN_CONSUMER_TIMEOUT_SEC",
+                  "RSFN_CONSUMER_TRANSPORT",
+                  "RSFN_INBOUND_XSD_VALIDATION_ENABLED",
+                  "SCHEDULE_ANTICIPATION_DISPATCH_ENABLED",
+                  "SCHEDULE_ANTICIPATION_FORWARD_ENABLED",
+                  "SCHEDULE_ANTICIPATION_SETTLE_ENABLED",
+                  "SCHEDULE_CANCELLATION_DISPATCH_ENABLED",
+                  "SCHEDULE_CANCELLATION_FORWARD_ENABLED",
+                  "SCHEDULE_CERT_EXPIRY_ENABLED",
+                  "SCHEDULE_CREDIT_WINDOW_CLOSE",
+                  "SCHEDULE_CREDIT_WINDOW_OPEN",
+                  "SCHEDULE_CUTOFF_ALERT_LEAD_MIN",
+                  "SCHEDULE_D1_CONFIRMATION_CUTOFF",
+                  "SCHEDULE_D1_CONFIRMATION_ENABLED",
+                  "SCHEDULE_DEBIT_DISPATCH_ENABLED",
+                  "SCHEDULE_DEBIT_FORWARD_ENABLED",
+                  "SCHEDULE_DISPATCH_ENABLED",
+                  "SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK",
+                  "SCHEDULE_DISPATCH_MAX_RECORDS",
+                  "SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS",
+                  "SCHEDULE_DISPATCH_PAGE_SIZE",
+                  "SCHEDULE_DOMICILE_RETURN_CLOSE",
+                  "SCHEDULE_DOMICILE_RETURN_OPEN",
+                  "SCHEDULE_DOMICILE_RETURN_PM_CLOSE",
+                  "SCHEDULE_DOMICILE_RETURN_PM_OPEN",
+                  "SCHEDULE_FORWARD_ENABLED",
+                  "SCHEDULE_GRID_GATE_ENABLED",
+                  "SCHEDULE_HOLIDAYS",
+                  "SCHEDULE_OPERATION_STUCK_ENABLED",
+                  "SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC",
+                  "SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC",
+                  "SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC",
+                  "SCHEDULE_RELAY_STATUS_ENABLED",
+                  "SCHEDULE_RETURN_POLL_ENABLED",
+                  "SCHEDULE_RSFN_INGEST_ENABLED",
+                  "SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF",
+                  "SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF",
+                  "SCHEDULE_SILOC_WINDOWS_ENABLED",
+                  "SCHEDULE_SPECIAL_GRADE",
+                  "SCHEDULE_STR_SETTLED_ENABLED",
+                  "SCHEDULE_VARREDURA_ENABLED",
+                  "SCHEDULE_WORKER_ENABLED",
+                  "SCHEDULE_WORKER_INTERVAL_SEC",
+                  "SERVER_ADDRESS",
+                  "SERVER_TLS_CERT_FILE",
+                  "SERVER_TLS_KEY_FILE",
+                  "SFN_BUS_PROVIDER",
+                  "SFN_INGEST_ENABLED",
+                  "SFN_KAFKA_BATCH_SIZE",
+                  "SFN_KAFKA_BROKERS",
+                  "SFN_KAFKA_GROUP_ID",
+                  "SFN_KAFKA_TOPIC",
+                  "SFN_STUB_BASE_URL",
+                  "SFN_STUB_TIMEOUT_SEC",
+                  "SIGNER_ADDR",
+                  "SIGNER_AWSKMS_DEFAULT_KEY_REF",
+                  "SIGNER_AWSKMS_REGION",
+                  "SIGNER_MAX_BODY_BYTES",
+                  "SIGNER_PKCS11_KEY_LABEL",
+                  "SIGNER_PKCS11_MODULE",
+                  "SIGNER_PKCS11_SLOT",
+                  "SIGNER_PKCS11_TOKEN_LABEL",
+                  "SIGNER_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "SIGNER_PLUGIN_AUTH_ENABLED",
+                  "SIGNER_PLUGIN_AUTH_HOST",
+                  "SIGNER_SOFTKEY_ALLOW_IN_PRODUCTION",
+                  "SIGNER_SOFTKEY_PFX_PASSPHRASE",
+                  "SIGNER_SOFTKEY_PFX_PATH",
+                  "SIGNER_TIMEOUT_SEC",
+                  "SIGNER_URL",
+                  "SIGNER_VAULT_ADDR",
+                  "SIGNER_VAULT_CACERT",
+                  "SIGNER_VAULT_NAMESPACE",
+                  "SIGNER_VAULT_TRANSIT_MOUNT",
+                  "SIGNING_CUSTODY_ADAPTER",
+                  "SIGNING_FAIL_CLOSED",
+                  "SIGNING_REQUIRE_SIGNATURE",
+                  "SPB_EMITTER_CERT_PATH",
+                  "SPB_RECIPIENT_KEY_PATH",
+                  "STREAMING_BATCH_LINGER_MS",
+                  "STREAMING_BATCH_MAX_BYTES",
+                  "STREAMING_BROKERS",
+                  "STREAMING_CB_FAILURE_RATIO",
+                  "STREAMING_CB_MIN_REQUESTS",
+                  "STREAMING_CB_TIMEOUT_S",
+                  "STREAMING_CLIENT_ID",
+                  "STREAMING_CLOSE_TIMEOUT_S",
+                  "STREAMING_CLOUDEVENTS_SOURCE",
+                  "STREAMING_COMPRESSION",
+                  "STREAMING_ENABLED",
+                  "STREAMING_HEALTH_CHECK_TIMEOUT",
+                  "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS",
+                  "STREAMING_MAX_BUFFERED_RECORDS",
+                  "STREAMING_RECORD_DELIVERY_TIMEOUT_S",
+                  "STREAMING_RECORD_RETRIES",
+                  "STREAMING_REQUIRED_ACKS",
+                  "STREAMING_SASL_ALLOW_PLAINTEXT",
+                  "STREAMING_SASL_MECHANISM",
+                  "STREAMING_SASL_PASSWORD",
+                  "STREAMING_SASL_USERNAME",
+                  "STREAMING_TLS_ENABLED",
+                  "SWAGGER_BASE_PATH",
+                  "SWAGGER_DESCRIPTION",
+                  "SWAGGER_ENABLED",
+                  "SWAGGER_HOST",
+                  "SWAGGER_LEFT_DELIM",
+                  "SWAGGER_RIGHT_DELIM",
+                  "SWAGGER_SCHEMES",
+                  "SWAGGER_TITLE",
+                  "SWAGGER_VERSION",
+                  "SYSTEMPLANE_ENABLED",
+                  "TENANT_RUNTIME_CONFIG_ENABLED",
+                  "TLS_TERMINATED_UPSTREAM",
+                  "WEBHOOK_ALLOW_PRIVATE_NETWORK",
+                  "WEBHOOK_API_KEY",
+                  "WEBHOOK_API_KEY_FILE",
+                  "WEBHOOK_BACKOFF_BASE_SEC",
+                  "WEBHOOK_CONSUME_BATCH",
+                  "WEBHOOK_DELIVERY_PROVIDER",
+                  "WEBHOOK_DELIVERY_TIMEOUT_SEC",
+                  "WEBHOOK_HMAC_SECRET",
+                  "WEBHOOK_HMAC_SECRET_FILE",
+                  "WEBHOOK_MAX_ATTEMPTS",
+                  "WEBHOOK_NOTIFICATIONS_BASE_URL",
+                  "WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC",
+                  "WEBHOOK_RETRY_BATCH",
+                  "WEBHOOK_WORKER_ENABLED",
+                  "WEBHOOK_WORKER_INTERVAL_SEC",
+                  "XSD_MAX_BODY_BYTES",
+                  "XSD_VALIDATOR_ADDR",
+                  "XSD_VALIDATOR_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "XSD_VALIDATOR_PLUGIN_AUTH_ENABLED",
+                  "XSD_VALIDATOR_PLUGIN_AUTH_HOST",
+                  "XSD_VALIDATOR_TIMEOUT_SEC",
+                  "XSD_VALIDATOR_URL"
+                ]
+              }
+            }
+          }
         }
       },
       "additionalProperties": true
@@ -1383,7 +1739,327 @@
         },
         "configmap": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "properties": {
+            "data": {
+              "type": "object",
+              "additionalProperties": true,
+              "propertyNames": {
+                "enum": [
+                  "AGGRESSIVE_RATE_LIMIT_MAX",
+                  "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+                  "ALLOW_CORS_WILDCARD",
+                  "ALLOW_INSECURE_TLS",
+                  "ALLOW_RATELIMIT_FAIL_OPEN",
+                  "ASLC_INBOUND_XSD_VALIDATION_ENABLED",
+                  "AWS_ACCESS_KEY_ID",
+                  "AWS_REGION",
+                  "AWS_SECRET_ACCESS_KEY",
+                  "AWS_SESSION_TOKEN",
+                  "CGO_ENABLED",
+                  "CIRCUIT_BREAKER_ENABLED",
+                  "CORS_ALLOWED_HEADERS",
+                  "CORS_ALLOWED_METHODS",
+                  "CORS_ALLOWED_ORIGINS",
+                  "CORS_ALLOW_CREDENTIALS",
+                  "CORS_EXPOSE_HEADERS",
+                  "DB_METRICS_INTERVAL_SEC",
+                  "DEPLOYMENT_MODE",
+                  "DISPATCH_DEV_RECIPIENT_CERT_PATH",
+                  "E2E_APP_PORT",
+                  "E2E_CABINE_EDGE_PORT",
+                  "E2E_IBM_MQ_PORT",
+                  "E2E_MOCK_NUCLEA_PORT",
+                  "E2E_RABBITMQ_PORT",
+                  "E2E_XSD_VALIDATOR_PORT",
+                  "ENABLE_TELEMETRY",
+                  "ENV_NAME",
+                  "HTTP_BODY_LIMIT_BYTES",
+                  "IDEMPOTENCY_RETRY_WINDOW_SEC",
+                  "INFRA_CONNECT_TIMEOUT_SEC",
+                  "INTAKE_BATCH_BULK_CHUNK_SIZE",
+                  "INTAKE_BATCH_MAX_LINES",
+                  "INTAKE_BATCH_SPOOL_DIR",
+                  "INTAKE_BATCH_SPOOL_MAX_BYTES",
+                  "IS_DEVELOPMENT",
+                  "KMS_SIGNING_KEY_ARN",
+                  "LICENSE_KEY",
+                  "LICENSE_SERVICE_ADDRESS",
+                  "LOG_LEVEL",
+                  "M2M_CREDENTIAL_CACHE_TTL_SEC",
+                  "M2M_TARGET_SERVICE",
+                  "MAX_PAGINATION_LIMIT",
+                  "MAX_PAGINATION_MONTH_DATE_RANGE",
+                  "MIGRATIONS_PATH",
+                  "MOCK_NUCLEA_LICENSE_KEY",
+                  "MOCK_NUCLEA_LICENSE_ORG_MODE",
+                  "MOCK_NUCLEA_LOG_LEVEL",
+                  "MOCK_NUCLEA_ORGANIZATION_IDS",
+                  "MOCK_NUCLEA_URL",
+                  "MQSSLKEYR",
+                  "MQ_BRIDGE_ACK_TIMEOUT_SEC",
+                  "MQ_BRIDGE_ADDR",
+                  "MQ_BRIDGE_ALLOW_STUB",
+                  "MQ_BRIDGE_CHANNEL",
+                  "MQ_BRIDGE_CONN_NAME",
+                  "MQ_BRIDGE_GET_WAIT_MS",
+                  "MQ_BRIDGE_MAX_BODY_BYTES",
+                  "MQ_BRIDGE_MAX_DRAIN",
+                  "MQ_BRIDGE_MAX_INFLIGHT",
+                  "MQ_BRIDGE_MAX_INFLIGHT_PER_DESCRIPTOR",
+                  "MQ_BRIDGE_MAX_MESSAGE_BYTES",
+                  "MQ_BRIDGE_MQ_USER",
+                  "MQ_BRIDGE_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "MQ_BRIDGE_PLUGIN_AUTH_ENABLED",
+                  "MQ_BRIDGE_PLUGIN_AUTH_HOST",
+                  "MQ_BRIDGE_QUEUE",
+                  "MQ_BRIDGE_QUEUE_MANAGER",
+                  "MQ_BRIDGE_RECEIVE_BUFFER_BYTES",
+                  "MQ_BRIDGE_SWEEP_INTERVAL_SEC",
+                  "MQ_BRIDGE_TENANT",
+                  "MQ_BRIDGE_TIMEOUT_SEC",
+                  "MQ_BRIDGE_TLS_CIPHER",
+                  "MQ_BRIDGE_TLS_ENABLED",
+                  "MQ_BRIDGE_URL",
+                  "MULTI_TENANT_CACHE_TTL_SEC",
+                  "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD",
+                  "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC",
+                  "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
+                  "MULTI_TENANT_ENABLED",
+                  "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+                  "MULTI_TENANT_MAX_TENANT_POOLS",
+                  "MULTI_TENANT_REDIS_HOST",
+                  "MULTI_TENANT_REDIS_PASSWORD",
+                  "MULTI_TENANT_REDIS_PORT",
+                  "MULTI_TENANT_REDIS_TLS",
+                  "MULTI_TENANT_SERVICE_API_KEY",
+                  "MULTI_TENANT_TIMEOUT",
+                  "MULTI_TENANT_URL",
+                  "NUCLEA_REST_ALLOW_INSECURE_TLS",
+                  "NUCLEA_REST_BASE_URL",
+                  "NUCLEA_REST_CB_CONSECUTIVE_FAILURES",
+                  "NUCLEA_REST_CB_OPEN_TIMEOUT_SEC",
+                  "NUCLEA_REST_CLIENT_CERT_PATH",
+                  "NUCLEA_REST_CLIENT_KEY_PATH",
+                  "NUCLEA_REST_REQUIRE_JOSE_CERT",
+                  "NUCLEA_REST_TIMEOUT_SEC",
+                  "ORGANIZATION_IDS",
+                  "OTEL_EXPORTER_OTLP_ENDPOINT",
+                  "OTEL_LIBRARY_NAME",
+                  "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+                  "OTEL_RESOURCE_SERVICE_NAME",
+                  "OTEL_RESOURCE_SERVICE_VERSION",
+                  "OUTBOX_ALLOW_EMPTY_TENANT",
+                  "OUTBOX_BATCH_SIZE",
+                  "OUTBOX_DISPATCH_INTERVAL_SEC",
+                  "OUTBOX_ENABLED",
+                  "OUTBOX_INCLUDE_TENANT_METRICS",
+                  "OUTBOX_MAX_DISPATCH_ATTEMPTS",
+                  "OUTBOX_MAX_FAILED_PER_BATCH",
+                  "OUTBOX_PRIORITY_EVENT_TYPES",
+                  "OUTBOX_PROCESSING_TIMEOUT_SEC",
+                  "OUTBOX_PUBLISH_BACKOFF_MS",
+                  "OUTBOX_PUBLISH_MAX_ATTEMPTS",
+                  "OUTBOX_RETRY_WINDOW_SEC",
+                  "OUTBOX_TABLE_NAME",
+                  "PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "PLUGIN_AUTH_ENABLED",
+                  "PLUGIN_AUTH_HOST",
+                  "POSTGRES_CONNECT_TIMEOUT_SEC",
+                  "POSTGRES_CONN_MAX_IDLE_TIME_MINS",
+                  "POSTGRES_CONN_MAX_LIFETIME_MINS",
+                  "POSTGRES_HOST",
+                  "POSTGRES_MAX_IDLE_CONNS",
+                  "POSTGRES_MAX_OPEN_CONNS",
+                  "POSTGRES_NAME",
+                  "POSTGRES_PASSWORD",
+                  "POSTGRES_PORT",
+                  "POSTGRES_REPLICA_HOST",
+                  "POSTGRES_REPLICA_NAME",
+                  "POSTGRES_REPLICA_PASSWORD",
+                  "POSTGRES_REPLICA_PORT",
+                  "POSTGRES_REPLICA_SSLMODE",
+                  "POSTGRES_REPLICA_USER",
+                  "POSTGRES_SSLMODE",
+                  "POSTGRES_USER",
+                  "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK",
+                  "RABBITMQ_ALLOW_INSECURE_TLS",
+                  "RABBITMQ_DEFAULT_PASS",
+                  "RABBITMQ_DEFAULT_USER",
+                  "RABBITMQ_ENABLED",
+                  "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS",
+                  "RABBITMQ_HEALTH_CHECK_URL",
+                  "RABBITMQ_HOST",
+                  "RABBITMQ_PORT_AMQP",
+                  "RABBITMQ_PORT_HOST",
+                  "RABBITMQ_QUEUE",
+                  "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS",
+                  "RABBITMQ_URL",
+                  "RABBITMQ_VHOST",
+                  "RATE_LIMIT_ENABLED",
+                  "RATE_LIMIT_MAX",
+                  "RATE_LIMIT_WINDOW_SEC",
+                  "REDIS_CA_CERT",
+                  "REDIS_DB",
+                  "REDIS_DIAL_TIMEOUT",
+                  "REDIS_HOST",
+                  "REDIS_MASTER_NAME",
+                  "REDIS_MAX_RETRIES",
+                  "REDIS_MAX_RETRY_BACKOFF",
+                  "REDIS_MIN_IDLE_CONNS",
+                  "REDIS_MIN_RETRY_BACKOFF",
+                  "REDIS_PASSWORD",
+                  "REDIS_POOL_SIZE",
+                  "REDIS_POOL_TIMEOUT",
+                  "REDIS_PROTOCOL",
+                  "REDIS_READ_TIMEOUT",
+                  "REDIS_TLS",
+                  "REDIS_WRITE_TIMEOUT",
+                  "RELAXED_RATE_LIMIT_MAX",
+                  "RELAXED_RATE_LIMIT_WINDOW_SEC",
+                  "RSFN_CONSUMER_ALLOW_INSECURE_TLS",
+                  "RSFN_CONSUMER_BASE_URL",
+                  "RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES",
+                  "RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC",
+                  "RSFN_CONSUMER_TIMEOUT_SEC",
+                  "RSFN_CONSUMER_TRANSPORT",
+                  "RSFN_INBOUND_XSD_VALIDATION_ENABLED",
+                  "SCHEDULE_ANTICIPATION_DISPATCH_ENABLED",
+                  "SCHEDULE_ANTICIPATION_FORWARD_ENABLED",
+                  "SCHEDULE_ANTICIPATION_SETTLE_ENABLED",
+                  "SCHEDULE_CANCELLATION_DISPATCH_ENABLED",
+                  "SCHEDULE_CANCELLATION_FORWARD_ENABLED",
+                  "SCHEDULE_CERT_EXPIRY_ENABLED",
+                  "SCHEDULE_CREDIT_WINDOW_CLOSE",
+                  "SCHEDULE_CREDIT_WINDOW_OPEN",
+                  "SCHEDULE_CUTOFF_ALERT_LEAD_MIN",
+                  "SCHEDULE_D1_CONFIRMATION_CUTOFF",
+                  "SCHEDULE_D1_CONFIRMATION_ENABLED",
+                  "SCHEDULE_DEBIT_DISPATCH_ENABLED",
+                  "SCHEDULE_DEBIT_FORWARD_ENABLED",
+                  "SCHEDULE_DISPATCH_ENABLED",
+                  "SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK",
+                  "SCHEDULE_DISPATCH_MAX_RECORDS",
+                  "SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS",
+                  "SCHEDULE_DISPATCH_PAGE_SIZE",
+                  "SCHEDULE_DOMICILE_RETURN_CLOSE",
+                  "SCHEDULE_DOMICILE_RETURN_OPEN",
+                  "SCHEDULE_DOMICILE_RETURN_PM_CLOSE",
+                  "SCHEDULE_DOMICILE_RETURN_PM_OPEN",
+                  "SCHEDULE_FORWARD_ENABLED",
+                  "SCHEDULE_GRID_GATE_ENABLED",
+                  "SCHEDULE_HOLIDAYS",
+                  "SCHEDULE_OPERATION_STUCK_ENABLED",
+                  "SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC",
+                  "SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC",
+                  "SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC",
+                  "SCHEDULE_RELAY_STATUS_ENABLED",
+                  "SCHEDULE_RETURN_POLL_ENABLED",
+                  "SCHEDULE_RSFN_INGEST_ENABLED",
+                  "SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF",
+                  "SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF",
+                  "SCHEDULE_SILOC_WINDOWS_ENABLED",
+                  "SCHEDULE_SPECIAL_GRADE",
+                  "SCHEDULE_STR_SETTLED_ENABLED",
+                  "SCHEDULE_VARREDURA_ENABLED",
+                  "SCHEDULE_WORKER_ENABLED",
+                  "SCHEDULE_WORKER_INTERVAL_SEC",
+                  "SERVER_ADDRESS",
+                  "SERVER_TLS_CERT_FILE",
+                  "SERVER_TLS_KEY_FILE",
+                  "SFN_BUS_PROVIDER",
+                  "SFN_INGEST_ENABLED",
+                  "SFN_KAFKA_BATCH_SIZE",
+                  "SFN_KAFKA_BROKERS",
+                  "SFN_KAFKA_GROUP_ID",
+                  "SFN_KAFKA_TOPIC",
+                  "SFN_STUB_BASE_URL",
+                  "SFN_STUB_TIMEOUT_SEC",
+                  "SIGNER_ADDR",
+                  "SIGNER_AWSKMS_DEFAULT_KEY_REF",
+                  "SIGNER_AWSKMS_REGION",
+                  "SIGNER_MAX_BODY_BYTES",
+                  "SIGNER_PKCS11_KEY_LABEL",
+                  "SIGNER_PKCS11_MODULE",
+                  "SIGNER_PKCS11_SLOT",
+                  "SIGNER_PKCS11_TOKEN_LABEL",
+                  "SIGNER_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "SIGNER_PLUGIN_AUTH_ENABLED",
+                  "SIGNER_PLUGIN_AUTH_HOST",
+                  "SIGNER_SOFTKEY_ALLOW_IN_PRODUCTION",
+                  "SIGNER_SOFTKEY_PFX_PASSPHRASE",
+                  "SIGNER_SOFTKEY_PFX_PATH",
+                  "SIGNER_TIMEOUT_SEC",
+                  "SIGNER_URL",
+                  "SIGNER_VAULT_ADDR",
+                  "SIGNER_VAULT_CACERT",
+                  "SIGNER_VAULT_NAMESPACE",
+                  "SIGNER_VAULT_TRANSIT_MOUNT",
+                  "SIGNING_CUSTODY_ADAPTER",
+                  "SIGNING_FAIL_CLOSED",
+                  "SIGNING_REQUIRE_SIGNATURE",
+                  "SPB_EMITTER_CERT_PATH",
+                  "SPB_RECIPIENT_KEY_PATH",
+                  "STREAMING_BATCH_LINGER_MS",
+                  "STREAMING_BATCH_MAX_BYTES",
+                  "STREAMING_BROKERS",
+                  "STREAMING_CB_FAILURE_RATIO",
+                  "STREAMING_CB_MIN_REQUESTS",
+                  "STREAMING_CB_TIMEOUT_S",
+                  "STREAMING_CLIENT_ID",
+                  "STREAMING_CLOSE_TIMEOUT_S",
+                  "STREAMING_CLOUDEVENTS_SOURCE",
+                  "STREAMING_COMPRESSION",
+                  "STREAMING_ENABLED",
+                  "STREAMING_HEALTH_CHECK_TIMEOUT",
+                  "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS",
+                  "STREAMING_MAX_BUFFERED_RECORDS",
+                  "STREAMING_RECORD_DELIVERY_TIMEOUT_S",
+                  "STREAMING_RECORD_RETRIES",
+                  "STREAMING_REQUIRED_ACKS",
+                  "STREAMING_SASL_ALLOW_PLAINTEXT",
+                  "STREAMING_SASL_MECHANISM",
+                  "STREAMING_SASL_PASSWORD",
+                  "STREAMING_SASL_USERNAME",
+                  "STREAMING_TLS_ENABLED",
+                  "SWAGGER_BASE_PATH",
+                  "SWAGGER_DESCRIPTION",
+                  "SWAGGER_ENABLED",
+                  "SWAGGER_HOST",
+                  "SWAGGER_LEFT_DELIM",
+                  "SWAGGER_RIGHT_DELIM",
+                  "SWAGGER_SCHEMES",
+                  "SWAGGER_TITLE",
+                  "SWAGGER_VERSION",
+                  "SYSTEMPLANE_ENABLED",
+                  "TENANT_RUNTIME_CONFIG_ENABLED",
+                  "TLS_TERMINATED_UPSTREAM",
+                  "WEBHOOK_ALLOW_PRIVATE_NETWORK",
+                  "WEBHOOK_API_KEY",
+                  "WEBHOOK_API_KEY_FILE",
+                  "WEBHOOK_BACKOFF_BASE_SEC",
+                  "WEBHOOK_CONSUME_BATCH",
+                  "WEBHOOK_DELIVERY_PROVIDER",
+                  "WEBHOOK_DELIVERY_TIMEOUT_SEC",
+                  "WEBHOOK_HMAC_SECRET",
+                  "WEBHOOK_HMAC_SECRET_FILE",
+                  "WEBHOOK_MAX_ATTEMPTS",
+                  "WEBHOOK_NOTIFICATIONS_BASE_URL",
+                  "WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC",
+                  "WEBHOOK_RETRY_BATCH",
+                  "WEBHOOK_WORKER_ENABLED",
+                  "WEBHOOK_WORKER_INTERVAL_SEC",
+                  "XSD_MAX_BODY_BYTES",
+                  "XSD_VALIDATOR_ADDR",
+                  "XSD_VALIDATOR_PLUGIN_AUTH_ALLOW_INSECURE_HTTP",
+                  "XSD_VALIDATOR_PLUGIN_AUTH_ENABLED",
+                  "XSD_VALIDATOR_PLUGIN_AUTH_HOST",
+                  "XSD_VALIDATOR_TIMEOUT_SEC",
+                  "XSD_VALIDATOR_URL"
+                ]
+              }
+            }
+          }
         }
       },
       "additionalProperties": true

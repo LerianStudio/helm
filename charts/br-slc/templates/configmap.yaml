@@ -1,26 +1,8 @@
 {{- $cm := .Values.configmap.data | default dict -}}
 {{- $ds := .Values.datastores | default dict -}}
-{{- $webhook := .Values.webhook | default dict -}}
-{{- $app := .Values.app | default dict -}}
-{{- $auth := .Values.auth | default dict -}}
-{{- $broker := .Values.broker | default dict -}}
-{{- $circuitBreaker := .Values.circuitBreaker | default dict -}}
-{{- $cors := .Values.cors | default dict -}}
-{{- $outbox := .Values.outbox | default dict -}}
-{{- $postgres := .Values.postgres | default dict -}}
-{{- $rateLimit := .Values.rateLimit | default dict -}}
-{{- $redis := .Values.redis | default dict -}}
-{{- $security := .Values.security | default dict -}}
-{{- $server := .Values.server | default dict -}}
-{{- $streaming := .Values.streaming | default dict -}}
-{{- $swagger := .Values.swagger | default dict -}}
-{{- $schedule := .Values.schedule | default dict -}}
-{{- $sfn := .Values.sfn | default dict -}}
-{{- $signing := .Values.signing | default dict -}}
-{{- $intake := .Values.intake | default dict -}}
-{{- $dispatch := .Values.dispatch | default dict -}}
-{{- $nuclea := .Values.nuclea | default dict -}}
+{{- /* Dependency toggles kept as typed knobs (configmap.data.<KEY> > .Values.<toggle>.enabled > default). */ -}}
 {{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" (.Values.multiTenant | default dict) "field" "enabled" "default" "false")) "true" -}}
+{{- $streamingEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_ENABLED" "params" (.Values.streaming | default dict) "field" "enabled" "default" "false")) "true" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -28,136 +10,145 @@ metadata:
   labels:
     {{- include "br-slc.labels" . | nindent 4 }}
 data:
-  WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC: {{ .Values.webhookNotificationsCacheTtlSec | default "60" | quote }}
-  WEBHOOK_HMAC_SECRET_FILE: {{ .Values.webhookHmacSecretFile | default "" | quote }}
+  WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC: {{ $cm.WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC | default "60" | quote }}
+  WEBHOOK_HMAC_SECRET_FILE: {{ $cm.WEBHOOK_HMAC_SECRET_FILE | default "" | quote }}
   # Config knobs — each resolves via lerian-common.cfgValue:
   #   configmap.data.<NATIVE_KEY> (escape hatch) > .Values.<group>.<field> > chart default.
-  AGGRESSIVE_RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AGGRESSIVE_RATE_LIMIT_MAX" "params" $rateLimit "field" "aggressiveRateLimitMax" "default" "100") | quote }}
-  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC" "params" $rateLimit "field" "aggressiveRateLimitWindowSec" "default" "60") | quote }}
-  ALLOW_CORS_WILDCARD: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_CORS_WILDCARD" "params" $security "field" "allowCorsWildcard" "default" "false") | quote }}
-  ALLOW_INSECURE_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_INSECURE_TLS" "params" $security "field" "allowInsecureTls" "default" "false") | quote }}
-  ALLOW_RATELIMIT_FAIL_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_RATELIMIT_FAIL_OPEN" "params" $rateLimit "field" "allowRatelimitFailOpen" "default" "false") | quote }}
-  AWS_ACCESS_KEY_ID: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AWS_ACCESS_KEY_ID" "params" $app "field" "awsAccessKeyId" "default" "") | default "" | quote }}
-  AWS_REGION: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "AWS_REGION" "params" $app "field" "awsRegion" "default" "us-east-2") | quote }}
-  CIRCUIT_BREAKER_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CIRCUIT_BREAKER_ENABLED" "params" $circuitBreaker "field" "circuitBreakerEnabled" "default" "false") | quote }}
-  CORS_ALLOWED_HEADERS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CORS_ALLOWED_HEADERS" "params" $cors "field" "allowedHeaders" "default" "Origin,Content-Type,Accept,Authorization,X-Request-ID") | quote }}
-  CORS_ALLOWED_METHODS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CORS_ALLOWED_METHODS" "params" $cors "field" "allowedMethods" "default" "GET,POST,PUT,PATCH,DELETE,OPTIONS") | quote }}
-  CORS_ALLOWED_ORIGINS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CORS_ALLOWED_ORIGINS" "params" $cors "field" "allowedOrigins" "default" "") | quote }}
-  CORS_ALLOW_CREDENTIALS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CORS_ALLOW_CREDENTIALS" "params" $cors "field" "allowCredentials" "default" "false") | quote }}
-  CORS_EXPOSE_HEADERS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "CORS_EXPOSE_HEADERS" "params" $cors "field" "exposeHeaders" "default" "") | quote }}
-  DB_METRICS_INTERVAL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DB_METRICS_INTERVAL_SEC" "params" $postgres "field" "dbMetricsIntervalSec" "default" "15") | quote }}
-  DEPLOYMENT_MODE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DEPLOYMENT_MODE" "params" $server "field" "deploymentMode" "default" "byoc") | quote }}
-  ENV_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ENV_NAME" "params" $app "field" "envName" "default" "production") | quote }}
-  HTTP_BODY_LIMIT_BYTES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "HTTP_BODY_LIMIT_BYTES" "params" $server "field" "httpBodyLimitBytes" "default" "104857600") | quote }}
-  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "IDEMPOTENCY_RETRY_WINDOW_SEC" "params" $app "field" "idempotencyRetryWindowSec" "default" "300") | quote }}
-  INFRA_CONNECT_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "INFRA_CONNECT_TIMEOUT_SEC" "params" $postgres "field" "infraConnectTimeoutSec" "default" "30") | quote }}
-  INTAKE_BATCH_MAX_LINES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "INTAKE_BATCH_MAX_LINES" "params" $app "field" "intakeBatchMaxLines" "default" "50000") | quote }}
-  LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "LOG_LEVEL" "params" $app "field" "logLevel" "default" "info") | quote }}
-  M2M_CREDENTIAL_CACHE_TTL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "M2M_CREDENTIAL_CACHE_TTL_SEC" "params" $app "field" "m2mCredentialCacheTtlSec" "default" "300") | quote }}
-  MAX_PAGINATION_LIMIT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MAX_PAGINATION_LIMIT" "params" $app "field" "maxPaginationLimit" "default" "100") | quote }}
-  MAX_PAGINATION_MONTH_DATE_RANGE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MAX_PAGINATION_MONTH_DATE_RANGE" "params" $app "field" "maxPaginationMonthDateRange" "default" "3") | quote }}
-  MIGRATIONS_PATH: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MIGRATIONS_PATH" "params" $postgres "field" "migrationsPath" "default" "migrations") | quote }}
-  MOCK_NUCLEA_URL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MOCK_NUCLEA_URL" "params" $app "field" "mockNucleaUrl" "default" "") | quote }}
-  MQ_BRIDGE_MAX_DRAIN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MQ_BRIDGE_MAX_DRAIN" "params" $app "field" "mqBridgeMaxDrain" "default" "16") | quote }}
-  MQ_BRIDGE_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MQ_BRIDGE_TIMEOUT_SEC" "params" $app "field" "mqBridgeTimeoutSec" "default" "10") | quote }}
-  MQ_BRIDGE_URL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MQ_BRIDGE_URL" "params" $app "field" "mqBridgeUrl" "default" "http://localhost:9121") | quote }}
-  NUCLEA_REST_ALLOW_INSECURE_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "NUCLEA_REST_ALLOW_INSECURE_TLS" "params" $app "field" "nucleaRestAllowInsecureTls" "default" "false") | quote }}
-  NUCLEA_REST_CB_CONSECUTIVE_FAILURES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "NUCLEA_REST_CB_CONSECUTIVE_FAILURES" "params" $app "field" "nucleaRestCbConsecutiveFailures" "default" "5") | quote }}
-  NUCLEA_REST_CB_OPEN_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "NUCLEA_REST_CB_OPEN_TIMEOUT_SEC" "params" $app "field" "nucleaRestCbOpenTimeoutSec" "default" "30") | quote }}
-  NUCLEA_REST_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "NUCLEA_REST_TIMEOUT_SEC" "params" $app "field" "nucleaRestTimeoutSec" "default" "30") | quote }}
-  OUTBOX_ALLOW_EMPTY_TENANT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_ALLOW_EMPTY_TENANT" "params" $outbox "field" "allowEmptyTenant" "default" "true") | quote }}
-  OUTBOX_BATCH_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_BATCH_SIZE" "params" $outbox "field" "batchSize" "default" "50") | quote }}
-  OUTBOX_DISPATCH_INTERVAL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_DISPATCH_INTERVAL_SEC" "params" $outbox "field" "dispatchIntervalSec" "default" "2") | quote }}
-  OUTBOX_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_ENABLED" "params" $outbox "field" "enabled" "default" "true") | quote }}
-  OUTBOX_INCLUDE_TENANT_METRICS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_INCLUDE_TENANT_METRICS" "params" $outbox "field" "includeTenantMetrics" "default" "false") | quote }}
-  OUTBOX_MAX_DISPATCH_ATTEMPTS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_MAX_DISPATCH_ATTEMPTS" "params" $outbox "field" "maxDispatchAttempts" "default" "10") | quote }}
-  OUTBOX_MAX_FAILED_PER_BATCH: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_MAX_FAILED_PER_BATCH" "params" $outbox "field" "maxFailedPerBatch" "default" "25") | quote }}
-  OUTBOX_PROCESSING_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_PROCESSING_TIMEOUT_SEC" "params" $outbox "field" "processingTimeoutSec" "default" "600") | quote }}
-  OUTBOX_PUBLISH_BACKOFF_MS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_PUBLISH_BACKOFF_MS" "params" $outbox "field" "publishBackoffMs" "default" "200") | quote }}
-  OUTBOX_PUBLISH_MAX_ATTEMPTS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_PUBLISH_MAX_ATTEMPTS" "params" $outbox "field" "publishMaxAttempts" "default" "3") | quote }}
-  OUTBOX_RETRY_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_RETRY_WINDOW_SEC" "params" $outbox "field" "retryWindowSec" "default" "300") | quote }}
-  OUTBOX_TABLE_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "OUTBOX_TABLE_NAME" "params" $outbox "field" "tableName" "default" "outbox_events") | quote }}
-  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PLUGIN_AUTH_ENABLED" "params" $auth "field" "pluginAuthEnabled" "default" "true") | quote }}
-  PLUGIN_AUTH_HOST: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "PLUGIN_AUTH_HOST" "params" $auth "field" "pluginAuthHost" "default" "") | quote }}
-  POSTGRES_CONNECT_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_CONNECT_TIMEOUT_SEC" "params" $postgres "field" "postgresConnectTimeoutSec" "default" "10") | quote }}
-  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_CONN_MAX_IDLE_TIME_MINS" "params" $postgres "field" "postgresConnMaxIdleTimeMins" "default" "5") | quote }}
-  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_CONN_MAX_LIFETIME_MINS" "params" $postgres "field" "postgresConnMaxLifetimeMins" "default" "30") | quote }}
-  POSTGRES_MAX_IDLE_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_MAX_IDLE_CONNS" "params" $postgres "field" "postgresMaxIdleConns" "default" "5") | quote }}
-  POSTGRES_MAX_OPEN_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_MAX_OPEN_CONNS" "params" $postgres "field" "postgresMaxOpenConns" "default" "25") | quote }}
-  POSTGRES_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_NAME" "params" $postgres "field" "postgresName" "default" "br-slc") | quote }}
-  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK" "params" $broker "field" "allowInsecureHealthCheck" "default" "false") | quote }}
-  RABBITMQ_ALLOW_INSECURE_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_ALLOW_INSECURE_TLS" "params" $broker "field" "allowInsecureTls" "default" "false") | quote }}
-  RABBITMQ_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_ENABLED" "params" $broker "field" "enabled" "default" "false") | quote }}
-  RABBITMQ_PORT_HOST: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_PORT_HOST" "params" $broker "field" "portHost" "default" "15672") | quote }}
-  RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS" "params" $broker "field" "requireHealthAllowedHosts" "default" "false") | quote }}
-  RABBITMQ_VHOST: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RABBITMQ_VHOST" "params" $broker "field" "vhost" "default" "/") | quote }}
-  RATE_LIMIT_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_ENABLED" "params" $rateLimit "field" "rateLimitEnabled" "default" "true") | quote }}
-  RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_MAX" "params" $rateLimit "field" "rateLimitMax" "default" "500") | quote }}
-  RATE_LIMIT_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_WINDOW_SEC" "params" $rateLimit "field" "rateLimitWindowSec" "default" "60") | quote }}
-  REDIS_DB: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_DB" "params" $redis "field" "db" "default" "0") | quote }}
-  REDIS_DIAL_TIMEOUT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_DIAL_TIMEOUT" "params" $redis "field" "dialTimeout" "default" "5") | quote }}
-  REDIS_MAX_RETRIES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_MAX_RETRIES" "params" $redis "field" "maxRetries" "default" "3") | quote }}
-  REDIS_MAX_RETRY_BACKOFF: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_MAX_RETRY_BACKOFF" "params" $redis "field" "maxRetryBackoff" "default" "8") | quote }}
-  REDIS_MIN_IDLE_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_MIN_IDLE_CONNS" "params" $redis "field" "minIdleConns" "default" "2") | quote }}
-  REDIS_MIN_RETRY_BACKOFF: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_MIN_RETRY_BACKOFF" "params" $redis "field" "minRetryBackoff" "default" "1") | quote }}
-  REDIS_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_POOL_SIZE" "params" $redis "field" "poolSize" "default" "10") | quote }}
-  REDIS_POOL_TIMEOUT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_POOL_TIMEOUT" "params" $redis "field" "poolTimeout" "default" "2") | quote }}
-  REDIS_PROTOCOL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_PROTOCOL" "params" $redis "field" "protocol" "default" "3") | quote }}
-  REDIS_READ_TIMEOUT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_READ_TIMEOUT" "params" $redis "field" "readTimeout" "default" "3") | quote }}
-  REDIS_WRITE_TIMEOUT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "REDIS_WRITE_TIMEOUT" "params" $redis "field" "writeTimeout" "default" "3") | quote }}
-  RELAXED_RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RELAXED_RATE_LIMIT_MAX" "params" $rateLimit "field" "relaxedRateLimitMax" "default" "1000") | quote }}
-  RELAXED_RATE_LIMIT_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RELAXED_RATE_LIMIT_WINDOW_SEC" "params" $rateLimit "field" "relaxedRateLimitWindowSec" "default" "60") | quote }}
-  RSFN_CONSUMER_ALLOW_INSECURE_TLS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RSFN_CONSUMER_ALLOW_INSECURE_TLS" "params" $app "field" "rsfnConsumerAllowInsecureTls" "default" "false") | quote }}
-  RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES" "params" $app "field" "rsfnConsumerCbConsecutiveFailures" "default" "5") | quote }}
-  RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC" "params" $app "field" "rsfnConsumerCbOpenTimeoutSec" "default" "30") | quote }}
-  RSFN_CONSUMER_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RSFN_CONSUMER_TIMEOUT_SEC" "params" $app "field" "rsfnConsumerTimeoutSec" "default" "30") | quote }}
-  RSFN_CONSUMER_TRANSPORT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RSFN_CONSUMER_TRANSPORT" "params" $app "field" "rsfnConsumerTransport" "default" "stub") | quote }}
-  RSFN_INBOUND_XSD_VALIDATION_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RSFN_INBOUND_XSD_VALIDATION_ENABLED" "params" $app "field" "rsfnInboundXsdValidationEnabled" "default" "true") | quote }}
-  SCHEDULE_CREDIT_WINDOW_CLOSE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_CREDIT_WINDOW_CLOSE" "params" $app "field" "scheduleCreditWindowClose" "default" "17:30") | quote }}
-  SCHEDULE_CREDIT_WINDOW_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_CREDIT_WINDOW_OPEN" "params" $app "field" "scheduleCreditWindowOpen" "default" "00:30") | quote }}
-  SCHEDULE_CUTOFF_ALERT_LEAD_MIN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_CUTOFF_ALERT_LEAD_MIN" "params" $app "field" "scheduleCutoffAlertLeadMin" "default" "30") | quote }}
-  SCHEDULE_D1_CONFIRMATION_CUTOFF: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_D1_CONFIRMATION_CUTOFF" "params" $app "field" "scheduleD1ConfirmationCutoff" "default" "19:00") | quote }}
-  SCHEDULE_D1_CONFIRMATION_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_D1_CONFIRMATION_ENABLED" "params" $app "field" "scheduleD1ConfirmationEnabled" "default" "false") | quote }}
-  SCHEDULE_DISPATCH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DISPATCH_ENABLED" "params" $app "field" "scheduleDispatchEnabled" "default" "false") | quote }}
-  SCHEDULE_DISPATCH_PAGE_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DISPATCH_PAGE_SIZE" "params" $app "field" "scheduleDispatchPageSize" "default" "1000") | quote }}
-  SCHEDULE_GRID_GATE_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_GRID_GATE_ENABLED" "params" $app "field" "scheduleGridGateEnabled" "default" "false") | quote }}
-  SCHEDULE_HOLIDAYS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_HOLIDAYS" "params" $app "field" "scheduleHolidays" "default" "") | quote }}
-  SCHEDULE_RELAY_STATUS_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_RELAY_STATUS_ENABLED" "params" $app "field" "scheduleRelayStatusEnabled" "default" "false") | quote }}
-  SCHEDULE_RETURN_POLL_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_RETURN_POLL_ENABLED" "params" $app "field" "scheduleReturnPollEnabled" "default" "false") | quote }}
-  SCHEDULE_RSFN_INGEST_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_RSFN_INGEST_ENABLED" "params" $app "field" "scheduleRsfnIngestEnabled" "default" "false") | quote }}
-  SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF" "params" $app "field" "scheduleSilocDepositCycle1Cutoff" "default" "07:30") | quote }}
-  SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF" "params" $app "field" "scheduleSilocDepositCycle2Cutoff" "default" "12:50") | quote }}
-  SCHEDULE_SILOC_WINDOWS_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_SILOC_WINDOWS_ENABLED" "params" $app "field" "scheduleSilocWindowsEnabled" "default" "false") | quote }}
-  SCHEDULE_STR_SETTLED_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_STR_SETTLED_ENABLED" "params" $app "field" "scheduleStrSettledEnabled" "default" "false") | quote }}
-  SCHEDULE_WORKER_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_WORKER_ENABLED" "params" $app "field" "scheduleWorkerEnabled" "default" "true") | quote }}
-  SCHEDULE_WORKER_INTERVAL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_WORKER_INTERVAL_SEC" "params" $app "field" "scheduleWorkerIntervalSec" "default" "30") | quote }}
-  SERVER_ADDRESS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SERVER_ADDRESS" "params" $server "field" "serverAddress" "default" ":4111") | quote }}
-  SIGNER_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SIGNER_TIMEOUT_SEC" "params" $app "field" "signerTimeoutSec" "default" "10") | quote }}
-  SIGNER_URL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SIGNER_URL" "params" $app "field" "signerUrl" "default" "http://localhost:9101") | quote }}
-  STREAMING_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_ENABLED" "params" $streaming "field" "enabled" "default" "false") | quote }}
-  STREAMING_HEALTH_CHECK_TIMEOUT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_HEALTH_CHECK_TIMEOUT" "params" $streaming "field" "healthCheckTimeout" "default" "2s") | quote }}
-  SWAGGER_BASE_PATH: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_BASE_PATH" "params" $swagger "field" "basePath" "default" "/") | quote }}
-  SWAGGER_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_ENABLED" "params" $swagger "field" "enabled" "default" "true") | quote }}
-  SWAGGER_LEFT_DELIM: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_LEFT_DELIM" "params" $swagger "field" "leftDelim" "default" "{{") | quote }}
-  SWAGGER_RIGHT_DELIM: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_RIGHT_DELIM" "params" $swagger "field" "rightDelim" "default" "}}") | quote }}
-  SWAGGER_TITLE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_TITLE" "params" $swagger "field" "title" "default" "BrSlc") | quote }}
-  SWAGGER_VERSION: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SWAGGER_VERSION" "params" $swagger "field" "version" "default" "1.0.0") | quote }}
-  SYSTEMPLANE_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SYSTEMPLANE_ENABLED" "params" $postgres "field" "systemplaneEnabled" "default" "false") | quote }}
-  TENANT_RUNTIME_CONFIG_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TENANT_RUNTIME_CONFIG_ENABLED" "params" $postgres "field" "tenantRuntimeConfigEnabled" "default" "false") | quote }}
-  TLS_TERMINATED_UPSTREAM: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "TLS_TERMINATED_UPSTREAM" "params" $server "field" "tlsTerminatedUpstream" "default" "false") | quote }}
+  AGGRESSIVE_RATE_LIMIT_MAX: {{ $cm.AGGRESSIVE_RATE_LIMIT_MAX | default "100" | quote }}
+  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ $cm.AGGRESSIVE_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  ALLOW_CORS_WILDCARD: {{ $cm.ALLOW_CORS_WILDCARD | default "false" | quote }}
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "false" | quote }}
+  AWS_ACCESS_KEY_ID: {{ $cm.AWS_ACCESS_KEY_ID | default "" | quote }}
+  AWS_REGION: {{ $cm.AWS_REGION | default "us-east-2" | quote }}
+  CIRCUIT_BREAKER_ENABLED: {{ $cm.CIRCUIT_BREAKER_ENABLED | default "false" | quote }}
+  CORS_ALLOWED_HEADERS: {{ $cm.CORS_ALLOWED_HEADERS | default "Origin,Content-Type,Accept,Authorization,X-Request-ID" | quote }}
+  CORS_ALLOWED_METHODS: {{ $cm.CORS_ALLOWED_METHODS | default "GET,POST,PUT,PATCH,DELETE,OPTIONS" | quote }}
+  CORS_ALLOWED_ORIGINS: {{ $cm.CORS_ALLOWED_ORIGINS | default "" | quote }}
+  CORS_ALLOW_CREDENTIALS: {{ $cm.CORS_ALLOW_CREDENTIALS | default "false" | quote }}
+  CORS_EXPOSE_HEADERS: {{ $cm.CORS_EXPOSE_HEADERS | default "" | quote }}
+  DB_METRICS_INTERVAL_SEC: {{ $cm.DB_METRICS_INTERVAL_SEC | default "15" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
+  HTTP_BODY_LIMIT_BYTES: {{ $cm.HTTP_BODY_LIMIT_BYTES | default "104857600" | quote }}
+  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ $cm.IDEMPOTENCY_RETRY_WINDOW_SEC | default "300" | quote }}
+  INFRA_CONNECT_TIMEOUT_SEC: {{ $cm.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
+  INTAKE_BATCH_MAX_LINES: {{ $cm.INTAKE_BATCH_MAX_LINES | default "50000" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  M2M_CREDENTIAL_CACHE_TTL_SEC: {{ $cm.M2M_CREDENTIAL_CACHE_TTL_SEC | default "300" | quote }}
+  MAX_PAGINATION_LIMIT: {{ $cm.MAX_PAGINATION_LIMIT | default "100" | quote }}
+  MAX_PAGINATION_MONTH_DATE_RANGE: {{ $cm.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
+  MIGRATIONS_PATH: {{ $cm.MIGRATIONS_PATH | default "migrations" | quote }}
+  MOCK_NUCLEA_URL: {{ $cm.MOCK_NUCLEA_URL | default "" | quote }}
+  MQ_BRIDGE_MAX_DRAIN: {{ $cm.MQ_BRIDGE_MAX_DRAIN | default "16" | quote }}
+  MQ_BRIDGE_TIMEOUT_SEC: {{ $cm.MQ_BRIDGE_TIMEOUT_SEC | default "10" | quote }}
+  MQ_BRIDGE_URL: {{ $cm.MQ_BRIDGE_URL | default "http://localhost:9121" | quote }}
+  NUCLEA_REST_ALLOW_INSECURE_TLS: {{ $cm.NUCLEA_REST_ALLOW_INSECURE_TLS | default "false" | quote }}
+  NUCLEA_REST_CB_CONSECUTIVE_FAILURES: {{ $cm.NUCLEA_REST_CB_CONSECUTIVE_FAILURES | default "5" | quote }}
+  NUCLEA_REST_CB_OPEN_TIMEOUT_SEC: {{ $cm.NUCLEA_REST_CB_OPEN_TIMEOUT_SEC | default "30" | quote }}
+  NUCLEA_REST_TIMEOUT_SEC: {{ $cm.NUCLEA_REST_TIMEOUT_SEC | default "30" | quote }}
+  OUTBOX_ALLOW_EMPTY_TENANT: {{ $cm.OUTBOX_ALLOW_EMPTY_TENANT | default "true" | quote }}
+  OUTBOX_BATCH_SIZE: {{ $cm.OUTBOX_BATCH_SIZE | default "50" | quote }}
+  OUTBOX_DISPATCH_INTERVAL_SEC: {{ $cm.OUTBOX_DISPATCH_INTERVAL_SEC | default "2" | quote }}
+  OUTBOX_ENABLED: {{ $cm.OUTBOX_ENABLED | default "true" | quote }}
+  OUTBOX_INCLUDE_TENANT_METRICS: {{ $cm.OUTBOX_INCLUDE_TENANT_METRICS | default "false" | quote }}
+  OUTBOX_MAX_DISPATCH_ATTEMPTS: {{ $cm.OUTBOX_MAX_DISPATCH_ATTEMPTS | default "10" | quote }}
+  OUTBOX_MAX_FAILED_PER_BATCH: {{ $cm.OUTBOX_MAX_FAILED_PER_BATCH | default "25" | quote }}
+  OUTBOX_PROCESSING_TIMEOUT_SEC: {{ $cm.OUTBOX_PROCESSING_TIMEOUT_SEC | default "600" | quote }}
+  OUTBOX_PUBLISH_BACKOFF_MS: {{ $cm.OUTBOX_PUBLISH_BACKOFF_MS | default "200" | quote }}
+  OUTBOX_PUBLISH_MAX_ATTEMPTS: {{ $cm.OUTBOX_PUBLISH_MAX_ATTEMPTS | default "3" | quote }}
+  OUTBOX_RETRY_WINDOW_SEC: {{ $cm.OUTBOX_RETRY_WINDOW_SEC | default "300" | quote }}
+  OUTBOX_TABLE_NAME: {{ $cm.OUTBOX_TABLE_NAME | default "outbox_events" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
+  PLUGIN_AUTH_HOST: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "") | quote }}
+  POSTGRES_CONNECT_TIMEOUT_SEC: {{ $cm.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ $cm.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
+  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ $cm.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ $cm.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
+  POSTGRES_MAX_OPEN_CONNS: {{ $cm.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
+  POSTGRES_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_NAME" "default" "br-slc") | quote }}
+  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ $cm.RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK | default "false" | quote }}
+  RABBITMQ_ALLOW_INSECURE_TLS: {{ $cm.RABBITMQ_ALLOW_INSECURE_TLS | default "false" | quote }}
+  RABBITMQ_ENABLED: {{ $cm.RABBITMQ_ENABLED | default "false" | quote }}
+  RABBITMQ_PORT_HOST: {{ $cm.RABBITMQ_PORT_HOST | default "15672" | quote }}
+  RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: {{ $cm.RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS | default "false" | quote }}
+  RABBITMQ_VHOST: {{ $cm.RABBITMQ_VHOST | default "/" | quote }}
+  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "500" | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ $cm.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ $cm.REDIS_DIAL_TIMEOUT | default "5" | quote }}
+  REDIS_MAX_RETRIES: {{ $cm.REDIS_MAX_RETRIES | default "3" | quote }}
+  REDIS_MAX_RETRY_BACKOFF: {{ $cm.REDIS_MAX_RETRY_BACKOFF | default "8" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ $cm.REDIS_MIN_IDLE_CONNS | default "2" | quote }}
+  REDIS_MIN_RETRY_BACKOFF: {{ $cm.REDIS_MIN_RETRY_BACKOFF | default "1" | quote }}
+  REDIS_POOL_SIZE: {{ $cm.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_POOL_TIMEOUT: {{ $cm.REDIS_POOL_TIMEOUT | default "2" | quote }}
+  REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_READ_TIMEOUT: {{ $cm.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ $cm.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  RELAXED_RATE_LIMIT_MAX: {{ $cm.RELAXED_RATE_LIMIT_MAX | default "1000" | quote }}
+  RELAXED_RATE_LIMIT_WINDOW_SEC: {{ $cm.RELAXED_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  RSFN_CONSUMER_ALLOW_INSECURE_TLS: {{ $cm.RSFN_CONSUMER_ALLOW_INSECURE_TLS | default "false" | quote }}
+  RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES: {{ $cm.RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES | default "5" | quote }}
+  RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC: {{ $cm.RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC | default "30" | quote }}
+  RSFN_CONSUMER_TIMEOUT_SEC: {{ $cm.RSFN_CONSUMER_TIMEOUT_SEC | default "30" | quote }}
+  RSFN_CONSUMER_TRANSPORT: {{ $cm.RSFN_CONSUMER_TRANSPORT | default "stub" | quote }}
+  RSFN_INBOUND_XSD_VALIDATION_ENABLED: {{ $cm.RSFN_INBOUND_XSD_VALIDATION_ENABLED | default "true" | quote }}
+  SCHEDULE_CREDIT_WINDOW_CLOSE: {{ $cm.SCHEDULE_CREDIT_WINDOW_CLOSE | default "17:30" | quote }}
+  SCHEDULE_CREDIT_WINDOW_OPEN: {{ $cm.SCHEDULE_CREDIT_WINDOW_OPEN | default "00:30" | quote }}
+  SCHEDULE_CUTOFF_ALERT_LEAD_MIN: {{ $cm.SCHEDULE_CUTOFF_ALERT_LEAD_MIN | default "30" | quote }}
+  SCHEDULE_D1_CONFIRMATION_CUTOFF: {{ $cm.SCHEDULE_D1_CONFIRMATION_CUTOFF | default "19:00" | quote }}
+  SCHEDULE_D1_CONFIRMATION_ENABLED: {{ $cm.SCHEDULE_D1_CONFIRMATION_ENABLED | default "false" | quote }}
+  SCHEDULE_DISPATCH_ENABLED: {{ $cm.SCHEDULE_DISPATCH_ENABLED | default "false" | quote }}
+  SCHEDULE_DISPATCH_PAGE_SIZE: {{ $cm.SCHEDULE_DISPATCH_PAGE_SIZE | default "1000" | quote }}
+  SCHEDULE_GRID_GATE_ENABLED: {{ $cm.SCHEDULE_GRID_GATE_ENABLED | default "false" | quote }}
+  SCHEDULE_HOLIDAYS: {{ $cm.SCHEDULE_HOLIDAYS | default "" | quote }}
+  SCHEDULE_RELAY_STATUS_ENABLED: {{ $cm.SCHEDULE_RELAY_STATUS_ENABLED | default "false" | quote }}
+  SCHEDULE_RETURN_POLL_ENABLED: {{ $cm.SCHEDULE_RETURN_POLL_ENABLED | default "false" | quote }}
+  SCHEDULE_RSFN_INGEST_ENABLED: {{ $cm.SCHEDULE_RSFN_INGEST_ENABLED | default "false" | quote }}
+  SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF: {{ $cm.SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF | default "07:30" | quote }}
+  SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF: {{ $cm.SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF | default "12:50" | quote }}
+  SCHEDULE_SILOC_WINDOWS_ENABLED: {{ $cm.SCHEDULE_SILOC_WINDOWS_ENABLED | default "false" | quote }}
+  SCHEDULE_STR_SETTLED_ENABLED: {{ $cm.SCHEDULE_STR_SETTLED_ENABLED | default "false" | quote }}
+  SCHEDULE_WORKER_ENABLED: {{ $cm.SCHEDULE_WORKER_ENABLED | default "true" | quote }}
+  SCHEDULE_WORKER_INTERVAL_SEC: {{ $cm.SCHEDULE_WORKER_INTERVAL_SEC | default "30" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4111" | quote }}
+  SIGNER_TIMEOUT_SEC: {{ $cm.SIGNER_TIMEOUT_SEC | default "10" | quote }}
+  SIGNER_URL: {{ $cm.SIGNER_URL | default "http://localhost:9101" | quote }}
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  {{- /* STREAMING (lerian-common.streaming.env + global.streaming). Toggle via
+     .Values.streaming.enabled; full SASL/broker block emitted only when enabled
+     AND brokers configured. STREAMING_SASL_PASSWORD is a Secret (secrets.yaml). */ -}}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $cm
+        "clientId" (include "br-slc.fullname" .)
+        "cloudeventsSource" "//lerian.midaz/br-slc") | nindent 2 }}
+  STREAMING_HEALTH_CHECK_TIMEOUT: {{ $cm.STREAMING_HEALTH_CHECK_TIMEOUT | default "2s" | quote }}
+  SWAGGER_BASE_PATH: {{ $cm.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "true" | quote }}
+  SWAGGER_LEFT_DELIM: {{ $cm.SWAGGER_LEFT_DELIM | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIM: {{ $cm.SWAGGER_RIGHT_DELIM | default "}}" | quote }}
+  SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "BrSlc" | quote }}
+  SWAGGER_VERSION: {{ $cm.SWAGGER_VERSION | default "1.0.0" | quote }}
+  SYSTEMPLANE_ENABLED: {{ $cm.SYSTEMPLANE_ENABLED | default "false" | quote }}
+  TENANT_RUNTIME_CONFIG_ENABLED: {{ $cm.TENANT_RUNTIME_CONFIG_ENABLED | default "false" | quote }}
+  TLS_TERMINATED_UPSTREAM: {{ $cm.TLS_TERMINATED_UPSTREAM | default "false" | quote }}
   # Mounted-file PATH (not a secret value) — configmap.data passthrough like
   # WEBHOOK_HMAC_SECRET_FILE; excluded from the grouped API.
   WEBHOOK_API_KEY_FILE: {{ $cm.WEBHOOK_API_KEY_FILE | default "" | quote }}
-  WEBHOOK_BACKOFF_BASE_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_BACKOFF_BASE_SEC" "params" $webhook "field" "webhookBackoffBaseSec" "default" "30") | quote }}
-  WEBHOOK_CONSUME_BATCH: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_CONSUME_BATCH" "params" $webhook "field" "webhookConsumeBatch" "default" "100") | quote }}
-  WEBHOOK_DELIVERY_PROVIDER: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_DELIVERY_PROVIDER" "params" $webhook "field" "webhookDeliveryProvider" "default" "direct") | quote }}
-  WEBHOOK_DELIVERY_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_DELIVERY_TIMEOUT_SEC" "params" $webhook "field" "webhookDeliveryTimeoutSec" "default" "10") | quote }}
-  WEBHOOK_MAX_ATTEMPTS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_MAX_ATTEMPTS" "params" $webhook "field" "webhookMaxAttempts" "default" "6") | quote }}
-  WEBHOOK_NOTIFICATIONS_BASE_URL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_NOTIFICATIONS_BASE_URL" "params" $webhook "field" "webhookNotificationsBaseUrl" "default" "") | quote }}
-  WEBHOOK_WORKER_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_WORKER_ENABLED" "params" $webhook "field" "webhookWorkerEnabled" "default" "false") | quote }}
-  WEBHOOK_WORKER_INTERVAL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_WORKER_INTERVAL_SEC" "params" $webhook "field" "webhookWorkerIntervalSec" "default" "30") | quote }}
-  XSD_VALIDATOR_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "XSD_VALIDATOR_TIMEOUT_SEC" "params" $app "field" "xsdValidatorTimeoutSec" "default" "10") | quote }}
-  XSD_VALIDATOR_URL: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "XSD_VALIDATOR_URL" "params" $app "field" "xsdValidatorUrl" "default" "http://localhost:9091") | quote }}
+  WEBHOOK_BACKOFF_BASE_SEC: {{ $cm.WEBHOOK_BACKOFF_BASE_SEC | default "30" | quote }}
+  WEBHOOK_CONSUME_BATCH: {{ $cm.WEBHOOK_CONSUME_BATCH | default "100" | quote }}
+  WEBHOOK_DELIVERY_PROVIDER: {{ $cm.WEBHOOK_DELIVERY_PROVIDER | default "direct" | quote }}
+  WEBHOOK_DELIVERY_TIMEOUT_SEC: {{ $cm.WEBHOOK_DELIVERY_TIMEOUT_SEC | default "10" | quote }}
+  WEBHOOK_MAX_ATTEMPTS: {{ $cm.WEBHOOK_MAX_ATTEMPTS | default "6" | quote }}
+  WEBHOOK_NOTIFICATIONS_BASE_URL: {{ $cm.WEBHOOK_NOTIFICATIONS_BASE_URL | default "" | quote }}
+  WEBHOOK_WORKER_ENABLED: {{ $cm.WEBHOOK_WORKER_ENABLED | default "false" | quote }}
+  WEBHOOK_WORKER_INTERVAL_SEC: {{ $cm.WEBHOOK_WORKER_INTERVAL_SEC | default "30" | quote }}
+  XSD_VALIDATOR_TIMEOUT_SEC: {{ $cm.XSD_VALIDATOR_TIMEOUT_SEC | default "10" | quote }}
+  XSD_VALIDATOR_URL: {{ $cm.XSD_VALIDATOR_URL | default "http://localhost:9091" | quote }}
 
   # =====================================================================
   # MULTI-TENANCY (lerian-common.multiTenant.env). Toggle via
@@ -207,42 +198,42 @@ data:
   # ADDITIONAL CONFIG — schedule / sfn / signing / intake / dispatch / nuclea / misc.
   # Each resolves via cfgValue (configmap.data.<KEY> > .Values.<group>.<field> > default).
   # =====================================================================
-  ASLC_INBOUND_XSD_VALIDATION_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ASLC_INBOUND_XSD_VALIDATION_ENABLED" "params" $nuclea "field" "aslcInboundXsdValidationEnabled" "default" "true") | quote }}
-  DISPATCH_DEV_RECIPIENT_CERT_PATH: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "DISPATCH_DEV_RECIPIENT_CERT_PATH" "params" $dispatch "field" "devRecipientCertPath" "default" "") | quote }}
-  INTAKE_BATCH_BULK_CHUNK_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "INTAKE_BATCH_BULK_CHUNK_SIZE" "params" $intake "field" "batchBulkChunkSize" "default" "500") | quote }}
-  INTAKE_BATCH_SPOOL_DIR: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "INTAKE_BATCH_SPOOL_DIR" "params" $intake "field" "batchSpoolDir" "default" "") | quote }}
-  INTAKE_BATCH_SPOOL_MAX_BYTES: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "INTAKE_BATCH_SPOOL_MAX_BYTES" "params" $intake "field" "batchSpoolMaxBytes" "default" "268435456") | quote }}
-  IS_DEVELOPMENT: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "IS_DEVELOPMENT" "params" $app "field" "isDevelopment" "default" "true") | quote }}
-  SCHEDULE_ANTICIPATION_DISPATCH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_ANTICIPATION_DISPATCH_ENABLED" "params" $schedule "field" "anticipationDispatchEnabled" "default" "false") | quote }}
-  SCHEDULE_ANTICIPATION_FORWARD_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_ANTICIPATION_FORWARD_ENABLED" "params" $schedule "field" "anticipationForwardEnabled" "default" "false") | quote }}
-  SCHEDULE_ANTICIPATION_SETTLE_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_ANTICIPATION_SETTLE_ENABLED" "params" $schedule "field" "anticipationSettleEnabled" "default" "false") | quote }}
-  SCHEDULE_CANCELLATION_DISPATCH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_CANCELLATION_DISPATCH_ENABLED" "params" $schedule "field" "cancellationDispatchEnabled" "default" "false") | quote }}
-  SCHEDULE_CANCELLATION_FORWARD_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_CANCELLATION_FORWARD_ENABLED" "params" $schedule "field" "cancellationForwardEnabled" "default" "false") | quote }}
-  SCHEDULE_CERT_EXPIRY_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_CERT_EXPIRY_ENABLED" "params" $schedule "field" "certExpiryEnabled" "default" "false") | quote }}
-  SCHEDULE_DEBIT_DISPATCH_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DEBIT_DISPATCH_ENABLED" "params" $schedule "field" "debitDispatchEnabled" "default" "false") | quote }}
-  SCHEDULE_DEBIT_FORWARD_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DEBIT_FORWARD_ENABLED" "params" $schedule "field" "debitForwardEnabled" "default" "false") | quote }}
-  SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK" "params" $schedule "field" "dispatchMaxPagesPerTick" "default" "100") | quote }}
-  SCHEDULE_DISPATCH_MAX_RECORDS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DISPATCH_MAX_RECORDS" "params" $schedule "field" "dispatchMaxRecords" "default" "50000") | quote }}
-  SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS" "params" $schedule "field" "dispatchMaxTransmitAttempts" "default" "20") | quote }}
-  SCHEDULE_DOMICILE_RETURN_CLOSE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DOMICILE_RETURN_CLOSE" "params" $schedule "field" "domicileReturnClose" "default" "10:00") | quote }}
-  SCHEDULE_DOMICILE_RETURN_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DOMICILE_RETURN_OPEN" "params" $schedule "field" "domicileReturnOpen" "default" "08:50") | quote }}
-  SCHEDULE_DOMICILE_RETURN_PM_CLOSE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DOMICILE_RETURN_PM_CLOSE" "params" $schedule "field" "domicileReturnPmClose" "default" "18:30") | quote }}
-  SCHEDULE_DOMICILE_RETURN_PM_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_DOMICILE_RETURN_PM_OPEN" "params" $schedule "field" "domicileReturnPmOpen" "default" "14:10") | quote }}
-  SCHEDULE_FORWARD_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_FORWARD_ENABLED" "params" $schedule "field" "forwardEnabled" "default" "false") | quote }}
-  SCHEDULE_OPERATION_STUCK_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_OPERATION_STUCK_ENABLED" "params" $schedule "field" "operationStuckEnabled" "default" "false") | quote }}
-  SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC" "params" $schedule "field" "operationStuckThresholdExternalSec" "default" "7200") | quote }}
-  SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC" "params" $schedule "field" "operationStuckThresholdInternalSec" "default" "21600") | quote }}
-  SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC" "params" $schedule "field" "operationStuckThresholdSettledSec" "default" "93600") | quote }}
-  SCHEDULE_SPECIAL_GRADE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_SPECIAL_GRADE" "params" $schedule "field" "specialGrade" "default" "none") | quote }}
-  SCHEDULE_VARREDURA_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SCHEDULE_VARREDURA_ENABLED" "params" $schedule "field" "varreduraEnabled" "default" "false") | quote }}
-  SFN_BUS_PROVIDER: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_BUS_PROVIDER" "params" $sfn "field" "busProvider" "default" "kafka") | quote }}
-  SFN_INGEST_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_INGEST_ENABLED" "params" $sfn "field" "ingestEnabled" "default" "false") | quote }}
-  SFN_KAFKA_BATCH_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_KAFKA_BATCH_SIZE" "params" $sfn "field" "kafkaBatchSize" "default" "100") | quote }}
-  SFN_KAFKA_GROUP_ID: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_KAFKA_GROUP_ID" "params" $sfn "field" "kafkaGroupId" "default" "br-slc-sfn") | quote }}
-  SFN_KAFKA_TOPIC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_KAFKA_TOPIC" "params" $sfn "field" "kafkaTopic" "default" "siloc.inbound") | quote }}
-  SFN_STUB_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SFN_STUB_TIMEOUT_SEC" "params" $sfn "field" "stubTimeoutSec" "default" "30") | quote }}
-  SIGNING_CUSTODY_ADAPTER: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SIGNING_CUSTODY_ADAPTER" "params" $signing "field" "custodyAdapter" "default" "softkey") | quote }}
-  SIGNING_FAIL_CLOSED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SIGNING_FAIL_CLOSED" "params" $signing "field" "failClosed" "default" "true") | quote }}
-  SIGNING_REQUIRE_SIGNATURE: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SIGNING_REQUIRE_SIGNATURE" "params" $signing "field" "requireSignature" "default" "true") | quote }}
-  WEBHOOK_ALLOW_PRIVATE_NETWORK: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_ALLOW_PRIVATE_NETWORK" "params" $webhook "field" "allowPrivateNetwork" "default" "false") | quote }}
-  WEBHOOK_RETRY_BATCH: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "WEBHOOK_RETRY_BATCH" "params" $webhook "field" "retryBatch" "default" "100") | quote }}
+  ASLC_INBOUND_XSD_VALIDATION_ENABLED: {{ $cm.ASLC_INBOUND_XSD_VALIDATION_ENABLED | default "true" | quote }}
+  DISPATCH_DEV_RECIPIENT_CERT_PATH: {{ $cm.DISPATCH_DEV_RECIPIENT_CERT_PATH | default "" | quote }}
+  INTAKE_BATCH_BULK_CHUNK_SIZE: {{ $cm.INTAKE_BATCH_BULK_CHUNK_SIZE | default "500" | quote }}
+  INTAKE_BATCH_SPOOL_DIR: {{ $cm.INTAKE_BATCH_SPOOL_DIR | default "" | quote }}
+  INTAKE_BATCH_SPOOL_MAX_BYTES: {{ $cm.INTAKE_BATCH_SPOOL_MAX_BYTES | default "268435456" | quote }}
+  IS_DEVELOPMENT: {{ $cm.IS_DEVELOPMENT | default "true" | quote }}
+  SCHEDULE_ANTICIPATION_DISPATCH_ENABLED: {{ $cm.SCHEDULE_ANTICIPATION_DISPATCH_ENABLED | default "false" | quote }}
+  SCHEDULE_ANTICIPATION_FORWARD_ENABLED: {{ $cm.SCHEDULE_ANTICIPATION_FORWARD_ENABLED | default "false" | quote }}
+  SCHEDULE_ANTICIPATION_SETTLE_ENABLED: {{ $cm.SCHEDULE_ANTICIPATION_SETTLE_ENABLED | default "false" | quote }}
+  SCHEDULE_CANCELLATION_DISPATCH_ENABLED: {{ $cm.SCHEDULE_CANCELLATION_DISPATCH_ENABLED | default "false" | quote }}
+  SCHEDULE_CANCELLATION_FORWARD_ENABLED: {{ $cm.SCHEDULE_CANCELLATION_FORWARD_ENABLED | default "false" | quote }}
+  SCHEDULE_CERT_EXPIRY_ENABLED: {{ $cm.SCHEDULE_CERT_EXPIRY_ENABLED | default "false" | quote }}
+  SCHEDULE_DEBIT_DISPATCH_ENABLED: {{ $cm.SCHEDULE_DEBIT_DISPATCH_ENABLED | default "false" | quote }}
+  SCHEDULE_DEBIT_FORWARD_ENABLED: {{ $cm.SCHEDULE_DEBIT_FORWARD_ENABLED | default "false" | quote }}
+  SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK: {{ $cm.SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK | default "100" | quote }}
+  SCHEDULE_DISPATCH_MAX_RECORDS: {{ $cm.SCHEDULE_DISPATCH_MAX_RECORDS | default "50000" | quote }}
+  SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS: {{ $cm.SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS | default "20" | quote }}
+  SCHEDULE_DOMICILE_RETURN_CLOSE: {{ $cm.SCHEDULE_DOMICILE_RETURN_CLOSE | default "10:00" | quote }}
+  SCHEDULE_DOMICILE_RETURN_OPEN: {{ $cm.SCHEDULE_DOMICILE_RETURN_OPEN | default "08:50" | quote }}
+  SCHEDULE_DOMICILE_RETURN_PM_CLOSE: {{ $cm.SCHEDULE_DOMICILE_RETURN_PM_CLOSE | default "18:30" | quote }}
+  SCHEDULE_DOMICILE_RETURN_PM_OPEN: {{ $cm.SCHEDULE_DOMICILE_RETURN_PM_OPEN | default "14:10" | quote }}
+  SCHEDULE_FORWARD_ENABLED: {{ $cm.SCHEDULE_FORWARD_ENABLED | default "false" | quote }}
+  SCHEDULE_OPERATION_STUCK_ENABLED: {{ $cm.SCHEDULE_OPERATION_STUCK_ENABLED | default "false" | quote }}
+  SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC: {{ $cm.SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC | default "7200" | quote }}
+  SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC: {{ $cm.SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC | default "21600" | quote }}
+  SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC: {{ $cm.SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC | default "93600" | quote }}
+  SCHEDULE_SPECIAL_GRADE: {{ $cm.SCHEDULE_SPECIAL_GRADE | default "none" | quote }}
+  SCHEDULE_VARREDURA_ENABLED: {{ $cm.SCHEDULE_VARREDURA_ENABLED | default "false" | quote }}
+  SFN_BUS_PROVIDER: {{ $cm.SFN_BUS_PROVIDER | default "kafka" | quote }}
+  SFN_INGEST_ENABLED: {{ $cm.SFN_INGEST_ENABLED | default "false" | quote }}
+  SFN_KAFKA_BATCH_SIZE: {{ $cm.SFN_KAFKA_BATCH_SIZE | default "100" | quote }}
+  SFN_KAFKA_GROUP_ID: {{ $cm.SFN_KAFKA_GROUP_ID | default "br-slc-sfn" | quote }}
+  SFN_KAFKA_TOPIC: {{ $cm.SFN_KAFKA_TOPIC | default "siloc.inbound" | quote }}
+  SFN_STUB_TIMEOUT_SEC: {{ $cm.SFN_STUB_TIMEOUT_SEC | default "30" | quote }}
+  SIGNING_CUSTODY_ADAPTER: {{ $cm.SIGNING_CUSTODY_ADAPTER | default "softkey" | quote }}
+  SIGNING_FAIL_CLOSED: {{ $cm.SIGNING_FAIL_CLOSED | default "true" | quote }}
+  SIGNING_REQUIRE_SIGNATURE: {{ $cm.SIGNING_REQUIRE_SIGNATURE | default "true" | quote }}
+  WEBHOOK_ALLOW_PRIVATE_NETWORK: {{ $cm.WEBHOOK_ALLOW_PRIVATE_NETWORK | default "false" | quote }}
+  WEBHOOK_RETRY_BATCH: {{ $cm.WEBHOOK_RETRY_BATCH | default "100" | quote }}

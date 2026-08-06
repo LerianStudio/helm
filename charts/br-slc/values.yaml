@@ -46,6 +46,7 @@ global:
     #   host: ""          # POSTGRES_HOST (external in BYOC; operator must set)
     #   port: "5432"      # POSTGRES_PORT
     #   user: "br-slc"    # POSTGRES_USER
+    #   name: "br-slc"    # POSTGRES_NAME (database name)
     #   ssl: "require"    # POSTGRES_SSLMODE
     # redis:
     #   host: ""          # REDIS_HOST (host:port; external in BYOC)
@@ -53,27 +54,35 @@ global:
     #   host: "localhost" # RABBITMQ_HOST
     #   port: "5672"      # RABBITMQ_PORT_AMQP
     #   user: "guest"     # RABBITMQ_DEFAULT_USER
+  # -- Auth (Access Manager) via lerian-common.globalValue (block "auth"). Read by
+  # PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_HOST; configmap.data.PLUGIN_AUTH_* still wins.
+  # Empty ({}) → chart defaults (enabled "true", host "" → fail-closed until set).
+  auth: {}
+    # enabled: "true"     # PLUGIN_AUTH_ENABLED
+    # host: ""            # PLUGIN_AUTH_HOST (required when enabled; https in prod)
+  # -- Streaming (lerian-common.streaming.env). The full SASL/broker block renders
+  # only when .streaming.enabled=true AND brokers are set. Empty ({}) keeps it off.
+  streaming: {}
+    # brokers: ""              # STREAMING_BROKERS (comma-separated; required when enabled)
+    # tlsEnabled: "true"       # STREAMING_TLS_ENABLED
+    # saslMechanism: "PLAIN"   # STREAMING_SASL_MECHANISM (PLAIN|SCRAM-SHA-256|SCRAM-SHA-512)
+    # saslUsername: ""         # STREAMING_SASL_USERNAME (STREAMING_SASL_PASSWORD → secrets.data)
 # -- Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). URL + Redis
 # infra come from global.multiTenant (or configmap.data.MULTI_TENANT_*).
 # Precedence: configmap.data.MULTI_TENANT_ENABLED > multiTenant.enabled > "false".
 multiTenant:
   # -- Enable multi-tenancy (MULTI_TENANT_ENABLED)
   enabled: false
+# -- Streaming toggle (dependency knob for STREAMING_ENABLED). Broker/SASL config
+# comes from global.streaming (or configmap.data.STREAMING_*); the SASL password
+# is a Secret (secrets.data.STREAMING_SASL_PASSWORD).
+# Precedence: configmap.data.STREAMING_ENABLED > streaming.enabled > "false".
+streaming:
+  # -- Enable the lib-streaming producer (STREAMING_ENABLED)
+  enabled: false
 # -- Dedicated datastore mask for THIS service (same fields as global.datastores;
 # wins over global, loses to configmap.data.<KEY>). Empty ({}) keeps defaults.
 datastores: {}
-
-# Non-secret app config emitted into the app ConfigMap but kept OUT of
-# configmap.data because their env-var names contain the substring "_token_"
-# (a PKCS11 token label and a token-cache TTL — neither is a credential),
-# which the Lerian helm-chart-standard secret-key heuristic would otherwise
-# flag. The ConfigMap template wires them under their real env-var names.
-webhookNotificationsCacheTtlSec: "60"
-# WEBHOOK_HMAC_SECRET_FILE — optional mounted-Secret file PATH (not a secret
-# value). Kept out of configmap.data because its name contains "secret". Empty
-# by default; set it together with extraVolumes/extraVolumeMounts if you prefer
-# the mounted-volume rotation pattern over the inline WEBHOOK_HMAC_SECRET var.
-webhookHmacSecretFile: ""
 
 image:
   repository: ghcr.io/lerianstudio/br-slc
@@ -252,35 +261,17 @@ secrets:
 #     until the operator/overlay sets the real Access Manager URL. See README.
 #
 # See README.md "Env Var Coverage" for the full 156/156 mapping table.
-# -- Raw ConfigMap env-var escape hatch (configmap.data). The clean grouped API is
-# the top-level blocks below; each key resolves via cfgValue:
-#   configmap.data.<NATIVE_KEY> (here) > .Values.<group>.<field> > chart default.
-# Defaults live in the template, so leaving data {} renders the documented defaults.
+# -- PRIMARY override surface: the raw ConfigMap env-var escape hatch. Every
+# non-dependency app key (rate-limit, outbox, swagger, cors, schedule, sfn,
+# signing, intake, dispatch, nuclea, tuning, …) keeps its default IN THE TEMPLATE
+# and is overridden here by its NATIVE env-var name:
+#   configmap.data.<NATIVE_KEY> > chart default.
+# Dependency connections (Postgres/Redis/RabbitMQ HOST/PORT/USER/NAME/SSL, MT,
+# OTEL, auth, streaming) are the TYPED knobs above (datastores mask + global.*).
+# Leaving data {} renders the documented defaults. Guarded by values.schema.json
+# (propertyNames.enum) so a typo'd key is rejected.
 configmap:
   data: {}
-# -- Grouped config API (field names in templates/configmap.yaml). Postgres/Redis/
-# RabbitMQ HOST/PORT/USER come from the datastores mask; MT/OTEL from global.*.
-app: {}
-auth: {}
-broker: {}
-circuitBreaker: {}
-cors: {}
-outbox: {}
-postgres: {}
-rateLimit: {}
-redis: {}
-security: {}
-server: {}
-streaming: {}
-swagger: {}
-webhook: {}
-# -- Grouped config (see templates/configmap.yaml for field names).
-schedule: {}   # settlement/dispatch scheduler windows + toggles (SCHEDULE_*)
-sfn: {}        # SFN bus/kafka ingest (SFN_*)
-signing: {}    # signing custody adapter / fail-closed / require-signature (SIGNING_*)
-intake: {}     # batch intake spool/chunk (INTAKE_*)
-dispatch: {}   # dispatch dev cert path etc. (DISPATCH_*)
-nuclea: {}     # NUCLEA/RSFN/ASLC REST + XSD validation knobs
 signer:
   # SIGNER_PKCS11_TOKEN_LABEL, wired into the signer ConfigMap under its real
   # env-var name. Kept here (not under signer.configmap.data) because the name

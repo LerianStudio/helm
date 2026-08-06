@@ -5,6 +5,20 @@ metadata:
   name: {{ include "midaz-ledger.fullname" . }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
+{{- /*
+Migration gate. When the migration Job renders, this Deployment moves one sync
+wave later: the Job stays in the default wave, together with the bundled
+PostgreSQL and the Secret it reads, and Argo CD only applies the Deployment once
+that wave is healthy — a Job is healthy only once Complete. Set
+`ledger.migrations.deploymentSyncWave: ""` to opt out. Plain `helm install`
+ignores the annotation and keeps today's behaviour: the ledger crash-loops
+against the unmigrated schema until the Job finishes, then starts.
+*/}}
+{{- $migrationSyncWave := dig "deploymentSyncWave" "1" (.Values.ledger.migrations | default dict) | toString }}
+{{- if and (include "midaz.ledgerMigrationsEnabled" .) $migrationSyncWave }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $migrationSyncWave | quote }}
+{{- end }}
 spec:
   revisionHistoryLimit: {{ .Values.ledger.revisionHistoryLimit | default 10 }}
   strategy:

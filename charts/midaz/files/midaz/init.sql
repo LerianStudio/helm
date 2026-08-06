@@ -14,5 +14,7 @@ CREATE DATABASE transaction;
 -- (its Deployment reads the same subchart Secret). Created unconditionally, and
 -- not gated on tracer.enabled, because initdb scripts run exactly once: gating
 -- would leave the database missing for anyone enabling tracer after install.
--- An unused empty database costs nothing.
-CREATE DATABASE tracer;
+-- An unused empty database costs nothing. The name tracks
+-- tracer.configmap.DB_NAME so the bundled cluster and the external bootstrap
+-- Job create the same database the tracer service and its migration Job read.
+CREATE DATABASE {{ dig "configmap" "DB_NAME" "" (.Values.tracer | default dict) | default "tracer" }};

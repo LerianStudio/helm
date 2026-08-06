@@ -273,7 +273,10 @@ helper so 3.x releases keep rendering exactly as before.
 */}}
 {{- define "midaz.tagIsV4" -}}
 {{- $tag := . | toString | trimPrefix "v" -}}
-{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+" $tag -}}
+{{- /* Anchored, complete SemVer 2.0.0 match: semverCompare hard-fails rendering
+       on a malformed version, so a prefix-only test would let "4.0.0.1" through
+       and abort the render instead of resolving to "not v4". */ -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
 {{- if semverCompare ">=4.0.0-0" $tag -}}true{{- end -}}
 {{- end -}}
 {{- end -}}

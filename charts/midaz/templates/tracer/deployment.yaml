@@ -5,6 +5,17 @@ metadata:
   name: {{ include "midaz-tracer.fullname" . }}
   labels:
     {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+{{- /*
+Migration gate — see the ledger Deployment for the reasoning. The migration Job
+stays in the default sync wave with the bundled PostgreSQL and its Secret, this
+Deployment moves one wave later, and Argo CD applies it only once the Job is
+Complete. `tracer.migrations.deploymentSyncWave: ""` opts out.
+*/}}
+{{- $migrationSyncWave := dig "deploymentSyncWave" "1" (.Values.tracer.migrations | default dict) | toString }}
+{{- if and .Values.tracer.migrations.enabled $migrationSyncWave }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $migrationSyncWave | quote }}
+{{- end }}
 spec:
   revisionHistoryLimit: {{ .Values.tracer.revisionHistoryLimit | default 10 }}
   strategy:

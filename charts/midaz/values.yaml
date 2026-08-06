@@ -144,6 +144,12 @@ ledger:
     # during Sync; against a pre-provisioned database, set
     # `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment.
     annotations: {}
+    # -- Argo CD sync wave stamped on the ledger Deployment while this Job
+    # renders, so the Deployment is applied only once the Job reports Complete
+    # (the Job itself stays in the default wave, with the bundled PostgreSQL
+    # Secret it reads). Set to "" to drop the annotation and let both apply
+    # together. Ignored by plain `helm install`.
+    deploymentSyncWave: "1"
     # -- Retries before the Job is marked failed
     backoffLimit: 6
     # -- Hard timeout for the whole Job
@@ -641,6 +647,12 @@ tracer:
     # during Sync; against a pre-provisioned database, set
     # `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment.
     annotations: {}
+    # -- Argo CD sync wave stamped on the tracer Deployment while this Job
+    # renders, so the Deployment is applied only once the Job reports Complete
+    # (the Job itself stays in the default wave, with the bundled PostgreSQL
+    # Secret it reads). Set to "" to drop the annotation and let both apply
+    # together. Ignored by plain `helm install`.
+    deploymentSyncWave: "1"
     # -- Retries before the Job is marked failed (also absorbs a database that
     # is reachable but not yet provisioned by the bootstrap Job)
     backoffLimit: 6

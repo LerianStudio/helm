@@ -1,8 +1,13 @@
 crm:
+  # Exercise the standalone CRM deployment templates in the render-gate.
+  enabled: true
   secrets:
     # App crypto material — operator-provided (external boundary).
     LCRYPTO_HASH_SECRET_KEY: "sample"
     LCRYPTO_ENCRYPT_SECRET_KEY: "sample"
+tracer:
+  # Exercise the tracer deployment templates in the render-gate.
+  enabled: true
 ledger:
   secrets:
     # RabbitMQ — operator-provided; not yet single-sourced (see chart README

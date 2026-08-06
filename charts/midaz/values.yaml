@@ -102,6 +102,28 @@ global:
           db: "crm"
         - role: "readWrite"
           db: "fees"
+  # =============================================================================
+  # TIERED DEPENDENCY-CONNECTION SURFACE (env-wide masks / contracts)
+  # Set a connection ONCE here and every component emits its native env keys from
+  # it. Empty by default → each component falls through to its own default
+  # (render-identical to the un-productized chart). Per-component overrides live
+  # under `<component>.datastores` and each component's `configmap.<KEY>` still
+  # wins over everything (the escape hatch). See values-quickstart.yaml.
+  # =============================================================================
+  # -- Shared datastore masks. Keys: postgresOnboarding / postgresTransaction /
+  # mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / mongo / redis /
+  # broker. Each accepts host/port/user/ssl/replicaHost.
+  datastores: {}
+  # -- Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment.
+  observability: {}
+  # -- Env-wide multi-tenant (tenant-manager): url / redisHost / redisPort / redisTls / ...
+  multiTenant: {}
+  # -- Env-wide streaming (lib-streaming / RedPanda): brokers / saslMechanism / saslUsername / tlsEnabled / ...
+  streaming: {}
+  # -- Env-wide auth (plugin-access-manager): enabled / host.
+  auth: {}
+  # -- Env-wide service discovery (Consul): see lerian-common.serviceDiscovery.env.
+  serviceDiscovery: {}
 ledger:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -278,106 +300,12 @@ ledger:
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/ledger/configmap.yaml
-  configmap:
-    ALLOW_INSECURE_TLS: "true"
-    # -- Otel default configuration
-    ENABLE_TELEMETRY: "true"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""
-    # -- Accounting config
-    ACCOUNT_TYPE_VALIDATION: ""
-    TRANSACTION_ROUTE_VALIDATION: ""
-    # -- PostgreSQL Onboarding module
-    DB_ONBOARDING_HOST: "midaz-postgresql-primary"
-    DB_ONBOARDING_USER: "midaz"
-    DB_ONBOARDING_NAME: "onboarding"
-    DB_ONBOARDING_PORT: "5432"
-    DB_ONBOARDING_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_ONBOARDING_REPLICA_USER: "midaz"
-    DB_ONBOARDING_REPLICA_NAME: "onboarding"
-    DB_ONBOARDING_REPLICA_PORT: "5432"
-    # -- MongoDB Onboarding module
-    MONGO_ONBOARDING_URI: "mongodb"
-    MONGO_ONBOARDING_HOST: "midaz-mongodb"
-    MONGO_ONBOARDING_NAME: "onboarding"
-    MONGO_ONBOARDING_USER: "midaz"
-    MONGO_ONBOARDING_PORT: "27017"
-    # -- PostgreSQL Transaction module
-    DB_TRANSACTION_HOST: "midaz-postgresql-primary"
-    DB_TRANSACTION_USER: "midaz"
-    DB_TRANSACTION_NAME: "transaction"
-    DB_TRANSACTION_PORT: "5432"
-    DB_TRANSACTION_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_TRANSACTION_REPLICA_USER: "midaz"
-    DB_TRANSACTION_REPLICA_NAME: "transaction"
-    DB_TRANSACTION_REPLICA_PORT: "5432"
-    # -- MongoDB Transaction module
-    MONGO_TRANSACTION_URI: "mongodb"
-    MONGO_TRANSACTION_HOST: "midaz-mongodb"
-    MONGO_TRANSACTION_NAME: "transaction"
-    MONGO_TRANSACTION_USER: "midaz"
-    MONGO_TRANSACTION_PORT: "27017"
-    # -- MongoDB CRM module. The midaz v4 ledger binary serves CRM in-process,
-    # so it opens this database itself. Passwords live in ledger.secrets.
-    MONGO_CRM_URI: "mongodb"
-    MONGO_CRM_HOST: "midaz-mongodb"
-    MONGO_CRM_NAME: "crm"
-    MONGO_CRM_USER: "midaz"
-    MONGO_CRM_PORT: "27017"
-    # -- MongoDB Fees module (also in-process in the v4 ledger binary)
-    MONGO_FEES_URI: "mongodb"
-    MONGO_FEES_HOST: "midaz-mongodb"
-    MONGO_FEES_NAME: "fees"
-    MONGO_FEES_USER: "midaz"
-    MONGO_FEES_PORT: "27017"
-    # -- KMS vendor selector for CRM field encryption (midaz pkg/crypto).
-    # "none" keeps legacy mode: local symmetric keys from LCRYPTO_* in the
-    # ledger Secret. "hashicorp-vault" switches to envelope encryption and
-    # then requires KMS_VAULT_ADDR, KMS_VAULT_ROLE_ID, KMS_VAULT_AUTH_METHOD
-    # here plus KMS_VAULT_SECRET_ID in ledger.secrets.
-    KMS_VENDOR: "none"
-    # -- Tracer reservation seam (ledger acting as tracer client). Empty
-    # TRACER_BASE_URL disables the integration; set it to the tracer Service
-    # when tracer.enabled=true.
-    TRACER_BASE_URL: ""
-    # -- Reservation transport: "rest" or "grpc". The bundled tracer exposes
-    # only its HTTP API by default (the gRPC seam stays off until
-    # tracer.configmap.TRACER_GRPC_PORT is set), so the in-chart path defaults
-    # to REST. Switch both together to use gRPC, which is the seam's
-    # production transport.
-    TRACER_TRANSPORT: "rest"
-    # -- Fee engine default currency
-    DEFAULT_CURRENCY: "USD"
-    # -- Redis (shared)
-    REDIS_HOST: "midaz-valkey-primary:6379"
-    # -- RabbitMQ configuration
-    RABBITMQ_URI: "amqp"
-    RABBITMQ_HOST: "midaz-rabbitmq"
-    RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672"
-    RABBITMQ_DEFAULT_USER: "transaction"
-    RABBITMQ_CONSUMER_USER: "consumer"
-    RABBITMQ_TRANSACTION_ASYNC: "false"
-    # -- Audit
-    AUDIT_LOG_ENABLED: "false"
-    # -- Balance Sync Worker
-    BALANCE_SYNC_WORKER_ENABLED: "false"
-    BALANCE_SYNC_MAX_WORKERS: "5"
-    # -- Rate Limiting - Three-tier system with Redis backend
-    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+  # -- Dedicated datastore masks for this component (override global.datastores).
+  # Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding /
+  # mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/ssl/replicaHost).
+  datastores: {}
+  # -- Escape hatch: any native env var (e.g. DB_ONBOARDING_MAX_OPEN_CONNS) overrides the template default.
+  configmap: {}
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -561,32 +489,10 @@ crm:
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/crm/configmap.yaml
-  configmap:
-    ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    # -- MongoDB configuration
-    MONGO_HOST: "midaz-mongodb"
-    MONGO_NAME: "crm"
-    MONGO_PORT: "27017"
-    MONGO_USER: "midaz"
-    # -- Rate Limiting - Three-tier system with Redis backend
-    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+  # -- Dedicated datastore mask (override global.datastores). Sub-key: mongo (host/port/user).
+  datastores: {}
+  # -- Escape hatch: any native env var overrides the template default.
+  configmap: {}
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -779,77 +685,10 @@ tracer:
   affinity: {}
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/tracer/configmap.yaml
-  configmap:
-    ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
-    # -- Application server
-    SERVER_PORT: "4020"
-    SERVER_ADDRESS: ":4020"
-    LOG_LEVEL: "info"
-    # -- Authentication
-    API_KEY_ENABLED: "false"
-    # -- CORS configuration
-    CORS_ALLOWED_ORIGINS: "*"
-    # -- Auth Plugin (Access Manager)
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    # -- Listen address for the reservation gRPC seam the ledger can call
-    # (e.g. ":4021"). Empty keeps the seam off, which is why the ledger side
-    # (`ledger.configmap.TRACER_TRANSPORT`) defaults to the REST transport.
-    # Setting it here also publishes `service.grpcPort` on the tracer Service.
-    TRACER_GRPC_PORT: ""
-    # -- PostgreSQL configuration. Shares the bundled midaz PostgreSQL: the
-    # `tracer` database is created by files/midaz/init.sql (internal) or the
-    # external bootstrap Job, and is owned by the same `midaz` role whose
-    # password the subchart Secret holds. A dedicated `tracer` role would need
-    # its own Secret, which nothing in this chart provisions.
-    # Empty resolves to the bundled PostgreSQL primary Service of THIS release
-    # (e.g. `review-postgresql-primary`), so a non-`midaz` release name still
-    # connects. Set it explicitly for an external PostgreSQL.
-    DB_HOST: ""
-    DB_PORT: "5432"
-    DB_NAME: "tracer"
-    DB_USER: "midaz"
-    DB_SSL_MODE: "disable"
-    # -- Soft heap limit for the Go runtime, ~90% of resources.limits.memory.
-    # The image ships GOMEMLIMIT=1800MiB (a 2Gi container); without this
-    # override the GC lets the heap grow past the 512Mi cgroup limit and the
-    # kernel OOM-kills the pod. Keep the two in sync when changing limits.
-    GOMEMLIMIT: "460MiB"
-    # -- Swagger documentation
-    SWAGGER_TITLE: "Tracer API"
-    SWAGGER_DESCRIPTION: "Real-time transaction validation and fraud prevention API"
-    SWAGGER_HOST: ":4020"
-    SWAGGER_BASE_PATH: "/"
-    SWAGGER_SCHEMES: "http"
-    # -- CEL expression engine cost limit
-    CEL_COST_LIMIT: "10000"
-    # -- OpenTelemetry
-    ENABLE_TELEMETRY: "false"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/tracer"
-    OTEL_RESOURCE_SERVICE_NAME: "midaz-tracer"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    # -- Cleanup worker
-    CLEANUP_WORKER_ENABLED: "false"
-    CLEANUP_INTERVAL_HOURS: "24"
-    # -- Multi-tenant (when true, MULTI_TENANT_URL, MULTI_TENANT_REDIS_HOST and
-    #    secrets.MULTI_TENANT_SERVICE_API_KEY become required)
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
-    MULTI_TENANT_REDIS_HOST: ""
-    MULTI_TENANT_REDIS_PORT: "6379"
-    MULTI_TENANT_REDIS_TLS: "true"
-    MULTI_TENANT_MAX_TENANT_POOLS: "100"
-    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
-    MULTI_TENANT_TIMEOUT: "30"
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-    MULTI_TENANT_CACHE_TTL_SEC: "120"
-    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
-    # MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: ""
-    # MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT: ""
+  # -- Dedicated datastore mask (override global.datastores). Sub-key: postgres (host/port/user/ssl).
+  datastores: {}
+  # -- Escape hatch: any native env var overrides the template default.
+  configmap: {}
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -866,6 +705,9 @@ tracer:
     # -- Optional Redis password for the tenant connection-pool registry.
     # MULTI_TENANT_REDIS_PASSWORD: ""
   # -- Existing secrets name
+    # -- Service discovery (lib-service-discovery) Consul ACL token. Operator-provided;
+    # only set when the Consul server enforces ACLs. Emitted into the tracer Secret only when set.
+    SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
 grafana:

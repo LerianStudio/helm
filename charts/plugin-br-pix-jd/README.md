@@ -1,0 +1,40 @@
+# plugin-br-pix-jd
+
+Helm chart for [`plugin-br-pix-jd`](https://github.com/LerianStudio/plugin-br-pix-jd) — the Lerian Bacen/JDPI Pix plugin: DICT keys and claims, SPI transactions, refunds and limits, QR codes, inbound JDPI webhooks, MED 2.0, Pix Automático, and indirect participants.
+
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: `worker.secrets.LICENSE_KEY` (or `api.secrets.LICENSE_KEY`, which it falls back to) — required only when the worker is enabled and `IS_DEVELOPMENT` is not true. The api does NOT validate a license. `api.secrets.POSTGRES_PASSWORD` only when the bundled Postgres is disabled or marked external. Everything else is optional at this chart version; the JD / Midaz / CRM / notification credentials land in a later phase of this chart's rollout.
+- Dependency notes: two dependencies. `lerian-common-helm` is a **local library chart** (`file://../lerian-common`) — it renders nothing and supplies the shared env and workload helpers. `postgresql` is the Bitnami subchart, pinned to `16.3.5`, bundled by default and gated on `postgresql.enabled`; set `postgresql.enabled=false` or `postgresql.external=true` for an operator-provided datastore.
+- Production overrides: `api.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE` (production requires SSL), `api.configmap.REDIS_HOST`, `api.existingSecret.name` for operator-managed credentials, and `api.ingress.*`. Never set the `ALLOW_*` bypasses in production — the app fails its boot when they are present under `ENVIRONMENT_NAME=production`.
+- Source/license: [LerianStudio/plugin-br-pix-jd](https://github.com/LerianStudio/plugin-br-pix-jd). The plugin is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
+
+## Before you install
+
+**Pin `api.image.tag` in production.** The chart's `appVersion` (`1.12.0-beta.8`) is the tag of the release train it was cut against, published to `ghcr.io/lerianstudio/plugin-br-pix-jd` — note the registry tag has no leading `v`. Riding `appVersion` means a chart bump silently changes the app version.
+
+**The `worker` component ships disabled.** The production Dockerfile builds only `./cmd/app`, so the image carries no `/worker` binary. Until the app ships a build with both entry points (the pattern already present in its `Dockerfile.smoke`), enabling `worker` yields a CrashLoopBackOff — and transaction reconciliation, the MED pollers and the indirect-delivery drainer do not run.
+
+**The app does not apply migrations on boot** — it reads `MIGRATIONS_PATH` and never calls `golang-migrate`. The chart therefore ships a segregated migration Job whose hook phase follows the datastore: `PostSync` for the bundled Postgres (provisioned during Sync, so the api briefly serves against an empty schema), `PreSync` for an external one (schema-first). In multi-tenant mode the Tenant Manager owns per-tenant migrations and the chart REFUSES `migrations.enabled=true`.
+
+## Components
+
+| Component | Values key | Workload | Entry point | Notes |
+|---|---|---|---|---|
+| API | `api` | Deployment + Service (+ Ingress / HPA / PDB) | image default (`/service` = `cmd/app`) | Listens on `8080`. `/health`, `/readyz`, `/metrics`, `/version` are auth-exempt. |
+| Worker | `worker` | Deployment | `/worker` (`cmd/worker`) | No Service, no Ingress, no HPA, no probes — it runs cron jobs, not a listener. Disabled by default. |
+
+Both components run **the same image**. Setting `worker.image.repository`/`tag` to anything other than the api's fails the render: the two are entry points of one build, and mismatched tags would deploy an api and a worker compiled from different commits.
+
+## Credentials
+
+`POSTGRES_PASSWORD` is single-sourced. With the bundled subchart the password is generated into the subchart's own Secret and the container reads it through a `secretKeyRef`; the key is deliberately absent from this chart's Secret. Only on the external path does the operator supply it, and the chart fails the render with an actionable message rather than emitting an empty value.
+
+## Rate limiting
+
+The three-tier limiter is Redis-backed and **fail-closed by default**: an unreachable Redis rejects requests rather than degrading. `api.configmap.REDIS_HOST` is therefore required. Use the productized `api.rateLimit.*` knobs; raw `api.configmap.RATE_LIMIT_*` keys still work and take precedence.
+
+## Values
+
+See [`values.yaml`](values.yaml) for the annotated defaults and [`values-template.yaml`](values-template.yaml) for the operator-provided placeholders.

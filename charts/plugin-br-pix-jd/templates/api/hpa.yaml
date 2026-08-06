@@ -1,0 +1,7 @@
+{{- if and .Values.api.enabled .Values.api.autoscaling.enabled }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" .Values.api.autoscaling
+      "name" (include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api"))
+      "namespace" (include "plugin-br-pix-jd.namespace" $)
+      "labels" (include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "api"))) }}
+{{- end }}

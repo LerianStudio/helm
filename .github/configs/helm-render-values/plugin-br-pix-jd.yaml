@@ -1,0 +1,22 @@
+# CI-ONLY render fixture for charts/plugin-br-pix-jd.
+#
+# NOT a production example and NOT a credential store. Every value here exists so
+# the repository render gate can satisfy the chart's fail-loud gates; the strings
+# are deliberately self-describing placeholders, never real secrets.
+#
+# Gates this file satisfies:
+#   api.secrets.LICENSE_KEY   — required whenever the api renders its own Secret
+#   api.configmap.REDIS_HOST  — required because the rate limiter is fail-closed
+#   api.configmap.ENVIRONMENT_NAME — required so the production gates are deliberate
+#   api.configmap.MIDAZ_ASSET_ID   — required; empty silently backfills a fake asset
+api:
+  configmap:
+    REDIS_HOST: "valkey:6379"
+    # Required gate: an empty value would resolve to "development" in the app and
+    # silently disable every production security check.
+    ENVIRONMENT_NAME: "development"
+    # Required gate: an empty value is NOT inert — the app backfills "1" and posts
+    # against a fabricated asset instead of failing closed.
+    MIDAZ_ASSET_ID: "BRL"
+  secrets:
+    LICENSE_KEY: "ci-only-not-a-real-license"

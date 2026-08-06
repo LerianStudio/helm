@@ -1,0 +1,106 @@
+{{- if .Values.api.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api") }}
+  namespace: {{ include "plugin-br-pix-jd.namespace" $ }}
+  labels:
+    {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "api") | nindent 4 }}
+  {{- with (include "plugin-br-pix-jd.commonAnnotations" (dict "root" $)) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- /* Omit replicas entirely when the HPA owns the count: leaving it set makes
+     every `helm upgrade` reset the scale the autoscaler just decided. */ -}}
+  {{- if not .Values.api.autoscaling.enabled }}
+  replicas: {{ .Values.api.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.api.revisionHistoryLimit }}
+  {{- include "lerian-common.deploymentStrategy" (dict
+        "type" .Values.api.deploymentStrategy.type
+        "maxSurge" .Values.api.deploymentStrategy.rollingUpdate.maxSurge
+        "maxUnavailable" .Values.api.deploymentStrategy.rollingUpdate.maxUnavailable) | nindent 2 }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-pix-jd.componentSelectorLabels" (dict "root" $ "name" "api") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- /* Roll the pods when env changes. Without this a ConfigMap-only edit
+           leaves the running pods on the old values with no visible signal. */}}
+        checksum/config: {{ include (print $.Template.BasePath "/api/configmap.yaml") . | sha256sum }}
+        {{- if include "plugin-br-pix-jd.rendersOwnSecret" (dict "comp" .Values.api) }}
+        checksum/secret: {{ include (print $.Template.BasePath "/api/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with (include "plugin-br-pix-jd.commonAnnotations" (dict "root" $)) }}
+        {{- . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "api") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "plugin-br-pix-jd.serviceAccountName" . }}
+      {{- with (.Values.api.imagePullSecrets | default (.Values.global).imagePullSecrets) }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- /* Above the lib-streaming close timeout so an in-flight CloudEvent flush
+         completes instead of being cut off mid-close. */}}
+      terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
+      {{- /* Migrations are NOT run from this pod. They are a segregated Job
+         (templates/common/migrations-job.yaml), which is the repository convention —
+         see plugin-br-bank-transfer, notifications, plugin-access-manager,
+         plugin-br-pix-switch. A per-pod init container would re-run the migration on
+         every replica start and couple the schema to the rollout. */}}
+      containers:
+        - name: api
+          image: {{ include "plugin-br-pix-jd.componentImage" (dict "root" $ "comp" .Values.api) | quote }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          {{- /* No command/args: the image's own ENTRYPOINT is /service (cmd/app).
+             The worker is the component that overrides it. */}}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api") }}
+            - secretRef:
+                name: {{ include "plugin-br-pix-jd.componentSecretName" (dict "root" $ "name" "api" "comp" .Values.api) }}
+          env:
+            {{- /* Single-sourced Postgres password: read straight from the bundled
+               subchart's own Secret (or the operator's existingSecret), never
+               duplicated into this chart's Secret. */ -}}
+            {{- include "plugin-br-pix-jd.dbPasswordEnv" . | nindent 12 }}
+            {{- with .Values.api.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "readinessProbe" "probe" .Values.api.readinessProbe
+                "port" 8080
+                "path" "/readyz" "initialDelay" 5 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "livenessProbe" "probe" .Values.api.livenessProbe
+                "port" 8080
+                "path" "/health" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
+          {{- if .Values.api.startupProbe.enabled }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "startupProbe" "probe" .Values.api.startupProbe
+                "port" 8080
+                "path" "/readyz" "initialDelay" 10 "period" 5 "timeout" 5 "success" 1 "failure" 30) | nindent 10 }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if or .Values.api.nodeSelector .Values.api.affinity .Values.api.tolerations }}
+      {{- include "lerian-common.scheduling" .Values.api | nindent 6 }}
+      {{- end }}
+{{- end }}

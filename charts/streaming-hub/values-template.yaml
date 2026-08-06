@@ -25,7 +25,12 @@ streamingHub:
       PLUGIN_AUTH_ENABLED: "true"
       PLUGIN_AUTH_ADDRESS: ""
       STREAMING_HUB_TENANT_ID: default
+      # Multi-tenant: the switch plus the two values it REQUIRES when true. The
+      # hub refuses to boot with an empty or "local" ENV_NAME, and the credential
+      # sweep fails without a region the AWS SDK chain can resolve.
       MULTI_TENANT_ENABLED: "false"
+      ENV_NAME: ""                            # staging | production (secrets path segment)
+      AWS_REGION: ""                          # e.g. us-east-2 (where the tenant credentials live)
 
   secrets:
     STREAMING_HUB_POSTGRES_DSN: ""            # full Postgres DSN, credentials embedded

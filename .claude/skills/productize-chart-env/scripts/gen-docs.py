@@ -123,7 +123,8 @@ def render(rows):
             d = default.replace("|", "\\|")
             out.write(f"| `{key}` | {typ} | `{d}` | {desc} |\n")
         out.write("\n")
-    return out.getvalue()
+    # Exactly one trailing newline (no blank line at EOF → passes `git diff --check`).
+    return out.getvalue().rstrip("\n") + "\n"
 
 
 def main():

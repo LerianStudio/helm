@@ -649,7 +649,10 @@ JDPI_RETRY_BASE_DELAY_MS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $c
 {{- /* Midaz ledger. MIDAZ_ASSET_ID has NO safe default: the app silently backfills "1"
    when it is empty, which posts against a fabricated asset instead of failing. The
    chart refuses instead — same defect class the app's own smoke report flagged. */ -}}
-{{- $assetId := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_ASSET_ID" "default" "") -}}
+{{- /* O `}}` abaixo NÃO right-trima de propósito: o comentário acima e este
+   assignment trimam ambos os lados, então esta é a newline que termina a última
+   chave emitida antes do bloco Midaz. Sem ela as duas se juntam numa linha só. */ -}}
+{{- $assetId := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_ASSET_ID" "default" "") }}
 MIDAZ_ORGANIZATION_ID: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_ORGANIZATION_ID" "default" "") | quote }}
 MIDAZ_LEDGER_ID: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_LEDGER_ID" "default" "") | quote }}
 MIDAZ_ASSET_ID: {{ required "\n\nERROR: api.configmap.MIDAZ_ASSET_ID is required.\nAn empty value is NOT inert: the app backfills \"1\" and posts against a fabricated\nasset instead of failing closed. Set the real asset code (for example BRL).\n" $assetId | quote }}

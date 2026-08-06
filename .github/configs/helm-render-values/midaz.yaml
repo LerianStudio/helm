@@ -10,6 +10,8 @@ tracer:
   enabled: true
 ledger:
   secrets:
+    LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     # RabbitMQ — operator-provided; not yet single-sourced (see chart README
     # "Known limitation"). The infra passwords (Postgres/Mongo/Valkey) are now
     # single-sourced from the Bitnami subchart Secrets, so they are intentionally

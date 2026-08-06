@@ -14,16 +14,3 @@ Steps
 Accessing the Services
 Once the port-forwarding is set up, you can access the services in your web browser or via API calls using the following URLs:
 - `midaz-ledger`: http://localhost:3002
-
-{{ if or (include "midaz.tagIsV4" (.Values.ledger.image.tag | default .Chart.AppVersion)) .Values.tracer.enabled -}}
-WARNING: private registry required for midaz v4 images
-
-The v4 artifacts this release selects are not anonymously pullable from Docker
-Hub today. `lerianstudio/midaz-ledger` is public; `midaz-ledger-migrations`,
-`midaz-tracer` and `midaz-tracer-migrations` return `denied/unauthorized`.
-{{ if not (or .Values.ledger.imagePullSecrets .Values.tracer.imagePullSecrets) -}}
-No imagePullSecrets are configured, so those pods will stall in
-ImagePullBackOff. Set `ledger.imagePullSecrets` / `tracer.imagePullSecrets`
-(or attach a pull secret to the ServiceAccount), or mirror the images.
-{{ end -}}
-{{ end -}}

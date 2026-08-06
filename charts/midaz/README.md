@@ -318,7 +318,7 @@ tracer:
   # EXTERNAL PostgreSQL (postgresql.enabled=false / postgresql.external=true).
 ```
 
-> **Prerequisite — the v4 images are not public yet.** `lerianstudio/midaz-ledger` resolves anonymously, but `midaz-ledger-migrations`, `midaz-tracer`, and `midaz-tracer-migrations` currently return `denied/unauthorized` on Docker Hub. Selecting a 4.x ledger tag or enabling tracer therefore requires `ledger.imagePullSecrets` / `tracer.imagePullSecrets` (or a pull secret on the ServiceAccount, or mirrored images) until those packages are published; `helm install` prints a warning when they are missing.
+> **Images.** Every image this chart references is expected to be pullable anonymously, so no `imagePullSecrets` are needed for a default install. Three v4 packages do not satisfy that yet: `lerianstudio/midaz-tracer`, `lerianstudio/midaz-tracer-migrations`, and `lerianstudio/midaz-ledger-migrations` still answer `denied/unauthorized` on Docker Hub, while `lerianstudio/midaz-ledger` resolves. The chart keeps the coordinates the midaz release pipeline publishes; making those repositories public is the fix.
 
 ## Observability
 

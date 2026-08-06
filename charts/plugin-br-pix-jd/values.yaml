@@ -194,8 +194,16 @@ api:
   # Chart defaults when a key is absent everywhere: LOG_LEVEL=info,
   # SERVER_ADDRESS=:8080, TLS_TERMINATED_UPSTREAM=true, POSTGRES_SSLMODE=disable,
   # POSTGRES_USER/POSTGRES_NAME=plugin-br-pix-jd, MIGRATIONS_PATH=/migrations,
-  # SYSTEMPLANE_ENABLED=false, SWAGGER_ENABLED=false, ENVIRONMENT_NAME="".
+  # SYSTEMPLANE_ENABLED=false, SWAGGER_ENABLED=false, ENVIRONMENT_NAME="",
+  # DEPLOYMENT_MODE="".
   # REDIS_HOST has NO default and is required — the rate limiter is fail-closed.
+  #
+  # DEPLOYMENT_MODE (saas | byoc | local, default "") is validated at render time
+  # because the app rejects an unrecognized value at boot. It is INDEPENDENT of
+  # ENVIRONMENT_NAME: "saas" arms TLS enforcement over Postgres, Redis and — in
+  # multi-tenant — the MT Redis and MT URL, failing the boot when any of them is
+  # plaintext. Empty is read by the app as "local" (enforcement off).
+  #
   # See README.md for the full table.
   configmap: {}
   # -- Extra environment variables appended to the container (list of name/value)

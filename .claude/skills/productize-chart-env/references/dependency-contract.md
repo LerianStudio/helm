@@ -40,6 +40,7 @@ table is a snapshot of **lerian-common 1.4.0** — verify before relying on it).
 | **Auth** (access-manager) | `PLUGIN_AUTH_*` | `auth.env` (via `globalValue`) | `global.auth.{enabled,host}` | `<comp>.configmap.PLUGIN_AUTH_*` override; caller passes `hostKey` (`PLUGIN_AUTH_HOST`\|`_ADDRESS`) | — |
 | **Observability** (OTel collector) | `ENABLE_TELEMETRY`, `OTEL_*` | `otel.env` / `.envFlat` / `.podEnv` | `global.observability.{enabled,otlpEndpoint,deploymentEnvironment}` | per-service identity inline (`OTEL_RESOURCE_SERVICE_NAME/VERSION`, `OTEL_LIBRARY_NAME`) | — |
 | **Object storage** (S3/SeaweedFS) | `OBJECT_STORAGE_*` | `objectStorage.value` (≥ lerian-common 1.5.0) | `global.objectStorage.<name>.{endpoint,region,bucket,disableSSL,usePathStyle}` | `<comp>.objectStorage.<name>.*` (dedicated) | `*_ACCESS_KEY_ID`, `*_SECRET_ACCESS_KEY` |
+| **KMS / Vault** (envelope encryption) | `KMS_*` | `kms.value` (≥ lerian-common 1.5.0) | `global.kms.{vendor,vaultAddr,vaultAuthMethod,vaultRoleId,vaultMount}` | `<comp>.kms.*` (dedicated) | `KMS_VAULT_SECRET_ID` |
 | **AWS IAM Roles Anywhere** | `AWS_*` (roles-anywhere) | `rolesAnywhere.{sidecar,volume,imdsEnv,podSecurityContext}` | — | `<comp>.aws.rolesAnywhere.{enabled,…}` | (cert material via volume) |
 | **Inter-service** (sibling Lerian services) | `*_URL` / `*_HOST` of another service | `internalHost` / `internalURL` / `firstIngressHost` / `dependency.fullname` | (derived from names / SD) | derived; or a passthrough URL when SD is off | — |
 

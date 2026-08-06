@@ -321,6 +321,14 @@ ConfigMaps are all included) and reconciles emitted keys vs the `.env`:
 - **No raw drift**: an emitted key not in the `.env` is flagged chart-only (dead config or `.env` gap).
 - **Byte-identical** (regression guard, NOT completeness): default render == prior productized
   render, except intentionally-gated keys (MT/streaming infra now only render when enabled).
+- **Configured-path check (byte-identity of the DEFAULT render is necessary but NOT sufficient).**
+  A mask can feed the ConfigMap yet be IGNORED by the migration Job, the bootstrap Job, the init
+  SQL, or a container/Service port — a silent break that a default-only diff never sees. Render a
+  CONFIGURED scenario: set each dependency mask/knob to a DISTINCT value (custom host, custom db
+  name, custom port) and assert it flows through EVERY consumer of that value, not just the
+  ConfigMap. Bake that scenario into the render-gate fixture so CI keeps covering it. (Also: guard
+  against a `default` argument that fails eagerly — `| default (include "…that can fail…")` runs
+  even when the primary value is present; resolve first, then fail on the empty result.)
 - **Schema**: `helm lint`/`template` validates against the shipped `values.schema.json` — a
   typo'd key under a closed block is rejected (that is the user-facing half of the coverage check).
 - **Docs**: the README parameter table regenerates from the `# --` annotations with no diff.

@@ -469,6 +469,25 @@ each component can still override any shared key), serviceName (OTel identity).
    (auth forced on, Postgres password + SSL required, every ALLOW_* bypass and
    IS_DEVELOPMENT=true rejected at boot). */ -}}
 ENVIRONMENT_NAME: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ENVIRONMENT_NAME" "default" "") | quote }}
+{{- $deploymentMode := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "DEPLOYMENT_MODE" "default" "") | trim -}}
+{{- if and $deploymentMode (not (has (lower $deploymentMode) (list "saas" "byoc" "local"))) -}}
+{{- fail (printf "\n\nERROR: DEPLOYMENT_MODE must be one of saas, byoc, local; got %q.\nThe app rejects any other value at boot (normalizeDeploymentMode), so a typo here\nis NOT inert — it CrashLoops the pod. Empty is allowed and the app reads it as\n\"local\".\n" $deploymentMode) -}}
+{{- end -}}
+{{- /* DEPLOYMENT_MODE selects the app's TLS posture and is INDEPENDENT of
+   ENVIRONMENT_NAME: "saas" means managed infrastructure and turns ON enforcement that
+   every internal datastore (Postgres, Redis, and in multi-tenant also the MT Redis and
+   the MT URL) speaks TLS, failing the boot otherwise. "byoc"/"local" leave it off.
+   There are legitimate saas-staging and local-production combinations, so the two keys
+   are never derived from each other.
+
+   Modeled here rather than left to extraConfigmap because the failure mode of NOT
+   modeling it is invisible: only modeled keys reach the ConfigMap, so an operator who
+   sets DEPLOYMENT_MODE under api.configmap would get a values file that reads as if
+   enforcement were armed while the app actually ran with it off.
+
+   Default is EMPTY, not "local": the app already resolves empty to local, and emitting
+   a literal would silently override a global contract if one is ever added. */}}
+DEPLOYMENT_MODE: {{ $deploymentMode | quote }}
 LOG_LEVEL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "LOG_LEVEL" "default" "info") | quote }}
 INFRA_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "INFRA_CONNECT_TIMEOUT_SEC" "default" "30") | quote }}
 DB_METRICS_INTERVAL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "DB_METRICS_INTERVAL_SEC" "default" "15") | quote }}

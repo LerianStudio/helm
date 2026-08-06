@@ -50,6 +50,31 @@ Name of the service account to use (shared by api and worker).
 {{- end }}
 
 {{/*
+------------------------------------------------------------------------------
+rolesAnywhereEnabled — truthy string when the AWS IAM Roles Anywhere sidecar is on.
+
+Roles Anywhere is the credential path for clusters that are NOT EKS, where IRSA
+does not exist: an aws-signing-helper sidecar exchanges an X.509 client
+certificate for temporary AWS credentials and serves them over a loopback IMDS
+endpoint the SDK inside the app picks up. On EKS use IRSA instead
+(serviceAccount.annotations) — the two are alternatives, never both.
+
+This chart needs AWS credentials at all because multi-tenant M2M resolves each
+tenant's Midaz/CRM/JD credentials from Secrets Manager at runtime.
+
+Exists as a helper because the upstream guard is a three-clause `and` over
+possibly-absent maps, repeated at four sites per component. Written out eight
+times by hand, one of them eventually loses a clause and nil-pointers the render
+on a values file that omits `aws` entirely.
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.rolesAnywhereEnabled" -}}
+{{- $aws := .Values.aws | default dict -}}
+{{- $ra := $aws.rolesAnywhere | default dict -}}
+{{- if $ra.enabled -}}true{{- end -}}
+{{- end }}
+
+{{/*
 componentFullname — <chart fullname>-<component>, e.g. plugin-br-pix-jd-api.
 Input dict: root, name.
 */}}

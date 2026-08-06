@@ -39,10 +39,11 @@ spec:
       {{- with (.Values.worker.imagePullSecrets | default (.Values.api.imagePullSecrets | default (.Values.global).imagePullSecrets)) }}
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
-      {{- with .Values.podSecurityContext }}
-      securityContext:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- /* Same contract as the api: the helper owns both branches (fsGroup 65532 for
+         the Roles Anywhere cert volume, else the chart's podSecurityContext), so it is
+         called unguarded. The worker needs credentials as much as the api does — the
+         MED pollers and reconcilers resolve per-tenant credentials too. */}}
+      {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" .Values.podSecurityContext) | nindent 6 }}
       {{- /* Above the lib-streaming close timeout, same coupling as the api: the worker
          publishes lifecycle events through the outbox relay too. */}}
       terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
@@ -81,6 +82,9 @@ spec:
                 name: {{ include "plugin-br-pix-jd.componentSecretName" (dict "root" $ "name" "worker" "comp" .Values.worker) }}
           env:
             {{- include "plugin-br-pix-jd.dbPasswordEnv" . | nindent 12 }}
+            {{- if include "plugin-br-pix-jd.rolesAnywhereEnabled" . }}
+            {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 12 }}
+            {{- end }}
             {{- with .Values.worker.extraEnvVars }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -92,6 +96,12 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+        {{- if include "plugin-br-pix-jd.rolesAnywhereEnabled" . }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
+        {{- end }}
+      {{- if include "plugin-br-pix-jd.rolesAnywhereEnabled" . }}
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" (printf "%s-iam-tls" (include "plugin-br-pix-jd.fullname" .))) | nindent 6 }}
+      {{- end }}
       {{- if or .Values.worker.nodeSelector .Values.worker.affinity .Values.worker.tolerations }}
       {{- include "lerian-common.scheduling" .Values.worker | nindent 6 }}
       {{- end }}

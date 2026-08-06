@@ -1,0 +1,45 @@
+# Render fixture for streaming-hub — exercises the dependency paths (Kafka mask,
+# auth, secrets, bootstrap Job, migrations) with TYPE-correct values so byte-identity
+# and coverage checks never render an accidentally-empty block. Used by the
+# productize-chart-env render-gate + coverage.py.
+global:
+  auth:
+    enabled: "true"
+    address: "http://plugin-access-manager-auth:4000"
+  datastores:
+    kafka:
+      brokers: "redpanda:9092"
+      saslMechanism: "SCRAM-SHA-512"
+      saslUsername: "streaming-hub"
+      tls: "true"
+  externalPostgresDefinitions:
+    enabled: true
+streamingHub:
+  datastores:
+    kafka:
+      caCert: ""
+  configmap: {}
+  extraEnvVars: {}
+  telemetry:
+    enabled: true
+  useExistingSecret: false
+  secrets:
+    STREAMING_HUB_POSTGRES_DSN: "postgres://hub:hub@localhost:5432/hub?sslmode=disable"
+    STREAMING_HUB_KAFKA_SCRAM_PASSWORD: "changeme"
+    STREAMING_HUB_DEV_KEK: "DEV-ONLY-FAKE-KEK-NOT-A-REAL-KEY"
+    STREAMING_HUB_TENANT_MANAGER_SERVICE_API_KEY: "changeme"
+    STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD: "changeme"
+  migrations:
+    enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: "streaming-hub.lerian.net"
+        paths:
+          - path: /
+            pathType: Prefix
+  all:
+    autoscaling:
+      enabled: false
+    tolerations: []
+    nodeSelector: {}

@@ -21,7 +21,8 @@
 | `global.externalPostgresDefinitions.hubCredentials` | string | `{}` | Credentials for the hub role created by the Job. |
 | `global.externalPostgresDefinitions.hubCredentials.useExistingSecret.name` | string | `""` | Existing secret with DB_PASSWORD_HUB key. |
 | `global.externalPostgresDefinitions.hubCredentials.password` | string | `""` | Password for the hub role (ignored if useExistingSecret.name is set). |
-| `global.auth` | object | `{}` | Env-wide inbound auth (lib-auth / plugin-auth), consumed by lerian-common.globalValue. Declare once at the umbrella level; a component streamingHub.common.configmap.PLUGIN_AUTH_* still overrides per-service. Precedence: common.configmap.<KEY> > global.auth.<field> > chart default. Leave empty ({}) to keep the chart defaults. |
+| `global.auth` | object | `{}` | Env-wide inbound auth (lib-auth / plugin-auth), consumed by lerian-common.globalValue. Declare once at the umbrella level; a component streamingHub.configmap.PLUGIN_AUTH_* still overrides per-service. Precedence: configmap.<KEY> > global.auth.<field> > chart default. Leave empty ({}) to keep the chart defaults. |
+| `global.datastores` | object | `{}` | Env-wide SHARED datastore mask, consumed by lerian-common.datastore.value. Declare a dependency connection ONCE at the umbrella; a component streamingHub.datastores.<type> (dedicated) or configmap.<KEY> (native) still overrides it. Precedence per field: configmap.<KEY> > streamingHub.datastores.<type>.<field> > global.datastores.<type>.<field> > chart default. Leave empty ({}) to keep the chart defaults. |
 | `streamingHub.mode` | enum: all|split | `all` | Deployment topology switch. One of: all | split. all   (default) -> ONE Deployment with STREAMING_HUB_ROLE=all (ingest + delivery co-resident; the dev-st target). Byte-equivalent to the historical single binary. split           -> TWO Deployments: ingest (role=ingest) and delivery (role=delivery), each scaled independently.  !!! NEVER run both an `all` Deployment AND ingest/delivery against the same Kafka cluster: they join ONE consumer group and DOUBLE-CONSUME every event. The mode switch enforces either/or — do not work around it. !!! The values.schema.json constrains this to the enum ["all","split"]. |
 | `streamingHub.image.repository` | string | `ghcr.io/lerianstudio/streaming-hub` | Container image repository. |
 | `streamingHub.image.pullPolicy` | string | `IfNotPresent` | Image pull policy. |
@@ -54,24 +55,9 @@
 | `streamingHub.readinessProbe` | object | `{}` | Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM). |
 | `streamingHub.nodeSelector` | object | `{}` | Shared default scheduling (per-role blocks may override). |
 | `streamingHub.telemetry.enabled` | bool | `false` | Inject the per-pod OTLP endpoint override (HOST_IP downward API). |
-| `streamingHub.common` | object | `{}` | Native per-key escape hatch (highest precedence). Any UPPER_SNAKE app env var can be pinned here verbatim, overriding the grouped field + default. |
+| `streamingHub.datastores` | object | `{}` | DEDICATED datastore mask for this component's OWN dependency instance, consumed by lerian-common.datastore.value. Wins over global.datastores; native configmap.<KEY> still wins over both. Leave empty ({}) to keep the chart defaults. |
+| `streamingHub.configmap` | object | `{}` | Native per-key escape hatch (highest precedence, the PRIMARY override surface). Any UPPER_SNAKE app env var can be pinned here verbatim, overriding the template default (and any datastore/global mask). |
 | `streamingHub.extraEnvVars` | object | `{}` | Unmodeled extra env vars appended verbatim to the ConfigMap. |
-| `streamingHub.app` | object | `{}` | Application / lifecycle (STREAMING_HUB_ENV|LOG_LEVEL|HEALTH_WINDOW| SWAGGER_ENABLED|SHUTDOWN_TIMEOUT|PRE_STOP_DRAIN_TIMEOUT). |
-| `streamingHub.server` | object | `{}` | HTTP server / metrics (STREAMING_HUB_HTTP_LISTEN_ADDR|METRICS_ENABLED). |
-| `streamingHub.kafka` | object | `{}` | Kafka / Redpanda (brokers|scramMechanism|scramUsername|tlsEnabled|caCert). The SCRAM password is a Secret (see secrets below). |
-| `streamingHub.kek` | object | `{}` | Crypto / KEK config (source|ref). The KEK material itself is a Secret. |
-| `streamingHub.dispatch` | object | `{}` | Dispatch / poison worker pool (workers|claimBatch|idleIntervalMs|poisonThreshold). |
-| `streamingHub.pull` | object | `{}` | Pull rate limit (rate|burst). |
-| `streamingHub.dlq` | object | `{}` | DLQ visibility (group|retention|pruneInterval). |
-| `streamingHub.manifest` | object | `{}` | Event manifest sources (sources|refreshInterval). |
-| `streamingHub.reconciler` | object | `{}` | Reconciler / topic-drift (enabled|interval). |
-| `streamingHub.partition` | object | `{}` | Partition lifecycle cron (cronInterval|futureBufferWeeks|retentionEnabled|retentionHorizon). |
-| `streamingHub.idempotency` | object | `{}` | Idempotency (ttl|reapInterval). |
-| `streamingHub.autodisable` | object | `{}` | Auto-disable subscriber circuit (enabled|failureWindow|failureSpread). |
-| `streamingHub.multiTenant` | object | `{}` | Tenancy (F4). libEnabled=MULTI_TENANT_ENABLED (lib-commons request tenancy); the rest is the hub SaaS tenant-manager roster (STREAMING_HUB_MULTI_TENANT_*/ TENANT_MANAGER_*/TENANT_ID/ENVIRONMENT_NAME). Default = BYOC single-tenant. |
-| `streamingHub.security` | object | `{}` | Security posture (allowInsecureKafka|allowInsecureDbTls|allowPrivateSinks). All fail-closed; MUST stay false in staging/production. |
-| `streamingHub.aws` | object | `{}` | AWS SaaS setup metadata (hubPrincipalArn|setupTemplateUrl). |
-| `streamingHub.observability` | object | `{}` | Observability (OTEL_*: libraryName|serviceName|deploymentEnvironment| exporterOtlpEndpoint|insecureExporter). OTEL_EXPORTER_OTLP_ENDPOINT is overridden per-pod when telemetry.enabled=true (downward API). |
 | `streamingHub.migrations.enabled` | bool | `false` | Enable or disable the migrations Job. Default false — opt-in per env (consistent with the chart's other optional features). |
 | `streamingHub.migrations.useExistingSecret` | bool | `false` | Optional. When true, the Job reads STREAMING_HUB_POSTGRES_DSN from a pre-existing Secret (existingSecretName) instead of the chart-managed migration-secret hook. Independent of streamingHub.useExistingSecret; set this to point migrations at the app's existing (e.g. Vault) Secret. |
 | `streamingHub.migrations.existingSecretName` | string | `""` | Name of the pre-existing Secret holding STREAMING_HUB_POSTGRES_DSN (only used when migrations.useExistingSecret=true). |

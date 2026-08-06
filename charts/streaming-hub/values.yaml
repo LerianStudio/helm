@@ -51,12 +51,26 @@ global:
       password: ""
   # -- Env-wide inbound auth (lib-auth / plugin-auth), consumed by
   #    lerian-common.globalValue. Declare once at the umbrella level; a component
-  #    streamingHub.common.configmap.PLUGIN_AUTH_* still overrides per-service.
-  #    Precedence: common.configmap.<KEY> > global.auth.<field> > chart default.
+  #    streamingHub.configmap.PLUGIN_AUTH_* still overrides per-service.
+  #    Precedence: configmap.<KEY> > global.auth.<field> > chart default.
   #    Leave empty ({}) to keep the chart defaults.
   auth: {}
     # enabled: true                                    # PLUGIN_AUTH_ENABLED
     # address: "http://plugin-access-manager-auth:4000" # PLUGIN_AUTH_ADDRESS
+  # -- Env-wide SHARED datastore mask, consumed by lerian-common.datastore.value.
+  #    Declare a dependency connection ONCE at the umbrella; a component
+  #    streamingHub.datastores.<type> (dedicated) or configmap.<KEY>
+  #    (native) still overrides it. Precedence per field:
+  #      configmap.<KEY> > streamingHub.datastores.<type>.<field>
+  #        > global.datastores.<type>.<field> > chart default.
+  #    Leave empty ({}) to keep the chart defaults.
+  datastores: {}
+    # kafka:                          # STREAMING_HUB_KAFKA_* connection
+    #   brokers: "redpanda:9092"      # STREAMING_HUB_KAFKA_BROKERS
+    #   saslMechanism: "SCRAM-SHA-512" # STREAMING_HUB_KAFKA_SCRAM_MECHANISM
+    #   saslUsername: "streaming-hub" # STREAMING_HUB_KAFKA_SCRAM_USERNAME
+    #   tls: "true"                   # STREAMING_HUB_KAFKA_TLS_ENABLED
+    #   caCert: ""                    # STREAMING_HUB_KAFKA_CA_CERT (base64 PEM)
 # =============================================================================
 # streamingHub — the single root key for everything the hub owns.
 # =============================================================================
@@ -197,64 +211,46 @@ streamingHub:
   useExistingSecret: false
   existingSecretName: ""
   # ===========================================================================
-  # Configuration API (productized onto lerian-common).
+  # Configuration API (TIERED productization onto lerian-common).
   #
-  # Every non-sensitive key is emitted by templates/configmap.yaml via
-  # lerian-common.cfgValue with precedence:
-  #   common.configmap.<NATIVE_KEY> (escape hatch) > streamingHub.<group>.<field> > chart default.
-  # Chart defaults live in the TEMPLATE, so the grouped blocks below ship EMPTY
-  # ({}) — set a field only to override. common.configmap stays as the per-key
-  # native escape hatch; streamingHub.extraEnvVars carries unmodeled keys.
+  # Typed KNOBS are reserved for DEPENDENCY CONNECTIONS; every other app knob is
+  # an escape-hatch PASSTHROUGH whose default lives in templates/configmap.yaml.
+  #
+  #   - Kafka/RedPanda connection -> streamingHub.datastores.kafka.* (dedicated)
+  #     or global.datastores.kafka.* (shared) via lerian-common.datastore.value.
+  #   - Auth (PLUGIN_AUTH_*)      -> global.auth.* via lerian-common.globalValue.
+  #   - Everything else           -> template default, overridable via
+  #     streamingHub.configmap.<NATIVE_KEY> (the PRIMARY override surface)
+  #     or streamingHub.extraEnvVars (unmodeled keys).
+  #
+  # There are NO per-group config blocks any more (app/server/kek/dispatch/pull/
+  # dlq/manifest/reconciler/partition/idempotency/autodisable/multiTenant/security/
+  # aws/observability): those defaults live in the template; set an override via
+  # streamingHub.configmap.<KEY>. Postgres is a single opaque DSN Secret
+  # (STREAMING_HUB_POSTGRES_DSN), not host/port/user/db, so it has no datastore
+  # mask in the ConfigMap (the bootstrap Job carries host/port separately).
   #
   # DELIBERATELY ABSENT (injected per-Deployment, see the all/ingest/delivery
   # blocks below): STREAMING_HUB_ROLE, STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS,
   # STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS, STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME.
   # ===========================================================================
-  # -- (object) Native per-key escape hatch (highest precedence). Any UPPER_SNAKE app env
-  #    var can be pinned here verbatim, overriding the grouped field + default.
-  common:
-    configmap: {}
+  # -- (object) DEDICATED datastore mask for this component's OWN dependency
+  #    instance, consumed by lerian-common.datastore.value. Wins over
+  #    global.datastores; native configmap.<KEY> still wins over both.
+  #    Leave empty ({}) to keep the chart defaults.
+  datastores: {}
+    # kafka:                          # STREAMING_HUB_KAFKA_* connection
+    #   brokers: "redpanda:9092"      # STREAMING_HUB_KAFKA_BROKERS
+    #   saslMechanism: "SCRAM-SHA-512" # STREAMING_HUB_KAFKA_SCRAM_MECHANISM
+    #   saslUsername: "streaming-hub" # STREAMING_HUB_KAFKA_SCRAM_USERNAME
+    #   tls: "true"                   # STREAMING_HUB_KAFKA_TLS_ENABLED
+    #   caCert: ""                    # STREAMING_HUB_KAFKA_CA_CERT (base64 PEM)
+  # -- (object) Native per-key escape hatch (highest precedence, the PRIMARY
+  #    override surface). Any UPPER_SNAKE app env var can be pinned here verbatim,
+  #    overriding the template default (and any datastore/global mask).
+  configmap: {}
   # -- Unmodeled extra env vars appended verbatim to the ConfigMap.
   extraEnvVars: {}
-  # -- Application / lifecycle (STREAMING_HUB_ENV|LOG_LEVEL|HEALTH_WINDOW|
-  #    SWAGGER_ENABLED|SHUTDOWN_TIMEOUT|PRE_STOP_DRAIN_TIMEOUT).
-  app: {}
-  # -- HTTP server / metrics (STREAMING_HUB_HTTP_LISTEN_ADDR|METRICS_ENABLED).
-  server: {}
-  # -- Kafka / Redpanda (brokers|scramMechanism|scramUsername|tlsEnabled|caCert).
-  #    The SCRAM password is a Secret (see secrets below).
-  kafka: {}
-  # -- Crypto / KEK config (source|ref). The KEK material itself is a Secret.
-  kek: {}
-  # -- Dispatch / poison worker pool (workers|claimBatch|idleIntervalMs|poisonThreshold).
-  dispatch: {}
-  # -- Pull rate limit (rate|burst).
-  pull: {}
-  # -- DLQ visibility (group|retention|pruneInterval).
-  dlq: {}
-  # -- Event manifest sources (sources|refreshInterval).
-  manifest: {}
-  # -- Reconciler / topic-drift (enabled|interval).
-  reconciler: {}
-  # -- Partition lifecycle cron (cronInterval|futureBufferWeeks|retentionEnabled|retentionHorizon).
-  partition: {}
-  # -- Idempotency (ttl|reapInterval).
-  idempotency: {}
-  # -- Auto-disable subscriber circuit (enabled|failureWindow|failureSpread).
-  autodisable: {}
-  # -- Tenancy (F4). libEnabled=MULTI_TENANT_ENABLED (lib-commons request tenancy);
-  #    the rest is the hub SaaS tenant-manager roster (STREAMING_HUB_MULTI_TENANT_*/
-  #    TENANT_MANAGER_*/TENANT_ID/ENVIRONMENT_NAME). Default = BYOC single-tenant.
-  multiTenant: {}
-  # -- Security posture (allowInsecureKafka|allowInsecureDbTls|allowPrivateSinks).
-  #    All fail-closed; MUST stay false in staging/production.
-  security: {}
-  # -- AWS SaaS setup metadata (hubPrincipalArn|setupTemplateUrl).
-  aws: {}
-  # -- Observability (OTEL_*: libraryName|serviceName|deploymentEnvironment|
-  #    exporterOtlpEndpoint|insecureExporter). OTEL_EXPORTER_OTLP_ENDPOINT is
-  #    overridden per-pod when telemetry.enabled=true (downward API).
-  observability: {}
   # ===========================================================================
   # secrets — role-INVARIANT, SENSITIVE env (one shared Secret). All default "".
   # Empty values are SKIPPED at render so unset SaaS/dev keys never ship blank.

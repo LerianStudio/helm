@@ -14,8 +14,7 @@ streamingHub:
   image:
     tag: ""  # defaults to the chart appVersion
 
-  common:
-    configmap:
+  configmap:
       STREAMING_HUB_ENV: production          # local | staging | production
       STREAMING_HUB_LOG_LEVEL: info
       STREAMING_HUB_KAFKA_BROKERS: ""         # e.g. redpanda.dev-st.lerian.net:9092

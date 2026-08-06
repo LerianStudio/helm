@@ -263,10 +263,7 @@
           "description": "Shared default scheduling (per-role blocks may override)."
         },
         "tolerations": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
+          "type": "array"
         },
         "affinity": {
           "type": "object",
@@ -288,322 +285,107 @@
         "existingSecretName": {
           "default": ""
         },
-        "common": {
+        "datastores": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Native per-key escape hatch (highest precedence). Any UPPER_SNAKE app env"
+          "description": "DEDICATED datastore mask for this component's OWN dependency"
+        },
+        "configmap": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Native per-key escape hatch (highest precedence, the PRIMARY",
+          "propertyNames": {
+            "enum": [
+              "AWS_REGION",
+              "ENV",
+              "ENVIRONMENT_NAME",
+              "ENV_NAME",
+              "MULTI_TENANT_ENABLED",
+              "OTEL_EXPORTER_OTLP_ENDPOINT",
+              "OTEL_INSECURE_EXPORTER",
+              "OTEL_LIBRARY_NAME",
+              "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+              "OTEL_RESOURCE_SERVICE_NAME",
+              "PLUGIN_AUTH_ADDRESS",
+              "PLUGIN_AUTH_ENABLED",
+              "POSTGRES_DB",
+              "POSTGRES_HOST",
+              "POSTGRES_PASSWORD",
+              "POSTGRES_PORT",
+              "POSTGRES_SSLMODE",
+              "POSTGRES_USER",
+              "STREAMING_HUB_ALLOW_INSECURE_DB_TLS",
+              "STREAMING_HUB_ALLOW_INSECURE_KAFKA",
+              "STREAMING_HUB_ALLOW_PRIVATE_SINKS",
+              "STREAMING_HUB_AUTODISABLE_ENABLED",
+              "STREAMING_HUB_AUTODISABLE_FAILURE_SPREAD",
+              "STREAMING_HUB_AUTODISABLE_FAILURE_WINDOW",
+              "STREAMING_HUB_AWS_HUB_PRINCIPAL_ARN",
+              "STREAMING_HUB_AWS_SETUP_TEMPLATE_URL",
+              "STREAMING_HUB_DEV_KEK",
+              "STREAMING_HUB_DISPATCH_CLAIM_BATCH",
+              "STREAMING_HUB_DISPATCH_IDLE_INTERVAL_MS",
+              "STREAMING_HUB_DISPATCH_WORKERS",
+              "STREAMING_HUB_DLQ_GROUP",
+              "STREAMING_HUB_DLQ_PRUNE_INTERVAL",
+              "STREAMING_HUB_DLQ_RETENTION",
+              "STREAMING_HUB_ENV",
+              "STREAMING_HUB_HEALTH_WINDOW",
+              "STREAMING_HUB_HTTP_LISTEN_ADDR",
+              "STREAMING_HUB_IDEMPOTENCY_REAP_INTERVAL",
+              "STREAMING_HUB_IDEMPOTENCY_TTL",
+              "STREAMING_HUB_KAFKA_BROKERS",
+              "STREAMING_HUB_KAFKA_CA_CERT",
+              "STREAMING_HUB_KAFKA_SCRAM_MECHANISM",
+              "STREAMING_HUB_KAFKA_SCRAM_PASSWORD",
+              "STREAMING_HUB_KAFKA_SCRAM_USERNAME",
+              "STREAMING_HUB_KAFKA_TLS_ENABLED",
+              "STREAMING_HUB_KEK_REF",
+              "STREAMING_HUB_KEK_SOURCE",
+              "STREAMING_HUB_LOG_LEVEL",
+              "STREAMING_HUB_MANIFEST_REFRESH_INTERVAL",
+              "STREAMING_HUB_MANIFEST_SOURCES",
+              "STREAMING_HUB_METRICS_ENABLED",
+              "STREAMING_HUB_MULTI_TENANT_ALLOW_INSECURE_TM",
+              "STREAMING_HUB_MULTI_TENANT_AWS_REGION",
+              "STREAMING_HUB_MULTI_TENANT_CACHE_TTL",
+              "STREAMING_HUB_MULTI_TENANT_ENABLED",
+              "STREAMING_HUB_MULTI_TENANT_LISTENER_STALENESS_THRESHOLD",
+              "STREAMING_HUB_MULTI_TENANT_RECONCILE_INTERVAL",
+              "STREAMING_HUB_MULTI_TENANT_REDIS_CA_CERT",
+              "STREAMING_HUB_MULTI_TENANT_REDIS_HOST",
+              "STREAMING_HUB_MULTI_TENANT_REDIS_PORT",
+              "STREAMING_HUB_MULTI_TENANT_REDIS_TLS",
+              "STREAMING_HUB_MULTI_TENANT_SECRETS_ENV",
+              "STREAMING_HUB_MULTI_TENANT_TM_STALENESS_THRESHOLD",
+              "STREAMING_HUB_PARTITION_CRON_INTERVAL",
+              "STREAMING_HUB_PARTITION_FUTURE_BUFFER_WEEKS",
+              "STREAMING_HUB_PARTITION_RETENTION_ENABLED",
+              "STREAMING_HUB_PARTITION_RETENTION_HORIZON",
+              "STREAMING_HUB_POISON_THRESHOLD",
+              "STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME",
+              "STREAMING_HUB_POSTGRES_DSN",
+              "STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS",
+              "STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS",
+              "STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT",
+              "STREAMING_HUB_PULL_BURST",
+              "STREAMING_HUB_PULL_RATE",
+              "STREAMING_HUB_RECONCILER_ENABLED",
+              "STREAMING_HUB_RECONCILER_INTERVAL",
+              "STREAMING_HUB_ROLE",
+              "STREAMING_HUB_SHUTDOWN_TIMEOUT",
+              "STREAMING_HUB_SWAGGER_ENABLED",
+              "STREAMING_HUB_TENANT_ID",
+              "STREAMING_HUB_TENANT_MANAGER_CB_THRESHOLD",
+              "STREAMING_HUB_TENANT_MANAGER_CB_TIMEOUT",
+              "STREAMING_HUB_TENANT_MANAGER_URL"
+            ]
+          }
         },
         "extraEnvVars": {
           "type": "object",
           "additionalProperties": true,
           "description": "Unmodeled extra env vars appended verbatim to the ConfigMap."
-        },
-        "app": {
-          "type": "object",
-          "properties": {
-            "env": {
-              "default": "production"
-            },
-            "healthWindow": {
-              "default": "720h"
-            },
-            "logLevel": {
-              "default": "info"
-            },
-            "preStopDrainTimeout": {
-              "default": "5s"
-            },
-            "shutdownTimeout": {
-              "default": "30s"
-            },
-            "swaggerEnabled": {
-              "default": "false"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Application / lifecycle (STREAMING_HUB_ENV|LOG_LEVEL|HEALTH_WINDOW|"
-        },
-        "server": {
-          "type": "object",
-          "properties": {
-            "httpListenAddr": {
-              "default": ":8080"
-            },
-            "metricsEnabled": {
-              "default": "true"
-            }
-          },
-          "additionalProperties": false,
-          "description": "HTTP server / metrics (STREAMING_HUB_HTTP_LISTEN_ADDR|METRICS_ENABLED)."
-        },
-        "kafka": {
-          "type": "object",
-          "properties": {
-            "brokers": {
-              "default": "localhost:19092"
-            },
-            "caCert": {
-              "default": ""
-            },
-            "scramMechanism": {
-              "default": ""
-            },
-            "scramUsername": {
-              "default": ""
-            },
-            "tlsEnabled": {
-              "default": "false"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Kafka / Redpanda (brokers|scramMechanism|scramUsername|tlsEnabled|caCert)."
-        },
-        "kek": {
-          "type": "object",
-          "properties": {
-            "ref": {
-              "default": ""
-            },
-            "source": {
-              "default": "env"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Crypto / KEK config (source|ref). The KEK material itself is a Secret."
-        },
-        "dispatch": {
-          "type": "object",
-          "properties": {
-            "claimBatch": {
-              "default": "16"
-            },
-            "idleIntervalMs": {
-              "default": "250"
-            },
-            "poisonThreshold": {
-              "default": "5"
-            },
-            "workers": {
-              "default": "8"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Dispatch / poison worker pool (workers|claimBatch|idleIntervalMs|poisonThreshold)."
-        },
-        "pull": {
-          "type": "object",
-          "properties": {
-            "burst": {
-              "default": "200"
-            },
-            "rate": {
-              "default": "100"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Pull rate limit (rate|burst)."
-        },
-        "dlq": {
-          "type": "object",
-          "properties": {
-            "group": {
-              "default": "streaming-hub-dlq.local"
-            },
-            "pruneInterval": {
-              "default": "1h"
-            },
-            "retention": {
-              "default": "168h"
-            }
-          },
-          "additionalProperties": false,
-          "description": "DLQ visibility (group|retention|pruneInterval)."
-        },
-        "manifest": {
-          "type": "object",
-          "properties": {
-            "refreshInterval": {
-              "default": "300"
-            },
-            "sources": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false,
-          "description": "Event manifest sources (sources|refreshInterval)."
-        },
-        "reconciler": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "default": "true"
-            },
-            "interval": {
-              "default": "300"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Reconciler / topic-drift (enabled|interval)."
-        },
-        "partition": {
-          "type": "object",
-          "properties": {
-            "cronInterval": {
-              "default": "6h"
-            },
-            "futureBufferWeeks": {
-              "default": "4"
-            },
-            "retentionEnabled": {
-              "default": "false"
-            },
-            "retentionHorizon": {
-              "default": "0"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Partition lifecycle cron (cronInterval|futureBufferWeeks|retentionEnabled|retentionHorizon)."
-        },
-        "idempotency": {
-          "type": "object",
-          "properties": {
-            "reapInterval": {
-              "default": "5m"
-            },
-            "ttl": {
-              "default": "24h"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Idempotency (ttl|reapInterval)."
-        },
-        "autodisable": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "default": "true"
-            },
-            "failureSpread": {
-              "default": "12h"
-            },
-            "failureWindow": {
-              "default": "120h"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Auto-disable subscriber circuit (enabled|failureWindow|failureSpread)."
-        },
-        "multiTenant": {
-          "type": "object",
-          "properties": {
-            "allowInsecureTm": {
-              "default": "false"
-            },
-            "awsRegion": {
-              "default": ""
-            },
-            "cacheTtl": {
-              "default": "12h"
-            },
-            "cbThreshold": {
-              "default": "0"
-            },
-            "cbTimeout": {
-              "default": "30s"
-            },
-            "enabled": {
-              "default": "false"
-            },
-            "environmentName": {
-              "default": ""
-            },
-            "libEnabled": {
-              "default": "false"
-            },
-            "listenerStalenessThreshold": {
-              "default": "12h"
-            },
-            "reconcileInterval": {
-              "default": "6h"
-            },
-            "redisCaCert": {
-              "default": ""
-            },
-            "redisHost": {
-              "default": ""
-            },
-            "redisPort": {
-              "default": ""
-            },
-            "redisTls": {
-              "default": "false"
-            },
-            "secretsEnv": {
-              "default": ""
-            },
-            "tenantId": {
-              "default": "default"
-            },
-            "tenantManagerUrl": {
-              "default": ""
-            },
-            "tmStalenessThreshold": {
-              "default": "12h"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Tenancy (F4). libEnabled=MULTI_TENANT_ENABLED (lib-commons request tenancy);"
-        },
-        "security": {
-          "type": "object",
-          "properties": {
-            "allowInsecureDbTls": {
-              "default": "false"
-            },
-            "allowInsecureKafka": {
-              "default": "false"
-            },
-            "allowPrivateSinks": {
-              "default": "false"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Security posture (allowInsecureKafka|allowInsecureDbTls|allowPrivateSinks)."
-        },
-        "aws": {
-          "type": "object",
-          "properties": {
-            "hubPrincipalArn": {
-              "default": ""
-            },
-            "setupTemplateUrl": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false,
-          "description": "AWS SaaS setup metadata (hubPrincipalArn|setupTemplateUrl)."
-        },
-        "observability": {
-          "type": "object",
-          "properties": {
-            "deploymentEnvironment": {
-              "default": "production"
-            },
-            "exporterOtlpEndpoint": {
-              "default": ""
-            },
-            "insecureExporter": {
-              "default": "false"
-            },
-            "libraryName": {
-              "default": "github.com/LerianStudio/streaming-hub"
-            },
-            "serviceName": {
-              "default": "streaming-hub"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Observability (OTEL_*: libraryName|serviceName|deploymentEnvironment|"
         },
         "secrets": {
           "type": "object",
@@ -787,10 +569,7 @@
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              }
+              "type": "array"
             },
             "affinity": {
               "type": "object",
@@ -884,10 +663,7 @@
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              }
+              "type": "array"
             },
             "affinity": {
               "type": "object",
@@ -981,10 +757,7 @@
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              }
+              "type": "array"
             },
             "affinity": {
               "type": "object",

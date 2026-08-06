@@ -10,15 +10,20 @@
 
 ## Overview
 
-The `lerian-common` chart v1.5.0 adds a new **object storage mask resolver**,
-`lerian-common.objectStorage.value`. This is a **minor, purely additive release** — it introduces a
-new helper and changes nothing that existed in v1.4.0.
+The `lerian-common` chart v1.5.0 adds two new **dependency mask resolvers**,
+`lerian-common.objectStorage.value` and `lerian-common.kms.value`. This is a **minor, purely
+additive release** — it introduces new helpers and changes nothing that existed in v1.4.0.
 
 **What changed:**
 
 - New helper `lerian-common.objectStorage.value` — a datastore-style mask for S3 / SeaweedFS
   connections, so an operator writes `objectStorage.<name>.bucket` instead of the app's native
   `OBJECT_STORAGE_<NAME>_BUCKET` env key.
+- New helper `lerian-common.kms.value` — a datastore-style mask for the KMS / HashiCorp Vault
+  connection, so an operator writes `kms.vaultAddr` instead of the native `KMS_VAULT_ADDR`. Single
+  backend (no `<name>` sub-key); fields `vendor` / `vaultAddr` / `vaultAuthMethod` / `vaultRoleId` /
+  `vaultMount`; the AppRole `KMS_VAULT_SECRET_ID` stays in the chart Secret (fail-fast when
+  `vendor=hashicorp-vault`).
 
 **Who is affected:**
 

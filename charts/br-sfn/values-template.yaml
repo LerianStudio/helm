@@ -64,6 +64,21 @@
 #   secrets:
 #     POSTGRES_PASSWORD: ""
 
+# correios:
+#   enabled: true
+#   configmap:
+#     POSTGRES_HOST: ""
+#     POSTGRES_PORT: "5432"
+#     POSTGRES_USER: ""
+#     POSTGRES_NAME: ""      # NOT POSTGRES_DB — this rail reads POSTGRES_NAME
+#     CACHE_ADDR: ""         # valkey/redis host:port
+#     OBJECT_STORAGE_ENDPOINT: ""
+#     OBJECT_STORAGE_BUCKET: ""
+#   secrets:
+#     POSTGRES_PASSWORD: ""  # required when correios.enabled (URL-safe)
+#     ENCRYPTION_KEY: ""     # AES-256, 32 bytes
+#     RABBITMQ_URL: ""
+
 # slcEdge:
 #   enabled: true
 #   configmap:

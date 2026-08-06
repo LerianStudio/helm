@@ -2,8 +2,9 @@
 
 Helm chart for **br-sfn** — the Lerian Brazilian SFN rails monorepo: SPB/STR
 (TED), SPI (Pix — four runtime binaries), SILOC (card settlement), SCR (credit
-information), desk (cockpit operator-state + four-eyes), slc-edge (Cabine SLC
-authenticated passthrough) and the cockpit operations SPA.
+information), desk (cockpit operator-state + four-eyes), correios (BC Correio
+regulatory mailbox), slc-edge (Cabine SLC authenticated passthrough) and the
+cockpit operations SPA.
 
 ## Modularity contract
 
@@ -32,6 +33,7 @@ A default render produces only the shared ServiceAccount.
 | SILOC rail | `siloc` | `ghcr.io/lerianstudio/br-siloc` | 9820 | dedicated (`br-siloc-migrations`) |
 | SCR rail | `scr` | `ghcr.io/lerianstudio/br-scr` | 3003 | baked (`/migrations`, table `schema_migrations_scr`) |
 | desk | `desk` | `ghcr.io/lerianstudio/br-desk` | 3002 | baked (`/migrations`) |
+| correios rail | `correios` | `ghcr.io/lerianstudio/plugin-bc-correios` | 8080 | baked (`/migrations`, db key `POSTGRES_NAME`) |
 | slc-edge | `slcEdge` | `ghcr.io/lerianstudio/br-slc-edge` | 3005 | none (stateless) |
 | cockpit SPA | `cockpit` | `ghcr.io/lerianstudio/br-sfn-cockpit` | 8080 | none (static bundle) |
 
@@ -44,9 +46,9 @@ one Redis and one RedPanda.
 PreSync ArgoCD hook Jobs (`hook-weight: -1`), one per rail that owns a schema,
 in two flavors:
 
-- **baked** (spb, scr, desk): an initContainer copies the migrations tree out
-  of the app image; `migrate/migrate` applies it. Postgres passwords must be
-  URL-safe (no `@ : / ? # %`).
+- **baked** (spb, scr, desk, correios): an initContainer copies the migrations
+  tree out of the app image; `migrate/migrate` applies it. Postgres passwords
+  must be URL-safe (no `@ : / ? # %`).
 - **dedicated** (spi, siloc): the rail's own migrator image runs with the
   `POSTGRES_*` env contract. The SPI migrator owns module ordering
   (global → events → spi → dict → brcode → core) and the per-module bookkeeping
@@ -55,8 +57,11 @@ in two flavors:
 
 Connection settings resolve from `<component>.migrations.postgres.*`, falling
 back to the component's `configmap` keys (`POSTGRES_HOST`, `POSTGRES_PORT`,
-`POSTGRES_USER`, `POSTGRES_DB`, `POSTGRES_SSLMODE`). Host, user and database
-are required — the render fails loud when missing.
+`POSTGRES_USER`, `POSTGRES_DB`, `POSTGRES_SSLMODE`). correios is the one
+exception: its service reads the database name from `POSTGRES_NAME`, so its
+migration Job falls back to `correios.configmap.POSTGRES_NAME` instead of
+`POSTGRES_DB`. Host, user and database are required — the render fails loud
+when missing.
 
 ## Configuration model
 
@@ -84,8 +89,8 @@ pins an environment-specific image build.
 - Chart type: `multi-component`
 - Required secrets: None for default render (all components disabled). Per
   enabled rail: `POSTGRES_PASSWORD` in `<component>.secrets` (or an
-  `existingSecretName` Secret) for spb/spi/siloc/scr/desk; slc-edge and
-  cockpit need none.
+  `existingSecretName` Secret) for spb/spi/siloc/scr/desk/correios; slc-edge
+  and cockpit need none.
 - Dependency notes: no subcharts — Postgres/Valkey/RabbitMQ/RedPanda/IBM MQ
   are external services by contract.
 - Production overrides: `<component>.enabled`, `<component>.image.tag`

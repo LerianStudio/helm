@@ -459,7 +459,8 @@ hook-weight -1 puts the Job after any PreSync Secret and before the main-sync
 Deployments, so no rail boots unmigrated.
 
 Input dict: root, name (component), comp, shared, sharedCfg, flavor
-("baked"|"dedicated").
+("baked"|"dedicated"), dbCfgKey (optional — the ConfigMap key holding the
+database name; defaults to POSTGRES_DB, correios reads POSTGRES_NAME).
 */}}
 {{- define "br-sfn.componentMigrationJob" -}}
 {{- $mig := .comp.migrations | default dict -}}
@@ -479,9 +480,10 @@ Input dict: root, name (component), comp, shared, sharedCfg, flavor
 {{- if not $pgUser -}}
 {{- fail (printf "br-sfn: %s migrations need a Postgres user — set %s.migrations.postgres.user or %s.configmap.POSTGRES_USER" .name .name .name) -}}
 {{- end -}}
-{{- $pgDb := include "br-sfn.migrationPgValue" (dict "mig" $mig "key" "database" "cfg" $cfg "cfgKey" "POSTGRES_DB" "fallback" "") -}}
+{{- $dbCfgKey := .dbCfgKey | default "POSTGRES_DB" -}}
+{{- $pgDb := include "br-sfn.migrationPgValue" (dict "mig" $mig "key" "database" "cfg" $cfg "cfgKey" $dbCfgKey "fallback" "") -}}
 {{- if not $pgDb -}}
-{{- fail (printf "br-sfn: %s migrations need a Postgres database — set %s.migrations.postgres.database or %s.configmap.POSTGRES_DB" .name .name .name) -}}
+{{- fail (printf "br-sfn: %s migrations need a Postgres database — set %s.migrations.postgres.database or %s.configmap.%s" .name .name .name $dbCfgKey) -}}
 {{- end -}}
 {{- $pgSsl := include "br-sfn.migrationPgValue" (dict "mig" $mig "key" "sslMode" "cfg" $cfg "cfgKey" "POSTGRES_SSLMODE" "fallback" "disable") -}}
 {{- $pwSecret := ($mig.passwordSecret | default dict) -}}

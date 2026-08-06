@@ -14,8 +14,10 @@ metadata:
 spec:
   {{- if hasKey .Values.tracer.pdb "maxUnavailable" }}
   maxUnavailable: {{ .Values.tracer.pdb.maxUnavailable }}
+  {{- else if hasKey .Values.tracer.pdb "minAvailable" }}
+  minAvailable: {{ .Values.tracer.pdb.minAvailable }}
   {{- else }}
-  minAvailable: {{ .Values.tracer.pdb.minAvailable | default 1 }}
+  minAvailable: 1
   {{- end }}
   selector:
     matchLabels:

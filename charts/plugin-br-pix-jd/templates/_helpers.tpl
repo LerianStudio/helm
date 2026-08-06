@@ -766,7 +766,14 @@ Input dict: root, comp (the component values block).
    moves it to render time. In multi-tenant the key is resolved per tenant. */ -}}
 {{- $delivery := index $s "INDIRECTS_DELIVERY_ENCRYPTION_KEY" | default "" -}}
 {{- if and $delivery (not $mt) -}}
-{{- if not (regexMatch "^[0-9a-fA-F]{64}$" $delivery) -}}
+{{- /* SKIP the format check for an argocd-vault-plugin placeholder. AVP substitutes
+   `<path:...>` in the RENDERED manifest, AFTER helm has run — so at template time the
+   value is always the literal placeholder, never the secret. A shape check here would
+   therefore reject every AVP-managed install, which is exactly what happened: the
+   GitOps sync rendered only the first helmfile release and ArgoCD still reported
+   Synced/Healthy because avp-helmfile swallowed the error.
+   The guard stays for direct `helm install`, where the real value IS present. */ -}}
+{{- if and (not (hasPrefix "<path:" $delivery)) (not (regexMatch "^[0-9a-fA-F]{64}$" $delivery)) -}}
 {{- fail (printf "\n\nERROR: INDIRECTS_DELIVERY_ENCRYPTION_KEY must be 64 hex characters (a hex-encoded\nAES-256 key); got %d. Generate one with: openssl rand -hex 32\nA malformed key makes the app fail delivery-secret encryption closed at runtime.\n" (len $delivery)) -}}
 {{- end -}}
 {{- $lines = append $lines (printf "INDIRECTS_DELIVERY_ENCRYPTION_KEY: %s" ($delivery | b64enc | quote)) -}}
@@ -939,7 +946,14 @@ Input dict: root, comp.
 {{- end -}}
 {{- $l2 := index $s "M2M_L2_ENCRYPTION_KEY" | default "" -}}
 {{- if $l2 -}}
-{{- if not (regexMatch "^[0-9a-fA-F]{64}$" $l2) -}}
+{{- /* SKIP the format check for an argocd-vault-plugin placeholder. AVP substitutes
+   `<path:...>` in the RENDERED manifest, AFTER helm has run — so at template time the
+   value is always the literal placeholder, never the secret. A shape check here would
+   therefore reject every AVP-managed install, which is exactly what happened: the
+   GitOps sync rendered only the first helmfile release and ArgoCD still reported
+   Synced/Healthy because avp-helmfile swallowed the error.
+   The guard stays for direct `helm install`, where the real value IS present. */ -}}
+{{- if and (not (hasPrefix "<path:" $l2)) (not (regexMatch "^[0-9a-fA-F]{64}$" $l2)) -}}
 {{- fail (printf "\n\nERROR: M2M_L2_ENCRYPTION_KEY must be 64 hex characters (hex-encoded AES-256); got %d.\nGenerate one with: openssl rand -hex 32\nIt encrypts the L2 cache holding every tenant clientId/clientSecret; a malformed value\nfails the boot. Leave it EMPTY to disable L2 deliberately (L1 only, one boot WARN).\n" (len $l2)) -}}
 {{- end -}}
 {{- $lines = append $lines (printf "M2M_L2_ENCRYPTION_KEY: %s" ($l2 | b64enc | quote)) -}}

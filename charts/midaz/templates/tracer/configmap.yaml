@@ -37,7 +37,7 @@ data:
   # PostgreSQL Database (host/user/port/ssl via lerian-common datastore mask)
   DB_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" (include "midaz-tracer.dbHost" .)) | quote }}
   DB_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
-  DB_NAME: {{ $cm.DB_NAME | default "tracer" | quote }}
+  DB_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "tracer") | quote }}
   DB_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "midaz") | quote }}
   DB_SSL_MODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSL_MODE" "default" "disable") | quote }}
   {{/* No MIGRATIONS_PATH: the v4 tracer does not read it. Schema is applied by

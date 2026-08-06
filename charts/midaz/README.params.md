@@ -45,7 +45,7 @@
 | `global.externalMongoDefinitions.midazCredentials.username` | string | `"midaz"` | App username (ignored if useExistingSecret.name is set) |
 | `global.externalMongoDefinitions.midazCredentials.password` | string | `""` | Password for midaz user (ignored if useExistingSecret.name is set) |
 | `global.externalMongoDefinitions.midazCredentials.roles` | string | `{}` | List of roles to grant to the user. Each item is a {role, db} pair. |
-| `global.datastores` | object | `{}` | Shared datastore masks. Keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / mongo / redis / broker. Each accepts host/port/user/ssl/replicaHost. |
+| `global.datastores` | object | `{}` | Shared datastore masks. Keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / mongo / redis / broker. Each accepts host/port/user/ssl/replicaHost/name. |
 | `global.observability` | object | `{}` | Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment. |
 | `global.multiTenant` | object | `{}` | Env-wide multi-tenant (tenant-manager): url / redisHost / redisPort / redisTls / ... |
 | `global.streaming` | object | `{}` | Env-wide streaming (lib-streaming / RedPanda): brokers / saslMechanism / saslUsername / tlsEnabled / ... |
@@ -132,7 +132,7 @@
 | `tracer.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
 | `tracer.image.repository` | string | `lerianstudio/midaz-tracer` | Repository for the Tracer service container image. In midaz v4 tracer ships from the monorepo (`components/tracer`) and the release pipeline publishes it as `midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates the configuration contract this chart renders. |
 | `tracer.image.pullPolicy` | string | `Always` | Image pull policy |
-| `tracer.image.tag` | string | `"4.0.0-beta.26"` | Image tag used for deployment |
+| `tracer.image.tag` | string | `"4.0.0-beta.25"` | Image tag used for deployment |
 | `tracer.migrations` | string | `{}` | Dedicated migration runner (`midaz-tracer-migrations`, built FROM migrate/migrate). The v4 tracer no longer migrates at startup: it boots against an already-migrated schema, so this Job has to apply it. |
 | `tracer.migrations.enabled` | bool | `true` | Enable or disable the tracer migration Job |
 | `tracer.migrations.image.repository` | string | `lerianstudio/midaz-tracer-migrations` | Repository for the tracer migration-runner image |

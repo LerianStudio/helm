@@ -51,7 +51,7 @@ global:
 ledger:
   enabled: true
   image:
-    tag: "3.8.0"            # -- pin the ledger image version
+    tag: "4.0.0-beta.26"   # -- pin the ledger image version
   ingress:
     enabled: false
     # hosts: [{ host: "ledger.example.com", paths: [{ path: "/", pathType: Prefix }] }]

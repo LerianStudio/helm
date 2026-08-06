@@ -112,18 +112,47 @@ global:
   # =============================================================================
   # -- Shared datastore masks. Keys: postgresOnboarding / postgresTransaction /
   # mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / mongo / redis /
-  # broker. Each accepts host/port/user/ssl/replicaHost.
+  # broker. Each accepts host/port/user/ssl/replicaHost/name.
   datastores: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   postgresOnboarding:  { host: "postgresql.internal", user: "midaz", name: "onboarding" }
+  #   postgresTransaction: { host: "postgresql.internal", user: "midaz", name: "transaction" }
+  #   mongoOnboarding:     { host: "mongodb.internal", user: "midaz", name: "onboarding" }
+  #   mongoTransaction:    { host: "mongodb.internal", user: "midaz", name: "transaction" }
+  #   mongoCrm:            { host: "mongodb.internal", user: "midaz", name: "midaz-crm" }
+  #   mongoFees:           { host: "mongodb.internal", user: "plugin-fees", name: "plugin-fees-db" }
+  #   redis:               { host: "valkey.internal:6379" }
+  #   broker:              { host: "rabbitmq.internal", user: "midaz" }
   # -- Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment.
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   otlpEndpoint: "otel-collector-lerian:4317"
+  #   deploymentEnvironment: "production"
   # -- Env-wide multi-tenant (tenant-manager): url / redisHost / redisPort / redisTls / ...
   multiTenant: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   url: "http://tenant-manager:8080"
+  #   redisHost: "valkey.internal"
+  #   redisPort: "6379"
+  #   redisTls: "false"
   # -- Env-wide streaming (lib-streaming / RedPanda): brokers / saslMechanism / saslUsername / tlsEnabled / ...
   streaming: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   brokers: "kafka:9092"
+  #   saslMechanism: "PLAIN"
+  #   saslUsername: "midaz"
+  #   tlsEnabled: "true"
   # -- Env-wide auth (plugin-access-manager): enabled / host.
   auth: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   host: "plugin-access-manager:3000"
   # -- Env-wide service discovery (Consul): see lerian-common.serviceDiscovery.env.
   serviceDiscovery: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   address: "consul:8500"
+  #   namespace: "midaz"
 ledger:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}

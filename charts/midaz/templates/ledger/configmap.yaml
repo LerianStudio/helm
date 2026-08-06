@@ -73,13 +73,13 @@ data:
   # Primary
   DB_ONBOARDING_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "host" "nativeKey" "DB_ONBOARDING_HOST" "default" "midaz-postgresql-primary") | quote }}
   DB_ONBOARDING_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "user" "nativeKey" "DB_ONBOARDING_USER" "default" "midaz") | quote }}
-  DB_ONBOARDING_NAME: {{ $cm.DB_ONBOARDING_NAME | default "onboarding" | quote }}
+  DB_ONBOARDING_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "name" "nativeKey" "DB_ONBOARDING_NAME" "default" "onboarding") | quote }}
   DB_ONBOARDING_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "port" "nativeKey" "DB_ONBOARDING_PORT" "default" "5432") | quote }}
   DB_ONBOARDING_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "ssl" "nativeKey" "DB_ONBOARDING_SSLMODE" "default" "disable") | quote }}
   # Replica
   DB_ONBOARDING_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "replicaHost" "nativeKey" "DB_ONBOARDING_REPLICA_HOST" "default" "midaz-postgresql-replication") | quote }}
   DB_ONBOARDING_REPLICA_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "user" "nativeKey" "DB_ONBOARDING_REPLICA_USER" "default" "midaz") | quote }}
-  DB_ONBOARDING_REPLICA_NAME: {{ $cm.DB_ONBOARDING_REPLICA_NAME | default "onboarding" | quote }}
+  DB_ONBOARDING_REPLICA_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "name" "nativeKey" "DB_ONBOARDING_REPLICA_NAME" "default" "onboarding") | quote }}
   DB_ONBOARDING_REPLICA_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "port" "nativeKey" "DB_ONBOARDING_REPLICA_PORT" "default" "5432") | quote }}
   DB_ONBOARDING_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "ssl" "nativeKey" "DB_ONBOARDING_REPLICA_SSLMODE" "default" "disable") | quote }}
   # Connection pool
@@ -91,7 +91,7 @@ data:
   # =============================================================================
   MONGO_ONBOARDING_URI: {{ $cm.MONGO_ONBOARDING_URI | default "mongodb" | quote }}
   MONGO_ONBOARDING_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "host" "nativeKey" "MONGO_ONBOARDING_HOST" "default" "midaz-mongodb") | quote }}
-  MONGO_ONBOARDING_NAME: {{ $cm.MONGO_ONBOARDING_NAME | default "onboarding" | quote }}
+  MONGO_ONBOARDING_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "name" "nativeKey" "MONGO_ONBOARDING_NAME" "default" "onboarding") | quote }}
   MONGO_ONBOARDING_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "user" "nativeKey" "MONGO_ONBOARDING_USER" "default" "midaz") | quote }}
   MONGO_ONBOARDING_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "port" "nativeKey" "MONGO_ONBOARDING_PORT" "default" "27017") | quote }}
   MONGO_ONBOARDING_MAX_POOL_SIZE: {{ $cm.MONGO_ONBOARDING_MAX_POOL_SIZE | default "1000" | quote }}
@@ -104,13 +104,13 @@ data:
   # Primary
   DB_TRANSACTION_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "host" "nativeKey" "DB_TRANSACTION_HOST" "default" "midaz-postgresql-primary") | quote }}
   DB_TRANSACTION_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") | quote }}
-  DB_TRANSACTION_NAME: {{ $cm.DB_TRANSACTION_NAME | default "transaction" | quote }}
+  DB_TRANSACTION_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") | quote }}
   DB_TRANSACTION_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") | quote }}
   DB_TRANSACTION_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
   # Replica
   DB_TRANSACTION_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "replicaHost" "nativeKey" "DB_TRANSACTION_REPLICA_HOST" "default" "midaz-postgresql-replication") | quote }}
   DB_TRANSACTION_REPLICA_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_REPLICA_USER" "default" "midaz") | quote }}
-  DB_TRANSACTION_REPLICA_NAME: {{ $cm.DB_TRANSACTION_REPLICA_NAME | default "transaction" | quote }}
+  DB_TRANSACTION_REPLICA_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_REPLICA_NAME" "default" "transaction") | quote }}
   DB_TRANSACTION_REPLICA_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_REPLICA_PORT" "default" "5432") | quote }}
   DB_TRANSACTION_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "ssl" "nativeKey" "DB_TRANSACTION_REPLICA_SSLMODE" "default" "disable") | quote }}
   # Connection pool
@@ -122,7 +122,7 @@ data:
   # =============================================================================
   MONGO_TRANSACTION_URI: {{ $cm.MONGO_TRANSACTION_URI | default "mongodb" | quote }}
   MONGO_TRANSACTION_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "host" "nativeKey" "MONGO_TRANSACTION_HOST" "default" "midaz-mongodb") | quote }}
-  MONGO_TRANSACTION_NAME: {{ $cm.MONGO_TRANSACTION_NAME | default "transaction" | quote }}
+  MONGO_TRANSACTION_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "name" "nativeKey" "MONGO_TRANSACTION_NAME" "default" "transaction") | quote }}
   MONGO_TRANSACTION_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "user" "nativeKey" "MONGO_TRANSACTION_USER" "default" "midaz") | quote }}
   MONGO_TRANSACTION_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "port" "nativeKey" "MONGO_TRANSACTION_PORT" "default" "27017") | quote }}
   MONGO_TRANSACTION_MAX_POOL_SIZE: {{ $cm.MONGO_TRANSACTION_MAX_POOL_SIZE | default "1000" | quote }}
@@ -134,7 +134,7 @@ data:
   # =============================================================================
   MONGO_CRM_URI: {{ $cm.MONGO_CRM_URI | default "mongodb" | quote }}
   MONGO_CRM_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" "midaz-mongodb") | quote }}
-  MONGO_CRM_NAME: {{ $cm.MONGO_CRM_NAME | default "crm" | quote }}
+  MONGO_CRM_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "name" "nativeKey" "MONGO_CRM_NAME" "default" "crm") | quote }}
   MONGO_CRM_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "user" "nativeKey" "MONGO_CRM_USER" "default" "midaz") | quote }}
   MONGO_CRM_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "port" "nativeKey" "MONGO_CRM_PORT" "default" "27017") | quote }}
   # MONGO_CRM_PASSWORD lives in the ledger Secret (see templates/ledger/secrets.yaml)
@@ -147,7 +147,7 @@ data:
   # =============================================================================
   MONGO_FEES_URI: {{ $cm.MONGO_FEES_URI | default "mongodb" | quote }}
   MONGO_FEES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" "midaz-mongodb") | quote }}
-  MONGO_FEES_NAME: {{ $cm.MONGO_FEES_NAME | default "fees" | quote }}
+  MONGO_FEES_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "name" "nativeKey" "MONGO_FEES_NAME" "default" "fees") | quote }}
   MONGO_FEES_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "user" "nativeKey" "MONGO_FEES_USER" "default" "midaz") | quote }}
   MONGO_FEES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "port" "nativeKey" "MONGO_FEES_PORT" "default" "27017") | quote }}
   # MONGO_FEES_PASSWORD lives in the ledger Secret (see templates/ledger/secrets.yaml)

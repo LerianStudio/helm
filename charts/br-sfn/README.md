@@ -32,6 +32,7 @@ A default render produces only the shared ServiceAccount.
 | SILOC rail | `siloc` | `ghcr.io/lerianstudio/br-siloc` | 9820 | dedicated (`br-siloc-migrations`) |
 | SCR rail | `scr` | `ghcr.io/lerianstudio/br-scr` | 3003 | baked (`/migrations`, table `schema_migrations_scr`) |
 | desk | `desk` | `ghcr.io/lerianstudio/br-desk` | 3002 | baked (`/migrations`) |
+| correios rail | `correios` | `ghcr.io/lerianstudio/plugin-bc-correios` | 8080 | baked (`/migrations`, db key `POSTGRES_NAME`) |
 | slc-edge | `slcEdge` | `ghcr.io/lerianstudio/br-slc-edge` | 3005 | none (stateless) |
 | cockpit SPA | `cockpit` | `ghcr.io/lerianstudio/br-sfn-cockpit` | 8080 | none (static bundle) |
 

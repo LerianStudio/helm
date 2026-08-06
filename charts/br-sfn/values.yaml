@@ -587,6 +587,90 @@ desk:
     resources: {}
 
 # =============================================================================
+# correios — BC Correio regulatory mailbox (BCB SOAP polling, attachment
+# storage, search, audit trail and transmission). Postgres + Valkey/Redis cache
+# + RabbitMQ + S3-compatible object storage, all external.
+#
+# The image name stays `plugin-bc-correios`: it predates the monorepo move and
+# renaming it would have to land in three repos at once. The rail's values key,
+# resources and env contract are br-sfn's.
+#
+# Migrations are baked at /migrations and applied out-of-process — the app
+# binary never drives them (see deploy/docker/correios.Dockerfile). The rail
+# reads POSTGRES_NAME (not POSTGRES_DB), which is why its Job passes
+# dbCfgKey=POSTGRES_NAME.
+# =============================================================================
+correios:
+  enabled: false
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/plugin-bc-correios
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches the Dockerfile EXPOSE 8080 (config.ServerPort default).
+    port: 8080
+  configmap: {}
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe: {}
+  readinessProbe: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  migrations:
+    enabled: true
+    sourcePath: /migrations
+    table: ""
+    postgres:
+      host: ""
+      port: ""
+      user: ""
+      # Falls back to configmap.POSTGRES_NAME, the key this rail reads.
+      database: ""
+      sslMode: ""
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+    imagePullSecrets: []
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 600
+    resources: {}
+
+# =============================================================================
 # slcEdge — Cabine SLC authenticated passthrough edge (br-slc-edge). Stateless:
 # no datastore, no migrations. Renders as "slc-edge" resources.
 # =============================================================================

@@ -97,6 +97,18 @@
       },
       "additionalProperties": true
     },
+    "correios": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
     "slcEdge": {
       "type": "object",
       "properties": {

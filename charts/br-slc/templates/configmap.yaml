@@ -171,13 +171,21 @@ data:
         "enabledDefault" "true"
         "endpointDefault" "otel-collector-lerian:4317"
         "deploymentEnvironmentDefault" "production") | nindent 2 }}
+  {{- /* OTEL_RESOURCE_SERVICE_VERSION is DERIVED from the app image tag, through the
+         same expression "br-slc.image" uses (_helpers.tpl), so the telemetry version
+         label cannot disagree with the image the pod runs. It used to be the literal
+         "1.0.0", which shipped to every install: br-slc-dev-st reported
+         service_version="1.0.0" while running 1.1.0-beta.54, mislabelling every
+         dashboard series. This is also the pattern lerian-common's own doc prescribes
+         for this key (see the plugin-fees example in _otel.tpl). A configmap.<KEY>
+         override still wins — envFlat resolves configmap > defaults > stdDefaults. */}}
   {{- include "lerian-common.otel.envFlat" (dict
         "configmap" $cm
         "keys" (list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION")
         "defaults" (dict
           "OTEL_RESOURCE_SERVICE_NAME" "br-slc"
           "OTEL_LIBRARY_NAME" "br-slc"
-          "OTEL_RESOURCE_SERVICE_VERSION" "1.0.0")) | nindent 2 }}
+          "OTEL_RESOURCE_SERVICE_VERSION" (.Values.image.tag | default .Chart.AppVersion))) | nindent 2 }}
 
   # =====================================================================
   # DATASTORES (external / client-managed in BYOC). HOST/PORT/USER/SSL from

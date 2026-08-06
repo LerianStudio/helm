@@ -90,6 +90,7 @@ global:
     #   host: ""          # POSTGRES_HOST (host only; required when the subchart is off)
     #   port: "5432"      # POSTGRES_PORT
     #   user: "br-ccs"    # POSTGRES_USER
+    #   name: "br-ccs"    # POSTGRES_NAME (database name)
     #   ssl: "require"    # POSTGRES_SSLMODE
     #   replicaHost: ""   # POSTGRES_REPLICA_HOST (enables the replica block when set)
     # redis:
@@ -122,6 +123,12 @@ global:
     # tlsEnabled: "false"         # STREAMING_TLS_ENABLED
     # saslMechanism: ""           # STREAMING_SASL_MECHANISM (PLAIN|SCRAM-SHA-256|SCRAM-SHA-512)
     # saslUsername: ""            # STREAMING_SASL_USERNAME
+  # -- Env-wide inbound auth (plugin-access-manager), consumed by lerian-common.globalValue
+  # (block "auth"). A component brCcs.configmap.PLUGIN_AUTH_* still overrides.
+  # Leave empty ({}) for the chart defaults (PLUGIN_AUTH_ENABLED=false, HOST unset).
+  auth: {}
+    # enabled: "true"             # PLUGIN_AUTH_ENABLED
+    # host: "http://plugin-access-manager:4000"  # PLUGIN_AUTH_HOST
 brCcs:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -291,69 +298,19 @@ brCcs:
   affinity: {}
   # -- Host aliases for custom DNS resolution inside the pod
   hostAliases: []
-  # -- Raw ConfigMap env-var escape hatch. The clean, grouped API lives in the
-  # brCcs.<group> blocks below (server, cors, postgres, redis, broker, outbox,
-  # fetcher, sta, reporter, swagger, rateLimit, pagination, observability, m2m,
-  # readiness, shutdown, objectStorage) — each key resolves via cfgValue:
-  #   brCcs.configmap.<NATIVE_KEY> (here) > brCcs.<group>.<field> > chart default.
-  # Set a raw NATIVE_KEY here only to override a value not exposed as a grouped
-  # field, or to pass an optional/opt-in key (e.g. SERVER_TLS_CERT_FILE,
-  # RABBITMQ_QUEUE, FETCHER_URL, *_OAUTH2_*, CCS_DETAIL_*). Defaults live in the
-  # template, so leaving this {} renders the documented defaults.
+  # -- PRIMARY override surface (escape hatch). TIERED model: dependency
+  # connections (postgres/redis/broker, multiTenant, otel, serviceDiscovery,
+  # streaming, auth) are the typed, documented knobs — the datastore mask
+  # (brCcs.datastores + global.datastores) and the global.* dependency blocks.
+  # EVERYTHING ELSE (rate-limit, outbox, swagger, cors, pagination, fetcher/sta/
+  # reporter integration, object storage, probes, timeouts, retention, tuning)
+  # has its default in templates/configmap.yaml and is reached ONLY here: set a
+  # raw NATIVE_KEY to override it, or to pass an optional/opt-in key (e.g.
+  # SERVER_TLS_CERT_FILE, RABBITMQ_QUEUE, FETCHER_URL, *_OAUTH2_*, CCS_DETAIL_*).
+  # Precedence: brCcs.configmap.<KEY> > chart default. Leaving this {} renders
+  # the documented defaults (byte-identical to the app .env).
   # @default -- templates/configmap.yaml
   configmap: {}
-  # -- Application identity: name / env / version / logLevel / deploymentMode / runMode
-  app: {}
-  # -- HTTP server: address / port / grpcPort / bodyLimitBytes / tlsTerminatedUpstream / trustedProxies
-  server: {}
-  # -- CORS: allowedOrigins / allowedMethods / allowedHeaders / exposeHeaders / allowCredentials
-  cors: {}
-  # -- PostgreSQL tuning (host/port/user/ssl come from datastores): name / migrationsPath /
-  #    systemplaneEnabled / maxOpenConns / maxIdleConns / connMaxLifetimeMins / connMaxIdleTimeMins /
-  #    connectTimeoutSec / infraConnectTimeoutSec
-  postgres: {}
-  # -- Redis tuning (host from datastores): db / protocol / poolSize / minIdleConns / readTimeout /
-  #    writeTimeout / dialTimeout / poolTimeout / maxRetries / minRetryBackoff / maxRetryBackoff
-  redis: {}
-  # -- RabbitMQ (host/port/user from datastores): enabled / circuitBreakerEnabled / portHost / vhost /
-  #    exchange / requireHealthAllowedHosts / allowInsecureHealthCheck / allowInsecureTls /
-  #    publisherConfirmTimeoutMs / publisherRecoveryInitialMs / publisherRecoveryMaxMs /
-  #    publisherMaxRecoveries / staDlqTtlSeconds
-  broker: {}
-  # -- Outbox: enabled / tableName / dispatchIntervalSec / batchSize / publishMaxAttempts /
-  #    publishBackoffMs / retryWindowSec / maxDispatchAttempts / processingTimeoutSec /
-  #    maxFailedPerBatch / includeTenantMetrics / allowEmptyTenant
-  outbox: {}
-  # -- Fetcher integration: enabled / httpTimeoutSec / ccsOutboxDispatchIntervalMs /
-  #    ccsOutboxBatchSize / ccsOutboxMaxAttempts / ccsOutboxDlqRoutingKey
-  fetcher: {}
-  # -- STA integration: enabled / httpTimeoutSec
-  sta: {}
-  # -- Reporter integration: enabled / httpTimeoutSec
-  reporter: {}
-  # -- Swagger: enabled / title / version / basePath / leftDelim / rightDelim
-  swagger: {}
-  # -- Rate limiting: enabled / max / windowSec / aggressiveMax / aggressiveWindowSec /
-  #    relaxedMax / relaxedWindowSec / exportMax / exportWindowSec / dispatchMax /
-  #    dispatchWindowSec / allowFailOpen
-  rateLimit: {}
-  # -- Pagination: limit / monthDateRange
-  pagination: {}
-  # -- Observability: dbMetricsIntervalSec / idempotencyRetryWindowSec
-  observability: {}
-  # -- M2M (non-secret): credentialCacheTtlSec / awsRegion
-  m2m: {}
-  # -- Readiness / startup probes: probeTimeoutSec / depSlowThresholdMs / startupMaxDurationSec /
-  #    startupInitialDelayMs / startupMaxDelayMs
-  readiness: {}
-  # -- Graceful shutdown: drainGracePeriodSec / totalTimeoutSec
-  shutdown: {}
-  # -- Object storage (non-secret): seaweedfsS3Port / seaweedfsMasterPort / {sta,ccs,fetcher}{Endpoint,
-  #    Region,Bucket,UsePathStyle,DisableSsl} / outboundRetentionDays / accs009RetentionDays
-  objectStorage:
-    staBucket: "sta-files"
-    ccsBucket: "lerian-ccs"
-    fetcherBucket: "lerian-fetcher"
 
   # -- Secrets for storing sensitive data. Provide real values via an existing
   # Secret (useExistingSecret) or a secrets manager — NEVER commit real values.

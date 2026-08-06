@@ -35,9 +35,6 @@
         "multiTenant": {
           "type": "object",
           "properties": {
-            "defaultTenantId": {
-              "default": "11111111-1111-1111-1111-111111111111"
-            },
             "enabled": {
               "type": "boolean",
               "default": false,
@@ -414,508 +411,253 @@
         "configmap": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Raw ConfigMap env-var escape hatch. The clean, grouped API lives in the"
-        },
-        "app": {
-          "type": "object",
-          "properties": {
-            "deploymentMode": {
-              "default": "byoc"
-            },
-            "env": {
-              "default": "production"
-            },
-            "logLevel": {
-              "default": "info"
-            },
-            "name": {
-              "default": "br-ccs"
-            },
-            "runMode": {
-              "default": "all"
-            },
-            "version": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false,
-          "description": "Application identity: name / env / version / logLevel / deploymentMode / runMode"
-        },
-        "server": {
-          "type": "object",
-          "properties": {
-            "address": {
-              "default": ":4030"
-            },
-            "bodyLimitBytes": {
-              "default": "104857600"
-            },
-            "grpcPort": {
-              "default": "7001"
-            },
-            "port": {
-              "default": "4030"
-            },
-            "tlsTerminatedUpstream": {
-              "default": "true"
-            },
-            "trustedProxies": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false,
-          "description": "HTTP server: address / port / grpcPort / bodyLimitBytes / tlsTerminatedUpstream / trustedProxies"
-        },
-        "cors": {
-          "type": "object",
-          "properties": {
-            "allowCredentials": {
-              "default": "false"
-            },
-            "allowedHeaders": {
-              "default": "Authorization,Content-Type,X-Tenant-ID,X-Idempotency,X-Request-ID"
-            },
-            "allowedMethods": {
-              "default": "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-            },
-            "allowedOrigins": {
-              "default": ""
-            },
-            "exposeHeaders": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false,
-          "description": "CORS: allowedOrigins / allowedMethods / allowedHeaders / exposeHeaders / allowCredentials"
-        },
-        "postgres": {
-          "type": "object",
-          "properties": {
-            "connMaxIdleTimeMins": {
-              "default": "5"
-            },
-            "connMaxLifetimeMins": {
-              "default": "30"
-            },
-            "connectTimeoutSec": {
-              "default": "10"
-            },
-            "infraConnectTimeoutSec": {
-              "default": "30"
-            },
-            "maxIdleConns": {
-              "default": "5"
-            },
-            "maxOpenConns": {
-              "default": "25"
-            },
-            "migrationsPath": {
-              "default": "migrations"
-            },
-            "name": {
-              "default": "br-ccs"
-            },
-            "systemplaneEnabled": {
-              "default": "false"
-            }
-          },
-          "additionalProperties": false,
-          "description": "PostgreSQL tuning (host/port/user/ssl come from datastores): name / migrationsPath /"
-        },
-        "redis": {
-          "type": "object",
-          "properties": {
-            "db": {
-              "default": "0"
-            },
-            "dialTimeout": {
-              "default": "5"
-            },
-            "maxRetries": {
-              "default": "3"
-            },
-            "maxRetryBackoff": {
-              "default": "1"
-            },
-            "minIdleConns": {
-              "default": "2"
-            },
-            "minRetryBackoff": {
-              "default": "8"
-            },
-            "poolSize": {
-              "default": "10"
-            },
-            "poolTimeout": {
-              "default": "2"
-            },
-            "protocol": {
-              "default": "3"
-            },
-            "readTimeout": {
-              "default": "3"
-            },
-            "writeTimeout": {
-              "default": "3"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Redis tuning (host from datastores): db / protocol / poolSize / minIdleConns / readTimeout /"
-        },
-        "broker": {
-          "type": "object",
-          "properties": {
-            "allowInsecureHealthCheck": {
-              "default": "false"
-            },
-            "allowInsecureTls": {
-              "default": "false"
-            },
-            "circuitBreakerEnabled": {
-              "default": "true"
-            },
-            "enabled": {
-              "default": "false"
-            },
-            "exchange": {
-              "default": "events"
-            },
-            "portHost": {
-              "default": "15672"
-            },
-            "publisherConfirmTimeoutMs": {
-              "default": "5000"
-            },
-            "publisherMaxRecoveries": {
-              "default": "10"
-            },
-            "publisherRecoveryInitialMs": {
-              "default": "1000"
-            },
-            "publisherRecoveryMaxMs": {
-              "default": "30000"
-            },
-            "requireHealthAllowedHosts": {
-              "default": "false"
-            },
-            "staDlqTtlSeconds": {
-              "default": "30"
-            },
-            "vhost": {
-              "default": "/"
-            }
-          },
-          "additionalProperties": false,
-          "description": "RabbitMQ (host/port/user from datastores): enabled / circuitBreakerEnabled / portHost / vhost /"
-        },
-        "outbox": {
-          "type": "object",
-          "properties": {
-            "allowEmptyTenant": {
-              "default": "true"
-            },
-            "batchSize": {
-              "default": "50"
-            },
-            "dispatchIntervalSec": {
-              "default": "2"
-            },
-            "enabled": {
-              "default": "false"
-            },
-            "includeTenantMetrics": {
-              "default": "false"
-            },
-            "maxDispatchAttempts": {
-              "default": "10"
-            },
-            "maxFailedPerBatch": {
-              "default": "25"
-            },
-            "processingTimeoutSec": {
-              "default": "600"
-            },
-            "publishBackoffMs": {
-              "default": "200"
-            },
-            "publishMaxAttempts": {
-              "default": "3"
-            },
-            "retryWindowSec": {
-              "default": "300"
-            },
-            "tableName": {
-              "default": "outbox_events"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Outbox: enabled / tableName / dispatchIntervalSec / batchSize / publishMaxAttempts /"
-        },
-        "fetcher": {
-          "type": "object",
-          "properties": {
-            "ccsOutboxBatchSize": {
-              "default": "50"
-            },
-            "ccsOutboxDispatchIntervalMs": {
-              "default": "500"
-            },
-            "ccsOutboxDlqRoutingKey": {
-              "default": "ccs.outbox.dlq"
-            },
-            "ccsOutboxMaxAttempts": {
-              "default": "10"
-            },
-            "enabled": {
-              "default": "false"
-            },
-            "httpTimeoutSec": {
-              "default": "30"
-            },
-            "maxRedeliveries": {
-              "default": "5"
-            },
-            "retryBackoffMs": {
-              "default": "5000"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Fetcher integration: enabled / httpTimeoutSec / ccsOutboxDispatchIntervalMs /"
-        },
-        "sta": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "default": "false"
-            },
-            "httpTimeoutSec": {
-              "default": "30"
-            }
-          },
-          "additionalProperties": false,
-          "description": "STA integration: enabled / httpTimeoutSec"
-        },
-        "reporter": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "default": "false"
-            },
-            "httpTimeoutSec": {
-              "default": "30"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Reporter integration: enabled / httpTimeoutSec"
-        },
-        "swagger": {
-          "type": "object",
-          "properties": {
-            "basePath": {
-              "default": "/"
-            },
-            "enabled": {
-              "default": "true"
-            },
-            "leftDelim": {
-              "default": "{{"
-            },
-            "rightDelim": {
-              "default": "}}"
-            },
-            "title": {
-              "default": "br-ccs"
-            },
-            "version": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false,
-          "description": "Swagger: enabled / title / version / basePath / leftDelim / rightDelim"
-        },
-        "rateLimit": {
-          "type": "object",
-          "properties": {
-            "aggressiveMax": {
-              "default": "100"
-            },
-            "aggressiveWindowSec": {
-              "default": "60"
-            },
-            "allowFailOpen": {
-              "default": ""
-            },
-            "dispatchMax": {
-              "default": "30"
-            },
-            "dispatchWindowSec": {
-              "default": "60"
-            },
-            "enabled": {
-              "default": "true"
-            },
-            "exportMax": {
-              "default": "60"
-            },
-            "exportWindowSec": {
-              "default": "60"
-            },
-            "max": {
-              "default": "500"
-            },
-            "relaxedMax": {
-              "default": "1000"
-            },
-            "relaxedWindowSec": {
-              "default": "60"
-            },
-            "windowSec": {
-              "default": "60"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Rate limiting: enabled / max / windowSec / aggressiveMax / aggressiveWindowSec /"
-        },
-        "pagination": {
-          "type": "object",
-          "properties": {
-            "limit": {
-              "default": "100"
-            },
-            "monthDateRange": {
-              "default": "3"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Pagination: limit / monthDateRange"
-        },
-        "observability": {
-          "type": "object",
-          "properties": {
-            "dbMetricsIntervalSec": {
-              "default": "15"
-            },
-            "idempotencyRetryWindowSec": {
-              "default": "300"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Observability: dbMetricsIntervalSec / idempotencyRetryWindowSec"
-        },
-        "m2m": {
-          "type": "object",
-          "properties": {
-            "awsRegion": {
-              "default": "us-east-1"
-            },
-            "credentialCacheTtlSec": {
-              "default": "300"
-            }
-          },
-          "additionalProperties": false,
-          "description": "M2M (non-secret): credentialCacheTtlSec / awsRegion"
-        },
-        "readiness": {
-          "type": "object",
-          "properties": {
-            "depSlowThresholdMs": {
-              "default": "500"
-            },
-            "probeTimeoutSec": {
-              "default": "5"
-            },
-            "startupInitialDelayMs": {
-              "default": "1000"
-            },
-            "startupMaxDelayMs": {
-              "default": "30000"
-            },
-            "startupMaxDurationSec": {
-              "default": "120"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Readiness / startup probes: probeTimeoutSec / depSlowThresholdMs / startupMaxDurationSec /"
-        },
-        "shutdown": {
-          "type": "object",
-          "properties": {
-            "drainGracePeriodSec": {
-              "default": "15"
-            },
-            "totalTimeoutSec": {
-              "default": "30"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Graceful shutdown: drainGracePeriodSec / totalTimeoutSec"
-        },
-        "objectStorage": {
-          "type": "object",
-          "properties": {
-            "accs009RetentionDays": {
-              "default": "30"
-            },
-            "ccsBucket": {
-              "type": "string",
-              "default": "lerian-ccs"
-            },
-            "ccsDisableSsl": {
-              "default": "true"
-            },
-            "ccsEndpoint": {
-              "default": ""
-            },
-            "ccsRegion": {
-              "default": "us-east-1"
-            },
-            "ccsUsePathStyle": {
-              "default": "true"
-            },
-            "fetcherBucket": {
-              "type": "string",
-              "default": "lerian-fetcher"
-            },
-            "fetcherDisableSsl": {
-              "default": "true"
-            },
-            "fetcherEndpoint": {
-              "default": ""
-            },
-            "fetcherRegion": {
-              "default": "us-east-1"
-            },
-            "fetcherUsePathStyle": {
-              "default": "true"
-            },
-            "outboundRetentionDays": {
-              "default": "30"
-            },
-            "seaweedfsMasterPort": {
-              "default": "9343"
-            },
-            "seaweedfsS3Port": {
-              "default": "8342"
-            },
-            "staBucket": {
-              "type": "string",
-              "default": "sta-files"
-            },
-            "staDisableSsl": {
-              "default": "true"
-            },
-            "staEndpoint": {
-              "default": ""
-            },
-            "staRegion": {
-              "default": "us-east-1"
-            },
-            "staUsePathStyle": {
-              "default": "true"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Object storage (non-secret): seaweedfsS3Port / seaweedfsMasterPort / {sta,ccs,fetcher}{Endpoint,"
+          "description": "PRIMARY override surface (escape hatch). TIERED model: dependency",
+          "propertyNames": {
+            "enum": [
+              "AGGRESSIVE_RATE_LIMIT_MAX",
+              "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+              "ALLOW_RATELIMIT_FAIL_OPEN",
+              "APPLICATION_NAME",
+              "AWS_REGION",
+              "CCS_ACCS005_OVERFLOW_THRESHOLD",
+              "CCS_ACCS005_SECRECY_SITUACAO",
+              "CCS_ACCS009_RETENTION_DAYS",
+              "CCS_BACEN_DESTINATARIO_CNPJ_BASE",
+              "CCS_CRYPTO_MASTER_KEY",
+              "CCS_DETAIL_MESSAGE_EMIT_ENABLED",
+              "CCS_DETAIL_MESSAGE_VALIDATION_ENABLED",
+              "CCS_FETCHER_MAX_REDELIVERIES",
+              "CCS_FETCHER_RETRY_BACKOFF_MS",
+              "CCS_OUTBOUND_RETENTION_DAYS",
+              "CCS_OUTBOX_BATCH_SIZE",
+              "CCS_OUTBOX_DISPATCH_INTERVAL_MS",
+              "CCS_OUTBOX_DLQ_ROUTING_KEY",
+              "CCS_OUTBOX_MAX_ATTEMPTS",
+              "CCS_RUN_MODE",
+              "CCS_STA_DLQ_TTL_SECONDS",
+              "CIRCUIT_BREAKER_ENABLED",
+              "CORS_ALLOWED_HEADERS",
+              "CORS_ALLOWED_METHODS",
+              "CORS_ALLOWED_ORIGINS",
+              "CORS_ALLOW_CREDENTIALS",
+              "CORS_EXPOSE_HEADERS",
+              "DB_METRICS_INTERVAL_SEC",
+              "DEFAULT_TENANT_ID",
+              "DEPLOYMENT_MODE",
+              "DISPATCH_RATE_LIMIT_MAX",
+              "DISPATCH_RATE_LIMIT_WINDOW_SEC",
+              "ENABLE_TELEMETRY",
+              "ENV_NAME",
+              "EXPORT_RATE_LIMIT_MAX",
+              "EXPORT_RATE_LIMIT_WINDOW_SEC",
+              "FETCHER_CLIENT_ID",
+              "FETCHER_CLIENT_SECRET",
+              "FETCHER_CRYPTO_KEY",
+              "FETCHER_ENABLED",
+              "FETCHER_HTTP_TIMEOUT_SEC",
+              "FETCHER_M2M_TARGET_SERVICE",
+              "FETCHER_SD_SERVICE_NAME",
+              "FETCHER_URL",
+              "GRPC_PORT",
+              "HTTP_BODY_LIMIT_BYTES",
+              "IDEMPOTENCY_RETRY_WINDOW_SEC",
+              "INFRA_CONNECT_TIMEOUT_SEC",
+              "LICENSE_KEY",
+              "LOG_LEVEL",
+              "M2M_CREDENTIAL_CACHE_TTL_SEC",
+              "MAX_PAGINATION_LIMIT",
+              "MAX_PAGINATION_MONTH_DATE_RANGE",
+              "MIGRATIONS_PATH",
+              "MULTI_TENANT_CACHE_TTL_SEC",
+              "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD",
+              "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC",
+              "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
+              "MULTI_TENANT_ENABLED",
+              "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+              "MULTI_TENANT_MAX_TENANT_POOLS",
+              "MULTI_TENANT_REDIS_CA_CERT",
+              "MULTI_TENANT_REDIS_HOST",
+              "MULTI_TENANT_REDIS_PASSWORD",
+              "MULTI_TENANT_REDIS_PORT",
+              "MULTI_TENANT_REDIS_TLS",
+              "MULTI_TENANT_SERVICE_API_KEY",
+              "MULTI_TENANT_TIMEOUT",
+              "MULTI_TENANT_URL",
+              "OBJECT_STORAGE_CCS_ACCESS_KEY",
+              "OBJECT_STORAGE_CCS_BUCKET",
+              "OBJECT_STORAGE_CCS_DISABLE_SSL",
+              "OBJECT_STORAGE_CCS_ENDPOINT",
+              "OBJECT_STORAGE_CCS_REGION",
+              "OBJECT_STORAGE_CCS_SECRET_KEY",
+              "OBJECT_STORAGE_CCS_USE_PATH_STYLE",
+              "OBJECT_STORAGE_FETCHER_ACCESS_KEY",
+              "OBJECT_STORAGE_FETCHER_BUCKET",
+              "OBJECT_STORAGE_FETCHER_DISABLE_SSL",
+              "OBJECT_STORAGE_FETCHER_ENDPOINT",
+              "OBJECT_STORAGE_FETCHER_REGION",
+              "OBJECT_STORAGE_FETCHER_SECRET_KEY",
+              "OBJECT_STORAGE_FETCHER_USE_PATH_STYLE",
+              "OBJECT_STORAGE_STA_ACCESS_KEY",
+              "OBJECT_STORAGE_STA_BUCKET",
+              "OBJECT_STORAGE_STA_DISABLE_SSL",
+              "OBJECT_STORAGE_STA_ENDPOINT",
+              "OBJECT_STORAGE_STA_REGION",
+              "OBJECT_STORAGE_STA_SECRET_KEY",
+              "OBJECT_STORAGE_STA_USE_PATH_STYLE",
+              "ORGANIZATION_IDS",
+              "OTEL_EXPORTER_OTLP_ENDPOINT",
+              "OTEL_LIBRARY_NAME",
+              "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+              "OTEL_RESOURCE_SERVICE_NAME",
+              "OTEL_RESOURCE_SERVICE_VERSION",
+              "OUTBOX_ALLOW_EMPTY_TENANT",
+              "OUTBOX_BATCH_SIZE",
+              "OUTBOX_DISPATCH_INTERVAL_SEC",
+              "OUTBOX_ENABLED",
+              "OUTBOX_INCLUDE_TENANT_METRICS",
+              "OUTBOX_MAX_DISPATCH_ATTEMPTS",
+              "OUTBOX_MAX_FAILED_PER_BATCH",
+              "OUTBOX_PRIORITY_EVENT_TYPES",
+              "OUTBOX_PROCESSING_TIMEOUT_SEC",
+              "OUTBOX_PUBLISH_BACKOFF_MS",
+              "OUTBOX_PUBLISH_MAX_ATTEMPTS",
+              "OUTBOX_RETRY_WINDOW_SEC",
+              "OUTBOX_TABLE_NAME",
+              "PLUGIN_AUTH_ENABLED",
+              "PLUGIN_AUTH_HOST",
+              "POSTGRES_CONNECT_TIMEOUT_SEC",
+              "POSTGRES_CONN_MAX_IDLE_TIME_MINS",
+              "POSTGRES_CONN_MAX_LIFETIME_MINS",
+              "POSTGRES_HOST",
+              "POSTGRES_MAX_IDLE_CONNS",
+              "POSTGRES_MAX_OPEN_CONNS",
+              "POSTGRES_NAME",
+              "POSTGRES_PASSWORD",
+              "POSTGRES_PORT",
+              "POSTGRES_REPLICA_HOST",
+              "POSTGRES_REPLICA_NAME",
+              "POSTGRES_REPLICA_PASSWORD",
+              "POSTGRES_REPLICA_PORT",
+              "POSTGRES_REPLICA_SSLMODE",
+              "POSTGRES_REPLICA_USER",
+              "POSTGRES_SSLMODE",
+              "POSTGRES_USER",
+              "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK",
+              "RABBITMQ_ALLOW_INSECURE_TLS",
+              "RABBITMQ_DEFAULT_PASS",
+              "RABBITMQ_DEFAULT_USER",
+              "RABBITMQ_ENABLED",
+              "RABBITMQ_EXCHANGE",
+              "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS",
+              "RABBITMQ_HEALTH_CHECK_URL",
+              "RABBITMQ_HOST",
+              "RABBITMQ_PORT_AMQP",
+              "RABBITMQ_PORT_HOST",
+              "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS",
+              "RABBITMQ_PUBLISHER_MAX_RECOVERIES",
+              "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS",
+              "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS",
+              "RABBITMQ_QUEUE",
+              "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS",
+              "RABBITMQ_URL",
+              "RABBITMQ_VHOST",
+              "RATE_LIMIT_ENABLED",
+              "RATE_LIMIT_MAX",
+              "RATE_LIMIT_WINDOW_SEC",
+              "READYZ_DEP_SLOW_THRESHOLD_MS",
+              "READYZ_PROBE_TIMEOUT_SEC",
+              "REDIS_CA_CERT",
+              "REDIS_DB",
+              "REDIS_DIAL_TIMEOUT",
+              "REDIS_HOST",
+              "REDIS_MASTER_NAME",
+              "REDIS_MAX_RETRIES",
+              "REDIS_MAX_RETRY_BACKOFF",
+              "REDIS_MIN_IDLE_CONNS",
+              "REDIS_MIN_RETRY_BACKOFF",
+              "REDIS_PASSWORD",
+              "REDIS_POOL_SIZE",
+              "REDIS_POOL_TIMEOUT",
+              "REDIS_PROTOCOL",
+              "REDIS_READ_TIMEOUT",
+              "REDIS_TLS",
+              "REDIS_WRITE_TIMEOUT",
+              "RELAXED_RATE_LIMIT_MAX",
+              "RELAXED_RATE_LIMIT_WINDOW_SEC",
+              "REPORTER_CLIENT_ID",
+              "REPORTER_CLIENT_SECRET",
+              "REPORTER_ENABLED",
+              "REPORTER_M2M_TARGET_SERVICE",
+              "REPORTER_SD_SERVICE_NAME",
+              "SD_ADDRESS",
+              "SD_ALLOW_STALE",
+              "SD_DIAL_TIMEOUT",
+              "SD_ENABLED",
+              "SD_EXTERNAL_ADDRESS",
+              "SD_EXTERNAL_PORT",
+              "SD_INTERNAL_ADDRESS",
+              "SD_INTERNAL_PORT",
+              "SD_INTERNAL_SCHEME",
+              "SD_PREFER_VIEW",
+              "SD_RESPONSE_HEADER_TIMEOUT",
+              "SD_SEED_TIMEOUT",
+              "SD_TLS",
+              "SD_TLS_HANDSHAKE_TIMEOUT",
+              "SD_TLS_SKIP_VERIFY",
+              "SD_TOKEN",
+              "SD_WORKLOAD",
+              "SEAWEEDFS_MASTER_PORT",
+              "SEAWEEDFS_S3_PORT",
+              "SERVER_ADDRESS",
+              "SERVER_PORT",
+              "SERVER_TLS_CERT_FILE",
+              "SERVER_TLS_KEY_FILE",
+              "SHUTDOWN_DRAIN_GRACE_PERIOD_SEC",
+              "SHUTDOWN_TOTAL_TIMEOUT_SEC",
+              "STARTUP_SELF_PROBE_INITIAL_DELAY_MS",
+              "STARTUP_SELF_PROBE_MAX_DELAY_MS",
+              "STARTUP_SELF_PROBE_MAX_DURATION_SEC",
+              "STA_BASE_URL",
+              "STA_CLIENT_ID",
+              "STA_CLIENT_SECRET",
+              "STA_ENABLED",
+              "STA_HTTP_TIMEOUT_SEC",
+              "STA_M2M_TARGET_SERVICE",
+              "STA_SD_SERVICE_NAME",
+              "STREAMING_BATCH_LINGER_MS",
+              "STREAMING_BATCH_MAX_BYTES",
+              "STREAMING_BROKERS",
+              "STREAMING_CB_FAILURE_RATIO",
+              "STREAMING_CB_MIN_REQUESTS",
+              "STREAMING_CB_TIMEOUT_S",
+              "STREAMING_CLIENT_ID",
+              "STREAMING_CLOSE_TIMEOUT_S",
+              "STREAMING_CLOUDEVENTS_SOURCE",
+              "STREAMING_COMPRESSION",
+              "STREAMING_ENABLED",
+              "STREAMING_EVENT_POLICIES",
+              "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS",
+              "STREAMING_MAX_BUFFERED_RECORDS",
+              "STREAMING_RECORD_DELIVERY_TIMEOUT_S",
+              "STREAMING_RECORD_RETRIES",
+              "STREAMING_REQUIRED_ACKS",
+              "STREAMING_SASL_ALLOW_PLAINTEXT",
+              "STREAMING_SASL_MECHANISM",
+              "STREAMING_SASL_USERNAME",
+              "STREAMING_TLS_ENABLED",
+              "SWAGGER_BASE_PATH",
+              "SWAGGER_DESCRIPTION",
+              "SWAGGER_ENABLED",
+              "SWAGGER_LEFT_DELIM",
+              "SWAGGER_RIGHT_DELIM",
+              "SWAGGER_TITLE",
+              "SWAGGER_VERSION",
+              "SYSTEMPLANE_ENABLED",
+              "TLS_TERMINATED_UPSTREAM",
+              "TRUSTED_PROXIES",
+              "VERSION"
+            ]
+          }
         },
         "secrets": {
           "type": "object",

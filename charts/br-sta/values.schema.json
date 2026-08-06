@@ -28,19 +28,10 @@
         "multiTenant": {
           "type": "object",
           "properties": {
-            "defaultTenantId": {
-              "default": "11111111-1111-1111-1111-111111111111"
-            },
             "enabled": {
               "type": "boolean",
               "default": false,
               "description": "Enable multi-tenancy (MULTI_TENANT_ENABLED)"
-            },
-            "poolMaxConns": {
-              "default": "20"
-            },
-            "poolMaxIdleConns": {
-              "default": "5"
             }
           },
           "additionalProperties": false,
@@ -461,417 +452,252 @@
         "configmap": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Raw ConfigMap env-var escape hatch. The clean, grouped API lives in the"
-        },
-        "app": {
-          "type": "object",
-          "properties": {
-            "awsRegion": {
-              "default": "us-east-1"
-            },
-            "bacenEnvironment": {
-              "default": "homologation"
-            },
-            "circuitBreakerEnabled": {
-              "default": "false"
-            },
-            "credentialsRecoveryOnBoot": {
-              "default": "true"
-            },
-            "envName": {
-              "default": "production"
-            },
-            "exampleStatusProviderMode": {
-              "default": "healthy"
-            },
-            "logLevel": {
-              "default": "info"
-            },
-            "m2mCredentialCacheTtlSec": {
-              "default": "300"
-            }
-          },
-          "additionalProperties": false,
-          "description": "Grouped config API (see templates/configmap.yaml for field names). Postgres/"
-        },
-        "server": {
-          "type": "object",
-          "properties": {
-            "httpBodyLimitBytes": {
-              "default": "104857600"
-            },
-            "serverAddress": {
-              "default": "0.0.0.0:8080"
-            },
-            "tlsTerminatedUpstream": {
-              "default": "true"
-            },
-            "trustedProxies": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false
-        },
-        "cors": {
-          "type": "object",
-          "properties": {
-            "allowCredentials": {
-              "default": "false"
-            },
-            "allowedHeaders": {
-              "default": "Origin,Content-Type,Accept,Authorization,X-Request-ID"
-            },
-            "allowedMethods": {
-              "default": "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-            },
-            "allowedOrigins": {
-              "default": "*"
-            },
-            "exposeHeaders": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false
-        },
-        "postgres": {
-          "type": "object",
-          "properties": {
-            "connMaxIdleTimeMins": {
-              "default": "5"
-            },
-            "connMaxLifetimeMins": {
-              "default": "30"
-            },
-            "connectTimeoutSec": {
-              "default": "10"
-            },
-            "dbMetricsIntervalSec": {
-              "default": "15"
-            },
-            "infraConnectTimeoutSec": {
-              "default": "30"
-            },
-            "maxConnections": {
-              "default": "100"
-            },
-            "maxIdleConns": {
-              "default": "5"
-            },
-            "maxOpenConns": {
-              "default": "25"
-            },
-            "migrationsPath": {
-              "default": "migrations"
-            },
-            "name": {
-              "default": "br_sta"
-            },
-            "sharedBuffers": {
-              "default": "128MB"
-            },
-            "systemplaneEnabled": {
-              "default": "false"
-            }
-          },
-          "additionalProperties": false
-        },
-        "redis": {
-          "type": "object",
-          "properties": {
-            "db": {
-              "default": "0"
-            },
-            "dialTimeout": {
-              "default": "5"
-            },
-            "maxRetries": {
-              "default": "3"
-            },
-            "maxRetryBackoff": {
-              "default": "8"
-            },
-            "minIdleConns": {
-              "default": "2"
-            },
-            "minRetryBackoff": {
-              "default": "1"
-            },
-            "poolSize": {
-              "default": "10"
-            },
-            "poolTimeout": {
-              "default": "2"
-            },
-            "protocol": {
-              "default": "3"
-            },
-            "readTimeout": {
-              "default": "3"
-            },
-            "tls": {
-              "default": "false"
-            },
-            "writeTimeout": {
-              "default": "3"
-            }
-          },
-          "additionalProperties": false
-        },
-        "broker": {
-          "type": "object",
-          "properties": {
-            "allowInsecureHealthCheck": {
-              "default": "false"
-            },
-            "allowInsecureTls": {
-              "default": "false"
-            },
-            "enabled": {
-              "default": "false"
-            },
-            "exchange": {
-              "default": "events"
-            },
-            "portHost": {
-              "default": "15672"
-            },
-            "publisherConfirmTimeoutMs": {
-              "default": "5000"
-            },
-            "publisherMaxRecoveries": {
-              "default": "10"
-            },
-            "publisherRecoveryInitialMs": {
-              "default": "1000"
-            },
-            "publisherRecoveryMaxMs": {
-              "default": "30000"
-            },
-            "requireHealthAllowedHosts": {
-              "default": "false"
-            },
-            "scheme": {
-              "default": "amqp"
-            },
-            "vhost": {
-              "default": "/"
-            }
-          },
-          "additionalProperties": false
-        },
-        "outbox": {
-          "type": "object",
-          "properties": {
-            "allowEmptyTenant": {
-              "default": "true"
-            },
-            "batchSize": {
-              "default": "50"
-            },
-            "dispatchIntervalSec": {
-              "default": "2"
-            },
-            "enabled": {
-              "default": "false"
-            },
-            "includeTenantMetrics": {
-              "default": "false"
-            },
-            "maxDispatchAttempts": {
-              "default": "10"
-            },
-            "maxFailedPerBatch": {
-              "default": "25"
-            },
-            "processingTimeoutSec": {
-              "default": "600"
-            },
-            "publishBackoffMs": {
-              "default": "200"
-            },
-            "publishMaxAttempts": {
-              "default": "3"
-            },
-            "retryWindowSec": {
-              "default": "300"
-            },
-            "tableName": {
-              "default": "outbox_events"
-            }
-          },
-          "additionalProperties": false
-        },
-        "sta": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "auth": {
-          "type": "object",
-          "properties": {
-            "pluginAuthEnabled": {
-              "default": "false"
-            },
-            "pluginAuthHost": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false
-        },
-        "swagger": {
-          "type": "object",
-          "properties": {
-            "basePath": {
-              "default": "/"
-            },
-            "enabled": {
-              "default": "false"
-            },
-            "leftDelim": {
-              "default": "{{"
-            },
-            "rightDelim": {
-              "default": "}}"
-            },
-            "title": {
-              "default": "br-sta"
-            },
-            "version": {
-              "default": "1.0.0"
-            }
-          },
-          "additionalProperties": false
-        },
-        "rateLimit": {
-          "type": "object",
-          "properties": {
-            "aggressiveRateLimitMax": {
-              "default": "100"
-            },
-            "aggressiveRateLimitWindowSec": {
-              "default": "60"
-            },
-            "rateLimitEnabled": {
-              "default": "true"
-            },
-            "rateLimitMax": {
-              "default": "500"
-            },
-            "rateLimitWindowSec": {
-              "default": "60"
-            },
-            "relaxedRateLimitMax": {
-              "default": "1000"
-            },
-            "relaxedRateLimitWindowSec": {
-              "default": "60"
-            }
-          },
-          "additionalProperties": false
-        },
-        "pagination": {
-          "type": "object",
-          "properties": {
-            "maxPaginationLimit": {
-              "default": "100"
-            },
-            "maxPaginationMonthDateRange": {
-              "default": "3"
-            }
-          },
-          "additionalProperties": false
-        },
-        "idempotency": {
-          "type": "object",
-          "properties": {
-            "idempotencyRetryWindowSec": {
-              "default": "300"
-            }
-          },
-          "additionalProperties": false
-        },
-        "audit": {
-          "type": "object",
-          "properties": {
-            "exportRateLimitMax": {
-              "default": "10"
-            },
-            "exportRateLimitWindowSec": {
-              "default": "60"
-            },
-            "publisherAlternateExchange": {
-              "default": "sta.audit.dlq"
-            },
-            "publisherConfirmTimeoutSec": {
-              "default": "5"
-            }
-          },
-          "additionalProperties": false
-        },
-        "transfer": {
-          "type": "object",
-          "properties": {
-            "inboundEnabled": {
-              "default": "false"
-            },
-            "inboundMaxFileSizeBytes": {
-              "default": "5368709120"
-            },
-            "objectStorageBucket": {
-              "default": ""
-            }
-          },
-          "additionalProperties": false
-        },
-        "truststore": {
-          "type": "object",
-          "properties": {
-            "defaultPageSize": {
-              "default": "25"
-            },
-            "expiringSoonDays": {
-              "default": "30"
-            },
-            "maxCertSizeBytes": {
-              "default": "65536"
-            },
-            "maxPageSize": {
-              "default": "100"
-            },
-            "s3Bucket": {
-              "default": "br-sta-truststore"
-            },
-            "s3Endpoint": {
-              "default": "http://localhost:8333"
-            },
-            "s3PathStyle": {
-              "default": "true"
-            },
-            "s3Region": {
-              "default": "us-east-1"
-            }
-          },
-          "additionalProperties": false
-        },
-        "masterKey": {
-          "type": "object",
-          "properties": {
-            "provider": {
-              "default": "envvar"
-            },
-            "version": {
-              "default": "v1"
-            }
-          },
-          "additionalProperties": false
-        },
-        "m2m": {
-          "type": "object",
-          "properties": {
-            "awsAccessKeyId": {
-              "default": "any"
-            }
-          },
-          "additionalProperties": false
+          "description": "Primary override surface: raw ConfigMap env-var passthrough. Every non-dependency",
+          "propertyNames": {
+            "enum": [
+              "AGGRESSIVE_RATE_LIMIT_MAX",
+              "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+              "AUDIT_API_DEFAULT_PAGE_SIZE",
+              "AUDIT_API_MAX_EXPORT_DATE_RANGE_DAYS",
+              "AUDIT_API_MAX_PAGE_SIZE",
+              "AUDIT_CLEANUP_ENABLED",
+              "AUDIT_CLEANUP_INTERVAL_HOURS",
+              "AUDIT_CLEANUP_RETENTION_DAYS",
+              "AUDIT_CLEANUP_SERVICE_NAME",
+              "AUDIT_CONSUMER_ALTERNATE_EXCHANGE",
+              "AUDIT_CONSUMER_DEDUP_TTL_SEC",
+              "AUDIT_CONSUMER_DLQ_EXCHANGE",
+              "AUDIT_CONSUMER_ENABLED",
+              "AUDIT_CONSUMER_EXCHANGE",
+              "AUDIT_CONSUMER_LOCK_CLASS_ID",
+              "AUDIT_CONSUMER_MAX_RETRY_ATTEMPTS",
+              "AUDIT_CONSUMER_QUEUE",
+              "AUDIT_CONSUMER_SERVICE_NAME",
+              "AUDIT_EXPORT_GENERATOR_BATCH_SIZE",
+              "AUDIT_EXPORT_GENERATOR_ENABLED",
+              "AUDIT_EXPORT_GENERATOR_INTERVAL_SEC",
+              "AUDIT_EXPORT_GENERATOR_OBJECT_PREFIX",
+              "AUDIT_EXPORT_GENERATOR_S3_BUCKET",
+              "AUDIT_EXPORT_GENERATOR_S3_ENDPOINT",
+              "AUDIT_EXPORT_GENERATOR_S3_PATH_STYLE",
+              "AUDIT_EXPORT_GENERATOR_S3_REGION",
+              "AUDIT_EXPORT_GENERATOR_SERVICE_NAME",
+              "AUDIT_EXPORT_RATE_LIMIT_MAX",
+              "AUDIT_EXPORT_RATE_LIMIT_WINDOW_SEC",
+              "AUDIT_PARTITION_INTERVAL_HOURS",
+              "AUDIT_PARTITION_LOOKAHEAD_MONTHS",
+              "AUDIT_PARTITION_MANAGER_ENABLED",
+              "AUDIT_PARTITION_SERVICE_NAME",
+              "AUDIT_PUBLISHER_ALTERNATE_EXCHANGE",
+              "AUDIT_PUBLISHER_BATCH_SIZE",
+              "AUDIT_PUBLISHER_CONFIRM_TIMEOUT_SEC",
+              "AUDIT_PUBLISHER_ENABLED",
+              "AUDIT_PUBLISHER_EXCHANGE",
+              "AUDIT_PUBLISHER_INTERVAL_SEC",
+              "AUDIT_PUBLISHER_LOCK_CLASS_ID",
+              "AUDIT_PUBLISHER_MAX_ATTEMPTS",
+              "AUDIT_PUBLISHER_SERVICE_NAME",
+              "AWS_ACCESS_KEY_ID",
+              "AWS_REGION",
+              "AWS_SECRET_ACCESS_KEY",
+              "BACEN_ENVIRONMENT",
+              "BUSINESS_EVENTS_ALTERNATE_EXCHANGE",
+              "BUSINESS_EVENTS_BATCH_SIZE",
+              "BUSINESS_EVENTS_CONFIRM_TIMEOUT_SEC",
+              "BUSINESS_EVENTS_ENABLED",
+              "BUSINESS_EVENTS_EXCHANGE",
+              "BUSINESS_EVENTS_INTERVAL_SEC",
+              "BUSINESS_EVENTS_LOCK_CLASS_ID",
+              "BUSINESS_EVENTS_MAX_ATTEMPTS",
+              "BUSINESS_EVENTS_SERVICE_NAME",
+              "CIRCUIT_BREAKER_ENABLED",
+              "CORS_ALLOWED_HEADERS",
+              "CORS_ALLOWED_METHODS",
+              "CORS_ALLOWED_ORIGINS",
+              "CORS_ALLOW_CREDENTIALS",
+              "CORS_EXPOSE_HEADERS",
+              "CREDENTIALS_RECOVERY_ON_BOOT",
+              "DB_CONNECTION_STRING",
+              "DB_METRICS_INTERVAL_SEC",
+              "DEFAULT_TENANT_ID",
+              "ENABLE_TELEMETRY",
+              "ENV_NAME",
+              "EXAMPLE_STATUS_PROVIDER_MODE",
+              "HTTP_BODY_LIMIT_BYTES",
+              "IDEMPOTENCY_RETRY_WINDOW_SEC",
+              "INFRA_CONNECT_TIMEOUT_SEC",
+              "LICENSE_KEY",
+              "LICENSE_SERVICE_ADDRESS",
+              "LOG_LEVEL",
+              "M2M_CREDENTIAL_CACHE_TTL_SEC",
+              "M2M_TARGET_SERVICE",
+              "MASTER_ENCRYPTION_KEY",
+              "MASTER_KEYS",
+              "MASTER_KEY_KMS_KEY_ID",
+              "MASTER_KEY_KMS_REGION",
+              "MASTER_KEY_PROVIDER",
+              "MASTER_KEY_VERSION",
+              "MAX_PAGINATION_LIMIT",
+              "MAX_PAGINATION_MONTH_DATE_RANGE",
+              "MIGRATIONS_PATH",
+              "MULTI_TENANT_ALLOW_INSECURE_HTTP",
+              "MULTI_TENANT_CACHE_TTL_SEC",
+              "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD",
+              "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC",
+              "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
+              "MULTI_TENANT_ENABLED",
+              "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+              "MULTI_TENANT_MAX_TENANT_POOLS",
+              "MULTI_TENANT_POOL_MAX_CONNS",
+              "MULTI_TENANT_POOL_MAX_IDLE_CONNS",
+              "MULTI_TENANT_REDIS_HOST",
+              "MULTI_TENANT_REDIS_PASSWORD",
+              "MULTI_TENANT_REDIS_PORT",
+              "MULTI_TENANT_REDIS_TLS",
+              "MULTI_TENANT_SERVICE_API_KEY",
+              "MULTI_TENANT_TIMEOUT",
+              "MULTI_TENANT_URL",
+              "ORGANIZATION_IDS",
+              "OTEL_EXPORTER_OTLP_ENDPOINT",
+              "OTEL_LIBRARY_NAME",
+              "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+              "OTEL_RESOURCE_SERVICE_NAME",
+              "OTEL_RESOURCE_SERVICE_VERSION",
+              "OUTBOX_ALLOW_EMPTY_TENANT",
+              "OUTBOX_BATCH_SIZE",
+              "OUTBOX_DISPATCH_INTERVAL_SEC",
+              "OUTBOX_ENABLED",
+              "OUTBOX_INCLUDE_TENANT_METRICS",
+              "OUTBOX_MAX_DISPATCH_ATTEMPTS",
+              "OUTBOX_MAX_FAILED_PER_BATCH",
+              "OUTBOX_PRIORITY_EVENT_TYPES",
+              "OUTBOX_PROCESSING_TIMEOUT_SEC",
+              "OUTBOX_PUBLISH_BACKOFF_MS",
+              "OUTBOX_PUBLISH_MAX_ATTEMPTS",
+              "OUTBOX_RETRY_WINDOW_SEC",
+              "OUTBOX_TABLE_NAME",
+              "PLUGIN_AUTH_ENABLED",
+              "PLUGIN_AUTH_HOST",
+              "POSTGRES_CONNECT_TIMEOUT_SEC",
+              "POSTGRES_CONN_MAX_IDLE_TIME_MINS",
+              "POSTGRES_CONN_MAX_LIFETIME_MINS",
+              "POSTGRES_HOST",
+              "POSTGRES_MAX_CONNECTIONS",
+              "POSTGRES_MAX_IDLE_CONNS",
+              "POSTGRES_MAX_OPEN_CONNS",
+              "POSTGRES_NAME",
+              "POSTGRES_PASSWORD",
+              "POSTGRES_PORT",
+              "POSTGRES_REPLICA_HOST",
+              "POSTGRES_REPLICA_NAME",
+              "POSTGRES_REPLICA_PASSWORD",
+              "POSTGRES_REPLICA_PORT",
+              "POSTGRES_REPLICA_SSLMODE",
+              "POSTGRES_REPLICA_USER",
+              "POSTGRES_SHARED_BUFFERS",
+              "POSTGRES_SSLMODE",
+              "POSTGRES_USER",
+              "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK",
+              "RABBITMQ_ALLOW_INSECURE_TLS",
+              "RABBITMQ_DEFAULT_PASS",
+              "RABBITMQ_DEFAULT_USER",
+              "RABBITMQ_ENABLED",
+              "RABBITMQ_EXCHANGE",
+              "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS",
+              "RABBITMQ_HEALTH_CHECK_URL",
+              "RABBITMQ_HOST",
+              "RABBITMQ_PORT_AMQP",
+              "RABBITMQ_PORT_HOST",
+              "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS",
+              "RABBITMQ_PUBLISHER_MAX_RECOVERIES",
+              "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS",
+              "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS",
+              "RABBITMQ_QUEUE",
+              "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS",
+              "RABBITMQ_SCHEME",
+              "RABBITMQ_URL",
+              "RABBITMQ_VHOST",
+              "RATE_LIMIT_ENABLED",
+              "RATE_LIMIT_MAX",
+              "RATE_LIMIT_WINDOW_SEC",
+              "REDIS_CA_CERT",
+              "REDIS_DB",
+              "REDIS_DIAL_TIMEOUT",
+              "REDIS_HOST",
+              "REDIS_MASTER_NAME",
+              "REDIS_MAX_RETRIES",
+              "REDIS_MAX_RETRY_BACKOFF",
+              "REDIS_MIN_IDLE_CONNS",
+              "REDIS_MIN_RETRY_BACKOFF",
+              "REDIS_PASSWORD",
+              "REDIS_POOL_SIZE",
+              "REDIS_POOL_TIMEOUT",
+              "REDIS_PROTOCOL",
+              "REDIS_READ_TIMEOUT",
+              "REDIS_TLS",
+              "REDIS_URL",
+              "REDIS_WRITE_TIMEOUT",
+              "RELAXED_RATE_LIMIT_MAX",
+              "RELAXED_RATE_LIMIT_WINDOW_SEC",
+              "SCHEDULER_ENABLED",
+              "SD_ADDRESS",
+              "SD_ENABLED",
+              "SD_EXTERNAL_ADDRESS",
+              "SD_EXTERNAL_PORT",
+              "SD_INTERNAL_ADDRESS",
+              "SD_INTERNAL_PORT",
+              "SD_INTERNAL_SCHEME",
+              "SD_PREFER_VIEW",
+              "SD_TLS",
+              "SD_TLS_SKIP_VERIFY",
+              "SD_TOKEN",
+              "SD_WATCH_WAIT_TIME",
+              "SD_WORKLOAD",
+              "SERVER_ADDRESS",
+              "SERVER_TLS_CERT_FILE",
+              "SERVER_TLS_KEY_FILE",
+              "SERVER_TRUSTED_PROXIES",
+              "STREAMING_BATCH_LINGER_MS",
+              "STREAMING_BROKERS",
+              "STREAMING_CB_FAILURE_RATIO",
+              "STREAMING_CB_MIN_REQUESTS",
+              "STREAMING_CB_TIMEOUT_S",
+              "STREAMING_CLIENT_ID",
+              "STREAMING_CLOSE_TIMEOUT_S",
+              "STREAMING_CLOUDEVENTS_SOURCE",
+              "STREAMING_COMPRESSION",
+              "STREAMING_ENABLED",
+              "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS",
+              "STREAMING_REQUIRED_ACKS",
+              "STREAMING_SASL_ALLOW_PLAINTEXT",
+              "STREAMING_SASL_MECHANISM",
+              "STREAMING_SASL_PASSWORD",
+              "STREAMING_SASL_USERNAME",
+              "STREAMING_TLS_CA_CERT",
+              "STREAMING_TLS_ENABLED",
+              "SWAGGER_BASE_PATH",
+              "SWAGGER_DESCRIPTION",
+              "SWAGGER_ENABLED",
+              "SWAGGER_LEFT_DELIM",
+              "SWAGGER_RIGHT_DELIM",
+              "SWAGGER_TITLE",
+              "SWAGGER_VERSION",
+              "SYSTEMPLANE_ENABLED",
+              "TLS_TERMINATED_UPSTREAM",
+              "TRANSFER_INBOUND_ENABLED",
+              "TRANSFER_INBOUND_MAX_FILE_SIZE_BYTES",
+              "TRANSFER_OBJECT_STORAGE_BUCKET",
+              "TRUST_STORE_DEFAULT_PAGE_SIZE",
+              "TRUST_STORE_EXPIRING_SOON_DAYS",
+              "TRUST_STORE_MAX_CERT_SIZE_BYTES",
+              "TRUST_STORE_MAX_PAGE_SIZE",
+              "TRUST_STORE_S3_BUCKET",
+              "TRUST_STORE_S3_ENDPOINT",
+              "TRUST_STORE_S3_PATH_STYLE",
+              "TRUST_STORE_S3_REGION",
+              "VERSION"
+            ]
+          }
         },
         "serviceDiscovery": {
           "type": "object",
@@ -1129,7 +955,252 @@
         "configmap": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Worker-only environment (layered on top of the manager ConfigMap/Secret)."
+          "description": "Worker-only environment (layered on top of the manager ConfigMap/Secret).",
+          "propertyNames": {
+            "enum": [
+              "AGGRESSIVE_RATE_LIMIT_MAX",
+              "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+              "AUDIT_API_DEFAULT_PAGE_SIZE",
+              "AUDIT_API_MAX_EXPORT_DATE_RANGE_DAYS",
+              "AUDIT_API_MAX_PAGE_SIZE",
+              "AUDIT_CLEANUP_ENABLED",
+              "AUDIT_CLEANUP_INTERVAL_HOURS",
+              "AUDIT_CLEANUP_RETENTION_DAYS",
+              "AUDIT_CLEANUP_SERVICE_NAME",
+              "AUDIT_CONSUMER_ALTERNATE_EXCHANGE",
+              "AUDIT_CONSUMER_DEDUP_TTL_SEC",
+              "AUDIT_CONSUMER_DLQ_EXCHANGE",
+              "AUDIT_CONSUMER_ENABLED",
+              "AUDIT_CONSUMER_EXCHANGE",
+              "AUDIT_CONSUMER_LOCK_CLASS_ID",
+              "AUDIT_CONSUMER_MAX_RETRY_ATTEMPTS",
+              "AUDIT_CONSUMER_QUEUE",
+              "AUDIT_CONSUMER_SERVICE_NAME",
+              "AUDIT_EXPORT_GENERATOR_BATCH_SIZE",
+              "AUDIT_EXPORT_GENERATOR_ENABLED",
+              "AUDIT_EXPORT_GENERATOR_INTERVAL_SEC",
+              "AUDIT_EXPORT_GENERATOR_OBJECT_PREFIX",
+              "AUDIT_EXPORT_GENERATOR_S3_BUCKET",
+              "AUDIT_EXPORT_GENERATOR_S3_ENDPOINT",
+              "AUDIT_EXPORT_GENERATOR_S3_PATH_STYLE",
+              "AUDIT_EXPORT_GENERATOR_S3_REGION",
+              "AUDIT_EXPORT_GENERATOR_SERVICE_NAME",
+              "AUDIT_EXPORT_RATE_LIMIT_MAX",
+              "AUDIT_EXPORT_RATE_LIMIT_WINDOW_SEC",
+              "AUDIT_PARTITION_INTERVAL_HOURS",
+              "AUDIT_PARTITION_LOOKAHEAD_MONTHS",
+              "AUDIT_PARTITION_MANAGER_ENABLED",
+              "AUDIT_PARTITION_SERVICE_NAME",
+              "AUDIT_PUBLISHER_ALTERNATE_EXCHANGE",
+              "AUDIT_PUBLISHER_BATCH_SIZE",
+              "AUDIT_PUBLISHER_CONFIRM_TIMEOUT_SEC",
+              "AUDIT_PUBLISHER_ENABLED",
+              "AUDIT_PUBLISHER_EXCHANGE",
+              "AUDIT_PUBLISHER_INTERVAL_SEC",
+              "AUDIT_PUBLISHER_LOCK_CLASS_ID",
+              "AUDIT_PUBLISHER_MAX_ATTEMPTS",
+              "AUDIT_PUBLISHER_SERVICE_NAME",
+              "AWS_ACCESS_KEY_ID",
+              "AWS_REGION",
+              "AWS_SECRET_ACCESS_KEY",
+              "BACEN_ENVIRONMENT",
+              "BUSINESS_EVENTS_ALTERNATE_EXCHANGE",
+              "BUSINESS_EVENTS_BATCH_SIZE",
+              "BUSINESS_EVENTS_CONFIRM_TIMEOUT_SEC",
+              "BUSINESS_EVENTS_ENABLED",
+              "BUSINESS_EVENTS_EXCHANGE",
+              "BUSINESS_EVENTS_INTERVAL_SEC",
+              "BUSINESS_EVENTS_LOCK_CLASS_ID",
+              "BUSINESS_EVENTS_MAX_ATTEMPTS",
+              "BUSINESS_EVENTS_SERVICE_NAME",
+              "CIRCUIT_BREAKER_ENABLED",
+              "CORS_ALLOWED_HEADERS",
+              "CORS_ALLOWED_METHODS",
+              "CORS_ALLOWED_ORIGINS",
+              "CORS_ALLOW_CREDENTIALS",
+              "CORS_EXPOSE_HEADERS",
+              "CREDENTIALS_RECOVERY_ON_BOOT",
+              "DB_CONNECTION_STRING",
+              "DB_METRICS_INTERVAL_SEC",
+              "DEFAULT_TENANT_ID",
+              "ENABLE_TELEMETRY",
+              "ENV_NAME",
+              "EXAMPLE_STATUS_PROVIDER_MODE",
+              "HTTP_BODY_LIMIT_BYTES",
+              "IDEMPOTENCY_RETRY_WINDOW_SEC",
+              "INFRA_CONNECT_TIMEOUT_SEC",
+              "LICENSE_KEY",
+              "LICENSE_SERVICE_ADDRESS",
+              "LOG_LEVEL",
+              "M2M_CREDENTIAL_CACHE_TTL_SEC",
+              "M2M_TARGET_SERVICE",
+              "MASTER_ENCRYPTION_KEY",
+              "MASTER_KEYS",
+              "MASTER_KEY_KMS_KEY_ID",
+              "MASTER_KEY_KMS_REGION",
+              "MASTER_KEY_PROVIDER",
+              "MASTER_KEY_VERSION",
+              "MAX_PAGINATION_LIMIT",
+              "MAX_PAGINATION_MONTH_DATE_RANGE",
+              "MIGRATIONS_PATH",
+              "MULTI_TENANT_ALLOW_INSECURE_HTTP",
+              "MULTI_TENANT_CACHE_TTL_SEC",
+              "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD",
+              "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC",
+              "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
+              "MULTI_TENANT_ENABLED",
+              "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+              "MULTI_TENANT_MAX_TENANT_POOLS",
+              "MULTI_TENANT_POOL_MAX_CONNS",
+              "MULTI_TENANT_POOL_MAX_IDLE_CONNS",
+              "MULTI_TENANT_REDIS_HOST",
+              "MULTI_TENANT_REDIS_PASSWORD",
+              "MULTI_TENANT_REDIS_PORT",
+              "MULTI_TENANT_REDIS_TLS",
+              "MULTI_TENANT_SERVICE_API_KEY",
+              "MULTI_TENANT_TIMEOUT",
+              "MULTI_TENANT_URL",
+              "ORGANIZATION_IDS",
+              "OTEL_EXPORTER_OTLP_ENDPOINT",
+              "OTEL_LIBRARY_NAME",
+              "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+              "OTEL_RESOURCE_SERVICE_NAME",
+              "OTEL_RESOURCE_SERVICE_VERSION",
+              "OUTBOX_ALLOW_EMPTY_TENANT",
+              "OUTBOX_BATCH_SIZE",
+              "OUTBOX_DISPATCH_INTERVAL_SEC",
+              "OUTBOX_ENABLED",
+              "OUTBOX_INCLUDE_TENANT_METRICS",
+              "OUTBOX_MAX_DISPATCH_ATTEMPTS",
+              "OUTBOX_MAX_FAILED_PER_BATCH",
+              "OUTBOX_PRIORITY_EVENT_TYPES",
+              "OUTBOX_PROCESSING_TIMEOUT_SEC",
+              "OUTBOX_PUBLISH_BACKOFF_MS",
+              "OUTBOX_PUBLISH_MAX_ATTEMPTS",
+              "OUTBOX_RETRY_WINDOW_SEC",
+              "OUTBOX_TABLE_NAME",
+              "PLUGIN_AUTH_ENABLED",
+              "PLUGIN_AUTH_HOST",
+              "POSTGRES_CONNECT_TIMEOUT_SEC",
+              "POSTGRES_CONN_MAX_IDLE_TIME_MINS",
+              "POSTGRES_CONN_MAX_LIFETIME_MINS",
+              "POSTGRES_HOST",
+              "POSTGRES_MAX_CONNECTIONS",
+              "POSTGRES_MAX_IDLE_CONNS",
+              "POSTGRES_MAX_OPEN_CONNS",
+              "POSTGRES_NAME",
+              "POSTGRES_PASSWORD",
+              "POSTGRES_PORT",
+              "POSTGRES_REPLICA_HOST",
+              "POSTGRES_REPLICA_NAME",
+              "POSTGRES_REPLICA_PASSWORD",
+              "POSTGRES_REPLICA_PORT",
+              "POSTGRES_REPLICA_SSLMODE",
+              "POSTGRES_REPLICA_USER",
+              "POSTGRES_SHARED_BUFFERS",
+              "POSTGRES_SSLMODE",
+              "POSTGRES_USER",
+              "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK",
+              "RABBITMQ_ALLOW_INSECURE_TLS",
+              "RABBITMQ_DEFAULT_PASS",
+              "RABBITMQ_DEFAULT_USER",
+              "RABBITMQ_ENABLED",
+              "RABBITMQ_EXCHANGE",
+              "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS",
+              "RABBITMQ_HEALTH_CHECK_URL",
+              "RABBITMQ_HOST",
+              "RABBITMQ_PORT_AMQP",
+              "RABBITMQ_PORT_HOST",
+              "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS",
+              "RABBITMQ_PUBLISHER_MAX_RECOVERIES",
+              "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS",
+              "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS",
+              "RABBITMQ_QUEUE",
+              "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS",
+              "RABBITMQ_SCHEME",
+              "RABBITMQ_URL",
+              "RABBITMQ_VHOST",
+              "RATE_LIMIT_ENABLED",
+              "RATE_LIMIT_MAX",
+              "RATE_LIMIT_WINDOW_SEC",
+              "REDIS_CA_CERT",
+              "REDIS_DB",
+              "REDIS_DIAL_TIMEOUT",
+              "REDIS_HOST",
+              "REDIS_MASTER_NAME",
+              "REDIS_MAX_RETRIES",
+              "REDIS_MAX_RETRY_BACKOFF",
+              "REDIS_MIN_IDLE_CONNS",
+              "REDIS_MIN_RETRY_BACKOFF",
+              "REDIS_PASSWORD",
+              "REDIS_POOL_SIZE",
+              "REDIS_POOL_TIMEOUT",
+              "REDIS_PROTOCOL",
+              "REDIS_READ_TIMEOUT",
+              "REDIS_TLS",
+              "REDIS_URL",
+              "REDIS_WRITE_TIMEOUT",
+              "RELAXED_RATE_LIMIT_MAX",
+              "RELAXED_RATE_LIMIT_WINDOW_SEC",
+              "SCHEDULER_ENABLED",
+              "SD_ADDRESS",
+              "SD_ENABLED",
+              "SD_EXTERNAL_ADDRESS",
+              "SD_EXTERNAL_PORT",
+              "SD_INTERNAL_ADDRESS",
+              "SD_INTERNAL_PORT",
+              "SD_INTERNAL_SCHEME",
+              "SD_PREFER_VIEW",
+              "SD_TLS",
+              "SD_TLS_SKIP_VERIFY",
+              "SD_TOKEN",
+              "SD_WATCH_WAIT_TIME",
+              "SD_WORKLOAD",
+              "SERVER_ADDRESS",
+              "SERVER_TLS_CERT_FILE",
+              "SERVER_TLS_KEY_FILE",
+              "SERVER_TRUSTED_PROXIES",
+              "STREAMING_BATCH_LINGER_MS",
+              "STREAMING_BROKERS",
+              "STREAMING_CB_FAILURE_RATIO",
+              "STREAMING_CB_MIN_REQUESTS",
+              "STREAMING_CB_TIMEOUT_S",
+              "STREAMING_CLIENT_ID",
+              "STREAMING_CLOSE_TIMEOUT_S",
+              "STREAMING_CLOUDEVENTS_SOURCE",
+              "STREAMING_COMPRESSION",
+              "STREAMING_ENABLED",
+              "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS",
+              "STREAMING_REQUIRED_ACKS",
+              "STREAMING_SASL_ALLOW_PLAINTEXT",
+              "STREAMING_SASL_MECHANISM",
+              "STREAMING_SASL_PASSWORD",
+              "STREAMING_SASL_USERNAME",
+              "STREAMING_TLS_CA_CERT",
+              "STREAMING_TLS_ENABLED",
+              "SWAGGER_BASE_PATH",
+              "SWAGGER_DESCRIPTION",
+              "SWAGGER_ENABLED",
+              "SWAGGER_LEFT_DELIM",
+              "SWAGGER_RIGHT_DELIM",
+              "SWAGGER_TITLE",
+              "SWAGGER_VERSION",
+              "SYSTEMPLANE_ENABLED",
+              "TLS_TERMINATED_UPSTREAM",
+              "TRANSFER_INBOUND_ENABLED",
+              "TRANSFER_INBOUND_MAX_FILE_SIZE_BYTES",
+              "TRANSFER_OBJECT_STORAGE_BUCKET",
+              "TRUST_STORE_DEFAULT_PAGE_SIZE",
+              "TRUST_STORE_EXPIRING_SOON_DAYS",
+              "TRUST_STORE_MAX_CERT_SIZE_BYTES",
+              "TRUST_STORE_MAX_PAGE_SIZE",
+              "TRUST_STORE_S3_BUCKET",
+              "TRUST_STORE_S3_ENDPOINT",
+              "TRUST_STORE_S3_PATH_STYLE",
+              "TRUST_STORE_S3_REGION",
+              "VERSION"
+            ]
+          }
         },
         "extraEnvVars": {
           "type": "object",

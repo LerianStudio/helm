@@ -82,6 +82,12 @@ global:
   # -- Env-wide streaming (lib-streaming → Kafka), consumed by lerian-common.streaming.env.
   # Only used when streaming is enabled (brSta.streaming.enabled). Leave {} for defaults.
   streaming: {}
+  # -- Env-wide inbound auth (access-manager), consumed by lerian-common.globalValue
+  # for PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST. A component configmap.<KEY> still overrides.
+  # Precedence: brSta.configmap.PLUGIN_AUTH_* > global.auth.<field> > chart default.
+  auth: {}
+    # enabled: "false"    # PLUGIN_AUTH_ENABLED
+    # host: ""            # PLUGIN_AUTH_HOST (access-manager base URL)
 
 # ==============================================================================
 # APPLICATION
@@ -255,36 +261,14 @@ brSta:
   affinity: {}
   # -- Host aliases for custom DNS resolution inside the pod
   hostAliases: []
-  # -- Raw ConfigMap env-var escape hatch. The clean, grouped API lives in the
-  # br-sta.<group> blocks below. Each key resolves via cfgValue:
-  #   configmap.<NATIVE_KEY> (here) > br-sta.<group>.<field> > chart default.
-  # Defaults live in the template, so leaving this {} renders the documented
-  # defaults. Set a raw key here only to override a value or pass an opt-in key.
+  # -- Primary override surface: raw ConfigMap env-var passthrough. Every non-dependency
+  # app key defaults in templates/configmap.yaml; set brSta.configmap.<NATIVE_KEY> here
+  # to override a default or pass an opt-in key (e.g. AUDIT_PUBLISHER_INTERVAL_SEC).
+  # Dependency connections are the ONLY typed knobs — Postgres/Redis/RabbitMQ HOST/PORT/
+  # USER/SSL via the datastores mask; MULTI_TENANT/OTEL/streaming/SD via the global.*
+  # blocks; PLUGIN_AUTH via global.auth. Precedence: configmap.<KEY> > mask/global > default.
   # @default -- templates/configmap.yaml
   configmap: {}
-  # -- Grouped config API (see templates/configmap.yaml for field names). Postgres/
-  # Redis/RabbitMQ HOST/PORT/USER come from the datastores mask; MT/OTEL from the
-  # global.* blocks. These groups hold the remaining per-service knobs.
-  app: {}          # ENV_NAME(envName) / LOG_LEVEL(logLevel) / DEPLOYMENT_MODE / etc.
-  server: {}       # SERVER_ADDRESS / HTTP_BODY_LIMIT_BYTES / TLS_TERMINATED_UPSTREAM ...
-  cors: {}         # allowedOrigins / allowedMethods / allowedHeaders / exposeHeaders / allowCredentials
-  # multiTenant grouped fields (defaultTenantId / poolMaxConns / poolMaxIdleConns)
-  # live under brSta.multiTenant above (alongside enabled).
-  postgres: {}     # name / connectTimeoutSec / migrationsPath / systemplaneEnabled / maxOpenConns / ... (tuning)
-  redis: {}        # db / protocol / poolSize / minIdleConns / readTimeout / ... (tuning)
-  broker: {}       # vhost / exchange / publisher* / allowInsecure* / ... (non-mask RabbitMQ)
-  outbox: {}       # enabled / tableName / dispatchIntervalSec / batchSize / ...
-  sta: {}          # STA integration knobs
-  auth: {}         # PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST
-  swagger: {}      # enabled / title / version / basePath / leftDelim / rightDelim
-  rateLimit: {}    # enabled / max / windowSec / aggressive* / relaxed* / allowFailOpen
-  pagination: {}   # limit / monthDateRange
-  idempotency: {}  # retryWindowSec
-  audit: {}        # exportRateLimitMax/WindowSec / publisherAlternateExchange / publisherConfirmTimeoutSec
-  transfer: {}     # inboundEnabled / inboundMaxFileSizeBytes / objectStorageBucket
-  truststore: {}   # defaultPageSize / expiringSoonDays / maxCertSizeBytes / maxPageSize / s3Bucket/Endpoint/PathStyle/Region
-  masterKey: {}    # provider / version (MASTER_KEYS material is a Secret)
-  m2m: {}          # awsAccessKeyId (AWS_SECRET_ACCESS_KEY is a Secret)
   # -- Service discovery toggle (grouped API for SD_ENABLED). SD_TOKEN (ACL) is a Secret.
   serviceDiscovery:
     enabled: false

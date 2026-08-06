@@ -1,4 +1,5 @@
 {{- if .Values.tracer.enabled }}
+{{- include "midaz-tracer.validate" . }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -34,7 +35,13 @@ data:
   DB_NAME: {{ .Values.tracer.configmap.DB_NAME | default "tracer" | quote }}
   DB_USER: {{ .Values.tracer.configmap.DB_USER | default "tracer" | quote }}
   DB_SSL_MODE: {{ .Values.tracer.configmap.DB_SSL_MODE | default "disable" | quote }}
-  MIGRATIONS_PATH: {{ .Values.tracer.configmap.MIGRATIONS_PATH | default "./migrations" | quote }}
+  {{/* No MIGRATIONS_PATH: the v4 tracer does not read it. Schema is applied by
+       the midaz-tracer-migrations Job (templates/tracer/migrations-job.yaml). */}}
+
+  # GO RUNTIME
+  # GOMEMLIMIT must track resources.limits.memory (~90%); the image default of
+  # 1800MiB assumes a 2Gi container and would let the heap outgrow the cgroup.
+  GOMEMLIMIT: {{ .Values.tracer.configmap.GOMEMLIMIT | default "460MiB" | quote }}
 
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.tracer.configmap.SWAGGER_TITLE | default "Tracer API" | quote }}

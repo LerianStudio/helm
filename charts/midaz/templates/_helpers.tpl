@@ -260,3 +260,98 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+midaz.tagIsV4 — reports "true" when the passed image tag is a semver >= 4.0.0
+(pre-releases included), "" otherwise. Non-semver tags ("latest", digests,
+branch builds) resolve to "" so they never trip a version-gated requirement.
+
+Midaz v4 changed two boot contracts that 3.x does not have: the unified ledger
+binary serves CRM in-process (so it initializes the CRM cipher at startup) and
+neither ledger nor tracer migrates its schema anymore. Both are gated on this
+helper so 3.x releases keep rendering exactly as before.
+*/}}
+{{- define "midaz.tagIsV4" -}}
+{{- $tag := . | toString | trimPrefix "v" -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+" $tag -}}
+{{- if semverCompare ">=4.0.0-0" $tag -}}true{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+midaz.ledgerMigrationsEnabled — resolves the tri-state ledger.migrations.enabled.
+Unset (null) means "auto": on for 4.x ledger tags, off for 3.x, which still runs
+its migrations in-process. An explicit true/false always wins, so operators who
+apply the schema out-of-band (managed-Postgres S3 pipeline) can pin it off.
+*/}}
+{{- define "midaz.ledgerMigrationsEnabled" -}}
+{{- $enabled := dig "migrations" "enabled" nil .Values.ledger -}}
+{{- if kindIs "invalid" $enabled -}}
+{{- include "midaz.tagIsV4" (.Values.ledger.image.tag | default .Chart.AppVersion) -}}
+{{- else if eq (toString $enabled) "true" -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+midaz-tracer.migrationsFullname — one Job name per migration image tag. A Job
+spec is immutable, so a stable name would silently skip the run on upgrade; the
+tag suffix makes every version bump create a new Job. Re-running is safe:
+golang-migrate tracks progress in the schema_migrations table.
+*/}}
+{{- define "midaz-tracer.migrationsFullname" -}}
+{{- $tag := include "midaz-tracer.migrationsTag" . -}}
+{{- printf "%s-migrations-%s" (include "midaz-tracer.fullname" .) (regexReplaceAll "[^a-z0-9.]+" (lower $tag) "-") | trunc 63 | trimSuffix "-" | trimSuffix "." -}}
+{{- end -}}
+
+{{- define "midaz-ledger.migrationsFullname" -}}
+{{- $tag := include "midaz-ledger.migrationsTag" . -}}
+{{- printf "%s-migrations-%s" (include "midaz-ledger.fullname" .) (regexReplaceAll "[^a-z0-9.]+" (lower $tag) "-") | trunc 63 | trimSuffix "-" | trimSuffix "." -}}
+{{- end -}}
+
+{{/*
+Migration-runner image tags default to the matching application image tag so the
+schema and the binary reading it can never drift when only one is bumped.
+*/}}
+{{- define "midaz-tracer.migrationsTag" -}}
+{{- dig "migrations" "image" "tag" "" .Values.tracer | default .Values.tracer.image.tag | default .Chart.AppVersion -}}
+{{- end -}}
+
+{{- define "midaz-ledger.migrationsTag" -}}
+{{- dig "migrations" "image" "tag" "" .Values.ledger | default .Values.ledger.image.tag | default .Chart.AppVersion -}}
+{{- end -}}
+
+{{/*
+midaz-tracer.validate — render-time mirror of the tracer bootstrap validators
+(components/tracer/internal/bootstrap). Every rule below is a configuration the
+v4 process rejects at boot, so failing the render turns a CrashLoopBackOff into
+a helm error the operator can read.
+*/}}
+{{- define "midaz-tracer.validate" -}}
+{{- $tracer := .Values.tracer -}}
+{{- $cm := $tracer.configmap | default dict -}}
+{{- $secrets := $tracer.secrets | default dict -}}
+{{- $extra := $tracer.extraEnvVars | default dict -}}
+{{- if and $tracer.useExistingSecret (not $tracer.existingSecretName) -}}
+{{- fail "tracer.useExistingSecret=true requires tracer.existingSecretName (an empty secretRef.name is rejected by the API server)" -}}
+{{- end -}}
+{{- if eq ($cm.API_KEY_ENABLED | default "false" | toString) "true" -}}
+{{- if and (not $secrets.API_KEY) (not $tracer.useExistingSecret) -}}
+{{- fail "tracer.secrets.API_KEY is required when API_KEY_ENABLED=true (ValidateAuthConfig rejects an empty key at boot); or set tracer.useExistingSecret" -}}
+{{- end -}}
+{{- if eq ($cm.CORS_ALLOWED_ORIGINS | default "*" | toString) "*" -}}
+{{- fail "tracer.configmap.CORS_ALLOWED_ORIGINS=\"*\" is rejected at boot when API_KEY_ENABLED=true: any site could drive authenticated calls once the key leaks. Set a concrete origin allow-list" -}}
+{{- end -}}
+{{- end -}}
+{{- if eq ($cm.MULTI_TENANT_ENABLED | default "false" | toString) "true" -}}
+{{- if ne ($cm.PLUGIN_AUTH_ENABLED | default "false" | toString) "true" -}}
+{{- fail "tracer.configmap.PLUGIN_AUTH_ENABLED must be \"true\" when MULTI_TENANT_ENABLED=true: API-key-only auth cannot verify tenant JWT signatures, so any caller could forge a tenantId" -}}
+{{- end -}}
+{{- if or (eq ($cm.API_KEY_ENABLED_ONLY_VALIDATION | default "false" | toString) "true") (eq (dig "API_KEY_ENABLED_ONLY_VALIDATION" "false" $extra | toString) "true") -}}
+{{- fail "API_KEY_ENABLED_ONLY_VALIDATION=true is incompatible with MULTI_TENANT_ENABLED=true: it lets /v1/validations bypass plugin auth, reopening cross-tenant forgery" -}}
+{{- end -}}
+{{- if and (not $secrets.MULTI_TENANT_SERVICE_API_KEY) (not $tracer.useExistingSecret) -}}
+{{- fail "tracer.secrets.MULTI_TENANT_SERVICE_API_KEY is required when MULTI_TENANT_ENABLED=true" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

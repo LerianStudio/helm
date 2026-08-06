@@ -55,11 +55,13 @@ spec:
               name: {{ include "midaz-tracer.fullname" . }}
           {{- else }}
           - secretRef:
-              name: {{ .Values.tracer.existingSecretName }}
+              name: {{ required "tracer.existingSecretName is required when tracer.useExistingSecret=true" .Values.tracer.existingSecretName }}
           {{- end }}
           - configMapRef:
               name: {{ include "midaz-tracer.fullname" . }}
           env:
+            {{/* existingSecretName presence is enforced by midaz-tracer.validate; ternary
+                 cannot carry `required` because Go templates evaluate both arms. */}}
             {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
             {{/* PostgreSQL: DB_PASSWORD is single-sourced from the Bitnami postgresql subchart Secret when internal. */}}
             {{- $pg := .Values.postgresql | default dict }}

@@ -124,6 +124,50 @@ ledger:
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
     tag: "3.8.0"
+  # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
+  # migrate/migrate) applying the onboarding and transaction migration sets.
+  migrations:
+    # -- Run the migration Job. Unset means auto: on for 4.x ledger tags, which
+    # removed in-process migration, off for 3.x, which still migrates at
+    # startup. Set false to keep it off when the schema is applied out-of-band.
+    enabled:
+    image:
+      # -- Repository for the ledger migration-runner image
+      repository: lerianstudio/midaz-ledger-migrations
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+      # -- Migration image tag. Empty tracks `ledger.image.tag` so the schema and
+      # the binary reading it cannot drift.
+      tag: ""
+    # -- Extra Job annotations. The Job is a plain Sync-phase resource by
+    # default because the bundled PostgreSQL Secret it reads is only created
+    # during Sync; against a pre-provisioned database, set
+    # `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment.
+    annotations: {}
+    # -- Retries before the Job is marked failed
+    backoffLimit: 6
+    # -- Hard timeout for the whole Job
+    activeDeadlineSeconds: 600
+    # -- How long the finished Job is kept for inspection
+    ttlSecondsAfterFinished: 259200
+    # -- Wait for the PostgreSQL endpoint before running migrate
+    waitForPostgres:
+      # -- Enable or disable the wait-for-postgres init container
+      enabled: true
+      image:
+        # -- Repository for the wait-for-postgres init container image
+        repository: busybox
+        # -- Image tag for the wait-for-postgres init container image
+        tag: "1.37"
+    resources:
+      # -- CPU and memory limits for the migration Job
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      # -- Minimum CPU and memory requests for the migration Job
+      requests:
+        cpu: 50m
+        memory: 64Mi
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -569,12 +613,59 @@ tracer:
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   image:
-    # -- Repository for the Tracer service container image
-    repository: lerianstudio/tracer
+    # -- Repository for the Tracer service container image. In midaz v4 tracer
+    # ships from the monorepo (`components/tracer`) and the release pipeline
+    # publishes it as `midaz-tracer`; the standalone `lerianstudio/tracer` 1.x
+    # image predates the configuration contract this chart renders.
+    repository: lerianstudio/midaz-tracer
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.0.0"
+    tag: "4.0.0-beta.24"
+  # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
+  # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
+  # against an already-migrated schema, so this Job has to apply it.
+  migrations:
+    # -- Enable or disable the tracer migration Job
+    enabled: true
+    image:
+      # -- Repository for the tracer migration-runner image
+      repository: lerianstudio/midaz-tracer-migrations
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+      # -- Migration image tag. Empty tracks `tracer.image.tag` so the schema and
+      # the binary reading it cannot drift.
+      tag: ""
+    # -- Extra Job annotations. The Job is a plain Sync-phase resource by
+    # default because the bundled PostgreSQL Secret it reads is only created
+    # during Sync; against a pre-provisioned database, set
+    # `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment.
+    annotations: {}
+    # -- Retries before the Job is marked failed (also absorbs a database that
+    # is reachable but not yet provisioned by the bootstrap Job)
+    backoffLimit: 6
+    # -- Hard timeout for the whole Job
+    activeDeadlineSeconds: 600
+    # -- How long the finished Job is kept for inspection
+    ttlSecondsAfterFinished: 259200
+    # -- Wait for the PostgreSQL endpoint before running migrate
+    waitForPostgres:
+      # -- Enable or disable the wait-for-postgres init container
+      enabled: true
+      image:
+        # -- Repository for the wait-for-postgres init container image
+        repository: busybox
+        # -- Image tag for the wait-for-postgres init container image
+        tag: "1.37"
+    resources:
+      # -- CPU and memory limits for the migration Job
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      # -- Minimum CPU and memory requests for the migration Job
+      requests:
+        cpu: 50m
+        memory: 64Mi
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -682,13 +773,21 @@ tracer:
     # -- Auth Plugin (Access Manager)
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    # -- PostgreSQL configuration (shares the bundled midaz postgresql by default)
-    DB_HOST: "midaz-postgresql"
+    # -- PostgreSQL configuration. Shares the bundled midaz PostgreSQL: the
+    # `tracer` database is created by files/midaz/init.sql (internal) or the
+    # external bootstrap Job, and is owned by the same `midaz` role whose
+    # password the subchart Secret holds. A dedicated `tracer` role would need
+    # its own Secret, which nothing in this chart provisions.
+    DB_HOST: "midaz-postgresql-primary"
     DB_PORT: "5432"
     DB_NAME: "tracer"
-    DB_USER: "tracer"
+    DB_USER: "midaz"
     DB_SSL_MODE: "disable"
-    MIGRATIONS_PATH: "./migrations"
+    # -- Soft heap limit for the Go runtime, ~90% of resources.limits.memory.
+    # The image ships GOMEMLIMIT=1800MiB (a 2Gi container); without this
+    # override the GC lets the heap grow past the 512Mi cgroup limit and the
+    # kernel OOM-kills the pod. Keep the two in sync when changing limits.
+    GOMEMLIMIT: "460MiB"
     # -- Swagger documentation
     SWAGGER_TITLE: "Tracer API"
     SWAGGER_DESCRIPTION: "Real-time transaction validation and fraud prevention API"

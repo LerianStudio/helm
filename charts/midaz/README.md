@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided — see "Known limitation" below) plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled Bitnami subcharts and are only required when the matching backend is external.
+- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided — see "Known limitation" below) plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled Bitnami subcharts and are only required when the matching backend is external.
 - Dependency notes: PostgreSQL, MongoDB, and Valkey passwords are single-sourced from the bundled Bitnami subchart Secrets (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`, `<release>-valkey` key `valkey-password`) and injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ and optional OpenTelemetry are also bundled. When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
 - Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the bundled Bitnami subcharts own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -293,6 +293,28 @@ crm:
   # using an EXTERNAL MongoDB (mongodb.enabled=false / mongodb.external=true).
   # secrets:
   #   MONGO_PASSWORD: "<your-mongo-password>"
+```
+
+### Tracer
+
+The `tracer` service provides real-time transaction validation and fraud prevention. From midaz v4 it ships from the monorepo (`components/tracer`) and is published as `lerianstudio/midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates this configuration contract. It is disabled by default (`tracer.enabled=false`) and existing releases render unchanged.
+
+- **Database.** Tracer uses the bundled PostgreSQL with the same `midaz` role that owns `onboarding` and `transaction`. Its `tracer` database is created by `files/midaz/init.sql` on a fresh internal cluster, and by the external bootstrap Job (`global.externalPostgresDefinitions.enabled=true`) otherwise. On a pre-existing internal cluster, initdb scripts no longer run: create the database once by hand (`CREATE DATABASE tracer;`) before enabling tracer.
+- **Migrations.** Neither tracer nor the v4 ledger migrates at startup anymore. `tracer.migrations` and `ledger.migrations` render the dedicated `midaz-tracer-migrations` / `midaz-ledger-migrations` runner Jobs, whose tag defaults to the matching application tag. The tracer Job is on whenever tracer is; the ledger Job is on for 4.x ledger tags only (`ledger.migrations.enabled` pins it either way, e.g. `false` when the schema is applied out-of-band). Both are plain Sync-phase resources because the bundled PostgreSQL Secret they read is only created during Sync; against a pre-provisioned database, set `argocd.argoproj.io/hook: PreSync` under `<component>.migrations.annotations` to order them ahead of the Deployment.
+- **Memory.** `tracer.configmap.GOMEMLIMIT` must track `tracer.resources.limits.memory` (~90%). The image ships `GOMEMLIMIT=1800MiB`, sized for a 2Gi container, so without the override the Go heap outgrows a 512Mi cgroup and the pod is OOM-killed.
+- **Fail-fast configuration.** The chart mirrors the tracer boot validators, so misconfiguration fails `helm template` instead of crash-looping: `API_KEY_ENABLED=true` requires an API key and rejects wildcard CORS; `MULTI_TENANT_ENABLED=true` requires `PLUGIN_AUTH_ENABLED=true`, a service API key, and rejects `API_KEY_ENABLED_ONLY_VALIDATION=true`; `tracer.useExistingSecret=true` requires `tracer.existingSecretName`.
+
+```yaml
+tracer:
+  enabled: true
+  configmap:
+    API_KEY_ENABLED: "true"
+    CORS_ALLOWED_ORIGINS: "https://app.example.com"
+  secrets:
+    API_KEY: "<your-api-key>"
+  # DB_PASSWORD is single-sourced from the bundled Bitnami postgresql subchart
+  # (Secret `midaz-postgresql`, key `password`) — only set it here when using an
+  # EXTERNAL PostgreSQL (postgresql.enabled=false / postgresql.external=true).
 ```
 
 ## Observability

@@ -126,47 +126,6 @@ Fail loud at render time so the operator fixes the configuration.
 {{- end }}
 
 {{/*
-Create a default fully qualified app name for CRM.
-*/}}
-{{- define "midaz-crm.fullname" -}}
-{{- printf "%s-%s" (include "midaz.name" .) .Values.crm.name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Create CRM app version
-*/}}
-{{- define "crm.defaultTag" -}}
-{{- default .Chart.AppVersion .Values.crm.image.tag }}
-{{- end -}}
-
-{{/*
-Return valid CRM version label
-*/}}
-{{- define "crm.versionLabelValue" -}}
-{{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "crm.defaultTag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}
-{{- end -}}
-
-{{/*
-CRM Common labels
-*/}}
-{{- define "midaz-crm.labels" -}}
-helm.sh/chart: {{ include "midaz.chart" .context }}
-{{ include "midaz-crm.selectorLabels" (dict "context" .context "name" .name) }}
-app.kubernetes.io/version: {{ include "crm.versionLabelValue" .context }}
-app.kubernetes.io/managed-by: {{ .context.Release.Service }}
-{{- end }}
-
-{{/*
-CRM Selector labels
-*/}}
-{{- define "midaz-crm.selectorLabels" -}}
-{{- if .name -}}
-app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
-{{- end }}
-app.kubernetes.io/instance: {{ .context.Release.Name }}
-{{- end }}
-
-{{/*
 Create a default fully qualified app name for Tracer.
 */}}
 {{- define "midaz-tracer.fullname" -}}

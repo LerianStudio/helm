@@ -341,7 +341,12 @@ ledger:
     # TRACER_BASE_URL disables the integration; set it to the tracer Service
     # when tracer.enabled=true.
     TRACER_BASE_URL: ""
-    TRACER_TRANSPORT: "grpc"
+    # -- Reservation transport: "rest" or "grpc". The bundled tracer exposes
+    # only its HTTP API by default (the gRPC seam stays off until
+    # tracer.configmap.TRACER_GRPC_PORT is set), so the in-chart path defaults
+    # to REST. Switch both together to use gRPC, which is the seam's
+    # production transport.
+    TRACER_TRANSPORT: "rest"
     # -- Fee engine default currency
     DEFAULT_CURRENCY: "USD"
     # -- Redis (shared)
@@ -724,8 +729,12 @@ tracer:
   service:
     # -- Kubernetes service type
     type: ClusterIP
-    # -- Service port
+    # -- Service port (HTTP API)
     port: 4020
+    # -- gRPC reservation seam port. Only exposed when
+    # `tracer.configmap.TRACER_GRPC_PORT` is set; the seam is off in the app
+    # until then, so the port would otherwise route to a closed socket.
+    grpcPort: 4021
   ingress:
     # -- Enable or disable ingress
     enabled: false
@@ -785,12 +794,20 @@ tracer:
     # -- Auth Plugin (Access Manager)
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
+    # -- Listen address for the reservation gRPC seam the ledger can call
+    # (e.g. ":4021"). Empty keeps the seam off, which is why the ledger side
+    # (`ledger.configmap.TRACER_TRANSPORT`) defaults to the REST transport.
+    # Setting it here also publishes `service.grpcPort` on the tracer Service.
+    TRACER_GRPC_PORT: ""
     # -- PostgreSQL configuration. Shares the bundled midaz PostgreSQL: the
     # `tracer` database is created by files/midaz/init.sql (internal) or the
     # external bootstrap Job, and is owned by the same `midaz` role whose
     # password the subchart Secret holds. A dedicated `tracer` role would need
     # its own Secret, which nothing in this chart provisions.
-    DB_HOST: "midaz-postgresql-primary"
+    # Empty resolves to the bundled PostgreSQL primary Service of THIS release
+    # (e.g. `review-postgresql-primary`), so a non-`midaz` release name still
+    # connects. Set it explicitly for an external PostgreSQL.
+    DB_HOST: ""
     DB_PORT: "5432"
     DB_NAME: "tracer"
     DB_USER: "midaz"

@@ -29,8 +29,13 @@ data:
   PLUGIN_AUTH_ENABLED: {{ .Values.tracer.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
   PLUGIN_AUTH_ADDRESS: {{ .Values.tracer.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth:4000" | quote }}
 
+  # RESERVATION gRPC SEAM (opt-in; empty keeps the seam off, as the app does)
+  {{- with .Values.tracer.configmap.TRACER_GRPC_PORT }}
+  TRACER_GRPC_PORT: {{ . | quote }}
+  {{- end }}
+
   # PostgreSQL Database
-  DB_HOST: {{ .Values.tracer.configmap.DB_HOST | default "midaz-postgresql" | quote }}
+  DB_HOST: {{ include "midaz-tracer.dbHost" . | quote }}
   DB_PORT: {{ .Values.tracer.configmap.DB_PORT | default "5432" | quote }}
   DB_NAME: {{ .Values.tracer.configmap.DB_NAME | default "tracer" | quote }}
   DB_USER: {{ .Values.tracer.configmap.DB_USER | default "tracer" | quote }}
@@ -67,7 +72,7 @@ data:
 
   # MULTI-TENANT
   MULTI_TENANT_ENABLED: {{ .Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if eq (.Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  {{- if include "midaz.isTrue" (.Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false") }}
   MULTI_TENANT_URL: {{ required "tracer.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.tracer.configmap.MULTI_TENANT_URL | quote }}
   MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.tracer.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
   MULTI_TENANT_REDIS_HOST: {{ required "tracer.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.tracer.configmap.MULTI_TENANT_REDIS_HOST | quote }}

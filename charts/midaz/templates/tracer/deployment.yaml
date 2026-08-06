@@ -60,6 +60,13 @@ spec:
             - name: http
               containerPort: {{ .Values.tracer.service.port }}
               protocol: TCP
+            {{- if .Values.tracer.configmap.TRACER_GRPC_PORT }}
+            {{/* TRACER_GRPC_PORT is a listen address (":4021"); the container port is
+                 its numeric half, kept in sync with the Service via service.grpcPort. */}}
+            - name: grpc
+              containerPort: {{ .Values.tracer.service.grpcPort | default 4021 }}
+              protocol: TCP
+            {{- end }}
           envFrom:
           {{- if not .Values.tracer.useExistingSecret }}
           - secretRef:

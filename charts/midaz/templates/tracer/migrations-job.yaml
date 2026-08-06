@@ -18,7 +18,7 @@ the schema_migrations table, not on disk.
 {{- $pgAuth := $pg.auth | default dict }}
 {{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
 {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
-{{- $dbHost := $cm.DB_HOST | default "midaz-postgresql-primary" }}
+{{- $dbHost := include "midaz-tracer.dbHost" . }}
 {{- $dbPort := $cm.DB_PORT | default "5432" }}
 apiVersion: batch/v1
 kind: Job

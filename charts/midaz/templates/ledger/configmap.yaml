@@ -50,7 +50,7 @@ data:
   # MULTI-TENANT
   # =============================================================================
   MULTI_TENANT_ENABLED: {{ .Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if eq (.Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  {{- if include "midaz.isTrue" (.Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false") }}
   MULTI_TENANT_URL: {{ required "ledger.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.ledger.configmap.MULTI_TENANT_URL | quote }}
   MULTI_TENANT_SERVICE_NAME: {{ .Values.ledger.configmap.MULTI_TENANT_SERVICE_NAME | default "ledger" | quote }}
   MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
@@ -182,7 +182,14 @@ data:
   # TRACER_BASE_URL empty disables the integration (nil reserver).
   # =============================================================================
   TRACER_BASE_URL: {{ .Values.ledger.configmap.TRACER_BASE_URL | default "" | quote }}
-  TRACER_TRANSPORT: {{ .Values.ledger.configmap.TRACER_TRANSPORT | default "grpc" | quote }}
+  {{- /* The seam accepts "grpc" or "rest". The bundled tracer only serves gRPC
+         when TRACER_GRPC_PORT is set, so selecting grpc against an in-chart
+         tracer that has it unset would dial a port nothing listens on. */ -}}
+  {{- $tracerTransport := .Values.ledger.configmap.TRACER_TRANSPORT | default "rest" }}
+  {{- if and .Values.ledger.configmap.TRACER_BASE_URL (eq (lower $tracerTransport) "grpc") .Values.tracer.enabled (not .Values.tracer.configmap.TRACER_GRPC_PORT) }}
+  {{- fail "ledger.configmap.TRACER_TRANSPORT=grpc requires tracer.configmap.TRACER_GRPC_PORT to be set: the bundled tracer keeps its gRPC seam off and its Service exposes only HTTP. Set the port, or use TRACER_TRANSPORT=rest" }}
+  {{- end }}
+  TRACER_TRANSPORT: {{ $tracerTransport | quote }}
   TRACER_TLS_MODE: {{ .Values.ledger.configmap.TRACER_TLS_MODE | default "" | quote }}
   TRACER_TIMEOUT_MS: {{ .Values.ledger.configmap.TRACER_TIMEOUT_MS | default "" | quote }}
   TRACER_TLS_CERT_FILE: {{ .Values.ledger.configmap.TRACER_TLS_CERT_FILE | default "" | quote }}

@@ -16,6 +16,12 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    {{- if .Values.tracer.configmap.TRACER_GRPC_PORT }}
+    - port: {{ .Values.tracer.service.grpcPort | default 4021 }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+    {{- end }}
   selector:
     {{- include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 4 }}
 {{- end }}

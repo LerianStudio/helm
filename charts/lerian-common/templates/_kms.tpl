@@ -38,7 +38,11 @@ Inputs (dict):
 */}}
 {{- define "lerian-common.kms.value" -}}
 {{- $cm := .configmap | default dict -}}
-{{- $dedicated := .dedicated | default (.context.Values.kms | default dict) -}}
+{{- /* Select the fallback ONLY when `dedicated` is omitted — `hasKey`, not `| default`,
+   so an explicitly-supplied empty map (`dedicated: {}`) stays empty instead of falling
+   through to root `.Values.kms`. */ -}}
+{{- $dedicated := (.context.Values.kms | default dict) -}}
+{{- if hasKey . "dedicated" -}}{{- $dedicated = (.dedicated | default dict) -}}{{- end -}}
 {{- $shared := (.context.Values.global | default dict).kms | default dict -}}
 {{/* Ordered presence checks (not chained sprig `default`) so an explicit `false`
      at any tier — native key, dedicated, shared, or default — wins instead of

@@ -48,7 +48,12 @@ Inputs (dict):
    chart whose per-component masks live at `<component>.objectStorage`) takes
    precedence; otherwise fall back to `.context.Values.objectStorage`, which in a
    SUBCHART is that product's own block. */ -}}
-{{- $dedicated := index (.dedicated | default (.context.Values.objectStorage | default dict)) .name | default dict -}}
+{{- /* Select the fallback ONLY when `dedicated` is omitted — `hasKey`, not `| default`,
+   so an explicitly-supplied empty map (`dedicated: {}`) stays empty instead of falling
+   through to root `.Values.objectStorage`. */ -}}
+{{- $ded := (.context.Values.objectStorage | default dict) -}}
+{{- if hasKey . "dedicated" -}}{{- $ded = (.dedicated | default dict) -}}{{- end -}}
+{{- $dedicated := index $ded .name | default dict -}}
 {{- $shared := index ((.context.Values.global | default dict).objectStorage | default dict) .name | default dict -}}
 {{/* Ordered presence checks (not chained sprig `default`) so an explicit `false`
      at any tier — native key, dedicated, shared, or default — wins instead of

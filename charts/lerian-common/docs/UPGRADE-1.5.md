@@ -5,6 +5,7 @@
 - **[Overview](#overview)**
 - **[Features](#features)**
   - [1. Object storage mask resolver (`objectStorage.value`)](#1-object-storage-mask-resolver-objectstoragevalue)
+  - [2. KMS / Vault mask resolver (`kms.value`)](#2-kms--vault-mask-resolver-kmsvalue)
 - **[Migration Steps](#migration-steps)**
 - **[Command to upgrade](#command-to-upgrade)**
 
@@ -71,9 +72,15 @@ like datastore passwords — the mask covers only the non-secret connection fiel
 ```yaml
 OBJECT_STORAGE_CCS_BUCKET: {{ include "lerian-common.objectStorage.value" (dict
     "context" $ "configmap" .Values.brCcs.configmap
+    "dedicated" .Values.brCcs.objectStorage
     "name" "ccs" "field" "bucket"
     "nativeKey" "OBJECT_STORAGE_CCS_BUCKET" "default" "lerian-ccs") | quote }}
 ```
+
+> **Monolithic vs subchart:** pass `"dedicated" .Values.<component>.objectStorage` when the chart
+> is a monolithic parent (per-component masks live under `<component>.objectStorage`). Omit
+> `dedicated` only in subchart mode, where `.context.Values.objectStorage` already is that
+> component's block. Passing an explicit empty map keeps the component off the shared mask.
 
 **Operator mask** (shared, set once per environment):
 
@@ -84,6 +91,41 @@ global:
       endpoint: "s3.amazonaws.com"
       region: "us-east-1"
       bucket: "my-ccs-bucket"
+```
+
+### 2. KMS / Vault mask resolver (`kms.value`)
+
+The KMS/Vault backend is a dependency connection, so it gets the same typed-mask treatment. A
+single backend per app (no `<name>` sub-key).
+
+**Precedence** (identical to the datastore/object-storage masks):
+```
+native configmap key  >  dedicated (<product>.kms)  >  shared (global.kms)  >  default
+```
+Presence-based (ordered `hasKey`), so an explicit `false`/`""` at any tier wins.
+
+**Canonical fields:** `vendor` (`none`|`hashicorp-vault`) · `vaultAddr` · `vaultAuthMethod` ·
+`vaultRoleId` · `vaultMount`.
+
+**Secret:** the AppRole `KMS_VAULT_SECRET_ID` is credential material — it stays in the chart's own
+Secret (fail-fast when `vendor=hashicorp-vault`), NOT in this mask.
+
+**Usage** (component `configmap.yaml`):
+```yaml
+KMS_VAULT_ADDR: {{ include "lerian-common.kms.value" (dict
+    "context" $ "configmap" .Values.ledger.configmap
+    "dedicated" .Values.ledger.kms
+    "field" "vaultAddr"
+    "nativeKey" "KMS_VAULT_ADDR" "default" "") | quote }}
+```
+
+**Operator mask** (shared):
+```yaml
+global:
+  kms:
+    vendor: "hashicorp-vault"
+    vaultAddr: "https://vault.internal:8200"
+    vaultAuthMethod: "approle"
 ```
 
 ## Migration Steps
@@ -98,6 +140,11 @@ None required. To adopt the mask in a product chart:
 3. Move the operator-facing connection values into `global.objectStorage.<name>` (shared) or
    `<component>.objectStorage.<name>` (dedicated). Keep the credentials in the chart's Secret.
 4. Verify with `helm template … --debug` that the rendered keys are unchanged when no mask is set.
+
+For **KMS/Vault**: replace the `KMS_VENDOR` / `KMS_VAULT_*` passthroughs with `lerian-common.kms.value`
+calls (same default so it stays byte-identical), pass `"dedicated" .Values.<component>.kms` for a
+monolithic chart, move the operator values to `global.kms` / `<component>.kms`, and keep
+`KMS_VAULT_SECRET_ID` in the component Secret with a fail-fast when `vendor=hashicorp-vault`.
 
 ## Command to upgrade
 

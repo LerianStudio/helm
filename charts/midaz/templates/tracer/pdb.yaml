@@ -12,8 +12,8 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  {{- with .Values.tracer.pdb.maxUnavailable }}
-  maxUnavailable: {{ . }}
+  {{- if hasKey .Values.tracer.pdb "maxUnavailable" }}
+  maxUnavailable: {{ .Values.tracer.pdb.maxUnavailable }}
   {{- else }}
   minAvailable: {{ .Values.tracer.pdb.minAvailable | default 1 }}
   {{- end }}

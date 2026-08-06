@@ -170,7 +170,11 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 Create a default fully qualified app name for Tracer.
 */}}
 {{- define "midaz-tracer.fullname" -}}
-{{- printf "%s-%s" (include "midaz.name" .) .Values.tracer.name | trunc 63 | trimSuffix "-" }}
+{{- if .Values.tracer.fullnameOverride }}
+{{- .Values.tracer.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s" (include "midaz.name" .) (default .Values.tracer.name .Values.tracer.nameOverride) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end }}
 
 {{/*

@@ -167,9 +167,15 @@ data:
   # =============================================================================
   KMS_VENDOR: {{ .Values.ledger.configmap.KMS_VENDOR | default "none" | quote }}
   # Vault fields required only when KMS_VENDOR=hashicorp-vault (envelope encryption)
+  {{- if eq (.Values.ledger.configmap.KMS_VENDOR | default "none") "hashicorp-vault" }}
+  KMS_VAULT_ADDR: {{ required "ledger.configmap.KMS_VAULT_ADDR is required when KMS_VENDOR=hashicorp-vault" .Values.ledger.configmap.KMS_VAULT_ADDR | quote }}
+  KMS_VAULT_ROLE_ID: {{ required "ledger.configmap.KMS_VAULT_ROLE_ID is required when KMS_VENDOR=hashicorp-vault" .Values.ledger.configmap.KMS_VAULT_ROLE_ID | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ required "ledger.configmap.KMS_VAULT_AUTH_METHOD is required when KMS_VENDOR=hashicorp-vault" .Values.ledger.configmap.KMS_VAULT_AUTH_METHOD | quote }}
+  {{- else }}
   KMS_VAULT_ADDR: {{ .Values.ledger.configmap.KMS_VAULT_ADDR | default "" | quote }}
   KMS_VAULT_ROLE_ID: {{ .Values.ledger.configmap.KMS_VAULT_ROLE_ID | default "" | quote }}
   KMS_VAULT_AUTH_METHOD: {{ .Values.ledger.configmap.KMS_VAULT_AUTH_METHOD | default "" | quote }}
+  {{- end }}
 
   # =============================================================================
   # TRACER RESERVATION SEAM (ledger -> tracer client side)

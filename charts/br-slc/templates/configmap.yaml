@@ -19,6 +19,15 @@ data:
   ALLOW_CORS_WILDCARD: {{ $cm.ALLOW_CORS_WILDCARD | default "false" | quote }}
   ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
   ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "false" | quote }}
+  {{- /* Which subject an M2M token authorizes under. "false" (lib-auth's own
+  default, kept here so the posture is explicit rather than inherited) makes
+  lib-auth IGNORE the token's sub and authorize under the fabricated
+  "admin/br-slc-editor-role" — a role the br-slc Casdoor seed does not declare,
+  so M2M tokens 403 on gated routes regardless of the role the client holds.
+  "true" uses the token's real sub, making a client bound to br-slc-operator-role
+  work. Flipping it changes who can call the API; coordinate with the Access
+  Manager team. See values.yaml (the auth block) for the full rationale. */}}
+  AUTH_M2M_INVERSION_ENABLED: {{ $cm.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
   AWS_ACCESS_KEY_ID: {{ $cm.AWS_ACCESS_KEY_ID | default "" | quote }}
   AWS_REGION: {{ $cm.AWS_REGION | default "us-east-2" | quote }}
   CIRCUIT_BREAKER_ENABLED: {{ $cm.CIRCUIT_BREAKER_ENABLED | default "false" | quote }}

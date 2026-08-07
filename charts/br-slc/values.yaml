@@ -71,6 +71,25 @@ global:
   auth: {}
     # enabled: "true"     # PLUGIN_AUTH_ENABLED
     # host: ""            # PLUGIN_AUTH_HOST (required when enabled; https in prod)
+  # -- M2M authorization posture. Set configmap.data.AUTH_M2M_INVERSION_ENABLED
+  # ("true"/"false", read straight from the env by lib-auth); there is no
+  # globalValue for it.
+  #
+  # It decides WHICH SUBJECT an M2M (machine-to-machine) token authorizes under,
+  # and the default is the legacy behaviour:
+  #   false (default) — lib-auth IGNORES the token's own sub and authorizes under
+  #     a FABRICATED subject, "admin/<product>-editor-role" → for this chart that
+  #     is "admin/br-slc-editor-role". The br-slc Casdoor seed
+  #     (config/casdoor/init_data.json) declares br-slc-{admin,operator,viewer,
+  #     platform-admin}-role and NO editor role, so unless the Access Manager also
+  #     carries a permission bound to that fabricated subject, every M2M token gets
+  #     403 on gated routes no matter which role the client holds.
+  #   true — lib-auth uses the token's real sub ("<owner>/<name>"), so binding the
+  #     client to br-slc-operator-role (which already carries operations:write) is
+  #     enough. This is where lib-auth v3 is heading.
+  #
+  # Flipping it changes who can call the API. Coordinate with the Access Manager
+  # team before enabling it in a tier — the client provisioning has to match.
   # -- Streaming (lerian-common.streaming.env). The full SASL/broker block renders
   # only when .streaming.enabled=true AND brokers are set. Empty ({}) keeps it off.
   streaming: {}
@@ -417,7 +436,16 @@ signer:
       SIGNER_MAX_BODY_BYTES: "65536"
       ENV_NAME: "production"
       # --- softkey adapter (BYOC-first custody path) ---
-      SIGNER_SOFTKEY_PFX_PATH: "/certs/signer.pfx"
+      # EMPTY ON PURPOSE — leave it empty and the chart DERIVES it from
+      # signer.softkeySecret (mountPath + secretKey) whenever that mount is
+      # enabled; see signer-configmap.yaml. This variable is the softkey
+      # adapter's enable signal, exactly as SIGNER_AWSKMS_REGION,
+      # SIGNER_PKCS11_TOKEN_LABEL and SIGNER_VAULT_ADDR are for theirs, so a
+      # static value here would register a softkey adapter on tiers that mount
+      # no PFX and use another custody path entirely. Set it only when the PFX
+      # arrives by some route other than softkeySecret (CSI driver,
+      # initContainer) — and then it must agree with wherever that route mounts it.
+      SIGNER_SOFTKEY_PFX_PATH: ""
       # DELIBERATE, FLAGGED default: softkey holds the key in process memory,
       # which config.go treats as alert-worthy in production and REFUSES to
       # start unless acked. BYOC-first ships softkey day-one; flip back to

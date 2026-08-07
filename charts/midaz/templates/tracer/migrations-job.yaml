@@ -1,0 +1,130 @@
+{{- if and .Values.tracer.enabled .Values.tracer.migrations.enabled }}
+{{- /*
+Tracer schema migration runner.
+
+midaz v4 removed in-process migration from the tracer: the service boots against
+an already-migrated database, and the release publishes a dedicated
+`midaz-tracer-migrations` image (FROM migrate/migrate) whose entrypoint applies
+the migration set from DB_* (or DATABASE_URL) and exits.
+
+The Job name carries the migration image tag because a Job spec is immutable: a
+stable name would leave the original Job in place on upgrade and silently skip
+the new migrations. Re-running is safe — golang-migrate keeps its progress in
+the schema_migrations table, not on disk.
+*/}}
+{{- $migrations := .Values.tracer.migrations }}
+{{- $cm := .Values.tracer.configmap | default dict }}
+{{- $pg := .Values.postgresql | default dict }}
+{{- $pgAuth := $pg.auth | default dict }}
+{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+{{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
+{{- $dbHost := include "midaz-tracer.dbHost" . }}
+{{- $dbPort := $cm.DB_PORT | default "5432" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "midaz-tracer.migrationsFullname" . }}
+  labels:
+    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+  {{- with $migrations.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  backoffLimit: {{ $migrations.backoffLimit | default 6 }}
+  activeDeadlineSeconds: {{ $migrations.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ $migrations.ttlSecondsAfterFinished | default 259200 }}
+  template:
+    metadata:
+      labels:
+        {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with .Values.tracer.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $migrations.waitForPostgres.enabled }}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ $migrations.waitForPostgres.image.repository }}:{{ $migrations.waitForPostgres.image.tag }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - >
+              TIMEOUT={{ $migrations.activeDeadlineSeconds | default 600 }};
+              ELAPSED=0;
+              echo "Checking {{ $dbHost }}:{{ $dbPort }}...";
+              while ! nc -z {{ $dbHost }} {{ $dbPort }}; do
+                if [ $ELAPSED -ge $TIMEOUT ]; then
+                  echo "Timeout waiting for {{ $dbHost }}:{{ $dbPort }} after ${TIMEOUT}s";
+                  exit 1;
+                fi;
+                echo "{{ $dbHost }}:{{ $dbPort }} is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)";
+                sleep 5;
+                ELAPSED=$((ELAPSED + 5));
+              done;
+              echo "{{ $dbHost }}:{{ $dbPort }} is ready!";
+          {{- with .Values.tracer.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            limits:
+              cpu: 100m
+              memory: 32Mi
+            requests:
+              cpu: 10m
+              memory: 16Mi
+      {{- end }}
+      containers:
+        - name: migrations
+          image: {{ $migrations.image.repository }}:{{ include "midaz-tracer.migrationsTag" . }}
+          imagePullPolicy: {{ $migrations.image.pullPolicy | default "IfNotPresent" }}
+          {{- with .Values.tracer.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: DB_HOST
+              value: {{ $dbHost | quote }}
+            - name: DB_PORT
+              value: {{ $dbPort | quote }}
+            - name: DB_NAME
+              value: {{ $cm.DB_NAME | default "tracer" | quote }}
+            - name: DB_USER
+              value: {{ $cm.DB_USER | default "midaz" | quote }}
+            - name: DB_SSL_MODE
+              value: {{ $cm.DB_SSL_MODE | default "disable" | quote }}
+            {{/* Same single-source rule as the tracer Deployment: the bundled
+                 PostgreSQL Secret when internal, the tracer Secret when external. */}}
+            {{- if $pgInternal }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_PASSWORD") | nindent 12 }}
+            {{- else if or .Values.tracer.useExistingSecret .Values.tracer.secrets.DB_PASSWORD }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_PASSWORD
+            {{- end }}
+          resources:
+            {{- toYaml $migrations.resources | nindent 12 }}
+      {{- with .Values.tracer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -141,6 +141,17 @@ data:
   SYSTEMPLANE_ENABLED: {{ $cm.SYSTEMPLANE_ENABLED | default "false" | quote }}
   TENANT_RUNTIME_CONFIG_ENABLED: {{ $cm.TENANT_RUNTIME_CONFIG_ENABLED | default "false" | quote }}
   TLS_TERMINATED_UPSTREAM: {{ $cm.TLS_TERMINATED_UPSTREAM | default "false" | quote }}
+  {{- /* VERSION feeds the version field of /readyz (readyz.go readyzVersionValue).
+         DERIVED from the app image tag through the same expression "br-slc.image"
+         uses (_helpers.tpl), so the reported version cannot disagree with the image
+         the pod runs — the same rule OTEL_RESOURCE_SERVICE_VERSION follows below.
+         Stating it explicitly is deliberate: readyzVersionValue falls back to
+         Telemetry.ServiceVersion (OTEL_RESOURCE_SERVICE_VERSION) when VERSION is
+         unset, so /readyz would already be correct through that key alone — but
+         then an operator retuning the TELEMETRY version label would silently move
+         what /readyz reports. These are two different contracts; each gets its own
+         key. An explicit configmap.VERSION override still wins. */}}
+  VERSION: {{ $cm.VERSION | default (.Values.image.tag | default .Chart.AppVersion) | quote }}
   # Mounted-file PATH (not a secret value) — configmap.data passthrough like
   # WEBHOOK_HMAC_SECRET_FILE; excluded from the grouped API.
   WEBHOOK_API_KEY_FILE: {{ $cm.WEBHOOK_API_KEY_FILE | default "" | quote }}

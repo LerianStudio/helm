@@ -1,0 +1,121 @@
+{{- if .Values.tracer.enabled }}
+{{- include "midaz-tracer.validate" . }}
+{{- $cm := .Values.tracer.configmap | default dict }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "midaz-tracer.fullname" . }}
+  labels:
+    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+data:
+  # -- Default Environment variables for Tracer
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+
+  # APP
+  SERVER_PORT: {{ $cm.SERVER_PORT | default "4020" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4020" | quote }}
+  VERSION: {{ .Values.tracer.image.tag | default .Chart.AppVersion | quote }}
+
+  # LOG LEVEL
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+
+  # AUTHENTICATION
+  API_KEY_ENABLED: {{ $cm.API_KEY_ENABLED | default "false" | quote }}
+
+  # CORS
+  CORS_ALLOWED_ORIGINS: {{ $cm.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+
+  # AUTH PLUGIN (Access Manager) — via lerian-common.auth.env (global.auth contract)
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
+
+  # RESERVATION gRPC SEAM (opt-in; empty keeps the seam off, as the app does)
+  {{- with $cm.TRACER_GRPC_PORT }}
+  TRACER_GRPC_PORT: {{ . | quote }}
+  {{- end }}
+
+  # PostgreSQL Database (host/user/port/ssl via lerian-common datastore mask)
+  {{- /* Resolve host through the mask FIRST (tracer.datastores.postgres.host › global.datastores.postgres
+     › configmap.DB_HOST › bundled primary). fail ONLY if the resolved host is empty — the old default
+     `include "midaz-tracer.dbHost"` was evaluated eagerly and failed even when the mask supplied a host. */ -}}
+  {{- $tracerDbHost := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" (include "midaz.postgresqlPrimaryHost" .)) -}}
+  {{- if not $tracerDbHost }}{{- fail "tracer Postgres host is required when PostgreSQL is external: set tracer.datastores.postgres.host, global.datastores.postgres.host, or tracer.configmap.DB_HOST" -}}{{- end }}
+  DB_HOST: {{ $tracerDbHost | quote }}
+  DB_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
+  DB_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "tracer") | quote }}
+  DB_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "midaz") | quote }}
+  DB_SSL_MODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSL_MODE" "default" "disable") | quote }}
+  {{/* No MIGRATIONS_PATH: the v4 tracer does not read it. Schema is applied by
+       the midaz-tracer-migrations Job (templates/tracer/migrations-job.yaml). */}}
+
+  # GO RUNTIME
+  # GOMEMLIMIT must track resources.limits.memory (~90%); the image default of
+  # 1800MiB assumes a 2Gi container and would let the heap outgrow the cgroup.
+  GOMEMLIMIT: {{ $cm.GOMEMLIMIT | default "460MiB" | quote }}
+
+  # SWAGGER
+  SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "Tracer API" | quote }}
+  SWAGGER_DESCRIPTION: {{ $cm.SWAGGER_DESCRIPTION | default "Real-time transaction validation and fraud prevention API" | quote }}
+  SWAGGER_HOST: {{ $cm.SWAGGER_HOST | default ":4020" | quote }}
+  SWAGGER_BASE_PATH: {{ $cm.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ $cm.SWAGGER_SCHEMES | default "http" | quote }}
+
+  # CEL Expression Engine
+  CEL_COST_LIMIT: {{ $cm.CEL_COST_LIMIT | default "10000" | quote }}
+
+  # OPEN TELEMETRY (identity inline; shared endpoint/env/enable via global.observability)
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "midaz-tracer" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/tracer" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.tracer.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" ($cm.ENV_NAME | default "development")) | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
+
+  # CLEANUP WORKER
+  CLEANUP_WORKER_ENABLED: {{ $cm.CLEANUP_WORKER_ENABLED | default "false" | quote }}
+  CLEANUP_INTERVAL_HOURS: {{ $cm.CLEANUP_INTERVAL_HOURS | default "24" | quote }}
+
+  # MULTI-TENANT — knob inline; gated block via lerian-common.multiTenant.env
+  {{- $mtEnabled := eq (include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict
+        "context" $
+        "configmap" $cm
+        "enabled" $mtEnabled
+        "requiredUrl" true
+        "requiredRedisHost" true
+        "emitRedis" true
+        "redisTlsDefault" "true"
+        "emitPool" true
+        "emitCache" true
+        "emitAllowInsecure" true) | nindent 2 }}
+  {{- if $mtEnabled }}
+  {{- with $cm.MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT }}
+  MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: {{ . | quote }}
+  {{- end }}
+  {{- with $cm.MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT }}
+  MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT: {{ . | quote }}
+  {{- end }}
+  {{- end }}
+
+  # =============================================================================
+  # SERVICE DISCOVERY — knob inline; server config from global.serviceDiscovery,
+  # endpoints derived from this chart's own service/ingress (gated via helper).
+  # =============================================================================
+  {{- $sdEnabled := eq (include "midaz.isTrue" ($cm.SD_ENABLED | default "false")) "true" }}
+  SD_ENABLED: {{ $cm.SD_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" $sdEnabled
+        "configmap" $cm
+        "name" (include "midaz-tracer.fullname" .)
+        "port" .Values.tracer.service.port
+        "namespace" (include "global.namespace" .)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.tracer.ingress))) | nindent 2 }}
+  # Extra Env Vars
+  {{- with .Values.tracer.extraEnvVars }}
+  {{- range $key, $value := . }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

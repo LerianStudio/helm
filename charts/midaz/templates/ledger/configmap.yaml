@@ -1,7 +1,9 @@
 {{- if .Values.ledger.enabled }}
-{{- $rabbitHost := .Values.ledger.configmap.RABBITMQ_HOST | default "midaz-rabbitmq" }}
-{{- $rabbitProtocol := .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" }}
-{{- $rabbitAmqpPort := .Values.ledger.configmap.RABBITMQ_PORT_AMQP | default "15672" }}
+{{- $cm := .Values.ledger.configmap | default dict }}
+{{- $rabbitHost := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
+{{- $rabbitPort := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "5672") }}
+{{- $rabbitProtocol := $cm.RABBITMQ_PROTOCOL | default "http" }}
+{{- $rabbitAmqpPort := $cm.RABBITMQ_PORT_AMQP | default "15672" }}
 
 {{- $rabbitHealthCheckURL := "" }}
 
@@ -19,218 +21,285 @@ data:
   # =============================================================================
   # APP CONFIGURATION
   # =============================================================================
-  ALLOW_INSECURE_TLS: {{ .Values.ledger.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
-  ENV_NAME: {{ .Values.ledger.configmap.ENV_NAME | default "production" | quote }}
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
-  DEPLOYMENT_MODE: {{ .Values.ledger.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-  LOG_LEVEL: {{ .Values.ledger.configmap.LOG_LEVEL | default "debug" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "debug" | quote }}
 
-  SERVER_PORT: {{ .Values.ledger.configmap.SERVER_PORT | default "3002" | quote }}
-  SERVER_ADDRESS: {{ .Values.ledger.configmap.SERVER_ADDRESS | default ":3002" | quote }}
+  SERVER_PORT: {{ $cm.SERVER_PORT | default "3002" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":3002" | quote }}
 
   # =============================================================================
   # SWAGGER
   # =============================================================================
-  SWAGGER_TITLE: {{ .Values.ledger.configmap.SWAGGER_TITLE | default "" | quote }}
-  SWAGGER_DESCRIPTION: {{ .Values.ledger.configmap.SWAGGER_DESCRIPTION | default "" | quote }}
-  SWAGGER_VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
-  SWAGGER_HOST: {{ .Values.ledger.configmap.SWAGGER_HOST | default "" | quote }}
-  SWAGGER_BASE_PATH: {{ .Values.ledger.configmap.SWAGGER_BASE_PATH | default "" | quote }}
-  SWAGGER_SCHEMES: {{ .Values.ledger.configmap.SWAGGER_SCHEMES | default "" | quote }}
-  SWAGGER_LEFT_DELIM: {{ .Values.ledger.configmap.SWAGGER_LEFT_DELIM | default "" | quote }}
-  SWAGGER_RIGHT_DELIM: {{ .Values.ledger.configmap.SWAGGER_RIGHT_DELIM | default "" | quote }}
+  SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "" | quote }}
+  SWAGGER_DESCRIPTION: {{ $cm.SWAGGER_DESCRIPTION | default "" | quote }}
+  SWAGGER_VERSION: {{ $cm.SWAGGER_VERSION | default (.Values.ledger.image.tag | default .Chart.AppVersion) | quote }}
+  SWAGGER_HOST: {{ $cm.SWAGGER_HOST | default "" | quote }}
+  SWAGGER_BASE_PATH: {{ $cm.SWAGGER_BASE_PATH | default "" | quote }}
+  SWAGGER_SCHEMES: {{ $cm.SWAGGER_SCHEMES | default "" | quote }}
+  SWAGGER_LEFT_DELIM: {{ $cm.SWAGGER_LEFT_DELIM | default "" | quote }}
+  SWAGGER_RIGHT_DELIM: {{ $cm.SWAGGER_RIGHT_DELIM | default "" | quote }}
 
   # =============================================================================
-  # AUTH CONFIGS (shared)
+  # AUTH CONFIGS (shared) — via lerian-common.auth.env (global.auth contract)
   # =============================================================================
-  PLUGIN_AUTH_ENABLED: {{ .Values.ledger.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_HOST: {{ .Values.ledger.configmap.PLUGIN_AUTH_HOST | default "" | quote }}
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST") | nindent 2 }}
 
   # =============================================================================
-  # MULTI-TENANT
+  # MULTI-TENANT — knob inline; gated block via lerian-common.multiTenant.env
+  # (URL + redis host come from global.multiTenant or configmap.MULTI_TENANT_*)
   # =============================================================================
-  MULTI_TENANT_ENABLED: {{ .Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if eq (.Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
-  MULTI_TENANT_URL: {{ required "ledger.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.ledger.configmap.MULTI_TENANT_URL | quote }}
-  MULTI_TENANT_SERVICE_NAME: {{ .Values.ledger.configmap.MULTI_TENANT_SERVICE_NAME | default "ledger" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
-  MULTI_TENANT_REDIS_HOST: {{ required "ledger.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.ledger.configmap.MULTI_TENANT_REDIS_HOST | quote }}
-  MULTI_TENANT_REDIS_PORT: {{ .Values.ledger.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
-  MULTI_TENANT_REDIS_TLS: {{ .Values.ledger.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
-  {{- end }}
+  {{- $mtEnabled := eq (include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict
+        "context" $
+        "configmap" $cm
+        "enabled" $mtEnabled
+        "serviceName" "ledger"
+        "emitRedis" true
+        "requiredUrl" true
+        "requiredRedisHost" true) | nindent 2 }}
 
   # =============================================================================
   # ACCOUNTING CONFIG
   # =============================================================================
-  ACCOUNT_TYPE_VALIDATION: {{ .Values.ledger.configmap.ACCOUNT_TYPE_VALIDATION | default "" | quote }}
-  TRANSACTION_ROUTE_VALIDATION: {{ .Values.ledger.configmap.TRANSACTION_ROUTE_VALIDATION | default "" | quote }}
+  ACCOUNT_TYPE_VALIDATION: {{ $cm.ACCOUNT_TYPE_VALIDATION | default "" | quote }}
+  TRANSACTION_ROUTE_VALIDATION: {{ $cm.TRANSACTION_ROUTE_VALIDATION | default "" | quote }}
 
   # =============================================================================
-  # DB POSTGRESQL - ONBOARDING MODULE
+  # DB POSTGRESQL - ONBOARDING MODULE (host/user/port/ssl/replicaHost via datastore mask)
   # =============================================================================
   # Primary
-  DB_ONBOARDING_HOST: {{ .Values.ledger.configmap.DB_ONBOARDING_HOST | default "midaz-postgresql-primary" | quote }}
-  DB_ONBOARDING_USER: {{ .Values.ledger.configmap.DB_ONBOARDING_USER | default "midaz" | quote }}
-  DB_ONBOARDING_NAME: {{ .Values.ledger.configmap.DB_ONBOARDING_NAME | default "onboarding" | quote }}
-  DB_ONBOARDING_PORT: {{ .Values.ledger.configmap.DB_ONBOARDING_PORT | default "5432" | quote }}
-  DB_ONBOARDING_SSLMODE: {{ .Values.ledger.configmap.DB_ONBOARDING_SSLMODE | default "disable" | quote }}
+  DB_ONBOARDING_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "host" "nativeKey" "DB_ONBOARDING_HOST" "default" "midaz-postgresql-primary") | quote }}
+  DB_ONBOARDING_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "user" "nativeKey" "DB_ONBOARDING_USER" "default" "midaz") | quote }}
+  DB_ONBOARDING_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "name" "nativeKey" "DB_ONBOARDING_NAME" "default" "onboarding") | quote }}
+  DB_ONBOARDING_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "port" "nativeKey" "DB_ONBOARDING_PORT" "default" "5432") | quote }}
+  DB_ONBOARDING_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "ssl" "nativeKey" "DB_ONBOARDING_SSLMODE" "default" "disable") | quote }}
   # Replica
-  DB_ONBOARDING_REPLICA_HOST: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_HOST | default "midaz-postgresql-read" | quote }}
-  DB_ONBOARDING_REPLICA_USER: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_USER | default "midaz" | quote }}
-  DB_ONBOARDING_REPLICA_NAME: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_NAME | default "onboarding" | quote }}
-  DB_ONBOARDING_REPLICA_PORT: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_PORT | default "5432" | quote }}
-  DB_ONBOARDING_REPLICA_SSLMODE: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_SSLMODE | default "disable" | quote }}
+  DB_ONBOARDING_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "replicaHost" "nativeKey" "DB_ONBOARDING_REPLICA_HOST" "default" "midaz-postgresql-replication") | quote }}
+  DB_ONBOARDING_REPLICA_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "user" "nativeKey" "DB_ONBOARDING_REPLICA_USER" "default" "midaz") | quote }}
+  DB_ONBOARDING_REPLICA_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "name" "nativeKey" "DB_ONBOARDING_REPLICA_NAME" "default" "onboarding") | quote }}
+  DB_ONBOARDING_REPLICA_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "port" "nativeKey" "DB_ONBOARDING_REPLICA_PORT" "default" "5432") | quote }}
+  DB_ONBOARDING_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "ssl" "nativeKey" "DB_ONBOARDING_REPLICA_SSLMODE" "default" "disable") | quote }}
   # Connection pool
-  DB_ONBOARDING_MAX_OPEN_CONNS: {{ .Values.ledger.configmap.DB_ONBOARDING_MAX_OPEN_CONNS | default "3000" | quote }}
-  DB_ONBOARDING_MAX_IDLE_CONNS: {{ .Values.ledger.configmap.DB_ONBOARDING_MAX_IDLE_CONNS | default "3000" | quote }}
+  DB_ONBOARDING_MAX_OPEN_CONNS: {{ $cm.DB_ONBOARDING_MAX_OPEN_CONNS | default "3000" | quote }}
+  DB_ONBOARDING_MAX_IDLE_CONNS: {{ $cm.DB_ONBOARDING_MAX_IDLE_CONNS | default "3000" | quote }}
 
   # =============================================================================
-  # MONGO DB - ONBOARDING MODULE
+  # MONGO DB - ONBOARDING MODULE (host/user/port via datastore mask)
   # =============================================================================
-  MONGO_ONBOARDING_URI: {{ .Values.ledger.configmap.MONGO_ONBOARDING_URI | default "mongodb" | quote }}
-  MONGO_ONBOARDING_HOST: {{ .Values.ledger.configmap.MONGO_ONBOARDING_HOST | default "midaz-mongodb" | quote }}
-  MONGO_ONBOARDING_NAME: {{ .Values.ledger.configmap.MONGO_ONBOARDING_NAME | default "onboarding" | quote }}
-  MONGO_ONBOARDING_USER: {{ .Values.ledger.configmap.MONGO_ONBOARDING_USER | default "midaz" | quote }}
-  MONGO_ONBOARDING_PORT: {{ .Values.ledger.configmap.MONGO_ONBOARDING_PORT | default "27017" | quote }}
-  MONGO_ONBOARDING_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_ONBOARDING_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_ONBOARDING_PARAMETERS: {{ .Values.ledger.configmap.MONGO_ONBOARDING_PARAMETERS | default "" | quote }}
-  MONGO_ONBOARDING_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_ONBOARDING_TLS_CA_CERT | default "" | quote }}
+  MONGO_ONBOARDING_URI: {{ $cm.MONGO_ONBOARDING_URI | default "mongodb" | quote }}
+  MONGO_ONBOARDING_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "host" "nativeKey" "MONGO_ONBOARDING_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_ONBOARDING_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "name" "nativeKey" "MONGO_ONBOARDING_NAME" "default" "onboarding") | quote }}
+  MONGO_ONBOARDING_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "user" "nativeKey" "MONGO_ONBOARDING_USER" "default" "midaz") | quote }}
+  MONGO_ONBOARDING_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "port" "nativeKey" "MONGO_ONBOARDING_PORT" "default" "27017") | quote }}
+  MONGO_ONBOARDING_MAX_POOL_SIZE: {{ $cm.MONGO_ONBOARDING_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_ONBOARDING_PARAMETERS: {{ $cm.MONGO_ONBOARDING_PARAMETERS | default "" | quote }}
+  MONGO_ONBOARDING_TLS_CA_CERT: {{ $cm.MONGO_ONBOARDING_TLS_CA_CERT | default "" | quote }}
 
   # =============================================================================
-  # DB POSTGRESQL - TRANSACTION MODULE
+  # DB POSTGRESQL - TRANSACTION MODULE (host/user/port/ssl/replicaHost via datastore mask)
   # =============================================================================
   # Primary
-  DB_TRANSACTION_HOST: {{ .Values.ledger.configmap.DB_TRANSACTION_HOST | default "midaz-postgresql-primary" | quote }}
-  DB_TRANSACTION_USER: {{ .Values.ledger.configmap.DB_TRANSACTION_USER | default "midaz" | quote }}
-  DB_TRANSACTION_NAME: {{ .Values.ledger.configmap.DB_TRANSACTION_NAME | default "transaction" | quote }}
-  DB_TRANSACTION_PORT: {{ .Values.ledger.configmap.DB_TRANSACTION_PORT | default "5432" | quote }}
-  DB_TRANSACTION_SSLMODE: {{ .Values.ledger.configmap.DB_TRANSACTION_SSLMODE | default "disable" | quote }}
+  DB_TRANSACTION_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "host" "nativeKey" "DB_TRANSACTION_HOST" "default" "midaz-postgresql-primary") | quote }}
+  DB_TRANSACTION_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") | quote }}
+  DB_TRANSACTION_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") | quote }}
+  DB_TRANSACTION_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") | quote }}
+  DB_TRANSACTION_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
   # Replica
-  DB_TRANSACTION_REPLICA_HOST: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_HOST | default "midaz-postgresql-read" | quote }}
-  DB_TRANSACTION_REPLICA_USER: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_USER | default "midaz" | quote }}
-  DB_TRANSACTION_REPLICA_NAME: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_NAME | default "transaction" | quote }}
-  DB_TRANSACTION_REPLICA_PORT: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_PORT | default "5432" | quote }}
-  DB_TRANSACTION_REPLICA_SSLMODE: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_SSLMODE | default "disable" | quote }}
+  DB_TRANSACTION_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "replicaHost" "nativeKey" "DB_TRANSACTION_REPLICA_HOST" "default" "midaz-postgresql-replication") | quote }}
+  DB_TRANSACTION_REPLICA_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_REPLICA_USER" "default" "midaz") | quote }}
+  DB_TRANSACTION_REPLICA_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_REPLICA_NAME" "default" "transaction") | quote }}
+  DB_TRANSACTION_REPLICA_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_REPLICA_PORT" "default" "5432") | quote }}
+  DB_TRANSACTION_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "ssl" "nativeKey" "DB_TRANSACTION_REPLICA_SSLMODE" "default" "disable") | quote }}
   # Connection pool
-  DB_TRANSACTION_MAX_OPEN_CONNS: {{ .Values.ledger.configmap.DB_TRANSACTION_MAX_OPEN_CONNS | default "3000" | quote }}
-  DB_TRANSACTION_MAX_IDLE_CONNS: {{ .Values.ledger.configmap.DB_TRANSACTION_MAX_IDLE_CONNS | default "3000" | quote }}
+  DB_TRANSACTION_MAX_OPEN_CONNS: {{ $cm.DB_TRANSACTION_MAX_OPEN_CONNS | default "3000" | quote }}
+  DB_TRANSACTION_MAX_IDLE_CONNS: {{ $cm.DB_TRANSACTION_MAX_IDLE_CONNS | default "3000" | quote }}
 
   # =============================================================================
-  # MONGO DB - TRANSACTION MODULE
+  # MONGO DB - TRANSACTION MODULE (host/user/port via datastore mask)
   # =============================================================================
-  MONGO_TRANSACTION_URI: {{ .Values.ledger.configmap.MONGO_TRANSACTION_URI | default "mongodb" | quote }}
-  MONGO_TRANSACTION_HOST: {{ .Values.ledger.configmap.MONGO_TRANSACTION_HOST | default "midaz-mongodb" | quote }}
-  MONGO_TRANSACTION_NAME: {{ .Values.ledger.configmap.MONGO_TRANSACTION_NAME | default "transaction" | quote }}
-  MONGO_TRANSACTION_USER: {{ .Values.ledger.configmap.MONGO_TRANSACTION_USER | default "midaz" | quote }}
-  MONGO_TRANSACTION_PORT: {{ .Values.ledger.configmap.MONGO_TRANSACTION_PORT | default "27017" | quote }}
-  MONGO_TRANSACTION_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_TRANSACTION_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_TRANSACTION_PARAMETERS: {{ .Values.ledger.configmap.MONGO_TRANSACTION_PARAMETERS | default "" | quote }}
-  MONGO_TRANSACTION_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_TRANSACTION_TLS_CA_CERT | default "" | quote }}
+  MONGO_TRANSACTION_URI: {{ $cm.MONGO_TRANSACTION_URI | default "mongodb" | quote }}
+  MONGO_TRANSACTION_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "host" "nativeKey" "MONGO_TRANSACTION_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_TRANSACTION_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "name" "nativeKey" "MONGO_TRANSACTION_NAME" "default" "transaction") | quote }}
+  MONGO_TRANSACTION_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "user" "nativeKey" "MONGO_TRANSACTION_USER" "default" "midaz") | quote }}
+  MONGO_TRANSACTION_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "port" "nativeKey" "MONGO_TRANSACTION_PORT" "default" "27017") | quote }}
+  MONGO_TRANSACTION_MAX_POOL_SIZE: {{ $cm.MONGO_TRANSACTION_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_TRANSACTION_PARAMETERS: {{ $cm.MONGO_TRANSACTION_PARAMETERS | default "" | quote }}
+  MONGO_TRANSACTION_TLS_CA_CERT: {{ $cm.MONGO_TRANSACTION_TLS_CA_CERT | default "" | quote }}
 
   # =============================================================================
-  # REDIS (shared between modules)
+  # MONGO DB - CRM MODULE (folded into the unified ledger binary; host/user/port via mask)
   # =============================================================================
-  REDIS_HOST: {{ .Values.ledger.configmap.REDIS_HOST | default "midaz-valkey-primary:6379" | quote }}
-  REDIS_MASTER_NAME: {{ .Values.ledger.configmap.REDIS_MASTER_NAME | default "" | quote }}
-  REDIS_TLS: {{ .Values.ledger.configmap.REDIS_TLS | default "false" | quote }}
-  REDIS_CA_CERT: {{ .Values.ledger.configmap.REDIS_CA_CERT | default "" | quote }}
-  REDIS_USE_GCP_IAM: {{ .Values.ledger.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
-  REDIS_SERVICE_ACCOUNT: {{ .Values.ledger.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
-  GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.ledger.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
-  REDIS_TOKEN_LIFETIME: {{ .Values.ledger.configmap.REDIS_TOKEN_LIFETIME | default "60" | quote }}
-  REDIS_TOKEN_REFRESH_DURATION: {{ .Values.ledger.configmap.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
-  REDIS_DB: {{ .Values.ledger.configmap.REDIS_DB | default "0" | quote }}
-  REDIS_PROTOCOL: {{ .Values.ledger.configmap.REDIS_PROTOCOL | default "3" | quote }}
-  REDIS_POOL_SIZE: {{ .Values.ledger.configmap.REDIS_POOL_SIZE | default "10" | quote }}
-  REDIS_MIN_IDLE_CONNS: {{ .Values.ledger.configmap.REDIS_MIN_IDLE_CONNS | default "0" | quote }}
-  REDIS_READ_TIMEOUT: {{ .Values.ledger.configmap.REDIS_READ_TIMEOUT | default "3" | quote }}
-  REDIS_WRITE_TIMEOUT: {{ .Values.ledger.configmap.REDIS_WRITE_TIMEOUT | default "3" | quote }}
-  REDIS_DIAL_TIMEOUT: {{ .Values.ledger.configmap.REDIS_DIAL_TIMEOUT | default "5" | quote }}
-  REDIS_POOL_TIMEOUT: {{ .Values.ledger.configmap.REDIS_POOL_TIMEOUT | default "2" | quote }}
-  REDIS_MAX_RETRIES: {{ .Values.ledger.configmap.REDIS_MAX_RETRIES | default "3" | quote }}
-  REDIS_MIN_RETRY_BACKOFF: {{ .Values.ledger.configmap.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
-  REDIS_MAX_RETRY_BACKOFF: {{ .Values.ledger.configmap.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
+  MONGO_CRM_URI: {{ $cm.MONGO_CRM_URI | default "mongodb" | quote }}
+  MONGO_CRM_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_CRM_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "name" "nativeKey" "MONGO_CRM_NAME" "default" "crm") | quote }}
+  MONGO_CRM_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "user" "nativeKey" "MONGO_CRM_USER" "default" "midaz") | quote }}
+  MONGO_CRM_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "port" "nativeKey" "MONGO_CRM_PORT" "default" "27017") | quote }}
+  # MONGO_CRM_PASSWORD lives in the ledger Secret (see templates/ledger/secrets.yaml)
+  MONGO_CRM_MAX_POOL_SIZE: {{ $cm.MONGO_CRM_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_CRM_PARAMETERS: {{ $cm.MONGO_CRM_PARAMETERS | default "" | quote }}
+  MONGO_CRM_TLS_CA_CERT: {{ $cm.MONGO_CRM_TLS_CA_CERT | default "" | quote }}
 
   # =============================================================================
-  # OPEN TELEMETRY
+  # MONGO DB - FEES MODULE (folded into the unified ledger binary; host/user/port via mask)
   # =============================================================================
-  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.ledger.configmap.OTEL_RESOURCE_SERVICE_NAME | default "ledger" | quote }}
-  OTEL_LIBRARY_NAME: {{ .Values.ledger.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v3/components/ledger" | quote }}
+  MONGO_FEES_URI: {{ $cm.MONGO_FEES_URI | default "mongodb" | quote }}
+  MONGO_FEES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_FEES_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "name" "nativeKey" "MONGO_FEES_NAME" "default" "fees") | quote }}
+  MONGO_FEES_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "user" "nativeKey" "MONGO_FEES_USER" "default" "midaz") | quote }}
+  MONGO_FEES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "port" "nativeKey" "MONGO_FEES_PORT" "default" "27017") | quote }}
+  # MONGO_FEES_PASSWORD lives in the ledger Secret (see templates/ledger/secrets.yaml)
+  MONGO_FEES_MAX_POOL_SIZE: {{ $cm.MONGO_FEES_MAX_POOL_SIZE | default "100" | quote }}
+  MONGO_FEES_PARAMETERS: {{ $cm.MONGO_FEES_PARAMETERS | default "" | quote }}
+  MONGO_FEES_TLS_CA_CERT: {{ $cm.MONGO_FEES_TLS_CA_CERT | default "" | quote }}
+
+  # =============================================================================
+  # LCRYPTO — key material lives in the ledger Secret, never here.
+  # LCRYPTO_HASH_SECRET_KEY and LCRYPTO_ENCRYPT_SECRET_KEY protect CRM holder
+  # fields (PII); see templates/ledger/secrets.yaml.
+  # =============================================================================
+
+  # =============================================================================
+  # KMS (encryption vendor selector; see midaz pkg/crypto/resolver.go)
+  # KMS_VAULT_SECRET_ID is the AppRole credential and lives in the Secret.
+  # =============================================================================
+  KMS_VENDOR: {{ $cm.KMS_VENDOR | default "none" | quote }}
+  # Vault fields required only when KMS_VENDOR=hashicorp-vault (envelope encryption)
+  {{- if eq ($cm.KMS_VENDOR | default "none") "hashicorp-vault" }}
+  KMS_VAULT_ADDR: {{ required "ledger.configmap.KMS_VAULT_ADDR is required when KMS_VENDOR=hashicorp-vault" $cm.KMS_VAULT_ADDR | quote }}
+  KMS_VAULT_ROLE_ID: {{ required "ledger.configmap.KMS_VAULT_ROLE_ID is required when KMS_VENDOR=hashicorp-vault" $cm.KMS_VAULT_ROLE_ID | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ required "ledger.configmap.KMS_VAULT_AUTH_METHOD is required when KMS_VENDOR=hashicorp-vault" $cm.KMS_VAULT_AUTH_METHOD | quote }}
+  {{- else }}
+  KMS_VAULT_ADDR: {{ $cm.KMS_VAULT_ADDR | default "" | quote }}
+  KMS_VAULT_ROLE_ID: {{ $cm.KMS_VAULT_ROLE_ID | default "" | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ $cm.KMS_VAULT_AUTH_METHOD | default "" | quote }}
+  {{- end }}
+
+  # =============================================================================
+  # TRACER RESERVATION SEAM (ledger -> tracer client side)
+  # TRACER_BASE_URL empty disables the integration (nil reserver).
+  # =============================================================================
+  TRACER_BASE_URL: {{ $cm.TRACER_BASE_URL | default "" | quote }}
+  {{- /* The seam accepts "grpc" or "rest". The bundled tracer only serves gRPC
+         when TRACER_GRPC_PORT is set, so selecting grpc against an in-chart
+         tracer that has it unset would dial a port nothing listens on. */ -}}
+  {{- $tracerTransport := $cm.TRACER_TRANSPORT | default "rest" }}
+  {{- if and $cm.TRACER_BASE_URL (eq (lower $tracerTransport) "grpc") .Values.tracer.enabled (not .Values.tracer.configmap.TRACER_GRPC_PORT) }}
+  {{- fail "ledger.configmap.TRACER_TRANSPORT=grpc requires tracer.configmap.TRACER_GRPC_PORT to be set: the bundled tracer keeps its gRPC seam off and its Service exposes only HTTP. Set the port, or use TRACER_TRANSPORT=rest" }}
+  {{- end }}
+  TRACER_TRANSPORT: {{ $tracerTransport | quote }}
+  TRACER_TLS_MODE: {{ $cm.TRACER_TLS_MODE | default "" | quote }}
+  TRACER_TIMEOUT_MS: {{ $cm.TRACER_TIMEOUT_MS | default "" | quote }}
+  TRACER_TLS_CERT_FILE: {{ $cm.TRACER_TLS_CERT_FILE | default "" | quote }}
+  TRACER_TLS_KEY_FILE: {{ $cm.TRACER_TLS_KEY_FILE | default "" | quote }}
+  TRACER_TLS_CA_FILE: {{ $cm.TRACER_TLS_CA_FILE | default "" | quote }}
+
+  # =============================================================================
+  # REDIS (shared between modules; host via datastore mask, tuning via passthrough)
+  # =============================================================================
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "midaz-valkey-primary:6379") | quote }}
+  REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
+  REDIS_TLS: {{ $cm.REDIS_TLS | default "false" | quote }}
+  REDIS_CA_CERT: {{ $cm.REDIS_CA_CERT | default "" | quote }}
+  REDIS_USE_GCP_IAM: {{ $cm.REDIS_USE_GCP_IAM | default "false" | quote }}
+  REDIS_SERVICE_ACCOUNT: {{ $cm.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+  GOOGLE_APPLICATION_CREDENTIALS: {{ $cm.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+  REDIS_TOKEN_LIFETIME: {{ $cm.REDIS_TOKEN_LIFETIME | default "60" | quote }}
+  REDIS_TOKEN_REFRESH_DURATION: {{ $cm.REDIS_TOKEN_REFRESH_DURATION | default "45" | quote }}
+  REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_POOL_SIZE: {{ $cm.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ $cm.REDIS_MIN_IDLE_CONNS | default "0" | quote }}
+  REDIS_READ_TIMEOUT: {{ $cm.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ $cm.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ $cm.REDIS_DIAL_TIMEOUT | default "5" | quote }}
+  REDIS_POOL_TIMEOUT: {{ $cm.REDIS_POOL_TIMEOUT | default "2" | quote }}
+  REDIS_MAX_RETRIES: {{ $cm.REDIS_MAX_RETRIES | default "3" | quote }}
+  REDIS_MIN_RETRY_BACKOFF: {{ $cm.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
+  REDIS_MAX_RETRY_BACKOFF: {{ $cm.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
+
+  # =============================================================================
+  # OPEN TELEMETRY (identity inline; shared endpoint/env/enable via global.observability)
+  # =============================================================================
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "ledger" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v3/components/ledger" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana:4317" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.ledger.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" "production") | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "midaz-grafana:4317") | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
 
   # =============================================================================
-  # RABBITMQ (used by transaction module)
+  # RABBITMQ (used by transaction module; host via datastore mask)
   # =============================================================================
-  RABBITMQ_URI: {{ .Values.ledger.configmap.RABBITMQ_URI | default "amqp" | quote }}
-  RABBITMQ_PROTOCOL: {{ .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" | quote }}
-  RABBITMQ_HOST: {{ .Values.ledger.configmap.RABBITMQ_HOST | default "midaz-rabbitmq" | quote }}
-  RABBITMQ_PORT_HOST: {{ .Values.ledger.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
-  RABBITMQ_PORT_AMQP: {{ .Values.ledger.configmap.RABBITMQ_PORT_AMQP | default "15672" | quote }}
-  RABBITMQ_DEFAULT_USER: {{ .Values.ledger.configmap.RABBITMQ_DEFAULT_USER | default "transaction" | quote }}
-  RABBITMQ_CONSUMER_USER: {{ .Values.ledger.configmap.RABBITMQ_CONSUMER_USER | default "consumer" | quote }}
-  RABBITMQ_NUMBERS_OF_WORKERS: {{ .Values.ledger.configmap.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
-  RABBITMQ_NUMBERS_OF_PREFETCH: {{ .Values.ledger.configmap.RABBITMQ_NUMBERS_OF_PREFETCH | default "10" | quote }}
-  RABBITMQ_HEALTH_CHECK_URL: {{ .Values.ledger.configmap.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
-  RABBITMQ_BALANCE_CREATE_QUEUE: {{ .Values.ledger.configmap.RABBITMQ_BALANCE_CREATE_QUEUE | default "transaction.balance_create.queue" | quote }}
-  RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE | default "transaction.transaction_balance_operation.exchange" | quote }}
-  RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY | default "transaction.transaction_balance_operation.key" | quote }}
-  RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE | default "transaction.transaction_balance_operation.queue" | quote }}
-  RABBITMQ_TRANSACTION_ASYNC: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_ASYNC | default "false" | quote }}
-  RABBITMQ_VHOST: {{ .Values.ledger.configmap.RABBITMQ_VHOST | default "" | quote }}
+  RABBITMQ_URI: {{ $cm.RABBITMQ_URI | default "amqp" | quote }}
+  RABBITMQ_PROTOCOL: {{ $rabbitProtocol | quote }}
+  RABBITMQ_HOST: {{ $rabbitHost | quote }}
+  RABBITMQ_PORT_HOST: {{ $rabbitPort | quote }}
+  RABBITMQ_PORT_AMQP: {{ $rabbitAmqpPort | quote }}
+  RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "transaction") | quote }}
+  RABBITMQ_CONSUMER_USER: {{ $cm.RABBITMQ_CONSUMER_USER | default "consumer" | quote }}
+  RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
+  RABBITMQ_NUMBERS_OF_PREFETCH: {{ $cm.RABBITMQ_NUMBERS_OF_PREFETCH | default "10" | quote }}
+  RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
+  RABBITMQ_BALANCE_CREATE_QUEUE: {{ $cm.RABBITMQ_BALANCE_CREATE_QUEUE | default "transaction.balance_create.queue" | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE: {{ $cm.RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE | default "transaction.transaction_balance_operation.exchange" | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY: {{ $cm.RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY | default "transaction.transaction_balance_operation.key" | quote }}
+  RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE: {{ $cm.RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE | default "transaction.transaction_balance_operation.queue" | quote }}
+  RABBITMQ_TRANSACTION_ASYNC: {{ $cm.RABBITMQ_TRANSACTION_ASYNC | default "false" | quote }}
+  RABBITMQ_VHOST: {{ $cm.RABBITMQ_VHOST | default "" | quote }}
 
   # =============================================================================
   # RABBITMQ CIRCUIT BREAKER
   # =============================================================================
-  RABBITMQ_CIRCUIT_BREAKER_CONSECUTIVE_FAILURES: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_CONSECUTIVE_FAILURES | default "15" | quote }}
-  RABBITMQ_CIRCUIT_BREAKER_FAILURE_RATIO: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_FAILURE_RATIO | default "50" | quote }}
-  RABBITMQ_CIRCUIT_BREAKER_INTERVAL: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_INTERVAL | default "120" | quote }}
-  RABBITMQ_CIRCUIT_BREAKER_MAX_REQUESTS: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_MAX_REQUESTS | default "3" | quote }}
-  RABBITMQ_CIRCUIT_BREAKER_MIN_REQUESTS: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_MIN_REQUESTS | default "10" | quote }}
-  RABBITMQ_CIRCUIT_BREAKER_TIMEOUT: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_TIMEOUT | default "30" | quote }}
-  RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL | default "30" | quote }}
-  RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT: {{ .Values.ledger.configmap.RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT | default "10" | quote }}
-  RABBITMQ_OPERATION_TIMEOUT: {{ .Values.ledger.configmap.RABBITMQ_OPERATION_TIMEOUT | default "30s" | quote }}
+  RABBITMQ_CIRCUIT_BREAKER_CONSECUTIVE_FAILURES: {{ $cm.RABBITMQ_CIRCUIT_BREAKER_CONSECUTIVE_FAILURES | default "15" | quote }}
+  RABBITMQ_CIRCUIT_BREAKER_FAILURE_RATIO: {{ $cm.RABBITMQ_CIRCUIT_BREAKER_FAILURE_RATIO | default "50" | quote }}
+  RABBITMQ_CIRCUIT_BREAKER_INTERVAL: {{ $cm.RABBITMQ_CIRCUIT_BREAKER_INTERVAL | default "120" | quote }}
+  RABBITMQ_CIRCUIT_BREAKER_MAX_REQUESTS: {{ $cm.RABBITMQ_CIRCUIT_BREAKER_MAX_REQUESTS | default "3" | quote }}
+  RABBITMQ_CIRCUIT_BREAKER_MIN_REQUESTS: {{ $cm.RABBITMQ_CIRCUIT_BREAKER_MIN_REQUESTS | default "10" | quote }}
+  RABBITMQ_CIRCUIT_BREAKER_TIMEOUT: {{ $cm.RABBITMQ_CIRCUIT_BREAKER_TIMEOUT | default "30" | quote }}
+  RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL: {{ $cm.RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL | default "30" | quote }}
+  RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT: {{ $cm.RABBITMQ_CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT | default "10" | quote }}
+  RABBITMQ_OPERATION_TIMEOUT: {{ $cm.RABBITMQ_OPERATION_TIMEOUT | default "30s" | quote }}
 
   # =============================================================================
   # BULK RECORDER
   # =============================================================================
-  BULK_RECORDER_ENABLED: {{ .Values.ledger.configmap.BULK_RECORDER_ENABLED | default "true" | quote }}
-  BULK_RECORDER_SIZE: {{ .Values.ledger.configmap.BULK_RECORDER_SIZE | default "0" | quote }}
-  BULK_RECORDER_FLUSH_TIMEOUT_MS: {{ .Values.ledger.configmap.BULK_RECORDER_FLUSH_TIMEOUT_MS | default "100" | quote }}
-  BULK_RECORDER_MAX_ROWS_PER_INSERT: {{ .Values.ledger.configmap.BULK_RECORDER_MAX_ROWS_PER_INSERT | default "1000" | quote }}
+  BULK_RECORDER_ENABLED: {{ $cm.BULK_RECORDER_ENABLED | default "true" | quote }}
+  BULK_RECORDER_SIZE: {{ $cm.BULK_RECORDER_SIZE | default "0" | quote }}
+  BULK_RECORDER_FLUSH_TIMEOUT_MS: {{ $cm.BULK_RECORDER_FLUSH_TIMEOUT_MS | default "100" | quote }}
+  BULK_RECORDER_MAX_ROWS_PER_INSERT: {{ $cm.BULK_RECORDER_MAX_ROWS_PER_INSERT | default "1000" | quote }}
 
   # TRANSACTION EXCHANGE EVENTS
-  RABBITMQ_TRANSACTION_EVENTS_ENABLED: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_EVENTS_ENABLED | default "false" | quote }}
-  RABBITMQ_TRANSACTION_EVENTS_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_TRANSACTION_EVENTS_EXCHANGE | default "transaction.transaction_events.exchange" | quote }}
+  RABBITMQ_TRANSACTION_EVENTS_ENABLED: {{ $cm.RABBITMQ_TRANSACTION_EVENTS_ENABLED | default "false" | quote }}
+  RABBITMQ_TRANSACTION_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_TRANSACTION_EVENTS_EXCHANGE | default "transaction.transaction_events.exchange" | quote }}
 
   # OVERDRAFT EVENTS
-  RABBITMQ_OVERDRAFT_EVENTS_ENABLED: {{ .Values.ledger.configmap.RABBITMQ_OVERDRAFT_EVENTS_ENABLED | default "false" | quote }}
-  RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE | default "transaction.overdraft_events.exchange" | quote }}
+  RABBITMQ_OVERDRAFT_EVENTS_ENABLED: {{ $cm.RABBITMQ_OVERDRAFT_EVENTS_ENABLED | default "false" | quote }}
+  RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_OVERDRAFT_EVENTS_EXCHANGE | default "transaction.overdraft_events.exchange" | quote }}
 
   # AUDIT
-  AUDIT_LOG_ENABLED: {{ .Values.ledger.configmap.AUDIT_LOG_ENABLED | default "false" | quote }}
-  RABBITMQ_AUDIT_EXCHANGE: {{ .Values.ledger.configmap.RABBITMQ_AUDIT_EXCHANGE | default "audit.append_log.exchange" | quote }}
-  RABBITMQ_AUDIT_KEY: {{ .Values.ledger.configmap.RABBITMQ_AUDIT_KEY | default "audit.append_log.key" | quote }}
+  AUDIT_LOG_ENABLED: {{ $cm.AUDIT_LOG_ENABLED | default "false" | quote }}
+  RABBITMQ_AUDIT_EXCHANGE: {{ $cm.RABBITMQ_AUDIT_EXCHANGE | default "audit.append_log.exchange" | quote }}
+  RABBITMQ_AUDIT_KEY: {{ $cm.RABBITMQ_AUDIT_KEY | default "audit.append_log.key" | quote }}
 
   # =============================================================================
   # PAGINATION
   # =============================================================================
-  MAX_PAGINATION_LIMIT: {{ .Values.ledger.configmap.MAX_PAGINATION_LIMIT | default "100" | quote }}
-  MAX_PAGINATION_MONTH_DATE_RANGE: {{ .Values.ledger.configmap.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
+  MAX_PAGINATION_LIMIT: {{ $cm.MAX_PAGINATION_LIMIT | default "100" | quote }}
+  MAX_PAGINATION_MONTH_DATE_RANGE: {{ $cm.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
 
   # =============================================================================
   # BALANCE SYNC WORKER
   # =============================================================================
-  BALANCE_SYNC_WORKER_ENABLED: {{ .Values.ledger.configmap.BALANCE_SYNC_WORKER_ENABLED | default "false" | quote }}
-  BALANCE_SYNC_MAX_WORKERS: {{ .Values.ledger.configmap.BALANCE_SYNC_MAX_WORKERS | default "5" | quote }}
-  BALANCE_SYNC_BATCH_SIZE: {{ .Values.ledger.configmap.BALANCE_SYNC_BATCH_SIZE | default "50" | quote }}
-  BALANCE_SYNC_FLUSH_TIMEOUT_MS: {{ .Values.ledger.configmap.BALANCE_SYNC_FLUSH_TIMEOUT_MS | default "500" | quote }}
-  BALANCE_SYNC_POLL_INTERVAL_MS: {{ .Values.ledger.configmap.BALANCE_SYNC_POLL_INTERVAL_MS | default "50" | quote }}
+  BALANCE_SYNC_WORKER_ENABLED: {{ $cm.BALANCE_SYNC_WORKER_ENABLED | default "false" | quote }}
+  BALANCE_SYNC_MAX_WORKERS: {{ $cm.BALANCE_SYNC_MAX_WORKERS | default "5" | quote }}
+  BALANCE_SYNC_BATCH_SIZE: {{ $cm.BALANCE_SYNC_BATCH_SIZE | default "50" | quote }}
+  BALANCE_SYNC_FLUSH_TIMEOUT_MS: {{ $cm.BALANCE_SYNC_FLUSH_TIMEOUT_MS | default "500" | quote }}
+  BALANCE_SYNC_POLL_INTERVAL_MS: {{ $cm.BALANCE_SYNC_POLL_INTERVAL_MS | default "50" | quote }}
 
   # =============================================================================
   # RATE LIMITING
@@ -239,36 +308,53 @@ data:
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
   # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
   # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-  RATE_LIMIT_ENABLED: {{ .Values.ledger.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
-  RATE_LIMIT_MAX: {{ .Values.ledger.configmap.RATE_LIMIT_MAX | default "500" | quote }}
-  RATE_LIMIT_WINDOW_SEC: {{ .Values.ledger.configmap.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
-  AGGRESSIVE_RATE_LIMIT_MAX: {{ .Values.ledger.configmap.AGGRESSIVE_RATE_LIMIT_MAX | default "100" | quote }}
-  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ .Values.ledger.configmap.AGGRESSIVE_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
-  RELAXED_RATE_LIMIT_MAX: {{ .Values.ledger.configmap.RELAXED_RATE_LIMIT_MAX | default "1000" | quote }}
-  RELAXED_RATE_LIMIT_WINDOW_SEC: {{ .Values.ledger.configmap.RELAXED_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
-  RATE_LIMIT_REDIS_TIMEOUT_MS: {{ .Values.ledger.configmap.RATE_LIMIT_REDIS_TIMEOUT_MS | default "500" | quote }}
-  ALLOW_RATELIMIT_DISABLED: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
-  ALLOW_RATELIMIT_FAIL_OPEN: {{ .Values.ledger.configmap.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
+  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "500" | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ $cm.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  AGGRESSIVE_RATE_LIMIT_MAX: {{ $cm.AGGRESSIVE_RATE_LIMIT_MAX | default "100" | quote }}
+  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ $cm.AGGRESSIVE_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  RELAXED_RATE_LIMIT_MAX: {{ $cm.RELAXED_RATE_LIMIT_MAX | default "1000" | quote }}
+  RELAXED_RATE_LIMIT_WINDOW_SEC: {{ $cm.RELAXED_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  RATE_LIMIT_REDIS_TIMEOUT_MS: {{ $cm.RATE_LIMIT_REDIS_TIMEOUT_MS | default "500" | quote }}
+  ALLOW_RATELIMIT_DISABLED: {{ $cm.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "" | quote }}
 
-  SD_ADDRESS: {{ .Values.ledger.configmap.SD_ADDRESS | default "localhost:8500" | quote }}
-  SD_ALLOW_STALE: {{ .Values.ledger.configmap.SD_ALLOW_STALE | default "" | quote }}
-  SD_DIAL_TIMEOUT: {{ .Values.ledger.configmap.SD_DIAL_TIMEOUT | default "" | quote }}
-  SD_ENABLED: {{ .Values.ledger.configmap.SD_ENABLED | default "false" | quote }}
-  SD_EXTERNAL_ADDRESS: {{ .Values.ledger.configmap.SD_EXTERNAL_ADDRESS | default "" | quote }}
-  SD_EXTERNAL_PORT: {{ .Values.ledger.configmap.SD_EXTERNAL_PORT | default "" | quote }}
-  SD_INTERNAL_ADDRESS: {{ .Values.ledger.configmap.SD_INTERNAL_ADDRESS | default "" | quote }}
-  SD_INTERNAL_PORT: {{ .Values.ledger.configmap.SD_INTERNAL_PORT | default "" | quote }}
-  SD_INTERNAL_SCHEME: {{ .Values.ledger.configmap.SD_INTERNAL_SCHEME | default "" | quote }}
-  SD_PREFER_VIEW: {{ .Values.ledger.configmap.SD_PREFER_VIEW | default "" | quote }}
-  SD_RESPONSE_HEADER_TIMEOUT: {{ .Values.ledger.configmap.SD_RESPONSE_HEADER_TIMEOUT | default "" | quote }}
-  SD_SEED_TIMEOUT: {{ .Values.ledger.configmap.SD_SEED_TIMEOUT | default "" | quote }}
-  SD_TLS: {{ .Values.ledger.configmap.SD_TLS | default "false" | quote }}
-  SD_TLS_HANDSHAKE_TIMEOUT: {{ .Values.ledger.configmap.SD_TLS_HANDSHAKE_TIMEOUT | default "" | quote }}
-  SD_TLS_SKIP_VERIFY: {{ .Values.ledger.configmap.SD_TLS_SKIP_VERIFY | default "false" | quote }}
-  SD_WATCH_WAIT_TIME: {{ .Values.ledger.configmap.SD_WATCH_WAIT_TIME | default "" | quote }}
-  SD_WORKLOAD: {{ .Values.ledger.configmap.SD_WORKLOAD | default "" | quote }}
-  STREAMING_ENABLED: {{ .Values.ledger.configmap.STREAMING_ENABLED | default "false" | quote }}
-  SWAGGER_VERSION: {{ .Values.ledger.configmap.SWAGGER_VERSION | default "${VERSION}" | quote }}
+  # =============================================================================
+  # SERVICE DISCOVERY — knob inline; server config from global.serviceDiscovery,
+  # endpoints derived from this chart's own service/ingress (gated via helper).
+  # =============================================================================
+  {{- $sdEnabled := eq (include "midaz.isTrue" ($cm.SD_ENABLED | default "false")) "true" }}
+  SD_ENABLED: {{ $cm.SD_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" $sdEnabled
+        "configmap" $cm
+        "name" (include "midaz-ledger.fullname" .)
+        "port" .Values.ledger.service.port
+        "namespace" (include "global.namespace" .)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.ledger.ingress))) | nindent 2 }}
+
+  # =============================================================================
+  # STREAMING — knob inline; brokers/SASL/TLS from global.streaming (gated via helper).
+  # =============================================================================
+  {{- $streamingEnabled := eq (include "midaz.isTrue" ($cm.STREAMING_ENABLED | default "false")) "true" }}
+  STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $cm
+        "clientId" (include "midaz-ledger.fullname" .)
+        "cloudeventsSource" "lerian.midaz.ledger") | nindent 2 }}
+
+  # =============================================================================
+  # FEE ENGINE
+  # =============================================================================
+  DEFAULT_CURRENCY: {{ $cm.DEFAULT_CURRENCY | default "USD" | quote }}
+
+  # =============================================================================
+  # CASDOOR
+  # =============================================================================
+  CASDOOR_JWK_ADDRESS: {{ $cm.CASDOOR_JWK_ADDRESS | default "" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -1,4 +1,11 @@
 {{- if .Values.global.externalPostgresDefinitions.enabled }}
+{{- /* DB names via the SAME datastore masks the ledger/tracer configmaps + migration jobs use,
+   so bootstrap CREATEs exactly the databases the apps connect to (an operator who customizes a
+   name via the mask no longer gets 'onboarding'/'transaction'/'tracer' created out from under them). */ -}}
+{{- $dvb := "lerian-common.datastore.value" }}
+{{- $onbName := include $dvb (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" (.Values.ledger.configmap | default dict) "type" "postgresOnboarding" "field" "name" "nativeKey" "DB_ONBOARDING_NAME" "default" "onboarding") }}
+{{- $txName := include $dvb (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" (.Values.ledger.configmap | default dict) "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") }}
+{{- $tracerName := include $dvb (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" (.Values.tracer.configmap | default dict) "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "tracer") }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -74,6 +81,12 @@ spec:
           {{- end }}
         - name: DB_DATABASE
           value: postgres
+        - name: DB_ONBOARDING_NAME
+          value: {{ $onbName | quote }}
+        - name: DB_TRANSACTION_NAME
+          value: {{ $txName | quote }}
+        - name: DB_TRACER_NAME
+          value: {{ $tracerName | quote }}
         command:
         - /bin/sh
         - -c
@@ -83,36 +96,54 @@ spec:
           ONB_EXISTS=0
           TRX_EXISTS=0
           ROLE_EXISTS=0
+          {{- if .Values.tracer.enabled }}
+          TRACER_EXISTS=0
+          {{- end }}
 
-          if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_database WHERE datname='onboarding'" | grep -q 1; then
+          if printf '%s\n' "SELECT 1 FROM pg_database WHERE datname = :'db_name'" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -v db_name="$DB_ONBOARDING_NAME" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" | grep -q 1; then
             ONB_EXISTS=1
           fi
-          if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_database WHERE datname='transaction'" | grep -q 1; then
+          if printf '%s\n' "SELECT 1 FROM pg_database WHERE datname = :'db_name'" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -v db_name="$DB_TRANSACTION_NAME" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" | grep -q 1; then
             TRX_EXISTS=1
           fi
           if PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT 1 FROM pg_roles WHERE rolname='midaz'" | grep -q 1; then
             ROLE_EXISTS=1
           fi
+          {{- if .Values.tracer.enabled }}
+          if printf '%s\n' "SELECT 1 FROM pg_database WHERE datname = :'db_name'" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -v db_name="$DB_TRACER_NAME" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" | grep -q 1; then
+            TRACER_EXISTS=1
+          fi
+          {{- end }}
 
-          if [ "$ONB_EXISTS" = "1" ] && [ "$TRX_EXISTS" = "1" ] && [ "$ROLE_EXISTS" = "1" ]; then
-            echo "Postgres bootstrap config already exists (databases 'onboarding' and 'transaction' and role 'midaz'). Skipping."
+          if [ "$ONB_EXISTS" = "1" ] && [ "$TRX_EXISTS" = "1" ] && [ "$ROLE_EXISTS" = "1" ]{{ if .Values.tracer.enabled }} && [ "$TRACER_EXISTS" = "1" ]{{ end }}; then
+            echo "Postgres bootstrap config already exists. Skipping."
             exit 0
           fi
 
           # Databases
           if [ "$ONB_EXISTS" = "1" ]; then
-            echo "Database 'onboarding' already exists. Skipping creation."
+            echo "Onboarding database already exists. Skipping creation."
           else
-            echo "Creating database 'onboarding'..."
-            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE onboarding"
+            echo "Creating onboarding database..."
+            printf '%s\n' 'CREATE DATABASE :"db_name"' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v db_name="$DB_ONBOARDING_NAME" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
           fi
 
           if [ "$TRX_EXISTS" = "1" ]; then
-            echo "Database 'transaction' already exists. Skipping creation."
+            echo "Transaction database already exists. Skipping creation."
           else
-            echo "Creating database 'transaction'..."
-            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE transaction"
+            echo "Creating transaction database..."
+            printf '%s\n' 'CREATE DATABASE :"db_name"' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v db_name="$DB_TRANSACTION_NAME" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
           fi
+          {{- if .Values.tracer.enabled }}
+
+          # Tracer runs as the same 'midaz' role, so only its database is created here.
+          if [ "$TRACER_EXISTS" = "1" ]; then
+            echo "Tracer database already exists. Skipping creation."
+          else
+            echo "Creating tracer database..."
+            printf '%s\n' 'CREATE DATABASE :"db_name"' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v db_name="$DB_TRACER_NAME" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
+          fi
+          {{- end }}
 
           # Role
           if [ "$ROLE_EXISTS" = "1" ]; then
@@ -124,8 +155,12 @@ spec:
 
           # Privileges (safe to run repeatedly)
           echo "Ensuring privileges and schema permissions..."
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE onboarding TO midaz"
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE transaction TO midaz"
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d onboarding -c "GRANT ALL ON SCHEMA public TO midaz"
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d transaction -c "GRANT ALL ON SCHEMA public TO midaz"
+          printf '%s\n' 'GRANT ALL PRIVILEGES ON DATABASE :"db_name" TO midaz' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -v db_name="$DB_ONBOARDING_NAME" -d "$DB_DATABASE"
+          printf '%s\n' 'GRANT ALL PRIVILEGES ON DATABASE :"db_name" TO midaz' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -v db_name="$DB_TRANSACTION_NAME" -d "$DB_DATABASE"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_ONBOARDING_NAME" -c "GRANT ALL ON SCHEMA public TO midaz"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_TRANSACTION_NAME" -c "GRANT ALL ON SCHEMA public TO midaz"
+          {{- if .Values.tracer.enabled }}
+          printf '%s\n' 'GRANT ALL PRIVILEGES ON DATABASE :"db_name" TO midaz' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -v db_name="$DB_TRACER_NAME" -d "$DB_DATABASE"
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_TRACER_NAME" -c "GRANT ALL ON SCHEMA public TO midaz"
+          {{- end }}
 {{- end }}

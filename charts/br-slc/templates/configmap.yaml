@@ -227,7 +227,20 @@ data:
   INTAKE_BATCH_BULK_CHUNK_SIZE: {{ $cm.INTAKE_BATCH_BULK_CHUNK_SIZE | default "500" | quote }}
   INTAKE_BATCH_SPOOL_DIR: {{ $cm.INTAKE_BATCH_SPOOL_DIR | default "" | quote }}
   INTAKE_BATCH_SPOOL_MAX_BYTES: {{ $cm.INTAKE_BATCH_SPOOL_MAX_BYTES | default "268435456" | quote }}
-  IS_DEVELOPMENT: {{ $cm.IS_DEVELOPMENT | default "true" | quote }}
+  {{- /* IS_DEVELOPMENT selects the LICENSE GATEWAY and nothing else: lib-license-go
+         compares it to the exact string "true" (validation/client.go) — "true" picks
+         the dev gateway, anything else the production one. br-slc itself never reads
+         it. Defaults to "false" to AGREE WITH ENV_NAME's own "production" default
+         above: a chart whose unstated posture is production must not silently point
+         at the dev gateway.
+         It used to default to "true", and that is a measured incident, not a
+         hypothetical: benedita/stg-st does not declare the key (only dev-st does),
+         so bumping that tier onto this chart flipped it to the dev gateway, where
+         its production LICENSE_KEY does not exist — "404 LCS-1002 License not found"
+         and a fail-closed boot exit, CrashLoopBackOff. sandbox and prd-st carry the
+         same shape and would have failed identically. A tier that wants the dev
+         gateway states so, as dev-st does. */}}
+  IS_DEVELOPMENT: {{ $cm.IS_DEVELOPMENT | default "false" | quote }}
   SCHEDULE_ANTICIPATION_DISPATCH_ENABLED: {{ $cm.SCHEDULE_ANTICIPATION_DISPATCH_ENABLED | default "false" | quote }}
   SCHEDULE_ANTICIPATION_FORWARD_ENABLED: {{ $cm.SCHEDULE_ANTICIPATION_FORWARD_ENABLED | default "false" | quote }}
   SCHEDULE_ANTICIPATION_SETTLE_ENABLED: {{ $cm.SCHEDULE_ANTICIPATION_SETTLE_ENABLED | default "false" | quote }}

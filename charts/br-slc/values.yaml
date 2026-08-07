@@ -29,6 +29,17 @@ global:
     # -- ENABLE_TELEMETRY
     enabled: true
     # -- OTEL_EXPORTER_OTLP_ENDPOINT
+    # ⚠️ THIS IS A PLACEHOLDER, NOT A WORKING DEFAULT. `otel-collector-lerian` is
+    # the BYOC naming ASSUMPTION — a release name the operator is expected to
+    # match. It does NOT exist in Lerian's own clusters, where the receiver is
+    # `otel-collector-server.monitoring.svc.cluster.local:4317`, and an
+    # unqualified name resolves inside the release's OWN namespace, so a wrong
+    # value fails SILENTLY: telemetry is "on", the exporter drops everything, and
+    # nothing in the logs says so. That is exactly how br-slc ran without
+    # exporting a single span or metric in any tier until
+    # lerian-internal-gitops#2005.
+    # REPOINT THIS PER ENVIRONMENT and verify a metric actually lands (it appears
+    # only on the SECOND export interval — a first empty window proves nothing).
     otlpEndpoint: "otel-collector-lerian:4317"
     # -- OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
     deploymentEnvironment: "production"

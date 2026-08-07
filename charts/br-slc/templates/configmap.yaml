@@ -44,6 +44,7 @@ data:
   MQ_BRIDGE_TIMEOUT_SEC: {{ $cm.MQ_BRIDGE_TIMEOUT_SEC | default "10" | quote }}
   MQ_BRIDGE_URL: {{ $cm.MQ_BRIDGE_URL | default "http://localhost:9121" | quote }}
   NUCLEA_REST_ALLOW_INSECURE_TLS: {{ $cm.NUCLEA_REST_ALLOW_INSECURE_TLS | default "false" | quote }}
+  NUCLEA_REST_BASE_URL: {{ $cm.NUCLEA_REST_BASE_URL | default "" | quote }}
   NUCLEA_REST_CB_CONSECUTIVE_FAILURES: {{ $cm.NUCLEA_REST_CB_CONSECUTIVE_FAILURES | default "5" | quote }}
   NUCLEA_REST_CB_OPEN_TIMEOUT_SEC: {{ $cm.NUCLEA_REST_CB_OPEN_TIMEOUT_SEC | default "30" | quote }}
   NUCLEA_REST_TIMEOUT_SEC: {{ $cm.NUCLEA_REST_TIMEOUT_SEC | default "30" | quote }}
@@ -70,6 +71,8 @@ data:
   RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ $cm.RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK | default "false" | quote }}
   RABBITMQ_ALLOW_INSECURE_TLS: {{ $cm.RABBITMQ_ALLOW_INSECURE_TLS | default "false" | quote }}
   RABBITMQ_ENABLED: {{ $cm.RABBITMQ_ENABLED | default "false" | quote }}
+  RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS: {{ $cm.RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS | default "" | quote }}
+  RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default "" | quote }}
   RABBITMQ_PORT_HOST: {{ $cm.RABBITMQ_PORT_HOST | default "15672" | quote }}
   RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: {{ $cm.RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS | default "false" | quote }}
   RABBITMQ_VHOST: {{ $cm.RABBITMQ_VHOST | default "/" | quote }}
@@ -90,6 +93,7 @@ data:
   RELAXED_RATE_LIMIT_MAX: {{ $cm.RELAXED_RATE_LIMIT_MAX | default "1000" | quote }}
   RELAXED_RATE_LIMIT_WINDOW_SEC: {{ $cm.RELAXED_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
   RSFN_CONSUMER_ALLOW_INSECURE_TLS: {{ $cm.RSFN_CONSUMER_ALLOW_INSECURE_TLS | default "false" | quote }}
+  RSFN_CONSUMER_BASE_URL: {{ $cm.RSFN_CONSUMER_BASE_URL | default "" | quote }}
   RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES: {{ $cm.RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES | default "5" | quote }}
   RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC: {{ $cm.RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC | default "30" | quote }}
   RSFN_CONSUMER_TIMEOUT_SEC: {{ $cm.RSFN_CONSUMER_TIMEOUT_SEC | default "30" | quote }}
@@ -100,6 +104,7 @@ data:
   SCHEDULE_CUTOFF_ALERT_LEAD_MIN: {{ $cm.SCHEDULE_CUTOFF_ALERT_LEAD_MIN | default "30" | quote }}
   SCHEDULE_D1_CONFIRMATION_CUTOFF: {{ $cm.SCHEDULE_D1_CONFIRMATION_CUTOFF | default "19:00" | quote }}
   SCHEDULE_D1_CONFIRMATION_ENABLED: {{ $cm.SCHEDULE_D1_CONFIRMATION_ENABLED | default "false" | quote }}
+  SCHEDULE_DEV_WINDOWS_ALWAYS_OPEN: {{ $cm.SCHEDULE_DEV_WINDOWS_ALWAYS_OPEN | default "false" | quote }}
   SCHEDULE_DISPATCH_ENABLED: {{ $cm.SCHEDULE_DISPATCH_ENABLED | default "false" | quote }}
   SCHEDULE_DISPATCH_PAGE_SIZE: {{ $cm.SCHEDULE_DISPATCH_PAGE_SIZE | default "1000" | quote }}
   SCHEDULE_GRID_GATE_ENABLED: {{ $cm.SCHEDULE_GRID_GATE_ENABLED | default "false" | quote }}
@@ -239,6 +244,7 @@ data:
   SFN_KAFKA_BATCH_SIZE: {{ $cm.SFN_KAFKA_BATCH_SIZE | default "100" | quote }}
   SFN_KAFKA_GROUP_ID: {{ $cm.SFN_KAFKA_GROUP_ID | default "br-slc-sfn" | quote }}
   SFN_KAFKA_TOPIC: {{ $cm.SFN_KAFKA_TOPIC | default "siloc.inbound" | quote }}
+  SFN_STUB_BASE_URL: {{ $cm.SFN_STUB_BASE_URL | default "" | quote }}
   SFN_STUB_TIMEOUT_SEC: {{ $cm.SFN_STUB_TIMEOUT_SEC | default "30" | quote }}
   SIGNING_CUSTODY_ADAPTER: {{ $cm.SIGNING_CUSTODY_ADAPTER | default "softkey" | quote }}
   SIGNING_FAIL_CLOSED: {{ $cm.SIGNING_FAIL_CLOSED | default "true" | quote }}

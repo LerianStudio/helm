@@ -26,7 +26,7 @@ global:
     # mongoCrm: { host: "mongo-0", port: "27017", user: "midaz" }
     # mongoFees: { host: "mongo-0", port: "27017", user: "midaz" }
     # redis: { host: "valkey-primary:6379" }
-    # broker: { host: "rabbitmq", user: "transaction" }
+    # broker: { host: "rabbitmq", port: "5672", user: "transaction" }
   # -- OTel collector (leave empty to keep telemetry off / the bundled endpoint).
   observability: {}
     # enabled: "true"

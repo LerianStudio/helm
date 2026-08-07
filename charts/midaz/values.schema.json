@@ -1371,7 +1371,9 @@
         },
         "extraEnvVars": {
           "type": "object",
-          "additionalProperties": true,
+          "additionalProperties": {
+            "type": "string"
+          },
           "description": "Extra environment variables"
         },
         "secrets": {

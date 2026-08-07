@@ -114,6 +114,8 @@ data:
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.tracer.ingress))) | nindent 2 }}
   # Extra Env Vars
   {{- with .Values.tracer.extraEnvVars }}
-  {{- toYaml . | nindent 2 }}
+  {{- range $key, $value := . }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
   {{- end }}
 {{- end }}

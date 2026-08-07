@@ -1,0 +1,12 @@
+{{- if .Values.mqbridge.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-slc.fullname" . }}-mqbridge
+  labels:
+    {{- include "br-slc.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.mqbridge.configmap.data }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

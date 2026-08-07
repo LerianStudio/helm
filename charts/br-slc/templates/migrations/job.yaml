@@ -11,10 +11,12 @@
 {{- $pgUser := .Values.migrations.postgres.user | default .Values.configmap.data.POSTGRES_USER | default "br-slc" }}
 {{- $pgDb := .Values.migrations.postgres.database | default .Values.configmap.data.POSTGRES_NAME | default "br-slc" }}
 {{- $pgSslMode := .Values.migrations.postgres.sslMode | default .Values.configmap.data.POSTGRES_SSLMODE | default "require" }}
-{{- $secretName := ternary .Values.migrations.existingSecretName (include "br-slc-migrations.fullname" .) .Values.migrations.useExistingSecret }}
-{{- if and .Values.migrations.useExistingSecret (not .Values.migrations.existingSecretName) }}
-{{- fail "migrations.useExistingSecret=true requires migrations.existingSecretName to be set" }}
-{{- end }}
+{{- /* Resolved by br-slc-migrations.secretName so this secretKeyRef and the mint
+       condition in migrations/secrets.yaml cannot drift — they sit in different
+       files and MUST agree, or the Job references a Secret nobody creates. The
+       helper also raises the missing-source errors, replacing the
+       useExistingSecret-without-a-name fail that used to live here. */}}
+{{- $secretName := include "br-slc-migrations.secretName" . }}
 {{- $pullSecrets := .Values.migrations.imagePullSecrets | default .Values.imagePullSecrets }}
 apiVersion: batch/v1
 kind: Job

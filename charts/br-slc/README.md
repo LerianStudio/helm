@@ -1,9 +1,11 @@
 # br-slc Helm chart
 
 Internal Helm chart for the **br-slc monolith** (Sistema de Liquidação
-Centralizada — SLC). BYOC single-tenant deployment: **ClusterIP-only**
-Service, **no Ingress**. Postgres/Redis/RabbitMQ are external, client-managed
-dependencies in BYOC — this chart does not deploy them.
+Centralizada — SLC). BYOC single-tenant deployment: **ClusterIP-only** Service
+by default, with **Ingress as an opt-in** (`ingress.enabled` is `false` out of
+the box; the template ships and renders when you turn it on).
+Postgres/Redis/RabbitMQ are external, client-managed dependencies in BYOC —
+this chart does not deploy them.
 
 ## Chart Contract
 
@@ -331,8 +333,10 @@ signing-key material is never readable by the app container.
 
 ### App container Secret (`secrets.*`)
 
-Seven env vars, injected via `secretKeyRef` into both the app container and the
-migration Job:
+Seven env vars, injected via `secretKeyRef` into the **app container**. The
+migration Job does **not** get all seven — it receives only `POSTGRES_PASSWORD`,
+and only in the BYOC case where it reads this Secret directly (see "Migrations"
+below for the three custody paths):
 
 | Env var | Purpose |
 |---|---|
@@ -449,7 +453,9 @@ boots against an unmigrated database.
   `secrets.data.POSTGRES_PASSWORD`). Its `hook-delete-policy` is
   `BeforeHookCreation` **only** (not `HookSucceeded`) so it survives the whole
   PreSync phase for the Job to read, and is replaced on the next sync. It is
-  minted only when `migrations.useExistingSecret=false`.
+  minted **only when this chart actually holds a password to put in it** — that
+  is, `migrations.postgres.password` is set, or `secrets.create=true` with
+  `secrets.data.POSTGRES_PASSWORD`.
 - `templates/migrations/job.yaml` — a PreSync Job
   (`argocd.argoproj.io/hook-weight: "-1"`, so it runs after the Secret) that
   runs the dedicated `ghcr.io/lerianstudio/br-slc-migrations` image
@@ -463,10 +469,28 @@ boots against an unmigrated database.
 The Job reads the DB connection from plain env vars
 (`POSTGRES_HOST`/`POSTGRES_PORT`/`POSTGRES_USER`/`POSTGRES_NAME`/`POSTGRES_SSLMODE`,
 each defaulting to the app's `configmap.data.POSTGRES_*`) plus
-`POSTGRES_PASSWORD` via `secretKeyRef`. When `migrations.useExistingSecret=true`
-the password comes from the operator-managed `migrations.existingSecretName`
-instead of the chart-minted PreSync Secret (the render **fails fast** if
-`existingSecretName` is left empty in that mode).
+`POSTGRES_PASSWORD` via `secretKeyRef`. Which Secret that ref points at has
+**three** cases, resolved in one place (`br-slc-migrations.secretName`) so the
+Job and the mint condition cannot disagree:
+
+| Case | Job reads | PreSync Secret minted? |
+|---|---|---|
+| `migrations.useExistingSecret=true` | `migrations.existingSecretName` | no |
+| the chart holds a password (`migrations.postgres.password`, or `secrets.create=true` + `secrets.data.POSTGRES_PASSWORD`) | the chart-minted PreSync Secret | yes |
+| **BYOC default** (`secrets.create=false`) | `secrets.existingSecretName` | no |
+
+The BYOC case works precisely because `secrets.create=false` means the app
+Secret is **operator-managed and already exists** before PreSync runs — the
+first-install ordering problem the hook Secret solves does not apply to it.
+
+The render **fails fast** whenever the resolution has no source: with
+`useExistingSecret=true` and an empty `existingSecretName`, or in the BYOC case
+with `secrets.existingSecretName` also empty.
+
+> ⚠️ Until this was fixed, the BYOC default minted the hook Secret anyway with
+> an **empty** `POSTGRES_PASSWORD` (`secrets.data` is empty when
+> `secrets.create=false`), so the migration Job authenticated with `""` — failing
+> PreSync and blocking the entire ArgoCD sync, at the chart's own defaults.
 
 A lightweight `busybox` initContainer (`migrations.waitForPostgres`, on by
 default) polls `POSTGRES_HOST:POSTGRES_PORT` with `nc -z` before the migrations

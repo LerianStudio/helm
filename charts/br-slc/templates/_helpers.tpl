@@ -151,6 +151,56 @@ reference this.
 {{- end -}}
 
 {{/*
+Does THIS CHART hold a Postgres password it can put in the PreSync hook Secret?
+Returns a non-empty string when yes, "" when no (Helm's boolean-by-emptiness).
+
+Only two sources qualify: an explicit migrations.postgres.password, or
+secrets.data.POSTGRES_PASSWORD when the chart is actually minting the app Secret
+(secrets.create=true). With secrets.create=false the app Secret is
+operator-managed and secrets.data is empty by definition — reading it would
+yield "".
+*/}}
+{{- define "br-slc-migrations.chartOwnsPassword" -}}
+{{- if .Values.migrations.postgres.password -}}
+true
+{{- else if and .Values.secrets.create .Values.secrets.data.POSTGRES_PASSWORD -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+Name of the Secret the migration Job reads POSTGRES_PASSWORD from. SINGLE source
+of truth, shared by migrations/job.yaml and migrations/secrets.yaml: the Job's
+secretKeyRef and the mint condition MUST agree, and they are in different files.
+
+Three cases:
+
+  1. migrations.useExistingSecret=true  -> migrations.existingSecretName.
+     The operator points the Job at a Secret they manage themselves.
+  2. the chart owns a password          -> the minted PreSync hook Secret.
+     PreSync hooks run BEFORE the main sync wave, so on a first install the app
+     Secret this chart creates does not exist yet — hence the dedicated hook
+     Secret at weight -2.
+  3. otherwise (the BYOC default)       -> secrets.existingSecretName.
+     secrets.create=false means the app Secret is operator-managed and ALREADY
+     EXISTS before PreSync, so the ordering problem case 2 solves does not apply
+     and the Job can read it directly. Minting a hook Secret here is what used
+     to happen and it was a defect: secrets.data.POSTGRES_PASSWORD is empty
+     under secrets.create=false, so the chart minted a Secret carrying an EMPTY
+     password and the migration Job authenticated with "" — failing PreSync and
+     blocking the whole ArgoCD sync, at the chart's own defaults.
+*/}}
+{{- define "br-slc-migrations.secretName" -}}
+{{- if .Values.migrations.useExistingSecret -}}
+{{- required "migrations.useExistingSecret=true requires migrations.existingSecretName to be set" .Values.migrations.existingSecretName -}}
+{{- else if include "br-slc-migrations.chartOwnsPassword" . -}}
+{{- include "br-slc-migrations.fullname" . -}}
+{{- else -}}
+{{- required "the migration Job has no POSTGRES_PASSWORD source: set secrets.existingSecretName (BYOC default), or provide migrations.postgres.password, or secrets.create=true with secrets.data.POSTGRES_PASSWORD, or migrations.useExistingSecret=true with migrations.existingSecretName" .Values.secrets.existingSecretName -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Migrations labels.
 */}}
 {{- define "br-slc-migrations.labels" -}}

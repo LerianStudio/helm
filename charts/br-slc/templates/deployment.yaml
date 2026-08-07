@@ -99,10 +99,12 @@ spec:
                   name: {{ include "br-slc.signerSecretName" $ }}
                   key: {{ $key }}
             {{- end }}
+          {{- /* exec, not httpGet: the signer binds 127.0.0.1 and the kubelet
+          probes from the NODE's netns — see br-slc.execProbe in _helpers.tpl. */}}
           livenessProbe:
-            {{- include "br-slc.httpProbe" .Values.signer.livenessProbe | nindent 12 }}
+            {{- include "br-slc.execProbe" .Values.signer.livenessProbe | nindent 12 }}
           readinessProbe:
-            {{- include "br-slc.httpProbe" .Values.signer.readinessProbe | nindent 12 }}
+            {{- include "br-slc.execProbe" .Values.signer.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.signer.resources | nindent 12 }}
           securityContext:
@@ -132,10 +134,12 @@ spec:
           env:
             {{- /* GOMAXPROCS from the container CFS cpu limit — see br-slc.gomaxprocsEnv (Gate 8 FIX 7). */}}
             {{- include "br-slc.gomaxprocsEnv" .Values.xsdValidator.resources | nindent 12 }}
+          {{- /* exec, not httpGet: the validator binds 127.0.0.1 and the kubelet
+          probes from the NODE's netns — see br-slc.execProbe in _helpers.tpl. */}}
           livenessProbe:
-            {{- include "br-slc.httpProbe" .Values.xsdValidator.livenessProbe | nindent 12 }}
+            {{- include "br-slc.execProbe" .Values.xsdValidator.livenessProbe | nindent 12 }}
           readinessProbe:
-            {{- include "br-slc.httpProbe" .Values.xsdValidator.readinessProbe | nindent 12 }}
+            {{- include "br-slc.execProbe" .Values.xsdValidator.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.xsdValidator.resources | nindent 12 }}
           securityContext:
@@ -172,8 +176,10 @@ spec:
                   name: {{ include "br-slc.mqbridgeSecretName" $ }}
                   key: {{ $key }}
             {{- end }}
+          {{- /* exec, not httpGet: the bridge binds 127.0.0.1 and the kubelet
+          probes from the NODE's netns — see br-slc.execProbe in _helpers.tpl. */}}
           livenessProbe:
-            {{- include "br-slc.httpProbe" .Values.mqbridge.livenessProbe | nindent 12 }}
+            {{- include "br-slc.execProbe" .Values.mqbridge.livenessProbe | nindent 12 }}
           # NO readinessProbe on purpose (Decisão 21): mqbridge is same-pod and
           # nothing routes to :9121 through a Service, so a readiness probe here
           # buys no traffic gating. Its /readyz reflects the IBM MQ pool state

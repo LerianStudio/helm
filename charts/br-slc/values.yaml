@@ -165,6 +165,37 @@ securityContext:
   seccompProfile:
     type: RuntimeDefault
 
+# NetworkPolicy — defense in depth over the same-pod sidecar ports (9101 signer,
+# 9091 xsd-validator, 9121 mqbridge). Those ports delegate no auth of their own,
+# so the PRIMARY defense is that each binds 127.0.0.1 (see
+# signer.configmap.data.SIGNER_ADDR); this policy is the second layer, for the
+# case where an operator overrides a bind back to 0.0.0.0.
+#
+# Deliberately NARROW: it allows the app port from ANY source and denies every
+# other port. It does NOT try to restrict WHO reaches the API — that needs a
+# per-environment inventory of ingress controllers and callers, which belongs in
+# the tier overlay (set ingressFrom), not in a chart default that would break
+# installers silently. Egress is untouched on purpose: a default-deny there would
+# need DNS, Postgres, RabbitMQ, RSFN/Núclea and OTLP all enumerated first.
+#
+# Two caveats worth knowing before trusting this:
+#  - it selects the POD, not the container. App and sidecars share a network
+#    namespace, so a compromised app container still reaches 127.0.0.1:9101. Only
+#    the loopback bind + custody split (ADR-9) address that.
+#  - enforcement depends on the CNI. A cluster whose CNI ignores NetworkPolicy
+#    accepts this object and silently does nothing — which is precisely why the
+#    loopback bind, and not this, is the primary defense.
+networkPolicy:
+  enabled: true
+  # Optional ingress source allowlist for the app port. EMPTY = any source, which
+  # is the same reachability the app has without this policy. Populate per tier to
+  # tighten it, e.g.:
+  #   ingressFrom:
+  #     - namespaceSelector:
+  #         matchLabels:
+  #           kubernetes.io/metadata.name: ingress-nginx
+  ingressFrom: []
+
 resources:
   limits:
     cpu: "1"
@@ -372,7 +403,17 @@ signer:
       SIGNER_PKCS11_PIN: ""
   configmap:
     data:
-      SIGNER_ADDR: ":9101"
+      # LOOPBACK bind. This port custodies the ICP-Brasil signing key and
+      # delegates no auth of its own (PLUGIN_AUTH_ENABLED defaults false), so a
+      # bare ":9101" — which binds 0.0.0.0 — makes /v1/sign reachable from every
+      # pod in the cluster: not having a Service is NOT a boundary, the pod IP
+      # answers directly. The signer is a same-pod sidecar (ADR-12) and the app
+      # calls it over localhost (configmap.data.SIGNER_URL), so nothing is lost.
+      # This value MUST agree with the binary's DefaultAddr (signer/server.go):
+      # the key is set here explicitly, so changing only the Go default leaves
+      # the deployed bind open. Probes are `exec` for the same reason — the
+      # kubelet probes from the NODE's netns, so httpGet cannot reach loopback.
+      SIGNER_ADDR: "127.0.0.1:9101"
       SIGNER_MAX_BODY_BYTES: "65536"
       ENV_NAME: "production"
       # --- softkey adapter (BYOC-first custody path) ---
@@ -449,7 +490,12 @@ xsdValidator:
     failureThreshold: 3
   configmap:
     data:
-      XSD_VALIDATOR_ADDR: ":9091"
+      # LOOPBACK bind — same rationale as signer.configmap.data.SIGNER_ADDR: the
+      # port delegates no auth of its own and the validator is a same-pod sidecar
+      # (ADR-12) reached over localhost (configmap.data.XSD_VALIDATOR_URL). A bare
+      # ":9091" would let any pod in the cluster drive /v1/validate. Must agree
+      # with the binary's DefaultAddr (validator/server.go).
+      XSD_VALIDATOR_ADDR: "127.0.0.1:9091"
       XSD_MAX_BODY_BYTES: "5242880"
       ENV_NAME: "production"
       # --- Auth delegation (Access Manager) --- fails closed until the
@@ -569,7 +615,12 @@ mqbridge:
   # arrives per call from the monolith on /v1/drain.
   configmap:
     data:
-      MQ_BRIDGE_ADDR: ":9121"
+      # LOOPBACK bind — same rationale as signer.configmap.data.SIGNER_ADDR: the
+      # port delegates no auth of its own and the bridge is a same-pod sidecar
+      # (ADR-12 / Decisão 21) reached over localhost (configmap.data.MQ_BRIDGE_URL).
+      # A bare ":9121" would let any pod in the cluster drain and ack RSFN
+      # messages. Must agree with the binary's DefaultAddr (mqbridge/config.go).
+      MQ_BRIDGE_ADDR: "127.0.0.1:9121"
       MQ_BRIDGE_MAX_INFLIGHT: "16"
       MQ_BRIDGE_ACK_TIMEOUT_SEC: "60"
       # Derived (half of ack timeout, clamped [1s,30s]) when left at "0".

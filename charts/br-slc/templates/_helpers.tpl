@@ -238,12 +238,50 @@ capabilities:
 {{/*
 HTTP liveness/readiness probe body. Call with the probe dict as context, e.g.:
   livenessProbe:
-    {{- include "br-slc.httpProbe" .Values.signer.livenessProbe | nindent 12 }}
+    {{- include "br-slc.httpProbe" .Values.livenessProbe | nindent 12 }}
+
+For the app and mock-nuclea only — both bind 0.0.0.0 and are reached through a
+Service. The same-pod sidecars use br-slc.execProbe below; see its comment.
 */}}
 {{- define "br-slc.httpProbe" -}}
 httpGet:
   path: {{ .httpGet.path }}
   port: {{ .httpGet.port }}
+initialDelaySeconds: {{ .initialDelaySeconds }}
+periodSeconds: {{ .periodSeconds }}
+timeoutSeconds: {{ .timeoutSeconds }}
+failureThreshold: {{ .failureThreshold }}
+{{- end -}}
+
+{{/*
+Exec liveness/readiness probe body for the SAME-POD sidecars (signer, xsd-validator,
+mqbridge). Call with the probe dict as context, exactly like br-slc.httpProbe:
+  livenessProbe:
+    {{- include "br-slc.execProbe" .Values.signer.livenessProbe | nindent 12 }}
+
+WHY exec and not httpGet: those sidecars bind 127.0.0.1 on purpose (see
+signer.configmap.data.SIGNER_ADDR) so no other pod in the cluster can reach a port
+that delegates no auth of its own. The kubelet probes from the NODE's network
+namespace — so `httpGet` resolves to the NODE, not the container, and even
+`httpGet.host: 127.0.0.1` would probe the node's own loopback. Every sidecar would
+CrashLoopBackOff. `exec` runs INSIDE the container, where loopback is the
+container's own. The command mirrors each image's Dockerfile HEALTHCHECK; wget is
+installed in all three runtime images for exactly this purpose.
+
+It reads the SAME httpGet.path / httpGet.port keys the http probe uses, so moving a
+component between the two helpers needs no values.yaml or values.schema.json change.
+*/}}
+{{- define "br-slc.execProbe" -}}
+{{- if kindIs "string" .httpGet.port -}}
+{{- fail (printf "br-slc.execProbe: httpGet.port must be a NUMBER, got the named port %q. exec builds a URL, and a port name cannot be dialed — it would render a probe that can never succeed (CrashLoopBackOff)." .httpGet.port) -}}
+{{- end -}}
+exec:
+  command:
+    - wget
+    - --quiet
+    - --tries=1
+    - --spider
+    - {{ printf "http://127.0.0.1:%v%s" .httpGet.port .httpGet.path | quote }}
 initialDelaySeconds: {{ .initialDelaySeconds }}
 periodSeconds: {{ .periodSeconds }}
 timeoutSeconds: {{ .timeoutSeconds }}

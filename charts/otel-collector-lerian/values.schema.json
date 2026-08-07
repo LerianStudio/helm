@@ -5,7 +5,55 @@
   "properties": {
     "opentelemetry-collector": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "config": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "processors": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "resource/add_client_id": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "attributes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                          "key": { "type": "string" },
+                          "value": { "type": "string" }
+                        },
+                        "allOf": [
+                          {
+                            "$comment": "Se este item for o client.id, o value DEVE seguir o padrao canonico: nome tudo-minusculo + sufixo -stg/-hml/-prd, OU um dos 3 ambientes internos Lerian (aws-production/aws-staging/aws-devops). Bloqueia maiusculas e sufixos nao-canonicos (Dev/development/staging/production por extenso). Validado no helm install/upgrade/template/lint.",
+                            "if": {
+                              "properties": { "key": { "const": "client.id" } },
+                              "required": ["key"]
+                            },
+                            "then": {
+                              "properties": {
+                                "value": {
+                                  "type": "string",
+                                  "pattern": "^(aws-production|aws-staging|aws-devops|[a-z0-9]+-(stg|hml|prd))$"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "global": {
       "type": "object",

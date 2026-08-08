@@ -1,0 +1,594 @@
+# Default values for br-sta.
+# This is a YAML-formatted file.
+#
+# Runtime model: ONE Deployment, ONE pod, ONE process (the /service binary).
+# br-sta is a Go/Fiber HTTP service. It requires PostgreSQL (SQL migrations at
+# startup) and Redis/Valkey (caching + rate limiting). RabbitMQ, plugin-auth,
+# multi-tenant, outbox and telemetry are all OPTIONAL and disabled by default.
+
+# -- Override the chart top-level name
+nameOverride: "br-sta"
+# -- Override the fully generated name
+fullnameOverride: ""
+# -- Override the namespace used by templates
+namespaceOverride: ""
+
+global:
+  # -- Bootstrap job for external PostgreSQL: creates database and role
+  externalPostgresDefinitions:
+    # -- Enable or disable the PostgreSQL bootstrap job
+    enabled: false
+    # -- PostgreSQL connection settings (used by the bootstrap job only)
+    connection:
+      # -- PostgreSQL host
+      host: "br-sta-postgresql-primary"
+      # -- PostgreSQL port
+      port: "5432"
+    # -- Admin (superuser) credentials used to create the application DB and role
+    postgresAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_USER_ADMIN and DB_ADMIN_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "postgres"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: ""
+    # -- Credentials for the br_sta role created by the job
+    appCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_PASSWORD_BR_STA key
+        name: ""
+      # -- Password for br_sta role (ignored if useExistingSecret.name is set)
+      password: ""
+  # -- Env-wide observability, consumed by lerian-common.otel.env. Declare once at
+  # the umbrella level; a component configmap.<KEY> still overrides per-service.
+  # Precedence: brSta.configmap.<KEY> > global.observability.<field> > chart default.
+  observability:
+    # -- Enable telemetry export (ENABLE_TELEMETRY). Unset → chart default "false".
+    enabled: false
+    # -- OTLP collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT). Unset → chart default "".
+    otlpEndpoint: ""
+    # -- Deployment environment tag (OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT). Unset → "production".
+    deploymentEnvironment: "production"
+  # -- Env-wide multi-tenant infra (tenant-manager URL + its Redis), consumed by
+  # lerian-common.multiTenant.env. Only used when MT is enabled (see
+  # brSta.multiTenant.enabled). A component configmap.<KEY> still overrides.
+  multiTenant: {}
+    # url: ""             # MULTI_TENANT_URL (required when MT enabled)
+    # redisHost: ""       # MULTI_TENANT_REDIS_HOST (required when MT enabled)
+    # redisPort: "6379"   # MULTI_TENANT_REDIS_PORT
+    # redisTls: "false"   # MULTI_TENANT_REDIS_TLS
+  # -- Env-wide datastore mask, consumed by lerian-common.datastore.value. Declare a
+  # SHARED instance once here; a DEDICATED per-service instance goes under
+  # brSta.datastores; a component configmap.<KEY> still overrides everything.
+  # Precedence: brSta.configmap.<KEY> > brSta.datastores.<type>.<field>
+  #             > global.datastores.<type>.<field> > chart default.
+  datastores: {}
+    # postgres:
+    #   host: ""          # POSTGRES_HOST (host only)
+    #   port: "5432"      # POSTGRES_PORT
+    #   user: "br_sta"    # POSTGRES_USER
+    #   ssl: "require"    # POSTGRES_SSLMODE
+    #   replicaHost: ""   # POSTGRES_REPLICA_HOST (enables the replica block when set)
+    # redis:
+    #   host: ""          # REDIS_HOST (host:port)
+    # broker:
+    #   host: ""          # RABBITMQ_HOST
+    #   port: "5672"      # RABBITMQ_PORT_AMQP
+    #   user: "br_sta"    # RABBITMQ_DEFAULT_USER
+  # -- Env-wide service discovery (Consul), consumed by lerian-common.serviceDiscovery.env.
+  # Only used when SD is enabled (brSta.serviceDiscovery.enabled). Leave {} for defaults.
+  serviceDiscovery: {}
+  # -- Env-wide streaming (lib-streaming → Kafka), consumed by lerian-common.streaming.env.
+  # Only used when streaming is enabled (brSta.streaming.enabled). Leave {} for defaults.
+  streaming: {}
+  # -- Env-wide inbound auth (access-manager), consumed by lerian-common.globalValue
+  # for PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST. A component configmap.<KEY> still overrides.
+  # Precedence: brSta.configmap.PLUGIN_AUTH_* > global.auth.<field> > chart default.
+  auth: {}
+    # enabled: "false"    # PLUGIN_AUTH_ENABLED
+    # host: ""            # PLUGIN_AUTH_HOST (access-manager base URL)
+
+# ==============================================================================
+# APPLICATION
+# Single Deployment running the /service binary (Go/Fiber HTTP server).
+# ==============================================================================
+brSta:
+  # -- Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). Tenant-manager
+  # URL + Redis infra come from global.multiTenant (or configmap.MULTI_TENANT_*).
+  # Precedence: configmap.MULTI_TENANT_ENABLED > brSta.multiTenant.enabled > "false".
+  multiTenant:
+    # -- Enable multi-tenancy (MULTI_TENANT_ENABLED)
+    enabled: false
+  # -- Dedicated datastore mask for THIS service (see global.datastores for the shared
+  # form + precedence). Same fields as global.datastores; wins over global, loses to
+  # configmap.<KEY>. Leave empty ({}) to keep the bundled-subchart / native defaults.
+  datastores: {}
+  # -- Service name
+  name: "br-sta"
+  # -- Number of replicas
+  replicaCount: 2
+  # -- Number of old ReplicaSets to retain for rollback
+  revisionHistoryLimit: 10
+  # -- Annotations applied to the Deployment resource
+  annotations: {}
+  # -- Annotations applied to the pods
+  podAnnotations: {}
+  image:
+    # -- Repository for the br-sta image
+    repository: ghcr.io/lerianstudio/br-sta
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag (defaults to Chart.appVersion if empty)
+    tag: ""
+  # -- Image pull secrets for private registries
+  imagePullSecrets: []
+  # -- Database migrations Job (init/postgres-migrations runner image).
+  # Applies the SQL migrations once as an Argo hook — PreSync for external
+  # Postgres (schema-first, before the app rolls out) or PostSync for the
+  # bundled subchart (after the DB is provisioned) — so schema changes are
+  # applied by a dedicated process rather than at application runtime.
+  # Disabled by default; enable per-environment (e.g. the dev-st gitops values).
+  migrations:
+    # -- Enable or disable the migrations Job.
+    enabled: false
+    # -- When true, read POSTGRES_PASSWORD from a pre-existing Secret
+    # (existingSecretName) instead of the chart-managed app Secret.
+    useExistingSecret: false
+    # -- Name of the pre-existing Secret containing POSTGRES_PASSWORD
+    # (only used when useExistingSecret=true).
+    existingSecretName: ""
+    image:
+      # -- Repository for the migrations runner image.
+      repository: ghcr.io/lerianstudio/br-sta-migrations
+      # -- Tag for the migrations image. Defaults to the app image tag
+      # (brSta.image.tag, or the chart appVersion) when left empty.
+      tag: ""
+      # -- Optional image digest (overrides tag when set).
+      digest: ""
+      # -- Image pull policy.
+      pullPolicy: IfNotPresent
+    # -- Path inside the image where the SQL migrations live.
+    path: "/migrations"
+    # -- Bypass the lib-commons migrator TLS guard for a non-TLS Postgres
+    # (POSTGRES_SSLMODE=disable is rejected without it). When empty, inherits
+    # ALLOW_INSECURE_TLS from brSta.extraEnvVars, then brSta.configmap. Leave
+    # empty for a TLS-enabled Postgres.
+    allowInsecureTLS: ""
+    # -- Maximum retries before the Job is considered failed.
+    backoffLimit: 3
+    # -- Hard wall-clock cap for the Job (seconds).
+    activeDeadlineSeconds: 600
+    # -- Seconds to retain the finished Job before garbage collection.
+    ttlSecondsAfterFinished: 600
+    # -- Optional MIGRATIONS_TIMEOUT_SEC passed to the runner (per-run deadline).
+    timeoutSeconds: ""
+    # -- Resource requests/limits for the migrations container.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    # -- Extra annotations on the Job resource.
+    annotations: {}
+    # -- Extra annotations on the migration pod.
+    podAnnotations: {}
+  # -- Override of the resource name
+  nameOverride: ""
+  # -- Override of the fully qualified resource name
+  fullnameOverride: ""
+  # -- Termination grace period.
+  terminationGracePeriodSeconds: 60
+  # -- Pod security context
+  podSecurityContext: {}
+  # -- Container security context (Distroless nonroot UID/GID is 65532)
+  securityContext:
+    runAsGroup: 65532
+    runAsUser: 65532
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+  # -- PodDisruptionBudget configuration
+  pdb:
+    enabled: true
+    minAvailable: 1
+    maxUnavailable: ""
+    annotations: {}
+  # -- Deployment strategy
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  # -- Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+  # -- Ingress configuration
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  # -- Resource requests and limits
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # -- HorizontalPodAutoscaler configuration
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+    scaleDownStabilizationSeconds: 300
+  # -- Readiness probe configuration
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 2
+  # -- Liveness probe configuration
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 3
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: []
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+  # -- Host aliases for custom DNS resolution inside the pod
+  hostAliases: []
+  # -- Primary override surface: raw ConfigMap env-var passthrough. Every non-dependency
+  # app key defaults in templates/configmap.yaml; set brSta.configmap.<NATIVE_KEY> here
+  # to override a default or pass an opt-in key (e.g. AUDIT_PUBLISHER_INTERVAL_SEC).
+  # Dependency connections are the ONLY typed knobs — Postgres/Redis/RabbitMQ HOST/PORT/
+  # USER/SSL via the datastores mask; MULTI_TENANT/OTEL/streaming/SD via the global.*
+  # blocks; PLUGIN_AUTH via global.auth. Precedence: configmap.<KEY> > mask/global > default.
+  # @default -- templates/configmap.yaml
+  configmap: {}
+  # -- Service discovery toggle (grouped API for SD_ENABLED). SD_TOKEN (ACL) is a Secret.
+  serviceDiscovery:
+    enabled: false
+  # -- Streaming toggle (grouped API for STREAMING_ENABLED). SASL password is a Secret.
+  streaming:
+    enabled: false
+  # -- Secrets (sensitive environment variables)
+  # @default -- templates/secrets.yaml
+  secrets:
+    # PostgreSQL password is single-sourced from the postgresql subchart Secret
+    # (name derived collapse-aware via common.names.dependency.fullname; key "password")
+    # and read via secretKeyRef on the deployment — leave empty with the bundled subchart.
+    # Only set this for an EXTERNAL Postgres without postgresql.auth.existingSecret.
+    # See docs/helm-chart-standard.md "Single-Source Infra Secrets".
+    POSTGRES_PASSWORD: ""
+    # POSTGRES_REPLICA_PASSWORD: ""
+    # Redis/Valkey password is single-sourced from the valkey subchart Secret
+    # (key "valkey-password") and read via secretKeyRef — leave empty with the
+    # bundled subchart. Only set this for an EXTERNAL Redis without
+    # valkey.auth.existingSecret.
+    REDIS_PASSWORD: ""
+    # RabbitMQ password — kept in the app Secret (only relevant when RABBITMQ_ENABLED=true).
+    RABBITMQ_DEFAULT_PASS: ""
+    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANT_ENABLED=true)
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    # MULTI_TENANT_REDIS_PASSWORD: ""
+    # Crypto master-key catalogue (MASTER_KEY_PROVIDER=envvar) — key material, provide via a secrets manager.
+    MASTER_KEYS: ""
+    # Object-storage credential (the non-secret AWS_ACCESS_KEY_ID lives in the ConfigMap / m2m group).
+    AWS_SECRET_ACCESS_KEY: ""
+    # Service-discovery ACL token (only when SD is enabled).
+    SD_TOKEN: ""
+    # Streaming SASL password (REQUIRED when streaming is enabled with a SASL mechanism).
+    STREAMING_SASL_PASSWORD: ""
+  # -- Use an externally managed Secret instead of generating one
+  useExistingSecret: false
+  # -- Name of the externally managed Secret
+  existingSecretName: ""
+  # -- Extra environment variables (map of key:value pairs)
+  extraEnvVars: {}
+  # -- ServiceAccount configuration
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+# ==============================================================================
+# WORKER
+# Second Deployment running the br-sta worker component. Upstream builds the
+# manager (cmd/manager) and worker (cmd/worker) as two SEPARATE images, each
+# with its own ENTRYPOINT already set to the right compiled binary (both are
+# named /service inside their respective images by convention — see
+# github.com/LerianStudio/br-sta's per-component Dockerfiles). Set
+# worker.image to the dedicated worker image; do not point it at the manager
+# image. It runs the background jobs: audit outbox publisher/consumer, the
+# leader-gated scheduler (credential expiry/rotation, retention,
+# stale-protocol cleanup), the credential-recovery-on-boot sweep, and the
+# inbound BACEN poll loop. It serves ONLY the probe endpoints (WorkerMode —
+# no business HTTP API), reuses the manager ConfigMap + Secret for all shared
+# infra config, and layers the worker-only knobs below on top.
+# ==============================================================================
+worker:
+  # -- Enable the worker Deployment. REQUIRES worker.image to point at a
+  # dedicated worker image (built from cmd/worker) — keep this false until
+  # that image is confirmed available, then enable per-deployment.
+  enabled: false
+  # -- Replicas. The background jobs are leader-gated but the worker does NOT
+  # run its own leader election yet — keep this at 1 (and do not add an HPA) to
+  # avoid duplicate processing.
+  replicaCount: 1
+  # -- Number of old ReplicaSets to retain for rollback
+  revisionHistoryLimit: 10
+  # -- Annotations applied to the Deployment resource
+  annotations: {}
+  # -- Annotations applied to the pods
+  podAnnotations: {}
+  # -- Worker image. REQUIRED: point at the dedicated worker image (built
+  # from cmd/worker). Empty repository/tag fall back to the manager image,
+  # which does NOT run the worker's logic — only set for local testing.
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: IfNotPresent
+  # -- Image pull secrets (empty inherits the manager's)
+  imagePullSecrets: []
+  # -- Container command. The worker image's own ENTRYPOINT already runs the
+  # correct binary (/service, built from cmd/worker) — this override matches
+  # that ENTRYPOINT rather than replacing it with a different binary name.
+  command:
+    - /service
+  # -- Termination grace period
+  terminationGracePeriodSeconds: 60
+  # -- Pod security context
+  podSecurityContext: {}
+  # -- Container security context (empty inherits the manager's)
+  securityContext: {}
+  # -- ServiceAccount configuration
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+  # -- Probe server port. WorkerMode binds SERVER_ADDRESS here; no Service or
+  # Ingress is created for the worker.
+  service:
+    port: 8081
+  # -- Resource requests and limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # -- Deployment strategy. Recreate by default: the worker is leader-gated but
+  # runs no leader election, so a RollingUpdate surge would briefly run two
+  # worker pods and duplicate background processing (audit drain, scheduler).
+  deploymentStrategy:
+    type: Recreate
+  # -- Readiness probe configuration
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 2
+  # -- Liveness probe configuration
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 3
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: []
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+  # -- Host aliases for custom DNS resolution inside the pod
+  hostAliases: []
+  # -- Worker-only environment (layered on top of the manager ConfigMap/Secret).
+  # SetConfigFromEnvVars ignores envDefault, so every knob a background job
+  # needs must be set explicitly. SERVER_ADDRESS is derived from service.port.
+  # @default -- templates/worker/configmap.yaml
+  configmap:
+    # OTEL identity for the worker process
+    OTEL_RESOURCE_SERVICE_NAME: "br-sta-worker"
+    # Leader-gated scheduler (credential expiry/rotation, retention, cleanup)
+    SCHEDULER_ENABLED: "true"
+    # Resolve credentials left mid-rotation by a prior worker death, at boot
+    CREDENTIALS_RECOVERY_ON_BOOT: "true"
+    # Audit outbox publisher (drains audit_outbox -> sta.audit.events).
+    # Requires the shared RABBITMQ_ENABLED="true".
+    AUDIT_PUBLISHER_ENABLED: "true"
+    AUDIT_PUBLISHER_INTERVAL_SEC: "2"
+    AUDIT_PUBLISHER_BATCH_SIZE: "100"
+    AUDIT_PUBLISHER_MAX_ATTEMPTS: "10"
+    AUDIT_PUBLISHER_EXCHANGE: "sta.audit.events"
+    AUDIT_PUBLISHER_LOCK_CLASS_ID: "7700"
+    AUDIT_PUBLISHER_SERVICE_NAME: "br-sta-worker"
+    # Audit consumer (writes hash-chained rows into the audit log tables)
+    AUDIT_CONSUMER_ENABLED: "true"
+    AUDIT_CONSUMER_QUEUE: "br-sta.audit.consume"
+    AUDIT_CONSUMER_EXCHANGE: "sta.audit.events"
+    AUDIT_CONSUMER_DEDUP_TTL_SEC: "5"
+    AUDIT_CONSUMER_LOCK_CLASS_ID: "7701"
+    AUDIT_CONSUMER_MAX_RETRY_ATTEMPTS: "10"
+    AUDIT_CONSUMER_DLQ_EXCHANGE: "sta.audit.dlq"
+    AUDIT_CONSUMER_SERVICE_NAME: "br-sta-worker"
+  # -- Extra environment variables (map of key:value pairs) rendered as inline
+  # container env (wins over both ConfigMaps).
+  extraEnvVars: {}
+
+# ==============================================================================
+# POSTGRESQL SUB-CHART (Bitnami)
+# Default: enabled with replication for in-cluster development/staging.
+# Production: set postgresql.enabled=false and configure
+#   global.externalPostgresDefinitions for an externally managed Postgres.
+# ==============================================================================
+postgresql:
+  enabled: true
+  external: false
+  global:
+    security:
+      # Bitnami moved free images to bitnamisecure / bitnamilegacy in 2025;
+      # the upstream Bitnami chart treats those repos as "non-standard" and
+      # blocks them unless this flag is set. Required for fresh installs.
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/postgresql
+    tag: "latest"
+  architecture: replication
+  replication:
+    numSynchronousReplicas: 1
+  auth:
+    enabled: true
+    enablePostgresUser: true
+    postgresPassword: ""
+    username: "br_sta"
+    password: ""
+    database: "br_sta"
+    replicationUsername: "replicator"
+    replicationPassword: ""
+  primary:
+    persistence:
+      size: 8Gi
+    resourcesPreset: "medium"
+    extendedConfiguration: |
+      shared_buffers = 512MB
+      max_wal_senders = 20
+      wal_keep_size = 512MB
+      max_replication_slots = 20
+    extraEnvVars:
+      - name: POSTGRESQL_WAL_LEVEL
+        value: "logical"
+      - name: POSTGRESQL_HOST_STANDBY
+        value: "on"
+      - name: POSTGRESQL_MAX_CONNECTIONS
+        value: "200"
+  readReplicas:
+    name: replication
+    replicaCount: 1
+    persistence:
+      size: 8Gi
+    resourcesPreset: "medium"
+    extendedConfiguration: |
+      shared_buffers = 512MB
+      max_wal_senders = 20
+      max_replication_slots = 20
+      wal_keep_size = 512MB
+    extraEnvVars:
+      - name: POSTGRESQL_WAL_LEVEL
+        value: "logical"
+      - name: POSTGRESQL_HOST_STANDBY
+        value: "on"
+      - name: POSTGRESQL_MAX_CONNECTIONS
+        value: "200"
+
+# ==============================================================================
+# VALKEY SUB-CHART (Bitnami, Redis-compatible)
+# Default: enabled (standalone) for in-cluster development/staging.
+# Provides caching + rate limiting for br-sta (REDIS_* env vars).
+# Production: set valkey.enabled=false and point REDIS_HOST/REDIS_PASSWORD at
+#   an externally managed Redis/Valkey.
+# ==============================================================================
+valkey:
+  enabled: true
+  external: false
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/valkey
+    tag: "latest"
+  architecture: standalone
+  auth:
+    enabled: true
+    password: ""
+    username: br_sta
+  primary:
+    kind: Deployment
+    resourcesPreset: "medium"
+    persistence:
+      enabled: false
+    extraFlags:
+      - "--maxmemory 640mb"
+      - "--maxmemory-policy allkeys-lru"
+      - "--hz 100"
+      - "--maxclients 10000"
+
+# ==============================================================================
+# RABBITMQ SUB-CHART (groundhog2k) — OPTIONAL
+# Disabled by default. Set rabbitmq.enabled=true to bundle an in-cluster broker
+# for the event-driven starter. When enabled, also set app.configmap.RABBITMQ_ENABLED="true".
+# The broker Service is "<release>-rabbitmq" (AMQP :5672) — RABBITMQ_HOST is
+# derived from it automatically in the ConfigMap unless overridden.
+# Production: set rabbitmq.enabled=false and point RABBITMQ_HOST / RABBITMQ_DEFAULT_USER
+#   / app.secrets.RABBITMQ_DEFAULT_PASS at an externally managed broker.
+# ==============================================================================
+rabbitmq:
+  enabled: false
+  external: false
+  image:
+    tag: "3.13.6"
+  persistence:
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  podSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile: {type: RuntimeDefault}
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: {drop: ["ALL"]}
+  authentication:
+    user:
+      # Must match brSta.configmap.RABBITMQ_DEFAULT_USER.
+      value: "br_sta"
+    password:
+      # Operators MUST supply this AND the matching brSta.secrets.RABBITMQ_DEFAULT_PASS
+      # when rabbitmq.enabled=true. Both must be the same value.
+      value: ""
+    erlangCookie:
+      # Operators MUST supply a stable cookie (e.g. openssl rand -base64 32) when
+      # rabbitmq.enabled=true. It must not change across upgrades (breaks clustering).
+      value: ""
+
+# ==============================================================================
+# OPTIONAL OTEL COLLECTOR INTEGRATION
+# Setting otel-collector-lerian.enabled=true causes the deployment to inject
+# HOST_IP/OTEL_EXPORTER_OTLP_ENDPOINT pointing at the host node's collector.
+# ==============================================================================
+otel-collector-lerian:
+  enabled: false

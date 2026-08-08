@@ -1,0 +1,15 @@
+dependencies:
+- name: lerian-common-helm
+  repository: file://../lerian-common
+  version: 1.4.0
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.3.5
+- name: valkey
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 2.4.7
+- name: rabbitmq
+  repository: https://groundhog2k.github.io/helm-charts
+  version: 2.1.11
+digest: sha256:c083184b66b524fe31164e51f1732a7e0f615814712d9050e58ecd8c3490d5a6
+generated: "2026-08-04T17:38:03.977223-03:00"

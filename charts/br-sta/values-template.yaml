@@ -1,0 +1,74 @@
+# Production values overlay starter for br-sta-helm.
+# Copy this file, fill in the placeholders, and pass it to helm install/upgrade.
+#
+#   helm upgrade --install br-sta lerian/br-sta-helm \
+#     -n <namespace> --create-namespace \
+#     -f values-prod.yaml
+
+br-sta:
+  replicaCount: 2
+  image:
+    tag: "latest"   # pin to a published immutable tag
+  ingress:
+    enabled: false
+    className: nginx
+    annotations: {}
+    hosts:
+      - host: br-sta.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: br-sta-tls
+        hosts:
+          - br-sta.example.com
+  configmap:
+    ENV_NAME: "production"
+    LOG_LEVEL: "info"
+    # External PostgreSQL — leave empty only if postgresql.enabled=true.
+    POSTGRES_HOST: ""
+    POSTGRES_SSLMODE: "require"
+    # External Redis/Valkey (host:port) — leave empty only if valkey.enabled=true.
+    REDIS_HOST: ""
+    REDIS_TLS: "false"
+    # Multi-tenancy (set to "true" to enable — then MULTI_TENANT_URL + API key are required)
+    MULTI_TENANT_ENABLED: "false"
+    # MULTI_TENANT_URL: ""
+    # OpenTelemetry (or use otel-collector-lerian.enabled below for host injection)
+    ENABLE_TELEMETRY: "false"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+  secrets:
+    # Database — leave empty when postgresql.enabled=true (auto-generated).
+    POSTGRES_PASSWORD: ""
+    # Redis/Valkey — leave empty when valkey.enabled=true (auto-generated).
+    REDIS_PASSWORD: ""
+    # Multi-tenancy (REQUIRED when MULTI_TENANT_ENABLED=true)
+    # MULTI_TENANT_SERVICE_API_KEY: ""
+    # RabbitMQ (only relevant when RABBITMQ_ENABLED=true)
+    # RABBITMQ_DEFAULT_PASS: ""
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+
+# Use managed Postgres + Redis in production.
+postgresql:
+  enabled: false
+valkey:
+  enabled: false
+
+# When using a fresh external Postgres, optionally run the bootstrap Job once:
+# global:
+#   externalPostgresDefinitions:
+#     enabled: true
+#     connection:
+#       host: my-rds.example.com
+#       port: "5432"
+#     postgresAdminLogin:
+#       username: postgres
+#       password: <admin password>
+#     appCredentials:
+#       password: <br_sta role password>
+
+# otel-collector-lerian:
+#   enabled: true

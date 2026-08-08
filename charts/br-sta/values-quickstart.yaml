@@ -1,0 +1,90 @@
+# =============================================================================
+# br-sta — QUICKSTART values (the layperson layer)
+# -----------------------------------------------------------------------------
+# The full values.yaml is the power-user API. This file is the short list of
+# DEPENDENCY-CONNECTION knobs a non-expert fills to get br-sta running: where the
+# database/cache/broker live, the image tag, the ingress host, and the
+# operator-provided secrets. Everything else has a working default in the chart;
+# reach it only via brSta.configmap.<KEY> (the escape hatch) when you must.
+#
+#   helm install br-sta charts/br-sta -f values-quickstart.yaml
+#
+# Anything with CHANGE_ME MUST be set. The bundled Bitnami subcharts (postgresql,
+# valkey) are ON by default and RabbitMQ is opt-in, so the *host* knobs below only
+# matter when you point br-sta at EXTERNAL infra (set <subchart>.enabled=false).
+# =============================================================================
+
+global:
+  # -- Set each dependency connection ONCE here; the manager (and the worker via
+  #    envFrom) emit their native env keys from it. Leave a block out to keep the
+  #    in-cluster bundled default.
+  datastores: {}
+    # postgres: { host: "pg-primary", port: "5432", user: "br_sta", ssl: "require", name: "br_sta", replicaHost: "pg-replica" }
+    # redis:    { host: "valkey-primary:6379" }
+    # broker:   { host: "rabbitmq", port: "5672", user: "br_sta" }
+  # -- OTel collector (leave empty to keep telemetry off).
+  observability: {}
+    # enabled: "true"
+    # otlpEndpoint: "otel-collector:4317"
+    # deploymentEnvironment: "production"
+  # -- access-manager auth (per-service override via brSta.configmap.PLUGIN_AUTH_*).
+  auth: {}
+    # enabled: "true"
+    # host: "http://plugin-access-manager-auth:4000"
+  # -- Tenant-manager (only needed when MULTI_TENANT_ENABLED=true).
+  multiTenant: {}
+    # url: "http://tenant-manager:8080"
+    # redisHost: "tenant-manager-redis"
+  # -- Streaming backend (only needed when STREAMING_ENABLED=true).
+  streaming: {}
+    # brokers: "redpanda:9092"
+    # saslMechanism: "SCRAM-SHA-512"
+    # saslUsername: "br_sta"
+    # tlsEnabled: "true"
+
+brSta:
+  image:
+    tag: ""                 # -- pin the manager image version (defaults to chart appVersion)
+  ingress:
+    enabled: false
+    # hosts: [{ host: "br-sta.example.com", paths: [{ path: "/", pathType: Prefix }] }]
+  # -- Turn on env-wide features here (they read global.multiTenant / global.streaming / global.serviceDiscovery):
+  multiTenant:
+    enabled: false          # MULTI_TENANT_ENABLED
+  serviceDiscovery:
+    enabled: false          # SD_ENABLED
+  streaming:
+    enabled: false          # STREAMING_ENABLED
+  # -- Common opt-in overrides go through the escape hatch:
+  configmap: {}
+    # RABBITMQ_ENABLED: "true"        # then set rabbitmq.enabled=true + secrets.RABBITMQ_DEFAULT_PASS
+    # TRUST_STORE_S3_BUCKET: "br-sta-truststore"   # object storage bucket (S3/SeaweedFS)
+    # TRANSFER_OBJECT_STORAGE_BUCKET: "br-sta-transfers"
+  secrets:
+    # -- Envelope-encryption master key: REQUIRED — the manager ABORTS BOOT without it.
+    #    Comma-separated "version:hexkey" (32-byte / 64-hex-char AES key). openssl rand -hex 32
+    MASTER_KEYS: "CHANGE_ME"
+    # -- Object-storage credentials (SeaweedFS/MinIO/AWS S3). AWS_ACCESS_KEY_ID is config.
+    # AWS_SECRET_ACCESS_KEY: "CHANGE_ME"
+    # -- Only for EXTERNAL infra (subchart disabled / .external=true):
+    # POSTGRES_PASSWORD: "CHANGE_ME"
+    # REDIS_PASSWORD: "CHANGE_ME"
+    # -- Only when the matching feature is enabled:
+    # RABBITMQ_DEFAULT_PASS: "CHANGE_ME"       # RABBITMQ_ENABLED=true
+    # MULTI_TENANT_SERVICE_API_KEY: "CHANGE_ME"  # multiTenant.enabled=true
+    # STREAMING_SASL_PASSWORD: "CHANGE_ME"       # streaming.enabled=true with a SASL mechanism
+    # SD_TOKEN: "CHANGE_ME"                       # serviceDiscovery.enabled=true (ACL token)
+
+# --- WORKER (background jobs: audit outbox/consumer, scheduler, inbound poll) ---
+# Opt-in. REQUIRES a dedicated worker image. It reuses the manager ConfigMap+Secret.
+worker:
+  enabled: false
+  # image:
+  #   repository: ghcr.io/lerianstudio/br-sta-worker
+  #   tag: ""
+
+# --- EXTERNAL INFRA: disable the bundled subcharts to use your own ---
+# postgresql:
+#   enabled: false
+# valkey:
+#   enabled: false

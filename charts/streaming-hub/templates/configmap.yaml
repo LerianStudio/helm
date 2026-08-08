@@ -1,0 +1,199 @@
+{{/*
+ONE shared ConfigMap — role-INVARIANT, non-sensitive env. Identical across all
+roles, so it is NOT duplicated per role (DRY). The role-specific vars
+(STREAMING_HUB_ROLE, the Postgres pool sizes) are deliberately ABSENT here —
+they are injected as explicit per-Deployment env in templates/<role>/deployment.yaml
+(see templates/_deployment.tpl), which wins over this envFrom layer.
+
+TIERED productization (the #1741 model): typed KNOBS are reserved for DEPENDENCY
+CONNECTIONS; every other app knob is an escape-hatch PASSTHROUGH with its default
+in the template. Concretely:
+  - Kafka/RedPanda connection (STREAMING_HUB_KAFKA_*) -> lerian-common.datastore.value
+    (type "kafka") mask: native configmap key > streamingHub.datastores.kafka.<field>
+    > global.datastores.kafka.<field> > template default.
+  - Auth (PLUGIN_AUTH_*) -> lerian-common.globalValue (block "auth"): native
+    configmap key > global.auth.<field> > template default (env-wide endpoint).
+  - Everything else -> {{ $cm.KEY | default "<default>" | quote }}: the default lives
+    HERE; streamingHub.configmap.<KEY> overrides it (escape hatch, top
+    precedence); streamingHub.extraEnvVars carries any unmodeled key.
+
+Postgres is NOT decomposed into host/port/user/db here: the hub reaches Postgres via
+a SINGLE opaque DSN (STREAMING_HUB_POSTGRES_DSN, a Secret) — so there is no
+connection field in THIS ConfigMap to route through a datastore mask (the bootstrap
+Job and the migration hook carry the host/port separately). MULTI_TENANT_ENABLED is
+the bare lib-commons request-tenancy gate (kept inline as the knob); the hub's SaaS
+tenant-manager roster uses its OWN STREAMING_HUB_MULTI_TENANT_* naming (NOT the
+lib-commons multiTenant.env contract), so those stay passthrough.
+*/}}
+{{- $cm := .Values.streamingHub.configmap | default dict }}
+{{- $ds := .Values.streamingHub.datastores | default dict }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "streaming-hub.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "streaming-hub.labels" (dict "context" . "component" "all") | nindent 4 }}
+data:
+  # =====================================================================
+  # APPLICATION / LIFECYCLE
+  # =====================================================================
+  STREAMING_HUB_ENV: {{ $cm.STREAMING_HUB_ENV | default "production" | quote }}
+  STREAMING_HUB_LOG_LEVEL: {{ $cm.STREAMING_HUB_LOG_LEVEL | default "info" | quote }}
+  STREAMING_HUB_HEALTH_WINDOW: {{ $cm.STREAMING_HUB_HEALTH_WINDOW | default "720h" | quote }}
+  STREAMING_HUB_SWAGGER_ENABLED: {{ $cm.STREAMING_HUB_SWAGGER_ENABLED | default "false" | quote }}
+  STREAMING_HUB_SHUTDOWN_TIMEOUT: {{ $cm.STREAMING_HUB_SHUTDOWN_TIMEOUT | default "30s" | quote }}
+  STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT: {{ $cm.STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT | default "5s" | quote }}
+
+  # =====================================================================
+  # HTTP SERVER / METRICS
+  # =====================================================================
+  STREAMING_HUB_HTTP_LISTEN_ADDR: {{ $cm.STREAMING_HUB_HTTP_LISTEN_ADDR | default ":8080" | quote }}
+  STREAMING_HUB_METRICS_ENABLED: {{ $cm.STREAMING_HUB_METRICS_ENABLED | default "true" | quote }}
+
+  # =====================================================================
+  # KAFKA / REDPANDA (external dependency connection). Routed through the
+  # lerian-common datastore mask (type "kafka") so an operator sets
+  # streamingHub.datastores.kafka.* (dedicated) or global.datastores.kafka.*
+  # (shared) instead of pinning each native key. The SCRAM password lives in
+  # the Secret. Defaults preserved verbatim (byte-identical when the mask is unset).
+  # =====================================================================
+  STREAMING_HUB_KAFKA_BROKERS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "kafka" "field" "brokers" "nativeKey" "STREAMING_HUB_KAFKA_BROKERS" "default" "localhost:19092") | quote }}
+  STREAMING_HUB_KAFKA_SCRAM_MECHANISM: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "kafka" "field" "saslMechanism" "nativeKey" "STREAMING_HUB_KAFKA_SCRAM_MECHANISM" "default" "") | quote }}
+  STREAMING_HUB_KAFKA_SCRAM_USERNAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "kafka" "field" "saslUsername" "nativeKey" "STREAMING_HUB_KAFKA_SCRAM_USERNAME" "default" "") | quote }}
+  STREAMING_HUB_KAFKA_TLS_ENABLED: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "kafka" "field" "tls" "nativeKey" "STREAMING_HUB_KAFKA_TLS_ENABLED" "default" "false") | quote }}
+  STREAMING_HUB_KAFKA_CA_CERT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "kafka" "field" "caCert" "nativeKey" "STREAMING_HUB_KAFKA_CA_CERT" "default" "") | quote }}
+
+  # =====================================================================
+  # CRYPTO / KEK (source/ref are config; the material itself is a Secret).
+  # TODO(lerian-common 1.5.0): route via the kms.value mask once the chart pins
+  # >= 1.5.0 (envelope-encryption dependency domain). Passthrough until then.
+  # =====================================================================
+  STREAMING_HUB_KEK_SOURCE: {{ $cm.STREAMING_HUB_KEK_SOURCE | default "env" | quote }}
+  STREAMING_HUB_KEK_REF: {{ $cm.STREAMING_HUB_KEK_REF | default "" | quote }}
+
+  # =====================================================================
+  # DISPATCH / POISON (delivery worker pool)
+  # =====================================================================
+  STREAMING_HUB_DISPATCH_WORKERS: {{ $cm.STREAMING_HUB_DISPATCH_WORKERS | default "8" | quote }}
+  STREAMING_HUB_DISPATCH_CLAIM_BATCH: {{ $cm.STREAMING_HUB_DISPATCH_CLAIM_BATCH | default "16" | quote }}
+  STREAMING_HUB_DISPATCH_IDLE_INTERVAL_MS: {{ $cm.STREAMING_HUB_DISPATCH_IDLE_INTERVAL_MS | default "250" | quote }}
+  STREAMING_HUB_POISON_THRESHOLD: {{ $cm.STREAMING_HUB_POISON_THRESHOLD | default "5" | quote }}
+
+  # =====================================================================
+  # PULL RATE LIMIT (source consumption)
+  # =====================================================================
+  STREAMING_HUB_PULL_RATE: {{ $cm.STREAMING_HUB_PULL_RATE | default "100" | quote }}
+  STREAMING_HUB_PULL_BURST: {{ $cm.STREAMING_HUB_PULL_BURST | default "200" | quote }}
+
+  # =====================================================================
+  # DLQ VISIBILITY
+  # =====================================================================
+  STREAMING_HUB_DLQ_GROUP: {{ $cm.STREAMING_HUB_DLQ_GROUP | default "streaming-hub-dlq.local" | quote }}
+  STREAMING_HUB_DLQ_RETENTION: {{ $cm.STREAMING_HUB_DLQ_RETENTION | default "168h" | quote }}
+  STREAMING_HUB_DLQ_PRUNE_INTERVAL: {{ $cm.STREAMING_HUB_DLQ_PRUNE_INTERVAL | default "1h" | quote }}
+
+  # =====================================================================
+  # MANIFEST (event manifest sources)
+  # =====================================================================
+  STREAMING_HUB_MANIFEST_SOURCES: {{ $cm.STREAMING_HUB_MANIFEST_SOURCES | default "" | quote }}
+  STREAMING_HUB_MANIFEST_REFRESH_INTERVAL: {{ $cm.STREAMING_HUB_MANIFEST_REFRESH_INTERVAL | default "300" | quote }}
+
+  # =====================================================================
+  # RECONCILER (topic-drift detection; dark-ship, defaults on)
+  # =====================================================================
+  STREAMING_HUB_RECONCILER_ENABLED: {{ $cm.STREAMING_HUB_RECONCILER_ENABLED | default "true" | quote }}
+  STREAMING_HUB_RECONCILER_INTERVAL: {{ $cm.STREAMING_HUB_RECONCILER_INTERVAL | default "300" | quote }}
+
+  # =====================================================================
+  # PARTITION LIFECYCLE CRON
+  # =====================================================================
+  STREAMING_HUB_PARTITION_CRON_INTERVAL: {{ $cm.STREAMING_HUB_PARTITION_CRON_INTERVAL | default "6h" | quote }}
+  STREAMING_HUB_PARTITION_FUTURE_BUFFER_WEEKS: {{ $cm.STREAMING_HUB_PARTITION_FUTURE_BUFFER_WEEKS | default "4" | quote }}
+  STREAMING_HUB_PARTITION_RETENTION_ENABLED: {{ $cm.STREAMING_HUB_PARTITION_RETENTION_ENABLED | default "false" | quote }}
+  STREAMING_HUB_PARTITION_RETENTION_HORIZON: {{ $cm.STREAMING_HUB_PARTITION_RETENTION_HORIZON | default "0" | quote }}
+
+  # =====================================================================
+  # IDEMPOTENCY
+  # =====================================================================
+  STREAMING_HUB_IDEMPOTENCY_TTL: {{ $cm.STREAMING_HUB_IDEMPOTENCY_TTL | default "24h" | quote }}
+  STREAMING_HUB_IDEMPOTENCY_REAP_INTERVAL: {{ $cm.STREAMING_HUB_IDEMPOTENCY_REAP_INTERVAL | default "5m" | quote }}
+
+  # =====================================================================
+  # AUTO-DISABLE (subscriber failure circuit)
+  # =====================================================================
+  STREAMING_HUB_AUTODISABLE_ENABLED: {{ $cm.STREAMING_HUB_AUTODISABLE_ENABLED | default "true" | quote }}
+  STREAMING_HUB_AUTODISABLE_FAILURE_WINDOW: {{ $cm.STREAMING_HUB_AUTODISABLE_FAILURE_WINDOW | default "120h" | quote }}
+  STREAMING_HUB_AUTODISABLE_FAILURE_SPREAD: {{ $cm.STREAMING_HUB_AUTODISABLE_FAILURE_SPREAD | default "12h" | quote }}
+
+  # =====================================================================
+  # TENANCY (F4). Bare MULTI_TENANT_ENABLED is the lib-commons request-tenancy
+  # toggle (kept inline as the knob/gate source); the STREAMING_HUB_MULTI_TENANT_*
+  # block is the hub's SaaS tenant-manager roster (a distinct concern, the hub's
+  # OWN naming — NOT the lib-commons multiTenant.env contract, so it stays
+  # passthrough). Default = BYOC single-tenant. A non-default TENANT_ID quarantines
+  # all other ce-tenantid events — confirm the producer.
+  # =====================================================================
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  STREAMING_HUB_TENANT_ID: {{ $cm.STREAMING_HUB_TENANT_ID | default "default" | quote }}
+  STREAMING_HUB_MULTI_TENANT_ENABLED: {{ $cm.STREAMING_HUB_MULTI_TENANT_ENABLED | default "false" | quote }}
+  STREAMING_HUB_MULTI_TENANT_AWS_REGION: {{ $cm.STREAMING_HUB_MULTI_TENANT_AWS_REGION | default "" | quote }}
+  # Source SELECTOR for tenant secrets (env|secretsmanager reference), NOT secret
+  # material — the `| default ""` marks it as intentional config for the standard's
+  # secret-in-configmap gate. The actual secrets live in the app Secret.
+  STREAMING_HUB_MULTI_TENANT_SECRETS_ENV: {{ $cm.STREAMING_HUB_MULTI_TENANT_SECRETS_ENV | default "" | quote }}
+  STREAMING_HUB_TENANT_MANAGER_URL: {{ $cm.STREAMING_HUB_TENANT_MANAGER_URL | default "" | quote }}
+  STREAMING_HUB_MULTI_TENANT_ALLOW_INSECURE_TM: {{ $cm.STREAMING_HUB_MULTI_TENANT_ALLOW_INSECURE_TM | default "false" | quote }}
+  STREAMING_HUB_MULTI_TENANT_TM_STALENESS_THRESHOLD: {{ $cm.STREAMING_HUB_MULTI_TENANT_TM_STALENESS_THRESHOLD | default "12h" | quote }}
+  STREAMING_HUB_MULTI_TENANT_LISTENER_STALENESS_THRESHOLD: {{ $cm.STREAMING_HUB_MULTI_TENANT_LISTENER_STALENESS_THRESHOLD | default "12h" | quote }}
+  STREAMING_HUB_MULTI_TENANT_RECONCILE_INTERVAL: {{ $cm.STREAMING_HUB_MULTI_TENANT_RECONCILE_INTERVAL | default "6h" | quote }}
+  STREAMING_HUB_MULTI_TENANT_CACHE_TTL: {{ $cm.STREAMING_HUB_MULTI_TENANT_CACHE_TTL | default "12h" | quote }}
+  STREAMING_HUB_TENANT_MANAGER_CB_THRESHOLD: {{ $cm.STREAMING_HUB_TENANT_MANAGER_CB_THRESHOLD | default "0" | quote }}
+  STREAMING_HUB_TENANT_MANAGER_CB_TIMEOUT: {{ $cm.STREAMING_HUB_TENANT_MANAGER_CB_TIMEOUT | default "30s" | quote }}
+  STREAMING_HUB_MULTI_TENANT_REDIS_HOST: {{ $cm.STREAMING_HUB_MULTI_TENANT_REDIS_HOST | default "" | quote }}
+  STREAMING_HUB_MULTI_TENANT_REDIS_PORT: {{ $cm.STREAMING_HUB_MULTI_TENANT_REDIS_PORT | default "" | quote }}
+  STREAMING_HUB_MULTI_TENANT_REDIS_TLS: {{ $cm.STREAMING_HUB_MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  STREAMING_HUB_MULTI_TENANT_REDIS_CA_CERT: {{ $cm.STREAMING_HUB_MULTI_TENANT_REDIS_CA_CERT | default "" | quote }}
+  ENVIRONMENT_NAME: {{ $cm.ENVIRONMENT_NAME | default "" | quote }}
+
+  # =====================================================================
+  # SECURITY POSTURE (fail-closed insecure opt-ins; MUST stay false in prod)
+  # =====================================================================
+  STREAMING_HUB_ALLOW_INSECURE_KAFKA: {{ $cm.STREAMING_HUB_ALLOW_INSECURE_KAFKA | default "false" | quote }}
+  STREAMING_HUB_ALLOW_INSECURE_DB_TLS: {{ $cm.STREAMING_HUB_ALLOW_INSECURE_DB_TLS | default "false" | quote }}
+  STREAMING_HUB_ALLOW_PRIVATE_SINKS: {{ $cm.STREAMING_HUB_ALLOW_PRIVATE_SINKS | default "false" | quote }}
+
+  # =====================================================================
+  # AWS (SaaS setup metadata; NON-secret public ARN/URL).
+  # TODO(lerian-common 1.5.0): if these become part of an AWS/objectStorage
+  # dependency mask, adopt it once the chart pins >= 1.5.0. Passthrough until then.
+  # =====================================================================
+  STREAMING_HUB_AWS_HUB_PRINCIPAL_ARN: {{ $cm.STREAMING_HUB_AWS_HUB_PRINCIPAL_ARN | default "" | quote }}
+  STREAMING_HUB_AWS_SETUP_TEMPLATE_URL: {{ $cm.STREAMING_HUB_AWS_SETUP_TEMPLATE_URL | default "" | quote }}
+
+  # =====================================================================
+  # AUTHENTICATION (lib-auth / plugin-auth JWT). ENABLED + ADDRESS resolve via
+  # global.auth (globalValue: configmap.<KEY> > global.auth.<field> > default) so
+  # the env-wide auth endpoint is shared across services.
+  # =====================================================================
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "address" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth:4000") | quote }}
+
+  # =====================================================================
+  # OBSERVABILITY (OTEL_*). OTEL_EXPORTER_OTLP_ENDPOINT is overridden per-pod with
+  # $(HOST_IP):4317 via the downward API when streamingHub.telemetry.enabled=true
+  # (a CHART-level toggle — not an app env var; see templates/_deployment.tpl).
+  # OTEL_LIBRARY_NAME and OTEL_RESOURCE_* are lib-observability identity passthrough.
+  # =====================================================================
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/streaming-hub" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "streaming-hub" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ $cm.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote }}
+
+  # =====================================================================
+  # EXTRA OVERRIDES (escape hatch for optional knobs not modeled above)
+  # =====================================================================
+  {{- range $key, $value := .Values.streamingHub.extraEnvVars }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

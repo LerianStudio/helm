@@ -1,0 +1,20 @@
+{{- if .Values.streamingHub.ingress.enabled }}
+{{/*
+Control-plane API ingress (default OFF; opt-in per env in gitops).
+Backend Service is the active role's component Service:
+  - mode=all    -> the `all` Service.
+  - mode=split  -> the `ingest` Service (the control API is served on EVERY role,
+                   so ingest is an arbitrary-but-stable default; override the
+                   backend by editing this template if delivery is preferred).
+*/}}
+{{- $component := ternary "all" "ingest" (eq .Values.streamingHub.mode "all") -}}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" .Values.streamingHub.ingress
+      "name" (include "streaming-hub.fullname" .)
+      "backendName" (include "streaming-hub.componentFullname" (dict "context" . "component" $component))
+      "namespace" (include "global.namespace" .)
+      "labels" (include "streaming-hub.labels" (dict "context" . "component" $component))
+      "svcPort" .Values.streamingHub.service.port
+    ) }}
+{{- end }}

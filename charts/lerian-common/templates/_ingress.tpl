@@ -38,9 +38,13 @@ Usage (chart ingress.yaml):
 Inputs (dict):
   context   (req)  root context ($) — for .Capabilities.KubeVersion
   ingress   (req)  the component's `.ingress` map (className/annotations/tls/hosts)
-  name      (req)  metadata.name + backend service name (already rendered)
+  name      (req)  metadata.name (+ backend service name unless backendName is set; already rendered)
   labels    (req)  labels block already rendered (no leading indent)
   svcPort   (req)  backend service port
+  backendName (opt) backend Service name when it differs from metadata.name
+                    (defaults to `name`); already rendered. Lets a chart whose
+                    ingress routes to a differently-named Service (e.g. a role/
+                    component Service, not the chart's own) still use this template.
   global    (opt)  `.Values.global.ingress` — shared contract defaults
   subdomain (opt)  host prefix used with global.ingress.domain to derive the host
   namespace (opt)  metadata.namespace (already rendered); omitted when empty
@@ -51,6 +55,7 @@ Inputs (dict):
 {{- $ing := .ingress -}}
 {{- $g := .global | default dict -}}
 {{- $name := .name -}}
+{{- $backendName := .backendName | default .name -}}
 {{- $svcPort := .svcPort -}}
 {{- /* Presence-based (hasKey) so an explicit component className "" (deliberately no
    class) is honored instead of falling back to the global class. */ -}}
@@ -114,11 +119,11 @@ spec:
             backend:
               {{- if semverCompare ">=1.19-0" $ctx.Capabilities.KubeVersion.GitVersion }}
               service:
-                name: {{ $name }}
+                name: {{ $backendName }}
                 port:
                   number: {{ $svcPort }}
               {{- else }}
-              serviceName: {{ $name }}
+              serviceName: {{ $backendName }}
               servicePort: {{ $svcPort }}
               {{- end }}
           {{- end }}

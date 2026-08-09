@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "profile": {
+      "type": "string"
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "collection": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "receiver": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "inspection": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "kube-state-metrics": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "alloy": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

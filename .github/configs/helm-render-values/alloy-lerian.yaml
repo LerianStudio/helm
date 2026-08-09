@@ -1,0 +1,14 @@
+# CI-only fixture. Not a production example; must not contain real credentials.
+#
+# Exists because `profile`, `origin.id` and `destination.endpoint` are required
+# with no default, so the chart cannot render without them. The chart it replaces
+# had no fixture, which is why the render gate never exercised it — and why it
+# shipped unable to render with its own values.
+#
+# Exercises the `client` profile: the stricter of the two (credential required,
+# node infrastructure excluded, inspection parameter absent).
+profile: client
+origin:
+  id: sample-prd
+destination:
+  endpoint: https://telemetry.invalid/v1

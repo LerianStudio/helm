@@ -1,0 +1,62 @@
+apiVersion: v2
+name: alloy-lerian-helm
+description: >-
+  Lerian telemetry collection agent for client clusters. Wraps the upstream
+  Grafana Alloy chart and renders the collection pipeline from semantic
+  parameters instead of exposing the processing chain. Roles are segregated by
+  observation scope — a per-node agent receives application telemetry, and a
+  single-replica role observes cluster state — because a cluster-scoped watcher
+  replicated per node produces duplicate writes proportional to cluster size.
+  Regulated-data sanitisation runs at the edge and is not configurable.
+type: application
+
+annotations:
+  lerian.studio/chart-type: dependency-wrapper
+
+home: https://github.com/LerianStudio/helm
+
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/alloy-lerian
+  - https://github.com/grafana/alloy
+
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+
+# Seed version only. semantic-release owns the published OCI package version;
+# never hand-bump this field.
+version: 1.0.0
+
+# Tracks the pinned upstream Alloy binary, not this chart's own release line.
+appVersion: "1.18.1"
+
+keywords:
+  - alloy
+  - observability
+  - telemetry
+  - opentelemetry
+  - lerian
+
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+# Refer to the Lerian docs for component documentation:
+# https://docs.lerian.studio/docs/midaz-components
+
+dependencies:
+  # Pinned exactly, no ranges. v1.18.1 is the minimum floor, not a preference:
+  # it exists primarily to backport two transitive-dependency CVE fixes, so
+  # 1.18.0 is vulnerable. Bumping requires re-running the sanitisation gate —
+  # regex and function behaviour can change between versions, and the failure
+  # mode in production is silent.
+  - name: alloy
+    version: "1.11.1"
+    repository: "https://grafana.github.io/helm-charts"
+
+  # Sole source of cluster-object metrics in the Alloy model: the agent has no
+  # equivalent of the OTel k8s_cluster receiver. Single-replica by default
+  # (`replicas: 1`, verified by render), which is what makes it a single writer.
+  # Condition-gated so clusters that already run kube-state-metrics can reuse it.
+  - name: kube-state-metrics
+    version: "8.2.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    condition: kube-state-metrics.enabled

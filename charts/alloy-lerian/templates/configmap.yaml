@@ -1,0 +1,29 @@
+{{- /*
+Configuration for the per-node role. Rendered from semantic parameters — the
+processing chain is not part of the values surface (see _config.tpl).
+*/ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "alloy-lerian.fullname" . }}-node
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "alloy-lerian.labels" . | nindent 4 }}
+    alloy-lerian.lerian.studio/role: node
+data:
+  config.alloy: |
+    {{- include "alloy-lerian.config.node" . | nindent 4 }}
+{{- if .Values.roles.singleton.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "alloy-lerian.fullname" . }}-singleton
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "alloy-lerian.labels" . | nindent 4 }}
+    alloy-lerian.lerian.studio/role: singleton
+data:
+  config.alloy: |
+    {{- include "alloy-lerian.config.singleton" . | nindent 4 }}
+{{- end }}

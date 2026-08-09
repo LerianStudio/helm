@@ -1,0 +1,197 @@
+# alloy-lerian — telemetry collection agent for client clusters.
+#
+# The surface below is SEMANTIC INTENT, not pipeline topology. The processing
+# chain (admission, enrichment, origin marking, perimeter, sanitisation,
+# batching) is rendered by the chart and deliberately not configurable:
+#
+#   - ordering is a contract. In this agent components form a graph, so swapping
+#     two stages produces no error — it produces telemetry without enrichment,
+#     silently
+#   - sanitisation of regulated data is not negotiable. There is no value that
+#     disables or weakens a rule
+#
+# Two parameters have NO default and fail the render when absent: `profile` and
+# `origin.id`. That is intentional. The chart this one replaces shipped a
+# default origin identifier that violated its own schema, which is why it could
+# not render with its own values.
+
+nameOverride: ""
+fullnameOverride: ""
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# ---------------------------------------------------------------------------
+# PROFILE — required, no default, not inferable
+# ---------------------------------------------------------------------------
+# own     our own environment. Collects node infrastructure, because the node
+#         is ours and its capacity and scheduling are our concern.
+# client  a client cluster. Does NOT collect node infrastructure: the node
+#         belongs to the client, collecting it asks for data we have no
+#         standing to act on, and it adds traffic across the public network.
+#
+# The boundary is operational responsibility. Inferring it from a cluster
+# property would silently produce the wrong profile in the ambiguous case.
+profile: ""
+
+# ---------------------------------------------------------------------------
+# ORIGIN — required, no default
+# ---------------------------------------------------------------------------
+# Marks every record with the environment it came from. Without it, telemetry
+# reaches the destination unattributable.
+#
+# Form: lowercase segments separated by hyphens ending in stg | hml | prd, or a
+# reserved own-environment name. Hyphenated composition is accepted — the
+# earlier pattern rejected identifiers already in use.
+#
+# Note: this marks PROVENANCE, not identity. The credential authenticates the
+# sender; the marker is self-declared. Changing it for a live environment is a
+# data migration, not a configuration tweak: the marker is part of series
+# identity at the destination, so a new value orphans every existing series.
+origin:
+  id: ""
+
+# ---------------------------------------------------------------------------
+# DESTINATION
+# ---------------------------------------------------------------------------
+destination:
+  endpoint: ""
+
+  credential:
+    # Omitted by default in the own profile (the internal platform does not
+    # validate it) and required in the client profile. Set explicitly to
+    # override the derivation.
+    # enabled: true
+
+    # Reference only. The credential lives in the origin cluster Secret,
+    # provisioned by onboarding before install; the chart reads it and never
+    # creates it. Registered in the repository's out-of-band secret allowlist.
+    secretName: "alloy-api-key"
+    secretKey: "api-key"
+
+  # In-memory queue. Persistence is deliberately out of scope: the durable
+  # backend is below the agent's stable component tier, and enabling it would
+  # require lowering the stability floor GLOBALLY, which un-gates every
+  # unstable component in a financial-institution cluster.
+  #
+  # Consequence accepted: a process restart loses the in-flight queue. The main
+  # gain — retry on transient failure — does not depend on persistence and does
+  # not exist today.
+  queue:
+    size: 1000
+    consumers: 10
+
+  retry:
+    # Effective survivable outage window. Beyond it, records are discarded and
+    # the discard is counted — silent loss is what this replaces.
+    #
+    # To be sized from measured volume per environment rather than guessed.
+    maxElapsedTime: "5m"
+
+# ---------------------------------------------------------------------------
+# COLLECTION
+# ---------------------------------------------------------------------------
+collection:
+  # Floor of 60s, enforced. A lower value is REJECTED, not clamped: clamping
+  # would hide the divergent intent of whoever set it.
+  #
+  # Cost at the destination is series x writes per minute. Collecting faster
+  # than anyone queries wastes CPU in the client cluster, bandwidth across the
+  # public network, and processing at the destination.
+  interval: "60s"
+
+  namespaces:
+    # Anchored regular expressions. `include` takes precedence; both empty
+    # means the profile default applies — NOT "collect everything". An empty
+    # perimeter read as unrestricted is the failure mode that exposes data.
+    include: ""
+    exclude: "^(kube-system|kube-public|kube-node-lease|cert-manager|keda|monitoring|default)$"
+
+  # Drops records below INFO at the edge. Records with no severity are kept:
+  # absence of the field is not evidence of low value.
+  dropDebugLogs: true
+
+# ---------------------------------------------------------------------------
+# ROLES — segregated by observation scope
+# ---------------------------------------------------------------------------
+# The chart delivers roles, not one agent. A cluster-scoped watcher replicated
+# per node writes the same series from every replica, with no attribute
+# distinguishing the writers: cost grows with cluster size while information
+# does not. Measured before this chart existed: writes per minute equalled the
+# node count exactly, across five environments.
+roles:
+  node:
+    # Per-node. Receives application telemetry pushed over the standard
+    # protocol. Push cannot duplicate, so replication is safe here.
+    enabled: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+
+  singleton:
+    # Exactly one replica, enforced. Observes cluster-scope state.
+    enabled: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+
+receiver:
+  # Restores the pre-v1.18.0 behaviour of no HTTP timeout. The pinned version
+  # changed the defaults to 1m/1m/30s, which can cut a long-lived connection.
+  # Set only for an application shown to be affected — as an exception for that
+  # application, not globally.
+  preserveLegacyTimeouts: false
+
+# ---------------------------------------------------------------------------
+# IN-TRANSIT DATA INSPECTION — own profile only
+# ---------------------------------------------------------------------------
+# The feature streams RAW pipeline payloads: log bodies and span attributes
+# from a core banking ledger. The upstream project's only stated mitigation is
+# transport TLS, which protects the channel and not the access, and the agent
+# UI carries no documented authentication.
+#
+# Supplying this in the client profile is a configuration error, not an
+# override — the render fails.
+inspection:
+  enabled: false
+
+logging:
+  level: "info"
+
+# ---------------------------------------------------------------------------
+# UPSTREAM DEPENDENCIES
+# ---------------------------------------------------------------------------
+# Sole source of cluster-object metrics: this agent has no equivalent of the
+# collector's cluster receiver. Single-replica by default, which is what makes
+# it a single writer.
+#
+# Disable to reuse an existing instance — many client clusters already run one,
+# and running two is waste plus a potential write conflict.
+kube-state-metrics:
+  enabled: true
+  replicas: 1
+  # Automatic sharding is documented upstream as experimental and liable to
+  # break or be removed without notice. Our scale does not require it.
+  autosharding:
+    enabled: false
+
+# Values passed through to the upstream agent chart. Kept minimal on purpose:
+# the agent's own defaults are good practice, and diverging from them requires
+# a documented reason.
+alloy:
+  # Usage reporting to the vendor is inappropriate in a financial-institution
+  # cluster.
+  alloy:
+    enableReporting: false
+    stabilityLevel: "generally-available"
+  # Not needed for the roles in scope, and would collide with CRDs a client
+  # cluster may already have.
+  crds:
+    create: false

@@ -393,6 +393,7 @@ The render gate runs `helm dependency build` + `helm template` per chart and ass
 A documented allowlist exempts Secrets that are intentionally provisioned out of band (each entry must carry a justification):
 
 - `otel-api-key` — operator-provisioned before install (`otel-collector-lerian`).
+- `alloy-api-key` — operator-provisioned before install (`alloy-lerian`); the credential lives in the origin cluster Secret and the chart only references it.
 - `kedaorg-certs` — self-managed at runtime by the KEDA operator's cert rotation (`reporter`).
 
 Charts with required production values use dummy CI-only fixtures under `.github/configs/helm-render-values/<chart>.yaml`. These files are not production examples and must not contain real credentials.

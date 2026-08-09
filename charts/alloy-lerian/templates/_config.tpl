@@ -148,37 +148,38 @@ otelcol.processor.transform "procedencia" {
 otelcol.processor.filter "perimetro" {
   error_mode = "ignore"
 
-{{- $ns := .Values.collection.namespaces }}
-{{- if $ns.include }}
+{{- $nsInclude := include "alloy-lerian.namespaceInclude" . }}
+{{- $nsExclude := include "alloy-lerian.namespaceExclude" . }}
+{{- if $nsInclude }}
   metrics {
     datapoint = [
-      `resource.attributes["k8s.namespace.name"] == nil or not IsMatch(resource.attributes["k8s.namespace.name"], {{ $ns.include | quote }})`,
+      `resource.attributes["k8s.namespace.name"] == nil or not IsMatch(resource.attributes["k8s.namespace.name"], {{ $nsInclude | quote }})`,
     ]
   }
   logs {
     log_record = [
-      `resource.attributes["k8s.namespace.name"] == nil or not IsMatch(resource.attributes["k8s.namespace.name"], {{ $ns.include | quote }})`,
+      `resource.attributes["k8s.namespace.name"] == nil or not IsMatch(resource.attributes["k8s.namespace.name"], {{ $nsInclude | quote }})`,
     ]
   }
   traces {
     span = [
-      `resource.attributes["k8s.namespace.name"] == nil or not IsMatch(resource.attributes["k8s.namespace.name"], {{ $ns.include | quote }})`,
+      `resource.attributes["k8s.namespace.name"] == nil or not IsMatch(resource.attributes["k8s.namespace.name"], {{ $nsInclude | quote }})`,
     ]
   }
-{{- else if $ns.exclude }}
+{{- else if $nsExclude }}
   metrics {
     datapoint = [
-      `IsMatch(resource.attributes["k8s.namespace.name"], {{ $ns.exclude | quote }})`,
+      `IsMatch(resource.attributes["k8s.namespace.name"], {{ $nsExclude | quote }})`,
     ]
   }
   logs {
     log_record = [
-      `IsMatch(resource.attributes["k8s.namespace.name"], {{ $ns.exclude | quote }})`,
+      `IsMatch(resource.attributes["k8s.namespace.name"], {{ $nsExclude | quote }})`,
     ]
   }
   traces {
     span = [
-      `IsMatch(resource.attributes["k8s.namespace.name"], {{ $ns.exclude | quote }})`,
+      `IsMatch(resource.attributes["k8s.namespace.name"], {{ $nsExclude | quote }})`,
     ]
   }
 {{- end }}

@@ -102,11 +102,29 @@ collection:
   interval: "60s"
 
   namespaces:
-    # Anchored regular expressions. `include` takes precedence; both empty
-    # means the profile default applies — NOT "collect everything". An empty
-    # perimeter read as unrestricted is the failure mode that exposes data.
+    # DERIVED FROM THE PROFILE — leave empty unless the environment genuinely
+    # differs. The defaults are:
+    #
+    #   client  include ^(midaz|midaz-plugins)$   — only what we operate.
+    #           Everything else in that cluster belongs to the client and would
+    #           cross the public network for no return.
+    #   own     exclude ^(kube-system|kube-public|kube-node-lease)$ — the whole
+    #           cluster is ours, minus plumbing.
+    #
+    # `include` takes precedence. Both empty does NOT mean "collect everything":
+    # it means the profile default applies. An empty perimeter read as
+    # unrestricted is the failure mode that exposes data.
     include: ""
-    exclude: "^(kube-system|kube-public|kube-node-lease|cert-manager|keda|monitoring|default)$"
+    exclude: ""
+
+  # Node CPU, memory and filesystem — the HOST, not the workloads. Available
+  # only in the own profile; setting it true with profile: client fails the
+  # render. Not collected by default in either profile.
+  #
+  # Cluster-OBJECT metrics (pod phase, deployment state, autoscaler) are a
+  # different thing and are collected in both — those describe workloads we
+  # operate.
+  nodeInfrastructure: false
 
   # Drops records below INFO at the edge. Records with no severity are kept:
   # absence of the field is not evidence of low value.

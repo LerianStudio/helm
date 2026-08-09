@@ -7,6 +7,7 @@ cannot reference the release name, so an aliased subchart could not point at a
 release-prefixed ConfigMap.
 */ -}}
 {{- include "alloy-lerian.assertSingletonReplicas" . -}}
+{{- include "alloy-lerian.assertNodeInfra" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

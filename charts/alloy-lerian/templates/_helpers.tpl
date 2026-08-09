@@ -208,3 +208,61 @@ alloy-lerian-node
 {{- define "alloy-lerian.singletonConfigMapName" -}}
 alloy-lerian-singleton
 {{- end -}}
+
+
+{{/*
+==============================================================================
+NAMESPACE PERIMETER — derived from the profile
+==============================================================================
+The client installs this chart, so it should fill in as little as possible.
+The perimeter is one of the things that differs between profiles, and the
+difference is not a preference:
+
+  client  collect ONLY the namespaces we operate. Everything else in that
+          cluster belongs to the client and is none of our business — and it
+          would cross the public network for no return.
+  own     collect everything except cluster plumbing. The whole cluster is ours.
+
+Overridable, but the default is correct for each profile so the common case
+needs no value at all.
+*/}}
+{{- define "alloy-lerian.namespaceInclude" -}}
+{{- $ns := (.Values.collection).namespaces | default dict -}}
+{{- if $ns.include -}}
+{{- $ns.include -}}
+{{- else if eq (include "alloy-lerian.profile" .) "client" -}}
+^(midaz|midaz-plugins)$
+{{- end -}}
+{{- end -}}
+
+{{- define "alloy-lerian.namespaceExclude" -}}
+{{- $ns := (.Values.collection).namespaces | default dict -}}
+{{- if $ns.exclude -}}
+{{- $ns.exclude -}}
+{{- else if eq (include "alloy-lerian.profile" .) "own" -}}
+^(kube-system|kube-public|kube-node-lease)$
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+==============================================================================
+NODE INFRASTRUCTURE — own profile only, enforced
+==============================================================================
+Node CPU, memory and filesystem come from the kubelet, which is a different
+source from the cluster-object producer. Not collected today in either profile.
+
+The guard exists so that enabling it later cannot silently reach the client
+profile: the node belongs to the client, and collecting it asks for data we have
+no standing to act on.
+
+Cluster-OBJECT metrics (pod phase, deployment state, autoscaler) are a different
+thing and are collected in both profiles — those describe workloads we operate.
+*/}}
+{{- define "alloy-lerian.assertNodeInfra" -}}
+{{- $requested := (.Values.collection).nodeInfrastructure | default false -}}
+{{- if and $requested (eq (include "alloy-lerian.profile" .) "client") -}}
+{{- fail "\n\nalloy-lerian: `collection.nodeInfrastructure` is not available in the client profile.\n\nNode CPU, memory and filesystem describe the host, which belongs to the client.\nWe have no standing to act on it, and it would cross the public network for no\nreturn.\n\nCluster-object metrics (pod phase, deployment state, autoscaler) are collected\nin both profiles — those describe workloads we operate.\n" -}}
+{{- end -}}
+{{- ternary "true" "false" $requested -}}
+{{- end -}}

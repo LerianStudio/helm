@@ -1,0 +1,42 @@
+# Modelo para cluster de CLIENTE (BYOC). Anel 4 do rollout.
+#
+# Este arquivo é o que o cliente recebe. São DOIS valores; o resto é derivado.
+#
+#   helm upgrade --install alloy-lerian \
+#     oci://ghcr.io/lerianstudio/alloy-lerian-helm --version <fixada> \
+#     -n monitoring --create-namespace -f values.yaml
+
+profile: client
+
+origin:
+  # Substituir. Minúsculas, segmentos separados por hífen, terminando em
+  # stg | hml | prd. Exemplos válidos: acme-prd, lazari-sandbox-prd.
+  id: SUBSTITUIR-prd
+
+destination:
+  endpoint: https://telemetry.lerian.io
+
+# ---------------------------------------------------------------------------
+# PRÉ-REQUISITO: o Secret da credencial deve existir ANTES do install
+# ---------------------------------------------------------------------------
+#   kubectl -n monitoring create secret generic alloy-api-key \
+#     --from-literal=api-key='<credencial fornecida pela Lerian>'
+#
+# O chart apenas lê esse Secret; nunca o cria. No perfil `client` a credencial
+# é obrigatória, porque o ponto de entrada a valida.
+#
+# ---------------------------------------------------------------------------
+# Derivado do perfil — não precisa constar aqui
+# ---------------------------------------------------------------------------
+# collection.namespaces  inclui APENAS ^(midaz|midaz-plugins)$. O resto do
+#                        cluster é do cliente e não é coletado.
+# nó                     não coletado, e ligar é impossível neste perfil.
+# inspection             o parâmetro NÃO EXISTE neste perfil. Fornecê-lo é erro
+#                        de configuração, não sobrescrita.
+# sanitização            sempre ativa. Dado regulado é mascarado no cluster de
+#                        origem, antes de qualquer saída. Não há valor que
+#                        desabilite.
+#
+# Se o cluster já roda kube-state-metrics, desligue o nosso para não haver dois:
+#   kube-state-metrics:
+#     enabled: false

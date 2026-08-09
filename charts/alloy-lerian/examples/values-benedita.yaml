@@ -1,0 +1,76 @@
+# benedita — anel 1 do rollout. Ambiente próprio, on-premises.
+#
+# Uso:
+#   helm upgrade --install alloy-lerian \
+#     oci://ghcr.io/lerianstudio/alloy-lerian-helm --version <fixada> \
+#     -n monitoring --create-namespace \
+#     -f examples/values-benedita.yaml
+#
+# Três valores. O resto é derivado do perfil, e os defaults do agente são
+# mantidos deliberadamente.
+
+# Ambiente nosso: coleta todos os namespaces exceto a infra do orquestrador, e
+# a inspeção de dado em trânsito fica disponível (desligada por padrão).
+profile: own
+
+origin:
+  # Nome reservado de ambiente próprio, aceito sem sufixo de estágio.
+  #
+  # ⚠️ Trocar isto num ambiente em operação é MIGRAÇÃO DE DADO, não ajuste de
+  # config: a marca compõe a identidade da série no destino, então um valor novo
+  # cria séries novas e órfã todas as anteriores.
+  id: benedita
+
+destination:
+  # Concentrador interno, via ingress do cluster. Inalterado nesta fase — o
+  # contrato de transporte é o mesmo antes e depois da migração, então o
+  # concentrador não percebe a troca.
+  endpoint: https://telemetry.benedita.lerian.net
+
+  # Sem bloco `credential`: a plataforma interna não valida a credencial, e o
+  # perfil `own` já deriva isso. Nenhum Secret precisa existir antes do install.
+
+# ---------------------------------------------------------------------------
+# Deliberadamente AUSENTE deste arquivo
+# ---------------------------------------------------------------------------
+# collection.namespaces      derivado: exclui ^(kube-system|kube-public|kube-node-lease)$
+# collection.interval        60s, o piso — não há razão para subir no anel 1
+# collection.dropDebugLogs   true
+# collection.nodeInfrastructure  false. Métricas de NÓ (CPU/memória do host)
+#                            não são coletadas por nenhum perfil hoje; a fonte
+#                            é o kubelet e não está no chart. O perfil `own`
+#                            permite ligar quando existir; o `client` não.
+# roles.*                    ambos ativos
+# kube-state-metrics         ativo, uma réplica. Se benedita já tiver um,
+#                            desligar com `kube-state-metrics.enabled: false`
+#                            para não rodar dois.
+# inspection.enabled         false. Disponível neste perfil, mas ligar expõe
+#                            payload cru de pipeline numa interface sem
+#                            autenticação — só sob janela aprovada, e nunca
+#                            por Service ou Ingress.
+#
+# As regras de sanitização de dado regulado NÃO aparecem aqui porque não são
+# configuráveis. Não existe valor que as desabilite ou enfraqueça.
+
+# ---------------------------------------------------------------------------
+# Antes de subir: o portão de validação do anel 1
+# ---------------------------------------------------------------------------
+# Este ambiente é onde a migração é validada por inteiro antes de qualquer
+# outro receber a mudança. O que precisa estar fechado:
+#
+#   1. contrato de mudança declarado ANTES do deploy, conferindo depois
+#   2. escritas por série = 1, e invariante ao número de nós
+#      (taxa unitária num cluster de um nó não prova nada)
+#   3. redução de séries conforme o previsto
+#   4. consumo de recurso e privilégio não superiores aos anteriores
+#   5. reversão exercitada com sucesso
+#   6. métricas de descarte distintas: saturação de fila vs descarte permanente
+#      — causas diferentes, e a segunda não se resolve sozinha
+#   7. correspondência de vocabulário de métrica confirmada contra dado REAL
+#      (o mapa atual é hipótese documental: nenhum nome novo existe hoje no
+#      destino)
+#   8. arquétipos de alerta reescritos, com disparo verificado
+#   9. painéis exibindo dado; os que consultam informação descontinuada
+#      removidos, não deixados vazios
+#
+# Enquanto qualquer item estiver aberto, aws-staging não inicia.

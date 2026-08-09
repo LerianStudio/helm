@@ -7,7 +7,7 @@ chart and renders the collection pipeline from semantic parameters.
 
 - Chart type: `dependency-wrapper`
 - Required secrets: `alloy-api-key` (key `api-key`) — operator-provisioned in the origin cluster before install, in the `client` profile. Not created by this chart. Omitted in the `own` profile, where the internal platform does not validate it.
-- Dependency notes: two external dependencies, pinned exactly. `alloy` 1.11.1 (upstream agent) is unconditional; `kube-state-metrics` 8.2.0 is condition-gated on `kube-state-metrics.enabled` so clusters that already run it can reuse the existing instance.
+- Dependency notes: three dependency entries, all pinned exactly. `alloy` 1.11.1 appears **twice** under the `node` and `singleton` aliases, each condition-gated on its own `enabled` value, because the upstream chart delivers one set of workloads and the design needs two topologies. `kube-state-metrics` 8.2.0 is condition-gated on `kube-state-metrics.enabled` so clusters that already run it can reuse the existing instance.
 - Production overrides: `profile` and `origin.id` are required and have no default — the render fails without them. `destination.endpoint` is required. Override `destination.retry.maxElapsedTime` and `destination.queue.size` from measured volume per environment.
 - Source/license: [grafana/alloy](https://github.com/grafana/alloy) (Apache-2.0), [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) (Apache-2.0).
 
@@ -37,7 +37,7 @@ operational responsibility, not preference.
 | Application telemetry over the standard protocol | yes | yes |
 | Cluster-scope state | yes | yes |
 | Cluster-object metrics | yes | yes |
-| **Node infrastructure** | **yes** | **no** |
+| **Node infrastructure** | not collected today; the profile permits enabling it | **not collected, and enabling it fails the render** |
 | In-transit data inspection | configurable, off by default | **parameter does not exist** |
 | Regulated-data sanitisation | yes | yes |
 | Destination credential | omitted by default | required |

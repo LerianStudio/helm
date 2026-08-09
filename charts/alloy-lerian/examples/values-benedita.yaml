@@ -28,7 +28,17 @@ destination:
   endpoint: https://telemetry.benedita.lerian.net
 
   # Sem bloco `credential`: a plataforma interna não valida a credencial, e o
-  # perfil `own` já deriva isso. Nenhum Secret precisa existir antes do install.
+  # perfil `own` já deriva isso — o cabeçalho não é enviado.
+
+# Remove a referência ao Secret que os defaults do chart carregam. Ela é
+# inofensiva (optional: true, e o cabeçalho não é enviado neste perfil), mas
+# deixá-la sugere que o Secret é esperado aqui — e não é.
+node:
+  alloy:
+    extraEnv: []
+singleton:
+  alloy:
+    extraEnv: []
 
 # ---------------------------------------------------------------------------
 # Deliberadamente AUSENTE deste arquivo

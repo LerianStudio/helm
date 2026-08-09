@@ -1,0 +1,61 @@
+# MODELO de fluxo de CI para a porta de sanitizacao.
+#
+# Installed: the chart now exists.
+#
+# Por que um fluxo dedicado, e nao um passo no fluxo de padrao de chart:
+# a verificacao executa um contêiner e leva ~30s por rodada. Manter separado
+# permite que falhe de forma legivel, sem se misturar aos demais checks.
+
+name: Sanitizacao de dado regulado
+
+on:
+  pull_request:
+    paths:
+      - 'charts/alloy-lerian/sanitizacao/**'
+      - 'charts/alloy-lerian/templates/**'
+      - '.github/workflows/sanitizacao.yml'
+  # Execucao semanal: o motor de regex e o agente sao pinados, mas a rodada
+  # periodica detecta se algo no ambiente de execucao mudou.
+  schedule:
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  porta-de-sanitizacao:
+    name: Porta de sanitizacao (bloqueante)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Obter o codigo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # A versao do agente e pinada de proposito. Atualizar exige reverificar
+      # as assercoes — o comportamento de regex e de funcao pode mudar entre
+      # versoes, e a falha seria silenciosa em producao.
+      - name: Obter a imagem do agente
+        run: docker pull grafana/alloy:v1.18.1
+
+      - name: Executar a porta
+        run: ./charts/alloy-lerian/sanitizacao/porta-de-entrega.sh
+
+      # Anexa o resultado ao resumo da execucao, para que quem revisa veja
+      # sem abrir o log.
+      - name: Registrar o resultado
+        if: always()
+        run: |
+          {
+            echo "## Porta de sanitizacao"
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "Liberado — todas as regras de sanitizacao verificadas."
+            else
+              echo "**BLOQUEADO.** Regra de sanitizacao malformada nao gera erro"
+              echo "em producao: produz saida que aparenta estar mascarada."
+              echo "Ver o log do passo anterior."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

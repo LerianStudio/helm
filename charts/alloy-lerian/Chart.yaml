@@ -43,14 +43,33 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # https://docs.lerian.studio/docs/midaz-components
 
 dependencies:
+  # The upstream chart delivers ONE set of workloads, but the design needs two
+  # topologies. Declared twice under aliases rather than hand-writing
+  # DaemonSet/Deployment manifests: reusing upstream keeps probes, RBAC,
+  # security context and the config-reloader sidecar in one place instead of
+  # forking them.
+  #
   # Pinned exactly, no ranges. v1.18.1 is the minimum floor, not a preference:
   # it exists primarily to backport two transitive-dependency CVE fixes, so
   # 1.18.0 is vulnerable. Bumping requires re-running the sanitisation gate —
   # regex and function behaviour can change between versions, and the failure
   # mode in production is silent.
+
+  # Per-node role: receives application telemetry pushed to it. Push cannot
+  # duplicate, so replication per node is safe.
   - name: alloy
+    alias: node
     version: "1.11.1"
     repository: "https://grafana.github.io/helm-charts"
+    condition: node.enabled
+
+  # Single-replica role: observes cluster-scope state. More than one replica
+  # duplicates every series with nothing distinguishing the writers.
+  - name: alloy
+    alias: singleton
+    version: "1.11.1"
+    repository: "https://grafana.github.io/helm-charts"
+    condition: singleton.enabled
 
   # Sole source of cluster-object metrics in the Alloy model: the agent has no
   # equivalent of the OTel k8s_cluster receiver. Single-replica by default

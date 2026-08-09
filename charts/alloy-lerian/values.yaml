@@ -120,27 +120,113 @@ collection:
 # distinguishing the writers: cost grows with cluster size while information
 # does not. Measured before this chart existed: writes per minute equalled the
 # node count exactly, across five environments.
+#
+# Each role is an aliased instance of the upstream agent chart, so upstream owns
+# probes, RBAC, security context and the config-reloader sidecar. The blocks
+# below are the upstream values surface under the alias name — see the `node:`
+# and `singleton:` blocks further down.
 roles:
   node:
     # Per-node. Receives application telemetry pushed over the standard
     # protocol. Push cannot duplicate, so replication is safe here.
     enabled: true
+
+  singleton:
+    # Exactly one replica, enforced. Observes cluster-scope state.
+    enabled: true
+
+# ---------------------------------------------------------------------------
+# NODE ROLE — upstream agent values under the `node` alias
+# ---------------------------------------------------------------------------
+node:
+  enabled: true
+  alloy:
+    # Config comes from the ConfigMap this chart renders; upstream must not
+    # create its own.
+    configMap:
+      create: false
+      name: alloy-lerian-node
+      key: config.alloy
+    # Ports the applications push to. Upstream opens none by default.
+    extraPorts:
+      - name: otlp-grpc
+        port: 4317
+        targetPort: 4317
+        protocol: TCP
+      - name: otlp-http
+        port: 4318
+        targetPort: 4318
+        protocol: TCP
+    # Usage reporting to the vendor is inappropriate in a client cluster.
+    enableReporting: false
+    # Held at the strictest tier. Lowering it would un-gate every unstable
+    # component; the durable send queue is the only thing that would need it,
+    # and that trade was rejected.
+    stabilityLevel: generally-available
+    # Credential read from the Secret the onboarding process provisions in this
+    # namespace. The chart never creates it — registered in the repository's
+    # out-of-band secret allowlist so the render gate does not flag it.
+    # Remove this entry for the own profile, where the platform does not
+    # validate the credential.
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-api-key
+            key: api-key
+            optional: true
     resources:
       requests:
         cpu: 100m
         memory: 128Mi
       limits:
         memory: 512Mi
+  controller:
+    type: daemonset
+    # Needed for the connection-based association fallback, which reads the peer
+    # address. Not every application declares k8s.pod.ip, so the fallback is
+    # still load-bearing. Drop this once declaration coverage is complete.
+    hostNetwork: true
+    dnsPolicy: ClusterFirstWithHostNet
+  crds:
+    create: false
 
-  singleton:
-    # Exactly one replica, enforced. Observes cluster-scope state.
-    enabled: true
+# ---------------------------------------------------------------------------
+# SINGLETON ROLE — upstream agent values under the `singleton` alias
+# ---------------------------------------------------------------------------
+singleton:
+  enabled: true
+  alloy:
+    configMap:
+      create: false
+      name: alloy-lerian-singleton
+      key: config.alloy
+    enableReporting: false
+    stabilityLevel: generally-available
+    # No inbound ports: this role watches the cluster API and scrapes, it does
+    # not receive pushes.
+    extraPorts: []
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-api-key
+            key: api-key
+            optional: true
     resources:
       requests:
         cpu: 50m
         memory: 128Mi
       limits:
         memory: 256Mi
+  controller:
+    type: deployment
+    # EXACTLY ONE. More than one replica duplicates every series with no
+    # attribute distinguishing the writers — the defect this chart exists to
+    # fix. Enforced by the chart, not merely defaulted.
+    replicas: 1
+  crds:
+    create: false
 
 receiver:
   # Restores the pre-v1.18.0 behaviour of no HTTP timeout. The pinned version

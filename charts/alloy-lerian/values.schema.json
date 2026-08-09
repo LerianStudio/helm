@@ -32,6 +32,14 @@
       "type": "object",
       "additionalProperties": true
     },
+    "node": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "singleton": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "receiver": {
       "type": "object",
       "additionalProperties": true

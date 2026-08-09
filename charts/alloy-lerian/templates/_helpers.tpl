@@ -176,3 +176,35 @@ configuration error rather than an override.
 {{- end -}}
 {{- ternary "true" "false" (and $requested (eq $profile "own")) -}}
 {{- end -}}
+
+
+{{/*
+==============================================================================
+ROLE GUARDS
+==============================================================================
+The subchart values cannot reference the release name, so the ConfigMap name is
+injected here and the single-replica constraint is enforced rather than merely
+defaulted. A default can be overridden silently; this fails the render.
+*/}}
+{{- define "alloy-lerian.assertSingletonReplicas" -}}
+{{- $s := .Values.singleton | default dict -}}
+{{- $c := $s.controller | default dict -}}
+{{- $r := $c.replicas -}}
+{{- if and (ne ($r | toString) "<nil>") (ne ($r | int) 1) -}}
+{{- fail (printf "\n\nalloy-lerian: singleton.controller.replicas is %v; it must be 1.\n\nThis role observes cluster-scope state. More than one replica writes the same\nseries from every instance, with no attribute distinguishing the writers —\nthe exact defect this chart exists to fix. Cost would grow with replica count\nwhile information does not.\n" $r) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+ConfigMap names are FIXED, not release-derived. Subchart values are static YAML
+and cannot reference the release name, so an aliased subchart could not point at
+a release-prefixed ConfigMap. Fixed names keep the reference resolvable while
+staying namespace-scoped, which is the actual isolation boundary.
+*/}}
+{{- define "alloy-lerian.nodeConfigMapName" -}}
+alloy-lerian-node
+{{- end -}}
+
+{{- define "alloy-lerian.singletonConfigMapName" -}}
+alloy-lerian-singleton
+{{- end -}}

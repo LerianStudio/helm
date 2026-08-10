@@ -192,7 +192,12 @@ node:
           secretKeyRef:
             name: alloy-api-key
             key: api-key
-            optional: true
+            # NÃO optional. No perfil client o ponto de entrada valida a
+            # credencial, e 401 é falha PERMANENTE: o dado é descartado na hora,
+            # sem reenvio. Com optional: true o pod subiria sem a credencial e a
+            # perda seria silenciosa e contínua. Falhar na criação do pod é
+            # ruidoso e recuperável — é o modo de falha que queremos.
+            optional: false
     resources:
       requests:
         cpu: 100m
@@ -230,7 +235,12 @@ singleton:
           secretKeyRef:
             name: alloy-api-key
             key: api-key
-            optional: true
+            # NÃO optional. No perfil client o ponto de entrada valida a
+            # credencial, e 401 é falha PERMANENTE: o dado é descartado na hora,
+            # sem reenvio. Com optional: true o pod subiria sem a credencial e a
+            # perda seria silenciosa e contínua. Falhar na criação do pod é
+            # ruidoso e recuperável — é o modo de falha que queremos.
+            optional: false
     resources:
       requests:
         cpu: 50m
@@ -286,16 +296,3 @@ kube-state-metrics:
   autosharding:
     enabled: false
 
-# Values passed through to the upstream agent chart. Kept minimal on purpose:
-# the agent's own defaults are good practice, and diverging from them requires
-# a documented reason.
-alloy:
-  # Usage reporting to the vendor is inappropriate in a financial-institution
-  # cluster.
-  alloy:
-    enableReporting: false
-    stabilityLevel: "generally-available"
-  # Not needed for the roles in scope, and would collide with CRDs a client
-  # cluster may already have.
-  crds:
-    create: false

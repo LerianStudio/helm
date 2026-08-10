@@ -264,5 +264,7 @@ thing and are collected in both profiles — those describe workloads we operate
 {{- if and $requested (eq (include "alloy-lerian.profile" .) "client") -}}
 {{- fail "\n\nalloy-lerian: `collection.nodeInfrastructure` is not available in the client profile.\n\nNode CPU, memory and filesystem describe the host, which belongs to the client.\nWe have no standing to act on it, and it would cross the public network for no\nreturn.\n\nCluster-object metrics (pod phase, deployment state, autoscaler) are collected\nin both profiles — those describe workloads we operate.\n" -}}
 {{- end -}}
-{{- ternary "true" "false" $requested -}}
+{{/* Emits NOTHING. An assertion helper that returns a value gets that value
+     written into the manifest by the call site — which produced
+     "falseapiVersion: v1" and made every render invalid YAML. */}}
 {{- end -}}

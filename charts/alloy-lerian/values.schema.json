@@ -14,7 +14,12 @@
       "additionalProperties": true
     },
     "profile": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "own",
+        "client"
+      ],
+      "description": "own = our environment (collects node infra); client = client cluster (does not). Not inferable, no default."
     },
     "origin": {
       "type": "object",
@@ -55,10 +60,11 @@
     "kube-state-metrics": {
       "type": "object",
       "additionalProperties": true
-    },
-    "alloy": {
-      "type": "object",
-      "additionalProperties": true
     }
-  }
+  },
+  "required": [
+    "destination",
+    "origin",
+    "profile"
+  ]
 }

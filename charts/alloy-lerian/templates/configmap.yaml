@@ -19,7 +19,7 @@ metadata:
 data:
   config.alloy: |
     {{- include "alloy-lerian.config.node" . | nindent 4 }}
-{{- if .Values.roles.singleton.enabled }}
+{{- if .Values.singleton.enabled }}
 ---
 apiVersion: v1
 kind: ConfigMap

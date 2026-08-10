@@ -333,8 +333,10 @@ ledger:
   # Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding /
   # mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/ssl/replicaHost).
   datastores: {}
-  # -- Escape hatch: any native env var (e.g. DB_ONBOARDING_MAX_OPEN_CONNS) overrides the template default.
-  configmap: {}
+  # -- Escape hatch: native environment variables override template defaults.
+  configmap:
+    # -- Schema Registry used by the billing serializer. Leave empty to keep billing emission disabled.
+    STREAMING_SCHEMA_REGISTRY_URL: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

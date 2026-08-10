@@ -102,8 +102,11 @@ data:
   # SERVICE DISCOVERY — knob inline; server config from global.serviceDiscovery,
   # endpoints derived from this chart's own service/ingress (gated via helper).
   # =============================================================================
-  {{- $sdEnabled := eq (include "midaz.isTrue" ($cm.SD_ENABLED | default "false")) "true" }}
-  SD_ENABLED: {{ $cm.SD_ENABLED | default "false" | quote }}
+  {{- /* enabled precedence: configmap.SD_ENABLED > global.serviceDiscovery.enabled > false. */ -}}
+  {{- $sdGlobalEnabled := toString (((.Values.global | default dict).serviceDiscovery | default dict).enabled | default false) }}
+  {{- $sdRaw := $sdGlobalEnabled }}{{- if hasKey $cm "SD_ENABLED" }}{{- $sdRaw = toString (index $cm "SD_ENABLED") }}{{- end }}
+  {{- $sdEnabled := eq (include "midaz.isTrue" $sdRaw) "true" }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
   {{- include "lerian-common.serviceDiscovery.env" (dict
         "context" $
         "enabled" $sdEnabled

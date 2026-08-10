@@ -323,8 +323,15 @@ data:
   # SERVICE DISCOVERY — knob inline; server config from global.serviceDiscovery,
   # endpoints derived from this chart's own service/ingress (gated via helper).
   # =============================================================================
-  {{- $sdEnabled := eq (include "midaz.isTrue" ($cm.SD_ENABLED | default "false")) "true" }}
-  SD_ENABLED: {{ $cm.SD_ENABLED | default "false" | quote }}
+  {{- /* enabled precedence: configmap.SD_ENABLED (this component) > global.serviceDiscovery.enabled
+     (env-wide toggle) > false. Emit the RESOLVED value so the app's SD_ENABLED reflects the
+     env-wide toggle, and pass it to the helper. */ -}}
+  {{- /* hasKey (not `| default`): a per-component SD_ENABLED=false must WIN over a global true —
+     sprig `default` treats a YAML false as empty and would fall through to the global. */ -}}
+  {{- $sdGlobalEnabled := toString (((.Values.global | default dict).serviceDiscovery | default dict).enabled | default false) }}
+  {{- $sdRaw := $sdGlobalEnabled }}{{- if hasKey $cm "SD_ENABLED" }}{{- $sdRaw = toString (index $cm "SD_ENABLED") }}{{- end }}
+  {{- $sdEnabled := eq (include "midaz.isTrue" $sdRaw) "true" }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
   {{- include "lerian-common.serviceDiscovery.env" (dict
         "context" $
         "enabled" $sdEnabled
@@ -337,8 +344,11 @@ data:
   # =============================================================================
   # STREAMING — knob inline; brokers/SASL/TLS from global.streaming (gated via helper).
   # =============================================================================
-  {{- $streamingEnabled := eq (include "midaz.isTrue" ($cm.STREAMING_ENABLED | default "false")) "true" }}
-  STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+  {{- /* enabled precedence: configmap.STREAMING_ENABLED > global.streaming.enabled > false. */ -}}
+  {{- $streamingGlobalEnabled := toString (((.Values.global | default dict).streaming | default dict).enabled | default false) }}
+  {{- $streamingRaw := $streamingGlobalEnabled }}{{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = toString (index $cm "STREAMING_ENABLED") }}{{- end }}
+  {{- $streamingEnabled := eq (include "midaz.isTrue" $streamingRaw) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
   {{- include "lerian-common.streaming.env" (dict
         "context" $
         "enabled" $streamingEnabled

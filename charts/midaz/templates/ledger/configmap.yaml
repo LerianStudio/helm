@@ -349,6 +349,9 @@ data:
   {{- $streamingRaw := $streamingGlobalEnabled }}{{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = toString (index $cm "STREAMING_ENABLED") }}{{- end }}
   {{- $streamingEnabled := eq (include "midaz.isTrue" $streamingRaw) "true" }}
   STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  # Billing events use the Schema Registry independently of the Kafka broker endpoint.
+  # Empty is intentional: billing emission stays disabled until an operator configures it.
+  STREAMING_SCHEMA_REGISTRY_URL: {{ $cm.STREAMING_SCHEMA_REGISTRY_URL | default "" | quote }}
   {{- include "lerian-common.streaming.env" (dict
         "context" $
         "enabled" $streamingEnabled

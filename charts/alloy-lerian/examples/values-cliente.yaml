@@ -19,11 +19,16 @@ destination:
 # ---------------------------------------------------------------------------
 # PRÉ-REQUISITO: o Secret da credencial deve existir ANTES do install
 # ---------------------------------------------------------------------------
-#   kubectl -n monitoring create secret generic alloy-api-key \
-#     --from-literal=api-key='<credencial fornecida pela Lerian>'
+# ÚNICO passo manual. Um Secret, com os valores que a Lerian entrega:
 #
-# O chart apenas lê esse Secret; nunca o cria. No perfil `client` a credencial
-# é obrigatória, porque o ponto de entrada a valida.
+#   kubectl -n monitoring create secret generic alloy-lerian \
+#     --from-literal=telemetry-token='<token de telemetria>' \
+#     --from-literal=fleet-token='<token de fleet, se aplicável>'
+#
+# O chart apenas LÊ esse Secret; nunca o cria. No perfil `client` a credencial de
+# telemetria é obrigatória, porque o ponto de entrada a valida.
+#
+# A chave `fleet-token` só é necessária se `fleetManagement.enabled: true`.
 #
 # ---------------------------------------------------------------------------
 # Derivado do perfil — não precisa constar aqui

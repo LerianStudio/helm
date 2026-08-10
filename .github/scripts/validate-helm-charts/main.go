@@ -1288,11 +1288,12 @@ var allowedDanglingSecrets = map[string]bool{
 	// its README instructs `kubectl create secret generic otel-api-key` before
 	// install, so the chart intentionally never renders it.
 	"otel-api-key": true,
-	// alloy-lerian references an operator-provisioned API-key Secret. The
-	// credential lives in the origin cluster Secret, created by the onboarding
-	// process before install; the chart only reads it via secretKeyRef and
-	// intentionally never renders it.
-	"alloy-api-key": true,
+	// alloy-lerian references a Secret the client creates before install, from
+	// values we hand over — one Secret, one key per credential (telemetry and,
+	// when remote management is enabled, fleet). The chart only reads it via
+	// secretKeyRef and intentionally never renders it. That single command is the
+	// only manual step in the client installation.
+	"alloy-lerian": true,
 	// reporter bundles the KEDA subchart, whose operator self-manages this TLS
 	// cert Secret at runtime via --enable-cert-rotation/--cert-secret-name. KEDA
 	// creates it; no Helm chart renders it.

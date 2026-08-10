@@ -15,15 +15,24 @@ fleetManagement:
     plataforma: kubernetes
 ```
 
-E o Secret do token, antes do install:
+O cliente executa **um** comando antes do install, com os valores que entregamos
+— um Secret, duas chaves:
 
 ```bash
-kubectl -n monitoring create secret generic alloy-fleet-token \
-  --from-literal=token='<token com escopo de leitura de config remota>'
+kubectl -n monitoring create secret generic alloy-lerian \
+  --from-literal=telemetry-token='<token de telemetria>' \
+  --from-literal=fleet-token='<token de leitura de config remota>'
 ```
+
+É o único passo manual. Todo o resto o chart resolve.
 
 O chart valida: com `enabled: true` e `url` ou `username` vazios, o render falha
 com mensagem explicando o que falta.
+
+### Sobre o `username`
+
+**Não é identidade — é o ID numérico da stack, igual para todos os clientes.** Não
+serve para diferenciar origem. A credencial que varia é o **token**.
 
 ## Não exige o operator
 
@@ -112,22 +121,57 @@ de atributo **local**, um agente mal configurado poderia declarar o atributo de
 outro cliente e receber configuração alheia. Para qualquer matching com
 significado de segurança, use atributos **remotos**.
 
-## ⚠️ Isolamento entre clientes é por STACK, não por pipeline
+## 🔴 RISCO ACEITO: um cliente pode enumerar a frota inteira
 
-O controle de acesso do Fleet Management tem duas papéis, ambas com escopo da
-aplicação inteira dentro da stack:
+**Decisão de 2026-08-10: aceito por ora, com a topologia de stack pendente para
+antes do anel de clientes.** Não bloqueia os anéis internos.
 
-- **Reader** — vê collectors, atributos e pipelines
-- **Admin** — escopo irrestrito no app
+### O que exatamente acontece
 
-**Não há escopo por pipeline nem por collector.** Com N clientes na mesma stack,
-quem tem leitura vê a configuração de **todos**.
+O token que o agente usa para buscar configuração serve para mais do que isso. As
+mesmas credencial e URL respondem a `ListCollectors` e `ListPipelines` — chamadas
+de enumeração da stack:
 
-Particionamento dentro de uma stack **não está documentado**, e a evidência aponta
-para inexistente. Se o isolamento entre clientes importar, o caminho arquitetural
-é **uma stack por cliente** — não controle de acesso dentro de uma.
+```bash
+curl -d '{}' -u "<stack-id>:<token>" \
+  https://fleet-management-<stack>.grafana.net/collector.v1.CollectorService/ListCollectors
+```
 
-Decidir isso **antes** de habilitar em ambiente de cliente.
+E o escopo mínimo de uma access policy é a **stack inteira**: seletores de rótulo,
+que seriam o mecanismo de sub-escopo, valem só para métricas e logs — não para
+Fleet Management.
+
+**Consequência:** um cliente que leia o Secret do próprio cluster — e ele pode, é
+o cluster dele — enumera collectors, atributos e pipelines de **todos os outros
+clientes** da mesma stack.
+
+### O que NÃO resolve
+
+| Tentativa | Por que não basta |
+|---|---|
+| Token por cliente | Melhora revogação e rastreabilidade, mas o alcance de cada token continua sendo a stack |
+| `username` distinto | Não é identidade — é o ID da stack, igual para todos |
+| Esconder a credencial do cliente | Estruturalmente impossível: o agente precisa lê-la em runtime, e quem tem o namespace lê o Secret |
+| RBAC do Fleet Management | Governa a interface, não o token de API. Planos distintos |
+| `id` e `attributes` | Auto-declarados e não autenticados. Não são fronteira de tenant |
+
+### O que resolve
+
+**Uma stack por cliente.** É o padrão que a documentação recomenda nomeando o
+cenário — revendedores e prestadores de serviço gerenciado com clientes que não
+devem acessar dados uns dos outros. Bônus: cada stack tem contabilização própria,
+o que dá atribuição de custo por cliente de graça.
+
+Particionamento **dentro** de uma stack não está documentado, e a evidência aponta
+para inexistente.
+
+### Por que aceitar por agora
+
+Fleet Management é fase posterior e começa pelos **nossos** ambientes (benedita,
+depois AWS), onde não há cliente na stack e o problema não existe.
+
+⚠️ **A decisão de topologia de stack precisa ser tomada ANTES de habilitar Fleet
+Management em cluster de cliente.** Não depois.
 
 ## O que fica obrigatoriamente local
 
@@ -140,6 +184,18 @@ permanecem locais:
 
 Somado à política de exportação local, isso define a fronteira do que a gestão
 remota alcança.
+
+## Rotação do token
+
+**Decisão: manter variável de ambiente.** É o caminho que a documentação de
+onboarding mostra, e mais legível na configuração.
+
+**Custo aceito:** variável de ambiente **não recarrega**. Trocar o token exige
+reiniciar os pods — em cluster de cliente, isso é janela negociada.
+
+A alternativa existe e fica registrada: com `password_file` e o Secret montado
+como volume, o agente relê o arquivo a cada requisição, permitindo rotação sem
+reinício. Se a frequência de rotação passar a doer, é a mudança a fazer.
 
 ## Verificação executada
 

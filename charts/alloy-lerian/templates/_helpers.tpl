@@ -131,11 +131,11 @@ gate does not flag it as a dangling reference.
 {{- end -}}
 
 {{- define "alloy-lerian.credentialSecretName" -}}
-{{- .Values.destination.credential.secretName | default "alloy-api-key" -}}
+{{- .Values.destination.credential.secretName | default "alloy-lerian" -}}
 {{- end -}}
 
 {{- define "alloy-lerian.credentialSecretKey" -}}
-{{- .Values.destination.credential.secretKey | default "api-key" -}}
+{{- .Values.destination.credential.secretKey | default "telemetry-token" -}}
 {{- end -}}
 
 {{/*

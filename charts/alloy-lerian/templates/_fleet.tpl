@@ -58,11 +58,15 @@ is byte-identical to today's until someone opts in.
 remotecfg {
   url = {{ $f.url | quote }}
 
-  // Stable and unique per pod. NOT constants.hostname and NOT the auto-generated
-  // seed: the seed is persisted to the agent's storage path, which on an
-  // ephemeral pod is lost on every restart — producing a new collector identity
-  // each time and churn in the fleet registry.
-  id = sys.env("ALLOY_FLEET_COLLECTOR_ID")
+  // Origin plus pod name: stable for the pod's lifetime and unique across the
+  // DaemonSet. Composed here rather than read from one variable, because the
+  // origin is known at render time and only the pod name needs the environment.
+  //
+  // NOT constants.hostname (resolves to the node in a DaemonSet) and NOT the
+  // auto-generated seed: the seed is persisted to the agent's storage path,
+  // which an ephemeral pod loses on every restart — producing a new collector
+  // identity each time and churn in the fleet registry.
+  id = {{ printf "%s-" (include "alloy-lerian.originId" .) | quote }} + sys.env("ALLOY_FLEET_POD_NAME")
 
   attributes = {
 {{- range $k, $v := ($f.attributes | default dict) }}
@@ -81,27 +85,39 @@ remotecfg {
 {{- end -}}
 
 {{/*
-Environment for the fleet block: collector identity and token.
+==============================================================================
+GUARD — the fleet block needs environment the subchart values must carry
+==============================================================================
+The `remotecfg` block reads ALLOY_FLEET_POD_NAME and ALLOY_FLEET_TOKEN from
+the environment. Those entries live in the subchart's `extraEnv`, which is static
+YAML — a parent template cannot inject a fieldRef into it.
 
-The identity is composed from the pod name, which the workload injects from the
-object metadata — stable for the pod's lifetime and unique across the DaemonSet.
+So the chart cannot wire them automatically. It CAN refuse to render a
+configuration that would fail at startup, which is what this guard does: without
+it, enabling fleet management would produce an agent that cannot authenticate and
+never receives configuration, and the failure would only appear in the pod log.
+
+Verified: the helper that used to render these entries was never invoked, so the
+environment never reached the container. This guard is what makes that class of
+mistake impossible rather than merely unlikely.
 */}}
-{{- define "alloy-lerian.fleetEnv" -}}
+{{- define "alloy-lerian.assertFleetEnv" -}}
 {{- if eq (include "alloy-lerian.fleetEnabled" .) "true" -}}
-{{- $f := .Values.fleetManagement -}}
-- name: ALLOY_FLEET_POD_NAME
-  valueFrom:
-    fieldRef:
-      fieldPath: metadata.name
-- name: ALLOY_FLEET_COLLECTOR_ID
-  value: {{ printf "%s-$(ALLOY_FLEET_POD_NAME)" (include "alloy-lerian.originId" .) | quote }}
-- name: ALLOY_FLEET_TOKEN
-  valueFrom:
-    secretKeyRef:
-      name: {{ $f.tokenSecret.name | default "alloy-fleet-token" | quote }}
-      key: {{ $f.tokenSecret.key | default "token" | quote }}
-      # Not optional: with remote management enabled, a missing token means the
-      # agent silently never receives configuration.
-      optional: false
+{{- range $papel := list "node" "singleton" -}}
+{{- $cfg := index $.Values $papel -}}
+{{- if $cfg -}}
+{{- if $cfg.enabled -}}
+{{- $env := ($cfg.alloy).extraEnv | default list -}}
+{{- $nomes := list -}}
+{{- range $e := $env -}}{{- $nomes = append $nomes $e.name -}}{{- end -}}
+{{- if not (has "ALLOY_FLEET_POD_NAME" $nomes) -}}
+{{- fail (printf "\n\nalloy-lerian: fleetManagement está habilitado, mas `%s.alloy.extraEnv` não\ndeclara ALLOY_FLEET_POD_NAME.\n\nO bloco remotecfg lê essa variável. Sem ela o agente não inicia, e a falha só\napareceria no log do pod.\n\nAcrescente ao values do papel %s:\n\n  %s:\n    alloy:\n      extraEnv:\n        - name: ALLOY_FLEET_POD_NAME\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.name\n        - name: ALLOY_FLEET_POD_NAME\n          value: \"%s-$(ALLOY_FLEET_POD_NAME)\"\n        - name: ALLOY_FLEET_TOKEN\n          valueFrom:\n            secretKeyRef:\n              name: alloy-lerian\n              key: fleet-token\n" $papel $papel $papel (include "alloy-lerian.originId" $)) -}}
+{{- end -}}
+{{- if not (has "ALLOY_FLEET_TOKEN" $nomes) -}}
+{{- fail (printf "\n\nalloy-lerian: fleetManagement está habilitado, mas `%s.alloy.extraEnv` não\ndeclara ALLOY_FLEET_TOKEN.\n\nSem o token o agente autentica e falha, e nunca recebe configuração.\n" $papel) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

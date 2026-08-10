@@ -64,11 +64,16 @@ destination:
     # override the derivation.
     # enabled: true
 
-    # Reference only. The credential lives in the origin cluster Secret,
-    # provisioned by onboarding before install; the chart reads it and never
-    # creates it. Registered in the repository's out-of-band secret allowlist.
-    secretName: "alloy-api-key"
-    secretKey: "api-key"
+    # Referência apenas. O chart LÊ este Secret e nunca o cria.
+    #
+    # O cliente executa UM comando antes do install, com os valores que
+    # entregamos. Ver README, seção de instalação.
+    #
+    # Registrado na allowlist de secret provisionado fora de banda do
+    # repositório, para que a porta de renderização não o trate como referência
+    # pendente.
+    secretName: "alloy-lerian"
+    secretKey: "telemetry-token"
 
   # In-memory queue. Persistence is deliberately out of scope: the durable
   # backend is below the agent's stable component tier, and enabling it would
@@ -196,16 +201,37 @@ node:
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
           secretKeyRef:
-            name: alloy-api-key
-            key: api-key
+            name: alloy-lerian
+            key: telemetry-token
             # NÃO optional. No perfil client o ponto de entrada valida a
             # credencial, e 401 é falha PERMANENTE: o dado é descartado na hora,
             # sem reenvio. Com optional: true o pod subiria sem a credencial e a
             # perda seria silenciosa e contínua. Falhar na criação do pod é
             # ruidoso e recuperável — é o modo de falha que queremos.
             optional: false
-      # As entradas de Fleet Management são acrescentadas pelo chart quando
-      # `fleetManagement.enabled` é true — não editar aqui.
+      # --- Fleet Management ---
+      # Presentes desde já para que ligar `fleetManagement.enabled` não exija
+      # editar env no cluster do cliente. Inertes enquanto o bloco remotecfg
+      # não é renderizado: são apenas variáveis não lidas.
+      #
+      # A identidade é origem + nome do pod: estável na vida do pod e única no
+      # DaemonSet. O padrão do agente seria um UUID persistido no diretório de
+      # armazenamento, que pod efêmero perde a cada reinício — gerando
+      # identidade nova toda vez e churn no registro da frota.
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            # Opcional aqui, ao contrário da credencial de telemetria: enquanto
+            # o Fleet Management estiver desligado a chave não precisa existir
+            # no Secret. Quando ligado, a guarda do chart exige a variável, e a
+            # ausência da chave falha na criação do pod.
+            optional: true
     resources:
       requests:
         cpu: 100m
@@ -241,14 +267,25 @@ singleton:
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
           secretKeyRef:
-            name: alloy-api-key
-            key: api-key
+            name: alloy-lerian
+            key: telemetry-token
             # NÃO optional. No perfil client o ponto de entrada valida a
             # credencial, e 401 é falha PERMANENTE: o dado é descartado na hora,
             # sem reenvio. Com optional: true o pod subiria sem a credencial e a
             # perda seria silenciosa e contínua. Falhar na criação do pod é
             # ruidoso e recuperável — é o modo de falha que queremos.
             optional: false
+      # --- Fleet Management --- ver a nota no papel node
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: true
     resources:
       requests:
         cpu: 50m
@@ -320,11 +357,13 @@ fleetManagement:
   # Identificador numérico da stack, mostrado na mesma interface.
   username: ""
 
-  # Token com escopo de leitura de config remota. Provisionado no cluster antes
-  # do install, como a credencial de telemetria — o chart apenas referencia.
+  # Token de leitura de config remota. Mesmo Secret da credencial de telemetria,
+  # chave distinta — o cliente cria UM Secret, não dois.
+  #
+  # Aponte para outro Secret se preferir separar as credenciais.
   tokenSecret:
-    name: "alloy-fleet-token"
-    key: "token"
+    name: "alloy-lerian"
+    key: "fleet-token"
 
   # Intervalo de consulta. Mínimo aceito pelo agente: 10s.
   pollFrequency: "1m"

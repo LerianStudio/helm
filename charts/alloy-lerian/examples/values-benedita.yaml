@@ -30,19 +30,15 @@ destination:
   # Sem bloco `credential`: a plataforma interna não valida a credencial, e o
   # perfil `own` já deriva isso — o cabeçalho não é enviado.
 
-# Remove a referência ao Secret que os defaults do chart carregam. A plataforma
-# interna não valida a credencial, então o cabeçalho não é enviado e nenhum
-# Secret precisa existir antes do install.
+# A plataforma interna não valida a credencial de telemetria, então o cabeçalho
+# não é enviado e nenhum Secret precisa existir antes do install.
 #
-# Se o destino passar a validar, reverter isto e definir
-# `destination.credential.enabled: true` — aí o Secret alloy-api-key precisa
-# existir no namespace.
-node:
-  alloy:
-    extraEnv: []
-singleton:
-  alloy:
-    extraEnv: []
+# NÃO zerar `extraEnv` para isso: as entradas são opcionais (`optional: true`), e
+# zerar a lista apagaria também as variáveis do Fleet Management, quebrando o
+# render quando ele for habilitado. Verificado — a guarda do chart pega.
+#
+# Se o destino passar a validar, definir `destination.credential.enabled: true` e
+# criar o Secret no namespace.
 
 # benedita JÁ RODA kube-state-metrics: o chart `prometheus` do próprio ambiente
 # o sobe (o11y/prometheus/values.yaml, `kube-state-metrics.enabled: true`).

@@ -408,7 +408,14 @@ supplied through values; an existing Secret is opaque to the chart.
 */}}
 {{- define "midaz.validateLcryptoKey" -}}
 {{- $key := .key | toString -}}
-{{- if $key -}}
+{{- /* Skip validation when the value is a secret-manager INJECTION PLACEHOLDER, not the literal
+   key: ArgoCD-Vault-Plugin `<path:secret/...#K>`, envsubst `${VAR}`, or any `<...>` token. The
+   real hex key is substituted AFTER `helm template`, so hex-validating the placeholder would
+   hard-fail the render in every Vault/AVP-backed environment (benedita, etc.). Literal values
+   (operator-supplied or the CI fixture) are still validated. */ -}}
+{{- if or (hasPrefix "<" $key) (contains "<path:" $key) (contains "${" $key) -}}
+{{- /* injected at deploy time — trust the secret manager */ -}}
+{{- else if $key -}}
 {{- if not (regexMatch "^[0-9a-fA-F]+$" $key) -}}
 {{- fail (printf "%s must be a hex-encoded AES key (0-9a-f only): it is hex-decoded before aes.NewCipher, so a non-hex value fails at boot" .name) -}}
 {{- end -}}

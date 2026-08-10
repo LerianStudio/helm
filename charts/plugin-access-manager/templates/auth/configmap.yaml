@@ -1,3 +1,8 @@
+{{- $idCidrs := .Values.identity.configmap.PLATFORM_INTERNAL_CIDRS | default "" -}}
+{{- $authCidrs := .Values.auth.configmap.PLATFORM_INTERNAL_CIDRS | default "" -}}
+{{- if ne $idCidrs $authCidrs -}}
+{{- fail "PLATFORM_INTERNAL_CIDRS must be identical on identity.configmap and auth.configmap: a skew leaks the platform ranges into the enforcement entry set, which on proxy-fronted environments allows everyone" -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

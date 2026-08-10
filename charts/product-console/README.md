@@ -13,7 +13,7 @@ A Helm chart for deploying Product Console - Lerian Studio's web interface for m
 ## Prerequisites
 
 - Kubernetes 1.19+
-- Helm 3.2.0+
+- Helm 3.8.0+ (OCI registry support is enabled by default)
 
 ## Installing the Chart
 

@@ -44,19 +44,19 @@ The Reporter plugin provides a flexible document templating system that enables 
 ## Installing the Chart
 
 ```bash
-helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version <version> -n reporter --create-namespace
+helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version <version> -n midaz-plugins --create-namespace
 ```
 
 To install with a custom values file:
 
 ```bash
-helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version <version> -n reporter -f my-values.yaml
+helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version <version> -n midaz-plugins -f my-values.yaml
 ```
 
 ## Uninstalling the Chart
 
 ```bash
-helm uninstall reporter -n reporter
+helm uninstall reporter -n midaz-plugins
 ```
 
 ## Configuration
@@ -174,7 +174,7 @@ All variables follow the pattern `DATASOURCE_<NAME>_<PROPERTY>`, where `<NAME>` 
 |----------|-------------|---------|
 | `DATASOURCE_<NAME>_SSLMODE` | SSL connection mode | `disable` |
 | `DATASOURCE_<NAME>_SSLROOTCERT` | Path to SSL root certificate | `""` |
-| `DATASOURCE_<NAME>_DB_SCHEMAS` | Comma-separated list of schemas to query | `public` |
+| `DATASOURCE_<NAME>_SCHEMAS` | Comma-separated list of schemas to query | `public` |
 
 ### Configuration
 
@@ -190,7 +190,7 @@ common:
     DATASOURCE_EXTERNAL_DATABASE: external_database
     DATASOURCE_EXTERNAL_TYPE: postgresql
     DATASOURCE_EXTERNAL_SSLMODE: disable
-    DATASOURCE_EXTERNAL_DB_SCHEMAS: sales,inventory,reporting
+    DATASOURCE_EXTERNAL_SCHEMAS: sales,inventory,reporting
 
 secrets:
   DATASOURCE_EXTERNAL_PASSWORD: db_password
@@ -220,7 +220,7 @@ common:
     DATASOURCE_ANALYTICS_DATABASE: analytics
     DATASOURCE_ANALYTICS_TYPE: postgresql
     DATASOURCE_ANALYTICS_SSLMODE: require
-    DATASOURCE_ANALYTICS_DB_SCHEMAS: reports,aggregations
+    DATASOURCE_ANALYTICS_SCHEMAS: reports,aggregations
 
 secrets:
   DATASOURCE_SALES_PASSWORD: sales_password

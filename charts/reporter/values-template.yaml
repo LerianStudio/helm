@@ -1,140 +1,339 @@
-# Default values
+# Reporter configuration template.
+# Copy this structure into an environment values file and replace example values.
+# ConfigMap keys below are the Reporter runtime contract. Values in `secrets` are
+# rendered into Kubernetes Secrets; do not put passwords, API keys, or encryption
+# keys in a ConfigMap.
 
 manager:
+  # Kubernetes metadata for the manager ConfigMap. Example: {"argocd.argoproj.io/sync-wave": "1"}
+  configmapAnnotations: {}
   configmap:
-    PLUGIN_AUTH_ENABLED: "false"
-    # Rate Limiting
+    # HTTP listen address for the Manager API. Example: ":4005" or "0.0.0.0:4005".
+    SERVER_ADDRESS: ":4005"
+    # Enables the generated Swagger endpoint. Accepted values: "true" or "false".
+    SWAGGER_ENABLED: "false"
+    # OpenTelemetry service name for Manager. Example: "reporter-manager".
+    OTEL_RESOURCE_SERVICE_NAME: "reporter-manager"
+
+    # Comma-separated browser origins allowed by CORS. Example: "https://console.example.com".
+    CORS_ALLOWED_ORIGINS: ""
+    # Comma-separated HTTP methods allowed by CORS. Example: "GET,POST,PUT,DELETE".
+    CORS_ALLOWED_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
+    # Comma-separated request headers allowed by CORS. Example: "Authorization,Content-Type".
+    CORS_ALLOWED_HEADERS: "Authorization,Content-Type,X-Request-ID"
+    # Comma-separated reverse-proxy CIDRs or addresses to trust. Example: "10.0.0.0/8,127.0.0.1".
+    TRUSTED_PROXIES: ""
+
+    # Minimum MongoDB connection pool size for Manager. Example: "10".
+    MONGO_MIN_POOL_SIZE: "10"
+    # Maximum idle duration for a MongoDB connection. Example: "60s".
+    MONGO_MAX_CONN_IDLE_TIME: "60s"
+
+    # Enables the Streaming Hub inbound subscriber. Accepted values: "true" or "false".
+    HUB_SUBSCRIBER_ENABLED: "false"
+    # Queue used to republish accepted Hub deliveries. Example: "reporter.generate-report.queue".
+    HUB_SUBSCRIBER_REPUBLISH_QUEUE: ""
+    # Exchange used to republish accepted Hub deliveries. Example: "reporter.events.exchange".
+    HUB_SUBSCRIBER_REPUBLISH_EXCHANGE: ""
+    # Routing key used to republish accepted Hub deliveries. Example: "report.requested".
+    HUB_SUBSCRIBER_REPUBLISH_KEY: ""
+    # MongoDB collection that stores encrypted inbound signing secrets. Example: "inbound_signing_secrets".
+    HUB_SUBSCRIBER_SECRET_COLLECTION: "inbound_signing_secrets"
+    # Maximum clock drift accepted for Hub signatures, in seconds. Example: "300".
+    HUB_SUBSCRIBER_TOLERANCE_SEC: "300"
+    # Maximum accepted Hub request body size in bytes. Example: "1048576".
+    HUB_SUBSCRIBER_MAX_BODY_BYTES: "1048576"
+    # Inbox-to-worker relay polling interval in seconds. Example: "5".
+    HUB_SUBSCRIBER_RELAY_INTERVAL_SEC: "5"
+
+    # Enables rate limiting for Manager endpoints. Accepted values: "true" or "false".
     RATE_LIMIT_ENABLED: "true"
+    # Default requests allowed during RATE_LIMIT_WINDOW_SEC. Example: "500".
     RATE_LIMIT_MAX: "500"
+    # Default rate-limit window in seconds. Example: "60".
     RATE_LIMIT_WINDOW_SEC: "60"
+    # Requests allowed for the aggressive tier. Example: "100".
     AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    # Aggressive-tier window in seconds. Example: "60".
     AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    # Requests allowed for the relaxed tier. Example: "1000".
     RELAXED_RATE_LIMIT_MAX: "1000"
+    # Relaxed-tier window in seconds. Example: "60".
     RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    # Valkey timeout for rate-limit operations, in milliseconds. Example: "500".
     RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    # Required justification when rate limiting is disabled in a strict environment. Example: "internal batch workload".
     ALLOW_RATELIMIT_DISABLED: ""
+    # Required justification when rate limiting may fail open. Example: "temporary Valkey migration".
     ALLOW_RATELIMIT_FAIL_OPEN: ""
+  # Extra ConfigMap entries for Manager. They must be recognized by the application or they are ignored. Example: {"CUSTOM_FLAG": "true"}.
+  extraEnvVars: {}
   useExistingSecret: false
   existingSecretName: ""
   clusterRole:
     create: true
 
 worker:
+  # Kubernetes metadata for the worker ConfigMap. Example: {"argocd.argoproj.io/sync-wave": "2"}
+  configmapAnnotations: {}
   configmap:
-    # Rate Limiting
+    # Health server port for Worker probes. Example: "4006".
+    HEALTH_PORT: "4006"
+    # OpenTelemetry service name for Worker. Example: "reporter-worker".
+    OTEL_RESOURCE_SERVICE_NAME: "reporter-worker"
+    # Number of report-generation consumers. Example: "5".
+    RABBITMQ_NUMBERS_OF_WORKERS: "5"
+    # Number of concurrent PDF rendering workers. Example: "2".
+    PDF_POOL_WORKERS: "2"
+    # Maximum PDF rendering duration in seconds. Example: "90".
+    PDF_TIMEOUT_SECONDS: "90"
+    # AWS region used by Worker integrations. Example: "us-east-1".
+    AWS_REGION: ""
+    # Reconciliation interval in minutes. Example: "5".
+    RECONCILIATION_INTERVAL_MIN: "5"
+    # Maximum datasource count per extraction. Example: "10".
+    ENGINE_MAX_DATASOURCES: "10"
+    # Maximum tables queried per datasource. Example: "50".
+    ENGINE_MAX_TABLES_PER_DATASOURCE: "50"
+    # Maximum fields queried per table. Example: "200".
+    ENGINE_MAX_FIELDS_PER_TABLE: "200"
+    # Maximum concurrent extraction operations. Example: "4".
+    ENGINE_MAX_CONCURRENCY: "4"
+    # Extraction timeout in seconds. Example: "300".
+    ENGINE_TIMEOUT_SEC: "300"
+    # Maximum extraction payload size in bytes. Example: "104857600".
+    ENGINE_MAX_RESULT_BYTES: "104857600"
+
+    # Enables rate limiting for Worker endpoints. Accepted values: "true" or "false".
     RATE_LIMIT_ENABLED: "true"
+    # Default requests allowed during RATE_LIMIT_WINDOW_SEC. Example: "500".
     RATE_LIMIT_MAX: "500"
+    # Default rate-limit window in seconds. Example: "60".
     RATE_LIMIT_WINDOW_SEC: "60"
+    # Requests allowed for the aggressive tier. Example: "100".
     AGGRESSIVE_RATE_LIMIT_MAX: "100"
+    # Aggressive-tier window in seconds. Example: "60".
     AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
+    # Requests allowed for the relaxed tier. Example: "1000".
     RELAXED_RATE_LIMIT_MAX: "1000"
+    # Relaxed-tier window in seconds. Example: "60".
     RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
+    # Valkey timeout for rate-limit operations, in milliseconds. Example: "500".
     RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
+    # Required justification when rate limiting is disabled in a strict environment. Example: "internal batch workload".
     ALLOW_RATELIMIT_DISABLED: ""
+    # Required justification when rate limiting may fail open. Example: "temporary Valkey migration".
     ALLOW_RATELIMIT_FAIL_OPEN: ""
+  # Extra ConfigMap entries for Worker. They must be recognized by the application or they are ignored. Example: {"CUSTOM_FLAG": "true"}.
+  extraEnvVars: {}
   useExistingSecret: false
   existingSecretName: ""
 
 common:
+  # These values are injected into both Manager and Worker ConfigMaps.
+  # VERSION and OTEL_RESOURCE_SERVICE_VERSION are intentionally omitted: templates
+  # derive both from the respective image tag.
   configmap:
+    # Runtime environment name. Example: "development", "staging", or "production".
+    ENV_NAME: "development"
+    # Deployment posture. Accepted values: "local", "byoc", or "saas".
+    DEPLOYMENT_MODE: "local"
+    # Application log level. Example: "debug", "info", "warn", or "error".
+    LOG_LEVEL: "debug"
+    # Bypasses TLS enforcement for transitional non-production environments. Accepted values: "true" or "false".
+    ALLOW_INSECURE_TLS: "false"
 
-    # WORKER
-    ENV_NAME: development
-
-    # RABBITMQ
-    RABBITMQ_URI: amqp
-    RABBITMQ_PORT_HOST: 15672
-    RABBITMQ_HOST: reporter-rabbitmq.reporter.svc.cluster.local
-    RABBITMQ_PORT_AMQP: 5672
-    RABBITMQ_NUMBERS_OF_WORKERS: 5
-    RABBITMQ_EXCHANGE: "reporter.generate-report.exchange"
-    RABBITMQ_GENERATE_REPORT_QUEUE: "reporter.generate-report.queue"
-    RABBITMQ_GENERATE_REPORT_KEY: "reporter.generate-report.key"
-
-    # SEAWEEEDFS
-    SEAWEEDFS_HOST: seaweedfs-filer.reporter.svc.cluster.local
-    SEAWEEDFS_FILER_PORT: 9000
-    SEAWEEDFS_TTL: 6M
-
-    # MONGO DB
-    #MONGO_URI=mongo+srv
-    MONGO_URI: mongodb
-    MONGO_HOST: reporter-mongodb.reporter.svc.cluster.local
-    MONGO_NAME: reporter-db
-    MONGO_USER: reporter
-    MONGO_PORT: 27017
-    MONGO_MAX_POOL_SIZE: 1000
-
-    # OPEN TELEMETRY
-    OTEL_LIBRARY_NAME: github.com/LerianStudio/plugin-template-engine
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: development
-    OTEL_EXPORTER_OTLP_ENDPOINT_PORT: 4317
-    OTEL_EXPORTER_OTLP_ENDPOINT: otlp://midaz-otel-lgtm:4317
-    ENABLE_TELEMETRY: false
+    # OpenTelemetry instrumentation library name. Example: "github.com/LerianStudio/reporter".
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/reporter"
+    # Deployment environment attached to telemetry. Example: "development" or "production".
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+    # OTLP collector endpoint, including port when required. Example: "http://otel-collector:4317".
+    OTEL_EXPORTER_OTLP_ENDPOINT: "otlp://midaz-otel-lgtm:4317"
+    # Allows an insecure OTLP exporter connection. Accepted values: "true" or "false".
     OTEL_INSECURE_EXPORTER: "false"
+    # Enables OpenTelemetry export. Accepted values: "true" or "false".
+    ENABLE_TELEMETRY: "true"
 
-    # MongoDB TLS
-    MONGO_TLS_CA_CERT: ""
+    # MongoDB URI. When set, it takes precedence over split MongoDB fields. Example: "mongodb://reporter-mongodb:27017/reporter-db".
+    MONGO_URI: "mongodb"
+    # MongoDB hostname for split-field configuration. Example: "reporter-mongodb.midaz-plugins.svc.cluster.local".
+    MONGO_HOST: "reporter-mongodb.midaz-plugins.svc.cluster.local"
+    # MongoDB database name. Example: "reporter-db".
+    MONGO_NAME: "reporter-db"
+    # MongoDB username. Example: "reporter".
+    MONGO_USER: "reporter"
+    # MongoDB port. Example: "27017".
+    MONGO_PORT: "27017"
+    # MongoDB connection options. Example: "tls=true&authSource=admin".
     MONGO_PARAMETERS: ""
+    # Maximum MongoDB connection pool size. Example: "1000".
+    MONGO_MAX_POOL_SIZE: "1000"
+    # PEM certificate path or content used to validate MongoDB TLS. Example: "/etc/ssl/certs/mongo-ca.pem".
+    MONGO_TLS_CA_CERT: ""
 
-    # Fetcher Integration
-    FETCHER_ENABLED: "false"
-    FETCHER_URL: ""
+    # S3-compatible object storage endpoint. Example: "https://s3.us-east-1.amazonaws.com".
+    OBJECT_STORAGE_ENDPOINT: "http://seaweedfs-s3.midaz-plugins.svc.cluster.local:8333"
+    # Object storage region. Example: "us-east-1".
+    OBJECT_STORAGE_REGION: "us-east-1"
+    # Uses path-style S3 requests. Accepted values: "true" or "false".
+    OBJECT_STORAGE_USE_PATH_STYLE: "false"
+    # Disables TLS for object storage. Accepted values: "true" or "false".
+    OBJECT_STORAGE_DISABLE_SSL: "false"
+    # Bucket that stores templates and reports. Example: "reporter-storage".
+    OBJECT_STORAGE_BUCKET: "reporter-storage"
 
-    # Multi-Tenant
+    # RabbitMQ URI scheme. Example: "amqp" or "amqps".
+    RABBITMQ_URI: "amqp"
+    # RabbitMQ hostname. Example: "reporter-rabbitmq.midaz-plugins.svc.cluster.local".
+    RABBITMQ_HOST: "reporter-rabbitmq.midaz-plugins.svc.cluster.local"
+    # RabbitMQ management health endpoint. Example: "http://reporter-rabbitmq:15672/api/health/checks/alarms".
+    RABBITMQ_HEALTH_CHECK_URL: "http://reporter-rabbitmq.midaz-plugins.svc.cluster.local:15672"
+    # RabbitMQ management port. Example: "15672".
+    RABBITMQ_PORT_HOST: "15672"
+    # RabbitMQ AMQP port. Example: "5672".
+    RABBITMQ_PORT_AMQP: "5672"
+    # Internal report-command exchange. Example: "reporter.generate-report.exchange".
+    RABBITMQ_EXCHANGE: "reporter.generate-report.exchange"
+    # Queue consumed by report workers. Example: "reporter.generate-report.queue".
+    RABBITMQ_GENERATE_REPORT_QUEUE: "reporter.generate-report.queue"
+    # Routing key for report commands. Example: "reporter.generate-report.key".
+    RABBITMQ_GENERATE_REPORT_KEY: "reporter.generate-report.key"
+    # Exchange used for Reporter business events. Example: "reporter.events.exchange".
+    RABBITMQ_REPORT_EVENTS_EXCHANGE: ""
+    # Enables TLS for split-field RabbitMQ configuration. Accepted values: "true" or "false".
+    RABBITMQ_TLS: "false"
+
+    # Valkey or Redis hostname. Example: "reporter-valkey.midaz-plugins.svc.cluster.local:6379".
+    REDIS_HOST: "reporter-valkey.midaz-plugins.svc.cluster.local:6379"
+    # Redis Sentinel master name. Leave empty for standalone Redis. Example: "mymaster".
+    REDIS_MASTER_NAME: ""
+    # Redis logical database number. Example: "0".
+    REDIS_DB: "0"
+    # RESP protocol version. Accepted values: "2" or "3".
+    REDIS_PROTOCOL: "3"
+    # Enables TLS for Redis. Accepted values: "true" or "false".
+    REDIS_TLS: "false"
+    # PEM certificate path or content used to validate Redis TLS. Example: "/etc/ssl/certs/redis-ca.pem".
+    REDIS_CA_CERT: ""
+    # Enables Google Cloud IAM authentication for Redis. Accepted values: "true" or "false".
+    REDIS_USE_GCP_IAM: "false"
+    # Google service account used for Redis IAM. Example: "reporter@project.iam.gserviceaccount.com".
+    REDIS_SERVICE_ACCOUNT: ""
+    # Lifetime of a Redis IAM token in seconds. Example: "60".
+    REDIS_TOKEN_LIFETIME: "60"
+    # Redis IAM token refresh interval in seconds. Example: "45".
+    REDIS_TOKEN_REFRESH_DURATION: "45"
+    # File path to Google application credentials for Redis IAM. Example: "/var/run/secrets/google/credentials.json".
+    GOOGLE_APPLICATION_CREDENTIALS: ""
+
+    # Enables Access Manager authentication. Accepted values: "true" or "false".
+    PLUGIN_AUTH_ENABLED: "false"
+    # Access Manager base URL. Example: "http://plugin-access-manager-auth:4000".
+    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
+
+    # Enables multi-tenant datasource resolution. Accepted values: "true" or "false".
     MULTI_TENANT_ENABLED: "false"
+    # Tenant Manager base URL. Example: "https://tenant-manager.example.com".
+    MULTI_TENANT_URL: ""
+    # Tenant Manager environment. Example: "staging" or "production".
+    MULTI_TENANT_ENVIRONMENT: "staging"
+    # Dedicated Redis host for tenant-manager data. Example: "tenant-redis:6379".
+    MULTI_TENANT_REDIS_HOST: ""
+    # Dedicated Redis port for tenant-manager data. Example: "6379".
+    MULTI_TENANT_REDIS_PORT: "6379"
+    # Enables TLS for tenant-manager Redis. Accepted values: "true" or "false".
+    MULTI_TENANT_REDIS_TLS: "false"
+    # PEM certificate path or content used to validate tenant-manager Redis TLS. Example: "/etc/ssl/certs/tenant-redis-ca.pem".
+    MULTI_TENANT_REDIS_CA_CERT: ""
+    # Maximum number of cached tenant connection pools. Example: "100".
+    MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # Idle timeout for tenant connection pools in seconds. Example: "300".
+    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
+    # Tenant Manager request timeout in seconds. Example: "30".
+    MULTI_TENANT_TIMEOUT: "30"
+    # Consecutive errors that open the tenant circuit breaker. Example: "5".
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    # Tenant circuit-breaker recovery timeout in seconds. Example: "30".
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # Tenant metadata cache TTL in seconds. Example: "120".
+    MULTI_TENANT_CACHE_TTL_SEC: "120"
+    # Allows HTTP Tenant Manager URLs. Accepted values: "true" or "false".
+    MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
 
-    # MIDAZ ONBOARDING
-    DATASOURCE_ONBOARDING_CONFIG_NAME: midaz_onboarding
-    DATASOURCE_ONBOARDING_HOST: midaz-postgresql-replication.midaz.svc.cluster.local
-    DATASOURCE_ONBOARDING_PORT: 5432
-    DATASOURCE_ONBOARDING_USER: midaz
-    DATASOURCE_ONBOARDING_DATABASE: onboarding
-    DATASOURCE_ONBOARDING_TYPE: postgresql
-    DATASOURCE_ONBOARDING_SSLMODE: disable
+    # Midaz onboarding datasource logical name. Example: "midaz_onboarding".
+    DATASOURCE_ONBOARDING_CONFIG_NAME: "midaz_onboarding"
+    # Midaz onboarding PostgreSQL hostname. Example: "midaz-postgresql-replication.midaz.svc.cluster.local".
+    DATASOURCE_ONBOARDING_HOST: "midaz-postgresql-replication.midaz.svc.cluster.local"
+    # Midaz onboarding PostgreSQL port. Example: "5432".
+    DATASOURCE_ONBOARDING_PORT: "5432"
+    # Midaz onboarding PostgreSQL user. Example: "midaz".
+    DATASOURCE_ONBOARDING_USER: "midaz"
+    # Midaz onboarding database. Example: "onboarding".
+    DATASOURCE_ONBOARDING_DATABASE: "onboarding"
+    # Midaz onboarding database driver. Accepted values: "postgresql" or "mongodb".
+    DATASOURCE_ONBOARDING_TYPE: "postgresql"
+    # PostgreSQL SSL mode. Example: "disable", "require", or "verify-full".
+    DATASOURCE_ONBOARDING_SSLMODE: "disable"
+    # PostgreSQL root CA certificate path. Example: "/etc/ssl/certs/onboarding-ca.pem".
+    DATASOURCE_ONBOARDING_SSLROOTCERT: ""
+    # MongoDB SSL toggle when this datasource type is mongodb. Accepted values: "true" or "false".
+    DATASOURCE_ONBOARDING_SSL: "false"
+    # MongoDB CA certificate path when this datasource type is mongodb. Example: "/etc/ssl/certs/onboarding-ca.pem".
+    DATASOURCE_ONBOARDING_SSLCA: ""
+    # MongoDB URI options when this datasource type is mongodb. Example: "authSource=admin".
+    DATASOURCE_ONBOARDING_OPTIONS: ""
+    # Deprecated CRM organization scope retained for backward compatibility. Example: "org-123".
+    DATASOURCE_ONBOARDING_MIDAZ_ORGANIZATION_ID: ""
+    # Comma-separated PostgreSQL schemas. Example: "public,ledger". Defaults to "public" when empty.
+    DATASOURCE_ONBOARDING_SCHEMAS: "public"
+
+    # Midaz transaction datasource logical name. Example: "midaz_transaction".
+    DATASOURCE_TRANSACTION_CONFIG_NAME: "midaz_transaction"
+    # Midaz transaction PostgreSQL hostname. Example: "midaz-postgresql-primary.midaz.svc.cluster.local".
+    DATASOURCE_TRANSACTION_HOST: "midaz-postgresql-replication.midaz.svc.cluster.local"
+    # Midaz transaction PostgreSQL port. Example: "5432".
+    DATASOURCE_TRANSACTION_PORT: "5432"
+    # Midaz transaction PostgreSQL user. Example: "midaz".
+    DATASOURCE_TRANSACTION_USER: "midaz"
+    # Midaz transaction database. Example: "transaction".
+    DATASOURCE_TRANSACTION_DATABASE: "transaction"
+    # Midaz transaction database driver. Accepted values: "postgresql" or "mongodb".
+    DATASOURCE_TRANSACTION_TYPE: "postgresql"
+    # PostgreSQL SSL mode. Example: "disable", "require", or "verify-full".
+    DATASOURCE_TRANSACTION_SSLMODE: "disable"
+    # PostgreSQL root CA certificate path. Example: "/etc/ssl/certs/transaction-ca.pem".
+    DATASOURCE_TRANSACTION_SSLROOTCERT: ""
+    # MongoDB SSL toggle when this datasource type is mongodb. Accepted values: "true" or "false".
+    DATASOURCE_TRANSACTION_SSL: "false"
+    # MongoDB CA certificate path when this datasource type is mongodb. Example: "/etc/ssl/certs/transaction-ca.pem".
+    DATASOURCE_TRANSACTION_SSLCA: ""
+    # MongoDB URI options when this datasource type is mongodb. Example: "authSource=admin".
+    DATASOURCE_TRANSACTION_OPTIONS: ""
+    # Deprecated CRM organization scope retained for backward compatibility. Example: "org-123".
+    DATASOURCE_TRANSACTION_MIDAZ_ORGANIZATION_ID: ""
+    # Comma-separated PostgreSQL schemas. Example: "public,transaction". Defaults to "public" when empty.
+    DATASOURCE_TRANSACTION_SCHEMAS: "public"
 
 secrets:
-  RABBITMQ_DEFAULT_USER: plugin
+  # MONGO_PASSWORD is single-sourced from the bundled MongoDB Secret. Leave it empty with the bundled subchart; set it only for external MongoDB without an existing Secret.
+  MONGO_PASSWORD: ""
+  # RabbitMQ application username. Example: "plugin".
+  RABBITMQ_DEFAULT_USER: "plugin"
+  # RabbitMQ application password. Example: "replace-with-a-secret".
   RABBITMQ_DEFAULT_PASS: ""
-  # RABBITMQ_ERLANG_COOKIE is required when rabbitmq.enabled=true (single-sourced to the broker).
+  # Stable RabbitMQ Erlang cookie. Generate once with `openssl rand -hex 32`.
   RABBITMQ_ERLANG_COOKIE: ""
+  # Midaz onboarding datasource password. Example: "replace-with-a-secret".
   DATASOURCE_ONBOARDING_PASSWORD: ""
+  # Midaz transaction datasource password. Example: "replace-with-a-secret".
+  DATASOURCE_TRANSACTION_PASSWORD: ""
+  # S3-compatible object-storage access key ID. Example: "AKIA...".
   OBJECT_STORAGE_ACCESS_KEY_ID: ""
+  # S3-compatible object-storage secret key. Example: "replace-with-a-secret".
   OBJECT_STORAGE_SECRET_KEY: ""
-  # Fetcher Integration - Base64 encoded 32-byte encryption key
-  APP_ENC_KEY: ""
-
-seaweedfs:
-  enabled: true
-
-keda:
-  enabled: true
-
-mongodb:
-  enabled: true
-
-valkey:
-  enabled: true
-
-externalRabbitmqDefinitions:
-  enabled: false
-  connection:
-    protocol: "http"
-    host: "reporter-rabbitmq"
-    port: "15672"
-    portAmqp: "5672"
-  rabbitmqAdminLogin:
-    useExistingSecret:
-      name: ""
-    username: "midaz"
-    password: ""
-  appCredentials:
-    useExistingSecret:
-      name: ""
-    pluginPassword: ""
-
-rabbitmq:
-  enabled: true
-
-otel-collector-lerian:
-  enabled: true
+  # Access Manager service API key for multi-tenant mode. Example: "replace-with-a-secret".
+  MULTI_TENANT_SERVICE_API_KEY: ""
+  # Tenant-manager Redis password. Example: "replace-with-a-secret".
+  MULTI_TENANT_REDIS_PASSWORD: ""
+  # Hub subscriber AES encryption key. Example: a 32-byte hex key.
+  HUB_SUBSCRIBER_SECRET_ENCRYPT_KEY: ""

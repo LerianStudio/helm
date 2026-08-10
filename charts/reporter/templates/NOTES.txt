@@ -32,10 +32,9 @@ The following dependencies have been deployed:
    - Host: {{ .Values.common.configmap.MONGO_HOST }}
    - Port: {{ .Values.common.configmap.MONGO_PORT }}
 
-3. SeaweedFS
-   - API Host: {{ .Values.common.configmap.SEAWEEDFS_HOST }}
-   - API Port: {{ .Values.common.configmap.SEAWEEDFS_FILER_PORT }}
-   - TTL: {{ .Values.common.configmap.SEAWEEDFS_TTL }}
+3. Object Storage
+   - Endpoint: {{ .Values.common.configmap.OBJECT_STORAGE_ENDPOINT }}
+   - Bucket: {{ .Values.common.configmap.OBJECT_STORAGE_BUCKET }}
 
 ## Accessing the API
 

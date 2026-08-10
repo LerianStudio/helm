@@ -4,7 +4,7 @@ metadata:
   name: {{ include "plugin-manager.fullname" . }}
   labels:
     {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 4 }}
-  {{- with .Values.manager.configmap.annotations }}
+  {{- with .Values.manager.configmapAnnotations }}
   annotations:
     {{- range $key, $value := . }}
     {{ $key }}: {{ $value | quote }}

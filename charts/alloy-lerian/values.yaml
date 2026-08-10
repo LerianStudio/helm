@@ -179,6 +179,37 @@ roles:
 # NODE ROLE — upstream agent values under the `node` alias
 # ---------------------------------------------------------------------------
 node:
+  # ---------------------------------------------------------------------------
+  # IMAGEM — oficial da Grafana, fixada por DIGEST
+  # ---------------------------------------------------------------------------
+  # Imagem upstream, não uma imagem nossa. Segue o precedente do
+  # otel-collector-lerian, que encapsula um coletor de terceiro e usa
+  # `otel/opentelemetry-collector-contrib` upstream com versão fixada. Reempacotar
+  # entregaria o mesmo binário ao custo de build, varredura e republicação a cada
+  # CVE do upstream — e faria perder a proveniência que o cliente pode verificar.
+  #
+  # DIGEST, não tag. Tag é mutável: `v1.18.1` pode ser republicada apontando para
+  # outros bits, e num cluster de instituição financeira "qual bit exatamente está
+  # rodando" precisa ter resposta. O chart oficial já fixa por digest a imagem do
+  # config-reloader e NÃO fixa a do agente — corrigimos essa assimetria.
+  #
+  # VERIFICADO que este digest é o do ÍNDICE multiplataforma, não de uma
+  # arquitetura: o índice resolve linux/amd64, arm64, ppc64le e s390x. Fixar o
+  # digest de uma arquitetura quebraria em nó ARM.
+  #
+  # `tag` é IGNORADA quando `digest` está presente (upstream _helpers.tpl:90 —
+  # digest tem precedência). Mantida só como legenda legível: sem ela, o values
+  # não diria qual versão é este digest.
+  #
+  # Ao atualizar: obter o digest do índice com
+  #   docker buildx imagetools inspect grafana/alloy:<versão>
+  # e trocar os dois campos juntos.
+  image:
+    registry: docker.io
+    repository: grafana/alloy
+    tag: v1.18.1
+    digest: sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33
+
   enabled: true
   alloy:
     # Config comes from the ConfigMap this chart renders; upstream must not
@@ -326,6 +357,37 @@ node:
 # SINGLETON ROLE — upstream agent values under the `singleton` alias
 # ---------------------------------------------------------------------------
 singleton:
+  # ---------------------------------------------------------------------------
+  # IMAGEM — oficial da Grafana, fixada por DIGEST
+  # ---------------------------------------------------------------------------
+  # Imagem upstream, não uma imagem nossa. Segue o precedente do
+  # otel-collector-lerian, que encapsula um coletor de terceiro e usa
+  # `otel/opentelemetry-collector-contrib` upstream com versão fixada. Reempacotar
+  # entregaria o mesmo binário ao custo de build, varredura e republicação a cada
+  # CVE do upstream — e faria perder a proveniência que o cliente pode verificar.
+  #
+  # DIGEST, não tag. Tag é mutável: `v1.18.1` pode ser republicada apontando para
+  # outros bits, e num cluster de instituição financeira "qual bit exatamente está
+  # rodando" precisa ter resposta. O chart oficial já fixa por digest a imagem do
+  # config-reloader e NÃO fixa a do agente — corrigimos essa assimetria.
+  #
+  # VERIFICADO que este digest é o do ÍNDICE multiplataforma, não de uma
+  # arquitetura: o índice resolve linux/amd64, arm64, ppc64le e s390x. Fixar o
+  # digest de uma arquitetura quebraria em nó ARM.
+  #
+  # `tag` é IGNORADA quando `digest` está presente (upstream _helpers.tpl:90 —
+  # digest tem precedência). Mantida só como legenda legível: sem ela, o values
+  # não diria qual versão é este digest.
+  #
+  # Ao atualizar: obter o digest do índice com
+  #   docker buildx imagetools inspect grafana/alloy:<versão>
+  # e trocar os dois campos juntos.
+  image:
+    registry: docker.io
+    repository: grafana/alloy
+    tag: v1.18.1
+    digest: sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33
+
   enabled: true
   alloy:
     configMap:

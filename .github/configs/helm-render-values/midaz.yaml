@@ -33,3 +33,11 @@ ledger:
     # omitted here.
     RABBITMQ_DEFAULT_PASS: "sample"
     RABBITMQ_CONSUMER_PASS: "sample"
+crm:
+  # Exercise the standalone CRM deployment templates in the render-gate.
+  enabled: true
+  secrets:
+    # App crypto material — operator-provided (external boundary). Hex like the
+    # ledger fixture so any hex validation on the CRM cipher key is satisfied.
+    LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

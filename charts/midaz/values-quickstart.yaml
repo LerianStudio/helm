@@ -97,3 +97,17 @@ tracer:
 
 # --- CRM (standalone legacy CRM deployment; opt-in — the unified ledger already
 #     serves CRM in-process, so enable this only for the separate service) ---
+crm:
+  enabled: false
+  image:
+    tag: "3.8.0"
+  secrets: {}
+    # LCRYPTO_HASH_SECRET_KEY: "CHANGE_ME"   # REQUIRED when crm.enabled=true
+    # LCRYPTO_ENCRYPT_SECRET_KEY: "CHANGE_ME"
+
+# --- Bundled infrastructure (set enabled=false to use your own; then fill the
+#     matching global.datastores.* host above and the *_PASSWORD secrets) ---
+# postgresql: { enabled: true }
+# mongodb:    { enabled: true, auth: { enabled: true } }
+# valkey:     { enabled: true }
+# rabbitmq:   { enabled: true }

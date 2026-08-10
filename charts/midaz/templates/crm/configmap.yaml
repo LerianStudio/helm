@@ -1,0 +1,93 @@
+{{- if .Values.crm.enabled }}
+{{- $cm := .Values.crm.configmap | default dict }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "midaz-crm.fullname" . }}
+  labels:
+    {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 4 }}
+data:
+  # -- Default Environment variables for CRM
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+
+  # APP
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "crm" | quote }}
+  SERVER_PORT: {{ $cm.SERVER_PORT | default "4003" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4003" | quote }}
+  VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
+
+  # Mongo DB (host/user/port via lerian-common datastore mask; tuning via passthrough)
+  MONGO_URI: {{ $cm.MONGO_URI | default "mongodb" | quote }}
+  MONGO_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.crm.datastores "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.crm.datastores "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
+  MONGO_NAME: {{ $cm.MONGO_NAME | default "crm" | quote }}
+  MONGO_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.crm.datastores "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "midaz") | quote }}
+  MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_PARAMETERS: {{ $cm.MONGO_PARAMETERS | default "" | quote }}
+  MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
+
+  # SWAGGER
+  SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "CRM" | quote }}
+  SWAGGER_DESCRIPTION: {{ $cm.SWAGGER_DESCRIPTION | default "The CRM API provides a set of endpoints for managing holder data, including information related to their ledger accounts." | quote }}
+  SWAGGER_VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
+  SWAGGER_HOST: {{ $cm.SWAGGER_HOST | default ":4003" | quote }}
+  SWAGGER_BASE_PATH: {{ $cm.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ $cm.SWAGGER_SCHEMES | default "http" | quote }}
+  SWAGGER_LEFT_DELIMITER: {{ $cm.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIMITER: {{ $cm.SWAGGER_RIGHT_DELIMITER | default "}}" | quote }}
+
+  # LOG LEVEL
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "debug" | quote }}
+
+  # OPEN TELEMETRY (identity inline; shared endpoint/env/enable via global.observability)
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "midaz-crm" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-crm" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" ($cm.ENV_NAME | default "development")) | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "midaz-grafana:4317") | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
+
+  # AUTH (shared) — wired to the global.auth contract (configmap.<KEY> overrides)
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth:4000") | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
+
+  # MULTI-TENANT (knob only; CRM emits just the gate)
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+
+  KMS_VAULT_ADDR: {{ $cm.KMS_VAULT_ADDR | default "http://midaz-hc-vault:8200" | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ $cm.KMS_VAULT_AUTH_METHOD | default "token" | quote }}
+  KMS_VENDOR: {{ $cm.KMS_VENDOR | default "hashicorp-vault" | quote }}
+
+  # =============================================================================
+  # SERVICE DISCOVERY — knob inline; server config from global.serviceDiscovery,
+  # endpoints derived from this chart's own service/ingress (gated via helper).
+  # =============================================================================
+  {{- $sdEnabled := eq (include "midaz.isTrue" ($cm.SD_ENABLED | default "false")) "true" }}
+  SD_ENABLED: {{ $cm.SD_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" $sdEnabled
+        "configmap" $cm
+        "name" (include "midaz-crm.fullname" .)
+        "port" .Values.crm.service.port
+        "namespace" (include "global.namespace" .)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.crm.ingress))) | nindent 2 }}
+
+  # =============================================================================
+  # STREAMING — knob inline; brokers/SASL/TLS from global.streaming (gated via helper).
+  # =============================================================================
+  {{- $streamingEnabled := eq (include "midaz.isTrue" ($cm.STREAMING_ENABLED | default "false")) "true" }}
+  STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $cm
+        "clientId" (include "midaz-crm.fullname" .)
+        "cloudeventsSource" "lerian.midaz.crm") | nindent 2 }}
+  # Extra Env Vars
+  {{- with .Values.crm.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

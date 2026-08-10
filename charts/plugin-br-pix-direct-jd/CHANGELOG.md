@@ -2,6 +2,26 @@
 
 ## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
 
+- **Features**
+  - Added ALLOW_INSECURE_TLS configuration for enhanced security options.
+  
+- **Fixes**
+  - Addressed CodeRabbit review comments for improved code quality.
+  - Corrected value key typo and updated stale README notes.
+  - Implemented collapse-aware infrastructure host fallbacks.
+
+- **Improvements**
+  - Standardized charts to align with the Lerian chart contract.
+  - Aligned upgrade guide format for better documentation consistency.
+
+Contributors: @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-direct-jd-v2.2.11...plugin-br-pix-direct-jd-v3.0.0)
+
+---
+
+## [3.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-direct-jd-v3.0.0)
+
 - **Improvements:**
   - Align upgrade guide format for better consistency and clarity.
 

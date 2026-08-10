@@ -192,7 +192,7 @@ data:
   {{- end }}
   TRACER_TRANSPORT: {{ $tracerTransport | quote }}
   TRACER_TLS_MODE: {{ $cm.TRACER_TLS_MODE | default "" | quote }}
-  TRACER_TIMEOUT_MS: {{ $cm.TRACER_TIMEOUT_MS | default "" | quote }}
+  TRACER_TIMEOUT_MS: {{ $cm.TRACER_TIMEOUT_MS | default "250" | quote }}
   TRACER_TLS_CERT_FILE: {{ $cm.TRACER_TLS_CERT_FILE | default "" | quote }}
   TRACER_TLS_KEY_FILE: {{ $cm.TRACER_TLS_KEY_FILE | default "" | quote }}
   TRACER_TLS_CA_FILE: {{ $cm.TRACER_TLS_CA_FILE | default "" | quote }}
@@ -225,7 +225,7 @@ data:
   # OPEN TELEMETRY (identity inline; shared endpoint/env/enable via global.observability)
   # =============================================================================
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "ledger" | quote }}
-  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v3/components/ledger" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v4/components/ledger" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" "production") | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}

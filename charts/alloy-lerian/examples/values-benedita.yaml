@@ -33,12 +33,57 @@ destination:
 # A plataforma interna não valida a credencial de telemetria, então o cabeçalho
 # não é enviado e nenhum Secret precisa existir antes do install.
 #
-# NÃO zerar `extraEnv` para isso: as entradas são opcionais (`optional: true`), e
-# zerar a lista apagaria também as variáveis do Fleet Management, quebrando o
-# render quando ele for habilitado. Verificado — a guarda do chart pega.
+# MAS a entrada de ambiente vem `optional: false` no values do chart — correto
+# para o perfil `client`, onde 401 é descarte permanente. Aqui a variável nunca é
+# lida, e ainda assim sua ausência trava o pod.
+#
+# MEDIDO na benedita: sem o override abaixo, o install falha com
+#   Error: secret "alloy-lerian" not found   →   CreateContainerConfigError 4/4
+#
+# NÃO zerar `extraEnv` para resolver: apagaria também as variáveis do Fleet
+# Management. Sobrescrever a entrada, mantendo as demais.
 #
 # Se o destino passar a validar, definir `destination.credential.enabled: true` e
 # criar o Secret no namespace.
+node:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: true
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: true
+
+singleton:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: true
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: true
 
 # benedita JÁ RODA kube-state-metrics: o chart `prometheus` do próprio ambiente
 # o sobe (o11y/prometheus/values.yaml, `kube-state-metrics.enabled: true`).

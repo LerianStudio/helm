@@ -121,3 +121,53 @@ mistake impossible rather than merely unlikely.
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+==============================================================================
+GUARD — a credential the destination never checks must not block startup
+==============================================================================
+MEASURED on benedita, ring 1: the install failed with
+
+    Error: secret "alloy-lerian" not found
+    CreateContainerConfigError  (4/4 pods)
+
+because ALLOY_DESTINATION_CREDENTIAL is mounted with `optional: false` in the
+subchart values for BOTH profiles, while the rendered config only ever READS it
+in the `client` profile. In an own environment the platform does not validate the
+credential, the exporter renders no `headers` block, and the variable is dead —
+yet its absence still stopped every pod.
+
+`optional: false` is right for `client`: there, 401 is a PERMANENT failure, so a
+pod that starts without the credential discards data silently and continuously.
+Failing to create the pod is loud and recoverable. That reasoning simply does not
+transfer to a destination that never authenticates.
+
+The values file said "remove this entry for the own profile" — an instruction a
+human has to remember, and one that CONTRADICTS the ring-1 values file, which
+says never to zero `extraEnv` because that also erases the fleet variables. Two
+documents disagreeing is how the defect survived to a real cluster.
+
+So the chart decides instead of asking. This guard refuses a combination that
+cannot work, naming the one-line fix.
+*/}}
+{{- define "alloy-lerian.assertCredentialEnv" -}}
+{{- $autenticado := eq (include "alloy-lerian.destinationAuthenticated" .) "true" -}}
+{{- range $papel := list "node" "singleton" -}}
+{{- $cfg := index $.Values $papel -}}
+{{- if $cfg -}}
+{{- if $cfg.enabled -}}
+{{- range $e := (($cfg.alloy).extraEnv | default list) -}}
+{{- if eq $e.name "ALLOY_DESTINATION_CREDENTIAL" -}}
+{{- $ref := ($e.valueFrom).secretKeyRef -}}
+{{- if $ref -}}
+{{- $obrigatorio := not ($ref.optional | default false) -}}
+{{- if and $obrigatorio (not $autenticado) -}}
+{{- fail (printf "\n\nalloy-lerian: `%s.alloy.extraEnv` exige o Secret %q, mas este destino\nNAO autentica (perfil %q), entao a credencial nunca e lida.\n\nMedido na benedita: os pods travam em CreateContainerConfigError com\n\"secret %q not found\" e o agente nunca inicia — por uma variavel que a\nconfiguracao renderizada nem referencia.\n\nCorrija marcando a entrada como opcional no values deste ambiente:\n\n  %s:\n    alloy:\n      extraEnv:\n        - name: ALLOY_DESTINATION_CREDENTIAL\n          valueFrom:\n            secretKeyRef:\n              name: %s\n              key: telemetry-token\n              optional: true\n\nNAO zere `extraEnv` para resolver isso: apagaria tambem as variaveis do Fleet\nManagement. Se o destino passar a validar credencial, defina\n`destination.credential.enabled: true` e crie o Secret.\n" $papel $ref.name (include "alloy-lerian.profile" $) $ref.name $papel $ref.name) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

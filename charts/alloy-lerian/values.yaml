@@ -214,12 +214,22 @@ node:
           secretKeyRef:
             name: alloy-lerian
             key: telemetry-token
-            # NÃO optional. No perfil client o ponto de entrada valida a
-            # credencial, e 401 é falha PERMANENTE: o dado é descartado na hora,
-            # sem reenvio. Com optional: true o pod subiria sem a credencial e a
-            # perda seria silenciosa e contínua. Falhar na criação do pod é
-            # ruidoso e recuperável — é o modo de falha que queremos.
-            optional: false
+            # `true` aqui, e a EXIGÊNCIA vem da guarda do chart, não deste
+            # arquivo — porque quem decide é o PERFIL, e YAML estático não
+            # consegue perguntar qual é.
+            #
+            # No perfil client a credencial é obrigatória de verdade: 401 é falha
+            # PERMANENTE, o dado é descartado na hora, e um pod que sobe sem
+            # credencial perde em silêncio e continuamente. Falhar é o modo de
+            # falha correto — e `assertCredentialRequired` é quem impõe isso,
+            # exigindo que o Secret exista antes do install.
+            #
+            # No perfil own o destino não valida nada e a variável nem é lida.
+            # MEDIDO na benedita: com `optional: false` fixo aqui, TODO ambiente
+            # próprio travava em CreateContainerConfigError e precisava repetir
+            # ~20 linhas de extraEnv só para desfazer este default. Um default que
+            # o caso mais simples precisa sobrescrever é o default errado.
+            optional: true
       # --- Fleet Management ---
       # Presentes desde já para que ligar `fleetManagement.enabled` não exija
       # editar env no cluster do cliente. Inertes enquanto o bloco remotecfg
@@ -280,12 +290,22 @@ singleton:
           secretKeyRef:
             name: alloy-lerian
             key: telemetry-token
-            # NÃO optional. No perfil client o ponto de entrada valida a
-            # credencial, e 401 é falha PERMANENTE: o dado é descartado na hora,
-            # sem reenvio. Com optional: true o pod subiria sem a credencial e a
-            # perda seria silenciosa e contínua. Falhar na criação do pod é
-            # ruidoso e recuperável — é o modo de falha que queremos.
-            optional: false
+            # `true` aqui, e a EXIGÊNCIA vem da guarda do chart, não deste
+            # arquivo — porque quem decide é o PERFIL, e YAML estático não
+            # consegue perguntar qual é.
+            #
+            # No perfil client a credencial é obrigatória de verdade: 401 é falha
+            # PERMANENTE, o dado é descartado na hora, e um pod que sobe sem
+            # credencial perde em silêncio e continuamente. Falhar é o modo de
+            # falha correto — e `assertCredentialRequired` é quem impõe isso,
+            # exigindo que o Secret exista antes do install.
+            #
+            # No perfil own o destino não valida nada e a variável nem é lida.
+            # MEDIDO na benedita: com `optional: false` fixo aqui, TODO ambiente
+            # próprio travava em CreateContainerConfigError e precisava repetir
+            # ~20 linhas de extraEnv só para desfazer este default. Um default que
+            # o caso mais simples precisa sobrescrever é o default errado.
+            optional: true
       # --- Fleet Management --- ver a nota no papel node
       - name: ALLOY_FLEET_POD_NAME
         valueFrom:

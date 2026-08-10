@@ -384,5 +384,35 @@ otelcol.exporter.otlphttp "destino" {
     }
 {{- end }}
   }
+
+  // MEASURED on benedita: without this block the exporter used its implicit
+  // default and lost 256 event records at startup —
+  // `enqueue_failed_log_records_total = 256`, "sending queue is full", zero HTTP
+  // errors at any point. The destination never refused; the local queue filled.
+  //
+  // The cause is specific to this role: loki.source.kubernetes_events replays the
+  // cluster's existing event history the moment it starts, so the first seconds
+  // carry a burst that steady-state sizing does not cover. The node role never
+  // sees this — applications push at their own pace.
+  //
+  // Deeper queue than the node role for that reason. Still bounded: a burst that
+  // outlasts the queue should drop rather than grow without limit.
+  sending_queue {
+    enabled       = true
+    queue_size    = {{ .Values.destination.queue.singletonSize | default 5000 }}
+    num_consumers = {{ .Values.destination.queue.consumers | default 10 }}
+    // Same reasoning as the node role: back-pressure is not ours to impose.
+    block_on_overflow = false
+  }
+
+  // The node role had retry and this one did not — an inconsistency, not a
+  // decision. A transient failure at the destination would discard cluster-object
+  // metrics outright while application telemetry survived the same outage.
+  retry_on_failure {
+    enabled          = true
+    initial_interval = "5s"
+    max_interval     = "30s"
+    max_elapsed_time = {{ .Values.destination.retry.maxElapsedTime | default "5m" | quote }}
+  }
 }
 {{- end -}}

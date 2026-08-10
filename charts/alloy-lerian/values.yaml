@@ -86,6 +86,17 @@ destination:
   queue:
     size: 1000
     consumers: 10
+    # Singleton role only, and deliberately deeper than `size` above.
+    #
+    # MEASURED on benedita: with the node role's 1000, the singleton lost 256
+    # event records in its first seconds — loki.source.kubernetes_events replays
+    # the cluster's existing event history the moment it starts, so the opening
+    # burst is far above steady state. No HTTP error at any point: the destination
+    # accepted everything it was offered, the local queue simply filled.
+    #
+    # The node role does not need this: applications push at their own pace and
+    # never replay a backlog.
+    singletonSize: 5000
 
   retry:
     # Effective survivable outage window. Beyond it, records are discarded and

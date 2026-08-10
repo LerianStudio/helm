@@ -103,6 +103,28 @@ otelcol.processor.transform "sanitizacao" {
       // regra de nome — ver README, secao de premissas).
       `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[A-Z][^=]*?(?: [a-z]+=|$)", "$1**********")`,
 
+      // --- CREDENCIAL DE AUTENTICACAO ---
+      // Difere em natureza de todas as regras acima: aquelas protegem dado que
+      // IDENTIFICA alguem, esta protege valor que CONCEDE ACESSO. Credencial
+      // vazada nao e incidente de privacidade, e sessao autenticada na mao de
+      // terceiro — e permanece exploravel ate expirar.
+      //
+      // Vem ANTES da regra de identificador opaco de proposito: um JWT tem
+      // sequencias alfanumericas longas que a regra seguinte poderia reescrever
+      // parcialmente, e token parcialmente mascarado ainda vaza estrutura
+      // enquanto parece sanitizado.
+      //
+      // Preserva o NOME DO ESQUEMA e nada mais. "Bearer" vs "Basic" e o que
+      // torna a falha de autenticacao diagnosticavel; nenhum fragmento da
+      // credencial tem valor de diagnostico, e preservar prefixo de JWT
+      // revelaria o algoritmo de assinatura.
+      `replace_pattern(body, "(?i)((?:bearer|basic|digest|token|apikey|api_key)[=: ] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
+
+      // Forma de atribuicao, onde o esquema nao antecede o valor.
+      // A CHAVE e preservada porque saber QUAL credencial apareceu e o que torna
+      // o vazamento acionavel — nao se rotaciona o que nao se nomeia.
+      `replace_pattern(body, "(?i)((?:password|passwd|senha|secret|client_secret|access_token|refresh_token|private_key)[=:] ?)[^\\s,;}]+", "$1**********")`,
+
       // --- IDENTIFICADOR OPACO DE RECURSO ---
       // Preserva o prefixo semantico e os 4 primeiros caracteres — suficiente
       // para correlacionar registros do mesmo recurso em diagnostico, sem

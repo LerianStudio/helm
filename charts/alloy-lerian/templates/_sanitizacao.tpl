@@ -94,6 +94,29 @@ otelcol.processor.transform "sanitizacao" {
       // The only class with no preserved part, and that is deliberate.
       `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[A-Z][^=]*?(?: [a-z]+=|$)", "$1**********")`,
 
+      // --- AUTHENTICATION CREDENTIAL ---
+      // Different in kind from every rule above: those protect data that
+      // IDENTIFIES someone, this protects a value that GRANTS ACCESS. A leaked
+      // credential is not a privacy incident, it is an authenticated session in
+      // someone else's hands — and it stays exploitable until it expires.
+      //
+      // Placed BEFORE the opaque-identifier rule on purpose. A JWT contains long
+      // alphanumeric runs that a later rule could partially rewrite, and a
+      // partially masked token still leaks structure while looking sanitised.
+      //
+      // The SCHEME NAME is preserved and nothing else. "Bearer" versus "Basic"
+      // is what makes an authentication failure diagnosable; no fragment of the
+      // credential itself has diagnostic value, and preserving a JWT prefix
+      // would disclose the signing algorithm. Second class with no preserved
+      // part, for a different reason than postal address.
+      `replace_pattern(body, "(?i)((?:bearer|basic|digest|token|apikey|api_key)[=: ] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
+
+      // Assignment form, where the scheme is not what precedes the value:
+      // password=, secret=, client_secret=, access_token=. The KEY is preserved
+      // because knowing WHICH credential appeared is what makes a leak
+      // actionable — you cannot rotate what you cannot name.
+      `replace_pattern(body, "(?i)((?:password|passwd|senha|secret|client_secret|access_token|refresh_token|private_key)[=:] ?)[^\\s,;}]+", "$1**********")`,
+
       // --- OPAQUE RESOURCE IDENTIFIER ---
       // Preserves the semantic prefix and four characters: enough to correlate
       // records for the same resource, not enough to reconstruct the value.

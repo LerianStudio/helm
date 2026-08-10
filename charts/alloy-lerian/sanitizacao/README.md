@@ -209,3 +209,46 @@ transactionId=98765432109876   → transactionId=987********876543210
 ## Próximo passo
 
 **ST-003-03 e seguintes:** traduzir as regras restantes (nome, correio eletrônico, endereço, telefone, chave de pagamento, identificador opaco), cada uma com as 4 categorias. O padrão de trabalho está estabelecido: caso primeiro (falha), regra depois (passa), quebra deliberada (detecta).
+
+## Limite de alcance: CORPO de REGISTRO, e nada mais
+
+Medido em cluster real (T-005), nao inferido do codigo. As 12 regras operam sobre
+`body` dentro de `log_statements`. Consequencia direta:
+
+| Onde o dado esta | Sanitizado |
+|---|---|
+| Corpo de registro de log | **Sim** — as 8 classes |
+| Atributo de registro de log | **Nao** |
+| Atributo de recurso | **Nao** |
+| Ponto de dado de metrica (rotulo) | **Nao** |
+| Atributo de span | **Nao** |
+
+### Evidencia
+
+Emitidos por uma aplicacao no cluster, atravessando o agente, lidos no destino:
+
+```
+metrica pagamentos_total, rotulo  cpf_titular    -> Str(529.982.247-25)      INTACTO
+span    POST /transactions, attr  usuario_email  -> Str(titular@lerian.studio) INTACTO
+registro de log, corpo            cpf=...        -> 529.***.***-**            MASCARADO
+```
+
+Mesmo CPF, mesmo agente, mesmo instante: mascarado no corpo, intacto no rotulo.
+
+### Por que nao foi simplesmente estendido
+
+Nao e uma linha a mais. Varrer atributo exige decidir **quais** — iterar sobre
+todos custa CPU por registro no caminho quente, e enumerar uma lista fixa erra
+por omissao no primeiro atributo novo que uma aplicacao inventar. Em metrica ha
+agravante: rotulo faz parte da identidade da serie, entao reescrever rotulo
+**cria serie nova** e mexe em cardinalidade — exatamente o que esta migracao
+existe para reduzir.
+
+### Mitigacao vigente
+
+PII em rotulo de metrica ja e defeito de instrumentacao por outra razao: destroi
+a cardinalidade. O caminho certo e nao emitir, e isso e responsabilidade da
+biblioteca compartilhada, nao do agente.
+
+**Fica registrado como lacuna conhecida**, para decisao explicita — nao como algo
+que o arcabouco cobre e nao cobre.

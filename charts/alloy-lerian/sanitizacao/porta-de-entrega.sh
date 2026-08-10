@@ -71,8 +71,28 @@ fi
 echo ""
 echo "[4/6] Cobertura: cada classe tem as 4 categorias obrigatorias"
 # ---------------------------------------------------------------------------
-CLASSES=(documento nome email telefone chavepgto endereco idopaco)
+# A lista de classes e DERIVADA dos arquivos de caso, nao fixada aqui.
+#
+# Por que: com a lista fixa, uma classe nova entrava sem nenhuma exigencia de
+# cobertura — a porta liberava porque nao sabia que a classe existia. Medido:
+# a classe 'credencial' passou com 4 categorias por acaso, e teria passado
+# igualmente com uma so. Uma porta que so verifica o que ja conhece nao protege
+# contra o proximo acrescimo, que e justamente quando o erro acontece.
+#
+# 'interacao-*' e 'risco-*' sao casos transversais, nao classes: nomeiam
+# cenarios entre classes e nao seguem o eixo de 4 categorias.
 CATEGORIAS=(canonico forma-alternativa ausente preservacao-fragmento)
+mapfile -t CLASSES < <(
+  find "${RAIZ}/casos" -name '*.json' ! -name '*.esperado.json' -printf '%f\n' \
+    | sed 's/\.json$//' \
+    | grep -vE '^(interacao|risco)-' \
+    | sed -E "s/-($(IFS='|'; echo "${CATEGORIAS[*]}"))$//" \
+    | sort -u
+)
+
+if [ ${#CLASSES[@]} -eq 0 ]; then
+  erro "nenhuma classe encontrada em casos/ — a derivacao falhou"
+fi
 
 for classe in "${CLASSES[@]}"; do
   faltando=()

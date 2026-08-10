@@ -203,6 +203,50 @@ node:
     # component; the durable send queue is the only thing that would need it,
     # and that trade was rejected.
     stabilityLevel: generally-available
+    # MEASURED: without this, the agent runs as ROOT. The upstream chart ships
+    # `securityContext: {}` and the image's own default user is uid 0, so the
+    # config-reloader sidecar the chart injects ends up MORE restricted than the
+    # agent it watches.
+    #
+    # Upstream asks for `runAsUser: 0` (with privileged: true) in exactly two
+    # scenarios, and NEITHER is ours: collecting logs by mounting the host
+    # filesystem, and host telemetry from /proc and /sys. This agent only
+    # receives OTLP and scrapes HTTP.
+    #
+    # VERIFIED against the real binary with the rendered node config: uid 473
+    # starts clean, "now listening for http traffic", no permission error. Root
+    # was the image default, not a requirement of our use.
+    #
+    # Non-negotiable for BYOC: this runs in a financial institution's cluster, and
+    # "does your agent run as root" is a question we should never answer with yes.
+    securityContext:
+      runAsUser: 473
+      runAsGroup: 473
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+
+    # Required BY readOnlyRootFilesystem above, not optional alongside it.
+    #
+    # MEASURED: the upstream chart mounts only the ConfigMap at /etc/alloy — it
+    # provides no volume for `storagePath` (default /tmp/alloy). With a read-only
+    # root and no writable mount the agent dies at startup:
+    #
+    #   failed to create the remotecfg service:
+    #   mkdir /tmp/alloy: read-only file system
+    #
+    # emptyDir, not a claim: the path holds the remotecfg service's working state,
+    # which is rebuildable. Persisting it across restarts is neither needed nor
+    # wanted — see docs/FLEET-MANAGEMENT.md on why we compose the collector id
+    # from the pod name instead of relying on the persisted seed.
+    mounts:
+      extra:
+        - name: alloy-storage
+          mountPath: /tmp/alloy
+
     # Credential read from the Secret the onboarding process provisions in this
     # namespace. The chart never creates it — registered in the repository's
     # out-of-band secret allowlist so the render gate does not flag it.
@@ -260,6 +304,15 @@ node:
       limits:
         memory: 512Mi
   controller:
+    # Writable volume for `storagePath` — REQUIRED by readOnlyRootFilesystem.
+    # The upstream chart mounts only the ConfigMap and provides nothing writable,
+    # so a read-only root kills the agent at startup:
+    #   mkdir /tmp/alloy: read-only file system
+    # emptyDir because the content is rebuildable working state.
+    volumes:
+      extra:
+        - name: alloy-storage
+          emptyDir: {}
     type: daemonset
     # Needed for the connection-based association fallback, which reads the peer
     # address. Not every application declares k8s.pod.ip, so the fallback is
@@ -281,6 +334,50 @@ singleton:
       key: config.alloy
     enableReporting: false
     stabilityLevel: generally-available
+    # MEASURED: without this, the agent runs as ROOT. The upstream chart ships
+    # `securityContext: {}` and the image's own default user is uid 0, so the
+    # config-reloader sidecar the chart injects ends up MORE restricted than the
+    # agent it watches.
+    #
+    # Upstream asks for `runAsUser: 0` (with privileged: true) in exactly two
+    # scenarios, and NEITHER is ours: collecting logs by mounting the host
+    # filesystem, and host telemetry from /proc and /sys. This agent only
+    # receives OTLP and scrapes HTTP.
+    #
+    # VERIFIED against the real binary with the rendered node config: uid 473
+    # starts clean, "now listening for http traffic", no permission error. Root
+    # was the image default, not a requirement of our use.
+    #
+    # Non-negotiable for BYOC: this runs in a financial institution's cluster, and
+    # "does your agent run as root" is a question we should never answer with yes.
+    securityContext:
+      runAsUser: 473
+      runAsGroup: 473
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+
+    # Required BY readOnlyRootFilesystem above, not optional alongside it.
+    #
+    # MEASURED: the upstream chart mounts only the ConfigMap at /etc/alloy — it
+    # provides no volume for `storagePath` (default /tmp/alloy). With a read-only
+    # root and no writable mount the agent dies at startup:
+    #
+    #   failed to create the remotecfg service:
+    #   mkdir /tmp/alloy: read-only file system
+    #
+    # emptyDir, not a claim: the path holds the remotecfg service's working state,
+    # which is rebuildable. Persisting it across restarts is neither needed nor
+    # wanted — see docs/FLEET-MANAGEMENT.md on why we compose the collector id
+    # from the pod name instead of relying on the persisted seed.
+    mounts:
+      extra:
+        - name: alloy-storage
+          mountPath: /tmp/alloy
+
     # No inbound ports: this role watches the cluster API and scrapes, it does
     # not receive pushes.
     extraPorts: []
@@ -324,6 +421,15 @@ singleton:
       limits:
         memory: 256Mi
   controller:
+    # Writable volume for `storagePath` — REQUIRED by readOnlyRootFilesystem.
+    # The upstream chart mounts only the ConfigMap and provides nothing writable,
+    # so a read-only root kills the agent at startup:
+    #   mkdir /tmp/alloy: read-only file system
+    # emptyDir because the content is rebuildable working state.
+    volumes:
+      extra:
+        - name: alloy-storage
+          emptyDir: {}
     type: deployment
     # EXACTLY ONE. More than one replica duplicates every series with no
     # attribute distinguishing the writers — the defect this chart exists to

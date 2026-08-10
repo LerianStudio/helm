@@ -3,9 +3,19 @@
 O chart instala **três** componentes: o agente em dois papéis (por nó e instância
 única) e um produtor de estado de objetos de cluster.
 
-Medido no render: **zero CRDs, nenhum pod privilegiado, nenhum `hostPID`, nenhum
-`hostPath`.** O único privilégio é `hostNetwork` no papel por nó, necessário para
-o caminho secundário de atribuição de contexto.
+Medido no cluster: **zero CRDs, nenhum pod privilegiado, nenhum `hostPID`, nenhum
+`hostPath`, e o agente roda como uid 473 com raiz somente-leitura.** O único
+privilégio é `hostNetwork` no papel por nó, necessário para o caminho secundário
+de atribuição de contexto.
+
+> **Correção (2026-08-10).** Esta seção afirmava a mesma postura quando o agente
+> ainda rodava como **root** — o chart oficial entrega `securityContext: {}` e o
+> usuário default da imagem é uid 0, de modo que o sidecar `config-reloader`
+> injetado pelo próprio chart era mais restrito que o agente. Encontrado ao
+> comparar com o chart oficial, e corrigido: `runAsUser: 473`,
+> `runAsNonRoot: true`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`.
+> Verificado no cluster (`uid=473(alloy)`), sem perda de função.
+> Ver `pre-dev/alloy-collector-client/double-check-chart-oficial.md`.
 
 Este documento registra por que cada componente do chart guarda-chuva ficou fora,
 para que a decisão não se perca e ninguém religue por conveniência.
@@ -137,6 +147,10 @@ para a decisão ser explícita em vez de herdada.
 | Aspecto | Este chart |
 |---|---|
 | CRDs instaladas | zero |
+| Usuário do agente | **uid 473, não-root** (medido: `uid=473(alloy)`) |
+| Raiz somente-leitura | **sim** |
+| Escalonamento de privilégio | negado |
+| Capabilities | todas descartadas |
 | Pods privilegiados | nenhum |
 | `hostPID` / `hostIPC` | nenhum |
 | `hostPath` | nenhum |

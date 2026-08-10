@@ -268,3 +268,27 @@ thing and are collected in both profiles — those describe workloads we operate
      written into the manifest by the call site — which produced
      "falseapiVersion: v1" and made every render invalid YAML. */}}
 {{- end -}}
+
+
+{{/*
+==============================================================================
+CLUSTER-OBJECT PRODUCER — where to scrape it
+==============================================================================
+Deploying the producer and scraping it are SEPARATE decisions. A cluster that
+already runs one (a monitoring stack usually brings its own) should have ours
+disabled — running two producers of the same metrics is the duplication this
+migration exists to remove — but the scrape must still happen.
+
+Tying the scrape to our subchart being enabled silently removed the collection
+along with the workload. Verified.
+
+Default: our own service, when enabled. Override to point at the existing one.
+*/}}
+{{- define "alloy-lerian.clusterObjectTarget" -}}
+{{- $t := (.Values.collection).clusterObjectTarget | default "" -}}
+{{- if $t -}}
+{{- $t -}}
+{{- else if index .Values "kube-state-metrics" "enabled" -}}
+{{- printf "%s-kube-state-metrics.%s.svc.cluster.local:8080" .Release.Name .Release.Namespace -}}
+{{- end -}}
+{{- end -}}

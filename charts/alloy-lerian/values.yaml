@@ -117,6 +117,12 @@ collection:
     include: ""
     exclude: ""
 
+  # Where to scrape cluster-object metrics from. Empty means our own producer,
+  # when enabled. Set this to reuse an existing producer — deploying it and
+  # scraping it are separate decisions, and disabling ours must not silently
+  # remove the collection.
+  clusterObjectTarget: ""
+
   # Node CPU, memory and filesystem — the HOST, not the workloads. Available
   # only in the own profile; setting it true with profile: client fails the
   # render. Not collected by default in either profile.

@@ -30,15 +30,37 @@ destination:
   # Sem bloco `credential`: a plataforma interna não valida a credencial, e o
   # perfil `own` já deriva isso — o cabeçalho não é enviado.
 
-# Remove a referência ao Secret que os defaults do chart carregam. Ela é
-# inofensiva (optional: true, e o cabeçalho não é enviado neste perfil), mas
-# deixá-la sugere que o Secret é esperado aqui — e não é.
+# Remove a referência ao Secret que os defaults do chart carregam. A plataforma
+# interna não valida a credencial, então o cabeçalho não é enviado e nenhum
+# Secret precisa existir antes do install.
+#
+# Se o destino passar a validar, reverter isto e definir
+# `destination.credential.enabled: true` — aí o Secret alloy-api-key precisa
+# existir no namespace.
 node:
   alloy:
     extraEnv: []
 singleton:
   alloy:
     extraEnv: []
+
+# benedita JÁ RODA kube-state-metrics: o chart `prometheus` do próprio ambiente
+# o sobe (o11y/prometheus/values.yaml, `kube-state-metrics.enabled: true`).
+# Subir o nosso criaria DOIS produtores das mesmas métricas de objeto de cluster
+# — exatamente a duplicação que esta migração corrige.
+#
+# O papel singleton faz scrape do que já existe — ver collection.clusterObjectTarget.
+kube-state-metrics:
+  enabled: false
+
+collection:
+  # Aponta para o kube-state-metrics que o chart `prometheus` do ambiente já
+  # sobe. CONFIRMAR o nome do service antes do deploy:
+  #   kubectl -n monitoring get svc | grep kube-state-metrics
+  #
+  # Se estiver errado, o scrape falha em silêncio: o alvo simplesmente não
+  # responde, e as métricas de objeto de cluster não aparecem.
+  clusterObjectTarget: "prometheus-kube-state-metrics.monitoring.svc.cluster.local:8080"
 
 # ---------------------------------------------------------------------------
 # Deliberadamente AUSENTE deste arquivo

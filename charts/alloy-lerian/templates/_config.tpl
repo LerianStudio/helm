@@ -297,7 +297,8 @@ logging {
   format = "logfmt"
 }
 
-{{ if index .Values "kube-state-metrics" "enabled" -}}
+{{- $alvoObjetos := include "alloy-lerian.clusterObjectTarget" . }}
+{{ if $alvoObjetos -}}
 // Cluster-object metrics, scraped from the dedicated producer. Single writer by
 // construction: the producer runs one replica, so this scrape cannot duplicate
 // regardless of how many agents exist.
@@ -307,7 +308,7 @@ logging {
 // destination — and the cost at the destination is series x writes per minute.
 prometheus.scrape "objetos_de_cluster" {
   targets = [{
-    __address__ = {{ printf "%s-kube-state-metrics.%s.svc.cluster.local:8080" .Release.Name .Release.Namespace | quote }},
+    __address__ = {{ $alvoObjetos | quote }},
   }]
   scrape_interval = {{ $interval | quote }}
   forward_to      = [prometheus.relabel.procedencia.receiver]

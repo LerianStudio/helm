@@ -120,6 +120,7 @@ data:
   # RUNTIME
   DEPLOYMENT_MODE: {{ .Values.auth.configmap.DEPLOYMENT_MODE | default "local" | quote }}
   TRUSTED_PROXIES: {{ .Values.auth.configmap.TRUSTED_PROXIES | default "" | quote }}
+  PLATFORM_INTERNAL_CIDRS: {{ .Values.auth.configmap.PLATFORM_INTERNAL_CIDRS | default "" | quote }}
   SWAGGER_ENABLED: {{ .Values.auth.configmap.SWAGGER_ENABLED | default "true" | quote }}
 
   # CACHE (0 = use built-in default from constant)

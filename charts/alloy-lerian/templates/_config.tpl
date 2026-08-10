@@ -35,7 +35,7 @@ logging {
   level  = {{ .Values.logging.level | default "info" | quote }}
   format = "logfmt"
 }
-
+{{ include "alloy-lerian.config.fleet" . }}
 {{ if eq (include "alloy-lerian.livedebugEnabled" .) "true" -}}
 // Enabled only in the own profile. Streams raw pipeline payloads.
 livedebugging {
@@ -296,6 +296,7 @@ logging {
   level  = {{ .Values.logging.level | default "info" | quote }}
   format = "logfmt"
 }
+{{ include "alloy-lerian.config.fleet" . }}
 
 {{- $alvoObjetos := include "alloy-lerian.clusterObjectTarget" . }}
 {{ if $alvoObjetos -}}

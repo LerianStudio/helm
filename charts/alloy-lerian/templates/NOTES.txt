@@ -1,0 +1,36 @@
+alloy-lerian instalado no namespace {{ .Release.Namespace }}.
+
+Perfil: {{ include "alloy-lerian.profile" . }}
+Origem: {{ include "alloy-lerian.originId" . }}
+Destino: {{ include "alloy-lerian.destinationEndpoint" . }}
+Cadência mínima: {{ include "alloy-lerian.interval" . }}
+
+Papéis instalados:
+  - node (DaemonSet)  recebe telemetria de aplicação por OTLP em 4317/4318
+{{- if .Values.singleton.enabled }}
+  - singleton (Deployment, 1 réplica)  estado de escopo de cluster
+{{- end }}
+
+{{- if index .Values "kube-state-metrics" "enabled" }}
+  - kube-state-metrics (Deployment, 1 réplica)  estado de objetos de cluster
+{{- else }}
+Produtor de estado de objetos: externo
+  alvo: {{ include "alloy-lerian.clusterObjectTarget" . | default "NENHUM — métricas de objeto de cluster não serão coletadas" }}
+{{- end }}
+
+{{ if eq (include "alloy-lerian.fleetEnabled" .) "true" -}}
+Fleet Management: ATIVO
+  endpoint: {{ .Values.fleetManagement.url }}
+  intervalo: {{ .Values.fleetManagement.pollFrequency | default "1m" }}
+
+  A configuração remota roda em controlador SEPARADO da local. As regras de
+  sanitização, que vivem na config local, não podem ser desligadas remotamente.
+
+  Atenção: uma pipeline remota com exportador próprio teria caminho de saída
+  que NÃO passa pelo mascaramento local. Mantenha a exportação local.
+{{- else -}}
+Fleet Management: inativo (fleetManagement.enabled: false)
+{{- end }}
+
+Sanitização de dado regulado: SEMPRE ativa, não configurável.
+  7 classes cobertas, verificadas por asserção no pipeline de entrega.

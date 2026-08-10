@@ -204,6 +204,8 @@ node:
             # perda seria silenciosa e contínua. Falhar na criação do pod é
             # ruidoso e recuperável — é o modo de falha que queremos.
             optional: false
+      # As entradas de Fleet Management são acrescentadas pelo chart quando
+      # `fleetManagement.enabled` é true — não editar aqui.
     resources:
       requests:
         cpu: 100m
@@ -284,6 +286,61 @@ inspection:
 
 logging:
   level: "info"
+
+# ---------------------------------------------------------------------------
+# FLEET MANAGEMENT — gestão remota de configuração, desligada por padrão
+# ---------------------------------------------------------------------------
+# Ligar é mudar `enabled` e informar url/username/token — nenhuma edição de
+# config no cluster do cliente.
+#
+# NÃO exige o operator do agente: `remotecfg` é bloco de config do runtime, então
+# o chart standalone é caminho suportado e o `bind`/`escalate` do operator fica
+# fora do cluster.
+#
+# Transporte: PULL, HTTPS 443 de saída. Nada disca para dentro do cluster.
+#
+# As regras de sanitização vivem na config LOCAL e não podem ser desligadas
+# remotamente — config local e remota têm controladores de componente separados
+# e, pela documentação, "cannot be in conflict".
+#
+# ⚠️ O risco real é o oposto do óbvio: como os controladores são isolados, uma
+# pipeline remota também NÃO consegue encaminhar para a nossa sanitização local.
+# Uma pipeline remota com exportador próprio teria caminho de saída paralelo que
+# nunca passa pelo mascaramento.
+#
+# Mitigação é de POLÍTICA, não de config: usar Fleet Management para coleta e
+# descoberta, mantendo a EXPORTAÇÃO local. Ver docs/FLEET-MANAGEMENT.md.
+fleetManagement:
+  enabled: false
+
+  # Copiar VERBATIM da interface do Fleet Management. O formato do host varia por
+  # stack e região, e construí-lo à mão é erro documentado.
+  url: ""
+
+  # Identificador numérico da stack, mostrado na mesma interface.
+  username: ""
+
+  # Token com escopo de leitura de config remota. Provisionado no cluster antes
+  # do install, como a credencial de telemetria — o chart apenas referencia.
+  tokenSecret:
+    name: "alloy-fleet-token"
+    key: "token"
+
+  # Intervalo de consulta. Mínimo aceito pelo agente: 10s.
+  pollFrequency: "1m"
+
+  # Atributos usados pelo serviço para decidir qual configuração enviar a este
+  # collector.
+  #
+  # ⚠️ Atributos LOCAIS são auto-declarados e não há validação de conteúdo
+  # documentada. Para segmentação com significado de segurança, prefira
+  # atributos REMOTOS (definidos na interface, que têm precedência) — um
+  # collector poderia declarar o atributo de outro cliente e receber config
+  # alheia.
+  #
+  # Os reservados (collector.os, collector.version, collector.ID) são injetados
+  # pelo serviço e não podem ser sobrescritos.
+  attributes: {}
 
 # ---------------------------------------------------------------------------
 # UPSTREAM DEPENDENCIES

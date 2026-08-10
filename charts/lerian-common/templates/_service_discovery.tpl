@@ -70,9 +70,20 @@ global.serviceDiscovery (all optional except address when enabled):
   keeping a derived key in extraEnvVars too would duplicate it. SD_ENABLED stays with
   the caller and is never emitted here.
 */ -}}
-{{- /* Normalize .enabled to a strict bool: a raw string "false" (e.g. passed straight
-   from a configmap value) would otherwise be truthy under `if`. */ -}}
-{{- $enabled := eq (toString (.enabled | default false)) "true" -}}
+{{- /* Activation precedence (env-wide toggle with per-component override):
+   1. explicit `.enabled` param — legacy callers that pre-resolve it still win (backward-compatible);
+   2. `configmap.SD_ENABLED` — this component's own override;
+   3. `global.serviceDiscovery.enabled` — the env-wide toggle (turn SD on for the whole umbrella);
+   4. false.
+   A raw string "false" would be truthy under `if`, so normalize to a strict bool at each tier. */ -}}
+{{- $enabled := false -}}
+{{- if hasKey . "enabled" -}}
+{{- $enabled = eq (toString (.enabled | default false)) "true" -}}
+{{- else if hasKey $c "SD_ENABLED" -}}
+{{- $enabled = eq (toString (index $c "SD_ENABLED")) "true" -}}
+{{- else -}}
+{{- $enabled = eq (toString ($sd.enabled | default false)) "true" -}}
+{{- end -}}
 {{- if $enabled -}}
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is
    rendered by the component's own extraEnvVars passthrough. Emitting it again

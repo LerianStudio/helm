@@ -49,12 +49,23 @@ global.streaming (all optional except brokers, which gates emission):
    over the global value (mirrors multiTenant.env / serviceDiscovery.env). Empty
    dict when omitted. */ -}}
 {{- $c := .configmap | default dict -}}
+{{- /* Activation precedence (env-wide toggle with per-component override), mirrors
+   serviceDiscovery.env: explicit `.enabled` param (legacy caller wins) › configmap.
+   STREAMING_ENABLED (per-component) › global.streaming.enabled (env-wide) › false. */ -}}
+{{- $enabled := false -}}
+{{- if hasKey . "enabled" -}}
+{{- $enabled = eq (toString (.enabled | default false)) "true" -}}
+{{- else if hasKey $c "STREAMING_ENABLED" -}}
+{{- $enabled = eq (toString (index $c "STREAMING_ENABLED")) "true" -}}
+{{- else -}}
+{{- $enabled = eq (toString ($s.enabled | default false)) "true" -}}
+{{- end -}}
 {{- /* Activate when enabled AND brokers are configured — via EITHER the env-wide
    global.streaming.brokers OR a legacy flat configmap.STREAMING_BROKERS (mirrors
    serviceDiscovery.env). Each key resolves by PRESENCE (hasKey) so an explicit
    configmap value survives even when it is a YAML false / 0 / "" — sprig `default`
    would treat those as empty and wrongly fall back to the global/derived value. */ -}}
-{{- if and .enabled (or $s.brokers (hasKey $c "STREAMING_BROKERS")) -}}
+{{- if and $enabled (or $s.brokers (hasKey $c "STREAMING_BROKERS")) -}}
 {{- $brokers := $s.brokers -}}{{- if hasKey $c "STREAMING_BROKERS" -}}{{- $brokers = index $c "STREAMING_BROKERS" -}}{{- end -}}
 {{- $tlsEnabled := ($s.tlsEnabled | default false) -}}{{- if hasKey $c "STREAMING_TLS_ENABLED" -}}{{- $tlsEnabled = index $c "STREAMING_TLS_ENABLED" -}}{{- end -}}
 {{- $saslMechanism := $s.saslMechanism -}}{{- if hasKey $c "STREAMING_SASL_MECHANISM" -}}{{- $saslMechanism = index $c "STREAMING_SASL_MECHANISM" -}}{{- end -}}{{- if kindIs "invalid" $saslMechanism -}}{{- $saslMechanism = "" -}}{{- end -}}

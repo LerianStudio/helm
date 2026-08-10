@@ -321,17 +321,14 @@ prometheus.relabel "procedencia" {
     target_label = "client_id"
     replacement  = {{ $origin | quote }}
   }
-  forward_to = [prometheus.remote_write.destino.receiver]
+  forward_to = [otelcol.receiver.prometheus.ponte_metricas.receiver]
 }
 
-prometheus.remote_write "destino" {
-  endpoint {
-    url = {{ printf "%s/api/v1/push" (trimSuffix "/" (include "alloy-lerian.destinationEndpoint" .)) | quote }}
-{{- if $authenticated }}
-    headers = {
-      "x-api-key" = sys.env("ALLOY_DESTINATION_CREDENTIAL"),
-    }
-{{- end }}
+// Bridge into OTLP. See the note on the exporter below for why this role does
+// not speak the native protocols.
+otelcol.receiver.prometheus "ponte_metricas" {
+  output {
+    metrics = [otelcol.exporter.otlphttp.destino.input]
   }
 }
 {{ end -}}
@@ -341,21 +338,51 @@ prometheus.remote_write "destino" {
 // explicit form of the same guarantee.
 loki.source.kubernetes_events "eventos" {
   log_format = "logfmt"
-  forward_to = [loki.write.destino.receiver]
+  forward_to = [otelcol.receiver.loki.ponte_eventos.receiver]
 }
 
-loki.write "destino" {
-  endpoint {
-    url = {{ printf "%s/loki/api/v1/push" (trimSuffix "/" (include "alloy-lerian.destinationEndpoint" .)) | quote }}
+otelcol.receiver.loki "ponte_eventos" {
+  output {
+    logs = [otelcol.processor.transform.procedencia_eventos.input]
+  }
+}
+
+// Events do not pass through the node role, so they need their own origin mark.
+otelcol.processor.transform "procedencia_eventos" {
+  error_mode = "ignore"
+  log_statements {
+    context = "resource"
+    statements = [
+      `set(attributes["client.id"], {{ $origin | quote }})`,
+    ]
+  }
+  output {
+    logs = [otelcol.exporter.otlphttp.destino.input]
+  }
+}
+
+// ⚠️ OTLP, NOT prometheus.remote_write and loki.write.
+//
+// The destination in this architecture is an OTLP COLLECTOR, not a storage
+// backend. Measured on the real destination: its receivers are otlp, jaeger and
+// a self-scrape — there is no prometheusremotewrite receiver and no Loki push
+// endpoint. Exporting natively would POST to /api/v1/push and /loki/api/v1/push
+// on a collector that serves neither path.
+//
+// The failure mode is what makes this worth a comment: cluster-object metrics
+// and Kubernetes events would simply never arrive, while the agent stayed
+// healthy and the node role kept delivering normally. Nothing would look broken.
+//
+// OTLP is also the contract every other hop already speaks, so the concentrator
+// treats this role exactly like any other producer.
+otelcol.exporter.otlphttp "destino" {
+  client {
+    endpoint = {{ include "alloy-lerian.destinationEndpoint" . | quote }}
 {{- if $authenticated }}
     headers = {
       "x-api-key" = sys.env("ALLOY_DESTINATION_CREDENTIAL"),
     }
 {{- end }}
-  }
-
-  external_labels = {
-    client_id = {{ $origin | quote }},
   }
 }
 {{- end -}}

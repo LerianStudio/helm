@@ -35,7 +35,7 @@ kind: Job
 metadata:
   name: {{ include "midaz-tracer.migrationsFullname" . }}
   labels:
-    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+    {{- include "midaz-tracer.labels" (dict "context" . "name" (printf "%s-migrations" .Values.tracer.name) ) | nindent 4 }}
   {{- with $migrations.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -47,7 +47,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 8 }}
+        {{- include "midaz-tracer.labels" (dict "context" . "name" (printf "%s-migrations" .Values.tracer.name) ) | nindent 8 }}
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false

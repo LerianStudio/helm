@@ -41,7 +41,7 @@ kind: Job
 metadata:
   name: {{ include "midaz-ledger.migrationsFullname" . }}
   labels:
-    {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
+    {{- include "midaz.labels" (dict "context" . "component" (printf "%s-migrations" .Values.ledger.name) "name" (printf "%s-migrations" .Values.ledger.name) ) | nindent 4 }}
   {{- with $migrations.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -53,7 +53,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 8 }}
+        {{- include "midaz.labels" (dict "context" . "component" (printf "%s-migrations" .Values.ledger.name) "name" (printf "%s-migrations" .Values.ledger.name) ) | nindent 8 }}
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false

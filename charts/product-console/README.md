@@ -20,8 +20,7 @@ A Helm chart for deploying Product Console - Lerian Studio's web interface for m
 To install the chart with the release name `product-console`:
 
 ```bash
-helm repo add lerianstudio https://charts.lerian.studio
-helm install product-console lerianstudio/product-console-helm
+helm install product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version <version> -n midaz --create-namespace
 ```
 
 ## Configuration
@@ -35,7 +34,7 @@ Copy `values-template.yaml` and customize it for your deployment:
 ```bash
 cp values-template.yaml my-values.yaml
 # Edit my-values.yaml with your configuration
-helm install product-console lerianstudio/product-console-helm -f my-values.yaml
+helm install product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version <version> -f my-values.yaml -n midaz --create-namespace
 ```
 
 ### Key Configuration Options

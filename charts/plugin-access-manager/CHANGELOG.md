@@ -1,5 +1,17 @@
 # Plugin-access-manager Changelog
 
+## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.6.0)
+
+- **Features**
+  - Expose `PLATFORM_INTERNAL_CIDRS` on auth.
+  - Fail the render on `PLATFORM_INTERNAL_CIDRS` skew.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.5.0...plugin-access-manager-v8.6.0)
+
+---
+
 ## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v8.5.0)
 
 - **Features**

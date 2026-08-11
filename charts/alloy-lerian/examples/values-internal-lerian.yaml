@@ -247,38 +247,55 @@ node-exporter:
 # costMetrics:
 #   enabled: false
 
-# --- 2º: CONSUMO REAL POR CONTÊINER — a pergunta do usuário, respondida --
+# --- 2º: CONSUMO REAL POR CONTÊINER (containerResources) ----------------
 # Componente verificado: `prometheus.exporter.cadvisor` existe e carrega sem
 # exigir atributo.
 #
-# PERGUNTA (2026-08-11): "não precisaríamos, pois já coletamos métricas dos pods
-# do Kubernetes, certo?"
+# SIM, É ISTO QUE FALTA para ter uso real de contêiner. O kube-state-metrics não
+# substitui: ele lê a API do Kubernetes, então sabe o que foi DECLARADO
+# (`resource_limits`, 737 séries) e o estado do objeto. Consumo não está na API —
+# está no kubelet/cAdvisor.
 #
-# MEDIDO na benedita, e a resposta é NÃO — são coisas diferentes:
+# ============================================================================
+# CUSTO MEDIDO (benedita, 3 nós — o prometheus-server local já coleta, então os
+# números são reais, não estimativa)
+# ============================================================================
 #
-#   temos via kube-state-metrics          responde
-#   ------------------------------------  ----------------------------------
-#   kube_pod_container_resource_limits    quanto foi DECLARADO no manifesto
-#     (737 séries)                        ex: fetcher-worker limite = 21 GB
-#   kube_pod_status_phase (1.950)         está Running/Pending?
-#   kube_pod_container_status_restarts    reiniciou quantas vezes?
+#   sem filtro nenhum                    78 famílias / 90.948 séries
+#   com allowlist de 16 famílias                     / 14.406 séries
+#   allowlist + só contêiner nomeado                 /  4.200 séries  (-95,4%)
 #
-#   NÃO temos                             ficaria sem resposta
-#   ------------------------------------  ----------------------------------
-#   container_memory_usage_bytes          "este pod está perto do limite?"
-#     (0 séries com client_id=benedita)
+# Dois cortes independentes, e o segundo foi a surpresa:
 #
-# O kube-state-metrics lê a API do Kubernetes: sabe o que foi DECLARADO e o
-# estado do objeto. Consumo não está na API — está no kubelet/cAdvisor.
+# 1. ALLOWLIST. As famílias caras não respondem nada — `container_tasks_state`
+#    (5.255), `container_blkio_device_usage_total` (5.048),
+#    `container_memory_failures_total` (4.204), `container_fs_reads/writes_total`
+#    (3.885 cada). As que importam são baratas: `memory_usage_bytes` e
+#    `memory_working_set_bytes` custam 1.393 séries cada.
 #
-# ⚠️ O CUSTO DISSO É REAL, e mensurável agora: há 5 séries de
-# `kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}` na
-# benedita. Cinco contêineres JÁ morreram por memória — e só soubemos depois.
-# OOMKilled avisa DEPOIS do óbito; uso real avisa ANTES. É a diferença entre
-# reagir e prevenir, que é exatamente o objetivo declarado.
+# 2. `container!=""`. MEDIDO: de 1.393 séries de memory_usage, apenas 374 têm
+#    nome de contêiner. As outras 1.019 (73%) são sandbox de pod e agregados do
+#    cgroup raiz — o mesmo dado somado, num nível que ninguém consulta.
 #
-# Na benedita a lacuna é encoberta pelo prometheus-server local (1.049 séries).
-# Num cluster BYOC não haveria nada.
+# ============================================================================
+# O QUE ISSO COMPRA, com caso real medido agora
+# ============================================================================
+#   mimir-ingester-0 / ingester        94,4% do limite de memória
+#   alloy-lerian-singleton / alloy      81,0%
+#   cert-manager / cert-manager-c       79,7%
+#   flowker-worker / flowker-worker     77,8%
+#
+# Isso é `working_set / spec_memory_limit`, ambos do cAdvisor. Hoje é INVISÍVEL
+# no pipeline do Alloy — e a benedita tem 5 séries de
+# `last_terminated_reason{reason="OOMKilled"}`: cinco contêineres já morreram por
+# memória, e só soubemos depois.
+#
+# Na benedita a lacuna é encoberta pelo prometheus-server local. Num cluster BYOC
+# não haveria nada.
+#
+# 16 famílias a manter: cpu_usage, cpu_cfs_throttled (×3), memory_usage,
+# memory_working_set, memory_rss, memory_cache, spec_memory_limit,
+# spec_cpu_quota/period, fs_usage, fs_limit, network_rx/tx, last_seen.
 # containerResources:
 #   enabled: false
 

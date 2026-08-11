@@ -6,7 +6,7 @@ chart and renders the collection pipeline from semantic parameters.
 ## Chart Contract
 
 - Chart type: `dependency-wrapper`
-- Required secrets: `alloy-api-key` (key `api-key`) — operator-provisioned in the origin cluster before install, in the `client` profile. Not created by this chart. Omitted in the `own` profile, where the internal platform does not validate it.
+- Required secrets: `alloy-lerian` (key `telemetry-token`) — created by the client before install, from a token we hand over, in the `client` profile. The chart reads it and never creates it. When Fleet Management is enabled, the same Secret carries a second key, `fleet-token`. One Secret, one command: it is the only manual step.
 - Dependency notes: three dependency entries, all pinned exactly. `alloy` 1.11.1 appears **twice** under the `node` and `singleton` aliases, each condition-gated on its own `enabled` value, because the upstream chart delivers one set of workloads and the design needs two topologies. `kube-state-metrics` 8.2.0 is condition-gated on `kube-state-metrics.enabled` so clusters that already run it can reuse the existing instance.
 - Production overrides: `profile` and `origin.id` are required and have no default — the render fails without them. `destination.endpoint` is required. Override `destination.retry.maxElapsedTime` and `destination.queue.size` from measured volume per environment.
 - Source/license: [grafana/alloy](https://github.com/grafana/alloy) (Apache-2.0), [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) (Apache-2.0).

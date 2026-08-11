@@ -19,7 +19,7 @@ Logo, a única verificação válida é **comparar a saída observada com a espe
 
 Código de saída 0 = liberado. Diferente de 0 = bloqueado.
 
-## Porta de entrega — 5 verificações bloqueantes
+## Porta de entrega — 6 verificações bloqueantes
 
 `porta-de-entrega.sh` é o que bloqueia a entrega. Vai além de rodar os casos:
 

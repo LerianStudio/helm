@@ -127,6 +127,19 @@ gate does not flag it as a dangling reference.
 {{- if not $e -}}
 {{- fail "\n\nalloy-lerian: `destination.endpoint` is required.\n\n  destination:\n    endpoint: https://telemetry.example.net/v1/logs\n" -}}
 {{- end -}}
+{{/*
+Plaintext is refused only when a CREDENTIAL travels to this endpoint. Cleartext
+transmission of the token is the risk; plain HTTP by itself is not, and an
+internal Service inside our own cluster is a legitimate destination — benedita
+uses exactly that, over http, with no credential.
+
+Tying the rule to the credential rather than to the scheme keeps the internal
+path working while making it impossible to send a token in the clear across a
+client's network.
+*/}}
+{{- if and (eq (include "alloy-lerian.destinationAuthenticated" .) "true") (not (hasPrefix "https://" $e)) -}}
+{{- fail (printf "\n\nalloy-lerian: `destination.endpoint` is %q, which is not https, but this profile\nSENDS A CREDENTIAL to it.\n\nThe token would cross the network in cleartext, readable by anything on the path.\n\nUse https, or — if the destination genuinely does not authenticate — set\n`destination.credential.enabled: false` so no credential is sent.\n" $e) -}}
+{{- end -}}
 {{- $e -}}
 {{- end -}}
 

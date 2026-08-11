@@ -15,11 +15,7 @@
     },
     "profile": {
       "type": "string",
-      "enum": [
-        "own",
-        "client"
-      ],
-      "description": "own = our environment (collects node infra); client = client cluster (does not). Not inferable, no default."
+      "description": "own = our environment (collects node infra); client = client cluster (does not). Required, no default. Validation lives in the chart, NOT as a schema enum: the enum fires first and reports \"value must be one of 'own','client'\", hiding the guard that actually explains the difference and what each profile collects — and the common case is a first install with no profile at all."
     },
     "origin": {
       "type": "object",

@@ -15,7 +15,8 @@ de atribuição de contexto.
 > comparar com o chart oficial, e corrigido: `runAsUser: 473`,
 > `runAsNonRoot: true`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`.
 > Verificado no cluster (`uid=473(alloy)`), sem perda de função.
-> Ver `pre-dev/alloy-collector-client/double-check-chart-oficial.md`.
+> Comparação completa contra o chart oficial: o agente rodava como root porque
+> o upstream entrega `securityContext: {}` e a imagem tem uid 0 por padrão.
 
 Este documento registra por que cada componente do chart guarda-chuva ficou fora,
 para que a decisão não se perca e ninguém religue por conveniência.

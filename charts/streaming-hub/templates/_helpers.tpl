@@ -101,13 +101,28 @@ Allows overriding it for multi-namespace deployments in combined charts.
 Resolve the shared Secret name a Deployment should reference:
 existingSecretName when useExistingSecret, otherwise the shared chart Secret.
 Input: root context (.).
+The existing-Secret path carries a KEY contract, not just a name: the
+Deployments pin STREAMING_HUB_POSTGRES_DSN via secretKeyRef (_deployment.tpl),
+so the `required` message below states the full contract the external Secret
+must satisfy.
 */}}
 {{- define "streaming-hub.secretName" -}}
 {{- if .Values.streamingHub.useExistingSecret -}}
-{{- required "streamingHub.existingSecretName is required when streamingHub.useExistingSecret=true" .Values.streamingHub.existingSecretName -}}
+{{- required "\n\nERROR: streamingHub.existingSecretName is required when streamingHub.useExistingSecret=true. The referenced Secret MUST carry the key STREAMING_HUB_POSTGRES_DSN — the Deployments consume it via an explicit secretKeyRef, and a Secret missing that key fails container creation (CreateContainerConfigError) instead of starting the app." .Values.streamingHub.existingSecretName -}}
 {{- else -}}
 {{- include "streaming-hub.fullname" . -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+streaming-hub.requiredPostgresDSN — fail before rendering a chart-managed Secret
+without the Postgres DSN. The application rejects an empty DSN at boot, so
+rendering an empty Secret would only defer the error to a CrashLoopBackOff.
+The existing-Secret path is validated independently by streaming-hub.secretName.
+*/}}
+{{- define "streaming-hub.requiredPostgresDSN" -}}
+{{- $secrets := get (.Values.streamingHub | default dict) "secrets" | default dict -}}
+{{- $postgresDSN := required "\n\nERROR: streamingHub.secrets.STREAMING_HUB_POSTGRES_DSN is required when streamingHub.useExistingSecret=false because streaming-hub cannot start without PostgreSQL. Set it through a protected values source, or set streamingHub.useExistingSecret=true with streamingHub.existingSecretName to reference an operator-provisioned Secret." (get $secrets "STREAMING_HUB_POSTGRES_DSN") -}}
 {{- end -}}
 
 {{/*

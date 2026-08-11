@@ -433,7 +433,7 @@ var configMapKindPattern = regexp.MustCompile(`(?m)^\s*kind:\s*ConfigMap\s*$`)
 // configMapDataKeyPattern captures a data-block key/value in a ConfigMap
 // template, e.g.
 //
-//	  SOME_PASSWORD: {{ .Values.x }}
+//	SOME_PASSWORD: {{ .Values.x }}
 //
 // Group 1 is the key name, group 2 the (template) value text. Pure-template
 // lines ({{- if ... }}, comments) do not match because they lack the `KEY:`

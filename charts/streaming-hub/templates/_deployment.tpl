@@ -96,6 +96,18 @@ spec:
               value: {{ $cfg.poolMaxOpenConns | quote }}
             - name: STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS
               value: {{ $cfg.poolMaxIdleConns | quote }}
+            {{- if $sh.useExistingSecret }}
+            # Existing-Secret path: Helm cannot inspect the external Secret's keys
+            # at render time, so the ONE boot-critical key is pinned via an explicit
+            # secretKeyRef (mirrors the migrations Job). An external Secret missing
+            # STREAMING_HUB_POSTGRES_DSN now fails container creation with a clear
+            # "couldn't find key" event instead of a silent app CrashLoopBackOff.
+            - name: STREAMING_HUB_POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "streaming-hub.secretName" $ }}
+                  key: STREAMING_HUB_POSTGRES_DSN
+            {{- end }}
             {{- with $sh.extraEnvVars }}
             {{- range . }}
             - name: {{ .name }}

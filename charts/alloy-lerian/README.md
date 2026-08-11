@@ -68,20 +68,76 @@ Runs at the edge, before anything leaves the origin cluster, and is **not
 configurable**. There is no value that disables a rule, weakens one, or produces
 unsanitised output. The absence of those knobs is the guarantee.
 
-Seven classes are covered: fiscal document, person name, email address, phone
-number, payment key, postal address, opaque resource identifier.
+**Eight classes** are covered: fiscal document, person name, email address, phone
+number, payment key, postal address, opaque resource identifier, authentication
+credential.
+
+### ⚠️ Read this before treating the list above as coverage
+
+The eight classes split into two kinds, and **the difference decides what happens
+when an application starts logging something new**:
+
+| | How it recognises the data | If a field is renamed or a new app logs it |
+|---|---|---|
+| **7 rules — by FORM** | the value's own shape (`999.999.999-99`, `x@y.z`, a JWT) | **still masked** — the field name is irrelevant |
+| **4 rules — by FIELD NAME** | an expected label (`customerName=`, `endereco=`, `password=`, `acc_`) | **passes through unmasked** |
+
+(Eleven rules across eight classes: some classes need two rules.)
+
+By form: fiscal document, phone, email, payment key, and the scheme form of
+credential. Verified — a CPF under a field name that appears in no test case
+(`documentoDoTitular=`) is masked correctly, because the rule reads the value.
+
+By field name: person name, postal address, the assignment form of credential
+(`password=`), and opaque identifier.
+
+**Why the second kind cannot simply be fixed:** `João Silva` is indistinguishable
+from `Rua Augusta` without the field label. Names and addresses have no distinctive
+form, so the anchor is unavoidable — this is a property of the data, not a shortcut.
+
+**Measured on a live cluster:** 500 real records carried **22 distinct field names,
+and none** was one of the labels the four anchored rules look for. Those rules
+protect a naming convention that nothing enforces.
+
+### What the CI gate does and does not prove
+
+`sanitizacao/porta-de-entrega.sh` runs 36 fixed input/expected pairs against the
+pinned agent. It answers *"do the rules still do what we wrote?"* — a regression
+test, and a load-bearing one: a malformed rule produces **no error** under
+`error_mode = "ignore"`, only output that looks masked (verified — the wrong
+backreference notation emits the literal text `$1.***.***-**`).
+
+It does **not** answer *"do the rules cover what the applications emit?"* Proven by
+injection: removing only `holder` from the person-name rule exposes
+`holderName=Ana Silva`, and the gate still reports 36 cases, 0 failures.
+
+**A green gate is not evidence that PII is protected.** Treating it as such is worse
+than not having it, because it grants confidence that does not correspond.
 
 What each class preserves, and why:
 
 | Class | Preserved | Reason |
 |---|---|---|
 | Fiscal document | first 3 digits | correlation without reconstruction |
-| Person name | first and last term | legibility in diagnosis |
-| Email address | 2 local chars + **whole domain** | the domain identifies the provider, not the person |
+| Person name | **given name only** | the surname is the most identifying term — preserving it defeats the rule |
+| Email address | 1–2 local chars + **whole domain** | the domain identifies the provider, not the person |
 | Phone number | country + area code | region is useful; the number is not |
 | Payment key | first and last block | traceability without reconstruction |
 | **Postal address** | **nothing — masked entirely** | **any fragment sharply narrows the search for a person** |
 | Opaque identifier | prefix + 4 chars | correlation of the same resource |
+| **Authentication credential** | **scheme name only** (`Bearer`, `Basic`) | a leaked token is access, not identification; a preserved JWT prefix would disclose the signing algorithm |
+
+### Two further limits, documented rather than implied
+
+**Log BODIES only.** The same CPF was masked in a body and left intact in a metric
+label, in the same agent, at the same instant. Rewriting a metric label creates a
+new series, which is what this migration exists to reduce.
+
+**String bodies only.** A `kvlist`/`map` body traverses all eight classes untouched.
+Measured: 20 of 20 real records have string bodies, so it does not manifest in
+current traffic — but the mechanism allows it. Covered by an explicit test case
+(`risco-corpo-estruturado`) that passes by *recognising* the gap and fails if the
+premise changes.
 
 Correctness is asserted in CI against a known input and expected output, and
 blocks release on mismatch. This is not belt-and-braces: the rules run with

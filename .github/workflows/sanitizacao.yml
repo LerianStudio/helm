@@ -1,10 +1,67 @@
-# MODELO de fluxo de CI para a porta de sanitizacao.
+# Porta de sanitizacao de dado regulado.
 #
-# Installed: the chart now exists.
+# ============================================================================
+# O QUE ESTE FLUXO FAZ, EM UMA FRASE
+# ============================================================================
+# Sobe o agente e confere se 36 pares de texto FIXO (entrada -> saida esperada)
+# ainda produzem o resultado esperado. Nao olha log real, nao toca cluster,
+# nao le codigo de aplicacao.
 #
-# Por que um fluxo dedicado, e nao um passo no fluxo de padrao de chart:
-# a verificacao executa um contêiner e leva ~30s por rodada. Manter separado
-# permite que falhe de forma legivel, sem se misturar aos demais checks.
+#   ENTRADA  (arquivo de teste): cliente cadastrado documento 12345678901
+#   ESPERADO (arquivo de teste): cliente cadastrado documento 123********
+#
+# ============================================================================
+# QUANDO ELE RODA
+# ============================================================================
+# Somente em PR que altere as regras de sanitizacao ou os templates deste
+# chart (ver `paths` abaixo), mais uma rodada semanal e execucao manual.
+# PR de aplicacao NAO dispara — aplicacao vive em outro repositorio.
+#
+# ============================================================================
+# SE ELE FALHAR, O QUE FAZER
+# ============================================================================
+# O log mostra as duas linhas que divergiram:
+#
+#   esperado: documento formatado 123.***.***-** recebido
+#   observado: documento formatado $1.***.***-** recebido
+#
+# Duas possibilidades, e a diferenca e toda:
+#
+#   1. a regra quebrou            -> corrija a REGRA
+#   2. a mudanca era intencional  -> atualize o arquivo .esperado.json
+#
+# Nunca "atualize o esperado para passar" sem olhar a saida observada: e
+# exatamente assim que uma regra quebrada e consagrada como correta.
+#
+# ============================================================================
+# POR QUE ISTO EXISTE (a unica razao que justifica o custo)
+# ============================================================================
+# Em producao as regras rodam com error_mode = "ignore". Regra malformada NAO
+# gera erro — produz saida que APARENTA estar mascarada. Verificado: a notacao
+# errada de retrovinculacao emite o texto literal "$1.***.***-**", sem qualquer
+# aviso, e o dado original desaparece do log. Uma olhada casual conclui que
+# funcionou.
+#
+# Sem esta porta, esse defeito passa por: revisao de codigo (o regex parece
+# plausivel), deploy (o agente sobe saudavel) e alertas (nao ha erro para
+# alertar).
+#
+# ============================================================================
+# O QUE ELE NAO PROVA  (leia antes de confiar no verde)
+# ============================================================================
+# Ele responde "as regras ainda fazem o que escrevemos?". NAO responde "as
+# regras cobrem o que as aplicacoes emitem?".
+#
+# Verificado por injecao: retirar apenas `holder` da regra de nome expoe
+# `holderName=Ana Silva`, e esta porta continua reportando 36 casos, 0 falhas.
+#
+# VERDE AQUI NAO E EVIDENCIA DE QUE PII ESTA PROTEGIDA. Ver a secao de limites
+# em charts/alloy-lerian/README.md.
+#
+# ============================================================================
+# Fluxo dedicado, e nao um passo no fluxo de padrao de chart: executa um
+# contêiner e leva ~30s. Separado, falha de forma legivel sem se misturar aos
+# demais checks.
 
 name: Sanitizacao de dado regulado
 
@@ -54,8 +111,22 @@ jobs:
             if [ "${{ job.status }}" = "success" ]; then
               echo "Liberado — todas as regras de sanitizacao verificadas."
             else
-              echo "**BLOQUEADO.** Regra de sanitizacao malformada nao gera erro"
-              echo "em producao: produz saida que aparenta estar mascarada."
-              echo "Ver o log do passo anterior."
+              echo "**BLOQUEADO.**"
+              echo ""
+              echo "O log do passo anterior mostra as duas linhas que divergiram:"
+              echo "\`esperado:\` e \`observado:\`. Compare-as e decida:"
+              echo ""
+              echo "1. **a regra quebrou** — corrija a regra em"
+              echo "   \`charts/alloy-lerian/templates/_sanitizacao.tpl\`"
+              echo "   (e espelhe em \`sanitizacao/regras.alloy\`)"
+              echo "2. **a mudanca era intencional** — atualize o"
+              echo "   \`.esperado.json\` do caso"
+              echo ""
+              echo "NAO atualize o esperado sem olhar o observado: e assim que"
+              echo "uma regra quebrada e consagrada como correta."
+              echo ""
+              echo "Por que isto bloqueia: em producao as regras rodam com"
+              echo "\`error_mode: ignore\`. Regra malformada nao gera erro —"
+              echo "produz saida que APARENTA estar mascarada."
             fi
           } >> "$GITHUB_STEP_SUMMARY"

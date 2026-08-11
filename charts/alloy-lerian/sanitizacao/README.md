@@ -287,3 +287,42 @@ corpo string para essa entrada, o caso quebra e alguém revisita.
 O verificador trata o marcador `__CORPO_NAO_STRING__` de forma explícita, porque a
 evidência aqui é a **ausência** de uma linha `Body: Str(` — comparar texto nunca
 detectaria isso.
+
+## As 11 regras são de DUAS naturezas — e isso decide o que elas resistem
+
+Distinção que não estava escrita e é a mais importante deste arquivo:
+
+| | Reconhece por | Se a aplicação renomear o campo |
+|---|---|---|
+| **7 regras — por FORMA** | a forma do próprio valor | **continua mascarando** |
+| **4 regras — por NOME DE CAMPO** | um rótulo esperado | **passa em claro** |
+
+**Por forma:** documento fiscal, telefone, e-mail, chave de pagamento, e a forma de
+esquema da credencial (`Bearer <token>`). Verificado executando: um CPF sob o campo
+`documentoDoTitular=`, que não aparece em nenhum caso de teste, é mascarado — a
+regra lê o valor, não o rótulo.
+
+**Por nome de campo:** nome de pessoa, endereço, credencial por atribuição
+(`password=`), identificador opaco.
+
+### Por que as 4 não podem simplesmente ser convertidas
+
+`João Silva` é indistinguível de `Rua Augusta` sem o rótulo do campo. Nome e
+endereço **não têm forma distintiva**, então a âncora é inevitável — é propriedade do
+dado, não atalho de implementação.
+
+### O tamanho da exposição, medido
+
+500 registros reais de um cluster em operação: **22 nomes de campo distintos, e
+NENHUM** era um dos rótulos que as 4 regras ancoradas procuram. Essas regras
+protegem uma convenção de nomenclatura que nada obriga.
+
+### Ao editar uma regra ancorada
+
+Acrescentar um rótulo à lista (`beneficiario`, `nomeCliente`, `pix_key`) é **baixo
+risco e alto retorno** — cada rótulo novo é cobertura que não existia. Remover um é
+o oposto, e a porta só percebe se algum dos 36 casos usar aquele rótulo:
+**verificado por injeção** — retirar apenas `holder` expõe `holderName=Ana Silva` e a
+porta libera com "36 casos, 0 falhas".
+
+Se remover um rótulo, escreva um caso para ele antes, para que a remoção apareça.

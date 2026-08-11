@@ -131,6 +131,14 @@ consul:
         cpu: "500m"
         memory: "256Mi"
 
+    # ---- Agent config: disable the DNS listener -----------------------------
+    # lib-service-discovery uses the Consul HTTP API, never Consul DNS. Setting
+    # the DNS port to -1 stops the agent from listening on :8600 (the upstream
+    # Service still declares the port, but nothing binds it) — one less open
+    # listener on the SD backend. Extend this JSON for any other agent tuning.
+    extraConfig: |
+      {"ports": {"dns": -1}}
+
   # ===========================================================================
   # DISABLED COMPONENTS — Lerian's usage needs none of these. Turning them off
   # keeps the deployment to a single StatefulSet + its ClusterIP Services and

@@ -9,7 +9,7 @@
 - Required secrets: none to supply manually. With `consul.global.acls.manageSystemACLs=true` (default) the chart generates the bootstrap-ACL-token Secret; with `consul.global.gossipEncryption.autoGenerate=true` (default) it generates the gossip-key Secret.
 - Production overrides: for HA set `consul.server.replicas`/`consul.server.bootstrapExpect` to an odd number (3/5) and `consul.server.disruptionBudget.enabled=true`; set `consul.global.tls.enabled=true` for cross-trust-boundary access; tune `consul.server.storage`, `consul.server.storageClass`, `consul.global.image` and `consul.server.resources` per cluster.
 - Reproducibility: `values.schema.json` keeps the `consul:` override block validated and `Chart.lock` pins the resolved dependency.
-- Source/license: source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: chart source in `github.com/LerianStudio/helm` under Apache-2.0. **The deployed Consul is third-party software under the Business Source License 1.1 — see [License](#license) below.**
 
 ---
 
@@ -82,7 +82,7 @@ and supply the generated CA.
 
 ## After install
 
-- `SD_ADDRESS`: `<release>-consul-server.<namespace>.svc:8500` (or `:8501` with TLS).
+- `SD_ADDRESS`: `<consul-fullname>-server.<namespace>.svc:8500` (or `:8501` with TLS), where `<consul-fullname>` resolves to `consul.fullnameOverride`, else `consul.global.name`, else `<release>-consul`. The post-install `NOTES` print the exact address resolved for your release.
 - ACL bootstrap token:
 
   ```console
@@ -99,3 +99,15 @@ See the post-install `NOTES` for the values resolved for your release.
 | Chart Version | Consul Version |
 | :---: | :---: |
 | `1.0.0` | 1.20.6 |
+
+---
+
+## License
+
+This chart (the Lerian wrapper) is licensed **Apache-2.0**.
+
+The workload it deploys — **HashiCorp Consul** (pinned `1.20.6`) — is **not** Apache/MPL: Consul `1.17.0`+ is under the **Business Source License 1.1 (BSL)**, HashiCorp's source-available license (Consul `≤ 1.16.x` was MPL 2.0). This chart does **not** redistribute the Consul binary — it references the upstream chart/images (`helm.releases.hashicorp.com`), which your cluster pulls at deploy time.
+
+**BSL Additional Use Grant (summary — read the full text at [hashicorp/consul `v1.20.6` LICENSE](https://github.com/hashicorp/consul/blob/v1.20.6/LICENSE)):** you may make production use of Consul **provided you do not offer it to third parties on a hosted or embedded basis in order to compete with HashiCorp's paid Consul** (HCP Consul / Consul Enterprise). "Embedded" means bundling Consul code **in a competitive offering**; a "competitive offering" is a *paid* product that *significantly overlaps* with HashiCorp's paid Consul. Each version's BSL converts to **MPL 2.0** four years after its release (the "Change Date").
+
+**What this means for Lerian and its clients:** running Consul as the internal service-discovery backend for `lib-service-discovery` in a core-banking platform is **not** a competitive offering — Consul is internal plumbing, not a Consul-like product sold to third parties — so this embedded / BYOC use is within the grant. If you intend to **resell managed or hosted Consul**, that is out of scope of this grant; obtain the appropriate HashiCorp license. This note is informational, not legal advice.

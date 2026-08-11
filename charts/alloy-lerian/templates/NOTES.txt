@@ -33,4 +33,6 @@ Fleet Management: inativo (fleetManagement.enabled: false)
 {{- end }}
 
 Sanitização de dado regulado: SEMPRE ativa, não configurável.
-  7 classes cobertas, verificadas por asserção no pipeline de entrega.
+  8 classes cobertas, verificadas contra o agente real na porta de entrega.
+  7 reconhecem por FORMA (robustas a nome de campo novo); 4 regras dependem de
+  NOME DE CAMPO — ver a seção de limites no README antes de tratar como garantia.

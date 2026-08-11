@@ -79,7 +79,7 @@ otelcol.processor.transform {{ $nome | quote }} {
       // rule. The given name is kept for legibility in diagnosis; everything
       // after it goes. Verified: 1 term is left alone, 2/3/4 terms are fully
       // masked, and a following `key=value` field is not consumed.
-      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)([A-Z]\\w*)(?: [A-Z]\\w*)+", "$1$2 **********")`,
+      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)(\\p{Lu}[\\p{L}]*)(?: \\p{Lu}[\\p{L}]*)+", "$1$2 **********")`,
 
       // --- EMAIL ADDRESS ---
       // Preserves two characters of the local part and the WHOLE domain. The

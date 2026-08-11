@@ -71,7 +71,7 @@ otelcol.processor.transform "sanitizacao" {
       //
       // Verificado: 1 termo nao e mascarado, 2/3/4 termos sao mascarados por
       // inteiro, e um campo `chave=valor` seguinte nao e consumido.
-      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)([A-Z]\\w*)(?: [A-Z]\\w*)+", "$1$2 **********")`,
+      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)(\\p{Lu}[\\p{L}]*)(?: \\p{Lu}[\\p{L}]*)+", "$1$2 **********")`,
 
       // --- ENDERECO DE CORREIO ELETRONICO ---
       // Preserva os 2 primeiros caracteres da parte local e o dominio INTEIRO.

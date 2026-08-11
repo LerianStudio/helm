@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - develop
+      # Chart line branches for legacy patches, e.g. hotfix/midaz-5.7.x
+      - 'hotfix/*.x'
     paths-ignore:
       - 'README.md'
       - '**/CHANGELOG.md'
@@ -24,7 +26,9 @@ jobs:
     name: Get Changed Paths
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
-      matrix: ${{ steps.changed-paths.outputs.matrix }}
+      matrix: ${{ steps.restrict.outputs.matrix }}
+      chart_line_chart: ${{ steps.restrict.outputs.chart_line_chart }}
+      chart_line_range: ${{ steps.restrict.outputs.chart_line_range }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -38,6 +42,50 @@ jobs:
           filter_paths: charts/
           get_app_name: true
           path_level: 2
+
+      - name: Restrict matrix on chart line branches
+        id: restrict
+        env:
+          MATRIX: ${{ steps.changed-paths.outputs.matrix }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          CHART=""
+          RANGE=""
+
+          case "${REF_NAME}" in
+            hotfix/*.x)
+              STEM="${REF_NAME#hotfix/}"
+              CHART=$(printf '%s' "${STEM}" | sed -nE 's/^(.+)-[0-9]+\.[0-9]+\.x$/\1/p')
+              RANGE=$(printf '%s' "${STEM}" | sed -nE 's/^.+-([0-9]+\.[0-9]+\.x)$/\1/p')
+              ;;
+          esac
+
+          if [ -z "${CHART}" ]; then
+            {
+              echo "matrix=${MATRIX}"
+              echo "chart_line_chart="
+              echo "chart_line_range="
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "::notice::Chart line branch — restricting the release matrix to '${CHART}' in range ${RANGE}"
+
+          # A chart line branch releases only its own chart. Anything else that
+          # changed on the branch would be released with the wrong version range.
+          RESTRICTED=$(printf '%s' "${MATRIX}" | jq -c --arg chart "${CHART}" '[.[] | select(.name == $chart)]')
+
+          if [ "${RESTRICTED}" = "[]" ]; then
+            echo "::notice::No change to charts/${CHART} in this push — nothing to release"
+          fi
+
+          {
+            echo "matrix=${RESTRICTED}"
+            echo "chart_line_chart=${CHART}"
+            echo "chart_line_range=${RANGE}"
+          } >> "$GITHUB_OUTPUT"
 
   release-helm-chart:
     needs: get-changed-paths
@@ -139,6 +187,9 @@ jobs:
           go build -o update-chart-version-readme-bin ./update-chart-version-readme
 
       - name: Generate .releaserc file
+        env:
+          CHART_LINE_RANGE: ${{ needs.get-changed-paths.outputs.chart_line_range }}
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
           CHART_NAME="${{ matrix.chart.name }}"
           CHART_PATH="${{ matrix.chart.working_dir }}"
@@ -160,6 +211,18 @@ jobs:
               .plugins[3][1].successCmd = $successCmd |
               .plugins[3][1].prepareCmd = $prepareCmd' \
             .github/configs/.releaserc.json > .releaserc
+
+          # On a chart line branch, register it as a semantic-release maintenance
+          # branch so the next version stays inside its range (e.g. 5.7.x -> 5.7.1)
+          if [ -n "${CHART_LINE_RANGE}" ]; then
+            jq \
+              --arg name "${BRANCH_NAME}" \
+              --arg range "${CHART_LINE_RANGE}" \
+              '.branches += [{name: $name, range: $range, channel: $range}]' \
+              .releaserc > .releaserc.tmp && mv .releaserc.tmp .releaserc
+          fi
+
+          jq . .releaserc
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4

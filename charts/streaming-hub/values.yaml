@@ -227,24 +227,23 @@ streamingHub:
       # default = BYOC single-tenant. A non-default value quarantines all
       # other ce-tenantid events (zero-delivery risk) — confirm the producer.
       STREAMING_HUB_TENANT_ID: "default"
-      # SaaS roster off by default (BYOC). When "true" the SaaS-only knobs below
-      # become required-when-SaaS (and several SECRET counterparts in secrets:).
-      STREAMING_HUB_MULTI_TENANT_ENABLED: "false"
-      STREAMING_HUB_TENANT_MANAGER_URL: ""
-      STREAMING_HUB_MULTI_TENANT_ALLOW_INSECURE_TM: "false"
-      STREAMING_HUB_MULTI_TENANT_TM_STALENESS_THRESHOLD: "12h"
-      STREAMING_HUB_MULTI_TENANT_LISTENER_STALENESS_THRESHOLD: "12h"
-      STREAMING_HUB_MULTI_TENANT_RECONCILE_INTERVAL: "6h"
-      STREAMING_HUB_MULTI_TENANT_CACHE_TTL: "12h"
-      STREAMING_HUB_TENANT_MANAGER_CB_THRESHOLD: "0"
-      STREAMING_HUB_TENANT_MANAGER_CB_TIMEOUT: "30s"
-      STREAMING_HUB_MULTI_TENANT_REDIS_HOST: ""
-      STREAMING_HUB_MULTI_TENANT_REDIS_PORT: ""
-      STREAMING_HUB_MULTI_TENANT_REDIS_TLS: "false"
-      STREAMING_HUB_MULTI_TENANT_REDIS_CA_CERT: ""
-      # lib-commons env name (NOT STREAMING_HUB_-prefixed). Required-in-SaaS:
-      # staging | production. Inert under BYOC. Leave empty unless SaaS.
-      ENVIRONMENT_NAME: ""
+      # Multi-tenant switch, read UNPREFIXED. When "true" the hub derives its
+      # tenants, their Kafka credentials and the producers it fetches manifests
+      # from in ONE boot sweep of AWS Secrets Manager under tenants/{ENV_NAME}/.
+      # It makes no tenant-manager API call and opens no Redis: the old
+      # cache-backed SaaS roster and its lifecycle listener were removed, and
+      # their STREAMING_HUB_MULTI_TENANT_* / _TENANT_MANAGER_* knobs (plus
+      # ENVIRONMENT_NAME) went with them. A STREAMING_HUB_-prefixed form of this
+      # flag has NO effect.
+      MULTI_TENANT_ENABLED: "false"
+      # Required when MULTI_TENANT_ENABLED is true: the {env} segment of
+      # tenants/{env}/{tenantId}/{module}/kafka. Empty or "local" is rejected at
+      # config load. ENV_NAME also decides whether lib-commons loads a .env file.
+      ENV_NAME: ""
+      # Required when MULTI_TENANT_ENABLED is true, and read by the AWS SDK's own
+      # chain (the hub carries no region field). The tenant credentials live in
+      # us-east-2 while much of the estate is sa-east-1 — set it explicitly.
+      AWS_REGION: ""
       # --- reconciler (topic-drift detection; dark-ship, defaults on) ---
       STREAMING_HUB_RECONCILER_ENABLED: "true"
       STREAMING_HUB_RECONCILER_INTERVAL: "300"
@@ -285,10 +284,6 @@ streamingHub:
     STREAMING_HUB_KEK_REF: ""
     # DEV-ONLY KEK material holder (local BYOC). Leave empty in real deploys.
     STREAMING_HUB_DEV_KEK: ""
-    # SaaS tenant-manager X-API-Key (required-when-SaaS).
-    STREAMING_HUB_TENANT_MANAGER_SERVICE_API_KEY: ""
-    # SaaS tenant pub/sub Redis AUTH password (optional even in SaaS).
-    STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD: ""
   # ===========================================================================
   # migrations — OUT-OF-BAND schema migration Job (Helm + ArgoCD PreSync hook).
   #

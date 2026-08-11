@@ -50,11 +50,12 @@ data:
   # MULTI-TENANT
   # =============================================================================
   MULTI_TENANT_ENABLED: {{ .Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if eq (.Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  {{- if include "midaz.isTrue" (.Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false") }}
   MULTI_TENANT_URL: {{ required "ledger.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.ledger.configmap.MULTI_TENANT_URL | quote }}
   MULTI_TENANT_SERVICE_NAME: {{ .Values.ledger.configmap.MULTI_TENANT_SERVICE_NAME | default "ledger" | quote }}
   MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.ledger.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
   MULTI_TENANT_REDIS_HOST: {{ required "ledger.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.ledger.configmap.MULTI_TENANT_REDIS_HOST | quote }}
   MULTI_TENANT_REDIS_PORT: {{ .Values.ledger.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
   MULTI_TENANT_REDIS_TLS: {{ .Values.ledger.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
@@ -127,6 +128,73 @@ data:
   MONGO_TRANSACTION_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_TRANSACTION_MAX_POOL_SIZE | default "1000" | quote }}
   MONGO_TRANSACTION_PARAMETERS: {{ .Values.ledger.configmap.MONGO_TRANSACTION_PARAMETERS | default "" | quote }}
   MONGO_TRANSACTION_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_TRANSACTION_TLS_CA_CERT | default "" | quote }}
+
+  # =============================================================================
+  # MONGO DB - CRM MODULE (folded into the unified ledger binary)
+  # =============================================================================
+  MONGO_CRM_URI: {{ .Values.ledger.configmap.MONGO_CRM_URI | default "mongodb" | quote }}
+  MONGO_CRM_HOST: {{ .Values.ledger.configmap.MONGO_CRM_HOST | default "midaz-mongodb" | quote }}
+  MONGO_CRM_NAME: {{ .Values.ledger.configmap.MONGO_CRM_NAME | default "crm" | quote }}
+  MONGO_CRM_USER: {{ .Values.ledger.configmap.MONGO_CRM_USER | default "midaz" | quote }}
+  MONGO_CRM_PORT: {{ .Values.ledger.configmap.MONGO_CRM_PORT | default "27017" | quote }}
+  # MONGO_CRM_PASSWORD lives in the ledger Secret (see templates/ledger/secrets.yaml)
+  MONGO_CRM_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_CRM_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_CRM_PARAMETERS: {{ .Values.ledger.configmap.MONGO_CRM_PARAMETERS | default "" | quote }}
+  MONGO_CRM_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_CRM_TLS_CA_CERT | default "" | quote }}
+
+  # =============================================================================
+  # MONGO DB - FEES MODULE (folded into the unified ledger binary)
+  # =============================================================================
+  MONGO_FEES_URI: {{ .Values.ledger.configmap.MONGO_FEES_URI | default "mongodb" | quote }}
+  MONGO_FEES_HOST: {{ .Values.ledger.configmap.MONGO_FEES_HOST | default "midaz-mongodb" | quote }}
+  MONGO_FEES_NAME: {{ .Values.ledger.configmap.MONGO_FEES_NAME | default "fees" | quote }}
+  MONGO_FEES_USER: {{ .Values.ledger.configmap.MONGO_FEES_USER | default "midaz" | quote }}
+  MONGO_FEES_PORT: {{ .Values.ledger.configmap.MONGO_FEES_PORT | default "27017" | quote }}
+  # MONGO_FEES_PASSWORD lives in the ledger Secret (see templates/ledger/secrets.yaml)
+  MONGO_FEES_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_FEES_MAX_POOL_SIZE | default "100" | quote }}
+  MONGO_FEES_PARAMETERS: {{ .Values.ledger.configmap.MONGO_FEES_PARAMETERS | default "" | quote }}
+  MONGO_FEES_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_FEES_TLS_CA_CERT | default "" | quote }}
+
+  # =============================================================================
+  # LCRYPTO — key material lives in the ledger Secret, never here.
+  # LCRYPTO_HASH_SECRET_KEY and LCRYPTO_ENCRYPT_SECRET_KEY protect CRM holder
+  # fields (PII); see templates/ledger/secrets.yaml.
+  # =============================================================================
+
+  # =============================================================================
+  # KMS (encryption vendor selector; see midaz pkg/crypto/resolver.go)
+  # KMS_VAULT_SECRET_ID is the AppRole credential and lives in the Secret.
+  # =============================================================================
+  KMS_VENDOR: {{ .Values.ledger.configmap.KMS_VENDOR | default "none" | quote }}
+  # Vault fields required only when KMS_VENDOR=hashicorp-vault (envelope encryption)
+  {{- if eq (.Values.ledger.configmap.KMS_VENDOR | default "none") "hashicorp-vault" }}
+  KMS_VAULT_ADDR: {{ required "ledger.configmap.KMS_VAULT_ADDR is required when KMS_VENDOR=hashicorp-vault" .Values.ledger.configmap.KMS_VAULT_ADDR | quote }}
+  KMS_VAULT_ROLE_ID: {{ required "ledger.configmap.KMS_VAULT_ROLE_ID is required when KMS_VENDOR=hashicorp-vault" .Values.ledger.configmap.KMS_VAULT_ROLE_ID | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ required "ledger.configmap.KMS_VAULT_AUTH_METHOD is required when KMS_VENDOR=hashicorp-vault" .Values.ledger.configmap.KMS_VAULT_AUTH_METHOD | quote }}
+  {{- else }}
+  KMS_VAULT_ADDR: {{ .Values.ledger.configmap.KMS_VAULT_ADDR | default "" | quote }}
+  KMS_VAULT_ROLE_ID: {{ .Values.ledger.configmap.KMS_VAULT_ROLE_ID | default "" | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ .Values.ledger.configmap.KMS_VAULT_AUTH_METHOD | default "" | quote }}
+  {{- end }}
+
+  # =============================================================================
+  # TRACER RESERVATION SEAM (ledger -> tracer client side)
+  # TRACER_BASE_URL empty disables the integration (nil reserver).
+  # =============================================================================
+  TRACER_BASE_URL: {{ .Values.ledger.configmap.TRACER_BASE_URL | default "" | quote }}
+  {{- /* The seam accepts "grpc" or "rest". The bundled tracer only serves gRPC
+         when TRACER_GRPC_PORT is set, so selecting grpc against an in-chart
+         tracer that has it unset would dial a port nothing listens on. */ -}}
+  {{- $tracerTransport := .Values.ledger.configmap.TRACER_TRANSPORT | default "rest" }}
+  {{- if and .Values.ledger.configmap.TRACER_BASE_URL (eq (lower $tracerTransport) "grpc") .Values.tracer.enabled (not .Values.tracer.configmap.TRACER_GRPC_PORT) }}
+  {{- fail "ledger.configmap.TRACER_TRANSPORT=grpc requires tracer.configmap.TRACER_GRPC_PORT to be set: the bundled tracer keeps its gRPC seam off and its Service exposes only HTTP. Set the port, or use TRACER_TRANSPORT=rest" }}
+  {{- end }}
+  TRACER_TRANSPORT: {{ $tracerTransport | quote }}
+  TRACER_TLS_MODE: {{ .Values.ledger.configmap.TRACER_TLS_MODE | default "" | quote }}
+  TRACER_TIMEOUT_MS: {{ .Values.ledger.configmap.TRACER_TIMEOUT_MS | default "" | quote }}
+  TRACER_TLS_CERT_FILE: {{ .Values.ledger.configmap.TRACER_TLS_CERT_FILE | default "" | quote }}
+  TRACER_TLS_KEY_FILE: {{ .Values.ledger.configmap.TRACER_TLS_KEY_FILE | default "" | quote }}
+  TRACER_TLS_CA_FILE: {{ .Values.ledger.configmap.TRACER_TLS_CA_FILE | default "" | quote }}
 
   # =============================================================================
   # REDIS (shared between modules)
@@ -268,6 +336,26 @@ data:
   SD_WATCH_WAIT_TIME: {{ .Values.ledger.configmap.SD_WATCH_WAIT_TIME | default "" | quote }}
   SD_WORKLOAD: {{ .Values.ledger.configmap.SD_WORKLOAD | default "" | quote }}
   STREAMING_ENABLED: {{ .Values.ledger.configmap.STREAMING_ENABLED | default "false" | quote }}
+
+  # =============================================================================
+  # STREAMING (lib-streaming producer; disabled by default)
+  # =============================================================================
+  STREAMING_BROKERS: {{ .Values.ledger.configmap.STREAMING_BROKERS | default "" | quote }}
+  STREAMING_CLIENT_ID: {{ .Values.ledger.configmap.STREAMING_CLIENT_ID | default "" | quote }}
+  STREAMING_CLOUDEVENTS_SOURCE: {{ .Values.ledger.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "" | quote }}
+  STREAMING_COMPRESSION: {{ .Values.ledger.configmap.STREAMING_COMPRESSION | default "" | quote }}
+  STREAMING_REQUIRED_ACKS: {{ .Values.ledger.configmap.STREAMING_REQUIRED_ACKS | default "" | quote }}
+  STREAMING_BATCH_LINGER_MS: {{ .Values.ledger.configmap.STREAMING_BATCH_LINGER_MS | default "" | quote }}
+
+  # =============================================================================
+  # FEE ENGINE
+  # =============================================================================
+  DEFAULT_CURRENCY: {{ .Values.ledger.configmap.DEFAULT_CURRENCY | default "USD" | quote }}
+
+  # =============================================================================
+  # CASDOOR
+  # =============================================================================
+  CASDOOR_JWK_ADDRESS: {{ .Values.ledger.configmap.CASDOOR_JWK_ADDRESS | default "" | quote }}
   SWAGGER_VERSION: {{ .Values.ledger.configmap.SWAGGER_VERSION | default "${VERSION}" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}

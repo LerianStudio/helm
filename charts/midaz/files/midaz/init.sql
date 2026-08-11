@@ -9,3 +9,12 @@ SELECT * FROM pg_create_logical_replication_slot('logical_slot', 'pgoutput');
 
 CREATE DATABASE onboarding;
 CREATE DATABASE transaction;
+
+-- Tracer shares this cluster and the `midaz` role that owns the databases above
+-- (its Deployment reads the same subchart Secret). Created unconditionally, and
+-- not gated on tracer.enabled, because initdb scripts run exactly once: gating
+-- would leave the database missing for anyone enabling tracer after install.
+-- An unused empty database costs nothing. The name tracks
+-- tracer.configmap.DB_NAME so the bundled cluster and the external bootstrap
+-- Job create the same database the tracer service and its migration Job read.
+CREATE DATABASE {{ dig "configmap" "DB_NAME" "" (.Values.tracer | default dict) | default "tracer" }};

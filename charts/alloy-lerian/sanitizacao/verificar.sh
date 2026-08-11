@@ -11,7 +11,11 @@
 set -euo pipefail
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGEM="grafana/alloy:v1.18.1"
+# MESMO digest que o chart implanta (values.yaml, node.image/singleton.image).
+# Uma tag aqui validaria as regras contra bits possivelmente diferentes dos que
+# rodam em producao — a porta perderia justamente o que ela existe para garantir.
+# Ao atualizar a versao, trocar NOS DOIS lugares.
+IMAGEM="grafana/alloy@sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33"  # v1.18.1
 CONTEINER="alloy-verificacao-sanitizacao"
 PORTA="${PORTA:-4318}"
 FALHAS=0

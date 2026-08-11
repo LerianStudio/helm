@@ -343,6 +343,24 @@ loki.source.kubernetes_events "eventos" {
 
 otelcol.receiver.loki "ponte_eventos" {
   output {
+    logs = [otelcol.processor.memory_limiter.admissao_eventos.input]
+  }
+}
+
+// ADMISSION CONTROL — first in the event chain, for the same reason it is first
+// in the node chain: it sheds load before anything downstream allocates for it.
+//
+// This role needed it MORE than the node role, not less. Measured on benedita:
+// loki.source.kubernetes_events replays the cluster's whole event history the
+// moment it starts, and that burst already overran the exporter queue once. A
+// deeper `queue_size` bounds the EXPORTER, not the process — a large enough
+// history is absorbed in memory until the OOM killer decides for us.
+otelcol.processor.memory_limiter "admissao_eventos" {
+  check_interval         = "1s"
+  limit_percentage       = 80
+  spike_limit_percentage = 20
+
+  output {
     logs = [otelcol.processor.transform.procedencia_eventos.input]
   }
 }

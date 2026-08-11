@@ -183,9 +183,14 @@ streamingHub:
     enabled: false
   # ===========================================================================
   # Secret sourcing.
-  # useExistingSecret=false -> the chart renders templates/secret.yaml (inline).
+  # useExistingSecret=false -> the chart renders templates/secrets.yaml (inline).
   # useExistingSecret=true  -> NO Secret is rendered; Deployments reference
   #                            existingSecretName (the gitops/Vault path).
+  #                            KEY CONTRACT: that Secret MUST carry
+  #                            STREAMING_HUB_POSTGRES_DSN — the Deployments pin
+  #                            it via secretKeyRef, so a Secret missing the key
+  #                            fails container creation with a clear event
+  #                            instead of CrashLooping the app.
   # ===========================================================================
   useExistingSecret: false
   existingSecretName: ""
@@ -264,7 +269,9 @@ streamingHub:
       OTEL_EXPORTER_OTLP_ENDPOINT: ""
   # ===========================================================================
   # secrets — role-INVARIANT, SENSITIVE env (one shared Secret). All default "".
-  # Empty values are SKIPPED at render so unset SaaS/dev keys never ship blank.
+  # STREAMING_HUB_POSTGRES_DSN is required when this chart manages the Secret:
+  # rendering fails loudly when it is blank rather than deploying a pod that
+  # CrashLoops at startup. Empty optional SaaS/dev keys are skipped at render.
   # In gitops these come from Vault via useExistingSecret=true (this map is then
   # unused). Every key exists verbatim in streaming-hub/.env.reference.
   # ===========================================================================

@@ -1,0 +1,5 @@
+# CI-only render fixture. This is a syntactically valid, credential-free DSN:
+# it exercises the chart-managed Secret path without shipping a password.
+streamingHub:
+  secrets:
+    STREAMING_HUB_POSTGRES_DSN: "postgresql://postgresql.example.invalid:5432/streaming_hub?sslmode=require"

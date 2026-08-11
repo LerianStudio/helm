@@ -26,7 +26,7 @@ HTTP routes mount.
   two Deployments (`streaming-hub-ingest`, `streaming-hub-delivery`) with the
   matching role env, plus their Services (and per-role HPA/PDB).
 
-The shared singletons (`templates/configmap.yaml`, `templates/secret.yaml`,
+The shared singletons (`templates/configmap.yaml`, `templates/secrets.yaml`,
 `templates/serviceaccount.yaml`) are role-invariant and rendered exactly once
 regardless of mode. The Deployment/Service/HPA/PDB bodies are a single
 parameterized partial (`templates/_deployment.tpl`) invoked by thin

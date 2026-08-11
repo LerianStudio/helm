@@ -37,6 +37,56 @@
 #  kepler, Beyla, windows-exp.   ❌ nunca    descartados com motivo    (§4)
 #  alloy-operator                ❌ nunca    descartado com motivo     (§4)
 #
+# ============================================================================
+# INVENTÁRIO COMPLETO — os 17 serviços que o Alloy oferece
+# ============================================================================
+# Levantado do chart guarda-chuva 4.3.3 (a lista canônica), cruzado com o que o
+# nosso chart instancia de fato.
+#
+#  LIGADO (3)
+#    applicationObservability   telemetria de app por OTLP        papel node
+#    clusterMetrics             objetos de cluster (via KSM)      papel singleton
+#    clusterEvents              eventos do Kubernetes             papel singleton
+#
+#  IMPLEMENTADO, off (1)
+#    hostMetrics                métricas de nó, com allowlist     §3
+#
+#  NÃO IMPLEMENTADO — avaliar ao levar para aws-staging (9)
+#    podLogsViaLoki             log de contêiner por arquivo
+#    podLogsViaKubernetesApi    log pela API (sem montar /var/log)
+#    podLogsObjects             CRD PodLogs (exigiria a CRD que desligamos)
+#    nodeLogs                   log do HOST (journald, /var/log)
+#    profiling                  perfilamento contínuo por eBPF
+#    profilesReceiver           receber perfis que a app envia
+#    costMetrics                custo (opencost)
+#    annotationAutodiscovery    descoberta por anotação nos pods
+#    prometheusOperatorObjects  consumir PodMonitor/ServiceMonitor
+#
+#  NÃO SE APLICA (5)
+#    autoInstrumentation        Beyla — decisão de negócio, não entra
+#    kubernetesManifests        tail de manifesto; sem uso identificado
+#    selfReporting              telemetria de uso para a Grafana; desligado
+#                               deliberadamente (`enableReporting: false`)
+#    podLogsViaOpenTelemetry    já coberto: é o que as apps fazem hoje via OTLP
+#    windows-exporter           decisão de negócio; sem nós Windows
+#
+#  Dos 8 `telemetryServices` (componentes instaláveis):
+#    kube-state-metrics  ⬜ off (o ambiente já roda um)
+#    node-exporter       ⬜ off (o ambiente já roda um)
+#    opencost            ✳ não implementado
+#    beyla, kepler       ❌ decisão de negócio
+#    windows-exporter    ❌ decisão de negócio
+#    k8s-manifest-tail   ✳ sem uso identificado
+#    sdkInjector         ✳ injeção de SDK; as apps já usam a lib compartilhada
+#
+# ⚠️ NOTA SOBRE PRIVILÉGIO NOS AMBIENTES INTERNOS
+# O usuário esclareceu que privilégio, RBAC e políticas NÃO são restrição nos
+# nossos clusters. Então o critério para os 9 acima é VALOR e CUSTO — o que a
+# métrica responde e quanto de série ela adiciona — e não postura de segurança.
+# A avaliação acontece ao levar para aws-staging, um por vez, medindo antes e
+# depois. O que continua fora é o que é decisão de negócio: Beyla, kepler,
+# windows-exporter.
+
 # LEGENDA
 #   ✅ LIGADO    ligado neste arquivo, e validado em cluster
 #   ⬜ off       a chave EXISTE e funciona — mudar para true habilita
@@ -203,14 +253,22 @@ node-exporter:
 # ===========================================================================
 # ❌ DESCARTADOS — não entram, e o motivo fica registrado
 # ===========================================================================
-# kepler (energia)        privileged + hostPID + RAPL do processador, para uma
-#                         métrica sem uso regulatório nem de SLO. E a leitura RAPL
-#                         tipicamente não é exposta em ambiente virtualizado.
-# Beyla (auto-instr.)     privileged + hostPID, e LÊ paths HTTP e statements SQL
-#                         no kernel — vetor de exfiltração que contorna os
-#                         controles da aplicação. Desnecessário: as apps já emitem
-#                         telemetria nativa pela lib compartilhada.
-# windows-exporter        exige nós Windows; o stack é Go em Linux.
+# DECISÃO DE NEGÓCIO (não de privilégio) — decidido pelo usuário 2026-08-11:
+#
+# kepler (energia)        não faz sentido para o negócio. Consumo energético não
+#                         responde pergunta de SLO nem regulatória aqui.
+# Beyla (auto-instr.)     não faz sentido: as aplicações já emitem telemetria
+#                         nativa pela lib compartilhada. Beyla existe para código
+#                         que não se controla.
+# windows-exporter        não há nós Windows; o stack é Go em Linux.
+#
+# ⚠️ Nos ambientes internos, privilégio/RBAC/política NÃO são restrição — o
+# usuário confirmou. Então o argumento de segurança que estes três carregavam
+# aqui foi removido: nos NOSSOS clusters eles seriam viáveis tecnicamente, e não
+# entram porque não têm valor de negócio.
+#
+# A ressalva de privilégio permanece válida para o perfil `client` (BYOC), onde o
+# cluster é de terceiro — ver docs/COMPONENTES-EXCLUIDOS.md.
 # alloy-operator          ⚠️ REAVALIADO 2026-08-11, e o veredito mudou de nuance.
 #
 #   Medido na versão ATUAL (chart 0.6.3 / app 1.11.1), não na documentação:

@@ -7,9 +7,43 @@
 # custa e o que exige. Tudo DESLIGADO por padrão, exceto o que já foi validado
 # em cluster.
 #
-# A ordem de habilitação é uma por vez, medindo séries antes e depois. Sem isso o
-# terceiro serviço ligado surpreende — medido: o node-exporter sozinho, sem
-# allowlist, adicionaria 46.575 séries em 3 nós.
+# A ordem de habilitação é uma por vez, medindo séries antes e depois.
+#
+# ============================================================================
+# ⚠️ NÃO USE OS NÚMEROS DA BENEDITA COMO REFERÊNCIA DE PRODUÇÃO
+# ============================================================================
+# A benedita tem 426k séries ativas; produção opera com 60–70k. E o motivo não é
+# só escala de uso: MEDIDO, a benedita tem 3 nós de 256 CPUs cada = 768 CPUs.
+# Métricas de nó escalam por CPU, não por nó, então "X séries em 3 nós" não
+# transfere para nenhum outro ambiente.
+#
+# Use as TAXAS POR UNIDADE abaixo. Derivadas de medição, não estimadas, e
+# conferidas contra o real (o modelo previu 4.905 séries de contêiner na
+# benedita; o medido foi 4.893).
+#
+#   MÉTRICAS DE NÓ (com allowlist)      CONSUMO POR CONTÊINER (com allowlist)
+#   por CPU:         5 séries           por contêiner:  ~11 séries
+#   por nó:         ~28 séries          por pod:         ~2 séries
+#   por disco:      ~10 séries
+#   por interface:  ~12 séries
+#
+#   custo = (CPUs x 5) + (nós x 28) + (discos x 10) + (interfaces x 12)
+#         + (contêineres x 11) + (pods x 2)
+#
+# EXEMPLOS CALCULADOS COM O MODELO:
+#
+#   ambiente              nós x CPU   contêineres   nó      contêiner   TOTAL
+#   -------------------   ---------   -----------   -----   ---------   ------
+#   produção pequena       3 x 8          80          336     1.000     1.336
+#   produção média         6 x 16        200          912     2.500     3.412
+#   benedita (referência)  3 x 256       375        4.056     4.905     8.961
+#
+# Num ambiente de 60–70k séries ativas, ligar os dois custa ~2% (produção
+# pequena) a ~5% (média). Na benedita seria 2% — mesma ordem, mas por acidente:
+# lá a base é 6x maior E os nós são 32x maiores.
+#
+# ⚠️ RECALCULE POR AMBIENTE antes de habilitar. `kubectl get nodes` dá CPUs e
+# nós; `kubectl get pods -A` dá a contagem de pods.
 #
 # ============================================================================
 # ⚠️ ESTE ARQUIVO NÃO SERVE PARA CLUSTER DE CLIENTE

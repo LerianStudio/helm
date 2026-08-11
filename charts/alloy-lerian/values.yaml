@@ -347,10 +347,39 @@ node:
         - name: alloy-storage
           emptyDir: {}
     type: daemonset
-    # Needed for the connection-based association fallback, which reads the peer
-    # address. Not every application declares k8s.pod.ip, so the fallback is
-    # still load-bearing. Drop this once declaration coverage is complete.
+    # ⚠️ DIVERGE do default upstream (false), e a alternativa upstream FOI TESTADA
+    # e nao serve. Documentado porque a pergunta "por que nao usam o padrao do
+    # Alloy aqui?" e legitima e merece numero, nao opiniao.
+    #
+    # O padrao upstream para um DaemonSet que recebe trafego e `extraPorts` com
+    # `hostPort` — o README oficial diz "Daemonsets taking traffic might find this
+    # useful" — sem hostNetwork. MEDIDO na benedita, com hostNetwork:false e
+    # hostPort nas portas OTLP:
+    #
+    #   trafego chega            SIM (10.792 spans aceitos)
+    #   enriquecimento k8s       92 de 94 registros PERDERAM k8s.pod.name
+    #
+    # Por que: hostPort faz NAT, entao o agente ve o IP de origem como o IP do NO,
+    # nao do pod. O tier `connection` do k8sattributes nao resolve, e o tier
+    # `k8s.pod.ip` so cobre as aplicacoes que declaram o atributo — nao todas.
+    #
+    # O resultado e telemetria SEM atribuicao de pod, e sem erro nenhum: chega,
+    # so nao da para saber de quem. Esse e o modo de falha que hostNetwork evita.
+    #
+    # Custo aceito: o pod compartilha a pilha de rede do no (verificado — com
+    # hostNetwork ele reporta o hostname do NO; sem, o proprio). E o unico
+    # privilegio do chart, e o que a lacuna de NetworkPolicy no perfil de cliente
+    # se refere.
+    #
+    # CAMINHO PARA REMOVER, em ordem: (1) toda aplicacao declarar k8s.pod.ip via
+    # lib-o11y, (2) confirmar 100% de enriquecimento medindo, (3) trocar para o
+    # padrao upstream hostPort e remover isto. O passo 2 e o que faltava — sem ele
+    # a troca degrada em silencio.
     hostNetwork: true
+    # Obrigatorio COM hostNetwork: sem isto o nome de Service nao resolve, porque
+    # a resolucao passa a usar o DNS do host. Medido no T-005 — a sonda ficou com
+    # ClusterFirst e o exportador falhou com "server misbehaving" contra o proprio
+    # Service do destino.
     dnsPolicy: ClusterFirstWithHostNet
   crds:
     create: false

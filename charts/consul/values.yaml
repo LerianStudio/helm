@@ -49,11 +49,14 @@ consul:
       manageSystemACLs: true
 
     # ---- Gossip encryption --------------------------------------------------
-    # autoGenerate creates and stores a gossip key Secret automatically. It is
-    # harmless with a single server (no server-to-server gossip yet) and means
-    # scaling to 3/5 servers is encrypted by default — no migration needed.
+    # OFF at replicas: 1 — a single-member gossip pool has no server-to-server
+    # gossip to encrypt, and autoGenerate creates the key via an install hook
+    # Job whose Secret is not part of the static render (the repo render-gate
+    # rejects the resulting dangling secret reference).
+    # RE-ENABLE (autoGenerate: true) when scaling to replicas: 3 for HA, where
+    # inter-server gossip actually exists.
     gossipEncryption:
-      autoGenerate: true
+      autoGenerate: false
 
     # ---- TLS ----------------------------------------------------------------
     # DEFAULT: OFF. Rationale for the "minimal facilitator" posture:

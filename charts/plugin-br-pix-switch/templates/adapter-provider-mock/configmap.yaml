@@ -1,6 +1,6 @@
-{{- if .Values.adapterBtgMock.enabled }}
-{{- $component := "adapter-btg-mock" }}
-{{- $values := .Values.adapterBtgMock }}
+{{- if .Values.adapterProviderMock.enabled }}
+{{- $component := "adapter-provider-mock" }}
+{{- $values := .Values.adapterProviderMock }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

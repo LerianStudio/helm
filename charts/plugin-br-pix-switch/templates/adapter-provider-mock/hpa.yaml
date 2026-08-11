@@ -1,6 +1,6 @@
-{{- if and .Values.adapterBtgMock.enabled .Values.adapterBtgMock.autoscaling.enabled }}
-{{- $component := "adapter-btg-mock" }}
-{{- $values := .Values.adapterBtgMock }}
+{{- if and .Values.adapterProviderMock.enabled .Values.adapterProviderMock.autoscaling.enabled }}
+{{- $component := "adapter-provider-mock" }}
+{{- $values := .Values.adapterProviderMock }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

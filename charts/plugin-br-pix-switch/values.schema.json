@@ -40,7 +40,7 @@
       },
       "additionalProperties": true
     },
-    "adapterBtgMock": {
+    "adapterProviderMock": {
       "type": "object",
       "properties": {
         "configmap": {

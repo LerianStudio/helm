@@ -59,6 +59,14 @@ jobs:
               STEM="${REF_NAME#hotfix/}"
               CHART=$(printf '%s' "${STEM}" | sed -nE 's/^(.+)-[0-9]+\.[0-9]+\.x$/\1/p')
               RANGE=$(printf '%s' "${STEM}" | sed -nE 's/^.+-([0-9]+\.[0-9]+\.x)$/\1/p')
+
+              # The trigger glob is looser than this parser, so a branch such as
+              # hotfix/foo.x or hotfix/midaz-5.x reaches here unparsed. Falling
+              # through would release every changed chart without a range.
+              if [ -z "${CHART}" ] || [ -z "${RANGE}" ]; then
+                echo "::error::'${REF_NAME}' looks like a chart line branch but does not match <chart>-<major>.<minor>.x — refusing to release"
+                exit 1
+              fi
               ;;
           esac
 

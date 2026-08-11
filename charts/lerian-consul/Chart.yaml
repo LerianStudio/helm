@@ -1,5 +1,5 @@
 apiVersion: v2
-name: consul
+name: lerian-consul
 description: >-
   Lerian wrapper for the official HashiCorp Consul chart, curated as a minimal,
   single-node service-discovery backend for lib-service-discovery in BYOC
@@ -12,7 +12,7 @@ annotations:
 home: https://github.com/LerianStudio/helm
 
 sources:
-  - https://github.com/LerianStudio/helm/tree/main/charts/consul
+  - https://github.com/LerianStudio/helm/tree/main/charts/lerian-consul
 
 # A list of maintainers who are responsible for the chart
 maintainers:

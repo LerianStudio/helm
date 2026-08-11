@@ -58,7 +58,7 @@ Disabled by default (do not enable unless you know you need them):
 - `3` / `5` — tolerate 1 / 2 failures. Set `disruptionBudget.enabled=true` too.
 
 ```console
-$ helm install consul charts/consul \
+$ helm install lerian-consul charts/lerian-consul \
     --set consul.server.replicas=3 \
     --set consul.server.bootstrapExpect=3 \
     --set consul.server.disruptionBudget.enabled=true
@@ -72,7 +72,7 @@ server cert generation), moves the API to port `8501`, and requires distributing
 the CA to consumers.
 
 ```console
-$ helm install consul charts/consul --set consul.global.tls.enabled=true
+$ helm install lerian-consul charts/lerian-consul --set consul.global.tls.enabled=true
 ```
 
 With TLS on, point `lib-service-discovery` at `...-consul-server:8501` (HTTPS)

@@ -41,6 +41,12 @@ consul:
     # (docker buildx imagetools inspect hashicorp/consul:<tag>) to change Consul.
     image: "hashicorp/consul:1.20.6@sha256:200471c74bc0965cd20c81eacc31a209873d5d9e599fe637ceb856b0cbbc518d"
 
+    # ---- Control-plane image (ACL / TLS / gossip Jobs) ----------------------
+    # The server-acl-init, tls-init and gossip-key Jobs run this image. They
+    # manage Secrets and carry RBAC, so pin it by DIGEST too — not just the
+    # mutable :1.6.10 tag. Bump together with the chart dependency.
+    imageK8S: "hashicorp/consul-k8s-control-plane:1.6.10@sha256:9be63ef67b2271f090f26d56e4984604605c10265b91cac97a169e65acba0af7"
+
     # ---- ACL system ---------------------------------------------------------
     # Kept ON: the upstream chart bootstraps the ACL system (server-acl-init
     # Job) and writes the bootstrap token into a Kubernetes Secret named
@@ -113,6 +119,14 @@ consul:
     # the in-cluster ClusterIP Service. This must stay false so no hostPort is
     # opened on the node.
     exposeGossipAndRPCPorts: false
+
+    # ---- Connect / service mesh (server side) -------------------------------
+    # OFF. lib-service-discovery uses the HTTP API only; it needs no Connect
+    # (mesh CA, xDS). The upstream server default is connect ENABLED, which
+    # stands up the Connect CA and exposes the xDS gRPC port (8502) — matching
+    # `connectInject.enabled: false` below is not enough, the SERVER flag is
+    # separate. Disable it so the render carries no mesh surface.
+    connect: false
 
     # ---- Security context ---------------------------------------------------
     # Confirmed non-root (matches the upstream secure default; restated here so

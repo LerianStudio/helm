@@ -59,9 +59,22 @@ destination:
   endpoint: ""
 
   credential:
-    # Omitted by default in the own profile (the internal platform does not
-    # validate it) and required in the client profile. Set explicitly to
-    # override the derivation.
+    # Derivado do perfil: ausente em `own`, obrigatório em `client`. Defina
+    # explicitamente para sobrescrever.
+    #
+    # POR QUE `own` NÃO AUTENTICA — é topologia, não relaxamento:
+    # em aws-staging e aws-production a entrega vai por um LOAD BALANCER INTERNO E
+    # PRIVADO, dentro da VPC. A autenticação da plataforma vive na borda, no API
+    # Gateway; o tráfego de telemetria não sai para a internet. Autenticar neste
+    # salto significaria sair e voltar só para validar credencial — latência e um
+    # ponto de falha a mais, sem ganhar isolamento, porque quem alcança o LB
+    # privado já está dentro do perímetro.
+    #
+    # Confirmado no estado atual: o otel-collector-client de staging exporta com
+    # `headers: []` e funciona.
+    #
+    # Em `client` (BYOC) o cluster é de terceiro e a entrega cruza a internet
+    # pública — daí a credencial ser obrigatória, e 401 ser descarte permanente.
     # enabled: true
 
     # Referência apenas. O chart LÊ este Secret e nunca o cria.

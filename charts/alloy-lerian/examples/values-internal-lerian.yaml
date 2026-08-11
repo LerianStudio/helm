@@ -263,7 +263,39 @@ node-exporter:
 #
 #   sem filtro nenhum                    78 famílias / 90.948 séries
 #   com allowlist de 16 famílias                     / 14.406 séries
-#   allowlist + só contêiner nomeado                 /  4.200 séries  (-95,4%)
+#   allowlist + filtro de nível                      /  4.893 séries  (-94,6%)
+#
+# O QUE SOBRA — 16 famílias, contadas uma a uma:
+#
+#   POR CONTÊINER (container!="")                            séries
+#   ------------------------------------------------------  ------
+#   container_cpu_usage_seconds_total                           375
+#   container_memory_usage_bytes                                375
+#   container_memory_working_set_bytes                          375   ← o que
+#   container_memory_rss                                        375     importa
+#   container_memory_cache                                      375     p/ OOM
+#   container_last_seen                                         375
+#   container_spec_memory_limit_bytes                           374   ← o limite,
+#   container_spec_cpu_period                                   374     p/ a razão
+#   container_cpu_cfs_periods_total                             303
+#   container_cpu_cfs_throttled_periods_total                   303   ← throttling
+#   container_cpu_cfs_throttled_seconds_total                   303     de CPU
+#   container_spec_cpu_quota                                    302
+#                                                            -------
+#                                                              4.209
+#
+#   POR POD (pod!="") — cAdvisor mede fs e rede no nível do POD, não do
+#   contêiner. MEDIDO: essas 4 têm ZERO séries com nome de contêiner, então um
+#   filtro `container!=""` sozinho as eliminaria por inteiro.
+#   ------------------------------------------------------  ------
+#   container_network_receive_bytes_total                        ~176
+#   container_network_transmit_bytes_total                       ~176
+#   container_fs_usage_bytes                                     ~166
+#   container_fs_limit_bytes                                     ~166
+#                                                            -------
+#                                                                684
+#
+#   TOTAL                                                      4.893
 #
 # Dois cortes independentes, e o segundo foi a surpresa:
 #

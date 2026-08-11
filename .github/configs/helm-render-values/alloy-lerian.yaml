@@ -12,3 +12,50 @@ origin:
   id: sample-prd
 destination:
   endpoint: https://telemetry.invalid/v1
+
+# A credencial é OBRIGATÓRIA no perfil client, e a guarda do chart recusa o render
+# sem isto — de propósito: um pod que sobe sem credencial recebe 401, que é falha
+# PERMANENTE, e perde telemetria em silêncio.
+#
+# Espelha examples/values-cliente.yaml, que é o que o cliente realmente usa. A
+# fixture precisa exercitar a mesma configuração; se divergir, a porta de render
+# valida um caminho que ninguém instala.
+node:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: true
+
+singleton:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: true

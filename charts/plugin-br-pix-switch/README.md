@@ -21,7 +21,7 @@ per component.
 |---|---|---|---|
 | `spi` | `spi/api` | 4101 | PIX SPI service |
 | `spiSystemplane` | `spi/systemplane/api` | 4102 | Runtime config plane |
-| `adapterBtgMock` | `adapter-btg-mock/api` | 4103 | BTG provider mock (disabled by default) |
+| `adapterProviderMock` | `adapter-provider-mock/api` | 4103 | BTG provider mock (disabled by default) |
 | `dictHub` | `dict/hub/api` | 4104 | DICT hub (Postgres + Mongo + Valkey) |
 | `dictHubVsync` | `dict/hub/vsync` | 4105 | DICT verification sync worker (singleton) |
 | `dictProxy` | `dict/proxy/api` | 4106 | DICT proxy to BCB |
@@ -66,7 +66,7 @@ Default `enabled` values:
 
 - `spi`, `spiSystemplane`, `dictHub`, `dictHubVsync`, `dictProxy`,
   `dictSystemplane`, `cobHub`, `cobProxy`, `cobSystemplane`: `true`
-- `adapterBtgMock`: `false` (it's a mock — only enable in dev/staging)
+- `adapterProviderMock`: `false` (it's a mock — only enable in dev/staging)
 - `adapterLerian`, `adapterLerianConsumer`, `adapterLerianSystemplane`: `false`
   (Lerian provider adapter — enable per environment)
 
@@ -116,7 +116,7 @@ This chart follows the multi-component layout used by
 
 ```sh
 # Render with all components and one disabled
-helm template my-release ./plugin-br-pix-switch --set adapterBtgMock.enabled=true
+helm template my-release ./plugin-br-pix-switch --set adapterProviderMock.enabled=true
 
 # Lint
 helm lint ./plugin-br-pix-switch

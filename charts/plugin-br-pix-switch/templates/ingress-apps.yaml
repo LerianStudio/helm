@@ -10,7 +10,7 @@ false or no routes resolve to enabled components.
 No path rewriting is performed at the ingress — apps own their /<component>
 path namespace (e.g. SPI's router registers /spi/health, /spi/keys/lookup).
 
-adapter-btg-mock retains its own per-component ingress block; this shared
+adapter-provider-mock retains its own per-component ingress block; this shared
 ingress only covers the externally-facing application components.
 */}}
 {{- if .Values.appsIngress.enabled }}

@@ -1,6 +1,6 @@
-{{- if and .Values.adapterBtgMock.enabled .Values.adapterBtgMock.pdb.enabled }}
-{{- $component := "adapter-btg-mock" }}
-{{- $values := .Values.adapterBtgMock }}
+{{- if and .Values.adapterProviderMock.enabled .Values.adapterProviderMock.pdb.enabled }}
+{{- $component := "adapter-provider-mock" }}
+{{- $values := .Values.adapterProviderMock }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

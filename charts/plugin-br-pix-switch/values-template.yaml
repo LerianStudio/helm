@@ -1,7 +1,7 @@
 # Production values template for plugin-br-pix-switch (chart 2.0.0-beta.1+)
 #
 # Override only the fields you need to change from values.yaml defaults.
-# All 13 components are enabled by default except adapter-btg-mock and the
+# All 13 components are enabled by default except adapter-provider-mock and the
 # adapter-lerian trio (adapterLerian / adapterLerianConsumer /
 # adapterLerianSystemplane); disable any component by setting `enabled: false`.
 
@@ -27,7 +27,7 @@ spi:
     LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
-    ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
+    ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-provider-mock:4103"
     DICT_BASE_URL: "http://plugin-br-pix-switch-dict-hub:4104"
     COB_BASE_URL: "http://plugin-br-pix-switch-cob-hub:4108"
     MIDAZ_BASE_URL: "http://midaz-onboarding.midaz.svc.cluster.local:3000"
@@ -62,9 +62,9 @@ spiSystemplane:
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
 # ------------------------------------------------------------
-# adapter-btg-mock (disabled in production!)
+# adapter-provider-mock (disabled in production!)
 # ------------------------------------------------------------
-adapterBtgMock:
+adapterProviderMock:
   enabled: false
 
 # ------------------------------------------------------------
@@ -79,7 +79,7 @@ dictHub:
     LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
-    ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-btg-mock:4103"
+    ADAPTER_BASE_URL: "http://plugin-br-pix-switch-adapter-provider-mock:4103"
     KEY_CACHE_TTL_SEC: "60"
     MONGO_DB_NAME: "pix-dict"
   secrets:

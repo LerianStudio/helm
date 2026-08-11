@@ -1,0 +1,236 @@
+# values-internal-lerian.yaml — ambientes NOSSOS (benedita, anacleto, aws-*).
+#
+# ============================================================================
+# O QUE ESTE ARQUIVO É
+# ============================================================================
+# O catálogo COMPLETO de serviços que o chart pode habilitar, cada um com o que
+# custa e o que exige. Tudo DESLIGADO por padrão, exceto o que já foi validado
+# em cluster.
+#
+# A ordem de habilitação é uma por vez, medindo séries antes e depois. Sem isso o
+# terceiro serviço ligado surpreende — medido: o node-exporter sozinho, sem
+# allowlist, adicionaria 46.575 séries em 3 nós.
+#
+# ============================================================================
+# ⚠️ ESTE ARQUIVO NÃO SERVE PARA CLUSTER DE CLIENTE
+# ============================================================================
+# `profile: own` desliga a exigência de credencial e libera métricas de nó. Num
+# cluster de cliente use `values-cliente.yaml`.
+#
+# E note o limite, medido: a guarda de perfil NÃO É CONTROLE. Quem instala o
+# chart controla o values, então trocar `profile` libera qualquer coisa —
+# verificado. As guardas impedem quem ERRA, não quem quer. O controle de custo
+# real fica no lado servidor, por `client.id`, e nasce como feature do
+# alloy-server (projeto 2).
+
+profile: own
+
+origin:
+  # ⚠️ Trocar isto num ambiente em operação é MIGRAÇÃO DE DADO: a marca compõe a
+  # identidade da série no destino, então valor novo órfã todas as anteriores.
+  id: SUBSTITUIR   # benedita | anacleto | aws-staging | aws-production
+
+destination:
+  endpoint: SUBSTITUIR
+
+# ===========================================================================
+# ✅ LIGADO E VALIDADO EM CLUSTER
+# ===========================================================================
+
+# --- Telemetria de aplicação por OTLP (o papel node) ---------------------
+# É o núcleo do chart: recebe push das aplicações, enriquece com contexto k8s,
+# marca procedência, aplica perímetro, sanitiza e entrega.
+# Medido na benedita: 26 namespaces de aplicação entregando, 3 sinais.
+# (o bloco `node:` completo está no fim do arquivo — UM bloco por papel, porque
+# chave YAML duplicada descarta a primeira em SILÊNCIO; verificado)
+
+# --- Estado de objetos de cluster + eventos (o papel singleton) ----------
+# EXATAMENTE UMA réplica, imposto pelo chart. Mais de uma duplicaria toda série
+# sem atributo que distinga os escritores — o defeito que esta migração corrige.
+# Medido: DPM 3,41 -> 1,00, com 1 produtor distinto.
+# (o bloco `singleton:` completo está no fim do arquivo)
+
+# --- kube-state-metrics ---------------------------------------------------
+# Única fonte de métricas de objeto de cluster no modelo Alloy: o agente não tem
+# equivalente do receptor k8s_cluster do OTel.
+#
+# `false` porque benedita e anacleto JÁ rodam um (chart prometheus). Subir o
+# nosso criaria dois produtores da mesma métrica — a duplicação que corrigimos.
+# Em ambiente sem um, ligue e remova o clusterObjectTarget abaixo.
+kube-state-metrics:
+  enabled: false
+
+collection:
+  clusterObjectTarget: "prometheus-kube-state-metrics.monitoring.svc.cluster.local:8080"
+
+  # ===========================================================================
+  # ⬜ MÉTRICAS DE NÓ — implementado, DESLIGADO por padrão
+  # ===========================================================================
+  # Já validado em cluster, mas fica desligado porque o volume é grande e a
+  # decisão é por ambiente.
+  #
+  # MEDIDO na benedita (3 nós):
+  #   sem allowlist   612 famílias / 46.575 séries  (11% do cluster inteiro)
+  #   com allowlist    34 famílias /  2.612 séries  (-94,4%)
+  #
+  # Escala com o número de nós. O motor de cardinalidade são 256 CPUs x 8 modos
+  # por métrica; a allowlist mantém 5 modos (idle, iowait, system, user, steal).
+  #
+  # Para ligar, DUAS coisas — instalar o exportador e raspá-lo são decisões
+  # separadas:
+  #   collection.nodeInfrastructure: true
+  #   node-exporter.enabled: true          OU  collection.nodeExporterTarget
+  nodeInfrastructure: false
+
+  # Aponte para um node-exporter que o ambiente já rode. benedita e anacleto têm
+  # `prometheus-prometheus-node-exporter` há mais de 40 dias.
+  nodeExporterTarget: ""
+
+  interval: "60s"
+  dropDebugLogs: true
+
+# node-exporter como subchart. `false` quando o ambiente já roda um.
+# O privilégio que ele pede fica CONTIDO nele (não-root, sem eBPF, rootfs
+# somente-leitura) em vez de no agente — que continua uid 473.
+node-exporter:
+  enabled: false
+
+# ===========================================================================
+# ⬜ NÃO IMPLEMENTADOS — catálogo com custo e exigência levantados
+# ===========================================================================
+# As chaves abaixo NÃO EXISTEM no chart ainda. Estão aqui como catálogo da ordem
+# de habilitação acordada, com o que cada uma vai exigir quando for implementada.
+#
+# Descomentar não faz nada hoje — e é deliberado: uma flag que promete e não
+# entrega é pior que sua ausência. Foi o defeito que o `nodeInfrastructure` teve
+# até ser implementado de verdade.
+
+# --- 1º: COLETA DE LOG DE POD POR ARQUIVO --------------------------------
+# Componente verificado no binário: `loki.source.kubernetes` existe e exige o
+# atributo `targets`.
+#
+# CUSTO: volume de log, não de série. Medido na benedita, o ledger sozinho já
+# domina a volumetria de log da plataforma — ligar isto sem filtro por
+# severidade e por namespace multiplica o que já é o maior custo de log.
+#
+# EXIGE: `alloy.mounts.varlog: true` (montar /var/log do nó, em leitura).
+# Não exige privileged nem root.
+#
+# ⚠️ SOBREPOSIÇÃO: as aplicações já entregam log por OTLP no papel node. Isto
+# capturaria o MESMO log por outro caminho — o ganho é log de contêiner que não
+# usa a lib (infra, sidecars, jobs), não log de aplicação. Ligar sem excluir o
+# que já vem por OTLP duplicaria custo.
+# podLogs:
+#   enabled: false
+
+# --- 2º: PERFILAMENTO CONTÍNUO (eBPF) -----------------------------------
+# Componente verificado: `pyroscope.ebpf` existe e exige `forward_to`.
+#
+# ⚠️ O ÚNICO ITEM DESTA LISTA QUE MUDA A POSTURA DE PRIVILÉGIO.
+# O values do guarda-chuva da Grafana usa preset `privileged` + `daemonset` para
+# isto, e o README oficial pede `privileged: true` + `runAsUser: 0`.
+#
+# REGRA ACORDADA: entra como PAPEL PRÓPRIO, nunca como flag num papel existente.
+# Ligar no papel node desfaria o uid 473 + rootfs somente-leitura no MESMO
+# DaemonSet que recebe OTLP de 26 namespaces de aplicação. O privilégio fica
+# contido num papel que só perfila.
+#
+# EXIGE: papel novo, `privileged: true`, `hostPID: true`, e um destino Pyroscope.
+# profiles:
+#   enabled: false
+
+# --- 3º: MÉTRICAS DE CUSTO (opencost) -----------------------------------
+# EXIGE um Prometheus próprio para scrape e armazenamento, mais credencial de
+# FATURAMENTO da conta de nuvem — sem ela entrega preço de tabela, não custo real.
+#
+# É FinOps, ortogonal ao objetivo deste chart. Avaliar se não é melhor fora dele.
+# costMetrics:
+#   enabled: false
+
+# --- 4º: CONSUMO REAL POR CONTÊINER (lacuna conhecida) ------------------
+# Componente verificado: `prometheus.exporter.cadvisor` existe e carrega sem
+# exigir atributo.
+#
+# LACUNA REAL, medida: hoje NINGUÉM coleta consumo por contêiner no modelo Alloy.
+# Na benedita `container_memory_usage_bytes` vem do prometheus-server local
+# (1.049 séries) e da Anacleto (346), e ZERO com client_id=benedita.
+#
+# O kube-state-metrics NÃO substitui: entrega request/limit DECLARADO
+# (1.586 + 1.470 séries), não consumo. Sem consumo não há como responder "este
+# pod está perto do limite" — base de saturação e de alerta de OOM.
+#
+# Num cluster BYOC isso apareceria, porque não há prometheus-server nosso.
+# containerResources:
+#   enabled: false
+
+# ===========================================================================
+# ❌ DESCARTADOS — não entram, e o motivo fica registrado
+# ===========================================================================
+# kepler (energia)        privileged + hostPID + RAPL do processador, para uma
+#                         métrica sem uso regulatório nem de SLO. E a leitura RAPL
+#                         tipicamente não é exposta em ambiente virtualizado.
+# Beyla (auto-instr.)     privileged + hostPID, e LÊ paths HTTP e statements SQL
+#                         no kernel — vetor de exfiltração que contorna os
+#                         controles da aplicação. Desnecessário: as apps já emitem
+#                         telemetria nativa pela lib compartilhada.
+# windows-exporter        exige nós Windows; o stack é Go em Linux.
+# alloy-operator          o ClusterRole dele pede `bind` e `escalate` em RBAC,
+#                         equivalentes a admin. Temos papéis fixos; o problema que
+#                         ele resolve é gestão de frota multi-instância.
+#
+# Detalhe de cada um em docs/COMPONENTES-EXCLUIDOS.md.
+
+# ===========================================================================
+# Fleet Management — pronto e inativo
+# ===========================================================================
+# Nasce configurado, ligamos depois de validar nos nossos ambientes. Quatro
+# validações no render ao habilitar; ver docs/FLEET-MANAGEMENT.md.
+fleetManagement:
+  enabled: false
+
+# ===========================================================================
+# Credencial — opcional aqui, obrigatória no perfil client
+# ===========================================================================
+# O destino interno não valida credencial, então a entrada é opcional. NÃO zere
+# `extraEnv` para isso: apagaria também as variáveis do Fleet Management.
+node:
+  enabled: true
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: true
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: true
+
+singleton:
+  enabled: true
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: true
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: true

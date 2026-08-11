@@ -1323,8 +1323,9 @@ cobSystemplane:
 #
 # Two ingress objects, both routed by path prefix:
 #
-#   appsIngress         — user-facing traffic (SPI, DICT/COB hub+proxy, optional
-#                         adapter-provider-mock). Single hostname.
+#   appsIngress         — user-facing traffic (SPI, DICT/COB hub+proxy). Single
+#                         hostname. adapter-provider-mock is routed separately
+#                         under providersIngress, below.
 #   systemplaneIngress  — admin/runtime-config traffic (SPI/DICT/COB systemplanes).
 #                         Separate hostname so operators can apply stricter
 #                         annotations (auth, IP allowlist, WAF) than the apps

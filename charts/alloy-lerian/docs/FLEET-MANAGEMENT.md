@@ -1,8 +1,13 @@
 # Fleet Management — gestão remota de configuração
 
-O chart já nasce com suporte completo, **desligado por padrão**. Ligar é mudar uma
-flag e informar três valores — nenhuma edição de configuração no cluster do
-cliente.
+O chart já nasce com suporte completo e **inativo**, não ausente. A distinção
+importa: ligar é mudar uma flag e informar três valores — nenhuma edição de
+configuração no cluster do cliente, nenhum upgrade de chart, nenhum passo que exija
+o cliente entender o mecanismo.
+
+Ligamos depois de validar a instalação nos nossos ambientes. O caminho de
+habilitação é verificado desde já — ver a seção de verificação no fim — justamente
+para que "ligar depois" não signifique "descobrir problemas depois".
 
 ## Como ligar
 
@@ -26,8 +31,19 @@ kubectl -n monitoring create secret generic alloy-lerian \
 
 É o único passo manual. Todo o resto o chart resolve.
 
-O chart valida: com `enabled: true` e `url` ou `username` vazios, o render falha
-com mensagem explicando o que falta.
+O chart valida quatro coisas ao habilitar, e cada uma recusa o render com mensagem
+que nomeia a correção:
+
+| Faltando | Por que é bloqueante |
+|---|---|
+| `url` vazia | o host varia por stack e região; construir à mão é erro documentado |
+| `username` vazio | é o id numérico da stack, visível na interface |
+| `ALLOY_FLEET_POD_NAME` ausente | o `remotecfg` lê a variável; sem ela o agente não inicia |
+| `ALLOY_FLEET_TOKEN` com `optional: true` | **medido:** o render passava e o agente subia SEM o token — autentica, falha, e nunca recebe configuração, visível só no log do pod |
+
+O último foi encontrado em revisão: declarar a variável não basta, ela precisa ser
+obrigatória. Enquanto Fleet está inativo o token permanece opcional, para que
+nenhum Secret seja exigido antes da hora.
 
 ### Sobre o `username`
 

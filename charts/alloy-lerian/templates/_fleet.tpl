@@ -113,6 +113,24 @@ mistake impossible rather than merely unlikely.
 {{- if not (has "ALLOY_FLEET_POD_NAME" $nomes) -}}
 {{- fail (printf "\n\nalloy-lerian: fleetManagement está habilitado, mas `%s.alloy.extraEnv` não\ndeclara ALLOY_FLEET_POD_NAME.\n\nO bloco remotecfg lê essa variável. Sem ela o agente não inicia, e a falha só\napareceria no log do pod.\n\nAcrescente ao values do papel %s:\n\n  %s:\n    alloy:\n      extraEnv:\n        - name: ALLOY_FLEET_POD_NAME\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.name\n        - name: ALLOY_FLEET_TOKEN\n          valueFrom:\n            secretKeyRef:\n              name: alloy-lerian\n              key: fleet-token\n" $papel $papel $papel (include "alloy-lerian.originId" $)) -}}
 {{- end -}}
+{{/*
+Declaring the token is not enough: it must be REQUIRED.
+MEASURED — with fleet enabled and the entry `optional: true`, the render passes and
+`remotecfg.basic_auth.password` resolves from a variable that may not exist. The
+agent then starts, authenticates, fails, and never receives configuration — visible
+only in the pod log. Same class of defect as the destination credential, in the
+opposite direction.
+*/}}
+{{- range $e2 := $env -}}
+{{- if eq $e2.name "ALLOY_FLEET_TOKEN" -}}
+{{- $ref2 := ($e2.valueFrom).secretKeyRef -}}
+{{- if $ref2 -}}
+{{- if $ref2.optional -}}
+{{- fail (printf "\n\nalloy-lerian: fleetManagement esta habilitado, mas `%s.alloy.extraEnv` marca\nALLOY_FLEET_TOKEN como `optional: true`.\n\nO agente subiria SEM o token: remotecfg autentica, falha, e nunca recebe\nconfiguracao — e isso aparece SO no log do pod. Nenhum pod reinicia, nenhum\nalerta dispara, a gestao remota simplesmente nao funciona.\n\nCorrija no values deste ambiente:\n\n  %s:\n    alloy:\n      extraEnv:\n        - name: ALLOY_FLEET_TOKEN\n          valueFrom:\n            secretKeyRef:\n              name: %s\n              key: fleet-token\n              optional: false\n\nE garanta que a chave `fleet-token` exista no Secret %q ANTES de habilitar.\n" $papel $papel $ref2.name $ref2.name) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- if not (has "ALLOY_FLEET_TOKEN" $nomes) -}}
 {{- fail (printf "\n\nalloy-lerian: fleetManagement está habilitado, mas `%s.alloy.extraEnv` não\ndeclara ALLOY_FLEET_TOKEN.\n\nSem o token o agente autentica e falha, e nunca recebe configuração.\n" $papel) -}}
 {{- end -}}

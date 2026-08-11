@@ -49,6 +49,16 @@ is byte-identical to today's until someone opts in.
 {{- if not $f.url -}}
 {{- fail "\n\nalloy-lerian: fleetManagement.enabled is true but `fleetManagement.url` is empty.\n\nCopy the endpoint verbatim from the Fleet Management UI — the host format varies\nby stack and region, and building it by hand is a documented mistake.\n" -}}
 {{- end -}}
+{{/*
+The token travels to this URL in basic_auth, so plaintext here is the same defect
+the destination guard covers — and the same reasoning applies: it is the CREDENTIAL
+crossing the network in the clear that matters. Unlike the destination, there is no
+legitimate plain-http case: Fleet Management is a hosted service reached over the
+public internet, and its URL is copied verbatim from the UI, which gives https.
+*/}}
+{{- if not (hasPrefix "https://" $f.url) -}}
+{{- fail (printf "\n\nalloy-lerian: `fleetManagement.url` e %q, que nao e https.\n\nO token de configuracao remota viaja para esta URL em basic_auth — em texto claro,\nlegivel por qualquer coisa no caminho.\n\nCopie o endpoint VERBATIM da interface do Fleet Management: ela entrega https, e\nconstruir o host a mao e erro documentado (o formato varia por stack e regiao).\n" $f.url) -}}
+{{- end -}}
 {{- if not $f.username -}}
 {{- fail "\n\nalloy-lerian: fleetManagement.enabled is true but `fleetManagement.username` is empty.\n\nIt is the numeric stack id shown in the Fleet Management UI.\n" -}}
 {{- end -}}

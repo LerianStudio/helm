@@ -165,16 +165,18 @@ collection:
 # probes, RBAC, security context and the config-reloader sidecar. The blocks
 # below are the upstream values surface under the alias name — see the `node:`
 # and `singleton:` blocks further down.
-roles:
-  node:
-    # Per-node. Receives application telemetry pushed over the standard
-    # protocol. Push cannot duplicate, so replication is safe here.
-    enabled: true
-
-  singleton:
-    # Exactly one replica, enforced. Observes cluster-scope state.
-    enabled: true
-
+#
+# There is deliberately NO `roles.<role>.enabled` surface. It existed and did
+# nothing: the subchart conditions in Chart.yaml read `node.enabled` and
+# `singleton.enabled`, so `--set roles.singleton.enabled=false` still rendered the
+# singleton — measured. A value that looks like a control and is not is worse than
+# no value.
+#
+# A nested `condition: roles.singleton.enabled` DOES work in Helm and was verified,
+# so pointing the conditions at `roles` was a real alternative. It was rejected
+# because it leaves two names for one switch, and the templates plus the subchart
+# aliases already speak `node`/`singleton`. One name, where the subchart actually
+# reads it.
 # ---------------------------------------------------------------------------
 # NODE ROLE — upstream agent values under the `node` alias
 # ---------------------------------------------------------------------------

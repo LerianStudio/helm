@@ -15,7 +15,7 @@ on:
       SLACK_BOT_TOKEN_HELM:
         description: 'Slack Bot Token for Helm notifications'
         required: true
-      SLACK_CHANNEL_DEVOPS:
+      SLACK_CHANNEL_OPS:
         description: 'Slack channel ID for notifications'
         required: true
       SLACK_GROUP_TECH_SUPPORT:
@@ -130,7 +130,7 @@ jobs:
           # Build Slack payload with blocks at root level (avoids "show more" collapse)
           # Use attachment only for the color bar indicator
           SLACK_PAYLOAD=$(jq -n \
-            --arg channel "${{ secrets.SLACK_CHANNEL_DEVOPS }}" \
+            --arg channel "${{ secrets.SLACK_CHANNEL_OPS }}" \
             --arg chart_name "$CHART_NAME" \
             --arg chart_version "$CHART_VERSION" \
             --arg release_url "$RELEASE_URL" \

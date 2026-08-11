@@ -222,5 +222,5 @@ jobs:
       chart_path: ${{ matrix.chart.working_dir }}
     secrets:
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
-      SLACK_CHANNEL_DEVOPS: ${{ secrets.SLACK_CHANNEL_DEVOPS }}
+      SLACK_CHANNEL_OPS: ${{ secrets.SLACK_CHANNEL_OPS }}
       SLACK_GROUP_TECH_SUPPORT: ${{ secrets.SLACK_GROUP_TECH_SUPPORT }}

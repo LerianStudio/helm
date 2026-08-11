@@ -34,7 +34,7 @@ The library talks to the Consul HTTP API on the in-cluster ClusterIP Service.
    The server Service is "<prefix>-server", so a custom name resolves correctly. */}}
 {{- $consul := .Values.consul | default dict }}
 {{- $cglobal := $consul.global | default dict }}
-{{- $prefix := $consul.fullnameOverride | default $cglobal.name | default (printf "%s-%s" .Release.Name ($consul.nameOverride | default "consul")) }}
+{{- $prefix := $consul.fullnameOverride | default $cglobal.name | default (printf "%s-%s" .Release.Name ($consul.nameOverride | default "consul")) | trunc 63 | trimSuffix "-" }}
 {{- $server := printf "%s-server" $prefix }}
 
 {{- if $cglobal.tls.enabled }}

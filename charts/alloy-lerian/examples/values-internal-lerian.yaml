@@ -22,9 +22,10 @@
 #  ----------------------------  ----------  ----------------------------------
 #  Telemetria de app (OTLP)      ✅ LIGADO   `node.enabled: true`      (§6)
 #  Objetos de cluster + eventos  ✅ LIGADO   `singleton.enabled: true` (§6)
-#  kube-state-metrics (subchart) ⬜ off      `kube-state-metrics:`     (§2)
-#                                            ↳ off porque o ambiente JÁ roda um;
-#                                              o scrape aponta para o existente
+#  Objetos de cluster (KSM)      📦 reusa    `kube-state-metrics: false` (§2)
+#                                            ↳ COLETA ATIVA. O false só diz "não
+#                                              instale outro"; o scrape aponta
+#                                              para o KSM que o ambiente já roda
 #  Métricas de nó                ⬜ off      `collection.nodeInfrastructure` (§3)
 #  node-exporter (subchart)      ⬜ off      `node-exporter:`          (§3)
 #  Fleet Management              ⬜ off      `fleetManagement:`        (§5)
@@ -51,18 +52,26 @@
 #  IMPLEMENTADO, off (1)
 #    hostMetrics                métricas de nó, com allowlist     §3
 #
-#  NÃO IMPLEMENTADO — avaliar ao levar para aws-staging (9)
-#    podLogsViaLoki             log de contêiner por arquivo
-#    podLogsViaKubernetesApi    log pela API (sem montar /var/log)
-#    podLogsObjects             CRD PodLogs (exigiria a CRD que desligamos)
-#    nodeLogs                   log do HOST (journald, /var/log)
+#  NÃO IMPLEMENTADO — avaliar ao levar para aws-staging (5)
 #    profiling                  perfilamento contínuo por eBPF
 #    profilesReceiver           receber perfis que a app envia
 #    costMetrics                custo (opencost)
 #    annotationAutodiscovery    descoberta por anotação nos pods
 #    prometheusOperatorObjects  consumir PodMonitor/ServiceMonitor
 #
-#  NÃO SE APLICA (5)
+#  NÃO SE APLICA (9)
+#    podLogsViaLoki             ❌ já temos log das aplicações por OTLP
+#    podLogsViaKubernetesApi    ❌ idem
+#    podLogsObjects             ❌ idem
+#    nodeLogs                   ❌ idem
+#      ↳ decidido 2026-08-11. Medido: 15 serviços da Lerian, em 21 namespaces,
+#        já entregam log por OTLP. Coletar por arquivo capturaria o MESMO log por
+#        outro caminho e duplicaria o custo — e log é o maior custo da plataforma
+#        hoje (o ledger sozinho domina a volumetria).
+#      ⚠️ O que fica descoberto, para constar: log de contêiner que NÃO usa a lib
+#        compartilhada — infra de terceiro, sidecars, jobs. Se algum dia precisar
+#        diagnosticar um desses pelo log, o caminho é `kubectl logs`, não o
+#        pipeline. Aceito.
 #    autoInstrumentation        Beyla — decisão de negócio, não entra
 #    kubernetesManifests        tail de manifesto; sem uso identificado
 #    selfReporting              telemetria de uso para a Grafana; desligado
@@ -88,7 +97,13 @@
 # windows-exporter.
 
 # LEGENDA
-#   ✅ LIGADO    ligado neste arquivo, e validado em cluster
+#   ✅ LIGADO    a COLETA está ativa, e validada em cluster
+#   📦 reusa     a coleta está ATIVA, mas o subchart NÃO é instalado — o Alloy
+#                raspa um exportador que o ambiente já roda. `enabled: false`
+#                aqui significa "não instale outro", NUNCA "não colete".
+#                Verificado na benedita: kube_pod_info chega com
+#                client_id=benedita (390 séries) enquanto
+#                kube-state-metrics.enabled é false
 #   ⬜ off       a chave EXISTE e funciona — mudar para true habilita
 #   ✳ n/impl    a chave NÃO EXISTE no chart; está comentada como catálogo.
 #                Descomentar não faz nada. Precisa ser implementada primeiro.
@@ -192,25 +207,20 @@ node-exporter:
 # entrega é pior que sua ausência. Foi o defeito que o `nodeInfrastructure` teve
 # até ser implementado de verdade.
 
-# --- 1º: COLETA DE LOG DE POD POR ARQUIVO --------------------------------
-# Componente verificado no binário: `loki.source.kubernetes` existe e exige o
-# atributo `targets`.
+# --- ❌ COLETA DE LOG POR ARQUIVO/API — NÃO SE APLICA -------------------
+# Removido do catálogo em 2026-08-11: já temos log das aplicações por OTLP.
 #
-# CUSTO: volume de log, não de série. Medido na benedita, o ledger sozinho já
-# domina a volumetria de log da plataforma — ligar isto sem filtro por
-# severidade e por namespace multiplica o que já é o maior custo de log.
+# Medido antes de decidir: 15 serviços da Lerian, em 21 namespaces, entregam log
+# pelo papel node. Ligar coleta por arquivo capturaria o MESMO log por um segundo
+# caminho, duplicando o que já é o maior custo da plataforma.
 #
-# EXIGE: `alloy.mounts.varlog: true` (montar /var/log do nó, em leitura).
-# Não exige privileged nem root.
+# Cobre podLogsViaLoki, podLogsViaKubernetesApi, podLogsObjects e nodeLogs — os
+# quatro resolvem o mesmo problema, que já está resolvido.
 #
-# ⚠️ SOBREPOSIÇÃO: as aplicações já entregam log por OTLP no papel node. Isto
-# capturaria o MESMO log por outro caminho — o ganho é log de contêiner que não
-# usa a lib (infra, sidecars, jobs), não log de aplicação. Ligar sem excluir o
-# que já vem por OTLP duplicaria custo.
-# podLogs:
-#   enabled: false
+# Lacuna aceita: contêiner que não usa a lib compartilhada (infra de terceiro,
+# sidecars, jobs) não tem log no pipeline. Diagnóstico desses é `kubectl logs`.
 
-# --- 2º: PERFILAMENTO CONTÍNUO (eBPF) -----------------------------------
+# --- 1º: PERFILAMENTO CONTÍNUO (eBPF) -----------------------------------
 # Componente verificado: `pyroscope.ebpf` existe e exige `forward_to`.
 #
 # ⚠️ O ÚNICO ITEM DESTA LISTA QUE MUDA A POSTURA DE PRIVILÉGIO.
@@ -226,7 +236,7 @@ node-exporter:
 # profiles:
 #   enabled: false
 
-# --- 3º: MÉTRICAS DE CUSTO (opencost) -----------------------------------
+# --- 2º: MÉTRICAS DE CUSTO (opencost) -----------------------------------
 # EXIGE um Prometheus próprio para scrape e armazenamento, mais credencial de
 # FATURAMENTO da conta de nuvem — sem ela entrega preço de tabela, não custo real.
 #
@@ -234,7 +244,7 @@ node-exporter:
 # costMetrics:
 #   enabled: false
 
-# --- 4º: CONSUMO REAL POR CONTÊINER (lacuna conhecida) ------------------
+# --- 3º: CONSUMO REAL POR CONTÊINER (lacuna conhecida) ------------------
 # Componente verificado: `prometheus.exporter.cadvisor` existe e carrega sem
 # exigir atributo.
 #

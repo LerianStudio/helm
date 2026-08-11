@@ -227,7 +227,7 @@ otelcol.processor.filter "ruido" {
 // is exactly why correctness cannot depend on this mechanism reporting failure.
 // The delivery gate asserts each rule against a known input and expected
 // output, and blocks release on mismatch.
-{{ include "alloy-lerian.config.sanitizacao" . }}
+{{ include "alloy-lerian.config.sanitizacao" (dict "nome" "sanitizacao" "saida" "otelcol.processor.batch.agrupamento.input") }}
 
 // STAGE 7 — batching. Must be last: enrichment operates on individual records,
 // and batching destroys the connection context stage 2 depends on.
@@ -347,6 +347,45 @@ otelcol.receiver.loki "ponte_eventos" {
   }
 }
 
+// PERIMETER for events. Cluster events come from EVERY namespace, including the
+// ones the client profile is meant to exclude — the source watches the whole
+// cluster and takes no namespace argument. Without this, the perimeter that the
+// node role enforces would simply not apply to this signal.
+//
+// Reads the same k8s.namespace.name the node role filters on. The Loki bridge
+// promotes the source's labels to attributes, so the attribute is present on the
+// LOG RECORD here rather than on the resource.
+otelcol.processor.filter "perimetro_eventos" {
+  error_mode = "ignore"
+
+{{- $nsIncludeEv := include "alloy-lerian.namespaceInclude" . }}
+{{- $nsExcludeEv := include "alloy-lerian.namespaceExclude" . }}
+{{- if $nsIncludeEv }}
+  logs {
+    log_record = [
+      `attributes["namespace"] == nil or not IsMatch(attributes["namespace"], {{ $nsIncludeEv | quote }})`,
+    ]
+  }
+{{- else if $nsExcludeEv }}
+  logs {
+    log_record = [
+      `IsMatch(attributes["namespace"], {{ $nsExcludeEv | quote }})`,
+    ]
+  }
+{{- end }}
+
+  output {
+    logs = [otelcol.processor.transform.sanitizacao_eventos.input]
+  }
+}
+
+// SANITISATION for events. Event messages are free text written by controllers,
+// and they quote application payloads — a failed job's message can carry whatever
+// the application put in it. The SAME rule set as the node role, rendered from
+// one source: duplicating the rules would create two sets that can drift, and a
+// drifted copy is worse than no copy because it still looks protected.
+{{ include "alloy-lerian.config.sanitizacao" (dict "nome" "sanitizacao_eventos" "saida" "otelcol.exporter.otlphttp.destino.input") }}
+
 // Events do not pass through the node role, so they need their own origin mark.
 otelcol.processor.transform "procedencia_eventos" {
   error_mode = "ignore"
@@ -357,7 +396,7 @@ otelcol.processor.transform "procedencia_eventos" {
     ]
   }
   output {
-    logs = [otelcol.exporter.otlphttp.destino.input]
+    logs = [otelcol.processor.filter.perimetro_eventos.input]
   }
 }
 

@@ -34,7 +34,9 @@ negative leaks a document. Requiring a field prefix was evaluated and rejected:
 the canonical case is a bare document in running text.
 */}}
 {{- define "alloy-lerian.config.sanitizacao" -}}
-otelcol.processor.transform "sanitizacao" {
+{{- $nome := .nome | default "sanitizacao" -}}
+{{- $saida := .saida | default "otelcol.processor.batch.agrupamento.input" -}}
+otelcol.processor.transform {{ $nome | quote }} {
   // "ignore" keeps a malformed rule from halting the pipeline. This is also
   // why correctness is asserted in CI rather than trusted at runtime: a wrong
   // rule produces no error, only output that appears masked.
@@ -125,7 +127,7 @@ otelcol.processor.transform "sanitizacao" {
   }
 
   output {
-    logs = [otelcol.processor.batch.agrupamento.input]
+    logs = [{{ $saida }}]
   }
 }
 {{- end -}}

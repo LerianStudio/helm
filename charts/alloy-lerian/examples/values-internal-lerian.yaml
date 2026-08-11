@@ -14,7 +14,39 @@
 # ============================================================================
 # ⚠️ ESTE ARQUIVO NÃO SERVE PARA CLUSTER DE CLIENTE
 # ============================================================================
-# `profile: own` desliga a exigência de credencial e libera métricas de nó. Num
+# `# ============================================================================
+# ESTADO DE CADA SERVIÇO — este quadro é a resposta rápida
+# ============================================================================
+#
+#  SERVIÇO                       ESTADO      ONDE ESTÁ NESTE ARQUIVO
+#  ----------------------------  ----------  ----------------------------------
+#  Telemetria de app (OTLP)      ✅ LIGADO   `node.enabled: true`      (§6)
+#  Objetos de cluster + eventos  ✅ LIGADO   `singleton.enabled: true` (§6)
+#  kube-state-metrics (subchart) ⬜ off      `kube-state-metrics:`     (§2)
+#                                            ↳ off porque o ambiente JÁ roda um;
+#                                              o scrape aponta para o existente
+#  Métricas de nó                ⬜ off      `collection.nodeInfrastructure` (§3)
+#  node-exporter (subchart)      ⬜ off      `node-exporter:`          (§3)
+#  Fleet Management              ⬜ off      `fleetManagement:`        (§5)
+#  ----------------------------  ----------  ----------------------------------
+#  podLogs                       ✳ n/impl   catálogo comentado        (§4)
+#  profiles (perfilamento eBPF)  ✳ n/impl   catálogo comentado        (§4)
+#  costMetrics                   ✳ n/impl   catálogo comentado        (§4)
+#  containerResources            ✳ n/impl   catálogo comentado        (§4)
+#  ----------------------------  ----------  ----------------------------------
+#  kepler, Beyla, windows-exp.   ❌ nunca    descartados com motivo    (§4)
+#  alloy-operator                ❌ nunca    descartado com motivo     (§4)
+#
+# LEGENDA
+#   ✅ LIGADO    ligado neste arquivo, e validado em cluster
+#   ⬜ off       a chave EXISTE e funciona — mudar para true habilita
+#   ✳ n/impl    a chave NÃO EXISTE no chart; está comentada como catálogo.
+#                Descomentar não faz nada. Precisa ser implementada primeiro.
+#   ❌ nunca     decidido não entrar; motivo registrado
+#
+# Só há DOIS serviços ligados: os dois papéis do agente. Todo o resto está off.
+
+profile: own` desliga a exigência de credencial e libera métricas de nó. Num
 # cluster de cliente use `values-cliente.yaml`.
 #
 # E note o limite, medido: a guarda de perfil NÃO É CONTROLE. Quem instala o
@@ -34,8 +66,11 @@ destination:
   endpoint: SUBSTITUIR
 
 # ===========================================================================
-# ✅ LIGADO E VALIDADO EM CLUSTER
+# §1 — ✅ OS DOIS PAPÉIS DO AGENTE (os únicos serviços LIGADOS)
 # ===========================================================================
+# As chaves `enabled` destes dois estão na §6, junto com a configuração de
+# credencial de cada papel — UM bloco por papel, porque chave YAML duplicada
+# descarta a primeira em silêncio (verificado).
 
 # --- Telemetria de aplicação por OTLP (o papel node) ---------------------
 # É o núcleo do chart: recebe push das aplicações, enriquece com contexto k8s,
@@ -50,7 +85,9 @@ destination:
 # Medido: DPM 3,41 -> 1,00, com 1 produtor distinto.
 # (o bloco `singleton:` completo está no fim do arquivo)
 
-# --- kube-state-metrics ---------------------------------------------------
+# ===========================================================================
+# §2 — ⬜ kube-state-metrics (off: o ambiente já roda um)
+# ===========================================================================
 # Única fonte de métricas de objeto de cluster no modelo Alloy: o agente não tem
 # equivalente do receptor k8s_cluster do OTel.
 #
@@ -63,9 +100,9 @@ kube-state-metrics:
 collection:
   clusterObjectTarget: "prometheus-kube-state-metrics.monitoring.svc.cluster.local:8080"
 
-  # ===========================================================================
-  # ⬜ MÉTRICAS DE NÓ — implementado, DESLIGADO por padrão
-  # ===========================================================================
+  # =========================================================================
+  # §3 — ⬜ MÉTRICAS DE NÓ (implementado, off)
+  # =========================================================================
   # Já validado em cluster, mas fica desligado porque o volume é grande e a
   # decisão é por ambiente.
   #
@@ -96,7 +133,7 @@ node-exporter:
   enabled: false
 
 # ===========================================================================
-# ⬜ NÃO IMPLEMENTADOS — catálogo com custo e exigência levantados
+# §4 — ✳ NÃO IMPLEMENTADOS + ❌ DESCARTADOS (catálogo, não configuração)
 # ===========================================================================
 # As chaves abaixo NÃO EXISTEM no chart ainda. Estão aqui como catálogo da ordem
 # de habilitação acordada, com o que cada uma vai exigir quando for implementada.
@@ -174,14 +211,37 @@ node-exporter:
 #                         controles da aplicação. Desnecessário: as apps já emitem
 #                         telemetria nativa pela lib compartilhada.
 # windows-exporter        exige nós Windows; o stack é Go em Linux.
-# alloy-operator          o ClusterRole dele pede `bind` e `escalate` em RBAC,
-#                         equivalentes a admin. Temos papéis fixos; o problema que
-#                         ele resolve é gestão de frota multi-instância.
+# alloy-operator          ⚠️ REAVALIADO 2026-08-11, e o veredito mudou de nuance.
+#
+#   Medido na versão ATUAL (chart 0.6.3 / app 1.11.1), não na documentação:
+#   o ClusterRole pede, em `rbac.authorization.k8s.io` sobre clusterroles,
+#   clusterrolebindings, roles e rolebindings:
+#
+#     get list watch create update patch delete BIND ESCALATE
+#
+#   `escalate` permite conceder permissões que o próprio sujeito não tem —
+#   é caminho para admin. Continua lá; a objeção original NÃO estava
+#   desatualizada.
+#
+#   O QUE MUDOU: com `rbac.createClusterRoles: false` e `namespaces: [monitoring]`
+#   os ClusterRoles DESAPARECEM do render (medido: sobram 3 Role + 3 RoleBinding,
+#   nenhum ClusterRole) e o escalate fica restrito ao namespace. Isso é bem
+#   diferente de escalate no cluster inteiro.
+#
+#   POR QUE AINDA NÃO ENTRA: o operator resolve gestão de frota
+#   multi-instância — o guarda-chuva o adotou porque cada instância exigia um
+#   subchart e o values do pai chegou a ~3.000 linhas. Temos DOIS papéis fixos.
+#   Não há problema para ele resolver aqui, então o privilégio não compra nada.
+#
+#   QUANDO REABRIR: se passarmos de dois para muitos papéis (profiling, logs,
+#   receiver separados, como o guarda-chuva faz com cinco), o custo de gerenciar
+#   subcharts pode passar a justificar. Aí a discussão é honesta — hoje seria
+#   privilégio sem contrapartida.
 #
 # Detalhe de cada um em docs/COMPONENTES-EXCLUIDOS.md.
 
 # ===========================================================================
-# Fleet Management — pronto e inativo
+# §5 — ⬜ FLEET MANAGEMENT (pronto e inativo)
 # ===========================================================================
 # Nasce configurado, ligamos depois de validar nos nossos ambientes. Quatro
 # validações no render ao habilitar; ver docs/FLEET-MANAGEMENT.md.
@@ -189,8 +249,10 @@ fleetManagement:
   enabled: false
 
 # ===========================================================================
-# Credencial — opcional aqui, obrigatória no perfil client
+# §6 — ✅ OS PAPÉIS: `enabled` + credencial
 # ===========================================================================
+# É AQUI que os dois papéis são ligados. Estão no fim do arquivo porque a
+# configuração de credencial de cada um vive no mesmo bloco.
 # O destino interno não valida credencial, então a entrada é opcional. NÃO zere
 # `extraEnv` para isso: apagaria também as variáveis do Fleet Management.
 node:

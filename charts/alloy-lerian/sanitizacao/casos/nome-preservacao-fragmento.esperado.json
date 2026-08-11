@@ -1,2 +1,1 @@
-{"body":"recipientName=Ana ********** Lima ok","categoria":"preservacaoDeFragmento",
-"descricao":"Ana e Lima DEVEM aparecer. Se sair $1 ou $2 literal, ou vazio, a regra esta errada."}
+{"body": "recipientName=Ana ********** ok", "categoria": "preservacaoDeFragmento", "descricao": "Ana e Lima DEVEM aparecer. Se sair $1 ou $2 literal, ou vazio, a regra esta errada."}

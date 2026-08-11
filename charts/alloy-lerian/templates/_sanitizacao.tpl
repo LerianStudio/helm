@@ -66,16 +66,20 @@ otelcol.processor.transform {{ $nome | quote }} {
       // surrounding log text is lowercase, which delimits the value without a
       // lookbehind. This is a PREMISE about how applications log, not a
       // guarantee — an application logging names in a different case would not
-      // match, and the alternative-form test case for this class is what would
-      // surface it.
+      // match.
       //
-      // Two rules are needed. Three-or-more terms first: the two-term rule
-      // would otherwise match the first two and leave the rest exposed.
-      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)([A-Z]\\w*)(?: [A-Z]\\w*)+ ([A-Z]\\w*)", "$1$2 ********** $3")`,
-
-      // Exactly two terms: no middle to mask, but the surname is still
-      // personal data. The three-plus rule cannot match this case.
-      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)([A-Z]\\w*) ([A-Z]\\w*)", "$1$2 ********** $3")`,
+      // ONE rule, and it masks EVERY term after the first. There were two before
+      // (3+ terms, then exactly 2) and both leaked, which is worse than not
+      // masking because the output looks protected:
+      //
+      //   Ana Silva              -> "Ana ********** Silva"   full name readable
+      //   Ana Beatriz Costa Lima -> "Ana ********** Lima"    surname preserved
+      //
+      // The surname is the most identifying term, so preserving it defeats the
+      // rule. The given name is kept for legibility in diagnosis; everything
+      // after it goes. Verified: 1 term is left alone, 2/3/4 terms are fully
+      // masked, and a following `key=value` field is not consumed.
+      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)([A-Z]\\w*)(?: [A-Z]\\w*)+", "$1$2 **********")`,
 
       // --- EMAIL ADDRESS ---
       // Preserves two characters of the local part and the WHOLE domain. The
@@ -94,7 +98,7 @@ otelcol.processor.transform {{ $nome | quote }} {
       // Masked ENTIRELY. Unlike an email domain or a phone area code, any
       // fragment of an address sharply narrows the search space for a person.
       // The only class with no preserved part, and that is deliberate.
-      `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[A-Z][^=]*?(?: [a-z]+=|$)", "$1**********")`,
+      `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[A-Z][^=]*?( [a-z_]+[=:]|$)", "$1**********$2")`,
 
       // --- AUTHENTICATION CREDENTIAL ---
       // Different in kind from every rule above: those protect data that

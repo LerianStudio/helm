@@ -144,7 +144,17 @@ echo "[6/6] Regras do arcabouco identicas as do template do chart"
 # Sem isto o arcabouco poderia validar um conjunto de regras enquanto producao
 # usa outro: o teste passaria e o dado vazaria.
 TEMPLATE="${RAIZ}/../templates/_sanitizacao.tpl"
-extrai() { grep -oE 'replace_pattern\(body, "[^"]+", "[^"]*"\)' "$1" | sort; }
+# SEM `sort`. A ordem faz parte do que esta sendo comparado.
+#
+# MEDIDO: com `| sort`, inverter telefone e documento no template — a mesma ordem
+# que o cabecalho do template declara como CONTRATO — passava esta verificacao.
+# Injetei a troca e a porta liberou. Um numero E.164 de 13 digitos casa a regra de
+# 11 digitos e vira "+551********21": mascarado, e mascarado ERRADO, perdendo o
+# codigo de area e preservando o fim do numero do assinante.
+#
+# Comparar conjuntos verificava que as regras existem. O que precisa ser
+# verificado e que elas estao na ordem certa.
+extrai() { grep -oE 'replace_pattern\(body, "[^"]+", "[^"]*"\)' "$1"; }
 if [ ! -f "$TEMPLATE" ]; then
   ok "template ausente (execucao fora do chart) - verificacao ignorada"
 elif diff -q <(extrai "$TEMPLATE") <(extrai "${RAIZ}/regras.alloy") >/dev/null 2>&1; then

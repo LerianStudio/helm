@@ -1,3 +1,1 @@
-{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"caso-sanitizacao"}}]},
-"scopeLogs":[{"logRecords":[{"timeUnixNano":"1700000000000000000","severityNumber":9,"severityText":"INFO",
-"body":{"stringValue":"customerName=Ana Beatriz Lima documento 12345678901 email=ana@lerian.studio phone=+5511987654321 pixKey=a1b2c3d4-e5f6-7890-abcd-ef1234567890 accountId=acc_9f8e7d6c5b4a3210 processado"}}]}]}]}
+{"resourceLogs": [{"resource": {"attributes": [{"key": "service.name", "value": {"stringValue": "caso-sanitizacao"}}]}, "scopeLogs": [{"logRecords": [{"timeUnixNano": "1700000000000000000", "severityNumber": 9, "severityText": "INFO", "body": {"stringValue": "customerName=Ana Beatriz Lima documento 12345678901 email=ana@lerian.studio phone=+5511987654321 pixKey=a1b2c3d4-e5f6-7890-abcd-ef1234567890 accountId=acc_9f8e7d6c5b4a3210 endereco=Rua Das Flores 123 authorization: Bearer eyJhbGciOiJIUzI1NiJ9.carga.assinatura processado"}}]}]}]}

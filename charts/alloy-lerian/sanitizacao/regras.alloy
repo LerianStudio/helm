@@ -51,29 +51,27 @@ otelcol.processor.transform "sanitizacao" {
       `replace_pattern(body, "([0-9]{3})[0-9]{8}", "$1********")`,
 
       // --- NOME DE PESSOA ---
-      // Campos de nome conhecidos: customerName, senderName, recipientName,
+      // Campos conhecidos: customerName, senderName, recipientName,
       // receiverName, clientName, holderName.
-      // Preserva primeiro e ultimo termo; mascara o meio.
-      // Casa nome de 2+ termos capitalizados. Depende de convencao de caixa:
-      // termos de nome comecam em maiuscula, e o texto seguinte no log e
-      // minusculo. Isto delimita o fim do valor SEM retrovisor, que o motor
-      // de regex desta versao nao suporta.
       //
-      // Tentativas anteriores e por que falharam (verificado por teste):
-      //  - (?: \w+)+ guloso   -> consome ate o fim, ultimo grupo vazio,
-      //                          APAGA o sobrenome (pior que nao mascarar)
-      //  - (?: \w+)*? nao-guloso -> casa o minimo, nao mascara o meio
-      // 3+ termos: primeiro + meio mascarado + ultimo. Vem ANTES da regra de
-      // 2 termos, senao esta casaria os dois primeiros e deixaria o resto exposto.
-      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)([A-Z]\\w*)(?: [A-Z]\\w*)+ ([A-Z]\\w*)", "$1$2 ********** $3")`,
-
-      // Exatamente 2 termos: nao ha meio a mascarar, mas o sobrenome ainda e
-      // dado pessoal. Insere a mascara entre os dois, preservando ambos.
-      // A regra de 3+ nao casa este caso porque exige >=1 termo no meio; e como
-      // ela roda ANTES, nomes longos ja foram mascarados quando esta avalia.
-      // NAO usar lookahead: o motor de regex desta versao nao suporta
-      // (verificado — falha na CARGA com "unsupported Perl syntax: (?!").
-      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)([A-Z]\\w*) ([A-Z]\\w*)", "$1$2 ********** $3")`,
+      // UMA regra, e ela mascara TODOS os termos apos o primeiro. Antes havia
+      // duas (3+ termos, e exatamente 2) e AMBAS vazavam — pior que nao mascarar,
+      // porque a saida aparenta estar protegida:
+      //
+      //   Ana Silva              -> "Ana ********** Silva"   nome inteiro legivel
+      //   Ana Beatriz Costa Lima -> "Ana ********** Lima"    sobrenome preservado
+      //
+      // O sobrenome e o termo MAIS identificador; preserva-lo anula a regra. O
+      // primeiro nome fica para legibilidade em diagnostico, o resto vai.
+      //
+      // Depende de convencao de caixa: termos de nome comecam em maiuscula e o
+      // texto seguinte no log e minusculo, o que delimita o fim do valor SEM
+      // retrovisor — que o motor desta versao nao suporta (falha na CARGA com
+      // "unsupported Perl syntax: (?!").
+      //
+      // Verificado: 1 termo nao e mascarado, 2/3/4 termos sao mascarados por
+      // inteiro, e um campo `chave=valor` seguinte nao e consumido.
+      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)([A-Z]\\w*)(?: [A-Z]\\w*)+", "$1$2 **********")`,
 
       // --- ENDERECO DE CORREIO ELETRONICO ---
       // Preserva os 2 primeiros caracteres da parte local e o dominio INTEIRO.
@@ -101,7 +99,7 @@ otelcol.processor.transform "sanitizacao" {
       // Delimita o fim do valor pela convencao de caixa: o valor comeca em
       // maiuscula e o texto seguinte do log e minusculo (mesma premissa da
       // regra de nome — ver README, secao de premissas).
-      `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[A-Z][^=]*?(?: [a-z]+=|$)", "$1**********")`,
+      `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[A-Z][^=]*?( [a-z_]+[=:]|$)", "$1**********$2")`,
 
       // --- CREDENCIAL DE AUTENTICACAO ---
       // Difere em natureza de todas as regras acima: aquelas protegem dado que

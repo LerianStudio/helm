@@ -52,7 +52,10 @@
 #  IMPLEMENTADO, off (1)
 #    hostMetrics                métricas de nó, com allowlist     §3
 #
-#  NÃO IMPLEMENTADO — avaliar ao levar para aws-staging (5)
+#  A IMPLEMENTAR — decidido que VAI entrar (1)
+#    costMetrics                custo (opencost) — habilitar depois no interno
+#
+#  NÃO IMPLEMENTADO — avaliar ao levar para aws-staging (4)
 #    profiling                  perfilamento contínuo por eBPF
 #    profilesReceiver           receber perfis que a app envia
 #    costMetrics                custo (opencost)
@@ -111,7 +114,7 @@
 #
 # Só há DOIS serviços ligados: os dois papéis do agente. Todo o resto está off.
 
-profile: own` desliga a exigência de credencial e libera métricas de nó. Num
+# `profile: own` desliga a exigência de credencial e libera métricas de nó. Num
 # cluster de cliente use `values-cliente.yaml`.
 #
 # E note o limite, medido: a guarda de perfil NÃO É CONTROLE. Quem instala o
@@ -244,25 +247,41 @@ node-exporter:
 # costMetrics:
 #   enabled: false
 
-# --- 3º: CONSUMO REAL POR CONTÊINER (lacuna conhecida) ------------------
+# --- 2º: CONSUMO REAL POR CONTÊINER — a pergunta do usuário, respondida --
 # Componente verificado: `prometheus.exporter.cadvisor` existe e carrega sem
 # exigir atributo.
 #
-# LACUNA REAL, medida: hoje NINGUÉM coleta consumo por contêiner no modelo Alloy.
-# Na benedita `container_memory_usage_bytes` vem do prometheus-server local
-# (1.049 séries) e da Anacleto (346), e ZERO com client_id=benedita.
+# PERGUNTA (2026-08-11): "não precisaríamos, pois já coletamos métricas dos pods
+# do Kubernetes, certo?"
 #
-# O kube-state-metrics NÃO substitui: entrega request/limit DECLARADO
-# (1.586 + 1.470 séries), não consumo. Sem consumo não há como responder "este
-# pod está perto do limite" — base de saturação e de alerta de OOM.
+# MEDIDO na benedita, e a resposta é NÃO — são coisas diferentes:
 #
-# Num cluster BYOC isso apareceria, porque não há prometheus-server nosso.
+#   temos via kube-state-metrics          responde
+#   ------------------------------------  ----------------------------------
+#   kube_pod_container_resource_limits    quanto foi DECLARADO no manifesto
+#     (737 séries)                        ex: fetcher-worker limite = 21 GB
+#   kube_pod_status_phase (1.950)         está Running/Pending?
+#   kube_pod_container_status_restarts    reiniciou quantas vezes?
+#
+#   NÃO temos                             ficaria sem resposta
+#   ------------------------------------  ----------------------------------
+#   container_memory_usage_bytes          "este pod está perto do limite?"
+#     (0 séries com client_id=benedita)
+#
+# O kube-state-metrics lê a API do Kubernetes: sabe o que foi DECLARADO e o
+# estado do objeto. Consumo não está na API — está no kubelet/cAdvisor.
+#
+# ⚠️ O CUSTO DISSO É REAL, e mensurável agora: há 5 séries de
+# `kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}` na
+# benedita. Cinco contêineres JÁ morreram por memória — e só soubemos depois.
+# OOMKilled avisa DEPOIS do óbito; uso real avisa ANTES. É a diferença entre
+# reagir e prevenir, que é exatamente o objetivo declarado.
+#
+# Na benedita a lacuna é encoberta pelo prometheus-server local (1.049 séries).
+# Num cluster BYOC não haveria nada.
 # containerResources:
 #   enabled: false
 
-# ===========================================================================
-# ❌ DESCARTADOS — não entram, e o motivo fica registrado
-# ===========================================================================
 # DECISÃO DE NEGÓCIO (não de privilégio) — decidido pelo usuário 2026-08-11:
 #
 # kepler (energia)        não faz sentido para o negócio. Consumo energético não

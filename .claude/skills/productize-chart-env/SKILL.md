@@ -350,18 +350,20 @@ For any judgment call the heuristics were unsure about, print `REVIEW: <key> cla
 so the human confirms in the PR — the skill proposes, the reviewer decides.
 
 ### Verification behavior of the checks
-- **`coverage.py` is allowlist-aware.** An active `.env` key the chart does not emit is legitimate
-  ONLY when the operator can still set it via `configmap.<KEY>` — i.e. it is in the chart's
-  `values.schema.json` `propertyNames.enum`. coverage.py loads that allowlist from `--chart-dir` and:
-  **FAILs** a not-emitted active key that is ALSO absent from the allowlist (the operator cannot set
-  it at all); **WARNs** a not-emitted key that IS in the allowlist as `app-default-only` (settable,
-  the app internally defaults it — the byte-identity-preserving case, e.g. the tracer keys midaz
-  never emitted); and still **FAILs** a `helper-not-wired` domain gap. With no schema present it
-  degrades to a WARN (nothing to cross-check against).
-- **`coverage.py` surfaces unverified secrets.** A secret-classified key NOT rendered with the
-  fixture is emitted as a `REVIEW` line — a name match alone does not prove a `secrets.yaml` entry
-  maps it into `Secret.data`. Full auto-verification (render a fixture that supplies every optional
-  secret and assert emission) is the remaining hardening; until then the REVIEW line flags it.
+- **`coverage.py` PROVES emission with a configured render — name/allowlist matches are never
+  enough.** For every active `.env` key the DEFAULT render does not emit, coverage.py runs a second
+  render that SETS the key (`<comp>.configmap.<KEY>` for config, `<comp>.secrets.<KEY>` for secrets,
+  paths auto-detected from `values.yaml`) and checks the sentinel value actually surfaces in the
+  rendered ConfigMap/Secret. Outcomes: a not-emitted key absent from the schema allowlist → **FAIL**
+  (operator cannot set it); an allowlisted key whose probe emits NOTHING → **FAIL** (a dead
+  allowlist entry — `configmap.<KEY>` has no template line, so `propertyNames.enum` accepting the
+  name is misleading); a secret-classified key that produces no Secret entry when set → **FAIL**
+  (silently-dropped credential); a `helper-not-wired` domain gap → **FAIL**. A key that DOES surface
+  under the probe is genuinely settable → covered. If the probe cannot run (no PyYAML / no override
+  path / render error) it degrades to a `REVIEW` line, never a silent pass.
+- Consequence to expect: this can surface previously-hidden gaps on already-productized charts — an
+  allowlist entry the template never renders, or a `.env` key not applicable to a given binary that
+  should be dropped from the allowlist rather than left as a phantom knob. Triage in the PR.
 - **`gen-schema.py` closes the dependency-mask blocks** (`datastores.<type>`, `objectStorage.<name>`,
   `kms`) with the contract's finite field sets (`MASK_FIELDS`), under BOTH `<comp>.*` and `global.*`.
   A mask-field typo (`datastores.postgres.buket`, `kms.vaultMont`) is now REJECTED at helm install

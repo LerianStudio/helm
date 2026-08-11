@@ -23,8 +23,13 @@ Fetch the .env first:
   gh api repos/LerianStudio/<app>/contents/config/.env.example --jq '.content' \
     | base64 -d > <app>.env
 """
-import argparse, json, os, re, subprocess, sys
+import argparse, base64, json, os, re, subprocess, sys, tempfile
 from collections import Counter
+try:
+    import yaml
+    HAVE_YAML = True
+except ImportError:
+    HAVE_YAML = False
 
 # domain prefix -> (domain, ANCHOR key that proves the helper is wired)
 DOMAIN = [
@@ -61,18 +66,99 @@ def env_vars(path):
     return active, commented
 
 
+def _render(chart_dir, fixtures):
+    """helm template with 0+ -f fixtures → (returncode, stdout, stderr)."""
+    cmd = ["helm", "template", "cov", chart_dir]
+    for f in fixtures:
+        if f:
+            cmd += ["-f", f]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    return r.returncode, r.stdout, r.stderr
+
+
 def render_all(chart_dir, fixture):
     """Render the whole chart; return the set of ConfigMap/Secret data keys.
     A data key is an UPPER_SNAKE key at exactly 2-space indent (under data:/stringData:);
     metadata (name/labels, lowercase) and container env (`- name:`, deeper) don't match."""
-    cmd = ["helm", "template", "cov", chart_dir]
-    if fixture:
-        cmd += ["-f", fixture]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if r.returncode:
-        sys.stderr.write(r.stderr)
+    rc, out, err = _render(chart_dir, [fixture])
+    if rc:
+        sys.stderr.write(err)
         return None
-    return {m.group(1) for m in re.finditer(r"^  ([A-Z][A-Z0-9_]+):", r.stdout, re.M)}
+    return {m.group(1) for m in re.finditer(r"^  ([A-Z][A-Z0-9_]+):", out, re.M)}
+
+
+SENTINEL = "COVPROBE9Z7"   # unlikely-to-collide marker for the configured-render probe
+
+
+def find_override_paths(chart_dir):
+    """(configmap_path, secrets_path) dotted paths into values.yaml — the operator override
+    surfaces. Handles wrapped (`<comp>.configmap`) and flat (`configmap` / `configmap.data`)."""
+    if not HAVE_YAML:
+        return None, None
+    vp = os.path.join(chart_dir, "values.yaml")
+    if not os.path.exists(vp):
+        return None, None
+    try:
+        vals = yaml.safe_load(open(vp)) or {}
+    except Exception:
+        return None, None
+
+    def find(name):
+        if name in vals:
+            return name
+        for k, v in vals.items():
+            if isinstance(v, dict) and name in v:
+                return f"{k}.{name}"
+        return None
+
+    cm = find("configmap")
+    if cm:                                   # flat charts route the escape hatch through .data
+        node = vals
+        for s in cm.split("."):
+            node = (node or {}).get(s, {}) if isinstance(node, dict) else {}
+        if isinstance(node, dict) and "data" in node:
+            cm = f"{cm}.data"
+    return cm, find("secrets")
+
+
+def _set_path(root, path, key, value):
+    cur = root
+    for s in path.split("."):
+        cur = cur.setdefault(s, {})
+    cur[key] = value
+
+
+def probe_wired(chart_dir, base_fixture, cm_path, sec_path, config_keys, secret_keys):
+    """CONFIGURED RENDER: set each candidate key (config via cm_path, secret via sec_path) to a
+    sentinel and re-render. Return the subset whose sentinel actually surfaces in the rendered
+    ConfigMap/Secret — proof the override is EFFECTIVE (the chart emits the key), not merely
+    name-allowlisted. None = probe could not run (no PyYAML / no path / render failed)."""
+    if not HAVE_YAML:
+        return None
+    overrides, probe_of = {}, {}
+    for k in config_keys:
+        if cm_path:
+            _set_path(overrides, cm_path, k, f"{SENTINEL}{k}"); probe_of[k] = f"{SENTINEL}{k}"
+    for k in secret_keys:
+        if sec_path:
+            _set_path(overrides, sec_path, k, f"{SENTINEL}{k}"); probe_of[k] = f"{SENTINEL}{k}"
+    if not probe_of:
+        return set()
+    tf = tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False)
+    try:
+        yaml.safe_dump(overrides, tf); tf.close()
+        rc, out, err = _render(chart_dir, [base_fixture, tf.name])
+    finally:
+        os.unlink(tf.name)
+    if rc:
+        sys.stderr.write("[coverage] probe render failed; can't verify emission-on-set\n" + err)
+        return None
+    wired = set()
+    for k, sent in probe_of.items():
+        # secrets render base64 in Secret.data (raw in stringData) — accept either form.
+        if sent in out or base64.b64encode(sent.encode()).decode() in out:
+            wired.add(k)
+    return wired
 
 
 def schema_allowlist(chart_dir):
@@ -161,34 +247,56 @@ def main():
 
     rows = {k: classify(k, emitted, wired, applies) for k in sorted(allenv | emitted)}
     allow = schema_allowlist(a.chart_dir)
+    cm_path, sec_path = find_override_paths(a.chart_dir)
     fails, warns, review = [], [], []
 
-    for k in sorted(active):
+    # Active keys the DEFAULT render does NOT emit. Emission (not a name/allowlist match) is the
+    # only proof a key is covered, so we PROVE the rest with a configured render below.
+    helper_gaps = [k for k in active if not rows[k][1] and rows[k][0].startswith("gap:helper-not-wired:")]
+    secret_cand = [k for k in active if k not in emitted and rows[k][0] == "secret"]
+    config_cand, unsettable = [], []
+    for k in active:
         kind, covered = rows[k]
-        # An emit-when-set secret classified covered by NAME is not proof the chart wires it: if
-        # no secrets.yaml entry maps it, `<comp>.secrets.<K>` is silently dropped. Surface it.
-        if covered and kind == "secret" and k not in emitted:
-            review.append(f"'{k}' classified emit-when-set secret but NOT rendered with this "
-                          f"fixture — confirm secrets.yaml maps it into Secret.data/stringData")
-        if covered:
+        if k in emitted or kind == "secret" or kind.startswith("gap:helper-not-wired:"):
             continue
-        if kind.startswith("gap:helper-not-wired:"):
-            fails.append(f"{k}: domain helper '{kind.split(':')[-1]}' is NOT wired "
-                         f"(the app declares {kind.split(':')[-1].upper()}_* but the chart never emits it)")
-        elif allow and k not in allow:
-            # Real gap: not emitted AND not in the schema allowlist → the operator cannot even set
-            # it via configmap.<K>. (When no schema/allowlist is available we can't cross-check, so
-            # it stays a WARN below.)
-            fails.append(f"{k}: declared active in .env but neither emitted nor in the schema "
-                         f"allowlist (propertyNames.enum) — the operator cannot set it via configmap")
-        elif allow:
-            # In the allowlist but not emitted: legitimate ONLY as an app-default-only key the
-            # operator can override via configmap.<K>. Allowlist membership grants SET, not EMIT —
-            # confirm the app internally defaults it (the byte-identity-preserving case).
-            warns.append(f"app-default-only: '{k}' not emitted; settable via configmap.{k} "
-                         f"(in allowlist) — confirm the app internally defaults it")
+        # emitted==False here (config/datastore gap). Datastore is conditional-external (ok).
+        if kind == "datastore":
+            continue
+        if allow and k not in allow:
+            unsettable.append(k)          # not emitted AND not in allowlist → operator can't set it
         else:
-            warns.append(f"gap: '{k}' declared in .env, chart does not cover it (no schema to cross-check)")
+            config_cand.append(k)
+
+    # CONFIGURED RENDER: set every candidate and confirm the override actually reaches a rendered
+    # ConfigMap/Secret. A `propertyNames.enum` membership or a secret-shaped NAME does NOT prove the
+    # chart emits the key — only this probe does.
+    probe = probe_wired(a.chart_dir, a.fixture, cm_path, sec_path, config_cand, secret_cand)
+
+    for k in sorted(helper_gaps):
+        dom = rows[k][0].split(":")[-1]
+        fails.append(f"{k}: domain helper '{dom}' is NOT wired "
+                     f"(the app declares {dom.upper()}_* but the chart never emits it)")
+    for k in sorted(unsettable):
+        fails.append(f"{k}: declared active in .env, not emitted, and NOT in the schema allowlist "
+                     f"— the operator cannot set it via configmap")
+    if probe is None:
+        # Probe unavailable (no PyYAML / no override path / render failed): never a silent pass —
+        # surface every unproven candidate for human triage.
+        for k in sorted(config_cand):
+            review.append(f"'{k}' not emitted by default; emission-on-override NOT verified "
+                          f"(probe unavailable) — confirm configmap.{k} actually emits it")
+        for k in sorted(secret_cand):
+            review.append(f"'{k}' secret not rendered by default; emission-on-set NOT verified "
+                          f"(probe unavailable) — confirm secrets.yaml maps it")
+    else:
+        for k in sorted(config_cand):
+            if k not in probe:
+                fails.append(f"{k}: allowlisted but setting configmap.{k} emits NOTHING (no template "
+                             f"line renders it) — a dead allowlist entry, not actually settable")
+        for k in sorted(secret_cand):
+            if k not in probe:
+                fails.append(f"{k}: secret-classified but setting it produces no Secret entry "
+                             f"— the chart silently drops the credential")
     for k in sorted(emitted - allenv):
         if not re.match(r"^[A-Z]", k):
             continue

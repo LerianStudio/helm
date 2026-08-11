@@ -78,12 +78,26 @@ $ helm install lerian-consul charts/lerian-consul --set consul.global.tls.enable
 With TLS on, point `lib-service-discovery` at `...-consul-server:8501` (HTTPS)
 and supply the generated CA.
 
+### Security posture (deliberately lightweight)
+
+This chart ships a **minimal secure baseline** that is on by default and stays
+light — the BYOC "facilitator, not blocker" stance — because the client owns the
+cluster and its trust boundary:
+
+- ACL system **on** (scoped SD token, not the bootstrap token — see below).
+- Non-root server, ClusterIP-only Services (no LoadBalancer/NodePort/Ingress).
+- DNS listener **off**, gossip/RPC host ports **off**, unused components disabled.
+
+TLS and a NetworkPolicy are **client-owned opt-ins**, NOT forced defaults — a
+single-node, in-cluster-only SD backend does not need them, and forcing them
+would raise the BYOC barrier for the common case. This is a deliberate posture,
+not an omission: the hardening is one flag away and documented below.
+
 ### Hardening for external / shared clusters
 
-The single-node defaults optimize for an internal, single-tenant BYOC backend. A
-ClusterIP is **not** a trust boundary — by default any pod in the cluster can
-reach the Consul HTTP/RPC/gossip ports. For an externally-distributed or shared
-cluster, harden the deployment:
+A ClusterIP is **not** a trust boundary — with the lightweight defaults, any pod
+in the cluster can reach the Consul HTTP/RPC/gossip ports. When you expose the
+backend to an externally-distributed or shared/multi-tenant cluster, turn on:
 
 - **TLS**: `consul.global.tls.enabled=true` (encrypts the API; moves it to 8501).
 - **NetworkPolicy**: `networkPolicy.enabled=true` restricts ingress to the server

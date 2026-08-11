@@ -145,8 +145,8 @@ The helpers already exist; you are only WIRING them.
 | `SD_*` | `serviceDiscovery.env` or `.envFlat` | `global.serviceDiscovery` | envFlat (flat passthrough) is the simplest for a consumer chart |
 | `STREAMING_*` | `streaming.env` + `streaming.secret` | `global.streaming` | full SASL/broker contract; `STREAMING_SASL_PASSWORD` is a secret |
 | `PLUGIN_AUTH_*` | `globalValue` (block `auth`) | `global.auth` | ENABLED always; HOST emitted only when non-empty |
-| `OBJECT_STORAGE_*` (endpoint/region/bucket) | `objectStorage.value` mask (**lerian-common ≥1.5.0**) | `global.objectStorage.<name>` / `<comp>.objectStorage.<name>` | S3/SeaweedFS dependency; access/secret keys → `secrets`. On charts pinned to **1.4.0** the helper is unavailable → keep the keys as escape-hatch passthrough with a `# TODO 1.5.0` note, wire the mask when the pin bumps. |
-| `KMS_*` (Vault) | `kms.value` mask (**lerian-common ≥1.5.0**) | `global.kms` / `<comp>.kms` | Envelope-encryption dependency; `KMS_VAULT_SECRET_ID` → `secrets` (fail-fast when vendor=hashicorp-vault). Same 1.4.0 → escape-hatch rule as object storage. |
+| `OBJECT_STORAGE_*` (endpoint/region/bucket) | `objectStorage.value` mask (**lerian-common ≥1.5.0**) | `global.objectStorage.<name>` / `<comp>.objectStorage.<name>` | S3/SeaweedFS dependency; credentials (`*_ACCESS_KEY_ID`/`*_SECRET_ACCESS_KEY`) → `secrets.yaml` (fail-fast). On charts pinned to **1.4.0** the mask helper is unavailable → keep only the **non-secret** fields (endpoint/region/bucket/disableSSL/usePathStyle) as escape-hatch passthrough with a `# TODO 1.5.0` note; the credentials STILL go to `secrets.yaml`, **never** the ConfigMap. Wire the mask when the pin bumps. |
+| `KMS_*` (Vault) | `kms.value` mask (**lerian-common ≥1.5.0**) | `global.kms` / `<comp>.kms` | Envelope-encryption dependency; `KMS_VAULT_SECRET_ID` → `secrets.yaml` (fail-fast when vendor=hashicorp-vault) **on any lerian-common version**. Same 1.4.0 fallback as object storage — but only the **non-secret** `KMS_*` fields (vendor/vaultAddr/vaultAuthMethod/vaultRoleId/vaultMount) go to the escape hatch; `KMS_VAULT_SECRET_ID` never leaves `secrets.yaml`. |
 
 Everything NOT in this map is **passthrough config** (rate-limit, outbox, swagger, cors, pagination,
 probes, timeouts, retention, pool/client tuning, service-specific knobs) → `{{ $cm.KEY | default
@@ -188,17 +188,25 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
      Keep any `{{- if ... }}` / `range` conditional exactly. This is 80–90% of the keys.
    - **Dependency knob:** wire the domain helper/mask (Step 4) for db/cache/broker/streaming/SD/
      MT/auth, and — on lerian-common **≥1.5.0** — `objectStorage.value` / `kms.value` for object
-     storage / KMS. On a chart still pinned to **1.4.0** those two helpers do not exist: leave
-     `OBJECT_STORAGE_*` / `KMS_*` as escape-hatch passthrough with a `# TODO 1.5.0` note and wire
-     them when the pin bumps. Use `cfgValue` ONLY when a dependency knob genuinely needs the
-     `configmap.<KEY>` › knob › default precedence (rare — e.g. a toggle the fixture drives).
+     storage / KMS. On a chart still pinned to **1.4.0** those two helpers do not exist: leave the
+     **non-secret** `OBJECT_STORAGE_*` / `KMS_*` fields as escape-hatch passthrough with a
+     `# TODO 1.5.0` note and wire the mask when the pin bumps. **The credentials
+     (`*_ACCESS_KEY_ID` / `*_SECRET_ACCESS_KEY` / `KMS_VAULT_SECRET_ID`) ALWAYS go to `secrets.yaml`
+     with a fail-fast — never the escape-hatch ConfigMap, on any lerian-common version (a ConfigMap
+     is cleartext; routing a credential there is a CWE-312 exposure).** Use `cfgValue` ONLY when a
+     dependency knob genuinely needs the `configmap.<KEY>` › knob › default precedence (rare — e.g.
+     a toggle the fixture drives).
    - Carry any value that DIFFERED from the template default into the passthrough `| default "X"`
      (Rule 3) — e.g. br-ccs `OBJECT_STORAGE_*_BUCKET` shipped real bucket names, so
      `| default "lerian-ccs"`, not `| default ""`.
-6. **values.yaml holds ONLY the tiered surface:** `global.*`, the datastore mask + `external*Definitions`,
-   the dependency toggles/blocks (`multiTenant`/`serviceDiscovery`/`streaming`/`objectStorage`), the
-   k8s blocks, `configmap: {}` (now the PRIMARY override surface — document it prominently), and
-   `extraEnvVars`. **No `<comp>.<group>` blocks for non-dependency config** — those defaults live in
+6. **values.yaml holds ONLY the tiered surface:** `global.*` (incl. `global.datastores`,
+   `global.objectStorage`, `global.kms` when the app uses those dependencies), the datastore mask +
+   `external*Definitions`, the dependency toggles/blocks
+   (`multiTenant`/`serviceDiscovery`/`streaming`/`objectStorage`/`kms`), the k8s blocks,
+   `configmap: {}` (now the PRIMARY override surface — document it prominently), and `extraEnvVars`.
+   For object storage / KMS also surface the connection fields (`<comp>.objectStorage.<name>.*`,
+   `<comp>.kms.*`) and the secret reference in `values-quickstart.yaml` alongside the datastore
+   blocks — a KMS/S3-backed app is unusable without them. **No `<comp>.<group>` blocks for non-dependency config** — those defaults live in
    the template. Each kept knob carries a **`# -- <description>`** helm-docs annotation (P0 #2);
    `scripts/gen-docs.py --values <v.yaml> --out <chart>/README.params.md` regenerates the table
    (`--check` in CI). Also produce **`values-quickstart.yaml`** (Step 10) — the layperson layer.
@@ -329,8 +337,11 @@ ConfigMaps are all included) and reconciles emitted keys vs the `.env`:
   ConfigMap. Bake that scenario into the render-gate fixture so CI keeps covering it. (Also: guard
   against a `default` argument that fails eagerly — `| default (include "…that can fail…")` runs
   even when the primary value is present; resolve first, then fail on the empty result.)
-- **Schema**: `helm lint`/`template` validates against the shipped `values.schema.json` — a
-  typo'd key under a closed block is rejected (that is the user-facing half of the coverage check).
+- **Schema**: `helm lint`/`template` validates against the shipped `values.schema.json` — a typo'd
+  key under a closed block is rejected (the user-facing half of the coverage check). Verify with a
+  NEGATIVE test on BOTH closed surfaces: a `configmap.<TYPO>` (allowlist) AND a dependency-mask typo
+  (`datastores.postgres.buket`, `objectStorage.<name>.reigon`, `kms.vaultMont`) must each fail
+  `helm template`.
 - **Docs**: the README parameter table regenerates from the `# --` annotations with no diff.
 - `helm lint` + the repo render-gate + strict standard all green.
 
@@ -338,21 +349,25 @@ Emit a **coverage report** at the end: N config / N secret / N helper / N datast
 For any judgment call the heuristics were unsure about, print `REVIEW: <key> classified as <kind>`
 so the human confirms in the PR — the skill proposes, the reviewer decides.
 
-### Known limitations of the checks (deferred, by design)
-- **`coverage.py` treats a plain gap as a WARN, not a hard FAIL** (only a `helper-not-wired` domain
-  gap fails). This is deliberate for the tiered model: a non-dependency key the chart does not emit
-  is legitimate when the app internally defaults it and it is in the schema allowlist (settable via
-  `configmap.<KEY>`) — e.g. the tracer keys midaz never emitted. Hard-failing would forbid the
-  byte-identity-preserving conversions. Gaps are printed so the human triages them in the PR.
-- **`coverage.py` secret coverage is name-based** — it confirms a `*_PASSWORD`/`*_SECRET` key is
-  classified secret, not that a `secrets.yaml` template actually maps it into `Secret.data`. Verify
-  wiring by eye when adding a new secret. (Rendering-and-grepping the Secret is a future hardening.)
-- **`gen-schema.py` leaves the dependency-mask blocks OPEN** (`datastores.<type>`,
-  `objectStorage.<name>`, `kms`) — a mask-field typo (`datastores.postgres.buket`) is NOT caught, it
-  silently falls to the default. The masks ship EMPTY (`{}`, operator-filled), so the generic
-  values-driven generator can't enumerate their fields without hardcoding the lerian-common contract
-  into it. Typo protection lives on the finite `configmap` `propertyNames.enum` instead; closing the
-  masks with contract-defined field sets is deferred. (Matches the midaz/br-* schemas.)
+### Verification behavior of the checks
+- **`coverage.py` is allowlist-aware.** An active `.env` key the chart does not emit is legitimate
+  ONLY when the operator can still set it via `configmap.<KEY>` — i.e. it is in the chart's
+  `values.schema.json` `propertyNames.enum`. coverage.py loads that allowlist from `--chart-dir` and:
+  **FAILs** a not-emitted active key that is ALSO absent from the allowlist (the operator cannot set
+  it at all); **WARNs** a not-emitted key that IS in the allowlist as `app-default-only` (settable,
+  the app internally defaults it — the byte-identity-preserving case, e.g. the tracer keys midaz
+  never emitted); and still **FAILs** a `helper-not-wired` domain gap. With no schema present it
+  degrades to a WARN (nothing to cross-check against).
+- **`coverage.py` surfaces unverified secrets.** A secret-classified key NOT rendered with the
+  fixture is emitted as a `REVIEW` line — a name match alone does not prove a `secrets.yaml` entry
+  maps it into `Secret.data`. Full auto-verification (render a fixture that supplies every optional
+  secret and assert emission) is the remaining hardening; until then the REVIEW line flags it.
+- **`gen-schema.py` closes the dependency-mask blocks** (`datastores.<type>`, `objectStorage.<name>`,
+  `kms`) with the contract's finite field sets (`MASK_FIELDS`), under BOTH `<comp>.*` and `global.*`.
+  A mask-field typo (`datastores.postgres.buket`, `kms.vaultMont`) is now REJECTED at helm install
+  instead of silently falling to the default. Because the masks ship EMPTY, the field set is sourced
+  from `references/dependency-contract.md` (the lerian-common helper contract), not the chart values
+  — **keep `MASK_FIELDS` in sync with the contract** whenever the library adds a mask field.
 
 ## Output
 

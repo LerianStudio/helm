@@ -91,6 +91,21 @@ hand-roll a per-chart knob. It is the reference example of "extend the library, 
 Charts on lerian-common < 1.5.0 keep object storage in the escape hatch (allowlisted) until they
 bump the dependency and adopt the mask.
 
+## Version scope + the KMS fallback
+
+The vocabulary table above is a **lerian-common 1.4.0** snapshot with two rows that require **≥
+1.5.0**: `objectStorage.value` and `kms.value`. A chart pinned to **1.4.0** cannot invoke either
+helper — calling it fails the render. Fallback for BOTH, until the pin bumps:
+
+- **Non-secret fields** go to the escape hatch (allowlisted `configmap.<KEY>`): object storage
+  `endpoint/region/bucket/disableSSL/usePathStyle`; KMS `vendor/vaultAddr/vaultAuthMethod/
+  vaultRoleId/vaultMount`.
+- **Credentials NEVER go to the escape hatch — on any version.** `*_ACCESS_KEY_ID` /
+  `*_SECRET_ACCESS_KEY` (object storage) and `KMS_VAULT_SECRET_ID` (KMS) stay in `secrets.yaml`
+  with a fail-fast when the backend/vendor is enabled. A ConfigMap is cleartext; routing a
+  credential there is a CWE-312 exposure. This is identical whether the mask helper exists (≥1.5.0)
+  or the chart is on the 1.4.0 escape-hatch fallback.
+
 ---
 
 ## Adding a new dependency domain (how the standard evolves)

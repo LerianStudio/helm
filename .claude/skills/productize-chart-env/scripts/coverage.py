@@ -23,7 +23,7 @@ Fetch the .env first:
   gh api repos/LerianStudio/<app>/contents/config/.env.example --jq '.content' \
     | base64 -d > <app>.env
 """
-import argparse, re, subprocess, sys
+import argparse, json, os, re, subprocess, sys
 from collections import Counter
 
 # domain prefix -> (domain, ANCHOR key that proves the helper is wired)
@@ -73,6 +73,36 @@ def render_all(chart_dir, fixture):
         sys.stderr.write(r.stderr)
         return None
     return {m.group(1) for m in re.finditer(r"^  ([A-Z][A-Z0-9_]+):", r.stdout, re.M)}
+
+
+def schema_allowlist(chart_dir):
+    """Collect the configmap escape-hatch allowlist (every propertyNames.enum in the chart's
+    values.schema.json) as a set. Empty set = no schema / no enum → can't cross-check.
+    An active .env key that the chart does NOT emit is only truly settable by the operator when
+    it is in this allowlist (configmap.<KEY>); absent from BOTH emission and allowlist it is a
+    real gap (the operator cannot set it at all)."""
+    if not chart_dir:
+        return set()
+    p = os.path.join(chart_dir, "values.schema.json")
+    if not os.path.exists(p):
+        return set()
+    try:
+        schema = json.load(open(p))
+    except Exception:
+        return set()
+    allow = set()
+    def walk(node):
+        if isinstance(node, dict):
+            pn = node.get("propertyNames")
+            if isinstance(pn, dict) and isinstance(pn.get("enum"), list):
+                allow.update(pn["enum"])
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+    walk(schema)
+    return allow
 
 
 def domain_of(k, applies):
@@ -130,17 +160,35 @@ def main():
     wired = {dom: (anchor in emitted) for _, dom, anchor in DOMAIN}
 
     rows = {k: classify(k, emitted, wired, applies) for k in sorted(allenv | emitted)}
+    allow = schema_allowlist(a.chart_dir)
     fails, warns, review = [], [], []
 
     for k in sorted(active):
         kind, covered = rows[k]
+        # An emit-when-set secret classified covered by NAME is not proof the chart wires it: if
+        # no secrets.yaml entry maps it, `<comp>.secrets.<K>` is silently dropped. Surface it.
+        if covered and kind == "secret" and k not in emitted:
+            review.append(f"'{k}' classified emit-when-set secret but NOT rendered with this "
+                          f"fixture — confirm secrets.yaml maps it into Secret.data/stringData")
         if covered:
             continue
         if kind.startswith("gap:helper-not-wired:"):
             fails.append(f"{k}: domain helper '{kind.split(':')[-1]}' is NOT wired "
                          f"(the app declares {kind.split(':')[-1].upper()}_* but the chart never emits it)")
+        elif allow and k not in allow:
+            # Real gap: not emitted AND not in the schema allowlist → the operator cannot even set
+            # it via configmap.<K>. (When no schema/allowlist is available we can't cross-check, so
+            # it stays a WARN below.)
+            fails.append(f"{k}: declared active in .env but neither emitted nor in the schema "
+                         f"allowlist (propertyNames.enum) — the operator cannot set it via configmap")
+        elif allow:
+            # In the allowlist but not emitted: legitimate ONLY as an app-default-only key the
+            # operator can override via configmap.<K>. Allowlist membership grants SET, not EMIT —
+            # confirm the app internally defaults it (the byte-identity-preserving case).
+            warns.append(f"app-default-only: '{k}' not emitted; settable via configmap.{k} "
+                         f"(in allowlist) — confirm the app internally defaults it")
         else:
-            warns.append(f"gap: '{k}' declared in .env, chart does not cover it yet")
+            warns.append(f"gap: '{k}' declared in .env, chart does not cover it (no schema to cross-check)")
     for k in sorted(emitted - allenv):
         if not re.match(r"^[A-Z]", k):
             continue

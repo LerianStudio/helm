@@ -99,6 +99,37 @@ OPEN_MAPS = {"configmap", "data", "extraEnvVars", "extraEnvVarsCM", "extraEnvVar
 IDENT = re.compile(r"^[a-z][A-Za-z0-9]*$")          # camelCase leaf key
 ENVLIKE = re.compile(r"^[A-Z][A-Z0-9_]+$")          # env-var-like key
 
+# Dependency-mask blocks own a FINITE field set defined by the lerian-common helpers
+# (references/dependency-contract.md), NOT by the chart's values.yaml (which ships them empty or
+# partial). Close them so a mask-field typo (`datastores.postgres.buket`, `objectStorage.ccs.reigon`,
+# `kms.vaultMont`) is REJECTED at helm install instead of silently falling to the default.
+# `datastores`/`objectStorage` are keyed by <type>/<name> (each child is one mask instance);
+# `kms` is a single direct block. Keep this in sync with the contract table.
+MASK_FIELDS = {
+    "datastores":    ["host", "port", "user", "name", "ssl", "uri", "replicaHost"],
+    "objectStorage": ["endpoint", "region", "bucket", "disableSSL", "usePathStyle"],
+    "kms":           ["vendor", "vaultAddr", "vaultAuthMethod", "vaultRoleId", "vaultMount"],
+}
+MASK_KEYED = {"datastores", "objectStorage"}        # child = <type>/<name>; kms is direct
+
+
+def _mask_block(fields):
+    # One mask instance: finite + closed. No scalar `type` (helm/YAML coerce str/int/bool, same
+    # rationale as the cfgValue config groups) — the guard is the closed key set.
+    return {"type": "object", "additionalProperties": False,
+            "properties": {f: {} for f in sorted(fields)}}
+
+
+def mask_schema(key, desc, path):
+    d = desc.get(path, (None, None))[0]
+    if key in MASK_KEYED:
+        s = {"type": "object", "additionalProperties": _mask_block(MASK_FIELDS[key])}
+    else:
+        s = _mask_block(MASK_FIELDS[key])
+    if d:
+        s["description"] = d
+    return s
+
 # The valid NATIVE_KEY allowlist guarding the `configmap`/`data` escape hatch with
 # `propertyNames.enum`: a typo'd override (configmap.RATE_LIMIT_MAXX) is rejected while any real
 # key is accepted — typo protection for the tiered model WITHOUT typing every key as a knob.
@@ -148,6 +179,12 @@ def open_map_schema(child_path, node, desc):
         else:
             # wrapped chart: keys live directly under `configmap` — guard them here.
             cs["propertyNames"] = allow
+    # Even inside an OPEN block (e.g. `global`), close any dependency-mask child by its finite
+    # contract — the rest of the block stays open (additionalProperties: true).
+    if isinstance(node, dict):
+        masks = {k: mask_schema(k, desc, f"{child_path}.{k}") for k in node if k in MASK_FIELDS}
+        if masks:
+            cs.setdefault("properties", {}).update(masks)
     return cs
 
 
@@ -242,7 +279,10 @@ def build(node, path, desc, tgroups):
             return s
         for k, v in node.items():
             child_path = f"{path}.{k}" if path else k
-            if is_open(k, v) and child_path not in tgroups:
+            if k in MASK_FIELDS:
+                # Dependency-mask block (datastores/objectStorage/kms): finite, closed — reject typos.
+                props[k] = mask_schema(k, desc, child_path)
+            elif is_open(k, v) and child_path not in tgroups:
                 props[k] = open_map_schema(child_path, v, desc)
             elif not isinstance(v, (dict, list)):
                 # Scalar leaf of an OPEN operational block: emit NO `type` (default only),

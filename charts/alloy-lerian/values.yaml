@@ -139,13 +139,27 @@ collection:
   # remove the collection.
   clusterObjectTarget: ""
 
-  # Node CPU, memory and filesystem — the HOST, not the workloads. Available
-  # only in the own profile; setting it true with profile: client fails the
-  # render. Not collected by default in either profile.
+  # Métricas de NÓ — CPU, memória, filesystem e rede do HOST, não dos workloads.
   #
-  # Cluster-OBJECT metrics (pod phase, deployment state, autoscaler) are a
-  # different thing and are collected in both — those describe workloads we
-  # operate.
+  # Ligar isto faz DUAS coisas, e a segunda é a que importa:
+  #   1. instala o node-exporter (dependência `node-exporter`, abaixo)
+  #   2. o papel singleton passa a RASPAR o endpoint dele
+  #
+  # Segue o padrão do chart guarda-chuva da Grafana, que separa
+  # `telemetryServices.node-exporter.deploy` de `hostMetrics.collector` — o
+  # exportador é um componente, o agente só coleta. O agente NÃO monta /proc nem
+  # /sys e não ganha privilégio nenhum.
+  #
+  # Disponível só no perfil `own`: com `profile: client` o render falha, porque o
+  # nó pertence ao cliente e não temos competência para agir sobre ele.
+  #
+  # ⚠️ VOLUME. Medido na benedita: 3 nós produzem 612 famílias e **46.575 séries**
+  # — 11% de todas as séries daquele cluster. Escala com o número de nós. Ligar
+  # sem a allowlist de métricas infla exatamente o que esta migração reduz.
+  #
+  # Métricas de OBJETO de cluster (fase do pod, estado do deployment) são outra
+  # coisa e vêm do kube-state-metrics nos dois perfis — descrevem workloads que
+  # operamos.
   nodeInfrastructure: false
 
   # Drops records below INFO at the edge. Records with no severity are kept:
@@ -627,3 +641,31 @@ kube-state-metrics:
   # break or be removed without notice. Our scale does not require it.
   autosharding:
     enabled: false
+
+# ---------------------------------------------------------------------------
+# NODE-EXPORTER — métricas de nó, DESLIGADO por padrão
+# ---------------------------------------------------------------------------
+# Mesmo padrão do chart guarda-chuva da Grafana
+# (`telemetryServices.node-exporter.deploy`): o exportador é um componente
+# separado e o agente apenas raspa o endpoint dele.
+#
+# Habilitar exige DUAS coisas, de propósito:
+#   node-exporter:
+#     enabled: true
+#   collection:
+#     nodeInfrastructure: true    # liga o scrape no papel singleton
+#
+# Separado porque instalar e coletar são decisões distintas — um ambiente que já
+# rode node-exporter (como benedita hoje) mantém `enabled: false` e aponta o
+# scrape para o existente, exatamente como fazemos com o kube-state-metrics.
+#
+# Ligar só em ambiente NOSSO. No perfil `client` a guarda recusa.
+node-exporter:
+  enabled: false
+
+  # O privilégio que o node-exporter pede fica CONTIDO nele, e não no agente:
+  # roda não-root, sem eBPF, com rootfs somente-leitura, e monta o rootfs do nó
+  # em leitura. Bem menos que o `privileged: true` + root que o agente exigiria
+  # para ler /proc e /sys diretamente.
+  hostRootFsMount:
+    enabled: true

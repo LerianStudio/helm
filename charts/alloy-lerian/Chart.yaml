@@ -79,3 +79,24 @@ dependencies:
     version: "8.2.0"
     repository: "https://prometheus-community.github.io/helm-charts"
     condition: kube-state-metrics.enabled
+
+  # Metricas de NO (CPU, memoria, filesystem, rede do host). Segue o padrao do
+  # chart guarda-chuva da Grafana, que instala o node-exporter como componente
+  # SEPARADO (`telemetryServices.node-exporter.deploy`) e faz o agente apenas
+  # RASPAR o endpoint dele (`hostMetrics.collector: alloy-metrics`).
+  #
+  # Por que nao coletar direto no agente: o componente existe
+  # (`prometheus.exporter.unix`, verificado — carrega no binario), mas exigiria
+  # montar /proc e /sys, e o README do chart oficial pede `privileged: true` +
+  # `runAsUser: 0` para isso. Seria desfazer o uid 473 + rootfs somente-leitura no
+  # MESMO DaemonSet que recebe OTLP de 26 namespaces de aplicacao — medido na
+  # benedita. O node-exporter carrega esse privilegio isolado, e roda nao-root.
+  #
+  # DESLIGADO por padrao. Habilitar so nos ambientes internos, onde o no e nosso.
+  # No perfil `client` a guarda do chart recusa: o no pertence ao cliente.
+  - name: prometheus-node-exporter
+    version: "4.56.1"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    alias: node-exporter
+    # A condition acompanha o ALIAS, nao o nome do chart.
+    condition: node-exporter.enabled

@@ -298,6 +298,62 @@ logging {
 }
 {{ include "alloy-lerian.config.fleet" . }}
 
+{{- $alvoNo := include "alloy-lerian.nodeExporterTarget" . }}
+{{ if and (.Values.collection).nodeInfrastructure $alvoNo -}}
+// Metricas de NO, raspadas de um node-exporter — o agente nao monta /proc nem
+// /sys e nao ganha privilegio nenhum. Mesmo padrao do chart guarda-chuva da
+// Grafana, que separa instalar o exportador de coleta-lo.
+//
+// ALLOWLIST, nao coleta integral. MEDIDO na benedita: 3 nos produzem 612
+// familias e 46.575 series — 11% de todas as series daquele cluster, e escala
+// com o numero de nos. As 20 familias mais caras somam 25.482 series e a maioria
+// nao responde pergunta nenhuma: node_cpu_scaling_governor sao 4.608 series de
+// uma CONSTANTE, e node_cooling_device_*, node_softnet_* e node_cpu_frequency_*
+// seguem o mesmo padrao.
+//
+// O criterio das 35 familias mantidas: responder saturacao e falha iminente —
+// CPU, memoria, swap, filesystem (bytes E inodes E readonly), disco, rede com
+// erros e descartes, carga, pressure stall, e estado de unidade systemd.
+//
+// Resultado medido: 46.575 -> 7.620 series (-83,6%).
+prometheus.scrape "metricas_de_no" {
+  targets = [{
+    __address__ = {{ $alvoNo | quote }},
+  }]
+  scrape_interval = {{ $interval | quote }}
+  forward_to      = [prometheus.relabel.allowlist_no.receiver]
+}
+
+// A allowlist. `keep` sobre __name__ descarta tudo que nao esta na lista, ANTES
+// de sair do cluster — o corte na borda economiza CPU aqui, banda na rede e
+// processamento no destino.
+prometheus.relabel "allowlist_no" {
+  rule {
+    source_labels = ["__name__"]
+    regex = "node_(cpu_seconds_total|memory_(MemTotal|MemAvailable|Cached|Buffers|SwapTotal|SwapFree)_bytes|filesystem_(size|avail)_bytes|filesystem_files(_free)?|filesystem_readonly|disk_(read|written)_bytes_total|disk_io_time(_weighted)?_seconds_total|network_(receive|transmit)_(bytes|errs|drop)_total|load(1|5|15)|uname_info|boot_time_seconds|time_seconds|context_switches_total|intr_total|vmstat_pgmajfault|pressure_(cpu|memory|io)_waiting_seconds_total|systemd_unit_state)"
+    action = "keep"
+  }
+
+  // Dos 8 modos de CPU, 5 respondem alguma pergunta: idle (para calcular uso),
+  // iowait (espera de disco), system e user (onde o tempo vai), steal
+  // (contencao do hipervisor). irq, softirq e nice sao 2.304 series medidas que
+  // ninguem consulta.
+  rule {
+    source_labels = ["__name__", "mode"]
+    separator     = ";"
+    regex         = "node_cpu_seconds_total;(irq|softirq|nice)"
+    action        = "drop"
+  }
+
+  rule {
+    target_label = "client_id"
+    replacement  = {{ $origin | quote }}
+  }
+
+  forward_to = [otelcol.receiver.prometheus.ponte_metricas.receiver]
+}
+{{ end -}}
+
 {{- $alvoObjetos := include "alloy-lerian.clusterObjectTarget" . }}
 {{ if $alvoObjetos -}}
 // Cluster-object metrics, scraped from the dedicated producer. Single writer by

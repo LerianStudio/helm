@@ -8,6 +8,7 @@ release-prefixed ConfigMap.
 */ -}}
 {{- include "alloy-lerian.assertSingletonReplicas" . -}}
 {{- include "alloy-lerian.assertNodeInfra" . -}}
+{{- include "alloy-lerian.assertNodeExporterTarget" . -}}
 {{- include "alloy-lerian.assertFleetEnv" . -}}
 {{- include "alloy-lerian.assertCredentialEnv" . -}}
 apiVersion: v1

@@ -272,6 +272,44 @@ no standing to act on.
 Cluster-OBJECT metrics (pod phase, deployment state, autoscaler) are a different
 thing and are collected in both profiles — those describe workloads we operate.
 */}}
+{{/*
+==============================================================================
+NODE-EXPORTER TARGET — onde raspar metricas de no
+==============================================================================
+Mesma logica do clusterObjectTarget: instalar o exportador e raspa-lo sao
+decisoes SEPARADAS. Um ambiente que ja rode node-exporter mantem
+`node-exporter.enabled: false` e aponta aqui para o existente — foi o caso medido
+na benedita, que roda `prometheus-prometheus-node-exporter` ha 40 dias.
+
+Vazio + subchart habilitado => deriva o Service do subchart.
+Vazio + subchart desabilitado => nao ha o que raspar, e o chart avisa.
+*/}}
+{{- define "alloy-lerian.nodeExporterTarget" -}}
+{{- $explicito := (.Values.collection).nodeExporterTarget | default "" -}}
+{{- if $explicito -}}
+{{- $explicito -}}
+{{- else -}}
+{{- $ne := index .Values "node-exporter" | default dict -}}
+{{- if $ne.enabled -}}
+{{- printf "%s-prometheus-node-exporter.%s.svc.cluster.local:9100" .Release.Name .Release.Namespace -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+Guarda: pedir metricas de no sem ter de onde raspar renderia um singleton que
+coleta nada, em silencio.
+*/}}
+{{- define "alloy-lerian.assertNodeExporterTarget" -}}
+{{- if (.Values.collection).nodeInfrastructure -}}
+{{- if not (include "alloy-lerian.nodeExporterTarget" .) -}}
+{{- fail "\n\nalloy-lerian: `collection.nodeInfrastructure` esta true, mas nao ha de onde raspar\nmetricas de no.\n\nEscolha um dos dois:\n\n  a) instalar o exportador junto com o chart\n\n     node-exporter:\n       enabled: true\n\n  b) apontar para um node-exporter que o ambiente JA roda\n\n     collection:\n       nodeExporterTarget: \"prometheus-prometheus-node-exporter.monitoring.svc.cluster.local:9100\"\n\nSem isto o papel singleton renderizaria sem coletar nada, em silencio.\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+
 {{- define "alloy-lerian.assertNodeInfra" -}}
 {{- $requested := (.Values.collection).nodeInfrastructure | default false -}}
 {{- if and $requested (eq (include "alloy-lerian.profile" .) "client") -}}

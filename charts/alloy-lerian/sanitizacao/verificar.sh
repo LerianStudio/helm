@@ -88,6 +88,22 @@ for caso in "${selecionados[@]}"; do
   saida=$(docker logs "$CONTEINER" 2>&1 | tail -n +$((linhas_antes+1)))
   corpo_esperado=$(jq -r '.body' "$esperado")
 
+  # Marcador para corpo NAO-STRING. O agente nao emite linha "Body: Str(...)"
+  # quando o corpo e kvlist/map, entao a AUSENCIA dessa linha e a evidencia — e
+  # comparar texto nunca detectaria isso. Existe para que a lacuna seja um caso
+  # de teste explicito em vez de um silencio.
+  if [ "$corpo_esperado" = "__CORPO_NAO_STRING__" ]; then
+    if printf '%s' "$saida" | grep -q 'Body: Str('; then
+      echo "FALHA [${caso}]"
+      echo "  esperado: corpo NAO-string (nenhuma linha 'Body: Str(')"
+      echo "  observado: o agente emitiu corpo string — a premissa do caso mudou"
+      FALHAS=$((FALHAS+1))
+    else
+      echo "OK    [${caso}]  (lacuna conhecida: corpo nao-string nao e sanitizado)"
+    fi
+    continue
+  fi
+
   if printf '%s' "$saida" | grep -qF "$corpo_esperado"; then
     echo "OK    [${caso}]"
   else

@@ -252,3 +252,38 @@ biblioteca compartilhada, nao do agente.
 
 **Fica registrado como lacuna conhecida**, para decisao explicita — nao como algo
 que o arcabouco cobre e nao cobre.
+
+## Segundo limite: corpo NÃO-STRING atravessa intocado
+
+`replace_pattern` opera sobre `body` como **string**. Um corpo `kvlist`/`map`
+(OTLP permite) passa por todas as 8 classes sem ser tocado, e sob
+`error_mode = "ignore"` isso não gera erro nem aviso.
+
+### Medido, não suposto
+
+Amostrei 20 registros reais chegando ao destino na benedita, de 7 serviços
+distintos: **20 de 20 têm corpo string.** A lacuna não se manifesta no tráfego
+atual — mas o mecanismo permite, e "hoje ninguém faz" não é controle.
+
+### Por que não foi fechado agora
+
+As opções são caras ou destrutivas:
+
+| Opção | Custo |
+|---|---|
+| Descartar corpo não-string | perde dado legítimo de aplicação que logue estruturado |
+| Normalizar para string antes | reescreve o corpo de TODA aplicação, mudando o formato que os painéis consomem |
+| Sanitizar recursivamente o mapa | OTTL não tem iteração sobre mapa aninhado nesta versão |
+
+A decisão é de produto, não de implementação, e depende de saber se alguma
+aplicação nossa pretende logar estruturado.
+
+### O que fica no lugar
+
+O caso `risco-corpo-estruturado` **é um teste que passa reconhecendo a lacuna**,
+não ignorando-a. E ele falha se a premissa mudar: se o agente passar a emitir
+corpo string para essa entrada, o caso quebra e alguém revisita.
+
+O verificador trata o marcador `__CORPO_NAO_STRING__` de forma explícita, porque a
+evidência aqui é a **ausência** de uma linha `Body: Str(` — comparar texto nunca
+detectaria isso.

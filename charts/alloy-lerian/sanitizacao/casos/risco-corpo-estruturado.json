@@ -1,0 +1,1 @@
+{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"caso-sanitizacao"}}]},"scopeLogs":[{"logRecords":[{"timeUnixNano":"1700000000000000000","severityNumber":9,"severityText":"INFO","body":{"kvlistValue":{"values":[{"key":"cpf","value":{"stringValue":"529.982.247-25"}},{"key":"acao","value":{"stringValue":"pagamento"}}]}}}]}]}]}

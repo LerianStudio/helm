@@ -78,7 +78,7 @@ otelcol.processor.transform "sanitizacao" {
       // Dominio preservado de proposito: e util para diagnostico (identifica o
       // provedor ou o cliente corporativo) e nao identifica a pessoa.
       // Nao depende de prefixo de campo — casa qualquer email no corpo.
-      `replace_pattern(body, "([A-Za-z0-9]{2})[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})", "$1****$2")`,
+      `replace_pattern(body, "([A-Za-z0-9]{1,2})[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})", "$1****$2")`,
 
       // --- CHAVE DE PAGAMENTO ---
       // Uma chave pode assumir 4 formas: documento fiscal, telefone, correio
@@ -99,7 +99,7 @@ otelcol.processor.transform "sanitizacao" {
       // Delimita o fim do valor pela convencao de caixa: o valor comeca em
       // maiuscula e o texto seguinte do log e minusculo (mesma premissa da
       // regra de nome — ver README, secao de premissas).
-      `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[A-Z][^=]*?( [a-z_]+[=:]|$)", "$1**********$2")`,
+      `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[\\p{Lu}0-9][^=]*?( [a-z_]+[=:]|$)", "$1**********$2")`,
 
       // --- CREDENCIAL DE AUTENTICACAO ---
       // Difere em natureza de todas as regras acima: aquelas protegem dado que

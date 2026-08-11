@@ -85,7 +85,7 @@ otelcol.processor.transform {{ $nome | quote }} {
       // Preserves two characters of the local part and the WHOLE domain. The
       // domain identifies the provider or corporate client, not the person,
       // and is genuinely useful in diagnosis.
-      `replace_pattern(body, "([A-Za-z0-9]{2})[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})", "$1****$2")`,
+      `replace_pattern(body, "([A-Za-z0-9]{1,2})[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})", "$1****$2")`,
 
       // --- PAYMENT KEY ---
       // A key may be a document, a phone number, an email address or a random
@@ -98,7 +98,7 @@ otelcol.processor.transform {{ $nome | quote }} {
       // Masked ENTIRELY. Unlike an email domain or a phone area code, any
       // fragment of an address sharply narrows the search space for a person.
       // The only class with no preserved part, and that is deliberate.
-      `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[A-Z][^=]*?( [a-z_]+[=:]|$)", "$1**********$2")`,
+      `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[\\p{Lu}0-9][^=]*?( [a-z_]+[=:]|$)", "$1**********$2")`,
 
       // --- AUTHENTICATION CREDENTIAL ---
       // Different in kind from every rule above: those protect data that

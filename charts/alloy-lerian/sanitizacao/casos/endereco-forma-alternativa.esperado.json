@@ -1,1 +1,5 @@
-{"body":"street: **********","categoria":"formaAlternativa","descricao":"Prefixo alternativo (street em vez de address)"}
+{
+ "body": "address=**********",
+ "categoria": "formaAlternativa",
+ "descricao": "Endereco iniciando por DIGITO (numero antes do logradouro, comum em endereco internacional). A regra exigia [A-Z] e o valor passava INTACTO — verificado executando. Corrigido para [\\p{Lu}0-9], que tambem cobre inicial acentuada."
+}

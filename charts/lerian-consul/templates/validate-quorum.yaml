@@ -4,6 +4,16 @@ broken cluster without complaint: bootstrapExpect != replicas never forms
 quorum, and an even replica count tolerates zero failures while risking
 split-brain. Fail fast with a clear message instead. Emits nothing on success.
 */ -}}
+{{- /* Name-length guard: Helm accepts a long release name, but the upstream builds
+   "<release>-consul-server" for the StatefulSet/Service and Kubernetes rejects any
+   object name > 63 chars. Fail fast when the resolved prefix leaves no room for the
+   "-server" suffix (56 + 7 = 63) instead of erroring at apply time. */ -}}
+{{- $consul := .Values.consul | default dict -}}
+{{- $cglobal := $consul.global | default dict -}}
+{{- $prefix := $consul.fullnameOverride | default $cglobal.name | default (printf "%s-%s" .Release.Name ($consul.nameOverride | default "consul")) -}}
+{{- if gt (len $prefix) 56 -}}
+{{-   fail (printf "\nlerian-consul: the resolved Consul name prefix %q is %d chars; with the '-server' suffix the StatefulSet/Service name would exceed Kubernetes' 63-char limit. Shorten the release name, or set consul.global.name / consul.fullnameOverride to <= 56 chars." $prefix (len $prefix)) -}}
+{{- end -}}
 {{- $server := (.Values.consul | default dict).server | default dict -}}
 {{- /* `int (X | default 1)` would turn an explicit 0 into 1 (default treats 0 as
    empty), and a negative value would slip past the even-count check — either

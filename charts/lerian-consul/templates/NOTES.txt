@@ -68,18 +68,22 @@ Do NOT give the bootstrap token to application workloads — it can manage ACLs,
 KV and the whole cluster. Use it ONCE, as an operator, to mint a least-privilege
 service-discovery token for lib-service-discovery:
 
-  # 1) Policy — only what the library needs (no ACL / KV / operator access):
-  cat > sd-policy.hcl <<'EOF'
-  service_prefix "" { policy = "write" }   # register / deregister + resolve
+  # 1) Policy — PER WORKLOAD: write ONLY its own service, read the rest to
+  #    discover. A blanket service_prefix "" write would let any holder overwrite
+  #    or deregister every service — not least-privilege.
+  cat > sd-<svc>.hcl <<'EOF'
+  service "<svc>"   { policy = "write" }   # register/update ONLY this workload's service
+  service_prefix "" { policy = "read"  }   # discover other services
   node_prefix    "" { policy = "read"  }   # read node health for resolution
   EOF
-  # 2) Create the policy + token (CONSUL_HTTP_TOKEN = the bootstrap token above):
-  consul acl policy create -name lib-service-discovery -rules @sd-policy.hcl
-  consul acl token create  -description lib-service-discovery \
-      -policy-name lib-service-discovery -format=json | jq -r .SecretID
+  # 2) One policy + token PER workload (CONSUL_HTTP_TOKEN = the bootstrap token):
+  consul acl policy create -name sd-<svc> -rules @sd-<svc>.hcl
+  consul acl token create  -description sd-<svc> \
+      -policy-name sd-<svc> -format=json | jq -r .SecretID
 
-Put that SecretID in your own Secret and pass it to lib-service-discovery as
-SD_TOKEN. It can be rotated/revoked independently of the bootstrap token.
+Put each SecretID in that workload's own Secret and pass it as SD_TOKEN — one
+per service, rotatable/revocable independently of the bootstrap token. See
+https://developer.hashicorp.com/consul/docs/secure/acl/token/service
 {{- else }}
 ACL management is DISABLED (consul.global.acls.manageSystemACLs=false).
 No bootstrap token is created; the library needs no token. Enable ACLs for any

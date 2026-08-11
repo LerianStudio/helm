@@ -126,20 +126,21 @@ $ kubectl get secret -n <namespace> <consul-fullname>-bootstrap-acl-token \
     -o jsonpath='{.data.token}' | base64 -d ; echo
 ```
 
-**Do not give the bootstrap token to application workloads** (CWE-269 least-privilege). Use it once, as an operator, to mint a **scoped service-discovery token** for `lib-service-discovery` — one that can only register/deregister and read health, nothing else:
+**Do not give the bootstrap token to application workloads** (CWE-269 least-privilege). Use it once, as an operator, to mint a **per-workload** token — each can register/update only **its own** service and read the rest for discovery, nothing else. A blanket `service_prefix "" { policy = "write" }` is **not** least-privilege: any holder could deregister or overwrite every service.
 
 ```console
-# CONSUL_HTTP_TOKEN = the bootstrap token above
-$ cat > sd-policy.hcl <<'EOF'
-service_prefix "" { policy = "write" }   # register / deregister + resolve
+# CONSUL_HTTP_TOKEN = the bootstrap token above; repeat per workload (<svc>)
+$ cat > sd-<svc>.hcl <<'EOF'
+service "<svc>"   { policy = "write" }   # register/update ONLY this workload's service
+service_prefix "" { policy = "read"  }   # discover other services
 node_prefix    "" { policy = "read"  }   # read node health for resolution
 EOF
-$ consul acl policy create -name lib-service-discovery -rules @sd-policy.hcl
-$ consul acl token create  -description lib-service-discovery \
-    -policy-name lib-service-discovery -format=json | jq -r .SecretID
+$ consul acl policy create -name sd-<svc> -rules @sd-<svc>.hcl
+$ consul acl token create  -description sd-<svc> \
+    -policy-name sd-<svc> -format=json | jq -r .SecretID
 ```
 
-Store that SecretID in your own Secret and pass it to `lib-service-discovery` as `SD_TOKEN`; rotate/revoke it independently of the bootstrap token. (If you register through the **catalog** API instead of the agent API, grant `node_prefix "" { policy = "write" }` as well.) Automating this as an in-chart post-bootstrap Job is a deliberate non-goal for the minimal wrapper — do it in your platform bootstrap.
+Store each SecretID in that workload's own Secret and pass it as `SD_TOKEN` — one token per service, rotatable/revocable independently of the bootstrap token. This follows HashiCorp's [service-token guidance](https://developer.hashicorp.com/consul/docs/secure/acl/token/service). (If you register through the **catalog** API instead of the agent API, grant `node_prefix "" { policy = "write" }` as well.) Automating this as an in-chart post-bootstrap Job is a deliberate non-goal for the minimal wrapper — do it in your platform bootstrap.
 
 ---
 

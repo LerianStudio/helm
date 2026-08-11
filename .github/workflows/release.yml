@@ -181,23 +181,30 @@ jobs:
 
 
 
-      # Library charts (type: library) are consumed by other charts and are not
-      # deployable applications, so they must not be registered in the Plugin
-      # Lifecycle Management. Detect the chart kind to gate the step below.
-      - name: Detect library chart
+      # Only deployable Lerian PRODUCTS/PLUGINS belong in the Plugin Lifecycle
+      # Management. Two chart kinds are exempt and must NOT be registered there:
+      #   1. Library charts (type: library) — consumed by other charts, not deployable.
+      #   2. Dependency wrappers (annotation lerian.studio/chart-type: dependency-wrapper,
+      #      e.g. lerian-consul) — they deploy third-party infra we curate, not a Lerian
+      #      product to register/announce as a release.
+      - name: Detect lifecycle-exempt chart
         id: chart-kind
         env:
           CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
         run: |
+          SKIP=false
           if grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "$CHART_WORKING_DIR/Chart.yaml"; then
-            echo "is_library=true" >> "$GITHUB_OUTPUT"
+            SKIP=true
             echo "::notice::$CHART_WORKING_DIR is a library chart — skipping Plugin Lifecycle Management."
-          else
-            echo "is_library=false" >> "$GITHUB_OUTPUT"
           fi
+          if grep -qE 'lerian\.studio/chart-type:[[:space:]]*["'"'"']?dependency-wrapper["'"'"']?[[:space:]]*$' "$CHART_WORKING_DIR/Chart.yaml"; then
+            SKIP=true
+            echo "::notice::$CHART_WORKING_DIR is a dependency-wrapper — skipping Plugin Lifecycle Management."
+          fi
+          echo "skip_lifecycle=$SKIP" >> "$GITHUB_OUTPUT"
 
       - name: Publish Release in Plugin Lifecycle Management
-        if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.is_library != 'true'
+        if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.skip_lifecycle != 'true'
         uses: LerianStudio/github-actions-lifecycle-management@main
         with:
           chart_name: "${{ matrix.chart.name }}"

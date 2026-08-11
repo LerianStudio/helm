@@ -58,15 +58,28 @@ Confirm the exact Service name/ports with:
   ACL BOOTSTRAP TOKEN
 --------------------------------------------------------------------------------
 {{- if .Values.consul.global.acls.manageSystemACLs }}
-The ACL system is managed by the chart. The bootstrap token is stored in a
-Kubernetes Secret. Retrieve it with:
+The chart manages the ACL system and stores the **bootstrap** token — a
+full-access, ADMINISTRATOR-ONLY credential — in a Kubernetes Secret:
 
-  kubectl get secret -n {{ .Release.Namespace }} {{ .Release.Name }}-consul-bootstrap-acl-token \
+  kubectl get secret -n {{ .Release.Namespace }} {{ $prefix }}-bootstrap-acl-token \
     -o jsonpath='{.data.token}' | base64 -d ; echo
 
-Pass this token to lib-service-discovery (e.g. SD_TOKEN) so it can register,
-deregister and run health checks. Create a narrower policy/token for production
-instead of using the bootstrap token directly.
+Do NOT give the bootstrap token to application workloads — it can manage ACLs,
+KV and the whole cluster. Use it ONCE, as an operator, to mint a least-privilege
+service-discovery token for lib-service-discovery:
+
+  # 1) Policy — only what the library needs (no ACL / KV / operator access):
+  cat > sd-policy.hcl <<'EOF'
+  service_prefix "" { policy = "write" }   # register / deregister + resolve
+  node_prefix    "" { policy = "read"  }   # read node health for resolution
+  EOF
+  # 2) Create the policy + token (CONSUL_HTTP_TOKEN = the bootstrap token above):
+  consul acl policy create -name lib-service-discovery -rules @sd-policy.hcl
+  consul acl token create  -description lib-service-discovery \
+      -policy-name lib-service-discovery -format=json | jq -r .SecretID
+
+Put that SecretID in your own Secret and pass it to lib-service-discovery as
+SD_TOKEN. It can be rotated/revoked independently of the bootstrap token.
 {{- else }}
 ACL management is DISABLED (consul.global.acls.manageSystemACLs=false).
 No bootstrap token is created; the library needs no token. Enable ACLs for any

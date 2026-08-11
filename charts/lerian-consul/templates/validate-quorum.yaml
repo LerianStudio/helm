@@ -15,3 +15,11 @@ split-brain. Fail fast with a clear message instead. Emits nothing on success.
 {{- if and (gt $replicas 1) (eq (mod $replicas 2) 0) -}}
 {{-   fail (printf "\nlerian-consul: consul.server.replicas (%d) must be ODD (1, 3 or 5) for a sane Raft quorum — 2 tolerates zero failures and risks split-brain." $replicas) -}}
 {{- end -}}
+{{- /* Multi-server (replicas > 1) means real server-to-server gossip. It MUST be
+   encrypted; the single-node default ships gossipEncryption.autoGenerate=false
+   (nothing to encrypt at 1 member). Fail unless the operator enabled auto-generate
+   OR supplied an existing gossip key Secret. */ -}}
+{{- $gossip := (($.Values.consul | default dict).global | default dict).gossipEncryption | default dict -}}
+{{- if and (gt $replicas 1) (not $gossip.autoGenerate) (not $gossip.secretName) -}}
+{{-   fail (printf "\nlerian-consul: consul.server.replicas is %d (multi-server) but gossip encryption is OFF. Server-to-server gossip would be unencrypted. Set consul.global.gossipEncryption.autoGenerate=true (or provide .secretName/.secretKey) before scaling past 1." $replicas) -}}
+{{- end -}}

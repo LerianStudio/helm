@@ -1,0 +1,57 @@
+{{- /*
+Opt-in NetworkPolicy — ClusterIP is NOT a trust boundary. Without this, every
+pod in the cluster can reach the Consul server's API / RPC / gossip ports.
+Default OFF (facilitator posture; not every CNI enforces policies). Turn it on
+for shared or externally-distributed clusters. External distribution should also
+enable TLS (consul.global.tls.enabled=true).
+
+NOTE: some CNIs route kubelet health probes through NetworkPolicy — if the
+server's readiness probe is blocked once enabled, allow the API port (8500/8501)
+from the host/kubelet per your CNI's guidance.
+*/ -}}
+{{- if .Values.networkPolicy.enabled -}}
+{{- $consul := .Values.consul | default dict -}}
+{{- $cglobal := $consul.global | default dict -}}
+{{- $prefix := $consul.fullnameOverride | default $cglobal.name | default (printf "%s-%s" .Release.Name ($consul.nameOverride | default "consul")) -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $prefix }}-server
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/part-of: lerian-consul
+spec:
+  podSelector:
+    matchLabels:
+      app: consul
+      component: server
+      release: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Server-to-server: Raft RPC (8300) + LAN gossip (8301) + WAN gossip (8302).
+    # Only the Consul servers of THIS release may reach these ports.
+    - from:
+        - podSelector:
+            matchLabels:
+              app: consul
+              release: {{ .Release.Name }}
+      ports:
+        - { protocol: TCP, port: 8300 }
+        - { protocol: TCP, port: 8301 }
+        - { protocol: UDP, port: 8301 }
+        - { protocol: TCP, port: 8302 }
+        - { protocol: UDP, port: 8302 }
+    # Client API: HTTP 8500 / HTTPS 8501 — same namespace by default, plus any
+    # namespace listed in networkPolicy.allowedNamespaces (the SD consumers).
+    - from:
+        - podSelector: {}
+        {{- range .Values.networkPolicy.allowedNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . | quote }}
+        {{- end }}
+      ports:
+        - { protocol: TCP, port: 8500 }
+        - { protocol: TCP, port: 8501 }
+{{- end -}}

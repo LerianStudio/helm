@@ -35,9 +35,11 @@ consul:
     # name: consul
 
     # ---- Container image (BYOC-exposed knob) --------------------------------
-    # Pinned to match Chart.yaml appVersion. Override `.tag` to bump Consul
-    # without changing the chart.
-    image: "hashicorp/consul:1.20.6"
+    # Pinned by DIGEST (not just the mutable :1.20.6 tag) so the deployed binary
+    # is reproducible — the "reproducible" promise the Chart.lock makes for the
+    # chart, extended to the image. Bump BOTH the tag and the digest together
+    # (docker buildx imagetools inspect hashicorp/consul:<tag>) to change Consul.
+    image: "hashicorp/consul:1.20.6@sha256:200471c74bc0965cd20c81eacc31a209873d5d9e599fe637ceb856b0cbbc518d"
 
     # ---- ACL system ---------------------------------------------------------
     # Kept ON: the upstream chart bootstraps the ACL system (server-acl-init
@@ -173,3 +175,17 @@ consul:
     enabled: false
   terminatingGateways:
     enabled: false
+
+# =============================================================================
+# NetworkPolicy (Lerian-owned; opt-in) — ClusterIP is not a trust boundary.
+# =============================================================================
+networkPolicy:
+  # OFF by default: the "facilitator, not blocker" posture, and not every CNI
+  # enforces NetworkPolicies. ENABLE for shared or externally-distributed
+  # clusters — otherwise any pod can reach the Consul API/RPC/gossip ports.
+  # External distribution should ALSO enable TLS (consul.global.tls.enabled=true).
+  enabled: false
+  # Extra namespaces allowed to reach the Consul HTTP/HTTPS API (8500/8501),
+  # matched on the `kubernetes.io/metadata.name` label. Same-namespace pods are
+  # always allowed; list here the namespaces of the SD-consuming Lerian services.
+  allowedNamespaces: []

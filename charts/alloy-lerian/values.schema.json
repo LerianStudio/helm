@@ -100,6 +100,11 @@
         "flushInterval": {
           "type": "string",
           "description": "How often derived RED metrics are emitted. 60s floor enforced by the chart: it is the write rate of these series, and cost is series x writes per minute."
+        },
+        "cardinalityLimit": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Ceiling on distinct dimension combinations. Beyond it, further combinations fold into one entry labelled otel.metric.overflow=\"true\" (visible, not silently dropped). 0 disables."
         }
       }
     }

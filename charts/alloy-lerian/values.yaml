@@ -224,6 +224,46 @@ spanMetrics:
   # of short-lived series rather than letting them accumulate.
   expiration: "5m"
 
+  # Circuit breaker on cardinality: the ceiling on distinct dimension
+  # combinations the connector will track.
+  #
+  # ⚠️ IT DOES NOT DISCARD SILENTLY, which is why it is safe to enable. Past the
+  # ceiling, further combinations are folded into a single entry carrying
+  # `otel.metric.overflow="true"`. So hitting the limit is VISIBLE at the
+  # destination — query for that label to find out. A limit that dropped data
+  # without a trace would be worse than no limit.
+  #
+  # WHY IT IS NEEDED HERE SPECIFICALLY: `span_name` is always a dimension. The
+  # connector includes it by construction and it cannot be removed through
+  # `dimensions`. MEASURED in aws-staging: 154 distinct span names, more than
+  # any dimension we chose. Upstream documents this as the usual cause of
+  # span-metric cardinality blowups — span names that violate the semantic
+  # convention of staying low-cardinality (an id in the name, one span name per
+  # request). One badly named span in one service is enough.
+  #
+  # SIZING, from measured totals of the four spanmetrics families per cluster
+  # (2026-08-12):
+  #
+  #   aws-staging       8.676   <- the largest
+  #   aws-production    3.924
+  #   Cappta-Prd        3.024
+  #   Voluti-prd          996
+  #   Banqi-Prd           144
+  #   Cappta-Stg           96
+  #
+  # 20000 is ~2.3x the largest observed. Deliberately loose: the purpose is to
+  # cap a runaway, not to trim steady-state traffic. Too tight and normal growth
+  # lands in the overflow bucket, losing the per-endpoint detail that the RED
+  # dashboards exist for.
+  #
+  # ⚠️ The ceiling is PER AGENT, and the node role is a DaemonSet, so each pod
+  # counts only the spans of the applications on its own node. The figures above
+  # are cluster-wide totals, which makes 20000 per agent looser still — and that
+  # is the intended direction.
+  #
+  # 0 disables the limit, which is the component default.
+  cardinalityLimit: 20000
+
   # ⚠️ EVERY DIMENSION MULTIPLIES CARDINALITY. Each distinct combination is a
   # billable series, and the destination charges series x writes per minute.
   #

@@ -240,6 +240,14 @@ otelcol.processor.filter "ruido" {
 // stream discards, and the metrics would report requests no trace can show —
 // a divergence with no error to reveal it.
 //
+// ⚠️ THAT REASONING INVERTS IF TAIL SAMPLING IS EVER ADDED. Upstream is
+// explicit that the connector must run BEFORE a sampling decision, because
+// sampled-away spans still happened and the rate must count them. The two
+// positions are not in conflict today: our stage 4 and 5 are deliberate
+// exclusion (health probes, namespaces outside the perimeter), where the metric
+// SHOULD exclude too — not sampling, where it must not. Adding a tail sampler
+// downstream means moving this connector ahead of it.
+//
 // Feeds the batch stage rather than the exporter directly, so the derived
 // metrics get the same batching as everything else.
 otelcol.connector.spanmetrics "red" {
@@ -266,6 +274,15 @@ otelcol.connector.spanmetrics "red" {
   // Explicit, because it is the write rate of these series and therefore a
   // cost parameter. The component default is not ours to inherit silently.
   metrics_flush_interval = {{ include "alloy-lerian.spanMetricsFlushInterval" . }}
+{{- if gt (int .Values.spanMetrics.cardinalityLimit) 0 }}
+
+  // Runaway guard. Past this many distinct dimension combinations, further ones
+  // fold into a single entry labelled otel.metric.overflow="true" — visible at
+  // the destination, not discarded in silence. It exists mainly because
+  // span_name is an unavoidable dimension and a badly named span in one service
+  // is enough to blow up cardinality.
+  aggregation_cardinality_limit = {{ int .Values.spanMetrics.cardinalityLimit }}
+{{- end }}
 
   output {
     metrics = [otelcol.processor.batch.agrupamento.input]

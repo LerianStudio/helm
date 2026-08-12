@@ -1499,7 +1499,7 @@ func addDependencyRepositories(chartDir, workDir string, env []string) (string, 
 // fails all attempts and is reported exactly as before — the retry smooths
 // transient errors, it does not mask deterministic breakage.
 func retryHelm(fn func() (string, error)) (string, error) {
-	const attempts = 3
+	const attempts = 5
 	var (
 		out string
 		err error
@@ -1509,7 +1509,9 @@ func retryHelm(fn func() (string, error)) (string, error) {
 			return out, nil
 		}
 		if i < attempts {
-			time.Sleep(time.Duration(i) * 2 * time.Second)
+			// Linear backoff (3s, 6s, 9s, 12s -> ~30s total) to ride out a
+			// rate-limited or briefly-unavailable upstream chart repository.
+			time.Sleep(time.Duration(i) * 3 * time.Second)
 		}
 	}
 	return out, err

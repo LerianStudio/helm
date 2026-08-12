@@ -72,11 +72,9 @@ spec:
             - configMapRef:
                 name: {{ $workerFullname }}
           {{- with $w.extraEnvVars }}
+          # extraEnvVars is a LIST of {name,value} (same shape as every other rail).
           env:
-            {{- range $k, $v := . }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           ports:
             - name: http

@@ -223,6 +223,7 @@
           "description": "SPB ConfigMap escape hatch: set/override ANY native env KEY here (wins over",
           "propertyNames": {
             "enum": [
+              "ALLOW_INSECURE_TLS",
               "ALLOW_MOCK_TRANSPORT",
               "APPROVAL_ALCADA_BANDS",
               "APPROVAL_DEADLINE_WINDOW",
@@ -554,6 +555,7 @@
               "ACCESS_CONTROL_ALLOW_HEADERS",
               "ACCESS_CONTROL_ALLOW_METHODS",
               "ACCESS_CONTROL_ALLOW_ORIGIN",
+              "ALLOW_INSECURE_TLS",
               "AUTH_ENABLED",
               "AUTH_TRUST_UPSTREAM_METADATA",
               "BACEN_ARQ_ALLOWED_ENDPOINT_HOSTS",
@@ -797,6 +799,7 @@
                   "ACCESS_CONTROL_ALLOW_HEADERS",
                   "ACCESS_CONTROL_ALLOW_METHODS",
                   "ACCESS_CONTROL_ALLOW_ORIGIN",
+                  "ALLOW_INSECURE_TLS",
                   "AUTH_ENABLED",
                   "AUTH_TRUST_UPSTREAM_METADATA",
                   "BACEN_ARQ_ALLOWED_ENDPOINT_HOSTS",
@@ -1142,6 +1145,7 @@
                   "ACCESS_CONTROL_ALLOW_HEADERS",
                   "ACCESS_CONTROL_ALLOW_METHODS",
                   "ACCESS_CONTROL_ALLOW_ORIGIN",
+                  "ALLOW_INSECURE_TLS",
                   "AUTH_ENABLED",
                   "AUTH_TRUST_UPSTREAM_METADATA",
                   "BACEN_ARQ_ALLOWED_ENDPOINT_HOSTS",
@@ -1487,6 +1491,7 @@
                   "ACCESS_CONTROL_ALLOW_HEADERS",
                   "ACCESS_CONTROL_ALLOW_METHODS",
                   "ACCESS_CONTROL_ALLOW_ORIGIN",
+                  "ALLOW_INSECURE_TLS",
                   "AUTH_ENABLED",
                   "AUTH_TRUST_UPSTREAM_METADATA",
                   "BACEN_ARQ_ALLOWED_ENDPOINT_HOSTS",
@@ -1832,6 +1837,7 @@
                   "ACCESS_CONTROL_ALLOW_HEADERS",
                   "ACCESS_CONTROL_ALLOW_METHODS",
                   "ACCESS_CONTROL_ALLOW_ORIGIN",
+                  "ALLOW_INSECURE_TLS",
                   "AUTH_ENABLED",
                   "AUTH_TRUST_UPSTREAM_METADATA",
                   "BACEN_ARQ_ALLOWED_ENDPOINT_HOSTS",
@@ -2271,6 +2277,7 @@
           "description": "SILOC ConfigMap escape hatch: set/override ANY native env KEY (DB_*, MQ_*,",
           "propertyNames": {
             "enum": [
+              "ALLOW_INSECURE_TLS",
               "AUTH_ADDRESS",
               "AUTH_ENABLED",
               "CAMARA_PAG_ISPB",
@@ -2583,6 +2590,7 @@
           "description": "SCR ConfigMap escape hatch: set/override ANY native env KEY (POSTGRES_*,",
           "propertyNames": {
             "enum": [
+              "ALLOW_INSECURE_TLS",
               "AWS_REGION",
               "DEPLOYMENT_MODE",
               "ENABLE_TELEMETRY",
@@ -2895,6 +2903,7 @@
           "description": "DESK ConfigMap escape hatch: set/override ANY native env KEY (DB_*, DESK_*,",
           "propertyNames": {
             "enum": [
+              "ALLOW_INSECURE_TLS",
               "DB_CONN_MAX_IDLE_TIME",
               "DB_CONN_MAX_LIFETIME",
               "DB_HOST",
@@ -3221,6 +3230,7 @@
               "AI_TENANT_MAX_CONCURRENT",
               "AI_TENANT_RATE_LIMIT_PER_MIN",
               "ALLOWED_ORIGINS",
+              "ALLOW_INSECURE_TLS",
               "ALLOW_RATELIMIT_FAIL_OPEN",
               "APP_NAME",
               "APP_VERSION",
@@ -3763,6 +3773,7 @@
             "enum": [
               "AGGRESSIVE_RATE_LIMIT_MAX",
               "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+              "ALLOW_INSECURE_TLS",
               "AUDIT_CONSUMER_DEDUP_TTL_SEC",
               "AUDIT_CONSUMER_DLQ_EXCHANGE",
               "AUDIT_CONSUMER_ENABLED",
@@ -4281,6 +4292,7 @@
                 "enum": [
                   "AGGRESSIVE_RATE_LIMIT_MAX",
                   "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+                  "ALLOW_INSECURE_TLS",
                   "AUDIT_CONSUMER_DEDUP_TTL_SEC",
                   "AUDIT_CONSUMER_DLQ_EXCHANGE",
                   "AUDIT_CONSUMER_ENABLED",

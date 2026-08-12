@@ -14,6 +14,12 @@
       "existingSecretName" $.Values.sta.existingSecretName
 -}}
 {{- $extra := dict "MIGRATIONS_PATH" ($.Values.sta.migrations.path | default "/migrations") -}}
-{{- if $.Values.sta.migrations.allowInsecureTLS }}{{- $_ := set $extra "ALLOW_INSECURE_TLS" (toString $.Values.sta.migrations.allowInsecureTLS) }}{{- end -}}
+{{- /* Mirror the app's ALLOW_INSECURE_TLS into the migrator (lib-commons migrator also
+   refuses non-TLS Postgres without it). Resolution: migrations.allowInsecureTLS override
+   > configmap.ALLOW_INSECURE_TLS. Emitted only when truthy — secure by default. */ -}}
+{{- $insecure := "" -}}
+{{- if $.Values.sta.migrations.allowInsecureTLS }}{{- $insecure = toString $.Values.sta.migrations.allowInsecureTLS -}}
+{{- else if (index ($.Values.sta.configmap | default dict) "ALLOW_INSECURE_TLS") }}{{- $insecure = toString (index $.Values.sta.configmap "ALLOW_INSECURE_TLS") -}}{{- end -}}
+{{- if and $insecure (ne $insecure "false") }}{{- $_ := set $extra "ALLOW_INSECURE_TLS" $insecure }}{{- end -}}
 {{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "sta" "secretComponent" "sta" "comp" $comp "shared" $.Values.sta.configmap "sharedSecrets" $.Values.sta.secrets "sharedCfg" $.Values.sta "flavor" "dedicated" "dbCfgKey" "POSTGRES_NAME" "dbEnvName" "POSTGRES_NAME" "extraMigrationEnv" $extra "configDataOverride" (include "br-sfn.staConfigData" (dict "root" $ "comp" $.Values.sta "port" ($.Values.sta.service.port | default 8080) "cm" ($.Values.sta.configmap | default dict)))) }}
 {{- end -}}

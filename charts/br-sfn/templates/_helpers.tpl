@@ -688,6 +688,9 @@ port (the sub-deployment service port; SERVER_ADDRESS defaults to it).
   POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "brspi") | quote }}
   POSTGRES_DB: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_DB" "default" "brspi") | quote }}
   POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+  # ALLOW_INSECURE_TLS (lib-commons bypass to accept a non-TLS Postgres/Redis; dev/dev-st
+  # only). SECURE default false; NEVER default true. Set <rail>.configmap.ALLOW_INSECURE_TLS=true only in dev.
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
   POSTGRES_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") | quote }}
 
   # REDIS / Valkey (combined host:port via datastore mask; composes the shared
@@ -943,6 +946,9 @@ defaults to it).
   POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "postgres") | quote }}
   POSTGRES_DB: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_DB" "default" "br_bank_transfer_jota") | quote }}
   POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+  # ALLOW_INSECURE_TLS (lib-commons bypass to accept a non-TLS Postgres/Redis; dev/dev-st
+  # only). SECURE default false; NEVER default true. Set <rail>.configmap.ALLOW_INSECURE_TLS=true only in dev.
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
   POSTGRES_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") | quote }}
 
   # REDIS / Valkey (host+port via datastore mask; tuning passthrough below). REDIS_PASSWORD -> Secret.
@@ -1139,6 +1145,9 @@ Input dict: root ($), comp (.Values.siloc), port (service port; SERVER_PORT defa
   DB_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "") | quote }}
   DB_NAME: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "") | quote }}
   DB_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSLMODE" "default" "disable") | quote }}
+  # ALLOW_INSECURE_TLS (lib-commons bypass to accept a non-TLS Postgres/Redis; dev/dev-st
+  # only). SECURE default false; NEVER default true. Set <rail>.configmap.ALLOW_INSECURE_TLS=true only in dev.
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
   DB_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "DB_REPLICA_HOST" "default" "") | quote }}
 
   # REDIS / Valkey (native REDIS_ADDRESS via datastore host mask). REDIS_PASSWORD -> Secret.
@@ -1252,6 +1261,9 @@ Input dict: root ($), comp (.Values.scr), port (service port; SERVER_PORT defaul
   POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "scr") | quote }}
   POSTGRES_DB: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_DB" "default" "scr") | quote }}
   POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+  # ALLOW_INSECURE_TLS (lib-commons bypass to accept a non-TLS Postgres/Redis; dev/dev-st
+  # only). SECURE default false; NEVER default true. Set <rail>.configmap.ALLOW_INSECURE_TLS=true only in dev.
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
 
   # REDIS / Valkey (host+port via datastore mask; tuning passthrough below). REDIS_PASSWORD -> Secret.
   REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "localhost") | quote }}
@@ -1374,6 +1386,9 @@ Input dict: root ($), comp (.Values.desk), port (service port; SERVER_PORT defau
   DB_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "desk") | quote }}
   DB_NAME: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "desk") | quote }}
   DB_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSLMODE" "default" "disable") | quote }}
+  # ALLOW_INSECURE_TLS (lib-commons bypass to accept a non-TLS Postgres/Redis; dev/dev-st
+  # only). SECURE default false; NEVER default true. Set <rail>.configmap.ALLOW_INSECURE_TLS=true only in dev.
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
   DB_MAX_OPEN_CONNS: {{ $cm.DB_MAX_OPEN_CONNS | default "25" | quote }}
   DB_MAX_IDLE_CONNS: {{ $cm.DB_MAX_IDLE_CONNS | default "10" | quote }}
   DB_CONN_MAX_LIFETIME: {{ $cm.DB_CONN_MAX_LIFETIME | default "10m" | quote }}
@@ -1478,6 +1493,9 @@ Input dict: root ($), comp (.Values.correios), port (service port; SERVER_PORT d
   POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "plugin-bc-correios") | quote }}
   POSTGRES_NAME: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_NAME" "default" "plugin-bc-correios") | quote }}
   POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+  # ALLOW_INSECURE_TLS (lib-commons bypass to accept a non-TLS Postgres/Redis; dev/dev-st
+  # only). SECURE default false; NEVER default true. Set <rail>.configmap.ALLOW_INSECURE_TLS=true only in dev.
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
 
   # CACHE — Redis/Valkey (addr host:port via datastore mask). CACHE_PASSWORD -> Secret.
   CACHE_ADDR: {{ include "br-sfn.redisComposedAddr" (dict "root" $root "ds" $ds "cm" $cm "hostKey" "CACHE_ADDR" "hostDefault" "localhost:6390") | quote }}
@@ -1889,6 +1907,9 @@ cm (the manager configmap map .Values.sta.configmap).
   POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "br_sta") | quote }}
   POSTGRES_NAME: {{ $pgName | quote }}
   POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+  # ALLOW_INSECURE_TLS (lib-commons bypass to accept a non-TLS Postgres/Redis; dev/dev-st
+  # only). SECURE default false; NEVER default true. Set <rail>.configmap.ALLOW_INSECURE_TLS=true only in dev.
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
   {{- $replicaHost := include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") }}
   {{- if $replicaHost }}
   POSTGRES_REPLICA_HOST: {{ $replicaHost | quote }}
@@ -1942,11 +1963,9 @@ cm (the manager configmap map .Values.sta.configmap).
   # =============================================================================
   STREAMING_ENABLED: {{ $streamingEnabled | quote }}
   {{- include "lerian-common.streaming.env" (dict "context" $root "enabled" $streamingEnabled "configmap" $cm "clientId" $name "cloudeventsSource" "lerian.br-sta") | nindent 2 }}
-
-  # Extra environment variables (passthrough from values.sta.extraEnvVars)
-  {{- with $root.Values.sta.extraEnvVars }}
-  {{- toYaml . | nindent 2 }}
-  {{- end }}
+  {{- /* extraEnvVars is a DEPLOYMENT-env concern (list of {name,value}) rendered into
+     container env: by componentDeployment / the worker deployment — NOT into this
+     ConfigMap (which is map-typed). Do not re-render it here. */ -}}
 {{- end }}
 
 {{/*

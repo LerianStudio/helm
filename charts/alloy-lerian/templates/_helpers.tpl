@@ -114,6 +114,34 @@ divergent intent of whoever configured it.
 
 {{/*
 ==============================================================================
+RED FLUSH INTERVAL — same 60s floor, same reason
+==============================================================================
+The write rate of the derived RED series. It is subject to the identical floor
+as collection.interval because it is the identical cost mechanism: the
+destination charges series x writes per minute, and these series are among the
+most numerous the agent produces.
+
+Returned quoted, so the caller emits a literal the config parser accepts.
+*/}}
+{{- define "alloy-lerian.spanMetricsFlushInterval" -}}
+{{- $i := .Values.spanMetrics.flushInterval | default "60s" -}}
+{{- $seconds := 0 -}}
+{{- if regexMatch "^[0-9]+s$" $i -}}
+{{-   $seconds = $i | trimSuffix "s" | int -}}
+{{- else if regexMatch "^[0-9]+m$" $i -}}
+{{-   $seconds = mul ($i | trimSuffix "m" | int) 60 -}}
+{{- else -}}
+{{-   fail (printf "\n\nalloy-lerian: spanMetrics.flushInterval %q is malformed. Use a duration such as 60s or 5m.\n" $i) -}}
+{{- end -}}
+{{- if lt $seconds 60 -}}
+{{- fail (printf "\n\nalloy-lerian: spanMetrics.flushInterval %q is below the 60s floor.\n\nThese are the RED series, among the most numerous the agent emits, and the\ndestination charges series x writes per minute. Flushing faster multiplies\nthe cost of identical information.\n\nRejected rather than adjusted, so the divergent intent stays visible.\n" $i) -}}
+{{- end -}}
+{{- $i | quote -}}
+{{- end -}}
+
+
+{{/*
+==============================================================================
 DESTINATION — reference to a Secret, never a literal
 ==============================================================================
 The credential lives in the origin cluster Secret, provisioned before install

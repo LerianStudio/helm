@@ -180,6 +180,107 @@ collection:
   dropDebugLogs: true
 
 # ---------------------------------------------------------------------------
+# RED METRICS DERIVED FROM SPANS
+# ---------------------------------------------------------------------------
+# Counts spans to produce request rate, error rate and latency
+# (`calls_total`, `duration_milliseconds_*`). It is NOT a separate service: the
+# component runs inside the same agent process, reading the traces that already
+# flow through it. Nothing is scraped and nothing extra is instrumented.
+#
+# ⚠️ THIS IS NOT OPTIONAL IN PRACTICE — it replaces a producer that exists
+# today. The connector lives in the otel-collector-client being retired, so an
+# agent without it silently stops producing the RED series. MEASURED: benedita
+# migrated to Alloy on 2026-08-11 and `calls_total` disappeared for that
+# cluster while it still exists for the six clusters that kept the old agent.
+#
+# Turning it off is defensible only where nothing consumes the RED series —
+# never as an oversight.
+spanMetrics:
+  enabled: true
+
+  # Identical to the retiring agent. Changing them renames every `_bucket`
+  # series and orphans the history, so treat this as a data migration.
+  buckets: ["10ms", "50ms", "100ms", "200ms", "500ms", "1s", "5s", "10s"]
+
+  # How often the derived metrics are emitted. Set EXPLICITLY because it is a
+  # cost parameter, not a detail: the destination charges series x writes per
+  # minute, so a shorter interval multiplies the bill for the same information.
+  #
+  # 60s matches `collection.interval` and holds the DPM-of-1 property that this
+  # migration exists to establish. Leaving it to the component default would
+  # make the write rate of the RED series depend on an upstream default nobody
+  # here chose — which is how the retiring agent ended up at DPM 6.00.
+  flushInterval: "60s"
+
+  # Empty means bare `calls_total` / `duration_milliseconds_*`.
+  #
+  # Grafana Cloud's own convention is `traces_span_metrics_*`, and the Tempo
+  # generator already emits that. Adopting it here would rename the series and
+  # break the dashboards and alert rules that query the current names — a
+  # separate decision from swapping agents, deliberately not taken now.
+  namespace: ""
+
+  # Series with no new datapoint for this long are dropped. It bounds the cost
+  # of short-lived series rather than letting them accumulate.
+  expiration: "5m"
+
+  # ⚠️ EVERY DIMENSION MULTIPLIES CARDINALITY. Each distinct combination is a
+  # billable series, and the destination charges series x writes per minute.
+  #
+  # MEASURED on calls_total{client_id="aws-staging"} (723 series), 2026-08-12:
+  #
+  #   http.route                  176 values  the axis of per-endpoint RED
+  #   k8s.namespace.name           17 values  stable; 153 alert rules use it
+  #   k8s.deployment.name          10 values  stable; the useful workload grain
+  #   http.method                   7 values  LEGACY FORM — see below
+  #   http.request.method           7 values  canonical form
+  #   http.status_code              7 values  LEGACY FORM — see below
+  #   http.response.status_code     7 values  canonical form
+  #   tenant.id                     2 values  multi-tenant attribution
+  #
+  # The legacy `http.method`/`http.status_code` pair is redundant with the
+  # canonical form and doubles their cardinality contribution. It stays because
+  # MEASURED: 75 alert rules query `http_status_code` and ZERO query
+  # `http_response_status_code`. Dropping the legacy form silently breaks all
+  # 75. Remove it only after those rules are migrated.
+  #
+  # DELIBERATELY ABSENT, and both were emitted by the retiring agent:
+  #
+  #   k8s.container.name   MEASURED: 1 distinct value. A dimension that never
+  #                        varies distinguishes nothing and only widens the
+  #                        series identity.
+  #
+  #   k8s.pod.name         MEASURED: 13 pods against 10 deployments. The pod is
+  #                        ephemeral, so every rollout mints series that never
+  #                        receive another datapoint — cardinality churn with
+  #                        no analytical gain over the deployment.
+  #
+  #                        The concentrator already carries a workaround for
+  #                        this (`transform/aggregate_unmigrated_spanmetrics`,
+  #                        whose comment asks for the client to be fixed);
+  #                        removing the dimension here is what closes it.
+  #
+  #                        VERIFIED before removing: of 84 dashboards, 35 query
+  #                        spanmetrics across 769 queries, and NONE reference
+  #                        k8s_pod_name or k8s_container_name. The 12 `$pod`
+  #                        template variables read `k8s_pod_phase`, an
+  #                        infrastructure metric, not these.
+  #
+  # ⚠️ CONSEQUENCE OF THE REMOVAL: series identity changes, so old and new are
+  # distinct series. RED panels show a discontinuity at rollout. This is
+  # visible, not silent — and it lands in the same window as the k8s_* to
+  # kube_* rename, which is better than two separate breaks.
+  dimensions:
+    - k8s.namespace.name
+    - k8s.deployment.name
+    - http.method
+    - http.request.method
+    - http.route
+    - http.status_code
+    - http.response.status_code
+    - tenant.id
+
+# ---------------------------------------------------------------------------
 # ROLES — segregated by observation scope
 # ---------------------------------------------------------------------------
 # The chart delivers roles, not one agent. A cluster-scoped watcher replicated

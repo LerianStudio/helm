@@ -216,9 +216,62 @@ otelcol.processor.filter "ruido" {
   output {
     metrics = [otelcol.processor.batch.agrupamento.input]
     logs    = [otelcol.processor.transform.sanitizacao.input]
+{{- if .Values.spanMetrics.enabled }}
+    // Traces fan out: the span itself continues to the destination unchanged,
+    // AND feeds the RED derivation. The concentrator downstream sees no
+    // difference in the trace stream.
+    traces  = [
+      otelcol.processor.batch.agrupamento.input,
+      otelcol.connector.spanmetrics.red.input,
+    ]
+{{- else }}
     traces  = [otelcol.processor.batch.agrupamento.input]
+{{- end }}
   }
 }
+
+{{- if .Values.spanMetrics.enabled }}
+
+// RED DERIVATION — request rate, error rate and latency, counted from spans.
+//
+// POSITION IS A CORRECTNESS PROPERTY, not a preference. This reads the output
+// of stage 5, so it counts exactly the spans that survive the perimeter and
+// the noise filter. Placed before them it would count spans that the trace
+// stream discards, and the metrics would report requests no trace can show —
+// a divergence with no error to reveal it.
+//
+// Feeds the batch stage rather than the exporter directly, so the derived
+// metrics get the same batching as everything else.
+otelcol.connector.spanmetrics "red" {
+  histogram {
+    explicit {
+      buckets = [{{ range $i, $b := .Values.spanMetrics.buckets }}{{ if $i }}, {{ end }}{{ $b | quote }}{{ end }}]
+    }
+  }
+
+{{- range .Values.spanMetrics.dimensions }}
+  dimension {
+    name = {{ . | quote }}
+  }
+{{- end }}
+
+  namespace = {{ .Values.spanMetrics.namespace | quote }}
+
+  // CUMULATIVE is what the destination chain expects. Delta would silently
+  // change the meaning of every rate() in the existing dashboards.
+  aggregation_temporality = "CUMULATIVE"
+
+  metrics_expiration = {{ .Values.spanMetrics.expiration | quote }}
+
+  // Explicit, because it is the write rate of these series and therefore a
+  // cost parameter. The component default is not ours to inherit silently.
+  metrics_flush_interval = {{ include "alloy-lerian.spanMetricsFlushInterval" . }}
+
+  output {
+    metrics = [otelcol.processor.batch.agrupamento.input]
+  }
+}
+{{- end }}
 
 // STAGE 6 — SANITISATION. Regulated data never leaves the origin cluster
 // unmasked. Logs only: this is where free-text bodies carry it.

@@ -29,10 +29,6 @@
       "type": "object",
       "additionalProperties": true
     },
-    "roles": {
-      "type": "object",
-      "additionalProperties": true
-    },
     "node": {
       "type": "object",
       "additionalProperties": true
@@ -67,6 +63,43 @@
       "properties": {
         "enabled": {
           "type": "boolean"
+        }
+      }
+    },
+    "spanMetrics": {
+      "type": "object",
+      "description": "RED metrics derived from spans (calls_total, duration_milliseconds_*). Replaces the connector that lived in the retiring otel-collector-client; disabling it stops those series from being produced at all.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Explicit histogram bucket boundaries. Changing them renames every _bucket series."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Metric name prefix. Empty yields bare calls_total / duration_milliseconds_*, which is what the existing dashboards and alert rules query."
+        },
+        "expiration": {
+          "type": "string",
+          "description": "Drop series with no new datapoint for this long."
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Span attributes promoted to labels. Every dimension multiplies cardinality; k8s.pod.name and k8s.container.name are deliberately absent."
+        },
+        "flushInterval": {
+          "type": "string",
+          "description": "How often derived RED metrics are emitted. 60s floor enforced by the chart: it is the write rate of these series, and cost is series x writes per minute."
         }
       }
     }

@@ -187,7 +187,11 @@ Input dict:
 {{- define "br-sfn.componentDeployment" -}}
 {{- $id := dict "root" .root "name" .name -}}
 {{- $fullname := include "br-sfn.componentFullname" $id -}}
-{{- $configData := include "br-sfn.componentConfigData" (dict "comp" .comp "shared" .shared) -}}
+{{- /* configDataOverride (optional): a PRE-RENDERED ConfigMap body (used by the
+       productized spi family, whose ConfigMap is template-rendered with defaults +
+       dependency masks, not the bespoke shared/own merge). When absent, fall back
+       to the legacy merge so the still-bespoke components render unchanged. */ -}}
+{{- $configData := .configDataOverride | default (include "br-sfn.componentConfigData" (dict "comp" .comp "shared" .shared)) -}}
 {{- $secretData := include "br-sfn.componentSecretData" (dict "comp" .comp "shared" .shared) -}}
 {{- $sharedCfg := .sharedCfg | default dict -}}
 {{- $hasSecret := or $secretData .comp.useExistingSecret $sharedCfg.useExistingSecret -}}
@@ -468,7 +472,10 @@ database name; defaults to POSTGRES_DB, correios reads POSTGRES_NAME).
 {{- $id := dict "root" .root "name" (printf "%s-migrations" .name) -}}
 {{- $compId := dict "root" .root "name" .name -}}
 {{- $fullname := include "br-sfn.componentFullname" $id -}}
-{{- $cfgStr := include "br-sfn.componentConfigData" (dict "comp" .comp "shared" .shared) -}}
+{{- /* configDataOverride (optional): pre-rendered ConfigMap body, so the migration Job
+       resolves POSTGRES_* through the SAME datastore masks the productized app ConfigMap
+       uses (configured-path parity). Falls back to the legacy merge when absent. */ -}}
+{{- $cfgStr := .configDataOverride | default (include "br-sfn.componentConfigData" (dict "comp" .comp "shared" .shared)) -}}
 {{- $cfg := dict -}}
 {{- if $cfgStr }}{{ $cfg = fromYaml $cfgStr }}{{ end -}}
 {{- $pgHost := include "br-sfn.migrationPgValue" (dict "mig" $mig "key" "host" "cfg" $cfg "cfgKey" "POSTGRES_HOST" "fallback" "") -}}
@@ -638,4 +645,1047 @@ spec:
           emptyDir: {}
       {{- end }}
 {{- end }}
+{{- end }}
+
+{{/*
+=============================================================================
+spiConfigData — the productized SPI-family ConfigMap body (the "manager"
+surface the 4 sub-deployments spi-api/dict/brcode/core share).
+
+Dependency CONNECTIONS are typed knobs via lerian-common masks/helpers
+(Postgres + Redis via datastore.value, observability via otel.env, auth via
+globalValue over global.auth); EVERYTHING else is an escape-hatch passthrough
+with the app's struct default, overridable via spi.configmap.<KEY> (shared) or
+spi.<comp>.configmap.<KEY> (per sub-deployment; wins). Credentials NEVER render
+here — they live in the Secret.
+
+Input dict: root ($), comp (the sub-deployment values block — image/configmap),
+port (the sub-deployment service port; SERVER_ADDRESS defaults to it).
+=============================================================================
+*/}}
+{{- define "br-sfn.spiConfigData" -}}
+{{- $root := .root -}}
+{{- $ds := $root.Values.spi.datastores | default dict -}}
+{{- $port := .port -}}
+{{- /* precedence in ONE map: per-sub-deployment configmap wins over the shared
+       spi.configmap escape hatch; masks/helpers read this merged map as the native
+       (top-precedence) source. */ -}}
+{{- $cm := mergeOverwrite (deepCopy ($root.Values.spi.configmap | default dict)) (.comp.configmap | default dict) -}}
+  # =============================================================================
+  # DATABASE — PostgreSQL (host/port/user/db/ssl/replicaHost via datastore mask;
+  # POOL/replica tuning stays passthrough below). POSTGRES_PASSWORD -> Secret.
+  # =============================================================================
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" "localhost") | quote }}
+  POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "brspi") | quote }}
+  POSTGRES_DB: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_DB" "default" "brspi") | quote }}
+  POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+  POSTGRES_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") | quote }}
+
+  # REDIS / Valkey (host via datastore mask; tuning passthrough below). REDIS_PASSWORD -> Secret.
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "localhost:6379") | quote }}
+
+  # =============================================================================
+  # OBSERVABILITY — per-service identity inline; ENABLE_TELEMETRY / OTLP endpoint /
+  # deployment-env shared via global.observability (lerian-common.otel.env).
+  # =============================================================================
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default (.svcName | default "br-spi") | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/br-spi" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default (.comp.image.tag | default $root.Chart.AppVersion) | quote }}
+  {{- include "lerian-common.otel.env" (dict "context" $root "configmap" $cm "enabledDefault" "false" "endpointDefault" "localhost:4317" "deploymentEnvironmentDefault" "development") | nindent 2 }}
+
+  # =============================================================================
+  # AUTH (plugin-access-manager) — enable/host via global.auth. AUTH_ENABLED is the
+  # app's canonical gate; PLUGIN_AUTH_ENABLED is the lib-auth alias (both track
+  # global.auth.enabled so they never diverge). PLUGIN_AUTH_ADDRESS is the host.
+  # =============================================================================
+  AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "AUTH_ENABLED" "default" "false") | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "") | quote }}
+
+  # SERVER_ADDRESS defaults to this sub-deployment's own service port, so the app
+  # listens on the port the Service and health probes target (each binary differs).
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default (printf ":%v" $port) | quote }}
+
+  # APP / SERVER
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  SYSTEMPLANE_ENABLED: {{ $cm.SYSTEMPLANE_ENABLED | default "true" | quote }}
+  HTTP_BODY_LIMIT_BYTES: {{ $cm.HTTP_BODY_LIMIT_BYTES | default "1048576" | quote }}
+  PUBLIC_BASE_URL: {{ $cm.PUBLIC_BASE_URL | default "" | quote }}
+  TLS_TERMINATED_UPSTREAM: {{ $cm.TLS_TERMINATED_UPSTREAM | default "false" | quote }}
+  TRUSTED_PROXIES: {{ $cm.TRUSTED_PROXIES | default "" | quote }}
+  BACEN_CALLBACK_TRUSTED_PROXY_CIDRS: {{ $cm.BACEN_CALLBACK_TRUSTED_PROXY_CIDRS | default "" | quote }}
+  SERVER_TLS_CERT_FILE: {{ $cm.SERVER_TLS_CERT_FILE | default "" | quote }}
+  SERVER_TLS_KEY_FILE: {{ $cm.SERVER_TLS_KEY_FILE | default "" | quote }}
+  SERVER_TLS_CLIENT_CA_FILE: {{ $cm.SERVER_TLS_CLIENT_CA_FILE | default "" | quote }}
+  ACCESS_CONTROL_ALLOW_ORIGIN: {{ $cm.ACCESS_CONTROL_ALLOW_ORIGIN | default "http://localhost:3000" | quote }}
+  ACCESS_CONTROL_ALLOW_METHODS: {{ $cm.ACCESS_CONTROL_ALLOW_METHODS | default "GET,POST,PUT,PATCH,DELETE,OPTIONS" | quote }}
+  ACCESS_CONTROL_ALLOW_HEADERS: {{ $cm.ACCESS_CONTROL_ALLOW_HEADERS | default "Origin,Content-Type,Accept,Authorization,X-Request-ID,X-Correlation-ID,Idempotency-Key" | quote }}
+
+  # SWAGGER
+  SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "false" | quote }}
+
+  # RATE LIMIT
+  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "100" | quote }}
+  RATE_LIMIT_EXPIRY_SEC: {{ $cm.RATE_LIMIT_EXPIRY_SEC | default "60" | quote }}
+
+  # OUTBOX
+  OUTBOX_ENABLED: {{ $cm.OUTBOX_ENABLED | default "true" | quote }}
+  OUTBOX_DISPATCH_INTERVAL_MS: {{ $cm.OUTBOX_DISPATCH_INTERVAL_MS | default "2000" | quote }}
+  OUTBOX_BATCH_SIZE: {{ $cm.OUTBOX_BATCH_SIZE | default "50" | quote }}
+  OUTBOX_MAX_DISPATCH_ATTEMPTS: {{ $cm.OUTBOX_MAX_DISPATCH_ATTEMPTS | default "10" | quote }}
+  OUTBOX_PROCESSING_TIMEOUT_MS: {{ $cm.OUTBOX_PROCESSING_TIMEOUT_MS | default "600000" | quote }}
+  OUTBOX_RETRY_WINDOW_MS: {{ $cm.OUTBOX_RETRY_WINDOW_MS | default "300000" | quote }}
+
+  # SCHEDULER
+  SCHEDULER_APPROVAL_EXPIRY_ENABLED: {{ $cm.SCHEDULER_APPROVAL_EXPIRY_ENABLED | default "false" | quote }}
+  SCHEDULER_CLAIM_DEADLINE_ENABLED: {{ $cm.SCHEDULER_CLAIM_DEADLINE_ENABLED | default "false" | quote }}
+  SCHEDULER_DICT_AUDIT_RETENTION_ENABLED: {{ $cm.SCHEDULER_DICT_AUDIT_RETENTION_ENABLED | default "false" | quote }}
+  SCHEDULER_DICT_RECONCILIATION_FULL_ENABLED: {{ $cm.SCHEDULER_DICT_RECONCILIATION_FULL_ENABLED | default "false" | quote }}
+  SCHEDULER_DICT_RECONCILIATION_INCREMENTAL_ENABLED: {{ $cm.SCHEDULER_DICT_RECONCILIATION_INCREMENTAL_ENABLED | default "false" | quote }}
+  SCHEDULER_ENABLED: {{ $cm.SCHEDULER_ENABLED | default "false" | quote }}
+  SCHEDULER_INBOUND_DISCOVERY_ENABLED: {{ $cm.SCHEDULER_INBOUND_DISCOVERY_ENABLED | default "false" | quote }}
+  SCHEDULER_MED_DEADLINE_ENABLED: {{ $cm.SCHEDULER_MED_DEADLINE_ENABLED | default "false" | quote }}
+  SCHEDULER_PORTABILITY_DEADLINE_ENABLED: {{ $cm.SCHEDULER_PORTABILITY_DEADLINE_ENABLED | default "false" | quote }}
+  SCHEDULER_QUOTA_RESET_ENABLED: {{ $cm.SCHEDULER_QUOTA_RESET_ENABLED | default "false" | quote }}
+
+  # IDEMPOTENCY / INFRA
+  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ $cm.IDEMPOTENCY_RETRY_WINDOW_SEC | default "86400" | quote }}
+  INFRA_CONNECT_TIMEOUT_SEC: {{ $cm.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
+
+  # BACEN SPI (primary CPM / ICOM secondary channel)
+  BACEN_SPI_ALLOWED_ENDPOINT_HOSTS: {{ $cm.BACEN_SPI_ALLOWED_ENDPOINT_HOSTS | default "" | quote }}
+  BACEN_SPI_CATALOGUE_ROOT: {{ $cm.BACEN_SPI_CATALOGUE_ROOT | default "" | quote }}
+  BACEN_SPI_CATALOGUE_VERSION: {{ $cm.BACEN_SPI_CATALOGUE_VERSION | default "5.12.1" | quote }}
+  BACEN_SPI_ENDPOINT: {{ $cm.BACEN_SPI_ENDPOINT | default "http://localhost:9900" | quote }}
+  BACEN_SPI_INBOUND_CALLBACK_TIMEOUT_MS: {{ $cm.BACEN_SPI_INBOUND_CALLBACK_TIMEOUT_MS | default "250" | quote }}
+  BACEN_SPI_INBOUND_SIGNER_COMMON_NAME: {{ $cm.BACEN_SPI_INBOUND_SIGNER_COMMON_NAME | default "" | quote }}
+  BACEN_SPI_INITIATION_TIMEOUT_MS: {{ $cm.BACEN_SPI_INITIATION_TIMEOUT_MS | default "150" | quote }}
+  BACEN_SPI_KMIP_BASE_URL: {{ $cm.BACEN_SPI_KMIP_BASE_URL | default "" | quote }}
+  BACEN_SPI_KMIP_CRYPTO_USER: {{ $cm.BACEN_SPI_KMIP_CRYPTO_USER | default "" | quote }}
+  BACEN_SPI_KMIP_DIGEST_INFO_PREFIX: {{ $cm.BACEN_SPI_KMIP_DIGEST_INFO_PREFIX | default "false" | quote }}
+  BACEN_SPI_KMIP_SIGN_PRIVATE_KEY_UID: {{ $cm.BACEN_SPI_KMIP_SIGN_PRIVATE_KEY_UID | default "" | quote }}
+  BACEN_SPI_KMIP_SIGN_PUBLIC_KEY_UID: {{ $cm.BACEN_SPI_KMIP_SIGN_PUBLIC_KEY_UID | default "" | quote }}
+  BACEN_SPI_KMIP_VHSM: {{ $cm.BACEN_SPI_KMIP_VHSM | default "" | quote }}
+  BACEN_SPI_OCSP_CACHE_TTL_CAP_SEC: {{ $cm.BACEN_SPI_OCSP_CACHE_TTL_CAP_SEC | default "3600" | quote }}
+  BACEN_SPI_OCSP_CRL_CACHE_TTL_SEC: {{ $cm.BACEN_SPI_OCSP_CRL_CACHE_TTL_SEC | default "3600" | quote }}
+  BACEN_SPI_OCSP_MODE: {{ $cm.BACEN_SPI_OCSP_MODE | default "soft_fail" | quote }}
+  BACEN_SPI_OCSP_TIMEOUT_MS: {{ $cm.BACEN_SPI_OCSP_TIMEOUT_MS | default "3000" | quote }}
+  BACEN_SPI_OUTBOUND_QUOTA_BURST: {{ $cm.BACEN_SPI_OUTBOUND_QUOTA_BURST | default "" | quote }}
+  BACEN_SPI_OUTBOUND_QUOTA_ENABLED: {{ $cm.BACEN_SPI_OUTBOUND_QUOTA_ENABLED | default "false" | quote }}
+  BACEN_SPI_OUTBOUND_QUOTA_LIMIT: {{ $cm.BACEN_SPI_OUTBOUND_QUOTA_LIMIT | default "" | quote }}
+  BACEN_SPI_PARTICIPANT_ISPB: {{ $cm.BACEN_SPI_PARTICIPANT_ISPB | default "" | quote }}
+  BACEN_SPI_PAYLOAD_RESOLVER_IN_MEMORY_MAX_BYTES: {{ $cm.BACEN_SPI_PAYLOAD_RESOLVER_IN_MEMORY_MAX_BYTES | default "134217728" | quote }}
+  BACEN_SPI_PAYLOAD_RESOLVER_KIND: {{ $cm.BACEN_SPI_PAYLOAD_RESOLVER_KIND | default "in_memory" | quote }}
+  BACEN_SPI_PAYLOAD_RESOLVER_TTL_SEC: {{ $cm.BACEN_SPI_PAYLOAD_RESOLVER_TTL_SEC | default "86400" | quote }}
+  BACEN_SPI_PKCS11_KEY_LABEL: {{ $cm.BACEN_SPI_PKCS11_KEY_LABEL | default "" | quote }}
+  BACEN_SPI_PKCS11_MODULE_PATH: {{ $cm.BACEN_SPI_PKCS11_MODULE_PATH | default "" | quote }}
+  BACEN_SPI_PKCS11_PIN_FILE: {{ $cm.BACEN_SPI_PKCS11_PIN_FILE | default "" | quote }}
+  BACEN_SPI_PKCS11_TOKEN_LABEL: {{ $cm.BACEN_SPI_PKCS11_TOKEN_LABEL | default "" | quote }}
+  BACEN_SPI_RETRY_ATTEMPTS: {{ $cm.BACEN_SPI_RETRY_ATTEMPTS | default "3" | quote }}
+  BACEN_SPI_RETRY_INITIAL_BACKOFF_MS: {{ $cm.BACEN_SPI_RETRY_INITIAL_BACKOFF_MS | default "500" | quote }}
+  BACEN_SPI_RETRY_MAX_BACKOFF_MS: {{ $cm.BACEN_SPI_RETRY_MAX_BACKOFF_MS | default "5000" | quote }}
+  BACEN_SPI_SECONDARY_ALLOWED_ENDPOINT_HOSTS: {{ $cm.BACEN_SPI_SECONDARY_ALLOWED_ENDPOINT_HOSTS | default "" | quote }}
+  BACEN_SPI_SECONDARY_ENDPOINT: {{ $cm.BACEN_SPI_SECONDARY_ENDPOINT | default "" | quote }}
+  BACEN_SPI_SIGNER_COMMON_NAME: {{ $cm.BACEN_SPI_SIGNER_COMMON_NAME | default "" | quote }}
+  BACEN_SPI_SIGNER_KIND: {{ $cm.BACEN_SPI_SIGNER_KIND | default "file" | quote }}
+  BACEN_SPI_SIGNING_CERT_FILE: {{ $cm.BACEN_SPI_SIGNING_CERT_FILE | default "" | quote }}
+  BACEN_SPI_TIMEOUT_SEC: {{ $cm.BACEN_SPI_TIMEOUT_SEC | default "30" | quote }}
+  BACEN_SPI_XSD_DIR: {{ $cm.BACEN_SPI_XSD_DIR | default "docs/pre-dev/bacen-references/spi/spi.5.12.1/xsd" | quote }}
+
+  # BACEN ICOM (pull-stream consumer)
+  BACEN_ICOM_BASE_URL: {{ $cm.BACEN_ICOM_BASE_URL | default "" | quote }}
+  BACEN_ICOM_CONSUMER_ENABLED: {{ $cm.BACEN_ICOM_CONSUMER_ENABLED | default "false" | quote }}
+  BACEN_ICOM_ISPB: {{ $cm.BACEN_ICOM_ISPB | default "" | quote }}
+  BACEN_ICOM_LONGPOLL_TIMEOUT_MS: {{ $cm.BACEN_ICOM_LONGPOLL_TIMEOUT_MS | default "90000" | quote }}
+  BACEN_ICOM_SECONDARY_CONSUMER_ENABLED: {{ $cm.BACEN_ICOM_SECONDARY_CONSUMER_ENABLED | default "false" | quote }}
+
+  # BACEN ARQ (file transfer)
+  BACEN_ARQ_ALLOWED_ENDPOINT_HOSTS: {{ $cm.BACEN_ARQ_ALLOWED_ENDPOINT_HOSTS | default "" | quote }}
+  BACEN_ARQ_ENDPOINT: {{ $cm.BACEN_ARQ_ENDPOINT | default "" | quote }}
+
+  # BACEN TLS (shared CERTPIC mTLS material — file paths)
+  BACEN_TLS_CERT_FILE: {{ $cm.BACEN_TLS_CERT_FILE | default "" | quote }}
+  BACEN_TLS_KEY_FILE: {{ $cm.BACEN_TLS_KEY_FILE | default "" | quote }}
+  BACEN_TLS_CA_FILE: {{ $cm.BACEN_TLS_CA_FILE | default "" | quote }}
+
+  # BACEN DICT
+  BACEN_DICT_ALLOWED_ENDPOINT_HOSTS: {{ $cm.BACEN_DICT_ALLOWED_ENDPOINT_HOSTS | default "" | quote }}
+  BACEN_DICT_ENDPOINT: {{ $cm.BACEN_DICT_ENDPOINT | default "http://localhost:9900" | quote }}
+  BACEN_DICT_KMIP_BASE_URL: {{ $cm.BACEN_DICT_KMIP_BASE_URL | default "" | quote }}
+  BACEN_DICT_KMIP_CRYPTO_USER: {{ $cm.BACEN_DICT_KMIP_CRYPTO_USER | default "" | quote }}
+  BACEN_DICT_KMIP_DIGEST_INFO_PREFIX: {{ $cm.BACEN_DICT_KMIP_DIGEST_INFO_PREFIX | default "false" | quote }}
+  BACEN_DICT_KMIP_SIGN_PRIVATE_KEY_UID: {{ $cm.BACEN_DICT_KMIP_SIGN_PRIVATE_KEY_UID | default "" | quote }}
+  BACEN_DICT_KMIP_SIGN_PUBLIC_KEY_UID: {{ $cm.BACEN_DICT_KMIP_SIGN_PUBLIC_KEY_UID | default "" | quote }}
+  BACEN_DICT_KMIP_VHSM: {{ $cm.BACEN_DICT_KMIP_VHSM | default "" | quote }}
+  BACEN_DICT_NP_ALLOWED_ENDPOINT_HOSTS: {{ $cm.BACEN_DICT_NP_ALLOWED_ENDPOINT_HOSTS | default "" | quote }}
+  BACEN_DICT_NP_ENDPOINT: {{ $cm.BACEN_DICT_NP_ENDPOINT | default "" | quote }}
+  BACEN_DICT_PARTICIPANT_ISPB: {{ $cm.BACEN_DICT_PARTICIPANT_ISPB | default "" | quote }}
+  BACEN_DICT_PKCS11_KEY_LABEL: {{ $cm.BACEN_DICT_PKCS11_KEY_LABEL | default "" | quote }}
+  BACEN_DICT_PKCS11_MODULE_PATH: {{ $cm.BACEN_DICT_PKCS11_MODULE_PATH | default "" | quote }}
+  BACEN_DICT_PKCS11_PIN_FILE: {{ $cm.BACEN_DICT_PKCS11_PIN_FILE | default "" | quote }}
+  BACEN_DICT_PKCS11_TOKEN_LABEL: {{ $cm.BACEN_DICT_PKCS11_TOKEN_LABEL | default "" | quote }}
+  BACEN_DICT_SIGNER_KIND: {{ $cm.BACEN_DICT_SIGNER_KIND | default "file" | quote }}
+  BACEN_DICT_SIGNING_CERT_FILE: {{ $cm.BACEN_DICT_SIGNING_CERT_FILE | default "" | quote }}
+  BACEN_DICT_SIGNING_KEY_FILE: {{ $cm.BACEN_DICT_SIGNING_KEY_FILE | default "" | quote }}
+  BACEN_DICT_TIMEOUT_SEC: {{ $cm.BACEN_DICT_TIMEOUT_SEC | default "10" | quote }}
+  BACEN_DICT_VERIFY_CERT_FILE: {{ $cm.BACEN_DICT_VERIFY_CERT_FILE | default "" | quote }}
+
+  # BACEN BRCODE JOSE (public payload signing)
+  BACEN_BRCODE_JOSE_KID: {{ $cm.BACEN_BRCODE_JOSE_KID | default "" | quote }}
+  BACEN_BRCODE_JOSE_KMIP_BASE_URL: {{ $cm.BACEN_BRCODE_JOSE_KMIP_BASE_URL | default "" | quote }}
+  BACEN_BRCODE_JOSE_KMIP_CRYPTO_USER: {{ $cm.BACEN_BRCODE_JOSE_KMIP_CRYPTO_USER | default "" | quote }}
+  BACEN_BRCODE_JOSE_KMIP_DIGEST_INFO_PREFIX: {{ $cm.BACEN_BRCODE_JOSE_KMIP_DIGEST_INFO_PREFIX | default "false" | quote }}
+  BACEN_BRCODE_JOSE_KMIP_SIGN_PRIVATE_KEY_UID: {{ $cm.BACEN_BRCODE_JOSE_KMIP_SIGN_PRIVATE_KEY_UID | default "" | quote }}
+  BACEN_BRCODE_JOSE_KMIP_SIGN_PUBLIC_KEY_UID: {{ $cm.BACEN_BRCODE_JOSE_KMIP_SIGN_PUBLIC_KEY_UID | default "" | quote }}
+  BACEN_BRCODE_JOSE_KMIP_VHSM: {{ $cm.BACEN_BRCODE_JOSE_KMIP_VHSM | default "" | quote }}
+  BACEN_BRCODE_JOSE_PKCS11_KEY_LABEL: {{ $cm.BACEN_BRCODE_JOSE_PKCS11_KEY_LABEL | default "" | quote }}
+  BACEN_BRCODE_JOSE_PKCS11_MODULE_PATH: {{ $cm.BACEN_BRCODE_JOSE_PKCS11_MODULE_PATH | default "" | quote }}
+  BACEN_BRCODE_JOSE_PKCS11_PIN_FILE: {{ $cm.BACEN_BRCODE_JOSE_PKCS11_PIN_FILE | default "" | quote }}
+  BACEN_BRCODE_JOSE_PKCS11_TOKEN_LABEL: {{ $cm.BACEN_BRCODE_JOSE_PKCS11_TOKEN_LABEL | default "" | quote }}
+  BACEN_BRCODE_JOSE_SIGNER_KIND: {{ $cm.BACEN_BRCODE_JOSE_SIGNER_KIND | default "" | quote }}
+  BACEN_BRCODE_JOSE_SIGNING_CERT_FILE: {{ $cm.BACEN_BRCODE_JOSE_SIGNING_CERT_FILE | default "" | quote }}
+  BACEN_BRCODE_JOSE_SIGNING_KEY_FILE: {{ $cm.BACEN_BRCODE_JOSE_SIGNING_KEY_FILE | default "" | quote }}
+
+  # BRCODE SETTLEMENT CONSUMER
+  BRCODE_SETTLEMENT_CONSUMER_CLIENT_ID: {{ $cm.BRCODE_SETTLEMENT_CONSUMER_CLIENT_ID | default "" | quote }}
+  BRCODE_SETTLEMENT_CONSUMER_GROUP: {{ $cm.BRCODE_SETTLEMENT_CONSUMER_GROUP | default "br-spi-brcode-settlement-consumer" | quote }}
+  BRCODE_SETTLEMENT_CONSUMER_TOPIC: {{ $cm.BRCODE_SETTLEMENT_CONSUMER_TOPIC | default "br-spi.spi.payment" | quote }}
+
+  # CERT READINESS
+  CERT_READINESS_MIN_DAYS: {{ $cm.CERT_READINESS_MIN_DAYS | default "14" | quote }}
+
+  # POSTGRES tuning (host/port/user/db/ssl/replicaHost via datastore mask above)
+  POSTGRES_MAX_OPEN_CONNS: {{ $cm.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ $cm.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
+  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ $cm.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ $cm.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
+  POSTGRES_CONNECT_TIMEOUT_SEC: {{ $cm.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
+  POSTGRES_REPLICA_PORT: {{ $cm.POSTGRES_REPLICA_PORT | default "" | quote }}
+  POSTGRES_REPLICA_USER: {{ $cm.POSTGRES_REPLICA_USER | default "" | quote }}
+  POSTGRES_REPLICA_DB: {{ $cm.POSTGRES_REPLICA_DB | default "" | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ $cm.POSTGRES_REPLICA_SSLMODE | default "" | quote }}
+
+  # REDIS tuning (host via datastore mask above)
+  REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
+  REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+  REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_TLS: {{ $cm.REDIS_TLS | default "false" | quote }}
+  REDIS_CA_CERT: {{ $cm.REDIS_CA_CERT | default "" | quote }}
+  REDIS_POOL_SIZE: {{ $cm.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ $cm.REDIS_MIN_IDLE_CONNS | default "2" | quote }}
+  REDIS_READ_TIMEOUT_MS: {{ $cm.REDIS_READ_TIMEOUT_MS | default "3000" | quote }}
+  REDIS_WRITE_TIMEOUT_MS: {{ $cm.REDIS_WRITE_TIMEOUT_MS | default "3000" | quote }}
+  REDIS_DIAL_TIMEOUT_MS: {{ $cm.REDIS_DIAL_TIMEOUT_MS | default "5000" | quote }}
+
+  # AUTH (enable/host via global.auth below; trust-upstream is passthrough)
+  AUTH_TRUST_UPSTREAM_METADATA: {{ $cm.AUTH_TRUST_UPSTREAM_METADATA | default "false" | quote }}
+
+  # OBSERVABILITY (OTLP/enable via global.observability below; Prometheus scrape passthrough)
+  TELEMETRY_REQUIRED: {{ $cm.TELEMETRY_REQUIRED | default "false" | quote }}
+  METRICS_PROMETHEUS_ENABLED: {{ $cm.METRICS_PROMETHEUS_ENABLED | default "false" | quote }}
+  METRICS_PROMETHEUS_ADDRESS: {{ $cm.METRICS_PROMETHEUS_ADDRESS | default "127.0.0.1:9090" | quote }}
+{{- end }}
+
+{{/*
+spiConfigmap — one ConfigMap per SPI sub-deployment (spi-api/dict/brcode/core),
+each carrying the shared productized surface merged with its own overrides.
+Input dict: root, name, comp, port.
+*/}}
+{{- define "br-sfn.spiConfigmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sfn.componentFullname" (dict "root" .root "name" .name) }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" (dict "root" .root "name" .name) | nindent 4 }}
+data:
+{{ include "br-sfn.spiConfigData" (dict "root" .root "comp" .comp "port" .port "svcName" .svcName) }}
+{{- end }}
+
+{{/*
+=============================================================================
+spbConfigData — the productized SPB/STR (TED) ConfigMap body.
+
+SPB is a SINGLE deployment. Dependency CONNECTIONS are typed knobs via
+lerian-common masks/helpers (Postgres + Redis + RabbitMQ via datastore.value,
+observability + auth via globalValue over global.observability/global.auth);
+EVERYTHING else is an escape-hatch passthrough with the app default, overridable
+via spb.configmap.<KEY>. Credentials NEVER render here — they live in the Secret.
+
+Input dict: root ($), comp (.Values.spb), port (the service port; SERVER_PORT
+defaults to it).
+=============================================================================
+*/}}
+{{- define "br-sfn.spbConfigData" -}}
+{{- $root := .root -}}
+{{- $ds := $root.Values.spb.datastores | default dict -}}
+{{- $port := .port -}}
+{{- $cm := .comp.configmap | default dict -}}
+  # =============================================================================
+  # DATABASE — PostgreSQL (host/port/user/db/ssl/replicaHost via datastore mask;
+  # pool/replica tuning passthrough below). POSTGRES_PASSWORD -> Secret.
+  # =============================================================================
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" "localhost") | quote }}
+  POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "postgres") | quote }}
+  POSTGRES_DB: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_DB" "default" "br_bank_transfer_jota") | quote }}
+  POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+  POSTGRES_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") | quote }}
+
+  # REDIS / Valkey (host+port via datastore mask; tuning passthrough below). REDIS_PASSWORD -> Secret.
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "localhost") | quote }}
+  REDIS_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | quote }}
+
+  # RABBITMQ (host/port/user via datastore broker mask; tuning passthrough below). RABBITMQ_PASSWORD -> Secret.
+  RABBITMQ_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "") | quote }}
+  RABBITMQ_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT" "default" "5672") | quote }}
+  RABBITMQ_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_USER" "default" "guest") | quote }}
+
+  # =============================================================================
+  # OBSERVABILITY — identity inline; ENABLE_TELEMETRY / OTLP endpoint shared via
+  # global.observability (spb reads no OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT, so
+  # the 2 shared keys are wired individually rather than via otel.env).
+  # =============================================================================
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "br-spb" | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "http://localhost:4318") | quote }}
+
+  # =============================================================================
+  # AUTH (plugin-access-manager) — enable/host via global.auth. spb uses
+  # PLUGIN_AUTH_ENABLED as its canonical gate (default true).
+  # =============================================================================
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://localhost:4000") | quote }}
+
+  # SERVER_PORT defaults to the service port so the app listens where the Service/probes target.
+  SERVER_PORT: {{ $cm.SERVER_PORT | default (printf "%v" $port) | quote }}
+
+  # APP / SERVER
+  ENV_NAME: {{ $cm.ENV_NAME | default "develop" | quote }}
+  SERVICE_NAME: {{ $cm.SERVICE_NAME | default "br-spb" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  CORS_ALLOWED_ORIGINS: {{ $cm.CORS_ALLOWED_ORIGINS | default "http://localhost:3000" | quote }}
+  TRUSTED_PROXIES: {{ $cm.TRUSTED_PROXIES | default "" | quote }}
+  ENABLE_DEV_DEBUG_ROUTES: {{ $cm.ENABLE_DEV_DEBUG_ROUTES | default "false" | quote }}
+  SYSTEMPLANE_LISTEN_CHANNEL: {{ $cm.SYSTEMPLANE_LISTEN_CHANNEL | default "br_spb_systemplane_changes" | quote }}
+
+  # SWAGGER
+  SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "false" | quote }}
+
+  # IBM MQ / STR transport (RSFN)
+  STR_MQ_HOST: {{ $cm.STR_MQ_HOST | default "" | quote }}
+  STR_MQ_PORT: {{ $cm.STR_MQ_PORT | default "1414" | quote }}
+  STR_MQ_CHANNEL: {{ $cm.STR_MQ_CHANNEL | default "DEV.APP.SVRCONN" | quote }}
+  STR_MQ_QUEUE_MGR: {{ $cm.STR_MQ_QUEUE_MGR | default "QM1" | quote }}
+  STR_MQ_USER: {{ $cm.STR_MQ_USER | default "app" | quote }}
+  STR_MQ_TLS_ENABLED: {{ $cm.STR_MQ_TLS_ENABLED | default "false" | quote }}
+  MQSSLKEYR: {{ $cm.MQSSLKEYR | default "" | quote }}
+  STR_MQ_SEND_QUEUE: {{ $cm.STR_MQ_SEND_QUEUE | default "QR.REQ.00000000.00038166.01" | quote }}
+  STR_MQ_RESPONSE_QUEUE: {{ $cm.STR_MQ_RESPONSE_QUEUE | default "QL.RSP.00038166.00000000.01" | quote }}
+  STR_MQ_RECEIVE_QUEUE: {{ $cm.STR_MQ_RECEIVE_QUEUE | default "QL.REQ.00038166.00000000.01" | quote }}
+  STR_ISPB: {{ $cm.STR_ISPB | default "00000000" | quote }}
+  SILOC_ISPB: {{ $cm.SILOC_ISPB | default "02992335" | quote }}
+  STR_MQ_MOCK: {{ $cm.STR_MQ_MOCK | default "false" | quote }}
+  STR_MQ_MOCK_HOST: {{ $cm.STR_MQ_MOCK_HOST | default "http://localhost:8080" | quote }}
+  STR_MQ_MOCK_ALLOWED_HOSTS: {{ $cm.STR_MQ_MOCK_ALLOWED_HOSTS | default "" | quote }}
+  ALLOW_MOCK_TRANSPORT: {{ $cm.ALLOW_MOCK_TRANSPORT | default "false" | quote }}
+  MQ_HEARTBEAT_INTERVAL: {{ $cm.MQ_HEARTBEAT_INTERVAL | default "300s" | quote }}
+  MQ_DISCONNECT_INTERVAL: {{ $cm.MQ_DISCONNECT_INTERVAL | default "6000s" | quote }}
+  MQ_SEQ_WRAP: {{ $cm.MQ_SEQ_WRAP | default "99999999" | quote }}
+  MQ_ADOPTNEWMCA: {{ $cm.MQ_ADOPTNEWMCA | default "ALL" | quote }}
+
+  # CIRCUIT BREAKER
+  CB_MAX_REQUESTS: {{ $cm.CB_MAX_REQUESTS | default "3" | quote }}
+  CB_INTERVAL: {{ $cm.CB_INTERVAL | default "30s" | quote }}
+  CB_TIMEOUT: {{ $cm.CB_TIMEOUT | default "10s" | quote }}
+  CB_CONSECUTIVE_FAILURES: {{ $cm.CB_CONSECUTIVE_FAILURES | default "5" | quote }}
+  CB_FAILURE_RATIO: {{ $cm.CB_FAILURE_RATIO | default "0.5" | quote }}
+  CB_MIN_REQUESTS: {{ $cm.CB_MIN_REQUESTS | default "10" | quote }}
+
+  # OBSERVABILITY (OTLP/enable via global.observability; identity + prometheus passthrough)
+  METRICS_PROMETHEUS_ENABLED: {{ $cm.METRICS_PROMETHEUS_ENABLED | default "false" | quote }}
+  METRICS_PROMETHEUS_ADDRESS: {{ $cm.METRICS_PROMETHEUS_ADDRESS | default "127.0.0.1:9090" | quote }}
+
+  # CERTIFICATES / SIGNER (SPB_SIGNER_KIND custody; file paths + labels)
+  CERT_PATH: {{ $cm.CERT_PATH | default "" | quote }}
+  KEY_PATH: {{ $cm.KEY_PATH | default "" | quote }}
+  CERT_BASE_PATH: {{ $cm.CERT_BASE_PATH | default "/certs" | quote }}
+  BACEN_PUBLIC_CERT_PATH: {{ $cm.BACEN_PUBLIC_CERT_PATH | default "" | quote }}
+  CERT_READINESS_MIN_DAYS: {{ $cm.CERT_READINESS_MIN_DAYS | default "30" | quote }}
+  PROCESS_CERT_PATH: {{ $cm.PROCESS_CERT_PATH | default "" | quote }}
+  PROCESS_PRIVATE_KEY_PATH: {{ $cm.PROCESS_PRIVATE_KEY_PATH | default "" | quote }}
+  SPB_SIGNER_KIND: {{ $cm.SPB_SIGNER_KIND | default "file" | quote }}
+  SPB_PKCS11_MODULE_PATH: {{ $cm.SPB_PKCS11_MODULE_PATH | default "" | quote }}
+  SPB_PKCS11_TOKEN_LABEL: {{ $cm.SPB_PKCS11_TOKEN_LABEL | default "" | quote }}
+  SPB_PKCS11_PIN_FILE: {{ $cm.SPB_PKCS11_PIN_FILE | default "" | quote }}
+  SPB_PKCS11_KEY_LABEL: {{ $cm.SPB_PKCS11_KEY_LABEL | default "" | quote }}
+  SPB_KMIP_BASE_URL: {{ $cm.SPB_KMIP_BASE_URL | default "" | quote }}
+  SPB_KMIP_VHSM: {{ $cm.SPB_KMIP_VHSM | default "" | quote }}
+  SPB_KMIP_CRYPTO_USER: {{ $cm.SPB_KMIP_CRYPTO_USER | default "" | quote }}
+  SPB_KMIP_SIGN_PRIVATE_KEY_UID: {{ $cm.SPB_KMIP_SIGN_PRIVATE_KEY_UID | default "" | quote }}
+  SPB_KMIP_SIGN_PUBLIC_KEY_UID: {{ $cm.SPB_KMIP_SIGN_PUBLIC_KEY_UID | default "" | quote }}
+  SPB_KMIP_DECRYPT_KEY_UID: {{ $cm.SPB_KMIP_DECRYPT_KEY_UID | default "" | quote }}
+  SPB_KMIP_DIGEST_INFO_PREFIX: {{ $cm.SPB_KMIP_DIGEST_INFO_PREFIX | default "false" | quote }}
+  INBOUND_ALLOW_CLEARTEXT_FALLBACK: {{ $cm.INBOUND_ALLOW_CLEARTEXT_FALLBACK | default "false" | quote }}
+
+  # POSTGRES tuning (host/port/user/db/ssl/replicaHost via datastore mask above)
+  POSTGRES_MAX_OPEN_CONNS: {{ $cm.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ $cm.POSTGRES_MAX_IDLE_CONNS | default "10" | quote }}
+  POSTGRES_CONN_MAX_LIFETIME: {{ $cm.POSTGRES_CONN_MAX_LIFETIME | default "5m" | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME: {{ $cm.POSTGRES_CONN_MAX_IDLE_TIME | default "2m" | quote }}
+  POSTGRES_REPLICA_PORT: {{ $cm.POSTGRES_REPLICA_PORT | default "" | quote }}
+  POSTGRES_REPLICA_USER: {{ $cm.POSTGRES_REPLICA_USER | default "" | quote }}
+  POSTGRES_REPLICA_DB: {{ $cm.POSTGRES_REPLICA_DB | default "" | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ $cm.POSTGRES_REPLICA_SSLMODE | default "" | quote }}
+
+  # REDIS tuning (host/port via datastore mask above)
+  REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+  REDIS_TLS_ENABLED: {{ $cm.REDIS_TLS_ENABLED | default "false" | quote }}
+  REDIS_TLS_CA_CERT_BASE64: {{ $cm.REDIS_TLS_CA_CERT_BASE64 | default "" | quote }}
+  REDIS_POOL_SIZE: {{ $cm.REDIS_POOL_SIZE | default "20" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ $cm.REDIS_MIN_IDLE_CONNS | default "5" | quote }}
+
+  # RABBITMQ (host/port/user via datastore broker mask above)
+  RABBITMQ_VHOST: {{ $cm.RABBITMQ_VHOST | default "/" | quote }}
+  RABBITMQ_STR_EXCHANGE: {{ $cm.RABBITMQ_STR_EXCHANGE | default "str.events" | quote }}
+  RABBITMQ_TLS_ENABLED: {{ $cm.RABBITMQ_TLS_ENABLED | default "false" | quote }}
+
+  # OUTBOX / EVENT DELIVERY / DISPATCH
+  EMISSION_REQUIRED: {{ $cm.EMISSION_REQUIRED | default "false" | quote }}
+  OUTBOX_DISPATCH_INTERVAL: {{ $cm.OUTBOX_DISPATCH_INTERVAL | default "2s" | quote }}
+  OUTBOX_BATCH_SIZE: {{ $cm.OUTBOX_BATCH_SIZE | default "50" | quote }}
+  OUTBOX_MAX_PUBLISH_ATTEMPTS: {{ $cm.OUTBOX_MAX_PUBLISH_ATTEMPTS | default "3" | quote }}
+  OUTBOX_POSTGRES_MAX_OPEN_CONNS: {{ $cm.OUTBOX_POSTGRES_MAX_OPEN_CONNS | default "10" | quote }}
+  OUTBOX_POSTGRES_MAX_IDLE_CONNS: {{ $cm.OUTBOX_POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
+  EVENT_DELIVERY_BATCH_SIZE: {{ $cm.EVENT_DELIVERY_BATCH_SIZE | default "25" | quote }}
+  EVENT_DELIVERY_MAX_ATTEMPTS: {{ $cm.EVENT_DELIVERY_MAX_ATTEMPTS | default "3" | quote }}
+  EVENT_DELIVERY_RETRY_BACKOFF: {{ $cm.EVENT_DELIVERY_RETRY_BACKOFF | default "30s" | quote }}
+  DISPATCH_MAX_AUTO_ATTEMPTS: {{ $cm.DISPATCH_MAX_AUTO_ATTEMPTS | default "8" | quote }}
+  DISPATCH_RETRY_BACKOFF_CEILING: {{ $cm.DISPATCH_RETRY_BACKOFF_CEILING | default "30m" | quote }}
+
+  # RATE LIMIT
+  RATE_LIMIT_IP_MAX: {{ $cm.RATE_LIMIT_IP_MAX | default "300" | quote }}
+  RATE_LIMIT_IP_WINDOW: {{ $cm.RATE_LIMIT_IP_WINDOW | default "1m" | quote }}
+  RATE_LIMIT_KEY_MAX: {{ $cm.RATE_LIMIT_KEY_MAX | default "100" | quote }}
+  RATE_LIMIT_KEY_WINDOW: {{ $cm.RATE_LIMIT_KEY_WINDOW | default "1m" | quote }}
+
+  # IDEMPOTENCY
+  IDEMPOTENCY_ENABLED: {{ $cm.IDEMPOTENCY_ENABLED | default "true" | quote }}
+  IDEMPOTENCY_DEFAULT_TTL_SEC: {{ $cm.IDEMPOTENCY_DEFAULT_TTL_SEC | default "300" | quote }}
+
+  # EMISSION APPROVAL (alcada maker-checker; OFF by default)
+  APPROVAL_ALCADA_BANDS: {{ $cm.APPROVAL_ALCADA_BANDS | default "" | quote }}
+  APPROVAL_DEADLINE_WINDOW: {{ $cm.APPROVAL_DEADLINE_WINDOW | default "" | quote }}
+  APPROVAL_EXPIRY_ENABLED: {{ $cm.APPROVAL_EXPIRY_ENABLED | default "true" | quote }}
+  APPROVAL_EXPIRY_SWEEP_INTERVAL: {{ $cm.APPROVAL_EXPIRY_SWEEP_INTERVAL | default "1m" | quote }}
+{{- end }}
+
+{{/*
+spbConfigmap — the single SPB ConfigMap (productized surface + escape hatch).
+Input dict: root, name, comp, port.
+*/}}
+{{- define "br-sfn.spbConfigmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sfn.componentFullname" (dict "root" .root "name" .name) }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" (dict "root" .root "name" .name) | nindent 4 }}
+data:
+{{ include "br-sfn.spbConfigData" (dict "root" .root "comp" .comp "port" .port) }}
+{{- end }}
+
+{{/*
+=============================================================================
+silocConfigData — the productized SILOC (Núclea card settlement) ConfigMap body.
+
+SINGLE deployment. Native DB naming is DB_* and REDIS_ADDRESS and AUTH_* (NOT the
+POSTGRES_* and PLUGIN_AUTH_* of spi/spb) — the datastore and global masks absorb
+that via nativeKey. Dependency CONNECTIONS are typed knobs (Postgres + Redis via
+datastore.value; observability + auth via globalValue over global.observability/
+global.auth); everything else is escape-hatch passthrough. Credentials -> Secret.
+
+siloc has NO broker/streaming/SD/multiTenant/objectStorage/kms env contract (the
+IBM MQ SILOC leg is plain passthrough, like spb's STR_MQ_*).
+
+Input dict: root ($), comp (.Values.siloc), port (service port; SERVER_PORT defaults to it).
+=============================================================================
+*/}}
+{{- define "br-sfn.silocConfigData" -}}
+{{- $root := .root -}}
+{{- $ds := $root.Values.siloc.datastores | default dict -}}
+{{- $port := .port -}}
+{{- $cm := .comp.configmap | default dict -}}
+  # =============================================================================
+  # DATABASE — PostgreSQL (native DB_*; host/port/user/name/ssl/replicaHost via
+  # datastore mask). DB_PASSWORD -> Secret.
+  # =============================================================================
+  DB_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "") | quote }}
+  DB_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
+  DB_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "") | quote }}
+  DB_NAME: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "") | quote }}
+  DB_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSLMODE" "default" "disable") | quote }}
+  DB_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "DB_REPLICA_HOST" "default" "") | quote }}
+
+  # REDIS / Valkey (native REDIS_ADDRESS via datastore host mask). REDIS_PASSWORD -> Secret.
+  REDIS_ADDRESS: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_ADDRESS" "default" "") | quote }}
+  REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+  REDIS_TLS: {{ $cm.REDIS_TLS | default "false" | quote }}
+
+  # =============================================================================
+  # OBSERVABILITY — ENABLE_TELEMETRY / OTLP endpoint via global.observability
+  # (siloc uses SERVICE_NAME for identity; no OTEL_RESOURCE_* keys).
+  # =============================================================================
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
+
+  # =============================================================================
+  # AUTH (lib-auth plugin) — enable/host via global.auth. Native keys AUTH_ENABLED
+  # (default true, default-closed) / AUTH_ADDRESS.
+  # =============================================================================
+  AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "AUTH_ENABLED" "default" "true") | quote }}
+  AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "host" "nativeKey" "AUTH_ADDRESS" "default" "") | quote }}
+
+  # SERVER_PORT defaults to the service port so the app listens where the Service/probes target.
+  SERVER_PORT: {{ $cm.SERVER_PORT | default (printf "%v" $port) | quote }}
+
+  # APP / SERVER
+  SERVICE_NAME: {{ $cm.SERVICE_NAME | default "br-siloc" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "" | quote }}
+  CERT_READINESS_MIN_DAYS: {{ $cm.CERT_READINESS_MIN_DAYS | default "30" | quote }}
+  CAMARA_PAG_ISPB: {{ $cm.CAMARA_PAG_ISPB | default "02992335" | quote }}
+
+  # IBM MQ — Núclea SILOC settlement leg (single QM; plain passthrough)
+  MQ_HOST: {{ $cm.MQ_HOST | default "" | quote }}
+  MQ_PORT: {{ $cm.MQ_PORT | default "" | quote }}
+  MQ_CHANNEL: {{ $cm.MQ_CHANNEL | default "" | quote }}
+  MQ_QUEUE_MANAGER: {{ $cm.MQ_QUEUE_MANAGER | default "" | quote }}
+  MQ_SEND_QUEUE: {{ $cm.MQ_SEND_QUEUE | default "" | quote }}
+  MQ_RECEIVE_QUEUE: {{ $cm.MQ_RECEIVE_QUEUE | default "" | quote }}
+  MQ_TLS_ENABLED: {{ $cm.MQ_TLS_ENABLED | default "false" | quote }}
+  MQ_SSL_KEY_REPOSITORY: {{ $cm.MQ_SSL_KEY_REPOSITORY | default "" | quote }}
+
+  # SFN CUSTODY / TRUST (file paths + cache tuning)
+  SFN_TRUST_MANIFEST_PATH: {{ $cm.SFN_TRUST_MANIFEST_PATH | default "" | quote }}
+  SFN_CUSTODY_CONFIG_PATH: {{ $cm.SFN_CUSTODY_CONFIG_PATH | default "" | quote }}
+  SFN_CUSTODY_CACHE_ENTRIES: {{ $cm.SFN_CUSTODY_CACHE_ENTRIES | default "16" | quote }}
+{{- end }}
+
+{{/*
+silocMigrationConfig — POSTGRES_* env for the dedicated br-siloc-migrations image,
+mapped from the SAME postgres datastore mask the app DB_* reads (nativeKey DB_*).
+So one operator mask (siloc.datastores.postgres / global.datastores.postgres) feeds
+BOTH the app (DB_*) and the migrator (POSTGRES_*). Fed to componentMigrationJob via
+configDataOverride; its migrationPgValue reads these POSTGRES_* keys.
+Input dict: root ($).
+*/}}
+{{- define "br-sfn.silocMigrationConfig" -}}
+{{- $root := .root -}}
+{{- $ds := $root.Values.siloc.datastores | default dict -}}
+{{- $cm := $root.Values.siloc.configmap | default dict -}}
+POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "") | quote }}
+POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
+POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "") | quote }}
+POSTGRES_DB: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "") | quote }}
+POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSLMODE" "default" "disable") | quote }}
+{{- end }}
+
+{{/*
+silocConfigmap — the single SILOC ConfigMap. Input dict: root, name, comp, port.
+*/}}
+{{- define "br-sfn.silocConfigmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sfn.componentFullname" (dict "root" .root "name" .name) }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" (dict "root" .root "name" .name) | nindent 4 }}
+data:
+{{ include "br-sfn.silocConfigData" (dict "root" .root "comp" .comp "port" .port) }}
+{{- end }}
+
+{{/*
+=============================================================================
+scrConfigData — the productized SCR (Sistema de Informacoes de Credito) body.
+
+SINGLE deployment. Dependency CONNECTIONS are typed knobs (Postgres + Redis via
+datastore.value; observability + auth via globalValue; MULTI-TENANT via
+lerian-common.multiTenant.env). App and migrator BOTH use POSTGRES_* (no mapper).
+
+STREAMING NOTE: scr reaches RedPanda through lib-streaming but exposes its own
+SCR_STREAMING_* env names (NOT lib-streaming's canonical STREAMING_* contract that
+lerian-common.streaming.env emits) — so the helper does not fit and these stay
+escape-hatch passthrough (all non-secret; no SASL/password key). Recorded as a
+lerian-common gap, not hand-rolled as a bespoke knob.
+
+Input dict: root ($), comp (.Values.scr), port (service port; SERVER_PORT defaults to it).
+=============================================================================
+*/}}
+{{- define "br-sfn.scrConfigData" -}}
+{{- $root := .root -}}
+{{- $ds := $root.Values.scr.datastores | default dict -}}
+{{- $port := .port -}}
+{{- $cm := .comp.configmap | default dict -}}
+  # =============================================================================
+  # DATABASE — PostgreSQL (host/port/user/db/ssl via datastore mask; pool tuning
+  # passthrough below). POSTGRES_PASSWORD -> Secret. No read replica in scr.
+  # =============================================================================
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" "localhost") | quote }}
+  POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "scr") | quote }}
+  POSTGRES_DB: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_DB" "default" "scr") | quote }}
+  POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+
+  # REDIS / Valkey (host+port via datastore mask; tuning passthrough below). REDIS_PASSWORD -> Secret.
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "localhost") | quote }}
+  REDIS_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | quote }}
+
+  # =============================================================================
+  # MULTI-TENANT — knob inline; gated block (URL only, required when enabled) via
+  # lerian-common.multiTenant.env. MULTI_TENANT_SERVICE_API_KEY -> Secret.
+  # =============================================================================
+  {{- $mtEnabled := eq ($cm.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict "context" $root "configmap" $cm "enabled" $mtEnabled "requiredUrl" true "circuitBreaker" false) | nindent 2 }}
+
+  # =============================================================================
+  # OBSERVABILITY — ENABLE_TELEMETRY / OTLP endpoint via global.observability
+  # (scr uses SERVICE_NAME for identity; Prometheus scrape passthrough below).
+  # =============================================================================
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
+
+  # =============================================================================
+  # AUTH (lib-auth M2M) — enable/host via global.auth.
+  # =============================================================================
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://localhost:4000") | quote }}
+
+  # SERVER_PORT defaults to the service port so the app listens where the Service/probes target.
+  SERVER_PORT: {{ $cm.SERVER_PORT | default (printf "%v" $port) | quote }}
+
+  # APP / SERVER
+  SERVICE_NAME: {{ $cm.SERVICE_NAME | default "br-scr" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
+  TRUSTED_PROXIES: {{ $cm.TRUSTED_PROXIES | default "" | quote }}
+  PROXY_HEADER: {{ $cm.PROXY_HEADER | default "X-Forwarded-For" | quote }}
+
+  # POSTGRES tuning (host/port/user/db/ssl via datastore mask above)
+  POSTGRES_MAX_OPEN_CONNS: {{ $cm.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ $cm.POSTGRES_MAX_IDLE_CONNS | default "10" | quote }}
+  POSTGRES_CONN_LIFETIME: {{ $cm.POSTGRES_CONN_LIFETIME | default "30m" | quote }}
+  POSTGRES_CONN_IDLE_TIME: {{ $cm.POSTGRES_CONN_IDLE_TIME | default "5m" | quote }}
+
+  # REDIS tuning (host/port via datastore mask above)
+  REDIS_TLS_ENABLED: {{ $cm.REDIS_TLS_ENABLED | default "false" | quote }}
+  SCR_REDIS_DISABLED: {{ $cm.SCR_REDIS_DISABLED | default "false" | quote }}
+
+  # STREAMING (SCR_STREAMING_* — app-prefixed; lib-streaming helper does NOT fit this naming, so escape-hatch passthrough — see lerian-common gap)
+  SCR_STREAMING_BROKERS: {{ $cm.SCR_STREAMING_BROKERS | default "" | quote }}
+  SCR_STREAMING_TOPIC: {{ $cm.SCR_STREAMING_TOPIC | default "br-scr.consulta" | quote }}
+  SCR_STREAMING_CLIENT_ID: {{ $cm.SCR_STREAMING_CLIENT_ID | default "br-scr" | quote }}
+  SCR_STREAMING_SOURCE: {{ $cm.SCR_STREAMING_SOURCE | default "//br-scr" | quote }}
+  SCR_STREAMING_TLS: {{ $cm.SCR_STREAMING_TLS | default "false" | quote }}
+  SCR_STREAMING_EMISSION_DISABLED: {{ $cm.SCR_STREAMING_EMISSION_DISABLED | default "false" | quote }}
+
+  # wsscr2n outbound (BACEN SCR3 consulta)
+  SCR_WSSCR2N_BASE_URL: {{ $cm.SCR_WSSCR2N_BASE_URL | default "http://localhost:8080/wsscr2n" | quote }}
+  SCR_WSSCR2N_BASIC_USER: {{ $cm.SCR_WSSCR2N_BASIC_USER | default "UUUUUDDDD.OPERADOR" | quote }}
+
+  # SECRET STORE (vault selection; ADR-005)
+  SECRET_STORE_KIND: {{ $cm.SECRET_STORE_KIND | default "env" | quote }}
+  AWS_REGION: {{ $cm.AWS_REGION | default "" | quote }}
+  SECRET_STORE_PREFIX: {{ $cm.SECRET_STORE_PREFIX | default "" | quote }}
+
+  # METRICS (Prometheus scrape; OTLP/enable via global.observability)
+  METRICS_PROMETHEUS_ENABLED: {{ $cm.METRICS_PROMETHEUS_ENABLED | default "false" | quote }}
+  METRICS_PROMETHEUS_ADDRESS: {{ $cm.METRICS_PROMETHEUS_ADDRESS | default "127.0.0.1:9075" | quote }}
+{{- end }}
+
+{{/*
+scrConfigmap — the single SCR ConfigMap. Input dict: root, name, comp, port.
+*/}}
+{{- define "br-sfn.scrConfigmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sfn.componentFullname" (dict "root" .root "name" .name) }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" (dict "root" .root "name" .name) | nindent 4 }}
+data:
+{{ include "br-sfn.scrConfigData" (dict "root" .root "comp" .comp "port" .port) }}
+{{- end }}
+
+{{/*
+=============================================================================
+deskConfigData — the productized DESK (cabine operator-state / four-eyes) body.
+
+SINGLE deployment. Native DB naming is DB_* (like siloc, NOT POSTGRES_*); the
+mask absorbs it via nativeKey and deskMigrationConfig re-maps it to POSTGRES_* for
+the baked migrator. Dependency CONNECTIONS: Postgres via datastore.value;
+observability + auth via globalValue. desk has NO Redis/broker/streaming/MT.
+
+AUTH is dual: the inbound lib-auth middleware (PLUGIN_AUTH_ENABLED/ADDRESS) AND an
+outbound M2M client to access-manager (PLUGIN_ACCESS_MANAGER_URL/CLIENT_ID/SECRET,
+for the four-eyes user-deletion call). enable + all three host-ish URLs resolve
+from global.auth (enabled + host); the M2M CLIENT_ID is a non-secret identity
+passthrough and CLIENT_SECRET is a Secret (the auth helper contract covers only
+enabled/host, so the M2M credential is handled by the secret rule, not a knob).
+
+Input dict: root ($), comp (.Values.desk), port (service port; SERVER_PORT defaults to it).
+=============================================================================
+*/}}
+{{- define "br-sfn.deskConfigData" -}}
+{{- $root := .root -}}
+{{- $ds := $root.Values.desk.datastores | default dict -}}
+{{- $port := .port -}}
+{{- $cm := .comp.configmap | default dict -}}
+  # =============================================================================
+  # DATABASE — PostgreSQL (native DB_*; host/port/user/name/ssl via datastore mask;
+  # pool tuning passthrough). DB_PASSWORD -> Secret. No read replica.
+  # =============================================================================
+  DB_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "localhost") | quote }}
+  DB_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
+  DB_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "desk") | quote }}
+  DB_NAME: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "desk") | quote }}
+  DB_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSLMODE" "default" "disable") | quote }}
+  DB_MAX_OPEN_CONNS: {{ $cm.DB_MAX_OPEN_CONNS | default "25" | quote }}
+  DB_MAX_IDLE_CONNS: {{ $cm.DB_MAX_IDLE_CONNS | default "10" | quote }}
+  DB_CONN_MAX_LIFETIME: {{ $cm.DB_CONN_MAX_LIFETIME | default "10m" | quote }}
+  DB_CONN_MAX_IDLE_TIME: {{ $cm.DB_CONN_MAX_IDLE_TIME | default "5m" | quote }}
+
+  # =============================================================================
+  # OBSERVABILITY — ENABLE_TELEMETRY / OTLP endpoint via global.observability
+  # (desk uses SERVICE_NAME for identity; Prometheus scrape passthrough).
+  # =============================================================================
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
+  METRICS_PROMETHEUS_ENABLED: {{ $cm.METRICS_PROMETHEUS_ENABLED | default "false" | quote }}
+  METRICS_PROMETHEUS_ADDRESS: {{ $cm.METRICS_PROMETHEUS_ADDRESS | default "127.0.0.1:9074" | quote }}
+
+  # =============================================================================
+  # AUTH — inbound middleware + outbound M2M to access-manager. enable + host(s)
+  # via global.auth. CLIENT_SECRET -> Secret; CLIENT_ID is a non-secret passthrough.
+  # =============================================================================
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "") | quote }}
+  PLUGIN_ACCESS_MANAGER_URL: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_ACCESS_MANAGER_URL" "default" "") | quote }}
+  PLUGIN_ACCESS_MANAGER_CLIENT_ID: {{ $cm.PLUGIN_ACCESS_MANAGER_CLIENT_ID | default "" | quote }}
+
+  # SERVER_PORT defaults to the service port so the app listens where the Service/probes target.
+  SERVER_PORT: {{ $cm.SERVER_PORT | default (printf "%v" $port) | quote }}
+
+  # APP / SERVER
+  SERVICE_NAME: {{ $cm.SERVICE_NAME | default "br-desk" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
+
+  # CORS (cockpit SPA) + ACK workflow (OS.2)
+  DESK_CORS_ALLOWED_ORIGINS: {{ $cm.DESK_CORS_ALLOWED_ORIGINS | default "http://localhost:5173" | quote }}
+  DESK_ACK_TTL: {{ $cm.DESK_ACK_TTL | default "720h" | quote }}
+  DESK_ACK_GC_INTERVAL: {{ $cm.DESK_ACK_GC_INTERVAL | default "1h" | quote }}
+{{- end }}
+
+{{/*
+deskMigrationConfig — POSTGRES_* for the baked migrator, mapped from the SAME
+postgres mask the app DB_* reads (nativeKey DB_*). col-0 (fromYaml). See siloc.
+Input dict: root ($).
+*/}}
+{{- define "br-sfn.deskMigrationConfig" -}}
+{{- $root := .root -}}
+{{- $ds := $root.Values.desk.datastores | default dict -}}
+{{- $cm := $root.Values.desk.configmap | default dict -}}
+POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "localhost") | quote }}
+POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
+POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "desk") | quote }}
+POSTGRES_DB: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "desk") | quote }}
+POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSLMODE" "default" "disable") | quote }}
+{{- end }}
+
+{{/*
+deskConfigmap — the single DESK ConfigMap. Input dict: root, name, comp, port.
+*/}}
+{{- define "br-sfn.deskConfigmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sfn.componentFullname" (dict "root" .root "name" .name) }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" (dict "root" .root "name" .name) | nindent 4 }}
+data:
+{{ include "br-sfn.deskConfigData" (dict "root" .root "comp" .comp "port" .port) }}
+{{- end }}
+
+{{/*
+=============================================================================
+correiosConfigData — the productized CORREIOS (BC Correio regulatory mailbox) body.
+
+SINGLE deployment. Dependency CONNECTIONS: Postgres via datastore.value (native
+db-name key is POSTGRES_NAME); Redis/Valkey CACHE via datastore.value (CACHE_ADDR
+host:port); S3/SeaweedFS via objectStorage.value; observability + auth via
+globalValue; multi-tenant url + lifecycle-redis via globalValue (block multiTenant).
+App and baked migrator BOTH use POSTGRES_* (no mapper; migration dbCfgKey=POSTGRES_NAME).
+
+NOT wired (naming does not fit a 1.4.0 helper, so escape-hatch passthrough — recorded
+as gaps): RABBITMQ_URL is a full AMQP URL (embeds creds -> Secret; NOT the broker
+mask's host/port/user shape); the MT tuning tail (per-tenant conn caps, event channel,
+CA cert) exceeds multiTenant.env's fixed key set (wired per-key via globalValue for the
+shared url/redis bits, passthrough for the rest); observability enable is split
+(TRACING_ENABLED / METRICS_ENABLED), not a single ENABLE_TELEMETRY.
+
+Input dict: root ($), comp (.Values.correios), port (service port; SERVER_PORT defaults to it).
+=============================================================================
+*/}}
+{{- define "br-sfn.correiosConfigData" -}}
+{{- $root := .root -}}
+{{- $ds := $root.Values.correios.datastores | default dict -}}
+{{- $os := $root.Values.correios.objectStorage | default dict -}}
+{{- $port := .port -}}
+{{- $cm := .comp.configmap | default dict -}}
+  # =============================================================================
+  # DATABASE — PostgreSQL (host/port/user/name/ssl via datastore mask; POSTGRES_NAME
+  # is the db-name native key). Pool tuning passthrough. POSTGRES_PASSWORD -> Secret.
+  # =============================================================================
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" "localhost") | quote }}
+  POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5450") | quote }}
+  POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "plugin-bc-correios") | quote }}
+  POSTGRES_NAME: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_NAME" "default" "plugin-bc-correios") | quote }}
+  POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+
+  # CACHE — Redis/Valkey (addr host:port via datastore mask). CACHE_PASSWORD -> Secret.
+  CACHE_ADDR: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "CACHE_ADDR" "default" "localhost:6390") | quote }}
+
+  # OBJECT STORAGE — S3/SeaweedFS (endpoint/region/bucket/pathStyle via objectStorage mask).
+  # OBJECT_STORAGE_ACCESS_KEY / _SECRET_KEY -> Secret.
+  OBJECT_STORAGE_ENDPOINT: {{ include "lerian-common.objectStorage.value" (dict "context" $root "dedicated" $os "configmap" $cm "name" "default" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "http://localhost:8343") | quote }}
+  OBJECT_STORAGE_REGION: {{ include "lerian-common.objectStorage.value" (dict "context" $root "dedicated" $os "configmap" $cm "name" "default" "field" "region" "nativeKey" "OBJECT_STORAGE_REGION" "default" "us-east-1") | quote }}
+  OBJECT_STORAGE_BUCKET: {{ include "lerian-common.objectStorage.value" (dict "context" $root "dedicated" $os "configmap" $cm "name" "default" "field" "bucket" "nativeKey" "OBJECT_STORAGE_BUCKET" "default" "bc-correios-attachments") | quote }}
+  OBJECT_STORAGE_PATH_STYLE: {{ include "lerian-common.objectStorage.value" (dict "context" $root "dedicated" $os "configmap" $cm "name" "default" "field" "usePathStyle" "nativeKey" "OBJECT_STORAGE_PATH_STYLE" "default" "true") | quote }}
+
+  # OBSERVABILITY — OTLP endpoint + deployment-env via global.observability (identity + enables passthrough).
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "http://localhost:4337") | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" "development") | quote }}
+
+  # AUTH — enable/host via global.auth (lib-auth/v2).
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "") | quote }}
+
+  # MULTI-TENANT — ENABLED knob inline; url + tenant-lifecycle redis via global.multiTenant.
+  # SERVICE_API_KEY + REDIS_PASSWORD -> Secret. Tuning tail passthrough below.
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  MULTI_TENANT_URL: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "multiTenant" "field" "url" "nativeKey" "MULTI_TENANT_URL" "default" "") | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "multiTenant" "field" "redisHost" "nativeKey" "MULTI_TENANT_REDIS_HOST" "default" "") | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "multiTenant" "field" "redisPort" "nativeKey" "MULTI_TENANT_REDIS_PORT" "default" "6379") | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "multiTenant" "field" "redisTls" "nativeKey" "MULTI_TENANT_REDIS_TLS" "default" "false") | quote }}
+
+  # SERVER_PORT defaults to the service port so the app listens where the Service/probes target.
+  SERVER_PORT: {{ $cm.SERVER_PORT | default (printf "%v" $port) | quote }}
+
+  # APP / SERVER
+  APP_NAME: {{ $cm.APP_NAME | default "br-correios" | quote }}
+  APP_VERSION: {{ $cm.APP_VERSION | default "0.1.0" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
+  SERVER_READ_TIMEOUT_SEC: {{ $cm.SERVER_READ_TIMEOUT_SEC | default "30" | quote }}
+  SERVER_WRITE_TIMEOUT_SEC: {{ $cm.SERVER_WRITE_TIMEOUT_SEC | default "30" | quote }}
+  SERVER_SHUTDOWN_TIMEOUT_SEC: {{ $cm.SERVER_SHUTDOWN_TIMEOUT_SEC | default "30" | quote }}
+  TRUSTED_PROXIES: {{ $cm.TRUSTED_PROXIES | default "127.0.0.1,::1" | quote }}
+  ALLOWED_ORIGINS: {{ $cm.ALLOWED_ORIGINS | default "*" | quote }}
+
+  # POSTGRES tuning (host/port/user/name/ssl via datastore mask above)
+  POSTGRES_MAX_CONNS: {{ $cm.POSTGRES_MAX_CONNS | default "50" | quote }}
+  POSTGRES_MIN_CONNS: {{ $cm.POSTGRES_MIN_CONNS | default "5" | quote }}
+
+  # CACHE tuning (addr via datastore redis mask above; CACHE_PASSWORD -> Secret)
+  CACHE_DB: {{ $cm.CACHE_DB | default "0" | quote }}
+  CACHE_TLS: {{ $cm.CACHE_TLS | default "false" | quote }}
+  CACHE_CA_CERT: {{ $cm.CACHE_CA_CERT | default "" | quote }}
+  CACHE_TTL_SEC: {{ $cm.CACHE_TTL_SEC | default "60" | quote }}
+  CACHE_POOL_SIZE: {{ $cm.CACHE_POOL_SIZE | default "10" | quote }}
+  CACHE_MAX_ACTIVE_CONNS: {{ $cm.CACHE_MAX_ACTIVE_CONNS | default "20" | quote }}
+
+  # RABBITMQ (URL embeds creds -> Secret; user non-secret passthrough)
+  RABBITMQ_USER: {{ $cm.RABBITMQ_USER | default "CHANGE_ME_USER" | quote }}
+
+  # OBJECT STORAGE (endpoint/region/bucket/pathStyle via mask above; keys -> Secret)
+  OBJECT_STORAGE_PROVIDER: {{ $cm.OBJECT_STORAGE_PROVIDER | default "s3" | quote }}
+  OBJECT_STORAGE_LOCAL_PATH: {{ $cm.OBJECT_STORAGE_LOCAL_PATH | default "/data/bc-correios/storage" | quote }}
+
+  # LICENSE (lib-license-go; LICENSE_KEY -> Secret)
+  LICENSE_VALIDATION_DISABLED: {{ $cm.LICENSE_VALIDATION_DISABLED | default "false" | quote }}
+  ORGANIZATION_IDS: {{ $cm.ORGANIZATION_IDS | default "global" | quote }}
+  READYZ_LICENSE_TIMEOUT_SECONDS: {{ $cm.READYZ_LICENSE_TIMEOUT_SECONDS | default "5" | quote }}
+
+  # AUTH extras (enable/host via global.auth; CLIENT_SECRET -> Secret)
+  PLUGIN_AUTH_CLIENT_ID: {{ $cm.PLUGIN_AUTH_CLIENT_ID | default "plugin-bc-correios" | quote }}
+  DEFAULT_TENANT_ID: {{ $cm.DEFAULT_TENANT_ID | default "00000000-0000-0000-0000-000000000001" | quote }}
+  MARK_VERIFIED_PANIC: {{ $cm.MARK_VERIFIED_PANIC | default "false" | quote }}
+
+  # MULTI-TENANT tuning (ENABLED knob + url/redis via global.multiTenant above; API_KEY/REDIS_PASSWORD -> Secret)
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ $cm.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
+  MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: {{ $cm.MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT | default "0" | quote }}
+  MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT: {{ $cm.MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT | default "0" | quote }}
+  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ $cm.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
+  MULTI_TENANT_EVENT_CHANNEL: {{ $cm.MULTI_TENANT_EVENT_CHANNEL | default "tenant-events" | quote }}
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $cm.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
+  MULTI_TENANT_REDIS_CA_CERT: {{ $cm.MULTI_TENANT_REDIS_CA_CERT | default "" | quote }}
+  MT_FAIL_CLOSED_ON_MISSING_CTX: {{ $cm.MT_FAIL_CLOSED_ON_MISSING_CTX | default "true" | quote }}
+  SYSTEMPLANE_LAZY_MIGRATE: {{ $cm.SYSTEMPLANE_LAZY_MIGRATE | default "true" | quote }}
+
+  # RATE LIMIT
+  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "false" | quote }}
+  RATE_LIMIT_REDIS_TIMEOUT_MS: {{ $cm.RATE_LIMIT_REDIS_TIMEOUT_MS | default "500" | quote }}
+
+  # BCB SOAP (third-party Correios/BCB outbound; base URL override is BC_CORREIO_ENDPOINT_URL, allowlisted)
+  BC_CORREIO_ENVIRONMENT: {{ $cm.BC_CORREIO_ENVIRONMENT | default "mock" | quote }}
+  BC_CORREIO_TLS_MIN_VERSION: {{ $cm.BC_CORREIO_TLS_MIN_VERSION | default "TLSv1.2" | quote }}
+  BC_CORREIO_CONNECT_TIMEOUT_SEC: {{ $cm.BC_CORREIO_CONNECT_TIMEOUT_SEC | default "30" | quote }}
+
+  # ENCRYPTION — ENCRYPTION_KEY -> Secret (no config here)
+
+  # OBSERVABILITY (OTLP endpoint/deployment-env via global.observability; identity + enables passthrough)
+  TRACING_ENABLED: {{ $cm.TRACING_ENABLED | default "false" | quote }}
+  METRICS_ENABLED: {{ $cm.METRICS_ENABLED | default "false" | quote }}
+  OTEL_SERVICE_NAME: {{ $cm.OTEL_SERVICE_NAME | default "br-correios" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "br-correios" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default "0.1.0" | quote }}
+
+  # IDEMPOTENCY / ATTACHMENT / TRANSMISSION
+  IDEMPOTENCY_TTL_SEC: {{ $cm.IDEMPOTENCY_TTL_SEC | default "86400" | quote }}
+  ATTACHMENT_BANDWIDTH_BUDGET_MB_PER_MIN: {{ $cm.ATTACHMENT_BANDWIDTH_BUDGET_MB_PER_MIN | default "500" | quote }}
+  TRANSMISSION_PENDING_GRACE_SEC: {{ $cm.TRANSMISSION_PENDING_GRACE_SEC | default "30" | quote }}
+  TRANSMISSION_RETRY_MAX_ATTEMPTS: {{ $cm.TRANSMISSION_RETRY_MAX_ATTEMPTS | default "3" | quote }}
+  TRANSMISSION_METRICS_QUERY_TIMEOUT_SEC: {{ $cm.TRANSMISSION_METRICS_QUERY_TIMEOUT_SEC | default "2" | quote }}
+
+  # STREAMING OUTBOX / AUDIT OUTBOX dispatchers
+  STREAMING_OUTBOX_BATCH_LIMIT: {{ $cm.STREAMING_OUTBOX_BATCH_LIMIT | default "50" | quote }}
+  STREAMING_OUTBOX_MAX_ATTEMPTS: {{ $cm.STREAMING_OUTBOX_MAX_ATTEMPTS | default "50" | quote }}
+  STREAMING_OUTBOX_MULTI_TENANT_ENABLED: {{ $cm.STREAMING_OUTBOX_MULTI_TENANT_ENABLED | default "false" | quote }}
+  STREAMING_OUTBOX_POLL_INTERVAL_SEC: {{ $cm.STREAMING_OUTBOX_POLL_INTERVAL_SEC | default "2" | quote }}
+  STREAMING_OUTBOX_RETENTION_DAYS: {{ $cm.STREAMING_OUTBOX_RETENTION_DAYS | default "7" | quote }}
+  AUDIT_OUTBOX_POLL_INTERVAL_SEC: {{ $cm.AUDIT_OUTBOX_POLL_INTERVAL_SEC | default "2" | quote }}
+  AUDIT_OUTBOX_BATCH_LIMIT: {{ $cm.AUDIT_OUTBOX_BATCH_LIMIT | default "50" | quote }}
+  AUDIT_OUTBOX_MAX_ATTEMPTS: {{ $cm.AUDIT_OUTBOX_MAX_ATTEMPTS | default "50" | quote }}
+  AUDIT_OUTBOX_RETENTION_DAYS: {{ $cm.AUDIT_OUTBOX_RETENTION_DAYS | default "7" | quote }}
+
+  # FEATURE FLAGS
+  FEATURE_AI_INSIGHTS_ENABLED: {{ $cm.FEATURE_AI_INSIGHTS_ENABLED | default "true" | quote }}
+  FEATURE_AUDIT_ENABLED: {{ $cm.FEATURE_AUDIT_ENABLED | default "true" | quote }}
+
+  # AI (per-tenant BYOK; tuning only — no provider keys here, per-tenant via API)
+  AI_DEFAULT_SYSTEM_PROMPT: {{ $cm.AI_DEFAULT_SYSTEM_PROMPT | default "" | quote }}
+  AI_DEFAULT_MODEL_OPENAI: {{ $cm.AI_DEFAULT_MODEL_OPENAI | default "gpt-4o-mini" | quote }}
+  AI_DEFAULT_MODEL_ANTHROPIC: {{ $cm.AI_DEFAULT_MODEL_ANTHROPIC | default "claude-sonnet-4-20250514" | quote }}
+  AI_DEFAULT_MODEL_GEMINI: {{ $cm.AI_DEFAULT_MODEL_GEMINI | default "gemini-2.0-flash" | quote }}
+  AI_TENANT_RATE_LIMIT_PER_MIN: {{ $cm.AI_TENANT_RATE_LIMIT_PER_MIN | default "50" | quote }}
+  AI_CIRCUIT_BREAKER_THRESHOLD: {{ $cm.AI_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  AI_CIRCUIT_BREAKER_HALF_OPEN_SEC: {{ $cm.AI_CIRCUIT_BREAKER_HALF_OPEN_SEC | default "30" | quote }}
+  AI_TENANT_MAX_CONCURRENT: {{ $cm.AI_TENANT_MAX_CONCURRENT | default "3" | quote }}
+  AI_GLOBAL_MAX_CONCURRENT: {{ $cm.AI_GLOBAL_MAX_CONCURRENT | default "15" | quote }}
+  AI_ACQUIRE_TIMEOUT_SEC: {{ $cm.AI_ACQUIRE_TIMEOUT_SEC | default "30" | quote }}
+  AI_INLINE_PROVIDER_TIMEOUT_SEC: {{ $cm.AI_INLINE_PROVIDER_TIMEOUT_SEC | default "15" | quote }}
+  AI_BODY_INLINE_THRESHOLD: {{ $cm.AI_BODY_INLINE_THRESHOLD | default "200" | quote }}
+  AI_HTTP_ACQUIRE_TIMEOUT_SEC: {{ $cm.AI_HTTP_ACQUIRE_TIMEOUT_SEC | default "5" | quote }}
+{{- end }}
+
+{{/*
+correiosConfigmap — the single CORREIOS ConfigMap. Input dict: root, name, comp, port.
+*/}}
+{{- define "br-sfn.correiosConfigmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sfn.componentFullname" (dict "root" .root "name" .name) }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" (dict "root" .root "name" .name) | nindent 4 }}
+data:
+{{ include "br-sfn.correiosConfigData" (dict "root" .root "comp" .comp "port" .port) }}
+{{- end }}
+
+{{/*
+=============================================================================
+slcEdgeConfigData — the productized SLC-EDGE (Cabine SLC authenticated passthrough
+edge) body. STATELESS: no datastore/broker/auth/secret of its own — it relays the
+inbound bearer credential verbatim to the br-slc core and has NO migrations.
+
+Dependency CONNECTIONS: observability enable/endpoint via global.observability.
+SLC_UPSTREAM_URL points at the br-slc CORE, a SIBLING service that is NOT a
+component of THIS chart — so internalURL/dependency.fullname cannot derive its
+address. Per the dependency-contract it stays an allowlisted escape-hatch
+PASSTHROUGH URL (a plain cross-service URL when SD is not driving it), NOT a
+hand-rolled domain knob.
+
+Input dict: root ($), comp (.Values.slcEdge), port (service port; SERVER_PORT defaults to it).
+=============================================================================
+*/}}
+{{- define "br-sfn.slcEdgeConfigData" -}}
+{{- $root := .root -}}
+{{- $port := .port -}}
+{{- $cm := .comp.configmap | default dict -}}
+  # =============================================================================
+  # OBSERVABILITY — ENABLE_TELEMETRY / OTLP endpoint via global.observability
+  # (slc-edge uses SERVICE_NAME for identity; Prometheus scrape passthrough).
+  # =============================================================================
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
+  METRICS_PROMETHEUS_ENABLED: {{ $cm.METRICS_PROMETHEUS_ENABLED | default "false" | quote }}
+  METRICS_PROMETHEUS_ADDRESS: {{ $cm.METRICS_PROMETHEUS_ADDRESS | default "127.0.0.1:9075" | quote }}
+
+  # =============================================================================
+  # UPSTREAM — br-slc CORE (inter-service). NOT a component of this chart, so this
+  # is a plain passthrough URL (allowlisted escape hatch), not a derived knob.
+  # =============================================================================
+  SLC_UPSTREAM_URL: {{ $cm.SLC_UPSTREAM_URL | default "http://localhost:3010" | quote }}
+  SLC_UPSTREAM_TIMEOUT: {{ $cm.SLC_UPSTREAM_TIMEOUT | default "30s" | quote }}
+
+  # SERVER_PORT defaults to the service port so the app listens where the Service/probes target.
+  SERVER_PORT: {{ $cm.SERVER_PORT | default (printf "%v" $port) | quote }}
+
+  # SERVER DEADLINES (passthrough tuning; 0 disables a deadline)
+  SLC_READ_TIMEOUT: {{ $cm.SLC_READ_TIMEOUT | default "120s" | quote }}
+  SLC_WRITE_TIMEOUT: {{ $cm.SLC_WRITE_TIMEOUT | default "0s" | quote }}
+  SLC_IDLE_TIMEOUT: {{ $cm.SLC_IDLE_TIMEOUT | default "120s" | quote }}
+
+  # APP / SERVER
+  SERVICE_NAME: {{ $cm.SERVICE_NAME | default "br-slc-edge" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
+
+  # CORS (cockpit SPA)
+  SLC_EDGE_CORS_ALLOWED_ORIGINS: {{ $cm.SLC_EDGE_CORS_ALLOWED_ORIGINS | default "http://localhost:5173" | quote }}
+{{- end }}
+
+{{/*
+slcEdgeConfigmap — the single SLC-EDGE ConfigMap. Input dict: root, name, comp, port.
+*/}}
+{{- define "br-sfn.slcEdgeConfigmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sfn.componentFullname" (dict "root" .root "name" .name) }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" (dict "root" .root "name" .name) | nindent 4 }}
+data:
+{{ include "br-sfn.slcEdgeConfigData" (dict "root" .root "comp" .comp "port" .port) }}
 {{- end }}

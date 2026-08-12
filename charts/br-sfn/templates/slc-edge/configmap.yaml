@@ -1,3 +1,3 @@
 {{- if $.Values.slcEdge.enabled -}}
-{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "slc-edge" "comp" $.Values.slcEdge) }}
+{{ include "br-sfn.slcEdgeConfigmap" (dict "root" $ "name" "slc-edge" "comp" $.Values.slcEdge "port" ($.Values.slcEdge.service.port | default 3005)) }}
 {{- end -}}

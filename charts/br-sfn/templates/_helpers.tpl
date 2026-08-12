@@ -682,8 +682,9 @@ port (the sub-deployment service port; SERVER_ADDRESS defaults to it).
   POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable") | quote }}
   POSTGRES_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") | quote }}
 
-  # REDIS / Valkey (host via datastore mask; tuning passthrough below). REDIS_PASSWORD -> Secret.
-  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "localhost:6379") | quote }}
+  # REDIS / Valkey (combined host:port via datastore mask; composes the shared
+  # redis {host,port} tier too). REDIS_PASSWORD -> Secret.
+  REDIS_HOST: {{ include "br-sfn.redisComposedAddr" (dict "root" $root "ds" $ds "cm" $cm "hostKey" "REDIS_HOST" "hostDefault" "localhost:6379") | quote }}
 
   # =============================================================================
   # OBSERVABILITY — per-service identity inline; ENABLE_TELEMETRY / OTLP endpoint /
@@ -1133,7 +1134,7 @@ Input dict: root ($), comp (.Values.siloc), port (service port; SERVER_PORT defa
   DB_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "DB_REPLICA_HOST" "default" "") | quote }}
 
   # REDIS / Valkey (native REDIS_ADDRESS via datastore host mask). REDIS_PASSWORD -> Secret.
-  REDIS_ADDRESS: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_ADDRESS" "default" "") | quote }}
+  REDIS_ADDRESS: {{ include "br-sfn.redisComposedAddr" (dict "root" $root "ds" $ds "cm" $cm "hostKey" "REDIS_ADDRESS" "hostDefault" "") | quote }}
   REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
   REDIS_TLS: {{ $cm.REDIS_TLS | default "false" | quote }}
 
@@ -1471,7 +1472,7 @@ Input dict: root ($), comp (.Values.correios), port (service port; SERVER_PORT d
   POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable") | quote }}
 
   # CACHE — Redis/Valkey (addr host:port via datastore mask). CACHE_PASSWORD -> Secret.
-  CACHE_ADDR: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "CACHE_ADDR" "default" "localhost:6390") | quote }}
+  CACHE_ADDR: {{ include "br-sfn.redisComposedAddr" (dict "root" $root "ds" $ds "cm" $cm "hostKey" "CACHE_ADDR" "hostDefault" "localhost:6390") | quote }}
 
   # OBJECT STORAGE — S3/SeaweedFS (endpoint/region/bucket/pathStyle via objectStorage mask).
   # OBJECT_STORAGE_ACCESS_KEY / _SECRET_KEY -> Secret.
@@ -1694,3 +1695,30 @@ metadata:
 data:
 {{ include "br-sfn.slcEdgeConfigData" (dict "root" .root "comp" .comp "port" .port) }}
 {{- end }}
+
+{{/*
+redisComposedAddr — resolve a COMBINED redis address (`<host>:<port>`) from the
+datastore redis mask, for rails whose app reads a single combined-address env
+(spi REDIS_HOST, siloc REDIS_ADDRESS, correios CACHE_ADDR) rather than split
+host/port (spb/scr). Reads BOTH mask fields so the shared tier
+`global.datastores.redis.{host,port}` (separate) reaches these rails too.
+
+Behaviour-safe: appends `:<port>` ONLY when a separate mask port is present AND
+the resolved host has no embedded `:` — so the legacy embedded-port style
+(host="valkey:6379", no separate port) is unchanged and no stray `:` is added.
+
+Input dict: root ($), ds (dedicated datastores map), cm (configmap map),
+hostKey (native host env key), hostDefault (legacy default for host).
+*/}}
+{{- define "br-sfn.redisComposedAddr" -}}
+{{- $host := include "lerian-common.datastore.value" (dict "context" .root "dedicated" .ds "configmap" .cm "type" "redis" "field" "host" "nativeKey" .hostKey "default" .hostDefault) -}}
+{{- /* No native configmap key for the port on a combined-address rail — the app
+   reads only the combined host env — so use a sentinel nativeKey that is never in
+   the configmap; the mask then resolves dedicated/shared redis.port (or ""). */ -}}
+{{- $port := include "lerian-common.datastore.value" (dict "context" .root "dedicated" .ds "configmap" .cm "type" "redis" "field" "port" "nativeKey" "__BR_SFN_NO_NATIVE_REDIS_PORT__" "default" "") -}}
+{{- if and $port (not (contains ":" $host)) -}}
+{{- printf "%s:%s" $host $port -}}
+{{- else -}}
+{{- $host -}}
+{{- end -}}
+{{- end -}}

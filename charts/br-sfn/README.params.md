@@ -19,6 +19,11 @@
 | `securityContext` | object | `{}` | Container security context (alpine/debian nonroot images — UID/GID 65532; the cockpit overrides runAsUser/runAsGroup via cockpit.securityContext because nginx-unprivileged runs as uid 101). |
 | `waitImage` | string | `busybox:1.36` | Image used by wait-for-dependency initContainers. |
 | `migrateImage` | string | `migrate/migrate:v4.18.1` | golang-migrate image for components whose migrations run from their baked /migrations tree (spb, scr, desk). spi and siloc ship dedicated migrator images instead (see their migrations blocks). |
+
+## SPB (STR/TED rail over IBM MQ / RSFN)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
 | `spb.datastores` | object | `{}` | Dedicated datastore masks for SPB (Postgres + Redis + RabbitMQ). Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/name/ ssl/replicaHost; redis: host/port; broker (RabbitMQ): host/port/user. |
 | `spb.configmap` | object | `{}` | SPB ConfigMap escape hatch: set/override ANY native env KEY here (wins over the template default). Credentials NEVER go here — use secrets. |
 | `spb.secrets` | object | `{}` | SPB Secret map (emit-when-set). Holds POSTGRES/REDIS/RABBITMQ/STR_MQ passwords, WEBHOOK_SECRET_KEY, STR_PAYLOAD_ENCRYPTION_KEY, SPB_KMIP_CRYPTO_USER_TOKEN, DEV_DEBUG_TOKEN. Use useExistingSecret/existingSecretName to bring your own. |
@@ -32,20 +37,49 @@
 | `spi.configmap` | object | `{}` | SHARED ConfigMap escape hatch for all four binaries: set/override ANY native env KEY here (wins over the template default). Per-binary override via spi.<api|dict|brcode|core>.configmap.<KEY>. Credentials NEVER go here — use secrets. |
 | `spi.secrets` | object | `{}` | SHARED Secret map for all four binaries (emit-when-set; per-binary override via spi.<comp>.secrets). Holds POSTGRES_PASSWORD/REDIS_PASSWORD and the PII/crypto keys. |
 | `spi.useExistingSecret` | bool | `false` | Bring your own Secret instead of the chart-managed one (family-wide). |
+
+## SILOC (Núclea card settlement over IBM MQ)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
 | `siloc.datastores` | object | `{}` | Dedicated datastore masks for SILOC (Postgres + Redis). Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/ name/ssl/replicaHost (native DB_*); redis: host (native REDIS_ADDRESS). The SAME postgres mask also feeds the migrator's POSTGRES_* (see migrations below). |
 | `siloc.configmap` | object | `{}` | SILOC ConfigMap escape hatch: set/override ANY native env KEY (DB_*, MQ_*, SFN_*, ...); wins over the template default. Credentials NEVER go here — use secrets. |
 | `siloc.secrets` | object | `{}` | SILOC Secret map (emit-when-set). Holds DB_PASSWORD, REDIS_PASSWORD. |
+
+## SCR (Sistema de Informações de Crédito — wsscr2n facade)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
 | `scr.datastores` | object | `{}` | Dedicated datastore masks for SCR (Postgres + Redis). Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/ name/ssl (no replica); redis: host/port. The app and the baked migrator both read POSTGRES_*, so one mask feeds both. |
 | `scr.configmap` | object | `{}` | SCR ConfigMap escape hatch: set/override ANY native env KEY (POSTGRES_*, SCR_STREAMING_*, SCR_WSSCR2N_*, SECRET_STORE_*, MULTI_TENANT_ENABLED/URL, ...); wins over the template default. Credentials NEVER go here — use secrets. |
 | `scr.secrets` | object | `{}` | SCR Secret map (emit-when-set). Holds POSTGRES_PASSWORD, REDIS_PASSWORD, MULTI_TENANT_SERVICE_API_KEY, SCR_WSSCR2N_BASIC_PASSWORD, and the SCR_ATREST_* PII keys. |
+
+## DESK (cabine operator-state + four-eyes)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
 | `desk.datastores` | object | `{}` | Dedicated datastore mask for DESK (Postgres only; no Redis/replica). Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/name/ssl (native DB_*). The app reads DB_*; the baked migrator reads POSTGRES_* — the same mask feeds both (see migrations passwordSecret). |
 | `desk.configmap` | object | `{}` | DESK ConfigMap escape hatch: set/override ANY native env KEY (DB_*, DESK_*, PLUGIN_ACCESS_MANAGER_URL/CLIENT_ID, ...); wins over the template default. Credentials NEVER go here — use secrets. |
 | `desk.secrets` | object | `{}` | DESK Secret map (emit-when-set). Holds DB_PASSWORD and the outbound M2M PLUGIN_ACCESS_MANAGER_CLIENT_SECRET. |
+
+## CORREIOS (BC Correio regulatory mailbox)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
 | `correios.datastores` | object | `{}` | Dedicated datastore masks for CORREIOS. Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/name/ssl (native db-name is POSTGRES_NAME; app + baked migrator both POSTGRES_*); redis: host (native CACHE_ADDR, host:port). RabbitMQ is NOT masked — correios uses a full RABBITMQ_URL (a Secret). |
 | `correios.objectStorage` | object | `{}` | Dedicated object-storage mask for CORREIOS (S3/SeaweedFS attachment store). Overrides global.objectStorage; backend name is `default`. Fields: endpoint/ region/bucket/usePathStyle. Credentials (ACCESS_KEY/SECRET_KEY) -> secrets. |
 | `correios.configmap` | object | `{}` | CORREIOS ConfigMap escape hatch: set/override ANY native env KEY (POSTGRES_*, CACHE_*, OBJECT_STORAGE_*, MULTI_TENANT_*, AI_*, BC_CORREIO_*, ...); wins over the template default. Credentials NEVER go here — use secrets. |
 | `correios.secrets` | object | `{}` | CORREIOS Secret map (emit-when-set). Holds POSTGRES_PASSWORD, CACHE_PASSWORD, RABBITMQ_URL (embeds creds) + RABBITMQ_PASS, OBJECT_STORAGE_ACCESS_KEY/SECRET_KEY, ENCRYPTION_KEY, LICENSE_KEY, PLUGIN_AUTH_CLIENT_SECRET, MULTI_TENANT_SERVICE_API_KEY, MULTI_TENANT_REDIS_PASSWORD. |
+
+## SLC-EDGE (Cabine SLC authenticated passthrough edge)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
 | `slcEdge.configmap` | object | `{}` | SLC-EDGE ConfigMap escape hatch: set/override ANY native env KEY (SLC_UPSTREAM_URL, SLC_*_TIMEOUT, SLC_EDGE_CORS_ALLOWED_ORIGINS, ...). |
 | `slcEdge.secrets` | object | `{}` | SLC-EDGE has NO secrets (it forwards the caller's Authorization header verbatim; it holds no credential). Kept for the escape-hatch contract. |
-| `cockpit` | object | `{}` | build-arg VITE_*=... (out of chart scope). ============================================================================= |
+
+## Cockpit (operations SPA — build-arg-only)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
 | `cockpit.configmap` | object | `{}` | BUILD-ARG-ONLY rail: no runtime env. These stay as the OPEN escape-hatch contract (no schema enum) — the SPA reads no runtime env; VITE_* are image build args. Only set configmap here if a future runtime-config image variant introduces runtime keys. |

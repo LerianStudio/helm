@@ -3,62 +3,82 @@
 # -----------------------------------------------------------------------------
 # The full values.yaml is the power-user API. This file is the short list of
 # DEPENDENCY-CONNECTION knobs a non-expert fills to get a rail running: where the
-# database / cache live, which rail to deploy, the image tag, the ingress host,
-# and the operator-provided secrets. Everything else has a working default in the
-# chart; reach it only via `<component>.configmap.<KEY>` (the escape hatch).
+# database / cache / broker live, which rail to deploy, the image tag, the ingress
+# host, and the operator-provided secrets. Everything else has a working default
+# in the chart; reach it only via `<component>.configmap.<KEY>` (the escape hatch).
 #
 #   helm install br-sfn charts/br-sfn -f values-quickstart.yaml
 #
-# Anything with CHANGE_ME MUST be set. Infra (Postgres / Valkey / RedPanda) is
-# EXTERNAL and pre-provisioned — the host knobs below point the rail at it.
+# Anything with CHANGE_ME MUST be set. Infra (Postgres / Valkey / RabbitMQ / S3)
+# is EXTERNAL and pre-provisioned — the SHARED global.datastores block below points
+# every rail at it in ONE place.
 #
-# All 8 rails are now productized on lerian-common. `cockpit` is a special case:
-# it is BUILD-ARG-ONLY (see below) — it has no runtime config surface, so its
-# escape-hatch stays open with nothing to wire.
+# SET THE CONNECTION ONCE (global tier), NOT per rail. Precedence is
+# `<rail>.configmap.<KEY>` > `<rail>.datastores` (dedicated override) >
+# `global.datastores` > default — so a per-rail `datastores` block with a CHANGE_ME
+# would SHADOW the shared values below. Only add a per-rail block when you
+# DELIBERATELY point ONE rail at different infra (see the commented spi example).
+#
+# TLS: every example scheme is secure-by-default (https / amqps, ssl=verify-full,
+# object-storage disableSSL=false). Plaintext (http / amqp / disableSSL=true) is
+# acceptable ONLY behind an in-cluster service mesh that terminates mTLS.
+#
+# All 8 rails are productized on lerian-common. `cockpit` is BUILD-ARG-ONLY (see
+# below): it has no runtime config surface, so its escape hatch stays empty.
 # =============================================================================
 
 global:
-  # -- SHARED datastore tier (the PRIMARY knob): set the connection ONCE and every
-  #    rail inherits it. One Postgres/Redis/broker for the whole platform. Point a
-  #    single rail elsewhere with the ADVANCED per-rail override <rail>.datastores.*
-  #    (see the spi/spb blocks below). Precedence: configmap.<KEY> > <rail>.datastores
-  #    > global.datastores > default.
-  datastores: {}
-    # postgres: { host: "postgresql.internal", port: "5432", user: "brsfn", ssl: "verify-full", replicaHost: "postgresql-replica.internal" }
-    # redis:    { host: "valkey.internal", port: "6379" }
-    # broker:   { host: "rabbitmq.internal", port: "5672", user: "brsfn" }   # RabbitMQ (spb)
+  # -- SHARED datastore tier — the PRIMARY knob. Set once; EVERY enabled rail
+  #    inherits it. host/port/ssl are genuinely shared (one cluster); per-rail
+  #    USER and DB NAME differ (spi=brspi, spb=br_bank_transfer_jota,
+  #    correios=plugin-bc-correios, ...) — override those per rail via
+  #    `<rail>.configmap.POSTGRES_USER` / `POSTGRES_DB` / `POSTGRES_NAME` / `DB_*`.
+  datastores:
+    postgres:
+      host: "CHANGE_ME"          # e.g. postgresql.internal — shared by every rail
+      port: "5432"
+      user: "brsfn"              # override per rail when they differ (see above)
+      ssl: "verify-full"         # TLS-guaranteeing mode (require|verify-ca|verify-full)
+      # replicaHost: "postgresql-replica.internal"
+    redis:
+      host: "CHANGE_ME"          # e.g. valkey.internal — bare host (no :port)
+      port: "6379"               # combined-address rails (spi/siloc/correios) compose host:port
+    broker:                      # RabbitMQ (spb outbox relay)
+      host: "CHANGE_ME"          # e.g. rabbitmq.internal
+      port: "5672"
+      user: "brsfn"
   # -- OTel collector, env-wide (leave empty to keep telemetry off).
   observability: {}
     # enabled: "true"
-    # otlpEndpoint: "otel-collector-lerian:4317"
+    # otlpEndpoint: "otel-collector-lerian:4317"   # OTLP gRPC endpoint (host:port)
     # deploymentEnvironment: "production"
   # -- plugin-access-manager auth, env-wide (per-component override via configmap).
   auth: {}
     # enabled: "true"
-    # host: "https://plugin-access-manager:4000"
+    # host: "https://plugin-access-manager:4000"   # https — carries bearer tokens
   # -- Tenant Manager URL, env-wide (read when a rail sets MULTI_TENANT_ENABLED=true; scr + correios).
   multiTenant: {}
-    # url: "https://tenant-manager.internal"
+    # url: "https://tenant-manager.internal"        # https — carries the service API key
   # -- Object storage, env-wide, keyed by backend name (correios uses `default`).
   objectStorage: {}
-    # default: { endpoint: "https://s3.amazonaws.com", region: "us-east-1" }
+    # default:
+    #   endpoint: "https://s3.amazonaws.com"        # https; http only behind an in-cluster mesh
+    #   region: "us-east-1"
+    #   bucket: "bc-correios-attachments"
+    #   usePathStyle: "false"                       # "true" for MinIO/SeaweedFS
+    #   disableSSL: "false"                         # keep false; TLS to the object store
 
 # --- SPI / Pix rail (spi-api + spi-dict + spi-brcode + spi-core) ---
 spi:
   enabled: true
-  # -- ADVANCED per-rail override (dedicated). Prefer setting the connection ONCE in
-  #    global.datastores above; use this only to point SPI at a different host/db.
-  #    One Postgres + one Redis shared by all four SPI binaries.
-  datastores:
-    postgres:
-      host: "CHANGE_ME"          # e.g. spi-postgresql.internal
-      port: "5432"
-      user: "brspi"
-      name: "brspi"
-      ssl: "require"
-      # replicaHost: "spi-postgresql-replica.internal"
-    redis:
-      host: "CHANGE_ME:6379"     # e.g. spi-valkey.internal:6379
+  # -- ADVANCED (optional) dedicated override — the ONLY illustrative per-rail
+  #    datastores block. Uncomment ONLY to point SPI at different infra than the
+  #    shared global.datastores tier above; otherwise leave it out (a CHANGE_ME
+  #    here would SHADOW the shared host). Set the SPI db name per rail here or via
+  #    configmap.POSTGRES_DB.
+  # datastores:
+  #   postgres: { host: "spi-postgresql.internal", user: "brspi", name: "brspi", ssl: "verify-full" }
+  #   redis:    { host: "spi-valkey.internal", port: "6379" }
   api:
     image:
       tag: "1.0.0-beta.1"        # -- pin the spi-api image version
@@ -79,6 +99,7 @@ spi:
       tag: "1.0.0-beta.1"        # -- pin the br-spi-migrations image
   # -- Turn on env-wide/rail features here (escape hatch; each key wins over the default):
   configmap: {}
+    # POSTGRES_DB: "brspi"                    # per-rail db name (global sets host/port/ssl)
     # ENV_NAME: "production"                  # protected runtime -> stricter fail-closed validation
     # BACEN_SPI_PARTICIPANT_ISPB: "12345678"
     # BACEN_SPI_SIGNER_KIND: "pkcs11"         # production custody (file is dev/HML only)
@@ -101,31 +122,19 @@ spi:
     # IDEMPOTENCY_RESPONSE_ENCRYPTION_KEY: "CHANGE_ME"
 
 # --- SPB / STR rail (TED over IBM MQ / RSFN) ---
+# Postgres + Redis + RabbitMQ come from the shared global.datastores tier above.
+# The SPB db name / user differ from other rails — set them via configmap when they
+# do not match the shared defaults.
 spb:
   enabled: true
   image:
     tag: "1.0.0-beta.1"          # -- pin the br-spb image version
-  # -- ADVANCED per-rail override (dedicated). Prefer global.datastores above; use
-  #    this only to point SPB at a different Postgres/Redis/RabbitMQ.
-  datastores:
-    postgres:
-      host: "CHANGE_ME"          # e.g. spb-postgresql.internal
-      port: "5432"
-      user: "br_spb"
-      name: "br_bank_transfer_jota"
-      ssl: "verify-full"         # production/staging require verify-full
-    redis:
-      host: "CHANGE_ME"          # e.g. spb-valkey.internal
-      port: "6379"
-    broker:                      # RabbitMQ (outbox event relay); optional in develop
-      host: ""                   # e.g. spb-rabbitmq.internal
-      port: "5672"
-      user: "br_spb"
   ingress:
     enabled: false
     # hosts: [{ host: "str.example.com", paths: [{ path: "/", pathType: Prefix }] }]
   # -- Escape hatch (each key wins over the default). IBM MQ / STR transport lives here:
   configmap: {}
+    # POSTGRES_DB: "br_bank_transfer_jota"   # per-rail db name (global sets host/port/ssl)
     # ENV_NAME: "production"                 # protected runtime -> stricter fail-closed validation
     # STR_MQ_HOST: "mq.rsfn.internal"        # real IBM MQ host (required in production/staging)
     # STR_MQ_CHANNEL: "..."
@@ -136,33 +145,25 @@ spb:
   secrets:
     POSTGRES_PASSWORD: "CHANGE_ME"
     # REDIS_PASSWORD: "CHANGE_ME"            # required in production/staging
-    # RABBITMQ_PASSWORD: "CHANGE_ME"         # when broker.host is set
+    # RABBITMQ_PASSWORD: "CHANGE_ME"         # when the shared broker is used
     # STR_MQ_PASSWORD: "CHANGE_ME"           # required in production/staging
     # WEBHOOK_SECRET_KEY: "CHANGE_ME"        # 64 hex chars (32 bytes); required in prod/staging
     # STR_PAYLOAD_ENCRYPTION_KEY: "CHANGE_ME"  # AES-256 (hex/base64); required in prod/staging
     # SPB_KMIP_CRYPTO_USER_TOKEN: "CHANGE_ME"  # when SPB_SIGNER_KIND=kmip
 
 # --- SILOC rail (Núclea card settlement over IBM MQ) ---
+# Postgres + Redis from the shared tier. Native DB naming is DB_* / REDIS_ADDRESS;
+# the mask emits those for you. The SAME postgres mask also feeds the migrator.
 siloc:
   enabled: true
   image:
     tag: "1.0.0-beta.1"          # -- pin the br-siloc image version
-  # -- Native DB naming is DB_* / REDIS_ADDRESS; the mask emits those for you.
-  #    Prefer global.datastores above; this per-rail block points SILOC elsewhere.
-  #    The SAME postgres mask also feeds the migrator (POSTGRES_*), so set it once.
-  datastores:
-    postgres:
-      host: "CHANGE_ME"          # e.g. siloc-postgresql.internal
-      port: "5432"
-      user: "br_siloc"
-      name: "br_siloc"
-      ssl: "require"
-    redis:
-      host: "CHANGE_ME:6379"     # REDIS_ADDRESS (host:port)
   ingress:
     enabled: false
   # -- Escape hatch. The Núclea SILOC IBM MQ leg lives here (plain passthrough):
   configmap: {}
+    # DB_NAME: "br_siloc"                    # per-rail db name (global sets host/port/ssl)
+    # DB_USER: "br_siloc"
     # ENV_NAME: "production"
     # CAMARA_PAG_ISPB: "02992335"            # Núclea SILOC câmara ISPB (8 digits)
     # MQ_HOST: "..."
@@ -178,26 +179,18 @@ siloc:
     # REDIS_PASSWORD: "CHANGE_ME"
 
 # --- SCR rail (Sistema de Informações de Crédito — wsscr2n facade) ---
+# Postgres + Redis from the shared tier (app AND baked migrator both read POSTGRES_*).
 scr:
   enabled: true
   image:
     tag: "1.0.0-beta.1"          # -- pin the br-scr image version
-  # -- Postgres + Redis (app AND baked migrator both read POSTGRES_*). Prefer global.datastores.
-  datastores:
-    postgres:
-      host: "CHANGE_ME"          # e.g. scr-postgresql.internal
-      port: "5432"
-      user: "scr"
-      name: "scr"
-      ssl: "require"
-    redis:
-      host: "CHANGE_ME"          # e.g. scr-valkey.internal
-      port: "6379"
   ingress:
     enabled: false
   # -- Escape hatch. wsscr2n upstream + RedPanda streaming (SCR_STREAMING_*, app-prefixed)
   #    + secret-store selection live here (plain passthrough):
   configmap: {}
+    # POSTGRES_DB: "scr"                      # per-rail db name (global sets host/port/ssl)
+    # POSTGRES_USER: "scr"
     # ENV_NAME: "production"
     # DEPLOYMENT_MODE: "saas"                 # fail-closed TLS everywhere
     # SCR_WSSCR2N_BASE_URL: "https://scr.bcb.gov.br/wsscr2n"   # prod; keep the /wsscr2n suffix
@@ -216,28 +209,23 @@ scr:
     # MULTI_TENANT_SERVICE_API_KEY: "CHANGE_ME"         # required when MULTI_TENANT_ENABLED=true
 
 # --- DESK rail (cabine operator-state + four-eyes back-office) ---
+# Postgres only (no Redis) from the shared tier. App reads DB_*; the baked migrator
+# reads POSTGRES_* — the SAME mask feeds both.
 desk:
   enabled: true
   image:
     tag: "1.0.0-beta.1"          # -- pin the br-desk image version
-  # -- Postgres only (no Redis). App reads DB_*; the baked migrator reads POSTGRES_*;
-  #    the SAME mask feeds both. Prefer global.datastores.
-  datastores:
-    postgres:
-      host: "CHANGE_ME"          # e.g. desk-postgresql.internal
-      port: "5432"
-      user: "desk"
-      name: "desk"
-      ssl: "require"
   ingress:
     enabled: false
   # -- Escape hatch. CORS (cockpit SPA), ACK-workflow TTLs, and the outbound M2M
   #    access-manager URL/CLIENT_ID live here (plain passthrough):
   configmap: {}
+    # DB_NAME: "desk"                        # per-rail db name (global sets host/port/ssl)
+    # DB_USER: "desk"
     # ENV_NAME: "production"
     # DEPLOYMENT_MODE: "saas"
     # DESK_CORS_ALLOWED_ORIGINS: "https://cockpit.example.com"
-    # PLUGIN_ACCESS_MANAGER_URL: "https://plugin-access-manager:4000"   # or set global.auth.host
+    # PLUGIN_ACCESS_MANAGER_URL: "https://plugin-access-manager:4000"   # https; or set global.auth.host
     # PLUGIN_ACCESS_MANAGER_CLIENT_ID: "br-desk"
   # -- Operator-provided credentials (NEVER in configmap — schema rejects them there).
   #    DB_PASSWORD also feeds the migrator (mapped to POSTGRES_PASSWORD).
@@ -246,39 +234,26 @@ desk:
     # PLUGIN_ACCESS_MANAGER_CLIENT_SECRET: "CHANGE_ME"   # four-eyes user-deletion M2M; required in prod
 
 # --- CORREIOS rail (BC Correio regulatory mailbox — Postgres + cache + RabbitMQ + S3) ---
+# Postgres (native db-name is POSTGRES_NAME) + cache (CACHE_ADDR) from the shared
+# tier. S3 comes from the shared global.objectStorage (backend `default`) above.
 correios:
   enabled: true
   image:
     tag: "1.0.0-beta.1"          # -- pin the plugin-bc-correios image version
-  # -- Postgres (native db-name is POSTGRES_NAME; app + migrator both POSTGRES_*) + cache
-  #    (CACHE_ADDR host:port). Prefer global.datastores.
-  datastores:
-    postgres:
-      host: "CHANGE_ME"          # e.g. correios-postgresql.internal
-      port: "5432"
-      user: "plugin-bc-correios"
-      name: "plugin-bc-correios"
-      ssl: "require"
-    redis:
-      host: "CHANGE_ME:6379"     # CACHE_ADDR (host:port)
-  # -- S3/SeaweedFS attachment store (backend name `default`). Prefer global.objectStorage.
-  objectStorage:
-    default:
-      endpoint: "CHANGE_ME"      # e.g. https://s3.amazonaws.com or http://seaweedfs:8333
-      region: "us-east-1"
-      bucket: "bc-correios-attachments"
-      usePathStyle: "false"      # "true" for MinIO/SeaweedFS
   ingress:
     enabled: false
   # -- Escape hatch. RabbitMQ URL, BCB SOAP env, AI/feature/tenant tuning live here:
   configmap: {}
+    # POSTGRES_NAME: "plugin-bc-correios"     # per-rail db name (global sets host/port/ssl)
+    # POSTGRES_USER: "plugin-bc-correios"
     # ENV_NAME: "production"
     # BC_CORREIO_ENVIRONMENT: "production"    # mock | homologation | production
     # MULTI_TENANT_ENABLED: "true"            # then set global.multiTenant.url + secrets
   # -- Operator-provided credentials (NEVER in configmap — schema rejects them there).
   secrets:
     POSTGRES_PASSWORD: "CHANGE_ME"
-    RABBITMQ_URL: "amqp://user:CHANGE_ME@correios-rabbitmq:5672/"   # embeds credentials -> Secret
+    # amqps:// (TLS). Plaintext amqp:// only behind an in-cluster service mesh.
+    RABBITMQ_URL: "amqps://user:CHANGE_ME@correios-rabbitmq:5671/"   # embeds credentials -> Secret
     # CACHE_PASSWORD: "CHANGE_ME"
     OBJECT_STORAGE_ACCESS_KEY: "CHANGE_ME"
     OBJECT_STORAGE_SECRET_KEY: "CHANGE_ME"
@@ -295,9 +270,10 @@ slcEdge:
     enabled: false
   # -- Stateless: no datastore, no secrets (it relays the caller's bearer verbatim).
   #    The ONE required knob is the br-slc core upstream (a plain inter-service URL —
-  #    br-slc is a separate service, not derived by the chart).
+  #    br-slc is a separate service, not derived by the chart). It FORWARDS the bearer
+  #    token, so use https; plaintext http only behind an in-cluster service mesh.
   configmap:
-    SLC_UPSTREAM_URL: "CHANGE_ME"              # e.g. http://br-slc:3010 (the br-slc core base)
+    SLC_UPSTREAM_URL: "CHANGE_ME"              # e.g. https://br-slc:3010 (the br-slc core base)
     # SLC_EDGE_CORS_ALLOWED_ORIGINS: "https://cockpit.example.com"
     # SLC_UPSTREAM_TIMEOUT: "30s"
 

@@ -23,6 +23,13 @@ global:
   datastores:
     postgres:
       host: shared-pg.ci
+    # SHARED redis tier with SEPARATE host + port. No rail sets a dedicated redis
+    # block, so all 5 redis rails inherit this: the combined-address rails
+    # (spi REDIS_HOST / siloc REDIS_ADDRESS / correios CACHE_ADDR) COMPOSE
+    # host:port, and the split rails (spb/scr) get REDIS_HOST=host + REDIS_PORT=port.
+    redis:
+      host: shared-valkey.ci
+      port: "6390"
 spb:
   enabled: true
   # Productized on lerian-common. Dependency masks — each field a DISTINCT value so
@@ -36,9 +43,6 @@ spb:
       name: br_spb_ci_db
       ssl: verify-full
       replicaHost: spb-pg-replica.ci
-    redis:
-      host: spb-valkey.ci
-      port: "6381"
     broker:
       host: spb-rabbitmq.ci
       port: "5673"
@@ -61,8 +65,6 @@ spi:
       name: brspi_ci_db
       ssl: require
       replicaHost: spi-pg-replica.ci
-    redis:
-      host: spi-valkey.ci:6380
   # Escape-hatch passthrough override on the schema allowlist (typo protection check).
   configmap:
     LOG_LEVEL: debug
@@ -82,8 +84,6 @@ siloc:
       name: br_siloc_ci_db
       ssl: require
       replicaHost: siloc-pg-replica.ci
-    redis:
-      host: siloc-valkey.ci:6382
   configmap:
     LOG_LEVEL: debug
     ENV_NAME: sandbox
@@ -113,9 +113,6 @@ scr:
       user: br_scr_ci
       name: br_scr_ci_db
       ssl: require
-    redis:
-      host: scr-valkey.ci
-      port: "6383"
   # Enable multi-tenant to exercise multiTenant.env (URL from global.multiTenant.url,
   # required when enabled) + the MT secret. Plus a passthrough override (allowlist check).
   configmap:
@@ -153,8 +150,6 @@ correios:
       user: br_correios_ci
       name: br_correios_ci_db
       ssl: require
-    redis:
-      host: correios-valkey.ci:6384
   objectStorage:
     default:
       endpoint: https://s3.ci.local

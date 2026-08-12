@@ -113,6 +113,7 @@ migrateImage: migrate/migrate:v4.18.1
 # =============================================================================
 # spb — SPB/STR rail (TED). CGO + IBM MQ runtime (debian-based image).
 # =============================================================================
+# @section SPB (STR/TED rail over IBM MQ / RSFN)
 spb:
   enabled: false
   replicaCount: 1
@@ -437,6 +438,7 @@ spi:
 # siloc — SILOC rail (card settlement files). CGO + IBM MQ runtime, with a
 # dedicated migrator image (br-siloc-migrations).
 # =============================================================================
+# @section SILOC (Núclea card settlement over IBM MQ)
 siloc:
   enabled: false
   replicaCount: 1
@@ -527,6 +529,7 @@ siloc:
 # scr — SCR rail (credit information / wsscr2n). CGO-free alpine runtime;
 # migrations baked at /migrations with the schema_migrations_scr table.
 # =============================================================================
+# @section SCR (Sistema de Informações de Crédito — wsscr2n facade)
 scr:
   enabled: false
   replicaCount: 1
@@ -614,6 +617,7 @@ scr:
 # migrations baked at /migrations (default schema_migrations table — the desk
 # schema-readiness probe reads that exact name).
 # =============================================================================
+# @section DESK (cabine operator-state + four-eyes)
 desk:
   enabled: false
   replicaCount: 1
@@ -709,6 +713,7 @@ desk:
 # reads POSTGRES_NAME (not POSTGRES_DB), which is why its Job passes
 # dbCfgKey=POSTGRES_NAME.
 # =============================================================================
+# @section CORREIOS (BC Correio regulatory mailbox)
 correios:
   enabled: false
   replicaCount: 1
@@ -802,6 +807,7 @@ correios:
 # slcEdge — Cabine SLC authenticated passthrough edge (br-slc-edge). Stateless:
 # no datastore, no migrations. Renders as "slc-edge" resources.
 # =============================================================================
+# @section SLC-EDGE (Cabine SLC authenticated passthrough edge)
 slcEdge:
   enabled: false
   replicaCount: 1
@@ -872,9 +878,10 @@ slcEdge:
 # configmap/secrets maps below stay ONLY as the standard escape-hatch contract
 # (left OPEN — no propertyNames.enum — since there is no runtime env vocabulary
 # to allowlist; a future one-image runtime-config variant would add keys here).
-# Environments that need real URLs build/pin an environment-specific image with
-# --build-arg VITE_*=... (out of chart scope).
+# Environments that need real URLs build/pin an environment-specific image via
+# `docker build` build-args (VITE_*=...) — out of chart scope.
 # =============================================================================
+# @section Cockpit (operations SPA — build-arg-only)
 cockpit:
   enabled: false
   replicaCount: 1

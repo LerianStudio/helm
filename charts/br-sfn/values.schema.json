@@ -3704,7 +3704,6 @@
     },
     "cockpit": {
       "type": "object",
-      "description": "build-arg VITE_*=... (out of chart scope).",
       "properties": {
         "enabled": {
           "default": false

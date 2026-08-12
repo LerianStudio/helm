@@ -211,10 +211,11 @@ spi:
   enabled: false
   # -- Dedicated datastore masks for the SPI family (one Postgres + one Redis shared
   # by all four binaries). Overrides global.datastores; each configmap.<KEY> still wins.
-  # postgres accepts host/port/user/name/ssl/replicaHost; redis accepts host.
+  # postgres accepts host/port/user/name/ssl/replicaHost; redis accepts host + port
+  # (composed into the combined REDIS_HOST as `<host>:<port>`, IPv6-bracketed).
   datastores: {}
   #   postgres: { host: "spi-postgresql", port: "5432", user: "brspi", name: "brspi", ssl: "require" }
-  #   redis:    { host: "spi-valkey:6379" }
+  #   redis:    { host: "spi-valkey", port: "6379" }
   # -- SHARED ConfigMap escape hatch for all four binaries: set/override ANY native
   # env KEY here (wins over the template default). Per-binary override via
   # spi.<api|dict|brcode|core>.configmap.<KEY>. Credentials NEVER go here — use secrets.
@@ -459,8 +460,9 @@ siloc:
     port: 9820
   # -- Dedicated datastore masks for SILOC (Postgres + Redis). Overrides
   # global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/
-  # name/ssl/replicaHost (native DB_*); redis: host (native REDIS_ADDRESS). The
-  # SAME postgres mask also feeds the migrator's POSTGRES_* (see migrations below).
+  # name/ssl/replicaHost (native DB_*); redis: host + port (native REDIS_ADDRESS,
+  # composed as `<host>:<port>`, IPv6-bracketed). The SAME postgres mask also feeds
+  # the migrator's POSTGRES_* (see migrations below).
   datastores: {}
   #   postgres: { host: "siloc-postgresql", port: "5432", user: "br_siloc", name: "br_siloc", ssl: "require" }
   #   redis:    { host: "siloc-valkey:6379" }
@@ -734,11 +736,12 @@ correios:
     port: 8080
   # -- Dedicated datastore masks for CORREIOS. Overrides global.datastores; each
   # configmap.<KEY> still wins. postgres: host/port/user/name/ssl (native db-name is
-  # POSTGRES_NAME; app + baked migrator both POSTGRES_*); redis: host (native CACHE_ADDR,
-  # host:port). RabbitMQ is NOT masked — correios uses a full RABBITMQ_URL (a Secret).
+  # POSTGRES_NAME; app + baked migrator both POSTGRES_*); redis: host + port (native
+  # CACHE_ADDR, composed as `<host>:<port>`, IPv6-bracketed). RabbitMQ is NOT masked —
+  # correios uses a full RABBITMQ_URL (a Secret).
   datastores: {}
   #   postgres: { host: "correios-postgresql", port: "5432", user: "plugin-bc-correios", name: "plugin-bc-correios", ssl: "require" }
-  #   redis:    { host: "correios-valkey:6379" }
+  #   redis:    { host: "correios-valkey", port: "6379" }
   # -- Dedicated object-storage mask for CORREIOS (S3/SeaweedFS attachment store).
   # Overrides global.objectStorage; backend name is `default`. Fields: endpoint/
   # region/bucket/usePathStyle. Credentials (ACCESS_KEY/SECRET_KEY) -> secrets.

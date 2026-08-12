@@ -1716,8 +1716,17 @@ hostKey (native host env key), hostDefault (legacy default for host).
    reads only the combined host env — so use a sentinel nativeKey that is never in
    the configmap; the mask then resolves dedicated/shared redis.port (or ""). */ -}}
 {{- $port := include "lerian-common.datastore.value" (dict "context" .root "dedicated" .ds "configmap" .cm "type" "redis" "field" "port" "nativeKey" "__BR_SFN_NO_NATIVE_REDIS_PORT__" "default" "") -}}
-{{- if and $port (not (contains ":" $host)) -}}
+{{- /* IPv6-aware composition. Colon count decides whether the host already carries a
+   port: 0 colons -> bare host, append :port; >1 colon -> bare IPv6 literal, bracket
+   then append [host]:port; exactly 1 colon -> legacy host:port / ipv4:port, leave as-is.
+   An already-bracketed host (contains ']') or an unset port is emitted verbatim. */ -}}
+{{- $colons := sub (len (splitList ":" $host)) 1 -}}
+{{- if or (not $port) (contains "]" $host) -}}
+{{- $host -}}
+{{- else if eq $colons 0 -}}
 {{- printf "%s:%s" $host $port -}}
+{{- else if gt $colons 1 -}}
+{{- printf "[%s]:%s" $host $port -}}
 {{- else -}}
 {{- $host -}}
 {{- end -}}

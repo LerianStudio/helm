@@ -33,7 +33,7 @@
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `spi.enabled` | bool | `false` | Deploy the SPI/Pix rail (all four sub-deployments). |
-| `spi.datastores` | object | `{}` | Dedicated datastore masks for the SPI family (one Postgres + one Redis shared by all four binaries). Overrides global.datastores; each configmap.<KEY> still wins. postgres accepts host/port/user/name/ssl/replicaHost; redis accepts host. |
+| `spi.datastores` | object | `{}` | Dedicated datastore masks for the SPI family (one Postgres + one Redis shared by all four binaries). Overrides global.datastores; each configmap.<KEY> still wins. postgres accepts host/port/user/name/ssl/replicaHost; redis accepts host + port (composed into the combined REDIS_HOST as `<host>:<port>`, IPv6-bracketed). |
 | `spi.configmap` | object | `{}` | SHARED ConfigMap escape hatch for all four binaries: set/override ANY native env KEY here (wins over the template default). Per-binary override via spi.<api|dict|brcode|core>.configmap.<KEY>. Credentials NEVER go here — use secrets. |
 | `spi.secrets` | object | `{}` | SHARED Secret map for all four binaries (emit-when-set; per-binary override via spi.<comp>.secrets). Holds POSTGRES_PASSWORD/REDIS_PASSWORD and the PII/crypto keys. |
 | `spi.useExistingSecret` | bool | `false` | Bring your own Secret instead of the chart-managed one (family-wide). |
@@ -42,7 +42,7 @@
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `siloc.datastores` | object | `{}` | Dedicated datastore masks for SILOC (Postgres + Redis). Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/ name/ssl/replicaHost (native DB_*); redis: host (native REDIS_ADDRESS). The SAME postgres mask also feeds the migrator's POSTGRES_* (see migrations below). |
+| `siloc.datastores` | object | `{}` | Dedicated datastore masks for SILOC (Postgres + Redis). Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/ name/ssl/replicaHost (native DB_*); redis: host + port (native REDIS_ADDRESS, composed as `<host>:<port>`, IPv6-bracketed). The SAME postgres mask also feeds the migrator's POSTGRES_* (see migrations below). |
 | `siloc.configmap` | object | `{}` | SILOC ConfigMap escape hatch: set/override ANY native env KEY (DB_*, MQ_*, SFN_*, ...); wins over the template default. Credentials NEVER go here — use secrets. |
 | `siloc.secrets` | object | `{}` | SILOC Secret map (emit-when-set). Holds DB_PASSWORD, REDIS_PASSWORD. |
 
@@ -66,7 +66,7 @@
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `correios.datastores` | object | `{}` | Dedicated datastore masks for CORREIOS. Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/name/ssl (native db-name is POSTGRES_NAME; app + baked migrator both POSTGRES_*); redis: host (native CACHE_ADDR, host:port). RabbitMQ is NOT masked — correios uses a full RABBITMQ_URL (a Secret). |
+| `correios.datastores` | object | `{}` | Dedicated datastore masks for CORREIOS. Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/name/ssl (native db-name is POSTGRES_NAME; app + baked migrator both POSTGRES_*); redis: host + port (native CACHE_ADDR, composed as `<host>:<port>`, IPv6-bracketed). RabbitMQ is NOT masked — correios uses a full RABBITMQ_URL (a Secret). |
 | `correios.objectStorage` | object | `{}` | Dedicated object-storage mask for CORREIOS (S3/SeaweedFS attachment store). Overrides global.objectStorage; backend name is `default`. Fields: endpoint/ region/bucket/usePathStyle. Credentials (ACCESS_KEY/SECRET_KEY) -> secrets. |
 | `correios.configmap` | object | `{}` | CORREIOS ConfigMap escape hatch: set/override ANY native env KEY (POSTGRES_*, CACHE_*, OBJECT_STORAGE_*, MULTI_TENANT_*, AI_*, BC_CORREIO_*, ...); wins over the template default. Credentials NEVER go here — use secrets. |
 | `correios.secrets` | object | `{}` | CORREIOS Secret map (emit-when-set). Holds POSTGRES_PASSWORD, CACHE_PASSWORD, RABBITMQ_URL (embeds creds) + RABBITMQ_PASS, OBJECT_STORAGE_ACCESS_KEY/SECRET_KEY, ENCRYPTION_KEY, LICENSE_KEY, PLUGIN_AUTH_CLIENT_SECRET, MULTI_TENANT_SERVICE_API_KEY, MULTI_TENANT_REDIS_PASSWORD. |

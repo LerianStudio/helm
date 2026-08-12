@@ -6,6 +6,20 @@
   - Require Helm 3.8.0+ for the OCI install.
 
 - **Fixes**
+  - Use Docker Hub OCI registry in install documentation.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.2.0...product-console-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.3.0)
+
+- **Features**
+  - Require Helm 3.8.0+ for the OCI install.
+
+- **Fixes**
   - Use Docker Hub OCI registry in install docs.
 
 - **Improvements**

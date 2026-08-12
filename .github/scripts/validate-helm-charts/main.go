@@ -1117,7 +1117,9 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			return nil, err
 		}
 
-		if out, err := addDependencyRepositories(tmpChart, tmpRoot, helmEnv); err != nil {
+		if out, err := retryHelm(func() (string, error) {
+			return addDependencyRepositories(tmpChart, tmpRoot, helmEnv)
+		}); err != nil {
 			row.Status = "fail"
 			row.Class = "missing-dependency"
 			row.Detail = oneLine(out)
@@ -1126,7 +1128,9 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 
-		if out, err := runHelmWithEnv(tmpRoot, helmEnv, "dependency", "build", tmpChart); err != nil {
+		if out, err := retryHelm(func() (string, error) {
+			return runHelmWithEnv(tmpRoot, helmEnv, "dependency", "build", tmpChart)
+		}); err != nil {
 			row.Status = "fail"
 			row.Class = "missing-dependency"
 			row.Detail = oneLine(out)
@@ -1485,6 +1489,30 @@ func addDependencyRepositories(chartDir, workDir string, env []string) (string, 
 	}
 
 	return "", nil
+}
+
+// retryHelm runs a helm network operation (repo add/update, dependency build) up
+// to 3 times with a short linear backoff. These operations pull external subcharts
+// from remote (Bitnami/OCI) repositories whose availability is flaky in CI; a
+// transient fetch failure would otherwise fail the whole `--all` render gate and
+// red an unrelated chart's PR. A genuinely missing/unresolvable dependency still
+// fails all attempts and is reported exactly as before — the retry smooths
+// transient errors, it does not mask deterministic breakage.
+func retryHelm(fn func() (string, error)) (string, error) {
+	const attempts = 3
+	var (
+		out string
+		err error
+	)
+	for i := 1; i <= attempts; i++ {
+		if out, err = fn(); err == nil {
+			return out, nil
+		}
+		if i < attempts {
+			time.Sleep(time.Duration(i) * 2 * time.Second)
+		}
+	}
+	return out, err
 }
 
 func runHelmWithEnv(workDir string, env []string, args ...string) (string, error) {

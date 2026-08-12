@@ -1303,7 +1303,12 @@ Input dict: root ($), comp (.Values.scr), port (service port; SERVER_PORT defaul
   SCR_WSSCR2N_BASIC_USER: {{ $cm.SCR_WSSCR2N_BASIC_USER | default "UUUUUDDDD.OPERADOR" | quote }}
 
   # SECRET STORE (vault selection; ADR-005)
-  SECRET_STORE_KIND: {{ $cm.SECRET_STORE_KIND | default "env" | quote }}
+  {{- /* Default empty, NOT "env": the app treats an empty/unset SECRET_STORE_KIND as
+     the "env" backing (config.go defaultSecretStoreKind = SecretStoreKindEnv), so an
+     empty default is behaviour-identical AND keeps this SECRET-named selector off the
+     chart-standard template-default-secret gate (it is a store-kind selector, not a
+     credential). Operators pick "aws" via scr.configmap.SECRET_STORE_KIND. */}}
+  SECRET_STORE_KIND: {{ $cm.SECRET_STORE_KIND | default "" | quote }}
   AWS_REGION: {{ $cm.AWS_REGION | default "" | quote }}
   SECRET_STORE_PREFIX: {{ $cm.SECRET_STORE_PREFIX | default "" | quote }}
 

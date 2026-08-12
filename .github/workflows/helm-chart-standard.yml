@@ -69,6 +69,18 @@ jobs:
             exit 0
           fi
 
+          # A change to a LIBRARY chart (Chart.yaml `type: library`, e.g. lerian-common)
+          # renders NOTHING on its own (the validator marks it skipped-library), but its
+          # helpers are exercised by every consumer chart's render. Scoping to just the
+          # library would let a shared-helper regression pass the gate, so a library-chart
+          # change renders the whole fleet.
+          for chart in $(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed_files" | sort -u); do
+            if [[ -f "charts/$chart/Chart.yaml" ]] && grep -Eq '^[[:space:]]*type:[[:space:]]*library[[:space:]]*$' "charts/$chart/Chart.yaml"; then
+              echo "args=--all" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+
           # Collect the affected charts from BOTH sources, deduped. Keep only charts
           # whose directory still exists: a deleted chart still shows up in
           # `git diff --name-only`, but the render-gate errors with "unknown chart"
@@ -84,8 +96,10 @@ jobs:
           for chart in $(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed_files" | sort -u); do
             add_chart "$chart"
           done
-          # .github/configs/helm-render-values/<name>.y(a)ml  ->  <name>
-          for chart in $(awk -F/ '/^\.github\/configs\/helm-render-values\/[^/]+\.ya?ml$/ {f=$NF; sub(/\.ya?ml$/, "", f); print f}' <<< "$changed_files" | sort -u); do
+          # .github/configs/helm-render-values/<name>.yaml  ->  <name>
+          # `.yaml` ONLY: the validator (main.go) loads sampleValuesDir/<chart>.yaml, so a
+          # `.yml` fixture would select the chart but render it with default values.
+          for chart in $(awk -F/ '/^\.github\/configs\/helm-render-values\/[^/]+\.yaml$/ {f=$NF; sub(/\.yaml$/, "", f); print f}' <<< "$changed_files" | sort -u); do
             add_chart "$chart"
           done
           if [[ -z "$existing" ]]; then

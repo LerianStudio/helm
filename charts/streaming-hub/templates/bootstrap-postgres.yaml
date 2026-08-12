@@ -10,7 +10,6 @@ configurable (defaults: db "streaming-hub", role "streaming-hub") and must match
 the host/dbname/user encoded in STREAMING_HUB_POSTGRES_DSN.
 */}}
 {{- $defs := .Values.global.externalPostgresDefinitions -}}
-{{- $sh := .Values.streamingHub | default dict -}}
 {{- $dbName := $defs.database | default "streaming-hub" -}}
 {{- $roleName := $defs.role | default "streaming-hub" -}}
 apiVersion: batch/v1
@@ -36,31 +35,12 @@ spec:
   completions: 1
   parallelism: 1
   backoffLimit: 3
-  # Hard ceiling on the whole hook so a DB that becomes unresponsive mid-script
-  # (past the init TCP wait) can never hang this PreSync hook indefinitely and
-  # block every subsequent install/upgrade. Covers init wait (<=300s) + psql work.
-  activeDeadlineSeconds: 900
   template:
     spec:
       restartPolicy: Never
-      automountServiceAccountToken: false
-      securityContext:
-        seccompProfile:
-          type: RuntimeDefault
-      {{- with (get $sh "imagePullSecrets") }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       initContainers:
       - name: wait-for-dependencies
         image: busybox:1.37
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 65534
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
         env:
         - name: DB_HOST
           value: {{ $defs.connection.host | quote }}
@@ -86,21 +66,6 @@ spec:
       containers:
       - name: psql
         image: postgres:17
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 999
-          runAsGroup: 999
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-        resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          limits:
-            cpu: 250m
-            memory: 256Mi
         env:
         - name: DB_HOST
           value: {{ $defs.connection.host | quote }}
@@ -148,12 +113,8 @@ spec:
           # break the statement (a Vault-generated password legitimately may
           # contain a ' — that would otherwise abort CREATE ROLE).
           sql_lit() { printf "%s" "$1" | sed "s/'/''/g"; }
-          # Escape a double-quoted SQL IDENTIFIER (role/db name): double any embedded ".
-          sql_ident() { printf "%s" "$1" | sed 's/"/""/g'; }
           DB_NAME_LIT="$(sql_lit "$DB_NAME")"
           DB_ROLE_LIT="$(sql_lit "$DB_ROLE")"
-          DB_NAME_IDENT="$(sql_ident "$DB_NAME")"
-          DB_ROLE_IDENT="$(sql_ident "$DB_ROLE")"
           DB_PASSWORD_HUB_LIT="$(sql_lit "$DB_PASSWORD_HUB")"
           echo "=== streaming-hub PostgreSQL Bootstrap ==="
           echo "Host: $DB_HOST:$DB_PORT  Database: $DB_NAME  Role: $DB_ROLE"
@@ -170,45 +131,35 @@ spec:
             ROLE_EXISTS=1
           fi
 
-          # Role: create if absent, otherwise reconcile its password so a rotated
-          # DB_PASSWORD_HUB is applied on re-run (this hook re-runs every sync).
-          if [ "$ROLE_EXISTS" = "1" ]; then
-            echo "Role '$DB_ROLE' already exists; reconciling password."
-            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "ALTER ROLE \"${DB_ROLE_IDENT}\" WITH LOGIN PASSWORD '${DB_PASSWORD_HUB_LIT}'"
+          if [ "$DB_EXISTS" = "1" ] && [ "$ROLE_EXISTS" = "1" ]; then
+            echo "PostgreSQL bootstrap already complete (database '$DB_NAME' and role '$DB_ROLE' exist). Skipping creation."
           else
-            echo "Creating role '$DB_ROLE'..."
-            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE \"${DB_ROLE_IDENT}\" LOGIN PASSWORD '${DB_PASSWORD_HUB_LIT}'"
-          fi
+            # Create role if not exists
+            if [ "$ROLE_EXISTS" = "1" ]; then
+              echo "Role '$DB_ROLE' already exists. Skipping creation."
+            else
+              echo "Creating role '$DB_ROLE'..."
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE \"$DB_ROLE\" LOGIN PASSWORD '${DB_PASSWORD_HUB_LIT}'"
+            fi
 
-          # Database: create if absent.
-          if [ "$DB_EXISTS" = "1" ]; then
-            echo "Database '$DB_NAME' already exists. Skipping creation."
-          else
-            echo "Creating database '$DB_NAME'..."
-            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE \"${DB_NAME_IDENT}\" OWNER \"${DB_ROLE_IDENT}\""
+            # Create database if not exists
+            if [ "$DB_EXISTS" = "1" ]; then
+              echo "Database '$DB_NAME' already exists. Skipping creation."
+            else
+              echo "Creating database '$DB_NAME'..."
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_ROLE\""
+            fi
           fi
 
           # Privileges (safe to run repeatedly)
           echo "Ensuring privileges and schema permissions..."
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE \"${DB_NAME_IDENT}\" TO \"${DB_ROLE_IDENT}\""
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"${DB_ROLE_IDENT}\""
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"${DB_ROLE_IDENT}\""
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"${DB_ROLE_IDENT}\""
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO \"${DB_ROLE_IDENT}\""
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO \"${DB_ROLE_IDENT}\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE \"$DB_NAME\" TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO \"$DB_ROLE\""
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_NAME" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO \"$DB_ROLE\""
 
           echo ""
           echo "=== streaming-hub PostgreSQL Bootstrap completed successfully ==="
-      {{- with (get $sh "nodeSelector") }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with (get $sh "affinity") }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with (get $sh "tolerations") }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
 {{- end }}

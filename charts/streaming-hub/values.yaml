@@ -49,33 +49,11 @@ global:
         name: ""
       # -- Password for the hub role (ignored if useExistingSecret.name is set).
       password: ""
-  # -- Env-wide inbound auth (lib-auth / plugin-auth), consumed by
-  #    lerian-common.globalValue. Declare once at the umbrella level; a component
-  #    streamingHub.configmap.PLUGIN_AUTH_* still overrides per-service.
-  #    Precedence: configmap.<KEY> > global.auth.<field> > chart default.
-  #    Leave empty ({}) to keep the chart defaults.
-  auth: {}
-    # enabled: true                                    # PLUGIN_AUTH_ENABLED
-    # address: "http://plugin-access-manager-auth:4000" # PLUGIN_AUTH_ADDRESS
-  # -- Env-wide SHARED datastore mask, consumed by lerian-common.datastore.value.
-  #    Declare a dependency connection ONCE at the umbrella; a component
-  #    streamingHub.datastores.<type> (dedicated) or configmap.<KEY>
-  #    (native) still overrides it. Precedence per field:
-  #      configmap.<KEY> > streamingHub.datastores.<type>.<field>
-  #        > global.datastores.<type>.<field> > chart default.
-  #    Leave empty ({}) to keep the chart defaults.
-  datastores: {}
-    # kafka:                          # STREAMING_HUB_KAFKA_* connection
-    #   brokers: "redpanda:9092"      # STREAMING_HUB_KAFKA_BROKERS
-    #   saslMechanism: "SCRAM-SHA-512" # STREAMING_HUB_KAFKA_SCRAM_MECHANISM
-    #   saslUsername: "streaming-hub" # STREAMING_HUB_KAFKA_SCRAM_USERNAME
-    #   tls: "true"                   # STREAMING_HUB_KAFKA_TLS_ENABLED
-    #   caCert: ""                    # STREAMING_HUB_KAFKA_CA_CERT (base64 PEM)
 # =============================================================================
 # streamingHub — the single root key for everything the hub owns.
 # =============================================================================
 streamingHub:
-  # -- (enum: all|split) Deployment topology switch. One of: all | split.
+  # -- Deployment topology switch. One of: all | split.
   #    all   (default) -> ONE Deployment with STREAMING_HUB_ROLE=all (ingest +
   #          delivery co-resident; the dev-st target). Byte-equivalent to the
   #          historical single binary.
@@ -94,8 +72,7 @@ streamingHub:
     pullPolicy: IfNotPresent
     # -- Image tag. Empty falls back to Chart.appVersion via the defaultTag helper.
     tag: ""
-  # -- (list) Secrets for pulling the image from a private registry.
-  # @default -- [{name: ghcr-credential}]
+  # -- Secrets for pulling the image from a private registry.
   imagePullSecrets:
     - name: ghcr-credential
   # -- Number of old ReplicaSets to retain for rollback.
@@ -104,7 +81,7 @@ streamingHub:
   annotations: {}
   # -- Annotations applied to every pod.
   podAnnotations: {}
-  # -- (object) Deployment update strategy (shared by all roles).
+  # -- Deployment update strategy (shared by all roles).
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
@@ -112,7 +89,7 @@ streamingHub:
       maxUnavailable: 0
   # -- Pod-level security context. Empty by default (the hub needs no fsGroup).
   podSecurityContext: {}
-  # -- (object) Container-level security context (distroless:nonroot, uid/gid 65532).
+  # -- Container-level security context (distroless:nonroot, uid/gid 65532).
   securityContext:
     # -- Group ID for the process inside the container.
     runAsGroup: 65532
@@ -173,14 +150,14 @@ streamingHub:
   #    preStop hook is used — the hub self-drains on SIGTERM (PID 1 receives it
   #    directly; exec-form ENTRYPOINT).
   terminationGracePeriodSeconds: 80
-  # -- (object) Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).
+  # -- Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).
   livenessProbe:
     initialDelaySeconds: 15
     periodSeconds: 20
     timeoutSeconds: 5
     successThreshold: 1
     failureThreshold: 3
-  # -- (object) Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM).
+  # -- Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM).
   readinessProbe:
     initialDelaySeconds: 10
     periodSeconds: 10
@@ -189,8 +166,10 @@ streamingHub:
     failureThreshold: 3
   # -- Shared default scheduling (per-role blocks may override).
   nodeSelector: {}
-  tolerations: []
+  tolerations: {}
   affinity: {}
+  # -- Extra non-sensitive env vars injected on every Deployment (list of {name,value}).
+  extraEnvVars: []
   # ===========================================================================
   # telemetry — CHART-LEVEL OTEL wiring toggle (NOT an app env var; never shipped
   # to the container). When enabled, each Deployment injects HOST_IP via the
@@ -204,72 +183,107 @@ streamingHub:
     enabled: false
   # ===========================================================================
   # Secret sourcing.
-  # useExistingSecret=false -> the chart renders templates/secret.yaml (inline).
+  # useExistingSecret=false -> the chart renders templates/secrets.yaml (inline).
   # useExistingSecret=true  -> NO Secret is rendered; Deployments reference
   #                            existingSecretName (the gitops/Vault path).
+  #                            KEY CONTRACT: that Secret MUST carry
+  #                            STREAMING_HUB_POSTGRES_DSN — the Deployments pin
+  #                            it via secretKeyRef, so a Secret missing the key
+  #                            fails container creation with a clear event
+  #                            instead of CrashLooping the app.
   # ===========================================================================
   useExistingSecret: false
   existingSecretName: ""
   # ===========================================================================
-  # Configuration API (TIERED productization onto lerian-common).
-  #
-  # Typed KNOBS are reserved for DEPENDENCY CONNECTIONS; every other app knob is
-  # an escape-hatch PASSTHROUGH whose default lives in templates/configmap.yaml.
-  #
-  #   - Kafka/RedPanda connection -> streamingHub.datastores.kafka.* (dedicated)
-  #     or global.datastores.kafka.* (shared) via lerian-common.datastore.value.
-  #   - Auth (PLUGIN_AUTH_*)      -> global.auth.* via lerian-common.globalValue.
-  #   - Everything else           -> template default, overridable via
-  #     streamingHub.configmap.<NATIVE_KEY> (the PRIMARY override surface)
-  #     or streamingHub.extraEnvVars (unmodeled keys).
-  #
-  # There are NO per-group config blocks any more (app/server/kek/dispatch/pull/
-  # dlq/manifest/reconciler/partition/idempotency/autodisable/multiTenant/security/
-  # aws/observability): those defaults live in the template; set an override via
-  # streamingHub.configmap.<KEY>. Postgres is a single opaque DSN Secret
-  # (STREAMING_HUB_POSTGRES_DSN), not host/port/user/db, so it has no datastore
-  # mask in the ConfigMap (the bootstrap Job carries host/port separately).
+  # common.configmap — role-INVARIANT, NON-SENSITIVE env (one shared ConfigMap).
+  # Every key MUST exist verbatim in streaming-hub/.env.reference, EXCEPT the
+  # OTEL_* keys (lib-observability vars, not read by LoadConfig).
   #
   # DELIBERATELY ABSENT (injected per-Deployment, see the all/ingest/delivery
   # blocks below): STREAMING_HUB_ROLE, STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS,
-  # STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS, STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME.
+  # STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS.
   # ===========================================================================
-  # -- (object) DEDICATED datastore mask for this component's OWN dependency
-  #    instance, consumed by lerian-common.datastore.value. Wins over
-  #    global.datastores; native configmap.<KEY> still wins over both.
-  #    Leave empty ({}) to keep the chart defaults.
-  datastores: {}
-    # kafka:                          # STREAMING_HUB_KAFKA_* connection
-    #   brokers: "redpanda:9092"      # STREAMING_HUB_KAFKA_BROKERS
-    #   saslMechanism: "SCRAM-SHA-512" # STREAMING_HUB_KAFKA_SCRAM_MECHANISM
-    #   saslUsername: "streaming-hub" # STREAMING_HUB_KAFKA_SCRAM_USERNAME
-    #   tls: "true"                   # STREAMING_HUB_KAFKA_TLS_ENABLED
-    #   caCert: ""                    # STREAMING_HUB_KAFKA_CA_CERT (base64 PEM)
-  # -- (object) Native per-key escape hatch (highest precedence, the PRIMARY
-  #    override surface). Any UPPER_SNAKE app env var can be pinned here verbatim,
-  #    overriding the template default (and any datastore/global mask).
-  configmap: {}
-  # -- Unmodeled extra env vars appended verbatim to the ConfigMap.
-  extraEnvVars: {}
+  common:
+    configmap:
+      # --- core ---
+      # Deployment environment: local | staging | production.
+      STREAMING_HUB_ENV: "production"
+      STREAMING_HUB_LOG_LEVEL: "info"
+      STREAMING_HUB_HTTP_LISTEN_ADDR: ":8080"
+      STREAMING_HUB_METRICS_ENABLED: "true"
+      # --- kafka / redpanda (external) ---
+      STREAMING_HUB_KAFKA_BROKERS: "localhost:19092"
+      STREAMING_HUB_KAFKA_SCRAM_MECHANISM: ""
+      # Plaintext Kafka opt-in. MUST stay "false" for staging/production
+      # (rejected at boot when STREAMING_HUB_ENV=production).
+      STREAMING_HUB_ALLOW_INSECURE_KAFKA: "false"
+      # --- crypto / KEK (the material itself is a Secret) ---
+      # env | secretsmanager. KEK material arrives via the var named by KEK_REF.
+      STREAMING_HUB_KEK_SOURCE: "env"
+      # --- auth (lib-auth / plugin-auth JWT; PLUGIN_AUTH_ prefix, NOT STREAMING_HUB_) ---
+      PLUGIN_AUTH_ENABLED: "true"
+      PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
+      # --- tenancy (F4) ---
+      # default = BYOC single-tenant. A non-default value quarantines all
+      # other ce-tenantid events (zero-delivery risk) — confirm the producer.
+      STREAMING_HUB_TENANT_ID: "default"
+      # Multi-tenant switch, read UNPREFIXED. When "true" the hub derives its
+      # tenants, their Kafka credentials and the producers it fetches manifests
+      # from in ONE boot sweep of AWS Secrets Manager under tenants/{ENV_NAME}/.
+      # It makes no tenant-manager API call and opens no Redis: the old
+      # cache-backed SaaS roster and its lifecycle listener were removed, and
+      # their STREAMING_HUB_MULTI_TENANT_* / _TENANT_MANAGER_* knobs (plus
+      # ENVIRONMENT_NAME) went with them. A STREAMING_HUB_-prefixed form of this
+      # flag has NO effect.
+      MULTI_TENANT_ENABLED: "false"
+      # Required when MULTI_TENANT_ENABLED is true: the {env} segment of
+      # tenants/{env}/{tenantId}/{module}/kafka. Empty or "local" is rejected at
+      # config load. ENV_NAME also decides whether lib-commons loads a .env file.
+      ENV_NAME: ""
+      # Required when MULTI_TENANT_ENABLED is true, and read by the AWS SDK's own
+      # chain (the hub carries no region field). The tenant credentials live in
+      # us-east-2 while much of the estate is sa-east-1 — set it explicitly.
+      AWS_REGION: ""
+      # --- reconciler (topic-drift detection; dark-ship, defaults on) ---
+      STREAMING_HUB_RECONCILER_ENABLED: "true"
+      STREAMING_HUB_RECONCILER_INTERVAL: "300"
+      # --- partition lifecycle cron ---
+      STREAMING_HUB_PARTITION_CRON_INTERVAL: "6h"
+      STREAMING_HUB_PARTITION_FUTURE_BUFFER_WEEKS: "4"
+      STREAMING_HUB_PARTITION_RETENTION_ENABLED: "false"
+      STREAMING_HUB_PARTITION_RETENTION_HORIZON: "0"
+      # --- DLQ visibility ---
+      STREAMING_HUB_DLQ_RETENTION: "168h"
+      STREAMING_HUB_DLQ_PRUNE_INTERVAL: "1h"
+      # --- lifecycle / drain (kept coherent with terminationGracePeriodSeconds) ---
+      STREAMING_HUB_SHUTDOWN_TIMEOUT: "30s"
+      STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT: "5s"
+      # --- observability (OTEL_* are lib-observability vars, NOT in .env.reference) ---
+      # OTEL_EXPORTER_OTLP_ENDPOINT is overridden per-pod with $(HOST_IP):4317 via
+      # the downward API when streamingHub.telemetry.enabled=true (a CHART-level
+      # toggle, see above — not an app env var; see templates/_deployment.tpl).
+      OTEL_LIBRARY_NAME: "github.com/LerianStudio/streaming-hub"
+      OTEL_RESOURCE_SERVICE_NAME: "streaming-hub"
+      OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
   # ===========================================================================
   # secrets — role-INVARIANT, SENSITIVE env (one shared Secret). All default "".
-  # Empty values are SKIPPED at render so unset SaaS/dev keys never ship blank.
+  # STREAMING_HUB_POSTGRES_DSN is required when this chart manages the Secret:
+  # rendering fails loudly when it is blank rather than deploying a pod that
+  # CrashLoops at startup. Empty optional SaaS/dev keys are skipped at render.
   # In gitops these come from Vault via useExistingSecret=true (this map is then
   # unused). Every key exists verbatim in streaming-hub/.env.reference.
   # ===========================================================================
   secrets:
     # Single hub-owned Postgres DSN (password embedded -> whole DSN is secret).
     STREAMING_HUB_POSTGRES_DSN: ""
-    # SASL/SCRAM password (required when KAFKA_SCRAM_MECHANISM is set). The
-    # username + mechanism are non-sensitive config (streamingHub.kafka.*).
+    # SASL/SCRAM credentials (required when KAFKA_SCRAM_MECHANISM is set).
+    STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""
     STREAMING_HUB_KAFKA_SCRAM_PASSWORD: ""
+    # KEK reference: the NAME of the env var holding the KEK material.
+    STREAMING_HUB_KEK_REF: ""
     # DEV-ONLY KEK material holder (local BYOC). Leave empty in real deploys.
-    # (KEK_SOURCE/KEK_REF are non-sensitive config — streamingHub.kek.*.)
     STREAMING_HUB_DEV_KEK: ""
-    # SaaS tenant-manager X-API-Key (required-when-SaaS).
-    STREAMING_HUB_TENANT_MANAGER_SERVICE_API_KEY: ""
-    # SaaS tenant pub/sub Redis AUTH password (optional even in SaaS).
-    STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD: ""
   # ===========================================================================
   # migrations — OUT-OF-BAND schema migration Job (Helm + ArgoCD PreSync hook).
   #
@@ -323,7 +337,7 @@ streamingHub:
     annotations: {}
     # -- Extra annotations on the migration pod.
     podAnnotations: {}
-    # -- (object) Resource requests/limits for the migration container.
+    # -- Resource requests/limits for the migration container.
     resources:
       limits:
         cpu: 250m
@@ -367,7 +381,7 @@ streamingHub:
       minAvailable: 1
       annotations: {}
     nodeSelector: {}
-    tolerations: []
+    tolerations: {}
     affinity: {}
   ingest:
     replicaCount: 1
@@ -392,7 +406,7 @@ streamingHub:
       minAvailable: 1
       annotations: {}
     nodeSelector: {}
-    tolerations: []
+    tolerations: {}
     affinity: {}
   delivery:
     replicaCount: 1
@@ -417,5 +431,67 @@ streamingHub:
       minAvailable: 1
       annotations: {}
     nodeSelector: {}
-    tolerations: []
+    tolerations: {}
     affinity: {}
+
+# =============================================================================
+# aws — AWS IAM Roles Anywhere (X.509 -> short-lived AWS credentials).
+#
+# Default OFF. When enabled, every role's pod (all / ingest / delivery) gets an
+# `aws-signing-helper` sidecar serving an IMDS-compatible endpoint on
+# 127.0.0.1:<port>; the app's AWS SDK is pointed at it via
+# AWS_EC2_METADATA_SERVICE_ENDPOINT. Same shape and sidecar contract used by
+# fetcher, reporter, matcher and plugin-fees.
+#
+# The X.509 cert/key are NOT produced by this chart: mount a Secret of type
+# kubernetes.io/tls (keys tls.crt / tls.key) named by certificateSecretName —
+# in the Lerian environments a cert-manager Certificate in the deploying overlay
+# creates it. fsGroup 65532 is applied to the pod so the sidecar's non-root user
+# can read the 0440 projection; it is MERGED into streamingHub.podSecurityContext
+# while rolesAnywhere is enabled — fsGroup wins, and every other pod-level setting
+# you configured (runAsNonRoot, seccompProfile, supplementalGroups, ...) survives.
+# It used to replace the block wholesale, silently dropping all of them.
+#
+# trustAnchorArn / profileArn / roleArn are `required` when enabled — the chart
+# fails to render rather than starting a sidecar that cannot authenticate.
+# =============================================================================
+aws:
+  rolesAnywhere:
+    # -- Enable the IAM Roles Anywhere credential sidecar.
+    enabled: false
+    # -- Trust anchor ARN (required when enabled).
+    trustAnchorArn: ""
+    # -- Profile ARN (required when enabled).
+    profileArn: ""
+    # -- Role ARN the sidecar assumes (required when enabled).
+    roleArn: ""
+    # -- AWS region for the credential exchange.
+    region: "us-east-2"
+    # -- Credential session duration in seconds.
+    sessionDuration: 3600
+    # -- Name of the kubernetes.io/tls Secret holding tls.crt / tls.key.
+    #    Left empty on purpose so the template fallback in _deployment.tpl actually
+    #    fires: it resolves to "<streaming-hub.fullname>-iam-tls". Note that fullname
+    #    is fullnameOverride if set, else nameOverride if set, else the CHART name
+    #    (never the Helm release name), so the fallback yields "streaming-hub-iam-tls"
+    #    unless one of those overrides is set (e.g. nameOverride: foo -> "foo-iam-tls").
+    #    A non-empty default here made that branch unreachable and pinned every install
+    #    to one literal name, ignoring the overrides.
+    certificateSecretName: ""
+    sidecar:
+      image:
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        tag: "latest-amd64"
+        pullPolicy: IfNotPresent
+      # -- Port the sidecar serves the IMDS-compatible endpoint on.
+      port: 9911
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
+streaming-hub:
+  image:
+    tag: 1.0.1

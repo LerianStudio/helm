@@ -14,8 +14,8 @@ infra, and OTEL is env-wired (see [External dependencies](#external-dependencies
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `secrets.STREAMING_HUB_POSTGRES_DSN` (the DSN carries the DB password); `secrets.STREAMING_HUB_KAFKA_SCRAM_USERNAME` + `secrets.STREAMING_HUB_KAFKA_SCRAM_PASSWORD` (when the broker requires SASL/SCRAM); `secrets.STREAMING_HUB_KEK_REF` (KEK reference for the F10 envelope crypto — `secrets.STREAMING_HUB_DEV_KEK` for dev only). SaaS-only, required when `STREAMING_HUB_MULTI_TENANT_ENABLED=true`: `secrets.STREAMING_HUB_TENANT_MANAGER_SERVICE_API_KEY` and `secrets.STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD`. All blank by default — provide inline or set `streamingHub.useExistingSecret` + `streamingHub.existingSecretName` (the path GitOps uses, with a Vault-injected Secret).
-- Dependency notes: **No bundled subcharts.** Kafka/Redpanda and PostgreSQL are shared external infra — supply the Kafka connection via `streamingHub.datastores.kafka.brokers` (or `global.datastores.kafka.brokers`) and `secrets.STREAMING_HUB_POSTGRES_DSN`. OTEL is env-wired to a node-local collector (`HOST_IP:4317`, gated on `streamingHub.telemetry.enabled`) — there is no OTEL collector subchart. The optional `bootstrap-postgres` Job provisions the hub's single database when `global.externalPostgresDefinitions.enabled=true`.
+- Required secrets: `secrets.STREAMING_HUB_POSTGRES_DSN` (the DSN carries the DB password); `secrets.STREAMING_HUB_KAFKA_SCRAM_USERNAME` + `secrets.STREAMING_HUB_KAFKA_SCRAM_PASSWORD` (when the broker requires SASL/SCRAM); `secrets.STREAMING_HUB_KEK_REF` (KEK reference for the F10 envelope crypto — `secrets.STREAMING_HUB_DEV_KEK` for dev only). Multi-tenant needs no extra secrets — the hub reads the tenant credentials from AWS Secrets Manager with its own IAM identity. All blank by default; the chart fails rendering when its managed Secret lacks `STREAMING_HUB_POSTGRES_DSN`. Provide sensitive values inline through a protected values source or set `streamingHub.useExistingSecret` + `streamingHub.existingSecretName` (the path GitOps uses, with a Vault-injected Secret).
+- Dependency notes: **No bundled subcharts.** Kafka/Redpanda and PostgreSQL are shared external infra — supply `common.configmap.STREAMING_HUB_KAFKA_BROKERS` and `secrets.STREAMING_HUB_POSTGRES_DSN`. OTEL is env-wired to a node-local collector (`HOST_IP:4317`, gated on `streamingHub.telemetry.enabled`) — there is no OTEL collector subchart. The optional `bootstrap-postgres` Job provisions the hub's single database when `global.externalPostgresDefinitions.enabled=true`.
 - Migrations: the hub applies its schema **out of band** (the app never migrates itself). Enable the migration Job with `streamingHub.migrations.enabled=true` (default off). It is a PreSync hook that runs the stock `migrate/migrate` toolchain (image `ghcr.io/lerianstudio/streaming-hub-migrations`) BEFORE the app rolls out. The hook chain is **`bootstrap-postgres` (sync-wave -10, role+db) → `migration-secret` (-5, the DSN) → `migrations` Job (-1, the schema) → app Deployment (main Sync)**. The Job's only env is `STREAMING_HUB_POSTGRES_DSN` (from the migration-secret, or `migrations.existingSecretName` when `migrations.useExistingSecret=true`). Without it, ingest/dispatcher/partition workers crash on `relation "event_inbox"/"delivery_jobs" does not exist (42P01)`. **When `migrations.useExistingSecret=true`, the named secret must already exist in the namespace before the PreSync phase runs** — do not point it at the chart-managed application Secret (`streamingHub.existingSecretName` / inline `secrets.*`), which is created later in the main Sync phase and is therefore absent when the hook fires; the chart provisions its own PreSync `migration-secret` precisely to close that ordering gap.
 - Production overrides: choose `streamingHub.mode` (`all` vs `split`); size per-role `replicaCount` / `autoscaling` / `resources` and the Postgres pool (`poolMaxOpenConns` / `poolMaxIdleConns`) honoring **Σ(replicas × poolMaxOpenConns) ≤ Postgres `max_connections`**; set `image.tag`, `ingress`, and the secrets (inline or `useExistingSecret`).
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -56,7 +56,7 @@ helm uninstall streaming-hub -n streaming-hub
 ### > **DOUBLE-CONSUME HAZARD — the load-bearing rule**
 
 > **NEVER run a `mode: all` release AND a `mode: split` release against the same
-> Kafka/Redpanda cluster.** Both the `all` and `ingest` roles join the **one**
+> Kafka/Redpanda cluster.** All three roles (`all`, `ingest`) join the **one**
 > ingest consumer group. An `all` pod and an `ingest` pod consuming together
 > means **every event is double-consumed and double-delivered.** The `mode`
 > switch enforces either/or within a single release — do not defeat it by
@@ -149,14 +149,13 @@ Two mutually-exclusive paths:
 
 | `useExistingSecret` | Behavior |
 |---------------------|----------|
-| `false` (default) | The chart renders `templates/secrets.yaml` from `streamingHub.secrets` (base64-encoded; **empty values are skipped**, so unset SaaS/dev keys never ship blank). |
-| `true` | **No** Secret is rendered. Deployments reference `existingSecretName`. This is the **gitops/Vault path** (an external secret is projected into the named Secret) and is the production default. |
+| `false` (default) | The chart renders `templates/secrets.yaml` from `streamingHub.secrets` (base64-encoded; `STREAMING_HUB_POSTGRES_DSN` is required, while empty optional SaaS/dev keys are skipped). |
+| `true` | **No** Secret is rendered. Deployments reference `existingSecretName`. This is the **gitops/Vault path** (an external secret is projected into the named Secret) and is the production default. **Key contract:** the named Secret MUST carry `STREAMING_HUB_POSTGRES_DSN` — each Deployment pins that key via an explicit `secretKeyRef`, so a Secret missing it fails container creation (`CreateContainerConfigError`, "couldn't find key") instead of CrashLooping the app. |
 
 Sensitive keys (all in `streamingHub.secrets`, all default `""`):
 `STREAMING_HUB_POSTGRES_DSN`, `STREAMING_HUB_KAFKA_SCRAM_USERNAME`,
 `STREAMING_HUB_KAFKA_SCRAM_PASSWORD`, `STREAMING_HUB_KEK_REF`,
-`STREAMING_HUB_DEV_KEK` (dev only), `STREAMING_HUB_TENANT_MANAGER_SERVICE_API_KEY`,
-`STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD`.
+`STREAMING_HUB_DEV_KEK` (dev only).
 
 ---
 
@@ -176,10 +175,6 @@ This chart provisions **none** of the following — they live outside it:
   (a chart-level toggle, not an app env var), the Deployment injects `HOST_IP` via
   the downward API and sets `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317`
   (node-local DaemonSet collector).
-- **Image pull secret** — `streamingHub.imagePullSecrets` defaults to a secret
-  named `ghcr-credential`. The chart does **not** create it; it must already
-  exist in the release namespace or pods fail with `ImagePullBackOff`. Override
-  or clear `streamingHub.imagePullSecrets` when pulling from a public/mirror registry.
 
 ---
 
@@ -200,7 +195,7 @@ This chart provisions **none** of the following — they live outside it:
 | `streamingHub.securityContext` | nonroot 65532, drop ALL, RO rootfs, RuntimeDefault | Distroless:nonroot. |
 | `streamingHub.useExistingSecret` | `false` | `true` = Vault/gitops path. |
 | `streamingHub.existingSecretName` | `""` | Required when `useExistingSecret`. |
-| `streamingHub.configmap` | (documented set) | Shared non-sensitive env. Every key is verbatim in `.env.reference`. |
+| `streamingHub.common.configmap` | (documented set) | Shared non-sensitive env. Every key is verbatim in `.env.reference`. |
 | `streamingHub.secrets` | (all `""`) | Shared sensitive env. Empty values skipped. |
 | `streamingHub.<role>.replicaCount` | `1` | Per role: `all` / `ingest` / `delivery`. |
 | `streamingHub.<role>.poolMaxOpenConns` | all `25` / ingest `8` / delivery `16` | Postgres pool (connection-budget invariant). |

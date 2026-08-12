@@ -14,7 +14,8 @@ streamingHub:
   image:
     tag: ""  # defaults to the chart appVersion
 
-  configmap:
+  common:
+    configmap:
       STREAMING_HUB_ENV: production          # local | staging | production
       STREAMING_HUB_LOG_LEVEL: info
       STREAMING_HUB_KAFKA_BROKERS: ""         # e.g. redpanda.dev-st.lerian.net:9092
@@ -24,7 +25,12 @@ streamingHub:
       PLUGIN_AUTH_ENABLED: "true"
       PLUGIN_AUTH_ADDRESS: ""
       STREAMING_HUB_TENANT_ID: default
-      STREAMING_HUB_MULTI_TENANT_ENABLED: "false"
+      # Multi-tenant: the switch plus the two values it REQUIRES when true. The
+      # hub refuses to boot with an empty or "local" ENV_NAME, and the credential
+      # sweep fails without a region the AWS SDK chain can resolve.
+      MULTI_TENANT_ENABLED: "false"
+      ENV_NAME: ""                            # staging | production (secrets path segment)
+      AWS_REGION: ""                          # e.g. us-east-2 (where the tenant credentials live)
 
   secrets:
     STREAMING_HUB_POSTGRES_DSN: ""            # full Postgres DSN, credentials embedded
@@ -32,9 +38,9 @@ streamingHub:
     STREAMING_HUB_KAFKA_SCRAM_PASSWORD: ""
     STREAMING_HUB_KEK_REF: ""                 # KEK reference (KMS key id / ARN / ...)
     # STREAMING_HUB_DEV_KEK: ""               # dev only
-    # SaaS-only — required when MULTI_TENANT_ENABLED=true:
-    # STREAMING_HUB_TENANT_MANAGER_SERVICE_API_KEY: ""
-    # STREAMING_HUB_MULTI_TENANT_REDIS_PASSWORD: ""
+    # Multi-tenant needs no extra secrets: the hub reads the tenant credentials
+    # straight from AWS Secrets Manager with its own IAM identity. Set
+    # MULTI_TENANT_ENABLED, ENV_NAME and AWS_REGION in the configmap instead.
 
   useExistingSecret: false
   existingSecretName: ""

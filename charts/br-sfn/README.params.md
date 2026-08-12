@@ -78,6 +78,20 @@
 | `slcEdge.configmap` | object | `{}` | SLC-EDGE ConfigMap escape hatch: set/override ANY native env KEY (SLC_UPSTREAM_URL, SLC_*_TIMEOUT, SLC_EDGE_CORS_ALLOWED_ORIGINS, ...). |
 | `slcEdge.secrets` | object | `{}` | SLC-EDGE has NO secrets (it forwards the caller's Authorization header verbatim; it holds no credential). Kept for the escape-hatch contract. |
 
+## STA (Sistema de Transferência de Arquivos — manager + worker)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `sta.enabled` | bool | `false` | Deploy the STA rail (manager; worker is opt-in via sta.worker.enabled). |
+| `sta.datastores` | object | `{}` | Dedicated datastore masks for STA (Postgres + Redis + RabbitMQ). Overrides global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/ name/ssl/replicaHost (db-name is POSTGRES_NAME); redis: host + port (combined REDIS_HOST, composed `<host>:<port>`); broker (RabbitMQ): host/port/user. |
+| `sta.multiTenant` | object | `{}` | Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). URL + redis infra from global.multiTenant. Precedence: configmap.MULTI_TENANT_ENABLED > sta.multiTenant.enabled. |
+| `sta.serviceDiscovery` | object | `{}` | Service discovery toggle (SD_ENABLED). SD_TOKEN (ACL) is a Secret. |
+| `sta.streaming` | object | `{}` | Streaming toggle (STREAMING_ENABLED). STREAMING_SASL_PASSWORD is a Secret. |
+| `sta.configmap` | object | `{}` | SHARED ConfigMap escape hatch (manager + worker): set/override ANY native env KEY (POSTGRES_*, RABBITMQ_*, TRUST_STORE_S3_*, OUTBOX_*, AUDIT_*, ...); wins over the template default. Credentials NEVER go here — use secrets. |
+| `sta.secrets` | object | `{}` | SHARED Secret map (emit-when-set; manager + worker). Holds POSTGRES_PASSWORD, REDIS_PASSWORD, RABBITMQ_DEFAULT_PASS/RABBITMQ_URL, MULTI_TENANT_SERVICE_API_KEY, MULTI_TENANT_REDIS_PASSWORD, MASTER_KEYS, AWS_SECRET_ACCESS_KEY, SD_TOKEN, STREAMING_SASL_PASSWORD. |
+| `sta.worker` | object | `{}` | WORKER sub-deployment (background jobs). Opt-in; REQUIRES a dedicated worker image (cmd/worker). Shares sta.configmap/secrets via envFrom + layers worker-only keys. Leader-gated with NO leader election yet — keep replicaCount 1, no HPA. |
+| `sta.worker.configmap` | object | `{}` | Worker-only env, layered on the manager ConfigMap (worker keys win). |
+
 ## Cockpit (operations SPA — build-arg-only)
 
 | Key | Type | Default | Description |

@@ -871,6 +871,175 @@ slcEdge:
   tolerations: []
 
 # =============================================================================
+# sta — STA rail (Sistema de Transferência de Arquivos, br-sta). MANAGER (HTTP API)
+# + optional WORKER (background jobs: audit outbox pub/consumer, leader-gated
+# scheduler, credential-recovery, inbound poll). Migrated from the standalone
+# br-sta chart; the bundled Postgres/Valkey/RabbitMQ subcharts + bootstrap-postgres
+# were DROPPED (br-sfn is external-infra only). App + dedicated migrator both read
+# POSTGRES_* (db-name is POSTGRES_NAME). Manager + worker SHARE sta.configmap/secrets.
+# =============================================================================
+# @section STA (Sistema de Transferência de Arquivos — manager + worker)
+sta:
+  # -- Deploy the STA rail (manager; worker is opt-in via sta.worker.enabled).
+  enabled: false
+  # -- Dedicated datastore masks for STA (Postgres + Redis + RabbitMQ). Overrides
+  # global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/
+  # name/ssl/replicaHost (db-name is POSTGRES_NAME); redis: host + port (combined
+  # REDIS_HOST, composed `<host>:<port>`); broker (RabbitMQ): host/port/user.
+  datastores: {}
+  #   postgres: { host: "sta-postgresql", port: "5432", user: "br_sta", name: "br_sta", ssl: "require" }
+  #   redis:    { host: "sta-valkey", port: "6379" }
+  #   broker:   { host: "sta-rabbitmq", port: "5672", user: "br_sta" }
+  # -- Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). URL + redis infra
+  # from global.multiTenant. Precedence: configmap.MULTI_TENANT_ENABLED > sta.multiTenant.enabled.
+  multiTenant:
+    enabled: false
+  # -- Service discovery toggle (SD_ENABLED). SD_TOKEN (ACL) is a Secret.
+  serviceDiscovery:
+    enabled: false
+  # -- Streaming toggle (STREAMING_ENABLED). STREAMING_SASL_PASSWORD is a Secret.
+  streaming:
+    enabled: false
+  # -- SHARED ConfigMap escape hatch (manager + worker): set/override ANY native env KEY
+  # (POSTGRES_*, RABBITMQ_*, TRUST_STORE_S3_*, OUTBOX_*, AUDIT_*, ...); wins over the
+  # template default. Credentials NEVER go here — use secrets.
+  configmap: {}
+  # -- SHARED Secret map (emit-when-set; manager + worker). Holds POSTGRES_PASSWORD,
+  # REDIS_PASSWORD, RABBITMQ_DEFAULT_PASS/RABBITMQ_URL, MULTI_TENANT_SERVICE_API_KEY,
+  # MULTI_TENANT_REDIS_PASSWORD, MASTER_KEYS, AWS_SECRET_ACCESS_KEY, SD_TOKEN,
+  # STREAMING_SASL_PASSWORD.
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  replicaCount: 2
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sta
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches the app SERVER_ADDRESS default (0.0.0.0:8080).
+    port: 8080
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  # Both probes hit /health (br-sta serves readiness+liveness there).
+  livenessProbe: {}
+  readinessProbe: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  # PreSync migration Job — DEDICATED br-sta-migrations image (reads POSTGRES_NAME +
+  # MIGRATIONS_PATH). Its POSTGRES_* resolve through the SAME datastore mask the app uses.
+  migrations:
+    enabled: true
+    image:
+      repository: ghcr.io/lerianstudio/br-sta-migrations
+      tag: ""
+      pullPolicy: IfNotPresent
+    # Path the runner reads (image bundles SQL at /migrations).
+    path: /migrations
+    # Set true only for a non-TLS external Postgres (lib-commons migrator bypass).
+    allowInsecureTLS: false
+    postgres:
+      host: ""
+      port: ""
+      user: ""
+      database: ""
+      sslMode: ""
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+    imagePullSecrets: []
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 600
+    resources: {}
+  # -- WORKER sub-deployment (background jobs). Opt-in; REQUIRES a dedicated worker
+  # image (cmd/worker). Shares sta.configmap/secrets via envFrom + layers worker-only
+  # keys. Leader-gated with NO leader election yet — keep replicaCount 1, no HPA.
+  worker:
+    enabled: false
+    replicaCount: 1
+    revisionHistoryLimit: 10
+    image:
+      repository: ""
+      tag: ""
+      pullPolicy: IfNotPresent
+    imagePullSecrets: []
+    command:
+      - /service
+    terminationGracePeriodSeconds: 60
+    securityContext: {}
+    deploymentStrategy:
+      type: Recreate
+    service:
+      # Probe-server bind only (WorkerMode); no Service/Ingress created.
+      port: 8081
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    livenessProbe: {}
+    readinessProbe: {}
+    podAnnotations: {}
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+    # -- Worker-only env, layered on the manager ConfigMap (worker keys win).
+    configmap:
+      OTEL_RESOURCE_SERVICE_NAME: "br-sta-worker"
+      SCHEDULER_ENABLED: "true"
+      CREDENTIALS_RECOVERY_ON_BOOT: "true"
+      AUDIT_PUBLISHER_ENABLED: "true"
+      AUDIT_PUBLISHER_INTERVAL_SEC: "2"
+      AUDIT_PUBLISHER_BATCH_SIZE: "100"
+      AUDIT_PUBLISHER_MAX_ATTEMPTS: "10"
+      AUDIT_PUBLISHER_EXCHANGE: "sta.audit.events"
+      AUDIT_PUBLISHER_LOCK_CLASS_ID: "7700"
+      AUDIT_PUBLISHER_SERVICE_NAME: "br-sta-worker"
+      AUDIT_CONSUMER_ENABLED: "true"
+      AUDIT_CONSUMER_QUEUE: "br-sta.audit.consume"
+      AUDIT_CONSUMER_EXCHANGE: "sta.audit.events"
+      AUDIT_CONSUMER_DEDUP_TTL_SEC: "5"
+      AUDIT_CONSUMER_LOCK_CLASS_ID: "7701"
+      AUDIT_CONSUMER_MAX_RETRY_ATTEMPTS: "10"
+      AUDIT_CONSUMER_DLQ_EXCHANGE: "sta.audit.dlq"
+      AUDIT_CONSUMER_SERVICE_NAME: "br-sta-worker"
+    extraEnvVars: []
+
+# =============================================================================
 # cockpit — the br-sfn operations SPA (nginx-unprivileged serving the Vite
 # bundle). BUILD-ARG-ONLY: every VITE_* (auth/identity/rail URLs, FI ISPB,
 # floors) is inlined by `vite build` at IMAGE BUILD time (Dockerfile ARG->ENV);

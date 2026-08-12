@@ -172,6 +172,34 @@ slcEdge:
   configmap:
     SLC_UPSTREAM_URL: http://br-slc.ci:4000
     LOG_LEVEL: debug
+sta:
+  enabled: true
+  # Productized (migrated from br-sta). postgres INHERITS the shared global tier host
+  # (proves shared reaches sta manager + worker + migrator); other postgres fields +
+  # broker are dedicated/distinct for the configured-path check. redis inherits the
+  # shared global.datastores.redis {host,port} (composed). Worker enabled.
+  datastores:
+    postgres:
+      # NO host: inherits global.datastores.postgres.host (shared-pg.ci).
+      port: "6549"
+      user: br_sta_ci
+      name: br_sta_ci_db
+      ssl: require
+      replicaHost: sta-pg-replica.ci
+    broker:
+      host: sta-rabbitmq.ci
+      port: "5674"
+      user: br_sta_ci
+  worker:
+    enabled: true
+    image:
+      repository: ghcr.io/lerianstudio/br-sta-worker
+      tag: "1.0.0-beta.1"
+  configmap:
+    LOG_LEVEL: debug
+    ENV_NAME: sandbox
+  secrets:
+    POSTGRES_PASSWORD: "ci-dummy"
 cockpit:
   # BUILD-ARG-ONLY SPA: no runtime config surface (VITE_* are image build args).
   # Nothing to exercise beyond enabling the Deployment/Service templates.

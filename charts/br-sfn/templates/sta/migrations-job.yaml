@@ -1,0 +1,19 @@
+{{- if $.Values.sta.enabled -}}
+{{- /* Dedicated br-sta-migrations image. App AND migrator both use POSTGRES_* (db-name
+   is POSTGRES_NAME) — no DB_* divergence, so the productized ConfigMap body flows
+   straight through; dbEnvName=POSTGRES_NAME feeds the migrator its db-name env, and
+   extraMigrationEnv carries MIGRATIONS_PATH (+ ALLOW_INSECURE_TLS when set). The
+   dual-tier mask resolves POSTGRES_* the same as the app + worker. */ -}}
+{{- $comp := dict
+      "migrations" $.Values.sta.migrations
+      "configmap" $.Values.sta.configmap
+      "secrets" $.Values.sta.secrets
+      "image" $.Values.sta.image
+      "imagePullSecrets" $.Values.sta.imagePullSecrets
+      "useExistingSecret" $.Values.sta.useExistingSecret
+      "existingSecretName" $.Values.sta.existingSecretName
+-}}
+{{- $extra := dict "MIGRATIONS_PATH" ($.Values.sta.migrations.path | default "/migrations") -}}
+{{- if $.Values.sta.migrations.allowInsecureTLS }}{{- $_ := set $extra "ALLOW_INSECURE_TLS" (toString $.Values.sta.migrations.allowInsecureTLS) }}{{- end -}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "sta" "secretComponent" "sta" "comp" $comp "shared" $.Values.sta.configmap "sharedSecrets" $.Values.sta.secrets "sharedCfg" $.Values.sta "flavor" "dedicated" "dbCfgKey" "POSTGRES_NAME" "dbEnvName" "POSTGRES_NAME" "extraMigrationEnv" $extra "configDataOverride" (include "br-sfn.staConfigData" (dict "root" $ "comp" $.Values.sta "port" ($.Values.sta.service.port | default 8080) "cm" ($.Values.sta.configmap | default dict)))) }}
+{{- end -}}

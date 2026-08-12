@@ -626,7 +626,9 @@ spec:
               value: {{ $pgPort | quote }}
             - name: POSTGRES_USER
               value: {{ $pgUser | quote }}
-            - name: POSTGRES_DB
+            # dbEnvName: the DB-name env the migrator reads (default POSTGRES_DB; a rail
+            # whose migrator reads another name — br-sta uses POSTGRES_NAME — overrides it).
+            - name: {{ .dbEnvName | default "POSTGRES_DB" }}
               value: {{ $pgDb | quote }}
             - name: POSTGRES_SSLMODE
               value: {{ $pgSsl | quote }}
@@ -635,6 +637,12 @@ spec:
                 secretKeyRef:
                   name: {{ $pwName }}
                   key: {{ $pwKey }}
+            # extraMigrationEnv: optional extra env for a dedicated migrator needing more
+            # than the POSTGRES_* contract (br-sta: MIGRATIONS_PATH, ALLOW_INSECURE_TLS).
+            {{- range $k, $v := (.extraMigrationEnv | default dict) }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
           securityContext:
             {{- toYaml .root.Values.securityContext | nindent 12 }}
           resources:
@@ -1731,3 +1739,259 @@ hostKey (native host env key), hostDefault (legacy default for host).
 {{- $host -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+=============================================================================
+staConfigData — the productized STA (Sistema de Transferencia de Arquivos)
+MANAGER ConfigMap body. Translated from the already-productized br-sta chart into
+br-sfn's per-rail shape (external-infra only: bundled-subchart host fallbacks
+DROPPED — Postgres/Redis/RabbitMQ resolve via the datastore mask with default "").
+
+Dependency CONNECTIONS: Postgres + RabbitMQ(broker) via datastore.value; Redis via
+br-sfn.redisComposedAddr (combined host:port); observability via otel.env + otel.envFlat
+identity; auth via globalValue (global.auth, native PLUGIN_AUTH_HOST); multi-tenant via
+multiTenant.env (full: redis/pool/cache); service-discovery via serviceDiscovery.env;
+streaming via streaming.env. App AND dedicated migrator both use POSTGRES_* (db-name is
+POSTGRES_NAME). Object storage (TRUST_STORE_S3_* / TRANSFER_OBJECT_STORAGE_BUCKET) stays
+escape-hatch passthrough (carried from br-sta; see lerian-common gap note).
+
+Input dict: root ($), comp (.Values.sta — image tag), port (manager service port),
+cm (the manager configmap map .Values.sta.configmap).
+=============================================================================
+*/}}
+{{- define "br-sfn.staConfigData" -}}
+{{- $root := .root -}}
+{{- $ds := $root.Values.sta.datastores | default dict -}}
+{{- $comp := .comp -}}
+{{- $port := .port -}}
+{{- $cm := .cm | default dict -}}
+{{- $mt := $root.Values.sta.multiTenant | default dict -}}
+{{- $sd := $root.Values.sta.serviceDiscovery | default dict -}}
+{{- $strm := $root.Values.sta.streaming | default dict -}}
+{{- $tag := $comp.image.tag | default $root.Chart.AppVersion -}}
+{{- $name := include "br-sfn.componentFullname" (dict "root" $root "name" "sta") -}}
+{{- $namespace := include "global.namespace" $root -}}
+{{- $mtEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" $mt "field" "enabled" "default" "false")) "true" -}}
+{{- $sdEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "SD_ENABLED" "params" $sd "field" "enabled" "default" "false")) "true" -}}
+{{- $streamingEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_ENABLED" "params" $strm "field" "enabled" "default" "false")) "true" -}}
+  # =============================================================================
+  # PASSTHROUGH CONFIG — configmap.<KEY> escape hatch over the template default.
+  # =============================================================================
+  AGGRESSIVE_RATE_LIMIT_MAX: {{ $cm.AGGRESSIVE_RATE_LIMIT_MAX | default "100" | quote }}
+  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ $cm.AGGRESSIVE_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  AWS_REGION: {{ $cm.AWS_REGION | default "us-east-1" | quote }}
+  CIRCUIT_BREAKER_ENABLED: {{ $cm.CIRCUIT_BREAKER_ENABLED | default "false" | quote }}
+  CORS_ALLOWED_HEADERS: {{ $cm.CORS_ALLOWED_HEADERS | default "Origin,Content-Type,Accept,Authorization,X-Request-ID" | quote }}
+  CORS_ALLOWED_METHODS: {{ $cm.CORS_ALLOWED_METHODS | default "GET,POST,PUT,PATCH,DELETE,OPTIONS" | quote }}
+  CORS_ALLOWED_ORIGINS: {{ $cm.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+  CORS_ALLOW_CREDENTIALS: {{ $cm.CORS_ALLOW_CREDENTIALS | default "false" | quote }}
+  CORS_EXPOSE_HEADERS: {{ $cm.CORS_EXPOSE_HEADERS | default "" | quote }}
+  DB_METRICS_INTERVAL_SEC: {{ $cm.DB_METRICS_INTERVAL_SEC | default "15" | quote }}
+  DEFAULT_TENANT_ID: {{ $cm.DEFAULT_TENANT_ID | default "11111111-1111-1111-1111-111111111111" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
+  EXAMPLE_STATUS_PROVIDER_MODE: {{ $cm.EXAMPLE_STATUS_PROVIDER_MODE | default "healthy" | quote }}
+  HTTP_BODY_LIMIT_BYTES: {{ $cm.HTTP_BODY_LIMIT_BYTES | default "104857600" | quote }}
+  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ $cm.IDEMPOTENCY_RETRY_WINDOW_SEC | default "300" | quote }}
+  INFRA_CONNECT_TIMEOUT_SEC: {{ $cm.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  M2M_CREDENTIAL_CACHE_TTL_SEC: {{ $cm.M2M_CREDENTIAL_CACHE_TTL_SEC | default "300" | quote }}
+  MAX_PAGINATION_LIMIT: {{ $cm.MAX_PAGINATION_LIMIT | default "100" | quote }}
+  MAX_PAGINATION_MONTH_DATE_RANGE: {{ $cm.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
+  MIGRATIONS_PATH: {{ $cm.MIGRATIONS_PATH | default "migrations" | quote }}
+  OUTBOX_ALLOW_EMPTY_TENANT: {{ $cm.OUTBOX_ALLOW_EMPTY_TENANT | default "true" | quote }}
+  OUTBOX_BATCH_SIZE: {{ $cm.OUTBOX_BATCH_SIZE | default "50" | quote }}
+  OUTBOX_DISPATCH_INTERVAL_SEC: {{ $cm.OUTBOX_DISPATCH_INTERVAL_SEC | default "2" | quote }}
+  OUTBOX_ENABLED: {{ $cm.OUTBOX_ENABLED | default "false" | quote }}
+  OUTBOX_INCLUDE_TENANT_METRICS: {{ $cm.OUTBOX_INCLUDE_TENANT_METRICS | default "false" | quote }}
+  OUTBOX_MAX_DISPATCH_ATTEMPTS: {{ $cm.OUTBOX_MAX_DISPATCH_ATTEMPTS | default "10" | quote }}
+  OUTBOX_MAX_FAILED_PER_BATCH: {{ $cm.OUTBOX_MAX_FAILED_PER_BATCH | default "25" | quote }}
+  OUTBOX_PROCESSING_TIMEOUT_SEC: {{ $cm.OUTBOX_PROCESSING_TIMEOUT_SEC | default "600" | quote }}
+  OUTBOX_PUBLISH_BACKOFF_MS: {{ $cm.OUTBOX_PUBLISH_BACKOFF_MS | default "200" | quote }}
+  OUTBOX_PUBLISH_MAX_ATTEMPTS: {{ $cm.OUTBOX_PUBLISH_MAX_ATTEMPTS | default "3" | quote }}
+  OUTBOX_RETRY_WINDOW_SEC: {{ $cm.OUTBOX_RETRY_WINDOW_SEC | default "300" | quote }}
+  OUTBOX_TABLE_NAME: {{ $cm.OUTBOX_TABLE_NAME | default "outbox_events" | quote }}
+  POSTGRES_CONNECT_TIMEOUT_SEC: {{ $cm.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ $cm.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
+  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ $cm.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ $cm.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
+  POSTGRES_MAX_OPEN_CONNS: {{ $cm.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
+  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ $cm.RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK | default "false" | quote }}
+  RABBITMQ_ALLOW_INSECURE_TLS: {{ $cm.RABBITMQ_ALLOW_INSECURE_TLS | default "false" | quote }}
+  RABBITMQ_ENABLED: {{ $cm.RABBITMQ_ENABLED | default "false" | quote }}
+  RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "events" | quote }}
+  RABBITMQ_PORT_HOST: {{ $cm.RABBITMQ_PORT_HOST | default "15672" | quote }}
+  RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS: {{ $cm.RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS | default "5000" | quote }}
+  RABBITMQ_PUBLISHER_MAX_RECOVERIES: {{ $cm.RABBITMQ_PUBLISHER_MAX_RECOVERIES | default "10" | quote }}
+  RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS: {{ $cm.RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS | default "1000" | quote }}
+  RABBITMQ_PUBLISHER_RECOVERY_MAX_MS: {{ $cm.RABBITMQ_PUBLISHER_RECOVERY_MAX_MS | default "30000" | quote }}
+  RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: {{ $cm.RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS | default "false" | quote }}
+  RABBITMQ_VHOST: {{ $cm.RABBITMQ_VHOST | default "/" | quote }}
+  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "500" | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ $cm.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ $cm.REDIS_DIAL_TIMEOUT | default "5" | quote }}
+  REDIS_MAX_RETRIES: {{ $cm.REDIS_MAX_RETRIES | default "3" | quote }}
+  REDIS_MAX_RETRY_BACKOFF: {{ $cm.REDIS_MAX_RETRY_BACKOFF | default "1" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ $cm.REDIS_MIN_IDLE_CONNS | default "2" | quote }}
+  REDIS_MIN_RETRY_BACKOFF: {{ $cm.REDIS_MIN_RETRY_BACKOFF | default "8" | quote }}
+  REDIS_POOL_SIZE: {{ $cm.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_POOL_TIMEOUT: {{ $cm.REDIS_POOL_TIMEOUT | default "2" | quote }}
+  REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_READ_TIMEOUT: {{ $cm.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_TLS: {{ $cm.REDIS_TLS | default "false" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ $cm.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  RELAXED_RATE_LIMIT_MAX: {{ $cm.RELAXED_RATE_LIMIT_MAX | default "1000" | quote }}
+  RELAXED_RATE_LIMIT_WINDOW_SEC: {{ $cm.RELAXED_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  SWAGGER_BASE_PATH: {{ $cm.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "false" | quote }}
+  SWAGGER_LEFT_DELIM: {{ $cm.SWAGGER_LEFT_DELIM | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIM: {{ $cm.SWAGGER_RIGHT_DELIM | default "}}" | quote }}
+  SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "br-sta" | quote }}
+  SWAGGER_VERSION: {{ $cm.SWAGGER_VERSION | default "1.0.0" | quote }}
+  SYSTEMPLANE_ENABLED: {{ $cm.SYSTEMPLANE_ENABLED | default "false" | quote }}
+  TLS_TERMINATED_UPSTREAM: {{ $cm.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
+  MULTI_TENANT_POOL_MAX_CONNS: {{ $cm.MULTI_TENANT_POOL_MAX_CONNS | default "20" | quote }}
+  MULTI_TENANT_POOL_MAX_IDLE_CONNS: {{ $cm.MULTI_TENANT_POOL_MAX_IDLE_CONNS | default "5" | quote }}
+  AUDIT_EXPORT_RATE_LIMIT_MAX: {{ $cm.AUDIT_EXPORT_RATE_LIMIT_MAX | default "10" | quote }}
+  AUDIT_EXPORT_RATE_LIMIT_WINDOW_SEC: {{ $cm.AUDIT_EXPORT_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  AUDIT_PUBLISHER_ALTERNATE_EXCHANGE: {{ $cm.AUDIT_PUBLISHER_ALTERNATE_EXCHANGE | default "sta.audit.dlq" | quote }}
+  AUDIT_PUBLISHER_CONFIRM_TIMEOUT_SEC: {{ $cm.AUDIT_PUBLISHER_CONFIRM_TIMEOUT_SEC | default "5" | quote }}
+  BACEN_ENVIRONMENT: {{ $cm.BACEN_ENVIRONMENT | default "homologation" | quote }}
+  CREDENTIALS_RECOVERY_ON_BOOT: {{ $cm.CREDENTIALS_RECOVERY_ON_BOOT | default "true" | quote }}
+  MASTER_KEY_PROVIDER: {{ $cm.MASTER_KEY_PROVIDER | default "envvar" | quote }}
+  MASTER_KEY_VERSION: {{ $cm.MASTER_KEY_VERSION | default "v1" | quote }}
+  POSTGRES_MAX_CONNECTIONS: {{ $cm.POSTGRES_MAX_CONNECTIONS | default "100" | quote }}
+  POSTGRES_SHARED_BUFFERS: {{ $cm.POSTGRES_SHARED_BUFFERS | default "128MB" | quote }}
+  RABBITMQ_SCHEME: {{ $cm.RABBITMQ_SCHEME | default "amqp" | quote }}
+  SERVER_TRUSTED_PROXIES: {{ $cm.SERVER_TRUSTED_PROXIES | default "" | quote }}
+  TRANSFER_INBOUND_ENABLED: {{ $cm.TRANSFER_INBOUND_ENABLED | default "false" | quote }}
+  TRANSFER_INBOUND_MAX_FILE_SIZE_BYTES: {{ $cm.TRANSFER_INBOUND_MAX_FILE_SIZE_BYTES | default "5368709120" | quote }}
+  TRANSFER_OBJECT_STORAGE_BUCKET: {{ $cm.TRANSFER_OBJECT_STORAGE_BUCKET | default "" | quote }}
+  TRUST_STORE_DEFAULT_PAGE_SIZE: {{ $cm.TRUST_STORE_DEFAULT_PAGE_SIZE | default "25" | quote }}
+  TRUST_STORE_EXPIRING_SOON_DAYS: {{ $cm.TRUST_STORE_EXPIRING_SOON_DAYS | default "30" | quote }}
+  TRUST_STORE_MAX_CERT_SIZE_BYTES: {{ $cm.TRUST_STORE_MAX_CERT_SIZE_BYTES | default "65536" | quote }}
+  TRUST_STORE_MAX_PAGE_SIZE: {{ $cm.TRUST_STORE_MAX_PAGE_SIZE | default "100" | quote }}
+  TRUST_STORE_S3_BUCKET: {{ $cm.TRUST_STORE_S3_BUCKET | default "br-sta-truststore" | quote }}
+  TRUST_STORE_S3_ENDPOINT: {{ $cm.TRUST_STORE_S3_ENDPOINT | default "http://localhost:8333" | quote }}
+  TRUST_STORE_S3_PATH_STYLE: {{ $cm.TRUST_STORE_S3_PATH_STYLE | default "true" | quote }}
+  TRUST_STORE_S3_REGION: {{ $cm.TRUST_STORE_S3_REGION | default "us-east-1" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default "0.0.0.0:8080" | quote }}
+  VERSION: {{ $tag | quote }}
+
+  # =============================================================================
+  # DATABASE — PostgreSQL (host/port/user/name/ssl via datastore mask; db-name is
+  # POSTGRES_NAME). POSTGRES_PASSWORD -> Secret. External infra: no bundled fallback.
+  # =============================================================================
+  {{- $pgName := include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_NAME" "default" "br_sta") }}
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" "") | quote }}
+  POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "br_sta") | quote }}
+  POSTGRES_NAME: {{ $pgName | quote }}
+  POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+  {{- $replicaHost := include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") }}
+  {{- if $replicaHost }}
+  POSTGRES_REPLICA_HOST: {{ $replicaHost | quote }}
+  POSTGRES_REPLICA_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_REPLICA_PORT" "default" "5432") | quote }}
+  POSTGRES_REPLICA_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_REPLICA_USER" "default" "br_sta") | quote }}
+  POSTGRES_REPLICA_NAME: {{ $cm.POSTGRES_REPLICA_NAME | default $pgName | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_REPLICA_SSLMODE" "default" "require") | quote }}
+  {{- end }}
+
+  # REDIS / Valkey (combined host:port via datastore mask; composes shared {host,port}). REDIS_PASSWORD -> Secret.
+  REDIS_HOST: {{ include "br-sfn.redisComposedAddr" (dict "root" $root "ds" $ds "cm" $cm "hostKey" "REDIS_HOST" "hostDefault" "") | quote }}
+
+  # RABBITMQ (host/port/user via datastore broker mask). RABBITMQ_DEFAULT_PASS / RABBITMQ_URL -> Secret.
+  RABBITMQ_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "") | quote }}
+  RABBITMQ_PORT_AMQP: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
+  RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "br_sta") | quote }}
+
+  # =============================================================================
+  # AUTH (inbound) — enable/host via global.auth (native key PLUGIN_AUTH_HOST).
+  # =============================================================================
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
+  PLUGIN_AUTH_HOST: {{ include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "") | quote }}
+
+  # =============================================================================
+  # MULTI-TENANCY — knob inline; URL + redis/pool/cache via multiTenant.env
+  # (global.multiTenant). SERVICE_API_KEY / REDIS_PASSWORD -> Secret.
+  # =============================================================================
+  MULTI_TENANT_ENABLED: {{ $mtEnabled | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict "context" $root "configmap" $cm "enabled" $mtEnabled "emitRedis" true "emitPool" true "emitCache" true "emitAllowInsecure" true "requiredUrl" true "requiredRedisHost" true) | nindent 2 }}
+  {{- if $mtEnabled }}
+  MULTI_TENANT_POOL_MAX_CONNS: {{ $cm.MULTI_TENANT_POOL_MAX_CONNS | default "20" | quote }}
+  MULTI_TENANT_POOL_MAX_IDLE_CONNS: {{ $cm.MULTI_TENANT_POOL_MAX_IDLE_CONNS | default "5" | quote }}
+  {{- end }}
+
+  # =============================================================================
+  # OBSERVABILITY — shared enable/endpoint/deployment-env via global.observability;
+  # identity (name/library/version) per-service.
+  # =============================================================================
+  {{- include "lerian-common.otel.env" (dict "context" $root "configmap" $cm "enabledDefault" "false" "endpointDefault" "" "deploymentEnvironmentDefault" "production") | nindent 2 }}
+  {{- include "lerian-common.otel.envFlat" (dict "configmap" $cm "keys" (list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION") "defaults" (dict "OTEL_RESOURCE_SERVICE_NAME" "br-sta" "OTEL_LIBRARY_NAME" "github.com/LerianStudio/br-sta" "OTEL_RESOURCE_SERVICE_VERSION" $tag)) | nindent 2 }}
+
+  # =============================================================================
+  # SERVICE DISCOVERY — knob inline; server config from global.serviceDiscovery,
+  # endpoints derived from this rail's own service/ingress. SD_TOKEN -> Secret.
+  # =============================================================================
+  SD_ENABLED: {{ $sdEnabled | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict "context" $root "enabled" $sdEnabled "configmap" $cm "name" $name "port" $port "namespace" $namespace "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" ($root.Values.sta.ingress | default dict)))) | nindent 2 }}
+
+  # =============================================================================
+  # STREAMING — knob inline; brokers/SASL/TLS from global.streaming. STREAMING_SASL_PASSWORD -> Secret.
+  # =============================================================================
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  {{- include "lerian-common.streaming.env" (dict "context" $root "enabled" $streamingEnabled "configmap" $cm "clientId" $name "cloudeventsSource" "lerian.br-sta") | nindent 2 }}
+
+  # Extra environment variables (passthrough from values.sta.extraEnvVars)
+  {{- with $root.Values.sta.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}
+
+{{/*
+staConfigmap — the single STA manager ConfigMap. Input dict: root, name, comp, port.
+*/}}
+{{- define "br-sfn.staConfigmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sfn.componentFullname" (dict "root" .root "name" .name) }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" (dict "root" .root "name" .name) | nindent 4 }}
+data:
+{{ include "br-sfn.staConfigData" (dict "root" .root "comp" .comp "port" .port "cm" (.comp.configmap | default dict)) }}
+{{- end }}
+
+{{/*
+staWorkerConfigData — worker-only env, layered on top of the manager ConfigMap via
+envFrom in the worker Deployment (worker keys win). SERVER_ADDRESS is the worker
+probe-server bind (its own port); the rest come from sta.worker.configmap.
+Input dict: root ($), port (worker probe port).
+*/}}
+{{- define "br-sfn.staWorkerConfigData" -}}
+{{- $w := .root.Values.sta.worker | default dict -}}
+  # Worker-only env, layered on the manager ConfigMap (envFrom order → worker keys win).
+  SERVER_ADDRESS: {{ printf "0.0.0.0:%v" (($w.service | default dict).port | default 8081) | quote }}
+  {{- range $k, $v := ($w.configmap | default dict) }}
+  {{- if ne $k "SERVER_ADDRESS" }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+
+{{/*
+staWorkerConfigmap — the STA worker ConfigMap. Input dict: root, name, port.
+*/}}
+{{- define "br-sfn.staWorkerConfigmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-sfn.componentFullname" (dict "root" .root "name" .name) }}
+  namespace: {{ include "global.namespace" .root }}
+  labels:
+    {{- include "br-sfn.componentLabels" (dict "root" .root "name" .name) | nindent 4 }}
+data:
+{{ include "br-sfn.staWorkerConfigData" (dict "root" .root "port" .port) }}
+{{- end }}

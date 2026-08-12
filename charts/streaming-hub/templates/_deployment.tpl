@@ -108,11 +108,10 @@ spec:
                   name: {{ include "streaming-hub.secretName" $ }}
                   key: STREAMING_HUB_POSTGRES_DSN
             {{- end }}
-            {{- with $sh.extraEnvVars }}
-            {{- range . }}
-            - name: {{ .name }}
-              value: {{ .value | quote }}
-            {{- end }}
+            {{- range $k, $v := $sh.extraEnvVars }}
+            # Un-enumerated per-Deployment env hatch (key -> value map).
+            - name: {{ $k }}
+              value: {{ $v | quote }}
             {{- end }}
             {{- if $sh.telemetry.enabled }}
             # OTEL endpoint is overridden per-pod via the node host IP (DaemonSet

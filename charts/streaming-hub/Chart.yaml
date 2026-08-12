@@ -29,8 +29,13 @@ keywords:
   - lerian
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 
-# NO dependencies block by deliberate design (deviation from reporter/midaz):
-# OTEL is env-wired via the OTEL_EXPORTER_OTLP_ENDPOINT downward-API override,
-# not bundled as an otel-collector-lerian subchart. Declaring it would force an
-# OCI pull on every `helm lint` / `helm template`. Kafka/Redpanda and Postgres
-# are shared external infra, never subcharts here.
+# Only the lerian-common LIBRARY chart is declared. It renders nothing on its
+# own (type: library) and is vendored from the local monorepo (file://), so it
+# forces NO OCI/network pull on `helm lint` / `helm template`. The original
+# no-runtime-subchart design still holds: OTEL is env-wired via the
+# OTEL_EXPORTER_OTLP_ENDPOINT downward-API override (streamingHub.telemetry), and
+# Kafka/Redpanda + PostgreSQL are shared external infra, never subcharts here.
+dependencies:
+  - name: lerian-common-helm
+    version: "1.4.0"
+    repository: "file://../lerian-common"

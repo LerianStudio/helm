@@ -31,12 +31,12 @@ streamingHub:
       MULTI_TENANT_ENABLED: "false"
       ENV_NAME: ""                            # staging | production (secrets path segment)
       AWS_REGION: ""                          # e.g. us-east-2 (where the tenant credentials live)
+      STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""  # SASL/SCRAM username (NOT a credential — the password is a secret)
+      STREAMING_HUB_KEK_REF: ""               # KEK reference / pointer (KMS key id / ARN / env-var name — not key material)
 
   secrets:
     STREAMING_HUB_POSTGRES_DSN: ""            # full Postgres DSN, credentials embedded
-    STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""
     STREAMING_HUB_KAFKA_SCRAM_PASSWORD: ""
-    STREAMING_HUB_KEK_REF: ""                 # KEK reference (KMS key id / ARN / ...)
     # STREAMING_HUB_DEV_KEK: ""               # dev only
     # Multi-tenant needs no extra secrets: the hub reads the tenant credentials
     # straight from AWS Secrets Manager with its own IAM identity. Set

@@ -46,7 +46,7 @@
       "properties": {
         "mode": {
           "default": "all",
-          "description": "Deployment topology switch. One of: all | split.",
+          "description": "Deployment topology switch. One of: all or split.",
           "enum": [
             "all",
             "split"
@@ -342,7 +342,6 @@
               "PLUGIN_AUTH_ENABLED",
               "POSTGRES_DB",
               "POSTGRES_HOST",
-              "POSTGRES_PASSWORD",
               "POSTGRES_PORT",
               "POSTGRES_SSLMODE",
               "POSTGRES_USER",
@@ -354,7 +353,6 @@
               "STREAMING_HUB_AUTODISABLE_FAILURE_WINDOW",
               "STREAMING_HUB_AWS_HUB_PRINCIPAL_ARN",
               "STREAMING_HUB_AWS_SETUP_TEMPLATE_URL",
-              "STREAMING_HUB_DEV_KEK",
               "STREAMING_HUB_DISPATCH_CLAIM_BATCH",
               "STREAMING_HUB_DISPATCH_IDLE_INTERVAL_MS",
               "STREAMING_HUB_DISPATCH_WORKERS",
@@ -367,9 +365,7 @@
               "STREAMING_HUB_IDEMPOTENCY_REAP_INTERVAL",
               "STREAMING_HUB_IDEMPOTENCY_TTL",
               "STREAMING_HUB_KAFKA_BROKERS",
-              "STREAMING_HUB_KAFKA_CA_CERT",
               "STREAMING_HUB_KAFKA_SCRAM_MECHANISM",
-              "STREAMING_HUB_KAFKA_SCRAM_PASSWORD",
               "STREAMING_HUB_KAFKA_SCRAM_USERNAME",
               "STREAMING_HUB_KAFKA_TLS_ENABLED",
               "STREAMING_HUB_KEK_REF",
@@ -384,7 +380,6 @@
               "STREAMING_HUB_PARTITION_RETENTION_HORIZON",
               "STREAMING_HUB_POISON_THRESHOLD",
               "STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME",
-              "STREAMING_HUB_POSTGRES_DSN",
               "STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS",
               "STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS",
               "STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT",

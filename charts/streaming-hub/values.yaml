@@ -77,7 +77,7 @@ global:
 # streamingHub — the single root key for everything the hub owns.
 # =============================================================================
 streamingHub:
-  # -- (enum: all|split) Deployment topology switch. One of: all | split.
+  # -- (enum: all|split) Deployment topology switch. One of: all or split.
   #    all   (default) -> ONE Deployment with STREAMING_HUB_ROLE=all (ingest +
   #          delivery co-resident; the dev-st target). Byte-equivalent to the
   #          historical single binary.
@@ -229,12 +229,13 @@ streamingHub:
   # ===========================================================================
   datastores: {}
   # ===========================================================================
-  # configmap — the PRIMARY operator override surface (escape hatch). Ships EMPTY:
-  # every non-sensitive key already has a template default (see
-  # templates/configmap.yaml). Put configmap.<KEY> here to override an enumerated
-  # key (top precedence) OR to inject an un-enumerated one. NEVER put a credential
-  # here — those go to `secrets` (routed to a Secret, never the ConfigMap).
-  # For per-Deployment env, use extraEnvVars instead.
+  # configmap — the PRIMARY operator override surface. Ships EMPTY: every
+  # non-sensitive key already has a template default (see templates/configmap.yaml).
+  # Put configmap.<KEY> here to OVERRIDE an enumerated (allowlisted) key — the
+  # values.schema.json propertyNames.enum guards it, so a typo is rejected. To
+  # inject a key that is NOT in the allowlist, use `extraEnvVars` instead (the
+  # unconstrained per-Deployment env hatch). NEVER put a credential here — those
+  # go to `secrets` (routed to a Secret, never the ConfigMap).
   # ===========================================================================
   # -- Operator ConfigMap overrides (key -> value). See templates/configmap.yaml.
   # @default -- templates/configmap.yaml

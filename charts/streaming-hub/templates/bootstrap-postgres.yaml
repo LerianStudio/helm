@@ -85,23 +85,23 @@ spec:
           value: {{ $defs.postgresAdminLogin.username | quote }}
           {{- end }}
         - name: DB_ADMIN_PASSWORD
-          {{- if $defs.postgresAdminLogin.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
+              {{- if $defs.postgresAdminLogin.useExistingSecret.name }}
               name: {{ $defs.postgresAdminLogin.useExistingSecret.name | quote }}
+              {{- else }}
+              name: {{ include "streaming-hub.fullname" . }}-bootstrap
+              {{- end }}
               key: DB_ADMIN_PASSWORD
-          {{- else }}
-          value: {{ $defs.postgresAdminLogin.password | quote }}
-          {{- end }}
         - name: DB_PASSWORD_HUB
-          {{- if $defs.hubCredentials.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
+              {{- if $defs.hubCredentials.useExistingSecret.name }}
               name: {{ $defs.hubCredentials.useExistingSecret.name | quote }}
+              {{- else }}
+              name: {{ include "streaming-hub.fullname" . }}-bootstrap
+              {{- end }}
               key: DB_PASSWORD_HUB
-          {{- else }}
-          value: {{ $defs.hubCredentials.password | quote }}
-          {{- end }}
         - name: DB_DATABASE
           value: postgres
         command:

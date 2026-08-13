@@ -1,0 +1,8 @@
+identity:
+  secrets:
+    AUTHORIZER_CLIENT_SECRET: "sample"
+auth:
+  secrets:
+    AUTHORIZER_CLIENT_SECRET: "sample"
+  initUser:
+    adminPassword: "sample"

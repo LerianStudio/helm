@@ -1,0 +1,14 @@
+pix:
+  configmap:
+    BTG_BASE_URL: "https://example.test"
+    PIX_ISPB: "12345678"
+    MIDAZ_ORGANIZATION_ID: "00000000-0000-0000-0000-000000000000"
+    MIDAZ_LEDGER_ID: "00000000-0000-0000-0000-000000000000"
+    ORGANIZATION_IDS: "global"
+  secrets:
+    BTG_CLIENT_ID: "sample"
+    BTG_CLIENT_SECRET: "sample"
+    INTERNAL_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef"
+    MIDAZ_CLIENT_ID: "sample"
+    MIDAZ_CLIENT_SECRET: "sample"
+    LICENSE_KEY: "sample"

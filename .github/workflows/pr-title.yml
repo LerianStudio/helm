@@ -17,7 +17,7 @@ jobs:
       pull-requests: read
       statuses: write
     name: Validate PR title
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/create-github-app-token@v1
         id: app-token
@@ -37,10 +37,27 @@ jobs:
             reporter
             plugin-fees
             plugin-br-pix-direct-jd
+            plugin-br-pix-indirect-btg
+            plugin-br-pix-switch
+            plugin-br-bank-transfer
+            lerian-notification
+            plugin-br-bank-transfer-jd
             templates
             dependencies
             otel-collector
+            alloy-lerian
             plugins
             pipe
             doc
+            product-console
+            fetcher
+            lender
+            tracer
+            br-sta
+            br-ccs
+            br-slc
+            br-sfn
+            new
+            charts
+            common
           requireScope: true

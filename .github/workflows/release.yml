@@ -5,11 +5,15 @@ on:
     branches:
       - main
       - develop
+      # Chart line branches for legacy patches, e.g. hotfix/midaz-5.7.x
+      - 'hotfix/*.x'
     paths-ignore:
       - 'README.md'
+      - '**/CHANGELOG.md'
       - '.github/workflows/**'
       - '.github/configs/**'
       - '.gitignore'
+      - '**/docs/**'
 
 permissions:
   contents: write
@@ -20,9 +24,11 @@ jobs:
   get-changed-paths:
     if: github.actor != 'lerian-studio-midaz-push-bot[bot]'
     name: Get Changed Paths
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
-      matrix: ${{ steps.changed-paths.outputs.matrix }}
+      matrix: ${{ steps.restrict.outputs.matrix }}
+      chart_line_chart: ${{ steps.restrict.outputs.chart_line_chart }}
+      chart_line_range: ${{ steps.restrict.outputs.chart_line_range }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -37,13 +43,67 @@ jobs:
           get_app_name: true
           path_level: 2
 
+      - name: Restrict matrix on chart line branches
+        id: restrict
+        env:
+          MATRIX: ${{ steps.changed-paths.outputs.matrix }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          CHART=""
+          RANGE=""
+
+          case "${REF_NAME}" in
+            hotfix/*.x)
+              STEM="${REF_NAME#hotfix/}"
+              # Leading zeros are rejected: semver reads 01.02.x as an invalid range
+              CHART=$(printf '%s' "${STEM}" | sed -nE 's/^(.+)-(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.x$/\1/p')
+              RANGE=$(printf '%s' "${STEM}" | sed -nE 's/^.+-((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.x)$/\1/p')
+
+              # The trigger glob is looser than this parser, so a branch such as
+              # hotfix/foo.x or hotfix/midaz-5.x reaches here unparsed. Falling
+              # through would release every changed chart without a range.
+              if [ -z "${CHART}" ] || [ -z "${RANGE}" ]; then
+                echo "::error::'${REF_NAME}' looks like a chart line branch but does not match <chart>-<major>.<minor>.x — refusing to release"
+                exit 1
+              fi
+              ;;
+          esac
+
+          if [ -z "${CHART}" ]; then
+            {
+              echo "matrix=${MATRIX}"
+              echo "chart_line_chart="
+              echo "chart_line_range="
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "::notice::Chart line branch — restricting the release matrix to '${CHART}' in range ${RANGE}"
+
+          # A chart line branch releases only its own chart. Anything else that
+          # changed on the branch would be released with the wrong version range.
+          RESTRICTED=$(printf '%s' "${MATRIX}" | jq -c --arg chart "${CHART}" '[.[] | select(.name == $chart)]')
+
+          if [ "${RESTRICTED}" = "[]" ]; then
+            echo "::notice::No change to charts/${CHART} in this push — nothing to release"
+          fi
+
+          {
+            echo "matrix=${RESTRICTED}"
+            echo "chart_line_chart=${CHART}"
+            echo "chart_line_range=${RANGE}"
+          } >> "$GITHUB_OUTPUT"
+
   release-helm-chart:
     needs: get-changed-paths
     name: Release Helm Chart
     if: needs.get-changed-paths.outputs.matrix != '[]'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       max-parallel: 1
+      fail-fast: false
       matrix:
         chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     steps:
@@ -65,7 +125,7 @@ jobs:
 
       - name: Set up Helm
         continue-on-error: true
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
       - name: Set up Homebrew
         id: setup-homebrew
@@ -79,17 +139,35 @@ jobs:
         run: |
           brew install helm
 
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: .github/scripts/go.sum
+
       - name: Helm Dependency Update
-        run: helm dependency update ${{ matrix.chart.working_dir }}
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
+        run: helm dependency update "$CHART_WORKING_DIR"
 
       - name: Helm Lint
-        run: helm lint ${{ matrix.chart.working_dir }}
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
+        run: helm lint "$CHART_WORKING_DIR"
 
-      - name: Run helm unittest
-        id: unittest
+      - name: Render Helm Chart
+        working-directory: .github/scripts
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
         run: |
-          helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
-          helm unittest ${{ matrix.chart.working_dir }}
+          chart_name="$(basename "$CHART_WORKING_DIR")"
+          go run ./validate-helm-charts --root ../.. --render-gate --charts "$chart_name"
+
+      #- name: Run helm unittest
+      #  id: unittest
+      #  run: |
+      #    helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
+      #    helm unittest ${{ matrix.chart.working_dir }}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -112,18 +190,15 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-          cache-dependency-path: .github/scripts/go.mod
-
       - name: Build scripts
         run: |
           cd .github/scripts
-          go build -o update-chart-version-readme update-chart-version-readme.go
+          go build -o update-chart-version-readme-bin ./update-chart-version-readme
 
       - name: Generate .releaserc file
+        env:
+          CHART_LINE_RANGE: ${{ needs.get-changed-paths.outputs.chart_line_range }}
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
           CHART_NAME="${{ matrix.chart.name }}"
           CHART_PATH="${{ matrix.chart.working_dir }}"
@@ -138,13 +213,25 @@ jobs:
             --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
             --arg successCmd "helm package $CHART_PATH && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
-            --arg prepareCmd "./.github/scripts/update-chart-version-readme --chart $CHART_NAME --version \${nextRelease.version}" \
+            --arg prepareCmd "./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
             '.plugins[2][1].chartPath = $chartPath |
               .plugins[4][1].assets = [($chartPath + "/Chart.yaml"), "README.md"] |
               .tagFormat = $tagFormat |
               .plugins[3][1].successCmd = $successCmd |
               .plugins[3][1].prepareCmd = $prepareCmd' \
             .github/configs/.releaserc.json > .releaserc
+
+          # On a chart line branch, register it as a semantic-release maintenance
+          # branch so the next version stays inside its range (e.g. 5.7.x -> 5.7.1)
+          if [ -n "${CHART_LINE_RANGE}" ]; then
+            jq \
+              --arg name "${BRANCH_NAME}" \
+              --arg range "${CHART_LINE_RANGE}" \
+              '.branches += [{name: $name, range: $range, channel: $range}]' \
+              .releaserc > .releaserc.tmp && mv .releaserc.tmp .releaserc
+          fi
+
+          jq . .releaserc
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
@@ -165,8 +252,29 @@ jobs:
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
 
 
+
+      # Only deployable Lerian PRODUCTS/PLUGINS belong in the Plugin Lifecycle
+      # Management. Two chart kinds are exempt and must NOT be registered there:
+      #   1. Library charts (type: library) — consumed by other charts, not deployable.
+      #   2. Dependency wrappers (annotation lerian.studio/chart-type: dependency-wrapper,
+      #      e.g. lerian-consul) — they deploy third-party infra we curate, not a Lerian
+      #      product to register/announce as a release.
+      - name: Detect lifecycle-exempt chart
+        id: chart-kind
+        env:
+          CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
+        run: |
+          # YAML-aware: read the parsed .type and .annotations["lerian.studio/chart-type"]
+          # so quoted scalars, inline comments and flow mappings are handled and the match is
+          # scoped to the real keys (a grep could match the same text in a comment/other scalar).
+          SKIP=$(python3 -c 'import yaml,sys; c=yaml.safe_load(open(sys.argv[1])) or {}; print("true" if (str(c.get("type","")).lower()=="library" or (c.get("annotations") or {}).get("lerian.studio/chart-type")=="dependency-wrapper") else "false")' "$CHART_WORKING_DIR/Chart.yaml")
+          echo "skip_lifecycle=$SKIP" >> "$GITHUB_OUTPUT"
+          if [ "$SKIP" = "true" ]; then
+            echo "::notice::$CHART_WORKING_DIR is lifecycle-exempt (library or dependency-wrapper) — skipping Plugin Lifecycle Management."
+          fi
+
       - name: Publish Release in Plugin Lifecycle Management
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.skip_lifecycle != 'true'
         uses: LerianStudio/github-actions-lifecycle-management@main
         with:
           chart_name: "${{ matrix.chart.name }}"
@@ -174,45 +282,15 @@ jobs:
           lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
           working_directory: ${{ matrix.chart.working_dir }}
 
-  generate_changelog:
-    needs:
-      - get-changed-paths
-      - release-helm-chart
-    name: 📝 Generate AI-powered Changelog
-    if: needs.get-changed-paths.outputs.matrix != '[]'
-    runs-on: ubuntu-22.04
-    strategy:
-      max-parallel: 1
-      matrix:
-        chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
-    steps:
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
-          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
-
-      - uses: LerianStudio/github-actions-gptchangelog/helm-repo@chart
-        with:
-          WORK_DIR: ${{ matrix.chart.working_dir }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LERIAN_CI_CD_USER_GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
-          LERIAN_CI_CD_USER_GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
-          LERIAN_CI_CD_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
-          LERIAN_CI_CD_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
-          LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
-          LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
-
   notify-release:
     needs:
       - get-changed-paths
       - release-helm-chart
     name: 📢 Release Notification
-    if: needs.get-changed-paths.outputs.matrix != '[]'
+    if: needs.get-changed-paths.outputs.matrix != '[]' && github.ref == 'refs/heads/main'
     strategy:
       max-parallel: 1
+      fail-fast: false
       matrix:
         chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     uses: ./.github/workflows/release-notification.yml
@@ -221,5 +299,5 @@ jobs:
       chart_path: ${{ matrix.chart.working_dir }}
     secrets:
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
-      SLACK_CHANNEL_DEVOPS: ${{ secrets.SLACK_CHANNEL_DEVOPS }}
+      SLACK_CHANNEL_OPS: ${{ secrets.SLACK_CHANNEL_OPS }}
       SLACK_GROUP_TECH_SUPPORT: ${{ secrets.SLACK_GROUP_TECH_SUPPORT }}

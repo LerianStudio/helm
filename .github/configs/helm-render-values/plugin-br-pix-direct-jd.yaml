@@ -1,0 +1,6 @@
+pix:
+  secrets:
+    MIDAZ_CLIENT_SECRET: "sample"
+    JD_SECRET: "sample"
+    JD_PIX_CLIENT_SECRET: "sample"
+    SECRET_KEY_BASE: "sample"

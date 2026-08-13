@@ -1,0 +1,12 @@
+app:
+  configmap:
+    BTG_API_BASE_URL: "https://example.test"
+    BTG_AUTH_URL: "https://example.test/oauth"
+    MIDAZ_ONBOARDING_URL: "http://midaz-onboarding:3000"
+    MIDAZ_TRANSACTION_URL: "http://midaz-transaction:3000"
+  secrets:
+    BTG_CLIENT_ID: "sample"
+    BTG_CLIENT_SECRET: "sample"
+    BTG_WEBHOOK_SECRET: "sample"
+    INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
+    CREDENTIAL_ENCRYPTION_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="

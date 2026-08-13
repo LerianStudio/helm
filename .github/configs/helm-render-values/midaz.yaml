@@ -1,0 +1,13 @@
+crm:
+  secrets:
+    # App crypto material — operator-provided (external boundary).
+    LCRYPTO_HASH_SECRET_KEY: "sample"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "sample"
+ledger:
+  secrets:
+    # RabbitMQ — operator-provided; not yet single-sourced (see chart README
+    # "Known limitation"). The infra passwords (Postgres/Mongo/Valkey) are now
+    # single-sourced from the Bitnami subchart Secrets, so they are intentionally
+    # omitted here.
+    RABBITMQ_DEFAULT_PASS: "sample"
+    RABBITMQ_CONSUMER_PASS: "sample"

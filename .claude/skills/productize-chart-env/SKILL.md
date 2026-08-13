@@ -254,6 +254,35 @@ config (`WEBHOOK_API_KEY_FILE`, `AWS_ACCESS_KEY_ID=""`) stays **config** — see
     example. Aim ~15–25 knob lines. A couple of common overrides may go under `configmap:` as
     examples. This is the artifact for "sees the chart from outside without reading templates" —
     the docs/README lead with it. (Do NOT base it on a stale `values-template.yaml`; those drift.)
+11. **Portability & multi-tenant deploy-readiness.** A productized chart must install cleanly into
+    ANY namespace and COEXIST with other releases on a shared/multi-tenant cluster — driven entirely
+    by values, with NO hand-editing of the chart per environment. Four gates — each cost a real manual
+    fix when a chart missed it (reporter missed all four; midaz passes them):
+    - **(a) No hardcoded namespace in dependency hosts.** In-cluster hosts must be BARE service names
+      (`midaz-rabbitmq`, `midaz-mongodb`) or `.Release.Namespace`-derived — NEVER a fixed
+      `<svc>.<fixed-ns>.svc.cluster.local`. A baked namespace (reporter's `reporter-rabbitmq.reporter.svc…`)
+      breaks the instant the release lands in any namespace but the chart default. Bare names resolve
+      in the pod's own namespace via the resolv.conf search path → portable for free; if a full host
+      is unavoidable, derive it from `.Release.Namespace`, and always leave it overridable via values.
+    - **(b) No fixed-name cluster-scoped resources.** A ClusterRole/ClusterRoleBinding/CRD with a
+      STATIC name (a bundled subchart's `seaweedfs-rw-cr`) can't be owned by two releases → a second
+      install on a shared cluster fails `invalid ownership metadata`. Every cluster-scoped object the
+      chart OR a subchart creates must be release-name-prefixed; prefer EXTERNAL deps on a shared
+      cluster. Verify: `helm template | yq 'select(.metadata.namespace == null) | .kind + "/" + .metadata.name'`
+      → every name must carry the release prefix.
+    - **(c) Declared secret contract, all via `useExistingSecret`.** Every credential the app REQUIRES
+      must be (1) declared with a documented key name and (2) referenceable via `useExistingSecret` —
+      so credentials are provisioned out-of-band and REFERENCED, never inlined into values. A required
+      secret with no existingSecret path (reporter's bare `secrets.RABBITMQ_ERLANG_COOKIE is required`)
+      forces the deployer to hand-craft it. midaz is the target: `useExistingSecret: {name, keys}` on
+      every credential, keys named in the `# --` doc (`DB_PASSWORD_MIDAZ`, `MONGO_ROOT_*`, …).
+    - **(d) Env-driven hardening toggles with a dev default.** Security guards the app enforces
+      (insecure OTel/TLS, mTLS, plaintext broker) must be VALUES with a sane non-prod default, not
+      hardcoded to "production" — else a dev/test install crashloops until someone hand-sets
+      `ALLOW_INSECURE_*`. midaz ships `ALLOW_INSECURE_TLS: "true"` + `ENV_NAME: "development"` as
+      defaults, flipped per environment via values. A guard with no toggle blocks non-prod installs.
+    These are CHART obligations — no external tooling can paper over them. A chart that misses any of
+    the four is not portable/multi-tenant-safe no matter how complete its config coverage is.
 
 ## RULES (the gotchas — every one cost real debugging; bake them in)
 
@@ -343,6 +372,11 @@ ConfigMaps are all included) and reconciles emitted keys vs the `.env`:
   (`datastores.postgres.buket`, `objectStorage.<name>.reigon`, `kms.vaultMont`) must each fail
   `helm template`.
 - **Docs**: the README parameter table regenerates from the `# --` annotations with no diff.
+- **Portability / multi-tenant** (Step 11): no dependency host bakes a namespace (bare or
+  `.Release.Namespace`-derived); no cluster-scoped resource has a static, non-release-prefixed name;
+  every REQUIRED credential is `useExistingSecret`-referenceable with a documented key; every
+  app-enforced security guard is a value with a dev default. Any miss = **FAIL** — the chart can't be
+  installed to an arbitrary namespace on a shared cluster via values alone, regardless of config coverage.
 - `helm lint` + the repo render-gate + strict standard all green.
 
 Emit a **coverage report** at the end: N config / N secret / N helper / N datastore / gaps list.

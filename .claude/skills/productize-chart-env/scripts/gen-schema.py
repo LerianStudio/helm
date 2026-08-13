@@ -38,6 +38,10 @@ Usage:
 
 --env + --rendered-keys guard the `configmap` escape hatch with `propertyNames.enum` (the UNION
 of both — see the ENV_KEYS note). Omit both to leave `configmap` fully open (no typo protection).
+
+--open-prefixes DATASOURCE_ (comma-separated) relaxes the enum into `anyOf: [enum, pattern ^PREFIX...]`
+for key families the app fans out per-deploy and that can't be enumerated (reporter's
+`DATASOURCE_<name>_*` — the operator names the datasources). Typos OUTSIDE the namespace still fail.
 """
 import argparse, json, re, sys, os
 
@@ -144,6 +148,13 @@ def mask_schema(key, desc, path):
 # gap): those are legitimate escape-hatch overrides and a .env-only enum would wrongly reject
 # them. When neither source is given, `configmap` stays fully open (no enum).
 ENV_KEYS = set()
+# Namespaced OPEN prefixes (--open-prefixes): key families the app fans out at deploy time and
+# that CANNOT be enumerated — e.g. reporter lets an operator configure N datasources under
+# `DATASOURCE_<name>_*` where <name> is deployment-defined (TRANSACTION, FEES, CRM, ...). A closed
+# enum built from the .env can only ever list the EXAMPLE names, so real deploys get rejected. For
+# these, the propertyNames guard becomes `anyOf: [enum, pattern ^PREFIX...]` — still catches a typo
+# OUTSIDE the namespace (REDIS_HOSTX) while accepting any well-formed key INSIDE it.
+OPEN_PREFIXES = []
 _ENV_KEY = re.compile(r"^#?\s*([A-Z][A-Z0-9_]+)\s*=")   # active OR commented-optional env var
 _KEY = re.compile(r"^([A-Z][A-Z0-9_]+)\s*$")            # bare key (one per line) for --rendered-keys
 
@@ -166,6 +177,17 @@ def parse_key_list(path):
     return keys
 
 
+def _allow(keys):
+    """The propertyNames guard for a configmap escape hatch: the closed enum of known keys,
+    plus (when --open-prefixes is set) an OR'd pattern that accepts any well-formed key under a
+    deployment-namespaced prefix (see OPEN_PREFIXES). Keeps typo protection outside the namespace."""
+    enum = {"enum": sorted(keys)}
+    if OPEN_PREFIXES:
+        pat = "^(" + "|".join(re.escape(p) for p in OPEN_PREFIXES) + ")[A-Z0-9_]+$"
+        return {"anyOf": [enum, {"pattern": pat}]}
+    return enum
+
+
 def open_map_schema(child_path, node, desc):
     """Open passthrough object. For the `configmap`/`data` escape hatch, guard the KEYS with the
     .env allowlist (propertyNames.enum) — handles both the wrapped style (keys directly under
@@ -184,7 +206,7 @@ def open_map_schema(child_path, node, desc):
         own_node = (node["data"] if leaf == "configmap" and isinstance(node, dict)
                     and isinstance(node.get("data"), dict) else node)
         own = set(own_node) if isinstance(own_node, dict) else set()
-        allow = {"enum": sorted(ENV_KEYS | own)}
+        allow = _allow(ENV_KEYS | own)
         if leaf == "configmap" and isinstance(node, dict) and "data" in node:
             # flat chart: the escape hatch is `configmap.data` — guard the nested map's keys.
             cs["properties"] = {"data": {"type": "object", "additionalProperties": True,
@@ -351,14 +373,21 @@ def main():
                     help="file of NATIVE_KEYs the chart RENDERS (one per line; e.g. "
                          "`helm template <enable-all> | yq '..data|keys'`). UNIONed with --env so "
                          "the allowlist covers helper-emitted keys the .env.example omits.")
+    ap.add_argument("--open-prefixes", default=None,
+                    help="comma-separated key prefixes the app fans out per-deploy and that CANNOT "
+                         "be enumerated (e.g. reporter's DATASOURCE_ — N deployment-defined "
+                         "datasources). The configmap guard becomes anyOf:[enum, pattern ^PREFIX...] "
+                         "so any well-formed key under the prefix passes while typos elsewhere fail.")
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args()
 
-    global ENV_KEYS
+    global ENV_KEYS, OPEN_PREFIXES
     if a.env:
         ENV_KEYS |= parse_env_keys(a.env)
     if a.rendered_keys:
         ENV_KEYS |= parse_key_list(a.rendered_keys)
+    if a.open_prefixes:
+        OPEN_PREFIXES = [p.strip() for p in a.open_prefixes.split(",") if p.strip()]
 
     values = yaml.safe_load(open(a.values)) or {}
     desc = descriptions(a.values)

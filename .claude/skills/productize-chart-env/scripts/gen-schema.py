@@ -90,8 +90,13 @@ try:
 except ImportError:
     sys.stderr.write("gen-schema needs PyYAML (pip install pyyaml)\n"); sys.exit(2)
 
+# Subchart value blocks stay permissive. Real subcharts are auto-detected from Chart.yaml
+# (see main()); this set is the fallback for when --chart-dir is omitted. NOTE: "common" is
+# NOT listed — Bitnami's `common` is a LIBRARY chart with no values block, and a chart may
+# legitimately use a top-level `common:` config block (e.g. reporter's shared configmap) that
+# MUST get the escape-hatch enum guard, not be treated as an opaque subchart.
 SUBCHARTS = {"postgresql", "valkey", "redis", "rabbitmq", "mongodb", "kafka",
-             "lerian-common-helm", "lerian-common", "common"}
+             "lerian-common-helm", "lerian-common"}
 OPEN_MAPS = {"configmap", "data", "extraEnvVars", "extraEnvVarsCM", "extraEnvVarsSecret",
              "podAnnotations", "podLabels", "annotations", "commonLabels", "labels",
              "matchLabels", "selectorLabels", "nodeSelector", "extraObjects", "secrets",
@@ -171,7 +176,11 @@ def open_map_schema(child_path, node, desc):
         cs["description"] = cd
     leaf = child_path.split(".")[-1]
     if ENV_KEYS and leaf in ("configmap", "data"):
-        allow = {"enum": sorted(ENV_KEYS)}
+        # The enum is env/rendered keys UNIONed with the block's OWN shipped sub-keys — a
+        # chart may carry reserved non-env keys under `configmap` (e.g. `annotations` for the
+        # ConfigMap metadata) that are valid by construction and must not be rejected.
+        own = {k for k in node} if isinstance(node, dict) else set()
+        allow = {"enum": sorted(ENV_KEYS | own)}
         if leaf == "configmap" and isinstance(node, dict) and "data" in node:
             # flat chart: the escape hatch is `configmap.data` — guard the nested map's keys.
             cs["properties"] = {"data": {"type": "object", "additionalProperties": True,
@@ -350,11 +359,27 @@ def main():
     values = yaml.safe_load(open(a.values)) or {}
     desc = descriptions(a.values)
     tgroups = template_group_fields(a.chart_dir) if a.chart_dir else {}
+    # Auto-detect this chart's subcharts from Chart.yaml so their (opaque, upstream)
+    # value blocks stay permissive — the hardcoded SUBCHARTS set can't know every
+    # dependency name (e.g. seaweedfs, keda, otel-collector-lerian). Union, never shrink.
+    if a.chart_dir:
+        cy = os.path.join(a.chart_dir, "Chart.yaml")
+        if os.path.exists(cy):
+            meta = yaml.safe_load(open(cy)) or {}
+            for dep in (meta.get("dependencies") or []):
+                nm = dep.get("alias") or dep.get("name")
+                if nm:
+                    SUBCHARTS.add(nm)
     # ROOT: always open (subcharts/global live here); enumerate top-level for docs but permit extras
     props = {}
     for k, v in values.items():
         cp = k
-        if is_open(k, v) and cp not in tgroups:
+        if k in MASK_FIELDS:
+            # A top-level dependency-mask block (e.g. a chart whose dedicated `datastores`
+            # lives at the root because more than one component shares it) — close it by the
+            # contract's finite field set, same as when it's nested under a component/global.
+            props[k] = mask_schema(k, desc, cp)
+        elif is_open(k, v) and cp not in tgroups:
             props[k] = open_map_schema(cp, v, desc)
         else:
             props[k] = build(v, cp, desc, tgroups)

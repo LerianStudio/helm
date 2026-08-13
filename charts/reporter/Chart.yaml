@@ -16,7 +16,7 @@ maintainers:
 # to the chart and its templates, including the app version.
 version: 3.2.0
 # This is the version number of the application being deployed.
-appVersion: "2.3.0"
+appVersion: "2.4.0"
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
   - midaz
@@ -27,6 +27,9 @@ keywords:
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # Dependencies
 dependencies:
+  - name: lerian-common-helm
+    version: "1.4.0-alpha.202608101531.ede63d33"
+    repository: "oci://ghcr.io/lerianstudio/alpha"
   - name: keda
     version: "2.17.1"
     repository: "https://kedacore.github.io/charts"

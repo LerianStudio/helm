@@ -11,10 +11,9 @@ metadata:
     {{- end }}
   {{- end }} 
 data:
-  # Common shared values
-  {{- range $key, $value := .Values.common.configmap }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
+  # Common shared values (dependency connections via lerian-common masks/helpers;
+  # everything else an escape-hatch passthrough — see reporter.commonConfigmapData)
+  {{- include "reporter.commonConfigmapData" . | nindent 2 }}
   # Worker specific values
   {{- range $key, $value := .Values.worker.configmap }}
   {{ $key }}: {{ $value | quote }}

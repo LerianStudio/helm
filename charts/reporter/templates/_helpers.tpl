@@ -243,6 +243,140 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- end }}
 
 {{/*
+reporter.isTrue — "true" when the value is a truthy token (case-insensitive).
+*/}}
+{{- define "reporter.isTrue" -}}
+{{- $v := lower (trim (toString .)) -}}
+{{- if or (eq $v "true") (eq $v "1") (eq $v "yes") (eq $v "on") -}}true{{- end -}}
+{{- end -}}
+
+{{/*
+reporter.commonConfigmapData — the SHARED (common) ConfigMap data block for both the
+manager and worker surfaces. Dependency CONNECTIONS are resolved through lerian-common
+typed masks/helpers (datastore.value / globalValue / streaming.env); everything else is
+an escape-hatch passthrough (`$cm.KEY | default "X"`). Native `common.configmap.<KEY>`
+still wins for every masked field (top mask precedence). An operator can add any other
+key under common.configmap and it flows through the guarded range at the end.
+Input: the root context ($).
+*/}}
+{{- define "reporter.commonConfigmapData" -}}
+{{- $ := . -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $ded := .Values.datastores | default dict -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled -}}
+{{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = index $cm "STREAMING_ENABLED" -}}{{- end -}}
+{{- $streamingEnabled := eq (include "reporter.isTrue" ($streamingRaw | default "false")) "true" -}}
+{{- /* Keys emitted explicitly below; the guarded range must not re-emit them. */ -}}
+{{- $explicit := list
+    "ENV_NAME" "ALLOW_INSECURE_TLS" "LOG_LEVEL"
+    "RABBITMQ_URI" "RABBITMQ_HOST" "RABBITMQ_PORT_HOST" "RABBITMQ_PORT_AMQP"
+    "RABBITMQ_NUMBERS_OF_WORKERS" "RABBITMQ_EXCHANGE" "RABBITMQ_GENERATE_REPORT_QUEUE"
+    "RABBITMQ_GENERATE_REPORT_KEY" "RABBITMQ_HEALTH_CHECK_URL" "RABBITMQ_REPORT_EVENTS_EXCHANGE"
+    "REDIS_HOST" "REDIS_MASTER_NAME" "REDIS_DB" "REDIS_PROTOCOL" "REDIS_TLS" "REDIS_CA_CERT"
+    "GOOGLE_APPLICATION_CREDENTIALS" "REDIS_SERVICE_ACCOUNT"
+    "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_USE_PATH_STYLE"
+    "OBJECT_STORAGE_DISABLE_SSL" "OBJECT_STORAGE_BUCKET"
+    "MONGO_URI" "MONGO_HOST" "MONGO_NAME" "MONGO_USER" "MONGO_PORT" "MONGO_MAX_POOL_SIZE"
+    "MONGO_TLS_CA_CERT" "MONGO_PARAMETERS"
+    "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" "ENABLE_TELEMETRY" "OTEL_INSECURE_EXPORTER"
+    "FETCHER_ENABLED" "FETCHER_URL" "MULTI_TENANT_ENABLED"
+    "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD"
+    "SD_TLS" "SD_TLS_SKIP_VERIFY" "STREAMING_ENABLED"
+    "STREAMING_BROKERS" "STREAMING_CLOUDEVENTS_SOURCE" "STREAMING_CLIENT_ID"
+    "STREAMING_COMPRESSION" "STREAMING_REQUIRED_ACKS"
+    "DATASOURCE_ONBOARDING_CONFIG_NAME" "DATASOURCE_ONBOARDING_HOST" "DATASOURCE_ONBOARDING_PORT"
+    "DATASOURCE_ONBOARDING_USER" "DATASOURCE_ONBOARDING_DATABASE" "DATASOURCE_ONBOARDING_TYPE"
+    "DATASOURCE_ONBOARDING_SSLMODE" "DATASOURCE_ONBOARDING_SSLROOTCERT"
+-}}
+ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+{{- /* RabbitMQ broker connection via datastore mask (host/port/user); tuning stays passthrough. */}}
+RABBITMQ_URI: {{ $cm.RABBITMQ_URI | default "amqp" | quote }}
+RABBITMQ_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq") | quote }}
+RABBITMQ_PORT_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") | quote }}
+RABBITMQ_PORT_AMQP: {{ $cm.RABBITMQ_PORT_AMQP | default "5672" | quote }}
+RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
+RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "reporter.generate-report.exchange" | quote }}
+RABBITMQ_GENERATE_REPORT_QUEUE: {{ $cm.RABBITMQ_GENERATE_REPORT_QUEUE | default "reporter.generate-report.queue" | quote }}
+RABBITMQ_GENERATE_REPORT_KEY: {{ $cm.RABBITMQ_GENERATE_REPORT_KEY | default "reporter.generate-report.key" | quote }}
+RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default "http://reporter-rabbitmq:15672" | quote }}
+{{- /* Redis/Valkey connection via datastore mask (host carries host:port). */}}
+REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "reporter-valkey:6379") | quote }}
+REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
+REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
+REDIS_TLS: {{ $cm.REDIS_TLS | default "false" | quote }}
+REDIS_CA_CERT: {{ $cm.REDIS_CA_CERT | default "" | quote }}
+GOOGLE_APPLICATION_CREDENTIALS: {{ $cm.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+REDIS_SERVICE_ACCOUNT: {{ $cm.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+{{- /* Object storage (S3/SeaweedFS) — non-secret fields passthrough; keys stay in the Secret. */}}
+OBJECT_STORAGE_ENDPOINT: {{ $cm.OBJECT_STORAGE_ENDPOINT | default "http://seaweedfs-s3:8333" | quote }}
+OBJECT_STORAGE_REGION: {{ $cm.OBJECT_STORAGE_REGION | default "us-east-1" | quote }}
+OBJECT_STORAGE_USE_PATH_STYLE: {{ $cm.OBJECT_STORAGE_USE_PATH_STYLE | default "true" | quote }}
+OBJECT_STORAGE_DISABLE_SSL: {{ $cm.OBJECT_STORAGE_DISABLE_SSL | default "true" | quote }}
+OBJECT_STORAGE_BUCKET: {{ $cm.OBJECT_STORAGE_BUCKET | default "reporter-storage" | quote }}
+{{- /* MongoDB connection via datastore mask (host/port/user); name/tuning stay passthrough. */}}
+MONGO_URI: {{ $cm.MONGO_URI | default "mongodb" | quote }}
+MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "reporter-mongodb") | quote }}
+MONGO_NAME: {{ $cm.MONGO_NAME | default "reporter-db" | quote }}
+MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "reporter") | quote }}
+MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
+MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
+MONGO_PARAMETERS: {{ $cm.MONGO_PARAMETERS | default "" | quote }}
+{{- /* Observability: identity inline; shared endpoint/env/enable via global.observability. */}}
+OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}
+OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" "production") | quote }}
+OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "otlp://midaz-otel-lgtm:4317") | quote }}
+ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
+OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote }}
+FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
+FETCHER_URL: {{ $cm.FETCHER_URL | default "" | quote }}
+MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+{{- /* Service discovery: reporter's lib-service-discovery uses SD_ADDRESS and SD_ADVERTISE_
+   keys, which the vendored lerian-common.serviceDiscovery.env does NOT emit (it targets the
+   SD_INTERNAL_ and SD_EXTERNAL_ contract). Kept as escape-hatch passthrough (helper gap). */}}
+SD_ENABLED: {{ $cm.SD_ENABLED | default "false" | quote }}
+SD_ADDRESS: {{ $cm.SD_ADDRESS | default "" | quote }}
+SD_ADVERTISE_ADDRESS: {{ $cm.SD_ADVERTISE_ADDRESS | default "" | quote }}
+SD_ADVERTISE_PORT: {{ $cm.SD_ADVERTISE_PORT | default "0" | quote }}
+SD_WORKLOAD: {{ $cm.SD_WORKLOAD | default "" | quote }}
+SD_TLS: {{ $cm.SD_TLS | default "false" | quote }}
+SD_TLS_SKIP_VERIFY: {{ $cm.SD_TLS_SKIP_VERIFY | default "false" | quote }}
+{{- /* Streaming: knob inline; brokers/SASL/TLS transport + identity via global.streaming
+   (gated — inert unless enabled AND global.streaming.brokers is set). RABBITMQ_REPORT_EVENTS_EXCHANGE
+   is reporter-specific (RabbitMQ transport) and stays passthrough. */}}
+STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+RABBITMQ_REPORT_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_REPORT_EVENTS_EXCHANGE | default "reporter.events" | quote }}
+{{- if $streamingEnabled }}
+{{- include "lerian-common.streaming.env" (dict
+      "context" $
+      "enabled" $streamingEnabled
+      "configmap" $cm
+      "clientId" ($cm.STREAMING_CLIENT_ID | default "reporter")
+      "cloudeventsSource" ($cm.STREAMING_CLOUDEVENTS_SOURCE | default "//lerian.reporter")) | nindent 0 }}
+{{- end }}
+{{- /* External midaz datasource (direct-query mode) via postgres datastore mask. */}}
+DATASOURCE_ONBOARDING_CONFIG_NAME: {{ $cm.DATASOURCE_ONBOARDING_CONFIG_NAME | default "midaz_onboarding" | quote }}
+DATASOURCE_ONBOARDING_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DATASOURCE_ONBOARDING_HOST" "default" "midaz-postgresql-replication.midaz.svc.cluster.local") | quote }}
+DATASOURCE_ONBOARDING_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DATASOURCE_ONBOARDING_PORT" "default" "5432") | quote }}
+DATASOURCE_ONBOARDING_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DATASOURCE_ONBOARDING_USER" "default" "midaz") | quote }}
+DATASOURCE_ONBOARDING_DATABASE: {{ $cm.DATASOURCE_ONBOARDING_DATABASE | default "onboarding" | quote }}
+DATASOURCE_ONBOARDING_TYPE: {{ $cm.DATASOURCE_ONBOARDING_TYPE | default "postgresql" | quote }}
+DATASOURCE_ONBOARDING_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DATASOURCE_ONBOARDING_SSLMODE" "default" "disable") | quote }}
+DATASOURCE_ONBOARDING_SSLROOTCERT: {{ $cm.DATASOURCE_ONBOARDING_SSLROOTCERT | default "" | quote }}
+{{- /* Escape hatch: any OTHER key the operator adds under common.configmap. */}}
+{{- range $key, $value := $cm }}
+{{- if not (has $key $explicit) }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
 Secret/Service names render even when all bundled subcharts are disabled
 (external-infra path). Self-contained: no other common.* helpers required.

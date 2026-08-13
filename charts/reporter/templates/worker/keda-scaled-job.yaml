@@ -139,8 +139,8 @@ spec:
   {{- range .Values.worker.keda.scaledJob.triggers }}
   - type: {{ .type }}
     metadata:
-      queueName: {{ $.Values.common.configmap.RABBITMQ_GENERATE_REPORT_QUEUE | quote }}
-      host: "{{ $.Values.common.configmap.RABBITMQ_URI | default "amqp" }}://{{ $.Values.common.configmap.RABBITMQ_HOST }}:{{ $.Values.common.configmap.RABBITMQ_PORT_AMQP }}"
+      queueName: {{ $.Values.common.configmap.RABBITMQ_GENERATE_REPORT_QUEUE | default "reporter.generate-report.queue" | quote }}
+      host: "{{ $.Values.common.configmap.RABBITMQ_URI | default "amqp" }}://{{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($.Values.datastores | default dict) "configmap" ($.Values.common.configmap | default dict) "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq") }}:{{ $.Values.common.configmap.RABBITMQ_PORT_AMQP | default "5672" }}"
       queueLength: {{ .metadata.queueLength | quote }}
       protocol: {{ .metadata.protocol | quote }}
       vhost: {{ .metadata.vhost }}

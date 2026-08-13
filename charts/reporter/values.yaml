@@ -3,6 +3,27 @@
 # Declare variables to be passed into your templates.
 
 global:
+  # -- Env-wide SHARED datastore masks (set once per environment; a dedicated
+  # <release>.datastores or a native common.configmap.<KEY> overrides these).
+  # Same sub-keys as the dedicated block: mongo / redis / broker / postgres.
+  datastores: {}
+  # -- Env-wide observability. Consumed by lerian-common.globalValue (block "observability").
+  # Fields: enabled, otlpEndpoint, deploymentEnvironment. (configmap.<KEY> overrides.)
+  observability: {}
+  # -- Env-wide auth (access-manager). Consumed by lerian-common.globalValue (block "auth").
+  # Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
+  auth: {}
+  # -- Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when
+  # STREAMING_ENABLED=true. Fields: enabled, brokers, saslUsername, tlsEnabled, compression,
+  # requiredAcks, ... (brokers gates emission). Per-app identity stays in common.configmap.
+  streaming: {}
+  # -- Env-wide service discovery (Consul). Placeholder block: reporter keeps SD_* as
+  # configmap passthrough because its lib-service-discovery contract (SD_ADDRESS /
+  # SD_ADVERTISE_*) differs from lerian-common.serviceDiscovery.env (SD_INTERNAL_*/EXTERNAL_*).
+  serviceDiscovery: {}
+  # -- Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED
+  # gate today; other MULTI_TENANT_* keys are set via common.configmap.<KEY>.
+  multiTenant: {}
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
@@ -64,7 +85,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.3.0"
+    tag: "2.4.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -246,7 +267,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.3.0"
+    tag: "2.4.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -393,80 +414,39 @@ worker:
             protocol: "amqp"
             vhost: "/"
 common:
-  configmap:
-    # WORKER
-    ENV_NAME: development
-    # RABBITMQ
-    RABBITMQ_URI: amqp
-    RABBITMQ_PORT_HOST: 15672
-    RABBITMQ_HOST: reporter-rabbitmq.reporter.svc.cluster.local
-    RABBITMQ_PORT_AMQP: 5672
-    RABBITMQ_NUMBERS_OF_WORKERS: 5
-    RABBITMQ_EXCHANGE: "reporter.generate-report.exchange"
-    RABBITMQ_GENERATE_REPORT_QUEUE: "reporter.generate-report.queue"
-    RABBITMQ_GENERATE_REPORT_KEY: "reporter.generate-report.key"
-    RABBITMQ_HEALTH_CHECK_URL: "http://reporter-rabbitmq.reporter.svc.cluster.local:15672"
-    # Redis Configs
-    REDIS_MASTER_NAME: ""
-    REDIS_HOST: reporter-valkey.reporter.svc.cluster.local:6379
-    REDIS_DB: 0
-    REDIS_PROTOCOL: "3"
-    REDIS_TLS: "false"
-    REDIS_CA_CERT: ""
-    GOOGLE_APPLICATION_CREDENTIALS: ""
-    REDIS_SERVICE_ACCOUNT: ""
-    # Object Storage endpoint (default for local development with SeaweedFS)
-    OBJECT_STORAGE_ENDPOINT: http://seaweedfs-s3.reporter.svc.cluster.local:8333
-    OBJECT_STORAGE_REGION: us-east-1
-    OBJECT_STORAGE_USE_PATH_STYLE: "true"
-    OBJECT_STORAGE_DISABLE_SSL: "true"
-    OBJECT_STORAGE_BUCKET: "reporter-storage"
-    # MONGO DB
-    #MONGO_URI=mongo+srv
-    MONGO_URI: mongodb
-    MONGO_HOST: reporter-mongodb.reporter.svc.cluster.local
-    MONGO_NAME: reporter-db
-    MONGO_USER: reporter
-    MONGO_PORT: 27017
-    MONGO_MAX_POOL_SIZE: 1000
-    # OPEN TELEMETRY
-    OTEL_LIBRARY_NAME: github.com/LerianStudio/reporter
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: production
-    OTEL_EXPORTER_OTLP_ENDPOINT_PORT: 4317
-    OTEL_EXPORTER_OTLP_ENDPOINT: otlp://midaz-otel-lgtm:4317
-    ENABLE_TELEMETRY: true
-    OTEL_INSECURE_EXPORTER: "false"
-    # MongoDB TLS
-    MONGO_TLS_CA_CERT: ""
-    MONGO_PARAMETERS: ""
-    # Fetcher Integration
-    FETCHER_ENABLED: "false"
-    FETCHER_URL: ""
-    # Multi-Tenant
-    MULTI_TENANT_ENABLED: "false"
-    # MIDAZ ONBOARDING
-    DATASOURCE_ONBOARDING_CONFIG_NAME: midaz_onboarding
-    DATASOURCE_ONBOARDING_HOST: midaz-postgresql-replication.midaz.svc.cluster.local
-    DATASOURCE_ONBOARDING_PORT: 5432
-    DATASOURCE_ONBOARDING_USER: midaz
-    DATASOURCE_ONBOARDING_DATABASE: onboarding
-    DATASOURCE_ONBOARDING_TYPE: postgresql
-    DATASOURCE_ONBOARDING_SSLMODE: disable
-    DATASOURCE_ONBOARDING_SSLROOTCERT: ""
-    # EXTERNAL DATABASE WITH MULTIPLE SCHEMAS
-    # Use DATASOURCE_<NAME>_SCHEMAS to specify which schemas to query (comma-separated)
-    # If not set, defaults to "public" schema only
-    # In templates, use explicit schema syntax: external_db:sales.orders
-    #DATASOURCE_EXTERNAL_CONFIG_NAME: external_db
-    #DATASOURCE_EXTERNAL_HOST: external-postgres
-    #DATASOURCE_EXTERNAL_PORT: 5432
-    #DATASOURCE_EXTERNAL_USER: db_user
-    #DATASOURCE_EXTERNAL_DATABASE: external_database
-    #DATASOURCE_EXTERNAL_TYPE: postgresql
-    #DATASOURCE_EXTERNAL_SSLMODE: disable
-    #DATASOURCE_EXTERNAL_SSLROOTCERT:
-    #DATASOURCE_EXTERNAL_DB_SCHEMAS: sales,inventory,reporting
+  # -- Shared (common) application config for BOTH the manager and worker surfaces.
+  # Defaults for every shared key live in the templates (reporter.commonConfigmapData):
+  # dependency CONNECTIONS resolve through lerian-common typed masks/helpers, everything
+  # else is an escape-hatch passthrough. Set common.configmap.<KEY> here to override any
+  # shared key; add any other key and it flows through as-is.
+  configmap: {}
+# -- Dedicated datastore masks for THIS release (override global.datastores). Both the
+# manager and worker surfaces share these connections. Sub-keys (each host/port/user/ssl):
+#   mongo:    { host, port, user }         # MongoDB (report store + tenant cache)
+#   redis:    { host }                     # Valkey/Redis (host carries host:port)
+#   broker:   { host, port }               # RabbitMQ (the generate-report queue)
+#   postgres: { host, port, user, ssl }    # external midaz datasource (direct-query mode)
+# The native common.configmap.<KEY> still wins over these; these win over global.datastores.
+datastores: {}
 secrets:
+  # -- Credentials for the reporter workloads.
+  #
+  # useExistingSecret path (recommended for production): set
+  # `manager.useExistingSecret: true` + `manager.existingSecretName: <name>` (and the
+  # same for `worker`) and provide a Kubernetes Secret whose KEYS match the env-var
+  # names below. The workloads mount it via `envFrom.secretRef`, so every credential
+  # is referenceable from your own secret manager without ever templating a value here.
+  # Required keys in that existing Secret:
+  #   - RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS  (broker credentials)
+  #   - RABBITMQ_ERLANG_COOKIE                          (bundled broker only; stable value)
+  #   - DATASOURCE_ONBOARDING_PASSWORD                  (only when a direct datasource is configured)
+  #   - OBJECT_STORAGE_ACCESS_KEY_ID / OBJECT_STORAGE_SECRET_KEY (external S3 only)
+  #   - MONGO_PASSWORD                                  (external MongoDB only; bundled is single-sourced)
+  #   - APP_ENC_KEY                                     (fetcher integration; base64 32-byte key)
+  #
+  # Chart-managed path (default): leave `useExistingSecret: false` and set the values
+  # below; the chart renders them into the `<manager.name>` Secret.
+  #
   # MONGO_PASSWORD is single-sourced from the Bitnami mongodb subchart Secret
   # (<release>-mongodb, key mongodb-root-password) and read via secretKeyRef — leave empty
   # with the bundled subchart; only set for an external MongoDB without
@@ -484,12 +464,25 @@ secrets:
   RABBITMQ_ERLANG_COOKIE: ""
   DATASOURCE_ONBOARDING_PASSWORD: ""
   #DATASOURCE_EXTERNAL_PASSWORD: db_password
+  # -- Service discovery (lib-service-discovery) Consul ACL token. Operator-provided;
+  # only needed when common.configmap.SD_ENABLED=true and the Consul server enforces
+  # ACLs. Left empty (and rendered empty) otherwise.
+  SD_TOKEN: ""
   OBJECT_STORAGE_ACCESS_KEY_ID: ""
   OBJECT_STORAGE_SECRET_KEY: ""
   # Fetcher Integration - Base64 encoded 32-byte encryption key
   APP_ENC_KEY: ""
 seaweedfs:
   enabled: true
+  # -- Subchart-wide settings. createClusterRole is disabled by default: the bundled
+  # seaweedfs chart otherwise creates a FIXED-NAME cluster-scoped ClusterRole
+  # ("<serviceAccountName>-rw-cr") and ClusterRoleBinding that collide when more than
+  # one release is installed on the same cluster (different namespaces). The role only
+  # backs an optional pod-deletion hack after volume migration, so it is off by default.
+  # To re-enable, set createClusterRole=true AND a release-unique serviceAccountName.
+  global:
+    createClusterRole: false
+    serviceAccountName: "reporter-seaweedfs"
   master:
     enabled: true
     replicas: 1

@@ -1,0 +1,69 @@
+# reporter — quickstart values (the layperson layer)
+#
+# Copy this file, fill the CHANGE_ME credentials, and install:
+#   helm install reporter lerian/reporter -f values-quickstart.yaml
+#
+# It exposes ONLY the knobs needed to get running. Everything else has a sane
+# default in the chart; override any app setting via `common.configmap.<KEY>`,
+# `manager.configmap.<KEY>` or `worker.configmap.<KEY>`. The full values.yaml is
+# the power-user surface.
+
+# -- Container image tag (application version).
+manager:
+  image:
+    tag: "2.4.0"
+  # -- Expose the manager API through an Ingress (set enabled: true + a host).
+  ingress:
+    enabled: false
+    className: "nginx"
+    hosts:
+      - host: "reporter.example.com"   # <- your DNS name
+        paths:
+          - path: /
+            pathType: Prefix
+worker:
+  image:
+    tag: "2.4.0"
+
+# -- Dependency connections. Defaults point at the chart's bundled infra using
+# BARE service names, which resolve inside the release namespace. Point at your
+# own infra with the typed datastore masks (recommended) — one knob per field:
+datastores:
+  mongo:  { host: "reporter-mongodb", port: "27017", user: "reporter" }
+  redis:  { host: "reporter-valkey:6379" }
+  broker: { host: "reporter-rabbitmq", port: "15672" }
+  # postgres: { host: "midaz-postgresql-replica", port: "5432", user: "midaz" }  # direct datasource
+common:
+  configmap:
+    # -- S3/SeaweedFS endpoint (no mask yet on lerian-common 1.4.0; passthrough).
+    OBJECT_STORAGE_ENDPOINT: "http://seaweedfs-s3:8333"
+    # -- TLS enforcement bypass. "true" for the bundled plaintext infra; set
+    # "false" (and enable TLS on every dependency) for production. NEVER prod=true.
+    ALLOW_INSECURE_TLS: "true"
+    # -- Multi-tenant isolation. "true" also requires MULTI_TENANT_URL below.
+    MULTI_TENANT_ENABLED: "false"
+    # MULTI_TENANT_URL: "http://tenant-manager:8080"
+
+# -- Bundled dependencies. Set enabled: false to use an external instance instead
+# (then point the *_HOST values above at it).
+rabbitmq:
+  enabled: true
+mongodb:
+  enabled: true
+valkey:
+  enabled: true
+seaweedfs:
+  enabled: true
+
+# -- Credentials. Provide strong values, or reference your own Secret instead by
+# setting `manager.useExistingSecret: true` + `manager.existingSecretName: <name>`
+# (and the same under `worker`) with these keys.
+secrets:
+  RABBITMQ_DEFAULT_PASS: "CHANGE_ME"
+  # Stable across upgrades (do not rotate): openssl rand -hex 32
+  RABBITMQ_ERLANG_COOKIE: "CHANGE_ME"
+  # Only needed when a direct datasource (common.configmap.DATASOURCE_ONBOARDING_HOST) is set:
+  DATASOURCE_ONBOARDING_PASSWORD: "CHANGE_ME"
+  # External S3 only (bundled SeaweedFS runs auth-less):
+  # OBJECT_STORAGE_ACCESS_KEY_ID: "CHANGE_ME"
+  # OBJECT_STORAGE_SECRET_KEY: "CHANGE_ME"

@@ -1,0 +1,133 @@
+name: Helm Chart Standard
+
+on:
+  pull_request:
+    paths:
+      - 'charts/**'
+      - 'docs/helm-chart-standard.md'
+      - '.github/configs/helm-chart-standard-baseline.yaml'
+      - '.github/configs/helm-render-values/**'
+      - '.github/scripts/validate-helm-charts/**'
+      - '.github/workflows/helm-chart-standard.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Helm chart standard
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: .github/scripts/go.sum
+
+      - name: Validate chart standard
+        working-directory: .github/scripts
+        run: go run ./validate-helm-charts --root ../.. --strict
+
+      - name: Determine render scope
+        id: render-scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "args=--all" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+
+          # Changes to the validator source, this workflow, or the standard doc
+          # affect EVERY chart's validation -> render the whole fleet.
+          # NOTE: a change under .github/configs/helm-render-values/ is intentionally
+          # NOT here. A render fixture is chart-specific (helm-render-values/<chart>.yaml
+          # only feeds <chart>'s render), so it is mapped to that one chart below.
+          # Forcing --all for it coupled a single chart's PR to the external-dependency
+          # health of the whole fleet (flaky Bitnami/OCI fetches would red an unrelated PR).
+          if grep -Eq '^(\.github/scripts/validate-helm-charts/|\.github/workflows/helm-chart-standard\.yml|docs/helm-chart-standard\.md)' <<< "$changed_files"; then
+            echo "args=--all" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # A change to a LIBRARY chart (Chart.yaml `type: library`, e.g. lerian-common)
+          # renders NOTHING on its own (the validator marks it skipped-library), but its
+          # helpers are exercised by every consumer chart's render. Scoping to just the
+          # library would let a shared-helper regression pass the gate, so a library-chart
+          # change renders the whole fleet.
+          #
+          # Classify using BOTH revisions: a chart deleted in this PR, or flipped
+          # to/from `type: library`, only shows as library at BASE (or only at HEAD).
+          # Reading the working tree (HEAD) alone would miss those and, if another
+          # chart is still in `existing`, wrongly emit `--charts ...` and skip
+          # consumer rendering.
+          is_library() {
+            local chart="$1" rev
+            for rev in "$BASE_SHA" "$HEAD_SHA"; do
+              if git show "$rev:charts/$chart/Chart.yaml" 2>/dev/null \
+                   | grep -Eq '^[[:space:]]*type:[[:space:]]*library[[:space:]]*$'; then
+                return 0
+              fi
+            done
+            return 1
+          }
+          for chart in $(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed_files" | sort -u); do
+            if is_library "$chart"; then
+              echo "args=--all" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+
+          # Collect the affected charts from BOTH sources, deduped. Keep only charts
+          # whose directory still exists: a deleted chart still shows up in
+          # `git diff --name-only`, but the render-gate errors with "unknown chart"
+          # if asked to render a chart that is no longer present.
+          existing=""
+          add_chart() {
+            local chart="$1"
+            [[ -d "charts/$chart" ]] || return 0
+            case ",$existing," in *,"$chart",*) return 0 ;; esac
+            existing="${existing:+$existing,}$chart"
+          }
+          # charts/<name>/...  ->  <name>
+          for chart in $(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed_files" | sort -u); do
+            add_chart "$chart"
+          done
+          # .github/configs/helm-render-values/<name>.yaml  ->  <name>
+          # `.yaml` ONLY: the validator (main.go) loads sampleValuesDir/<chart>.yaml, so a
+          # `.yml` fixture would select the chart but render it with default values.
+          for chart in $(awk -F/ '/^\.github\/configs\/helm-render-values\/[^/]+\.yaml$/ {f=$NF; sub(/\.yaml$/, "", f); print f}' <<< "$changed_files" | sort -u); do
+            add_chart "$chart"
+          done
+          if [[ -z "$existing" ]]; then
+            echo "args=--all" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "args=--charts $existing" >> "$GITHUB_OUTPUT"
+
+      - name: Render chart templates
+        working-directory: .github/scripts
+        shell: bash
+        env:
+          RENDER_SCOPE_ARGS: ${{ steps.render-scope.outputs.args }}
+        run: go run ./validate-helm-charts --root ../.. --render-gate $RENDER_SCOPE_ARGS

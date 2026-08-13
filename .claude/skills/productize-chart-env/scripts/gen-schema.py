@@ -177,9 +177,13 @@ def open_map_schema(child_path, node, desc):
     leaf = child_path.split(".")[-1]
     if ENV_KEYS and leaf in ("configmap", "data"):
         # The enum is env/rendered keys UNIONed with the block's OWN shipped sub-keys — a
-        # chart may carry reserved non-env keys under `configmap` (e.g. `annotations` for the
-        # ConfigMap metadata) that are valid by construction and must not be rejected.
-        own = {k for k in node} if isinstance(node, dict) else set()
+        # chart may carry reserved non-env keys (e.g. `annotations` for the ConfigMap
+        # metadata) that are valid by construction and must not be rejected. For a flat
+        # chart the shipped keys live under `configmap.data`, so read OWN from there (not the
+        # outer node, whose keys are `data`/`annotations`); wrapped charts read them directly.
+        own_node = (node["data"] if leaf == "configmap" and isinstance(node, dict)
+                    and isinstance(node.get("data"), dict) else node)
+        own = set(own_node) if isinstance(own_node, dict) else set()
         allow = {"enum": sorted(ENV_KEYS | own)}
         if leaf == "configmap" and isinstance(node, dict) and "data" in node:
             # flat chart: the escape hatch is `configmap.data` — guard the nested map's keys.
@@ -362,11 +366,16 @@ def main():
     # Auto-detect this chart's subcharts from Chart.yaml so their (opaque, upstream)
     # value blocks stay permissive — the hardcoded SUBCHARTS set can't know every
     # dependency name (e.g. seaweedfs, keda, otel-collector-lerian). Union, never shrink.
+    # LIBRARY dependencies are NOT subcharts: a library chart (e.g. lerian-common) ships
+    # helpers, not a permissive values block — its typed masks must stay enum-guarded.
     if a.chart_dir:
         cy = os.path.join(a.chart_dir, "Chart.yaml")
         if os.path.exists(cy):
-            meta = yaml.safe_load(open(cy)) or {}
+            with open(cy) as fh:
+                meta = yaml.safe_load(fh) or {}
             for dep in (meta.get("dependencies") or []):
+                if dep.get("type") == "library":
+                    continue
                 nm = dep.get("alias") or dep.get("name")
                 if nm:
                     SUBCHARTS.add(nm)

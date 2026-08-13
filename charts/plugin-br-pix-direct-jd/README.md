@@ -2,6 +2,44 @@
 
 This Helm chart installs **Plugin BR Instant Payment** for Midaz, a high-performance and open-source ledger.
 
+> **Maintenance line.** This is the `1.2.x` chart line, which serves the app's
+> `1.10.x` maintenance line — the chart and app numbers do not match, and the
+> binding lives in `appVersion`. The mainline chart (`3.x`, on `main`) serves the
+> app's mainline and behaves differently where noted below. Releases here are cut
+> from the `hotfix/plugin-br-pix-direct-jd-1.2.x` branch and never merge into `main`.
+
+---
+
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: `pix.secrets.JD_SECRET` and `pix.secrets.JD_PIX_CLIENT_SECRET` — external-boundary credentials enforced with `required`, so an install without them fails at render time instead of authenticating with a placeholder. `pix.secrets.JD_CLIENT_SECRET` defaults to empty, matching the mainline chart.
+- Dependency notes: bundles the Bitnami `postgresql` dependency (`16.3`, resolved to `16.3.5` in `Chart.lock`) unless an external PostgreSQL is configured via `postgresql.enabled=false`.
+- Production overrides: provide the JD credentials above, `pix.secrets.LICENSE_KEY`, the Midaz and CRM client secrets, and the database password (see below); override image tags, ingress, resources and persistence as needed.
+- Source/license: source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
+### Database password on this line
+
+Unlike the mainline chart, this line does **not** single-source the PostgreSQL
+password through the subchart Secret — the app reads `DATABASE_PASSWORD` /
+`POSTGRES_PASSWORD` from its own Secret, and those keys are emitted only when set.
+So with the bundled subchart you must set both sides to the same value:
+
+```yaml
+postgresql:
+  auth:
+    password: "<db-password>"
+pix:
+  secrets:
+    DATABASE_PASSWORD: "<db-password>"
+    POSTGRES_PASSWORD: "<db-password>"
+```
+
+Leaving them unset makes the subchart generate a random password that the app does
+not receive, and the connection fails at runtime. Earlier revisions of this line
+hid that by defaulting both sides to the same hardcoded credential, which is exactly
+what the chart standard forbids.
+
 ---
 
 ## Install Plugin BR Instant Payment Helm Chart

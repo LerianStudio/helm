@@ -3,6 +3,7 @@ output
 .DS_Store
 .idea
 Chart.lock
+!charts/*/Chart.lock
 **/*.tgz
 **/charts/*/charts
 **/charts/*/lerian-values*

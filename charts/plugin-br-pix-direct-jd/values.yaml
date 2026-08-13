@@ -357,7 +357,7 @@ postgresql:
     enabled: true
     enablePostgresUser: false
     username: "pix"
-    password: "lerian"
+    password: ""
     database: "pix"
     persistence:
       size: 8Gi

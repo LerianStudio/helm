@@ -210,7 +210,6 @@ qrcode:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   ingress:
     # -- Enable or disable ingress
     enabled: false
@@ -417,5 +416,7 @@ postgresql:
         value: "5"
 otel-collector-lerian:
   enabled: true
-
+api:
+  image:
+    tag: 1.10.5
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

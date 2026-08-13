@@ -37,11 +37,16 @@ metadata:
   labels:
     {{- include "midaz-tracer.labels" (dict "context" . "name" (printf "%s-migrations" .Values.tracer.name) ) | nindent 4 }}
   annotations:
-    {{- /* Same immutable-Job guard as the ledger migrations: the tag-pinned Job name
-       survives chart-only bumps while the volatile helm.sh/chart label changes the
-       (immutable) pod template. Replace=true,Force=true has ArgoCD recreate rather
-       than patch; re-running is idempotent (progress lives in schema_migrations). */}}
-    argocd.argoproj.io/sync-options: Replace=true,Force=true
+    {{- /* Run the migration as an ArgoCD Sync hook so it is excluded from the app's
+       desired-state diff — same rationale as the ledger migrations Job. Tag-pinned
+       names left prior releases' Jobs OutOfSync ("ignored (requires pruning)"), so
+       the app never reached Synced and the sync-wait gate timed out. A hook never
+       enters the diff; HookSucceeded removes the Job on completion and
+       BeforeHookCreation clears a same-named leftover before recreate (Job spec is
+       immutable). Sync phase keeps it in the same wave as the password Secret, so
+       fresh installs are unaffected. Re-running is idempotent (schema_migrations). */}}
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
     {{- with $migrations.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

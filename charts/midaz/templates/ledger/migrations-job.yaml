@@ -43,14 +43,20 @@ metadata:
   labels:
     {{- include "midaz.labels" (dict "context" . "component" (printf "%s-migrations" .Values.ledger.name) "name" (printf "%s-migrations" .Values.ledger.name) ) | nindent 4 }}
   annotations:
-    {{- /* The Job name is pinned to the migrations image tag, so a chart-only bump
-       (new alpha) keeps the name but changes the pod template — via the volatile
-       helm.sh/chart label the shared labels helper stamps into spec.template. A Job
-       spec is immutable, so ArgoCD's apply/patch fails with
-       "spec.template: field is immutable" and the sync stalls. Replace=true,Force=true
-       makes ArgoCD delete+recreate the Job instead of patching it; re-running is safe
-       because golang-migrate tracks progress in schema_migrations, not on disk. */}}
-    argocd.argoproj.io/sync-options: Replace=true,Force=true
+    {{- /* Run the migration as an ArgoCD Sync hook so it is excluded from the app's
+       desired-state diff. As a plain tracked resource the tag-pinned Job name
+       (…-migrations-<tag>) left every prior release's Job live with no Git source,
+       so ArgoCD held them OutOfSync ("ignored (requires pruning)") and the app never
+       reached Synced — the sync-wait gate then timed out even though the deploy was
+       Healthy. A hook never enters the diff. hook-delete-policy keeps hooks from
+       piling up: HookSucceeded removes the Job once it completes, BeforeHookCreation
+       clears a same-named leftover before a re-sync recreates it (a Job spec is
+       immutable, so recreate — not patch — is required on a chart-only bump). Sync
+       phase, not PreSync, keeps the Job in the same wave as the password Secret it
+       reads, so fresh installs are unaffected. Re-running is safe: golang-migrate
+       tracks progress in schema_migrations. */}}
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
     {{- with $migrations.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

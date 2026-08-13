@@ -5,7 +5,10 @@ on:
     branches:
       - main
       - develop
-      # Chart line branches for legacy patches, e.g. hotfix/midaz-5.7.x
+      # Chart line branches for legacy patches, e.g. maintenance/midaz-5.7.x.
+      # maintenance/* is the convention; hotfix/* stays accepted so lines created
+      # under the old prefix keep releasing until they are renamed.
+      - 'maintenance/*.x'
       - 'hotfix/*.x'
     paths-ignore:
       - 'README.md'
@@ -55,15 +58,15 @@ jobs:
           RANGE=""
 
           case "${REF_NAME}" in
-            hotfix/*.x)
-              STEM="${REF_NAME#hotfix/}"
+            maintenance/*.x|hotfix/*.x)
+              STEM="${REF_NAME#*/}"
               # Leading zeros are rejected: semver reads 01.02.x as an invalid range
               CHART=$(printf '%s' "${STEM}" | sed -nE 's/^(.+)-(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.x$/\1/p')
               RANGE=$(printf '%s' "${STEM}" | sed -nE 's/^.+-((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.x)$/\1/p')
 
               # The trigger glob is looser than this parser, so a branch such as
-              # hotfix/foo.x or hotfix/midaz-5.x reaches here unparsed. Falling
-              # through would release every changed chart without a range.
+              # maintenance/foo.x or maintenance/midaz-5.x reaches here unparsed.
+              # Falling through would release every changed chart without a range.
               if [ -z "${CHART}" ] || [ -z "${RANGE}" ]; then
                 echo "::error::'${REF_NAME}' looks like a chart line branch but does not match <chart>-<major>.<minor>.x — refusing to release"
                 exit 1

@@ -14,6 +14,20 @@
 
 ---
 
+## [8.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.8.0)
+
+- **Fixes**
+  - Updated `midaz-crm` to version 3.8.1.
+  - Updated `midaz-ledger` to version 3.8.1.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.7.0...midaz-v8.8.0)
+
+---
+
 ## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
 
 - **Features**

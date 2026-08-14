@@ -14,8 +14,12 @@ global:
   # Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   auth: {}
   # -- Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when
-  # STREAMING_ENABLED=true. Fields: enabled, brokers, saslUsername, tlsEnabled, compression,
-  # requiredAcks, ... (brokers gates emission). Per-app identity stays in common.configmap.
+  # streaming is enabled. Fields: enabled, brokers, saslUsername, tlsEnabled, compression,
+  # requiredAcks, ... (brokers gates emission). Per-app identity (client-id / cloudevents-source)
+  # keeps its service-level default unless overridden via common.configmap.
+  # The operator sets the connection here: `enabled` + `brokers`. (reporter's transport is
+  # RabbitMQ+outbox, so STREAMING_BROKERS is validated-non-empty by lib-streaming but not used
+  # to connect — set it explicitly anyway; no placeholder default is baked in.)
   streaming: {}
   # -- Env-wide service discovery (Consul). Placeholder block: reporter keeps SD_* as
   # configmap passthrough because its lib-service-discovery contract (SD_ADDRESS /

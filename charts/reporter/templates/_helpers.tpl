@@ -373,7 +373,7 @@ MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
 {{- /* Streaming: knob inline; brokers/SASL/TLS transport + identity via global.streaming
    (gated — inert unless enabled AND global.streaming.brokers is set). RABBITMQ_REPORT_EVENTS_EXCHANGE
    is reporter-specific (RabbitMQ transport) and stays passthrough. */}}
-STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+STREAMING_ENABLED: {{ $streamingRaw | default "false" | quote }}
 RABBITMQ_REPORT_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_REPORT_EVENTS_EXCHANGE | default "reporter.events" | quote }}
 {{- if $streamingEnabled }}
 {{- include "lerian-common.streaming.env" (dict

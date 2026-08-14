@@ -156,6 +156,17 @@ The Reporter supports connecting to additional external databases beyond the bui
 
 All variables follow the pattern `DATASOURCE_<NAME>_<PROPERTY>`, where `<NAME>` is a unique identifier you choose for the datasource (e.g., `EXTERNAL`, `SALES`, `ANALYTICS`).
 
+### Schema Validation
+
+`DATASOURCE_*` is a **declared open namespace**: the operator names each datasource at
+deploy time, so a closed allowlist could only ever list example names. The strict
+`values.schema.json` therefore accepts any well-formed `DATASOURCE_<NAME>_<PROPERTY>` key
+under `common.configmap` — you can register datasources without ever touching the schema —
+while a typo *outside* the namespace (e.g. `REDIS_HOSTX`) is still rejected at
+`helm install`. The guard is `propertyNames: anyOf: [enum, pattern ^DATASOURCE_...]`,
+generated with `gen-schema.py --open-prefixes DATASOURCE_` (see `config/schema-keys.txt`).
+It is a *named* open family, never a fully-open ConfigMap.
+
 ### Required Variables
 
 | Variable | Description | Example |

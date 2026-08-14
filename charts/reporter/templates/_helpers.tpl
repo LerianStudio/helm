@@ -283,6 +283,11 @@ Input: the root context ($).
     "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
     "OTEL_EXPORTER_OTLP_ENDPOINT" "ENABLE_TELEMETRY" "OTEL_INSECURE_EXPORTER"
     "FETCHER_ENABLED" "FETCHER_URL" "MULTI_TENANT_ENABLED"
+    "MULTI_TENANT_URL" "MULTI_TENANT_ENVIRONMENT" "MULTI_TENANT_ALLOW_INSECURE_HTTP"
+    "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC"
+    "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
+    "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS" "MULTI_TENANT_REDIS_CA_CERT"
+    "MULTI_TENANT_TIMEOUT" "MULTI_TENANT_CACHE_TTL_SEC" "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC"
     "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS"
     "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD"
     "SD_TLS" "SD_TLS_SKIP_VERIFY" "STREAMING_ENABLED"
@@ -340,6 +345,13 @@ OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote 
 FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
 FETCHER_URL: {{ $cm.FETCHER_URL | default "" | quote }}
 MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+{{- /* Multi-tenant (lib-commons/multitenancy) via lerian-common.multiTenant.env — gated on
+   MULTI_TENANT_ENABLED; emits nothing when off. RABBITMQ_MULTI_TENANT_* stay passthrough
+   (reporter-specific). configmap.MULTI_TENANT_* overrides global.multiTenant. */}}
+{{- include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm
+      "enabled" (eq (include "reporter.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true")
+      "emitRedis" true "emitRedisCaCert" true "emitPool" true "emitCache" true
+      "emitEnvironment" true "emitAllowInsecure" true) | nindent 0 }}
 {{- /* Auth (access-manager) via lerian-common.auth.env → global.auth.{enabled,host}. The reporter
    app reads PLUGIN_AUTH_ADDRESS (NOT _HOST), so hostKey pins the correct native key. A native
    common.configmap.PLUGIN_AUTH_ENABLED/_ADDRESS still overrides (globalValue precedence). */}}

@@ -23,9 +23,9 @@ global:
     redis:  { host: "reporter-valkey:6379" }
     broker: { host: "reporter-rabbitmq", port: "15672" }
   # -- Object storage (S3/SeaweedFS) — non-secret fields via the mask (name
-  # "reporter"); access keys go in `secrets`. (lerian-common >= 1.5.0.)
+  # "s3"); access keys go in `secrets`. (lerian-common >= 1.5.0.)
   objectStorage:
-    reporter:
+    s3:
       endpoint: "http://seaweedfs-s3:8333"
   # -- OTel collector. Leave empty to keep telemetry off / the bundled endpoint.
   observability: {}

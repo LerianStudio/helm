@@ -19,9 +19,9 @@ global:
     redis:  { host: "reporter-valkey:6379" }
     mongo:  { host: "reporter-mongodb", port: "27017", user: "reporter" }
   # -- Object storage (S3/SeaweedFS) — non-secret fields via the mask (name
-  # "reporter"); access keys go in `secrets`. (lerian-common >= 1.5.0.)
+  # "s3"); access keys go in `secrets`. (lerian-common >= 1.5.0.)
   objectStorage:
-    reporter:
+    s3:
       endpoint: "http://seaweedfs-s3:8333"
       region: "us-east-1"
       bucket: "reporter-storage"

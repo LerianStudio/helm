@@ -327,14 +327,14 @@ REDIS_CA_CERT: {{ $cm.REDIS_CA_CERT | default "" | quote }}
 GOOGLE_APPLICATION_CREDENTIALS: {{ $cm.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
 REDIS_SERVICE_ACCOUNT: {{ $cm.REDIS_SERVICE_ACCOUNT | default "" | quote }}
 {{- /* Object storage (S3/SeaweedFS) — non-secret fields passthrough; keys stay in the Secret. */}}
-{{- /* Object storage via lerian-common.objectStorage.value mask (name "reporter"); non-secret
-   fields only — keys stay in the Secret. configmap.OBJECT_STORAGE_* overrides objectStorage.reporter
-   / global.objectStorage.reporter / default. */}}
-OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "configmap" $cm "name" "reporter" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "http://seaweedfs-s3:8333") | quote }}
-OBJECT_STORAGE_REGION: {{ include $osv (dict "context" $ "configmap" $cm "name" "reporter" "field" "region" "nativeKey" "OBJECT_STORAGE_REGION" "default" "us-east-1") | quote }}
-OBJECT_STORAGE_USE_PATH_STYLE: {{ include $osv (dict "context" $ "configmap" $cm "name" "reporter" "field" "usePathStyle" "nativeKey" "OBJECT_STORAGE_USE_PATH_STYLE" "default" "true") | quote }}
-OBJECT_STORAGE_DISABLE_SSL: {{ include $osv (dict "context" $ "configmap" $cm "name" "reporter" "field" "disableSSL" "nativeKey" "OBJECT_STORAGE_DISABLE_SSL" "default" "true") | quote }}
-OBJECT_STORAGE_BUCKET: {{ include $osv (dict "context" $ "configmap" $cm "name" "reporter" "field" "bucket" "nativeKey" "OBJECT_STORAGE_BUCKET" "default" "reporter-storage") | quote }}
+{{- /* Object storage via lerian-common.objectStorage.value mask (name "s3"); non-secret
+   fields only — keys stay in the Secret. configmap.OBJECT_STORAGE_* overrides objectStorage.s3
+   / global.objectStorage.s3 / default. */}}
+OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "http://seaweedfs-s3:8333") | quote }}
+OBJECT_STORAGE_REGION: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "region" "nativeKey" "OBJECT_STORAGE_REGION" "default" "us-east-1") | quote }}
+OBJECT_STORAGE_USE_PATH_STYLE: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "usePathStyle" "nativeKey" "OBJECT_STORAGE_USE_PATH_STYLE" "default" "true") | quote }}
+OBJECT_STORAGE_DISABLE_SSL: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "disableSSL" "nativeKey" "OBJECT_STORAGE_DISABLE_SSL" "default" "true") | quote }}
+OBJECT_STORAGE_BUCKET: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "bucket" "nativeKey" "OBJECT_STORAGE_BUCKET" "default" "reporter-storage") | quote }}
 {{- /* MongoDB connection via datastore mask (host/port/user); name/tuning stay passthrough. */}}
 MONGO_URI: {{ $cm.MONGO_URI | default "mongodb" | quote }}
 MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "reporter-mongodb") | quote }}

@@ -195,9 +195,9 @@ manager:
     SERVER_ADDRESS: ":4005" #":{{ .Values.manager.configmap.SERVER_PORT }}"
     # LOG LEVEL
     LOG_LEVEL: debug
-    # AUTH CONFIGS
-    PLUGIN_AUTH_ENABLED: false
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
+    # AUTH — PLUGIN_AUTH_ENABLED/_ADDRESS now emitted by lerian-common.auth.env (global.auth);
+    # default host http://plugin-access-manager-auth:4000. Override via global.auth.host or
+    # common.configmap.PLUGIN_AUTH_ADDRESS.
     # OPEN TELEMETRY
     OTEL_RESOURCE_SERVICE_NAME: reporter-manager
     OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0" #"{{ .Values.manager.configmap.VERSION }}"

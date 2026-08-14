@@ -282,6 +282,7 @@ Input: the root context ($).
     "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
     "OTEL_EXPORTER_OTLP_ENDPOINT" "ENABLE_TELEMETRY" "OTEL_INSECURE_EXPORTER"
     "FETCHER_ENABLED" "FETCHER_URL" "MULTI_TENANT_ENABLED"
+    "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS"
     "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD"
     "SD_TLS" "SD_TLS_SKIP_VERIFY" "STREAMING_ENABLED"
     "STREAMING_BROKERS" "STREAMING_CLOUDEVENTS_SOURCE" "STREAMING_CLIENT_ID"
@@ -336,6 +337,10 @@ OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote 
 FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
 FETCHER_URL: {{ $cm.FETCHER_URL | default "" | quote }}
 MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+{{- /* Auth (access-manager) via lerian-common.auth.env → global.auth.{enabled,host}. The reporter
+   app reads PLUGIN_AUTH_ADDRESS (NOT _HOST), so hostKey pins the correct native key. A native
+   common.configmap.PLUGIN_AUTH_ENABLED/_ADDRESS still overrides (globalValue precedence). */}}
+{{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 0 }}
 {{- /* Service discovery: reporter's lib-service-discovery uses SD_ADDRESS and SD_ADVERTISE_
    keys, which the vendored lerian-common.serviceDiscovery.env does NOT emit (it targets the
    SD_INTERNAL_ and SD_EXTERNAL_ contract). Kept as escape-hatch passthrough (helper gap). */}}

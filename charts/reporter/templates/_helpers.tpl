@@ -331,13 +331,12 @@ MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
 MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
 MONGO_PARAMETERS: {{ $cm.MONGO_PARAMETERS | default "" | quote }}
-{{- /* Observability: identity inline; shared endpoint/env/enable via global.observability. */}}
+{{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env (global.observability);
+   identity (library/port/insecure) stays inline. configmap.<KEY> still overrides via otel.env. */}}
 OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}
-OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" "production") | quote }}
 OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "otlp://midaz-otel-lgtm:4317") | quote }}
-ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
 OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote }}
+{{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "true" "endpointDefault" "otlp://midaz-otel-lgtm:4317" "deploymentEnvironmentDefault" "production") | nindent 0 }}
 FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
 FETCHER_URL: {{ $cm.FETCHER_URL | default "" | quote }}
 MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}

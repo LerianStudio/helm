@@ -341,16 +341,12 @@ MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
    app reads PLUGIN_AUTH_ADDRESS (NOT _HOST), so hostKey pins the correct native key. A native
    common.configmap.PLUGIN_AUTH_ENABLED/_ADDRESS still overrides (globalValue precedence). */}}
 {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 0 }}
-{{- /* Service discovery: reporter's lib-service-discovery uses SD_ADDRESS and SD_ADVERTISE_
-   keys, which the vendored lerian-common.serviceDiscovery.env does NOT emit (it targets the
-   SD_INTERNAL_ and SD_EXTERNAL_ contract). Kept as escape-hatch passthrough (helper gap). */}}
-SD_ENABLED: {{ $cm.SD_ENABLED | default "false" | quote }}
-SD_ADDRESS: {{ $cm.SD_ADDRESS | default "" | quote }}
-SD_ADVERTISE_ADDRESS: {{ $cm.SD_ADVERTISE_ADDRESS | default "" | quote }}
-SD_ADVERTISE_PORT: {{ $cm.SD_ADVERTISE_PORT | default "0" | quote }}
-SD_WORKLOAD: {{ $cm.SD_WORKLOAD | default "" | quote }}
-SD_TLS: {{ $cm.SD_TLS | default "false" | quote }}
-SD_TLS_SKIP_VERIFY: {{ $cm.SD_TLS_SKIP_VERIFY | default "false" | quote }}
+{{- /* Service discovery via lerian-common.serviceDiscovery.envFlat (lib-service-discovery
+   advertise contract: SD_ADDRESS + SD_ADVERTISE_* + SD_WORKLOAD + SD_TLS*). SD_ADDRESS default
+   "" (reporter) overrides the helper's "localhost:8500"; configmap.SD_* still overrides. */}}
+{{- include "lerian-common.serviceDiscovery.envFlat" (dict "configmap" $cm
+      "keys" (list "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD" "SD_TLS" "SD_TLS_SKIP_VERIFY")
+      "defaults" (dict "SD_ADDRESS" "")) | nindent 0 }}
 {{- /* Streaming: knob inline; brokers/SASL/TLS transport + identity via global.streaming
    (gated — inert unless enabled AND global.streaming.brokers is set). RABBITMQ_REPORT_EVENTS_EXCHANGE
    is reporter-specific (RabbitMQ transport) and stays passthrough. */}}

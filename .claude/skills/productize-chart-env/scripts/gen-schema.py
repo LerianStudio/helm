@@ -121,6 +121,16 @@ MASK_FIELDS = {
 }
 MASK_KEYED = {"datastores", "objectStorage"}        # child = <type>/<name>; kms is direct
 
+# GLOBAL-ONLY direct mask blocks: finite field sets from the lerian-common globalValue contract
+# (references/dependency-contract.md). Closed ONLY under `global` — the top-level operational
+# `observability:` block is a DIFFERENT, open chart config (see open_map_schema's leaf guard).
+# streaming / multiTenant / serviceDiscovery are deliberately NOT here: the contract lists them
+# with open-ended fields ("…"/wildcard), so closing them would reject legitimate keys.
+GLOBAL_MASK_FIELDS = {
+    "observability": ["deploymentEnvironment", "enabled", "otlpEndpoint"],
+    "auth":          ["enabled", "host"],
+}
+
 
 def _mask_block(fields):
     # One mask instance: finite + closed. No scalar `type` (helm/YAML coerce str/int/bool, same
@@ -135,6 +145,15 @@ def mask_schema(key, desc, path):
         s = {"type": "object", "additionalProperties": _mask_block(MASK_FIELDS[key])}
     else:
         s = _mask_block(MASK_FIELDS[key])
+    if d:
+        s["description"] = d
+    return s
+
+
+def global_mask_schema(key, desc, path):
+    # A global-only direct mask block (observability/auth): finite + closed, like _mask_block.
+    s = _mask_block(GLOBAL_MASK_FIELDS[key])
+    d = desc.get(path, (None, None))[0]
     if d:
         s["description"] = d
     return s
@@ -218,6 +237,12 @@ def open_map_schema(child_path, node, desc):
     # contract — the rest of the block stays open (additionalProperties: true).
     if isinstance(node, dict):
         masks = {k: mask_schema(k, desc, f"{child_path}.{k}") for k in node if k in MASK_FIELDS}
+        if leaf == "global":
+            # global-only direct mask blocks (observability/auth): close them too so a typo like
+            # global.observability.otlpEndpointX is rejected. Scoped to `global` so the top-level
+            # operational `observability:` block (a different, open chart config) stays open.
+            masks.update({k: global_mask_schema(k, desc, f"{child_path}.{k}")
+                          for k in node if k in GLOBAL_MASK_FIELDS})
         if masks:
             cs.setdefault("properties", {}).update(masks)
     return cs

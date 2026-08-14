@@ -188,19 +188,22 @@ manager:
   configmap:
     # -- Annotations for the configmap
     annotations: {}
-    # APP'
-    VERSION: "v1.0.0"
+    # APP (VERSION emitted from .Chart.AppVersion by the configmap template)
     APP_CONTEXT: "/manager/v1"
     SERVER_PORT: "4005"
     SERVER_ADDRESS: ":4005" #":{{ .Values.manager.configmap.SERVER_PORT }}"
+    # CORS
+    CORS_ALLOWED_ORIGINS: "*"
+    CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
     # LOG LEVEL
-    LOG_LEVEL: debug
+    LOG_LEVEL: info
     # AUTH — PLUGIN_AUTH_ENABLED/_ADDRESS now emitted by lerian-common.auth.env (global.auth);
     # default host http://plugin-access-manager-auth:4000. Override via global.auth.host or
     # common.configmap.PLUGIN_AUTH_ADDRESS.
     # OPEN TELEMETRY
     OTEL_RESOURCE_SERVICE_NAME: reporter-manager
-    OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0" #"{{ .Values.manager.configmap.VERSION }}"
+    # OTEL_RESOURCE_SERVICE_VERSION emitted from image.tag by the configmap template
     # SWAGGER
     SWAGGER_TITLE: 'Reporter'
     SWAGGER_DESCRIPTION: 'Documentation for reporter'
@@ -336,17 +339,16 @@ worker:
   configmap:
     # -- Annotations for the configmap
     annotations: {}
-    # APP
-    VERSION: v1.0.0
+    # APP (VERSION emitted from .Chart.AppVersion by the configmap template)
     # HEALTH SERVER
     HEALTH_PORT: "4006"
     # LOG LEVEL
-    LOG_LEVEL: debug
+    LOG_LEVEL: info
     # OPEN TELEMETRY
     OTEL_RESOURCE_SERVICE_NAME: reporter-worker
-    OTEL_RESOURCE_SERVICE_VERSION: "v1.0.0"
-    PDF_POOL_WORKERS: "5"
-    PDF_TIMEOUT_SECONDS: "30"
+    # OTEL_RESOURCE_SERVICE_VERSION emitted from image.tag by the configmap template
+    PDF_POOL_WORKERS: "3"
+    PDF_TIMEOUT_SECONDS: "90"
     # Rate Limiting - Three-tier system with Redis backend
     # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
     # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled

@@ -272,13 +272,15 @@ Input: the root context ($).
 {{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled -}}
 {{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = index $cm "STREAMING_ENABLED" -}}{{- end -}}
 {{- $streamingEnabled := eq (include "reporter.isTrue" ($streamingRaw | default "false")) "true" -}}
+{{- /* Multi-tenant toggle: configmap override > global.multiTenant.enabled > false. */ -}}
+{{- $mtRaw := $cm.MULTI_TENANT_ENABLED | default ((($.Values.global | default dict).multiTenant | default dict).enabled) | default "false" -}}
 {{- /* Keys emitted explicitly below; the guarded range must not re-emit them. */ -}}
 {{- $explicit := list
     "ENV_NAME" "ALLOW_INSECURE_TLS" "LOG_LEVEL"
     "RABBITMQ_URI" "RABBITMQ_HOST" "RABBITMQ_PORT_HOST" "RABBITMQ_PORT_AMQP"
     "RABBITMQ_NUMBERS_OF_WORKERS" "RABBITMQ_EXCHANGE" "RABBITMQ_GENERATE_REPORT_QUEUE"
     "RABBITMQ_GENERATE_REPORT_KEY" "RABBITMQ_HEALTH_CHECK_URL" "RABBITMQ_REPORT_EVENTS_EXCHANGE"
-    "REDIS_HOST" "REDIS_MASTER_NAME" "REDIS_DB" "REDIS_PROTOCOL" "REDIS_TLS" "REDIS_CA_CERT"
+    "REDIS_HOST" "REDIS_USER" "REDIS_MASTER_NAME" "REDIS_DB" "REDIS_PROTOCOL" "REDIS_TLS" "REDIS_CA_CERT"
     "GOOGLE_APPLICATION_CREDENTIALS" "REDIS_SERVICE_ACCOUNT"
     "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_USE_PATH_STYLE"
     "OBJECT_STORAGE_DISABLE_SSL" "OBJECT_STORAGE_BUCKET"
@@ -316,6 +318,7 @@ RABBITMQ_GENERATE_REPORT_KEY: {{ $cm.RABBITMQ_GENERATE_REPORT_KEY | default "rep
 RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default (printf "http://%s:%s" $rmqHost $rmqMgmtPort) | quote }}
 {{- /* Redis/Valkey connection via datastore mask (host carries host:port). */}}
 REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "reporter-valkey:6379") | quote }}
+REDIS_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") | quote }}
 REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
 REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
 REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
@@ -338,9 +341,9 @@ MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 MONGO_NAME: {{ $cm.MONGO_NAME | default "reporter-db" | quote }}
 MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "reporter") | quote }}
 MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
-MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "20" | quote }}
 MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
-MONGO_PARAMETERS: {{ $cm.MONGO_PARAMETERS | default "" | quote }}
+MONGO_PARAMETERS: {{ $cm.MONGO_PARAMETERS | default "maxIdleTimeMS=60000" | quote }}
 {{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env (global.observability);
    identity (library/port/insecure) stays inline. configmap.<KEY> still overrides via otel.env. */}}
 OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}
@@ -349,12 +352,12 @@ OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote 
 {{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "true" "endpointDefault" "otlp://midaz-otel-lgtm:4317" "deploymentEnvironmentDefault" "production") | nindent 0 }}
 FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
 FETCHER_URL: {{ $cm.FETCHER_URL | default "" | quote }}
-MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
 {{- /* Multi-tenant (lib-commons/multitenancy) via lerian-common.multiTenant.env — gated on
    MULTI_TENANT_ENABLED; emits nothing when off. RABBITMQ_MULTI_TENANT_* stay passthrough
    (reporter-specific). configmap.MULTI_TENANT_* overrides global.multiTenant. */}}
 {{- include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm
-      "enabled" (eq (include "reporter.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true")
+      "enabled" (eq (include "reporter.isTrue" $mtRaw) "true")
       "emitRedis" true "emitRedisCaCert" true "emitPool" true "emitCache" true
       "emitEnvironment" true "emitAllowInsecure" true) | nindent 0 }}
 {{- /* Auth (access-manager) via lerian-common.auth.env → global.auth.{enabled,host}. The reporter

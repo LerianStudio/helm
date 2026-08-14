@@ -90,9 +90,15 @@ opentelemetry-collector:
     - name: K8S_NODE_NAME
       valueFrom:
         fieldRef:
-          fieldPath: spec.nodeName    
-    - name: GOMEMLIMIT
-      value: "200MiB"
+          fieldPath: spec.nodeName
+    # GOMEMLIMIT is NOT set here on purpose. The subchart injects it
+    # automatically from `resources.limits.memory` (see `useGOMEMLIMIT`, enabled
+    # by default upstream). Declaring it here too renders two `env` entries with
+    # the same name, which server-side apply rejects (`duplicate entries for key
+    # [name="GOMEMLIMIT"]`). To raise it, raise `resources.limits.memory` — the
+    # limit and the GC target must move together, or the collector gets OOMKilled
+    # before the GC reacts. Only set it explicitly if you also set
+    # `useGOMEMLIMIT: false`.
     - name: GOGC
       value: "80"
     - name: GOMAXPROCS
@@ -145,8 +151,11 @@ opentelemetry-collector:
             namespaces: [midaz, midaz-plugins]
 
       # Collects pod/container performance metrics (CPU, memory) from the node's Kubelet.
+      # 60s matches the k8s_cluster receiver above and keeps this receiver at
+      # 1 data point per minute. At 10s it emitted 6x the samples for the same
+      # series, inflating DPM without adding resolution anyone consumes.
       kubeletstats:
-        collection_interval: 10s
+        collection_interval: 60s
         auth_type: "serviceAccount"
         endpoint: "${env:K8S_NODE_NAME}:10250"
         insecure_skip_verify: true

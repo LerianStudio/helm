@@ -304,7 +304,7 @@ Input: the root context ($).
     "DATASOURCE_ONBOARDING_SSLMODE" "DATASOURCE_ONBOARDING_SSLROOTCERT"
 -}}
 ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
-ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
 {{- /* RabbitMQ broker connection via datastore mask (host/port/user); tuning stays passthrough. */}}
 RABBITMQ_URI: {{ $cm.RABBITMQ_URI | default "amqp" | quote }}
 RABBITMQ_HOST: {{ $rmqHost | quote }}
@@ -341,7 +341,7 @@ MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 MONGO_NAME: {{ $cm.MONGO_NAME | default "reporter-db" | quote }}
 MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "reporter") | quote }}
 MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
-MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "20" | quote }}
+MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "100" | quote }}
 MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
 MONGO_PARAMETERS: {{ $cm.MONGO_PARAMETERS | default "maxIdleTimeMS=60000" | quote }}
 {{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env (global.observability);

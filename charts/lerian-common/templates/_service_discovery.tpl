@@ -254,6 +254,8 @@ Inputs (dict):
 {{- define "lerian-common.serviceDiscovery.envFlat" -}}
 {{- $std := dict
       "SD_ADDRESS" "localhost:8500"
+      "SD_ADVERTISE_ADDRESS" ""
+      "SD_ADVERTISE_PORT" "0"
       "SD_ALLOW_STALE" ""
       "SD_DIAL_TIMEOUT" ""
       "SD_ENABLED" "false"
@@ -271,7 +273,7 @@ Inputs (dict):
       "SD_WATCH_WAIT_TIME" ""
       "SD_WORKLOAD" "" -}}
 {{- $keys := .keys | default (list
-      "SD_ADDRESS" "SD_ALLOW_STALE" "SD_DIAL_TIMEOUT" "SD_ENABLED"
+      "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_ALLOW_STALE" "SD_DIAL_TIMEOUT" "SD_ENABLED"
       "SD_EXTERNAL_ADDRESS" "SD_EXTERNAL_PORT" "SD_INTERNAL_ADDRESS"
       "SD_INTERNAL_PORT" "SD_INTERNAL_SCHEME" "SD_PREFER_VIEW"
       "SD_RESPONSE_HEADER_TIMEOUT" "SD_SEED_TIMEOUT" "SD_TLS"

@@ -265,6 +265,10 @@ Input: the root context ($).
 {{- $ded := .Values.datastores | default dict -}}
 {{- $dv := "lerian-common.datastore.value" -}}
 {{- $osv := "lerian-common.objectStorage.value" -}}
+{{- /* Broker host+mgmt-port resolved once (via the datastore mask) — reused by RABBITMQ_HOST,
+   RABBITMQ_PORT_HOST and the derived RABBITMQ_HEALTH_CHECK_URL (single-source). */ -}}
+{{- $rmqHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq") -}}
+{{- $rmqMgmtPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") -}}
 {{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled -}}
 {{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = index $cm "STREAMING_ENABLED" -}}{{- end -}}
 {{- $streamingEnabled := eq (include "reporter.isTrue" ($streamingRaw | default "false")) "true" -}}
@@ -301,14 +305,15 @@ ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
 ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
 {{- /* RabbitMQ broker connection via datastore mask (host/port/user); tuning stays passthrough. */}}
 RABBITMQ_URI: {{ $cm.RABBITMQ_URI | default "amqp" | quote }}
-RABBITMQ_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq") | quote }}
-RABBITMQ_PORT_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") | quote }}
+RABBITMQ_HOST: {{ $rmqHost | quote }}
+RABBITMQ_PORT_HOST: {{ $rmqMgmtPort | quote }}
 RABBITMQ_PORT_AMQP: {{ $cm.RABBITMQ_PORT_AMQP | default "5672" | quote }}
 RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
 RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "reporter.generate-report.exchange" | quote }}
 RABBITMQ_GENERATE_REPORT_QUEUE: {{ $cm.RABBITMQ_GENERATE_REPORT_QUEUE | default "reporter.generate-report.queue" | quote }}
 RABBITMQ_GENERATE_REPORT_KEY: {{ $cm.RABBITMQ_GENERATE_REPORT_KEY | default "reporter.generate-report.key" | quote }}
-RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default "http://reporter-rabbitmq:15672" | quote }}
+{{- /* Health-check URL single-sourced from the broker mask (host:mgmt-port); configmap override still wins. */}}
+RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default (printf "http://%s:%s" $rmqHost $rmqMgmtPort) | quote }}
 {{- /* Redis/Valkey connection via datastore mask (host carries host:port). */}}
 REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "reporter-valkey:6379") | quote }}
 REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}

@@ -1,4 +1,11 @@
 {{- if .Values.global.externalRabbitmqDefinitions.enabled }}
+{{- $conn := .Values.global.externalRabbitmqDefinitions.connection }}
+{{- if not (has $conn.protocol (list "http" "https")) }}
+{{- fail (printf "global.externalRabbitmqDefinitions.connection.protocol must be \"http\" or \"https\" (got %q)" $conn.protocol) }}
+{{- end }}
+{{- if and (eq $conn.protocol "http") (not $conn.allowInsecureHttp) }}
+{{- fail "global.externalRabbitmqDefinitions: protocol \"http\" would send the RabbitMQ admin credentials in cleartext. Use protocol \"https\", or set connection.allowInsecureHttp=true to accept the risk (TLS-less in-cluster/dev brokers only)." }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -46,8 +46,10 @@ global:
     enabled: false
     # -- RabbitMQ connection settings
     connection:
-      # -- RabbitMQ protocol (http or https)
-      protocol: "http"
+      # -- RabbitMQ management API protocol (http or https). The bootstrap Job
+      # sends admin credentials on this connection, so https is the default;
+      # "http" is rejected at render time unless allowInsecureHttp is true.
+      protocol: "https"
       # -- RabbitMQ host (management API endpoint)
       host: "br-ccs-rabbitmq"
       # -- RabbitMQ HTTP management port
@@ -56,6 +58,9 @@ global:
       portAmqp: "5672"
       # -- Skip TLS verification for self-signed certificates (not recommended for production)
       skipTlsVerify: false
+      # -- Allow the management API over plain http, sending admin credentials
+      # in cleartext. Only for TLS-less in-cluster/dev brokers; never in production.
+      allowInsecureHttp: false
     # -- Admin credentials for RabbitMQ management API
     rabbitmqAdminLogin:
       useExistingSecret:

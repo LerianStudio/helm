@@ -206,11 +206,13 @@ global:
   externalRabbitmqDefinitions:
     enabled: false
     connection:
-      protocol: "http"
+      protocol: "https"  # admin credentials travel on this connection; "http"
+                         # is rejected at render time unless allowInsecureHttp
       host: ""       # REQUIRED when enabled — management API endpoint
       port: "15672"
       portAmqp: "5672"
       skipTlsVerify: false
+      allowInsecureHttp: false  # opt-in for plain-http management APIs (in-cluster/dev only)
     rabbitmqAdminLogin:
       useExistingSecret:
         name: ""     # Secret with RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys

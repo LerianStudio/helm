@@ -126,6 +126,11 @@ overlay with `null` is genuinely absent and falls back to the app default
 {{- if and $trustProxy (empty $trustedProxies) -}}
 {{- fail (printf "\n\nlender.configmap.TRUST_PROXY_ENABLED=true with an empty lender.configmap.TRUSTED_PROXIES.\nThe lender application refuses to boot: trusting proxy headers with no trusted proxy list\nlets any client spoof the client IP.\nSet lender.configmap.TRUSTED_PROXIES to the ingress/load-balancer IPs or CIDRs (e.g. \"10.0.0.0/8\").\n") -}}
 {{- end -}}
+{{- range (splitList "," $trustedProxies) -}}
+{{- if has (. | trim) (list "0.0.0.0/0" "::/0") -}}
+{{- fail (printf "\n\nlender.configmap.TRUSTED_PROXIES contains %q, which trusts every client.\nThe lender application rejects 0.0.0.0/0 and ::/0: an all-client trusted proxy range\nlets any client spoof proxy headers, defeating the trust list entirely\n(internal/bootstrap/config_validation.go).\nSet lender.configmap.TRUSTED_PROXIES to the specific ingress/load-balancer IPs or CIDRs (e.g. \"10.0.0.0/8\").\n" (. | trim)) -}}
+{{- end -}}
+{{- end -}}
 {{- if $armed -}}
 {{- if not $ack -}}
 {{- fail (printf "\n\nHardened deployment (DEPLOYMENT_MODE=%q, ENV_NAME=%q) requires the M2M inversion acknowledgement.\nSet:\n  lender.configmap.AUTH_M2M_INVERSION_ENABLED: \"true\"\nWhy: in a hardened posture the lender issues its own machine-to-machine credentials\ninstead of forwarding the caller's token. The flag is a conscious acknowledgement, so\nthe chart does not default it — the lender application refuses to boot without it\n(internal/bootstrap/config_validation.go).\nThe gate arms when DEPLOYMENT_MODE is one of saas, production, byoc, or ENV_NAME is production.\n" $mode $envName) -}}

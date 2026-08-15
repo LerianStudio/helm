@@ -54,6 +54,21 @@ jobs:
         run: |
           set -euo pipefail
 
+          # A push can delete a chart directory (e.g. a chart retired from this
+          # line). The changed-paths action still lists it, but there is nothing
+          # left to lint, package, or release, so drop entries whose working_dir
+          # no longer exists in the checked-out tree.
+          FILTERED='[]'
+          while IFS= read -r entry; do
+            dir=$(jq -r '.working_dir' <<<"$entry")
+            if [ -d "$dir" ]; then
+              FILTERED=$(jq -c --argjson e "$entry" '. + [$e]' <<<"$FILTERED")
+            else
+              echo "::notice::Skipping '$dir': the chart was removed in this push, nothing to release"
+            fi
+          done < <(jq -c '.[]' <<<"$MATRIX")
+          MATRIX="$FILTERED"
+
           CHART=""
           RANGE=""
 

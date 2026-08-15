@@ -286,6 +286,39 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.2.0-beta.1` | `1.3.0-beta.36` |
 -----------------
 
+### BR STA
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sta).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0-beta.5` | `1.0.0-beta.32` |
+-----------------
+
+### BR CCS
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-ccs).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0-beta.4` | `1.0.0` |
+-----------------
+
+### BR SLC
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-slc).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | `0.1.0` |
+-----------------
+
 ### Lerian Common (Library)
 
 Library chart consumed by other Lerian charts — renders nothing on its own.

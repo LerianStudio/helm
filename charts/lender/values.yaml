@@ -480,6 +480,10 @@ lenderConsole:
         paths:
           - path: /
             pathType: Prefix
+    # -- API prefixes routed to the lender API Service on the console host
+    # (same-origin: one host serves the console at / and the API under these
+    # prefixes). Empty keeps the console-only ingress.
+    apiPaths: []
     # -- TLS configuration for ingress
     tls: []
 

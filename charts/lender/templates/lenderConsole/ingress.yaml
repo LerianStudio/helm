@@ -30,6 +30,20 @@ spec:
     - host: {{ .host | quote }}
       http:
         paths:
+          # SAME-ORIGIN PROXY (same pattern as the matcher chart): the console
+          # defaults to API_BASE_URL="" (same-origin), so these prefixes route
+          # API traffic to the lender API Service on the SAME host; "/" routes
+          # to the console. nginx uses longest-prefix matching, so the API
+          # prefixes win over /.
+          {{- range $.Values.lenderConsole.ingress.apiPaths }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "lender.fullname" $ }}
+                port:
+                  number: {{ $.Values.lender.service.port }}
+          {{- end }}
           {{- range .paths }}
           - path: {{ .path }}
             pathType: {{ .pathType }}

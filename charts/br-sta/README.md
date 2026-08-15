@@ -28,7 +28,7 @@ The default render brings up br-sta plus an in-cluster PostgreSQL and Valkey, wi
 
 ## Architecture
 
-The chart deploys a **manager Deployment** (`/service`, a Go/Fiber HTTP server) and an optional **worker Deployment** (`/worker`, background jobs):
+The chart deploys a **manager Deployment** (`/service`, a Go/Fiber HTTP server) and an optional **worker Deployment** (`/service` from the dedicated worker image, background jobs):
 
 - HTTP API served on port `8080` (`/health`, `/api/v1/...`).
 - PostgreSQL is the primary datastore; SQL migrations are applied at startup from `MIGRATIONS_PATH` (`migrations`).

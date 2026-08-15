@@ -14,6 +14,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "br-slc.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-slc.labels" . | nindent 4 }}
 spec:

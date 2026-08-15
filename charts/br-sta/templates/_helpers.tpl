@@ -24,10 +24,13 @@ Top-level chart name.
 Application name (single deployment).
 */}}
 {{- define "br-sta.fullname" -}}
+{{- $component := index .Values "br-sta" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else if $component.fullnameOverride }}
+{{- $component.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- default "br-sta" (index .Values "br-sta").name | trunc 63 | trimSuffix "-" }}
+{{- default "br-sta" (default $component.nameOverride $component.name) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 

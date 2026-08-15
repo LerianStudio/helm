@@ -22,6 +22,7 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: {{ $fullName }}
+  namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-slc.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}

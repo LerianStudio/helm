@@ -22,6 +22,20 @@
     "revisionHistoryLimit": { "type": "integer", "minimum": 0 },
     "nameOverride": { "type": "string" },
     "fullnameOverride": { "type": "string" },
+    "namespaceOverride": { "type": "string" },
+    "webhookNotificationsCacheTtlSec": { "type": "string" },
+    "webhookHmacSecretFile": { "type": "string" },
+    "ingress": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "className": { "type": "string" },
+        "annotations": { "type": "object" },
+        "hosts": { "type": "array", "items": { "type": "object" } },
+        "tls": { "type": "array", "items": { "type": "object" } }
+      }
+    },
     "terminationGracePeriodSeconds": { "type": "integer", "minimum": 0 },
     "image": {
       "type": "object",
@@ -174,6 +188,7 @@
       "type": "object",
       "required": ["image", "resources", "securityContext", "livenessProbe", "readinessProbe", "softkeySecret", "secrets", "configmap"],
       "properties": {
+        "pkcs11TokenLabel": { "type": "string" },
         "image": {
           "type": "object",
           "required": ["repository", "pullPolicy"],

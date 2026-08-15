@@ -8,7 +8,7 @@
 br-sta:
   replicaCount: 2
   image:
-    tag: "latest"   # pin to a published immutable tag
+    tag: ""   # REQUIRED: pin a published immutable tag, e.g. "1.0.0"
   ingress:
     enabled: false
     className: nginx
@@ -26,10 +26,10 @@ br-sta:
     ENV_NAME: "production"
     LOG_LEVEL: "info"
     # External PostgreSQL — leave empty only if postgresql.enabled=true.
-    POSTGRES_HOST: ""
+    POSTGRES_HOST: "my-postgres.example.com"   # REQUIRED when postgresql.enabled=false
     POSTGRES_SSLMODE: "require"
     # External Redis/Valkey (host:port) — leave empty only if valkey.enabled=true.
-    REDIS_HOST: ""
+    REDIS_HOST: "my-redis.example.com:6379"   # REQUIRED when valkey.enabled=false
     REDIS_TLS: "false"
     # Multi-tenancy (set to "true" to enable — then MULTI_TENANT_URL + API key are required)
     MULTI_TENANT_ENABLED: "false"

@@ -151,6 +151,12 @@ spec:
             fi
           fi
 
+          # Keep the role password in sync with the Secret (idempotent): when the
+          # role pre-exists with a stale password, CREATE ROLE is skipped and the
+          # app would fail auth even though bootstrap "succeeded".
+          echo "Synchronizing role password..."
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "ALTER ROLE \"$DB_ROLE\" WITH LOGIN PASSWORD '${DB_PASSWORD_HUB_LIT}'"
+
           # Privileges (safe to run repeatedly)
           echo "Ensuring privileges and schema permissions..."
           PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE \"$DB_NAME\" TO \"$DB_ROLE\""

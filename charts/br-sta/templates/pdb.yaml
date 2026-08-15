@@ -14,10 +14,15 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  {{- if $component.pdb.maxUnavailable }}
+  {{- /* Key-presence check (not truthiness): an explicit maxUnavailable: 0 must
+       render as maxUnavailable, not silently fall back to minAvailable. An empty
+       string ("", the values.yaml default) still means "unset". */}}
+  {{- if and (hasKey $component.pdb "maxUnavailable") (not (kindIs "invalid" $component.pdb.maxUnavailable)) (ne (toString $component.pdb.maxUnavailable) "") }}
   maxUnavailable: {{ $component.pdb.maxUnavailable }}
+  {{- else if and (hasKey $component.pdb "minAvailable") (not (kindIs "invalid" $component.pdb.minAvailable)) (ne (toString $component.pdb.minAvailable) "") }}
+  minAvailable: {{ $component.pdb.minAvailable }}
   {{- else }}
-  minAvailable: {{ $component.pdb.minAvailable | default 1 }}
+  minAvailable: 1
   {{- end }}
   selector:
     matchLabels:

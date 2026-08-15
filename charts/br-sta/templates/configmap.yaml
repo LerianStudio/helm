@@ -9,9 +9,23 @@ metadata:
 data:
   # Application environment values
   {{- range $key, $value := $component.configmap }}
-  {{- if and (ne $key "POSTGRES_HOST") (ne $key "REDIS_HOST") (ne $key "RABBITMQ_HOST") }}
+  {{- if and (ne $key "POSTGRES_HOST") (ne $key "REDIS_HOST") (ne $key "RABBITMQ_HOST") (ne $key "POSTGRES_SSLMODE") }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  {{- end }}
+
+  # PostgreSQL TLS mode: explicit value wins; otherwise align with the transport of
+  # the Postgres actually in use. The bundled Bitnami subchart ships with TLS
+  # disabled, so a "require" default would refuse every connection on a default
+  # install; external Postgres defaults to "require" (encrypted in transit).
+  {{- $internalPg := eq (include "postgresql.enabled" .) "true" }}
+  {{- $sslMode := $component.configmap.POSTGRES_SSLMODE | default (ternary "disable" "require" $internalPg) }}
+  POSTGRES_SSLMODE: {{ $sslMode | quote }}
+  {{- /* lib-commons refuses a plaintext (sslmode=disable) Postgres unless
+       ALLOW_INSECURE_TLS=true. Emit the bypass automatically ONLY for the bundled
+       in-cluster plaintext path; explicit configmap/extraEnvVars settings win. */}}
+  {{- if and $internalPg (eq $sslMode "disable") (not (hasKey $component.configmap "ALLOW_INSECURE_TLS")) (not (hasKey ($component.extraEnvVars | default dict) "ALLOW_INSECURE_TLS")) }}
+  ALLOW_INSECURE_TLS: "true"
   {{- end }}
 
   # PostgreSQL host: explicit value or dynamic default derived from the Bitnami subchart's

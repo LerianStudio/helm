@@ -21,6 +21,8 @@ spec:
       labels:
         {{- include "lender.labels" (dict "context" . "component" .Values.lenderConsole.name "name" .Values.lenderConsole.name) | nindent 8 }}
     spec:
+      # Static frontend: no Kubernetes API access needed, so don't mount a SA token.
+      automountServiceAccountToken: false
       {{- with .Values.lenderConsole.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

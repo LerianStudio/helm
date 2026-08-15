@@ -257,9 +257,10 @@ operator input for optional integrations that have been toggled on (multi-tenant
 {{/* The worker requires a dedicated image: an empty repository falls back to
      the manager image, which does NOT run the worker's logic, so the worker
      would come up healthy while doing nothing. */}}
-{{- if .Values.worker.enabled }}
-{{- if not .Values.worker.image.repository }}
-{{- fail "\n\nERROR: worker.image.repository is REQUIRED when worker.enabled=true (the manager image does not run the worker's logic).\n" }}
+{{- if eq (include "br-sta.worker.enabled" .) "true" }}
+{{- $workerImage := ((.Values.worker | default dict).image | default dict) }}
+{{- if not $workerImage.repository }}
+{{- fail "\n\nERROR: worker.image.repository is REQUIRED when the worker is enabled (the manager image does not run the worker's logic).\n" }}
 {{- end }}
 {{- end }}
 

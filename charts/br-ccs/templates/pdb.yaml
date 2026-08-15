@@ -13,10 +13,15 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  {{- with .Values.brCcs.pdb.maxUnavailable }}
-  maxUnavailable: {{ . }}
+  {{- /* Key-presence check (not truthiness): an explicit maxUnavailable: 0 must
+       render as maxUnavailable, not silently fall back to minAvailable. An empty
+       string ("") still means "unset". */}}
+  {{- if and (hasKey .Values.brCcs.pdb "maxUnavailable") (not (kindIs "invalid" .Values.brCcs.pdb.maxUnavailable)) (ne (toString .Values.brCcs.pdb.maxUnavailable) "") }}
+  maxUnavailable: {{ .Values.brCcs.pdb.maxUnavailable }}
+  {{- else if and (hasKey .Values.brCcs.pdb "minAvailable") (not (kindIs "invalid" .Values.brCcs.pdb.minAvailable)) (ne (toString .Values.brCcs.pdb.minAvailable) "") }}
+  minAvailable: {{ .Values.brCcs.pdb.minAvailable }}
   {{- else }}
-  minAvailable: {{ .Values.brCcs.pdb.minAvailable | default 1 }}
+  minAvailable: 1
   {{- end }}
   selector:
     matchLabels:

@@ -5,7 +5,7 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0-beta.5] — Unreleased
+## [1.2.0-beta.1] - 2026-08-15
 
 ### Changed
 
@@ -22,7 +22,7 @@ and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   both are set) for environments that have not yet migrated to `MIDAZ_LEDGER_URL`.
   Remove once all overlays use the single key.
 
-## [1.0.0-beta.2] — Unreleased
+## [1.0.0-beta.2]
 
 ### Changed
 
@@ -42,7 +42,7 @@ and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   token reconciliation worker remained idle in any environment that relied on
   them.
 
-## [0.1.0] — Unreleased
+## [0.1.0]
 
 ### Added
 

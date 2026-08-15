@@ -24,6 +24,8 @@ global:
       host: "br-sta-postgresql-primary"
       # -- PostgreSQL port
       port: "5432"
+      # -- TLS mode used by the bootstrap job's psql connections (PGSSLMODE)
+      sslMode: "require"
     # -- Admin (superuser) credentials used to create the application DB and role
     postgresAdminLogin:
       useExistingSecret:
@@ -213,7 +215,9 @@ br-sta:
     SERVER_ADDRESS: "0.0.0.0:8080"
     HTTP_BODY_LIMIT_BYTES: "104857600"
     # CORS Configuration
-    CORS_ALLOWED_ORIGINS: "*"
+    # Empty by default: wildcard origins are unsafe for a production financial API.
+    # Set to an explicit comma-separated list of trusted origins per deployment.
+    CORS_ALLOWED_ORIGINS: ""
     CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
     CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
     CORS_EXPOSE_HEADERS: ""
@@ -241,7 +245,10 @@ br-sta:
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "br_sta"
     POSTGRES_NAME: "br_sta"
-    POSTGRES_SSLMODE: "require"
+    # Empty -> dynamic default in the configmap template: "disable" when the bundled
+    # (non-TLS) PostgreSQL subchart is in use, "require" for external Postgres.
+    # Set explicitly to pin a mode (e.g. "verify-full" with a CA for external).
+    POSTGRES_SSLMODE: ""
     # Migrations path (applied at startup by the /service binary)
     MIGRATIONS_PATH: "migrations"
     # Runtime config plane (operational knobs only; disabled preserves env-only mode)

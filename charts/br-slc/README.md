@@ -1,8 +1,9 @@
 # br-slc Helm chart
 
 Internal Helm chart for the **br-slc monolith** (Sistema de Liquidação
-Centralizada — SLC). BYOC single-tenant deployment: **ClusterIP-only**
-Service, **no Ingress**. Postgres/Redis/RabbitMQ are external, client-managed
+Centralizada — SLC). BYOC single-tenant deployment: **ClusterIP** Service by
+default, with an optional **Ingress** (disabled by default, opt-in via
+`ingress.enabled=true`). Postgres/Redis/RabbitMQ are external, client-managed
 dependencies in BYOC — this chart does not deploy them.
 
 ## Chart Contract

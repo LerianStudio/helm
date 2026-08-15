@@ -154,6 +154,12 @@ spec:
             fi
           fi
 
+          # Idempotent password sync: a rotated Secret must reach PostgreSQL even
+          # when the role already exists, or the app would use the new password
+          # while the role keeps the old one.
+          echo "Synchronizing role password..."
+          printf '%s\n' "ALTER ROLE \"br-ccs\" WITH LOGIN PASSWORD :'pw';" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_BR_CCS" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
+
           echo "Ensuring privileges and schema permissions..."
           PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "ALTER USER \"br-ccs\" CREATEDB" || echo "Warning: Could not grant CREATEDB (may require superuser privileges)"
           PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "GRANT ALL PRIVILEGES ON DATABASE \"br-ccs\" TO \"br-ccs\""

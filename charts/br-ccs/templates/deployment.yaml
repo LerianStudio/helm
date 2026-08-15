@@ -151,11 +151,25 @@ spec:
           - name: "OTEL_RESOURCE_ATTRIBUTES"
             value: "k8s.pod.ip=$(POD_IP)"
           {{- end }}
+          {{- /* SERVER_ADDRESS is the listener the app binds to; SERVER_PORT is the
+               in-container healthcheck port. The Service and probes target the named
+               http port below, so the two MUST agree — otherwise the app listens on
+               one port while probes hit another and the pod never becomes ready.
+               Fail at render time instead of shipping a broken rollout. */}}
+          {{- $ccsServerAddr := $bcCm.SERVER_ADDRESS | default ":4030" | toString }}
+          {{- $ccsServerPort := $bcCm.SERVER_PORT | default "4030" | toString }}
+          {{- if contains ":" $ccsServerAddr }}
+          {{- $ccsAddrPort := $ccsServerAddr | splitList ":" | last }}
+          {{- if and $ccsAddrPort (ne $ccsAddrPort $ccsServerPort) }}
+          {{- fail (printf "\n\nERROR: brCcs.configmap.SERVER_ADDRESS (%q) and SERVER_PORT (%q) disagree — the Service and probes use SERVER_PORT, so they must reference the same port. Set both to the same value.\n" $ccsServerAddr $ccsServerPort) }}
+          {{- end }}
+          {{- end }}
           ports:
             # Derived from the same config the app binds to, so overriding
             # SERVER_PORT / GRPC_PORT keeps the pod ports (and probes) aligned.
+            # SERVER_ADDRESS is validated above to carry the same port.
             - name: http
-              containerPort: {{ $bcCm.SERVER_PORT | default "4030" | int }}
+              containerPort: {{ $ccsServerPort | int }}
               protocol: TCP
             - name: grpc
               containerPort: {{ $bcCm.GRPC_PORT | default "7001" | int }}

@@ -26,9 +26,12 @@
          pre-upgrade hook at weight -5, so it already exists before this Job (weight -1); no
          separate migration-only Secret is required.
      A migration-specific or app-level existing Secret overrides the chart-managed name. */}}
-{{- $useInfraSecret := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret -}}
 {{- $migUseExisting := eq (lower (toString (get $migrations "useExistingSecret" | default false))) "true" -}}
 {{- $appUseExisting := eq (lower (toString (get $app "useExistingSecret" | default false))) "true" -}}
+{{- /* Explicit existing-Secret overrides take precedence over the subchart's infra
+     Secret: an operator asking for a specific Secret must get that Secret even
+     when the bundled PostgreSQL subchart is enabled. */}}
+{{- $useInfraSecret := and (not $migUseExisting) (not $appUseExisting) (or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret) -}}
 {{- $pwSecretName := include "br-sta.fullname" . -}}
 {{- if $migUseExisting }}
 {{- $pwSecretName = required "br-sta.migrations.existingSecretName is required when br-sta.migrations.useExistingSecret=true" (get $migrations "existingSecretName") -}}
@@ -60,12 +63,24 @@
      secure by default. */}}
 {{- $extraEnv := get $app "extraEnvVars" | default dict -}}
 {{- $allowInsecureTLS := "" -}}
-{{- if get $migrations "allowInsecureTLS" -}}
+{{- /* Key-presence check (empty string still means "inherit"): an explicit
+     migrations.allowInsecureTLS=false must override a true inherited from
+     extraEnvVars/configmap, and truthiness would treat false as absent. */}}
+{{- if and (hasKey $migrations "allowInsecureTLS") (not (kindIs "invalid" (get $migrations "allowInsecureTLS"))) (ne (toString (get $migrations "allowInsecureTLS")) "") -}}
 {{- $allowInsecureTLS = toString (get $migrations "allowInsecureTLS") -}}
 {{- else if get $extraEnv "ALLOW_INSECURE_TLS" -}}
 {{- $allowInsecureTLS = toString (get $extraEnv "ALLOW_INSECURE_TLS") -}}
 {{- else if get $configmap "ALLOW_INSECURE_TLS" -}}
 {{- $allowInsecureTLS = toString (get $configmap "ALLOW_INSECURE_TLS") -}}
+{{- end -}}
+{{- /* Effective sslmode mirrors configmap.yaml: explicit value wins; otherwise the
+     bundled Bitnami subchart ships with TLS disabled, so "require" would refuse
+     every connection on a default install — default to "disable" for internal
+     Postgres and "require" for external. The bundled plaintext path also needs
+     the lib-commons ALLOW_INSECURE_TLS bypass (in-cluster traffic only). */}}
+{{- $sslMode := get $configmap "POSTGRES_SSLMODE" | default (ternary "disable" "require" $internalPg) -}}
+{{- if and (not $allowInsecureTLS) $internalPg (eq $sslMode "disable") -}}
+{{- $allowInsecureTLS = "true" -}}
 {{- end -}}
 apiVersion: batch/v1
 kind: Job
@@ -170,7 +185,7 @@ spec:
             - name: POSTGRES_NAME
               value: {{ get $configmap "POSTGRES_NAME" | default "br_sta" | quote }}
             - name: POSTGRES_SSLMODE
-              value: {{ get $configmap "POSTGRES_SSLMODE" | default "require" | quote }}
+              value: {{ $sslMode | quote }}
             {{- if $allowInsecureTLS }}
             # lib-commons migrator bypass for non-TLS Postgres (sslmode=disable
             # alone is rejected). Mirrors the app's ALLOW_INSECURE_TLS.

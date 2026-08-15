@@ -52,6 +52,9 @@ spec:
               value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
             - name: DB_PORT
               value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+            # Encrypt admin-credential connections in transit; libpq honors PGSSLMODE.
+            - name: PGSSLMODE
+              value: {{ .Values.global.externalPostgresDefinitions.connection.sslMode | default "require" | quote }}
             - name: DB_USER_ADMIN
               {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
               valueFrom:

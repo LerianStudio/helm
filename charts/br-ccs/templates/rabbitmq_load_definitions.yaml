@@ -1,4 +1,5 @@
-{{- if .Values.rabbitmq.enabled }}
+{{- $rmq := .Values.rabbitmq | default dict }}
+{{- if $rmq.enabled }}
 kind: Secret
 apiVersion: v1
 metadata:

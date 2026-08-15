@@ -180,3 +180,43 @@ postgresql:
 rabbitmq:
   enabled: false
   external: true
+
+# ==============================================================================
+# EXTERNAL-INFRA BOOTSTRAP JOBS (optional)
+# Provision the br-ccs database/role and the RabbitMQ topology/user on the
+# EXTERNAL infrastructure above. Enable and fill in admin credentials, or keep
+# disabled and provision manually (see INFRASTRUCTURE DEPENDENCIES).
+# ==============================================================================
+global:
+  externalPostgresDefinitions:
+    enabled: false
+    connection:
+      host: ""       # REQUIRED when enabled — external PostgreSQL host
+      port: "5432"
+      sslMode: "require"
+    postgresAdminLogin:
+      useExistingSecret:
+        name: ""     # Secret with DB_USER_ADMIN and DB_ADMIN_PASSWORD keys
+      username: "postgres"
+      password: ""   # ignored if useExistingSecret.name is set
+    brCcsCredentials:
+      useExistingSecret:
+        name: ""     # Secret with DB_PASSWORD_BR_CCS key
+      password: ""   # ignored if useExistingSecret.name is set
+  externalRabbitmqDefinitions:
+    enabled: false
+    connection:
+      protocol: "http"
+      host: ""       # REQUIRED when enabled — management API endpoint
+      port: "15672"
+      portAmqp: "5672"
+      skipTlsVerify: false
+    rabbitmqAdminLogin:
+      useExistingSecret:
+        name: ""     # Secret with RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys
+      username: "admin"
+      password: ""   # ignored if useExistingSecret.name is set
+    brCcsCredentials:
+      useExistingSecret:
+        name: ""     # Secret with RABBITMQ_BR_CCS_PASS key
+      password: ""   # ignored if useExistingSecret.name is set

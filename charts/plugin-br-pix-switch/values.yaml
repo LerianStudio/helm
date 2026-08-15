@@ -1533,7 +1533,9 @@ adapterLerianConsumer:
 
   pdb:
     enabled: false
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -1649,7 +1651,9 @@ adapterLerianSystemplane:
 
   pdb:
     enabled: false
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:

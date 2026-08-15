@@ -1,9 +1,8 @@
 {{- if .Values.brCcs.enabled }}
 {{- $cm := .Values.brCcs.configmap | default dict }}
 {{- $multiTenantEnabled := eq (toString ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
-{{- $pg := .Values.postgresql | default dict }}
 {{- $vk := .Values.valkey | default dict }}
-{{- $pgInternal := and (ne (toString $pg.enabled) "false") (not $pg.external) }}
+{{- $pgInternal := eq (include "br-ccs.postgresql.internal" .) "true" }}
 {{- $vkInternal := and (ne (toString $vk.enabled) "false") (not $vk.external) }}
 {{- $namespace := include "global.namespace" . }}
 kind: ConfigMap
@@ -39,7 +38,9 @@ data:
   SERVER_TLS_KEY_FILE: {{ $cm.SERVER_TLS_KEY_FILE | quote }}
   {{- end }}
   TLS_TERMINATED_UPSTREAM: {{ $cm.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
-  TRUSTED_PROXIES: {{ $cm.TRUSTED_PROXIES | default "" | quote }}
+  {{- /* Default matches values.yaml: RFC1918 ranges keep the production boot
+         validation satisfied out of the box (empty fails when ENV_NAME=production). */}}
+  TRUSTED_PROXIES: {{ $cm.TRUSTED_PROXIES | default "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16" | quote }}
 
   # =====================================================================
   # CORS POLICY
@@ -95,8 +96,10 @@ data:
   {{- if $cm.POSTGRES_REPLICA_HOST }}
   POSTGRES_REPLICA_HOST: {{ $cm.POSTGRES_REPLICA_HOST | quote }}
   POSTGRES_REPLICA_PORT: {{ $cm.POSTGRES_REPLICA_PORT | default "5432" | quote }}
-  POSTGRES_REPLICA_USER: {{ $cm.POSTGRES_REPLICA_USER | quote }}
-  POSTGRES_REPLICA_NAME: {{ $cm.POSTGRES_REPLICA_NAME | quote }}
+  {{- /* Replica user/database default to the primary's values: a read replica
+         serves the same database with the same credentials unless overridden. */}}
+  POSTGRES_REPLICA_USER: {{ $cm.POSTGRES_REPLICA_USER | default ($cm.POSTGRES_USER | default "br-ccs") | quote }}
+  POSTGRES_REPLICA_NAME: {{ $cm.POSTGRES_REPLICA_NAME | default ($cm.POSTGRES_NAME | default "br-ccs") | quote }}
   POSTGRES_REPLICA_SSLMODE: {{ $cm.POSTGRES_REPLICA_SSLMODE | default "require" | quote }}
   {{- end }}
 
@@ -187,7 +190,9 @@ data:
   # FETCHER INTEGRATION
   # =====================================================================
   FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
-  {{- if $cm.FETCHER_URL }}
+  {{- if eq (toString ($cm.FETCHER_ENABLED | default "false")) "true" }}
+  FETCHER_URL: {{ required "brCcs.configmap.FETCHER_URL is required when FETCHER_ENABLED=true" $cm.FETCHER_URL | quote }}
+  {{- else if $cm.FETCHER_URL }}
   FETCHER_URL: {{ $cm.FETCHER_URL | quote }}
   {{- end }}
   FETCHER_HTTP_TIMEOUT_SEC: {{ $cm.FETCHER_HTTP_TIMEOUT_SEC | default "30" | quote }}
@@ -200,7 +205,9 @@ data:
   # STA INTEGRATION
   # =====================================================================
   STA_ENABLED: {{ $cm.STA_ENABLED | default "false" | quote }}
-  {{- if $cm.STA_BASE_URL }}
+  {{- if eq (toString ($cm.STA_ENABLED | default "false")) "true" }}
+  STA_BASE_URL: {{ required "brCcs.configmap.STA_BASE_URL is required when STA_ENABLED=true" $cm.STA_BASE_URL | quote }}
+  {{- else if $cm.STA_BASE_URL }}
   STA_BASE_URL: {{ $cm.STA_BASE_URL | quote }}
   {{- end }}
   STA_HTTP_TIMEOUT_SEC: {{ $cm.STA_HTTP_TIMEOUT_SEC | default "30" | quote }}
@@ -341,8 +348,14 @@ data:
 
   # =====================================================================
   # EXTRA OVERRIDES (escape hatch for optional knobs not modeled above)
+  # Keys already modeled in brCcs.configmap are rejected: rendering them
+  # twice would emit duplicate ConfigMap keys (invalid manifest / silent
+  # override). Set modeled keys under brCcs.configmap instead.
   # =====================================================================
-  {{- range $key, $value := .Values.brCcs.extraEnvVars }}
+  {{- range $key, $value := (.Values.brCcs.extraEnvVars | default dict) }}
+  {{- if hasKey $cm $key }}
+  {{- fail (printf "\n\nERROR: brCcs.extraEnvVars.%s duplicates a key set in brCcs.configmap — set it only under brCcs.configmap.\n" $key) }}
+  {{- end }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
 {{- end }}

@@ -533,7 +533,10 @@ postgresql:
     tag: "latest"
   architecture: replication
   replication:
-    numSynchronousReplicas: 1
+    # 0 keeps replication asynchronous: with synchronous replicas, writes hang
+    # whenever a replica is unavailable, which is the wrong default for the
+    # in-cluster development/staging posture this chart ships with.
+    numSynchronousReplicas: 0
   auth:
     enabled: true
     enablePostgresUser: true

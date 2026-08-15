@@ -1,7 +1,6 @@
 {{- $brCcs := .Values.brCcs | default dict }}
 {{- $migrations := get $brCcs "migrations" | default dict }}
 {{- $configmap := get $brCcs "configmap" | default dict }}
-{{- $postgresql := .Values.postgresql | default dict }}
 {{- $migrationImage := get $migrations "image" | default dict }}
 {{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") }}
 {{- $migrationsEnabled := and (eq (lower (toString (get $brCcs "enabled" | default false))) "true") (eq (lower (toString (get $migrations "enabled" | default false))) "true") }}
@@ -10,7 +9,7 @@
      external, the database is provisioned during the Sync phase (bitnami), so the
      migration runs as a POST hook (after the DB exists) with a wait-for-Postgres
      initContainer. External/pre-existing Postgres keeps the PRE hook (DB already exists). */}}
-{{- $internalPg := and (eq (lower (toString (get $postgresql "enabled" | default false))) "true") (not (eq (lower (toString (get $postgresql "external" | default false))) "true")) }}
+{{- $internalPg := eq (include "br-ccs.postgresql.internal" .) "true" }}
 {{- $appUseExisting := eq (lower (toString (get $brCcs "useExistingSecret" | default false))) "true" }}
 {{- $migUseExisting := eq (lower (toString (get $migrations "useExistingSecret" | default false))) "true" }}
 {{- $existingSecretName := "" }}

@@ -17,6 +17,10 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: {{ .Values.brCcs.service.grpcPort | default 7001 }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
   selector:
     {{- include "br-ccs.selectorLabels" (dict "context" . "name" .Values.brCcs.name) | nindent 4 }}
 {{- end }}

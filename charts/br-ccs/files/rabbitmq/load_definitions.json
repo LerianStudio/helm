@@ -1,24 +1,11 @@
 {
-  "users": [
-    {
-      "name": "br-ccs",
-      "tags": ""
-    }
-  ],
+  "users": [],
   "vhosts": [
     {
       "name": "/"
     }
   ],
-  "permissions": [
-    {
-      "user": "br-ccs",
-      "vhost": "/",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
-    }
-  ],
+  "permissions": [],
   "queues": [],
   "exchanges": [
     {

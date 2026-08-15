@@ -17,6 +17,22 @@ spec:
       initContainers:
       - name: wait-for-dependencies
         image: busybox:1.37
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
         env:
         - name: DB_HOST
           value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
@@ -42,7 +58,28 @@ spec:
       containers:
       - name: psql
         image: postgres:17
+        # uid/gid 999 = the postgres user baked into the official image.
+        securityContext:
+          runAsUser: 999
+          runAsGroup: 999
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
         env:
+        # PGSSLMODE is honoured by psql/libpq directly; default "require" keeps
+        # admin credentials off the wire unless the operator opts out.
+        - name: PGSSLMODE
+          value: {{ .Values.global.externalPostgresDefinitions.connection.sslMode | default "require" | quote }}
         - name: DB_HOST
           value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
         - name: DB_PORT
@@ -104,7 +141,9 @@ spec:
               echo "Role 'br-ccs' already exists. Skipping creation."
             else
               echo "Creating role 'br-ccs'..."
-              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_BR_CCS" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE \"br-ccs\" LOGIN PASSWORD :'pw'"
+              # psql interpolates :'pw' only for stdin/-f input, NOT for -c;
+              # feed the statement on stdin so the password is safely psql-quoted.
+              printf '%s\n' "CREATE ROLE \"br-ccs\" LOGIN PASSWORD :'pw';" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_BR_CCS" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
             fi
 
             if [ "$DB_EXISTS" = "1" ]; then

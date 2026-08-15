@@ -10,7 +10,16 @@ Create a default fully qualified app name for br-ccs.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "br-ccs.fullname" -}}
-{{- default (include "br-ccs.name" .) .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- if .Values.fullnameOverride }}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- $name := default "br-ccs" .Values.nameOverride }}
+{{- if contains $name .Release.Name }}
+{{- .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -75,27 +84,15 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- end }}
 
 {{/*
-Enable internal dependencies
-These helpers check both .enabled and .external flags
+br-ccs.postgresql.internal — single source of truth for the "bundled (internal)
+PostgreSQL subchart" decision. Internal means postgresql.enabled is not
+explicitly false AND postgresql.external is not truthy. Every template that
+branches on internal vs external Postgres MUST use this helper so the decision
+never drifts between manifests.
 */}}
-{{- define "rabbitmq.enabled" -}}
-{{- if and (default true .Values.rabbitmq.enabled) (not .Values.rabbitmq.external) -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-
-{{- define "valkey.enabled" -}}
-{{- if and (default true .Values.valkey.enabled) (not .Values.valkey.external) -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-
-{{- define "postgresql.enabled" -}}
-{{- if and (default true .Values.postgresql.enabled) (not .Values.postgresql.external) -}}
+{{- define "br-ccs.postgresql.internal" -}}
+{{- $pg := .Values.postgresql | default dict -}}
+{{- if and (ne (toString $pg.enabled) "false") (not $pg.external) -}}
 true
 {{- else -}}
 false

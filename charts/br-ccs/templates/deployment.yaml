@@ -23,10 +23,16 @@ spec:
       {{- include "br-ccs.selectorLabels" (dict "context" . "name" .Values.brCcs.name ) | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.brCcs.podAnnotations }}
       annotations:
+        # Roll the pods whenever the rendered ConfigMap/Secret content changes,
+        # so env updates are picked up without a manual restart.
+        checksum/configmap: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.brCcs.useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.brCcs.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "br-ccs.labels" (dict "context" . "component" .Values.brCcs.name "name" .Values.brCcs.name ) | nindent 8 }}
     spec:
@@ -74,9 +80,14 @@ spec:
               # Wait for PostgreSQL
               wait_for_service "$POSTGRES_HOST" "$POSTGRES_PORT"
 
-              # Wait for Redis/Valkey (REDIS_HOST is host:port)
+              # Wait for Redis/Valkey (REDIS_HOST is host:port; a bare host
+              # falls back to the default Redis port 6379 — `cut -f2` would
+              # otherwise echo the host back as the "port")
               REDIS_SVC=$(echo "$REDIS_HOST" | cut -d: -f1)
-              REDIS_PORT_NUM=$(echo "$REDIS_HOST" | cut -d: -f2)
+              case "$REDIS_HOST" in
+                *:*) REDIS_PORT_NUM=$(echo "$REDIS_HOST" | cut -d: -f2) ;;
+                *)   REDIS_PORT_NUM=6379 ;;
+              esac
               wait_for_service "$REDIS_SVC" "$REDIS_PORT_NUM"
 
               echo "All dependencies are ready!"
@@ -101,12 +112,14 @@ spec:
           - configMapRef:
               name: {{ include "br-ccs.fullname" . }}
           env:
+          {{- $bcSecrets := .Values.brCcs.secrets | default dict }}
+          {{- $bcCm := .Values.brCcs.configmap | default dict }}
           {{- $secretName := ternary .Values.brCcs.existingSecretName (include "br-ccs.fullname" .) .Values.brCcs.useExistingSecret }}
           {{- $pg := .Values.postgresql | default dict }}
           {{- $pgAuth := $pg.auth | default dict }}
-          {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+          {{- if or (eq (include "br-ccs.postgresql.internal" .) "true") $pgAuth.existingSecret }}
           {{- include "br-ccs.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
-          {{- else if .Values.brCcs.secrets.POSTGRES_PASSWORD }}
+          {{- else if $bcSecrets.POSTGRES_PASSWORD }}
           - name: POSTGRES_PASSWORD
             valueFrom:
               secretKeyRef:
@@ -117,14 +130,14 @@ spec:
           {{- $vkAuth := $vk.auth | default dict }}
           {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
           {{- include "br-ccs.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 10 }}
-          {{- else if .Values.brCcs.secrets.REDIS_PASSWORD }}
+          {{- else if $bcSecrets.REDIS_PASSWORD }}
           - name: REDIS_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: {{ $secretName }}
                 key: REDIS_PASSWORD
           {{- end }}
-          {{- if eq (toString .Values.brCcs.configmap.ENABLE_TELEMETRY) "true" }}
+          {{- if eq (toString ($bcCm.ENABLE_TELEMETRY | default "false")) "true" }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
@@ -139,8 +152,13 @@ spec:
             value: "k8s.pod.ip=$(POD_IP)"
           {{- end }}
           ports:
+            # Derived from the same config the app binds to, so overriding
+            # SERVER_PORT / GRPC_PORT keeps the pod ports (and probes) aligned.
             - name: http
-              containerPort: 4030
+              containerPort: {{ $bcCm.SERVER_PORT | default "4030" | int }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ $bcCm.GRPC_PORT | default "7001" | int }}
               protocol: TCP
           livenessProbe:
             httpGet:

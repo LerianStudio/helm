@@ -61,7 +61,9 @@ data:
   VERSION: {{ include "br-sta.defaultTag" . | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ include "br-sta.defaultTag" . | quote }}
 
-  # Extra environment variables (passthrough from values.app.extraEnvVars)
-  {{- with $component.extraEnvVars }}
-  {{- toYaml . | nindent 2 }}
+  # Extra environment variables (passthrough from values.app.extraEnvVars).
+  # Values are force-quoted: ConfigMap data must be strings, and bare YAML
+  # scalars like `true` or `8080` would otherwise fail the API validation.
+  {{- range $key, $value := $component.extraEnvVars }}
+  {{ $key }}: {{ $value | quote }}
   {{- end }}

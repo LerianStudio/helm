@@ -7,6 +7,15 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-ccs.labels" (dict "context" . "component" "bootstrap" "name" "rabbitmq") | nindent 4 }}
+  annotations:
+    # Hooked alongside the bootstrap Job (earlier weight so it exists first):
+    # external RabbitMQ must be provisioned BEFORE the app rolls out.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-2"
+    "helm.sh/hook-delete-policy": before-hook-creation
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-2"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
 data:
   load_definitions.json: |
 {{ .Files.Get "files/rabbitmq/load_definitions.json" | indent 4 }}
@@ -18,6 +27,16 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-ccs.labels" (dict "context" . "component" "bootstrap" "name" "rabbitmq") | nindent 4 }}
+  annotations:
+    # Pre-install/pre-upgrade hook: the external RabbitMQ must hold the events
+    # exchange and the br-ccs credentials BEFORE the app rolls out. Jobs are
+    # immutable, so before-hook-creation replaces the previous run on upgrade.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-1"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1
@@ -62,7 +81,10 @@ spec:
                 - ALL
       containers:
         - name: apply-definitions
-          image: ghcr.io/jqlang/jq:1.7.1
+          # curlimages/curl ships /bin/sh + curl (the jq image is distroless —
+          # no shell, so this script cannot run there). Matches the
+          # midaz/fetcher/reporter bootstrap convention.
+          image: curlimages/curl:8.7.1
           command:
             - sh
             - -c
@@ -90,22 +112,17 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
-              echo "Checking if RabbitMQ user 'br-ccs' already exists..."
-              BR_CCS_EXISTS=$(curl $CURL_OPTS -K /tmp/curlrc \
-                "$BASE_URL/api/users/br-ccs" 2>/dev/null || echo "not_found")
+              # Definitions only carry topology (vhost + exchange). The br-ccs
+              # user and its permissions are ensured unconditionally below via
+              # idempotent PUTs, so a skipped import can never leave the user
+              # without credentials or permissions.
+              echo "Checking if the 'events' exchange already exists..."
+              EXCHANGE_EXISTS=$(curl $CURL_OPTS -K /tmp/curlrc \
+                "$BASE_URL/api/exchanges/%2F/events" 2>/dev/null || echo "not_found")
 
-              SKIP_DEFINITIONS=false
-              if echo "$BR_CCS_EXISTS" | grep -q '"name":"br-ccs"'; then
-                echo "RabbitMQ user 'br-ccs' already exists. Checking exchanges..."
-                EXCHANGE_EXISTS=$(curl $CURL_OPTS -K /tmp/curlrc \
-                  "$BASE_URL/api/exchanges/%2F/events" 2>/dev/null || echo "not_found")
-                if echo "$EXCHANGE_EXISTS" | grep -q '"name":"events"'; then
-                  echo "RabbitMQ definitions already applied (user and exchange exist). Skipping definitions import."
-                  SKIP_DEFINITIONS=true
-                fi
-              fi
-
-              if [ "$SKIP_DEFINITIONS" = "false" ]; then
+              if echo "$EXCHANGE_EXISTS" | grep -q '"name":"events"'; then
+                echo "RabbitMQ definitions already applied (exchange exists). Skipping definitions import."
+              else
                 echo "Applying RabbitMQ definitions from file..."
                 HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
                   -K /tmp/curlrc \
@@ -121,20 +138,39 @@ spec:
                 echo "Definitions applied successfully."
               fi
 
-              echo "Updating RabbitMQ user 'br-ccs' password..."
-              USER_JSON=$(jq -n --arg pw "$RABBITMQ_BR_CCS_PASS" '{"password": $pw, "tags": ""}')
+              echo "Ensuring RabbitMQ user 'br-ccs' (create or update password)..."
+              # JSON-escape the password (backslash + double quote) — no jq in
+              # this image, and the value never touches the process list.
+              PW_JSON=$(printf '%s' "$RABBITMQ_BR_CCS_PASS" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+              umask 077
+              printf '{"password": "%s", "tags": ""}' "$PW_JSON" > /tmp/user.json
               HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
                 -K /tmp/curlrc \
                 -H "content-type: application/json" \
                 -X PUT \
-                --data "$USER_JSON" \
+                --data-binary @/tmp/user.json \
                 "$BASE_URL/api/users/br-ccs")
+              rm -f /tmp/user.json
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error updating br-ccs user (HTTP $HTTP_CODE):"
                 cat /tmp/response.txt
                 exit 1
               fi
-              echo "User password updated successfully."
+              echo "User ensured successfully."
+
+              echo "Ensuring RabbitMQ permissions for 'br-ccs' on vhost '/'..."
+              HTTP_CODE=$(curl $CURL_OPTS -o /tmp/response.txt -w "%{http_code}" \
+                -K /tmp/curlrc \
+                -H "content-type: application/json" \
+                -X PUT \
+                --data '{"configure":".*","write":".*","read":".*"}' \
+                "$BASE_URL/api/permissions/%2F/br-ccs")
+              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                echo "Error setting br-ccs permissions (HTTP $HTTP_CODE):"
+                cat /tmp/response.txt
+                exit 1
+              fi
+              echo "Permissions ensured successfully."
 
               echo ""
               echo "=== br-ccs RabbitMQ Bootstrap completed successfully ==="

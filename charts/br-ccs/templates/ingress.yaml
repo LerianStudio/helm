@@ -1,4 +1,4 @@
-{{- if .Values.brCcs.ingress.enabled -}}
+{{- if and .Values.brCcs.enabled .Values.brCcs.ingress.enabled -}}
 {{- $ingressName := include "br-ccs.fullname" . -}}
 {{- $svcPort := .Values.brCcs.service.port -}}
 {{- if and .Values.brCcs.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}

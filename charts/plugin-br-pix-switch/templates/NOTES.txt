@@ -17,6 +17,9 @@ Service, ConfigMap, and Secret.
 {{ if .Values.spi.enabled }}  ✓ spi                  port {{ .Values.spi.service.port }}{{ else }}  ✗ spi                  (disabled){{ end }}
 {{ if .Values.spiSystemplane.enabled }}  ✓ spi-systemplane      port {{ .Values.spiSystemplane.service.port }}{{ else }}  ✗ spi-systemplane      (disabled){{ end }}
 {{ if .Values.adapterProviderMock.enabled }}  ✓ adapter-provider-mock port {{ .Values.adapterProviderMock.service.port }}{{ else }}  ✗ adapter-provider-mock (disabled){{ end }}
+{{ if .Values.adapterLerian.enabled }}  ✓ adapter-lerian       port {{ .Values.adapterLerian.service.port }}{{ else }}  ✗ adapter-lerian       (disabled){{ end }}
+{{ if .Values.adapterLerianConsumer.enabled }}  ✓ adapter-lerian-consumer port {{ .Values.adapterLerianConsumer.service.port }}{{ else }}  ✗ adapter-lerian-consumer (disabled){{ end }}
+{{ if .Values.adapterLerianSystemplane.enabled }}  ✓ adapter-lerian-systemplane port {{ .Values.adapterLerianSystemplane.service.port }}{{ else }}  ✗ adapter-lerian-systemplane (disabled){{ end }}
 {{ if .Values.dictHub.enabled }}  ✓ dict-hub             port {{ .Values.dictHub.service.port }}{{ else }}  ✗ dict-hub             (disabled){{ end }}
 {{ if .Values.dictHubVsync.enabled }}  ✓ dict-hub-vsync       port {{ .Values.dictHubVsync.service.port }}{{ else }}  ✗ dict-hub-vsync       (disabled){{ end }}
 {{ if .Values.dictProxy.enabled }}  ✓ dict-proxy           port {{ .Values.dictProxy.service.port }}{{ else }}  ✗ dict-proxy           (disabled){{ end }}

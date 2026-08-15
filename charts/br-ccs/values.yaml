@@ -21,6 +21,9 @@ global:
       host: "br-ccs-postgresql-primary"
       # -- PostgreSQL port
       port: "5432"
+      # -- libpq sslmode used by the bootstrap psql session (disable, allow,
+      # prefer, require, verify-ca, verify-full). Default keeps TLS required.
+      sslMode: "require"
     # -- Admin credentials for PostgreSQL
     postgresAdminLogin:
       useExistingSecret:
@@ -173,6 +176,8 @@ brCcs:
     type: ClusterIP
     # -- Port for the HTTP API
     port: 4030
+    # -- Port for the gRPC API (keep aligned with brCcs.configmap.GRPC_PORT)
+    grpcPort: 7001
     annotations: {}
   ingress:
     # -- Enable or disable ingress
@@ -253,11 +258,14 @@ brCcs:
 
     # =================================================================
     # TLS / proxy
-    # TRUSTED_PROXIES is REQUIRED when ENV_NAME=production (VPC + ingress CIDR;
-    # never 0.0.0.0/0). Fiber honours X-Forwarded-For only from these ranges.
+    # TRUSTED_PROXIES is REQUIRED when ENV_NAME=production (never 0.0.0.0/0).
+    # Fiber honours X-Forwarded-For only from these ranges. The default trusts
+    # the RFC1918 private ranges (in-VPC/in-cluster ingress); tighten it to the
+    # exact ingress CIDR for your environment. An empty value fails the app's
+    # production boot validation.
     # =================================================================
     TLS_TERMINATED_UPSTREAM: "true"
-    TRUSTED_PROXIES: ""
+    TRUSTED_PROXIES: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
     # SERVER_TLS_CERT_FILE: ""
     # SERVER_TLS_KEY_FILE: ""
 
@@ -625,10 +633,13 @@ valkey:
   enabled: true
   global:
     security:
-      allowInsecureImages: false
+      # Bitnami moved free images to bitnamisecure / bitnamilegacy in 2025;
+      # the upstream Bitnami chart treats those repos as "non-standard" and
+      # blocks them unless this flag is set. Required for fresh installs.
+      allowInsecureImages: true
   image:
-    repository: bitnami/valkey
-    tag: "8.0.2"
+    repository: bitnamisecure/valkey
+    tag: "latest"
   external: false
   architecture: standalone
   auth:
@@ -649,10 +660,13 @@ postgresql:
   enabled: true
   global:
     security:
-      allowInsecureImages: false
+      # Bitnami moved free images to bitnamisecure / bitnamilegacy in 2025;
+      # the upstream Bitnami chart treats those repos as "non-standard" and
+      # blocks them unless this flag is set. Required for fresh installs.
+      allowInsecureImages: true
   image:
-    repository: bitnami/postgresql
-    tag: "17.4.0"
+    repository: bitnamisecure/postgresql
+    tag: "latest"
   external: false
   architecture: standalone
   auth:

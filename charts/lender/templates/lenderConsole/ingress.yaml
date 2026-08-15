@@ -1,4 +1,7 @@
 {{- if and .Values.lenderConsole.enabled .Values.lenderConsole.ingress.enabled }}
+{{- if and (not .Values.lender.enabled) (gt (len .Values.lenderConsole.ingress.apiPaths) 0) }}
+{{- fail (printf "\n\nlenderConsole.ingress.apiPaths is set but lender.enabled=false.\nThe API prefixes route to the lender API Service (%s), which is only created\nwhen lender.enabled=true — rendering these routes anyway would send API traffic\nto a missing Service (503).\nEither set lender.enabled=true or remove lenderConsole.ingress.apiPaths.\n" (include "lender.fullname" .)) -}}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

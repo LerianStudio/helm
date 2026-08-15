@@ -30,7 +30,8 @@ br-sta:
     POSTGRES_SSLMODE: "require"
     # External Redis/Valkey (host:port) — leave empty only if valkey.enabled=true.
     REDIS_HOST: "my-redis.example.com:6379"   # REQUIRED when valkey.enabled=false
-    REDIS_TLS: "false"
+    REDIS_TLS: "true"
+    # REDIS_CA_CERT: ""   # base64-encoded PEM CA cert, if your endpoint needs one
     # Multi-tenancy (set to "true" to enable — then MULTI_TENANT_URL + API key are required)
     MULTI_TENANT_ENABLED: "false"
     # MULTI_TENANT_URL: ""

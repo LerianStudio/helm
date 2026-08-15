@@ -1101,13 +1101,25 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			return nil, err
 		}
 
+		// Local library dependencies referenced via `file://<relpath>` (e.g.
+		// lerian-common) live outside the copied chart, so `helm dependency
+		// build` cannot resolve them in the isolated temp workspace. Materialize
+		// each such sibling at the same relative location so the file:// path
+		// resolves exactly as it does in the source tree.
+		if err := materializeLocalDependencies(root, chartDir, tmpRoot, tmpChart, deps); err != nil {
+			_ = os.RemoveAll(tmpRoot)
+			return nil, err
+		}
+
 		helmEnv, err := isolatedHelmEnv(tmpRoot)
 		if err != nil {
 			_ = os.RemoveAll(tmpRoot)
 			return nil, err
 		}
 
-		if out, err := addDependencyRepositories(tmpChart, tmpRoot, helmEnv); err != nil {
+		if out, err := retryHelm(func() (string, error) {
+			return addDependencyRepositories(tmpChart, tmpRoot, helmEnv)
+		}); err != nil {
 			row.Status = "fail"
 			row.Class = "missing-dependency"
 			row.Detail = oneLine(out)
@@ -1116,7 +1128,9 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 
-		if out, err := runHelmWithEnv(tmpRoot, helmEnv, "dependency", "build", tmpChart); err != nil {
+		if out, err := retryHelm(func() (string, error) {
+			return runHelmWithEnv(tmpRoot, helmEnv, "dependency", "build", tmpChart)
+		}); err != nil {
 			row.Status = "fail"
 			row.Class = "missing-dependency"
 			row.Detail = oneLine(out)
@@ -1477,6 +1491,32 @@ func addDependencyRepositories(chartDir, workDir string, env []string) (string, 
 	return "", nil
 }
 
+// retryHelm runs a helm network operation (repo add/update, dependency build) up
+// to 3 times with a short linear backoff. These operations pull external subcharts
+// from remote (Bitnami/OCI) repositories whose availability is flaky in CI; a
+// transient fetch failure would otherwise fail the whole `--all` render gate and
+// red an unrelated chart's PR. A genuinely missing/unresolvable dependency still
+// fails all attempts and is reported exactly as before — the retry smooths
+// transient errors, it does not mask deterministic breakage.
+func retryHelm(fn func() (string, error)) (string, error) {
+	const attempts = 5
+	var (
+		out string
+		err error
+	)
+	for i := 1; i <= attempts; i++ {
+		if out, err = fn(); err == nil {
+			return out, nil
+		}
+		if i < attempts {
+			// Linear backoff (3s, 6s, 9s, 12s -> ~30s total) to ride out a
+			// rate-limited or briefly-unavailable upstream chart repository.
+			time.Sleep(time.Duration(i) * 3 * time.Second)
+		}
+	}
+	return out, err
+}
+
 func runHelmWithEnv(workDir string, env []string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
@@ -1515,6 +1555,58 @@ func writeRenderInventory(path string, rows []renderRow) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(builder.String()), 0o644)
+}
+
+// materializeLocalDependencies copies each `file://<relpath>` dependency source
+// into the temp workspace at the same relative path the chart references, so an
+// isolated `helm dependency build` resolves local library charts (e.g.
+// lerian-common) exactly as it would in the repository tree. Missing sources are
+// left to `helm dependency build` to report as a normal missing-dependency.
+func materializeLocalDependencies(root, chartDir, tmpRoot, tmpChart string, deps []chartDependency) error {
+	for _, dependency := range deps {
+		repository := strings.TrimSpace(dependency.Repository)
+		if !strings.HasPrefix(repository, "file://") {
+			continue
+		}
+		relPath := strings.TrimPrefix(repository, "file://")
+		// Reject absolute paths (e.g. file:///tmp/lib → "/tmp/lib"): Helm resolves
+		// them verbatim at render time, escaping the repo, whereas filepath.Join
+		// below would fold the leading slash and pass the containment check — a
+		// mismatch that would let an absolute dependency read outside root.
+		if filepath.IsAbs(relPath) {
+			return fmt.Errorf("local dependency %q uses an absolute path, which is not supported", repository)
+		}
+		srcDir := filepath.Clean(filepath.Join(chartDir, relPath))
+		// Containment: a crafted `file://../../..` path in Chart.yaml must not let
+		// the copy read outside the repository tree or write outside the isolated
+		// render workspace. Legitimate local libraries (e.g. file://../lerian-common)
+		// still resolve to a sibling under root/tmpRoot and pass the check.
+		if !withinDir(root, srcDir) {
+			return fmt.Errorf("local dependency %q resolves outside the repository root (%s)", repository, srcDir)
+		}
+		if !dirExists(srcDir) {
+			continue
+		}
+		destDir := filepath.Clean(filepath.Join(tmpChart, relPath))
+		if !withinDir(tmpRoot, destDir) {
+			return fmt.Errorf("local dependency %q resolves outside the render workspace (%s)", repository, destDir)
+		}
+		if err := copyDir(srcDir, destDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// withinDir reports whether target is base itself or nested under it (after path
+// cleaning), used to contain `file://` dependency paths so a crafted Chart.yaml
+// cannot escape the repo/workspace via `..` traversal.
+func withinDir(base, target string) bool {
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
 }
 
 func copyDir(src, dst string) error {

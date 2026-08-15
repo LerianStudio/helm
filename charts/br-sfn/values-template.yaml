@@ -1,0 +1,90 @@
+# values-template.yaml — operator skeleton for the br-sfn chart.
+# Modular contract: every component defaults OFF. Enable only what you run,
+# then fill the required secrets for each enabled rail.
+
+# spb:
+#   enabled: true
+#   image:
+#     tag: ""            # pin the spb release (svc-scoped tags: spb/vX.Y.Z → X.Y.Z)
+#   configmap:
+#     POSTGRES_HOST: ""
+#     POSTGRES_PORT: "5432"
+#     POSTGRES_USER: ""
+#     POSTGRES_DB: ""
+#   secrets:
+#     POSTGRES_PASSWORD: ""   # required when spb.enabled (URL-safe)
+
+# spi:
+#   enabled: true
+#   configmap:               # shared by api/dict/brcode/core (component maps win)
+#     POSTGRES_HOST: ""
+#     POSTGRES_PORT: "5432"
+#     POSTGRES_USER: ""
+#     POSTGRES_DB: ""
+#   secrets:
+#     POSTGRES_PASSWORD: ""  # required when spi.enabled (URL-safe)
+#   api:
+#     image:
+#       tag: ""
+#   dict: {}
+#   brcode: {}
+#   core: {}
+#   migrations:
+#     image:
+#       tag: ""              # br-spi-migrations release
+
+# siloc:
+#   enabled: true
+#   configmap:
+#     POSTGRES_HOST: ""
+#     POSTGRES_PORT: "5432"
+#     POSTGRES_USER: ""
+#     POSTGRES_DB: ""
+#   secrets:
+#     POSTGRES_PASSWORD: ""
+#   migrations:
+#     image:
+#       tag: ""              # br-siloc-migrations release
+
+# scr:
+#   enabled: true
+#   configmap:
+#     POSTGRES_HOST: ""
+#     POSTGRES_USER: ""
+#     POSTGRES_DB: ""
+#   secrets:
+#     POSTGRES_PASSWORD: ""
+
+# desk:
+#   enabled: true
+#   configmap:
+#     POSTGRES_HOST: ""
+#     POSTGRES_USER: ""
+#     POSTGRES_DB: ""
+#   secrets:
+#     POSTGRES_PASSWORD: ""
+
+# correios:
+#   enabled: true
+#   configmap:
+#     POSTGRES_HOST: ""
+#     POSTGRES_PORT: "5432"
+#     POSTGRES_USER: ""
+#     POSTGRES_NAME: ""      # NOT POSTGRES_DB — this rail reads POSTGRES_NAME
+#     CACHE_ADDR: ""         # valkey/redis host:port
+#     OBJECT_STORAGE_ENDPOINT: ""
+#     OBJECT_STORAGE_BUCKET: ""
+#   secrets:
+#     POSTGRES_PASSWORD: ""  # required when correios.enabled (URL-safe)
+#     ENCRYPTION_KEY: ""     # AES-256, 32 bytes
+#     RABBITMQ_URL: ""
+
+# slcEdge:
+#   enabled: true
+#   configmap:
+#     SLC_CORE_URL: ""       # br-slc core base URL
+
+# cockpit:
+#   enabled: true
+#   image:
+#     tag: ""                # VITE_* URLs are baked at image build time

@@ -50,6 +50,10 @@ fetcher:
   - changed-files:
       - any-glob-to-any-file: charts/fetcher/**
 
+common:
+  - changed-files:
+      - any-glob-to-any-file: charts/lerian-common/**
+      
 pipe:
   - changed-files:
       - any-glob-to-any-file: .github/workflows/**

@@ -1,0 +1,3 @@
+{{- if $.Values.spb.enabled -}}
+{{ include "br-sfn.componentPdb" (dict "root" $ "name" "spb" "comp" $.Values.spb) }}
+{{- end -}}

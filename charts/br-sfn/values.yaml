@@ -1,0 +1,804 @@
+# Default values for the br-sfn (Brazilian SFN rails) chart.
+#
+# MODULARITY CONTRACT: every component defaults to enabled: false. This is a
+# monorepo of independent rails — SPB (STR/TED), SPI (Pix, 4 runtime binaries),
+# SILOC, SCR, desk (cockpit operator-state), slc-edge (Cabine SLC passthrough)
+# and the cockpit SPA — and no deployment runs all of them. Enable exactly the
+# rails the environment operates.
+#
+# INFRA CONTRACT: Postgres / Valkey(Redis) / RabbitMQ / RedPanda / IBM MQ are
+# EXTERNAL pre-provisioned services. This chart ships no infra subcharts; every
+# connection string arrives via each component's configmap/secrets maps, which
+# are emitted VERBATIM (no fixed allowlist) so new env vars never need a chart
+# change.
+#
+# RedPanda topics: spb and spi expect their topics to exist (the compose
+# redpanda-topics one-shot is a dev-only convenience). Topic provisioning is an
+# environment concern, not this chart's.
+nameOverride: "br-sfn"
+fullnameOverride: ""
+namespaceOverride: ""
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# -- Default pull secret for every component and migration Job (single GHCR
+# credential). Override per component via <component>.imagePullSecrets.
+imagePullSecrets:
+  - name: ghcr-credential
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# -- Pod-level security context (all components)
+podSecurityContext: {}
+
+# -- Container security context (alpine/debian nonroot images — UID/GID 65532;
+# the cockpit overrides runAsUser/runAsGroup via cockpit.securityContext because
+# nginx-unprivileged runs as uid 101).
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Image used by wait-for-dependency initContainers.
+waitImage: busybox:1.36
+
+# -- golang-migrate image for components whose migrations run from their baked
+# /migrations tree (spb, scr, desk). spi and siloc ship dedicated migrator
+# images instead (see their migrations blocks).
+migrateImage: migrate/migrate:v4.18.1
+
+# =============================================================================
+# spb — SPB/STR rail (TED). CGO + IBM MQ runtime (debian-based image).
+# =============================================================================
+spb:
+  enabled: false
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-spb
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches the Dockerfile EXPOSE 3000.
+    port: 3000
+  # -- Emitted verbatim into the component ConfigMap.
+  configmap: {}
+  # -- Emitted verbatim into the component Secret (AVP <path:...> refs on
+  # gitops tiers). Use useExistingSecret/existingSecretName to bring your own.
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe: {}
+  readinessProbe: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  # PreSync migration Job — golang-migrate over the migrations tree baked into
+  # the app image at /app/migrations (default schema_migrations table).
+  migrations:
+    enabled: true
+    # Baked flavor: copies the tree out of the app image and runs migrateImage.
+    sourcePath: /app/migrations
+    # x-migrations-table; empty = golang-migrate default (schema_migrations).
+    table: ""
+    postgres:
+      host: ""
+      port: ""
+      user: ""
+      database: ""
+      sslMode: ""
+    # Defaults to this component's Secret and POSTGRES_PASSWORD key.
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+    imagePullSecrets: []
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 600
+    resources: {}
+
+# =============================================================================
+# spi — SPI/Pix rail: FOUR runtime binaries (spi, dict, brcode, core) sharing
+# one image family, one Postgres, one Redis and RedPanda, plus a dedicated
+# migrator image (br-spi-migrations) that owns the module-ordered schema.
+# =============================================================================
+spi:
+  enabled: false
+  # Shared blocks for all four components; each component block below can
+  # override any of them.
+  configmap: {}
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  api:
+    replicaCount: 1
+    revisionHistoryLimit: 10
+    image:
+      repository: ghcr.io/lerianstudio/br-spi
+      tag: ""
+      pullPolicy: IfNotPresent
+    imagePullSecrets: []
+    podAnnotations: {}
+    deploymentUpdate:
+      type: RollingUpdate
+      maxSurge: 1
+      maxUnavailable: 0
+    service:
+      type: ClusterIP
+      port: 9800
+    configmap: {}
+    secrets: {}
+    extraEnvVars: []
+    extraVolumes: []
+    extraVolumeMounts: []
+    livenessProbe: {}
+    readinessProbe: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+    pdb:
+      enabled: false
+      minAvailable: 1
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts: []
+      tls: []
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+  dict:
+    replicaCount: 1
+    revisionHistoryLimit: 10
+    image:
+      repository: ghcr.io/lerianstudio/br-spi-dict
+      tag: ""
+      pullPolicy: IfNotPresent
+    imagePullSecrets: []
+    podAnnotations: {}
+    deploymentUpdate:
+      type: RollingUpdate
+      maxSurge: 1
+      maxUnavailable: 0
+    service:
+      type: ClusterIP
+      port: 9801
+    configmap: {}
+    secrets: {}
+    extraEnvVars: []
+    extraVolumes: []
+    extraVolumeMounts: []
+    livenessProbe: {}
+    readinessProbe: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+    pdb:
+      enabled: false
+      minAvailable: 1
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts: []
+      tls: []
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+  brcode:
+    replicaCount: 1
+    revisionHistoryLimit: 10
+    image:
+      repository: ghcr.io/lerianstudio/br-spi-brcode
+      tag: ""
+      pullPolicy: IfNotPresent
+    imagePullSecrets: []
+    podAnnotations: {}
+    deploymentUpdate:
+      type: RollingUpdate
+      maxSurge: 1
+      maxUnavailable: 0
+    service:
+      type: ClusterIP
+      port: 9802
+    configmap: {}
+    secrets: {}
+    extraEnvVars: []
+    extraVolumes: []
+    extraVolumeMounts: []
+    livenessProbe: {}
+    readinessProbe: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+    pdb:
+      enabled: false
+      minAvailable: 1
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts: []
+      tls: []
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+  core:
+    replicaCount: 1
+    revisionHistoryLimit: 10
+    image:
+      repository: ghcr.io/lerianstudio/br-spi-core
+      tag: ""
+      pullPolicy: IfNotPresent
+    imagePullSecrets: []
+    podAnnotations: {}
+    deploymentUpdate:
+      type: RollingUpdate
+      maxSurge: 1
+      maxUnavailable: 0
+    service:
+      type: ClusterIP
+      port: 9803
+    configmap: {}
+    secrets: {}
+    extraEnvVars: []
+    extraVolumes: []
+    extraVolumeMounts: []
+    livenessProbe: {}
+    readinessProbe: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+    pdb:
+      enabled: false
+      minAvailable: 1
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts: []
+      tls: []
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+  # PreSync migration Job — the DEDICATED br-spi-migrations image. Its
+  # entrypoint applies the module-ordered tree (global → events → spi → dict →
+  # brcode → core) with per-module bookkeeping tables the /readyz schema probe
+  # reads; never swap it for a plain golang-migrate run.
+  migrations:
+    enabled: true
+    image:
+      repository: ghcr.io/lerianstudio/br-spi-migrations
+      tag: ""
+      pullPolicy: IfNotPresent
+    postgres:
+      host: ""
+      port: ""
+      user: ""
+      database: ""
+      sslMode: ""
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+    imagePullSecrets: []
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 600
+    resources: {}
+
+# =============================================================================
+# siloc — SILOC rail (card settlement files). CGO + IBM MQ runtime, with a
+# dedicated migrator image (br-siloc-migrations).
+# =============================================================================
+siloc:
+  enabled: false
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-siloc
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches the Dockerfile EXPOSE 9820.
+    port: 9820
+  configmap: {}
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe: {}
+  readinessProbe: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  # PreSync migration Job — dedicated br-siloc-migrations image (module-ordered
+  # entrypoint, same shape as spi's).
+  migrations:
+    enabled: true
+    image:
+      repository: ghcr.io/lerianstudio/br-siloc-migrations
+      tag: ""
+      pullPolicy: IfNotPresent
+    postgres:
+      host: ""
+      port: ""
+      user: ""
+      database: ""
+      sslMode: ""
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+    imagePullSecrets: []
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 600
+    resources: {}
+
+# =============================================================================
+# scr — SCR rail (credit information / wsscr2n). CGO-free alpine runtime;
+# migrations baked at /migrations with the schema_migrations_scr table.
+# =============================================================================
+scr:
+  enabled: false
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-scr
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches the Dockerfile EXPOSE 3003 (config defaultServerPort).
+    port: 3003
+  configmap: {}
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe: {}
+  readinessProbe: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  migrations:
+    enabled: true
+    sourcePath: /migrations
+    # The SCR /readyz schema probe reads exactly this bookkeeping table.
+    table: schema_migrations_scr
+    postgres:
+      host: ""
+      port: ""
+      user: ""
+      database: ""
+      sslMode: ""
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+    imagePullSecrets: []
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 600
+    resources: {}
+
+# =============================================================================
+# desk — cockpit operator-state + four-eyes service. CGO-free alpine runtime;
+# migrations baked at /migrations (default schema_migrations table — the desk
+# schema-readiness probe reads that exact name).
+# =============================================================================
+desk:
+  enabled: false
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-desk
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches the Dockerfile EXPOSE 3002 (config defaultServerPort).
+    port: 3002
+  configmap: {}
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe: {}
+  readinessProbe: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  migrations:
+    enabled: true
+    sourcePath: /migrations
+    table: ""
+    postgres:
+      host: ""
+      port: ""
+      user: ""
+      database: ""
+      sslMode: ""
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+    imagePullSecrets: []
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 600
+    resources: {}
+
+# =============================================================================
+# correios — BC Correio regulatory mailbox (BCB SOAP polling, attachment
+# storage, search, audit trail and transmission). Postgres + Valkey/Redis cache
+# + RabbitMQ + S3-compatible object storage, all external.
+#
+# The image name stays `plugin-bc-correios`: it predates the monorepo move and
+# renaming it would have to land in three repos at once. The rail's values key,
+# resources and env contract are br-sfn's.
+#
+# Migrations are baked at /migrations and applied out-of-process — the app
+# binary never drives them (see deploy/docker/correios.Dockerfile). The rail
+# reads POSTGRES_NAME (not POSTGRES_DB), which is why its Job passes
+# dbCfgKey=POSTGRES_NAME.
+# =============================================================================
+correios:
+  enabled: false
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/plugin-bc-correios
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches the Dockerfile EXPOSE 8080 (config.ServerPort default).
+    port: 8080
+  configmap: {}
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe: {}
+  readinessProbe: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  migrations:
+    enabled: true
+    sourcePath: /migrations
+    table: ""
+    postgres:
+      host: ""
+      port: ""
+      user: ""
+      # Falls back to configmap.POSTGRES_NAME, the key this rail reads.
+      database: ""
+      sslMode: ""
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+    imagePullSecrets: []
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 600
+    resources: {}
+
+# =============================================================================
+# slcEdge — Cabine SLC authenticated passthrough edge (br-slc-edge). Stateless:
+# no datastore, no migrations. Renders as "slc-edge" resources.
+# =============================================================================
+slcEdge:
+  enabled: false
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-slc-edge
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches the Dockerfile EXPOSE 3005 (config defaultServerPort).
+    port: 3005
+  configmap: {}
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe: {}
+  readinessProbe: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+
+# =============================================================================
+# cockpit — the br-sfn operations SPA (nginx-unprivileged serving the Vite
+# bundle). VITE_* URLs are BAKED at image build time; the published baseline
+# image carries honest-degrade defaults, so environments that need real URLs
+# build/pin an environment-specific image. No configmap/secrets by default.
+# =============================================================================
+cockpit:
+  enabled: false
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sfn-cockpit
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches nginx-unprivileged EXPOSE 8080.
+    port: 8080
+  configmap: {}
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  extraEnvVars: []
+  # nginx-unprivileged needs a writable /tmp (pid file + proxy/cache dirs)
+  # under readOnlyRootFilesystem.
+  extraVolumes:
+    - name: tmp
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: tmp
+      mountPath: /tmp
+  # The SPA has no /health endpoints; nginx serves / for both probes.
+  livenessProbe:
+    path: /
+  readinessProbe:
+    path: /
+  # nginx-unprivileged runs as uid 101.
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 101
+    runAsGroup: 101
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []

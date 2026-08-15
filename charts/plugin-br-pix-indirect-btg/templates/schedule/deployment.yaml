@@ -8,7 +8,9 @@ spec:
   revisionHistoryLimit: {{ .Values.schedule.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.schedule.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.schedule.autoscaling.enabled }}
   replicas: {{ .Values.schedule.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "schedule.selectorLabels" (dict "context" . "name" .Values.schedule.name) | nindent 6 }}

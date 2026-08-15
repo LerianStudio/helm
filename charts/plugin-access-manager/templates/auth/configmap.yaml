@@ -1,3 +1,8 @@
+{{- $idCidrs := .Values.identity.configmap.PLATFORM_INTERNAL_CIDRS | default "" -}}
+{{- $authCidrs := .Values.auth.configmap.PLATFORM_INTERNAL_CIDRS | default "" -}}
+{{- if ne $idCidrs $authCidrs -}}
+{{- fail "PLATFORM_INTERNAL_CIDRS must be identical on identity.configmap and auth.configmap: a skew leaks the platform ranges into the enforcement entry set, which on proxy-fronted environments allows everyone" -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -116,6 +121,28 @@ data:
   MFA_REMEMBER_TTL_SEC: {{ .Values.auth.configmap.MFA_REMEMBER_TTL_SEC | default "2592000" | quote }}
   MFA_MAX_ATTEMPTS: {{ .Values.auth.configmap.MFA_MAX_ATTEMPTS | default "5" | quote }}
   MFA_MAX_RESEND_ATTEMPTS: {{ .Values.auth.configmap.MFA_MAX_RESEND_ATTEMPTS | default "3" | quote }}
+
+  # RUNTIME
+  DEPLOYMENT_MODE: {{ .Values.auth.configmap.DEPLOYMENT_MODE | default "local" | quote }}
+  TRUSTED_PROXIES: {{ .Values.auth.configmap.TRUSTED_PROXIES | default "" | quote }}
+  PLATFORM_INTERNAL_CIDRS: {{ .Values.auth.configmap.PLATFORM_INTERNAL_CIDRS | default "" | quote }}
+  SWAGGER_ENABLED: {{ .Values.auth.configmap.SWAGGER_ENABLED | default "true" | quote }}
+
+  # CACHE (0 = use built-in default from constant)
+  CACHE_TTL_ACCESS_TOKEN: {{ .Values.auth.configmap.CACHE_TTL_ACCESS_TOKEN | default "0" | quote }}
+  CACHE_TTL_ENFORCE_FALLBACK: {{ .Values.auth.configmap.CACHE_TTL_ENFORCE_FALLBACK | default "0" | quote }}
+  CACHE_TTL_USER_INFO: {{ .Values.auth.configmap.CACHE_TTL_USER_INFO | default "0" | quote }}
+  CACHE_TTL_USER_PERMISSIONS: {{ .Values.auth.configmap.CACHE_TTL_USER_PERMISSIONS | default "0" | quote }}
+  CACHE_TTL_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_TTL_ORG_PERMISSIONS | default "0" | quote }}
+  CACHE_MAX_ENTRIES_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_MAX_ENTRIES_ORG_PERMISSIONS | default "0" | quote }}
+  CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS | default "0" | quote }}
+
+  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false)
+  SD_ENABLED: {{ .Values.auth.configmap.SD_ENABLED | default "false" | quote }}
+  SD_ADDRESS: {{ .Values.auth.configmap.SD_ADDRESS | default "localhost:8500" | quote }}
+  SD_EXTERNAL_ADDRESS: {{ .Values.auth.configmap.SD_EXTERNAL_ADDRESS | default "" | quote }}
+  SD_EXTERNAL_PORT: {{ .Values.auth.configmap.SD_EXTERNAL_PORT | default "0" | quote }}
+  SD_TLS: {{ .Values.auth.configmap.SD_TLS | default "false" | quote }}
 
   # Extra Env Vars
   {{- with .Values.auth.extraEnvVars }}

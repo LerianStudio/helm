@@ -35,6 +35,40 @@ global:
       roles:
         - role: "readWrite"
           db: "plugin-br-pix-indirect-btg-db"
+
+# -- Outbound (client) mTLS to the BTG API, shared by the components that call
+# BTG directly (pix and reconciliation). Independent of the inbound webhook
+# `MTLS_ENABLED` toggle. The Secret (created by the chart from `tls.crt`/`tls.key`
+# below, OR pre-existing) is mounted read-only at 0440; the
+# pod's `fsGroup` makes the key group-readable so the non-root app can load it
+# (lib-commons v6's certificate loader, >=6.1.1, accepts group-read — like
+# cert-manager/Istio). No init container, no PersistentVolume. NOTE: the app
+# snapshots the cert at startup (no hot-reload wired), so rotating the Secret
+# requires a pod restart.
+mtls:
+  # -- Enable outbound client mTLS (sets BTG_OUTBOUND_MTLS_ENABLED=true and mounts the cert)
+  enabled: false
+  # -- Secret name. OPTIONAL — defaults to `<fullname>-mtls`. If `tls.crt` below is set, the chart CREATES this
+  #    Secret; otherwise it must already exist. Override only to consume an external Secret with another name.
+  secretName: ""
+  # -- Client certificate PEM. Set it to have the chart create the Secret — a literal PEM for tests, or a
+  #    placeholder your GitOps tool resolves (e.g. AVP `<path:secret/...#tls.crt>`). Leave EMPTY to consume an
+  #    externally-managed Secret named `secretName` (cert-manager, External Secrets, Vault CSI, manual, ...).
+  tls.crt: ""
+  # -- Private key PEM. Required when `tls.crt` is set.
+  tls.key: ""
+  # -- OPTIONAL CA verifying BTG's SERVER cert. When set, CLIENT_TLS_CA_FILE is emitted. Empty = system roots.
+  ca.crt: ""
+  # -- Mount path for the cert volume. Do NOT use /etc/ssl/certs (shadows the OS trust store).
+  mountPath: "/etc/btg/mtls"
+  # -- Key in the Secret (and file name) for the client certificate -> CLIENT_TLS_CERT_FILE
+  certFileName: "tls.crt"
+  # -- Key in the Secret (and file name) for the private key -> CLIENT_TLS_KEY_FILE
+  keyFileName: "tls.key"
+  # -- OPTIONAL key/file for the CA that verifies BTG's SERVER cert -> CLIENT_TLS_CA_FILE. Empty = omit.
+  caFileName: ""
+  # -- fsGroup applied to the pod so the non-root app can group-read the key. Match runAsGroup (1000).
+  fsGroup: 1000
 pix:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe:
@@ -239,7 +273,7 @@ inbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.8.0"
+    tag: "1.9.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -381,7 +415,7 @@ outbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.8.0"
+    tag: "1.9.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -539,7 +573,7 @@ reconciliation:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.8.0"
+    tag: "1.9.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -692,7 +726,7 @@ schedule:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.8.0"
+    tag: "1.9.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

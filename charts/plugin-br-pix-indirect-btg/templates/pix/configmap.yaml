@@ -163,6 +163,11 @@ data:
   RATE_LIMIT_ENABLED: {{ .Values.pix.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.pix.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
+  {{- if .Values.mtls.enabled }}
+  # Outbound BTG client mTLS (cert material mounted from .Values.mtls.secretName volume)
+  {{- include "plugin-br-pix-indirect-btg.mtlsConfig" . | nindent 2 }}
+  {{- end }}
+
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

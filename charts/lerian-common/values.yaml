@@ -8,19 +8,24 @@
 # `global.*`, the per-app enable knob stays in the component `extraEnvVars`
 # (`SD_ENABLED` / `STREAMING_ENABLED`) or `configmap` (`MULTI_TENANT_ENABLED`),
 # and a component's own value overrides the global default. Every helper is
-# backward-compatible: with the `global.*` block absent it stays inert and the
-# component's existing values drive the output unchanged.
+# backward-compatible: while disabled the helper stays inert and the component's
+# existing values drive the output unchanged. `serviceDiscovery.env` activates on the
+# app's `SD_ENABLED` knob and, when enabled, emits the full SD_* contract with
+# `SD_ADDRESS` defaulting to `localhost:8500`; `global.serviceDiscovery.address` or a
+# legacy `configmap.SD_ADDRESS` override it (a component `configmap.SD_*` value takes
+# precedence over the `global.*` default). The caller supplies only `SD_ENABLED`; the
+# helper owns the derived SD_* siblings — keep those out of extraEnvVars.
 
 global: {}
   # -- Service Discovery (lib-service-discovery). Set once per environment.
   # serviceDiscovery:
-  #   address: ""            # REQUIRED when SD_ENABLED=true (e.g. consul.<env>:443). No default.
+  #   address: ""            # SD_ADDRESS when SD_ENABLED=true (e.g. consul.<env>:443); legacy configmap.SD_ADDRESS wins. Defaults to localhost:8500 when neither is set.
   #   tls: false             # SD_TLS
   #   tlsSkipVerify: false   # SD_TLS_SKIP_VERIFY
   #   workload: ""           # SD_WORKLOAD — per-env isolation key (provider+consumer must match)
   #   preferView: external   # SD_PREFER_VIEW — internal|external (lib default: external)
   #   internalScheme: http   # SD_INTERNAL_SCHEME
-  #   externalPort: 443      # SD_EXTERNAL_PORT (emitted only when a component has an ingress host)
+  #   externalPort: 443      # SD_EXTERNAL_PORT (emitted when a component has an ingress host OR sets legacy configmap.SD_EXTERNAL_*)
   #
   # -- Streaming (lib-streaming / RedPanda). Set once per environment.
   # streaming:

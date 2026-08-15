@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.7.0-beta.4` | 3.8.0 | 3.8.0 |
+| `8.8.0` | 3.8.1 | 3.8.1 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `8.4.0-beta.5` | 2.6.7 | 2.4.5 |
+| `8.6.0` | 3.1.0 | 3.1.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.2.0-beta.3` | 2.3.0 | 2.3.0 |
+| `3.2.0` | 2.3.0 | 2.3.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -77,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `1.4.0-beta.1` | 1.0.0 |
+| `1.5.0` | 1.0.0 |
 -----------------
 
 
@@ -116,7 +116,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `3.6.0-beta.3` | 1.9.1 | 1.8.0 | 1.8.0 | 1.8.0 | 1.8.0 |
+| `3.8.0` | 1.9.1 | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 |
 
 -----------------
 
@@ -128,7 +128,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0-beta.5` | 1.0.0-beta.9 |
+| `1.1.0` | 1.0.0-beta.9 |
 -----------------
 
 ### Fetcher
@@ -155,6 +155,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Lender Version |
 | :---: | :---: |
 | `1.0.0-beta.3` | 1.0.0-beta.48 |
+-----------------
+
+### Lender
+
+For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lender).
+
+#### Application Version Mapping
+
+| Chart Version | Lender Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | 1.0.0-beta.48 |
 -----------------
 
 ### Tracer
@@ -191,7 +204,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `3.3.0-beta.2` | 1.10.0 |
+| `3.3.0` | 1.10.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -213,7 +226,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.2.0-beta.2` | 1.0.0 |
+| `2.2.0` | 1.0.0 |
 -----------------
 
 ### Notifications
@@ -247,4 +260,41 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | App Version |
 | :---: | :---: |
 | `1.0.0-beta.6` | 1.0.0 |
+-----------------
+
+### BR SFN
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sfn).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.1.0` | `1.0.0-beta.1` |
+-----------------
+
+### BR Consignado GW
+
+API gateway and same-origin operator console for the Dataprev consignado rail.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-consignado-gw).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.1.0` | `1.3.0-beta.36` |
+-----------------
+
+### Lerian Common (Library)
+
+Library chart consumed by other Lerian charts — renders nothing on its own.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-common).
+
+#### Application Version Mapping
+
+| Chart Version |
+| :---: |
+| `1.5.0` |
 -----------------

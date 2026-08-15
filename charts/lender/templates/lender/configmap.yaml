@@ -1,4 +1,8 @@
 {{- if .Values.lender.enabled }}
+{{- /* Fails the render when the hardened security posture is declared without the
+       keys the lender application demands at boot. Mirror of
+       internal/bootstrap/config_validation.go — see the helper for the full note. */}}
+{{- include "lender.validateHardenedSecurity" . }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

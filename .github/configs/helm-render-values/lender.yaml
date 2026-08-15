@@ -2,6 +2,16 @@
 # Enables BOTH components so the render gate exercises the console path, and
 # supplies the required-when-enabled values. No real credentials.
 lender:
+  configmap:
+    # The chart defaults to the hardened posture (DEPLOYMENT_MODE/ENV_NAME
+    # production, TLS_TERMINATED_UPSTREAM true), which the render gate in
+    # templates/_helpers.tpl refuses to render without these acknowledgements —
+    # mirroring the application's own boot validation. Supplied here so the CI
+    # render exercises the hardened path, which is the one operators install.
+    AUTH_M2M_INVERSION_ENABLED: "true"
+    TRUST_PROXY_ENABLED: "true"
+    TRUSTED_PROXIES: "10.0.0.0/8"
+
   secrets:
     # lender.secrets.POSTGRES_PASSWORD is `required` when useExistingSecret=false.
     POSTGRES_PASSWORD: "ci-dummy-not-a-real-secret"

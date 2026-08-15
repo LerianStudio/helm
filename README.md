@@ -103,7 +103,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.1.0-beta.7` | 1.0.0-beta.1 |
+| `2.1.0-beta.8` | 1.0.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG

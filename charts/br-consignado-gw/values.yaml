@@ -65,6 +65,12 @@ api:
   useExistingSecret: false
   existingSecretName: ""
   extraEnvVars: []
+  # Extra pod volumes / container mounts for file-shaped credentials the API
+  # reads from disk (Kafka SASL_SSL CA + SCRAM files via STREAMING_KAFKA_*_FILE,
+  # ICP-Brasil A1 client certificate via DATAPREV_CERT_FILE/DATAPREV_KEY_FILE).
+  # The operator supplies the Secret (e.g. an AVP-rendered raw resource).
+  extraVolumes: []
+  extraVolumeMounts: []
 
 # The Vite SPA is intentionally separate from the API but shares its ingress
 # host. Runtime API_BASE_URL must remain empty (same origin): the console

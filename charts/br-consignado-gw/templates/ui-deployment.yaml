@@ -64,8 +64,16 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            # The nginx-unprivileged entrypoint renders /etc/nginx/templates/*
+            # into conf.d at boot (envsubst); with readOnlyRootFilesystem the
+            # write fails and the container crash-loops, so conf.d is a
+            # writable emptyDir.
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
       volumes:
         - name: tmp
+          emptyDir: {}
+        - name: nginx-conf
           emptyDir: {}
       {{- with .Values.ui.nodeSelector }}
       nodeSelector:

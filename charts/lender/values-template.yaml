@@ -56,7 +56,21 @@ lender:
     targetMemoryUtilizationPercentage: 80
 
   configmap:
-    ENV_NAME: ""
+    # ENV_NAME must be one of development, local, test, staging, production, and
+    # DEPLOYMENT_MODE one of local, test, staging, production, saas, byoc. The whole
+    # ConfigMap is injected with envFrom, so a blank value here is a SET-but-empty
+    # environment variable and the application refuses to boot on it.
+    ENV_NAME: "production"
+    DEPLOYMENT_MODE: "production"
+    # Hardened posture (armed by DEPLOYMENT_MODE saas/production/byoc, or ENV_NAME
+    # production) requires the M2M inversion acknowledgement below. Flip it to "true"
+    # consciously — `helm install` refuses to render until you do.
+    AUTH_M2M_INVERSION_ENABLED: "false"
+    # With TLS terminated upstream, hardened deployments also require a trusted proxy
+    # list: set TRUSTED_PROXIES to your ingress/load-balancer IPs or CIDRs.
+    TLS_TERMINATED_UPSTREAM: "true"
+    TRUST_PROXY_ENABLED: "false"
+    TRUSTED_PROXIES: ""
     SERVER_ADDRESS: ":4017"
     LOG_LEVEL: "info"
     POSTGRES_HOST: ""

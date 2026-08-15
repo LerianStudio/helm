@@ -177,7 +177,14 @@ lender:
     # Application Settings
     ENV_NAME: "production"
     LOG_LEVEL: "info"
+    # Hardened posture: BYOC customers run production posture by design. The gate arms
+    # when DEPLOYMENT_MODE is one of saas, production, byoc, or ENV_NAME is production.
     DEPLOYMENT_MODE: "production"
+    # Acknowledgement that the lender issues its own machine-to-machine credentials
+    # instead of forwarding the caller's token. Deliberately NOT defaulted to "true":
+    # the operator must declare it consciously. A hardened deployment refuses to boot
+    # without it, and `helm install` refuses to render (templates/_helpers.tpl).
+    AUTH_M2M_INVERSION_ENABLED: "false"
     SERVER_ADDRESS: ":4017"
     HTTP_BODY_LIMIT_BYTES: "104857600"
 
@@ -197,6 +204,14 @@ lender:
 
     # TLS
     TLS_TERMINATED_UPSTREAM: "true"
+    # Required when the hardened gate is armed AND TLS_TERMINATED_UPSTREAM=true: with TLS
+    # terminated upstream the client IP and scheme arrive only through proxy headers, so
+    # they are only trustworthy behind a declared proxy list. Set TRUSTED_PROXIES to the
+    # ingress/load-balancer IPs or CIDRs (comma-separated, e.g. "10.0.0.0/8"); 0.0.0.0/0
+    # is rejected by the application. Enabling TRUST_PROXY_ENABLED with an empty
+    # TRUSTED_PROXIES fails the render and fails app boot.
+    TRUST_PROXY_ENABLED: "false"
+    TRUSTED_PROXIES: ""
 
     # Tenancy
     DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"

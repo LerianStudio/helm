@@ -18,7 +18,7 @@ data:
   # AUTHORIZER
   AUTHORIZER_PORT: {{ .Values.identity.configmap.AUTHORIZER_PORT | default "8000" | quote }}
   AUTHORIZER_ADDRESS: {{ .Values.identity.configmap.AUTHORIZER_ADDRESS | default "http://plugin-access-manager-auth-backend:8000" | quote }}
-  AUTHORIZER_CLIENT_ID: {{ .Values.identity.configmap.AUTHORIZER_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
+  AUTHORIZER_CLIENT_ID: {{ .Values.identity.configmap.AUTHORIZER_CLIENT_ID | default .Values.common.authorizer.clientId | quote }}
   AUTHORIZER_ORGANIZATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_ORGANIZATION_NAME | default "lerian" | quote }}
   AUTHORIZER_APPLICATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_APPLICATION_NAME | default "app-lerian" | quote }}
 

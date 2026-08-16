@@ -64,7 +64,7 @@ data:
   RUNNING_IN_DOCKER: {{ .Values.auth.configmap.RUNNING_IN_DOCKER | default "true" | quote }}
   AUTHORIZER_PORT: {{ .Values.auth.configmap.AUTHORIZER_PORT | default "8000" | quote }}
   AUTHORIZER_ADDRESS: {{ .Values.auth.configmap.AUTHORIZER_ADDRESS | default "http://plugin-access-manager-auth-backend:8000" | quote }}
-  AUTHORIZER_CLIENT_ID: {{ .Values.auth.configmap.AUTHORIZER_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
+  AUTHORIZER_CLIENT_ID: {{ .Values.auth.configmap.AUTHORIZER_CLIENT_ID | default .Values.common.authorizer.clientId | quote }}
   AUTHORIZER_ORGANIZATION_NAME: {{ .Values.auth.configmap.AUTHORIZER_ORGANIZATION_NAME | default "lerian" | quote }}
   AUTHORIZER_APPLICATION_NAME: {{ .Values.auth.configmap.AUTHORIZER_APPLICATION_NAME | default "app-lerian" | quote }}
   AUTHORIZER_MODEL_NAME: {{ .Values.auth.configmap.AUTHORIZER_MODEL_NAME | default "api-model" | quote }}

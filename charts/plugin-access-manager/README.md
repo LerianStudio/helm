@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET` and `auth.secrets.AUTHORIZER_CLIENT_SECRET`. `auth.secrets.DB_PASSWORD` is single-sourced from the bundled `auth-database` subchart Secret (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
+- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the bundled `auth-database` subchart Secret (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/auth-backend image tags, ingress, resources, and persistence.
 - Initial admin: the Casdoor bootstrap admin (`admin@midaz.tech`) is seeded from `init_data.json` baked into the `ghcr.io/lerianstudio/casdoor` image at first boot, not from this chart. Rotate the admin password immediately after the first login; never rely on the placeholder shipped in the image.

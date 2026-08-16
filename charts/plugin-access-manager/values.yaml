@@ -384,9 +384,12 @@ auth:
     adminEmail: "admin@midaz.tech"
     # -- Admin user display name
     adminDisplayName: "Admin"
-    # -- Admin password (will be stored in a secret)
-    # -- IMPORTANT: Change this in production!
-    adminPassword: "Lerian@123"
+    # -- Admin password (will be stored in a secret). REQUIRED when initUser is
+    # -- enabled and useExistingSecret is false — the install fails loud if it is
+    # -- empty. The chart ships no default on purpose: a published default password
+    # -- on the platform admin account is a live credential in every install that
+    # -- never overrode it.
+    adminPassword: ""
     # -- Use existing secret for admin password instead of creating one
     # -- IMPORTANT: If set to true, adminPasswordSecretName MUST be specified
     useExistingSecret: false

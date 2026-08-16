@@ -1,22 +1,32 @@
 {{/*
+Component names are derived from the RELEASE name, never from the chart name.
+The bundled subcharts (auth-database, valkey) name their Services after the
+release, so a chart-name-derived component name only lines up when the release
+happens to be called `plugin-access-manager`; under any other release name the
+cross-component DNS in the ConfigMaps points at Services that never exist and
+every `wait-for-dependencies` init container blocks forever.
+`{identity,auth}.name` / `auth.backend.name` stay available as explicit overrides.
+*/}}
+
+{{/*
 Expand the name of the chart and plugin identity.
 */}}
 {{- define "plugin-identity.name" -}}
-{{- default "plugin-access-manager-identity" .Values.identity.name | trunc 63 | trimSuffix "-" }}
+{{- default (printf "%s-identity" .Release.Name) .Values.identity.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Expand the name of the chart and plugin auth.
 */}}
 {{- define "plugin-auth.name" -}}
-{{- default "plugin-access-manager-auth" .Values.auth.name | trunc 63 | trimSuffix "-" }}
+{{- default (printf "%s-auth" .Release.Name) .Values.auth.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Expand the name of the chart and plugin auth.
 */}}
 {{- define "plugin-auth-backend.name" -}}
-{{- default "plugin-access-manager-auth-backend" .Values.auth.backend.name | trunc 63 | trimSuffix "-" }}
+{{- default (printf "%s-auth-backend" .Release.Name) .Values.auth.backend.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 
@@ -47,7 +57,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-identity.fullname" -}}
-{{- default "plugin-access-manager-identity" .Values.identity.name | trunc 63 | trimSuffix "-" }}
+{{- include "plugin-identity.name" . }}
 {{- end }}
 
 {{/*
@@ -56,7 +66,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-auth.fullname" -}}
-{{- default "plugin-access-manager-auth" .Values.auth.name | trunc 63 | trimSuffix "-" }}
+{{- include "plugin-auth.name" . }}
 {{- end }}
 
 {{/*
@@ -65,7 +75,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-auth-backend.fullname" -}}
-{{- default "plugin-access-manager-auth-backend" .Values.auth.backend.name | trunc 63 | trimSuffix "-" }}
+{{- include "plugin-auth-backend.name" . }}
 {{- end }}
 
 {{/*
@@ -76,12 +86,16 @@ Create app version.
 {{- end }}
 
 {{/*
+Selector labels. The `name` key callers pass in the dict is ignored: the label
+value always resolves through the component name helper, so it follows the
+release name and stays in step with the resource names it must select.
+*/}}
+
+{{/*
 Identity Selector labels
 */}}
 {{- define "plugin-identity.selectorLabels" -}}
-{{- if .name -}}
 app.kubernetes.io/name: {{ include "plugin-identity.name" .context }}
-{{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
@@ -89,9 +103,7 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 Auth Selector labels
 */}}
 {{- define "plugin-auth.selectorLabels" -}}
-{{- if .name -}}
 app.kubernetes.io/name: {{ include "plugin-auth.name" .context }}
-{{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
@@ -99,9 +111,7 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 Auth Selector labels
 */}}
 {{- define "plugin-auth-backend.selectorLabels" -}}
-{{- if .name -}}
 app.kubernetes.io/name: {{ include "plugin-auth-backend.name" .context }}
-{{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
@@ -163,6 +173,25 @@ Allows overriding it for multi-namespace deployments in combined charts.
 */}}
 {{- define "global.namespace" -}}
 {{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+Service name of the bundled `auth-database` (aliased Bitnami postgresql) primary.
+Derived through common.names.dependency.fullname so it follows the release name
+and the Bitnami release-name collapse, and honors the subchart's own
+nameOverride/fullnameOverride. Used as the DB_HOST default.
+*/}}
+{{- define "plugin-access-manager.authDatabaseHost" -}}
+{{- include "common.names.dependency.fullname" (dict "chartName" "auth-database" "chartValues" (index .Values "auth-database") "context" .) -}}
+{{- end }}
+
+{{/*
+Service name of the bundled `valkey` primary, derived the same way. Bitnami valkey
+names the primary Service `<fullname>-primary` in both standalone and replication
+architectures. Used as the REDIS_HOST default.
+*/}}
+{{- define "plugin-access-manager.valkeyHost" -}}
+{{- printf "%s-primary" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{/*

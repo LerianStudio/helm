@@ -25,7 +25,10 @@ identity:
   # Declare variables to be passed into your templates.
   replicaCount: 1
   revisionHistoryLimit: 10
-  name: "plugin-access-manager-identity"
+  # -- Component name. Empty derives it from the release name (<release>-identity),
+  # which is what the cross-component DNS defaults resolve to. Set it only to pin a
+  # legacy name, and remember every other component reference must then be pinned too.
+  name: ""
   description: "Identity plugin for Midaz"
   image:
     # -- Repository for the container image
@@ -142,7 +145,8 @@ identity:
     ENV_NAME: "development"
     AUTH_ENABLED: "true"
     AUTH_PORT: "4000"
-    AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
+    # AUTH_ADDRESS defaults to http://<auth component>:4000 (templates/identity/configmap.yaml).
+    # Set it only to point identity at an auth outside this release.
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -173,7 +177,8 @@ auth:
   # Declare variables to be passed into your templates.
   replicaCount: 3
   revisionHistoryLimit: 10
-  name: "plugin-access-manager-auth"
+  # -- Component name. Empty derives it from the release name (<release>-auth).
+  name: ""
   image:
     # -- Repository for the console service container image
     repository: ghcr.io/lerianstudio/plugin-auth
@@ -285,14 +290,16 @@ auth:
     ALLOW_INSECURE_TLS: "true"
     # -- Default Environment variables for the postgres
     DB_USER: "auth"
-    DB_HOST: "plugin-access-manager-auth-database"
+    # DB_HOST defaults to the bundled auth-database Service (templates/auth/configmap.yaml).
+    # Set it only for an external database.
     DB_PORT: 5432
     DB_NAME: "casdoor"
     DB_SSLMODE: "disable"
     # -- Default Environment
     ENV_NAME: "development"
     # -- Default Redis Settings
-    REDIS_HOST: "plugin-access-manager-valkey-primary"
+    # REDIS_HOST defaults to the bundled valkey primary Service (templates/auth/configmap.yaml).
+    # Set it only for an external Redis/Valkey.
     REDIS_PORT: 6379
     REDIS_USER: "auth"
   # -- Extra environment variables
@@ -322,7 +329,8 @@ auth:
     livenessProbe: {}
     replicaCount: 1
     revisionHistoryLimit: 10
-    name: "plugin-access-manager-auth-backend"
+    # -- Component name. Empty derives it from the release name (<release>-auth-backend).
+    name: ""
     # -- Whether to create database on startup (requires CREATEDB permission)
     createDatabase: true
     image:

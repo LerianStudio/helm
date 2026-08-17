@@ -373,6 +373,19 @@ opentelemetry-collector:
             buckets: [10ms, 50ms, 100ms, 200ms, 500ms, 1s, 5s, 10s]
         namespace: ""
         aggregation_temporality: CUMULATIVE
+        # Resource attributes that define one cumulative accumulator. Left empty,
+        # the connector hashes EVERY resource attribute, and k8sattributes adds
+        # `k8s.pod.name` upstream of here — so each pod would get its own
+        # accumulator and every rollout would reset the counters, independently
+        # of which attributes appear as dimensions below. Pinning the key to
+        # stable workload identity keeps one accumulator per workload across pod
+        # replacement. Keep `client.id` in the key: it is the multi-tenancy
+        # boundary and must never be collapsed across tenants.
+        resource_metrics_key_attributes:
+          - service.name
+          - client.id
+          - k8s.namespace.name
+          - k8s.deployment.name
         dimensions:
           # Only attributes that are stable for the lifetime of a workload
           # belong here. A dimension whose value changes over time mints a new

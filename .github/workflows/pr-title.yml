@@ -45,6 +45,7 @@ jobs:
             templates
             dependencies
             otel-collector
+            alloy-lerian
             plugins
             pipe
             doc
@@ -55,6 +56,7 @@ jobs:
             br-sta
             br-ccs
             br-slc
+            br-sfn
             new
             charts
             common

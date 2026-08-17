@@ -1,0 +1,4 @@
+{{- if $.Values.correios.enabled -}}
+{{/* dbCfgKey: the correios config reads POSTGRES_NAME, not POSTGRES_DB. */}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "correios" "comp" $.Values.correios "flavor" "baked" "dbCfgKey" "POSTGRES_NAME") }}
+{{- end -}}

@@ -3,6 +3,217 @@
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
 
 - **Features**
+  - Introduced schema migration Jobs for improved data handling.
+  - Added providersIngress for outbound-provider adapters.
+  - Implemented shared multi-path ingresses for better routing.
+  - Added bootstrap Jobs for Postgres and MongoDB to streamline setup.
+  - Refactored chart to support multi-component deployment.
+
+- **Fixes**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Adjusted probe paths to match per-component routePrefix.
+  - Ensured Secret overrides ConfigMap by swapping `envFrom` order.
+  - Fixed liveness probe path from `/live` to `/health`.
+  - Resolved namespace handling issues and global image tag override.
+
+- **Improvements**
+  - Used `amqps://` for dict-hub-vsync RabbitMQ connection for enhanced security.
+  - Standardized charts to align with Lerian chart contract.
+  - Documented subchart credentials and external-secret pattern for clarity.
+  - Auto-wired URLs to in-cluster subcharts for seamless integration.
+  - Defaulted `DEPLOYMENT_MODE` to `byoc` for consistent deployment behavior.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features:**
+  - Introduced schema migration Jobs.
+  - Added providersIngress for outbound-provider adapters.
+  - Implemented shared multi-path ingresses.
+  - Added bootstrap Jobs for PostgreSQL and MongoDB.
+  - Refactored chart to multi-component structure.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Adjusted probe paths to follow per-component routePrefix.
+  - Ensured Secret overrides ConfigMap by swapping `envFrom` order.
+  - Fixed namespace handling and global image tag override issues.
+  - Addressed bootstrap Job issues identified during live install tests.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features**
+  - Introduced schema migration Jobs.
+  - Added support for shared multi-path ingresses.
+  - Implemented auto-derivation of OTEL service version and node-IP OTLP endpoint.
+  - Added MongoDB and RabbitMQ subchart dependencies.
+  - Introduced bootstrap Jobs for PostgreSQL and MongoDB.
+
+- **Fixes**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Addressed probe paths to follow per-component `routePrefix`.
+  - Ensured `envFrom` order so Secret overrides ConfigMap.
+  - Fixed liveness probe path from `/live` to `/health`.
+  - Resolved namespace handling and global image tag override issues.
+
+- **Improvements**
+  - Standardized probe field set across all charts.
+  - Updated readiness probe paths to `/readyz`.
+  - Removed dead global.image block.
+  - Aligned documentation with chart standard revamp.
+  - Enhanced documentation for subchart credentials and external-secret pattern.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features:**
+  - Introduced schema migration Jobs for improved data handling.
+  - Added support for providersIngress to manage outbound-provider adapters.
+  - Implemented shared multi-path ingresses for better routing.
+  - Introduced per-component image repository defaults for streamlined deployments.
+  - Added auto-wiring of URLs to in-cluster subcharts for enhanced connectivity.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Adjusted probe paths to align with per-component routePrefix.
+  - Resolved issue with envFrom order to ensure Secret overrides ConfigMap.
+  - Fixed liveness probe path from `/live` to `/health` for accurate health checks.
+  - Addressed bootstrap Job issues identified during live install tests.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features:**
+  - Added schema migration Jobs.
+  - Introduced providersIngress for outbound-provider adapters.
+  - Implemented shared multi-path ingresses.
+  - Auto-derive OTEL service version and node-IP OTLP endpoint.
+  - Added MongoDB and RabbitMQ subchart dependencies.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Addressed probe template fallbacks to match per-component routePrefix.
+  - Fixed swap of `envFrom` order to ensure Secret overrides ConfigMap.
+  - Resolved bootstrap Job issues identified during live install testing.
+  - Set default `PLUGIN_AUTH_URL` on components using authentication.
+
+- **Improvements:**
+  - Standardized charts to align with Lerian chart contract.
+  - Enhanced documentation to include subchart credentials and external-secret pattern.
+  - Updated liveness probe path from `/live` to `/health`.
+  - Refactored chart to support multi-component deployment.
+  - Removed obsolete global.image block.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features:**
+  - Introduced schema migration Jobs.
+  - Added providersIngress for outbound-provider adapters.
+  - Implemented shared multi-path ingresses.
+  - Auto-wired URLs to in-cluster subcharts.
+  - Added bootstrap Jobs for Postgres and MongoDB.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Adjusted probe paths to follow per-component routePrefix.
+  - Fixed namespace handling and global image tag override.
+  - Resolved bootstrap Job issues identified during live install tests.
+  - Ensured Secret overrides ConfigMap by swapping `envFrom` order.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features:**
+  - Introduced schema migration Jobs for improved data handling.
+  - Implemented providersIngress for outbound-provider adapters.
+  - Added per-component image repository defaults for enhanced configuration.
+  - Enabled auto-derivation of OTEL service version and node-IP OTLP endpoint.
+  - Integrated auto-wiring of URLs to in-cluster subcharts for seamless connectivity.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Adjusted probe paths to align with per-component routePrefix.
+  - Resolved namespace handling issues and ensured global image tag override.
+  - Fixed bootstrap Job issues identified during live install testing.
+  - Ensured Secret overrides ConfigMap by swapping `envFrom` order.
+
+- **Improvements:**
+  - Standardized probe field set across all charts for consistency.
+  - Parametrized probe path and timing using `/readyz` for all charts.
+  - Removed dead global.image block to clean up configuration.
+  - Documented subchart credentials and external-secret pattern for clarity.
+  - Aligned upgrade guide format for better user guidance.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features:**
+  - Introduced schema migration Jobs for improved database management.
+  - Enabled auto-derivation of OTEL service version and node-IP OTLP endpoint.
+  - Implemented auto-wiring of URLs to in-cluster subcharts for seamless integration.
+  - Added MongoDB and RabbitMQ as subchart dependencies.
+  - Introduced bootstrap Jobs for PostgreSQL and MongoDB setup.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Adjusted probe paths to align with per-component routePrefix.
+  - Ensured Secret overrides ConfigMap by swapping `envFrom` order.
+  - Fixed liveness probe path from `/live` to `/health`.
+  - Resolved namespace handling issues and global image tag override.
+
+- **Improvements:**
+  - Standardized charts to adhere to the Lerian chart contract.
+  - Enhanced documentation to align with chart standard revamp.
+  - Updated upgrade guide format for better clarity.
+  - Removed dead global.image block to streamline configuration.
+  - Improved ingress handling for shared multi-path setups.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features**
   - Introduced schema migration Jobs to streamline updates.
   - Added support for shared multi-path ingresses.
   - Implemented per-component image repository defaults.

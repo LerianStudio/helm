@@ -5,6 +5,11 @@ on:
     branches:
       - main
       - develop
+      # Chart line branches for legacy patches, e.g. maintenance/midaz-5.7.x.
+      # maintenance/* is the convention; hotfix/* stays accepted so lines created
+      # under the old prefix keep releasing until they are renamed.
+      - 'maintenance/*.x'
+      - 'hotfix/*.x'
     paths-ignore:
       - 'README.md'
       - '**/CHANGELOG.md'
@@ -24,7 +29,9 @@ jobs:
     name: Get Changed Paths
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
-      matrix: ${{ steps.changed-paths.outputs.matrix }}
+      matrix: ${{ steps.restrict.outputs.matrix }}
+      chart_line_chart: ${{ steps.restrict.outputs.chart_line_chart }}
+      chart_line_range: ${{ steps.restrict.outputs.chart_line_range }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -38,6 +45,59 @@ jobs:
           filter_paths: charts/
           get_app_name: true
           path_level: 2
+
+      - name: Restrict matrix on chart line branches
+        id: restrict
+        env:
+          MATRIX: ${{ steps.changed-paths.outputs.matrix }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          CHART=""
+          RANGE=""
+
+          case "${REF_NAME}" in
+            maintenance/*.x|hotfix/*.x)
+              STEM="${REF_NAME#*/}"
+              # Leading zeros are rejected: semver reads 01.02.x as an invalid range
+              CHART=$(printf '%s' "${STEM}" | sed -nE 's/^(.+)-(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.x$/\1/p')
+              RANGE=$(printf '%s' "${STEM}" | sed -nE 's/^.+-((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.x)$/\1/p')
+
+              # The trigger glob is looser than this parser, so a branch such as
+              # maintenance/foo.x or maintenance/midaz-5.x reaches here unparsed.
+              # Falling through would release every changed chart without a range.
+              if [ -z "${CHART}" ] || [ -z "${RANGE}" ]; then
+                echo "::error::'${REF_NAME}' looks like a chart line branch but does not match <chart>-<major>.<minor>.x — refusing to release"
+                exit 1
+              fi
+              ;;
+          esac
+
+          if [ -z "${CHART}" ]; then
+            {
+              echo "matrix=${MATRIX}"
+              echo "chart_line_chart="
+              echo "chart_line_range="
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "::notice::Chart line branch — restricting the release matrix to '${CHART}' in range ${RANGE}"
+
+          # A chart line branch releases only its own chart. Anything else that
+          # changed on the branch would be released with the wrong version range.
+          RESTRICTED=$(printf '%s' "${MATRIX}" | jq -c --arg chart "${CHART}" '[.[] | select(.name == $chart)]')
+
+          if [ "${RESTRICTED}" = "[]" ]; then
+            echo "::notice::No change to charts/${CHART} in this push — nothing to release"
+          fi
+
+          {
+            echo "matrix=${RESTRICTED}"
+            echo "chart_line_chart=${CHART}"
+            echo "chart_line_range=${RANGE}"
+          } >> "$GITHUB_OUTPUT"
 
   release-helm-chart:
     needs: get-changed-paths
@@ -139,6 +199,9 @@ jobs:
           go build -o update-chart-version-readme-bin ./update-chart-version-readme
 
       - name: Generate .releaserc file
+        env:
+          CHART_LINE_RANGE: ${{ needs.get-changed-paths.outputs.chart_line_range }}
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
           CHART_NAME="${{ matrix.chart.name }}"
           CHART_PATH="${{ matrix.chart.working_dir }}"
@@ -161,6 +224,18 @@ jobs:
               .plugins[3][1].prepareCmd = $prepareCmd' \
             .github/configs/.releaserc.json > .releaserc
 
+          # On a chart line branch, register it as a semantic-release maintenance
+          # branch so the next version stays inside its range (e.g. 5.7.x -> 5.7.1)
+          if [ -n "${CHART_LINE_RANGE}" ]; then
+            jq \
+              --arg name "${BRANCH_NAME}" \
+              --arg range "${CHART_LINE_RANGE}" \
+              '.branches += [{name: $name, range: $range, channel: $range}]' \
+              .releaserc > .releaserc.tmp && mv .releaserc.tmp .releaserc
+          fi
+
+          jq . .releaserc
+
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
         id: semantic_changelog
@@ -181,23 +256,28 @@ jobs:
 
 
 
-      # Library charts (type: library) are consumed by other charts and are not
-      # deployable applications, so they must not be registered in the Plugin
-      # Lifecycle Management. Detect the chart kind to gate the step below.
-      - name: Detect library chart
+      # Only deployable Lerian PRODUCTS/PLUGINS belong in the Plugin Lifecycle
+      # Management. Two chart kinds are exempt and must NOT be registered there:
+      #   1. Library charts (type: library) — consumed by other charts, not deployable.
+      #   2. Dependency wrappers (annotation lerian.studio/chart-type: dependency-wrapper,
+      #      e.g. lerian-consul) — they deploy third-party infra we curate, not a Lerian
+      #      product to register/announce as a release.
+      - name: Detect lifecycle-exempt chart
         id: chart-kind
         env:
           CHART_WORKING_DIR: ${{ matrix.chart.working_dir }}
         run: |
-          if grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "$CHART_WORKING_DIR/Chart.yaml"; then
-            echo "is_library=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::$CHART_WORKING_DIR is a library chart — skipping Plugin Lifecycle Management."
-          else
-            echo "is_library=false" >> "$GITHUB_OUTPUT"
+          # YAML-aware: read the parsed .type and .annotations["lerian.studio/chart-type"]
+          # so quoted scalars, inline comments and flow mappings are handled and the match is
+          # scoped to the real keys (a grep could match the same text in a comment/other scalar).
+          SKIP=$(python3 -c 'import yaml,sys; c=yaml.safe_load(open(sys.argv[1])) or {}; print("true" if (str(c.get("type","")).lower()=="library" or (c.get("annotations") or {}).get("lerian.studio/chart-type")=="dependency-wrapper") else "false")' "$CHART_WORKING_DIR/Chart.yaml")
+          echo "skip_lifecycle=$SKIP" >> "$GITHUB_OUTPUT"
+          if [ "$SKIP" = "true" ]; then
+            echo "::notice::$CHART_WORKING_DIR is lifecycle-exempt (library or dependency-wrapper) — skipping Plugin Lifecycle Management."
           fi
 
       - name: Publish Release in Plugin Lifecycle Management
-        if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.is_library != 'true'
+        if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.skip_lifecycle != 'true'
         uses: LerianStudio/github-actions-lifecycle-management@main
         with:
           chart_name: "${{ matrix.chart.name }}"
@@ -222,5 +302,5 @@ jobs:
       chart_path: ${{ matrix.chart.working_dir }}
     secrets:
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
-      SLACK_CHANNEL_DEVOPS: ${{ secrets.SLACK_CHANNEL_DEVOPS }}
+      SLACK_CHANNEL_OPS: ${{ secrets.SLACK_CHANNEL_OPS }}
       SLACK_GROUP_TECH_SUPPORT: ${{ secrets.SLACK_GROUP_TECH_SUPPORT }}

@@ -1,0 +1,3 @@
+{{- if $.Values.correios.enabled -}}
+{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "correios" "comp" $.Values.correios "defaultPort" 8080 "livenessPath" "/health" "readyPath" "/readyz") }}
+{{- end -}}

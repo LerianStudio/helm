@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.7.0` | 3.8.0 | 3.8.0 |
+| `8.8.0` | 3.8.1 | 3.8.1 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version |
 | :---: | :---: | :---: |
-| `8.4.0` | 3.1.0 | 3.1.0 |
+| `8.6.0` | 3.1.0 | 3.1.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -77,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `1.4.0` | 1.0.0 |
+| `1.5.0` | 1.0.0 |
 -----------------
 
 
@@ -116,7 +116,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `3.7.0` | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 |
+| `3.8.0` | 1.9.1 | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 |
 
 -----------------
 
@@ -191,7 +191,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `3.2.0` | 1.10.0 |
+| `3.3.0` | 1.10.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -246,7 +246,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | `1.0.0-beta.1` |
+| `1.1.0` | `1.0.0-beta.1` |
 -----------------
 
 ### BR Consignado GW
@@ -259,7 +259,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | `1.3.0-beta.36` |
+| `1.1.0` | `1.3.0-beta.36` |
 -----------------
 
 ### Lerian Common (Library)
@@ -272,5 +272,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `1.4.0` |
+| `1.5.0` |
 -----------------

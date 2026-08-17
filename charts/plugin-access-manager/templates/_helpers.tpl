@@ -214,3 +214,41 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+
+{{/*
+Auth Backend UI (caradhras-ui) name/fullname/chart. Values live under auth.backend.ui
+(paralelo ao auth.backend). NOTE: the caradhras release pipeline
+gitops_yaml_key_mappings must point at .auth.backend.ui.image.tag.
+*/}}
+{{- define "plugin-auth-backend-ui.name" -}}
+{{- default "plugin-access-manager-auth-backend-ui" (.Values.auth.backend.ui).name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "plugin-auth-backend-ui.fullname" -}}
+{{- default "plugin-access-manager-auth-backend-ui" (.Values.auth.backend.ui).name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "plugin-auth-backend-ui.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Auth Backend UI Selector labels
+*/}}
+{{- define "plugin-auth-backend-ui.selectorLabels" -}}
+{{- if .name -}}
+app.kubernetes.io/name: {{ include "plugin-auth-backend-ui.name" .context }}
+{{- end }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
+{{/*
+Auth Backend UI Common labels
+*/}}
+{{- define "plugin-auth-backend-ui.labels" -}}
+helm.sh/chart: {{ include "plugin-auth-backend-ui.chart" .context }}
+{{ include "plugin-auth-backend-ui.selectorLabels" (dict "context" .context "name" .name) }}
+app.kubernetes.io/version: {{ include "plugin.version" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}

@@ -1,0 +1,33 @@
+{{- $ui := .Values.auth.backend.ui }}
+{{- if and $ui.enabled $ui.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "plugin-auth-backend-ui.fullname" . }}
+  labels:
+    {{- include "plugin-auth-backend-ui.labels" (dict "context" . "name" $ui.name) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "plugin-auth-backend-ui.fullname" . }}
+  minReplicas: {{ $ui.autoscaling.minReplicas }}
+  maxReplicas: {{ $ui.autoscaling.maxReplicas }}
+  metrics:
+    {{- if $ui.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $ui.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if $ui.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $ui.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

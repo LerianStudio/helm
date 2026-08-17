@@ -1,0 +1,24 @@
+{{- $ui := .Values.auth.backend.ui }}
+{{- if and $ui.enabled $ui.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "plugin-auth-backend-ui.fullname" . }}
+  labels:
+    {{- include "plugin-auth-backend-ui.labels" (dict "context" . "name" $ui.name) | nindent 4 }}
+  {{- with $ui.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with $ui.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ $ui.pdb.minAvailable | default 0 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-auth-backend-ui.selectorLabels" (dict "context" . "name" $ui.name) | nindent 6 }}
+{{- end }}

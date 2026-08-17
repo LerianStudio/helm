@@ -1,0 +1,103 @@
+{{- $ui := .Values.auth.backend.ui }}
+{{- if $ui.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-auth-backend-ui.fullname" . }}
+  labels:
+    {{- include "plugin-auth-backend-ui.labels" (dict "context" . "name" $ui.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $ui.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml $ui.deploymentStrategy | nindent 4 }}
+  {{- if not $ui.autoscaling.enabled }}
+  replicas: {{ $ui.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-auth-backend-ui.selectorLabels" (dict "context" . "name" $ui.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-auth-backend-ui.labels" (dict "context" . "name" $ui.name) | nindent 8 }}
+    spec:
+      {{- with $ui.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml $ui.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "plugin-auth-backend-ui.fullname" . }}
+          # nginx-unprivileged: non-root uid/gid 101, listens on 8080. readOnlyRootFilesystem
+          # stays true — the writable paths it needs (rendered conf, cache, pid, temp) are
+          # emptyDir mounts below.
+          securityContext:
+            {{- toYaml $ui.securityContext | nindent 12 }}
+          image: "{{ $ui.image.repository }}:{{ $ui.image.tag }}"
+          imagePullPolicy: {{ $ui.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            # Same-origin reverse-proxy upstream. Substituted into nginx.conf.template at boot;
+            # proxy_pass uses a variable, so nginx resolves it per-request via the resolver below —
+            # hence the FQDN (nginx's resolver does not apply the pod search domain).
+            - name: CARADHRAS_BACKEND_ADDR
+              value: {{ $ui.backendAddr | default (printf "%s.%s.svc.cluster.local:8000" (include "plugin-auth-backend.fullname" .) (include "global.namespace" .)) | quote }}
+            # Cluster DNS Service for nginx's request-time upstream resolution.
+            - name: NGINX_RESOLVER_ADDR
+              value: {{ $ui.resolverAddr | quote }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+          resources:
+            {{- toYaml $ui.resources | nindent 12 }}
+          volumeMounts:
+            # The base image's entrypoint renders /etc/nginx/templates/*.template into conf.d at boot.
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: nginx-conf
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+      {{- with $ui.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $ui.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $ui.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

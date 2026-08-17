@@ -1,0 +1,18 @@
+{{- $ui := .Values.auth.backend.ui }}
+{{- if $ui.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plugin-auth-backend-ui.fullname" . }}
+  labels:
+    {{- include "plugin-auth-backend-ui.labels" (dict "context" . "name" $ui.name) | nindent 4 }}
+spec:
+  type: {{ $ui.service.type }}
+  ports:
+    - port: {{ $ui.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "plugin-auth-backend-ui.selectorLabels" (dict "context" . "name" $ui.name) | nindent 4 }}
+{{- end }}

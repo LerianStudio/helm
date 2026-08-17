@@ -357,6 +357,90 @@ auth:
         pullPolicy: Always
         # -- Image tag used for deployment
         tag: "3.1.0"
+    # -- Caradhras auth-backend UI (SPA console). A separate nginx-unprivileged image that
+    # serves the Vite build and same-origin reverse-proxies /api, /cas, /scim, /.well-known,
+    # /files and /swagger to the auth-backend. NOTE: the caradhras release pipeline's
+    # gitops_yaml_key_mappings must target `.auth.backend.ui.image.tag` (it currently maps
+    # `caradhras-ui.tag` -> the old top-level key) so the image auto-bump keeps working.
+    ui:
+      # -- Enable/disable the auth-backend UI component
+      enabled: true
+      replicaCount: 2
+      revisionHistoryLimit: 10
+      name: "plugin-access-manager-auth-backend-ui"
+      image:
+        # -- Repository for the caradhras UI (nginx SPA) image
+        repository: ghcr.io/lerianstudio/caradhras-ui
+        # -- Image pull policy
+        pullPolicy: Always
+        # -- Image tag (auto-bumped by the caradhras release pipeline)
+        tag: "latest"
+      # -- Secrets for pulling images from a private registry
+      imagePullSecrets: []
+      nameOverride: ""
+      fullnameOverride: ""
+      # -- Backend the UI reverse-proxies to (CARADHRAS_BACKEND_ADDR). Empty = derived from
+      # the auth-backend Service (<auth-backend-fullname>:<auth service port>).
+      backendAddr: ""
+      # -- nginx `resolver` for request-time upstream DNS (NGINX_RESOLVER_ADDR). In k8s this
+      # is the cluster DNS Service — kube-dns/coredns. Override if your cluster differs.
+      resolverAddr: "kube-dns.kube-system.svc.cluster.local"
+      ingress:
+        # -- Enable or disable ingress (the UI is the user-facing entrypoint)
+        enabled: false
+        className: ""
+        annotations: {}
+        hosts:
+          - host: ""
+            paths:
+              - path: /
+                pathType: Prefix
+        tls: []
+      service:
+        # -- Kubernetes service type
+        type: ClusterIP
+        # -- Service port (targets the container's 8080)
+        port: 80
+      deploymentStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 1
+          maxUnavailable: 1
+      podSecurityContext: {}
+      # nginx-unprivileged listens on 8080 and runs as non-root uid/gid 101.
+      securityContext:
+        runAsGroup: 101
+        runAsUser: 101
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        seccompProfile:
+          type: RuntimeDefault
+      pdb:
+        enabled: true
+        maxUnavailable: 1
+        minAvailable: 0
+        annotations: {}
+      resources:
+        limits:
+          cpu: 500m
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 64Mi
+      autoscaling:
+        enabled: false
+        minReplicas: 2
+        maxReplicas: 6
+        targetCPUUtilizationPercentage: 80
+        targetMemoryUtilizationPercentage: 80
+      nodeSelector: {}
+      tolerations: {}
+      affinity: {}
+
   # -- Init User Job configuration
   # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
   # -- If the admin user is deleted by the customer, it will NOT be recreated
@@ -398,6 +482,7 @@ auth:
       requests:
         cpu: 50m
         memory: 64Mi
+
 auth-database:
   # Database dependency for identity and access management.
   # For more details, refer to the documentation:

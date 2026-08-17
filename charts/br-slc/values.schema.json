@@ -182,6 +182,21 @@
       },
       "additionalProperties": true
     },
+    "networkPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ship the NetworkPolicy that restricts pod ingress to the app port. Enforcement depends on the CNI; the sidecar loopback bind is the primary defense."
+        },
+        "ingressFrom": {
+          "type": "array",
+          "description": "Optional ingress source allowlist for the app port. EMPTY = any source, the same reachability the pod has without the policy."
+        }
+      },
+      "additionalProperties": true
+    },
     "resources": {
       "type": "object",
       "properties": {

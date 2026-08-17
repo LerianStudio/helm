@@ -3,14 +3,17 @@ kind: Job
 metadata:
   name: {{ include "plugin-auth-backend.fullname" . }}-migrations
   annotations:
-    # POST hook (both install and upgrade): the Job reads the plugin-auth ConfigMap
-    # (DB_*/POSTGRES_* env via configMapKeyRef) and needs the ghcr-credential
-    # imagePullSecret, so it can only run AFTER the main release creates those — a
-    # pre hook would fail (configmap/secret not created yet). Also covers the bundled
-    # auth-database case (DB created by the main release first). ArgoCD converts this
-    # to PostSync. The backend may briefly panic on its schema check until this Job
-    # completes, then recovers.
-    helm.sh/hook: post-install,post-upgrade
+    # Migration timing is asymmetric on purpose:
+    #  - post-install: on first install the Job reads the plugin-auth ConfigMap
+    #    (DB_*/POSTGRES_* via configMapKeyRef) and needs the ghcr-credential
+    #    imagePullSecret, which the main release only creates during this install —
+    #    a pre-install hook would fail (they don't exist yet).
+    #  - pre-upgrade: on upgrade those deps already exist, and the new schema MUST
+    #    be applied BEFORE the new app rolls (post-upgrade would boot the new
+    #    backend against the old schema and break).
+    # Also valid for the bundled auth-database case (DB exists by install-time post
+    # hook / already exists on upgrade).
+    helm.sh/hook: post-install,pre-upgrade
     helm.sh/hook-weight: "-1"
     # hook-succeeded removes the completed Job so a stale (immutable) Job never
     # blocks the next sync.

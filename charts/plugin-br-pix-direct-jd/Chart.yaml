@@ -13,7 +13,7 @@ maintainers:
 # to the chart and its templates, including the app version.
 version: 1.2.9
 # This is the version number of the application being deployed.
-appVersion: "1.10.7"
+appVersion: "1.10.0"
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
   - midaz

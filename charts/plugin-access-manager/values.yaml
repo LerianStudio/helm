@@ -357,6 +357,14 @@ auth:
         pullPolicy: Always
         # -- Image tag used for deployment
         tag: "3.1.0"
+    # -- Extra ConfigMap entries for the auth backend. Every key here is surfaced
+    # as an environment variable on the backend container (via envFrom), so use
+    # it for Caradhras infra knobs the base config does not cover.
+    configmap:
+      # -- Bypass lib-commons postgres TLS enforcement for the outbox/streaming
+      # clients. Non-TLS (sslmode=disable) Postgres only, e.g. dev/st. PROD must
+      # use a real-TLS DSN and leave this "false".
+      ALLOW_INSECURE_TLS: "false"
   # -- Init User Job configuration
   # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
   # -- If the admin user is deleted by the customer, it will NOT be recreated

@@ -20,3 +20,8 @@ data:
   quota: '{"organization": -1, "user": -1, "application": -1, "provider": -1}'
   logConfig: '{"filename": "logs/casdoor.log", "maxdays": 99999, "perm": "0770"}'
   initDataFile: {{ .Values.auth.backend.initDataFile | default "./init_data.json" | quote }}
+  {{- /* Passthrough for Caradhras infra env (ALLOW_INSECURE_TLS, STREAMING_*, ...).
+         Every key here becomes an env var on the backend via envFrom. */}}
+  {{- range $key, $val := (.Values.auth.backend.configmap | default dict) }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}

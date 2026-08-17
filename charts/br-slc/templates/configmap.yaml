@@ -49,7 +49,15 @@ data:
   MAX_PAGINATION_MONTH_DATE_RANGE: {{ $cm.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
   MIGRATIONS_PATH: {{ $cm.MIGRATIONS_PATH | default "migrations" | quote }}
   MOCK_NUCLEA_URL: {{ $cm.MOCK_NUCLEA_URL | default "" | quote }}
+  # IBM MQ connection descriptor: the sidecar holds no broker address, the app
+  # sends queueManager/channel/connName/queue in every POST /v1/drain body.
+  # Blank defaults keep the app fail-closed while the transport is "stub".
+  MQ_BRIDGE_CHANNEL: {{ $cm.MQ_BRIDGE_CHANNEL | default "" | quote }}
+  MQ_BRIDGE_CONN_NAME: {{ $cm.MQ_BRIDGE_CONN_NAME | default "" | quote }}
   MQ_BRIDGE_MAX_DRAIN: {{ $cm.MQ_BRIDGE_MAX_DRAIN | default "16" | quote }}
+  MQ_BRIDGE_QUEUE: {{ $cm.MQ_BRIDGE_QUEUE | default "" | quote }}
+  MQ_BRIDGE_QUEUE_MANAGER: {{ $cm.MQ_BRIDGE_QUEUE_MANAGER | default "" | quote }}
+  MQ_BRIDGE_TENANT: {{ $cm.MQ_BRIDGE_TENANT | default "" | quote }}
   MQ_BRIDGE_TIMEOUT_SEC: {{ $cm.MQ_BRIDGE_TIMEOUT_SEC | default "10" | quote }}
   MQ_BRIDGE_URL: {{ $cm.MQ_BRIDGE_URL | default "http://localhost:9121" | quote }}
   NUCLEA_REST_ALLOW_INSECURE_TLS: {{ $cm.NUCLEA_REST_ALLOW_INSECURE_TLS | default "false" | quote }}

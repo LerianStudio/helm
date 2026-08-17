@@ -3,18 +3,14 @@ kind: Job
 metadata:
   name: {{ include "plugin-auth-backend.fullname" . }}-migrations
   annotations:
-    {{- $db := default dict (index .Values "auth-database") }}
-    {{- $internalPg := and (ne (toString $db.enabled) "false") (not $db.external) }}
-    {{- if $internalPg }}
-    # Bundled DB (auth-database subchart) is created by the main release, so the
-    # schema can only be migrated AFTER it exists → post hook.
+    # POST hook (both install and upgrade): the Job reads the plugin-auth ConfigMap
+    # (DB_*/POSTGRES_* env via configMapKeyRef) and needs the ghcr-credential
+    # imagePullSecret, so it can only run AFTER the main release creates those — a
+    # pre hook would fail (configmap/secret not created yet). Also covers the bundled
+    # auth-database case (DB created by the main release first). ArgoCD converts this
+    # to PostSync. The backend may briefly panic on its schema check until this Job
+    # completes, then recovers.
     helm.sh/hook: post-install,post-upgrade
-    {{- else }}
-    # External/pre-existing DB: migrate BEFORE the auth-backend Deployment rolls so
-    # the schema chain is applied first and the backend does not panic on its boot
-    # schema-compatibility check → pre hook.
-    helm.sh/hook: pre-install,pre-upgrade
-    {{- end }}
     helm.sh/hook-weight: "-1"
     # hook-succeeded removes the completed Job so a stale (immutable) Job never
     # blocks the next sync.

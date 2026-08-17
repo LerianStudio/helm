@@ -3,8 +3,28 @@ kind: Job
 metadata:
   name: {{ include "plugin-auth-backend.fullname" . }}-migrations
   annotations:
-    helm.sh/hook: pre-upgrade, post-install
-    helm.sh/hook-delete-policy: before-hook-creation
+    {{- $db := default dict (index .Values "auth-database") }}
+    {{- $internalPg := and (ne (toString $db.enabled) "false") (not $db.external) }}
+    {{- if $internalPg }}
+    # Bundled DB (auth-database subchart) is created by the main release, so the
+    # schema can only be migrated AFTER it exists → post hook.
+    helm.sh/hook: post-install,post-upgrade
+    {{- else }}
+    # External/pre-existing DB: migrate BEFORE the auth-backend Deployment rolls so
+    # the schema chain is applied first and the backend does not panic on its boot
+    # schema-compatibility check → pre hook.
+    helm.sh/hook: pre-install,pre-upgrade
+    {{- end }}
+    helm.sh/hook-weight: "-1"
+    # hook-succeeded removes the completed Job so a stale (immutable) Job never
+    # blocks the next sync.
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    {{- /* Deploy-tool annotations (e.g. argocd.argoproj.io/hook: PreSync) are NOT
+           hardcoded here — ArgoCD already auto-converts the helm.sh/hook above.
+           Set auth.backend.migrations.annotations to add/override per environment. */}}
+    {{- with .Values.auth.backend.migrations.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   template:
     spec:

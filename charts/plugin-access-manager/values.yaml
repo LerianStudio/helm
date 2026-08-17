@@ -357,6 +357,12 @@ auth:
         pullPolicy: Always
         # -- Image tag used for deployment
         tag: "3.1.0"
+      # -- Extra annotations for the migrations Job. The chart already emits the
+      # helm.sh/hook (pre for external DB, post for bundled), which ArgoCD converts
+      # automatically. Use this only to add/override deploy-tool annotations, e.g.:
+      #   argocd.argoproj.io/hook: PreSync
+      #   argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+      annotations: {}
     # -- Extra ConfigMap entries for the auth backend. Every key here is surfaced
     # as an environment variable on the backend container (via envFrom), so use
     # it for Caradhras infra knobs the base config does not cover.

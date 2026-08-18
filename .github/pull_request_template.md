@@ -3,22 +3,9 @@
 ## Pull Request Type
 [//]: # (Check the appropriate box for the type of pull request.)
 
-- [ ] Midaz
-- [ ] Plugin Access Manager
-- [ ] Plugin CRM
-- [ ] Reporter
-- [ ] Plugin Fees
 - [ ] Plugin BR PIX Direct JD
-- [ ] Plugin BR PIX Indirect BTG
-- [ ] Plugin BR PIX Switch
-- [ ] Plugin BR Bank Transfer
-- [ ] Otel Collector
 - [ ] Pipeline
 - [ ] Documentation
-- [ ] Fetcher
-- [ ] BR STA
-- [ ] BR CCS
-- [ ] BR SLC
 - [ ] Common
 
 ## Checklist

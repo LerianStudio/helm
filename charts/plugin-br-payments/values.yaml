@@ -221,12 +221,23 @@ app:
     OUTBOX_TABLE_NAME: "outbox_events"
     OUTBOX_DISPATCH_INTERVAL_SEC: "2"
     OUTBOX_BATCH_SIZE: "50"
-    OUTBOX_PUBLISH_MAX_ATTEMPTS: "3"
     OUTBOX_PUBLISH_BACKOFF_MS: "200"
-    OUTBOX_RETRY_WINDOW_SEC: "300"
     OUTBOX_MAX_DISPATCH_ATTEMPTS: "10"
-    OUTBOX_PROCESSING_TIMEOUT_SEC: "600"
     OUTBOX_MAX_FAILED_PER_BATCH: "25"
+    # OUTBOX_PUBLISH_MAX_ATTEMPTS, OUTBOX_RETRY_WINDOW_SEC and
+    # OUTBOX_PROCESSING_TIMEOUT_SEC are deliberately NOT set here. Do not add
+    # them back with literal values.
+    #
+    # They are not independent knobs. The app derives a handler deadline from
+    # them and asserts at startup that handler + retry + dispatch interval stays
+    # strictly below the window in which the Midaz ledger still recognizes a
+    # replayed idempotency key — past it, a retried commit can stop being a
+    # replay and become a second financial effect, so the app refuses to boot.
+    # That arithmetic is owned by the application and pinned in a build-time
+    # test; restating it here is a second source of truth that rots silently.
+    # Omitted, the deployment inherits the validated defaults. Override per
+    # environment via app.extraEnvVars if needed — a bad override fails fast at
+    # startup with the offending budgets named.
     OUTBOX_INCLUDE_TENANT_METRICS: "false"
     OUTBOX_ALLOW_EMPTY_TENANT: "true"
     # Circuit Breaker

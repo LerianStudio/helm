@@ -1,0 +1,53 @@
+# Render fixture for streaming-hub — exercises the PRODUCTIZED dependency paths
+# (PostgreSQL datastore mask, plugin-access-manager auth, secrets, external
+# PostgreSQL bootstrap Job, migrations, ingress) with type-correct values so the
+# productize-chart-env render-gate + coverage.py never render an accidentally
+# empty block. Values here are sample/dev only — never real credentials.
+global:
+  # Auth env-wide (PLUGIN_AUTH_ENABLED renders "true").
+  auth:
+    enabled: true
+  # Shared PostgreSQL datastore mask → drives POSTGRES_HOST/PORT/USER/DB/SSLMODE.
+  datastores:
+    postgres:
+      host: "streaming-hub-postgresql"
+      port: "5432"
+      user: "streaming_hub"
+      name: "streaming_hub"
+      ssl: "require"
+  # Exercise the external PostgreSQL bootstrap Job (role+db creation).
+  externalPostgresDefinitions:
+    enabled: true
+    postgresAdminLogin:
+      password: "sample-admin"
+    hubCredentials:
+      password: "sample-hub"
+streamingHub:
+  mode: all
+  # ConfigMap escape hatch: enumerated overrides (incl. SCRAM username + TLS enable)
+  # and an un-enumerated passthrough (STREAMING_HUB_ROLE stays operator-settable).
+  configmap:
+    STREAMING_HUB_KAFKA_SCRAM_MECHANISM: "SCRAM-SHA-512"
+    STREAMING_HUB_KAFKA_SCRAM_USERNAME: "streaming-hub"
+    STREAMING_HUB_KAFKA_TLS_ENABLED: "true"
+    STREAMING_HUB_LOG_LEVEL: "debug"
+  extraEnvVars:
+    STREAMING_HUB_EXTRA_EXAMPLE: "exercise-the-hatch"
+  telemetry:
+    enabled: true
+  useExistingSecret: false
+  secrets:
+    STREAMING_HUB_POSTGRES_DSN: "postgres://streaming_hub:sample@streaming-hub-postgresql:5432/streaming_hub?sslmode=require"
+    STREAMING_HUB_KAFKA_SCRAM_PASSWORD: "sample"
+    STREAMING_HUB_KAFKA_CA_CERT: "-----BEGIN CERTIFICATE-----\nSAMPLE\n-----END CERTIFICATE-----"
+    STREAMING_HUB_DEV_KEK: "DEV-ONLY-FAKE-KEK-NOT-A-REAL-KEY-000000000000"
+    POSTGRES_PASSWORD: "sample"
+  migrations:
+    enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: "streaming-hub.lerian.net"
+        paths:
+          - path: /
+            pathType: Prefix

@@ -1,0 +1,3 @@
+{{- if eq .Values.streamingHub.mode "all" }}
+{{- include "streaming-hub.deployment" (dict "root" . "component" "all") }}
+{{- end }}

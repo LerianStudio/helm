@@ -313,6 +313,21 @@ data:
   WEBHOOK_SCHEDULE_CASHOUT_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_SCHEDULE_CASHOUT_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_MAX_CONCURRENT | default "2" | quote }}
 
+  # ==============================================================================
+  # REPORT_TEMPOSTRANSACOES - APIX TemposTransacoes report-job completion delivery
+  # ==============================================================================
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_ENABLED | default "true" | quote }}
+  # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
+  # Leaving empty disables external webhook delivery for safety
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_URL: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_URL | default "" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_WORKER_COUNT | default "1" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_POLLING_INTERVAL | default "1s" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_REQUEST_TIMEOUT | default "5s" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_CONCURRENT | default "2" | quote }}
+
   # Security Tier Configuration (lib-commons v4.4.0)
   SECURITY_TIER: {{ .Values.outbound.configmap.SECURITY_TIER | default "" | quote }}
   SECURITY_ENFORCEMENT: {{ .Values.outbound.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}

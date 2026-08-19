@@ -19,7 +19,17 @@ origin:
   # ⚠️ Trocar isto num ambiente em operação é MIGRAÇÃO DE DADO, não ajuste de
   # config: a marca compõe a identidade da série no destino, então um valor novo
   # cria séries novas e órfã todas as anteriores.
-  id: benedita
+  #
+  # ⚠️ MUDOU de `benedita` para `benedita-prd`: os clusters on-premise deixaram de
+  # ser nomes reservados, porque a telemetria deles vai para um Grafana separado e
+  # nunca divide espaço de identificador com dado de cliente. Logo eles seguem a
+  # convenção como qualquer outro ambiente.
+  #
+  # CONSEQUÊNCIA, e ela é real: a benedita já roda com `benedita`. Aplicar este
+  # values cria séries novas sob `benedita-prd` e as antigas expiram — descontinuidade
+  # visível nos painéis, não perda silenciosa. Ou se aceita a quebra de histórico, ou
+  # o cluster fica no identificador antigo até haver janela para migrar.
+  id: benedita-prd
 
 destination:
   # Concentrador interno, via ingress do cluster. Inalterado nesta fase — o

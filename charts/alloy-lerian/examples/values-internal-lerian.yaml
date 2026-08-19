@@ -162,7 +162,10 @@ profile: own
 origin:
   # ⚠️ Trocar isto num ambiente em operação é MIGRAÇÃO DE DADO: a marca compõe a
   # identidade da série no destino, então valor novo órfã todas as anteriores.
-  id: SUBSTITUIR   # benedita | anacleto | aws-staging | aws-production
+  # Ambiente NOSSO on-premise segue a convenção como qualquer outro: <nome>-<estágio>.
+  # Ex.: benedita-prd, anacleto-prd. Os três ambientes SaaS (aws-production,
+  # aws-staging, aws-devops) são exceção herdada e passam sem sufixo.
+  id: SUBSTITUIR-prd
 
 destination:
   endpoint: SUBSTITUIR

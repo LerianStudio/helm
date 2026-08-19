@@ -212,6 +212,17 @@ func applyOverlay(chartPath string, generated interface{}) (interface{}, error) 
 	if err := json.Unmarshal(overlayBytes, &overlayTree); err != nil {
 		return nil, fmt.Errorf("parse values.schema.overlay.json: %w", err)
 	}
+	// A raiz JSON `null` decodifica em map nil SEM erro, e um map nil mescla como
+	// se nao houvesse overlay: o arquivo existe, a geracao passa, e a regra que o
+	// autor acredita ter desaparece. Mesmo vale para um objeto vazio. Ambos sao
+	// erro, pela mesma razao que um overlay malformado e: um overlay que nao
+	// restringe nada e indistinguivel de um esquecimento.
+	if overlayTree == nil {
+		return nil, fmt.Errorf("values.schema.overlay.json: raiz nula; a raiz deve ser um objeto JSON com as regras a preservar")
+	}
+	if len(overlayTree) == 0 {
+		return nil, fmt.Errorf("values.schema.overlay.json: objeto vazio; remova o arquivo ou declare as regras a preservar")
+	}
 
 	return mergeTrees(genTree, overlayTree), nil
 }

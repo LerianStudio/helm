@@ -43,6 +43,10 @@ pix:
     REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
     ALLOW_INSECURE_TLS: "true"
     BTG_BASE_URL: ""
+    # Access Manager permission declaration
+    DECLARATION_ENABLED: "true"
+    # Defaults to the identity service in the Helm release namespace when empty.
+    PLUGIN_IDENTITY_HOST: ""
     PIX_ISPB: ""
     MIDAZ_ORGANIZATION_ID: ""
     MIDAZ_LEDGER_ID: ""
@@ -69,6 +73,8 @@ pix:
     REDIS_PASSWORD: ""
     BTG_CLIENT_ID: ""
     BTG_CLIENT_SECRET: ""
+    M2M_CLIENT_ID: ""
+    M2M_CLIENT_SECRET: ""
     MIDAZ_CLIENT_ID: ""
     MIDAZ_CLIENT_SECRET: ""
     FEE_CLIENT_ID: ""

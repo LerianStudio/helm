@@ -17,6 +17,8 @@ data:
   # AUTH PLUGIN
   PLUGIN_AUTH_ENABLED: {{ .Values.pix.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
   PLUGIN_AUTH_ADDRESS: {{ .Values.pix.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  DECLARATION_ENABLED: {{ .Values.pix.configmap.DECLARATION_ENABLED | default "true" | quote }}
+  PLUGIN_IDENTITY_HOST: {{ .Values.pix.configmap.PLUGIN_IDENTITY_HOST | default (printf "http://plugin-access-manager-identity.%s.svc.cluster.local:4001" .Release.Namespace) | quote }}
 
   # VALKEY
   REDIS_HOST: {{ .Values.pix.configmap.REDIS_HOST | default (include "plugin-br-pix-indirect-btg.valkeyHost" .) | quote }}

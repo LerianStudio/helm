@@ -206,7 +206,7 @@ pix:
     # External Services
     BTG_BASE_URL: ""
     # Access Manager permission declaration
-    DECLARATION_ENABLED: "true"
+    DECLARATION_ENABLED: "false"
     # Defaults to the identity service in the Helm release namespace when empty.
     PLUGIN_IDENTITY_HOST: ""
     # Midaz Configuration

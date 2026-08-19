@@ -30,16 +30,25 @@
                         },
                         "allOf": [
                           {
-                            "$comment": "Se este item for o client.id, o value DEVE seguir o padrao canonico: nome tudo-minusculo + sufixo -stg/-hml/-prd, OU um dos 3 ambientes internos Lerian (aws-production/aws-staging/aws-devops). Bloqueia maiusculas e sufixos nao-canonicos (Dev/development/staging/production por extenso). Validado no helm install/upgrade/template/lint.",
+                            "$comment": "Valida o client.id, que vira o label multi-tenant client_id no destino. PADRAO: <cliente>-<ambiente>, tudo minusculo, ambiente = stg|hml|prd. O nome do cliente e UMA palavra: 'banco-do-brasil-prd' e recusado de proposito. Os 3 ambientes internos da Lerian sao isentos via if/not/enum, NAO via pattern -- assim nao aparecem na mensagem de erro que o cliente le; ele nao precisa conhecer nomes internos nossos. `required: value` fecha a brecha de um item {key: client.id} sem value passar batido. Roda em helm install/upgrade/template/lint; release ja instalado segue rodando e so morde no proximo upgrade para esta versao.",
                             "if": {
                               "properties": { "key": { "const": "client.id" } },
                               "required": ["key"]
                             },
                             "then": {
+                              "required": ["value"],
                               "properties": {
                                 "value": {
                                   "type": "string",
-                                  "pattern": "^(aws-production|aws-staging|aws-devops|[a-z0-9]+-(stg|hml|prd))$"
+                                  "description": "Formato: <cliente>-<ambiente>, minusculo, ambiente = stg|hml|prd. Ex.: cappta-prd"
+                                }
+                              },
+                              "if": {
+                                "not": { "properties": { "value": { "enum": ["aws-production", "aws-staging", "aws-devops"] } } }
+                              },
+                              "then": {
+                                "properties": {
+                                  "value": { "pattern": "^[a-z0-9]+-(stg|hml|prd)$" }
                                 }
                               }
                             }

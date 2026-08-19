@@ -349,11 +349,22 @@ opentelemetry-collector:
             - k8s.deployment.name
             - k8s.namespace.name
 
-      # Adds the client ID for multi-tenancy, as requested.
+      # Marca de procedencia multi-tenant: este valor vira o label `client_id` no
+      # destino, e e a chave de roteamento de alertas, filtros e atribuicao de custo.
+      #
+      # PADRAO OBRIGATORIO: <cliente>-<ambiente>, tudo minusculo, ambiente = stg|hml|prd.
+      # Validado por values.schema.json, que RECUSA o render fora do padrao.
+      #
+      # O default abaixo e deliberadamente um exemplo VALIDO: um valor fora do padrao
+      # aqui faria `helm template`/`helm lint` do proprio chart falharem sem nenhum
+      # values de cliente -- quebrando a CI e a inspecao local do chart.
+      #
+      # ⚠️ TROCAR na instalacao. Manter o exemplo faz a telemetria de um cliente
+      # chegar rotulada como outro.
       resource/add_client_id:
         attributes:
           - key: client.id
-            value: "Firmino"
+            value: "exemplo-prd"
             action: upsert
 
     connectors:

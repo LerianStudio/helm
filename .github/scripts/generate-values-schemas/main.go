@@ -18,6 +18,15 @@
 //   - No keys are declared required: conventional Helm override keys
 //     (nameOverride, global, imagePullSecrets, etc.) are optional by convention,
 //     and operator -f files must not be forced to repeat defaulted blocks.
+//   - A chart MAY add hand-written rules that generation must not erase, by
+//     shipping values.schema.overlay.json next to values.yaml. It is deep-merged
+//     into the generated schema, overlay winning on conflict. Without this, any
+//     rule authored by hand is silently destroyed on the next run — including
+//     rules inside a knownSubcharts block, which generation reduces to an open
+//     object. The overlay is the ONLY supported way to constrain a subchart's
+//     surface, and it exists because some of those values are ours in practice
+//     (e.g. a tenant identifier we own that happens to live under a third-party
+//     block).
 //
 // Usage (run from .github/scripts):
 //
@@ -149,7 +158,15 @@ func generateChartSchema(chartPath string) error {
 
 	schema := buildSchema(topKeys, topValues, subcharts)
 
-	out, err := json.MarshalIndent(schema, "", "  ")
+	// Hand-written rules that generation must not erase. Applied AFTER the
+	// generated tree so the overlay wins: generation cannot know which nested
+	// values we own inside a third-party block.
+	overlaid, err := applyOverlay(chartPath, schema)
+	if err != nil {
+		return err
+	}
+
+	out, err := json.MarshalIndent(overlaid, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal schema: %w", err)
 	}
@@ -160,6 +177,68 @@ func generateChartSchema(chartPath string) error {
 		return fmt.Errorf("write values.schema.json: %w", err)
 	}
 	return nil
+}
+
+// applyOverlay deep-merges values.schema.overlay.json (when present) into the
+// generated schema and returns the result ready to marshal.
+//
+// Returns the generated schema untouched when no overlay exists, which is the
+// common case. A malformed overlay is a hard error rather than a warning: a
+// silently skipped overlay means the constraint the author believed they had
+// simply is not there.
+func applyOverlay(chartPath string, generated interface{}) (interface{}, error) {
+	overlayPath := filepath.Join(chartPath, "values.schema.overlay.json")
+	overlayBytes, err := os.ReadFile(overlayPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return generated, nil
+		}
+		return nil, fmt.Errorf("read values.schema.overlay.json: %w", err)
+	}
+
+	// Round-trip the generated schema through JSON so both sides are plain maps.
+	// orderedObject only exists to control key order on output; merging needs
+	// addressable maps.
+	genBytes, err := json.Marshal(generated)
+	if err != nil {
+		return nil, fmt.Errorf("marshal generated schema: %w", err)
+	}
+	var genTree map[string]interface{}
+	if err := json.Unmarshal(genBytes, &genTree); err != nil {
+		return nil, fmt.Errorf("decode generated schema: %w", err)
+	}
+
+	var overlayTree map[string]interface{}
+	if err := json.Unmarshal(overlayBytes, &overlayTree); err != nil {
+		return nil, fmt.Errorf("parse values.schema.overlay.json: %w", err)
+	}
+
+	return mergeTrees(genTree, overlayTree), nil
+}
+
+// mergeTrees deep-merges overlay into base. Maps recurse; every other type
+// (including arrays) is REPLACED wholesale by the overlay value.
+//
+// Arrays are replaced rather than appended on purpose: a JSON Schema keyword
+// like allOf/enum/required is a complete statement, and appending to it would
+// produce a rule the author never wrote.
+func mergeTrees(base, overlay map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(base)+len(overlay))
+	for k, v := range base {
+		out[k] = v
+	}
+	for k, ov := range overlay {
+		if bv, ok := out[k]; ok {
+			bm, bIsMap := bv.(map[string]interface{})
+			om, oIsMap := ov.(map[string]interface{})
+			if bIsMap && oIsMap {
+				out[k] = mergeTrees(bm, om)
+				continue
+			}
+		}
+		out[k] = ov
+	}
+	return out
 }
 
 // topLevel returns the ordered top-level keys and their value nodes from a

@@ -1,0 +1,90 @@
+{
+  "$comment": "Regras escritas a mao que a GERACAO NAO PODE APAGAR. O gerador reduz todo bloco de subchart a um objeto aberto -- correto como regra geral, porque a superficie e da dependencia. Mas o client.id e NOSSO: vira o label multi-tenant client_id no destino e e a chave de roteamento de alertas, filtros e atribuicao de custo. Este arquivo e mesclado por .github/scripts/generate-values-schemas apos a geracao, com o overlay vencendo em conflito.",
+  "properties": {
+    "opentelemetry-collector": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "config": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "processors": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "resource/add_client_id": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "attributes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "allOf": [
+                          {
+                            "$comment": "Valida o client.id, que vira o label multi-tenant client_id no destino. PADRAO: <cliente>-<ambiente>, tudo minusculo, ambiente = stg|hml|prd. O nome do cliente e UMA palavra: 'banco-do-brasil-prd' e recusado de proposito. Os 3 ambientes internos da Lerian sao isentos via if/not/enum, NAO via pattern -- assim nao aparecem na mensagem de erro que o cliente le; ele nao precisa conhecer nomes internos nossos. `required: value` fecha a brecha de um item {key: client.id} sem value passar batido. Roda em helm install/upgrade/template/lint; release ja instalado segue rodando e so morde no proximo upgrade para esta versao.",
+                            "if": {
+                              "properties": {
+                                "key": {
+                                  "const": "client.id"
+                                }
+                              },
+                              "required": [
+                                "key"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "value"
+                              ],
+                              "properties": {
+                                "value": {
+                                  "type": "string",
+                                  "description": "Formato: <cliente>-<ambiente>, minusculo, ambiente = stg|hml|prd. Ex.: cappta-prd"
+                                }
+                              },
+                              "if": {
+                                "not": {
+                                  "properties": {
+                                    "value": {
+                                      "enum": [
+                                        "aws-production",
+                                        "aws-staging",
+                                        "aws-devops"
+                                      ]
+                                    }
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "value": {
+                                    "pattern": "^[a-z0-9]+-(stg|hml|prd)$"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -205,6 +205,10 @@ pix:
     REDIS_HOST: ""
     # External Services
     BTG_BASE_URL: ""
+    # Access Manager permission declaration
+    DECLARATION_ENABLED: "false"
+    # Defaults to the identity service in the Helm release namespace when empty.
+    PLUGIN_IDENTITY_HOST: ""
     # Midaz Configuration
     MIDAZ_ORGANIZATION_ID: ""
     MIDAZ_LEDGER_ID: ""
@@ -245,6 +249,8 @@ pix:
     PLUGIN_CRM_CLIENT_SECRET: ""
     BTG_CLIENT_ID: ""
     BTG_CLIENT_SECRET: ""
+    M2M_CLIENT_ID: ""
+    M2M_CLIENT_SECRET: ""
     LICENSE_KEY: ""
     MIDAZ_CLIENT_ID: ""
     MIDAZ_CLIENT_SECRET: ""

@@ -32,8 +32,8 @@ per component.
 | `adapterLerian` | `adapter-lerian/api` | 4113 | Lerian provider adapter (API, disabled by default) |
 | `adapterLerianConsumer` | `adapter-lerian/consumer` | 4114 | Lerian provider adapter Kafka consumer (disabled by default) |
 | `adapterLerianSystemplane` | `adapter-lerian/systemplane/api` | 4115 | Runtime config plane for adapter-lerian (disabled by default) |
-| `pixauto` | `pixauto/api` | 4111 | Pix Automático payer side (disabled by default) |
-| `pixautoSystemplane` | `pixauto/systemplane/api` | 4112 | Runtime config plane for Pix Automático (disabled by default) |
+| `pixauto` | `pixauto/api` | 4116 | Pix Automático payer side (disabled by default) |
+| `pixautoSystemplane` | `pixauto/systemplane/api` | 4117 | Runtime config plane for Pix Automático (disabled by default) |
 
 ## Architecture
 

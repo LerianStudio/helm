@@ -1,7 +1,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "plugin-auth-backend.fullname" . }}-migrations
+  # Bounded to 63 chars: the Job controller stamps an auto `job-name` pod label
+  # whose VALUE is the Job name; >63 chars makes spec.template.labels invalid and
+  # the post-install hook fails. The release-prefixed fullname (lp-<module>-<key>)
+  # is already ~63, so the "-migrations" suffix overflows without the trunc.
+  name: {{ printf "%s-migrations" (include "plugin-auth-backend.fullname" .) | trunc 63 | trimSuffix "-" }}
   annotations:
     helm.sh/hook: pre-upgrade, post-install
     helm.sh/hook-delete-policy: before-hook-creation

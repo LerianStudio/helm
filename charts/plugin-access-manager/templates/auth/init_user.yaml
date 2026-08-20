@@ -6,7 +6,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "plugin-auth.fullname" . }}-init-user
+  name: {{ printf "%s-init-user" (include "plugin-auth.fullname" .) | trunc 63 | trimSuffix "-" }}
   labels:
     {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name) | nindent 4 }}
   annotations:
@@ -113,7 +113,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ include "plugin-auth.fullname" . }}-init-user
+  name: {{ printf "%s-init-user" (include "plugin-auth.fullname" .) | trunc 63 | trimSuffix "-" }}
   labels:
     {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name) | nindent 4 }}
   annotations:

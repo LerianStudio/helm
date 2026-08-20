@@ -1,6 +1,13 @@
 {{- if .Values.bankTransfer.enabled }}
 {{- $multiTenantEnabled := eq (toString (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
 {{- $namespace := include "global.namespace" . }}
+{{- /* Datastore masks (lerian-common): connection identity + TOPOLOGY resolved via
+   global.datastores.<type> (+ global.cloud presets) with native bankTransfer.configmap.<KEY>
+   and dedicated .Values.datastores overrides taking precedence. Defaults keep the
+   bundled-dev topology → render-equivalent for existing users. */ -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $ded := .Values.datastores | default dict -}}
+{{- $cm := .Values.bankTransfer.configmap -}}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -98,11 +105,11 @@ data:
   # POSTGRES (primary) — single-tenant only.
   # MT mode resolves per-tenant DBs via tenant-manager.
   # =====================================================================
-  POSTGRES_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_HOST | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
-  POSTGRES_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_PORT | default "5432" | quote }}
-  POSTGRES_USER: {{ .Values.bankTransfer.configmap.POSTGRES_USER | default "bank_transfer" | quote }}
+  POSTGRES_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
+  POSTGRES_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "bank_transfer") | quote }}
   POSTGRES_DB: {{ .Values.bankTransfer.configmap.POSTGRES_DB | default "bank_transfer" | quote }}
-  POSTGRES_SSLMODE: {{ .Values.bankTransfer.configmap.POSTGRES_SSLMODE | default "require" | quote }}
+  POSTGRES_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
   POSTGRES_MAX_OPEN_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
   POSTGRES_MAX_IDLE_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
   POSTGRES_CONN_MAX_LIFETIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
@@ -114,11 +121,11 @@ data:
   # POSTGRES (replica — optional, for CQRS read scaling)
   # =====================================================================
   {{- if .Values.bankTransfer.configmap.POSTGRES_REPLICA_HOST }}
-  POSTGRES_REPLICA_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_HOST | quote }}
-  POSTGRES_REPLICA_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_PORT | default "5432" | quote }}
+  POSTGRES_REPLICA_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") | quote }}
+  POSTGRES_REPLICA_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_REPLICA_PORT" "default" "5432") | quote }}
   POSTGRES_REPLICA_USER: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_USER | quote }}
   POSTGRES_REPLICA_DB: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_DB | quote }}
-  POSTGRES_REPLICA_SSLMODE: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_SSLMODE | default "require" | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_REPLICA_SSLMODE" "default" "require") | quote }}
   {{- end }}
   {{- end }}
 
@@ -127,9 +134,9 @@ data:
   # MT mode: only connection envs (HOST, DB, USER, TLS, CA_CERT) are rendered.
   # Pool/timeout tuning is single-tenant or systemplane-managed.
   # =====================================================================
-  REDIS_HOST: {{ .Values.bankTransfer.configmap.REDIS_HOST | default (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace) | quote }}
+  REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace)) | quote }}
   REDIS_DB: {{ .Values.bankTransfer.configmap.REDIS_DB | default "0" | quote }}
-  REDIS_TLS: {{ .Values.bankTransfer.configmap.REDIS_TLS | default "false" | quote }}
+  REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
   {{- if .Values.bankTransfer.configmap.REDIS_USER }}
   REDIS_USER: {{ .Values.bankTransfer.configmap.REDIS_USER | quote }}
   {{- end }}

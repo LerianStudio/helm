@@ -27,6 +27,9 @@ keywords:
   - brazil
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 dependencies:
+  - name: lerian-common-helm
+    version: "1.6.0-alpha.202608201533.227d9327"
+    repository: "oci://ghcr.io/lerianstudio/alpha"
   - name: valkey
     version: "2.4.7"
     repository: "oci://registry-1.docker.io/bitnamicharts"

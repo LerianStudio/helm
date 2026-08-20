@@ -271,10 +271,10 @@ bankTransfer:
     # PostgreSQL (primary)
     # POSTGRES_HOST defaults to "<release>-postgresql-primary.<ns>.svc.cluster.local"
     # =================================================================
-    POSTGRES_PORT: "5432"
-    POSTGRES_USER: "bank_transfer"
+    # POSTGRES host/port/user/sslmode resolved via the postgres datastore mask
+    # (global.datastores.postgres / global.cloud). Do NOT pin them here — a native
+    # configmap.<KEY> WINS over the mask and defeats it. Defaults live in the template.
     POSTGRES_DB: "bank_transfer"
-    POSTGRES_SSLMODE: "require"
     POSTGRES_MAX_OPEN_CONNS: "25"
     POSTGRES_MAX_IDLE_CONNS: "5"
     POSTGRES_CONN_MAX_LIFETIME_MINS: "30"
@@ -300,7 +300,8 @@ bankTransfer:
     REDIS_READ_TIMEOUT_MS: "3000"
     REDIS_WRITE_TIMEOUT_MS: "3000"
     REDIS_DIAL_TIMEOUT_MS: "5000"
-    REDIS_TLS: "false"
+    # REDIS_TLS/host/user/caCert resolved via the redis datastore mask
+    # (global.datastores.redis / global.cloud) — do NOT pin them here.
 
     # =================================================================
     # MongoDB (audit/event persistence)

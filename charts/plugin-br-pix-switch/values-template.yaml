@@ -219,6 +219,9 @@ pixauto:
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
+    # Parity with spi/dict-hub/cob-hub above. Inert — the live key is
+    # ORGANIZATION_IDS; no code reads this name.
+    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     DECLARATION_ENABLED: "false"
     STREAMING_ENABLED: "false"
@@ -236,6 +239,7 @@ pixautoSystemplane:
   configmap: {}
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 

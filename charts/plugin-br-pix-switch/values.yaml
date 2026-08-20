@@ -1385,14 +1385,17 @@ appsIngress:
       pathType: Prefix
       component: cobProxy
       serviceName: cob-proxy
-    # -- pixauto exposes ONLY its public payer surface on this host. The bare
-    # /pixauto prefix is deliberately NOT used: /pixauto/internal/v1/* is the
-    # M2M group carrying the inbound BACEN-derived recurrence callbacks
-    # (authorization request / cancellation / status update) and the scheduler's
-    # expiry sweep, and a Prefix rule on /pixauto would publish all of it here.
-    # /pixauto/health and /pixauto/readyz are also excluded — probes are kubelet
-    # -> pod, they never traverse the ingress.
-    - path: /pixauto/v1
+    # -- Bare prefix, same shape as every sibling above. This publishes the
+    # WHOLE /pixauto namespace on the apps host, including the M2M group
+    # /pixauto/internal/v1/* (inbound BACEN-derived recurrence callbacks and the
+    # scheduler expiry sweep). That is deliberate and is not the security
+    # boundary: the ingress hosts resolve to RFC1918 addresses on an internal
+    # network, and the pod answers on its ClusterIP regardless of any ingress
+    # rule, so a narrower path rule hides nothing an in-cluster caller could not
+    # already reach. Authentication on the internal group (lib-auth M2M) is the
+    # boundary. The bare prefix also keeps /pixauto/readyz reachable through the
+    # ingress, which the gethomepage.dev/href dashboard annotation targets.
+    - path: /pixauto
       pathType: Prefix
       component: pixauto
       serviceName: pixauto
@@ -1844,6 +1847,7 @@ pixauto:
     LOG_LEVEL: "info"
     ENV_NAME: "development"
     DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
     TELEMETRY_ENABLED: "true"
     OTEL_RESOURCE_SERVICE_NAME: "pix-pixauto"
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
@@ -1852,6 +1856,10 @@ pixauto:
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
+    # -- Carried for parity with spi/dict-hub/cob-hub, which all set it. INERT:
+    # nothing reads this name — lib-license-go's organization list is bound to
+    # ORGANIZATION_IDS above (pkg/config BaseConfig.LicenseOrganizationIDs).
+    LICENSE_ORGANIZATION_IDS: "global"
     # -- Single-tenant organization fallback. The tenant-config resolver reads
     # pixauto.organization_id from the systemplane store first and only falls
     # back to this. With NEITHER set every request answers 403
@@ -2008,6 +2016,7 @@ pixautoSystemplane:
     LOG_LEVEL: "info"
     ENV_NAME: "development"
     DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
     TELEMETRY_ENABLED: "true"
     OTEL_RESOURCE_SERVICE_NAME: "pix-pixauto-systemplane"
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-switch"
@@ -2032,6 +2041,11 @@ pixautoSystemplane:
 
   secrets:
     DATABASE_URL: ""
+    # -- Alternative DSN for the systemplane store only; takes precedence over
+    # DATABASE_URL for the config store (config.SystemplaneDSN). Same key the
+    # spi/dict/cob systemplanes carry — in this chart's single-database layout
+    # it is set to the same DSN as DATABASE_URL.
+    SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
     # -- Tenant Manager API key (consumed when MULTI_TENANT_ENABLED=true on

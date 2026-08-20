@@ -357,7 +357,7 @@ data:
         "enabled" $streamingEnabled
         "configmap" $cm
         "clientId" (include "midaz-ledger.fullname" .)
-        "cloudeventsSource" "lerian.midaz.ledger") | nindent 2 }}
+        "cloudeventsSource" "ledger") | nindent 2 }}
 
   # =============================================================================
   # FEE ENGINE

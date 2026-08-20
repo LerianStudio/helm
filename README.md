@@ -116,7 +116,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `3.9.0-beta.3` | 1.9.1 | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 |
+| `3.9.0-beta.4` | 1.9.1 | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 |
 
 -----------------
 

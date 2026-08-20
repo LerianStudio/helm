@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/LerianStudio/helm/.github/scripts/tableutil"
-	"gopkg.in/yaml.v3"
 )
 
 func main() {
@@ -100,98 +99,22 @@ func getChartDirectory(chartName string) string {
 }
 
 // extractAppVersionsFromValues reads values.yaml and extracts app versions
-// based on the table headers. For each "X Version" header, it looks for
-// the corresponding {x}.image.tag path in values.yaml
+// based on the table headers, delegating to the shared tableutil implementation
+// (kept as a thin wrapper so this tool preserves its stdout logging contract).
+// For each "X Version" header it resolves {x}.image.tag (root image.tag fallback).
 func extractAppVersionsFromValues(valuesPath string, headers []string) map[string]string {
-	versions := make(map[string]string)
-
-	content, err := os.ReadFile(valuesPath)
+	res, err := tableutil.ExtractAppVersionsFromValues(valuesPath, headers)
 	if err != nil {
-		fmt.Printf("WARNING: Could not read %s: %v\n", valuesPath, err)
-		return versions
+		fmt.Printf("WARNING: %v\n", err)
 	}
-
-	// Parse YAML into a generic map
-	var values map[string]interface{}
-	if err := yaml.Unmarshal(content, &values); err != nil {
-		fmt.Printf("WARNING: Could not parse %s: %v\n", valuesPath, err)
-		return versions
+	for header, tag := range res.Found {
+		fmt.Printf("Found %s = %s\n", header, tag)
 	}
-
-	// For each header that ends with " Version" (except "Chart Version"),
-	// derive the component name and look for {component}.image.tag
-	versionSuffix := " Version"
-	for _, header := range headers {
-		if !strings.HasSuffix(header, versionSuffix) || header == "Chart Version" {
-			continue
-		}
-
-		// Derive component name: "Auth Version" -> "auth"
-		componentName := strings.TrimSuffix(header, versionSuffix)
-		componentKey := strings.ToLower(componentName)
-
-		// Look for {component}.image.tag in values.yaml
-		tag := getImageTag(values, componentKey)
-		if tag != "" {
-			versions[header] = tag
-			fmt.Printf("Found %s = %s (from %s.image.tag)\n", header, tag, componentKey)
-		} else {
-			fmt.Printf("WARNING: Could not find %s.image.tag in values.yaml\n", componentKey)
-		}
+	for _, header := range res.Missing {
+		component := strings.ToLower(strings.TrimSuffix(header, " Version"))
+		fmt.Printf("WARNING: Could not find %s.image.tag in values.yaml\n", component)
 	}
-
-	return versions
-}
-
-// getImageTag extracts the image tag from a component's configuration
-// Looks for {component}.image.tag in the values map, with fallback to root image.tag
-func getImageTag(values map[string]interface{}, component string) string {
-	// First, try {component}.image.tag
-	if componentSection, ok := values[component]; ok {
-		if componentMap, ok := componentSection.(map[string]interface{}); ok {
-			if tag := extractTagFromImageSection(componentMap); tag != "" {
-				return tag
-			}
-		}
-	}
-
-	// Fallback: try image.tag directly at root level
-	// This handles charts where the values.yaml doesn't have a component section
-	// e.g., product-console where image.tag is at root instead of console.image.tag
-	if tag := extractTagFromImageSection(values); tag != "" {
-		fmt.Printf("  (found at root level image.tag)\n")
-		return tag
-	}
-
-	return ""
-}
-
-// extractTagFromImageSection extracts the tag from a map that contains an "image" section
-func extractTagFromImageSection(section map[string]interface{}) string {
-	imageSection, ok := section["image"]
-	if !ok {
-		return ""
-	}
-
-	imageMap, ok := imageSection.(map[string]interface{})
-	if !ok {
-		return ""
-	}
-
-	tag, ok := imageMap["tag"]
-	if !ok {
-		return ""
-	}
-
-	// Handle different tag types (string, number, etc.)
-	switch v := tag.(type) {
-	case string:
-		return v
-	case int, float64:
-		return fmt.Sprintf("%v", v)
-	default:
-		return fmt.Sprintf("%v", v)
-	}
+	return res.Found
 }
 
 // updateAppVersions updates the rows with app versions extracted from values.yaml

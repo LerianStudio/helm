@@ -14,7 +14,25 @@
     },
     "global": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "datastores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "host": {},
+              "port": {},
+              "user": {},
+              "ssl": {},
+              "tls": {},
+              "replicaHost": {}
+            }
+          },
+          "description": "Env-wide SHARED datastore mask (set once per environment). Consumed by lerian-common.datastore.value."
+        }
+      }
     },
     "bankTransfer": {
       "type": "object",

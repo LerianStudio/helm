@@ -5,6 +5,11 @@ nameOverride: "bank-transfer"
 fullnameOverride: ""
 namespaceOverride: ""
 global:
+  # -- Env-wide SHARED datastore mask (set once per environment; a native
+  # bankTransfer.configmap.<KEY> overrides it). Consumed by
+  # lerian-common.datastore.value. Fields: postgres.{host,port,user,ssl,
+  # replicaHost}, redis.{host,tls}.
+  datastores: {}
   # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:
     # -- Enable or disable the PostgreSQL bootstrap job

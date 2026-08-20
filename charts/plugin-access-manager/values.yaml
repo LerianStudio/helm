@@ -141,8 +141,10 @@ identity:
   # @default -- templates/identity/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
+    # Environment name is resolved via the global mask (global.env.name) — same
+    # rule as the datastore masks: do NOT pin ENV_NAME here, it WINS over the
+    # mask and defeats it. The default ("development") lives in
+    # templates/identity/configmap.yaml.
     AUTH_ENABLED: "true"
     AUTH_PORT: "4000"
     # AUTH_ADDRESS defaults to http://<auth component>:4000 (templates/identity/configmap.yaml).
@@ -293,10 +295,11 @@ auth:
     # templates/auth/configmap.yaml so a shared/managed profile can override them —
     # do NOT pin them here (a native configmap.<KEY> WINS over the mask and defeats it).
     DB_NAME: "casdoor"
-    # -- Default Environment
-    ENV_NAME: "development"
     # Redis connection (host/port/user/tls/caCert) is resolved via the redis datastore
     # mask (global.datastores.redis) — same rule: do NOT pin the connection keys here.
+    # ENV_NAME is resolved via the global mask (global.env.name) — same rule:
+    # do NOT pin it here, it WINS over the mask and defeats it. The default
+    # ("development") lives in templates/auth/configmap.yaml.
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data

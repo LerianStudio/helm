@@ -21,7 +21,10 @@ data:
   # -- Default Environment variables for the plugin-auth
   ALLOW_INSECURE_TLS: {{ .Values.auth.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   APPLICATION_NAME: {{ .Values.auth.configmap.APPLICATION_NAME | default "plugin-auth" | quote }}
-  ENV_NAME: {{ .Values.auth.configmap.ENV_NAME | default "development" | quote }}
+  {{- /* Environment name via the global mask (same shape as observability):
+     a managed profile / the operator sets global.env.name ONCE for every
+     component instead of the native ENV_NAME key on each. */}}
+  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") | quote }}
 
   # APP 
   SERVER_PORT: {{ .Values.auth.configmap.SERVER_PORT | default "4000" | quote }}
@@ -107,7 +110,10 @@ data:
   RATE_LIMIT_PERMISSION_WINDOW_SEC: {{ .Values.auth.configmap.RATE_LIMIT_PERMISSION_WINDOW_SEC | default "60" | quote }}
 
   # MULTI-TENANCY
-  MULTI_TENANT_ENABLED: {{ .Values.auth.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- /* global.multiTenant.enabled: previously set by consumers but never
+     read by any template — wiring it through the mask makes it real instead
+     of dead configuration, and collapses the auth+identity duplication. */}}
+  MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
 
   # CIRCUIT BREAKER
   CIRCUIT_BREAKER_ENABLED: {{ .Values.auth.configmap.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}

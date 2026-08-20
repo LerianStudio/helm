@@ -1359,6 +1359,10 @@ appsIngress:
       pathType: Prefix
       component: spi
       serviceName: spi
+    - path: /v1/streaming/manifest
+      pathType: Exact
+      component: spi
+      serviceName: spi
     - path: /dict-hub
       pathType: Prefix
       component: dictHub

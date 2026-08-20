@@ -85,33 +85,33 @@ The upgrade will create new Deployments and Services with the new names. The old
 
 **What changed:**
 
-The default admin password has been removed from `values.yaml`. The chart now fails installation if `auth.backend.initUser.adminPassword` is empty and `useExistingSecret` is false.
+The default admin password has been removed from `values.yaml`. The chart now fails installation if `auth.initUser.adminPassword` is empty and `useExistingSecret` is false.
+
+> **Path correction:** `initUser` lives directly under `auth:`, as a sibling of `auth.backend`, not under `auth.backend.initUser`. Templates read `.Values.auth.initUser.*` exclusively — a value set under `auth.backend.initUser` is silently ignored by Helm (it just becomes an unused key) and the chart falls back to the `auth.initUser` default. Placing it under `auth.backend` is easy to assume by analogy with `auth.backend.migrations`, but it is incorrect and has caused real upgrade failures.
 
 | Setting | v8.6.0 | v9.0.0 |
 |---------|--------|--------|
-| `auth.backend.initUser.adminPassword` | `"Lerian@123"` (default) | `""` (no default, required) |
+| `auth.initUser.adminPassword` | `"Lerian@123"` (default) | `""` (no default, required) |
 
 **Before (v8.6.0):**
 
 ```yaml
 auth:
-  backend:
-    initUser:
-      adminPassword: "Lerian@123"
+  initUser:
+    adminPassword: "Lerian@123"
 ```
 
 **After (v9.0.0):**
 
 ```yaml
 auth:
-  backend:
-    initUser:
-      # -- Admin password (will be stored in a secret). REQUIRED when initUser is
-      # -- enabled and useExistingSecret is false — the install fails loud if it is
-      # -- empty. The chart ships no default on purpose: a published default password
-      # -- on the platform admin account is a live credential in every install that
-      # -- never overrode it.
-      adminPassword: ""
+  initUser:
+    # -- Admin password (will be stored in a secret). REQUIRED when initUser is
+    # -- enabled and useExistingSecret is false — the install fails loud if it is
+    # -- empty. The chart ships no default on purpose: a published default password
+    # -- on the platform admin account is a live credential in every install that
+    # -- never overrode it.
+    adminPassword: ""
 ```
 
 **Why this matters:**
@@ -123,7 +123,15 @@ Publishing a default password for the platform admin account creates a security 
 - Upgrades will fail if you don't provide a password via `values.yaml` or `--set`
 - If you were relying on the default password `Lerian@123`, you must now explicitly set it (or choose a new secure password)
 
-> **Important:** You must set `auth.backend.initUser.adminPassword` in your values or use an existing secret. See [Step 3: Set Admin Password](#step-3-set-admin-password) for instructions.
+> **If this is a `helm upgrade` of an existing release**, the admin user was already created during the original install — you almost never need `initUser` to run again. The simplest fix for most upgrades is to set:
+> ```yaml
+> auth:
+>   initUser:
+>     enabled: false
+> ```
+> This skips the Job and the generated Secret entirely, so `adminPassword` is never evaluated and the `required` guard never fires. Only keep `initUser.enabled: true` (and set `adminPassword`, or `useExistingSecret` + `adminPasswordSecretName`) if you actually need the chart to (re)create the admin user — e.g. on a fresh install, or a DB reset that wiped the existing admin account.
+
+> **Important:** You must either set `auth.initUser.enabled: false` (see above, upgrades), or set `auth.initUser.adminPassword` / use an existing secret (fresh installs). See [Step 3: Set Admin Password](#step-3-set-admin-password) for instructions.
 
 ### 3. Cross-Component DNS References Updated
 
@@ -354,7 +362,28 @@ kubectl delete service plugin-access-manager-auth-backend -n plugin-access-manag
 
 ### Step 3: Set Admin Password
 
-The chart now requires an explicit admin password. Choose one of the following options:
+The chart now requires an explicit admin password whenever `auth.initUser.enabled` is `true` and `useExistingSecret` is `false`. Note the path: `initUser` sits directly under `auth:`, not under `auth.backend:`.
+
+#### If this is a `helm upgrade` of an existing release (recommended for most upgrades)
+
+The admin user was already created during the original install, so `initUser` doesn't need to run again. Just disable it:
+
+```yaml
+auth:
+  initUser:
+    enabled: false
+```
+
+```bash
+helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
+  --version 9.0.0 \
+  -n plugin-access-manager \
+  --set auth.initUser.enabled=false
+```
+
+With `enabled: false`, neither the Job nor the generated Secret render, so `adminPassword` is never evaluated and the `required` guard never fires — no password is needed at all.
+
+Only follow one of the options below if you actually need the chart to (re)create the admin user (fresh install, or the existing admin account/DB was wiped).
 
 #### Option 1: Set Password in values.yaml
 
@@ -362,10 +391,9 @@ Add the password to your `values.yaml`:
 
 ```yaml
 auth:
-  backend:
-    initUser:
-      enabled: true
-      adminPassword: "YourSecurePassword123!"
+  initUser:
+    enabled: true
+    adminPassword: "YourSecurePassword123!"
 ```
 
 #### Option 2: Set Password via --set Flag
@@ -376,7 +404,7 @@ Pass the password during upgrade:
 helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
   --version 9.0.0 \
   -n plugin-access-manager \
-  --set auth.backend.initUser.adminPassword="YourSecurePassword123!"
+  --set auth.initUser.adminPassword="YourSecurePassword123!"
 ```
 
 #### Option 3: Use Existing Secret
@@ -385,15 +413,14 @@ If you manage secrets externally:
 
 ```yaml
 auth:
-  backend:
-    initUser:
-      enabled: true
-      useExistingSecret: true
-      adminPasswordSecretName: "my-admin-password-secret"
-      adminPasswordSecretKey: "password"
+  initUser:
+    enabled: true
+    useExistingSecret: true
+    adminPasswordSecretName: "my-admin-password-secret"
+    adminPasswordSecretKey: "password"
 ```
 
-> **Important:** If you were using the default password `Lerian@123` in v8.6.0, you must now explicitly set it. For production environments, choose a strong, unique password.
+> **Important:** If you were relying on the default password `Lerian@123` from v8.6.0 and still want `initUser` enabled, you must now explicitly set it. For production environments, choose a strong, unique password — or, more simply, set `auth.initUser.enabled: false` on upgrade as shown above.
 
 ### Step 4: Review Cross-Component References
 
@@ -464,47 +491,49 @@ auth:
 
 ### Admin User Initialization
 
-Configure the admin user created during initial setup:
+Configure the admin user created during initial setup. `initUser` is a direct child of `auth:` — it is **not** nested under `auth.backend:` (unlike `auth.backend.migrations`, which is a backend-specific setting). Templates only read `.Values.auth.initUser.*`; anything set under `auth.backend.initUser` is a silent no-op.
 
 ```yaml
 auth:
-  backend:
-    initUser:
-      # -- Enable admin user initialization on first startup
-      enabled: true
-      # -- Admin username
-      adminName: "admin"
-      # -- Admin email address
-      adminEmail: "admin@midaz.tech"
-      # -- Admin user display name
-      adminDisplayName: "Admin"
-      # -- Admin password (will be stored in a secret). REQUIRED when initUser is
-      # -- enabled and useExistingSecret is false — the install fails loud if it is
-      # -- empty. The chart ships no default on purpose: a published default password
-      # -- on the platform admin account is a live credential in every install that
-      # -- never overrode it.
-      adminPassword: ""
-      # -- Use existing secret for admin password instead of creating one
-      # -- IMPORTANT: If set to true, adminPasswordSecretName MUST be specified
-      useExistingSecret: false
-      # -- Name of existing secret containing admin password
-      adminPasswordSecretName: ""
-      # -- Key in existing secret containing admin password
-      adminPasswordSecretKey: "password"
+  initUser:
+    # -- Enable admin user initialization on first startup.
+    # -- On a helm upgrade of an existing release, set this to false: the admin
+    # -- user already exists, so there's no need to re-run this job or provide
+    # -- adminPassword at all.
+    enabled: true
+    # -- Admin username
+    adminName: "admin"
+    # -- Admin email address
+    adminEmail: "admin@midaz.tech"
+    # -- Admin user display name
+    adminDisplayName: "Admin"
+    # -- Admin password (will be stored in a secret). REQUIRED when initUser is
+    # -- enabled and useExistingSecret is false — the install fails loud if it is
+    # -- empty. The chart ships no default on purpose: a published default password
+    # -- on the platform admin account is a live credential in every install that
+    # -- never overrode it.
+    adminPassword: ""
+    # -- Use existing secret for admin password instead of creating one
+    # -- IMPORTANT: If set to true, adminPasswordSecretName MUST be specified
+    useExistingSecret: false
+    # -- Name of existing secret containing admin password
+    adminPasswordSecretName: ""
+    # -- Key in existing secret containing admin password
+    adminPasswordSecretKey: "password"
 ```
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `enabled` | `true` | Whether to create an admin user on first startup |
+| `enabled` | `true` | Whether to create an admin user on first startup. Set `false` on upgrades of an existing release — the admin user already exists and no password is required. |
 | `adminName` | `"admin"` | Username for the admin account |
 | `adminEmail` | `"admin@midaz.tech"` | Email address for the admin account |
 | `adminDisplayName` | `"Admin"` | Display name for the admin account |
-| `adminPassword` | `""` | **REQUIRED** password for the admin account |
+| `adminPassword` | `""` | **REQUIRED** password for the admin account, only when `enabled: true` and `useExistingSecret: false` |
 | `useExistingSecret` | `false` | Use an existing Kubernetes secret for the password |
 | `adminPasswordSecretName` | `""` | Name of existing secret (required if `useExistingSecret: true`) |
 | `adminPasswordSecretKey` | `"password"` | Key in the secret containing the password |
 
-> **Warning:** The upgrade will fail if `enabled: true`, `useExistingSecret: false`, and `adminPassword` is empty.
+> **Warning:** The install/upgrade will fail if `enabled: true`, `useExistingSecret: false`, and `adminPassword` is empty. **If you're upgrading an existing release, the fix is almost always `auth.initUser.enabled: false`** — not setting a password.
 
 ### Cross-Component DNS Defaults
 

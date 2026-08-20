@@ -157,6 +157,23 @@ data:
   # BTG Webhook Validation
   BTG_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.BTG_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}
 
+  # Anti-Fraud Decision Hook (cashin / refund-cashin)
+  # Master flag off by default; when false none of the other ANTIFRAUD_HOOK_* vars
+  # are read or validated by the app. See docs/pre-dev/anti-fraud-validation-cashin.
+  ANTIFRAUD_HOOK_ENABLED: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_ENABLED | default "false" | quote }}
+  ANTIFRAUD_HOOK_URL: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_URL | default "" | quote }}
+  ANTIFRAUD_HOOK_TIMEOUT_MS: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_TIMEOUT_MS | default "500" | quote }}
+  ANTIFRAUD_HOOK_FALLBACK_DECISION: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_FALLBACK_DECISION | default "" | quote }}
+  ANTIFRAUD_HOOK_FALLBACK_MAX_APPROVE_AMOUNT: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_FALLBACK_MAX_APPROVE_AMOUNT | default "" | quote }}
+  ANTIFRAUD_HOOK_AUTH_HEADER_NAME: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_AUTH_HEADER_NAME | default "" | quote }}
+  ANTIFRAUD_HOOK_ALLOW_PRIVATE_NETWORK: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_ALLOW_PRIVATE_NETWORK | default "false" | quote }}
+  ANTIFRAUD_HOOK_CB_ENABLED: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_ENABLED | default "true" | quote }}
+  ANTIFRAUD_HOOK_CB_MAX_REQUESTS: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_MAX_REQUESTS | default "3" | quote }}
+  ANTIFRAUD_HOOK_CB_INTERVAL: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_INTERVAL | default "60s" | quote }}
+  ANTIFRAUD_HOOK_CB_TIMEOUT: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_TIMEOUT | default "30s" | quote }}
+  ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD | default "5" | quote }}
+  ANTIFRAUD_HOOK_PREWARM_ENABLED: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_PREWARM_ENABLED | default "true" | quote }}
+
   # Security Tier Configuration (lib-commons v4.4.0)
   SECURITY_TIER: {{ .Values.pix.configmap.SECURITY_TIER | default "" | quote }}
   SECURITY_ENFORCEMENT: {{ .Values.pix.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}

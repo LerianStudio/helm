@@ -35,6 +35,11 @@ per component.
 | `pixauto` | `pixauto/api` | 4116 | Pix Automático payer side (disabled by default) |
 | `pixautoSystemplane` | `pixauto/systemplane/api` | 4117 | Runtime config plane for Pix Automático (disabled by default) |
 
+> Ports 4111 and 4112 are deliberately skipped. 4111 belongs to `br-slc` — its
+> chart, two environments and a NetworkPolicy scoped to it — and the pair was
+> left free by the component allocated before Pix Automático. Do not fill the
+> gap; take the next number above 4117.
+
 ## Architecture
 
 The plugin uses a Proxy/Hub deployment model. A "hub" component owns business

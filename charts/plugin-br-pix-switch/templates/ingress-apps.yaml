@@ -1,6 +1,6 @@
 {{- /*
 Apps Ingress — single hostname routes user-facing traffic to the application
-components (SPI, DICT hub/proxy, COB hub/proxy).
+components (SPI, DICT hub/proxy, COB hub/proxy, Pix Automático).
 
 Each path under .Values.appsIngress.routes maps to one component's Service.
 The chart renders one path rule per route only when the target component is

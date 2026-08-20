@@ -288,20 +288,15 @@ auth:
   # @default -- templates/auth/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment variables for the postgres
-    DB_USER: "auth"
-    # DB_HOST defaults to the bundled auth-database Service (templates/auth/configmap.yaml).
-    # Set it only for an external database.
-    DB_PORT: 5432
+    # DB connection (host/port/user/ssl) is resolved via the postgres datastore mask
+    # (global.datastores.postgres / dedicated .Values.datastores). Defaults live in
+    # templates/auth/configmap.yaml so a shared/managed profile can override them —
+    # do NOT pin them here (a native configmap.<KEY> WINS over the mask and defeats it).
     DB_NAME: "casdoor"
-    DB_SSLMODE: "disable"
     # -- Default Environment
     ENV_NAME: "development"
-    # -- Default Redis Settings
-    # REDIS_HOST defaults to the bundled valkey primary Service (templates/auth/configmap.yaml).
-    # Set it only for an external Redis/Valkey.
-    REDIS_PORT: 6379
-    REDIS_USER: "auth"
+    # Redis connection (host/port/user/tls/caCert) is resolved via the redis datastore
+    # mask (global.datastores.redis) — same rule: do NOT pin the connection keys here.
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data

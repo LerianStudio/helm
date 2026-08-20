@@ -1,0 +1,14 @@
+auth-database:
+  enabled: false
+valkey:
+  enabled: false
+global:
+  multiTenant:
+    enabled: false
+  datastores:
+    redis:
+      tls: 'true'
+    postgres:
+      ssl: require
+  observability:
+    enabled: 'false'

@@ -48,6 +48,21 @@
             "host": {}
           },
           "description": "Env-wide auth (access-manager). Consumed by lerian-common.globalValue (block \"auth\")."
+        },
+        "streaming": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when streaming is enabled."
+        },
+        "serviceDiscovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Env-wide service discovery placeholder (reporter keeps SD_* as configmap passthrough)."
+        },
+        "multiTenant": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED gate today."
         }
       }
     },

@@ -236,6 +236,22 @@ pix:
     SCHEDULE_MIN_FUTURE_SECONDS: "60"
     SCHEDULE_DEFAULT_EXECUTE_HOUR_BRT: "6"
     SCHEDULE_MAX_ATTEMPTS: "2"
+    # Anti-Fraud Decision Hook (cashin / refund-cashin)
+    # Master flag off by default; when false none of the other ANTIFRAUD_HOOK_* vars
+    # are read or validated by the app.
+    ANTIFRAUD_HOOK_ENABLED: "false"
+    ANTIFRAUD_HOOK_URL: ""
+    ANTIFRAUD_HOOK_TIMEOUT_MS: "500"
+    ANTIFRAUD_HOOK_FALLBACK_DECISION: ""
+    ANTIFRAUD_HOOK_FALLBACK_MAX_APPROVE_AMOUNT: ""
+    ANTIFRAUD_HOOK_AUTH_HEADER_NAME: ""
+    ANTIFRAUD_HOOK_ALLOW_PRIVATE_NETWORK: "false"
+    ANTIFRAUD_HOOK_CB_ENABLED: "true"
+    ANTIFRAUD_HOOK_CB_MAX_REQUESTS: "3"
+    ANTIFRAUD_HOOK_CB_INTERVAL: "60s"
+    ANTIFRAUD_HOOK_CB_TIMEOUT: "30s"
+    ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: "5"
+    ANTIFRAUD_HOOK_PREWARM_ENABLED: "true"
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
@@ -258,6 +274,8 @@ pix:
     FEE_CLIENT_SECRET: ""
     INTERNAL_WEBHOOK_SECRET: ""
     BTG_WEBHOOK_SECRET: ""
+    ANTIFRAUD_HOOK_HMAC_SECRET: ""
+    ANTIFRAUD_HOOK_AUTH_HEADER_VALUE: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false

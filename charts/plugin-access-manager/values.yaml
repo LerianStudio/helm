@@ -17,6 +17,9 @@ global:
   # configmap.SD_* key is set. Fields: address, tls, tlsSkipVerify, workload,
   # preferView, internalScheme, externalPort.
   serviceDiscovery: {}
+  # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
+  # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  observability: {}
 
 # Common configuration shared between components
 common:

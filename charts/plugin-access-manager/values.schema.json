@@ -92,6 +92,14 @@
             "externalPort": {}
           },
           "description": "Env-wide service discovery (Consul) tuning. Consumed by lerian-common.serviceDiscovery.env."
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
         }
       }
     }

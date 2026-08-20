@@ -1,9 +1,10 @@
 # Production values template for plugin-br-pix-switch (chart 2.0.0-beta.1+)
 #
 # Override only the fields you need to change from values.yaml defaults.
-# All 13 components are enabled by default except adapter-provider-mock and the
+# All 15 components are enabled by default except adapter-provider-mock, the
 # adapter-lerian trio (adapterLerian / adapterLerianConsumer /
-# adapterLerianSystemplane); disable any component by setting `enabled: false`.
+# adapterLerianSystemplane) and the pixauto pair (pixauto /
+# pixautoSystemplane); disable any component by setting `enabled: false`.
 
 # Global image override (applies to every component unless overridden per-component)
 global:
@@ -202,6 +203,39 @@ adapterLerianSystemplane:
   configmap: {}
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+# ------------------------------------------------------------
+# pixauto/api — Pix Automático payer side
+# DECLARATION_ENABLED stays "false" until an M2M application is registered for
+# the plugin-br-pix-switch-pixauto slug; STREAMING_ENABLED stays "false" until
+# the br-sfn rail carries the recurrence message family (GAP-BRSFN-001).
+# ------------------------------------------------------------
+pixauto:
+  enabled: false
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    ORGANIZATION_IDS: "global"
+    ORGANIZATION_ID: "<your-org-id>"
+    DECLARATION_ENABLED: "false"
+    STREAMING_ENABLED: "false"
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# pixauto/systemplane/api — runtime config plane for Pix Automático
+# ------------------------------------------------------------
+pixautoSystemplane:
+  enabled: false
+  configmap: {}
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 

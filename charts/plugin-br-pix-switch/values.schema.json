@@ -172,6 +172,30 @@
       },
       "additionalProperties": true
     },
+    "pixauto": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "pixautoSystemplane": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
     "appsIngress": {
       "type": "object",
       "additionalProperties": true

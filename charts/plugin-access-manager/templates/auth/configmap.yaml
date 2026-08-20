@@ -7,8 +7,17 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "plugin-auth.fullname" . }}
+  annotations:
+    # Read by auth-backend/migrations.yaml (pre-upgrade, post-install) and
+    # auth/init_user.yaml (post-install) via configMapKeyRef/envFrom. Without a
+    # matching hook here, this ConfigMap is a plain resource applied only in the
+    # normal (post-hook) phase, so a pre-upgrade Job would run against a
+    # not-yet-updated/not-yet-created ConfigMap. Mirror the Jobs' hook types with
+    # a lower weight so this renders first in both phases.
+    helm.sh/hook: pre-upgrade, post-install
+    helm.sh/hook-weight: "-1"
   labels:
-    {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 4 }} 
+    {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 4 }}
 data:
   # -- Default Environment variables for the plugin-auth
   ALLOW_INSECURE_TLS: {{ .Values.auth.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}

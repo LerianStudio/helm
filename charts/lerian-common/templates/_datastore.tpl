@@ -42,15 +42,21 @@ Inputs (dict):
    `.context.Values.datastores`, which in a SUBCHART is that product's own block. */ -}}
 {{- $dedicated := index (.dedicated | default (.context.Values.datastores | default dict)) .type | default dict -}}
 {{- $shared := index ((.context.Values.global | default dict).datastores | default dict) .type | default dict -}}
+{{- /* Cloud preset tier: global.cloud selects a topology column (see _cloud.tpl).
+   Ranks BELOW an explicit shared/dedicated value (those are the override) and
+   ABOVE the hardcoded default. Only fields present in the preset participate. */ -}}
+{{- $cloudBlk := include "lerian-common.cloud.block" (dict "context" .context "kind" .type) | fromYaml -}}
 {{/* Ordered presence checks (not chained sprig `default`) so an explicit `false`
-     at any tier — native key, dedicated, shared, or default — wins instead of
-     falling through to a lower-priority value. */}}
+     at any tier — native key, dedicated, shared, cloud preset, or default — wins
+     instead of falling through to a lower-priority value. */}}
 {{- if hasKey $cm .nativeKey -}}
 {{- index $cm .nativeKey -}}
 {{- else if hasKey $dedicated .field -}}
 {{- index $dedicated .field -}}
 {{- else if hasKey $shared .field -}}
 {{- index $shared .field -}}
+{{- else if hasKey $cloudBlk .field -}}
+{{- index $cloudBlk .field -}}
 {{- else if hasKey . "default" -}}
 {{- .default -}}
 {{- else -}}

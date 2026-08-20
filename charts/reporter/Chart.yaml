@@ -28,8 +28,8 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # Dependencies
 dependencies:
   - name: lerian-common-helm
-    version: "1.5.0"
-    repository: "oci://ghcr.io/lerianstudio"
+    version: "1.6.0-alpha.202608201533.227d9327"
+    repository: "oci://ghcr.io/lerianstudio/alpha"
   - name: keda
     version: "2.17.1"
     repository: "https://kedacore.github.io/charts"

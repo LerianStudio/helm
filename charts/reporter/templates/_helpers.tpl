@@ -305,11 +305,15 @@ Input: the root context ($).
 -}}
 ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
 ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
-{{- /* RabbitMQ broker connection via datastore mask (host/port/user); tuning stays passthrough. */}}
-RABBITMQ_URI: {{ $cm.RABBITMQ_URI | default "amqp" | quote }}
+{{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the
+   topology fields scheme (amqp|amqps) and amqpPort — so a managed-broker profile
+   (e.g. AmazonMQ over TLS) sets global.datastores.broker.{scheme,amqpPort,port}
+   once instead of scattering RABBITMQ_* into common.configmap. Defaults keep the
+   bundled amqp/5672/15672 topology → render-equivalent for existing users. */}}
+RABBITMQ_URI: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") | quote }}
 RABBITMQ_HOST: {{ $rmqHost | quote }}
 RABBITMQ_PORT_HOST: {{ $rmqMgmtPort | quote }}
-RABBITMQ_PORT_AMQP: {{ $cm.RABBITMQ_PORT_AMQP | default "5672" | quote }}
+RABBITMQ_PORT_AMQP: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
 RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
 RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "reporter.generate-report.exchange" | quote }}
 RABBITMQ_GENERATE_REPORT_QUEUE: {{ $cm.RABBITMQ_GENERATE_REPORT_QUEUE | default "reporter.generate-report.queue" | quote }}
@@ -322,8 +326,11 @@ REDIS_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
 REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
 REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
-REDIS_TLS: {{ $cm.REDIS_TLS | default "false" | quote }}
-REDIS_CA_CERT: {{ $cm.REDIS_CA_CERT | default "" | quote }}
+{{- /* Redis TLS topology via the mask (tls + caCert) — a managed-cache profile
+   (e.g. ElastiCache in-transit encryption) sets global.datastores.redis.{tls,caCert}
+   once. Defaults keep plaintext → render-equivalent for existing users. */}}
+REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
+REDIS_CA_CERT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "caCert" "nativeKey" "REDIS_CA_CERT" "default" "") | quote }}
 GOOGLE_APPLICATION_CREDENTIALS: {{ $cm.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
 REDIS_SERVICE_ACCOUNT: {{ $cm.REDIS_SERVICE_ACCOUNT | default "" | quote }}
 {{- /* Object storage (S3/SeaweedFS) — non-secret fields passthrough; keys stay in the Secret. */}}
@@ -343,7 +350,7 @@ MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
 MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "100" | quote }}
 MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
-MONGO_PARAMETERS: {{ $cm.MONGO_PARAMETERS | default "maxIdleTimeMS=60000" | quote }}
+MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "maxIdleTimeMS=60000") | quote }}
 {{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env (global.observability);
    identity (library/port/insecure) stays inline. configmap.<KEY> still overrides via otel.env. */}}
 OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}

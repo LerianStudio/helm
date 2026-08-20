@@ -1,0 +1,61 @@
+# =============================================================================
+# PROFILE: managed-aws  (shipped WITH the chart, versioned. Clients do not edit.)
+# =============================================================================
+# The TOPOLOGY of a Lerian managed-cloud environment on AWS — expressed entirely
+# through the lerian-common typed masks / global blocks, NOT scattered configmap
+# keys. Install with:
+#
+#   helm install reporter lerian/reporter \
+#     -f values-managed-aws.yaml \      # <- this profile (topology; ours)
+#     -f my-endpoints.yaml              # <- the client contract (where the infra is)
+#
+# Bundled dev topology remains the chart default (no profile => in-cluster infra,
+# plaintext). Sibling profiles: values-managed-gcp.yaml, values-managed-azure.yaml.
+
+# --- managed data services: bundled subcharts OFF ----------------------------
+mongodb: { enabled: false }
+rabbitmq: { enabled: false }
+valkey: { enabled: false }
+seaweedfs: { enabled: false }
+keda: { enabled: false, external: false }
+otel-collector-lerian: { enabled: false }
+
+global:
+  multiTenant: { enabled: false }
+
+  # -- Connection TOPOLOGY via the typed datastore masks. The client's contract
+  #    adds host/port/user for each; this profile fixes the transport shape.
+  datastores:
+    broker:            # AmazonMQ over TLS
+      scheme: "amqps"
+      amqpPort: "5671"
+      port: "15671"    # management/host port
+    redis:             # ElastiCache in-transit encryption
+      tls: "true"
+    postgres:          # RDS
+      ssl: "require"
+
+  # -- Object storage: real regional S3 (not the bundled SeaweedFS path-style).
+  objectStorage:
+    s3:
+      usePathStyle: "false"
+      disableSSL: "false"
+
+  # -- No OTel collector in a managed bundle → telemetry off (app has the switch).
+  observability:
+    enabled: "false"
+
+# --- object-storage auth = IRSA (AWS). The role ARN is environment-specific and
+#     comes from the contract; the ANNOTATION KEY is the AWS-specific bit that
+#     lives in this cloud profile. (GCP profile uses iam.gke.io/…, Azure uses
+#     azure.workload.identity/…) ---------------------------------------------
+# manager/worker.serviceAccount.annotations.eks.amazonaws.com/role-arn is set by
+# the client contract (per-account ARN); mode = IRSA is what this profile implies.
+
+# --- cloud-agnostic managed-tier tuning (same on every cloud; candidates to
+#     become plain chart defaults in a follow-up). ---------------------------
+common:
+  configmap:
+    RATE_LIMIT_GLOBAL: "1000"
+    RATE_LIMIT_EXPORT: "100"
+    RATE_LIMIT_DISPATCH: "500"

@@ -10,6 +10,13 @@ global:
   # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block
   # "multiTenant"). Fields: enabled. (configmap.MULTI_TENANT_ENABLED overrides.)
   multiTenant: {}
+  # -- Env-wide service discovery (Consul) tuning, consumed by
+  # lerian-common.serviceDiscovery.env. Per-component activation stays with
+  # {auth,identity}.configmap.SD_ENABLED; every derived SD_* sibling (address,
+  # tls, internal/external endpoint) comes from here unless a legacy
+  # configmap.SD_* key is set. Fields: address, tls, tlsSkipVerify, workload,
+  # preferView, internalScheme, externalPort.
+  serviceDiscovery: {}
 
 # Common configuration shared between components
 common:

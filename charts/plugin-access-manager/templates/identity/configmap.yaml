@@ -132,12 +132,19 @@ data:
   # M2M (lib-auth/v3 middleware — identity authorizes inbound M2M calls)
   AUTH_M2M_INVERSION_ENABLED: {{ .Values.identity.configmap.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
 
-  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false)
+  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false). SD_ENABLED is the
+  # only key owned here — every derived SD_* sibling comes from the
+  # lerian-common mask (global.serviceDiscovery, same shape as datastores/env).
   SD_ENABLED: {{ .Values.identity.configmap.SD_ENABLED | default "false" | quote }}
-  SD_ADDRESS: {{ .Values.identity.configmap.SD_ADDRESS | default "localhost:8500" | quote }}
-  SD_EXTERNAL_ADDRESS: {{ .Values.identity.configmap.SD_EXTERNAL_ADDRESS | default "" | quote }}
-  SD_EXTERNAL_PORT: {{ .Values.identity.configmap.SD_EXTERNAL_PORT | default "0" | quote }}
-  SD_TLS: {{ .Values.identity.configmap.SD_TLS | default "false" | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context"     $
+        "enabled"     (eq (toString ($cm.SD_ENABLED | default "false")) "true")
+        "name"        (include "plugin-identity.fullname" .)
+        "port"        .Values.identity.service.port
+        "namespace"   .Release.Namespace
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.identity.ingress))
+        "configmap"   $cm
+      ) | nindent 2 }}
 
   # Extra Env Vars
   {{- with .Values.identity.extraEnvVars }}

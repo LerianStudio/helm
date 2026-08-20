@@ -78,6 +78,20 @@
             "enabled": {}
           },
           "description": "Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block \"multiTenant\")."
+        },
+        "serviceDiscovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "address": {},
+            "tls": {},
+            "tlsSkipVerify": {},
+            "workload": {},
+            "preferView": {},
+            "internalScheme": {},
+            "externalPort": {}
+          },
+          "description": "Env-wide service discovery (Consul) tuning. Consumed by lerian-common.serviceDiscovery.env."
         }
       }
     }

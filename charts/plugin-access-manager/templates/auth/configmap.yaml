@@ -153,12 +153,19 @@ data:
   CACHE_MAX_ENTRIES_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_MAX_ENTRIES_ORG_PERMISSIONS | default "0" | quote }}
   CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS | default "0" | quote }}
 
-  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false)
+  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false). SD_ENABLED is the
+  # only key owned here — every derived SD_* sibling comes from the
+  # lerian-common mask (global.serviceDiscovery, same shape as datastores/env).
   SD_ENABLED: {{ .Values.auth.configmap.SD_ENABLED | default "false" | quote }}
-  SD_ADDRESS: {{ .Values.auth.configmap.SD_ADDRESS | default "localhost:8500" | quote }}
-  SD_EXTERNAL_ADDRESS: {{ .Values.auth.configmap.SD_EXTERNAL_ADDRESS | default "" | quote }}
-  SD_EXTERNAL_PORT: {{ .Values.auth.configmap.SD_EXTERNAL_PORT | default "0" | quote }}
-  SD_TLS: {{ .Values.auth.configmap.SD_TLS | default "false" | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context"     $
+        "enabled"     (eq (toString ($cm.SD_ENABLED | default "false")) "true")
+        "name"        (include "plugin-auth.fullname" .)
+        "port"        .Values.auth.service.port
+        "namespace"   .Release.Namespace
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.auth.ingress))
+        "configmap"   $cm
+      ) | nindent 2 }}
 
   # Extra Env Vars
   {{- with .Values.auth.extraEnvVars }}

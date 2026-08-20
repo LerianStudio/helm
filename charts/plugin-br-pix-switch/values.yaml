@@ -1313,9 +1313,18 @@ appsIngress:
   #                     (camelCase, e.g. dictHub) — used to look up enabled+port
   #   - `serviceName`  (string, required): kebab-case Service name suffix
   #                     (e.g. dict-hub) — matches the rendered Service object
+  #
+  # The `/v1/streaming/manifest` route is the canonical lib-streaming/v3
+  # application manifest endpoint. It shares the SPI Service with the `/spi`
+  # route above (same `component`/`serviceName`) — two route entries, one
+  # component, one Service.
   routes:
     - path: /spi
       pathType: Prefix
+      component: spi
+      serviceName: spi
+    - path: /v1/streaming/manifest
+      pathType: Exact
       component: spi
       serviceName: spi
     - path: /dict-hub

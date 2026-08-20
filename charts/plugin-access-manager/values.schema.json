@@ -45,7 +45,41 @@
     },
     "global": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "datastores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "host": {},
+              "port": {},
+              "user": {},
+              "ssl": {},
+              "tls": {},
+              "caCert": {}
+            }
+          },
+          "description": "Env-wide SHARED datastore masks (set once per environment)."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {}
+          },
+          "description": "Env-wide environment name. Consumed by lerian-common.globalValue (block \"env\")."
+        },
+        "multiTenant": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block \"multiTenant\")."
+        }
+      }
     }
   }
 }

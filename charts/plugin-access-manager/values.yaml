@@ -1,4 +1,16 @@
 
+global:
+  # -- Env-wide SHARED datastore masks (set once per environment; a dedicated
+  # <release>.datastores or a native {auth,identity}.configmap.<KEY> overrides these).
+  # Fields: postgres.{host,port,user,ssl}, redis.{host,port,user,tls,caCert}.
+  datastores: {}
+  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block "env").
+  # Fields: name. (configmap.ENV_NAME overrides.)
+  env: {}
+  # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block
+  # "multiTenant"). Fields: enabled. (configmap.MULTI_TENANT_ENABLED overrides.)
+  multiTenant: {}
+
 # Common configuration shared between components
 common:
   # Common secrets and configurations

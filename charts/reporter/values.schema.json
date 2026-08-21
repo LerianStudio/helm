@@ -7,6 +7,16 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
+        "cloud": {
+          "type": "string",
+          "enum": [
+            "",
+            "aws",
+            "gcp",
+            "azure"
+          ],
+          "description": "Managed-cloud topology preset. Empty = bundled in-cluster infra (plaintext)."
+        },
         "datastores": {
           "type": "object",
           "additionalProperties": {

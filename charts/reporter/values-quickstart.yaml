@@ -15,6 +15,14 @@
 
 # --- The env-wide typed contract (dependency connections + cross-cutting) ------
 global:
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets tls/scheme/ports/
+  # ssl/telemetry/object-storage-path-style for the masks below in one knob —
+  # e.g. "aws" turns on Redis TLS, AmazonMQ amqps, RDS sslmode=require, S3
+  # virtual-host style, and disables the bundled OTel collector. Leave "" for
+  # the bundled in-cluster infra (plaintext). Endpoints (host/port/user) still
+  # come from global.datastores/objectStorage below — a cloud preset can't know
+  # your RDS host.
+  cloud: ""
   # -- Dependency connections. Defaults point at the chart's bundled infra using
   # bare service names (resolve inside the release namespace). Point at your own
   # infra with the typed masks (one knob per field); set <dep>.enabled=false below.
@@ -72,7 +80,9 @@ common:
     # DATASOURCE_ONBOARDING_USER: "midaz"
 
 # -- Bundled dependencies. Set enabled: false to use an external instance instead
-# (then point the masks under global.datastores above at it).
+# (then point the masks under global.datastores above at it). On a managed-cloud
+# install (global.cloud set), turn all four off — you're pointing at RDS/
+# DocumentDB/ElastiCache/AmazonMQ/S3 instead, not the in-cluster bundle.
 rabbitmq:
   enabled: true
 mongodb:
@@ -81,6 +91,15 @@ valkey:
   enabled: true
 seaweedfs:
   enabled: true
+
+# -- Managed-tier rate-limit tuning (same value on every cloud; the chart
+# defaults are sized for the bundled dev topology). Uncomment for a
+# managed-cloud install:
+# common:
+#   configmap:
+#     RATE_LIMIT_GLOBAL: "1000"
+#     RATE_LIMIT_EXPORT: "100"
+#     RATE_LIMIT_DISPATCH: "500"
 
 # -- Credentials. Provide strong values, or reference your own Secret instead by
 # setting `manager.useExistingSecret: true` + `manager.existingSecretName: <name>`

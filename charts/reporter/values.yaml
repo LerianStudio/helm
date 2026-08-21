@@ -3,6 +3,15 @@
 # Declare variables to be passed into your templates.
 
 global:
+  # -- Managed-cloud topology preset: aws | gcp | azure (unset = bundled
+  # in-cluster infra, plaintext). Sets the TOPOLOGY defaults (tls/scheme/ports/
+  # ssl/telemetry/object-storage path-style) for every lerian-common mask below —
+  # see lerian-common.cloud.table. Only ENDPOINTS (host/port/user) stay
+  # client-supplied via global.datastores/objectStorage; a cloud can't know your
+  # RDS host. Precedence: native configmap key > dedicated > shared (global.*) >
+  # this cloud preset > hardcoded default — an explicit global.datastores.<type>.
+  # <field> still overrides the preset.
+  cloud: ""
   # -- Env-wide SHARED datastore masks (set once per environment; a dedicated
   # <release>.datastores or a native common.configmap.<KEY> overrides these).
   # Same sub-keys as the dedicated block: mongo / redis / broker / postgres.

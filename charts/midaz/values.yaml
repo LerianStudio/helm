@@ -273,11 +273,14 @@ ledger:
   # @default -- templates/ledger/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- ENV_NAME/MULTI_TENANT_ENABLED/PLUGIN_AUTH_*/DB_*/MONGO_*/REDIS_*/
-    # RABBITMQ_{URI,HOST,PORT_HOST,PORT_AMQP} are resolved via the lerian-common
-    # masks (global.env/multiTenant/observability/auth/datastores) — do NOT pin
-    # them here, a native key WINS over its mask and defeats it. Their defaults
-    # live in templates/ledger/configmap.yaml.
+    # -- ENV_NAME/MULTI_TENANT_ENABLED/PLUGIN_AUTH_*/DB_{HOST,USER,PORT,SSLMODE,
+    # REPLICA_HOST,REPLICA_USER,REPLICA_PORT,REPLICA_SSLMODE}/MONGO_{HOST,USER,
+    # PORT,PARAMETERS}/REDIS_{HOST,PORT,TLS}/RABBITMQ_{URI,HOST,PORT_HOST,
+    # PORT_AMQP} are resolved via the lerian-common masks (global.env/
+    # multiTenant/observability/auth/datastores) — do NOT pin them here, a
+    # native key WINS over its mask and defeats it. Their defaults live in
+    # templates/ledger/configmap.yaml. MONGO_*_URI/DB_*_NAME/MONGO_*_NAME below
+    # are per-module identifiers, deliberately native, NOT covered by any mask.
     # -- ledger ships with telemetry ON by default, unlike the mask's own
     # (intentionally conservative) "false" fallback — pinned explicitly here so
     # this component's shipped default doesn't depend on the mask's fallback.

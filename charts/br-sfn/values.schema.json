@@ -2301,8 +2301,11 @@
               "MQ_SSL_KEY_REPOSITORY",
               "MQ_TLS_ENABLED",
               "OTEL_EXPORTER_OTLP_ENDPOINT",
+              "POSTGRES_HOST",
+              "POSTGRES_PORT",
               "REDIS_ADDRESS",
               "REDIS_DB",
+              "REDIS_HOST",
               "REDIS_TLS",
               "SERVER_PORT",
               "SERVICE_NAME",
@@ -2927,6 +2930,8 @@
               "PLUGIN_ACCESS_MANAGER_URL",
               "PLUGIN_AUTH_ADDRESS",
               "PLUGIN_AUTH_ENABLED",
+              "POSTGRES_HOST",
+              "POSTGRES_PORT",
               "SERVER_PORT",
               "SERVICE_NAME"
             ]

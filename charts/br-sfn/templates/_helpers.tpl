@@ -1135,7 +1135,22 @@ Input dict: root ($), comp (.Values.siloc), port (service port; SERVER_PORT defa
 {{- $root := .root -}}
 {{- $ds := $root.Values.siloc.datastores | default dict -}}
 {{- $port := .port -}}
-{{- $cm := .comp.configmap | default dict -}}
+{{- $cm := deepCopy (.comp.configmap | default dict) -}}
+{{- /* Backward-compat: pre-productization siloc had no fixed native keys (pure
+   passthrough), so upgrading operators may have set the legacy POSTGRES_HOST,
+   POSTGRES_PORT and REDIS_HOST names used by every other rail's migration-job
+   convention. Accept them as a fallback when the productized native key
+   (DB_HOST, DB_PORT, REDIS_ADDRESS) is unset, so an old values.yaml keeps
+   working functionally, not just schema-valid. */ -}}
+{{- if and (not (hasKey $cm "DB_HOST")) (hasKey $cm "POSTGRES_HOST") -}}
+{{- $cm = set $cm "DB_HOST" (index $cm "POSTGRES_HOST") -}}
+{{- end -}}
+{{- if and (not (hasKey $cm "DB_PORT")) (hasKey $cm "POSTGRES_PORT") -}}
+{{- $cm = set $cm "DB_PORT" (index $cm "POSTGRES_PORT") -}}
+{{- end -}}
+{{- if and (not (hasKey $cm "REDIS_ADDRESS")) (hasKey $cm "REDIS_HOST") -}}
+{{- $cm = set $cm "REDIS_ADDRESS" (index $cm "REDIS_HOST") -}}
+{{- end -}}
   # =============================================================================
   # DATABASE — PostgreSQL (native DB_*; host/port/user/name/ssl/replicaHost via
   # datastore mask). DB_PASSWORD -> Secret.
@@ -1207,7 +1222,15 @@ Input dict: root ($).
 {{- define "br-sfn.silocMigrationConfig" -}}
 {{- $root := .root -}}
 {{- $ds := $root.Values.siloc.datastores | default dict -}}
-{{- $cm := $root.Values.siloc.configmap | default dict -}}
+{{- $cm := deepCopy ($root.Values.siloc.configmap | default dict) -}}
+{{- /* Same legacy alias as silocConfigData — keep the dedicated migrator's view
+   of DB_HOST/DB_PORT consistent with the app's view. */ -}}
+{{- if and (not (hasKey $cm "DB_HOST")) (hasKey $cm "POSTGRES_HOST") -}}
+{{- $cm = set $cm "DB_HOST" (index $cm "POSTGRES_HOST") -}}
+{{- end -}}
+{{- if and (not (hasKey $cm "DB_PORT")) (hasKey $cm "POSTGRES_PORT") -}}
+{{- $cm = set $cm "DB_PORT" (index $cm "POSTGRES_PORT") -}}
+{{- end -}}
 POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "") | quote }}
 POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
 POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "") | quote }}
@@ -1376,7 +1399,17 @@ Input dict: root ($), comp (.Values.desk), port (service port; SERVER_PORT defau
 {{- $root := .root -}}
 {{- $ds := $root.Values.desk.datastores | default dict -}}
 {{- $port := .port -}}
-{{- $cm := .comp.configmap | default dict -}}
+{{- $cm := deepCopy (.comp.configmap | default dict) -}}
+{{- /* Backward-compat: pre-productization desk had no fixed native keys (pure
+   passthrough), so upgrading operators may have set the POSTGRES_* names used
+   by every other rail's migration-job convention. Accept them as a fallback
+   when the productized native key (DB_*) is unset. */ -}}
+{{- if and (not (hasKey $cm "DB_HOST")) (hasKey $cm "POSTGRES_HOST") -}}
+{{- $cm = set $cm "DB_HOST" (index $cm "POSTGRES_HOST") -}}
+{{- end -}}
+{{- if and (not (hasKey $cm "DB_PORT")) (hasKey $cm "POSTGRES_PORT") -}}
+{{- $cm = set $cm "DB_PORT" (index $cm "POSTGRES_PORT") -}}
+{{- end -}}
   # =============================================================================
   # DATABASE — PostgreSQL (native DB_*; host/port/user/name/ssl via datastore mask;
   # pool tuning passthrough). DB_PASSWORD -> Secret. No read replica.
@@ -1435,7 +1468,15 @@ Input dict: root ($).
 {{- define "br-sfn.deskMigrationConfig" -}}
 {{- $root := .root -}}
 {{- $ds := $root.Values.desk.datastores | default dict -}}
-{{- $cm := $root.Values.desk.configmap | default dict -}}
+{{- $cm := deepCopy ($root.Values.desk.configmap | default dict) -}}
+{{- /* Same legacy alias as deskConfigData — keep the baked migrator's view of
+   DB_HOST/DB_PORT consistent with the app's view. */ -}}
+{{- if and (not (hasKey $cm "DB_HOST")) (hasKey $cm "POSTGRES_HOST") -}}
+{{- $cm = set $cm "DB_HOST" (index $cm "POSTGRES_HOST") -}}
+{{- end -}}
+{{- if and (not (hasKey $cm "DB_PORT")) (hasKey $cm "POSTGRES_PORT") -}}
+{{- $cm = set $cm "DB_PORT" (index $cm "POSTGRES_PORT") -}}
+{{- end -}}
 POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "localhost") | quote }}
 POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
 POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $root "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "desk") | quote }}
@@ -1745,10 +1786,17 @@ hostKey (native host env key), hostDefault (legacy default for host).
 {{- /* IPv6-aware composition. Colon count decides whether the host already carries a
    port: 0 colons -> bare host, append :port; >1 colon -> bare IPv6 literal, bracket
    then append [host]:port; exactly 1 colon -> legacy host:port / ipv4:port, leave as-is.
-   An already-bracketed host (contains ']') or an unset port is emitted verbatim. */ -}}
+   A host already ending in "]:<port>" (bracketed IPv6 WITH an embedded port) is
+   emitted verbatim. A bracketed IPv6 host WITHOUT an embedded port (e.g.
+   "[2001:db8::10]") is NOT verbatim -- a configured port must still be appended,
+   otherwise it would be silently dropped. An unset port is always emitted verbatim. */ -}}
 {{- $colons := sub (len (splitList ":" $host)) 1 -}}
-{{- if or (not $port) (contains "]" $host) -}}
+{{- if not $port -}}
 {{- $host -}}
+{{- else if regexMatch "\\]:[0-9]+$" $host -}}
+{{- $host -}}
+{{- else if contains "]" $host -}}
+{{- printf "%s:%s" $host $port -}}
 {{- else if eq $colons 0 -}}
 {{- printf "%s:%s" $host $port -}}
 {{- else if gt $colons 1 -}}

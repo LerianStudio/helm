@@ -6,7 +6,10 @@
 {{- $mgrFullname := include "br-sfn.componentFullname" $mgrId -}}
 {{- $workerFullname := include "br-sfn.componentFullname" $id -}}
 {{- $wImage := $w.image | default dict -}}
-{{- $repo := $wImage.repository | default $mgr.image.repository -}}
+{{- if not $wImage.repository -}}
+{{- fail "\n\nERROR: sta.worker.image.repository is REQUIRED.\n   The STA worker runs a DIFFERENT binary (cmd/worker) than the manager (cmd/app) —\n   it must NOT silently reuse the manager's image repository.\n   Set sta.worker.image.repository to the worker's own image (e.g. ghcr.io/lerianstudio/br-sta-worker).\n" -}}
+{{- end -}}
+{{- $repo := $wImage.repository -}}
 {{- $tag := $wImage.tag | default $mgr.image.tag | default $.Chart.AppVersion -}}
 {{- $pullPolicy := $wImage.pullPolicy | default $mgr.image.pullPolicy | default "IfNotPresent" -}}
 {{- $secCtx := $w.securityContext | default $.Values.securityContext -}}
@@ -36,6 +39,13 @@ spec:
       annotations:
         {{- with $w.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- /* Worker envFrom also pulls the MANAGER's ConfigMap/Secret (see envFrom
+               below): a rotation on the manager side must roll the worker too, so the
+               checksum covers manager config + manager secret + worker's own config. */}}
+        checksum/config: {{ include "br-sfn.staConfigData" (dict "root" $ "comp" $mgr "port" (($mgr.service | default dict).port | default 8080) "cm" ($mgr.configmap | default dict)) | sha256sum }}
+        {{- if $hasSecret }}
+        checksum/secret: {{ include "br-sfn.componentSecretData" (dict "comp" $mgr "shared" dict) | sha256sum }}
         {{- end }}
         checksum/worker-config: {{ include "br-sfn.staWorkerConfigData" (dict "root" $ "port" (($w.service | default dict).port | default 8081)) | sha256sum }}
       labels:

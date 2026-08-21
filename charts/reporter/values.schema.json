@@ -44,6 +44,14 @@
           },
           "description": "Env-wide object storage (S3/SeaweedFS) mask, consumed by"
         },
+        "env": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {}
+          },
+          "description": "Env-wide environment name. Consumed by lerian-common.globalValue (block \"env\"),"
+        },
         "observability": {
           "type": "object",
           "additionalProperties": false,

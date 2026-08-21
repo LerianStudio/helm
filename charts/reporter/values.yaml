@@ -29,6 +29,11 @@ global:
   #   objectStorage:
   #     s3: { endpoint: "https://s3.us-east-1.amazonaws.com", region: "us-east-1", bucket: "my-bucket" }
   objectStorage: {}
+  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block "env"),
+  # single-sourcing ENV_NAME and OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT so they can't drift.
+  # Fields: name. (configmap.ENV_NAME overrides.)
+  # Example: env: { name: "production" }
+  env: {}
   # -- Env-wide observability. Consumed by lerian-common.globalValue (block "observability").
   # Fields: enabled, otlpEndpoint, deploymentEnvironment. (configmap.<KEY> overrides.)
   # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }

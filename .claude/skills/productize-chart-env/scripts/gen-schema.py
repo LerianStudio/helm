@@ -129,6 +129,7 @@ MASK_KEYED = {"datastores", "objectStorage"}        # child = <type>/<name>; kms
 GLOBAL_MASK_FIELDS = {
     "observability": ["deploymentEnvironment", "enabled", "otlpEndpoint"],
     "auth":          ["enabled", "host"],
+    "env":           ["name"],
 }
 
 

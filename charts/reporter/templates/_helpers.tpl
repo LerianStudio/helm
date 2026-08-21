@@ -321,7 +321,7 @@ Input: the root context ($).
    safety check then refused to boot with the bundled (non-https) OTel
    endpoint. Keeping one source of truth avoids the chart contradicting its
    own app on the happy path (helm install with no overrides). */ -}}
-{{- $envName := $cm.ENV_NAME | default "development" -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") -}}
 ENV_NAME: {{ $envName | quote }}
 {{/* The bundled/dev topology (mongo/redis/postgres/rabbitmq subcharts) has no
    TLS on any of them — the app REQUIRES this flag to bypass, it isn't a

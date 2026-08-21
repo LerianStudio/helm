@@ -7,16 +7,6 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "cloud": {
-          "type": "string",
-          "enum": [
-            "",
-            "aws",
-            "gcp",
-            "azure"
-          ],
-          "description": "Managed-cloud topology preset. Empty = bundled in-cluster infra (plaintext)."
-        },
         "datastores": {
           "type": "object",
           "additionalProperties": {
@@ -29,16 +19,25 @@
               "replicaHost": {},
               "ssl": {},
               "uri": {},
-              "user": {},
-              "params": {},
-              "scheme": {},
-              "amqpPort": {},
-              "tls": {},
-              "caCert": {},
-              "protocol": {}
+              "user": {}
             }
           },
-          "description": "Env-wide SHARED datastore masks (set once per environment; a dedicated <release>.datastores or a native common.configmap.<KEY> overrides these). Same sub-keys as the dedicated block: mongo / redis / broker / postgres."
+          "description": "Env-wide SHARED datastore masks (set once per environment; a dedicated"
+        },
+        "objectStorage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "bucket": {},
+              "disableSSL": {},
+              "endpoint": {},
+              "region": {},
+              "usePathStyle": {}
+            }
+          },
+          "description": "Env-wide object storage (S3/SeaweedFS) mask, consumed by"
         },
         "observability": {
           "type": "object",
@@ -58,26 +57,6 @@
             "host": {}
           },
           "description": "Env-wide auth (access-manager). Consumed by lerian-common.globalValue (block \"auth\")."
-        },
-        "streaming": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when streaming is enabled."
-        },
-        "serviceDiscovery": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Env-wide service discovery placeholder (reporter keeps SD_* as configmap passthrough)."
-        },
-        "multiTenant": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED gate today."
-        },
-        "objectStorage": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Env-wide object storage (S3/SeaweedFS) mask. Consumed by lerian-common.objectStorage.value (name \"s3\")."
         }
       }
     },
@@ -402,9 +381,6 @@
                   "ALLOW_RATELIMIT_FAIL_OPEN",
                   "APP_CONTEXT",
                   "APP_ENC_KEY",
-                  "CORS_ALLOWED_HEADERS",
-                  "CORS_ALLOWED_METHODS",
-                  "CORS_ALLOWED_ORIGINS",
                   "CRYPTO_ENCRYPT_SECRET_KEY_CRM",
                   "CRYPTO_HASH_SECRET_KEY_CRM",
                   "DATASOURCE_EXTERNAL_CONFIG_NAME",
@@ -780,9 +756,6 @@
                   "ALLOW_RATELIMIT_FAIL_OPEN",
                   "APP_CONTEXT",
                   "APP_ENC_KEY",
-                  "CORS_ALLOWED_HEADERS",
-                  "CORS_ALLOWED_METHODS",
-                  "CORS_ALLOWED_ORIGINS",
                   "CRYPTO_ENCRYPT_SECRET_KEY_CRM",
                   "CRYPTO_HASH_SECRET_KEY_CRM",
                   "DATASOURCE_EXTERNAL_CONFIG_NAME",
@@ -1059,9 +1032,6 @@
                   "ALLOW_RATELIMIT_FAIL_OPEN",
                   "APP_CONTEXT",
                   "APP_ENC_KEY",
-                  "CORS_ALLOWED_HEADERS",
-                  "CORS_ALLOWED_METHODS",
-                  "CORS_ALLOWED_ORIGINS",
                   "CRYPTO_ENCRYPT_SECRET_KEY_CRM",
                   "CRYPTO_HASH_SECRET_KEY_CRM",
                   "DATASOURCE_EXTERNAL_CONFIG_NAME",
@@ -1226,16 +1196,10 @@
           "replicaHost": {},
           "ssl": {},
           "uri": {},
-          "user": {},
-          "params": {},
-          "scheme": {},
-          "amqpPort": {},
-          "tls": {},
-          "caCert": {},
-          "protocol": {}
+          "user": {}
         }
       },
-      "description": "Dedicated datastore masks for THIS release (override global.datastores). Both the manager and worker surfaces share these connections. Sub-keys per type: mongo {host,port,user}, redis {host}, broker {host,port}, postgres {host,port,user,ssl}. The native common.configmap.<KEY> still wins over these; these win over global.datastores."
+      "description": "Dedicated datastore masks for THIS release (override global.datastores). Both the"
     },
     "secrets": {
       "type": "object",
@@ -1257,7 +1221,6 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "type": "boolean",
           "default": false,
           "description": "Enable or disable the RabbitMQ bootstrap job"
         },
@@ -1266,8 +1229,6 @@
           "description": "RabbitMQ connection settings",
           "properties": {
             "protocol": {
-              "type": "string",
-              "enum": ["http", "https"],
               "default": "http",
               "description": "RabbitMQ protocol (http or https)"
             },

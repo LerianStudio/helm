@@ -223,10 +223,6 @@ manager:
     APP_CONTEXT: "/manager/v1"
     SERVER_PORT: "4005"
     SERVER_ADDRESS: ":4005" #":{{ .Values.manager.configmap.SERVER_PORT }}"
-    # CORS
-    CORS_ALLOWED_ORIGINS: "*"
-    CORS_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-    CORS_ALLOWED_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
     # LOG LEVEL
     LOG_LEVEL: info
     # AUTH — PLUGIN_AUTH_ENABLED/_ADDRESS now emitted by lerian-common.auth.env (global.auth);

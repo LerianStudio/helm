@@ -303,7 +303,15 @@ Input: the root context ($).
     "DATASOURCE_ONBOARDING_USER" "DATASOURCE_ONBOARDING_DATABASE" "DATASOURCE_ONBOARDING_TYPE"
     "DATASOURCE_ONBOARDING_SSLMODE" "DATASOURCE_ONBOARDING_SSLROOTCERT"
 -}}
-ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+{{- /* Reused below as OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT's default — the two
+   were previously independent hardcoded literals ("development" here,
+   "production" there), so a plain no-args install landed in ENV_NAME=development
+   but OTEL deployment_environment=production, and the app's own production
+   safety check then refused to boot with the bundled (non-https) OTel
+   endpoint. Keeping one source of truth avoids the chart contradicting its
+   own app on the happy path (helm install with no overrides). */ -}}
+{{- $envName := $cm.ENV_NAME | default "development" -}}
+ENV_NAME: {{ $envName | quote }}
 ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
 {{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the
    topology fields scheme (amqp|amqps) and amqpPort — so a managed-broker profile
@@ -356,7 +364,7 @@ MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" 
 OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}
 OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
 OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote }}
-{{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "true" "endpointDefault" "otlp://midaz-otel-lgtm:4317" "deploymentEnvironmentDefault" "production") | nindent 0 }}
+{{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "true" "endpointDefault" "otlp://midaz-otel-lgtm:4317" "deploymentEnvironmentDefault" $envName) | nindent 0 }}
 FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
 FETCHER_URL: {{ $cm.FETCHER_URL | default "" | quote }}
 MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}

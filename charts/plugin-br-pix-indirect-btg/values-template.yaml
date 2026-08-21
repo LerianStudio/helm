@@ -47,6 +47,9 @@ pix:
     DECLARATION_ENABLED: "false"
     # Defaults to the identity service in the Helm release namespace when empty.
     PLUGIN_IDENTITY_HOST: ""
+    # RI M2M enforcement. Enable both only with a compatible Access Manager deployment.
+    AUTH_M2M_INVERSION_ENABLED: "false"
+    AUTH_M2M_PRODUCT_FORWARD_ENABLED: "false"
     PIX_ISPB: ""
     MIDAZ_ORGANIZATION_ID: ""
     MIDAZ_LEDGER_ID: ""

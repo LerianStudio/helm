@@ -34,7 +34,7 @@ spec:
         {{- end }}
         containers:
         - name: {{ include "plugin-worker.fullname" . }}
-          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
+          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag | default (include "plugin.version" .) }}"
           imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
           envFrom:
             - configMapRef:

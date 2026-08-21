@@ -54,6 +54,15 @@ auth-database:
   enabled: false
 valkey:
   enabled: false
+
+# auth.secrets.DB_PASSWORD/REDIS_PASSWORD are normally single-sourced from the
+# bundled subcharts' own Secrets. With both disabled above, supply the managed
+# instances' credentials explicitly (or point auth.existingSecretName at a
+# pre-created Secret with the same keys instead of inlining them here):
+auth:
+  secrets:
+    DB_PASSWORD: "CHANGE_ME"
+    REDIS_PASSWORD: "CHANGE_ME"
 ```
 
 `global.cloud` sets the connection TOPOLOGY (TLS, SSL mode) for every mask

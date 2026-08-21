@@ -38,7 +38,7 @@
               "protocol": {}
             }
           },
-          "description": "Env-wide SHARED datastore masks (set once per environment; a dedicated"
+          "description": "Env-wide SHARED datastore masks (set once per environment; a dedicated <release>.datastores or a native common.configmap.<KEY> overrides these). Same sub-keys as the dedicated block: mongo / redis / broker / postgres."
         },
         "observability": {
           "type": "object",
@@ -325,8 +325,7 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
+          "type": "array",
           "description": "Tolerations for scheduling on tainted nodes"
         },
         "affinity": {
@@ -737,8 +736,7 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
+          "type": "array",
           "description": "Tolerations for scheduling on tainted nodes"
         },
         "affinity": {
@@ -1237,7 +1235,7 @@
           "protocol": {}
         }
       },
-      "description": "Dedicated datastore masks for THIS release (override global.datastores). Both the"
+      "description": "Dedicated datastore masks for THIS release (override global.datastores). Both the manager and worker surfaces share these connections. Sub-keys per type: mongo {host,port,user}, redis {host}, broker {host,port}, postgres {host,port,user,ssl}. The native common.configmap.<KEY> still wins over these; these win over global.datastores."
     },
     "secrets": {
       "type": "object",
@@ -1259,6 +1257,7 @@
       "type": "object",
       "properties": {
         "enabled": {
+          "type": "boolean",
           "default": false,
           "description": "Enable or disable the RabbitMQ bootstrap job"
         },
@@ -1267,6 +1266,8 @@
           "description": "RabbitMQ connection settings",
           "properties": {
             "protocol": {
+              "type": "string",
+              "enum": ["http", "https"],
               "default": "http",
               "description": "RabbitMQ protocol (http or https)"
             },

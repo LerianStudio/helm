@@ -93,6 +93,27 @@ Copy `values-template.yaml` as your starting point — it documents every
 `global.*` mask with a working example. `values.yaml` is the full
 power-user reference; `values.schema.json` validates it.
 
+### Notable Default Changes (lerian-common adoption + OTEL/TLS fix)
+
+This chart version adopts `lerian-common` typed masks and, alongside the stated
+OTEL/TLS fix, ships a few deliberate operational default changes. Each is
+render-equivalent for the bundled dev topology (no override needed) unless noted:
+
+| Key | Old default | New default | Rationale |
+|-----|--------------|-------------|-----------|
+| `common.configmap.ALLOW_INSECURE_TLS` | `"false"` | **`"true"`** (security-relevant) | The bundled mongo/redis/rabbitmq/postgres subcharts run without TLS; the app *requires* this flag to bypass (mongo hard-fails with "TLS required" otherwise), so a zero-override `helm install` previously crashed. Same convention as `plugin-access-manager`. Flip to `"false"` explicitly for any managed-cloud/TLS-terminated topology (`global.cloud` presets do this for you). |
+| `common.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` | `"production"` | derived from `ENV_NAME` (default `"development"`) | Single-sources the OTEL deployment-environment with `ENV_NAME` instead of two independent hardcoded literals, so a zero-override install no longer contradicts itself (`ENV_NAME=development` but `deployment_environment=production`), which previously tripped the app's own production safety check against the non-TLS bundled OTel endpoint. |
+| `manager.configmap.LOG_LEVEL` / `worker.configmap.LOG_LEVEL` | `debug` | `info` | Reduce default log noise; override to `debug` for local troubleshooting. |
+| `worker.configmap.PDF_POOL_WORKERS` | `"5"` | `"3"` | Aligns the worker's default pool size with the manager's existing default (`3`), which was already `3` pre-PR. |
+| `worker.configmap.PDF_TIMEOUT_SECONDS` | `"30"` | `"90"` | Gives PDF generation enough headroom for larger reports before timing out. |
+| `common.configmap.MONGO_PARAMETERS` | `""` | `"maxIdleTimeMS=60000"` | Bounds idle MongoDB connections instead of holding them open indefinitely; a sensible production-safe default, not required by the OTEL/TLS fix but bundled here as part of the same "sensible chart defaults" pass. Override with `common.configmap.MONGO_PARAMETERS: ""` to restore the old (unbounded) behavior. |
+| `seaweedfs.global.serviceAccountName` | *(unset — subchart default `"seaweedfs"`)* | `"reporter-seaweedfs"` | **Upgrade note:** paired with `seaweedfs.global.createClusterRole: false` (also new) to avoid a fixed-name cluster-scoped `ClusterRole`/`ClusterRoleBinding` collision when more than one release runs on the same cluster. Because `createClusterRole` defaults to `false`, the ClusterRole itself is not created either way — but this **does rename the SeaweedFS `ServiceAccount`** object referenced by the master/volume/filer StatefulSets on any existing install that had `seaweedfs.enabled: true` before this change (old name `seaweedfs` → new name `reporter-seaweedfs`). Expect a one-time rolling restart of the SeaweedFS pods on upgrade; if you have IRSA/IAM-role annotations or RoleBindings pinned to the old ServiceAccount name, update them to `reporter-seaweedfs` before upgrading. |
+
+`MONGO_MAX_POOL_SIZE` (`100`) and `MONGO_HOST`/`RABBITMQ_HOST`/`RABBITMQ_HEALTH_CHECK_URL`/`REDIS_HOST`/`OBJECT_STORAGE_ENDPOINT`
+(FQDN `<svc>.reporter.svc.cluster.local` form, restored in this PR after an
+unintentional short-name drift was caught in review) are unchanged from the
+pre-adoption defaults — kept byte-identical for existing installs.
+
 ### Common Settings
 
 | Parameter | Description | Default |

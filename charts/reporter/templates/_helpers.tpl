@@ -267,7 +267,7 @@ Input: the root context ($).
 {{- $osv := "lerian-common.objectStorage.value" -}}
 {{- /* Broker host+mgmt-port resolved once (via the datastore mask) — reused by RABBITMQ_HOST,
    RABBITMQ_PORT_HOST and the derived RABBITMQ_HEALTH_CHECK_URL (single-source). */ -}}
-{{- $rmqHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq") -}}
+{{- $rmqHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq.reporter.svc.cluster.local") -}}
 {{- $rmqMgmtPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") -}}
 {{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled -}}
 {{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = index $cm "STREAMING_ENABLED" -}}{{- end -}}
@@ -342,7 +342,7 @@ RABBITMQ_GENERATE_REPORT_KEY: {{ $cm.RABBITMQ_GENERATE_REPORT_KEY | default "rep
 {{- /* Health-check URL single-sourced from the broker mask (host:mgmt-port); configmap override still wins. */}}
 RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default (printf "http://%s:%s" $rmqHost $rmqMgmtPort) | quote }}
 {{- /* Redis/Valkey connection via datastore mask (host carries host:port). */}}
-REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "reporter-valkey:6379") | quote }}
+REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "reporter-valkey.reporter.svc.cluster.local:6379") | quote }}
 REDIS_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") | quote }}
 REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
 REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
@@ -358,14 +358,14 @@ REDIS_SERVICE_ACCOUNT: {{ $cm.REDIS_SERVICE_ACCOUNT | default "" | quote }}
 {{- /* Object storage via lerian-common.objectStorage.value mask (name "s3"); non-secret
    fields only — keys stay in the Secret. configmap.OBJECT_STORAGE_* overrides objectStorage.s3
    / global.objectStorage.s3 / default. */}}
-OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "http://seaweedfs-s3:8333") | quote }}
+OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "http://seaweedfs-s3.reporter.svc.cluster.local:8333") | quote }}
 OBJECT_STORAGE_REGION: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "region" "nativeKey" "OBJECT_STORAGE_REGION" "default" "us-east-1") | quote }}
 OBJECT_STORAGE_USE_PATH_STYLE: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "usePathStyle" "nativeKey" "OBJECT_STORAGE_USE_PATH_STYLE" "default" "true") | quote }}
 OBJECT_STORAGE_DISABLE_SSL: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "disableSSL" "nativeKey" "OBJECT_STORAGE_DISABLE_SSL" "default" "true") | quote }}
 OBJECT_STORAGE_BUCKET: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "bucket" "nativeKey" "OBJECT_STORAGE_BUCKET" "default" "reporter-storage") | quote }}
 {{- /* MongoDB connection via datastore mask (host/port/user); name/tuning stay passthrough. */}}
 MONGO_URI: {{ $cm.MONGO_URI | default "mongodb" | quote }}
-MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "reporter-mongodb") | quote }}
+MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "reporter-mongodb.reporter.svc.cluster.local") | quote }}
 MONGO_NAME: {{ $cm.MONGO_NAME | default "reporter-db" | quote }}
 MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "reporter") | quote }}
 MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}

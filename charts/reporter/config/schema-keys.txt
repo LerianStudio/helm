@@ -1,7 +1,11 @@
 # Allowlist source for values.schema.json propertyNames (configmap escape hatch).
 # Regenerate: gen-schema.py --values ... --chart-dir charts/reporter \
 #   --rendered-keys charts/reporter/config/schema-keys.txt --open-prefixes DATASOURCE_
-# DATASOURCE_<name>_* is deployment-namespaced (pattern-guarded, not listed here).
+# DATASOURCE_ONBOARDING_* and DATASOURCE_EXTERNAL_* below are the chart's built-in example
+# datasources and ARE listed here (they render literally). --open-prefixes DATASOURCE_ additionally
+# relaxes values.schema.json's propertyNames guard to `anyOf: [enum, pattern ^DATASOURCE_[A-Z0-9_]+$]`,
+# so any OTHER operator-defined datasource name (e.g. DATASOURCE_CRM_HOST) also validates even
+# though it can never be enumerated here — see gen-schema.py's OPEN_PREFIXES for the exact pattern.
 AGGRESSIVE_RATE_LIMIT_MAX
 AGGRESSIVE_RATE_LIMIT_WINDOW_SEC
 ALLOW_INSECURE_TLS

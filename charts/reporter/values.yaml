@@ -176,7 +176,7 @@ manager:
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
-  tolerations: {}
+  tolerations: []
   # -- Affinity rules for pod scheduling
   affinity: {}
   # nodeAffinity:
@@ -339,7 +339,7 @@ worker:
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
-  tolerations: {}
+  tolerations: []
   # -- Affinity rules for pod scheduling
   affinity: {}
   # nodeAffinity:

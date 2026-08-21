@@ -24,12 +24,12 @@ The chart has been INSTALLED with version {{ .Chart.Version }}.
 The following dependencies have been deployed:
 
 1. RabbitMQ
-   - Host: {{ include "lerian-common.datastore.value" (dict "context" . "dedicated" (.Values.datastores | default dict) "configmap" (.Values.common.configmap | default dict) "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq") }}
+   - Host: {{ include "lerian-common.datastore.value" (dict "context" . "dedicated" (.Values.datastores | default dict) "configmap" (.Values.common.configmap | default dict) "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq.reporter.svc.cluster.local") }}
    - AMQP Port: {{ include "lerian-common.datastore.value" (dict "context" . "dedicated" (.Values.datastores | default dict) "configmap" (.Values.common.configmap | default dict) "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") }}
    - Management Port: {{ include "lerian-common.datastore.value" (dict "context" . "dedicated" (.Values.datastores | default dict) "configmap" (.Values.common.configmap | default dict) "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") }}
 
 2. MongoDB
-   - Host: {{ include "lerian-common.datastore.value" (dict "context" . "dedicated" (.Values.datastores | default dict) "configmap" (.Values.common.configmap | default dict) "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "reporter-mongodb") }}
+   - Host: {{ include "lerian-common.datastore.value" (dict "context" . "dedicated" (.Values.datastores | default dict) "configmap" (.Values.common.configmap | default dict) "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "reporter-mongodb.reporter.svc.cluster.local") }}
    - Port: {{ include "lerian-common.datastore.value" (dict "context" . "dedicated" (.Values.datastores | default dict) "configmap" (.Values.common.configmap | default dict) "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") }}
 
 3. SeaweedFS

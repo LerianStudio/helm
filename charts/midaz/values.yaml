@@ -74,6 +74,20 @@ global:
       host: "midaz-mongodb"
       # -- MongoDB port
       port: "27017"
+    # -- TLS for the bootstrap job's mongosh connection. Off by default (matches
+    # the bundled MongoDB subchart, which is plaintext); REQUIRED for managed
+    # TLS-only Mongo-API services like AWS DocumentDB.
+    # Example:
+    #   global:
+    #     externalMongoDefinitions:
+    #       tls:
+    #         enabled: true
+    #         insecure: true   # DocumentDB doesn't ship its CA in every client trust store
+    tls:
+      # -- Enable TLS on the mongosh connection (--tls)
+      enabled: false
+      # -- Skip certificate/hostname verification (--tlsInsecure). Only read when tls.enabled=true.
+      insecure: true
     # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
     mongoAdminLogin:
       useExistingSecret:

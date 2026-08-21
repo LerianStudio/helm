@@ -40,12 +40,12 @@ data:
   MIDAZ_TRANSACTION_BASE_PATH: {{ $cm.MIDAZ_TRANSACTION_BASE_PATH | default "http://midaz-transaction:3001/v1" | quote }}
 
   # Plugin Auth Configuration
-  {{- /* PLUGIN_AUTH_ENABLED/HOST via the global "auth" mask (global.auth.{enabled,host}).
-     PLUGIN_AUTH_CLIENT_ID/PORT/BASE_PATH have no mask in the dependency-contract and stay
-     native passthrough. */}}
-  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
+  {{- /* PLUGIN_AUTH_ENABLED/HOST via the dedicated lerian-common.auth.env helper
+     (global.auth.{enabled,host}), the canonical helper for plugin-access-manager
+     consumers per the dependency-contract. PLUGIN_AUTH_CLIENT_ID/PORT/BASE_PATH
+     have no mask in the contract and stay native passthrough. */}}
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "plugin-access-manager-auth") | nindent 2 }}
   PLUGIN_AUTH_CLIENT_ID: {{ $cm.PLUGIN_AUTH_CLIENT_ID | default "" | quote }}
-  PLUGIN_AUTH_HOST: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "plugin-access-manager-auth") | quote }}
   PLUGIN_AUTH_PORT: {{ $cm.PLUGIN_AUTH_PORT | default "4000" | quote }}
   PLUGIN_AUTH_BASE_PATH: {{ $cm.PLUGIN_AUTH_BASE_PATH | default "http://plugin-access-manager-auth:4000/v1" | quote }}
 

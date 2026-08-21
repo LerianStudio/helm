@@ -1,6 +1,7 @@
 {{- /*
 Systemplane Ingress — separate hostname routes admin/runtime-config traffic
-to the systemplane components (SPI, DICT, COB systemplanes).
+to the systemplane components (SPI, DICT, COB, adapter-lerian and Pix
+Automático systemplanes).
 
 Lives on its own hostname so the cluster operator can layer different ingress
 annotations (stricter auth, IP allowlists, separate WAF rules) than the apps

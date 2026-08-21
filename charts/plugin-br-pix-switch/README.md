@@ -10,7 +10,7 @@
 
 BACEN-compliant PIX instant payment platform for the Lerian ecosystem.
 
-The plugin is a Go monorepo that produces 13 independently-deployable binaries.
+The plugin is a Go monorepo that produces 15 independently-deployable binaries.
 This chart deploys all of them with one helm release. Each component has its
 own Deployment, Service, ConfigMap, Secret, HPA, and PDB; ingress is opt-in
 per component.
@@ -32,25 +32,35 @@ per component.
 | `adapterLerian` | `adapter-lerian/api` | 4113 | Lerian provider adapter (API, disabled by default) |
 | `adapterLerianConsumer` | `adapter-lerian/consumer` | 4114 | Lerian provider adapter Kafka consumer (disabled by default) |
 | `adapterLerianSystemplane` | `adapter-lerian/systemplane/api` | 4115 | Runtime config plane for adapter-lerian (disabled by default) |
+| `pixauto` | `pixauto/api` | 4116 | Pix Automático payer side (disabled by default) |
+| `pixautoSystemplane` | `pixauto/systemplane/api` | 4117 | Runtime config plane for Pix Automático (disabled by default) |
+
+> Ports 4111 and 4112 are deliberately skipped. 4111 belongs to `br-slc` — its
+> chart, two environments and a NetworkPolicy scoped to it — and the pair was
+> left free by the component allocated before Pix Automático. Do not fill the
+> gap; take the next number above 4117.
 
 ## Architecture
 
 The plugin uses a Proxy/Hub deployment model. A "hub" component owns business
 logic and local state (its own Postgres database, sometimes Mongo+Valkey),
 while a "proxy" component is a stateless pass-through. Both expose identical
-APIs. Four Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`,
-`pix-adapter-lerian`) and one Mongo database (`pix-dict`) for `dict-hub` (`pix-cob` is a
-forward-compat slot the Mongo bootstrap provisions but no component reads yet).
+APIs. Five Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`,
+`pix-adapter-lerian`, `pix-pixauto`) and one Mongo database (`pix-dict`) for `dict-hub`
+(`pix-cob` is a forward-compat slot the Mongo bootstrap provisions but no component
+reads yet).
 
 ## Required infrastructure
 
 For a full deployment:
-- **PostgreSQL**: 4 databases (`pix-spi`, `pix-dict`, `pix-cob`,
-  `pix-adapter-lerian`) and a role `pixswitch` with full ownership of each
+- **PostgreSQL**: 5 databases (`pix-spi`, `pix-dict`, `pix-cob`,
+  `pix-adapter-lerian`, `pix-pixauto`) and a role `pixswitch` with full
+  ownership of each
 - **MongoDB**: 1 database (`pix-dict`) used by `dict-hub`; the bootstrap also
   provisions `pix-cob` as a forward-compat slot, but no component reads it yet
 - **Valkey** (Redis-compatible): used by `spi`, `dict-hub`, `dict-hub-vsync`
-  for caching
+  for caching and by `pixauto` for its idempotency replay gate (optional there —
+  without it the gated routes fall through to their durable backstops)
 - **RabbitMQ**: used by `dict-hub-vsync` only
 
 For development, the chart's `postgresql`, `valkey`, `rabbitmq`, and `mongodb`
@@ -69,6 +79,8 @@ Default `enabled` values:
 - `adapterProviderMock`: `false` (it's a mock — only enable in dev/staging)
 - `adapterLerian`, `adapterLerianConsumer`, `adapterLerianSystemplane`: `false`
   (Lerian provider adapter — enable per environment)
+- `pixauto`, `pixautoSystemplane`: `false` (Pix Automático payer side — enable
+  per environment once its `pix-pixauto` database and DSN secret exist)
 
 ## Configuration
 
@@ -81,7 +93,10 @@ The app reads:
 - `MONGO_URL`, `MONGO_DB_NAME` (only `dict-hub`)
 - `VALKEY_URL` (full Redis URL)
 - `RABBITMQ_URI` (only `dict-hub-vsync`)
-- `LICENSE_KEY`, `LICENSE_ORGANIZATION_IDS` (every component)
+- `LICENSE_KEY`, `ORGANIZATION_IDS` (every component). `ORGANIZATION_IDS` is
+  the live key (`pkg/config` `BaseConfig.LicenseOrganizationIDs`); the
+  `LICENSE_ORGANIZATION_IDS` entry some components still carry in values.yaml
+  is inert — no code reads that name.
 - `DEPLOYMENT_MODE` (saas/byoc/local)
 - Sibling URLs (`ADAPTER_BASE_URL`, `DICT_BASE_URL`, `COB_BASE_URL`,
   `MIDAZ_BASE_URL`, `CRM_BASE_URL`)

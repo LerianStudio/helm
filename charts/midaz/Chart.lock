@@ -1,4 +1,7 @@
 dependencies:
+- name: lerian-common-helm
+  repository: oci://ghcr.io/lerianstudio
+  version: 2.0.0
 - name: valkey
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 2.4.7
@@ -11,5 +14,5 @@ dependencies:
 - name: rabbitmq
   repository: https://groundhog2k.github.io/helm-charts
   version: 2.1.11
-digest: sha256:2a2522d76f48d28c4bc86bd4c23226346e921eeeba11a217b89b5a71589a7f92
-generated: "2026-06-19T15:26:51.872268447-03:00"
+digest: sha256:f21d109cb1fc67ea0fc8b41d5a7d994ddf604f56a879debdd0783c804b65f551
+generated: "2026-08-21T13:06:26.47642-03:00"

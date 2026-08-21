@@ -1,4 +1,20 @@
 {{- if .Values.crm.enabled }}
+{{- /* Datastore mask (lerian-common): Mongo connection identity + TOPOLOGY resolved
+   via global.datastores.mongo — the SAME bucket ledger's onboarding/transaction
+   modules use (crm points at the same Mongo instance by default; only the
+   database NAME stays native/per-module). Defaults keep the bundled-dev
+   topology -> render-equivalent for existing users.
+
+   crm.datastores is midaz's per-component "dedicated" tier (this is a
+   monolithic parent chart, so the dedicated mask lives under the component key
+   rather than at chart root — see lerian-common's _datastore.tpl doc comment,
+   which names ledger.datastores/crm.datastores explicitly). */ -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $ded := .Values.crm.datastores | default dict -}}
+{{- $cm := .Values.crm.configmap -}}
+{{- /* Single-sourced so OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT can't drift from
+   ENV_NAME (same class of bug fixed in ledger/configmap.yaml above). */ -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,7 +24,7 @@ metadata:
 data:
   # -- Default Environment variables for CRM
   ALLOW_INSECURE_TLS: {{ .Values.crm.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
-  ENV_NAME: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
+  ENV_NAME: {{ $envName | quote }}
 
   # APP
   APPLICATION_NAME: {{ .Values.crm.configmap.APPLICATION_NAME | default "crm" | quote }}
@@ -18,12 +34,12 @@ data:
 
   # Mongo DB
   MONGO_URI: {{ .Values.crm.configmap.MONGO_URI | default "mongodb" | quote }}
-  MONGO_HOST: {{ .Values.crm.configmap.MONGO_HOST | default "midaz-mongodb" | quote }}
-  MONGO_PORT: {{ .Values.crm.configmap.MONGO_PORT | default "27017" | quote }}
+  MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
   MONGO_NAME: {{ .Values.crm.configmap.MONGO_NAME | default "crm" | quote }}
-  MONGO_USER: {{ .Values.crm.configmap.MONGO_USER | default "midaz" | quote }}
+  MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "midaz") | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.crm.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_PARAMETERS: {{ .Values.crm.configmap.MONGO_PARAMETERS | default "" | quote }}
+  MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") | quote }}
   MONGO_TLS_CA_CERT: {{ .Values.crm.configmap.MONGO_TLS_CA_CERT | default "" | quote }}
 
   # SWAGGER
@@ -43,17 +59,16 @@ data:
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.crm.configmap.OTEL_RESOURCE_SERVICE_NAME | default "midaz-crm" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.crm.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-crm" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.crm.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.crm.configmap.ENV_NAME | default "development" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.crm.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default $envName | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.crm.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.crm.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana:4317" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.crm.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
 
   # AUTH
-  PLUGIN_AUTH_ADDRESS: {{ .Values.crm.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-auth" | quote }}
-  PLUGIN_AUTH_ENABLED: {{ .Values.crm.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
 
   # MULTI-TENANT
-  MULTI_TENANT_ENABLED: {{ .Values.crm.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
 
   KMS_VAULT_ADDR: {{ .Values.crm.configmap.KMS_VAULT_ADDR | default "http://midaz-hc-vault:8200" | quote }}
   KMS_VAULT_AUTH_METHOD: {{ .Values.crm.configmap.KMS_VAULT_AUTH_METHOD | default "token" | quote }}

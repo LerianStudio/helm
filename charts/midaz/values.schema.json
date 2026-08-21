@@ -14,7 +14,71 @@
     },
     "global": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "cloud": {
+          "type": "string",
+          "enum": [
+            "",
+            "aws",
+            "gcp",
+            "azure"
+          ],
+          "description": "Managed-cloud topology preset. Empty = bundled in-cluster infra (plaintext)."
+        },
+        "datastores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "host": {},
+              "port": {},
+              "user": {},
+              "ssl": {},
+              "tls": {},
+              "replicaHost": {},
+              "params": {},
+              "scheme": {},
+              "amqpPort": {}
+            }
+          },
+          "description": "Env-wide SHARED datastore masks (set once per environment). Consumed by lerian-common.datastore.value."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {}
+          },
+          "description": "Env-wide environment name. Consumed by lerian-common.globalValue (block \"env\")."
+        },
+        "multiTenant": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block \"multiTenant\")."
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
+        },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {},
+            "host": {}
+          },
+          "description": "Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue (block \"auth\")."
+        }
+      }
     },
     "ledger": {
       "type": "object",
@@ -66,10 +130,12 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "When true, inject OTEL env vars (HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_RESOURCE_ATTRIBUTES) into midaz ledger and crm deployments. The endpoint is fixed at $(HOST_IP):4317 — apps require an OTEL collector listening on the node. To use a different endpoint, leave enabled=false and set OTEL_EXPORTER_OTLP_ENDPOINT directly in the application configmap (ledger.configmap / crm.configmap)."
+          "description": "When true, inject OTEL env vars (HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_RESOURCE_ATTRIBUTES) into midaz ledger and crm deployments. The endpoint is fixed at $(HOST_IP):4317 \u2014 apps require an OTEL collector listening on the node. To use a different endpoint, leave enabled=false and set OTEL_EXPORTER_OTLP_ENDPOINT directly in the application configmap (ledger.configmap / crm.configmap)."
         }
       },
-      "required": ["enabled"]
+      "required": [
+        "enabled"
+      ]
     }
   }
 }

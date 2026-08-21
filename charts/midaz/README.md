@@ -22,6 +22,69 @@ The default installation is similar to the one provided in the [Midaz repo](http
 
 ---
 
+## Managed Cloud (`global.cloud`)
+
+Point ledger/crm/tracer at a managed-cloud environment (AWS/GCP/Azure) instead
+of the bundled in-cluster PostgreSQL/MongoDB/Valkey/RabbitMQ, with one knob:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    postgresOnboarding:  { host: "my-rds.example.com", user: "midaz" }
+    postgresTransaction: { host: "my-rds.example.com", user: "midaz" }
+    mongoOnboarding:     { host: "my-docdb.example.com", user: "midaz" }
+    mongoTransaction:    { host: "my-docdb.example.com", user: "midaz" }
+    mongoCrm:            { host: "my-docdb.example.com", user: "midaz" }
+    redis:               { host: "my-elasticache.example.com", port: "6379" }
+    broker:              { host: "my-amazonmq.example.com" }
+  env:
+    name: "production"
+  observability:
+    enabled: true
+  auth:
+    host: "http://plugin-access-manager-auth:4000"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, AMQP scheme/ports, sslmode,
+DocumentDB connection params) for the masks above. Per-module identity
+(host/port/user — `postgresOnboarding`/`postgresTransaction`/`mongoOnboarding`/
+`mongoTransaction`/`mongoCrm`/`mongoFees`) always comes from `global.datastores`
+or a dedicated `ledger.datastores`/`crm.datastores`/`tracer.datastores` override
+— a cloud preset can't know your RDS host. TOPOLOGY-only fields that a cloud
+preset actually sets (`postgres.ssl`, `mongo.params`, `redis.tls`,
+`broker.scheme`/`amqpPort`/`port`) are shared across every module through the
+generic `postgres`/`mongo`/`redis`/`broker` keys, since onboarding/transaction/
+crm/fees share one physical Postgres/Mongo engine in the overwhelming majority
+of real deployments even though their host/port/user can differ per module.
+
+Precedence (highest to lowest): native `<component>.configmap.<KEY>` >
+dedicated `<component>.datastores` (this component's own instance) > shared
+`global.datastores` (env-wide) > `global.cloud` topology preset (for the
+TOPOLOGY-only fields above) > chart default.
+
+`REDIS_HOST` combines `global.datastores.redis.host` and `.port` (or the
+matching dedicated-tier fields) into the single `host:port` string the ledger
+service expects (e.g. `host: "my-elasticache.example.com"` + `port: "6380"` →
+`REDIS_HOST=my-elasticache.example.com:6380`); a native
+`ledger.configmap.REDIS_HOST` override is expected to already carry its own
+`host:port` and is used verbatim.
+
+`ENV_NAME` is resolved once per component via `global.env.name` and reused as
+the default for that component's `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`, so
+the two can't drift out of sync; a native `<component>.configmap.ENV_NAME` (or
+`.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`) still overrides independently.
+
+The ledger's dedicated migration Job (`templates/ledger/migrations-job.yaml`)
+resolves its own `DB_ONBOARDING_*`/`DB_TRANSACTION_*` connection through the
+SAME masks as the ledger ConfigMap, so an operator who repoints the database
+via `global.datastores`/`ledger.datastores` migrates the exact host/db the app
+then connects to.
+
+Copy `values-template.yaml` as your starting point — it documents every
+`global.*` mask with a working example. `values.yaml` is the full power-user
+reference; `values.schema.json` validates it.
+
 ## Install Midaz Helm Chart:
 
 To install Midaz using Helm, run:

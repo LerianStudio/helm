@@ -28,12 +28,15 @@ tracks progress in the schema_migrations table.
 {{- $onbPort := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "port" "nativeKey" "DB_ONBOARDING_PORT" "default" "5432") }}
 {{- $onbName := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "name" "nativeKey" "DB_ONBOARDING_NAME" "default" "onboarding") }}
 {{- $onbUser := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "user" "nativeKey" "DB_ONBOARDING_USER" "default" "midaz") }}
-{{- $onbSsl := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "ssl" "nativeKey" "DB_ONBOARDING_SSLMODE" "default" "disable") }}
+{{- /* ssl resolved via the generic "postgres" type — matches the same fix in
+   templates/ledger/configmap.yaml so the migration Job and the app can never
+   disagree on TLS requirement, and so a global.cloud preset reaches it. */ -}}
+{{- $onbSsl := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_ONBOARDING_SSLMODE" "default" "disable") }}
 {{- $txHost := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "host" "nativeKey" "DB_TRANSACTION_HOST" "default" $onbHost) }}
 {{- $txPort := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") }}
 {{- $txName := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") }}
 {{- $txUser := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") }}
-{{- $txSsl := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") }}
+{{- $txSsl := include $dv (dict "context" $ "dedicated" $dsl "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") }}
 {{- $dbHost := $onbHost }}
 {{- $dbPort := $onbPort }}
 apiVersion: batch/v1

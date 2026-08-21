@@ -1,4 +1,74 @@
+# midaz — values-template.yaml (the operator fill-in surface)
+#
+# STYLE: the env-wide typed contract lives in ONE `global:` block, FIRST — set
+# each dependency connection ONCE with its typed mask; ledger/crm/tracer
+# configmaps emit the app's native env keys from it. Do NOT scatter
+# *_HOST/*_PORT/*_USER keys into <component>.configmap when a mask exists.
+
 global:
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets tls/scheme/
+  # ports/ssl for the masks below in one knob — e.g. "aws" turns on Redis
+  # TLS, AmazonMQ amqps, RDS sslmode=require, DocumentDB TLS params. Leave ""
+  # for the bundled in-cluster infra (plaintext). Endpoints (host/port/user)
+  # still come from global.datastores below — a cloud preset can't know your
+  # RDS host.
+  # Example:
+  #   global:
+  #     cloud: "aws"
+  cloud: ""
+
+  # -- Dependency connections — typed masks (one knob per field), shared by
+  # ledger/crm/tracer configmaps. Point at your infra here, or keep the
+  # bundled defaults and toggle postgresql/mongodb/rabbitmq/valkey.enabled below.
+  # If ONE component needs a different backend than the rest of the env, set
+  # `ledger.datastores`/`crm.datastores`/`tracer.datastores` instead (same
+  # shape, higher precedence, lower than a native `<component>.configmap.<KEY>`).
+  # Example:
+  #   global:
+  #     datastores:
+  #       postgresOnboarding:  { host: "my-rds.example.com", user: "midaz" }
+  #       postgresTransaction: { host: "my-rds.example.com", user: "midaz" }
+  #       mongoOnboarding:     { host: "my-docdb.example.com", user: "midaz" }
+  #       mongoTransaction:    { host: "my-docdb.example.com", user: "midaz" }
+  #       redis:               { host: "my-elasticache.example.com", port: "6379" }
+  #       broker:               { host: "my-amazonmq.example.com" }
+  datastores: {}
+
+  # -- Env-wide environment name (drives ENV_NAME + observability's deployment
+  # environment default, single-sourced so they can't drift).
+  # Example:
+  #   global:
+  #     env:
+  #       name: "production"
+  env: {}
+    # name: "production"
+
+  # -- Env-wide multi-tenancy gate.
+  # Example:
+  #   global:
+  #     multiTenant:
+  #       enabled: "true"
+  multiTenant: {}
+    # enabled: "true"
+
+  # -- Env-wide telemetry gate.
+  # Example:
+  #   global:
+  #     observability:
+  #       enabled: "true"
+  observability: {}
+    # enabled: "true"
+
+  # -- plugin-access-manager auth, env-wide (ledger/crm/tracer all consume it).
+  # Example:
+  #   global:
+  #     auth:
+  #       enabled: "true"
+  #       host: "http://plugin-access-manager-auth:4000"
+  auth: {}
+    # enabled: "true"
+    # host: "http://plugin-access-manager-auth:4000"
+
   # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
     # -- Enable or disable the RabbitMQ bootstrap job
@@ -52,49 +122,30 @@ ledger:
 
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Auth configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""
+    # -- Auth configuration: PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_HOST come from
+    # global.auth above; do NOT pin them here, a native key wins and defeats it.
     # -- Accounting config
     ACCOUNT_TYPE_VALIDATION: ""
     TRANSACTION_ROUTE_VALIDATION: ""
-    # -- PostgreSQL Onboarding module
-    DB_ONBOARDING_HOST: "midaz-postgresql-primary"
-    DB_ONBOARDING_USER: "midaz"
+    # -- PostgreSQL Onboarding module (host/user/port/replicaHost come from
+    # global.datastores.postgresOnboarding above; only the per-module db name
+    # is native)
     DB_ONBOARDING_NAME: "onboarding"
-    DB_ONBOARDING_PORT: "5432"
-    DB_ONBOARDING_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_ONBOARDING_REPLICA_USER: "midaz"
     DB_ONBOARDING_REPLICA_NAME: "onboarding"
-    DB_ONBOARDING_REPLICA_PORT: "5432"
-    # -- MongoDB Onboarding module
+    # -- MongoDB Onboarding module (host/user/port from global.datastores.mongoOnboarding)
     MONGO_ONBOARDING_URI: "mongodb"
-    MONGO_ONBOARDING_HOST: "midaz-mongodb"
     MONGO_ONBOARDING_NAME: "onboarding"
-    MONGO_ONBOARDING_USER: "midaz"
-    MONGO_ONBOARDING_PORT: "27017"
-    # -- PostgreSQL Transaction module
-    DB_TRANSACTION_HOST: "midaz-postgresql-primary"
-    DB_TRANSACTION_USER: "midaz"
+    # -- PostgreSQL Transaction module (host/user/port/replicaHost come from
+    # global.datastores.postgresTransaction above; only the per-module db name
+    # is native)
     DB_TRANSACTION_NAME: "transaction"
-    DB_TRANSACTION_PORT: "5432"
-    DB_TRANSACTION_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_TRANSACTION_REPLICA_USER: "midaz"
     DB_TRANSACTION_REPLICA_NAME: "transaction"
-    DB_TRANSACTION_REPLICA_PORT: "5432"
-    # -- MongoDB Transaction module
+    # -- MongoDB Transaction module (host/user/port from global.datastores.mongoTransaction)
     MONGO_TRANSACTION_URI: "mongodb"
-    MONGO_TRANSACTION_HOST: "midaz-mongodb"
     MONGO_TRANSACTION_NAME: "transaction"
-    MONGO_TRANSACTION_USER: "midaz"
-    MONGO_TRANSACTION_PORT: "27017"
-    # -- Redis (shared)
-    REDIS_HOST: "midaz-valkey-primary:6379"
-    # -- RabbitMQ configuration
-    RABBITMQ_URI: "amqp"
-    RABBITMQ_HOST: "midaz-rabbitmq"
-    RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672"
+    # -- Redis (shared) — host/port come from global.datastores.redis above;
+    # a native REDIS_HOST here is used verbatim (its own host:port).
+    # -- RabbitMQ configuration (host/scheme/ports come from global.datastores.broker)
     RABBITMQ_DEFAULT_USER: "transaction"
     RABBITMQ_CONSUMER_USER: "consumer"
     RABBITMQ_TRANSACTION_ASYNC: "false"

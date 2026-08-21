@@ -1,9 +1,23 @@
 {{- if .Values.ledger.enabled }}
 {{- $cm := .Values.ledger.configmap | default dict }}
-{{- $rabbitHost := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
-{{- $rabbitPort := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "5672") }}
+{{- $dv := "lerian-common.datastore.value" }}
+{{- $ded := .Values.ledger.datastores | default dict }}
+{{- /* Single-sourced env name so ENV_NAME/OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
+   can't drift from one another; resolved once via global.env, consumed below
+   both directly (ENV_NAME) and as the default for the observability block's
+   own deploymentEnvironment field. */ -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") }}
+{{- /* RABBITMQ_PORT_HOST/RABBITMQ_PORT_AMQP are swapped from the generic broker
+   mask vocabulary in THIS chart specifically (PORT_HOST=5672 is actually the
+   real AMQP transport port, PORT_AMQP=15672 is actually the management API
+   port) — native key names stay unchanged; mapped to the cloud/mask fields by
+   VALUE (amqpPort=true AMQP port, port=management port), not by name, so a
+   `global.cloud` preset (aws: amqpPort=5671, port=443) still lands on the
+   right rendered key. */ -}}
+{{- $rabbitHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
+{{- $rabbitPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_HOST" "default" "5672") }}
 {{- $rabbitProtocol := $cm.RABBITMQ_PROTOCOL | default "http" }}
-{{- $rabbitAmqpPort := $cm.RABBITMQ_PORT_AMQP | default "15672" }}
+{{- $rabbitAmqpPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "15672") }}
 
 {{- $rabbitHealthCheckURL := "" }}
 
@@ -22,7 +36,7 @@ data:
   # APP CONFIGURATION
   # =============================================================================
   ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
-  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
+  ENV_NAME: {{ $envName | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "debug" | quote }}
@@ -76,13 +90,18 @@ data:
   DB_ONBOARDING_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "user" "nativeKey" "DB_ONBOARDING_USER" "default" "midaz") | quote }}
   DB_ONBOARDING_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "name" "nativeKey" "DB_ONBOARDING_NAME" "default" "onboarding") | quote }}
   DB_ONBOARDING_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "port" "nativeKey" "DB_ONBOARDING_PORT" "default" "5432") | quote }}
-  DB_ONBOARDING_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "ssl" "nativeKey" "DB_ONBOARDING_SSLMODE" "default" "disable") | quote }}
+  # ssl is a TOPOLOGY field (TLS requirement), not a per-module identity field —
+  # resolved through the generic "postgres" type (not "postgresOnboarding") so a
+  # global.cloud preset (e.g. aws: ssl=require) and a plain global.datastores.
+  # postgres.ssl both reach it; onboarding/transaction share one physical
+  # Postgres engine in the overwhelming majority of real deployments.
+  DB_ONBOARDING_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_ONBOARDING_SSLMODE" "default" "disable") | quote }}
   # Replica
   DB_ONBOARDING_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "replicaHost" "nativeKey" "DB_ONBOARDING_REPLICA_HOST" "default" "midaz-postgresql-replication") | quote }}
   DB_ONBOARDING_REPLICA_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "user" "nativeKey" "DB_ONBOARDING_REPLICA_USER" "default" "midaz") | quote }}
   DB_ONBOARDING_REPLICA_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "name" "nativeKey" "DB_ONBOARDING_REPLICA_NAME" "default" "onboarding") | quote }}
   DB_ONBOARDING_REPLICA_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "port" "nativeKey" "DB_ONBOARDING_REPLICA_PORT" "default" "5432") | quote }}
-  DB_ONBOARDING_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresOnboarding" "field" "ssl" "nativeKey" "DB_ONBOARDING_REPLICA_SSLMODE" "default" "disable") | quote }}
+  DB_ONBOARDING_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_ONBOARDING_REPLICA_SSLMODE" "default" "disable") | quote }}
   # Connection pool
   DB_ONBOARDING_MAX_OPEN_CONNS: {{ $cm.DB_ONBOARDING_MAX_OPEN_CONNS | default "3000" | quote }}
   DB_ONBOARDING_MAX_IDLE_CONNS: {{ $cm.DB_ONBOARDING_MAX_IDLE_CONNS | default "3000" | quote }}
@@ -96,7 +115,11 @@ data:
   MONGO_ONBOARDING_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "user" "nativeKey" "MONGO_ONBOARDING_USER" "default" "midaz") | quote }}
   MONGO_ONBOARDING_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "port" "nativeKey" "MONGO_ONBOARDING_PORT" "default" "27017") | quote }}
   MONGO_ONBOARDING_MAX_POOL_SIZE: {{ $cm.MONGO_ONBOARDING_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_ONBOARDING_PARAMETERS: {{ $cm.MONGO_ONBOARDING_PARAMETERS | default "" | quote }}
+  # params is a TOPOLOGY field (connection-string flags, e.g. DocumentDB's
+  # tls/tlsInsecure/directConnection/retryWrites) — resolved through the generic
+  # "mongo" type so a global.cloud preset reaches it uniformly across every
+  # Mongo-backed module.
+  MONGO_ONBOARDING_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_ONBOARDING_PARAMETERS" "default" "") | quote }}
   MONGO_ONBOARDING_TLS_CA_CERT: {{ $cm.MONGO_ONBOARDING_TLS_CA_CERT | default "" | quote }}
 
   # =============================================================================
@@ -107,13 +130,13 @@ data:
   DB_TRANSACTION_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") | quote }}
   DB_TRANSACTION_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") | quote }}
   DB_TRANSACTION_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") | quote }}
-  DB_TRANSACTION_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
+  DB_TRANSACTION_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
   # Replica
   DB_TRANSACTION_REPLICA_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "replicaHost" "nativeKey" "DB_TRANSACTION_REPLICA_HOST" "default" "midaz-postgresql-replication") | quote }}
   DB_TRANSACTION_REPLICA_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_REPLICA_USER" "default" "midaz") | quote }}
   DB_TRANSACTION_REPLICA_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_REPLICA_NAME" "default" "transaction") | quote }}
   DB_TRANSACTION_REPLICA_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_REPLICA_PORT" "default" "5432") | quote }}
-  DB_TRANSACTION_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgresTransaction" "field" "ssl" "nativeKey" "DB_TRANSACTION_REPLICA_SSLMODE" "default" "disable") | quote }}
+  DB_TRANSACTION_REPLICA_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_REPLICA_SSLMODE" "default" "disable") | quote }}
   # Connection pool
   DB_TRANSACTION_MAX_OPEN_CONNS: {{ $cm.DB_TRANSACTION_MAX_OPEN_CONNS | default "3000" | quote }}
   DB_TRANSACTION_MAX_IDLE_CONNS: {{ $cm.DB_TRANSACTION_MAX_IDLE_CONNS | default "3000" | quote }}
@@ -127,7 +150,7 @@ data:
   MONGO_TRANSACTION_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "user" "nativeKey" "MONGO_TRANSACTION_USER" "default" "midaz") | quote }}
   MONGO_TRANSACTION_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "port" "nativeKey" "MONGO_TRANSACTION_PORT" "default" "27017") | quote }}
   MONGO_TRANSACTION_MAX_POOL_SIZE: {{ $cm.MONGO_TRANSACTION_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_TRANSACTION_PARAMETERS: {{ $cm.MONGO_TRANSACTION_PARAMETERS | default "" | quote }}
+  MONGO_TRANSACTION_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_TRANSACTION_PARAMETERS" "default" "") | quote }}
   MONGO_TRANSACTION_TLS_CA_CERT: {{ $cm.MONGO_TRANSACTION_TLS_CA_CERT | default "" | quote }}
 
   # =============================================================================
@@ -140,7 +163,7 @@ data:
   MONGO_CRM_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "port" "nativeKey" "MONGO_CRM_PORT" "default" "27017") | quote }}
   # MONGO_CRM_PASSWORD lives in the ledger Secret (see templates/ledger/secrets.yaml)
   MONGO_CRM_MAX_POOL_SIZE: {{ $cm.MONGO_CRM_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_CRM_PARAMETERS: {{ $cm.MONGO_CRM_PARAMETERS | default "" | quote }}
+  MONGO_CRM_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_CRM_PARAMETERS" "default" "") | quote }}
   MONGO_CRM_TLS_CA_CERT: {{ $cm.MONGO_CRM_TLS_CA_CERT | default "" | quote }}
 
   # =============================================================================
@@ -153,7 +176,7 @@ data:
   MONGO_FEES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "port" "nativeKey" "MONGO_FEES_PORT" "default" "27017") | quote }}
   # MONGO_FEES_PASSWORD lives in the ledger Secret (see templates/ledger/secrets.yaml)
   MONGO_FEES_MAX_POOL_SIZE: {{ $cm.MONGO_FEES_MAX_POOL_SIZE | default "100" | quote }}
-  MONGO_FEES_PARAMETERS: {{ $cm.MONGO_FEES_PARAMETERS | default "" | quote }}
+  MONGO_FEES_PARAMETERS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_FEES_PARAMETERS" "default" "") | quote }}
   MONGO_FEES_TLS_CA_CERT: {{ $cm.MONGO_FEES_TLS_CA_CERT | default "" | quote }}
 
   # =============================================================================
@@ -200,9 +223,21 @@ data:
   # =============================================================================
   # REDIS (shared between modules; host via datastore mask, tuning via passthrough)
   # =============================================================================
-  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "midaz-valkey-primary:6379") | quote }}
+  {{- /* REDIS_HOST is historically a single combined "host:port" native key — an
+     explicit native override is used verbatim (it already carries its own port).
+     Otherwise host/port are resolved independently through the mask (so
+     global.datastores.redis.port / a dedicated ledger.datastores.redis.port
+     actually take effect, instead of being silently ignored behind a
+     host-only default) and combined here. */ -}}
+  {{- $redisHostField := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "midaz-valkey-primary") }}
+  {{- $redisPortField := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") }}
+  {{- $redisHost := $redisHostField }}
+  {{- if not (hasKey $cm "REDIS_HOST") }}
+    {{- $redisHost = printf "%s:%s" $redisHostField $redisPortField }}
+  {{- end }}
+  REDIS_HOST: {{ $redisHost | quote }}
   REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
-  REDIS_TLS: {{ $cm.REDIS_TLS | default "false" | quote }}
+  REDIS_TLS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
   REDIS_CA_CERT: {{ $cm.REDIS_CA_CERT | default "" | quote }}
   REDIS_USE_GCP_IAM: {{ $cm.REDIS_USE_GCP_IAM | default "false" | quote }}
   REDIS_SERVICE_ACCOUNT: {{ $cm.REDIS_SERVICE_ACCOUNT | default "" | quote }}
@@ -227,15 +262,22 @@ data:
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "ledger" | quote }}
   OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v4/components/ledger" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" "production") | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" $envName) | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "midaz-grafana:4317") | quote }}
-  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
+  # Mask fallback default is "false" — matching ledger's true historical
+  # default before this chart was productized. This component ships with
+  # telemetry ON by default (see ledger.configmap.ENABLE_TELEMETRY="true" in
+  # values.yaml), which still wins as the native key; only the MASK's OWN
+  # fallback (reached when neither a native key nor global.observability.enabled
+  # is set) must not silently default to "true" underneath an operator who
+  # never opted in.
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
 
   # =============================================================================
   # RABBITMQ (used by transaction module; host via datastore mask)
   # =============================================================================
-  RABBITMQ_URI: {{ $cm.RABBITMQ_URI | default "amqp" | quote }}
+  RABBITMQ_URI: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") | quote }}
   RABBITMQ_PROTOCOL: {{ $rabbitProtocol | quote }}
   RABBITMQ_HOST: {{ $rabbitHost | quote }}
   RABBITMQ_PORT_HOST: {{ $rabbitPort | quote }}

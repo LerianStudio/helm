@@ -1,6 +1,9 @@
 {{- if .Values.tracer.enabled }}
 {{- include "midaz-tracer.validate" . }}
 {{- $cm := .Values.tracer.configmap | default dict }}
+{{- /* Single-sourced so OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT can't drift from
+   ENV_NAME (same class of bug fixed in ledger/configmap.yaml). */ -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,7 +13,7 @@ metadata:
 data:
   # -- Default Environment variables for Tracer
   ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
-  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  ENV_NAME: {{ $envName | quote }}
 
   # APP
   SERVER_PORT: {{ $cm.SERVER_PORT | default "4020" | quote }}
@@ -67,7 +70,7 @@ data:
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "midaz-tracer" | quote }}
   OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/tracer" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.tracer.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" ($cm.ENV_NAME | default "development")) | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" $envName) | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
 

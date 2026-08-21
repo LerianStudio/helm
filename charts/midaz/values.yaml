@@ -110,9 +110,24 @@ global:
   # under `<component>.datastores` and each component's `configmap.<KEY>` still
   # wins over everything (the escape hatch). See values-quickstart.yaml.
   # =============================================================================
-  # -- Shared datastore masks. Keys: postgresOnboarding / postgresTransaction /
-  # mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / mongo / redis /
-  # broker. Each accepts host/port/user/ssl/replicaHost/name.
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets tls/scheme/ports/
+  # ssl/mongo-connection-params for the masks below in one knob — e.g. "aws"
+  # turns on Redis TLS, AmazonMQ amqps, RDS sslmode=require, DocumentDB TLS
+  # params. Leave "" for the bundled in-cluster infra (plaintext). Endpoints
+  # (host/port/user) still come from global.datastores below — a cloud preset
+  # can't know your RDS host. Ranks below an explicit global/dedicated
+  # datastores value and above the hardcoded chart default.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Shared datastore masks. Per-module IDENTITY keys (host/port/user/name/
+  # replicaHost): postgresOnboarding / postgresTransaction / mongoOnboarding /
+  # mongoTransaction / mongoCrm / mongoFees — each component's own instance.
+  # Shared TOPOLOGY keys (ssl/params/tls/scheme/amqpPort — the fields a
+  # `global.cloud` preset actually sets): postgres / mongo / redis / broker —
+  # generic, so one `global.cloud` knob (or one explicit override here) reaches
+  # every module uniformly, since onboarding/transaction/crm/fees share one
+  # physical Postgres/Mongo engine in the overwhelming majority of real
+  # deployments even though their per-module host/port/user can differ.
   datastores: {}
   # example ↓ (uncomment & fill; comments render nothing = default stays empty):
   #   postgresOnboarding:  { host: "postgresql.internal", user: "midaz", name: "onboarding" }
@@ -121,8 +136,16 @@ global:
   #   mongoTransaction:    { host: "mongodb.internal", user: "midaz", name: "transaction" }
   #   mongoCrm:            { host: "mongodb.internal", user: "midaz", name: "midaz-crm" }
   #   mongoFees:           { host: "mongodb.internal", user: "plugin-fees", name: "plugin-fees-db" }
-  #   redis:               { host: "valkey.internal:6379" }
+  #   postgres:            { ssl: "require" }
+  #   mongo:               { params: "tls=true" }
+  #   redis:               { host: "valkey.internal", port: "6379", tls: "true" }
   #   broker:              { host: "rabbitmq.internal", user: "midaz" }
+  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
+  # "env", field "name"); each component's ENV_NAME (and, by default, its
+  # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT, single-sourced from it) resolve here.
+  # A native `<component>.configmap.ENV_NAME` still wins.
+  # Example: env: { name: "production" }
+  env: {}
   # -- Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment.
   observability: {}
   # example ↓ (uncomment & fill; comments render nothing = default stays empty):
@@ -335,6 +358,10 @@ ledger:
   datastores: {}
   # -- Escape hatch: native environment variables override template defaults.
   configmap:
+    # -- ledger ships with telemetry ON by default, unlike the mask's own
+    # (intentionally conservative) "false" fallback — pinned explicitly here so
+    # this component's shipped default doesn't depend on the mask's fallback.
+    ENABLE_TELEMETRY: "true"
     # -- Schema Registry used by the billing serializer. Leave empty to keep billing emission disabled.
     STREAMING_SCHEMA_REGISTRY_URL: ""
   # -- Existing secrets name

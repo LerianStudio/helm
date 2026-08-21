@@ -1763,7 +1763,7 @@ adapterLerianSystemplane:
 # -----------------------------------------------------------------------------
 # pixauto/api — Pix Automático payer side (recurrence authorization)
 #
-# Owns ONE migration chain (apps/pixauto/migrations, 000001-000006) covering
+# Owns ONE migration chain (apps/pixauto/migrations, 000001-000007) covering
 # both the business tables and the systemplane_entries table, so the migration
 # Job below is the app's only one and lives on this API component.
 # -----------------------------------------------------------------------------

@@ -30,7 +30,7 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # https://docs.lerian.studio/docs/midaz-components
 dependencies:
   - name: lerian-common-helm
-    version: "1.6.0-alpha.202608211259.04eb4d92"
+    version: "1.6.0-alpha.202608211336.087c8fbc"
     repository: "oci://ghcr.io/lerianstudio/alpha"
   - name: postgresql
     alias: auth-database

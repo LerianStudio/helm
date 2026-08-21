@@ -4,7 +4,7 @@
 
 - Chart type: `single-service`
 - Required secrets: None for default render.
-- Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
+- Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured. Also depends on `lerian-common-helm` (shared library chart) for the HPA/PDB/Service/Ingress templates and the `global.*` config masks below.
 - Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override image tags, ingress, resources, namespace, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
@@ -39,6 +39,10 @@ helm install product-console oci://registry-1.docker.io/lerianstudio/product-con
 
 ### Key Configuration Options
 
+Every `configmap.<KEY>` and its shipped default are declared in
+`templates/configmap.yaml` (`values.yaml`'s `configmap:` map is intentionally
+empty — set a key there only to override its shipped default).
+
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `replicaCount` | Number of replicas | `1` |
@@ -47,8 +51,39 @@ helm install product-console oci://registry-1.docker.io/lerianstudio/product-con
 | `ingress.enabled` | Enable ingress | `false` |
 | `configmap.NODE_ENV` | Node environment | `production` |
 | `configmap.MIDAZ_CONSOLE_PORT` | Console port | `8081` |
-| `configmap.MIDAZ_BASE_PATH` | Midaz API base path | `http://midaz-onboarding:3000/v1` |
+| `configmap.MIDAZ_BASE_PATH` | Midaz API base path | `http://midaz-ledger.midaz.svc.cluster.local:3002/v1` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
+
+### Inter-service defaults (cross-namespace)
+
+Product Console talks to several sibling Lerian services (Midaz ledger,
+plugin-access-manager, CRM, Reporter). By default these are addressed by the
+standard in-cluster FQDN (`<service>.<namespace>.svc.cluster.local`), so the
+chart works out of the box even when each dependency is deployed in its own
+namespace — no service mesh or DNS wiring required. Override the
+corresponding `configmap.<KEY>` if your environment uses different
+service/namespace names.
+
+| Service | `configmap` keys | Default host |
+|---|---|---|
+| Midaz ledger | `MIDAZ_API_HOST`, `MIDAZ_TRANSACTION_BASE_HOST` (+ `*_PORT`/`*_PATH`) | `midaz-ledger.midaz.svc.cluster.local` |
+| plugin-access-manager (auth) | `PLUGIN_AUTH_HOST` (+ `PLUGIN_AUTH_PORT`/`PLUGIN_AUTH_BASE_PATH`) | `plugin-access-manager-auth.plugin-access-manager.svc.cluster.local` |
+| plugin-access-manager (identity) | `PLUGIN_IDENTITY_HOST` (+ `PLUGIN_IDENTITY_PORT`/`PLUGIN_IDENTITY_BASE_PATH`) | `plugin-access-manager-identity.plugin-access-manager.svc.cluster.local` |
+| CRM plugin | `CRM_BASE_PATH` | `http://midaz-crm.midaz.svc.cluster.local:4003/v1/` |
+| Reporter | `REPORTER_BASE_PATH` | `http://reporter-manager.reporter.svc.cluster.local:4005/v1` |
+
+### Shared config masks (`global.*`)
+
+These fields are consumed by `lerian-common` and let an operator set a value
+ONCE per environment for every chart that shares it, instead of pinning it
+per-component. A native `configmap.<KEY>` (see table above / `values.yaml`)
+always wins over the corresponding mask.
+
+| `global.*` field | Consumed by | Overriding native key(s) |
+|---|---|---|
+| `global.auth.enabled` / `global.auth.host` | `lerian-common.auth.env` | `configmap.PLUGIN_AUTH_ENABLED` / `configmap.PLUGIN_AUTH_HOST` |
+| `global.observability.enabled` | `lerian-common.globalValue` | `configmap.ENABLE_TELEMETRY` |
+| `global.datastores.mongo.{uri,host,port,user,params}` | `lerian-common.datastore.value` | `configmap.MONGODB_URI` / `MONGO_HOST` / `MONGO_PORT` / `MONGODB_USER` / `MONGO_PARAMETERS` |
 
 ## Uninstalling the Chart
 

@@ -102,7 +102,7 @@
 | `externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name` | string | `""` | Name of existing secret containing RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys |
 | `externalRabbitmqDefinitions.rabbitmqAdminLogin.username` | string | `"midaz"` | Admin username (ignored if useExistingSecret.name is set) |
 | `externalRabbitmqDefinitions.rabbitmqAdminLogin.password` | string | `""` | Admin password (ignored if useExistingSecret.name is set) |
-| `externalRabbitmqDefinitions.appCredentials` | object | `{}` | Credentials for the plugin application user created by the job |
+| `externalRabbitmqDefinitions.appCredentials` | object | `{}` | Credentials for the reporter application user created by the job |
 | `externalRabbitmqDefinitions.appCredentials.useExistingSecret.name` | string | `""` | Name of existing secret containing RABBITMQ_DEFAULT_PASS key |
-| `externalRabbitmqDefinitions.appCredentials.pluginPassword` | string | `""` | Password for plugin user (ignored if useExistingSecret.name is set) |
+| `externalRabbitmqDefinitions.appCredentials.reporterPassword` | string | `""` | Password for reporter user (ignored if useExistingSecret.name is set) |
 | `aws` | object | `{}` | AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Clotilde/Proxmox) |

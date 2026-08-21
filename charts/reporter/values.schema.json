@@ -1313,7 +1313,7 @@
         },
         "appCredentials": {
           "type": "object",
-          "description": "Credentials for the plugin application user created by the job",
+          "description": "Credentials for the reporter application user created by the job",
           "properties": {
             "useExistingSecret": {
               "type": "object",
@@ -1325,9 +1325,9 @@
               },
               "additionalProperties": true
             },
-            "pluginPassword": {
+            "reporterPassword": {
               "default": "",
-              "description": "Password for plugin user (ignored if useExistingSecret.name is set)"
+              "description": "Password for reporter user (ignored if useExistingSecret.name is set)"
             }
           },
           "additionalProperties": true

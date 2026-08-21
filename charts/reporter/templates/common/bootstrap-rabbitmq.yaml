@@ -71,11 +71,11 @@ spec:
 
               echo "Checking if RabbitMQ user already exists..."
 
-              PLUGIN_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/users/plugin" 2>/dev/null || echo "not_found")
+              REPORTER_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                "$BASE_URL/api/users/reporter" 2>/dev/null || echo "not_found")
 
-              if echo "$PLUGIN_EXISTS" | grep -q '"name":"plugin"'; then
-                echo "RabbitMQ definitions already applied (user plugin exists). Skipping."
+              if echo "$REPORTER_EXISTS" | grep -q '"name":"reporter"'; then
+                echo "RabbitMQ definitions already applied (user reporter exists). Skipping."
                 exit 0
               fi
 
@@ -93,15 +93,15 @@ spec:
               fi
               echo "Done."
 
-              echo "Updating RabbitMQ user: plugin..."
+              echo "Updating RabbitMQ user: reporter..."
               HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
                 --data "{\"password\":\"$RABBITMQ_APP_PASS\",\"tags\":\"administrator\"}" \
-                "$BASE_URL/api/users/plugin")
+                "$BASE_URL/api/users/reporter")
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error updating plugin user (HTTP $HTTP_CODE):"
+                echo "Error updating reporter user (HTTP $HTTP_CODE):"
                 cat /tmp/response.txt
                 exit 1
               fi
@@ -123,7 +123,7 @@ spec:
                   name: {{ .Values.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name | quote }}
                   key: RABBITMQ_DEFAULT_PASS
               {{- else }}
-              value: {{ .Values.externalRabbitmqDefinitions.appCredentials.pluginPassword | quote }}
+              value: {{ .Values.externalRabbitmqDefinitions.appCredentials.reporterPassword | quote }}
               {{- end }}
             - name: RABBITMQ_ADMIN_PASS
               {{- if .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}

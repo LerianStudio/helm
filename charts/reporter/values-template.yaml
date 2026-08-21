@@ -124,7 +124,7 @@ common:
 
 # --- Credentials — placeholders only (operator fills; never a concrete value) ---
 secrets:
-  RABBITMQ_DEFAULT_USER: "plugin"
+  RABBITMQ_DEFAULT_USER: "reporter"
   # Required (fail-fast guard) — operator fills before install.
   RABBITMQ_DEFAULT_PASS: "CHANGE_ME"
   # Required when rabbitmq.enabled=true (single-sourced to the broker); do not rotate.
@@ -171,4 +171,4 @@ externalRabbitmqDefinitions:
   appCredentials:
     useExistingSecret:
       name: ""
-    pluginPassword: ""
+    reporterPassword: ""

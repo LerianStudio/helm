@@ -168,7 +168,7 @@ The `secrets` section in `values.yaml` is fully dynamic. Any key/value pair adde
 
 ```yaml
 secrets:
-  RABBITMQ_DEFAULT_USER: plugin
+  RABBITMQ_DEFAULT_USER: reporter
   RABBITMQ_DEFAULT_PASS: Lerian@123
   # Stable Erlang cookie for the bundled RabbitMQ (required when rabbitmq.enabled).
   # Generate once with: openssl rand -hex 32
@@ -326,14 +326,14 @@ externalRabbitmqDefinitions:
     username: "admin"
     password: "admin-password"
   appCredentials:
-    pluginPassword: "Lerian@123"
+    reporterPassword: "Lerian@123"
 ```
 
 The bootstrap job:
 
 1. Waits for the RabbitMQ instance to be reachable (AMQP port)
-2. Applies the definitions file (exchanges, queues, bindings, and the `plugin` user)
-3. Updates the `plugin` user password
+2. Applies the definitions file (exchanges, queues, bindings, and the `reporter` user)
+3. Updates the `reporter` user password
 
 ### Using Existing Secrets for Bootstrap Credentials
 

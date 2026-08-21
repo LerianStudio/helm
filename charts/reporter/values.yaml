@@ -489,7 +489,7 @@ secrets:
   # nothing authenticates with it. Reintroduce this key if valkey.auth is ever enabled.
   # RabbitMQ is single-sourced here (Pattern B): the broker is pointed at this Secret via
   # rabbitmq.authentication.existingSecret, so these are the only copies of the broker creds.
-  RABBITMQ_DEFAULT_USER: plugin
+  RABBITMQ_DEFAULT_USER: reporter
   RABBITMQ_DEFAULT_PASS: ""
   # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
   # it from this Secret). Must be a STABLE value — changing it across upgrades breaks the
@@ -687,13 +687,13 @@ externalRabbitmqDefinitions:
     username: "midaz"
     # -- Admin password (ignored if useExistingSecret.name is set)
     password: ""
-  # -- Credentials for the plugin application user created by the job
+  # -- Credentials for the reporter application user created by the job
   appCredentials:
     useExistingSecret:
       # -- Name of existing secret containing RABBITMQ_DEFAULT_PASS key
       name: ""
-    # -- Password for plugin user (ignored if useExistingSecret.name is set)
-    pluginPassword: ""
+    # -- Password for reporter user (ignored if useExistingSecret.name is set)
+    reporterPassword: ""
 rabbitmq:
   enabled: true
   image:
@@ -720,7 +720,7 @@ rabbitmq:
   # Single-source (Pattern B): the broker reads its credentials from the application
   # manager Secret (reporter-manager) instead of keeping its own copy. The RabbitMQ
   # password therefore lives in exactly one place — secrets.RABBITMQ_DEFAULT_PASS — and
-  # the latent user mismatch (broker "midaz" vs app "plugin") is removed. Setting
+  # the latent user mismatch (broker "midaz" vs app "reporter") is removed. Setting
   # existingSecret suppresses the inline cookie, so RABBITMQ_ERLANG_COOKIE is required
   # in the app Secret (see secrets + reporter.rabbitmqErlangCookieRequired).
   # If the manager Secret name is overridden (manager.name / manager.existingSecretName),

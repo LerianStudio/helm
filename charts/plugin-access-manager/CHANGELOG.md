@@ -3,6 +3,25 @@
 ## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.0.0)
 
 - **Features**
+  - Introduced a requirement for an explicit `initUser` admin password.
+
+- **Fixes**
+  - Corrected the derivation of component names from the release.
+  - Fixed the rendering of the real authorizer client ID.
+
+- **Improvements**
+  - Updated documentation to reconcile the initial-admin password contract.
+  - Added an upgrade guide for version 8.6.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v8.6.0...plugin-access-manager-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.0.0)
+
+- **Features**
   - Reconcile the initial-admin password contract.
 
 - **Fixes**

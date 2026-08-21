@@ -60,21 +60,38 @@ global:
   cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
   datastores:
     postgres: { host: "my-rds.example.com", user: "bank_transfer" }
-    redis: { host: "my-elasticache.example.com" }
+    redis: { host: "my-elasticache.example.com:6379", user: "default" }
   env:
     name: "production"
   auth:
     host: "http://plugin-access-manager-auth:4000"
+
+# Disable the bundled subcharts — the masks above point at your managed
+# infra instead, so the in-cluster Postgres/Redis/MongoDB would otherwise
+# still deploy unused alongside it.
+postgresql:
+  enabled: false
+  external: true
+valkey:
+  enabled: false
+  external: true
+mongodb:
+  enabled: false
+  external: true
 ```
 
 `global.cloud` sets the connection TOPOLOGY (TLS, SSL mode) for the masks
 above; only the ENDPOINTS (host/port/user) still come from
 `global.datastores` — a cloud preset can't know your RDS host. A native
-`bankTransfer.configmap.<KEY>` always overrides any mask.
+`bankTransfer.configmap.<KEY>` always overrides any mask. `redis.host` is
+`host:port` (no separate `redis.port` field); set `redis.user` only for
+ACL-authenticated Redis/Valkey deployments.
 
 Copy `values-template.yaml` as your starting point — it documents every
-`global.*` mask with a working example. `values.yaml` is the full
-power-user reference; `values.schema.json` validates it.
+`global.*` mask with a working example, including the required
+`enabled: false` / `external: true` pair for each bundled subchart on a
+managed-cloud install. `values.yaml` is the full power-user reference;
+`values.schema.json` validates it.
 
 ---
 

@@ -8,11 +8,13 @@ global:
   # -- Env-wide SHARED datastore mask (set once per environment; a native
   # bankTransfer.configmap.<KEY> overrides it). Consumed by
   # lerian-common.datastore.value. Fields: postgres.{host,port,user,ssl,
-  # replicaHost}, redis.{host,tls}.
+  # replicaHost}, redis.{host,user,tls} — redis.host is "host:port" (no
+  # separate redis.port field); redis.user is only needed for
+  # ACL-authenticated Redis/Valkey deployments.
   # Example:
   #   datastores:
   #     postgres: { host: "my-rds.example.com", user: "bank_transfer" }
-  #     redis: { host: "my-elasticache.example.com:6379", tls: "true" }
+  #     redis: { host: "my-elasticache.example.com:6379", user: "default", tls: "true" }
   datastores: {}
   # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
   # "env"). Fields: name. (configmap.ENV_NAME overrides.)

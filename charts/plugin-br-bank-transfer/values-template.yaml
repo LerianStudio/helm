@@ -40,6 +40,10 @@ global:
     enabled: false
     # otlpEndpoint: ""
     # deploymentEnvironment: ""
+  # -- Env-wide auth (plugin-access-manager). Leave unset to keep the chart's
+  # own default endpoint; point it at your access-manager instance otherwise.
+  auth:
+    host: ""   # <- e.g. "http://plugin-access-manager-auth:4000"
 
 # --- Component config ------------------------------------------------------
 bankTransfer:

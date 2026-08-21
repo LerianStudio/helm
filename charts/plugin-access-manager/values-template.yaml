@@ -6,6 +6,10 @@
 # — the chart already defaults them.
 
 global:
+  # -- Managed-cloud topology preset: aws | gcp | azure. Leave "" for the
+  # bundled in-cluster infra (plaintext). Endpoints (host/port/user) still
+  # come from global.datastores below.
+  cloud: ""
   env:
     name: "development"
   multiTenant:
@@ -71,6 +75,8 @@ auth:
   initUser:
     enabled: true
 
+# Bundled dependencies. On a managed-cloud install (global.cloud set), turn
+# both off — you're pointing at RDS/ElastiCache instead of the in-cluster bundle.
 auth-database:
   enabled: true
 

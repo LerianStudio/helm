@@ -20,6 +20,16 @@ this knob exists.
 Deliberately ABSENT:
   - `broker` for gcp/azure — no managed RabbitMQ there; leave the bundled default
     (or set global.datastores.broker explicitly for CloudAMQP).
+  - `redis.tls` for gcp — Memorystore for Redis ships with in-transit encryption
+    OFF by default; TLS is an opt-in, CREATE-TIME-ONLY instance flag
+    (transit-encryption-mode=SERVER_AUTHENTICATION). Unlike Postgres (a client
+    can always request SSL; the server just doesn't enforce it), a Redis
+    instance provisioned without that flag has NO TLS LISTENER at all — a
+    client TLS handshake fails outright, it doesn't just fall back to
+    plaintext. Defaulting this to "true" would silently break connectivity for
+    anyone on GCP's own default Memorystore topology. Set
+    global.datastores.redis.tls=true explicitly once your instance actually
+    has in-transit encryption enabled.
   - object-storage AUTH annotation (IRSA/WI/AAD) — that is a serviceAccount
     annotation KEY, not a configmap value; handled by lerian-common.cloud.saAnnotations.
   - `observability.enabled` — a cloud choice does NOT imply telemetry on/off;
@@ -29,6 +39,23 @@ Deliberately ABSENT:
     backwards for a production install. The chart's own default (and any
     explicit global.observability.enabled/configmap.ENABLE_TELEMETRY) governs
     telemetry; the cloud table only sets connection/transport topology.
+
+Azure note: Azure Blob Storage has NO native S3 API — `objectStorage.usePathStyle:
+"true"` below only applies if you front it with an S3-compatible gateway (e.g.
+Flexify.IO, S3Proxy); path-style is the common convention for self-hosted/
+gateway S3 endpoints (vs. AWS/GCS's virtual-hosted-style). Native Azure Blob
+access (SDK, not the S3 mask) is a separate integration this chart doesn't
+model yet.
+
+AWS values verified against this org's own CloudFormation provisioning
+(lerian-cloudformation-foundation/templates/{elasticache,rds,amazonmq}.yaml):
+ElastiCache TransitEncryptionEnabled=true+required, RDS ForceSSL default "1",
+AmazonMQ security group opens 5671 (AMQPS)/15671/443 (AWS docs: 443 and 15671
+are interchangeable for the RabbitMQ web console/management API). Azure redis
+tls/6380 verified against Microsoft Learn (TLS-only is the actual default on
+new Azure Cache for Redis instances; the non-TLS port ships disabled). GCP/Azure
+have no equivalent Lerian-owned provisioning today (AWS-only Marketplace
+product) — those columns are best-effort, not validated against real infra.
 
 Keys mirror the datastore-mask field vocabulary (host/port/user/ssl/tls/scheme/
 amqpPort/params/caCert/protocol).
@@ -40,7 +67,6 @@ aws:
   postgres:      { ssl: "require" }
   objectStorage: { usePathStyle: "false", disableSSL: "false" }
 gcp:
-  redis:         { tls: "true" }
   postgres:      { ssl: "require" }
   objectStorage: { usePathStyle: "false", disableSSL: "false" }
 azure:

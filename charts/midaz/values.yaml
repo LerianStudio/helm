@@ -136,6 +136,16 @@ global:
         - role: "readWrite"
           db: "crm"
 ledger:
+  # -- Ledger-only ("dedicated") datastore mask override — takes precedence
+  # over global.datastores but below a native ledger.configmap.<KEY>. Use this
+  # when ledger's postgres/mongo/redis/broker instance differs from the
+  # env-wide shared one set in global.datastores. Same fields as
+  # global.datastores: postgres.{host,port,user,ssl,replicaHost},
+  # mongo.{host,port,user,params}, redis.{host,port,tls}, broker.{host,scheme,port,amqpPort}.
+  # Example:
+  #   datastores:
+  #     postgres: { host: "ledger-only-rds.example.com" }
+  datastores: {}
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
   # -- Liveness probe configuration. All fields override chart defaults.
@@ -263,11 +273,15 @@ ledger:
   # @default -- templates/ledger/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- ENV_NAME/MULTI_TENANT_ENABLED/ENABLE_TELEMETRY/PLUGIN_AUTH_*/DB_*/MONGO_*/
-    # REDIS_*/RABBITMQ_{URI,HOST,PORT_HOST,PORT_AMQP} are resolved via the
-    # lerian-common masks (global.env/multiTenant/observability/auth/datastores) —
-    # do NOT pin them here, a native key WINS over its mask and defeats it. Their
-    # defaults live in templates/ledger/configmap.yaml.
+    # -- ENV_NAME/MULTI_TENANT_ENABLED/PLUGIN_AUTH_*/DB_*/MONGO_*/REDIS_*/
+    # RABBITMQ_{URI,HOST,PORT_HOST,PORT_AMQP} are resolved via the lerian-common
+    # masks (global.env/multiTenant/observability/auth/datastores) — do NOT pin
+    # them here, a native key WINS over its mask and defeats it. Their defaults
+    # live in templates/ledger/configmap.yaml.
+    # -- ledger ships with telemetry ON by default, unlike the mask's own
+    # (intentionally conservative) "false" fallback — pinned explicitly here so
+    # this component's shipped default doesn't depend on the mask's fallback.
+    ENABLE_TELEMETRY: "true"
     # -- Accounting config
     ACCOUNT_TYPE_VALIDATION: ""
     TRANSACTION_ROUTE_VALIDATION: ""
@@ -350,6 +364,14 @@ ledger:
     # @default -- `midaz-ledger.fullname`
     name: ""
 crm:
+  # -- CRM-only ("dedicated") datastore mask override — takes precedence over
+  # global.datastores but below a native crm.configmap.<KEY>. Use this when
+  # CRM's mongo instance differs from the env-wide shared one set in
+  # global.datastores. Fields: mongo.{host,port,user,params}.
+  # Example:
+  #   datastores:
+  #     mongo: { host: "crm-only-docdb.example.com" }
+  datastores: {}
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
   # -- Liveness probe configuration. All fields override chart defaults.

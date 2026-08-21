@@ -52,6 +52,19 @@ always overrides any mask. Onboarding and transaction modules share the same
 name stays native/per-module); crm points at the same Mongo instance as
 ledger's onboarding module by default.
 
+Precedence (highest to lowest): native `<component>.configmap.<KEY>` >
+dedicated `<component>.datastores` (this component's own instance — set
+`ledger.datastores`/`crm.datastores` when that component needs a DIFFERENT
+backend than the rest of the env) > shared `global.datastores` (env-wide) >
+chart default.
+
+`redis.port` (both in `global.datastores.redis` and the dedicated tiers) is
+combined with `redis.host` into the single `REDIS_HOST` env var the ledger
+service expects (e.g. `host: "my-elasticache.example.com"` +
+`port: "6380"` → `REDIS_HOST=my-elasticache.example.com:6380`); a native
+`ledger.configmap.REDIS_HOST` override is expected to already carry its own
+`host:port` and is used verbatim.
+
 Copy `values-template.yaml` as your starting point — it documents every
 `global.*` mask with a working example. `values.yaml` is the full
 power-user reference; `values.schema.json` validates it.

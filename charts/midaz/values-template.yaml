@@ -21,6 +21,9 @@ global:
   # -- Dependency connections — typed masks (one knob per field), shared by
   # both ledger and crm configmaps. Point at your infra here, or keep the
   # bundled defaults and toggle postgresql/mongodb/rabbitmq/valkey.enabled below.
+  # If ONE component needs a different backend than the rest of the env, set
+  # `ledger.datastores`/`crm.datastores` instead (same shape, higher precedence,
+  # lower than a native ledger.configmap.<KEY>/crm.configmap.<KEY>).
   # Example:
   #   global:
   #     datastores:

@@ -3,9 +3,14 @@
    via global.datastores.mongo — the SAME bucket ledger's onboarding/transaction
    modules use (crm points at the same Mongo instance by default; only the
    database NAME stays native/per-module). Defaults keep the bundled-dev
-   topology -> render-equivalent for existing users. */ -}}
+   topology -> render-equivalent for existing users.
+
+   crm.datastores is midaz's per-component "dedicated" tier (this is a
+   monolithic parent chart, so the dedicated mask lives under the component key
+   rather than at chart root — see lerian-common's _datastore.tpl doc comment,
+   which names ledger.datastores/crm.datastores explicitly). */ -}}
 {{- $dv := "lerian-common.datastore.value" -}}
-{{- $ded := .Values.datastores | default dict -}}
+{{- $ded := .Values.crm.datastores | default dict -}}
 {{- $cm := .Values.crm.configmap -}}
 {{- /* Single-sourced so OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT can't drift from
    ENV_NAME (same class of bug fixed in ledger/configmap.yaml above). */ -}}

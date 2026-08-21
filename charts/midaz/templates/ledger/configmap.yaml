@@ -1,10 +1,14 @@
 {{- if .Values.ledger.enabled }}
 {{- /* Datastore masks (lerian-common): connection identity + TOPOLOGY resolved via
    global.datastores.<type> with native ledger.configmap.<KEY> and dedicated
-   .Values.datastores overrides taking precedence. Onboarding/transaction modules
+   ledger.datastores overrides taking precedence. Onboarding/transaction modules
    share the SAME postgres/mongo instance by default (only the database NAME
    differs, which stays native/per-module — not masked). Defaults keep the
    bundled-dev topology -> render-equivalent for existing users.
+
+   ledger.datastores is midaz's per-component "dedicated" tier (this is a
+   monolithic parent chart, so the dedicated mask lives under the component key
+   rather than at chart root — see lerian-common's _datastore.tpl doc comment).
 
    RABBITMQ_PORT_HOST/RABBITMQ_PORT_AMQP are swapped from every other chart's
    convention in THIS chart specifically (PORT_HOST=5672 is actually the AMQP
@@ -12,7 +16,7 @@
    (native key names unchanged) and mapped to the mask fields by VALUE, not name,
    so a cloud preset still lands on the right rendered key. */ -}}
 {{- $dv := "lerian-common.datastore.value" -}}
-{{- $ded := .Values.datastores | default dict -}}
+{{- $ded := .Values.ledger.datastores | default dict -}}
 {{- $cm := .Values.ledger.configmap -}}
 {{- $rabbitHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
 {{- $rabbitProtocol := .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" }}
@@ -152,7 +156,18 @@ data:
   # =============================================================================
   # REDIS (shared between modules)
   # =============================================================================
-  REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "midaz-valkey-primary:6379") | quote }}
+  {{- /* REDIS_HOST is historically a single combined "host:port" native key (see
+     README) — an explicit native override is used verbatim (it already carries
+     its own port). Otherwise host/port are resolved independently through the
+     mask (so global.datastores.redis.port / a dedicated ledger.datastores.redis.port
+     actually take effect) and combined here. */ -}}
+  {{- $redisHostField := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "midaz-valkey-primary") }}
+  {{- $redisPortField := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") }}
+  {{- $redisHost := $redisHostField }}
+  {{- if not (hasKey $cm "REDIS_HOST") }}
+    {{- $redisHost = printf "%s:%s" $redisHostField $redisPortField }}
+  {{- end }}
+  REDIS_HOST: {{ $redisHost | quote }}
   REDIS_MASTER_NAME: {{ .Values.ledger.configmap.REDIS_MASTER_NAME | default "" | quote }}
   REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
   REDIS_CA_CERT: {{ .Values.ledger.configmap.REDIS_CA_CERT | default "" | quote }}
@@ -182,7 +197,7 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default $envName | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana:4317" | quote }}
-  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
 
   # =============================================================================
   # RABBITMQ (used by transaction module)

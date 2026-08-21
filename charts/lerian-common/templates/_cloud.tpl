@@ -53,10 +53,14 @@ access (SDK, not the S3 mask) is a separate integration this chart doesn't
 model yet.
 
 AWS values verified against this org's own CloudFormation provisioning
-(lerian-cloudformation-foundation/templates/{elasticache,rds,amazonmq,documentdb}.yaml):
-ElastiCache TransitEncryptionEnabled=true+required, RDS ForceSSL default "1",
-AmazonMQ security group opens 5671 (AMQPS)/15671/443 (AWS docs: 443 and 15671
-are interchangeable for the RabbitMQ web console/management API), DocumentDB
+(lerian-cloudformation-foundation/templates/{elasticache,rds,amazonmq,documentdb}.yaml)
+AND a real production GitOps values file (lerian-aws-gitops
+environments/staging/helmfile/applications/midaz-mt/values.yaml):
+ElastiCache TransitEncryptionEnabled=true+required, RDS ForceSSL default "1".
+AmazonMQ: the CFN security group opens 5671 (AMQPS)/15671/443, but the actual
+production values file uses RABBITMQ_PORT_AMQP=443 (+ RABBITMQ_PROTOCOL=https)
+— not 15671 — so `broker.port` here is 443 to match what this org actually
+runs, even though AWS's own docs call 443/15671 interchangeable. DocumentDB
 EnableTLS default "enabled" — the mongo.params below are the exact
 connection-string shape this org runs against DocumentDB in production:
 tlsInsecure (DocumentDB doesn't ship AWS's public CA in every client trust
@@ -77,7 +81,7 @@ amqpPort/params/caCert/protocol).
 {{- define "lerian-common.cloud.table" -}}
 aws:
   redis:         { tls: "true" }
-  broker:        { scheme: "amqps", amqpPort: "5671", port: "15671" }
+  broker:        { scheme: "amqps", amqpPort: "5671", port: "443" }
   postgres:      { ssl: "require" }
   mongo:         { params: "tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&connectTimeoutMS=10000&serverSelectionTimeoutMS=10000" }
   objectStorage: { usePathStyle: "false", disableSSL: "false" }

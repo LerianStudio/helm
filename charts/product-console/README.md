@@ -72,7 +72,7 @@ service/namespace names.
 | CRM plugin | `CRM_BASE_PATH` | `http://midaz-crm.midaz.svc.cluster.local:4003/v1/` |
 | Reporter | `REPORTER_BASE_PATH` | `http://reporter-manager.reporter.svc.cluster.local:4005/v1` |
 
-### Shared config masks (`global.*`)
+### Managed Cloud (`global.cloud`)
 
 These fields are consumed by `lerian-common` and let an operator set a value
 ONCE per environment for every chart that shares it, instead of pinning it

@@ -2,6 +2,28 @@
 # This file contains the minimum required configuration for deployment
 # Copy this file and customize for your environment
 
+global:
+  # -- Env-wide MongoDB connection mask (global.datastores.mongo). Set the fields
+  # you need to point at an external instance; a native configmap.<KEY> pin
+  # would override these, so don't duplicate them there.
+  datastores:
+    mongo:
+      uri: ""
+      host: ""
+      port: "27017"
+      user: ""
+      params: ""
+  # -- Env-wide Access Manager gate/host (global.auth). Do NOT also pin
+  # configmap.PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_HOST — a native key wins over
+  # this mask and defeats it.
+  auth:
+    enabled: "false"
+    host: ""
+  # -- Env-wide telemetry gate (global.observability). Do NOT also pin
+  # configmap.ENABLE_TELEMETRY — a native key wins over this mask.
+  observability:
+    enabled: "false"
+
 replicaCount: 1
 
 image:
@@ -35,7 +57,7 @@ configmap:
   MIDAZ_CONSOLE_PORT: "8081"
 
   # OpenTelemetry Configuration
-  ENABLE_TELEMETRY: "false"
+  # ENABLE_TELEMETRY is set via global.observability.enabled above — do not pin it here.
   OTEL_HOST: ""
   OTEL_RECEIVER_HTTP_PORT: "4318"
   OTEL_URL_METRICS: ""
@@ -54,9 +76,8 @@ configmap:
   MIDAZ_TRANSACTION_BASE_PATH: ""
 
   # Plugin Auth Configuration
-  PLUGIN_AUTH_ENABLED: "false"
+  # PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_HOST are set via global.auth above — do not pin them here.
   PLUGIN_AUTH_CLIENT_ID: ""
-  PLUGIN_AUTH_HOST: ""
   PLUGIN_AUTH_PORT: "4000"
   PLUGIN_AUTH_BASE_PATH: ""
 
@@ -66,12 +87,9 @@ configmap:
   PLUGIN_IDENTITY_BASE_PATH: ""
 
   # MongoDB Configuration
-  MONGODB_URI: ""
-  MONGO_HOST: ""
-  MONGO_PORT: "27017"
+  # MONGODB_URI/MONGO_HOST/MONGO_PORT/MONGODB_USER/MONGO_PARAMETERS are set via
+  # global.datastores.mongo above — do not pin them here.
   MONGODB_DB_NAME: "midaz-console"
-  MONGODB_USER: ""
-  MONGO_PARAMETERS: ""
 
   # CRM Plugin Configuration
   CRM_BASE_PATH: ""

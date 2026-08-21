@@ -89,7 +89,11 @@ spec:
   - type: {{ .type }}
     metadata:
       queueName: {{ $.Values.common.configmap.RABBITMQ_GENERATE_REPORT_QUEUE | default "reporter.generate-report.queue" | quote }}
-      host: "{{ $.Values.common.configmap.RABBITMQ_URI | default "amqp" }}://{{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($.Values.datastores | default dict) "configmap" ($.Values.common.configmap | default dict) "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq") }}:{{ $.Values.common.configmap.RABBITMQ_PORT_AMQP | default "5672" }}"
+      {{- /* scheme/amqpPort resolved via the SAME broker datastore mask as host below
+         (and as _helpers.tpl RABBITMQ_URI/RABBITMQ_PORT_AMQP) — a managed-broker
+         profile (global.datastores.broker.{scheme,amqpPort}) must agree here too,
+         or KEDA polls the wrong endpoint while the app connects to the right one. */}}
+      host: "{{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($.Values.datastores | default dict) "configmap" ($.Values.common.configmap | default dict) "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") }}://{{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($.Values.datastores | default dict) "configmap" ($.Values.common.configmap | default dict) "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq") }}:{{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($.Values.datastores | default dict) "configmap" ($.Values.common.configmap | default dict) "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") }}"
       queueLength: {{ .metadata.queueLength | quote }}
       protocol: {{ .metadata.protocol | quote }}
       vhost: {{ .metadata.vhost }}

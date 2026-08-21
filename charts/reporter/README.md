@@ -63,6 +63,36 @@ helm uninstall reporter -n reporter
 
 The following table lists the configurable parameters and their default values.
 
+### Managed Cloud (`global.cloud`)
+
+Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster MongoDB/Redis/RabbitMQ/SeaweedFS with one knob:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    mongo: { host: "my-documentdb.example.com", port: "27017", user: "reporter" }
+    redis: { host: "my-elasticache.example.com:6379" }
+    broker: { host: "my-amazonmq.example.com" }
+  objectStorage:
+    s3: { endpoint: "https://s3.us-east-1.amazonaws.com", region: "us-east-1", bucket: "my-bucket" }
+  observability:
+    enabled: true
+  auth:
+    host: "http://plugin-access-manager-auth:4000"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, AMQP scheme/ports, S3
+path-style) for the masks above; only the ENDPOINTS (host/port/user) still
+come from `global.datastores`/`global.objectStorage` — a cloud preset can't
+know your RDS host. A native `common.configmap.<KEY>` always overrides any
+mask.
+
+Copy `values-template.yaml` as your starting point — it documents every
+`global.*` mask with a working example. `values.yaml` is the full
+power-user reference; `values.schema.json` validates it.
+
 ### Common Settings
 
 | Parameter | Description | Default |

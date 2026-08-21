@@ -93,7 +93,10 @@ The app reads:
 - `MONGO_URL`, `MONGO_DB_NAME` (only `dict-hub`)
 - `VALKEY_URL` (full Redis URL)
 - `RABBITMQ_URI` (only `dict-hub-vsync`)
-- `LICENSE_KEY`, `LICENSE_ORGANIZATION_IDS` (every component)
+- `LICENSE_KEY`, `ORGANIZATION_IDS` (every component). `ORGANIZATION_IDS` is
+  the live key (`pkg/config` `BaseConfig.LicenseOrganizationIDs`); the
+  `LICENSE_ORGANIZATION_IDS` entry some components still carry in values.yaml
+  is inert — no code reads that name.
 - `DEPLOYMENT_MODE` (saas/byoc/local)
 - Sibling URLs (`ADAPTER_BASE_URL`, `DICT_BASE_URL`, `COB_BASE_URL`,
   `MIDAZ_BASE_URL`, `CRM_BASE_URL`)

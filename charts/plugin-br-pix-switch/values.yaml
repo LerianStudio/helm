@@ -51,7 +51,7 @@ global:
   #
   # Use cases:
   #   - In-cluster Postgres subchart (postgresql.enabled=true) AND you want
-  #     the chart to create the 4 pix-switch databases for you. Set
+  #     the chart to create the 5 pix-switch databases for you. Set
   #     connection.host to the in-cluster service name
   #     (plugin-br-pix-switch-postgresql).
   #   - External Postgres (RDS, Cloud SQL, etc.) where the operator wants the
@@ -1393,8 +1393,14 @@ appsIngress:
     # network, and the pod answers on its ClusterIP regardless of any ingress
     # rule, so a narrower path rule hides nothing an in-cluster caller could not
     # already reach. Authentication on the internal group (lib-auth M2M) is the
-    # boundary. The bare prefix also keeps /pixauto/readyz reachable through the
-    # ingress, which the gethomepage.dev/href dashboard annotation targets.
+    # boundary — and it is OFF by default in this file: PLUGIN_AUTH_ENABLED is
+    # "false" for every component here, which makes the app's AuthEnabled() check
+    # false and omits the lib-auth handler from the route chain entirely. Set
+    # pixauto.configmap.PLUGIN_AUTH_ENABLED="true" (values-template.yaml already
+    # does) BEFORE enabling appsIngress, otherwise the published internal group
+    # is reachable from the ingress with no authentication at all. The bare
+    # prefix also keeps /pixauto/readyz reachable through the ingress, which the
+    # gethomepage.dev/href dashboard annotation targets.
     - path: /pixauto
       pathType: Prefix
       component: pixauto
@@ -1764,7 +1770,7 @@ adapterLerianSystemplane:
 pixauto:
   # Onboarding default, same as adapter-lerian: the component ships in the chart
   # so the release pipeline's `.pixauto.image.tag` key resolves, and each
-  # environment opts in once its `pixauto` database and DSN secret exist.
+  # environment opts in once its `pix-pixauto` database and DSN secret exist.
   enabled: false
   name: "pixauto"
   description: "Pix Automático payer API"

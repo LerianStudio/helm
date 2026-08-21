@@ -45,6 +45,7 @@ jobs:
             templates
             dependencies
             otel-collector
+            alloy-lerian
             plugins
             pipe
             doc

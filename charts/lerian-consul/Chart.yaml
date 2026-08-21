@@ -1,0 +1,50 @@
+apiVersion: v2
+name: lerian-consul
+description: >-
+  Lerian wrapper for the official HashiCorp Consul chart, curated as a minimal,
+  single-node service-discovery backend for lib-service-discovery in BYOC
+  deployments. Everything Lerian does not use (Connect/mesh, UI, sync-catalog,
+  gateways, per-node clients) is disabled by default.
+type: application
+annotations:
+  lerian.studio/chart-type: dependency-wrapper
+
+home: https://github.com/LerianStudio/helm
+
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/lerian-consul
+
+# A list of maintainers who are responsible for the chart
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+
+# This is the chart version. It should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+version: 1.0.0
+
+# This is the version number of the application being deployed.
+# It matches the appVersion of the pinned hashicorp/consul subchart (1.6.10 -> Consul 1.20.6).
+appVersion: "1.20.6"
+
+# A list of keywords about the chart. This helps others discover the chart.
+keywords:
+  - lerian
+  - consul
+  - service-discovery
+  - lib-service-discovery
+
+# The URL to an icon file for this chart. Or the icon data.
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+# This Helm chart wraps the official HashiCorp Consul chart as a single
+# pinned dependency. We do NOT re-implement Consul; the StatefulSet, Services,
+# ACL bootstrap, TLS-init and gossip-key jobs all come from the subchart.
+#
+# Pin rationale: chart 1.6.10 is the latest patch in the requested 1.6.x line
+# and ships Consul 1.20.6 (a stable release). The version is pinned EXACTLY
+# (no ^/~) so `helm dependency build` from Chart.lock is fully reproducible.
+dependencies:
+  - name: consul
+    version: 1.6.10
+    repository: "https://helm.releases.hashicorp.com"

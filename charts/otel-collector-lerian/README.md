@@ -97,7 +97,7 @@ This chart provides a pre-configured OpenTelemetry Collector with the following 
 | `opentelemetry-collector.extraEnvs[0].name` | API key environment variable name | `OTEL_API_KEY` |
 | `opentelemetry-collector.extraEnvs[0].valueFrom.secretKeyRef.name` | Secret name for API key | `otel-api-key` |
 | `opentelemetry-collector.extraEnvs[0].valueFrom.secretKeyRef.key` | Secret key for API key | `api-key` |
-| `GOMEMLIMIT` | Go memory limit | `200MiB` |
+| `GOMEMLIMIT` | Go memory limit. Not set in `extraEnvs` — the subchart derives it from `opentelemetry-collector.resources.limits.memory` via `useGOMEMLIMIT` (enabled by default upstream). Raise the memory limit to raise it, or set `useGOMEMLIMIT: false` to manage it yourself. | 80% of `resources.limits.memory` (`409MiB` at the default `512Mi`) |
 | `GOGC` | Go garbage collection percentage | `80` |
 | `GOMAXPROCS` | Maximum number of Go processes | `2` |
 
@@ -108,7 +108,7 @@ This chart provides a pre-configured OpenTelemetry Collector with the following 
 | `config.receivers.otlp.protocols.grpc.endpoint` | OTLP gRPC endpoint | `0.0.0.0:4317` |
 | `config.receivers.otlp.protocols.http.endpoint` | OTLP HTTP endpoint | `0.0.0.0:4318` |
 | `config.receivers.k8s_cluster.collection_interval` | Cluster metrics collection interval | `60s` |
-| `config.receivers.kubeletstats.collection_interval` | Kubelet stats collection interval | `10s` |
+| `config.receivers.kubeletstats.collection_interval` | Kubelet stats collection interval | `60s` |
 
 ### Processor Configuration
 

@@ -1,5 +1,179 @@
 # Product-console Changelog
 
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.3.0)
+
+- **Features**
+  - Added requirement for Helm 3.8.0+ for the OCI install in the documentation.
+
+- **Fixes**
+  - Updated installation documentation to use Docker Hub OCI registry.
+
+- **Improvements**
+  - Added an upgrade guide for product-console v3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.2.0...product-console-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.3.0)
+
+- **Features**
+  - Require Helm 3.8.0+ for the OCI install.
+
+- **Fixes**
+  - Use Docker Hub OCI registry in install docs.
+
+- **Improvements**
+  - Add upgrade guide for product-console v3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.2.0...product-console-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.3.0)
+
+- **Features:**
+  - Added upgrade guide for product-console v3.2.0.
+
+- **Fixes:**
+  - Updated install documentation to use Docker Hub OCI registry.
+
+- **Improvements:**
+  - Updated documentation to require Helm 3.8.0+ for OCI installation.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.2.0...product-console-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.3.0)
+
+- **Features:**
+  - Added requirement for Helm 3.8.0+ for the OCI install.
+
+- **Fixes:**
+  - Updated install documentation to use Docker Hub OCI registry.
+
+- **Improvements:**
+  - Added upgrade guide for product-console v3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.2.0...product-console-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.3.0)
+
+- **Features**
+  - Added requirement for Helm 3.8.0+ for the OCI install.
+
+- **Fixes**
+  - Updated install documentation to use Docker Hub OCI registry.
+
+- **Improvements**
+  - Added an upgrade guide for product-console v3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.2.0...product-console-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.3.0)
+
+- **Features**
+  - Added requirement for Helm 3.8.0+ for OCI install in documentation.
+
+- **Fixes**
+  - Updated installation documentation to use Docker Hub OCI registry.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.2.0...product-console-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.3.0)
+
+- **Features**
+  - Require Helm 3.8.0+ for the OCI install.
+
+- **Fixes**
+  - Use Docker Hub OCI registry in install documentation.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.2.0...product-console-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.3.0)
+
+- **Features**
+  - Require Helm 3.8.0+ for the OCI install.
+
+- **Fixes**
+  - Use Docker Hub OCI registry in install docs.
+
+- **Improvements**
+  - Add upgrade guide for product-console v3.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.2.0...product-console-v3.3.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.2.0)
+
+- **Features**
+  - Released version 3.2.0 of product-console.
+
+- **Improvements**
+  - Updated appVersion and image tag to 1.10.0 for product-console.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.1.0...product-console-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.2.0)
+
+- **Features**
+  - Released version 3.2.0 of product-console.
+  - Updated appVersion and image tag to 1.10.0.
+
+- **Improvements**
+  - Updated CHANGELOG for product-console to version 3.1.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.1.0...product-console-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.2.0)
+
+- **Features**
+  - Released product-console version 3.2.0.
+  - Released product-console version 3.1.0.
+
+- **Improvements**
+  - Updated appVersion and image tag to 1.10.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.1.0...product-console-v3.2.0)
+
+---
+
 ## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v3.2.0)
 
 - **Features**

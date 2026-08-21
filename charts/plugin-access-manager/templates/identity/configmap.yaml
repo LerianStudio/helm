@@ -17,21 +17,21 @@ data:
 
   # AUTHORIZER
   AUTHORIZER_PORT: {{ .Values.identity.configmap.AUTHORIZER_PORT | default "8000" | quote }}
-  AUTHORIZER_ADDRESS: {{ .Values.identity.configmap.AUTHORIZER_ADDRESS | default "http://plugin-access-manager-auth-backend:8000" | quote }}
-  AUTHORIZER_CLIENT_ID: {{ .Values.identity.configmap.AUTHORIZER_CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
+  AUTHORIZER_ADDRESS: {{ .Values.identity.configmap.AUTHORIZER_ADDRESS | default (printf "http://%s:8000" (include "plugin-auth-backend.fullname" .)) | quote }}
+  AUTHORIZER_CLIENT_ID: {{ .Values.identity.configmap.AUTHORIZER_CLIENT_ID | default .Values.common.authorizer.clientId | quote }}
   AUTHORIZER_ORGANIZATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_ORGANIZATION_NAME | default "lerian" | quote }}
   AUTHORIZER_APPLICATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_APPLICATION_NAME | default "app-lerian" | quote }}
 
   # AUTH
   PLUGIN_AUTH_ENABLED: {{ .Values.identity.configmap.AUTH_ENABLED | default "true" | quote }}
   PLUGIN_AUTH_PORT: {{ .Values.identity.configmap.AUTH_PORT | default "4000" | quote }}
-  PLUGIN_AUTH_ADDRESS: {{ .Values.identity.configmap.AUTH_ADDRESS | default (printf "http://plugin-access-manager-auth.%s.svc.cluster.local:4000" .Release.Namespace) | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ .Values.identity.configmap.AUTH_ADDRESS | default (printf "http://%s:4000" (include "plugin-auth.fullname" .)) | quote }}
 
   # SWAGGER
   SWAGGER_TITLE: {{ .Values.identity.configmap.SWAGGER_TITLE | default "Plugin Identity API" | quote }}
   SWAGGER_DESCRIPTION: {{ .Values.identity.configmap.SWAGGER_DESCRIPTION | default "The Identity API provides a set of endpoints for managing users and client credentials." | quote }}
   SWAGGER_VERSION: {{ .Values.identity.image.tag | quote }}
-  SWAGGER_HOST: {{ .Values.identity.configmap.SWAGGER_HOST | default (printf "plugin-access-manager-identity.%s.svc.cluster.local:4001" .Release.Namespace) | quote }}
+  SWAGGER_HOST: {{ .Values.identity.configmap.SWAGGER_HOST | default (printf "%s.%s.svc.cluster.local:4001" (include "plugin-identity.fullname" .) .Release.Namespace) | quote }}
   SWAGGER_BASE_PATH: {{ .Values.identity.configmap.SWAGGER_BASE_PATH | default "/" | quote }}
   SWAGGER_SCHEMES: {{ .Values.identity.configmap.SWAGGER_SCHEMES | default "http" | quote }}
   SWAGGER_LEFT_DELIMITER: {{ .Values.identity.configmap.SWAGGER_LEFT_DELIMITER | default "{{" | quote }}
@@ -51,7 +51,7 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }} 
   ENABLE_TELEMETRY: {{ .Values.identity.configmap.ENABLE_TELEMETRY | default "true" | quote }}
   # REDIS
-  REDIS_HOST: {{ printf "%s:%s" (.Values.identity.configmap.REDIS_HOST | default (printf "plugin-access-manager-valkey-primary.%s.svc.cluster.local" .Release.Namespace)) (.Values.identity.configmap.REDIS_PORT | default "6379" | toString) | quote }}
+  REDIS_HOST: {{ printf "%s:%s" (.Values.identity.configmap.REDIS_HOST | default (printf "%s.%s.svc.cluster.local" (include "plugin-access-manager.valkeyHost" .) .Release.Namespace)) (.Values.identity.configmap.REDIS_PORT | default "6379" | toString) | quote }}
   REDIS_PORT: {{ .Values.identity.configmap.REDIS_PORT | default "6379" | quote }}
   REDIS_USER: {{ .Values.identity.configmap.REDIS_USER | default "identity" | quote }}
   REDIS_SCAN_COUNT: {{ .Values.identity.configmap.REDIS_SCAN_COUNT | default "500" | quote }}
@@ -106,6 +106,7 @@ data:
   # RUNTIME
   DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}
   TRUSTED_PROXIES: {{ .Values.identity.configmap.TRUSTED_PROXIES | default "" | quote }}
+  PLATFORM_INTERNAL_CIDRS: {{ .Values.identity.configmap.PLATFORM_INTERNAL_CIDRS | default "" | quote }}
 
   # M2M (lib-auth/v3 middleware — identity authorizes inbound M2M calls)
   AUTH_M2M_INVERSION_ENABLED: {{ .Values.identity.configmap.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}

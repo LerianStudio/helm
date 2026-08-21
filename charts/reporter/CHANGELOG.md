@@ -2,6 +2,164 @@
 
 ## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
 
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update reporter-manager to version 2.3.0 and reporter-worker to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Improvements**
+  - Added an upgrade guide for `reporter` version 3.1.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Improvements:**
+  - Add upgrade guide for reporter v3.1.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled.
+  - Update reporter-manager to version 2.3.0 and reporter-worker to version 2.3.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update reporter-manager to version 2.3.0 and reporter-worker to version 2.3.0.
+  - Update reporter-manager to version 2.2.0 and reporter-worker to version 2.2.0.
+
+- **Documentation**
+  - Added upgrade guide for reporter v3.1.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update reporter-manager to version 2.3.0 and reporter-worker to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
 - **Fixes:**
   - Guard replicas when autoscaling is enabled.
   - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.

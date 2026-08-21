@@ -85,6 +85,12 @@ always wins over the corresponding mask.
 | `global.observability.enabled` | `lerian-common.globalValue` | `configmap.ENABLE_TELEMETRY` |
 | `global.datastores.mongo.{uri,host,port,user,params}` | `lerian-common.datastore.value` | `configmap.MONGODB_URI` / `MONGO_HOST` / `MONGO_PORT` / `MONGODB_USER` / `MONGO_PARAMETERS` |
 
+`global.cloud: aws` also applies automatically (no chart change needed): it
+sets `MONGO_PARAMETERS` to the real DocumentDB connection-string shape
+(`tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&...`)
+whenever no more specific override (native key or `global.datastores.mongo.params`)
+is set. `gcp`/`azure` have no Mongo preset today.
+
 ## Uninstalling the Chart
 
 ```bash

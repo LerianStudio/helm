@@ -36,10 +36,10 @@ global:
   multiTenant:
     enabled: false
   # -- Env-wide telemetry gate. Leave disabled to keep the bundled default off.
+  # Only "enabled" is supported on this chart (no otlpEndpoint/deploymentEnvironment
+  # fields — those exist on other charts' observability mask, not this one's).
   observability:
     enabled: false
-    # otlpEndpoint: ""
-    # deploymentEnvironment: ""
   # -- Env-wide auth (plugin-access-manager). Leave unset to keep the chart's
   # own default endpoint; point it at your access-manager instance otherwise.
   auth:
@@ -76,9 +76,10 @@ bankTransfer:
     # =================================================================
     # Multi-tenancy — only when global.multiTenant.enabled=true above
     # =================================================================
-    # MULTI_TENANT_URL: ""
-    # AWS_REGION: ""
-    # MULTI_TENANT_REDIS_HOST: ""
+    # MULTI_TENANT_URL: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
+    # MULTI_TENANT_ENVIRONMENT: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
+    # AWS_REGION: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
+    # MULTI_TENANT_REDIS_HOST: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
     # MULTI_TENANT_REDIS_TLS: "false"
     # MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE: "tenants/{env}/{tenantId}/{applicationName}/integration/configuration"
 
@@ -89,9 +90,11 @@ bankTransfer:
     # RABBITMQ_URL: ""  # Required if RABBITMQ_ENABLED=true
 
     # =================================================================
-    # Authentication (inbound)
+    # Authentication (inbound). Set the endpoint via global.auth.host above —
+    # do NOT set PLUGIN_AUTH_ADDRESS here too: a present native key (even "")
+    # wins over the mask and defeats it.
     # =================================================================
-    PLUGIN_AUTH_ADDRESS: ""  # REQUIRED — plugin-access-manager auth endpoint
+    # PLUGIN_AUTH_ADDRESS: ""  # optional per-component override of global.auth.host
 
     # =================================================================
     # Outbound adapters — URLs + auth toggles only

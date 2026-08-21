@@ -67,8 +67,15 @@ tlsInsecure (DocumentDB doesn't ship AWS's public CA in every client trust
 store by default), directConnection (skip replica-set topology discovery,
 which DocumentDB's replica endpoints don't expose the way vanilla MongoDB
 does), retryWrites=false (DocumentDB doesn't support retryable writes — the
-driver's default retryWrites=true errors on every write without this), plus
-connect/serverSelection timeouts tuned for DocumentDB's failover behavior.
+driver's default retryWrites=true errors on every write without this),
+authSource=admin (the bootstrap flow creates the app user in DocumentDB's
+`admin` database — the standard DocumentDB pattern — so without this the
+driver defaults authSource to the target db name and every connection fails
+SASL auth), plus connect/serverSelection timeouts tuned for DocumentDB's
+failover behavior. broker.protocol="https": AmazonMQ's management API is
+HTTPS-only on the 443 port used above — this is the scheme for a
+health-check/management-API URL a consumer builds (distinct from
+`scheme`=amqps, the wire protocol for the actual broker connection).
 Azure redis tls/6380 verified against Microsoft Learn (TLS-only
 is the actual default on new Azure Cache for Redis instances; the non-TLS port
 ships disabled). GCP/Azure have no equivalent Lerian-owned provisioning today
@@ -81,9 +88,9 @@ amqpPort/params/caCert/protocol).
 {{- define "lerian-common.cloud.table" -}}
 aws:
   redis:         { tls: "true" }
-  broker:        { scheme: "amqps", amqpPort: "5671", port: "443" }
+  broker:        { scheme: "amqps", amqpPort: "5671", port: "443", protocol: "https" }
   postgres:      { ssl: "require" }
-  mongo:         { params: "tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&connectTimeoutMS=10000&serverSelectionTimeoutMS=10000" }
+  mongo:         { params: "tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&connectTimeoutMS=10000&serverSelectionTimeoutMS=10000&authSource=admin" }
   objectStorage: { usePathStyle: "false", disableSSL: "false" }
 gcp:
   postgres:      { ssl: "require" }

@@ -73,18 +73,37 @@
         },
         "streaming": {
           "type": "object",
-          "additionalProperties": true,
+          "additionalProperties": false,
+          "properties": {
+            "batchLingerMs": {},
+            "brokers": {},
+            "compression": {},
+            "enabled": {},
+            "importantEmitTimeoutMs": {},
+            "requiredAcks": {},
+            "saslAllowPlaintext": {},
+            "saslMechanism": {},
+            "saslUsername": {},
+            "tlsEnabled": {}
+          },
           "description": "Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when"
+        },
+        "multiTenant": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {},
+            "redisHost": {},
+            "redisPort": {},
+            "redisTls": {},
+            "url": {}
+          },
+          "description": "Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED"
         },
         "serviceDiscovery": {
           "type": "object",
           "additionalProperties": true,
           "description": "Env-wide service discovery (Consul). Placeholder block: reporter keeps SD_* as"
-        },
-        "multiTenant": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED"
         },
         "externalMongoDefinitions": {
           "type": "object",

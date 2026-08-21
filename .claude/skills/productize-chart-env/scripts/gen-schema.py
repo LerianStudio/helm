@@ -124,12 +124,17 @@ MASK_KEYED = {"datastores", "objectStorage"}        # child = <type>/<name>; kms
 # GLOBAL-ONLY direct mask blocks: finite field sets from the lerian-common globalValue contract
 # (references/dependency-contract.md). Closed ONLY under `global` — the top-level operational
 # `observability:` block is a DIFFERENT, open chart config (see open_map_schema's leaf guard).
-# streaming / multiTenant / serviceDiscovery are deliberately NOT here: the contract lists them
-# with open-ended fields ("…"/wildcard), so closing them would reject legitimate keys.
+# serviceDiscovery is deliberately NOT here: its lib-service-discovery contract is consumed
+# via .envFlat with no dedicated global.serviceDiscovery field set at all (chart-specific),
+# so there is nothing finite to close against — it stays open via open_map_schema below.
 GLOBAL_MASK_FIELDS = {
     "observability": ["deploymentEnvironment", "enabled", "otlpEndpoint"],
     "auth":          ["enabled", "host"],
     "env":           ["name"],
+    "streaming":     ["enabled", "brokers", "compression", "requiredAcks",
+                       "saslAllowPlaintext", "saslMechanism", "saslUsername", "tlsEnabled",
+                       "batchLingerMs", "importantEmitTimeoutMs"],
+    "multiTenant":   ["enabled", "url", "redisHost", "redisPort", "redisTls"],
 }
 
 

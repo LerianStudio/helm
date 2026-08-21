@@ -30,6 +30,51 @@ $ helm list -n midaz-plugins
 ```
 
 ---
+## Managed Cloud (`global.cloud`)
+
+Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster Casdoor/Postgres/Redis with one knob:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    postgres: { host: "my-rds.example.com", user: "access_manager" }
+    redis: { host: "my-elasticache.example.com", port: "6379" }
+  env:
+    name: "production"
+  multiTenant:
+    enabled: false
+  observability:
+    enabled: true
+
+# Disable the bundled in-cluster datastores — otherwise they still deploy
+# alongside the managed ones above (wasted resources, confusing topology).
+auth-database:
+  enabled: false
+valkey:
+  enabled: false
+
+# auth.secrets.DB_PASSWORD/REDIS_PASSWORD are normally single-sourced from the
+# bundled subcharts' own Secrets. With both disabled above, supply the managed
+# instances' credentials explicitly (or point auth.existingSecretName at a
+# pre-created Secret with the same keys instead of inlining them here):
+auth:
+  secrets:
+    DB_PASSWORD: "CHANGE_ME"
+    REDIS_PASSWORD: "CHANGE_ME"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, SSL mode) for every mask
+below; only the ENDPOINTS (host/port/user) still come from `global.datastores`
+— a cloud preset can't know your RDS host. A native
+`{auth,identity}.configmap.<KEY>` always overrides any mask.
+
+Copy `values-template.yaml` as your starting point — it documents every
+`global.*` mask with a working example. `values.yaml` is the full
+power-user reference; `values.schema.json` validates it.
+
+---
 ## Configuring Ingress for Different Controllers
 
 The Midaz Helm Chart optionally supports different Ingress Controllers for exposing services when necessary. It is possible to enable Ingress for the following services: Transaction, Onboarding and Console. Below are the configurations for commonly used controllers.

@@ -45,7 +45,84 @@
     },
     "global": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "cloud": {
+          "type": "string",
+          "enum": [
+            "",
+            "aws",
+            "gcp",
+            "azure"
+          ],
+          "description": "Managed-cloud topology preset. Empty = bundled in-cluster infra (plaintext)."
+        },
+        "datastores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "host": {},
+              "port": {},
+              "user": {},
+              "ssl": {},
+              "tls": {},
+              "caCert": {}
+            }
+          },
+          "description": "Env-wide SHARED datastore masks (set once per environment)."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {}
+          },
+          "description": "Env-wide environment name. Consumed by lerian-common.globalValue (block \"env\")."
+        },
+        "multiTenant": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block \"multiTenant\")."
+        },
+        "serviceDiscovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "address": {},
+            "tls": {},
+            "tlsSkipVerify": {},
+            "workload": {},
+            "preferView": {},
+            "internalScheme": {},
+            "externalPort": {}
+          },
+          "description": "Env-wide service discovery (Consul) tuning. Consumed by lerian-common.serviceDiscovery.env."
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
+        },
+        "ingress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "className": {},
+            "annotations": {},
+            "tls": {},
+            "domain": {}
+          },
+          "description": "Env-wide ingress shared contract (className/annotations/tls/domain). Consumed by lerian-common.ingress; per-component ingress.* always wins."
+        }
+      }
     }
   }
 }

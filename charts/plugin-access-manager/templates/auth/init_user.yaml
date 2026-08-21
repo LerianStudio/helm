@@ -6,7 +6,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "plugin-auth.fullname" . }}-init-user
+  name: {{ printf "%s-init-user" (include "plugin-auth.fullname" .) | trunc 63 | trimSuffix "-" }}
   labels:
     {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name) | nindent 4 }}
   annotations:
@@ -86,7 +86,7 @@ spec:
             - name: ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.auth.initUser.adminPasswordSecretName | default (printf "%s-init-user" (include "plugin-auth.fullname" .)) }}
+                  name: {{ .Values.auth.initUser.adminPasswordSecretName | default (printf "%s-init-user" (include "plugin-auth.fullname" .) | trunc 63 | trimSuffix "-") }}
                   key: {{ .Values.auth.initUser.adminPasswordSecretKey | default "ADMIN_PASSWORD" }}
             {{- if .Values.auth.initUser.adminEmail }}
             - name: ADMIN_EMAIL
@@ -113,7 +113,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ include "plugin-auth.fullname" . }}-init-user
+  name: {{ printf "%s-init-user" (include "plugin-auth.fullname" .) | trunc 63 | trimSuffix "-" }}
   labels:
     {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name) | nindent 4 }}
   annotations:

@@ -1,4 +1,43 @@
 
+global:
+  # -- Managed-cloud topology preset: aws | gcp | azure (unset = bundled
+  # in-cluster infra, plaintext). Sets the TOPOLOGY defaults (tls/scheme/ports/
+  # ssl/object-storage path-style) for the masks below — see
+  # lerian-common.cloud.table. Only ENDPOINTS (host/port/user) stay
+  # client-supplied via global.datastores; a cloud can't know your RDS host.
+  # Precedence: native configmap key > dedicated > shared (global.*) > this
+  # cloud preset > hardcoded default.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Env-wide SHARED datastore masks (set once per environment; a dedicated
+  # <release>.datastores or a native {auth,identity}.configmap.<KEY> overrides these).
+  # Fields: postgres.{host,port,user,ssl}, redis.{host,port,user,tls,caCert}.
+  # Example:
+  #   datastores:
+  #     postgres: { host: "my-rds.example.com", user: "access_manager" }
+  #     redis: { host: "my-elasticache.example.com", port: "6379", tls: "true" }
+  datastores: {}
+  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block "env").
+  # Fields: name. (configmap.ENV_NAME overrides.)
+  # Example: env: { name: "production" }
+  env: {}
+  # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block
+  # "multiTenant"). Fields: enabled. (configmap.MULTI_TENANT_ENABLED overrides.)
+  # Example: multiTenant: { enabled: true }
+  multiTenant: {}
+  # -- Env-wide service discovery (Consul) tuning, consumed by
+  # lerian-common.serviceDiscovery.env. Per-component activation stays with
+  # {auth,identity}.configmap.SD_ENABLED; every derived SD_* sibling (address,
+  # tls, internal/external endpoint) comes from here unless a legacy
+  # configmap.SD_* key is set. Fields: address, tls, tlsSkipVerify, workload,
+  # preferView, internalScheme, externalPort.
+  # Example: serviceDiscovery: { address: "consul.internal:8500", tls: "true" }
+  serviceDiscovery: {}
+  # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
+  # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  # Example: observability: { enabled: true }
+  observability: {}
+
 # Common configuration shared between components
 common:
   # Common secrets and configurations
@@ -141,10 +180,13 @@ identity:
   # @default -- templates/identity/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
-    AUTH_ENABLED: "true"
-    AUTH_PORT: "4000"
+    # Environment name is resolved via the global mask (global.env.name) — same
+    # rule as the datastore masks: do NOT pin ENV_NAME here, it WINS over the
+    # mask and defeats it. The default ("development") lives in
+    # templates/identity/configmap.yaml.
+    # AUTH_ENABLED/AUTH_PORT are NOT pinned here — the chart already defaults
+    # them ("true"/"4000") in templates/identity/configmap.yaml; no mask reads
+    # them, so duplicating the value here was pure noise.
     # AUTH_ADDRESS defaults to http://<auth component>:4000 (templates/identity/configmap.yaml).
     # Set it only to point identity at an auth outside this release.
   # -- Extra environment variables
@@ -288,20 +330,17 @@ auth:
   # @default -- templates/auth/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment variables for the postgres
-    DB_USER: "auth"
-    # DB_HOST defaults to the bundled auth-database Service (templates/auth/configmap.yaml).
-    # Set it only for an external database.
-    DB_PORT: 5432
-    DB_NAME: "casdoor"
-    DB_SSLMODE: "disable"
-    # -- Default Environment
-    ENV_NAME: "development"
-    # -- Default Redis Settings
-    # REDIS_HOST defaults to the bundled valkey primary Service (templates/auth/configmap.yaml).
-    # Set it only for an external Redis/Valkey.
-    REDIS_PORT: 6379
-    REDIS_USER: "auth"
+    # DB connection (host/port/user/ssl) is resolved via the postgres datastore mask
+    # (global.datastores.postgres / dedicated .Values.datastores). Defaults live in
+    # templates/auth/configmap.yaml so a shared/managed profile can override them —
+    # do NOT pin them here (a native configmap.<KEY> WINS over the mask and defeats it).
+    # DB_NAME is NOT pinned either — it has no mask (deliberately native/per-module),
+    # and the chart already defaults it ("casdoor") in templates/auth/configmap.yaml.
+    # Redis connection (host/port/user/tls/caCert) is resolved via the redis datastore
+    # mask (global.datastores.redis) — same rule: do NOT pin the connection keys here.
+    # ENV_NAME is resolved via the global mask (global.env.name) — same rule:
+    # do NOT pin it here, it WINS over the mask and defeats it. The default
+    # ("development") lives in templates/auth/configmap.yaml.
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -333,6 +372,11 @@ auth:
     name: ""
     # -- Whether to create database on startup (requires CREATEDB permission)
     createDatabase: true
+    service:
+      # -- Kubernetes service type for the auth-backend (casdoor) component
+      type: ClusterIP
+      # -- Service port for the auth-backend (casdoor) component
+      port: 8000
     image:
       # -- Repository for the auth backend (casdoor) container image
       repository: ghcr.io/lerianstudio/casdoor

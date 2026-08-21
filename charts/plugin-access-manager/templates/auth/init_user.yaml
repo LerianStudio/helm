@@ -86,7 +86,7 @@ spec:
             - name: ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.auth.initUser.adminPasswordSecretName | default (printf "%s-init-user" (include "plugin-auth.fullname" .)) }}
+                  name: {{ .Values.auth.initUser.adminPasswordSecretName | default (printf "%s-init-user" (include "plugin-auth.fullname" .) | trunc 63 | trimSuffix "-") }}
                   key: {{ .Values.auth.initUser.adminPasswordSecretKey | default "ADMIN_PASSWORD" }}
             {{- if .Values.auth.initUser.adminEmail }}
             - name: ADMIN_EMAIL

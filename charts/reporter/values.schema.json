@@ -73,6 +73,11 @@
           "type": "object",
           "additionalProperties": true,
           "description": "Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED gate today."
+        },
+        "objectStorage": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Env-wide object storage (S3/SeaweedFS) mask. Consumed by lerian-common.objectStorage.value (name \"s3\")."
         }
       }
     },

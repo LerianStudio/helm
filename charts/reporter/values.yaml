@@ -22,6 +22,13 @@ global:
   #     redis: { host: "my-elasticache.example.com:6379", tls: "true" }
   #     broker: { host: "my-amazonmq.example.com", scheme: "amqps", amqpPort: "5671" }
   datastores: {}
+  # -- Env-wide object storage (S3/SeaweedFS) mask, consumed by
+  # lerian-common.objectStorage.value (name "s3"). Non-secret fields only —
+  # access keys go in secrets.OBJECT_STORAGE_ACCESS_KEY_ID/SECRET_KEY.
+  # Example:
+  #   objectStorage:
+  #     s3: { endpoint: "https://s3.us-east-1.amazonaws.com", region: "us-east-1", bucket: "my-bucket" }
+  objectStorage: {}
   # -- Env-wide observability. Consumed by lerian-common.globalValue (block "observability").
   # Fields: enabled, otlpEndpoint, deploymentEnvironment. (configmap.<KEY> overrides.)
   # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }

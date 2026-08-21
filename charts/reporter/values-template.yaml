@@ -1,8 +1,11 @@
 # reporter — values-template.yaml (the operator fill-in surface)
 #
+# Copy this file, fill the CHANGE_ME credentials + REQUIRED endpoints, and
+# install: helm install reporter lerian/reporter -f values-template.yaml
+#
 # Documents every knob an operator sets, with safe defaults + empty credential
-# placeholders. The minimal copy-and-run subset is values-quickstart.yaml; the
-# full power-user API is values.yaml.
+# placeholders. This is the ONLY starter file for this chart — the full
+# power-user API (every knob, no curation) is values.yaml.
 #
 # STYLE (canonical, mirrors the midaz productized chart): the whole env-wide
 # typed contract lives in ONE `global:` block, FIRST — set each dependency
@@ -12,6 +15,13 @@
 
 # --- The env-wide typed contract (dependency connections + cross-cutting) ------
 global:
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets tls/scheme/ports/
+  # ssl/object-storage-path-style for the masks below in one knob — e.g. "aws"
+  # turns on Redis TLS, AmazonMQ amqps, RDS sslmode=require, S3 virtual-host
+  # style. Leave "" for the bundled in-cluster infra (plaintext). Endpoints
+  # (host/port/user) still come from global.datastores/objectStorage below —
+  # a cloud preset can't know your RDS host.
+  cloud: ""
   # -- Dependency connections — typed masks (one knob per field). Point at your
   # infra here, or keep the bundled defaults and toggle <dep>.enabled below.
   datastores:
@@ -88,7 +98,7 @@ common:
     MONGO_PARAMETERS: ""
 
     # OpenTelemetry — per-service identity (endpoint/enable via global.observability)
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-template-engine"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/reporter"
     OTEL_RESOURCE_SERVICE_NAME: "reporter"
 
     # Multi-tenant — the gate (url/redis via global.multiTenant when enabled)
@@ -119,7 +129,11 @@ secrets:
   # Fetcher integration — base64-encoded 32-byte encryption key:
   APP_ENC_KEY: ""
 
-# --- Bundled dependencies (set enabled: false to use external infra) -----------
+# --- Bundled dependencies. Set enabled: false to use an external instance
+# instead (then point the masks under global.datastores/objectStorage above at
+# it). On a managed-cloud install (global.cloud set), turn all of these off —
+# you're pointing at RDS/DocumentDB/ElastiCache/AmazonMQ/S3 instead, not the
+# in-cluster bundle. -----------------------------------------------------------
 seaweedfs:
   enabled: true
 mongodb:

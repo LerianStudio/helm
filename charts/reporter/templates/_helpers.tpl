@@ -312,7 +312,13 @@ Input: the root context ($).
    own app on the happy path (helm install with no overrides). */ -}}
 {{- $envName := $cm.ENV_NAME | default "development" -}}
 ENV_NAME: {{ $envName | quote }}
-ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
+{{/* The bundled/dev topology (mongo/redis/postgres/rabbitmq subcharts) has no
+   TLS on any of them — the app REQUIRES this flag to bypass, it isn't a
+   plain "don't use TLS" toggle (mongo hard-fails otherwise: "TLS required").
+   default "false" meant a plain `helm install` with zero overrides always
+   crashed. Same convention as plugin-access-manager: default "true" for the
+   bundled path; a managed-cloud profile flips it explicitly. */ -}}
+ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
 {{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the
    topology fields scheme (amqp|amqps) and amqpPort — so a managed-broker profile
    (e.g. AmazonMQ over TLS) sets global.datastores.broker.{scheme,amqpPort,port}

@@ -293,12 +293,12 @@ jobs:
 
       - name: Publish Release in Plugin Lifecycle Management
         if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.skip_lifecycle != 'true'
-        uses: LerianStudio/github-actions-lifecycle-management@main
+        uses: LerianStudio/github-actions-shared-workflows/src/deploy/lifecycle-management-publish@v1.57.0
         with:
-          chart_name: "${{ matrix.chart.name }}"
-          application_ids: ${{ vars.APPLICATION_IDS }}
-          lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
-          working_directory: ${{ matrix.chart.working_dir }}
+          chart-name: "${{ matrix.chart.name }}"
+          application-ids: ${{ vars.APPLICATION_IDS }}
+          lifecycle-api-token: ${{ secrets.LIFECYCLE_API_TOKEN }}
+          working-directory: ${{ matrix.chart.working_dir }}
 
   notify-release:
     needs:

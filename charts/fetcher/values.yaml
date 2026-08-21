@@ -201,6 +201,17 @@ worker:
     RABBITMQ_NUMBERS_OF_WORKERS: "5"
     RABBITMQ_FETCHER_WORK_QUEUE: "fetcher.extract-external-data.queue"
     RABBITMQ_JOB_EVENTS_EXCHANGE: "fetcher.job.events"
+    # Streaming (lib-streaming/CloudEvents) - the worker hard-requires this at
+    # startup for mandatory job event notifications; it will not boot without
+    # a reachable broker. STREAMING_BROKERS has no working default - it MUST
+    # be set to a real Kafka/Redpanda bootstrap address before installing with
+    # the bundled worker (e.g. "redpanda.<namespace>:9092").
+    STREAMING_ENABLED: "true"
+    STREAMING_BROKERS: ""
+    STREAMING_CLOUDEVENTS_SOURCE: "fetcher-worker"
+    STREAMING_TLS_ENABLED: "false"
+    STREAMING_SASL_MECHANISM: ""
+    STREAMING_SASL_USERNAME: ""
     # Storage Provider
     STORAGE_PROVIDER: "seaweedfs"
     OBJECT_STORAGE_ENDPOINT: ""
@@ -226,6 +237,10 @@ worker:
   secrets:
     APP_ENC_KEY: ""
     APP_ENC_KEY_VERSION: "1"
+    # Streaming (lib-streaming) credentials - only needed when
+    # common.configmap.STREAMING_SASL_MECHANISM / STREAMING_TLS_ENABLED are set
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
     # Storage Encryption Keys
     CRYPTO_ENCRYPT_FILE_STORAGE: ""
     CRYPTO_HASH_SECRET_KEY_FILE_STORAGE: ""
@@ -272,6 +287,10 @@ common:
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(HOST_IP):4317"
     ENABLE_TELEMETRY: "false"
     OTEL_INSECURE_EXPORTER: "false"
+    # TLS - bundled dev-mode MongoDB has no TLS; app refuses non-TLS Mongo
+    # connections unless this is set. Set to "false" for production
+    # deployments with TLS-terminated MongoDB.
+    ALLOW_INSECURE_TLS: "true"
     # Multi-Tenant
     MULTI_TENANT_ENABLED: "false"
     MULTI_TENANT_URL: ""
@@ -285,7 +304,13 @@ secrets:
   MONGO_USER: "fetcher"
   MONGO_PASSWORD: ""
   RABBITMQ_DEFAULT_USER: "plugin"
-  RABBITMQ_DEFAULT_PASS: ""
+  # -- Password the app uses to authenticate as the "plugin" RabbitMQ user.
+  # Matches the fixed password_hash baked into files/rabbitmq/load_definitions.json
+  # (loaded automatically when rabbitmq.enabled=true, bundled dev-mode broker).
+  # DEV-ONLY default — for production/external RabbitMQ, override this AND
+  # regenerate load_definitions.json's password_hash (rabbit_password_hashing_sha256)
+  # to match, or use externalRabbitmqDefinitions with your own credentials.
+  RABBITMQ_DEFAULT_PASS: "fetcher-dev-only"
   REDIS_USER: ""
   REDIS_PASSWORD: ""
   LICENSE_KEY: ""

@@ -122,6 +122,9 @@ The following table lists the configurable parameters and their default values.
 | `common.configmap.SEAWEEDFS_HOST` | SeaweedFS host | `seaweedfs-filer` |
 | `common.configmap.REDIS_HOST` | Redis/Valkey host | `valkey` |
 | `common.configmap.REDIS_PORT` | Redis/Valkey port | `6379` |
+| `common.configmap.ALLOW_INSECURE_TLS` | Skip TLS certificate validation for MongoDB/RabbitMQ/Redis connections. Bundled dev-mode dependencies have no TLS, so the app refuses to connect unless this is `"true"`. Set to `"false"` in production with TLS-terminated backends. | `"true"` |
+| `worker.configmap.STREAMING_ENABLED` | Enable lib-streaming (CloudEvents) job notifications. The worker hard-requires this to be `"true"` and will not start without a reachable broker. | `"true"` |
+| `worker.configmap.STREAMING_BROKERS` | **REQUIRED when the worker is deployed** - Kafka/Redpanda bootstrap address(es), e.g. `redpanda.<namespace>:9092`. No working default; not bundled by this chart. | `""` |
 
 ### Secrets
 
@@ -132,7 +135,7 @@ The following table lists the configurable parameters and their default values.
 | `secrets.MONGO_USER` | **REQUIRED** - MongoDB username | `fetcher` |
 | `secrets.MONGO_PASSWORD` | **REQUIRED** - MongoDB password | `""` |
 | `secrets.RABBITMQ_DEFAULT_USER` | **REQUIRED** - RabbitMQ username | `plugin` |
-| `secrets.RABBITMQ_DEFAULT_PASS` | **REQUIRED** - RabbitMQ password | `""` |
+| `secrets.RABBITMQ_DEFAULT_PASS` | RabbitMQ password for the `plugin` user. Defaults to a fixed dev-only credential matching the hash baked into `files/rabbitmq/load_definitions.json` (used when `rabbitmq.enabled=true`). Override for production/external RabbitMQ. | `"fetcher-dev-only"` |
 | `secrets.LICENSE_KEY` | **REQUIRED** - Lerian license key | `""` |
 
 ### External RabbitMQ Bootstrap

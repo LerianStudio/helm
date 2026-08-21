@@ -50,6 +50,34 @@ $ helm uninstall plugin-br-bank-transfer -n midaz-plugins
 
 ---
 
+## Managed Cloud (`global.cloud`)
+
+Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster Postgres/Redis/MongoDB/RabbitMQ with one knob:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    postgres: { host: "my-rds.example.com", user: "bank_transfer" }
+    redis: { host: "my-elasticache.example.com" }
+  env:
+    name: "production"
+  auth:
+    host: "http://plugin-access-manager-auth:4000"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, SSL mode) for the masks
+above; only the ENDPOINTS (host/port/user) still come from
+`global.datastores` — a cloud preset can't know your RDS host. A native
+`bankTransfer.configmap.<KEY>` always overrides any mask.
+
+Copy `values-template.yaml` as your starting point — it documents every
+`global.*` mask with a working example. `values.yaml` is the full
+power-user reference; `values.schema.json` validates it.
+
+---
+
 ## Configuring Ingress for Different Controllers
 
 The Plugin Bank Transfer Helm Chart optionally supports different Ingress Controllers for exposing services when necessary.

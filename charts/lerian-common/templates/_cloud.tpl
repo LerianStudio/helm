@@ -10,7 +10,8 @@ So a cloud preset is a smart DEFAULT — an explicit global.datastores.<type>.<f
 still overrides it (the exception: e.g. ElastiCache without TLS).
 
 Only ENDPOINTS (host/port/user) stay client-supplied — a cloud can't know your RDS
-host. Topology (tls/scheme/ports/ssl/telemetry) is per-cloud and lives here.
+host. Topology (tls/scheme/ports/ssl/object-storage path-style) is per-cloud and
+lives here.
 
 `global.cloud` unset (or "opensource") => no column matches => hardcoded defaults
 (bundled in-cluster infra, plaintext). Nobody running open source needs to know
@@ -21,9 +22,16 @@ Deliberately ABSENT:
     (or set global.datastores.broker explicitly for CloudAMQP).
   - object-storage AUTH annotation (IRSA/WI/AAD) — that is a serviceAccount
     annotation KEY, not a configmap value; handled by lerian-common.cloud.saAnnotations.
+  - `observability.enabled` — a cloud choice does NOT imply telemetry on/off;
+    those are orthogonal (a managed-cloud install may still run its own OTel
+    collector/agent). Coupling them meant selecting a cloud silently turned
+    telemetry OFF for anyone who didn't also explicitly re-enable it — exactly
+    backwards for a production install. The chart's own default (and any
+    explicit global.observability.enabled/configmap.ENABLE_TELEMETRY) governs
+    telemetry; the cloud table only sets connection/transport topology.
 
 Keys mirror the datastore-mask field vocabulary (host/port/user/ssl/tls/scheme/
-amqpPort/params/caCert/protocol) and the global blocks (observability.enabled).
+amqpPort/params/caCert/protocol).
 */}}
 {{- define "lerian-common.cloud.table" -}}
 aws:
@@ -31,17 +39,14 @@ aws:
   broker:        { scheme: "amqps", amqpPort: "5671", port: "15671" }
   postgres:      { ssl: "require" }
   objectStorage: { usePathStyle: "false", disableSSL: "false" }
-  observability: { enabled: "false" }
 gcp:
   redis:         { tls: "true" }
   postgres:      { ssl: "require" }
   objectStorage: { usePathStyle: "false", disableSSL: "false" }
-  observability: { enabled: "false" }
 azure:
   redis:         { tls: "true", port: "6380" }
   postgres:      { ssl: "require" }
   objectStorage: { usePathStyle: "true", disableSSL: "false" }
-  observability: { enabled: "false" }
 {{- end -}}
 
 {{/*

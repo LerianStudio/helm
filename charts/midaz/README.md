@@ -22,6 +22,40 @@ The default installation is similar to the one provided in the [Midaz repo](http
 
 ---
 
+## Managed Cloud (`global.cloud`)
+
+Point ledger+crm at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster PostgreSQL/MongoDB/Valkey/RabbitMQ with one knob:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    postgres: { host: "my-rds.example.com", port: "5432", user: "midaz" }
+    mongo:    { host: "my-docdb.example.com", port: "27017", user: "midaz" }
+    redis:    { host: "my-elasticache.example.com", port: "6379" }
+    broker:   { host: "my-amazonmq.example.com" }
+  env:
+    name: "production"
+  observability:
+    enabled: true
+  auth:
+    host: "http://plugin-access-manager-auth:4000"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, AMQP scheme/ports, sslmode,
+DocumentDB connection params) for the masks above; only the ENDPOINTS
+(host/port/user) still come from `global.datastores` — a cloud preset can't
+know your RDS host. A native `ledger.configmap.<KEY>`/`crm.configmap.<KEY>`
+always overrides any mask. Onboarding and transaction modules share the same
+`global.datastores.postgres`/`.mongo` bucket by default (only the database
+name stays native/per-module); crm points at the same Mongo instance as
+ledger's onboarding module by default.
+
+Copy `values-template.yaml` as your starting point — it documents every
+`global.*` mask with a working example. `values.yaml` is the full
+power-user reference; `values.schema.json` validates it.
+
 ## Install Midaz Helm Chart:
 
 To install Midaz using Helm, run:

@@ -17,6 +17,12 @@
 {{- $rabbitHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
 {{- $rabbitProtocol := .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" }}
 {{- $rabbitAmqpPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "15672") }}
+{{- /* Single-sourced so OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT can't drift from
+   ENV_NAME (lib-observability reads the OTEL var, not ENV_NAME, and defaults
+   it to "production" — an independent hardcoded default here previously left
+   the OTel guard stuck on "production" even when global.env.name was
+   overridden, tripping the insecure-exporter guard). */ -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") }}
 
 {{- $rabbitHealthCheckURL := "" }}
 
@@ -35,7 +41,7 @@ data:
   # APP CONFIGURATION
   # =============================================================================
   ALLOW_INSECURE_TLS: {{ .Values.ledger.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
-  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | quote }}
+  ENV_NAME: {{ $envName | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
   DEPLOYMENT_MODE: {{ .Values.ledger.configmap.DEPLOYMENT_MODE | default "local" | quote }}
   LOG_LEVEL: {{ .Values.ledger.configmap.LOG_LEVEL | default "debug" | quote }}
@@ -173,7 +179,7 @@ data:
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.ledger.configmap.OTEL_RESOURCE_SERVICE_NAME | default "ledger" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.ledger.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/midaz/v3/components/ledger" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default $envName | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana:4317" | quote }}
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}

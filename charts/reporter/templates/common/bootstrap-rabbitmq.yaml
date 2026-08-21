@@ -54,7 +54,8 @@ spec:
             - sh
             - -c
             - |
-              set -e
+              set -u
+              FAILED=0
 
               # Build base URL - omit port for default HTTPS (443) or HTTP (80)
               if [ "$RABBITMQ_PROTOCOL" = "https" ] && [ "$RABBITMQ_PORT" = "443" ]; then
@@ -69,12 +70,14 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
-              # Both steps below (POST /api/definitions and PUT /api/users/reporter) are
-              # idempotent on RabbitMQ's side — re-applying them on every run reconciles
-              # drift (e.g. a rotated password, or a user whose tags got reset) instead
-              # of an "already exists -> skip everything" check that would leave stale
-              # credentials/permissions in place after the first successful run.
-              echo "Applying RabbitMQ definitions from file..."
+              # The three steps below (definitions import, user PUT, permissions PUT) are each
+              # idempotent on RabbitMQ's side and run UNCONDITIONALLY — no "already exists ->
+              # skip everything" check (would leave stale credentials/permissions in place after
+              # the first successful run) and no early exit on a prior step's failure (RabbitMQ's
+              # POST /api/definitions is NOT atomic — a mid-import failure must not skip
+              # reconciling the reporter user/permissions, which no longer live in the bulk
+              # definitions file precisely so they can be reconciled independently of it).
+              echo "Applying RabbitMQ definitions (queues/exchanges/bindings) from file..."
               HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
@@ -84,9 +87,10 @@ spec:
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error applying definitions (HTTP $HTTP_CODE):"
                 cat /tmp/response.txt
-                exit 1
+                FAILED=1
+              else
+                echo "Done."
               fi
-              echo "Done."
 
               echo "Updating RabbitMQ user: reporter..."
               HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
@@ -98,9 +102,30 @@ spec:
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error updating reporter user (HTTP $HTTP_CODE):"
                 cat /tmp/response.txt
+                FAILED=1
+              else
+                echo "Done."
+              fi
+
+              echo "Setting permissions for RabbitMQ user: reporter..."
+              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                -H "content-type: application/json" \
+                -X PUT \
+                --data '{"configure":".*","write":".*","read":".*"}' \
+                "$BASE_URL/api/permissions/%2F/reporter")
+              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                echo "Error setting reporter permissions (HTTP $HTTP_CODE):"
+                cat /tmp/response.txt
+                FAILED=1
+              else
+                echo "Done."
+              fi
+
+              if [ "$FAILED" -ne 0 ]; then
+                echo "One or more bootstrap steps failed — see errors above."
                 exit 1
               fi
-              echo "Done."
 
               echo ""
               echo "=== RabbitMQ Bootstrap completed successfully ==="

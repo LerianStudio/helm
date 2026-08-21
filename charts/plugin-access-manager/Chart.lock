@@ -1,12 +1,12 @@
 dependencies:
 - name: lerian-common-helm
   repository: oci://ghcr.io/lerianstudio/alpha
-  version: 1.6.0-alpha.202608201533.227d9327
+  version: 1.6.0-alpha.202608211111.568c3fa0
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 16.3.5
 - name: valkey
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 2.4.6
-digest: sha256:81d198ba28aa084bd45bb5b2a5ba55a4b651b87b0f82d394ed7822d1b3265f1e
-generated: "2026-08-20T12:34:50.56706-03:00"
+digest: sha256:22b306c2051bc4ca0e028c62888f86578a2cb2f97333a90909ebc4bee0bfc9a3
+generated: "2026-08-21T08:12:53.530273-03:00"

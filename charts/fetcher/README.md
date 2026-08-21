@@ -70,6 +70,46 @@ helm uninstall fetcher -n midaz-plugins
 
 The following table lists the configurable parameters and their default values.
 
+### Managed Cloud (`global.cloud`)
+
+Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster MongoDB/Valkey/RabbitMQ/SeaweedFS with one knob, via the
+[lerian-common](https://github.com/LerianStudio/helm/tree/main/charts/lerian-common)
+dependency:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    mongo: { host: "my-documentdb.example.com", port: "27017" }
+    redis: { host: "my-elasticache.example.com", port: "6379" }
+    broker: { host: "my-amazonmq.example.com" }
+  objectStorage:
+    fetcher: { endpoint: "https://s3.us-east-1.amazonaws.com", region: "us-east-1", bucket: "my-bucket" }
+  observability:
+    enabled: true
+  auth:
+    enabled: true
+    host: "http://plugin-access-manager-auth:4000"
+  streaming:
+    enabled: true
+    brokers: "redpanda.<namespace>:9092"   # mandatory: the worker will not boot without it
+  multiTenant:
+    enabled: true
+    url: "http://tenant-manager:8080"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, AMQP scheme/ports, S3
+path-style) for the masks above; only the ENDPOINTS (host/port) still come
+from `global.datastores`/`global.objectStorage` — a cloud preset can't know
+your DocumentDB/ElastiCache/AmazonMQ host. A native `common.configmap.<KEY>`
+(or `manager.configmap.<KEY>` / `worker.configmap.<KEY>` for their own masked
+fields) always overrides any mask.
+
+fetcher does **not** adopt `lerian-common.serviceDiscovery` — this chart has
+no `SD_*` contract at all today (no Consul/lib-service-discovery integration),
+so there is nothing to migrate onto that mask.
+
 ### Global Settings
 
 | Parameter | Description | Default |

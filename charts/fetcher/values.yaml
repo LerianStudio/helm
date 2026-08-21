@@ -5,6 +5,53 @@ nameOverride: ""
 fullnameOverride: ""
 namespaceOverride: "fetcher"
 global:
+  # -- Managed-cloud topology preset: aws | gcp | azure (unset = bundled
+  # in-cluster infra, plaintext). Sets TOPOLOGY defaults (tls/scheme/ports/
+  # object-storage path-style) for every lerian-common mask below — see
+  # lerian-common.cloud.table. Only ENDPOINTS (host/port/user) stay
+  # client-supplied via global.datastores/objectStorage; a cloud can't know
+  # your DocumentDB/ElastiCache/AmazonMQ host. Precedence: native configmap
+  # key > dedicated (datastores:/objectStorage: at chart root) > shared
+  # (global.*) > this cloud preset > hardcoded default.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Env-wide SHARED datastore masks (set once per environment; a native
+  # common.configmap.<KEY> always overrides). Sub-keys: mongo / redis / broker
+  # (fetcher has no direct postgres datasource, unlike reporter).
+  # Example:
+  #   datastores:
+  #     mongo: { host: "my-documentdb.example.com", port: "27017" }
+  #     redis: { host: "my-elasticache.example.com", port: "6379", tls: "true" }
+  #     broker: { host: "my-amazonmq.example.com", scheme: "amqps", amqpPort: "5671" }
+  datastores: {}
+  # -- Env-wide object storage (S3/SeaweedFS) mask, consumed by
+  # lerian-common.objectStorage.value (name "fetcher") for the worker's
+  # extraction output bucket. Non-secret fields only — access keys go in
+  # secrets.OBJECT_STORAGE_ACCESS_KEY_ID/SECRET_KEY.
+  # Example:
+  #   objectStorage:
+  #     fetcher: { endpoint: "https://s3.us-east-1.amazonaws.com", region: "us-east-1", bucket: "my-bucket" }
+  objectStorage: {}
+  # -- Env-wide observability. Consumed by lerian-common.globalValue (block "observability").
+  # Fields: enabled, otlpEndpoint, deploymentEnvironment. (common.configmap.<KEY> overrides.)
+  # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
+  observability: {}
+  # -- Env-wide auth (access-manager), used by the manager's PLUGIN_AUTH_* gate.
+  # Consumed by lerian-common.globalValue (block "auth"). Fields: enabled, host.
+  # (manager.configmap.PLUGIN_AUTH_* overrides.)
+  # Example: auth: { enabled: true, host: "http://plugin-access-manager-auth:4000" }
+  auth: {}
+  # -- Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env.
+  # Fields: enabled, brokers, saslUsername, tlsEnabled, compression, requiredAcks, ...
+  # (brokers gates emission). The fetcher worker HARD-REQUIRES streaming at startup
+  # (mandatory job event notifications) — set at least `enabled: true` + `brokers`
+  # here, or leave the per-component common.configmap.STREAMING_* passthrough.
+  # Example: streaming: { enabled: true, brokers: "redpanda:9092" }
+  streaming: {}
+  # -- Env-wide multi-tenant infra (lib-commons/multitenancy). Consumed by
+  # lerian-common.multiTenant.env, gated on MULTI_TENANT_ENABLED.
+  # Example: multiTenant: { enabled: true, url: "http://tenant-manager:8080" }
+  multiTenant: {}
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
@@ -132,9 +179,9 @@ manager:
     SWAGGER_SCHEMES: "http"
     SWAGGER_LEFT_DELIM: "{{"
     SWAGGER_RIGHT_DELIM: "}}"
-    # Auth
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_ADDRESS: ""
+    # AUTH — PLUGIN_AUTH_ENABLED/_ADDRESS now emitted by lerian-common.auth.env
+    # (global.auth); default disabled, host "". Override via global.auth.{enabled,host}
+    # or set manager.configmap.PLUGIN_AUTH_ENABLED/_ADDRESS here to win outright.
     # Rate Limiting - Three-tier system with Redis backend
     # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
     # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
@@ -203,22 +250,18 @@ worker:
     RABBITMQ_JOB_EVENTS_EXCHANGE: "fetcher.job.events"
     # Streaming (lib-streaming/CloudEvents) - the worker hard-requires this at
     # startup for mandatory job event notifications; it will not boot without
-    # a reachable broker. STREAMING_BROKERS has no working default - it MUST
-    # be set to a real Kafka/Redpanda bootstrap address before installing with
-    # the bundled worker (e.g. "redpanda.<namespace>:9092").
-    STREAMING_ENABLED: "true"
-    STREAMING_BROKERS: ""
+    # a reachable broker. STREAMING_ENABLED/_BROKERS/_TLS_ENABLED/_SASL_* are
+    # now emitted by lerian-common.streaming.env (global.streaming); STREAMING_
+    # BROKERS has no working default in either place - it MUST be set to a
+    # real Kafka/Redpanda bootstrap address (e.g. "redpanda.<namespace>:9092")
+    # via global.streaming.brokers or worker.configmap.STREAMING_BROKERS before
+    # installing with the bundled worker.
     STREAMING_CLOUDEVENTS_SOURCE: "fetcher-worker"
-    STREAMING_TLS_ENABLED: "false"
-    STREAMING_SASL_MECHANISM: ""
-    STREAMING_SASL_USERNAME: ""
-    # Storage Provider
+    # Storage Provider - OBJECT_STORAGE_ENDPOINT/_REGION/_BUCKET/_USE_PATH_STYLE
+    # now emitted by lerian-common.objectStorage.value (name "fetcher"); see
+    # global.objectStorage.fetcher.
     STORAGE_PROVIDER: "seaweedfs"
-    OBJECT_STORAGE_ENDPOINT: ""
-    OBJECT_STORAGE_REGION: "us-east-1"
-    OBJECT_STORAGE_BUCKET: "external-data"
     OBJECT_STORAGE_KEY_PREFIX: ""
-    OBJECT_STORAGE_USE_PATH_STYLE: "false"
     # Rate Limiting - Three-tier system with Redis backend
     # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
     # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
@@ -254,51 +297,23 @@ worker:
   useExistingSecret: false
   existingSecretName: ""
 # Common configuration shared between manager and worker
+# -- Dedicated datastore masks for THIS release (override global.datastores).
+# Sub-keys (each host/port/params):
+#   mongo:  { host, port, params }   # MongoDB (report store)
+#   redis:  { host, port }           # Valkey/Redis (rate-limit backend)
+#   broker: { host, port, amqpPort, scheme }  # RabbitMQ (extraction queue)
+# The native common.configmap.<KEY> still wins over these; these win over
+# global.datastores.
+datastores: {}
 common:
-  configmap:
-    # MongoDB
-    MONGO_URI: "mongodb"
-    MONGO_HOST: "mongodb"
-    MONGO_NAME: "fetcher-db"
-    MONGO_PORT: "27017"
-    MONGO_MAX_POOL_SIZE: "1000"
-    MONGO_PARAMETERS: ""
-    MONGO_TLS_CA_CERT: ""
-    # RabbitMQ
-    RABBITMQ_URI: "amqp"
-    RABBITMQ_HOST: "rabbitmq"
-    RABBITMQ_PORT_AMQP: "5672"
-    RABBITMQ_PORT_HOST: "15672"
-    RABBITMQ_HEALTH_CHECK_URL: "http://rabbitmq:15672"
-    # SeaweedFS
-    SEAWEEDFS_HOST: "seaweedfs-filer"
-    SEAWEEDFS_FILER_PORT: "8888"
-    SEAWEEDFS_TTL: "6M"
-    # Redis/Valkey
-    REDIS_HOST: "valkey"
-    REDIS_PORT: "6379"
-    REDIS_DB: "0"
-    # OpenTelemetry
-    OTEL_RESOURCE_SERVICE_NAME: "fetcher"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/fetcher"
-    OTEL_RESOURCE_SERVICE_VERSION: "1.0.0-beta.1"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT_PORT: "4317"
-    OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(HOST_IP):4317"
-    ENABLE_TELEMETRY: "false"
-    OTEL_INSECURE_EXPORTER: "false"
-    # TLS - bundled dev-mode MongoDB has no TLS; app refuses non-TLS Mongo
-    # connections unless this is set. Set to "false" for production
-    # deployments with TLS-terminated MongoDB.
-    ALLOW_INSECURE_TLS: "true"
-    # Multi-Tenant
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    MULTI_TENANT_ENVIRONMENT: ""
-    MULTI_TENANT_MAX_TENANT_POOLS: "100"
-    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+  # -- Shared (common) application config for BOTH the manager and worker
+  # surfaces. Defaults for every shared key live in the templates
+  # (fetcher.commonConfigmapData): dependency CONNECTIONS resolve through
+  # lerian-common typed masks/helpers (datastore.value / globalValue /
+  # multiTenant.env), everything else is an escape-hatch passthrough. Set
+  # common.configmap.<KEY> here to override any shared key; add any other key
+  # and it flows through as-is.
+  configmap: {}
 # Shared secrets
 secrets:
   MONGO_USER: "fetcher"

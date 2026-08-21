@@ -115,7 +115,7 @@ ENVLIKE = re.compile(r"^[A-Z][A-Z0-9_]+$")          # env-var-like key
 # `datastores`/`objectStorage` are keyed by <type>/<name> (each child is one mask instance);
 # `kms` is a single direct block. Keep this in sync with the contract table.
 MASK_FIELDS = {
-    "datastores":    ["host", "port", "user", "name", "ssl", "uri", "replicaHost"],
+    "datastores":    ["host", "port", "user", "name", "ssl", "uri", "replicaHost", "tls", "caCert", "scheme", "amqpPort", "params"],
     "objectStorage": ["endpoint", "region", "bucket", "disableSSL", "usePathStyle"],
     "kms":           ["vendor", "vaultAddr", "vaultAuthMethod", "vaultRoleId", "vaultMount"],
 }

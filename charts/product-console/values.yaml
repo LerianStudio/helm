@@ -200,67 +200,14 @@ otel:
   # -- OTEL collector HTTP port (OTLP/HTTP protocol)
   port: 4318
 
-# -- ConfigMap for environment variables and configurations
+# -- ConfigMap for environment variables and configurations.
 # All values here will be set as environment variables in the deployment.
-# Defaults for every key below live ONLY in templates/configmap.yaml (the
-# `| default "X"` / mask fallback) — left blank here on purpose so there is a
-# single source of truth; set a value here only to override the shipped default.
-configmap:
-  # Application Configuration
-  NODE_ENV: ""
-  MIDAZ_CONSOLE_PORT: ""
-
-  # OpenTelemetry Configuration
-  # Note: When otel.enabled=true or otel.external=true, OTEL_HOST and OTEL_URL_* are injected dynamically
-  # ENABLE_TELEMETRY is resolved via the global mask (global.observability.enabled);
-  # a native key here WINS over the mask and defeats it.
-  OTEL_RECEIVER_HTTP_PORT: ""
-
-  # NextAuth Configuration
-  NEXTAUTH_URL: ""
-
-  # Midaz API Configuration
-  MIDAZ_API_HOST: ""
-  MIDAZ_API_PORT: ""
-  MIDAZ_BASE_PATH: ""
-  MIDAZ_TRANSACTION_BASE_HOST: ""
-  MIDAZ_TRANSACTION_BASE_PORT: ""
-  MIDAZ_TRANSACTION_BASE_PATH: ""
-
-  # Plugin Auth Configuration
-  # PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_HOST are resolved via the global "auth" mask
-  # (global.auth.{enabled,host}); a native key here WINS over the mask and defeats it.
-  PLUGIN_AUTH_CLIENT_ID: ""
-  PLUGIN_AUTH_PORT: ""
-  PLUGIN_AUTH_BASE_PATH: ""
-
-  # Plugin Identity Configuration
-  PLUGIN_IDENTITY_HOST: ""
-  PLUGIN_IDENTITY_PORT: ""
-  PLUGIN_IDENTITY_BASE_PATH: ""
-
-  # MongoDB Configuration
-  # MONGODB_URI/MONGO_HOST/MONGO_PORT/MONGODB_USER/MONGO_PARAMETERS are resolved
-  # via the mongo datastore mask (global.datastores.mongo.{uri,host,port,user,params});
-  # a native key here WINS over the mask and defeats it.
-  # MONGODB_DB_NAME stays native (no mask — per-app database name).
-  MONGODB_DB_NAME: ""
-
-  # CRM Plugin Configuration
-  CRM_BASE_PATH: ""
-
-  # Reporter Configuration
-  REPORTER_BASE_PATH: ""
-
-  # Account Type Validation
-  MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: ""
-  MIDAZ_ACCOUNT_TYPE_VALIDATION: ""
-
-  # NextJS Public Configuration
-  NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: ""
-  NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: ""
-  NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: ""
-  NEXT_PUBLIC_MIDAZ_VERSION: ""
+# Every key and its shipped default live ONLY in templates/configmap.yaml
+# (as `KEY | default "X"`, or via a lerian-common mask for
+# ENABLE_TELEMETRY/PLUGIN_AUTH_*/MONGODB_*/MONGO_*) — none are declared here.
+# Add a key below only when you need to override its shipped default, e.g.:
+#   NODE_ENV: "development"
+configmap: {}
 
 # -- Extra environment variables from ConfigMap (merged with configmap values)
 extraEnvVars: {}

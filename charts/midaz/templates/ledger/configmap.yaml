@@ -16,7 +16,11 @@
    right rendered key. */ -}}
 {{- $rabbitHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
 {{- $rabbitPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_HOST" "default" "5672") }}
-{{- $rabbitProtocol := $cm.RABBITMQ_PROTOCOL | default "http" }}
+{{- /* RABBITMQ_PROTOCOL is the scheme for the mgmt-API health-check URL (distinct
+   from `scheme`=amqps, the wire protocol for the broker connection itself) —
+   resolved via the broker mask's "protocol" field so a `global.cloud` preset
+   (aws: protocol=https) doesn't have to be re-hardcoded per consumer. */ -}}
+{{- $rabbitProtocol := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "protocol" "nativeKey" "RABBITMQ_PROTOCOL" "default" "http") }}
 {{- $rabbitAmqpPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "15672") }}
 
 {{- $rabbitHealthCheckURL := "" }}

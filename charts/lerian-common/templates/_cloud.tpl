@@ -57,10 +57,15 @@ AWS values verified against this org's own CloudFormation provisioning
 ElastiCache TransitEncryptionEnabled=true+required, RDS ForceSSL default "1",
 AmazonMQ security group opens 5671 (AMQPS)/15671/443 (AWS docs: 443 and 15671
 are interchangeable for the RabbitMQ web console/management API), DocumentDB
-EnableTLS default "enabled" (tls=true&tlsInsecure=true&replicaSet=rs0 is the
-connection-string shape this org's own E2E installs use against it — DocumentDB
-doesn't ship AWS's public CA in every client trust store by default, hence
-tlsInsecure). Azure redis tls/6380 verified against Microsoft Learn (TLS-only
+EnableTLS default "enabled" — the mongo.params below are the exact
+connection-string shape this org runs against DocumentDB in production:
+tlsInsecure (DocumentDB doesn't ship AWS's public CA in every client trust
+store by default), directConnection (skip replica-set topology discovery,
+which DocumentDB's replica endpoints don't expose the way vanilla MongoDB
+does), retryWrites=false (DocumentDB doesn't support retryable writes — the
+driver's default retryWrites=true errors on every write without this), plus
+connect/serverSelection timeouts tuned for DocumentDB's failover behavior.
+Azure redis tls/6380 verified against Microsoft Learn (TLS-only
 is the actual default on new Azure Cache for Redis instances; the non-TLS port
 ships disabled). GCP/Azure have no equivalent Lerian-owned provisioning today
 (AWS-only Marketplace product) — those columns are best-effort, not validated
@@ -74,7 +79,7 @@ aws:
   redis:         { tls: "true" }
   broker:        { scheme: "amqps", amqpPort: "5671", port: "15671" }
   postgres:      { ssl: "require" }
-  mongo:         { params: "tls=true&tlsInsecure=true&replicaSet=rs0" }
+  mongo:         { params: "tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&connectTimeoutMS=10000&serverSelectionTimeoutMS=10000" }
   objectStorage: { usePathStyle: "false", disableSSL: "false" }
 gcp:
   postgres:      { ssl: "require" }

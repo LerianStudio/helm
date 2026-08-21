@@ -69,16 +69,11 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
-              echo "Checking if RabbitMQ user already exists..."
-
-              REPORTER_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/users/reporter" 2>/dev/null || echo "not_found")
-
-              if echo "$REPORTER_EXISTS" | grep -q '"name":"reporter"'; then
-                echo "RabbitMQ definitions already applied (user reporter exists). Skipping."
-                exit 0
-              fi
-
+              # Both steps below (POST /api/definitions and PUT /api/users/reporter) are
+              # idempotent on RabbitMQ's side — re-applying them on every run reconciles
+              # drift (e.g. a rotated password, or a user whose tags got reset) instead
+              # of an "already exists -> skip everything" check that would leave stale
+              # credentials/permissions in place after the first successful run.
               echo "Applying RabbitMQ definitions from file..."
               HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \

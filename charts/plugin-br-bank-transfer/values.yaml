@@ -9,23 +9,32 @@ global:
   # bankTransfer.configmap.<KEY> overrides it). Consumed by
   # lerian-common.datastore.value. Fields: postgres.{host,port,user,ssl,
   # replicaHost}, redis.{host,tls}.
+  # Example:
+  #   datastores:
+  #     postgres: { host: "my-rds.example.com", user: "bank_transfer" }
+  #     redis: { host: "my-elasticache.example.com:6379", tls: "true" }
   datastores: {}
   # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
   # "env"). Fields: name. (configmap.ENV_NAME overrides.)
+  # Example: env: { name: "production" }
   env: {}
   # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue
   # (block "multiTenant"). Fields: enabled. (configmap.MULTI_TENANT_ENABLED
   # overrides.)
+  # Example: multiTenant: { enabled: true }
   multiTenant: {}
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
   # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  # Example: observability: { enabled: true }
   observability: {}
   # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
+  # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
   auth: {}
   # -- Managed-cloud topology preset: aws | gcp | azure. Sets tls/ssl for the
   # datastores mask above in one knob. Leave "" for the bundled in-cluster
   # infra (plaintext).
+  # Example: cloud: "aws"
   cloud: ""
   # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:

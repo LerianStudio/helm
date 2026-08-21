@@ -223,6 +223,11 @@ manager:
     APP_CONTEXT: "/manager/v1"
     SERVER_PORT: "4005"
     SERVER_ADDRESS: ":4005" #":{{ .Values.manager.configmap.SERVER_PORT }}"
+    # CORS — no chart default: the app itself requires a non-empty,
+    # non-wildcard CORS_ALLOWED_ORIGINS in production (config validation,
+    # not a chart mask). Set common.configmap.CORS_ALLOWED_ORIGINS (and
+    # optionally CORS_ALLOWED_METHODS/CORS_ALLOWED_HEADERS) to your real
+    # consumer origin(s).
     # LOG LEVEL
     LOG_LEVEL: info
     # AUTH — PLUGIN_AUTH_ENABLED/_ADDRESS now emitted by lerian-common.auth.env (global.auth);

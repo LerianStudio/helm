@@ -4,6 +4,6 @@
       "name" (include "plugin-identity.fullname" .)
       "labels" (include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name))
       "selector" (include "plugin-identity.selectorLabels" (dict "context" . "name" .Values.identity.name))
-      "minAvailableDefault" 0
+      "minAvailableDefault" 1
     ) }}
 {{- end }}

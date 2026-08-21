@@ -154,18 +154,33 @@ data:
   CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS | default "0" | quote }}
 
   # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false). SD_ENABLED is the
-  # only key owned here — every derived SD_* sibling comes from the
-  # lerian-common mask (global.serviceDiscovery, same shape as datastores/env).
+  # only key owned here. While disabled, the legacy static SD_* keys stay
+  # byte-identical to pre-productization (flat passthrough via envFlat) so
+  # existing installs (SD_ENABLED unset) render with zero diff. Once
+  # explicitly opted in (SD_ENABLED=true), the full derived SD_* sibling
+  # contract comes from the lerian-common mask (global.serviceDiscovery, same
+  # shape as datastores/env) instead of the legacy static block.
   SD_ENABLED: {{ .Values.auth.configmap.SD_ENABLED | default "false" | quote }}
+  {{- if eq (toString ($cm.SD_ENABLED | default "false")) "true" }}
   {{- include "lerian-common.serviceDiscovery.env" (dict
         "context"     $
-        "enabled"     (eq (toString ($cm.SD_ENABLED | default "false")) "true")
+        "enabled"     true
         "name"        (include "plugin-auth.fullname" .)
         "port"        .Values.auth.service.port
         "namespace"   .Release.Namespace
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.auth.ingress))
         "configmap"   $cm
       ) | nindent 2 }}
+  {{- else }}
+  {{- include "lerian-common.serviceDiscovery.envFlat" (dict
+        "configmap" $cm
+        "keys" (list "SD_ADDRESS" "SD_EXTERNAL_ADDRESS" "SD_EXTERNAL_PORT" "SD_TLS")
+        "defaults" (dict
+          "SD_ADDRESS" "localhost:8500"
+          "SD_EXTERNAL_ADDRESS" ""
+          "SD_EXTERNAL_PORT" "0"
+          "SD_TLS" "false")) | nindent 2 }}
+  {{- end }}
 
   # Extra Env Vars
   {{- with .Values.auth.extraEnvVars }}

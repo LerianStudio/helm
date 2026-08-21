@@ -1,5 +1,5 @@
 {{- include "lerian-common.service" (dict
-      "service" (dict "type" .Values.auth.service.type "port" 8000)
+      "service" .Values.auth.backend.service
       "name" (include "plugin-auth-backend.fullname" .)
       "labels" (printf "%s " (include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name)))
       "selector" (include "plugin-auth-backend.selectorLabels" (dict "context" . "name" .Values.auth.backend.name))

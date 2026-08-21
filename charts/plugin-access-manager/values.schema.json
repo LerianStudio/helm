@@ -110,6 +110,17 @@
             "enabled": {}
           },
           "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
+        },
+        "ingress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "className": {},
+            "annotations": {},
+            "tls": {},
+            "domain": {}
+          },
+          "description": "Env-wide ingress shared contract (className/annotations/tls/domain). Consumed by lerian-common.ingress; per-component ingress.* always wins."
         }
       }
     }

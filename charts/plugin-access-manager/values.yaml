@@ -372,6 +372,11 @@ auth:
     name: ""
     # -- Whether to create database on startup (requires CREATEDB permission)
     createDatabase: true
+    service:
+      # -- Kubernetes service type for the auth-backend (casdoor) component
+      type: ClusterIP
+      # -- Service port for the auth-backend (casdoor) component
+      port: 8000
     image:
       # -- Repository for the auth backend (casdoor) container image
       repository: ghcr.io/lerianstudio/casdoor

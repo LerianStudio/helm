@@ -2,6 +2,8 @@
 {{- include "lerian-common.ingress" (dict
       "context" .
       "ingress" .Values.auth.ingress
+      "global" (.Values.global).ingress
+      "subdomain" "auth"
       "name" (include "plugin-auth.fullname" .)
       "labels" (printf "%s " (include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name)))
       "svcPort" .Values.auth.service.port

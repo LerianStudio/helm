@@ -244,6 +244,17 @@ def open_map_schema(child_path, node, desc):
             # operational `observability:` block (a different, open chart config) stays open.
             masks.update({k: global_mask_schema(k, desc, f"{child_path}.{k}")
                           for k in node if k in GLOBAL_MASK_FIELDS})
+            # Remaining dict-valued global children (streaming/serviceDiscovery/multiTenant, or
+            # any future one) are intentionally OPEN — their lerian-common contract lists
+            # wildcard/variadic fields, so closing them would reject legitimate keys. But leaving
+            # them out of `properties` entirely means they fall through to global's blanket
+            # additionalProperties:true with ZERO type info, indistinguishable from a typo'd key.
+            # Declare them as open objects (type:object, additionalProperties:true) instead — still
+            # permissive, but now documented and typed as an object.
+            masks.update({k: open_map_schema(f"{child_path}.{k}", v, desc)
+                          for k, v in node.items()
+                          if isinstance(v, dict) and k not in MASK_FIELDS
+                          and k not in GLOBAL_MASK_FIELDS and k not in masks})
         if masks:
             cs.setdefault("properties", {}).update(masks)
     return cs

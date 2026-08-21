@@ -70,6 +70,26 @@
             "host": {}
           },
           "description": "Env-wide auth (access-manager). Consumed by lerian-common.globalValue (block \"auth\")."
+        },
+        "streaming": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when"
+        },
+        "serviceDiscovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Env-wide service discovery (Consul). Placeholder block: reporter keeps SD_* as"
+        },
+        "multiTenant": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED"
+        },
+        "externalMongoDefinitions": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Bootstrap job for external MongoDB: creates users and grants privileges"
         }
       }
     },

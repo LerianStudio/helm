@@ -47,6 +47,13 @@ global:
     enabled: false
   observability:
     enabled: true
+
+# Disable the bundled in-cluster datastores — otherwise they still deploy
+# alongside the managed ones above (wasted resources, confusing topology).
+auth-database:
+  enabled: false
+valkey:
+  enabled: false
 ```
 
 `global.cloud` sets the connection TOPOLOGY (TLS, SSL mode) for every mask

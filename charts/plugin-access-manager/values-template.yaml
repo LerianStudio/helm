@@ -23,12 +23,12 @@ global:
       user: "auth"
   # -- Env-wide service discovery (Consul) tuning. Leave unset to keep it off
   # (SD_ENABLED stays with {auth,identity}.configmap.SD_ENABLED per component).
-  serviceDiscovery: {}
-    # address: "consul.internal:8500"
-    # tls: "true"
+  # serviceDiscovery:
+  #   address: "consul.internal:8500"
+  #   tls: "true"
   # -- Env-wide telemetry gate. Leave unset to keep the chart's own default.
-  observability: {}
-    # enabled: "true"
+  # observability:
+  #   enabled: "true"
 
 common:
   authorizer:

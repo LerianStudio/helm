@@ -6,6 +6,41 @@ nameOverride: "midaz"
 fullnameOverride: ""
 namespaceOverride: "midaz"
 global:
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets tls/scheme/ports/
+  # ssl/mongo-connection-params for the masks below in one knob — e.g. "aws"
+  # turns on Redis TLS, AmazonMQ amqps, RDS sslmode=require, DocumentDB TLS
+  # params. Leave "" for the bundled in-cluster infra (plaintext). Endpoints
+  # (host/port/user) still come from global.datastores below.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Env-wide SHARED datastore masks (set once per environment; a dedicated
+  # <component>.datastores or a native {ledger,crm}.configmap.<KEY> overrides
+  # these). ledger's onboarding/transaction modules and crm all share the SAME
+  # postgres/mongo/redis/broker buckets by default (only the database NAME
+  # stays native/per-module). Fields: postgres.{host,port,user,ssl,replicaHost},
+  # mongo.{host,port,user,params}, redis.{host,tls}, broker.{host,scheme,port,amqpPort}.
+  # Example:
+  #   datastores:
+  #     postgres: { host: "my-rds.example.com", user: "midaz" }
+  #     mongo: { host: "my-documentdb.example.com", user: "midaz" }
+  #     redis: { host: "my-elasticache.example.com:6379", tls: "true" }
+  datastores: {}
+  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
+  # "env"). Fields: name. (configmap.ENV_NAME overrides.)
+  # Example: env: { name: "production" }
+  env: {}
+  # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block
+  # "multiTenant"). Fields: enabled. (configmap.MULTI_TENANT_ENABLED overrides.)
+  # Example: multiTenant: { enabled: true }
+  multiTenant: {}
+  # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
+  # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  # Example: observability: { enabled: true }
+  observability: {}
+  # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue
+  # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
+  # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
+  auth: {}
   # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
     # -- Enable or disable the RabbitMQ bootstrap job
@@ -228,51 +263,24 @@ ledger:
   # @default -- templates/ledger/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Otel default configuration
-    ENABLE_TELEMETRY: "true"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""
+    # -- ENV_NAME/MULTI_TENANT_ENABLED/ENABLE_TELEMETRY/PLUGIN_AUTH_*/DB_*/MONGO_*/
+    # REDIS_*/RABBITMQ_{URI,HOST,PORT_HOST,PORT_AMQP} are resolved via the
+    # lerian-common masks (global.env/multiTenant/observability/auth/datastores) —
+    # do NOT pin them here, a native key WINS over its mask and defeats it. Their
+    # defaults live in templates/ledger/configmap.yaml.
     # -- Accounting config
     ACCOUNT_TYPE_VALIDATION: ""
     TRANSACTION_ROUTE_VALIDATION: ""
-    # -- PostgreSQL Onboarding module
-    DB_ONBOARDING_HOST: "midaz-postgresql-primary"
-    DB_ONBOARDING_USER: "midaz"
+    # -- Per-module database/collection names — NOT masked (deliberately native).
     DB_ONBOARDING_NAME: "onboarding"
-    DB_ONBOARDING_PORT: "5432"
-    DB_ONBOARDING_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_ONBOARDING_REPLICA_USER: "midaz"
     DB_ONBOARDING_REPLICA_NAME: "onboarding"
-    DB_ONBOARDING_REPLICA_PORT: "5432"
-    # -- MongoDB Onboarding module
-    MONGO_ONBOARDING_URI: "mongodb"
-    MONGO_ONBOARDING_HOST: "midaz-mongodb"
     MONGO_ONBOARDING_NAME: "onboarding"
-    MONGO_ONBOARDING_USER: "midaz"
-    MONGO_ONBOARDING_PORT: "27017"
-    # -- PostgreSQL Transaction module
-    DB_TRANSACTION_HOST: "midaz-postgresql-primary"
-    DB_TRANSACTION_USER: "midaz"
+    MONGO_ONBOARDING_URI: "mongodb"
     DB_TRANSACTION_NAME: "transaction"
-    DB_TRANSACTION_PORT: "5432"
-    DB_TRANSACTION_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_TRANSACTION_REPLICA_USER: "midaz"
     DB_TRANSACTION_REPLICA_NAME: "transaction"
-    DB_TRANSACTION_REPLICA_PORT: "5432"
-    # -- MongoDB Transaction module
-    MONGO_TRANSACTION_URI: "mongodb"
-    MONGO_TRANSACTION_HOST: "midaz-mongodb"
     MONGO_TRANSACTION_NAME: "transaction"
-    MONGO_TRANSACTION_USER: "midaz"
-    MONGO_TRANSACTION_PORT: "27017"
-    # -- Redis (shared)
-    REDIS_HOST: "midaz-valkey-primary:6379"
-    # -- RabbitMQ configuration
-    RABBITMQ_URI: "amqp"
-    RABBITMQ_HOST: "midaz-rabbitmq"
-    RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672"
+    MONGO_TRANSACTION_URI: "mongodb"
+    # -- RabbitMQ per-role users — NOT masked (deliberately native).
     RABBITMQ_DEFAULT_USER: "transaction"
     RABBITMQ_CONSUMER_USER: "consumer"
     RABBITMQ_TRANSACTION_ASYNC: "false"
@@ -465,16 +473,13 @@ crm:
   # @default -- templates/crm/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    # -- MongoDB configuration
-    MONGO_HOST: "midaz-mongodb"
+    # -- ENV_NAME/PLUGIN_AUTH_*/MONGO_{HOST,PORT,USER,PARAMETERS}/ENABLE_TELEMETRY/
+    # MULTI_TENANT_ENABLED are resolved via the lerian-common masks
+    # (global.env/auth/datastores/observability/multiTenant) — do NOT pin them
+    # here, a native key WINS over its mask and defeats it. Their defaults live
+    # in templates/crm/configmap.yaml.
+    # -- Per-module database name — NOT masked (deliberately native).
     MONGO_NAME: "crm"
-    MONGO_PORT: "27017"
-    MONGO_USER: "midaz"
     # -- Rate Limiting - Three-tier system with Redis backend
     # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
     # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled

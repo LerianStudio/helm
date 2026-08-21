@@ -1,7 +1,22 @@
 {{- if .Values.ledger.enabled }}
-{{- $rabbitHost := .Values.ledger.configmap.RABBITMQ_HOST | default "midaz-rabbitmq" }}
+{{- /* Datastore masks (lerian-common): connection identity + TOPOLOGY resolved via
+   global.datastores.<type> with native ledger.configmap.<KEY> and dedicated
+   .Values.datastores overrides taking precedence. Onboarding/transaction modules
+   share the SAME postgres/mongo instance by default (only the database NAME
+   differs, which stays native/per-module — not masked). Defaults keep the
+   bundled-dev topology -> render-equivalent for existing users.
+
+   RABBITMQ_PORT_HOST/RABBITMQ_PORT_AMQP are swapped from every other chart's
+   convention in THIS chart specifically (PORT_HOST=5672 is actually the AMQP
+   port, PORT_AMQP=15672 is actually the management port) — preserved as-is
+   (native key names unchanged) and mapped to the mask fields by VALUE, not name,
+   so a cloud preset still lands on the right rendered key. */ -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $ded := .Values.datastores | default dict -}}
+{{- $cm := .Values.ledger.configmap -}}
+{{- $rabbitHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
 {{- $rabbitProtocol := .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" }}
-{{- $rabbitAmqpPort := .Values.ledger.configmap.RABBITMQ_PORT_AMQP | default "15672" }}
+{{- $rabbitAmqpPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "15672") }}
 
 {{- $rabbitHealthCheckURL := "" }}
 
@@ -20,7 +35,7 @@ data:
   # APP CONFIGURATION
   # =============================================================================
   ALLOW_INSECURE_TLS: {{ .Values.ledger.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
-  ENV_NAME: {{ .Values.ledger.configmap.ENV_NAME | default "production" | quote }}
+  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
   DEPLOYMENT_MODE: {{ .Values.ledger.configmap.DEPLOYMENT_MODE | default "local" | quote }}
   LOG_LEVEL: {{ .Values.ledger.configmap.LOG_LEVEL | default "debug" | quote }}
@@ -43,14 +58,14 @@ data:
   # =============================================================================
   # AUTH CONFIGS (shared)
   # =============================================================================
-  PLUGIN_AUTH_ENABLED: {{ .Values.ledger.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_HOST: {{ .Values.ledger.configmap.PLUGIN_AUTH_HOST | default "" | quote }}
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST") | nindent 2 }}
 
   # =============================================================================
   # MULTI-TENANT
   # =============================================================================
-  MULTI_TENANT_ENABLED: {{ .Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if eq (.Values.ledger.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
+  {{- $mtRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") }}
+  MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
+  {{- if eq ($mtRaw | toString) "true" }}
   MULTI_TENANT_URL: {{ required "ledger.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.ledger.configmap.MULTI_TENANT_URL | quote }}
   MULTI_TENANT_SERVICE_NAME: {{ .Values.ledger.configmap.MULTI_TENANT_SERVICE_NAME | default "ledger" | quote }}
   MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.ledger.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
@@ -70,17 +85,17 @@ data:
   # DB POSTGRESQL - ONBOARDING MODULE
   # =============================================================================
   # Primary
-  DB_ONBOARDING_HOST: {{ .Values.ledger.configmap.DB_ONBOARDING_HOST | default "midaz-postgresql-primary" | quote }}
-  DB_ONBOARDING_USER: {{ .Values.ledger.configmap.DB_ONBOARDING_USER | default "midaz" | quote }}
+  DB_ONBOARDING_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_ONBOARDING_HOST" "default" "midaz-postgresql-primary") | quote }}
+  DB_ONBOARDING_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_ONBOARDING_USER" "default" "midaz") | quote }}
   DB_ONBOARDING_NAME: {{ .Values.ledger.configmap.DB_ONBOARDING_NAME | default "onboarding" | quote }}
-  DB_ONBOARDING_PORT: {{ .Values.ledger.configmap.DB_ONBOARDING_PORT | default "5432" | quote }}
-  DB_ONBOARDING_SSLMODE: {{ .Values.ledger.configmap.DB_ONBOARDING_SSLMODE | default "disable" | quote }}
+  DB_ONBOARDING_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_ONBOARDING_PORT" "default" "5432") | quote }}
+  DB_ONBOARDING_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_ONBOARDING_SSLMODE" "default" "disable") | quote }}
   # Replica
-  DB_ONBOARDING_REPLICA_HOST: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_HOST | default "midaz-postgresql-read" | quote }}
-  DB_ONBOARDING_REPLICA_USER: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_USER | default "midaz" | quote }}
+  DB_ONBOARDING_REPLICA_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "DB_ONBOARDING_REPLICA_HOST" "default" "midaz-postgresql-replication") | quote }}
+  DB_ONBOARDING_REPLICA_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_ONBOARDING_REPLICA_USER" "default" "midaz") | quote }}
   DB_ONBOARDING_REPLICA_NAME: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_NAME | default "onboarding" | quote }}
-  DB_ONBOARDING_REPLICA_PORT: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_PORT | default "5432" | quote }}
-  DB_ONBOARDING_REPLICA_SSLMODE: {{ .Values.ledger.configmap.DB_ONBOARDING_REPLICA_SSLMODE | default "disable" | quote }}
+  DB_ONBOARDING_REPLICA_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_ONBOARDING_REPLICA_PORT" "default" "5432") | quote }}
+  DB_ONBOARDING_REPLICA_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_ONBOARDING_REPLICA_SSLMODE" "default" "disable") | quote }}
   # Connection pool
   DB_ONBOARDING_MAX_OPEN_CONNS: {{ .Values.ledger.configmap.DB_ONBOARDING_MAX_OPEN_CONNS | default "3000" | quote }}
   DB_ONBOARDING_MAX_IDLE_CONNS: {{ .Values.ledger.configmap.DB_ONBOARDING_MAX_IDLE_CONNS | default "3000" | quote }}
@@ -89,29 +104,29 @@ data:
   # MONGO DB - ONBOARDING MODULE
   # =============================================================================
   MONGO_ONBOARDING_URI: {{ .Values.ledger.configmap.MONGO_ONBOARDING_URI | default "mongodb" | quote }}
-  MONGO_ONBOARDING_HOST: {{ .Values.ledger.configmap.MONGO_ONBOARDING_HOST | default "midaz-mongodb" | quote }}
+  MONGO_ONBOARDING_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_ONBOARDING_HOST" "default" "midaz-mongodb") | quote }}
   MONGO_ONBOARDING_NAME: {{ .Values.ledger.configmap.MONGO_ONBOARDING_NAME | default "onboarding" | quote }}
-  MONGO_ONBOARDING_USER: {{ .Values.ledger.configmap.MONGO_ONBOARDING_USER | default "midaz" | quote }}
-  MONGO_ONBOARDING_PORT: {{ .Values.ledger.configmap.MONGO_ONBOARDING_PORT | default "27017" | quote }}
+  MONGO_ONBOARDING_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_ONBOARDING_USER" "default" "midaz") | quote }}
+  MONGO_ONBOARDING_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_ONBOARDING_PORT" "default" "27017") | quote }}
   MONGO_ONBOARDING_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_ONBOARDING_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_ONBOARDING_PARAMETERS: {{ .Values.ledger.configmap.MONGO_ONBOARDING_PARAMETERS | default "" | quote }}
+  MONGO_ONBOARDING_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_ONBOARDING_PARAMETERS" "default" "") | quote }}
   MONGO_ONBOARDING_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_ONBOARDING_TLS_CA_CERT | default "" | quote }}
 
   # =============================================================================
   # DB POSTGRESQL - TRANSACTION MODULE
   # =============================================================================
   # Primary
-  DB_TRANSACTION_HOST: {{ .Values.ledger.configmap.DB_TRANSACTION_HOST | default "midaz-postgresql-primary" | quote }}
-  DB_TRANSACTION_USER: {{ .Values.ledger.configmap.DB_TRANSACTION_USER | default "midaz" | quote }}
+  DB_TRANSACTION_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_TRANSACTION_HOST" "default" "midaz-postgresql-primary") | quote }}
+  DB_TRANSACTION_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") | quote }}
   DB_TRANSACTION_NAME: {{ .Values.ledger.configmap.DB_TRANSACTION_NAME | default "transaction" | quote }}
-  DB_TRANSACTION_PORT: {{ .Values.ledger.configmap.DB_TRANSACTION_PORT | default "5432" | quote }}
-  DB_TRANSACTION_SSLMODE: {{ .Values.ledger.configmap.DB_TRANSACTION_SSLMODE | default "disable" | quote }}
+  DB_TRANSACTION_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") | quote }}
+  DB_TRANSACTION_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
   # Replica
-  DB_TRANSACTION_REPLICA_HOST: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_HOST | default "midaz-postgresql-read" | quote }}
-  DB_TRANSACTION_REPLICA_USER: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_USER | default "midaz" | quote }}
+  DB_TRANSACTION_REPLICA_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "DB_TRANSACTION_REPLICA_HOST" "default" "midaz-postgresql-replication") | quote }}
+  DB_TRANSACTION_REPLICA_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_TRANSACTION_REPLICA_USER" "default" "midaz") | quote }}
   DB_TRANSACTION_REPLICA_NAME: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_NAME | default "transaction" | quote }}
-  DB_TRANSACTION_REPLICA_PORT: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_PORT | default "5432" | quote }}
-  DB_TRANSACTION_REPLICA_SSLMODE: {{ .Values.ledger.configmap.DB_TRANSACTION_REPLICA_SSLMODE | default "disable" | quote }}
+  DB_TRANSACTION_REPLICA_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_TRANSACTION_REPLICA_PORT" "default" "5432") | quote }}
+  DB_TRANSACTION_REPLICA_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_REPLICA_SSLMODE" "default" "disable") | quote }}
   # Connection pool
   DB_TRANSACTION_MAX_OPEN_CONNS: {{ .Values.ledger.configmap.DB_TRANSACTION_MAX_OPEN_CONNS | default "3000" | quote }}
   DB_TRANSACTION_MAX_IDLE_CONNS: {{ .Values.ledger.configmap.DB_TRANSACTION_MAX_IDLE_CONNS | default "3000" | quote }}
@@ -120,20 +135,20 @@ data:
   # MONGO DB - TRANSACTION MODULE
   # =============================================================================
   MONGO_TRANSACTION_URI: {{ .Values.ledger.configmap.MONGO_TRANSACTION_URI | default "mongodb" | quote }}
-  MONGO_TRANSACTION_HOST: {{ .Values.ledger.configmap.MONGO_TRANSACTION_HOST | default "midaz-mongodb" | quote }}
+  MONGO_TRANSACTION_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_TRANSACTION_HOST" "default" "midaz-mongodb") | quote }}
   MONGO_TRANSACTION_NAME: {{ .Values.ledger.configmap.MONGO_TRANSACTION_NAME | default "transaction" | quote }}
-  MONGO_TRANSACTION_USER: {{ .Values.ledger.configmap.MONGO_TRANSACTION_USER | default "midaz" | quote }}
-  MONGO_TRANSACTION_PORT: {{ .Values.ledger.configmap.MONGO_TRANSACTION_PORT | default "27017" | quote }}
+  MONGO_TRANSACTION_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_TRANSACTION_USER" "default" "midaz") | quote }}
+  MONGO_TRANSACTION_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_TRANSACTION_PORT" "default" "27017") | quote }}
   MONGO_TRANSACTION_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_TRANSACTION_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_TRANSACTION_PARAMETERS: {{ .Values.ledger.configmap.MONGO_TRANSACTION_PARAMETERS | default "" | quote }}
+  MONGO_TRANSACTION_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_TRANSACTION_PARAMETERS" "default" "") | quote }}
   MONGO_TRANSACTION_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_TRANSACTION_TLS_CA_CERT | default "" | quote }}
 
   # =============================================================================
   # REDIS (shared between modules)
   # =============================================================================
-  REDIS_HOST: {{ .Values.ledger.configmap.REDIS_HOST | default "midaz-valkey-primary:6379" | quote }}
+  REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "midaz-valkey-primary:6379") | quote }}
   REDIS_MASTER_NAME: {{ .Values.ledger.configmap.REDIS_MASTER_NAME | default "" | quote }}
-  REDIS_TLS: {{ .Values.ledger.configmap.REDIS_TLS | default "false" | quote }}
+  REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
   REDIS_CA_CERT: {{ .Values.ledger.configmap.REDIS_CA_CERT | default "" | quote }}
   REDIS_USE_GCP_IAM: {{ .Values.ledger.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
   REDIS_SERVICE_ACCOUNT: {{ .Values.ledger.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
@@ -161,16 +176,16 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.ledger.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.ledger.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "midaz-grafana:4317" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.ledger.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
 
   # =============================================================================
   # RABBITMQ (used by transaction module)
   # =============================================================================
-  RABBITMQ_URI: {{ .Values.ledger.configmap.RABBITMQ_URI | default "amqp" | quote }}
+  RABBITMQ_URI: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") | quote }}
   RABBITMQ_PROTOCOL: {{ .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" | quote }}
-  RABBITMQ_HOST: {{ .Values.ledger.configmap.RABBITMQ_HOST | default "midaz-rabbitmq" | quote }}
-  RABBITMQ_PORT_HOST: {{ .Values.ledger.configmap.RABBITMQ_PORT_HOST | default "5672" | quote }}
-  RABBITMQ_PORT_AMQP: {{ .Values.ledger.configmap.RABBITMQ_PORT_AMQP | default "15672" | quote }}
+  RABBITMQ_HOST: {{ $rabbitHost | quote }}
+  RABBITMQ_PORT_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_HOST" "default" "5672") | quote }}
+  RABBITMQ_PORT_AMQP: {{ $rabbitAmqpPort | quote }}
   RABBITMQ_DEFAULT_USER: {{ .Values.ledger.configmap.RABBITMQ_DEFAULT_USER | default "transaction" | quote }}
   RABBITMQ_CONSUMER_USER: {{ .Values.ledger.configmap.RABBITMQ_CONSUMER_USER | default "consumer" | quote }}
   RABBITMQ_NUMBERS_OF_WORKERS: {{ .Values.ledger.configmap.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}

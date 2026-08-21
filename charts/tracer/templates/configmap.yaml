@@ -34,12 +34,12 @@ data:
 
   # Auth Plugin (Access Manager) — resolved via the lerian-common auth mask
   # (global.auth.{enabled,host}); a native configmap.PLUGIN_AUTH_* always wins.
-  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-auth:4000") | nindent 2 }}
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000") | nindent 2 }}
 
   # PostgreSQL Database — host/port/user/sslmode resolved via the postgres
   # datastore mask (global.datastores.postgres / global.cloud). A native
   # configmap.<KEY> always wins over the mask.
-  DB_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "tracer-postgresql") | quote }}
+  DB_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "tracer-postgresql.tracer.svc.cluster.local.") | quote }}
   DB_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
   DB_NAME: {{ .Values.tracer.configmap.DB_NAME | default "tracer" | quote }}
   DB_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "tracer") | quote }}

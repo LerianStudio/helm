@@ -16,6 +16,11 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
+        "cloud": {
+          "type": "string",
+          "enum": ["aws", "gcp", "azure"],
+          "description": "Managed-cloud topology preset consumed by lerian-common.cloud.block (sets TLS/SSL mode defaults for the datastore masks; endpoints still come from global.datastores)."
+        },
         "datastores": {
           "type": "object",
           "additionalProperties": {

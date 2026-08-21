@@ -30,8 +30,9 @@ global:
     enabled: false
     # -- PostgreSQL connection settings
     connection:
-      # -- PostgreSQL host
-      host: "tracer-postgresql"
+      # -- PostgreSQL host (last-resort fallback; the same postgres datastore
+      # mask/native DB_HOST value wins over this when set)
+      host: "tracer-postgresql.tracer.svc.cluster.local."
       # -- PostgreSQL port
       port: "5432"
     # -- Admin credentials for PostgreSQL
@@ -198,7 +199,7 @@ tracer:
   # while the pin stands). Only genuine overrides + REQUIRED-when-enabled
   # documentation stay. Set any of them via configmap.<KEY> to override.
   # @default -- templates/configmap.yaml
-  configmap:
+  configmap: {}
     # =================================================================
     # Application identity
     # ENV_NAME is resolved via the global mask (global.env.name) — do NOT pin
@@ -217,25 +218,22 @@ tracer:
 
     # =================================================================
     # Auth Plugin (Access Manager) — resolved via the lerian-common auth mask
-    # (global.auth.{enabled,host}). PLUGIN_AUTH_ENABLED is NOT pinned — the
-    # mask's default ("false") already matches the chart's historical default.
-    # PLUGIN_AUTH_ADDRESS IS pinned: its value here (a real in-cluster FQDN)
-    # differs from the template/mask default ("http://plugin-auth:4000") — a
-    # native key always wins over the mask, so this pin stays authoritative
-    # and is inert-but-harmless with respect to global.auth.host.
+    # (global.auth.{enabled,host}). Neither PLUGIN_AUTH_ENABLED nor
+    # PLUGIN_AUTH_ADDRESS is pinned here — pinning a native key would always
+    # win over global.auth.host and make the mask permanently inert. The
+    # real in-cluster FQDN default now lives in templates/configmap.yaml's
+    # `auth.env` call (hostDefault), so global.auth.host can still override it.
     # =================================================================
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
 
     # =================================================================
     # PostgreSQL Database — host/port/user/sslmode resolved via the postgres
-    # datastore mask (global.datastores.postgres / global.cloud). DB_HOST IS
-    # pinned: it differs from the template/mask default ("tracer-postgresql")
-    # — a native key always wins over the mask. DB_PORT/DB_USER/DB_SSL_MODE
-    # are NOT pinned — the chart already defaults them ("5432"/"tracer"/
-    # "disable"). DB_NAME/MIGRATIONS_PATH are per-module passthrough (no
-    # mask) and are NOT pinned either — same default-duplication reasoning.
+    # datastore mask (global.datastores.postgres / global.cloud). DB_HOST is
+    # NOT pinned here — same reasoning as PLUGIN_AUTH_ADDRESS above; its real
+    # default now lives in templates/configmap.yaml's datastore.value call.
+    # DB_PORT/DB_USER/DB_SSL_MODE are NOT pinned — the chart already defaults
+    # them ("5432"/"tracer"/"disable"). DB_NAME/MIGRATIONS_PATH are per-module
+    # passthrough (no mask) and are NOT pinned either.
     # =================================================================
-    DB_HOST: "tracer-postgresql.tracer.svc.cluster.local."
 
     # =================================================================
     # Swagger Documentation

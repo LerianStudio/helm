@@ -201,65 +201,65 @@ otel:
   port: 4318
 
 # -- ConfigMap for environment variables and configurations
-# All values here will be set as environment variables in the deployment
+# All values here will be set as environment variables in the deployment.
+# Defaults for every key below live ONLY in templates/configmap.yaml (the
+# `| default "X"` / mask fallback) — left blank here on purpose so there is a
+# single source of truth; set a value here only to override the shipped default.
 configmap:
   # Application Configuration
-  NODE_ENV: "production"
-  MIDAZ_CONSOLE_PORT: "8081"
+  NODE_ENV: ""
+  MIDAZ_CONSOLE_PORT: ""
 
   # OpenTelemetry Configuration
   # Note: When otel.enabled=true or otel.external=true, OTEL_HOST and OTEL_URL_* are injected dynamically
-  # ENABLE_TELEMETRY is NOT pinned here — it is resolved via the global mask
-  # (global.observability.enabled). A native key here WINS over the mask and
-  # defeats it (see templates/configmap.yaml); the default ("false") lives there.
-  OTEL_RECEIVER_HTTP_PORT: "4318"
+  # ENABLE_TELEMETRY is resolved via the global mask (global.observability.enabled);
+  # a native key here WINS over the mask and defeats it.
+  OTEL_RECEIVER_HTTP_PORT: ""
 
   # NextAuth Configuration
-  NEXTAUTH_URL: "http://localhost:8081"
+  NEXTAUTH_URL: ""
 
   # Midaz API Configuration
-  MIDAZ_API_HOST: "midaz-onboarding"
-  MIDAZ_API_PORT: "3000"
-  MIDAZ_BASE_PATH: "http://midaz-onboarding:3000/v1"
-  MIDAZ_TRANSACTION_BASE_HOST: "midaz-transaction"
-  MIDAZ_TRANSACTION_BASE_PORT: "3001"
-  MIDAZ_TRANSACTION_BASE_PATH: "http://midaz-transaction:3001/v1"
+  MIDAZ_API_HOST: ""
+  MIDAZ_API_PORT: ""
+  MIDAZ_BASE_PATH: ""
+  MIDAZ_TRANSACTION_BASE_HOST: ""
+  MIDAZ_TRANSACTION_BASE_PORT: ""
+  MIDAZ_TRANSACTION_BASE_PATH: ""
 
   # Plugin Auth Configuration
-  # PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_HOST are NOT pinned here — they are resolved
-  # via the global "auth" mask (global.auth.{enabled,host}). A native key here
-  # WINS over the mask and defeats it; the defaults live in templates/configmap.yaml.
+  # PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_HOST are resolved via the global "auth" mask
+  # (global.auth.{enabled,host}); a native key here WINS over the mask and defeats it.
   PLUGIN_AUTH_CLIENT_ID: ""
-  PLUGIN_AUTH_PORT: "4000"
-  PLUGIN_AUTH_BASE_PATH: "http://plugin-access-manager-auth:4000/v1"
+  PLUGIN_AUTH_PORT: ""
+  PLUGIN_AUTH_BASE_PATH: ""
 
   # Plugin Identity Configuration
-  PLUGIN_IDENTITY_HOST: "plugin-access-manager-identity"
-  PLUGIN_IDENTITY_PORT: "4001"
-  PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity:4001/v1"
+  PLUGIN_IDENTITY_HOST: ""
+  PLUGIN_IDENTITY_PORT: ""
+  PLUGIN_IDENTITY_BASE_PATH: ""
 
   # MongoDB Configuration
-  # MONGODB_URI/MONGO_HOST/MONGO_PORT/MONGODB_USER/MONGO_PARAMETERS are NOT
-  # pinned here — they are resolved via the mongo datastore mask
-  # (global.datastores.mongo.{uri,host,port,user,params}). A native key here
-  # WINS over the mask and defeats it; the defaults live in templates/configmap.yaml.
+  # MONGODB_URI/MONGO_HOST/MONGO_PORT/MONGODB_USER/MONGO_PARAMETERS are resolved
+  # via the mongo datastore mask (global.datastores.mongo.{uri,host,port,user,params});
+  # a native key here WINS over the mask and defeats it.
   # MONGODB_DB_NAME stays native (no mask — per-app database name).
-  MONGODB_DB_NAME: "midaz-console"
+  MONGODB_DB_NAME: ""
 
   # CRM Plugin Configuration
-  CRM_BASE_PATH: "http://crm-plugin:4003/v1/"
+  CRM_BASE_PATH: ""
 
   # Reporter Configuration
-  REPORTER_BASE_PATH: "http://reporter:3002/v1"
+  REPORTER_BASE_PATH: ""
 
   # Account Type Validation
-  MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: "false"
+  MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: ""
   MIDAZ_ACCOUNT_TYPE_VALIDATION: ""
 
   # NextJS Public Configuration
-  NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: "jpeg,jpg,png,svg"
-  NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: "midaz,plugin-fees,plugin-crm,plugin-smart-templates"
-  NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: "false"
+  NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: ""
+  NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: ""
+  NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: ""
   NEXT_PUBLIC_MIDAZ_VERSION: ""
 
 # -- Extra environment variables from ConfigMap (merged with configmap values)

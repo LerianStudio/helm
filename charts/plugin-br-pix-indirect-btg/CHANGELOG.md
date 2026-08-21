@@ -3,6 +3,24 @@
 ## [3.8.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.8.0)
 
 - **Features**
+  - Added a new upgrade guide for `plugin-br-pix-indirect-btg` version 3.7.0, including instructions for creating TLS secrets using `kubectl` and notes on both registries.
+
+- **Fixes**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.9.1.
+  - Corrected namespace placeholders and pod selectors in the UPGRADE-3.7 documentation.
+
+- **Improvements**
+  - Enhanced documentation with additional details for `plugin-br-pix-indirect-btg`.
+
+Contributors: @Leonardox7, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.7.0...plugin-br-pix-indirect-btg-v3.8.0)
+
+---
+
+## [3.8.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v3.8.0)
+
+- **Features**
   - Added a variant for creating TLS secrets using `kubectl create secret tls`.
   - Included notes regarding the use of both registries.
 

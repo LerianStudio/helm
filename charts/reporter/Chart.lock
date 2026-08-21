@@ -1,7 +1,7 @@
 dependencies:
 - name: lerian-common-helm
   repository: oci://ghcr.io/lerianstudio/alpha
-  version: 1.6.0-alpha.202608211259.04eb4d92
+  version: 1.6.0-alpha.202608211336.087c8fbc
 - name: keda
   repository: https://kedacore.github.io/charts
   version: 2.17.1
@@ -17,5 +17,5 @@ dependencies:
 - name: valkey
   repository: https://valkey.io/valkey-helm
   version: 0.7.4
-digest: sha256:ae52c2ed42a50f27af453c41f50821a9d824f4998f041593883bb8b1387375f8
-generated: "2026-08-21T10:00:40.769035-03:00"
+digest: sha256:09138f4b2788ea1028f65ab21f918652ec58de6f179bbeee7048f1b9491cedba
+generated: "2026-08-21T10:37:48.958892-03:00"

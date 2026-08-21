@@ -32,27 +32,30 @@ data:
   NEXTAUTH_URL: {{ $cm.NEXTAUTH_URL | default "http://localhost:8081" | quote }}
 
   # Midaz API Configuration
-  MIDAZ_API_HOST: {{ $cm.MIDAZ_API_HOST | default "midaz-onboarding" | quote }}
-  MIDAZ_API_PORT: {{ $cm.MIDAZ_API_PORT | default "3000" | quote }}
-  MIDAZ_BASE_PATH: {{ $cm.MIDAZ_BASE_PATH | default "http://midaz-onboarding:3000/v1" | quote }}
-  MIDAZ_TRANSACTION_BASE_HOST: {{ $cm.MIDAZ_TRANSACTION_BASE_HOST | default "midaz-transaction" | quote }}
-  MIDAZ_TRANSACTION_BASE_PORT: {{ $cm.MIDAZ_TRANSACTION_BASE_PORT | default "3001" | quote }}
-  MIDAZ_TRANSACTION_BASE_PATH: {{ $cm.MIDAZ_TRANSACTION_BASE_PATH | default "http://midaz-transaction:3001/v1" | quote }}
+  # Defaults assume the standard in-cluster FQDN for the sibling midaz release
+  # (<service>.<namespace>.svc.cluster.local) so this chart works out of the
+  # box even when the client deploys midaz in a separate namespace.
+  MIDAZ_API_HOST: {{ $cm.MIDAZ_API_HOST | default "midaz-ledger.midaz.svc.cluster.local" | quote }}
+  MIDAZ_API_PORT: {{ $cm.MIDAZ_API_PORT | default "3002" | quote }}
+  MIDAZ_BASE_PATH: {{ $cm.MIDAZ_BASE_PATH | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1" | quote }}
+  MIDAZ_TRANSACTION_BASE_HOST: {{ $cm.MIDAZ_TRANSACTION_BASE_HOST | default "midaz-ledger.midaz.svc.cluster.local" | quote }}
+  MIDAZ_TRANSACTION_BASE_PORT: {{ $cm.MIDAZ_TRANSACTION_BASE_PORT | default "3002" | quote }}
+  MIDAZ_TRANSACTION_BASE_PATH: {{ $cm.MIDAZ_TRANSACTION_BASE_PATH | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1" | quote }}
 
   # Plugin Auth Configuration
   {{- /* PLUGIN_AUTH_ENABLED/HOST via the dedicated lerian-common.auth.env helper
      (global.auth.{enabled,host}), the canonical helper for plugin-access-manager
      consumers per the dependency-contract. PLUGIN_AUTH_CLIENT_ID/PORT/BASE_PATH
      have no mask in the contract and stay native passthrough. */}}
-  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "plugin-access-manager-auth") | nindent 2 }}
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "plugin-access-manager-auth.plugin-access-manager.svc.cluster.local") | nindent 2 }}
   PLUGIN_AUTH_CLIENT_ID: {{ $cm.PLUGIN_AUTH_CLIENT_ID | default "" | quote }}
   PLUGIN_AUTH_PORT: {{ $cm.PLUGIN_AUTH_PORT | default "4000" | quote }}
-  PLUGIN_AUTH_BASE_PATH: {{ $cm.PLUGIN_AUTH_BASE_PATH | default "http://plugin-access-manager-auth:4000/v1" | quote }}
+  PLUGIN_AUTH_BASE_PATH: {{ $cm.PLUGIN_AUTH_BASE_PATH | default "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000/v1" | quote }}
 
   # Plugin Identity Configuration
-  PLUGIN_IDENTITY_HOST: {{ $cm.PLUGIN_IDENTITY_HOST | default "plugin-access-manager-identity" | quote }}
+  PLUGIN_IDENTITY_HOST: {{ $cm.PLUGIN_IDENTITY_HOST | default "plugin-access-manager-identity.plugin-access-manager.svc.cluster.local" | quote }}
   PLUGIN_IDENTITY_PORT: {{ $cm.PLUGIN_IDENTITY_PORT | default "4001" | quote }}
-  PLUGIN_IDENTITY_BASE_PATH: {{ $cm.PLUGIN_IDENTITY_BASE_PATH | default "http://plugin-access-manager-identity:4001/v1" | quote }}
+  PLUGIN_IDENTITY_BASE_PATH: {{ $cm.PLUGIN_IDENTITY_BASE_PATH | default "http://plugin-access-manager-identity.plugin-access-manager.svc.cluster.local:4001/v1" | quote }}
 
   # MongoDB Configuration
   MONGODB_URI: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "uri" "nativeKey" "MONGODB_URI" "default" "mongodb") | quote }}
@@ -64,10 +67,10 @@ data:
   MONGO_PARAMETERS: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") | quote }}
 
   # CRM Plugin Configuration
-  CRM_BASE_PATH: {{ $cm.CRM_BASE_PATH | default "http://crm-plugin:4003/v1/" | quote }}
+  CRM_BASE_PATH: {{ $cm.CRM_BASE_PATH | default "http://midaz-crm.midaz.svc.cluster.local:4003/v1/" | quote }}
 
   # Reporter Configuration
-  REPORTER_BASE_PATH: {{ $cm.REPORTER_BASE_PATH | default "http://reporter:3002/v1" | quote }}
+  REPORTER_BASE_PATH: {{ $cm.REPORTER_BASE_PATH | default "http://reporter-manager.reporter.svc.cluster.local:4005/v1" | quote }}
 
   # Account Type Validation
   MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: {{ $cm.MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED | default "false" | quote }}

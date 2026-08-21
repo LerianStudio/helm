@@ -21,7 +21,12 @@
       "properties": {
         "cloud": {
           "type": "string",
-          "enum": ["", "aws", "gcp", "azure"],
+          "enum": [
+            "",
+            "aws",
+            "gcp",
+            "azure"
+          ],
           "description": "Managed-cloud topology preset. Empty = bundled in-cluster infra (plaintext)."
         },
         "datastores": {
@@ -39,7 +44,8 @@
               "params": {},
               "scheme": {},
               "amqpPort": {},
-              "name": {}
+              "name": {},
+              "caCert": {}
             }
           },
           "description": "Env-wide SHARED datastore masks (set once per environment). Consumed by lerian-common.datastore.value."

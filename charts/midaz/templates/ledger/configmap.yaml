@@ -238,7 +238,7 @@ data:
   REDIS_HOST: {{ $redisHost | quote }}
   REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
   REDIS_TLS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
-  REDIS_CA_CERT: {{ $cm.REDIS_CA_CERT | default "" | quote }}
+  REDIS_CA_CERT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "redis" "field" "caCert" "nativeKey" "REDIS_CA_CERT" "default" "") | quote }}
   REDIS_USE_GCP_IAM: {{ $cm.REDIS_USE_GCP_IAM | default "false" | quote }}
   REDIS_SERVICE_ACCOUNT: {{ $cm.REDIS_SERVICE_ACCOUNT | default "" | quote }}
   GOOGLE_APPLICATION_CREDENTIALS: {{ $cm.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}

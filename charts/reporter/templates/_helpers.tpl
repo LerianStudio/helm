@@ -272,8 +272,15 @@ Input: the root context ($).
 {{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled -}}
 {{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = index $cm "STREAMING_ENABLED" -}}{{- end -}}
 {{- $streamingEnabled := eq (include "reporter.isTrue" ($streamingRaw | default "false")) "true" -}}
-{{- /* Multi-tenant toggle: configmap override > global.multiTenant.enabled > false. */ -}}
-{{- $mtRaw := $cm.MULTI_TENANT_ENABLED | default ((($.Values.global | default dict).multiTenant | default dict).enabled) | default "false" -}}
+{{- /* Multi-tenant toggle: configmap override > global.multiTenant.enabled > false.
+   Presence-based (hasKey), not sprig `default` — `default` treats boolean
+   `false` as empty, so an explicit `common.configmap.MULTI_TENANT_ENABLED: false`
+   would silently fall through to global.multiTenant.enabled if that's true,
+   contradicting the precedence above. Same hasKey pattern already used for
+   STREAMING_ENABLED two lines up. */ -}}
+{{- $mtRaw := (($.Values.global | default dict).multiTenant | default dict).enabled -}}
+{{- if hasKey $cm "MULTI_TENANT_ENABLED" }}{{- $mtRaw = index $cm "MULTI_TENANT_ENABLED" -}}{{- end -}}
+{{- if kindIs "invalid" $mtRaw }}{{- $mtRaw = "false" -}}{{- end -}}
 {{- /* Keys emitted explicitly below; the guarded range must not re-emit them. */ -}}
 {{- $explicit := list
     "ENV_NAME" "ALLOW_INSECURE_TLS" "LOG_LEVEL"

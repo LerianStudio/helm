@@ -182,10 +182,15 @@ data:
   {{- end }}
 
   # =====================================================================
-  # AUTHENTICATION (inbound) — required in both modes.
+  # AUTHENTICATION (inbound) — required in both modes. Resolved via the
+  # lerian-common auth mask (global.auth.{enabled,host}) instead of the
+  # convenience lerian-common.auth.env wrapper: that wrapper hardcodes
+  # enabled's default to "false", but this chart's own default has always
+  # been "true" — calling globalValue directly keeps the historical default
+  # render-equivalent while still picking up global.auth when set.
   # =====================================================================
-  PLUGIN_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.PLUGIN_AUTH_ENABLED | default "true" | quote }}
-  PLUGIN_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000") | quote }}
 
   # =====================================================================
   # LICENSE GATEWAY

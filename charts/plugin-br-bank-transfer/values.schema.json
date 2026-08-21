@@ -55,6 +55,25 @@
             "enabled": {}
           },
           "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
+        },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {},
+            "host": {}
+          },
+          "description": "Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue (block \"auth\")."
+        },
+        "cloud": {
+          "type": "string",
+          "enum": [
+            "",
+            "aws",
+            "gcp",
+            "azure"
+          ],
+          "description": "Managed-cloud topology preset. Empty = bundled in-cluster infra (plaintext)."
         }
       }
     },

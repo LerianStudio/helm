@@ -20,6 +20,13 @@ global:
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
   # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
   observability: {}
+  # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue
+  # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
+  auth: {}
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets tls/ssl for the
+  # datastores mask above in one knob. Leave "" for the bundled in-cluster
+  # infra (plaintext).
+  cloud: ""
   # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:
     # -- Enable or disable the PostgreSQL bootstrap job

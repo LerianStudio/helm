@@ -18,6 +18,11 @@ lives here.
 this knob exists.
 
 Deliberately ABSENT:
+  - `mongo` for gcp/azure — no Lerian-owned managed Mongo-compatible service
+    there (GCP has no native Mongo-API service; Azure Cosmos DB for MongoDB
+    uses a materially different connection-string convention we haven't
+    validated against real infra). Set global.datastores.mongo.params
+    explicitly if you have one.
   - `broker` for gcp/azure — no managed RabbitMQ there; leave the bundled default
     (or set global.datastores.broker explicitly for CloudAMQP).
   - `redis.tls` for gcp — Memorystore for Redis ships with in-transit encryption
@@ -48,14 +53,18 @@ access (SDK, not the S3 mask) is a separate integration this chart doesn't
 model yet.
 
 AWS values verified against this org's own CloudFormation provisioning
-(lerian-cloudformation-foundation/templates/{elasticache,rds,amazonmq}.yaml):
+(lerian-cloudformation-foundation/templates/{elasticache,rds,amazonmq,documentdb}.yaml):
 ElastiCache TransitEncryptionEnabled=true+required, RDS ForceSSL default "1",
 AmazonMQ security group opens 5671 (AMQPS)/15671/443 (AWS docs: 443 and 15671
-are interchangeable for the RabbitMQ web console/management API). Azure redis
-tls/6380 verified against Microsoft Learn (TLS-only is the actual default on
-new Azure Cache for Redis instances; the non-TLS port ships disabled). GCP/Azure
-have no equivalent Lerian-owned provisioning today (AWS-only Marketplace
-product) — those columns are best-effort, not validated against real infra.
+are interchangeable for the RabbitMQ web console/management API), DocumentDB
+EnableTLS default "enabled" (tls=true&tlsInsecure=true&replicaSet=rs0 is the
+connection-string shape this org's own E2E installs use against it — DocumentDB
+doesn't ship AWS's public CA in every client trust store by default, hence
+tlsInsecure). Azure redis tls/6380 verified against Microsoft Learn (TLS-only
+is the actual default on new Azure Cache for Redis instances; the non-TLS port
+ships disabled). GCP/Azure have no equivalent Lerian-owned provisioning today
+(AWS-only Marketplace product) — those columns are best-effort, not validated
+against real infra.
 
 Keys mirror the datastore-mask field vocabulary (host/port/user/ssl/tls/scheme/
 amqpPort/params/caCert/protocol).
@@ -65,6 +74,7 @@ aws:
   redis:         { tls: "true" }
   broker:        { scheme: "amqps", amqpPort: "5671", port: "15671" }
   postgres:      { ssl: "require" }
+  mongo:         { params: "tls=true&tlsInsecure=true&replicaSet=rs0" }
   objectStorage: { usePathStyle: "false", disableSSL: "false" }
 gcp:
   postgres:      { ssl: "require" }

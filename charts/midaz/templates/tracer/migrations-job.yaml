@@ -47,6 +47,12 @@ metadata:
        fresh installs are unaffected. Re-running is idempotent (schema_migrations). */}}
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    {{- /* Plain helm install/upgrade (no ArgoCD) hits the same immutable-Job
+       problem: argocd.argoproj.io/hook is ArgoCD-only, plain helm ignores it.
+       helm.sh/hook is the native equivalent — coexists safely, each controller
+       reads only its own annotation. */}}
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
     {{- with $migrations.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

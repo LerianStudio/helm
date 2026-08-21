@@ -60,6 +60,15 @@ metadata:
        tracks progress in schema_migrations. */}}
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    {{- /* Same problem, plain `helm install`/`helm upgrade` path (no ArgoCD): a
+       chart-only bump (e.g. a values change unrelated to the migration image tag)
+       still changes this Job's pod template (helm.sh/chart label), and a Job's
+       spec.template is immutable — a plain `helm upgrade` fails outright instead
+       of recreating. argocd.argoproj.io/hook is ArgoCD-only (plain helm ignores
+       it entirely); helm.sh/hook is the native equivalent plain helm DOES honor.
+       Both annotations coexist safely — each controller only reads its own. */}}
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
     {{- with $migrations.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

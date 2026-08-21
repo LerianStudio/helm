@@ -11,6 +11,16 @@ kind: Job
 metadata:
   name: midaz-bootstrap-postgres
   namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- /* Fixed name (no tag suffix, unlike the migration Jobs) — a Job's
+       spec.template is immutable, so ANY chart bump (e.g. the helm.sh/chart
+       label) makes a plain `helm upgrade` fail outright without this. Hook
+       annotations for BOTH delivery paths: ArgoCD reads its own, plain helm
+       CLI reads helm.sh/hook — each ignores the other's, safe to coexist. */}}
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1

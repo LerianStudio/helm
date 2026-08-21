@@ -10,7 +10,7 @@ profile: client
 
 origin:
   # Substituir. Formato: <cliente>-<ambiente>, minúsculas, ambiente = stg | prd.
-  # Composição com hífen é aceita. Exemplos válidos: acme-prd, banco-do-brasil-stg.
+  # O nome do cliente é UMA palavra: acme-prd, nunca acme-corp-prd.
   id: SUBSTITUIR-prd
 
 destination:

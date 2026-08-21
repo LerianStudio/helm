@@ -62,9 +62,6 @@ ORIGIN IDENTIFIER — required, canonical form
 Deliberately has NO default. The current collector chart ships a default that
 violates its own schema, which is why it cannot render with its own values.
 
-Canonical form accepts hyphenated composition: the earlier pattern rejected
-legitimate identifiers already in use (`lazari-sandbox-prd`, `pix-switch-prd`).
-
 Absence and malformation are DISTINCT errors. The current schema only detects
 the second, so an omitted identifier passes silently — and telemetry arrives
 at the destination with no owner.
@@ -75,6 +72,9 @@ WHO USES THIS CHART, which is what the rule encodes:
     exempt from the pattern. They predate the convention and renaming them would
     orphan the metric history of every series already carrying those names.
   - client clusters: <client>-<stage>, lowercase, stage = stg | prd. Nothing else.
+    The client name is a SINGLE word — acme-prd, never acme-corp-prd. Composition
+    is refused deliberately: the identifier is parsed by routing and cost rules
+    that split on the last hyphen, and a composed name makes that split ambiguous.
 
 Internal test clusters (benedita, clotilde, lazari-sandbox and the like) are NOT a
 case here: they report to a separate self-hosted Grafana and will not run this
@@ -102,8 +102,8 @@ anyway. Both messages state the required form and nothing else.
 {{- end -}}
 {{- $reserved := list "aws-production" "aws-staging" "aws-devops" -}}
 {{- if not (has $id $reserved) -}}
-{{- if not (regexMatch "^[a-z0-9]+(-[a-z0-9]+)*-(stg|prd)$" $id) -}}
-{{- fail (printf "\n\nalloy-lerian: origin.id %q is malformed.\n\nRequired form: <client>-<stage>, lowercase, stage = stg | prd.\nComposition is allowed: acme-prd, banco-do-brasil-prd.\n" $id) -}}
+{{- if not (regexMatch "^[a-z0-9]+-(stg|prd)$" $id) -}}
+{{- fail (printf "\n\nalloy-lerian: origin.id %q is malformed.\n\nRequired form: <client>-<stage>, lowercase, stage = stg | prd.\nThe client name is a single word: acme-prd, not acme-corp-prd.\n" $id) -}}
 {{- end -}}
 {{- end -}}
 {{- $id -}}

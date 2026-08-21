@@ -11,16 +11,24 @@ global:
   # RDS host. Precedence: native configmap key > dedicated > shared (global.*) >
   # this cloud preset > hardcoded default — an explicit global.datastores.<type>.
   # <field> still overrides the preset.
+  # Example: cloud: "aws"
   cloud: ""
   # -- Env-wide SHARED datastore masks (set once per environment; a dedicated
   # <release>.datastores or a native common.configmap.<KEY> overrides these).
   # Same sub-keys as the dedicated block: mongo / redis / broker / postgres.
+  # Example:
+  #   datastores:
+  #     mongo: { host: "my-documentdb.example.com", port: "27017", user: "reporter" }
+  #     redis: { host: "my-elasticache.example.com:6379", tls: "true" }
+  #     broker: { host: "my-amazonmq.example.com", scheme: "amqps", amqpPort: "5671" }
   datastores: {}
   # -- Env-wide observability. Consumed by lerian-common.globalValue (block "observability").
   # Fields: enabled, otlpEndpoint, deploymentEnvironment. (configmap.<KEY> overrides.)
+  # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
   observability: {}
   # -- Env-wide auth (access-manager). Consumed by lerian-common.globalValue (block "auth").
   # Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
+  # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
   auth: {}
   # -- Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when
   # streaming is enabled. Fields: enabled, brokers, saslUsername, tlsEnabled, compression,
@@ -29,13 +37,16 @@ global:
   # The operator sets the connection here: `enabled` + `brokers`. (reporter's transport is
   # RabbitMQ+outbox, so STREAMING_BROKERS is validated-non-empty by lib-streaming but not used
   # to connect — set it explicitly anyway; no placeholder default is baked in.)
+  # Example: streaming: { enabled: true, brokers: "redpanda:9092" }
   streaming: {}
   # -- Env-wide service discovery (Consul). Placeholder block: reporter keeps SD_* as
   # configmap passthrough because its lib-service-discovery contract (SD_ADDRESS /
   # SD_ADVERTISE_*) differs from lerian-common.serviceDiscovery.env (SD_INTERNAL_*/EXTERNAL_*).
+  # Example: set common.configmap.SD_ENABLED/SD_ADDRESS directly (not this block).
   serviceDiscovery: {}
   # -- Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED
   # gate today; other MULTI_TENANT_* keys are set via common.configmap.<KEY>.
+  # Example: multiTenant: { enabled: true }
   multiTenant: {}
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:

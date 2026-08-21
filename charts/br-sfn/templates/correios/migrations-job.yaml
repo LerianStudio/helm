@@ -1,4 +1,6 @@
 {{- if $.Values.correios.enabled -}}
-{{/* dbCfgKey: the correios config reads POSTGRES_NAME, not POSTGRES_DB. */}}
-{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "correios" "comp" $.Values.correios "flavor" "baked" "dbCfgKey" "POSTGRES_NAME") }}
+{{- /* dbCfgKey: the correios config reads POSTGRES_NAME, not POSTGRES_DB. App and
+   baked migrator both use POSTGRES_* — the productized ConfigMap body flows straight
+   through (migrator's POSTGRES_* resolve from the same datastore mask the app reads). */ -}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "correios" "comp" $.Values.correios "flavor" "baked" "dbCfgKey" "POSTGRES_NAME" "configDataOverride" (include "br-sfn.correiosConfigData" (dict "root" $ "comp" $.Values.correios "port" ($.Values.correios.service.port | default 8080)))) }}
 {{- end -}}

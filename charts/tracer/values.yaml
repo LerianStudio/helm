@@ -6,14 +6,33 @@ fullnameOverride: ""
 namespaceOverride: "tracer"
 
 global:
+  # -- Env-wide SHARED datastore mask (set once per environment; a native
+  # tracer.configmap.<KEY> overrides it). Consumed by lerian-common.datastore.value.
+  # Fields: postgres.{host,port,user,ssl}.
+  # Example: datastores: { postgres: { host: "my-rds.example.com", user: "tracer" } }
+  datastores: {}
+  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
+  # "env"). Fields: name. (configmap.ENV_NAME overrides.)
+  # Example: env: { name: "production" }
+  env: {}
+  # -- Env-wide telemetry gate + endpoint. Consumed by lerian-common.globalValue
+  # (block "observability"). Fields: enabled, otlpEndpoint. (configmap.ENABLE_TELEMETRY/
+  # OTEL_EXPORTER_OTLP_ENDPOINT override.)
+  # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
+  observability: {}
+  # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue
+  # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
+  # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
+  auth: {}
   # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:
     # -- Enable or disable the PostgreSQL bootstrap job
     enabled: false
     # -- PostgreSQL connection settings
     connection:
-      # -- PostgreSQL host
-      host: "tracer-postgresql"
+      # -- PostgreSQL host (last-resort fallback; the same postgres datastore
+      # mask/native DB_HOST value wins over this when set)
+      host: "tracer-postgresql.tracer.svc.cluster.local."
       # -- PostgreSQL port
       port: "5432"
     # -- Admin credentials for PostgreSQL
@@ -91,14 +110,18 @@ tracer:
     seccompProfile:
       type: RuntimeDefault
 
-  # -- PodDisruptionBudget configuration
+  # -- PodDisruptionBudget configuration. Rendered via lerian-common.pdb with
+  # specStyle "explicit": minAvailable and maxUnavailable are mutually exclusive
+  # (policy/v1 rejects a PDB spec with both set) — set only ONE. Pre-existing bug
+  # fixed here: both were set simultaneously, which the prior hand-rolled template
+  # rendered as-is (no mutual-exclusivity check), producing a manifest the K8s API
+  # server would reject at admission. Kept minAvailable (guarantees the single
+  # default replica is never voluntarily evicted); dropped maxUnavailable.
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
     # -- Minimum number of available pods
     minAvailable: 1
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
 
@@ -169,102 +192,99 @@ tracer:
   # -- Affinity rules for pod scheduling
   affinity: {}
 
-  # -- ConfigMap for environment variables and configurations
+  # -- ConfigMap for environment variables and configurations. Most keys below
+  # are NOT pinned: they duplicate the template's own default in
+  # templates/configmap.yaml, so pinning them here was pure noise (and a drift
+  # risk — a future template default change would silently have no effect
+  # while the pin stands). Only genuine overrides + REQUIRED-when-enabled
+  # documentation stay. Set any of them via configmap.<KEY> to override.
   # @default -- templates/configmap.yaml
-  configmap:
-    # Application Settings
-    # ENV_NAME selects the deployment environment. lib-commons v4.6.3+
-    # TenantEventListener fails fast at boot if this (or ENVIRONMENT_NAME) is
-    # unset — must be "staging" or "production". GitOps overrides this to
-    # "staging" per non-prod environment.
-    ALLOW_INSECURE_TLS: "true"
-    ENV_NAME: "production"
-    # SERVER_PORT/SERVER_ADDRESS default to 4020 to match the tracer source
-    # convention (Dockerfile EXPOSE 4020 + .env.example + Dockerfile.dev). The
-    # app reads SERVER_ADDRESS first; if empty, falls back to SERVER_PORT.
-    # Keep these in sync with service.port above (and containerPort) when
-    # overriding in environment values.yaml.
-    SERVER_PORT: "4020"
-    SERVER_ADDRESS: ":4020"
-    LOG_LEVEL: "info"
+  configmap: {}
+    # =================================================================
+    # Application identity
+    # ENV_NAME is resolved via the global mask (global.env.name) — do NOT pin
+    # it here, a native configmap.ENV_NAME WINS over the mask and defeats it.
+    # The default ("production") lives in templates/configmap.yaml.
+    # ALLOW_INSECURE_TLS/SERVER_PORT/SERVER_ADDRESS/LOG_LEVEL are NOT pinned —
+    # no mask reads them and the chart already defaults them
+    # ("true"/"4020"/":4020"/"info") in templates/configmap.yaml.
+    # =================================================================
 
-    # Authentication
-    API_KEY_ENABLED: "false"
+    # =================================================================
+    # Authentication / CORS
+    # API_KEY_ENABLED/CORS_ALLOWED_ORIGINS are NOT pinned — the chart already
+    # defaults them ("false"/"*") in templates/configmap.yaml.
+    # =================================================================
 
-    # CORS Configuration
-    CORS_ALLOWED_ORIGINS: "*"
+    # =================================================================
+    # Auth Plugin (Access Manager) — resolved via the lerian-common auth mask
+    # (global.auth.{enabled,host}). Neither PLUGIN_AUTH_ENABLED nor
+    # PLUGIN_AUTH_ADDRESS is pinned here — pinning a native key would always
+    # win over global.auth.host and make the mask permanently inert. The
+    # real in-cluster FQDN default now lives in templates/configmap.yaml's
+    # `auth.env` call (hostDefault), so global.auth.host can still override it.
+    # =================================================================
 
-    # Auth Plugin (Access Manager)
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000"
+    # =================================================================
+    # PostgreSQL Database — host/port/user/sslmode resolved via the postgres
+    # datastore mask (global.datastores.postgres / global.cloud). DB_HOST is
+    # NOT pinned here — same reasoning as PLUGIN_AUTH_ADDRESS above; its real
+    # default now lives in templates/configmap.yaml's datastore.value call.
+    # DB_PORT/DB_USER/DB_SSL_MODE are NOT pinned — the chart already defaults
+    # them ("5432"/"tracer"/"disable"). DB_NAME/MIGRATIONS_PATH are per-module
+    # passthrough (no mask) and are NOT pinned either.
+    # =================================================================
 
-    # PostgreSQL Database
-    DB_HOST: "tracer-postgresql.tracer.svc.cluster.local."
-    DB_PORT: "5432"
-    DB_NAME: "tracer"
-    DB_USER: "tracer"
-    DB_SSL_MODE: "disable"
-    MIGRATIONS_PATH: "./migrations"
-
+    # =================================================================
     # Swagger Documentation
-    SWAGGER_TITLE: "Tracer API"
-    SWAGGER_DESCRIPTION: "Real-time transaction validation and fraud prevention API"
-    SWAGGER_HOST: ":4020"
-    SWAGGER_BASE_PATH: "/"
-    SWAGGER_SCHEMES: "http"
+    # SWAGGER_TITLE/DESCRIPTION/HOST/BASE_PATH/SCHEMES are NOT pinned — the
+    # chart already defaults them in templates/configmap.yaml.
+    # =================================================================
 
+    # =================================================================
     # CEL Expression Engine
-    CEL_COST_LIMIT: "10000"
+    # CEL_COST_LIMIT is NOT pinned — the chart already defaults it ("10000").
+    # =================================================================
 
+    # =================================================================
     # OpenTelemetry
-    # -- Enable telemetry collection (when true, OTEL_EXPORTER_OTLP_ENDPOINT is overridden with HOST_IP:4317)
-    ENABLE_TELEMETRY: "false"
-    # -- OTEL library name for instrumentation
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/tracer"
-    # -- OTEL resource service name for traces/metrics
-    OTEL_RESOURCE_SERVICE_NAME: "tracer"
-    # -- OTEL exporter endpoint (empty when disabled; overridden by HOST_IP:4317 when ENABLE_TELEMETRY=true)
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # ENABLE_TELEMETRY/OTEL_EXPORTER_OTLP_ENDPOINT are resolved via the global
+    # mask (global.observability.{enabled,otlpEndpoint}) — do NOT pin them
+    # here, a native key WINS over the mask and defeats it. Defaults ("false"/
+    # "") live in templates/configmap.yaml. OTEL_LIBRARY_NAME/
+    # OTEL_RESOURCE_SERVICE_NAME are per-service identity, NOT masked, and are
+    # NOT pinned either — the chart already defaults them.
+    # =================================================================
 
+    # =================================================================
     # Cleanup Worker
-    CLEANUP_WORKER_ENABLED: "false"
-    CLEANUP_INTERVAL_HOURS: "24"
+    # CLEANUP_WORKER_ENABLED/CLEANUP_INTERVAL_HOURS are NOT pinned — the chart
+    # already defaults them ("false"/"24").
+    # =================================================================
 
-    # Multi-Tenant
+    # =================================================================
+    # Multi-Tenant — flat-passthrough via lerian-common.multiTenant.envFlat.
     # -- Enable multi-tenant mode. When true, the following fields are required:
     #    MULTI_TENANT_URL, MULTI_TENANT_REDIS_HOST, secrets.MULTI_TENANT_SERVICE_API_KEY.
     #    Also requires PLUGIN_AUTH_ENABLED=true and API_KEY_ENABLED_ONLY_VALIDATION=false
     #    (enforced by the app at boot for security).
-    MULTI_TENANT_ENABLED: "false"
-    # -- Tenant Manager URL (required when MULTI_TENANT_ENABLED=true).
-    #    Use http://tenant-manager.<ns>.svc.cluster.local:4026 for in-cluster traffic.
-    MULTI_TENANT_URL: ""
-    # -- Allow http:// MULTI_TENANT_URL. lib-commons rejects cleartext HTTP unless
-    #    this is true. Never set true in production.
-    MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
-    # -- Redis host for tenant connection-pool registry (required when MT enabled).
-    MULTI_TENANT_REDIS_HOST: ""
-    # -- Redis port for tenant registry.
-    MULTI_TENANT_REDIS_PORT: "6379"
-    # -- Use TLS for tenant Redis connection. Default true (matches app's
-    #    secure-by-default; app forces true when env var is unset).
-    MULTI_TENANT_REDIS_TLS: "true"
-    # -- Maximum number of tenant connection pools held in memory.
-    MULTI_TENANT_MAX_TENANT_POOLS: "100"
-    # -- Idle timeout (seconds) before evicting unused tenant pool.
-    MULTI_TENANT_IDLE_TIMEOUT_SEC: "300"
-    # -- Tenant manager request timeout (seconds).
-    MULTI_TENANT_TIMEOUT: "30"
-    # -- Circuit breaker failure threshold for tenant manager calls.
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    # -- Circuit breaker open timeout (seconds) before half-open retry.
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-    # -- Cache TTL (seconds) for tenant manager responses.
-    MULTI_TENANT_CACHE_TTL_SEC: "120"
-    # -- Per-tenant connection liveness check interval (seconds).
-    MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: "30"
+    # MULTI_TENANT_ENABLED is NOT pinned — the chart already defaults it
+    # ("false") in templates/configmap.yaml.
+    # When MULTI_TENANT_ENABLED=true, also set:
+    #   MULTI_TENANT_URL (required) — Tenant Manager URL, e.g.
+    #     http://tenant-manager.<ns>.svc.cluster.local:4026
+    #   MULTI_TENANT_REDIS_HOST (required) — Redis host for the tenant
+    #     connection-pool registry
+    #   MULTI_TENANT_ALLOW_INSECURE_HTTP / MULTI_TENANT_REDIS_PORT /
+    #   MULTI_TENANT_REDIS_TLS (defaults "true" for tracer) /
+    #   MULTI_TENANT_MAX_TENANT_POOLS / MULTI_TENANT_IDLE_TIMEOUT_SEC /
+    #   MULTI_TENANT_TIMEOUT / MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD /
+    #   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC / MULTI_TENANT_CACHE_TTL_SEC /
+    #   MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC — all optional, chart-defaulted.
     # -- Optional cap on per-tenant DB connections (only set in MT integration tests
     #    or environments with very low DB max_connections; leave unset in production).
+    #    NOT part of the multiTenant.envFlat standard key set — emitted directly
+    #    by the template when set.
     # MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: ""
     # MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT: ""
 

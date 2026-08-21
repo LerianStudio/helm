@@ -9,8 +9,8 @@
 profile: client
 
 origin:
-  # Substituir. Minúsculas, segmentos separados por hífen, terminando em
-  # stg | hml | prd. Exemplos válidos: acme-prd, lazari-sandbox-prd.
+  # Substituir. Formato: <cliente>-<ambiente>, minúsculas, ambiente = stg | prd.
+  # Composição com hífen é aceita. Exemplos válidos: acme-prd, banco-do-brasil-stg.
   id: SUBSTITUIR-prd
 
 destination:

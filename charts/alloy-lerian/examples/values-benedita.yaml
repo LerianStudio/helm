@@ -1,4 +1,15 @@
-# benedita — anel 1 do rollout. Ambiente próprio, on-premises.
+# benedita — anel 1 do rollout, onde o chart foi VALIDADO em cluster real.
+#
+# ⚠️ ESTE ARQUIVO É REGISTRO DE VALIDAÇÃO, NÃO MODELO DE INSTALAÇÃO.
+#
+# A benedita é cluster interno de TESTE e reporta para um Grafana self-hosted
+# separado — ela não é destino deste chart em regime. O arquivo fica porque as
+# medições citadas aqui (DPM 3,41 → 1,00, escritor único, taxas por unidade) vêm
+# deste cluster e são a evidência de que o desenho funciona.
+#
+# Para instalar de verdade, use:
+#   examples/values-cliente.yaml          cluster de cliente (BYOC)
+#   examples/values-internal-lerian.yaml  nossos aws-production/staging/devops
 #
 # Uso:
 #   helm upgrade --install alloy-lerian \
@@ -20,15 +31,13 @@ origin:
   # config: a marca compõe a identidade da série no destino, então um valor novo
   # cria séries novas e órfã todas as anteriores.
   #
-  # ⚠️ MUDOU de `benedita` para `benedita-prd`: os clusters on-premise deixaram de
-  # ser nomes reservados, porque a telemetria deles vai para um Grafana separado e
-  # nunca divide espaço de identificador com dado de cliente. Logo eles seguem a
-  # convenção como qualquer outro ambiente.
+  # ⚠️ `benedita` NÃO passa mais na validação, e está correto: o identificador de
+  # cluster de teste não segue o padrão de cliente, e nenhuma exceção foi criada
+  # para ele — uma exceção que nada usa é um caminho que alguém confunde com
+  # suportado depois.
   #
-  # CONSEQUÊNCIA, e ela é real: a benedita já roda com `benedita`. Aplicar este
-  # values cria séries novas sob `benedita-prd` e as antigas expiram — descontinuidade
-  # visível nos painéis, não perda silenciosa. Ou se aceita a quebra de histórico, ou
-  # o cluster fica no identificador antigo até haver janela para migrar.
+  # O valor abaixo existe só para o arquivo renderizar. A validação original foi
+  # feita com `benedita`, quando a lista de reservados ainda o incluía.
   id: benedita-prd
 
 destination:

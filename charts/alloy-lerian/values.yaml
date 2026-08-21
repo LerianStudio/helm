@@ -41,9 +41,9 @@ profile: ""
 # Marks every record with the environment it came from. Without it, telemetry
 # reaches the destination unattributable.
 #
-# Form: lowercase segments separated by hyphens ending in stg | hml | prd, or a
-# reserved own-environment name. Hyphenated composition is accepted — the
-# earlier pattern rejected identifiers already in use.
+# Form: <client>-<stage>, lowercase, stage = stg | prd. Hyphenated composition is
+# accepted (banco-do-brasil-prd). Our three SaaS environments are the only exempt
+# values; internal test clusters do not run this chart and get no exemption.
 #
 # Note: this marks PROVENANCE, not identity. The credential authenticates the
 # sender; the marker is self-declared. Changing it for a live environment is a

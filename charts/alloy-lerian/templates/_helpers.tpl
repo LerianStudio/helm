@@ -69,13 +69,24 @@ Absence and malformation are DISTINCT errors. The current schema only detects
 the second, so an omitted identifier passes silently — and telemetry arrives
 at the destination with no owner.
 
-The reserved list holds the three SaaS environments ONLY. They are exempt because
-they predate the convention, and renaming them would orphan the metric history of
-every series already carrying those names.
+WHO USES THIS CHART, which is what the rule encodes:
 
-On-premise clusters are deliberately NOT reserved: their telemetry goes to a
-separate Grafana, so they never share an identifier namespace with client data.
-An identifier for them still follows the convention (benedita-prd, not benedita).
+  - our three SaaS environments: aws-production, aws-staging, aws-devops. Reserved,
+    exempt from the pattern. They predate the convention and renaming them would
+    orphan the metric history of every series already carrying those names.
+  - client clusters: <client>-<stage>, lowercase, stage = stg | prd. Nothing else.
+
+Internal test clusters (benedita, clotilde, lazari-sandbox and the like) are NOT a
+case here: they report to a separate self-hosted Grafana and will not run this
+chart. No exemption is carved for them, on purpose — an exemption that nothing uses
+is a rule someone will later mistake for a supported path.
+
+Only stg and prd are accepted as stages. hml was dropped: a stage nobody routes to
+is a stage that produces telemetry nobody watches.
+
+Clients already outside the convention do not break today. The pattern only bites
+when a cluster is upgraded to this chart, and the identifier is corrected as part of
+that upgrade.
 
 ⚠️ NEITHER MESSAGE NAMES AN INTERNAL ENVIRONMENT. The reserved list is matched but
 never printed. This chart is installed in third-party clusters, and an error
@@ -87,12 +98,12 @@ anyway. Both messages state the required form and nothing else.
 {{- define "alloy-lerian.originId" -}}
 {{- $id := .Values.origin.id | default "" -}}
 {{- if not $id -}}
-{{- fail "\n\nalloy-lerian: `origin.id` is required and has no default.\n\nIt marks every record with the environment it came from. Without it,\ntelemetry reaches the destination unattributable.\n\n  origin:\n    id: acme-prd\n\nRequired form: <name>-<stage>, lowercase, stage = stg | hml | prd.\n" -}}
+{{- fail "\n\nalloy-lerian: `origin.id` is required and has no default.\n\nIt marks every record with the environment it came from. Without it,\ntelemetry reaches the destination unattributable.\n\n  origin:\n    id: acme-prd\n\nRequired form: <client>-<stage>, lowercase, stage = stg | prd.\n" -}}
 {{- end -}}
 {{- $reserved := list "aws-production" "aws-staging" "aws-devops" -}}
 {{- if not (has $id $reserved) -}}
-{{- if not (regexMatch "^[a-z0-9]+(-[a-z0-9]+)*-(stg|hml|prd)$" $id) -}}
-{{- fail (printf "\n\nalloy-lerian: origin.id %q is malformed.\n\nRequired form: <name>-<stage>, lowercase, stage = stg | hml | prd.\nComposition is allowed: acme-prd, lazari-sandbox-prd.\n" $id) -}}
+{{- if not (regexMatch "^[a-z0-9]+(-[a-z0-9]+)*-(stg|prd)$" $id) -}}
+{{- fail (printf "\n\nalloy-lerian: origin.id %q is malformed.\n\nRequired form: <client>-<stage>, lowercase, stage = stg | prd.\nComposition is allowed: acme-prd, banco-do-brasil-prd.\n" $id) -}}
 {{- end -}}
 {{- end -}}
 {{- $id -}}

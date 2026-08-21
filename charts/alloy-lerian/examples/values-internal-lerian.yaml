@@ -1,4 +1,11 @@
-# values-internal-lerian.yaml — ambientes NOSSOS (benedita, anacleto, aws-*).
+# values-internal-lerian.yaml — nossos ambientes SaaS: aws-production,
+# aws-staging, aws-devops. Estes três são os únicos identificadores nossos que
+# este chart aceita, e são exceção ao padrão <cliente>-<ambiente>.
+#
+# ⚠️ Clusters internos de TESTE (benedita, clotilde, lazari-sandbox) NÃO usam este
+# chart: reportam para um Grafana self-hosted separado. Se algum dia usarem, o
+# identificador terá de seguir o padrão como qualquer outro — não há exceção para
+# eles, de propósito.
 #
 # ============================================================================
 # O QUE ESTE ARQUIVO É
@@ -162,10 +169,10 @@ profile: own
 origin:
   # ⚠️ Trocar isto num ambiente em operação é MIGRAÇÃO DE DADO: a marca compõe a
   # identidade da série no destino, então valor novo órfã todas as anteriores.
-  # Ambiente NOSSO on-premise segue a convenção como qualquer outro: <nome>-<estágio>.
-  # Ex.: benedita-prd, anacleto-prd. Os três ambientes SaaS (aws-production,
-  # aws-staging, aws-devops) são exceção herdada e passam sem sufixo.
-  id: SUBSTITUIR-prd
+  # Um dos três: aws-production | aws-staging | aws-devops.
+  # São exceção ao padrão <cliente>-<ambiente> porque precedem a convenção, e
+  # renomeá-los órfã o histórico de toda série que já os carrega.
+  id: aws-staging
 
 destination:
   endpoint: SUBSTITUIR

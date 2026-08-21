@@ -51,6 +51,14 @@ global:
   # for Fetcher job-event notifications since fetcher 2.0.0-beta.5).
   streaming: {}
     # brokers: "redpanda:9092"
+  # -- Env-wide multi-tenancy gate. When true, also set MULTI_TENANT_URL etc.
+  # via common.configmap.
+  multiTenant: {}
+    # enabled: "true"
+  # -- Env-wide service discovery (Consul). Placeholder — reporter keeps SD_*
+  # as configmap passthrough; set common.configmap.SD_ENABLED/SD_ADDRESS
+  # directly instead of this block.
+  serviceDiscovery: {}
 
 # --- Component knobs -----------------------------------------------------------
 manager:

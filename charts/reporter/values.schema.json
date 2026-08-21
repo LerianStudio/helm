@@ -376,6 +376,7 @@
                 "enum": [
                   "AGGRESSIVE_RATE_LIMIT_MAX",
                   "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+                  "ALLOW_INSECURE_OTEL",
                   "ALLOW_INSECURE_TLS",
                   "ALLOW_RATELIMIT_DISABLED",
                   "ALLOW_RATELIMIT_FAIL_OPEN",
@@ -752,6 +753,7 @@
                 "enum": [
                   "AGGRESSIVE_RATE_LIMIT_MAX",
                   "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+                  "ALLOW_INSECURE_OTEL",
                   "ALLOW_INSECURE_TLS",
                   "ALLOW_RATELIMIT_DISABLED",
                   "ALLOW_RATELIMIT_FAIL_OPEN",
@@ -1029,6 +1031,7 @@
                 "enum": [
                   "AGGRESSIVE_RATE_LIMIT_MAX",
                   "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+                  "ALLOW_INSECURE_OTEL",
                   "ALLOW_INSECURE_TLS",
                   "ALLOW_RATELIMIT_DISABLED",
                   "ALLOW_RATELIMIT_FAIL_OPEN",

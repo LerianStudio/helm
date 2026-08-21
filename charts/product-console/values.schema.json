@@ -35,7 +35,45 @@
     },
     "global": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "datastores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "host": {},
+              "port": {},
+              "user": {},
+              "uri": {},
+              "params": {}
+            }
+          },
+          "description": "Env-wide SHARED datastore masks (set once per environment). Consumed by lerian-common.datastore.value."
+        },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {},
+            "host": {}
+          },
+          "description": "Env-wide Access Manager (plugin-auth) gate/host. Consumed by lerian-common.globalValue (block \"auth\")."
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
+        },
+        "externalMongoDefinitions": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
     },
     "podAnnotations": {
       "type": "object",

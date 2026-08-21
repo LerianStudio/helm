@@ -4,14 +4,18 @@
 {{- /* TLS is opt-in (default off, matching the un-productized chart's plaintext
    bundled MongoDB) but REQUIRED for managed TLS-only Mongo-API services like
    AWS DocumentDB — mongosh has no TLS flags below without this, so bootstrap
-   would fail outright against them. tlsInsecure skips hostname/CA verification
-   (DocumentDB doesn't ship its CA in every client trust store by default). */ -}}
+   would fail outright against them. --tlsAllowInvalidHostnames +
+   --tlsAllowInvalidCertificates (not --tlsInsecure, which the mongo:8 image's
+   mongosh has REMOVED — it errors "unrecognized option") together skip
+   hostname/CA verification (DocumentDB doesn't ship its CA in every client
+   trust store by default) — this is the modern mongosh equivalent of the
+   deprecated --tlsInsecure shorthand. */ -}}
 {{- $mongoTLS := .Values.global.externalMongoDefinitions.tls | default dict -}}
 {{- $mongoshTLSArgs := "" -}}
 {{- if $mongoTLS.enabled }}
   {{- $mongoshTLSArgs = "--tls" -}}
   {{- if ne (toString $mongoTLS.insecure) "false" }}
-    {{- $mongoshTLSArgs = printf "%s --tlsInsecure" $mongoshTLSArgs -}}
+    {{- $mongoshTLSArgs = printf "%s --tlsAllowInvalidHostnames --tlsAllowInvalidCertificates" $mongoshTLSArgs -}}
   {{- end }}
 {{- end }}
 apiVersion: batch/v1

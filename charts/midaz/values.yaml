@@ -86,7 +86,9 @@ global:
     tls:
       # -- Enable TLS on the mongosh connection (--tls)
       enabled: false
-      # -- Skip certificate/hostname verification (--tlsInsecure). Only read when tls.enabled=true.
+      # -- Skip certificate/hostname verification (--tlsAllowInvalidHostnames
+      # --tlsAllowInvalidCertificates; the mongo:8 image's mongosh removed the
+      # older --tlsInsecure shorthand). Only read when tls.enabled=true.
       insecure: true
     # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
     mongoAdminLogin:

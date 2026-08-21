@@ -7,16 +7,23 @@ global:
   # client-supplied via global.datastores; a cloud can't know your RDS host.
   # Precedence: native configmap key > dedicated > shared (global.*) > this
   # cloud preset > hardcoded default.
+  # Example: cloud: "aws"
   cloud: ""
   # -- Env-wide SHARED datastore masks (set once per environment; a dedicated
   # <release>.datastores or a native {auth,identity}.configmap.<KEY> overrides these).
   # Fields: postgres.{host,port,user,ssl}, redis.{host,port,user,tls,caCert}.
+  # Example:
+  #   datastores:
+  #     postgres: { host: "my-rds.example.com", user: "access_manager" }
+  #     redis: { host: "my-elasticache.example.com:6379", tls: "true" }
   datastores: {}
   # -- Env-wide environment name. Consumed by lerian-common.globalValue (block "env").
   # Fields: name. (configmap.ENV_NAME overrides.)
+  # Example: env: { name: "production" }
   env: {}
   # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block
   # "multiTenant"). Fields: enabled. (configmap.MULTI_TENANT_ENABLED overrides.)
+  # Example: multiTenant: { enabled: true }
   multiTenant: {}
   # -- Env-wide service discovery (Consul) tuning, consumed by
   # lerian-common.serviceDiscovery.env. Per-component activation stays with
@@ -24,9 +31,11 @@ global:
   # tls, internal/external endpoint) comes from here unless a legacy
   # configmap.SD_* key is set. Fields: address, tls, tlsSkipVerify, workload,
   # preferView, internalScheme, externalPort.
+  # Example: serviceDiscovery: { address: "consul.internal:8500", tls: "true" }
   serviceDiscovery: {}
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
   # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  # Example: observability: { enabled: true }
   observability: {}
 
 # Common configuration shared between components

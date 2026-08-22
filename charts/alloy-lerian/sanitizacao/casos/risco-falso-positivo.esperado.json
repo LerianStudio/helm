@@ -1,0 +1,3 @@
+{"body":"latencia 123********234 ns e transactionId=987********876543210",
+"categoria":"riscoFalsoPositivo",
+"descricao":"COMPORTAMENTO REAL DOCUMENTADO, nao desejado: a regra de 11 digitos mascara qualquer sequencia numerica longa (latencia, id de transacao). Trade-off aceito: falso positivo (perde legibilidade de diagnostico) e preferivel a falso negativo (vaza documento). Alternativa avaliada: exigir prefixo de campo — rejeitada porque documento aparece em log sem prefixo."}

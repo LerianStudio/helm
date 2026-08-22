@@ -1,0 +1,67 @@
+# CI-only fixture. Not a production example; must not contain real credentials.
+#
+# Exists because `profile`, `origin.id` and `destination.endpoint` are required
+# with no default, so the chart cannot render without them. The chart it replaces
+# had no fixture, which is why the render gate never exercised it — and why it
+# shipped unable to render with its own values.
+#
+# Exercises the `client` profile: the stricter of the two (credential required,
+# node infrastructure excluded, inspection parameter absent).
+profile: client
+origin:
+  id: sample-prd
+destination:
+  endpoint: https://telemetry.invalid/v1
+
+# A credencial é OBRIGATÓRIA no perfil client, e a guarda do chart recusa o render
+# sem isto — de propósito: um pod que sobe sem credencial recebe 401, que é falha
+# PERMANENTE, e perde telemetria em silêncio.
+#
+# Espelha examples/values-cliente.yaml, que é o que o cliente realmente usa. A
+# fixture precisa exercitar a mesma configuração; se divergir, a porta de render
+# valida um caminho que ninguém instala.
+node:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+singleton:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+# Gestão remota DESLIGADA explicitamente. O default do chart é `true`, e ligada
+# exige url/username/token reais — que uma fixture de render não tem e não deve
+# inventar. Desligar aqui é a decisão sendo declarada, não omissão.
+fleetManagement:
+  enabled: false

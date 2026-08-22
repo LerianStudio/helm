@@ -1,0 +1,38 @@
+{{- /*
+Configuration for each role, rendered from semantic parameters. The processing
+chain is not part of the values surface (see _config.tpl).
+
+Names are fixed rather than release-derived: subchart values are static YAML and
+cannot reference the release name, so an aliased subchart could not point at a
+release-prefixed ConfigMap.
+*/ -}}
+{{- include "alloy-lerian.assertSingletonReplicas" . -}}
+{{- include "alloy-lerian.assertNodeInfra" . -}}
+{{- include "alloy-lerian.assertNodeExporterTarget" . -}}
+{{- include "alloy-lerian.assertFleetEnv" . -}}
+{{- include "alloy-lerian.assertCredentialEnv" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "alloy-lerian.nodeConfigMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "alloy-lerian.labels" . | nindent 4 }}
+    alloy-lerian.lerian.studio/role: node
+data:
+  config.alloy: |
+    {{- include "alloy-lerian.config.node" . | nindent 4 }}
+{{- if .Values.singleton.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "alloy-lerian.singletonConfigMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "alloy-lerian.labels" . | nindent 4 }}
+    alloy-lerian.lerian.studio/role: singleton
+data:
+  config.alloy: |
+    {{- include "alloy-lerian.config.singleton" . | nindent 4 }}
+{{- end }}

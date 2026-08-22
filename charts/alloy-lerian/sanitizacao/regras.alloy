@@ -1,0 +1,141 @@
+// Regras de sanitizacao de dado regulado — ARCABOUCO DE VERIFICACAO
+//
+// IMPORTANTE: este arquivo e o alvo de teste, nao a configuracao de producao.
+// Diferenca deliberada: error_mode = "propagate" aqui, "ignore" em producao.
+// E justamente porque producao ignora erro que este arcabouco existe.
+//
+// Notacao de retrovinculacao: $1 (verificado empiricamente — ver
+// subtasks/T-003/EVIDENCIA-retrovinculacao.md). NUNCA $$1.
+//
+// Forma de invocacao: replace_pattern e funcao EDITORA — declaracao propria,
+// nunca aninhada em set(). Aninhar falha na carga.
+
+otelcol.receiver.otlp "entrada" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    logs = [otelcol.processor.transform.sanitizacao.input]
+  }
+}
+
+otelcol.processor.transform "sanitizacao" {
+  error_mode = "propagate"
+
+  log_statements {
+    context = "log"
+    statements = [
+      // ORDEM IMPORTA: a forma pontuada vem PRIMEIRO. Se a regra de 11 digitos
+      // seguidos rodasse antes, ela nao casaria a forma pontuada (por causa dos
+      // separadores), mas a pontuada tambem nao casaria o que a primeira ja
+      // mascarou. Manter a mais especifica antes da mais geral.
+
+      // --- TELEFONE --- (ANTES do documento, ver justificativa)
+      //
+      // ORDEM CRITICA: telefone vem ANTES do documento de 11 digitos seguidos.
+      // Verificado por teste: sem isto, "+5511987654321" (13 digitos) casa a
+      // regra de documento e vira "+551********21" — mascarado, mas mascarado
+      // ERRADO: perde o DDD e preserva 2 digitos finais do numero, que e o
+      // oposto do desejado. Telefone primeiro resolve.
+      //
+      // E.164 com pais e DDD: +5511987654321 -> +5511********
+      `replace_pattern(body, "(\\+[0-9]{2}[0-9]{2})[0-9]{8,9}", "$1********")`,
+
+      // Forma nacional com separadores: (11) 98765-4321 -> (11) *****-****
+      `replace_pattern(body, "(\\([0-9]{2}\\) )[0-9]{4,5}-[0-9]{4}", "$1*****-****")`,
+
+      // Documento fiscal pontuado: 123.456.789-01 -> 123.***.***-**
+      `replace_pattern(body, "([0-9]{3})\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2}", "$1.***.***-**")`,
+
+      // Documento fiscal de 11 digitos seguidos: preserva 3 primeiros, mascara 8.
+      `replace_pattern(body, "([0-9]{3})[0-9]{8}", "$1********")`,
+
+      // --- NOME DE PESSOA ---
+      // Campos conhecidos: customerName, senderName, recipientName,
+      // receiverName, clientName, holderName.
+      //
+      // UMA regra, e ela mascara TODOS os termos apos o primeiro. Antes havia
+      // duas (3+ termos, e exatamente 2) e AMBAS vazavam — pior que nao mascarar,
+      // porque a saida aparenta estar protegida:
+      //
+      //   Ana Silva              -> "Ana ********** Silva"   nome inteiro legivel
+      //   Ana Beatriz Costa Lima -> "Ana ********** Lima"    sobrenome preservado
+      //
+      // O sobrenome e o termo MAIS identificador; preserva-lo anula a regra. O
+      // primeiro nome fica para legibilidade em diagnostico, o resto vai.
+      //
+      // Depende de convencao de caixa: termos de nome comecam em maiuscula e o
+      // texto seguinte no log e minusculo, o que delimita o fim do valor SEM
+      // retrovisor — que o motor desta versao nao suporta (falha na CARGA com
+      // "unsupported Perl syntax: (?!").
+      //
+      // Verificado: 1 termo nao e mascarado, 2/3/4 termos sao mascarados por
+      // inteiro, e um campo `chave=valor` seguinte nao e consumido.
+      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)Name=)(\\p{Lu}[\\p{L}]*)(?: \\p{Lu}[\\p{L}]*)+", "$1$2 **********")`,
+
+      // --- ENDERECO DE CORREIO ELETRONICO ---
+      // Preserva os 2 primeiros caracteres da parte local e o dominio INTEIRO.
+      // Dominio preservado de proposito: e util para diagnostico (identifica o
+      // provedor ou o cliente corporativo) e nao identifica a pessoa.
+      // Nao depende de prefixo de campo — casa qualquer email no corpo.
+      `replace_pattern(body, "([A-Za-z0-9]{1,2})[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})", "$1****$2")`,
+
+      // --- CHAVE DE PAGAMENTO ---
+      // Uma chave pode assumir 4 formas: documento fiscal, telefone, correio
+      // eletronico ou identificador aleatorio (UUID). As TRES primeiras ja sao
+      // cobertas pelas regras acima, independentemente do nome do campo — nao
+      // ha regra propria para elas aqui, de proposito.
+      // Esta regra cobre apenas a forma de identificador aleatorio.
+      //
+      // Preserva o primeiro e o ultimo bloco; mascara os tres do meio.
+      // Os blocos preservados dao rastreabilidade para diagnostico sem
+      // permitir reconstruir a chave.
+      `replace_pattern(body, "([0-9a-fA-F]{8})-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-([0-9a-fA-F]{12})", "$1-****-****-****-$2")`,
+
+      // --- ENDERECO POSTAL ---
+      // Mascaramento INTEGRAL: nao ha parte do endereco que seja segura preservar.
+      // Ao contrario do email (dominio) ou telefone (DDD), qualquer fragmento de
+      // endereco reduz drasticamente o espaco de busca da pessoa.
+      // Delimita o fim do valor pela convencao de caixa: o valor comeca em
+      // maiuscula e o texto seguinte do log e minusculo (mesma premissa da
+      // regra de nome — ver README, secao de premissas).
+      `replace_pattern(body, "((?:address|street|logradouro|endereco)[=:] ?)[\\p{Lu}0-9][^=]*?( [a-z_]+[=:]|$)", "$1**********$2")`,
+
+      // --- CREDENCIAL DE AUTENTICACAO ---
+      // Difere em natureza de todas as regras acima: aquelas protegem dado que
+      // IDENTIFICA alguem, esta protege valor que CONCEDE ACESSO. Credencial
+      // vazada nao e incidente de privacidade, e sessao autenticada na mao de
+      // terceiro — e permanece exploravel ate expirar.
+      //
+      // Vem ANTES da regra de identificador opaco de proposito: um JWT tem
+      // sequencias alfanumericas longas que a regra seguinte poderia reescrever
+      // parcialmente, e token parcialmente mascarado ainda vaza estrutura
+      // enquanto parece sanitizado.
+      //
+      // Preserva o NOME DO ESQUEMA e nada mais. "Bearer" vs "Basic" e o que
+      // torna a falha de autenticacao diagnosticavel; nenhum fragmento da
+      // credencial tem valor de diagnostico, e preservar prefixo de JWT
+      // revelaria o algoritmo de assinatura.
+      `replace_pattern(body, "(?i)((?:bearer|basic|digest|token|apikey|api_key)[=: ] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
+
+      // Forma de atribuicao, onde o esquema nao antecede o valor.
+      // A CHAVE e preservada porque saber QUAL credencial apareceu e o que torna
+      // o vazamento acionavel — nao se rotaciona o que nao se nomeia.
+      `replace_pattern(body, "(?i)((?:password|passwd|senha|secret|client_secret|access_token|refresh_token|private_key)[=:] ?)[^\\s,;}]+", "$1**********")`,
+
+      // --- IDENTIFICADOR OPACO DE RECURSO ---
+      // Preserva o prefixo semantico e os 4 primeiros caracteres — suficiente
+      // para correlacionar registros do mesmo recurso em diagnostico, sem
+      // permitir reconstruir o identificador.
+      `replace_pattern(body, "((?:acc|txn|cus|ord)_[0-9a-zA-Z]{4})[0-9a-zA-Z]{4,}", "$1******")`,
+    ]
+  }
+
+  output {
+    logs = [otelcol.exporter.debug.saida.input]
+  }
+}
+
+otelcol.exporter.debug "saida" {
+  verbosity = "detailed"
+}

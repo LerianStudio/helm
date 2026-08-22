@@ -1,0 +1,3 @@
+{"body":"doc 987******** registrado",
+"descricao":"O fragmento capturado (987) DEVE aparecer na saida. Se aparecer a notacao literal ($1) ou vazio, a regra esta errada. Esta e a UNICA categoria que detecta notacao de retrovinculacao incorreta.",
+"categoria":"preservacaoDeFragmento"}

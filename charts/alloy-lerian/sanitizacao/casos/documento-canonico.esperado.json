@@ -1,0 +1,5 @@
+{
+  "body": "cliente cadastrado documento 123******** com sucesso",
+  "descricao": "Documento fiscal de 11 digitos: preserva 3 primeiros, substitui os 8 restantes por 8 asteriscos",
+  "categoria": "formaCanonica"
+}

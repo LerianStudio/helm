@@ -1,0 +1,144 @@
+# Modelo para cluster de CLIENTE (BYOC). Anel 4 do rollout.
+#
+# Este arquivo é o que o cliente recebe. São DOIS valores; o resto é derivado.
+#
+#   helm upgrade --install alloy-lerian \
+#     oci://ghcr.io/lerianstudio/alloy-lerian-helm --version <fixada> \
+#     -n monitoring --create-namespace -f values.yaml
+
+profile: client
+
+origin:
+  # Substituir. Formato: <cliente>-<ambiente>, minúsculas, ambiente = stg | prd.
+  # O nome do cliente é UMA palavra: acme-prd, nunca acme-corp-prd.
+  id: SUBSTITUIR-prd
+
+destination:
+  endpoint: https://telemetry.lerian.io
+
+# ---------------------------------------------------------------------------
+# PRÉ-REQUISITO: o Secret da credencial deve existir ANTES do install
+# ---------------------------------------------------------------------------
+# ÚNICO passo manual. Um Secret, com os valores que a Lerian entrega:
+#
+#   kubectl -n monitoring create secret generic alloy-lerian \
+#     --from-literal=telemetry-token='<token de telemetria>' \
+#     --from-literal=fleet-token='<token de fleet, se aplicável>'
+#
+# O chart apenas LÊ esse Secret; nunca o cria. No perfil `client` a credencial de
+# telemetria é obrigatória, porque o ponto de entrada a valida.
+#
+# A chave `fleet-token` só é necessária se `fleetManagement.enabled: true`.
+#
+# ---------------------------------------------------------------------------
+# Derivado do perfil — não precisa constar aqui
+# ---------------------------------------------------------------------------
+# collection.namespaces  inclui APENAS ^(midaz|midaz-plugins)$. O resto do
+#                        cluster é do cliente e não é coletado.
+# nó                     não coletado, e ligar é impossível neste perfil.
+# inspection             o parâmetro NÃO EXISTE neste perfil. Fornecê-lo é erro
+#                        de configuração, não sobrescrita.
+# sanitização            sempre ativa. Dado regulado é mascarado no cluster de
+#                        origem, antes de qualquer saída. Não há valor que
+#                        desabilite.
+#
+# Se o cluster já roda kube-state-metrics, desligue o nosso para não haver dois:
+#   kube-state-metrics:
+#     enabled: false
+
+# ---------------------------------------------------------------------------
+# Credencial — OBRIGATÓRIA neste perfil
+# ---------------------------------------------------------------------------
+# O values do chart traz `optional: true`, que é o default correto para os nossos
+# ambientes internos (o destino interno não valida credencial). Aqui o destino
+# VALIDA, e a guarda do chart recusa o render sem este bloco — de propósito.
+#
+# Por que obrigatória: 401 é falha PERMANENTE. O dado é descartado na hora, sem
+# reenvio. Um pod que sobe sem credencial perde telemetria em silêncio e
+# continuamente: nenhum pod reinicia, nenhum alerta dispara, a telemetria
+# simplesmente nunca chega. Falhar a criação do pod é ruidoso e recuperável.
+#
+# O Secret precisa existir ANTES do install — é o único passo manual, com o token
+# que entregamos:
+#
+#   kubectl -n monitoring create secret generic alloy-lerian \
+#     --from-literal=telemetry-token='<token que entregamos>'
+
+# ---------------------------------------------------------------------------
+# CONSUMO DE CONTÊINER — o único item que talvez precise de ajuste no cluster
+# ---------------------------------------------------------------------------
+# Vem LIGADO por padrão e coleta CPU, memória, disco e rede reais por contêiner,
+# do cAdvisor embutido no kubelet. Não instala nada: o cAdvisor já existe em todo
+# cluster Kubernetes.
+#
+# Descomente APENAS se este cluster já raspa cAdvisor por outro caminho — um
+# Prometheus próprio, um agente de observabilidade seu. Duas coletas do mesmo
+# endpoint duplicam cada série no destino, e a duplicata é indistinguível do
+# original.
+#
+# collection:
+#   containerUsage: false
+#
+# Se o cAdvisor estiver exposto por uma rota própria (não pelo kubelet), aponte
+# aqui em vez de desligar:
+#
+# collection:
+#   containerUsageTarget: "meu-cadvisor.monitoring.svc.cluster.local:8080"
+#
+# ⚠️ A coleta usa a permissão `nodes/proxy`, concedida pelo próprio chart. Se a
+# política do cluster a proibir, o sintoma é silencioso: os painéis de consumo
+# ficam vazios e nenhum erro aparece em nível de log normal. Nesse caso avise a
+# Lerian em vez de investigar — sabemos o que é.
+
+node:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+singleton:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+# ---------------------------------------------------------------------------
+# GESTÃO REMOTA DE CONFIGURAÇÃO
+# ---------------------------------------------------------------------------
+# O chart traz LIGADO por padrão, e ligada ela exige três valores que só a Lerian
+# tem: a URL do serviço, o id da stack e um token. Sem eles o render FALHA — de
+# propósito, para a ausência ser uma decisão e não um silêncio.
+#
+# Para o cluster de cliente ela vem desligada, porque o canal de configuração
+# remota é acordado caso a caso. Quando for habilitada, a Lerian entrega os três
+# valores e a chave `fleet-token` no mesmo Secret.
+fleetManagement:
+  enabled: false

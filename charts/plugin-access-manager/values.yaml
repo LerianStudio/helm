@@ -25,13 +25,14 @@ global:
   # "multiTenant"). Fields: enabled. (configmap.MULTI_TENANT_ENABLED overrides.)
   # Example: multiTenant: { enabled: true }
   multiTenant: {}
-  # -- Env-wide service discovery (Consul) tuning, consumed by
-  # lerian-common.serviceDiscovery.env. Per-component activation stays with
-  # {auth,identity}.configmap.SD_ENABLED; every derived SD_* sibling (address,
-  # tls, internal/external endpoint) comes from here unless a legacy
-  # configmap.SD_* key is set. Fields: address, tls, tlsSkipVerify, workload,
-  # preferView, internalScheme, externalPort.
-  # Example: serviceDiscovery: { address: "consul.internal:8500", tls: "true" }
+  # -- Env-wide service discovery (Consul). Consumed by lerian-common.globalValue
+  # (block "serviceDiscovery", field "enabled") for the opt-in gate — same
+  # precedence as every other gate: {auth,identity}.configmap.SD_ENABLED >
+  # global.serviceDiscovery.enabled > "false". Every derived SD_* sibling
+  # (address, tls, internal/external endpoint) also comes from here unless a
+  # legacy configmap.SD_* key is set. Fields: enabled, address, tls,
+  # tlsSkipVerify, workload, preferView, internalScheme, externalPort.
+  # Example: serviceDiscovery: { enabled: true, address: "consul.internal:8500", tls: "true" }
   serviceDiscovery: {}
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
   # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)

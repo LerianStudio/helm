@@ -153,15 +153,20 @@ data:
   CACHE_MAX_ENTRIES_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_MAX_ENTRIES_ORG_PERMISSIONS | default "0" | quote }}
   CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS | default "0" | quote }}
 
-  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false). SD_ENABLED is the
-  # only key owned here. While disabled, the legacy static SD_* keys stay
-  # byte-identical to pre-productization (flat passthrough via envFlat) so
-  # existing installs (SD_ENABLED unset) render with zero diff. Once
-  # explicitly opted in (SD_ENABLED=true), the full derived SD_* sibling
-  # contract comes from the lerian-common mask (global.serviceDiscovery, same
-  # shape as datastores/env) instead of the legacy static block.
-  SD_ENABLED: {{ .Values.auth.configmap.SD_ENABLED | default "false" | quote }}
-  {{- if eq (toString ($cm.SD_ENABLED | default "false")) "true" }}
+  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false). SD_ENABLED itself
+  # now resolves through the SAME global mask precedence as every other gate
+  # (ENABLE_TELEMETRY/MULTI_TENANT_ENABLED): native configmap.SD_ENABLED >
+  # global.serviceDiscovery.enabled > "false" — so an operator can flip it on
+  # for every component from one place instead of repeating SD_ENABLED per
+  # component. While disabled, the legacy static SD_* keys stay byte-identical
+  # to pre-productization (flat passthrough via envFlat) so existing installs
+  # (SD_ENABLED unset either way) render with zero diff. Once enabled, the full
+  # derived SD_* sibling contract comes from the lerian-common mask
+  # (global.serviceDiscovery, same shape as datastores/env) instead of the
+  # legacy static block.
+  {{- $sdEnabled := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "serviceDiscovery" "field" "enabled" "nativeKey" "SD_ENABLED" "default" "false") }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
+  {{- if eq (toString $sdEnabled) "true" }}
   {{- include "lerian-common.serviceDiscovery.env" (dict
         "context"     $
         "enabled"     true

@@ -93,6 +93,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "enabled": {},
             "address": {},
             "tls": {},
             "tlsSkipVerify": {},

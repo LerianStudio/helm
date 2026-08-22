@@ -21,9 +21,10 @@ global:
     postgres:
       port: 5432
       user: "auth"
-  # -- Env-wide service discovery (Consul) tuning. Leave unset to keep it off
-  # (SD_ENABLED stays with {auth,identity}.configmap.SD_ENABLED per component).
+  # -- Env-wide service discovery (Consul). Leave unset to keep it off (the
+  # gate falls back to {auth,identity}.configmap.SD_ENABLED per component).
   # serviceDiscovery:
+  #   enabled: true
   #   address: "consul.internal:8500"
   #   tls: "true"
   # -- Env-wide telemetry gate. Leave unset to keep the chart's own default.

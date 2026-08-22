@@ -1,5 +1,34 @@
 # Reporter Changelog
 
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.0.0)
+
+- **Features:**
+  - Added global environment mask and single-sourced `ENV_NAME`.
+  - Introduced datastore topology masks and global cloud support with service account cloud authentication.
+  - Adopted `lerian-common` configurations for multi-tenant environments, roles, observability, object storage, and service discovery.
+  - Implemented `STREAMING_ENABLED` to honor `global.streaming.enabled`.
+  - Derived `RABBITMQ_HEALTH_CHECK_URL` from the broker mask.
+
+- **Fixes:**
+  - Bounded RabbitMQ bootstrap curl calls with connect and max timeouts.
+  - Used `jq` for RabbitMQ user JSON body and fixed ArgoCD PostSync hook.
+  - JSON-escaped RabbitMQ password and fixed bootstrap hook timing.
+  - Reconciled RabbitMQ bootstrap on every run and restored CORS schema keys.
+  - Fixed critical issue with worker deployment image-tag fallback.
+
+- **Improvements:**
+  - Consolidated to a single starter file and corrected `OTEL_LIBRARY_NAME` typo.
+  - Updated documentation with Managed Cloud section and added copy-paste examples for global masks.
+  - Declared global object storage in `values.yaml/schema`.
+  - Dropped dead CORS configuration and fixed `RABBITMQ_HEALTH_CHECK_URL` scheme.
+  - Rejected `CHANGE_ME` placeholder password and added KEDA image tag fallback.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.2.0...reporter-v4.0.0)
+
+---
+
 ## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
 
 - **Fixes**

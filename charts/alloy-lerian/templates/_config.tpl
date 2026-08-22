@@ -450,6 +450,64 @@ otelcol.receiver.prometheus "ponte_consumo" {
   }
 }
 {{- end }}
+{{- if (.Values.collection).selfMetrics }}
+{{ include "alloy-lerian.config.selfMetrics" . }}
+{{- end }}
+{{- end -}}
+
+
+{{/*
+==============================================================================
+SELF METRICS — the agent's own queue, discards and failures
+==============================================================================
+Shared by both roles: each agent scrapes ITSELF on its own HTTP server port.
+Nothing is exposed outside the pod and there is no target to configure.
+
+⚠️ REPLACEMENT, not a new capability. The retiring agent has a `metrics/internal`
+pipeline scraping localhost:8887, and the `otelcol_*` families in the destination
+today come from it — MEASURED: 288 series in aws-devops. Dropping this collection
+makes the loss invisible by construction: you stop seeing the very mechanism that
+would report loss.
+
+⚠️ BOTH PREFIXES, deliberately. Alloy embeds the OpenTelemetry Collector, so the
+`otelcol.*` components in our chain report under the old prefix while native
+components use `alloy_*`. Covering one side leaves half the chain unobserved.
+
+Component names repeat across roles, and that is not a collision: the two roles
+are separate processes with separate configuration files.
+*/}}
+{{- define "alloy-lerian.config.selfMetrics" -}}
+prometheus.scrape "metricas_do_agente" {
+  targets = [{
+    __address__ = "127.0.0.1:12345",
+  }]
+
+  // Same 60s floor as every other collection: cost at the destination is series
+  // x writes per minute, and these are the agent's own series.
+  scrape_interval = {{ include "alloy-lerian.interval" . | quote }}
+  forward_to      = [prometheus.relabel.allowlist_agente.receiver]
+}
+
+prometheus.relabel "allowlist_agente" {
+  rule {
+    source_labels = ["__name__"]
+    regex         = {{ join "|" ((.Values.collection).selfMetricsAllowlist | default list) | quote }}
+    action        = "keep"
+  }
+
+  rule {
+    target_label = "client_id"
+    replacement  = {{ include "alloy-lerian.originId" . | quote }}
+  }
+
+  forward_to = [otelcol.receiver.prometheus.ponte_agente.receiver]
+}
+
+otelcol.receiver.prometheus "ponte_agente" {
+  output {
+    metrics = [otelcol.exporter.otlphttp.destino.input]
+  }
+}
 {{- end -}}
 
 
@@ -702,4 +760,13 @@ otelcol.exporter.otlphttp "destino" {
     max_elapsed_time = {{ .Values.destination.retry.maxElapsedTime | default "5m" | quote }}
   }
 }
+{{- if (.Values.collection).selfMetrics }}
+{{/*
+This role needs it MORE than the node role, not less: it is the singleton that
+replays the cluster's event history on startup, and it was here that a queue
+overflow lost 256 records in the first seconds — measured on benedita. Without
+these metrics that loss is invisible.
+*/}}
+{{ include "alloy-lerian.config.selfMetrics" . }}
+{{- end }}
 {{- end -}}

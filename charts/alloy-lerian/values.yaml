@@ -238,6 +238,57 @@ collection:
   # absence of the field is not evidence of low value.
   dropDebugLogs: true
 
+  # As métricas do PRÓPRIO agente: fila, descarte, falha de envio. É a única forma
+  # de responder "perdi dado?" — e essa resposta importa mais que qualquer métrica
+  # do cluster, porque sem ela toda a coleta é afirmação não verificada.
+  #
+  # ⚠️ REPOSIÇÃO, não recurso novo. O agente que sai tem um pipeline
+  # `metrics/internal` raspando localhost:8887, e dele vêm as famílias `otelcol_*`
+  # presentes no destino hoje — MEDIDO: 288 séries em aws-devops. Sem isto a
+  # migração as apaga, e a perda é invisível por construção: você deixa de ver
+  # justamente o mecanismo que reportaria perda.
+  #
+  # Cada agente rapa a SI MESMO na porta do próprio servidor HTTP. Não há alvo a
+  # configurar e nada é exposto fora do pod.
+  selfMetrics: true
+
+  # ⚠️ ALLOWLIST por valor diagnóstico. O endpoint expõe centenas de famílias —
+  # runtime do Go, contadores por componente, histogramas internos. Estas
+  # respondem as perguntas que motivam a coleta:
+  #
+  #   a fila está saturando?      queue_size vs queue_capacity
+  #   houve descarte PERMANENTE?  send_failed_* (o que o retry não recupera)
+  #   o destino está recusando?   refused_* / failed_*
+  #   a raspagem falhou?          up / scrape_samples_scraped
+  #   o agente está saudável?     alloy_build_info, cpu, memória
+  #
+  # ⚠️ `alloy_*` E `otelcol_*` juntos, de propósito: o Alloy embute o OTel
+  # Collector, então os componentes `otelcol.*` da nossa cadeia reportam com o
+  # prefixo antigo e os nativos com o novo. Cobrir um lado só deixa metade da
+  # cadeia sem observação.
+  selfMetricsAllowlist:
+    - otelcol_exporter_sent_metric_points_total
+    - otelcol_exporter_sent_log_records_total
+    - otelcol_exporter_sent_spans_total
+    - otelcol_exporter_send_failed_metric_points_total
+    - otelcol_exporter_send_failed_log_records_total
+    - otelcol_exporter_send_failed_spans_total
+    - otelcol_exporter_queue_size
+    - otelcol_exporter_queue_capacity
+    - otelcol_receiver_accepted_metric_points_total
+    - otelcol_receiver_refused_metric_points_total
+    - otelcol_receiver_accepted_log_records_total
+    - otelcol_receiver_refused_log_records_total
+    - otelcol_receiver_accepted_spans_total
+    - otelcol_receiver_refused_spans_total
+    - otelcol_scraper_errored_metric_points_total
+    - up
+    - scrape_samples_scraped
+    - alloy_build_info
+    - alloy_component_evaluation_seconds_count
+    - alloy_resources_process_cpu_seconds_total
+    - alloy_resources_process_resident_memory_bytes
+
 # ---------------------------------------------------------------------------
 # RED METRICS DERIVED FROM SPANS
 # ---------------------------------------------------------------------------

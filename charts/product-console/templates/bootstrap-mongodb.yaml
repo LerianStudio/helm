@@ -107,11 +107,12 @@ spec:
              mongosh hangs until "Server selection timed out" since the
              wait-for-dependencies check above only proves the TCP port is
              open, not that a plain (non-TLS) handshake will succeed.
-             --tlsInsecure mirrors the app's own MONGO_PARAMETERS
-             tlsInsecure=true (cloud preset in lerian-common's _cloud.tpl) —
-             skips CA/hostname validation, matching the app's own trust
-             posture for the same managed instance. */}}
-          value: {{ if .Values.global.externalMongoDefinitions.tls }}"--tls --tlsInsecure"{{ else }}""{{ end }}
+             mongosh has no single --tlsInsecure flag (that's a driver
+             connection-string option, e.g. the app's own MONGO_PARAMETERS
+             tlsInsecure=true cloud preset) — the CLI equivalent is these two
+             separate flags, matching the app's own trust posture for the
+             same managed instance. */}}
+          value: {{ if .Values.global.externalMongoDefinitions.tls }}"--tls --tlsAllowInvalidCertificates --tlsAllowInvalidHostnames"{{ else }}""{{ end }}
         command:
         - /bin/bash
         - -c

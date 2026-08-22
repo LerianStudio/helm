@@ -49,6 +49,10 @@ global:
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
     enabled: false
+    # -- Connect mongosh with --tls --tlsInsecure (needed for managed MongoDB
+    # like AWS DocumentDB, which requires TLS on every connection — mirrors
+    # the app's own MONGO_PARAMETERS tlsInsecure=true cloud preset)
+    tls: false
     # -- MongoDB connection settings
     connection:
       # -- MongoDB host

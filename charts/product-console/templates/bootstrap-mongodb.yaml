@@ -9,6 +9,15 @@ metadata:
   labels:
     {{- include "product-console.labels" . | nindent 4 }}
     app.kubernetes.io/component: bootstrap
+  annotations:
+    {{- /* Job's spec.template is immutable — any change to its pod template
+       (image, env vars, TLS flags, etc.) makes a plain `kubectl apply`/ArgoCD
+       Sync fail to patch it, silently leaving the stale Job running forever.
+       Replace=true,Force=true makes ArgoCD delete+recreate instead, so this
+       self-heals on every relevant chart/values change without manual
+       intervention (the Job is naturally re-runnable: idempotent user
+       create-or-update). */}}
+    argocd.argoproj.io/sync-options: Replace=true,Force=true
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1

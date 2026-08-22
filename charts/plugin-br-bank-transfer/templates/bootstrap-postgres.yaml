@@ -6,6 +6,19 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "bank-transfer.labels" (dict "context" . "component" "bootstrap" "name" "postgres") | nindent 4 }}
+  annotations:
+    {{- /* Job.spec.template is immutable — any pod-template change makes a plain
+       `kubectl apply`/ArgoCD Sync, or a plain `helm upgrade`, fail to patch it in
+       place, silently leaving the stale Job's pods retrying forever. Both native-
+       Helm and ArgoCD replace-on-upgrade mechanisms are set so this self-heals
+       under either deploy path (the Job is naturally idempotent: create-or-update
+       role/db/grants). Matches the fix already applied to other Lerian charts'
+       bootstrap/migration Jobs. */}}
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-options: Replace=true,Force=true
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1

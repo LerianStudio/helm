@@ -18,6 +18,14 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "bank-transfer.labels" (dict "context" . "component" "bootstrap" "name" "rabbitmq") | nindent 4 }}
+  annotations:
+    {{- /* Same immutable-Job self-heal fix as bootstrap-postgres.yaml — see there
+       for the full rationale. */}}
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-options: Replace=true,Force=true
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1

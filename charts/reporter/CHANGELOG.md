@@ -1,5 +1,32 @@
 # Reporter Changelog
 
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.0.0)
+
+- **Features:**
+  - Added support for cloud mask in the reporter.
+  - Introduced global.env mask for single-sourcing ENV_NAME.
+  - Implemented datastore topology masks and global.cloud support.
+  - Adopted lerian-common.multiTenant.env and lerian-common.auth.env for improved configuration.
+
+- **Fixes:**
+  - Bound RabbitMQ bootstrap curl calls with connect/max timeouts.
+  - JSON-escaped RabbitMQ password and fixed bootstrap hook timing.
+  - Reconciled RabbitMQ bootstrap on every run and restored CORS schema keys.
+  - Fixed critical issue with worker deployment lacking image-tag fallback.
+  - Resolved CodeRabbit audit issues including tolerations schema and dead-code secret guard.
+
+- **Improvements:**
+  - Consolidated to a single starter file and corrected OTEL_LIBRARY_NAME typo.
+  - Enhanced documentation with Managed Cloud section and copy-paste examples.
+  - Improved chart defaults for leaner environment values.
+  - Updated lerian-common-helm to stable versions for better stability.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.2.0...reporter-v4.0.0)
+
+---
+
 ## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
 
 - **Fixes**

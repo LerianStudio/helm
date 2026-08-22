@@ -64,6 +64,44 @@ global:
         name: ""
       # -- Password for bank_transfer role (ignored if useExistingSecret.name is set)
       password: ""
+  # -- Bootstrap job for external MongoDB: creates the app user (MongoDB is
+  # mandatory — the app hard-requires MONGO_ENABLED=true for transfer audit
+  # persistence, unlike Postgres/RabbitMQ which are optional)
+  externalMongoDefinitions:
+    # -- Enable or disable the MongoDB bootstrap job
+    enabled: false
+    # -- Connect mongosh with --tls --tlsAllowInvalidCertificates
+    # --tlsAllowInvalidHostnames (needed for managed MongoDB like AWS
+    # DocumentDB, which requires TLS on every connection)
+    tls: false
+    # -- MongoDB connection settings
+    connection:
+      # -- MongoDB host
+      host: "plugin-br-bank-transfer-mongodb"
+      # -- MongoDB port
+      port: "27017"
+    # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
+    mongoAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_ROOT_USER and MONGO_ROOT_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "root"
+      # -- Admin password (ignored if useExistingSecret.name is set)
+      password: ""
+    # -- Credentials for the app's MongoDB user created by the job
+    bankTransferCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing MONGO_APP_USER and MONGO_APP_PASSWORD keys
+        name: ""
+      # -- App username (ignored if useExistingSecret.name is set)
+      username: "bank_transfer"
+      # -- App password (ignored if useExistingSecret.name is set)
+      password: ""
+      # -- Roles granted to the app user
+      roles:
+        - role: "readWrite"
+          db: "plugin_br_bank_transfer"
   # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
   externalRabbitmqDefinitions:
     # -- Enable or disable the RabbitMQ bootstrap job

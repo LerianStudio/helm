@@ -128,7 +128,13 @@ spec:
               echo "Role 'bank_transfer' already exists. Skipping creation."
             else
               echo "Creating role 'bank_transfer'..."
-              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_BANK_TRANSFER" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE bank_transfer LOGIN PASSWORD :'pw'"
+              # psql's :'var' client-side interpolation doesn't fire for -c input on
+              # this image/version (server rejects the literal ":'pw'' with a syntax
+              # error — confirmed live), so escape the password for a plain SQL
+              # string literal ourselves (double any embedded single quotes) instead
+              # of relying on it.
+              ESCAPED_PW=$(printf '%s' "$DB_PASSWORD_BANK_TRANSFER" | sed "s/'/''/g")
+              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE bank_transfer LOGIN PASSWORD '$ESCAPED_PW'"
             fi
 
             # Create database if not exists

@@ -6,6 +6,15 @@ kind: Job
 metadata:
   name: {{ include "reporter.name" . }}-bootstrap-mongodb
   namespace: {{ include "global.namespace" . }}
+  annotations:
+    {{- /* Fixed name — a Job's spec.template is immutable, so ANY chart bump (e.g. the
+       helm.sh/chart label) makes a plain `helm upgrade` fail outright without this.
+       Hook annotations for BOTH delivery paths: each controller reads only its own,
+       safe to coexist. */}}
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1

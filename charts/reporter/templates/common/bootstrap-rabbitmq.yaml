@@ -14,6 +14,22 @@ kind: Job
 metadata:
   name: reporter-bootstrap-rabbitmq
   namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- /* Fixed name — a Job's spec.template is immutable, so ANY chart bump (e.g. the
+       helm.sh/chart label) makes a plain `helm upgrade` fail outright without this.
+       Hook annotations for BOTH delivery paths: each controller reads only its own,
+       safe to coexist. */}}
+    # PostSync (not Sync): this Job mounts the load_definitions.json ConfigMap
+    # rendered by THIS release — Sync-phase hooks can run before the normal
+    # resource batch is applied, same reasoning as post-upgrade below.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    # post-upgrade (not pre-upgrade): this Job mounts the load_definitions.json
+    # ConfigMap rendered by THIS release — pre-upgrade would run against the
+    # PREVIOUS revision's ConfigMap content, since hook resources apply before
+    # the normal resource batch on upgrade.
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1
@@ -54,7 +70,14 @@ spec:
             - sh
             - -c
             - |
-              set -e
+              set -u
+              FAILED=0
+
+              # jq builds the user-update JSON body safely (handles quotes, backslashes,
+              # control characters) — curlimages/curl ships no jq by default, but the
+              # underlying alpine base does carry apk, so install it once here rather
+              # than hand-roll JSON string escaping.
+              apk add --no-cache jq >/dev/null 2>&1
 
               # Build base URL - omit port for default HTTPS (443) or HTTP (80)
               if [ "$RABBITMQ_PROTOCOL" = "https" ] && [ "$RABBITMQ_PORT" = "443" ]; then
@@ -69,18 +92,15 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
-              echo "Checking if RabbitMQ user already exists..."
-
-              PLUGIN_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/users/plugin" 2>/dev/null || echo "not_found")
-
-              if echo "$PLUGIN_EXISTS" | grep -q '"name":"plugin"'; then
-                echo "RabbitMQ definitions already applied (user plugin exists). Skipping."
-                exit 0
-              fi
-
-              echo "Applying RabbitMQ definitions from file..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+              # The three steps below (definitions import, user PUT, permissions PUT) are each
+              # idempotent on RabbitMQ's side and run UNCONDITIONALLY — no "already exists ->
+              # skip everything" check (would leave stale credentials/permissions in place after
+              # the first successful run) and no early exit on a prior step's failure (RabbitMQ's
+              # POST /api/definitions is NOT atomic — a mid-import failure must not skip
+              # reconciling the reporter user/permissions, which no longer live in the bulk
+              # definitions file precisely so they can be reconciled independently of it).
+              echo "Applying RabbitMQ definitions (queues/exchanges/bindings) from file..."
+              HTTP_CODE=$(curl -sSk --connect-timeout 10 --max-time 30 -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X POST \
@@ -89,23 +109,46 @@ spec:
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error applying definitions (HTTP $HTTP_CODE):"
                 cat /tmp/response.txt
-                exit 1
+                FAILED=1
+              else
+                echo "Done."
               fi
-              echo "Done."
 
-              echo "Updating RabbitMQ user: plugin..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+              echo "Updating RabbitMQ user: reporter..."
+              jq -n --arg password "$RABBITMQ_APP_PASS" '{password: $password, tags: "administrator"}' > /tmp/user-body.json
+              HTTP_CODE=$(curl -sSk --connect-timeout 10 --max-time 30 -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
-                --data "{\"password\":\"$RABBITMQ_APP_PASS\",\"tags\":\"administrator\"}" \
-                "$BASE_URL/api/users/plugin")
+                --data @/tmp/user-body.json \
+                "$BASE_URL/api/users/reporter")
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error updating plugin user (HTTP $HTTP_CODE):"
+                echo "Error updating reporter user (HTTP $HTTP_CODE):"
                 cat /tmp/response.txt
+                FAILED=1
+              else
+                echo "Done."
+              fi
+
+              echo "Setting permissions for RabbitMQ user: reporter..."
+              HTTP_CODE=$(curl -sSk --connect-timeout 10 --max-time 30 -o /tmp/response.txt -w "%{http_code}" \
+                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                -H "content-type: application/json" \
+                -X PUT \
+                --data '{"configure":".*","write":".*","read":".*"}' \
+                "$BASE_URL/api/permissions/%2F/reporter")
+              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                echo "Error setting reporter permissions (HTTP $HTTP_CODE):"
+                cat /tmp/response.txt
+                FAILED=1
+              else
+                echo "Done."
+              fi
+
+              if [ "$FAILED" -ne 0 ]; then
+                echo "One or more bootstrap steps failed — see errors above."
                 exit 1
               fi
-              echo "Done."
 
               echo ""
               echo "=== RabbitMQ Bootstrap completed successfully ==="
@@ -123,7 +166,7 @@ spec:
                   name: {{ .Values.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name | quote }}
                   key: RABBITMQ_DEFAULT_PASS
               {{- else }}
-              value: {{ .Values.externalRabbitmqDefinitions.appCredentials.pluginPassword | quote }}
+              value: {{ .Values.externalRabbitmqDefinitions.appCredentials.reporterPassword | quote }}
               {{- end }}
             - name: RABBITMQ_ADMIN_PASS
               {{- if .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}

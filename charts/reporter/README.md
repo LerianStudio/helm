@@ -63,6 +63,57 @@ helm uninstall reporter -n reporter
 
 The following table lists the configurable parameters and their default values.
 
+### Managed Cloud (`global.cloud`)
+
+Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster MongoDB/Redis/RabbitMQ/SeaweedFS with one knob:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    mongo: { host: "my-documentdb.example.com", port: "27017", user: "reporter" }
+    redis: { host: "my-elasticache.example.com:6379" }
+    broker: { host: "my-amazonmq.example.com" }
+  objectStorage:
+    s3: { endpoint: "https://s3.us-east-1.amazonaws.com", region: "us-east-1", bucket: "my-bucket" }
+  observability:
+    enabled: true
+  auth:
+    host: "http://plugin-access-manager-auth:4000"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, AMQP scheme/ports, S3
+path-style) for the masks above; only the ENDPOINTS (host/port/user) still
+come from `global.datastores`/`global.objectStorage` — a cloud preset can't
+know your RDS host. A native `common.configmap.<KEY>` always overrides any
+mask.
+
+Copy `values-template.yaml` as your starting point — it documents every
+`global.*` mask with a working example. `values.yaml` is the full
+power-user reference; `values.schema.json` validates it.
+
+### Notable Default Changes (lerian-common adoption + OTEL/TLS fix)
+
+This chart version adopts `lerian-common` typed masks and, alongside the stated
+OTEL/TLS fix, ships a few deliberate operational default changes. Each is
+render-equivalent for the bundled dev topology (no override needed) unless noted:
+
+| Key | Old default | New default | Rationale |
+|-----|--------------|-------------|-----------|
+| `common.configmap.ALLOW_INSECURE_TLS` | `"false"` | **`"true"`** (security-relevant) | The bundled mongo/redis/rabbitmq/postgres subcharts run without TLS; the app *requires* this flag to bypass (mongo hard-fails with "TLS required" otherwise), so a zero-override `helm install` previously crashed. Same convention as `plugin-access-manager`. Flip to `"false"` explicitly for any managed-cloud/TLS-terminated topology (`global.cloud` presets do this for you). |
+| `common.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` | `"production"` | derived from `ENV_NAME` (default `"development"`) | Single-sources the OTEL deployment-environment with `ENV_NAME` instead of two independent hardcoded literals, so a zero-override install no longer contradicts itself (`ENV_NAME=development` but `deployment_environment=production`), which previously tripped the app's own production safety check against the non-TLS bundled OTel endpoint. |
+| `manager.configmap.LOG_LEVEL` / `worker.configmap.LOG_LEVEL` | `debug` | `info` | Reduce default log noise; override to `debug` for local troubleshooting. |
+| `worker.configmap.PDF_POOL_WORKERS` | `"5"` | `"3"` | Aligns the worker's default pool size with the manager's existing default (`3`), which was already `3` pre-PR. |
+| `worker.configmap.PDF_TIMEOUT_SECONDS` | `"30"` | `"90"` | Gives PDF generation enough headroom for larger reports before timing out. |
+| `common.configmap.MONGO_PARAMETERS` | `""` | `"maxIdleTimeMS=60000"` | Bounds idle MongoDB connections instead of holding them open indefinitely; a sensible production-safe default, not required by the OTEL/TLS fix but bundled here as part of the same "sensible chart defaults" pass. Override with `common.configmap.MONGO_PARAMETERS: ""` to restore the old (unbounded) behavior. |
+| `seaweedfs.global.serviceAccountName` | *(unset — subchart default `"seaweedfs"`)* | `"reporter-seaweedfs"` | **Upgrade note:** paired with `seaweedfs.global.createClusterRole: false` (also new) to avoid a fixed-name cluster-scoped `ClusterRole`/`ClusterRoleBinding` collision when more than one release runs on the same cluster. Because `createClusterRole` defaults to `false`, the ClusterRole itself is not created either way — but this **does rename the SeaweedFS `ServiceAccount`** object referenced by the master/volume/filer StatefulSets on any existing install that had `seaweedfs.enabled: true` before this change (old name `seaweedfs` → new name `reporter-seaweedfs`). Expect a one-time rolling restart of the SeaweedFS pods on upgrade; if you have IRSA/IAM-role annotations or RoleBindings pinned to the old ServiceAccount name, update them to `reporter-seaweedfs` before upgrading. |
+
+`MONGO_MAX_POOL_SIZE` (`100`) and `MONGO_HOST`/`RABBITMQ_HOST`/`RABBITMQ_HEALTH_CHECK_URL`/`REDIS_HOST`/`OBJECT_STORAGE_ENDPOINT`
+(FQDN `<svc>.reporter.svc.cluster.local` form, restored in this PR after an
+unintentional short-name drift was caught in review) are unchanged from the
+pre-adoption defaults — kept byte-identical for existing installs.
+
 ### Common Settings
 
 | Parameter | Description | Default |
@@ -117,7 +168,7 @@ The `secrets` section in `values.yaml` is fully dynamic. Any key/value pair adde
 
 ```yaml
 secrets:
-  RABBITMQ_DEFAULT_USER: plugin
+  RABBITMQ_DEFAULT_USER: reporter
   RABBITMQ_DEFAULT_PASS: Lerian@123
   # Stable Erlang cookie for the bundled RabbitMQ (required when rabbitmq.enabled).
   # Generate once with: openssl rand -hex 32
@@ -155,6 +206,17 @@ The Reporter supports connecting to additional external databases beyond the bui
 ### Naming Convention
 
 All variables follow the pattern `DATASOURCE_<NAME>_<PROPERTY>`, where `<NAME>` is a unique identifier you choose for the datasource (e.g., `EXTERNAL`, `SALES`, `ANALYTICS`).
+
+### Schema Validation
+
+`DATASOURCE_*` is a **declared open namespace**: the operator names each datasource at
+deploy time, so a closed allowlist could only ever list example names. The strict
+`values.schema.json` therefore accepts any well-formed `DATASOURCE_<NAME>_<PROPERTY>` key
+under `common.configmap` — you can register datasources without ever touching the schema —
+while a typo *outside* the namespace (e.g. `REDIS_HOSTX`) is still rejected at
+`helm install`. The guard is `propertyNames: anyOf: [enum, pattern ^DATASOURCE_...]`,
+generated with `gen-schema.py --open-prefixes DATASOURCE_` (see `config/schema-keys.txt`).
+It is a *named* open family, never a fully-open ConfigMap.
 
 ### Required Variables
 
@@ -264,14 +326,14 @@ externalRabbitmqDefinitions:
     username: "admin"
     password: "admin-password"
   appCredentials:
-    pluginPassword: "Lerian@123"
+    reporterPassword: "Lerian@123"
 ```
 
 The bootstrap job:
 
 1. Waits for the RabbitMQ instance to be reachable (AMQP port)
-2. Applies the definitions file (exchanges, queues, bindings, and the `plugin` user)
-3. Updates the `plugin` user password
+2. Applies the definitions file (exchanges, queues, bindings, and the `reporter` user)
+3. Updates the `reporter` user password
 
 ### Using Existing Secrets for Bootstrap Credentials
 

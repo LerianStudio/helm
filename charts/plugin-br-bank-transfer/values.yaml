@@ -441,6 +441,9 @@ bankTransfer:
 
     # License Key (required in production)
     # LICENSE_KEY: ""
+    # Organization IDs — alternative to configmap.ORGANIZATION_IDS; when set,
+    # the ConfigMap omits its own key so envFrom doesn't declare it twice.
+    # ORGANIZATION_IDS: ""
 
     # CRM Outbound M2M Credentials (optional - when CRM_AUTH_ENABLED=true)
     # CRM_CLIENT_SECRET: ""

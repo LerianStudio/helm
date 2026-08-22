@@ -199,7 +199,12 @@ data:
   # ORGANIZATION_IDS is rendered in both modes (license tenancy hint).
   # LICENSE_SERVICE_ADDRESS is single-tenant only.
   # =====================================================================
-  {{- if .Values.bankTransfer.configmap.ORGANIZATION_IDS }}
+  {{- /* Can also be supplied via .Values.bankTransfer.secrets.ORGANIZATION_IDS
+     (rendered into the Secret by templates/secrets.yaml, or present in an
+     existingSecret when useExistingSecret=true) for operators who source it
+     from the same secret store as LICENSE_KEY rather than a ConfigMap. When
+     set there, this key is omitted here so envFrom doesn't declare it twice. */}}
+  {{- if and .Values.bankTransfer.configmap.ORGANIZATION_IDS (not (.Values.bankTransfer.secrets.ORGANIZATION_IDS | default "")) }}
   ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
   {{- end }}
   {{- if not $multiTenantEnabled }}

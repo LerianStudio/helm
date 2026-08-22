@@ -59,7 +59,7 @@ externalRabbitmqDefinitions:
 
 ### 2. CORS configuration no longer has a chart default
 
-`manager.configmap.CORS_ALLOWED_ORIGINS` (and `_METHODS`/`_HEADERS`) previously defaulted to a wildcard (`"*"`). There is no longer a chart default for any of the three.
+`common.configmap.CORS_ALLOWED_ORIGINS` (and `_METHODS`/`_HEADERS`) previously defaulted to a wildcard (`"*"`). There is no longer a chart default for any of the three.
 
 **Why this matters:**
 
@@ -155,7 +155,7 @@ global:
 
 ### 7. Service Discovery, Multi-Tenant, Streaming, Observability Masks
 
-`global.observability`, `global.auth`, `global.env`, `global.multiTenant`, and `global.streaming` all follow the same `enabled`-gated pattern (see Configuration Reference). `global.serviceDiscovery` remains an open/untyped block — reporter's Consul wiring uses a different contract (`.envFlat`) with no dedicated field set to close against.
+`global.observability`, `global.auth`, `global.multiTenant`, and `global.streaming` all follow the same `enabled`-gated pattern (see Configuration Reference). `global.env` is a separate mask with a single `name` field (no `enabled` gate — it single-sources `ENV_NAME`). `global.serviceDiscovery` remains an open/untyped block — reporter's Consul wiring uses a different contract (`.envFlat`) with no dedicated field set to close against.
 
 # Configuration Reference
 
@@ -216,12 +216,16 @@ The RabbitMQ bootstrap Job's `curlimages/curl` image doesn't ship `jq`; the Job 
 3. (Optional) Migrate duplicated `common.configmap.DATASOURCE_ONBOARDING_*` / `MONGO_*` / `REDIS_*` / `RABBITMQ_*` values into `global.datastores.*` for a single source of truth.
 4. (Optional) Migrate `common.configmap.ENABLE_TELEMETRY` / `MULTI_TENANT_ENABLED` / `STREAMING_ENABLED` into their respective `global.*.enabled` masks.
 
+For steps 3–4: after moving a value into a `global.*` mask, render the chart (`helm template` or `helm diff upgrade`) and confirm the derived output matches expectations, **then remove the old `common.configmap.<KEY>` / `manager.configmap.<KEY>` / `worker.configmap.<KEY>` override** — a native key always wins over its mask, so leaving both in place silently keeps the old value active and makes the migration a no-op.
+
 Existing configuration not touched by the above continues to work unchanged — native `configmap.<KEY>` values always take precedence over any mask.
 
 # Preview changes before upgrading
 
+> **Important:** Pass your values file (`-f values.yaml`) or `--reuse-values` explicitly on every command below. A plain `helm upgrade`/`helm diff upgrade` with no values source falls back to the chart's bare defaults, not your existing release's values — this would revert any customization (datastores, secrets, replica counts, ...) already in place.
+
 ```bash
-helm diff upgrade reporter oci://ghcr.io/lerianstudio/reporter-helm --version 4.0.0 -n reporter
+helm diff upgrade reporter oci://ghcr.io/lerianstudio/reporter-helm --version 4.0.0 -n reporter -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -229,5 +233,5 @@ helm diff upgrade reporter oci://ghcr.io/lerianstudio/reporter-helm --version 4.
 # Command to upgrade
 
 ```bash
-helm upgrade reporter oci://ghcr.io/lerianstudio/reporter-helm --version 4.0.0 -n reporter
+helm upgrade reporter oci://ghcr.io/lerianstudio/reporter-helm --version 4.0.0 -n reporter -f values.yaml
 ```

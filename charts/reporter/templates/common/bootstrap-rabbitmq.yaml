@@ -21,7 +21,11 @@ metadata:
        safe to coexist. */}}
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
-    helm.sh/hook: post-install,pre-upgrade
+    # post-upgrade (not pre-upgrade): this Job mounts the load_definitions.json
+    # ConfigMap rendered by THIS release — pre-upgrade would run against the
+    # PREVIOUS revision's ConfigMap content, since hook resources apply before
+    # the normal resource batch on upgrade.
+    helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   ttlSecondsAfterFinished: 300
@@ -102,11 +106,15 @@ spec:
               fi
 
               echo "Updating RabbitMQ user: reporter..."
+              # JSON-escape the password (backslash first, then double-quote) — the
+              # curlimages/curl image ships no jq, and an unescaped " or \ in the password
+              # would otherwise produce invalid JSON.
+              ESCAPED_APP_PASS=$(printf '%s' "$RABBITMQ_APP_PASS" | sed 's/\\/\\\\/g; s/"/\\"/g')
               HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
-                --data "{\"password\":\"$RABBITMQ_APP_PASS\",\"tags\":\"administrator\"}" \
+                --data "{\"password\":\"$ESCAPED_APP_PASS\",\"tags\":\"administrator\"}" \
                 "$BASE_URL/api/users/reporter")
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error updating reporter user (HTTP $HTTP_CODE):"

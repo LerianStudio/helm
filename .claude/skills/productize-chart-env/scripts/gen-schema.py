@@ -157,7 +157,7 @@ def mask_schema(key, desc, path):
 
 
 def global_mask_schema(key, desc, path):
-    # A global-only direct mask block (observability/auth): finite + closed, like _mask_block.
+    # A global-only direct mask block (any GLOBAL_MASK_FIELDS key): finite + closed, like _mask_block.
     s = _mask_block(GLOBAL_MASK_FIELDS[key])
     d = desc.get(path, (None, None))[0]
     if d:
@@ -244,7 +244,7 @@ def open_map_schema(child_path, node, desc):
     if isinstance(node, dict):
         masks = {k: mask_schema(k, desc, f"{child_path}.{k}") for k in node if k in MASK_FIELDS}
         if leaf == "global":
-            # global-only direct mask blocks (observability/auth): close them too so a typo like
+            # global-only direct mask blocks (any GLOBAL_MASK_FIELDS key): close them too so a typo like
             # global.observability.otlpEndpointX is rejected. Scoped to `global` so the top-level
             # operational `observability:` block (a different, open chart config) stays open.
             masks.update({k: global_mask_schema(k, desc, f"{child_path}.{k}")

@@ -3,6 +3,35 @@
 ## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.0.0)
 
 - **Features:**
+  - Added global environment mask and single-sourcing for `ENV_NAME`.
+  - Introduced datastore topology masks, global.cloud, and service account cloud authentication.
+  - Adopted lerian-common rolesAnywhere, otel, and objectStorage for enhanced observability and storage management.
+  - Implemented STREAMING_ENABLED to honor global.streaming.enabled.
+  - Added RABBITMQ_HEALTH_CHECK_URL derivation from the broker mask.
+
+- **Fixes:**
+  - Bounded RabbitMQ bootstrap curl calls with connect/max timeouts.
+  - JSON-escaped RabbitMQ password and fixed bootstrap hook timing.
+  - Decoupled reporter user/permissions from non-atomic definitions import.
+  - Reconciled RabbitMQ bootstrap on every run and restored CORS schema keys.
+  - Addressed critical worker deployment image-tag fallback issue.
+
+- **Improvements:**
+  - Consolidated to a single starter file and fixed OTEL_LIBRARY_NAME typo.
+  - Added Managed Cloud section to README and updated values-template.yaml.
+  - Enhanced schema with missing multiTenant/serviceDiscovery declarations.
+  - Provided copy-paste examples under each global.* mask in values.yaml.
+  - Improved chart defaults for leaner environment values.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.2.0...reporter-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.0.0)
+
+- **Features:**
   - Added global environment mask and single-sourced `ENV_NAME`.
   - Introduced datastore topology masks and global cloud support with service account cloud authentication.
   - Adopted `lerian-common` configurations for multi-tenant environments, roles, observability, object storage, and service discovery.

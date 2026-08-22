@@ -19,7 +19,10 @@ metadata:
        helm.sh/chart label) makes a plain `helm upgrade` fail outright without this.
        Hook annotations for BOTH delivery paths: each controller reads only its own,
        safe to coexist. */}}
-    argocd.argoproj.io/hook: Sync
+    # PostSync (not Sync): this Job mounts the load_definitions.json ConfigMap
+    # rendered by THIS release — Sync-phase hooks can run before the normal
+    # resource batch is applied, same reasoning as post-upgrade below.
+    argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
     # post-upgrade (not pre-upgrade): this Job mounts the load_definitions.json
     # ConfigMap rendered by THIS release — pre-upgrade would run against the
@@ -70,6 +73,12 @@ spec:
               set -u
               FAILED=0
 
+              # jq builds the user-update JSON body safely (handles quotes, backslashes,
+              # control characters) — curlimages/curl ships no jq by default, but the
+              # underlying alpine base does carry apk, so install it once here rather
+              # than hand-roll JSON string escaping.
+              apk add --no-cache jq >/dev/null 2>&1
+
               # Build base URL - omit port for default HTTPS (443) or HTTP (80)
               if [ "$RABBITMQ_PROTOCOL" = "https" ] && [ "$RABBITMQ_PORT" = "443" ]; then
                 BASE_URL="$RABBITMQ_PROTOCOL://$RABBITMQ_HOST"
@@ -106,15 +115,12 @@ spec:
               fi
 
               echo "Updating RabbitMQ user: reporter..."
-              # JSON-escape the password (backslash first, then double-quote) — the
-              # curlimages/curl image ships no jq, and an unescaped " or \ in the password
-              # would otherwise produce invalid JSON.
-              ESCAPED_APP_PASS=$(printf '%s' "$RABBITMQ_APP_PASS" | sed 's/\\/\\\\/g; s/"/\\"/g')
+              jq -n --arg password "$RABBITMQ_APP_PASS" '{password: $password, tags: "administrator"}' > /tmp/user-body.json
               HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
-                --data "{\"password\":\"$ESCAPED_APP_PASS\",\"tags\":\"administrator\"}" \
+                --data @/tmp/user-body.json \
                 "$BASE_URL/api/users/reporter")
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error updating reporter user (HTTP $HTTP_CODE):"

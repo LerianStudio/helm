@@ -176,6 +176,64 @@ collection:
   # operamos.
   nodeInfrastructure: false
 
+  # Consumo REAL de CPU, memória, disco e rede por contêiner, raspado do cAdvisor
+  # embutido no kubelet de cada nó.
+  #
+  # ⚠️ SEM ISTO, A MIGRAÇÃO PERDE OBSERVAÇÃO. O agente que este chart substitui usa
+  # o receptor `kubeletstats`, e é dele que vêm as famílias `container_*` que já
+  # existem no destino hoje — MEDIDO: 68 séries em aws-devops, 72 em
+  # aws-production, 44 em aws-staging. O kube-state-metrics NÃO cobre isso: ele
+  # descreve o ESTADO declarado do objeto (limite, réplica desejada, fase), nunca
+  # o consumo observado. Trocar de agente sem esta coleta apaga a resposta para
+  # "este pod está estourando o limite?".
+  #
+  # É `true` por padrão porque é reposição de coleta existente, não recurso novo.
+  #
+  # ⚠️ DESLIGAR quando o cluster já raspa cAdvisor por outro caminho (um Prometheus
+  # próprio, um agente do cliente). Duas coletas do mesmo endpoint duplicam cada
+  # série no destino, e a duplicata é indistinguível do original.
+  containerUsage: true
+
+  # Onde raspar o cAdvisor. Vazio = via API server, o caminho que funciona sem
+  # depender de a porta do kubelet estar alcançável do pod.
+  #
+  # O cAdvisor NÃO é um componente a instalar — vem embutido no kubelet, então não
+  # há subchart aqui, ao contrário de kube-state-metrics e node-exporter. A decisão
+  # é só raspar ou não.
+  containerUsageTarget: ""
+
+  # ⚠️ ALLOWLIST, não coleta integral. MEDIDO na benedita: o endpoint expõe 78
+  # famílias e 90.948 séries; estas 16 são 4.893 (−94,6%).
+  #
+  # O corte não foi por volume, foi por valor: as famílias caras não respondem
+  # pergunta nenhuma — `container_tasks_state` (5.255 séries),
+  # `container_blkio_device_usage_total` (5.048), `container_memory_failures_total`
+  # (4.204). As que importam são baratas.
+  #
+  # ⚠️ AS 4 ÚLTIMAS SÃO POR POD, NÃO POR CONTÊINER. O cAdvisor mede filesystem e
+  # rede no nível do pod, e MEDIDO: elas têm ZERO séries com nome de contêiner. Um
+  # filtro `container!=""` as eliminaria por inteiro — foi o erro que essa medição
+  # pegou.
+  containerUsageAllowlist:
+    # por contêiner
+    - container_cpu_usage_seconds_total
+    - container_memory_usage_bytes
+    - container_memory_working_set_bytes      # o que importa para OOM
+    - container_memory_rss
+    - container_memory_cache
+    - container_last_seen
+    - container_spec_memory_limit_bytes       # o limite, para a razão uso/limite
+    - container_spec_cpu_period
+    - container_spec_cpu_quota
+    - container_cpu_cfs_periods_total
+    - container_cpu_cfs_throttled_periods_total
+    - container_cpu_cfs_throttled_seconds_total
+    # por POD — fs e rede não têm nome de contêiner
+    - container_network_receive_bytes_total
+    - container_network_transmit_bytes_total
+    - container_fs_usage_bytes
+    - container_fs_limit_bytes
+
   # Drops records below INFO at the edge. Records with no severity are kept:
   # absence of the field is not evidence of low value.
   dropDebugLogs: true

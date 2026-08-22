@@ -346,6 +346,110 @@ otelcol.exporter.otlphttp "destino" {
     max_elapsed_time = {{ .Values.destination.retry.maxElapsedTime | default "5m" | quote }}
   }
 }
+{{- if (.Values.collection).containerUsage }}
+
+// ===========================================================================
+// CONTAINER USAGE — observed consumption, from the kubelet's own cAdvisor
+// ===========================================================================
+// This is REPLACEMENT of collection that already exists, not a new capability.
+// The retiring agent reads it through `kubeletstats`, and the `container_*`
+// families in the destination today come from there (MEASURED: 68 series in
+// aws-devops, 72 in aws-production, 44 in aws-staging). kube-state-metrics does
+// NOT cover it: KSM describes an object's DECLARED state — the limit, the desired
+// replica count — never the consumption observed against it.
+//
+// Belongs to the node role, not the singleton: each agent scrapes the kubelet of
+// its OWN node. That is why replication is safe here and duplication is not a
+// concern — a node's cAdvisor is only ever read by the agent on that node.
+//
+// RBAC needs nothing added: the upstream chart's ClusterRole already grants
+// `nodes/metrics`, verified in the rendered output.
+discovery.kubernetes "nos_para_cadvisor" {
+  role = "node"
+}
+
+// Rewrites each node target into the API-server proxy path. Going through the
+// API server rather than the kubelet port directly is deliberate: the kubelet
+// port is frequently unreachable from a pod (firewall, read-only port disabled),
+// and the proxy path works wherever the API server does.
+discovery.relabel "alvo_cadvisor" {
+  targets = discovery.kubernetes.nos_para_cadvisor.targets
+
+  rule {
+    action = "replace"
+    target_label = "__address__"
+    replacement  = "kubernetes.default.svc:443"
+  }
+
+  rule {
+    source_labels = ["__meta_kubernetes_node_name"]
+    regex         = "(.+)"
+    action        = "replace"
+    target_label  = "__metrics_path__"
+    replacement   = "/api/v1/nodes/${1}/proxy/metrics/cadvisor"
+  }
+}
+
+prometheus.scrape "consumo_container" {
+{{- if (.Values.collection).containerUsageTarget }}
+  // Explicit target: an environment that exposes cAdvisor by another route.
+  targets = [{
+    __address__ = {{ (.Values.collection).containerUsageTarget | quote }},
+  }]
+{{- else }}
+  targets = discovery.relabel.alvo_cadvisor.output
+  scheme  = "https"
+
+  bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+  tls_config {
+    ca_file             = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    insecure_skip_verify = false
+  }
+{{- end }}
+
+  // Same 60s floor as everything else: cost at the destination is series x
+  // writes per minute, and the retiring agent's 10s interval is precisely what
+  // this migration exists to correct.
+  scrape_interval = {{ include "alloy-lerian.interval" . | quote }}
+  forward_to      = [prometheus.relabel.allowlist_consumo.receiver]
+}
+
+// ⚠️ ALLOWLIST, not full collection. MEASURED on benedita: the endpoint exposes
+// 78 families and 90,948 series; the {{ len ((.Values.collection).containerUsageAllowlist | default list) }} kept here are 4,893 — a 94.6% cut.
+//
+// The cut is by diagnostic value, not by volume. The expensive families answer
+// nothing: container_tasks_state (5,255 series),
+// container_blkio_device_usage_total (5,048), container_memory_failures_total
+// (4,204). What matters is cheap.
+//
+// ⚠️ NO `container!=""` FILTER HERE, and that is a measured decision: cAdvisor
+// reports filesystem and network at POD level, so container_fs_* and
+// container_network_* carry no container name at all. Filtering on a container
+// name would silently drop four of the sixteen families.
+prometheus.relabel "allowlist_consumo" {
+  rule {
+    source_labels = ["__name__"]
+    regex         = {{ join "|" ((.Values.collection).containerUsageAllowlist | default list) | quote }}
+    action        = "keep"
+  }
+
+  rule {
+    target_label = "client_id"
+    replacement  = {{ $origin | quote }}
+  }
+
+  forward_to = [otelcol.receiver.prometheus.ponte_consumo.receiver]
+}
+
+// Bridge to OTLP: the destination speaks OTLP only, same as every other signal
+// on this chain.
+otelcol.receiver.prometheus "ponte_consumo" {
+  output {
+    metrics = [otelcol.exporter.otlphttp.destino.input]
+  }
+}
+{{- end }}
 {{- end -}}
 
 

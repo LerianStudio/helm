@@ -2,6 +2,13 @@
 {{- $migrations := get $bankTransfer "migrations" | default dict }}
 {{- $configmap := get $bankTransfer "configmap" | default dict }}
 {{- $postgresql := .Values.postgresql | default dict }}
+{{- /* Same datastore mask configmap.yaml uses for POSTGRES_HOST/PORT/USER/SSLMODE — without
+   this, an external Postgres set only via global.datastores.postgres (no native
+   bankTransfer.configmap.POSTGRES_HOST) falls through to the bundled-subchart hostname here,
+   which doesn't exist when postgresql.enabled=false. POSTGRES_DB stays native (per-app
+   database name, not a masked field, matching configmap.yaml's contract). */ -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $ded := .Values.datastores | default dict -}}
 {{- $migrationImage := get $migrations "image" | default dict }}
 {{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") }}
 {{- $migrationsEnabled := and (eq (lower (toString (get $bankTransfer "enabled" | default false))) "true") (eq (lower (toString (get $migrations "enabled" | default false))) "true") }}
@@ -121,9 +128,9 @@ spec:
               echo "Postgres is ready";
           env:
             - name: POSTGRES_HOST
-              value: {{ get $configmap "POSTGRES_HOST" | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+              value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
             - name: POSTGRES_PORT
-              value: {{ get $configmap "POSTGRES_PORT" | default "5432" | quote }}
+              value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -156,15 +163,15 @@ spec:
             - name: ALLOW_INSECURE_TLS
               value: {{ get $configmap "ALLOW_INSECURE_TLS" | default "true" | quote }}
             - name: POSTGRES_HOST
-              value: {{ get $configmap "POSTGRES_HOST" | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+              value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
             - name: POSTGRES_PORT
-              value: {{ get $configmap "POSTGRES_PORT" | default "5432" | quote }}
+              value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
             - name: POSTGRES_USER
-              value: {{ get $configmap "POSTGRES_USER" | default "bank_transfer" | quote }}
+              value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "bank_transfer") | quote }}
             - name: POSTGRES_DB
               value: {{ get $configmap "POSTGRES_DB" | default "bank_transfer" | quote }}
             - name: POSTGRES_SSLMODE
-              value: {{ get $configmap "POSTGRES_SSLMODE" | default "require" | quote }}
+              value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
             - name: POSTGRES_CONNECT_TIMEOUT_SEC
               value: {{ get $configmap "POSTGRES_CONNECT_TIMEOUT_SEC" | default "10" | quote }}
             - name: POSTGRES_PASSWORD

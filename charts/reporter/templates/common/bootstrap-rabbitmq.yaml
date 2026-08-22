@@ -100,7 +100,7 @@ spec:
               # reconciling the reporter user/permissions, which no longer live in the bulk
               # definitions file precisely so they can be reconciled independently of it).
               echo "Applying RabbitMQ definitions (queues/exchanges/bindings) from file..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+              HTTP_CODE=$(curl -sSk --connect-timeout 10 --max-time 30 -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X POST \
@@ -116,7 +116,7 @@ spec:
 
               echo "Updating RabbitMQ user: reporter..."
               jq -n --arg password "$RABBITMQ_APP_PASS" '{password: $password, tags: "administrator"}' > /tmp/user-body.json
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+              HTTP_CODE=$(curl -sSk --connect-timeout 10 --max-time 30 -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
@@ -131,7 +131,7 @@ spec:
               fi
 
               echo "Setting permissions for RabbitMQ user: reporter..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+              HTTP_CODE=$(curl -sSk --connect-timeout 10 --max-time 30 -o /tmp/response.txt -w "%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \

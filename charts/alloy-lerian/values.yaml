@@ -804,8 +804,17 @@ logging:
 #
 # Mitigação é de POLÍTICA, não de config: usar Fleet Management para coleta e
 # descoberta, mantendo a EXPORTAÇÃO local. Ver docs/FLEET-MANAGEMENT.md.
+# ⚠️ LIGADO POR PADRÃO, e isso significa que url/username/token são OBRIGATÓRIOS:
+# um install sem eles FALHA NO RENDER, com mensagem dizendo o que copiar da
+# interface. É deliberado — a alternativa seria omitir o bloco remotecfg em
+# silêncio, e aí o agente subiria com a gestão remota simplesmente inexistente,
+# sem ninguém perceber. Este projeto já corrigiu esse modo de falhar três vezes
+# (credencial, cAdvisor 403, overlay nulo); não vamos criar a quarta.
+#
+# Para instalar sem gestão remota, declare explicitamente `enabled: false`. A
+# recusa é a decisão sendo tomada, não um obstáculo.
 fleetManagement:
-  enabled: false
+  enabled: true
 
   # Copiar VERBATIM da interface do Fleet Management. O formato do host varia por
   # stack e região, e construí-lo à mão é erro documentado.

@@ -63,6 +63,33 @@ destination:
 #
 #   kubectl -n monitoring create secret generic alloy-lerian \
 #     --from-literal=telemetry-token='<token que entregamos>'
+
+# ---------------------------------------------------------------------------
+# CONSUMO DE CONTÊINER — o único item que talvez precise de ajuste no cluster
+# ---------------------------------------------------------------------------
+# Vem LIGADO por padrão e coleta CPU, memória, disco e rede reais por contêiner,
+# do cAdvisor embutido no kubelet. Não instala nada: o cAdvisor já existe em todo
+# cluster Kubernetes.
+#
+# Descomente APENAS se este cluster já raspa cAdvisor por outro caminho — um
+# Prometheus próprio, um agente de observabilidade seu. Duas coletas do mesmo
+# endpoint duplicam cada série no destino, e a duplicata é indistinguível do
+# original.
+#
+# collection:
+#   containerUsage: false
+#
+# Se o cAdvisor estiver exposto por uma rota própria (não pelo kubelet), aponte
+# aqui em vez de desligar:
+#
+# collection:
+#   containerUsageTarget: "meu-cadvisor.monitoring.svc.cluster.local:8080"
+#
+# ⚠️ A coleta usa a permissão `nodes/proxy`, concedida pelo próprio chart. Se a
+# política do cluster a proibir, o sintoma é silencioso: os painéis de consumo
+# ficam vazios e nenhum erro aparece em nível de log normal. Nesse caso avise a
+# Lerian em vez de investigar — sabemos o que é.
+
 node:
   alloy:
     extraEnv:
@@ -81,7 +108,7 @@ node:
           secretKeyRef:
             name: alloy-lerian
             key: fleet-token
-            optional: true
+            optional: false
 
 singleton:
   alloy:
@@ -101,4 +128,17 @@ singleton:
           secretKeyRef:
             name: alloy-lerian
             key: fleet-token
-            optional: true
+            optional: false
+
+# ---------------------------------------------------------------------------
+# GESTÃO REMOTA DE CONFIGURAÇÃO
+# ---------------------------------------------------------------------------
+# O chart traz LIGADO por padrão, e ligada ela exige três valores que só a Lerian
+# tem: a URL do serviço, o id da stack e um token. Sem eles o render FALHA — de
+# propósito, para a ausência ser uma decisão e não um silêncio.
+#
+# Para o cluster de cliente ela vem desligada, porque o canal de configuração
+# remota é acordado caso a caso. Quando for habilitada, a Lerian entrega os três
+# valores e a chave `fleet-token` no mesmo Secret.
+fleetManagement:
+  enabled: false

@@ -82,7 +82,7 @@ node:
           secretKeyRef:
             name: alloy-lerian
             key: fleet-token
-            optional: true
+            optional: false
 
 singleton:
   alloy:
@@ -102,7 +102,7 @@ singleton:
           secretKeyRef:
             name: alloy-lerian
             key: fleet-token
-            optional: true
+            optional: false
 
 # benedita JÁ RODA kube-state-metrics: o chart `prometheus` do próprio ambiente
 # o sobe (o11y/prometheus/values.yaml, `kube-state-metrics.enabled: true`).
@@ -166,3 +166,9 @@ collection:
 #      removidos, não deixados vazios
 #
 # Enquanto qualquer item estiver aberto, aws-staging não inicia.
+
+# Gestão remota desligada: este arquivo é registro da validação em cluster, e a
+# validação foi feita sem Fleet Management. O default do chart é `true`, então a
+# ausência precisa ser declarada.
+fleetManagement:
+  enabled: false

@@ -206,6 +206,8 @@ Service discovery (Consul) configuration has been enhanced with a new mask syste
 
 When `SD_ENABLED=true`, the chart now automatically derives the full set of service discovery environment variables (`SD_ADDRESS`, `SD_EXTERNAL_ADDRESS`, `SD_EXTERNAL_PORT`, `SD_TLS`, `SD_TLS_SKIP_VERIFY`, `SD_WORKLOAD`, `SD_PREFER_VIEW`, `SD_INTERNAL_SCHEME`) from the global configuration and component metadata (service ports, ingress hosts).
 
+> **Important:** `SD_ENABLED` is **not** part of the `global.serviceDiscovery` mask — it is read directly from each component's own `configmap.SD_ENABLED` (`auth.configmap.SD_ENABLED`, `identity.configmap.SD_ENABLED`). The global block only supplies the *connection* settings (`address`, `tls`, `externalPort`, ...) once you opt a component in. Setting `global.serviceDiscovery.*` alone does **not** enable service discovery for any component — you must still set `SD_ENABLED: "true"` on every component (`auth`, `identity`) you want registered with Consul.
+
 **Backward compatibility:**
 
 When `SD_ENABLED` is unset or `false`, the legacy static `SD_*` keys in `auth.configmap` and `identity.configmap` continue to work exactly as before, ensuring zero diff for existing installations.
@@ -647,6 +649,54 @@ identity:
 ```
 
 > **Note:** The `SD_EXTERNAL_ADDRESS` is now automatically derived from the first ingress host. Remove the `SD_EXTERNAL_ADDRESS` key from your configmaps.
+
+# Known Gotchas (Field-Verified)
+
+The following were found while running a real `global.cloud: "aws"` install against managed RDS/ElastiCache. They are not template-diff changes, so they don't show up in the sections above — they are operational pitfalls worth knowing before you configure the masks.
+
+### Redis `caCert` must be Amazon's root CA, not the RDS bundle
+
+`global.datastores.redis.caCert` (or `auth.configmap.REDIS_CA_CERT`) must be the **Amazon Root CA1** certificate, not the RDS regional truststore bundle (`https://truststore.pki.rds.amazonaws.com/...`). RDS's bundle signs RDS/Aurora endpoints; ElastiCache/MemoryDB (and managed Valkey) TLS certificates chain to Amazon's general trust root instead. Using the RDS bundle fails at connection time with:
+
+```
+x509: certificate signed by unknown authority
+```
+
+Fetch the correct certificate with:
+
+```bash
+curl -s https://www.amazontrust.com/repository/AmazonRootCA1.pem | base64 -w0
+```
+
+and set the base64 output as `global.datastores.redis.caCert`.
+
+### Dedicated (non-master) PostgreSQL role
+
+Running with a dedicated, least-privilege PostgreSQL role instead of the RDS/Aurora master user is the recommended production pattern. `auth.backend.createDatabase` controls whether the auth-backend (Casdoor) migrations attempt `CREATE DATABASE` themselves:
+
+- `createDatabase: true` (default) — the connecting user must have `CREATEDB`. Fine with the master user, but defeats least-privilege if you've already created a dedicated role.
+- `createDatabase: false` — use this when the database is pre-created by a dedicated role that does **not** have `CREATEDB` (e.g., provisioned by your own bootstrap job, Terraform, or DBA tooling). The migrations Job connects and runs schema migrations only.
+
+Example: pre-create the dedicated role and database once (outside the chart), then point the chart at it without `CREATEDB`:
+
+```sql
+CREATE ROLE plugin_access_manager WITH LOGIN PASSWORD '...';
+CREATE DATABASE casdoor OWNER plugin_access_manager;
+```
+
+```yaml
+global:
+  datastores:
+    postgres:
+      host: "my-rds-instance.us-east-1.rds.amazonaws.com"
+      user: "plugin_access_manager"
+
+auth:
+  backend:
+    createDatabase: false
+```
+
+> **Note:** This is unrelated to `auth.configmap.SD_ENABLED` or the datastore masks above — it is a one-time provisioning decision, independent of whether you use `global.datastores` or native `configmap.DB_*` keys.
 
 # Preview changes before upgrading
 

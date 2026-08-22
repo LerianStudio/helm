@@ -215,6 +215,10 @@ extraEnvVars: {}
 # -- Secrets for storing sensitive data
 # All values here will be base64 encoded and set as environment variables
 secrets:
+  # -- Optional: set instead of configmap.PLUGIN_AUTH_CLIENT_ID when the
+  # client_id shouldn't sit in a ConfigMap. When non-empty, templates/configmap.yaml
+  # omits its own PLUGIN_AUTH_CLIENT_ID key so the env var isn't declared twice.
+  PLUGIN_AUTH_CLIENT_ID: ""
   PLUGIN_AUTH_CLIENT_SECRET: ""
   NEXTAUTH_SECRET: ""
   MONGODB_PASS: ""

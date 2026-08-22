@@ -52,7 +52,9 @@ empty — set a key there only to override its shipped default).
 | `configmap.NODE_ENV` | Node environment | `production` |
 | `configmap.MIDAZ_CONSOLE_PORT` | Console port | `8081` |
 | `configmap.MIDAZ_BASE_PATH` | Midaz API base path | `http://midaz-ledger.midaz.svc.cluster.local:3002/v1` |
+| `configmap.NEXTAUTH_URL` | Public URL NextAuth uses for OAuth callbacks | `ingress.hosts[0].host` (as `https://<host>`) when ingress is enabled with a host, else `http://localhost:8081` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
+| `secrets.PLUGIN_AUTH_CLIENT_ID` | Alternative to `configmap.PLUGIN_AUTH_CLIENT_ID` when the client_id shouldn't sit in a ConfigMap; when set, the ConfigMap key is omitted | `""` |
 
 ### Inter-service defaults (cross-namespace)
 

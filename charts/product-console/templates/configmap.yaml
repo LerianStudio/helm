@@ -29,7 +29,19 @@ data:
   OTEL_RECEIVER_HTTP_PORT: {{ $cm.OTEL_RECEIVER_HTTP_PORT | default "4318" | quote }}
 
   # NextAuth Configuration
-  NEXTAUTH_URL: {{ $cm.NEXTAUTH_URL | default "http://localhost:8081" | quote }}
+  {{/*
+     NEXTAUTH_URL defaults from the chart's own ingress host when set, so
+     operators don't have to duplicate the public hostname in two places.
+     Falls back to the legacy localhost default when ingress is disabled or
+     has no host (e.g. local/dev installs, or access via port-forward). */}}
+  {{- $nextAuthDefault := "http://localhost:8081" -}}
+  {{- if and .Values.ingress.enabled .Values.ingress.hosts (gt (len .Values.ingress.hosts) 0) -}}
+  {{- $ingressHost := (first .Values.ingress.hosts).host -}}
+  {{- if $ingressHost -}}
+  {{- $nextAuthDefault = printf "https://%s" $ingressHost -}}
+  {{- end -}}
+  {{- end -}}
+  NEXTAUTH_URL: {{ $cm.NEXTAUTH_URL | default $nextAuthDefault | quote }}
 
   # Midaz API Configuration
   # Defaults assume the standard in-cluster FQDN for the sibling midaz release
@@ -46,9 +58,20 @@ data:
   {{- /* PLUGIN_AUTH_ENABLED/HOST via the dedicated lerian-common.auth.env helper
      (global.auth.{enabled,host}), the canonical helper for plugin-access-manager
      consumers per the dependency-contract. PLUGIN_AUTH_CLIENT_ID/PORT/BASE_PATH
-     have no mask in the contract and stay native passthrough. */}}
+     have no mask in the contract and stay native passthrough. $pluginAuthEnabled
+     is resolved the same way the helper resolves it, so NEXT_PUBLIC_PLUGIN_AUTH_ENABLED
+     (the frontend-visible mirror) defaults to the same value instead of drifting
+     from PLUGIN_AUTH_ENABLED when only the global mask is set. */}}
+  {{- $pluginAuthEnabled := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") -}}
   {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "plugin-access-manager-auth.plugin-access-manager.svc.cluster.local") | nindent 2 }}
+  {{- /* PLUGIN_AUTH_CLIENT_ID can also be supplied via .Values.secrets.PLUGIN_AUTH_CLIENT_ID
+     (rendered into the Secret by templates/secrets.yaml, or present in an
+     existingSecret when useExistingSecret=true) for deployments that don't want
+     a client_id — even though it's not a client_secret — sitting in a ConfigMap.
+     When set there, this key is omitted here so envFrom doesn't declare it twice. */}}
+  {{- if not (.Values.secrets.PLUGIN_AUTH_CLIENT_ID | default "") }}
   PLUGIN_AUTH_CLIENT_ID: {{ $cm.PLUGIN_AUTH_CLIENT_ID | default "" | quote }}
+  {{- end }}
   PLUGIN_AUTH_PORT: {{ $cm.PLUGIN_AUTH_PORT | default "4000" | quote }}
   PLUGIN_AUTH_BASE_PATH: {{ $cm.PLUGIN_AUTH_BASE_PATH | default "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000/v1" | quote }}
 
@@ -78,8 +101,7 @@ data:
 
   # NextJS Public Configuration
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ $cm.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
-  NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: {{ $cm.NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS | default "midaz,plugin-fees,plugin-crm,plugin-smart-templates" | quote }}
-  NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: {{ $cm.NEXT_PUBLIC_PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: {{ $cm.NEXT_PUBLIC_PLUGIN_AUTH_ENABLED | default $pluginAuthEnabled | quote }}
   NEXT_PUBLIC_MIDAZ_VERSION: {{ $cm.NEXT_PUBLIC_MIDAZ_VERSION | default "" | quote }}
 
   VERSION: {{ .Values.image.tag | default .Chart.AppVersion | quote }}

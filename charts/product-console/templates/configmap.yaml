@@ -30,18 +30,23 @@ data:
 
   # NextAuth Configuration
   {{/*
-     NEXTAUTH_URL defaults from the chart's own ingress host when set, so
-     operators don't have to duplicate the public hostname in two places.
-     Falls back to the legacy localhost default when ingress is disabled or
+     $ingressOrigin ("https://<host>") is resolved once and shared by every
+     key that needs the app's own public origin, so operators don't have to
+     duplicate the hostname across them. Empty when ingress is disabled or
      has no host (e.g. local/dev installs, or access via port-forward). */}}
-  {{- $nextAuthDefault := "http://localhost:8081" -}}
+  {{- $ingressOrigin := "" -}}
   {{- if and .Values.ingress.enabled .Values.ingress.hosts (gt (len .Values.ingress.hosts) 0) -}}
   {{- $ingressHost := (first .Values.ingress.hosts).host -}}
   {{- if $ingressHost -}}
-  {{- $nextAuthDefault = printf "https://%s" $ingressHost -}}
+  {{- $ingressOrigin = printf "https://%s" $ingressHost -}}
   {{- end -}}
   {{- end -}}
-  NEXTAUTH_URL: {{ $cm.NEXTAUTH_URL | default $nextAuthDefault | quote }}
+  NEXTAUTH_URL: {{ $cm.NEXTAUTH_URL | default ($ingressOrigin | default "http://localhost:8081") | quote }}
+  {{- /* ALLOWED_ORIGINS (CSV) gates the app's own CSRF guard (rejects every
+     mutating request outside /api/auth/* when unset) — not part of any
+     lerian-common mask; defaults to the same origin as NEXTAUTH_URL since
+     that's virtually always what operators want (the app calling itself). */}}
+  ALLOWED_ORIGINS: {{ $cm.ALLOWED_ORIGINS | default $ingressOrigin | quote }}
 
   # Midaz API Configuration
   # Defaults assume the standard in-cluster FQDN for the sibling midaz release

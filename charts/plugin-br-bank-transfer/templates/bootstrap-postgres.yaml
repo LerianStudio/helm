@@ -120,30 +120,31 @@ spec:
             ROLE_EXISTS=1
           fi
 
-          if [ "$DB_EXISTS" = "1" ] && [ "$ROLE_EXISTS" = "1" ]; then
-            echo "PostgreSQL bootstrap already complete (database 'bank_transfer' and role 'bank_transfer' exist). Skipping creation."
-          else
-            # Create role if not exists
-            if [ "$ROLE_EXISTS" = "1" ]; then
-              echo "Role 'bank_transfer' already exists. Skipping creation."
-            else
-              echo "Creating role 'bank_transfer'..."
-              # psql's :'var' client-side interpolation doesn't fire for -c input on
-              # this image/version (server rejects the literal ":'pw'' with a syntax
-              # error — confirmed live), so escape the password for a plain SQL
-              # string literal ourselves (double any embedded single quotes) instead
-              # of relying on it.
-              ESCAPED_PW=$(printf '%s' "$DB_PASSWORD_BANK_TRANSFER" | sed "s/'/''/g")
-              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE bank_transfer LOGIN PASSWORD '$ESCAPED_PW'"
-            fi
+          # psql's :'var' client-side interpolation doesn't fire for -c input on
+          # this image/version (server rejects the literal ":'pw'' with a syntax
+          # error — confirmed live), so escape the password for a plain SQL
+          # string literal ourselves (double any embedded single quotes) instead
+          # of relying on it. The statement is sent via stdin (printf | psql), not
+          # -c, so the password never appears in this container's process
+          # arguments (ps output) — CodeRabbit finding, confirmed real. (A heredoc
+          # was tried first but its unindented body/terminator lines broke the
+          # YAML block-scalar indentation of this whole script — printf avoids
+          # that entirely.)
+          ESCAPED_PW=$(printf '%s' "$DB_PASSWORD_BANK_TRANSFER" | sed "s/'/''/g")
 
-            # Create database if not exists
-            if [ "$DB_EXISTS" = "1" ]; then
-              echo "Database 'bank_transfer' already exists. Skipping creation."
-            else
-              echo "Creating database 'bank_transfer'..."
-              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE bank_transfer OWNER bank_transfer"
-            fi
+          if [ "$ROLE_EXISTS" = "1" ]; then
+            echo "Role 'bank_transfer' already exists. Refreshing password..."
+            printf "ALTER ROLE bank_transfer LOGIN PASSWORD '%s';\n" "$ESCAPED_PW" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
+          else
+            echo "Creating role 'bank_transfer'..."
+            printf "CREATE ROLE bank_transfer LOGIN PASSWORD '%s';\n" "$ESCAPED_PW" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
+          fi
+
+          if [ "$DB_EXISTS" = "1" ]; then
+            echo "Database 'bank_transfer' already exists. Skipping creation."
+          else
+            echo "Creating database 'bank_transfer'..."
+            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE bank_transfer OWNER bank_transfer"
           fi
 
           # Privileges (safe to run repeatedly)

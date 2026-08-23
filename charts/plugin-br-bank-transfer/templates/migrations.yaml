@@ -12,9 +12,14 @@
 {{- $migrationImage := get $migrations "image" | default dict }}
 {{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") }}
 {{- $migrationsEnabled := and (eq (lower (toString (get $bankTransfer "enabled" | default false))) "true") (eq (lower (toString (get $migrations "enabled" | default false))) "true") }}
+{{- /* Same global.multiTenant mask configmap.yaml resolves MULTI_TENANT_ENABLED
+   through — reading the native key alone here missed global.multiTenant.enabled
+   (CodeRabbit finding), letting migrations run even when tenant-manager should
+   own them. */ -}}
+{{- $multiTenantEnabledRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $configmap "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") -}}
 {{- if $migrationsEnabled }}
-{{- if eq (lower (toString (get $configmap "MULTI_TENANT_ENABLED" | default "false"))) "true" }}
-{{- fail "bankTransfer.migrations.enabled cannot be true when bankTransfer.configmap.MULTI_TENANT_ENABLED=true; tenant-manager owns tenant database migrations" }}
+{{- if eq (lower (toString $multiTenantEnabledRaw)) "true" }}
+{{- fail "bankTransfer.migrations.enabled cannot be true when MULTI_TENANT_ENABLED=true (native or global.multiTenant.enabled); tenant-manager owns tenant database migrations" }}
 {{- end }}
 {{- /* Internal (chart-managed) Postgres support. When postgresql.enabled=true and not
      external, the database is provisioned during the Sync phase (bitnami StatefulSet), so

@@ -254,7 +254,11 @@ app:
     # MIDAZ_TRANSACTION_URL pair is still accepted as a fallback.
     MIDAZ_LEDGER_URL: ""
     # Reconciliation worker (in-process)
-    RECONCILIATION_INTERVAL: "5m"
+    # RECONCILIATION_INTERVAL is deliberately NOT set here, same reason as the
+    # OUTBOX timing keys above: the app asserts interval x 2 stays below the
+    # convergence sweep's ledger replay ceiling, so the 5m that used to sit here is
+    # now exactly the value that refuses to boot. Omitted, the deployment inherits
+    # the validated default; override per environment via app.extraEnvVars.
     RECONCILIATION_LOOKBACK_HOURS: "24"
     # Rate Limiting
     RATE_LIMIT_ENABLED: "true"

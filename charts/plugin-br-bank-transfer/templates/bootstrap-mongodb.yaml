@@ -1,6 +1,21 @@
 {{- if .Values.global.externalMongoDefinitions.enabled }}
 {{- $creds := .Values.global.externalMongoDefinitions.bankTransferCredentials -}}
 {{- $rolesJSON := toJson $creds.roles -}}
+{{- $caCert := .Values.global.externalMongoDefinitions.caCert | default dict -}}
+{{- $mongoDatabase := .Values.bankTransfer.configmap.MONGO_DATABASE | default "plugin_br_bank_transfer" -}}
+{{- /* configmap.yaml resolves the app's MONGO_DATABASE from this same key/default —
+   if none of the granted roles target that database, the app authenticates fine but
+   every query against MONGO_DATABASE fails with an authorization error at runtime
+   instead of at deploy time (CodeRabbit finding). */ -}}
+{{- $dbRoleMatch := false -}}
+{{- range $creds.roles }}
+{{- if eq .db $mongoDatabase }}
+{{- $dbRoleMatch = true }}
+{{- end }}
+{{- end }}
+{{- if not $dbRoleMatch }}
+{{- fail (printf "global.externalMongoDefinitions.bankTransferCredentials.roles has no entry for db %q (bankTransfer.configmap.MONGO_DATABASE) — the app would authenticate but be unauthorized against its own database" $mongoDatabase) }}
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -31,6 +46,12 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      {{- if $caCert.secretName }}
+      volumes:
+      - name: mongo-ca-cert
+        secret:
+          secretName: {{ $caCert.secretName | quote }}
+      {{- end }}
       initContainers:
       - name: wait-for-dependencies
         image: busybox:1.37
@@ -68,8 +89,16 @@ spec:
           {{- /* mongosh has no single --tlsInsecure flag (that's a driver
              connection-string option) — the CLI equivalent is these two
              separate flags. Confirmed live against this same DocumentDB
-             instance while fixing product-console's bootstrap-mongodb.yaml. */}}
-          value: {{ if .Values.global.externalMongoDefinitions.tls }}"--tls --tlsAllowInvalidCertificates --tlsAllowInvalidHostnames"{{ else }}""{{ end }}
+             instance while fixing product-console's bootstrap-mongodb.yaml.
+             A real CA bundle (caCert.secretName) takes precedence over the
+             insecure bypass flags when both are set. */}}
+          {{- if $caCert.secretName }}
+          value: "--tls --tlsCAFile=/tls/{{ $caCert.secretKey | default "ca.crt" }}"
+          {{- else if .Values.global.externalMongoDefinitions.tls }}
+          value: "--tls --tlsAllowInvalidCertificates --tlsAllowInvalidHostnames"
+          {{- else }}
+          value: ""
+          {{- end }}
         - name: MONGO_ROOT_USER
           {{- if .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name }}
           valueFrom:
@@ -108,6 +137,12 @@ spec:
           {{- end }}
         - name: ROLES_JSON
           value: {{ $rolesJSON | quote }}
+        {{- if $caCert.secretName }}
+        volumeMounts:
+        - name: mongo-ca-cert
+          mountPath: /tls
+          readOnly: true
+        {{- end }}
         command:
         - /bin/bash
         - -c

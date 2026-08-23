@@ -72,8 +72,19 @@ global:
     enabled: false
     # -- Connect mongosh with --tls --tlsAllowInvalidCertificates
     # --tlsAllowInvalidHostnames (needed for managed MongoDB like AWS
-    # DocumentDB, which requires TLS on every connection)
+    # DocumentDB, which requires TLS on every connection). Ignored when
+    # caCert.secretName is set — a real CA bundle takes precedence over the
+    # insecure bypass flags.
     tls: false
+    # -- Optional real CA bundle for TLS verification (e.g. the AWS
+    # rds-combined-ca-bundle.pem for DocumentDB), mounted into the bootstrap
+    # Job and passed as mongosh --tlsCAFile instead of the insecure
+    # --tlsAllowInvalidCertificates/--tlsAllowInvalidHostnames bypass flags.
+    caCert:
+      # -- Name of an existing Secret containing the CA bundle
+      secretName: ""
+      # -- Key within that Secret holding the PEM-encoded CA bundle
+      secretKey: "ca.crt"
     # -- MongoDB connection settings
     connection:
       # -- MongoDB host

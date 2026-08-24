@@ -243,6 +243,36 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- end }}
 
 {{/*
+reporter.datasourceCredEncKeyRequired — gate secrets.DATASOURCE_CRED_ENC_KEY.
+
+The reporter app >= 3.0.0 stores registered data-source credentials ENCRYPTED at rest and
+REFUSES TO BOOT without this key (unconfigured at request time surfaces as RPT-0074). It
+must be byte-identical on the manager and the worker, and that release has NO rotation —
+changing it makes every already-registered data source undecryptable.
+
+Presence is enforced only when the COMPONENT'S OWN resolved image tag parses as semver and
+is >= 3.0.0-0, so the chart's default appVersion (2.x, which ignores the key) still renders
+and a floating tag ("latest", a digest) is left alone rather than guessed at. Format and the
+values-template.yaml "CHANGE_ME" placeholder are checked regardless of tag — neither can ever
+be a correct value, and catching it now beats catching it at the 3.x upgrade.
+
+Input (dict): context (root .), component ("manager"|"worker"), tag (resolved image tag).
+*/}}
+{{- define "reporter.datasourceCredEncKeyRequired" -}}
+{{- $key := default "" .context.Values.secrets.DATASOURCE_CRED_ENC_KEY | toString -}}
+{{- if eq $key "CHANGE_ME" -}}
+{{- fail "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY is still the values-template.yaml placeholder \"CHANGE_ME\".\n   Generate a real key and set it before deploying: openssl rand -hex 32\n" -}}
+{{- end -}}
+{{- $tag := .tag | toString | trimPrefix "v" -}}
+{{- if and (not $key) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+([-+].*)?$" $tag) (semverCompare ">=3.0.0-0" $tag) -}}
+{{- fail (printf "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY is REQUIRED for reporter app >= 3.0.0 (%s.image.tag is %q).\n   The app encrypts data-source credentials at rest and will NOT boot without it.\n   Generate once: openssl rand -hex 32\n   Use the SAME value for the manager and the worker. There is NO rotation — changing it\n   makes every already-registered data source undecryptable.\n   See charts/reporter/docs/UPGRADE-4.1.md.\n" .component .tag) -}}
+{{- end -}}
+{{- if and $key (not (regexMatch "^([0-9a-fA-F]{32}|[0-9a-fA-F]{48}|[0-9a-fA-F]{64})$" $key)) -}}
+{{- fail "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY must be a hex-encoded AES key of 16, 24 or 32 bytes\n   (32, 48 or 64 hex characters). Generate one with: openssl rand -hex 32\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 reporter.isTrue — "true" when the value is a truthy token (case-insensitive).
 */}}
 {{- define "reporter.isTrue" -}}

@@ -4,6 +4,7 @@
 
 - Chart type: `multi-component`
 - Required secrets: `secrets.RABBITMQ_DEFAULT_PASS`, `secrets.RABBITMQ_ERLANG_COOKIE` (required when the bundled RabbitMQ subchart is enabled — must be stable across upgrades), and `secrets.DATASOURCE_ONBOARDING_PASSWORD`. The MongoDB password is **not** operator-provided with the bundled subchart: it is auto-generated into the `<release>-mongodb` Secret (key `mongodb-root-password`) and read via `secretKeyRef`.
+- Required from app 3.0.0 on: `secrets.DATASOURCE_CRED_ENC_KEY` — a hex-encoded AES key (16/24/32 bytes; `openssl rand -hex 32`) that both components use to encrypt registered data-source credentials at rest. It must be **identical** on the manager and the worker, and it **cannot be rotated** in that release. The render fails when either component's `image.tag` is `>= 3.0.0` and the key is empty; app 2.4.x (the chart's default appVersion) ignores it. See `docs/UPGRADE-4.1.md`.
 - Single-source infra secrets: MongoDB follows Pattern A (app reads the subchart Secret). RabbitMQ follows Pattern B (the groundhog2k broker is pointed at the application `reporter-manager` Secret via `rabbitmq.authentication.existingSecret`, so the broker password lives only in `secrets.RABBITMQ_DEFAULT_PASS`; this also removes the prior `midaz`-vs-`plugin` user mismatch). Valkey: the valkey.io subchart exposes no Secret-based password mechanism (auth is an inline ACL) and ships with `auth.enabled: false`, so there is no single-source wiring for it here. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
 - Release name: the hardcoded infra hosts and the `<release>-mongodb` / `reporter-manager` Secret references assume the release is installed as `reporter`. If you override `manager.name`/`manager.existingSecretName`, set `rabbitmq.authentication.existingSecret` to match.
 - Dependency notes: Uses local MongoDB and RabbitMQ dependency charts unless external services are configured.
@@ -177,9 +178,17 @@ secrets:
   # MONGO_PASSWORD is single-sourced from the bundled mongodb subchart Secret and read
   # via secretKeyRef — leave it unset; only set it for an EXTERNAL MongoDB.
   # REDIS_PASSWORD is omitted because the bundled valkey runs with auth disabled.
+  # At-rest encryption of registered data-source credentials. Required by app >= 3.0.0
+  # (both components); same value on manager and worker; NOT rotatable.
+  # Generate with: openssl rand -hex 32
+  DATASOURCE_CRED_ENC_KEY: <64-hex-chars>
   # Add any custom datasource password:
   DATASOURCE_EXTERNAL_PASSWORD: db_password
 ```
+
+> `DATASOURCE_CRED_ENC_KEY` belongs under `secrets:`, never under `common.configmap:` — the
+> configmap escape hatch accepts any `DATASOURCE_*` key, so a misplaced one lands in a
+> plaintext ConfigMap without any warning.
 
 ### Using Existing Secrets
 

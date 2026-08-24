@@ -32,6 +32,15 @@ data:
   # AUTH PLUGIN (Access Manager) — via lerian-common.auth.env (global.auth contract)
   {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
 
+  # RI PERMISSION DECLARATION (IdP identity service :4001 — distinct from auth :4000)
+  # IDP_DECLARATION_ENABLED publishes the permission/role manifest at boot (default
+  # false, fail-open). Under DEPLOYMENT_MODE=saas, IDP_HOST MUST be an https:// URL
+  # or the tracer's ValidateSaaSDeclarationTLS gate refuses boot. The M2M client
+  # secret lives in the tracer Secret (see templates/tracer/secrets.yaml).
+  IDP_DECLARATION_ENABLED: {{ $cm.IDP_DECLARATION_ENABLED | default "false" | quote }}
+  IDP_HOST: {{ $cm.IDP_HOST | default "" | quote }}
+  IDP_M2M_CLIENT_ID: {{ $cm.IDP_M2M_CLIENT_ID | default "" | quote }}
+
   # RESERVATION gRPC SEAM (opt-in; empty keeps the seam off, as the app does)
   {{- with $cm.TRACER_GRPC_PORT }}
   TRACER_GRPC_PORT: {{ . | quote }}

@@ -229,6 +229,38 @@ data:
   {{- end }}
 
   # =====================================================================
+  # STREAMING (lib-streaming v3 — business event publication)
+  # Rendered in both modes: STREAMING_CLOUDEVENTS_SOURCE is validated at
+  # startup regardless of MULTI_TENANT_ENABLED/STREAMING_ENABLED, so it can't
+  # sit behind either gate. STREAMING_ENABLED is the app's own knob (like
+  # RABBITMQ_ENABLED above) — the lerian-common mask never emits it, only the
+  # broker/TLS/SASL constants once enabled AND brokers are configured (via
+  # global.streaming.* or a legacy flat STREAMING_BROKERS override).
+  # =====================================================================
+  {{- $streamingEnabled := eq (toString ($cm.STREAMING_ENABLED | default "false")) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  STREAMING_CLOUDEVENTS_SOURCE: {{ $cm.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-bank-transfer" | quote }}
+  {{- if $cm.STREAMING_CLIENT_ID }}
+  STREAMING_CLIENT_ID: {{ $cm.STREAMING_CLIENT_ID | quote }}
+  {{- end }}
+  {{- include "lerian-common.streaming.env" (dict "context" $ "enabled" $streamingEnabled "configmap" $cm) | nindent 2 }}
+  {{- if $cm.STREAMING_OUTBOX_DISPATCH_INTERVAL_SECONDS }}
+  STREAMING_OUTBOX_DISPATCH_INTERVAL_SECONDS: {{ $cm.STREAMING_OUTBOX_DISPATCH_INTERVAL_SECONDS | quote }}
+  {{- end }}
+  {{- if $cm.STREAMING_CB_FAILURE_RATIO }}
+  STREAMING_CB_FAILURE_RATIO: {{ $cm.STREAMING_CB_FAILURE_RATIO | quote }}
+  {{- end }}
+  {{- if $cm.STREAMING_CB_MIN_REQUESTS }}
+  STREAMING_CB_MIN_REQUESTS: {{ $cm.STREAMING_CB_MIN_REQUESTS | quote }}
+  {{- end }}
+  {{- if $cm.STREAMING_CB_TIMEOUT_S }}
+  STREAMING_CB_TIMEOUT_S: {{ $cm.STREAMING_CB_TIMEOUT_S | quote }}
+  {{- end }}
+  {{- if $cm.STREAMING_CLOSE_TIMEOUT_S }}
+  STREAMING_CLOSE_TIMEOUT_S: {{ $cm.STREAMING_CLOSE_TIMEOUT_S | quote }}
+  {{- end }}
+
+  # =====================================================================
   # OUTBOUND ADAPTERS — URLs + auth toggles only.
   # In MT mode, per-tenant credentials + per-tenant JD config come from
   # AWS Secrets Manager via TenantIntegrationResolver. Tuning (timeouts,

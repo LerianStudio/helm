@@ -473,6 +473,27 @@ bankTransfer:
     # already defaults them in templates/configmap.yaml.
     # =================================================================
 
+    # =================================================================
+    # Streaming (lib-streaming v3 — business event publication)
+    # STREAMING_ENABLED defaults to "false" in templates/configmap.yaml (a
+    # disabled emitter is a no-op, not held-and-replayed — see .env.example).
+    # STREAMING_CLOUDEVENTS_SOURCE always renders (app validates it at
+    # startup regardless of STREAMING_ENABLED); the chart default below
+    # already matches the only value the app accepts for this service.
+    # Broker/TLS/SASL constants (STREAMING_BROKERS, STREAMING_TLS_ENABLED,
+    # STREAMING_SASL_MECHANISM/USERNAME, etc.) are NOT set here — they come
+    # from global.streaming.* (env-wide, shared with other charts) via the
+    # lerian-common.streaming.env mask, only once STREAMING_ENABLED=true.
+    # =================================================================
+    # STREAMING_ENABLED: "false"
+    STREAMING_CLOUDEVENTS_SOURCE: "plugin-br-bank-transfer"
+    # STREAMING_CLIENT_ID: ""
+    # STREAMING_OUTBOX_DISPATCH_INTERVAL_SECONDS: ""
+    # STREAMING_CB_FAILURE_RATIO: ""
+    # STREAMING_CB_MIN_REQUESTS: ""
+    # STREAMING_CB_TIMEOUT_S: ""
+    # STREAMING_CLOSE_TIMEOUT_S: ""
+
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
@@ -517,6 +538,11 @@ bankTransfer:
     # Midaz M2M Credentials (optional)
     # MIDAZ_CLIENT_ID: ""
     # MIDAZ_CLIENT_SECRET: ""
+
+    # Streaming credentials (optional — only required when a SASL mechanism
+    # is configured via global.streaming.saslMechanism)
+    # STREAMING_SASL_PASSWORD: ""
+    # STREAMING_TLS_CA_CERT: ""
   # RabbitMQ credentials (when RABBITMQ_ENABLED=true)
   # RABBITMQ_PASSWORD: ""
   # RABBITMQ_EVENT_SIGNING_SECRET: ""

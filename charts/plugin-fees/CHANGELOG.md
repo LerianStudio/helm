@@ -1,5 +1,22 @@
 # Plugin-fees Changelog
 
+## [8.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.0)
+
+- **Features:**
+  - Adopted lerian-common masks for datastore, auth, otel, multiTenant, streaming, and SD.
+
+- **Fixes:**
+  - Defaulted `imagePullSecrets` to empty instead of a nonexistent 'regcred'.
+  - Updated real Midaz URL defaults and moved `CLIENT_ID` to secret.
+  - Added a required check for `MONGO_HOST` and allowed `SD_ENABLED` to bypass global masks.
+  - Implemented a guard for replicas when autoscaling is enabled.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v7.3.0...plugin-fees-v8.0.0)
+
+---
+
 ## [7.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v7.3.0)
 
 - **Features**

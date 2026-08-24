@@ -1,5 +1,16 @@
 # Plugin-fees Changelog
 
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
 ## [8.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.0)
 
 - **Features:**

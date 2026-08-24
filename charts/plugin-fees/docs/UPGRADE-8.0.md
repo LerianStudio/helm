@@ -60,7 +60,7 @@ dependencies:
 
 ### 3. External MongoDB bootstrap now fails on a role/database mismatch
 
-The `bootstrap-mongodb` Job now validates that `global.externalMongoDefinitions.pluginFeesCredentials.roles` grants at least one role against `fees.configmap.MONGO_NAME` (default `plugin-fees-db`) before rendering:
+`templates/bootstrap-mongodb.yaml` now validates, at Helm render time, that `global.externalMongoDefinitions.pluginFeesCredentials.roles` grants at least one role against `fees.configmap.MONGO_NAME` (default `plugin-fees-db`) — the `fail` fires while Helm renders the template, before the `bootstrap-mongodb` Job is ever created in the cluster, so both `helm template` and `helm diff` catch a mismatch upfront:
 
 ```
 fail: global.externalMongoDefinitions.pluginFeesCredentials.roles has no entry
@@ -68,7 +68,7 @@ for db "plugin-fees-db" (fees.configmap.MONGO_NAME) — the app would
 authenticate but be unauthorized against its own database
 ```
 
-> **Why this matters:** Previously, a roles/database mismatch didn't fail the render — it created a MongoDB user with no real access to the app's own database, and the app would only discover this at runtime via an authorization error on its first query. This is now a deploy-time `fail`, not a runtime surprise. If you use `externalMongoDefinitions.enabled: true`, double-check your `roles` list includes an entry with `db` matching `MONGO_NAME`.
+> **Why this matters:** Previously, a roles/database mismatch didn't fail the render — it created a MongoDB user with no real access to the app's own database, and the app would only discover this at runtime via an authorization error on its first query. This is now a render-time `fail` (`helm template`/`helm diff`/`helm upgrade` all catch it before anything is applied), not a runtime surprise. If you use `externalMongoDefinitions.enabled: true`, double-check your `roles` list includes an entry with `db` matching `MONGO_NAME`.
 
 # Features
 
@@ -157,7 +157,7 @@ global:
       secretKey: "ca.crt"
 ```
 
-> **Note:** `caCert.secretName`, when set, mounts the real CA bundle into the bootstrap Job and connects with `--tls --tlsCAFile=...` instead of the insecure bypass flags. Use `tls: true` alone only for managed MongoDB where you trust the provider's default certificate chain.
+> **Warning:** `tls: true` *without* `caCert.secretName` connects with `--tlsAllowInvalidCertificates --tlsAllowInvalidHostnames` — this **disables both certificate and hostname validation**, it does not "trust" any certificate chain. It's an insecure bypass, suitable only for quick dev/test connectivity. When `caCert.secretName` is set, the bootstrap Job mounts the real CA bundle and connects with `--tls --tlsCAFile=...` instead, with full validation — **use `caCert` in production.**
 
 The Job's hooks were also hardened to self-heal on upgrade instead of leaving a stale Job retrying forever:
 
@@ -247,6 +247,13 @@ global:
     tls: true
     caCert:
       secretName: "docdb-ca-bundle"
+    # Required: at least one role must target fees.configmap.MONGO_NAME
+    # (default "plugin-fees-db"), or the bootstrap Job's render-time
+    # validation (see Breaking Changes #3 above) fails.
+    pluginFeesCredentials:
+      roles:
+        - db: "plugin-fees-db"
+          role: "readWrite"
 
 fees:
   image:
@@ -263,13 +270,13 @@ fees:
     STREAMING_SASL_PASSWORD: "your-kafka-password"
 ```
 
-**Minimal configuration (no mask usage, fully backward-compatible defaults):**
+**Minimal v8 configuration without shared masks:**
 
 ```yaml
 fees:
   image:
     tag: "3.4.0"
-  imagePullSecrets: []
+  imagePullSecrets: []   # add back explicitly if pulling from a private registry (see Breaking Changes #1)
   secrets:
     CLIENT_SECRET: "your-client-secret"
 ```
@@ -277,7 +284,7 @@ fees:
 # Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version 8.0.0 -n plugin-fees
+helm diff upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version 8.0.0 -n midaz-plugins
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -285,5 +292,5 @@ helm diff upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fee
 # Command to upgrade
 
 ```bash
-helm upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version 8.0.0 -n plugin-fees
+helm upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version 8.0.0 -n midaz-plugins
 ```

@@ -69,10 +69,14 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth:4000") | quote }}
   PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
 
-  # MIDAZ COMMUNICATION
-  CLIENT_ID: {{ $cm.CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
-  MIDAZ_ONBOARDING_URL: {{ $cm.MIDAZ_ONBOARDING_URL | default "http://midaz-onboarding.midaz.svc.cluster.local:3000/v1/" | quote }}
-  MIDAZ_TRANSACTION_URL: {{ $cm.MIDAZ_TRANSACTION_URL | default "http://midaz-transaction.midaz.svc.cluster.local:3002/v1/" | quote }}
+  # MIDAZ COMMUNICATION — defaults match the standard in-cluster Midaz ledger
+  # service name (midaz-ledger.midaz), a single unified service in the
+  # current Midaz topology (the previous defaults assumed separate
+  # "midaz-onboarding"/"midaz-transaction" services from an older split).
+  # CLIENT_ID travels in the Secret next to CLIENT_SECRET (see secrets.yaml)
+  # rather than here — same pairing as MIDAZ_CLIENT_ID/SECRET in other charts.
+  MIDAZ_ONBOARDING_URL: {{ $cm.MIDAZ_ONBOARDING_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1/" | quote }}
+  MIDAZ_TRANSACTION_URL: {{ $cm.MIDAZ_TRANSACTION_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1/" | quote }}
 
   # CORS & RATE LIMIT
   CORS_ALLOW_ORIGINS: {{ $cm.CORS_ALLOW_ORIGINS | default "http://localhost:3000" | quote }}

@@ -235,8 +235,9 @@ fees:
     MONGO_TLS_CA_CERT: ""
     MONGO_MIN_POOL_SIZE: "10"
     MONGO_MAX_CONN_IDLE_TIME_SECONDS: "300"
-    CLIENT_ID: "ac56c81d4d6d95c0ac12"
-    MIDAZ_TRANSACTION_URL: "http://midaz-transaction.midaz.svc.cluster.local:3002/v1/"
+    # CLIENT_ID moved to fees.secrets (paired with CLIENT_SECRET) — see below.
+    # MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL are NOT pinned — the chart
+    # already defaults them to the standard in-cluster midaz-ledger service.
     CORS_ALLOW_ORIGINS: "http://localhost:3000"
     RATE_LIMIT_MAX: "100"
     RATE_LIMIT_WINDOW_SECONDS: "60"
@@ -301,6 +302,10 @@ fees:
   # external MongoDB, set mongodb.external=true and either mongodb.auth.existingSecret or
   # provide MONGO_PASSWORD here. See docs/helm-chart-standard.md "Single-Source Infra Secrets".
   secrets:
+    # -- CLIENT_ID paired with CLIENT_SECRET below (not the ConfigMap) — same
+    # split as MIDAZ_CLIENT_ID/SECRET in other charts. Defaults to
+    # app-lerian's known client when unset.
+    # CLIENT_ID: ""
     CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""

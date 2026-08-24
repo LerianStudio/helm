@@ -15,7 +15,7 @@ livenessProbe: {}
 
 image:
   # -- Repository for the product-console container image
-  repository: lerianstudio/product-console
+  repository: ghcr.io/lerianstudio/product-console
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag used for deployment (defaults to Chart.AppVersion)

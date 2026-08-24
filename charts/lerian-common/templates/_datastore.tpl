@@ -28,7 +28,7 @@ Inputs (dict):
   configmap (req)  the component's `.configmap` map (native key — top precedence)
   type      (req)  mask block: postgres | mongo | redis | redisMt | broker | <role>
   field     (req)  canonical field. Shared across a product's modules:
-                     host | replicaHost | user | port | ssl | params
+                     host | replicaHost | user | port | ssl | params | caCert | protocol
                    Per-module fields (database/name) stay native, NOT masked.
   nativeKey (req)  the product's real env key (e.g. DB_ONBOARDING_HOST)
   default   (opt)  fallback when neither native key nor mask is set (keep it equal

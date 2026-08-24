@@ -33,6 +33,24 @@ global:
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
   auth: {}
+  # -- Env-wide streaming (lib-streaming v3 / RedPanda) gate. `enabled` is
+  # consumed by lerian-common.globalValue (block "streaming"), same pattern
+  # as multiTenant/observability above (configmap.STREAMING_ENABLED
+  # overrides). The remaining fields (brokers, tlsEnabled, saslMechanism,
+  # saslUsername, saslAllowPlaintext, compression, requiredAcks,
+  # batchLingerMs) are consumed by lerian-common.streaming.env directly —
+  # they only render once enabled=true AND brokers is set, and any matching
+  # native bankTransfer.configmap.STREAMING_* key still wins over these.
+  # STREAMING_SASL_PASSWORD/STREAMING_TLS_CA_CERT are secrets, set via
+  # bankTransfer.secrets, never here.
+  # Example:
+  #   streaming:
+  #     enabled: true
+  #     brokers: "redpanda.example.com:9092"
+  #     tlsEnabled: true
+  #     saslMechanism: "SCRAM-SHA-512"
+  #     saslUsername: "bank-transfer"
+  streaming: {}
   # -- Managed-cloud topology preset: aws | gcp | azure. Sets tls/ssl for the
   # datastores mask above in one knob. Leave "" for the bundled in-cluster
   # infra (plaintext).

@@ -232,13 +232,18 @@ data:
   # STREAMING (lib-streaming v3 — business event publication)
   # Rendered in both modes: STREAMING_CLOUDEVENTS_SOURCE is validated at
   # startup regardless of MULTI_TENANT_ENABLED/STREAMING_ENABLED, so it can't
-  # sit behind either gate. STREAMING_ENABLED is the app's own knob (like
-  # RABBITMQ_ENABLED above) — the lerian-common mask never emits it, only the
-  # broker/TLS/SASL constants once enabled AND brokers are configured (via
-  # global.streaming.* or a legacy flat STREAMING_BROKERS override).
+  # sit behind either gate. STREAMING_ENABLED itself now goes through the
+  # same lerian-common.globalValue mask as MULTI_TENANT_ENABLED/
+  # ENABLE_TELEMETRY above — global.streaming.enabled (env-wide) with a
+  # native configmap.STREAMING_ENABLED override — instead of reading only the
+  # native key directly (that bug meant global.streaming.enabled alone could
+  # never turn streaming on, only a per-app override could). The
+  # broker/TLS/SASL constants come from the same global.streaming.* block
+  # (or a legacy flat STREAMING_BROKERS override) once enabled.
   # =====================================================================
-  {{- $streamingEnabled := eq (toString ($cm.STREAMING_ENABLED | default "false")) "true" }}
-  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  {{- $streamingEnabledRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") }}
+  {{- $streamingEnabled := eq (toString $streamingEnabledRaw) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabledRaw | quote }}
   STREAMING_CLOUDEVENTS_SOURCE: {{ $cm.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-bank-transfer" | quote }}
   {{- if $cm.STREAMING_CLIENT_ID }}
   STREAMING_CLIENT_ID: {{ $cm.STREAMING_CLIENT_ID | quote }}

@@ -40,7 +40,8 @@
               "replicaHost": {},
               "params": {},
               "scheme": {},
-              "amqpPort": {}
+              "amqpPort": {},
+              "caCert": {}
             }
           },
           "description": "Env-wide SHARED datastore masks (set once per environment). Consumed by lerian-common.datastore.value."

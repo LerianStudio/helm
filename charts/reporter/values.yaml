@@ -266,6 +266,12 @@ manager:
     RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
     ALLOW_RATELIMIT_DISABLED: ""
     ALLOW_RATELIMIT_FAIL_OPEN: ""
+    # -- Comma-separated proxy IPs/CIDRs that front the manager. From app 3.x (lib-auth
+    # v3.4.0) the client IP is derived EXCLUSIVELY from this list: leaving it empty means
+    # no client IP is forwarded, so any tenant configured with an IP allowlist denies every
+    # request. Set it to the ingress / load-balancer addresses actually in front of this
+    # service.
+    TRUSTED_PROXIES: ""
   # Extra Env Vars
   extraEnvVars: {}
   # -- HPA configuration (used when KEDA is disabled)
@@ -482,6 +488,7 @@ secrets:
   #   - OBJECT_STORAGE_ACCESS_KEY_ID / OBJECT_STORAGE_SECRET_KEY (external S3 only)
   #   - MONGO_PASSWORD                                  (external MongoDB only; bundled is single-sourced)
   #   - APP_ENC_KEY                                     (fetcher integration; base64 32-byte key)
+  #   - DATASOURCE_CRED_ENC_KEY                         (app >= 3.0.0 only; hex AES key)
   #
   # Chart-managed path (default): leave `useExistingSecret: false` and set the values
   # below; the chart renders them into the `<manager.name>` Secret.
@@ -511,6 +518,17 @@ secrets:
   OBJECT_STORAGE_SECRET_KEY: ""
   # Fetcher Integration - Base64 encoded 32-byte encryption key
   APP_ENC_KEY: ""
+  # -- At-rest encryption key for registered data-source credentials. REQUIRED by the
+  # reporter app from 3.0.0 on: BOTH the manager and the worker refuse to boot without it,
+  # and a request that needs it while unconfigured fails with RPT-0074. Ignored by app 2.4.x
+  # (the chart's default appVersion), so it is empty by default and the render only fails
+  # once an image tag >= 3.0.0 is pinned.
+  # Hex-encoded AES key of 16, 24 or 32 bytes (32/48/64 hex chars): openssl rand -hex 32
+  # MUST be byte-identical for the manager and the worker — they encrypt and decrypt the
+  # same records.
+  # NO ROTATION in this release: changing the value makes every already-registered data
+  # source undecryptable (they must be re-registered).
+  DATASOURCE_CRED_ENC_KEY: ""
 seaweedfs:
   enabled: true
   # -- Subchart-wide settings. createClusterRole is disabled by default: the bundled

@@ -4,15 +4,15 @@
 
 - ***[Breaking Changes](#breaking-changes)***
     - [1. `imagePullSecrets` no longer defaults to `regcred`](#1-imagepullsecrets-no-longer-defaults-to-regcred)
-    - [2. `CLIENT_ID` moved from ConfigMap to Secret](#2-client_id-moved-from-configmap-to-secret)
-    - [3. New chart dependency: `lerian-common-helm`](#3-new-chart-dependency-lerian-common-helm)
-    - [4. External MongoDB bootstrap now fails on a role/database mismatch](#4-external-mongodb-bootstrap-now-fails-on-a-roledatabase-mismatch)
+    - [2. New chart dependency: `lerian-common-helm`](#2-new-chart-dependency-lerian-common-helm)
+    - [3. External MongoDB bootstrap now fails on a role/database mismatch](#3-external-mongodb-bootstrap-now-fails-on-a-roledatabase-mismatch)
 - ***[Features](#features)***
     - [1. Shared configuration masks via `lerian-common`](#1-shared-configuration-masks-via-lerian-common)
     - [2. `SD_ENABLED`/`STREAMING_ENABLED` now honor the shared mask](#2-sd_enabledstreaming_enabled-now-honor-the-shared-mask)
     - [3. TLS support for the external MongoDB bootstrap job](#3-tls-support-for-the-external-mongodb-bootstrap-job)
     - [4. `replicaCount` no longer fights with autoscaling](#4-replicacount-no-longer-fights-with-autoscaling)
     - [5. `MIDAZ_ONBOARDING_URL`/`MIDAZ_TRANSACTION_URL` default to the unified ledger service](#5-midaz_onboarding_urlmidaz_transaction_url-default-to-the-unified-ledger-service)
+    - [6. `CLIENT_ID` moved from ConfigMap to Secret (backward-compatible)](#6-client_id-moved-from-configmap-to-secret-backward-compatible)
 - ***[Configuration Reference](#configuration-reference)***
 - ***[Preview changes before upgrading](#preview-changes-before-upgrading)***
 - ***[Command to upgrade](#command-to-upgrade)***
@@ -45,27 +45,7 @@ fees:
 >     - name: regcred
 > ```
 
-### 2. `CLIENT_ID` moved from ConfigMap to Secret
-
-**Before (v7.3.0):**
-
-```yaml
-fees:
-  configmap:
-    CLIENT_ID: "ac56c81d4d6d95c0ac12"
-```
-
-**After (v8.0.0):**
-
-```yaml
-fees:
-  secrets:
-    CLIENT_ID: "ac56c81d4d6d95c0ac12"   # same default value, new location
-```
-
-> **Important:** `fees.configmap.CLIENT_ID` is no longer read by the chart. If you had overridden it in the ConfigMap, move the same value to `fees.secrets.CLIENT_ID` — it now travels next to `CLIENT_SECRET` (same pairing used by `MIDAZ_CLIENT_ID`/`MIDAZ_CLIENT_SECRET` in other charts). If unset, it still defaults to the same app-lerian client (`ac56c81d4d6d95c0ac12`), so most installs are unaffected functionally — only the field's location changed.
-
-### 3. New chart dependency: `lerian-common-helm`
+### 2. New chart dependency: `lerian-common-helm`
 
 The chart now depends on `lerian-common-helm` v2.0.0 (OCI):
 
@@ -78,7 +58,7 @@ dependencies:
 
 > **Note:** Run `helm dependency update charts/plugin-fees` (or let your CI's chart-release pipeline do it) before templating/installing v8.0.0. Helm consumers pulling the packaged OCI chart directly are unaffected — the dependency is bundled in the published artifact.
 
-### 4. External MongoDB bootstrap now fails on a role/database mismatch
+### 3. External MongoDB bootstrap now fails on a role/database mismatch
 
 The `bootstrap-mongodb` Job now validates that `global.externalMongoDefinitions.pluginFeesCredentials.roles` grants at least one role against `fees.configmap.MONGO_NAME` (default `plugin-fees-db`) before rendering:
 
@@ -216,6 +196,28 @@ MIDAZ_TRANSACTION_URL: "http://midaz-ledger.midaz.svc.cluster.local:3002/v1/"
 
 > **Note:** If you deploy Midaz with the older split onboarding/transaction services, or in a different namespace, set these two keys explicitly under `fees.configmap`.
 
+### 6. `CLIENT_ID` moved from ConfigMap to Secret (backward-compatible)
+
+**Before (v7.3.0):**
+
+```yaml
+fees:
+  configmap:
+    CLIENT_ID: "ac56c81d4d6d95c0ac12"
+```
+
+**After (v8.0.0):**
+
+```yaml
+fees:
+  secrets:
+    CLIENT_ID: "ac56c81d4d6d95c0ac12"   # preferred location going forward
+```
+
+`CLIENT_ID` now travels next to `CLIENT_SECRET` in the Secret (same pairing used by `MIDAZ_CLIENT_ID`/`MIDAZ_CLIENT_SECRET` in other charts) instead of the ConfigMap. Resolution order: `fees.secrets.CLIENT_ID` > `fees.configmap.CLIENT_ID` (old location, still honored) > the app-lerian default (`ac56c81d4d6d95c0ac12`).
+
+> **Note:** If you had customized `fees.configmap.CLIENT_ID`, it keeps working as-is — no action required. New installs and anyone touching this config going forward should set `fees.secrets.CLIENT_ID` instead; the ConfigMap fallback exists only for a smooth upgrade path and may be removed in a future major version.
+
 # Configuration Reference
 
 **Complete example with all new v8.0.0 features:**
@@ -256,7 +258,7 @@ fees:
     minReplicas: 1
     maxReplicas: 3
   secrets:
-    CLIENT_ID: "your-client-id"        # moved from configmap
+    CLIENT_ID: "your-client-id"        # preferred location; configmap.CLIENT_ID still honored as a fallback
     CLIENT_SECRET: "your-client-secret"
     STREAMING_SASL_PASSWORD: "your-kafka-password"
 ```

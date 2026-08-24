@@ -19,7 +19,7 @@
 {{- $ded := .Values.ledger.datastores | default dict -}}
 {{- $cm := .Values.ledger.configmap -}}
 {{- $rabbitHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
-{{- $rabbitProtocol := .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" }}
+{{- $rabbitProtocol := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "protocol" "nativeKey" "RABBITMQ_PROTOCOL" "default" "http") }}
 {{- $rabbitAmqpPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "15672") }}
 {{- /* Single-sourced so OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT can't drift from
    ENV_NAME (lib-observability reads the OTEL var, not ENV_NAME, and defaults
@@ -203,7 +203,7 @@ data:
   # RABBITMQ (used by transaction module)
   # =============================================================================
   RABBITMQ_URI: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") | quote }}
-  RABBITMQ_PROTOCOL: {{ .Values.ledger.configmap.RABBITMQ_PROTOCOL | default "http" | quote }}
+  RABBITMQ_PROTOCOL: {{ $rabbitProtocol | quote }}
   RABBITMQ_HOST: {{ $rabbitHost | quote }}
   RABBITMQ_PORT_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_HOST" "default" "5672") | quote }}
   RABBITMQ_PORT_AMQP: {{ $rabbitAmqpPort | quote }}

@@ -41,7 +41,8 @@
               "params": {},
               "scheme": {},
               "amqpPort": {},
-              "caCert": {}
+              "caCert": {},
+              "protocol": {}
             }
           },
           "description": "Env-wide SHARED datastore masks (set once per environment). Consumed by lerian-common.datastore.value."

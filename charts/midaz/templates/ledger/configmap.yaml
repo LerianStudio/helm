@@ -66,6 +66,17 @@ data:
   {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST") | nindent 2 }}
 
   # =============================================================================
+  # RI PERMISSION DECLARATION (IdP identity service :4001 — distinct from auth :4000)
+  # IDP_DECLARATION_ENABLED publishes the permission/role manifest at boot (default
+  # false, fail-open). Under DEPLOYMENT_MODE=saas, IDP_HOST MUST be an https:// URL
+  # or the ledger's ValidateSaaSDeclarationTLS gate refuses boot. The M2M client
+  # secret lives in the ledger Secret (see templates/ledger/secrets.yaml).
+  # =============================================================================
+  IDP_DECLARATION_ENABLED: {{ $cm.IDP_DECLARATION_ENABLED | default "false" | quote }}
+  IDP_HOST: {{ $cm.IDP_HOST | default "" | quote }}
+  IDP_M2M_CLIENT_ID: {{ $cm.IDP_M2M_CLIENT_ID | default "" | quote }}
+
+  # =============================================================================
   # MULTI-TENANT — knob inline; gated block via lerian-common.multiTenant.env
   # (URL + redis host come from global.multiTenant or configmap.MULTI_TENANT_*)
   # =============================================================================

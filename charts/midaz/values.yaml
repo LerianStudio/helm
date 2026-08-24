@@ -380,6 +380,12 @@ ledger:
     ENABLE_TELEMETRY: "true"
     # -- Schema Registry used by the billing serializer. Leave empty to keep billing emission disabled.
     STREAMING_SCHEMA_REGISTRY_URL: ""
+    # -- RI permission declaration to the IdP identity service (:4001, distinct from auth :4000).
+    # IDP_DECLARATION_ENABLED turns on manifest publication at boot (default false, fail-open).
+    # Under DEPLOYMENT_MODE=saas, IDP_HOST MUST be an https:// URL.
+    IDP_DECLARATION_ENABLED: "false"
+    IDP_HOST: ""
+    IDP_M2M_CLIENT_ID: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -428,6 +434,9 @@ ledger:
     # -- Service discovery (lib-service-discovery) Consul ACL token. Operator-provided;
     # only set when the Consul server enforces ACLs. Rendered into the ledger Secret.
     SD_TOKEN: ""
+    # -- RI permission declaration M2M client secret. Operator-provided; only set
+    # when IDP_DECLARATION_ENABLED=true. Rendered into the ledger Secret, never the ConfigMap.
+    IDP_M2M_CLIENT_SECRET: ""
     # -- Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set
     # when the streaming backend uses SASL auth and/or a private TLS CA. When set,
     # they are rendered into the ledger Secret (never the ConfigMap).
@@ -762,7 +771,13 @@ tracer:
   # -- Dedicated datastore mask (override global.datastores). Sub-key: postgres (host/port/user/ssl).
   datastores: {}
   # -- Escape hatch: any native env var overrides the template default.
-  configmap: {}
+  configmap:
+    # -- RI permission declaration to the IdP identity service (:4001, distinct from auth :4000).
+    # IDP_DECLARATION_ENABLED turns on manifest publication at boot (default false, fail-open).
+    # Under DEPLOYMENT_MODE=saas, IDP_HOST MUST be an https:// URL.
+    IDP_DECLARATION_ENABLED: "false"
+    IDP_HOST: ""
+    IDP_M2M_CLIENT_ID: ""
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -782,6 +797,9 @@ tracer:
     # -- Service discovery (lib-service-discovery) Consul ACL token. Operator-provided;
     # only set when the Consul server enforces ACLs. Emitted into the tracer Secret only when set.
     SD_TOKEN: ""
+    # -- RI permission declaration M2M client secret. Operator-provided; only set
+    # when IDP_DECLARATION_ENABLED=true. Rendered into the tracer Secret, never the ConfigMap.
+    IDP_M2M_CLIENT_SECRET: ""
   useExistingSecret: false
   existingSecretName: ""
 grafana:

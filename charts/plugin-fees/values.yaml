@@ -3,10 +3,62 @@
 # Declare variables to be passed into your templates.
 
 global:
+  # -- Env-wide SHARED datastore mask (set once per environment; a native
+  # fees.configmap.<KEY> overrides it). Consumed by lerian-common.datastore.value.
+  # Fields: mongo.{host,port,user,params}.
+  # Example: datastores: { mongo: { host: "my-docdb.example.com", user: "plugin-fees" } }
+  datastores: {}
+  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
+  # "env"). Fields: name. (configmap.ENV_NAME overrides.)
+  # Example: env: { name: "production" }
+  env: {}
+  # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue
+  # (block "multiTenant"). Fields: enabled. (configmap.MULTI_TENANT_ENABLED
+  # overrides.)
+  # Example: multiTenant: { enabled: true }
+  multiTenant: {}
+  # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
+  # "observability"). Fields: enabled, otlpEndpoint, deploymentEnvironment.
+  # (configmap.ENABLE_TELEMETRY/OTEL_EXPORTER_OTLP_ENDPOINT/
+  # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT override.)
+  # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
+  observability: {}
+  # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue
+  # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
+  # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
+  auth: {}
+  # -- Env-wide streaming (lib-streaming v3 / RedPanda) gate. `enabled` is
+  # consumed by lerian-common.globalValue (block "streaming"), same pattern as
+  # multiTenant/observability above (configmap.STREAMING_ENABLED overrides).
+  # The remaining fields (brokers, tlsEnabled, saslMechanism, saslUsername,
+  # saslAllowPlaintext, compression, requiredAcks, batchLingerMs) are consumed
+  # by lerian-common.streaming.env directly, once enabled=true AND brokers is
+  # set. STREAMING_SASL_PASSWORD/STREAMING_TLS_CA_CERT are secrets, set via
+  # fees.secrets, never here.
+  # Example: streaming: { enabled: true, brokers: "redpanda:9092" }
+  streaming: {}
+  # -- Managed-cloud topology preset: aws | gcp | azure. Leave "" for the
+  # bundled in-cluster infra (plaintext).
+  # Example: cloud: "aws"
+  cloud: ""
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
     enabled: false
+    # -- Connect mongosh with --tls --tlsAllowInvalidCertificates
+    # --tlsAllowInvalidHostnames (needed for managed MongoDB like AWS
+    # DocumentDB, which requires TLS on every connection). Ignored when
+    # caCert.secretName is set — a real CA bundle takes precedence over the
+    # insecure bypass flags.
+    tls: false
+    # -- Optional real CA bundle for TLS verification, mounted into the
+    # bootstrap Job and passed as mongosh --tlsCAFile instead of the
+    # insecure bypass flags.
+    caCert:
+      # -- Name of an existing Secret containing the CA bundle
+      secretName: ""
+      # -- Key within that Secret holding the PEM-encoded CA bundle
+      secretKey: "ca.crt"
     # -- MongoDB connection settings
     connection:
       # -- MongoDB host
@@ -157,19 +209,29 @@ fees:
   # @default -- templates/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
+    # -- ENV_NAME is NOT pinned — consumed by lerian-common.globalValue (block
+    # "env"); the chart already defaults it ("development") and picks up
+    # global.env.name when set. Pinning it here would make global.env.name
+    # unable to ever take effect (native key always wins over the mask).
+    # ENV_NAME: ""
     # -- Application name used for service identification in logs/tracing
     APPLICATION_NAME: "plugin-fees"
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    # -- MongoDB host. Leave empty to derive the bundled subchart Service name
-    # (collapse-aware via common.names.dependency.fullname). Set only for an external MongoDB.
-    MONGO_HOST: ""
+    # -- PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_ADDRESS are NOT pinned — consumed by
+    # lerian-common.globalValue (block "auth"); same reasoning as ENV_NAME
+    # above. The chart already defaults them ("false" /
+    # "http://plugin-access-manager-auth:4000").
+    # PLUGIN_AUTH_ENABLED: ""
+    # PLUGIN_AUTH_ADDRESS: ""
+    # -- MongoDB host/port/user/params are NOT pinned — consumed by
+    # lerian-common.datastore.value (type "mongo"); pinning them here would
+    # make global.datastores.mongo.* unable to ever take effect. The chart
+    # already defaults them to the bundled subchart Service name/27017/
+    # "plugin-fees"/"" respectively. Set only for a non-standard override.
+    # MONGO_HOST: ""
     MONGO_NAME: "plugin-fees-db"
-    MONGO_PORT: "27017"
-    MONGO_USER: "plugin-fees"
-    MONGO_PARAMETERS: ""
+    # MONGO_PORT: ""
+    # MONGO_USER: ""
+    # MONGO_PARAMETERS: ""
     MONGO_TLS_CA_CERT: ""
     MONGO_MIN_POOL_SIZE: "10"
     MONGO_MAX_CONN_IDLE_TIME_SECONDS: "300"
@@ -192,8 +254,10 @@ fees:
     M2M_CREDENTIAL_CACHE_TTL_SEC: "30"
     # -- AWS region for IAM Roles Anywhere and other AWS integrations
     AWS_REGION: ""
-    # -- Enable multi-tenant support via tenant-manager
-    MULTI_TENANT_ENABLED: "false"
+    # -- MULTI_TENANT_ENABLED is NOT pinned — consumed by lerian-common.globalValue
+    # (block "multiTenant"), same reasoning as ENV_NAME above. The chart
+    # already defaults it to "false" and picks up global.multiTenant.enabled.
+    # MULTI_TENANT_ENABLED: ""
     # -- URL of the tenant-manager service (required when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_URL: ""
     # -- Environment label sent to tenant-manager for tenant scoping

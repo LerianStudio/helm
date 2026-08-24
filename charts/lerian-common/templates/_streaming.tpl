@@ -39,8 +39,15 @@ Inputs (dict):
                            a no-configmap caller, aside from the new knobs below).
 
 global.streaming (all optional except brokers, which gates emission):
-  brokers, tlsEnabled, saslMechanism, saslUsername, saslAllowPlaintext,
-  compression, requiredAcks, batchLingerMs, importantEmitTimeoutMs
+  brokers, tlsEnabled, saslMechanism, saslUsername, saslAllowPlaintext
+
+Per-Kafka producer tuning (compression, required acks, batch linger, emit
+timeout) is deliberately NOT modeled here: lib-streaming v3's Builder hardcodes
+its own conservative defaults and does not read them from the environment at
+all — a consuming app (e.g. plugin-br-bank-transfer, verified against
+CONFIG_MATRIX.md and its StreamingConfig struct) simply ignores unknown env
+vars, so emitting STREAMING_COMPRESSION/REQUIRED_ACKS/BATCH_LINGER_MS/
+IMPORTANT_EMIT_TIMEOUT_MS was previously dead weight, not a real contract.
 ==============================================================================
 */}}
 {{- define "lerian-common.streaming.env" -}}
@@ -71,10 +78,6 @@ global.streaming (all optional except brokers, which gates emission):
 {{- $saslMechanism := $s.saslMechanism -}}{{- if hasKey $c "STREAMING_SASL_MECHANISM" -}}{{- $saslMechanism = index $c "STREAMING_SASL_MECHANISM" -}}{{- end -}}{{- if kindIs "invalid" $saslMechanism -}}{{- $saslMechanism = "" -}}{{- end -}}
 {{- $saslUsername := ($s.saslUsername | default "") -}}{{- if hasKey $c "STREAMING_SASL_USERNAME" -}}{{- $saslUsername = (index $c "STREAMING_SASL_USERNAME" | default "") -}}{{- end -}}
 {{- $saslAllowPlaintext := ($s.saslAllowPlaintext | default "false") -}}{{- if hasKey $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- $saslAllowPlaintext = index $c "STREAMING_SASL_ALLOW_PLAINTEXT" -}}{{- end -}}
-{{- $compression := ($s.compression | default "lz4") -}}{{- if hasKey $c "STREAMING_COMPRESSION" -}}{{- $compression = index $c "STREAMING_COMPRESSION" -}}{{- end -}}
-{{- $requiredAcks := ($s.requiredAcks | default "all") -}}{{- if hasKey $c "STREAMING_REQUIRED_ACKS" -}}{{- $requiredAcks = index $c "STREAMING_REQUIRED_ACKS" -}}{{- end -}}
-{{- $batchLingerMs := ($s.batchLingerMs | default "5") -}}{{- if hasKey $c "STREAMING_BATCH_LINGER_MS" -}}{{- $batchLingerMs = index $c "STREAMING_BATCH_LINGER_MS" -}}{{- end -}}
-{{- $importantEmitTimeoutMs := ($s.importantEmitTimeoutMs | default "5000") -}}{{- if hasKey $c "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" -}}{{- $importantEmitTimeoutMs = index $c "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" -}}{{- end -}}
 {{- /* SASL contract validation — lib-streaming fails closed at bootstrap otherwise.
    Enforced here in the ConfigMap (which ALWAYS renders, even when the Secret is external
    via useExistingSecret), so mechanism/username/TLS are validated regardless of the secret
@@ -115,10 +118,6 @@ STREAMING_TLS_ENABLED: {{ $tlsEnabled | quote }}
 STREAMING_SASL_MECHANISM: {{ $saslMechanism | quote }}
 STREAMING_SASL_USERNAME: {{ $saslUsername | quote }}
 STREAMING_SASL_ALLOW_PLAINTEXT: {{ $saslAllowPlaintext | quote }}
-STREAMING_COMPRESSION: {{ $compression | quote }}
-STREAMING_REQUIRED_ACKS: {{ $requiredAcks | quote }}
-STREAMING_BATCH_LINGER_MS: {{ $batchLingerMs | quote }}
-STREAMING_IMPORTANT_EMIT_TIMEOUT_MS: {{ $importantEmitTimeoutMs | quote }}
 {{- if hasKey . "clientId" }}
 {{- $clientId := .clientId -}}{{- if hasKey $c "STREAMING_CLIENT_ID" -}}{{- $clientId = index $c "STREAMING_CLIENT_ID" -}}{{- end }}
 STREAMING_CLIENT_ID: {{ $clientId | quote }}

@@ -68,6 +68,26 @@ times by hand, one of them eventually loses a clause and nil-pointers the render
 on a values file that omits `aws` entirely.
 ------------------------------------------------------------------------------
 */}}
+{{/*
+------------------------------------------------------------------------------
+workerOwnImage — truthy when the worker runs its OWN image, not the api's.
+
+The app used to ship ONE image with two entry points, so the chart had to override
+the ENTRYPOINT with `command: ["/worker"]` to reach the second binary. It now
+publishes a dedicated plugin-br-pix-jd-worker image whose own ENTRYPOINT is
+already /worker.
+
+Both shapes stay supported, and the difference matters: overriding the command on
+a dedicated image asserts a binary path inside an image this chart does not build.
+It happens to be correct today; it is not the chart's to promise.
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.workerOwnImage" -}}
+{{- $wi := (.Values.worker | default dict).image | default dict -}}
+{{- $repo := $wi.repository | default "" -}}
+{{- if and $repo (ne $repo .Values.api.image.repository) -}}true{{- end -}}
+{{- end }}
+
 {{- define "plugin-br-pix-jd.rolesAnywhereEnabled" -}}
 {{- $aws := .Values.aws | default dict -}}
 {{- $ra := $aws.rolesAnywhere | default dict -}}
@@ -199,12 +219,10 @@ Input: root context ($).
 {{- $worker := .Values.worker | default dict -}}
 {{- if $worker.enabled -}}
 {{- $workerImage := $worker.image | default dict -}}
-{{- $apiRepo := $api.image.repository -}}
 {{- $apiTag := ($api.image.tag | default .Chart.AppVersion) -}}
-{{- $workerRepo := ($workerImage.repository | default $apiRepo) -}}
 {{- $workerTag := ($workerImage.tag | default $apiTag) -}}
-{{- if or (ne $workerRepo $apiRepo) (ne $workerTag $apiTag) -}}
-{{- fail (printf "\n\nERROR: api and worker must run the SAME image — they are two entry points of one build.\n  api:    %s:%s\n  worker: %s:%s\nSet worker.image.repository/tag to match api.image.repository/tag, or leave them\nunset so they inherit the api's values.\n" $apiRepo $apiTag $workerRepo $workerTag) -}}
+{{- if ne $workerTag $apiTag -}}
+{{- fail (printf "\n\nERROR: api and worker must run the SAME TAG — they are two images of ONE build.\n  api:    %s:%s\n  worker: %s:%s\nThe repositories may differ (the app publishes plugin-br-pix-jd and\nplugin-br-pix-jd-worker separately), but the tag is the build identity and the two\nprocesses share one database and one schema. Different tags mean two commits over\none schema, on a path that includes the MED settlement reconciler.\nPin both to the same tag, or leave worker.image.tag unset to inherit the api's.\n" $api.image.repository $apiTag ($workerImage.repository | default $api.image.repository) $workerTag) -}}
 {{- end -}}
 {{- end -}}
 {{- end }}

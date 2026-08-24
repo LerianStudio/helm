@@ -71,7 +71,9 @@ spec:
              pattern the plugin's own Dockerfile.smoke and docker-compose.smoke.yml
              already use, precisely so the two processes can never come from different
              builds. `command` overrides the image ENTRYPOINT (/service). */}}
+          {{- if not (include "plugin-br-pix-jd.workerOwnImage" .) }}
           command: ["/worker"]
+          {{- end }}
           {{- /* No ports and no probes: cmd/worker exposes no HTTP surface, so an
              httpGet probe would fail forever and a tcpSocket probe would have nothing
              to connect to. Liveness for a cron process is its own exit. */}}

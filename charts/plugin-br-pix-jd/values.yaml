@@ -280,12 +280,18 @@ api:
     name: ""
 
 worker:
-  # -- DISABLED BY DEFAULT, and this is not a preference.
-  # The production Dockerfile builds only ./cmd/app, so the published image has no
-  # /worker binary to run — enabling this today yields a CrashLoopBackOff. The app
-  # team is porting the two lines that already exist in Dockerfile.smoke (the
-  # `go build -o /worker ./cmd/worker` step and its COPY). Flip this to true in the
-  # same change that ships those, not before.
+  # -- Disabled by default: the worker is opt-in, not every install runs jobs.
+  #
+  # The app publishes a DEDICATED worker image, ghcr.io/lerianstudio/plugin-br-pix-jd-worker,
+  # built from cmd/worker/Dockerfile with its own ENTRYPOINT ["/worker"]. Set
+  # worker.image.repository to it and the chart stops overriding the command.
+  #
+  # Leaving worker.image.repository unset keeps the older one-image shape, where the
+  # api image carries both binaries and the chart overrides the entrypoint. Both work.
+  #
+  # The TAG must match the api's in either shape — the chart fails the render
+  # otherwise. Repositories may differ; the tag is the build identity, and the two
+  # processes share one database and one schema.
   enabled: false
   # -- Replicas. The jobs take cross-replica Postgres advisory locks, so >1 is safe,
   # but there is nothing to gain: each tick is single-flight per job.

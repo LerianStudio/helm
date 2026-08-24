@@ -448,9 +448,12 @@ bankTransfer:
     # path templates are systemplane-managed at runtime.
     # =================================================================
 
-    # Midaz (REQUIRED — no chart default, must be set)
-    MIDAZ_BASE_URL: "http://midaz.midaz.svc.cluster.local.:3001"
-    MIDAZ_TRANSACTION_URL: "http://midaz.midaz.svc.cluster.local.:3001"
+    # Midaz — MIDAZ_BASE_URL/MIDAZ_TRANSACTION_URL/MIDAZ_AUTH_ADDRESS are NOT
+    # pinned — the chart already defaults them (standard in-cluster Midaz
+    # ledger/auth service names) in templates/configmap.yaml. Override here
+    # only for a non-standard install.
+    # MIDAZ_BASE_URL: ""
+    # MIDAZ_TRANSACTION_URL: ""
     # MIDAZ_AUTH_ENABLED is NOT pinned — the chart already defaults it
     # ("false") in templates/configmap.yaml.
     # MIDAZ_AUTH_ADDRESS: ""

@@ -52,7 +52,8 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": {}
+            "enabled": {},
+            "otlpEndpoint": {}
           },
           "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
         },

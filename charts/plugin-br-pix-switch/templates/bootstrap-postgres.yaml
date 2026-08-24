@@ -3,7 +3,9 @@
 Plugin BR Pix Switch — PostgreSQL bootstrap.
 
 Creates one Job per database listed in .Values.global.externalPostgresDefinitions.databases.
-Pix-switch needs 3 separate Postgres databases: pix-spi, pix-dict, pix-cob.
+Pix-switch needs 5 separate Postgres databases: pix-spi, pix-dict, pix-cob,
+pix-adapter-lerian and pix-pixauto. The list above is the source of truth; this
+sentence is a summary of it and must move with it.
 A single shared role (default: pixswitch) owns all of them.
 
 Each Job is idempotent — it checks for existing role and database before

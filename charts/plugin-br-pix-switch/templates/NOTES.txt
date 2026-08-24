@@ -27,6 +27,8 @@ Service, ConfigMap, and Secret.
 {{ if .Values.cobHub.enabled }}  ✓ cob-hub              port {{ .Values.cobHub.service.port }}{{ else }}  ✗ cob-hub              (disabled){{ end }}
 {{ if .Values.cobProxy.enabled }}  ✓ cob-proxy            port {{ .Values.cobProxy.service.port }}{{ else }}  ✗ cob-proxy            (disabled){{ end }}
 {{ if .Values.cobSystemplane.enabled }}  ✓ cob-systemplane      port {{ .Values.cobSystemplane.service.port }}{{ else }}  ✗ cob-systemplane      (disabled){{ end }}
+{{ if .Values.pixauto.enabled }}  ✓ pixauto               port {{ .Values.pixauto.service.port }}{{ else }}  ✗ pixauto               (disabled){{ end }}
+{{ if .Values.pixautoSystemplane.enabled }}  ✓ pixauto-systemplane  port {{ .Values.pixautoSystemplane.service.port }}{{ else }}  ✗ pixauto-systemplane  (disabled){{ end }}
 
 ------------------------------------------------------------
   Useful Commands

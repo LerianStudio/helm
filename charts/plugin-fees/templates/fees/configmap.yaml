@@ -120,13 +120,18 @@ data:
   {{- end }}
 
   # =============================================================================
-  # SERVICE DISCOVERY — knob inline; server config from global.serviceDiscovery,
-  # endpoints derived from this chart's own service/ingress (gated via helper).
-  # Replaces the previous native SD_* block, which had whitespace-only
-  # (functionally empty) defaults for EXTERNAL_ADDRESS/EXTERNAL_PORT/WORKLOAD.
+  # SERVICE DISCOVERY — knob resolves global.serviceDiscovery.enabled as a
+  # fallback (configmap.SD_ENABLED still wins), same fix as STREAMING_ENABLED
+  # below — passing a pre-resolved native-only `enabled` bypasses the helper's
+  # own global.serviceDiscovery.enabled fallback entirely. Server config from
+  # global.serviceDiscovery, endpoints derived from this chart's own
+  # service/ingress. Replaces the previous native SD_* block, which had
+  # whitespace-only (functionally empty) defaults for
+  # EXTERNAL_ADDRESS/EXTERNAL_PORT/WORKLOAD.
   # =============================================================================
-  {{- $sdEnabled := eq (lower (toString ($cm.SD_ENABLED | default "false"))) "true" }}
-  SD_ENABLED: {{ $cm.SD_ENABLED | default "false" | quote }}
+  {{- $sdEnabledRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "serviceDiscovery" "field" "enabled" "nativeKey" "SD_ENABLED" "default" "false") }}
+  {{- $sdEnabled := eq (lower (toString $sdEnabledRaw)) "true" }}
+  SD_ENABLED: {{ $sdEnabledRaw | quote }}
   {{- include "lerian-common.serviceDiscovery.env" (dict
         "context" $
         "enabled" $sdEnabled

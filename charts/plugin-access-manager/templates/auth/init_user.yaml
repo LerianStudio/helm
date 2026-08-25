@@ -88,25 +88,17 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.auth.initUser.adminPasswordSecretName | default (printf "%s-init-user" (include "plugin-auth.fullname" .) | trunc 63 | trimSuffix "-") }}
                   key: {{ .Values.auth.initUser.adminPasswordSecretKey | default "ADMIN_PASSWORD" }}
-            {{- if .Values.auth.initUser.adminEmail }}
             - name: ADMIN_EMAIL
-              value: {{ .Values.auth.initUser.adminEmail | quote }}
-            {{- end }}
-            {{- if .Values.auth.initUser.adminDisplayName }}
+              value: {{ .Values.auth.initUser.adminEmail | default "admin@midaz.tech" | quote }}
             - name: ADMIN_DISPLAY_NAME
-              value: {{ .Values.auth.initUser.adminDisplayName | quote }}
-            {{- end }}
+              value: {{ .Values.auth.initUser.adminDisplayName | default "Admin" | quote }}
             # Timeout configuration
-            {{- if .Values.auth.initUser.casdoorTimeout }}
             - name: CASDOOR_TIMEOUT_SEC
-              value: {{ .Values.auth.initUser.casdoorTimeout | quote }}
-            {{- end }}
-            {{- if .Values.auth.initUser.tableTimeout }}
+              value: {{ .Values.auth.initUser.casdoorTimeout | default 120 | quote }}
             - name: TABLE_TIMEOUT_SEC
-              value: {{ .Values.auth.initUser.tableTimeout | quote }}
-            {{- end }}
+              value: {{ .Values.auth.initUser.tableTimeout | default 60 | quote }}
           resources:
-            {{- toYaml .Values.auth.initUser.resources | nindent 12 }}
+            {{- toYaml (.Values.auth.initUser.resources | default (dict "limits" (dict "cpu" "100m" "memory" "128Mi") "requests" (dict "cpu" "50m" "memory" "64Mi"))) | nindent 12 }}
 {{- end }}
 ---
 {{- if and .Values.auth.initUser.enabled (not .Values.auth.initUser.useExistingSecret) }}

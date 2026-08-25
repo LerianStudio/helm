@@ -361,50 +361,17 @@ auth:
     SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
-  # -- Init User Job configuration
-  # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
-  # -- If the admin user is deleted by the customer, it will NOT be recreated
+  # -- Init User Job: creates the admin user on FIRST INSTALL ONLY (not on
+  # -- upgrades; if deleted by the customer, it is NOT recreated). Disabled
+  # -- by default and intentionally not advertised here — no environment
+  # -- across benedita/anacleto/AWS staging+production relies on the
+  # -- implicit default, every one of them sets this explicitly either way.
+  # -- All defaults (image, adminEmail/adminDisplayName, timeouts, resources)
+  # -- live in templates/auth/init_user.yaml — set initUser.enabled=true and
+  # -- adminPassword (or useExistingSecret + adminPasswordSecretName) to turn
+  # -- it on.
   initUser:
-    # -- Enable or disable the init user job
-    enabled: true
-    image:
-      # -- Repository for the caradhras-user-init container image
-      repository: ghcr.io/lerianstudio/caradhras-user-init
-      # -- Image pull policy
-      pullPolicy: Always
-      # -- Image tag used for deployment
-      tag: "3.2.0-beta.67"
-    # -- Admin user email (default: admin@midaz.tech)
-    adminEmail: "admin@midaz.tech"
-    # -- Admin user display name
-    adminDisplayName: "Admin"
-    # -- Admin password (will be stored in a secret). REQUIRED when initUser is
-    # -- enabled and useExistingSecret is false — the install fails loud if it is
-    # -- empty. The chart ships no default on purpose: a published default password
-    # -- on the platform admin account is a live credential in every install that
-    # -- never overrode it.
-    adminPassword: ""
-    # -- Use existing secret for admin password instead of creating one
-    # -- IMPORTANT: If set to true, adminPasswordSecretName MUST be specified
-    useExistingSecret: false
-    # -- Name of the existing secret containing ADMIN_PASSWORD
-    # -- REQUIRED when useExistingSecret is true
-    # -- The secret must exist in the same namespace and contain the key specified in adminPasswordSecretKey
-    adminPasswordSecretName: ""
-    # -- Key in the secret containing the admin password
-    adminPasswordSecretKey: "ADMIN_PASSWORD"
-    # -- Timeout waiting for caradhras backend to be ready (in seconds)
-    casdoorTimeout: 120
-    # -- Timeout waiting for user table to exist (in seconds)
-    tableTimeout: 60
-    # -- Resources for the init user job
-    resources:
-      limits:
-        cpu: 100m
-        memory: 128Mi
-      requests:
-        cpu: 50m
-        memory: 64Mi
+    enabled: false
 
 # -- Caradhras: the auth backend/authorization service, promoted to a
 # top-level component sibling of `identity`/`auth` (formerly nested as
@@ -463,12 +430,15 @@ caradhras:
     # -- Annotations for PodDisruptionBudget
     annotations: {}
   image:
-    # -- See "Backward-compat" note above — resolved via caradhras.imageRepository.
-    repository: ""
-    # -- See "Backward-compat" note above — resolved via caradhras.imagePullPolicy.
-    pullPolicy: ""
-    # -- See "Backward-compat" note above — resolved via caradhras.imageTag.
-    tag: ""
+    # -- NOTE: explicit (non-empty) on purpose, unlike migrations.image.* below.
+    # -- This means an install that only overrides the legacy
+    # -- auth.backend.image.repository/.tag path (and never sets
+    # -- caradhras.image.*) will NOT fall through to that legacy value anymore
+    # -- — this explicit default always wins. Set caradhras.image.* directly
+    # -- to override.
+    repository: ghcr.io/lerianstudio/caradhras
+    pullPolicy: Always
+    tag: "1.2.0"
   resources:
     # -- CPU and memory limits for pods
     limits:

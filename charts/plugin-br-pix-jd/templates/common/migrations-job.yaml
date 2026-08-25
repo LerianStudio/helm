@@ -1,0 +1,149 @@
+{{- $mig := .Values.migrations | default dict -}}
+{{- if $mig.enabled }}
+{{- /* MULTI-TENANT SKIPS THIS JOB, and does so silently rather than failing.
+
+   In MT the Tenant Manager creates and migrates every per-tenant database. This Job
+   targets the single-tenant database that MT never uses, so running it would migrate
+   the wrong schema — it would report success having touched nothing a tenant reads.
+
+   The first cut made the combination a hard render failure, which meant every MT
+   install had to carry `migrations.enabled: false` just to tell the chart something
+   the chart can already see. Inferring it is the better contract: the operator states
+   the tenancy mode once, in MULTI_TENANT_ENABLED, and the chart derives the rest.
+   NOTES.txt reports the skip so it is visible, not silent-and-surprising. */ -}}
+{{- if eq (index (fromYaml (include "plugin-br-pix-jd.effectiveConfig" .)) "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
+{{- /* no-op: the Tenant Manager owns per-tenant migrations */ -}}
+{{- else -}}
+{{- $bundled := include "plugin-br-pix-jd.postgresRenders" . -}}
+{{- $fullname := printf "%s-migrations" (include "plugin-br-pix-jd.fullname" .) | trunc 63 | trimSuffix "-" -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ include "plugin-br-pix-jd.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "migrations") | nindent 4 }}
+  annotations:
+    {{- if $bundled }}
+    {{- /* The bundled Postgres is provisioned DURING Sync (bitnami StatefulSet), so a
+       pre-hook would race a database that does not exist yet. Running post-Sync also
+       means the chart's own Secrets already exist, so no migration-only hook Secret is
+       needed on this path. The cost: the api rolls out before the schema lands and
+       returns errors on PIX routes until this Job finishes. */}}
+    "helm.sh/hook": post-install,post-upgrade
+    "argocd.argoproj.io/hook": PostSync
+    {{- else }}
+    {{- /* External Postgres already exists, so migrate BEFORE the app rolls out —
+       schema-first, no window where the api serves against an old schema. */}}
+    "helm.sh/hook": pre-install,pre-upgrade
+    "argocd.argoproj.io/hook": PreSync
+    {{- end }}
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
+    {{- with $mig.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  backoffLimit: {{ $mig.backoffLimit | default 3 }}
+  activeDeadlineSeconds: {{ $mig.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ $mig.ttlSecondsAfterFinished | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "migrations") | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with (.Values.api.imagePullSecrets | default (.Values.global).imagePullSecrets) }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      initContainers:
+        {{- if $bundled }}
+        {{- /* Bounded wait, not an infinite loop: an unreachable datastore should fail the
+           Job with a clear timeout rather than sit in Init forever until someone notices. */}}
+        - name: wait-for-postgres
+          image: {{ $mig.waitImage | default "busybox:1.37" | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              echo "waiting for $POSTGRES_HOST:$POSTGRES_PORT...";
+              ELAPSED=0;
+              while ! nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+                if [ $ELAPSED -ge {{ $mig.waitTimeoutSeconds | default 300 }} ]; then echo "timeout after {{ $mig.waitTimeoutSeconds | default 300 }}s"; exit 1; fi;
+                echo "not ready, waiting (${ELAPSED}s)"; sleep 5; ELAPSED=$((ELAPSED + 5));
+              done;
+              echo "postgres is ready"
+          env:
+            - name: POSTGRES_HOST
+              value: {{ include "plugin-br-pix-jd.postgresHost" . | quote }}
+            - name: POSTGRES_PORT
+              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_PORT" "default" "5432") | quote }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+        {{- end }}
+        {{- /* No separate migrations image exists for this plugin — unlike
+           plugin-br-bank-transfer, which publishes `<app>-migrations`. The app image is
+           the ONLY source of the migrations tree (its Dockerfile copies them to
+           /migrations), so extract them into an emptyDir and let the generic
+           golang-migrate image apply them. This keeps the migrate container from ever
+           executing the service binary, and keeps schema and app from drifting: they
+           come from the same tag by construction. */}}
+        - name: extract-migrations
+          image: {{ include "plugin-br-pix-jd.componentImage" (dict "root" $ "comp" .Values.api) | quote }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - cp -R {{ $mig.sourcePath | default "/migrations" }}/. /workdir/
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: migrations
+              mountPath: /workdir
+      containers:
+        - name: migrations
+          image: {{ $mig.migrateImage | default "migrate/migrate:v4.18.1" | quote }}
+          imagePullPolicy: {{ $mig.imagePullPolicy | default "IfNotPresent" }}
+          {{- /* The URL is assembled in-shell so the password rides a Secret-backed env
+             var and never appears in the rendered manifest. It must be URL-safe: an
+             @ : / ? # % in the password would break parsing. The bundled subchart
+             generates an alphanumeric password; an operator-supplied one is on them. */}}
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              migrate -path /migrations
+              -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_NAME}?sslmode=${POSTGRES_SSLMODE}{{ with $mig.table }}&x-migrations-table={{ . }}{{ end }}"
+              up
+          env:
+            - name: POSTGRES_HOST
+              value: {{ include "plugin-br-pix-jd.postgresHost" . | quote }}
+            - name: POSTGRES_PORT
+              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_PORT" "default" "5432") | quote }}
+            - name: POSTGRES_USER
+              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_USER" "default" "plugin-br-pix-jd") | quote }}
+            - name: POSTGRES_NAME
+              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_NAME" "default" "plugin-br-pix-jd") | quote }}
+            - name: POSTGRES_SSLMODE
+              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+            {{- include "plugin-br-pix-jd.migrationPasswordEnv" . | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml ($mig.resources | default (dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi"))) | nindent 12 }}
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+              readOnly: true
+      volumes:
+        - name: migrations
+          emptyDir: {}
+      {{- if or .Values.api.nodeSelector .Values.api.affinity .Values.api.tolerations }}
+      {{- include "lerian-common.scheduling" .Values.api | nindent 6 }}
+      {{- end }}
+{{- end }}
+{{- end }}

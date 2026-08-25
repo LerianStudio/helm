@@ -1,0 +1,84 @@
+plugin-br-pix-jd {{ .Chart.Version }} installed as release "{{ .Release.Name }}" in namespace "{{ include "plugin-br-pix-jd.namespace" . }}".
+
+{{- /* THIS FILE MUST LIVE AT templates/NOTES.txt, NOT templates/common/NOTES.txt.
+   Helm only treats a NOTES.txt at the chart's templates/ ROOT as release notes; one
+   in a subdirectory is classified as a subchart note and is suppressed unless the
+   operator passes --render-subchart-notes. The repository chart standard prescribes
+   templates/common/NOTES.txt for multi-component charts, and br-sfn follows it — so
+   that guidance silently hides the notes. Every warning below is the kind an
+   operator must not miss, so the working location wins over the prescribed one. */}}
+
+{{ if eq .Chart.AppVersion "0.0.0-unreleased" -}}
+!! appVersion is a PLACEHOLDER and NO IMAGE EXISTS AT THAT TAG.
+   Nothing has been published under the name `plugin-br-pix-jd` yet — the plugin's
+   latest release is `plugin-br-pix-direct-jd:v1.11.0`, under the previous name.
+   Pods will sit in ImagePullBackOff until you pin a real tag:
+     --set api.image.tag=<tag>
+{{ end -}}
+
+{{ if .Values.api.enabled -}}
+API
+  Service:  {{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api") }}:{{ .Values.api.service.port }}
+  In-cluster:
+    http://{{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api") }}.{{ include "plugin-br-pix-jd.namespace" . }}.svc.cluster.local:{{ .Values.api.service.port }}
+{{ if .Values.api.ingress.enabled -}}
+{{- /* Derived inline rather than through lerian-common.firstIngressHost: that helper
+   reads only `.ingress`, so passing global/subdomain to it silently yields an empty
+   host on exactly the derived-host path this line exists to report. */ -}}
+{{- $hosts := .Values.api.ingress.hosts | default list -}}
+{{- $gi := (.Values.global).ingress | default dict -}}
+  Ingress host:
+    {{ if $hosts }}{{ (first $hosts).host }}{{ else if $gi.domain }}pix-jd.{{ $gi.domain }}{{ else }}(no host configured — set api.ingress.hosts or global.ingress.domain){{ end }}
+{{ end -}}
+  Operational endpoints (auth-exempt): GET /health  GET /readyz  GET /metrics  GET /version
+{{ end -}}
+
+{{ if .Values.worker.enabled -}}
+WORKER: enabled — {{ if include "plugin-br-pix-jd.workerOwnImage" . }}dedicated image {{ (.Values.worker.image).repository }}
+        (its own ENTRYPOINT /worker){{ else }}the api's image, entrypoint overridden to /worker{{ end }}.
+{{ else -}}
+WORKER: DISABLED.
+  Consequence while this stays off: transaction reconciliation (including the
+  refund-park sweep, a money path), the MED pollers and the indirect-delivery
+  drainer DO NOT RUN. To enable, set worker.enabled=true and point
+  worker.image.repository at the published worker image.
+{{ end -}}
+
+{{ if include "plugin-br-pix-jd.postgresRenders" . -}}
+POSTGRES: bundled subchart, Service {{ include "lerian-common.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .) }}.
+  The password is generated into the subchart's own Secret and read from there —
+  anything you set in api.secrets.POSTGRES_PASSWORD is IGNORED on this path.
+{{ else -}}
+POSTGRES: external ({{ include "plugin-br-pix-jd.postgresHost" . }}).
+{{ end -}}
+
+{{ if and ((.Values.migrations | default dict).enabled) (eq (index .Values.api.configmap "MULTI_TENANT_ENABLED" | default "false" | toString) "true") -}}
+MIGRATIONS: SKIPPED — multi-tenant mode is on.
+  The Tenant Manager creates and migrates each per-tenant database. This chart
+  deliberately renders no migration Job: it would target the single-tenant database
+  that multi-tenant mode never reads.
+{{ else if (.Values.migrations | default dict).enabled -}}
+MIGRATIONS: applied by a segregated Job, {{ if include "plugin-br-pix-jd.postgresRenders" . }}AFTER this release syncs (PostSync).
+  The bundled Postgres is provisioned during Sync, so the Job waits for it and then
+  migrates. NOTE THE WINDOW: the api rolls out before the schema lands and will error
+  on PIX routes until the Job completes. Watch it with
+    kubectl -n {{ include "plugin-br-pix-jd.namespace" . }} logs job/{{ printf "%s-migrations" (include "plugin-br-pix-jd.fullname" .) | trunc 63 | trimSuffix "-" }}{{ else }}BEFORE the app rolls out (PreSync).
+  External Postgres already exists, so the schema is applied first and there is no
+  window where the api serves against an old schema.{{ end }}
+  The app itself never migrates — it reads MIGRATIONS_PATH and never calls
+  golang-migrate. In MULTI-TENANT mode the per-tenant databases are provisioned and
+  migrated by the Tenant Manager, and this Job must be disabled.
+{{ else -}}
+!! MIGRATIONS ARE DISABLED (migrations.enabled=false) AND THE APP DOES NOT MIGRATE.
+   The app reads MIGRATIONS_PATH but never calls golang-migrate, so nothing in this
+   release creates the schema. Apply it out of band or the api will fail against an
+   empty database.
+{{ end -}}
+
+{{ if not (index .Values.api.configmap "ENVIRONMENT_NAME") -}}
+!! ENVIRONMENT_NAME is unset, so the app resolves it to "development" and EVERY
+   production security gate is inert: the Postgres SSL and auth requirements are
+   not enforced, the security-bypass rejections do not run, and panic stack traces
+   are exposed. Set api.configmap.ENVIRONMENT_NAME=production for a production
+   install.
+{{ end -}}

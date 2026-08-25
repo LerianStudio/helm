@@ -1,8 +1,13 @@
 # Helm Upgrade from v9.1.0 to v9.2.0
 
+This is a **minor** release. The auth-backend-to-caradhras rename ships with a
+backward-compatibility layer (see below), so most existing installs upgrade
+with no values changes required — the notes below call out the handful of
+places where behavior changed despite that.
+
 # Topics
 
-- **[Breaking Changes](#breaking-changes)**
+- **[Notable Changes](#notable-changes)**
   - [1. Caradhras Component Promotion](#1-caradhras-component-promotion)
   - [2. Database Creation Default Changed](#2-database-creation-default-changed)
   - [3. Casdoor References Renamed to Caradhras](#3-casdoor-references-renamed-to-caradhras)
@@ -24,7 +29,7 @@
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
-# Breaking Changes
+# Notable Changes
 
 ### 1. Caradhras Component Promotion
 
@@ -89,7 +94,7 @@ caradhras:
 - The auth component's `AUTHORIZER_ADDRESS` ConfigMap value is automatically updated to point to the new service name
 - PodDisruptionBudget is now independent (see [section 3](#3-independent-poddisruptionbudget-for-caradhras))
 
-> **Important:** The chart implements backward compatibility for existing installs. If you currently override `auth.backend.*` values in your own values files, those overrides will continue to work through fallback aliases. However, the new `caradhras.*` path takes precedence if both are set.
+> **Important:** The chart implements backward compatibility for existing installs, with one exception: `image.repository`, `image.tag`, and `image.pullPolicy` are NOT part of the fallback anymore. The chart now ships an explicit, non-empty default for these three (`ghcr.io/lerianstudio/caradhras:1.2.0`), and the fallback only triggers when the new key is empty — so this explicit default always wins over a legacy `auth.backend.image.*` override, even if you never touch `caradhras.image.*` yourself. If you were relying on `auth.backend.image.tag` to pin a specific version (e.g. to stay on Casdoor `3.1.0`), that override is now silently ignored; set `caradhras.image.repository`/`.tag` directly instead. Every other field listed in the [Backward Compatibility Aliases](#backward-compatibility-aliases) table below still falls back to `auth.backend.*` as before.
 
 ### 2. Database Creation Default Changed
 
@@ -127,7 +132,7 @@ All user-facing documentation strings and comments referencing "Casdoor" have be
 |----------|--------|--------|
 | `common.authorizer.clientId` comment | "Casdoor application client id" | "Caradhras application client id" |
 | Template comments | References to `casdoor` | References to `caradhras` |
-| ConfigMap `appname` | `plugin-auth-casdoor-backend` | (removed from chart defaults) |
+| ConfigMap `appname` | `plugin-auth-casdoor-backend` | `plugin-auth-caradhras-backend` |
 
 **Why this matters:**
 
@@ -336,7 +341,7 @@ grep -E "auth\.backend\.|initUser\." current-values.yaml
 
 #### Option 1: Keep Existing Configuration (Recommended for Most)
 
-If you currently override `auth.backend.*` values, **you do not need to change anything**. The chart's backward compatibility layer will continue to honor those overrides.
+If you currently override `auth.backend.*` values, most of that **does not need to change** — except `image.repository`/`.tag`/`.pullPolicy`, which no longer fall back (see the note above).
 
 **Example:** Your existing values file has:
 
@@ -350,12 +355,12 @@ auth:
       timeoutSeconds: 10
 ```
 
-This will continue to work in v9.2.0. The chart will:
-- Use `replicaCount: 3`
-- Use image tag `3.1.0` (you may want to update this to `1.2.0` for the new Caradhras image)
-- Use `readinessProbe.timeoutSeconds: 10`
+In v9.2.0, the chart will:
+- Use `replicaCount: 3` (still falls back correctly)
+- Use `readinessProbe.timeoutSeconds: 10` (still falls back correctly)
+- **Ignore** `image.tag: "3.1.0"` — the chart's own explicit default (`ghcr.io/lerianstudio/caradhras:1.2.0`) wins regardless, so you are upgraded onto the new Caradhras image whether you intended that or not
 
-> **Warning:** If you keep `auth.backend.image.tag: "3.1.0"`, you will continue running the old Casdoor image. To use the new Caradhras image, update to `tag: "1.2.0"` or migrate to the `caradhras.*` path.
+> **Warning:** Unlike every other field in this chart, `auth.backend.image.repository`/`.tag`/`.pullPolicy` do NOT protect you from the image swap. If you need to stay on the old Casdoor image for now, set `caradhras.image.repository`/`.tag` explicitly to the Casdoor values — do not rely on the legacy `auth.backend.image.*` path for this.
 
 #### Option 2: Migrate to New Configuration Path
 
@@ -546,7 +551,7 @@ caradhras:
 
 | Probe | Path | Initial Delay | Period | Timeout | Success Threshold | Failure Threshold |
 |-------|------|---------------|--------|---------|-------------------|-------------------|
-| Readiness | `/readyz` | 15s | 5s | 1s | 1 | 3 |
+| Readiness | `/api/readyz` | 15s | 5s | 1s | 1 | 3 |
 | Liveness | `/api/health` | 20s | 10s | 1s | 1 | 3 |
 
 **Example: Production configuration**
@@ -669,23 +674,22 @@ caradhras:
 
 ### Backward Compatibility Aliases
 
-The chart maintains backward compatibility with the legacy `auth.backend.*` configuration path. The following fields support fallback:
+The chart maintains backward compatibility with the legacy `auth.backend.*` configuration path for most fields. The following fields support fallback:
 
 | New Path | Legacy Path | Default |
 |----------|-------------|---------|
 | `caradhras.name` | `auth.backend.name` | `<release>-caradhras` |
 | `caradhras.replicaCount` | `auth.backend.replicaCount` | `1` |
 | `caradhras.service.port` | `auth.backend.service.port` | `8000` |
-| `caradhras.image.repository` | `auth.backend.image.repository` | `ghcr.io/lerianstudio/caradhras` |
-| `caradhras.image.tag` | `auth.backend.image.tag` | `1.2.0` |
-| `caradhras.image.pullPolicy` | `auth.backend.image.pullPolicy` | `Always` |
 | `caradhras.readinessProbe.timeoutSeconds` | `auth.backend.readinessProbe.timeoutSeconds` | `1` |
 | `caradhras.livenessProbe.timeoutSeconds` | `auth.backend.livenessProbe.timeoutSeconds` | `1` |
 | `caradhras.migrations.image.repository` | `auth.backend.migrations.image.repository` | `ghcr.io/lerianstudio/caradhras-migrations` |
 | `caradhras.migrations.image.tag` | `auth.backend.migrations.image.tag` | `1.2.0` |
 | `caradhras.migrations.image.pullPolicy` | `auth.backend.migrations.image.pullPolicy` | `Always` |
 
-**Precedence rules:**
+> **NOT in this list on purpose:** `caradhras.image.repository`/`.tag`/`.pullPolicy` (the main backend image, as opposed to the migrations image above). The chart ships these three with an explicit, non-empty default (`ghcr.io/lerianstudio/caradhras:1.2.0`), so the fallback branch — which only triggers on an *empty* new-key value — never runs for them. A legacy `auth.backend.image.*` override is silently ignored for these three fields. See the warning in [section 1](#1-caradhras-component-promotion).
+
+**Precedence rules (for the fields in the table above):**
 
 1. If `caradhras.<field>` is set (non-empty), it is used
 2. Otherwise, if `auth.backend.<field>` is set (non-empty), it is used as a fallback
@@ -694,18 +698,18 @@ The chart maintains backward compatibility with the legacy `auth.backend.*` conf
 **Example: Mixed configuration (not recommended, but supported)**
 
 ```yaml
-# New path takes precedence for image
+# New path takes precedence for replicaCount
 caradhras:
-  image:
-    tag: "1.2.0"
+  replicaCount: 5
 
-# Legacy path used as fallback for replica count
+# Legacy path used as fallback for probe timeout
 auth:
   backend:
-    replicaCount: 3
+    readinessProbe:
+      timeoutSeconds: 10
 ```
 
-Result: The deployment will use `tag: "1.2.0"` (from new path) and `replicaCount: 3` (from legacy path).
+Result: The deployment will use `replicaCount: 5` (from new path) and `readinessProbe.timeoutSeconds: 10` (from legacy path).
 
 > **Note:** For clarity and maintainability, we recommend using **either** the new `caradhras.*` path **or** the legacy `auth.backend.*` path consistently, not mixing them.
 

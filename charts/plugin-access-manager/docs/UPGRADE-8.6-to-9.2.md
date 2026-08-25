@@ -88,6 +88,114 @@ if you actually need the job to run.
 - `caradhras.ingress.*` — the backend API can now declare its own ingress natively (previously required a hand-written raw Ingress outside the chart).
 - `caradhras.pdb.*` — independent from `auth.pdb`; if you'd disabled `auth.pdb.enabled` expecting it to cover the backend too, set `caradhras.pdb.enabled: false` as well.
 
+### 5. Preparing your values.yaml
+
+Take this as your worked example — a typical `v8.6.0` `auth.backend` block:
+
+```yaml
+auth:
+  backend:
+    name: ""
+    replicaCount: 2
+    createDatabase: true
+    service:
+      port: 8000
+    image:
+      repository: ghcr.io/lerianstudio/casdoor
+      pullPolicy: Always
+      tag: "3.1.0"
+    migrations:
+      image:
+        repository: ghcr.io/lerianstudio/casdoor-migrations
+        pullPolicy: Always
+        tag: "3.1.0"
+    readinessProbe:
+      timeoutSeconds: 10
+    livenessProbe:
+      timeoutSeconds: 10
+  initUser:
+    enabled: true
+    adminPassword: "Lerian@123"
+```
+
+**Step by step, translate it into `caradhras.*`:**
+
+1. **Rename the block**, drop everything you're not intentionally overriding — the chart has sane defaults for the rest:
+
+   ```yaml
+   caradhras:
+     replicaCount: 2
+   ```
+
+2. **Decide the image explicitly** — this is the one field that does NOT inherit from `auth.backend`, so silence here means "adopt Caradhras `1.2.0`":
+
+   ```yaml
+   caradhras:
+     replicaCount: 2
+     image:
+       repository: ghcr.io/lerianstudio/caradhras   # omit entirely to accept the chart default
+       tag: "1.2.0"
+     migrations:
+       image:
+         repository: ghcr.io/lerianstudio/caradhras-migrations
+         tag: "1.2.0"
+   ```
+
+   > If you deliberately want to stay on Casdoor a bit longer, put the *old* image values here instead (`ghcr.io/lerianstudio/casdoor:3.1.0`) — see [item 2](#2-the-one-compat-exception-the-image-does-not-fall-back).
+
+3. **Carry over anything you tuned on purpose** (probe timeouts, service port, `createDatabase`) — these DO still fall back from `auth.backend.*` on their own, but move them anyway if you're doing the full migration:
+
+   ```yaml
+   caradhras:
+     replicaCount: 2
+     image:
+       tag: "1.2.0"
+     migrations:
+       image:
+         tag: "1.2.0"
+     service:
+       port: 8000
+     readinessProbe:
+       timeoutSeconds: 10
+     livenessProbe:
+       timeoutSeconds: 10
+     # createDatabase: true   # only if your DB user actually has CREATEDB; chart default is now false
+   ```
+
+4. **Handle `initUser` separately** — it stays under `auth:`, not `caradhras:`, and its default flipped to `false`. On an existing release, just disable it:
+
+   ```yaml
+   auth:
+     initUser:
+       enabled: false
+   ```
+
+5. **Delete the old `auth.backend` block entirely** once you've moved what you need — a leftover `auth.backend.image.tag` sitting next to an explicit `caradhras.image.tag` does nothing (it's dead config, not a conflict), but it's confusing for the next person reading the file.
+
+**End state:**
+
+```yaml
+auth:
+  initUser:
+    enabled: false
+
+caradhras:
+  replicaCount: 2
+  image:
+    tag: "1.2.0"
+  migrations:
+    image:
+      tag: "1.2.0"
+  service:
+    port: 8000
+  readinessProbe:
+    timeoutSeconds: 10
+  livenessProbe:
+    timeoutSeconds: 10
+```
+
+> **Don't want to migrate the structure right now?** You don't have to — `auth.backend.*` keeps working for everything except the image (step 2 above still applies: decide the image explicitly, one way or the other). The full migration in steps 1-5 is about clarity, not a requirement.
+
 # Other Additive Features (v9.0.0 + v9.1.0)
 
 None of these require action — they're optional capabilities available

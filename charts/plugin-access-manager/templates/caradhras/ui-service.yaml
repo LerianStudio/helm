@@ -2,7 +2,7 @@
 {{- $ui := .Values.caradhras.ui -}}
 {{- $uiSvc := $ui.service | default dict -}}
 {{- include "lerian-common.service" (dict
-      "service" (dict "type" ($uiSvc.type | default "ClusterIP") "port" ($uiSvc.port | default 80) "annotations" $uiSvc.annotations)
+      "service" (dict "type" ($uiSvc.type | default "ClusterIP") "port" ($uiSvc.port | default 8080) "annotations" $uiSvc.annotations)
       "name" (include "plugin-caradhras-ui.fullname" .)
       "labels" (printf "%s " (include "plugin-caradhras-ui.labels" (dict "context" . "name" $ui.name)))
       "selector" (include "plugin-caradhras-ui.selectorLabels" (dict "context" . "name" $ui.name))

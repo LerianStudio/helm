@@ -61,17 +61,27 @@ spec:
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ $uiSvc.port | default 80 }}
+              containerPort: {{ $uiSvc.port | default 8080 }}
               protocol: TCP
           env:
-            # Same-origin reverse-proxy target: the SPA's nginx forwards API calls
-            # to the caradhras backend Service instead of a cross-origin host.
-            # NOTE: the exact env var the caradhras-ui image expects for this is
-            # unverified (no application source available at chart-authoring time)
-            # — verify against the real image before relying on this in production;
-            # use caradhras.ui.extraEnvVars to override/add the correct one meanwhile.
-            - name: CARADHRAS_BACKEND_URL
-              value: {{ printf "http://%s:%s" (include "plugin-caradhras.fullname" .) (include "caradhras.servicePort" .) | quote }}
+            # Verified against the real image's /etc/nginx/templates/default.conf.template
+            # (ghcr.io/lerianstudio/caradhras-ui:1.2.0-rc.2): the entrypoint's
+            # envsubst reads these two exact names.
+            #
+            # CARADHRAS_BACKEND_ADDR: "host:port" (NO scheme) — it's substituted
+            # into `set $caradhras_backend "${CARADHRAS_BACKEND_ADDR}";` then used
+            # as `proxy_pass http://$caradhras_backend;`. A value with "http://"
+            # already in it (the old CARADHRAS_BACKEND_URL name/shape) breaks the
+            # proxy_pass URL.
+            - name: CARADHRAS_BACKEND_ADDR
+              value: {{ printf "%s:%s" (include "plugin-caradhras.fullname" .) (include "caradhras.servicePort" .) | quote }}
+            # NGINX_RESOLVER_ADDR: the config's `resolver` directive is templated
+            # too (proxy_pass uses a variable, so nginx re-resolves the upstream
+            # at request time — Docker's embedded 127.0.0.11 default doesn't exist
+            # in a k8s pod). kube-dns is the conventional in-cluster DNS Service
+            # name across kubeadm/EKS/GKE/AKS even when CoreDNS-backed.
+            - name: NGINX_RESOLVER_ADDR
+              value: {{ $ui.resolverAddr | default "kube-dns.kube-system.svc.cluster.local" | quote }}
           {{- with $ui.extraEnvVars }}
           {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -79,14 +89,16 @@ spec:
             {{- toYaml ($ui.resources | default (dict "limits" (dict "cpu" "200m" "memory" "256Mi") "requests" (dict "cpu" "100m" "memory" "128Mi"))) | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: {{ $uiRP.path | default "/" }}
-              port: {{ $uiSvc.port | default 80 }}
+              # /healthz: the image's dedicated cheap-200 endpoint (no filesystem
+              # hit), verified against the real default.conf.template.
+              path: {{ $uiRP.path | default "/healthz" }}
+              port: {{ $uiSvc.port | default 8080 }}
             initialDelaySeconds: {{ $uiRP.initialDelaySeconds | default 10 }}
             periodSeconds: {{ $uiRP.periodSeconds | default 5 }}
           livenessProbe:
             httpGet:
-              path: {{ $uiLP.path | default "/" }}
-              port: {{ $uiSvc.port | default 80 }}
+              path: {{ $uiLP.path | default "/healthz" }}
+              port: {{ $uiSvc.port | default 8080 }}
             initialDelaySeconds: {{ $uiLP.initialDelaySeconds | default 15 }}
             periodSeconds: {{ $uiLP.periodSeconds | default 20 }}
       {{- with $ui.nodeSelector }}

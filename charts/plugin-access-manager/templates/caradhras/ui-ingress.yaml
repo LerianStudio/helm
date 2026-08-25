@@ -8,6 +8,6 @@
       "subdomain" "caradhras"
       "name" (include "plugin-caradhras-ui.fullname" .)
       "labels" (printf "%s " (include "plugin-caradhras-ui.labels" (dict "context" . "name" $ui.name)))
-      "svcPort" (($ui.service | default dict).port | default 80)
+      "svcPort" (($ui.service | default dict).port | default 8080)
     ) }}
 {{- end }}

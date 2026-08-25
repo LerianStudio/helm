@@ -243,11 +243,13 @@ data:
      Otherwise host/port are resolved independently through the mask (so
      global.datastores.redis.port / a dedicated ledger.datastores.redis.port
      actually take effect, instead of being silently ignored behind a
-     host-only default) and combined here. */ -}}
+     host-only default) and combined here. A mask host that already embeds a
+     port (contains ":") is also taken verbatim, so a value like
+     "valkey.example:6379" is not doubled into "valkey.example:6379:6379". */ -}}
   {{- $redisHostField := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "midaz-valkey-primary") }}
   {{- $redisPortField := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") }}
   {{- $redisHost := $redisHostField }}
-  {{- if not (hasKey $cm "REDIS_HOST") }}
+  {{- if and (not (hasKey $cm "REDIS_HOST")) (not (contains ":" $redisHostField)) }}
     {{- $redisHost = printf "%s:%s" $redisHostField $redisPortField }}
   {{- end }}
   REDIS_HOST: {{ $redisHost | quote }}

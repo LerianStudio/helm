@@ -116,7 +116,23 @@ Required inputs in the dict:
 {{- if hasKey $migrationsCfg "enabled" }}
   {{- $migrationsEnabled = $migrationsCfg.enabled }}
 {{- end }}
-{{- if and $componentValues.enabled $migrationsEnabled }}
+{{- $migrationDsn := "" }}
+{{- with $componentValues.secrets }}
+{{- $migrationDsn = default "" (index . "DATABASE_URL") }}
+{{- end }}
+{{- /*
+  Skip the Job when the chart owns the Secret and no DATABASE_URL was declared.
+  Rendering it anyway would emit a PreSync hook whose secretKeyRef names a key
+  that exists nowhere, so the pod never starts and the whole release's sync
+  aborts - the same failure class this file exists to prevent, reached from the
+  other direction.
+
+  useExistingSecret is deliberately NOT gated on $migrationDsn: in that mode the
+  operator-owned Secret replaces the chart's entirely and values.secrets is left
+  empty by design, so requiring a DSN here would silently stop rendering
+  migrations for every such deployment.
+*/}}
+{{- if and $componentValues.enabled $migrationsEnabled (or $componentValues.useExistingSecret $migrationDsn) }}
 {{- $componentFullname := include "plugin-br-pix-switch.componentFullname" (dict "context" $ctx "component" $serviceName) }}
 {{- /*
   Resolve which Secret carries DATABASE_URL for this Job.
@@ -127,17 +143,14 @@ Required inputs in the dict:
   normal resource and does not exist yet on the sync that first enables a
   component.
 
-  Fall back to componentSecretName when useExistingSecret=true (operator-owned
-  Secret, already in the cluster, no hook needed) or when the component declares
-  no DATABASE_URL, in which case the partial rendered nothing and this Job would
-  fail on a dangling reference.
+  Fall back to componentSecretName when useExistingSecret=true: that Secret is
+  operator-owned, already exists in the cluster before any sync, and carries the
+  DSN itself, so no hook is needed. The guard above guarantees the other branch
+  is reached only when a DSN was declared, which is exactly when the partial
+  rendered the Secret - the two conditions are complements, never both false.
 */}}
-{{- $migrationDsn := "" }}
-{{- with $componentValues.secrets }}
-{{- $migrationDsn = default "" (index . "DATABASE_URL") }}
-{{- end }}
 {{- $migrationSecretName := include "plugin-br-pix-switch.componentSecretName" (dict "context" $ctx "component" $serviceName "componentValues" $componentValues) }}
-{{- if and (not $componentValues.useExistingSecret) $migrationDsn }}
+{{- if not $componentValues.useExistingSecret }}
 {{- $migrationSecretName = printf "%s-migrations" $componentFullname | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- $componentImage := include "plugin-br-pix-switch.componentImage" (dict "context" $ctx "componentValues" $componentValues) }}

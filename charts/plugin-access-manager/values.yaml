@@ -441,6 +441,17 @@ caradhras:
     # -- See "Backward-compat" note above — resolved via caradhras.servicePort.
     port: ""
     annotations: {}
+  pdb:
+    # -- Enable or disable PodDisruptionBudget for the caradhras component.
+    # -- Own toggle: caradhras is now an independent top-level component, so
+    # -- it no longer shares (or is affected by) auth.pdb.
+    enabled: true
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Minimum number of available pods
+    minAvailable: 0
+    # -- Annotations for PodDisruptionBudget
+    annotations: {}
   image:
     # -- See "Backward-compat" note above — resolved via caradhras.imageRepository.
     repository: ""

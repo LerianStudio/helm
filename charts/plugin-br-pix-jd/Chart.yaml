@@ -48,7 +48,7 @@ dependencies:
   # `name` must be the library's real chart name (`lerian-common-helm`), not the
   # directory name. No `condition`: the helpers are needed at template time.
   - name: lerian-common-helm
-    version: "1.3.4"
+    version: 2.1.0
     repository: "file://../lerian-common"
   # Bundled by default; `postgresql.external: true` or `postgresql.enabled: false`
   # switches the chart to an operator-provided Postgres. Exact pin (no ~/^) per

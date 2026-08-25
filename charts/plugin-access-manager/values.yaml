@@ -444,6 +444,13 @@ caradhras:
     # -- See "Backward-compat" note above — resolved via caradhras.servicePort.
     port: ""
     annotations: {}
+  # -- Ingress for the caradhras component itself (admin panel/API, port
+  # -- 8000). Disabled by default. Set caradhras.ingress.enabled=true plus
+  # -- className/annotations/hosts/tls (same shape as auth.ingress/
+  # -- identity.ingress) to turn it on — do not confuse with caradhras.ui.ingress,
+  # -- which fronts the separate SPA console.
+  ingress:
+    enabled: false
   pdb:
     # -- Enable or disable PodDisruptionBudget for the caradhras component.
     # -- Own toggle: caradhras is now an independent top-level component, so

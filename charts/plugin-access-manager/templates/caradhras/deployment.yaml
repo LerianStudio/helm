@@ -113,7 +113,7 @@ spec:
               port: 8000
             initialDelaySeconds: {{ .Values.caradhras.readinessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.caradhras.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.caradhras.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ include "caradhras.readinessProbeTimeoutSeconds" . }}
             successThreshold: {{ .Values.caradhras.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.caradhras.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -122,7 +122,7 @@ spec:
               port: 8000
             initialDelaySeconds: {{ .Values.caradhras.livenessProbe.initialDelaySeconds | default 20 }}
             periodSeconds: {{ .Values.caradhras.livenessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.caradhras.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ include "caradhras.livenessProbeTimeoutSeconds" . }}
             successThreshold: {{ .Values.caradhras.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.caradhras.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.auth.nodeSelector }}

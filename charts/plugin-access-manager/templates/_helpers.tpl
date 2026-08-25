@@ -245,6 +245,24 @@ just triggered by a missing fallback instead of a tag typo.
 {{- end }}
 
 {{/*
+caradhras.readinessProbeTimeoutSeconds / .livenessProbeTimeoutSeconds — same
+fallback precedence, for the one probe field every known install actually
+overrides (Caradhras/Casdoor's /readyz and /api/health can take 5-13s to
+respond; the chart's own hardcoded default of 1s is a k8s API default, not
+a validated-safe value for this app). An install relying only on the legacy
+auth.backend.readinessProbe/livenessProbe.timeoutSeconds override would
+otherwise silently revert to the 1s default on upgrade and start flapping
+into CrashLoopBackOff from probe failures alone.
+*/}}
+{{- define "caradhras.readinessProbeTimeoutSeconds" -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.readinessProbe.timeoutSeconds "oldVal" (dig "backend" "readinessProbe" "timeoutSeconds" "" .Values.auth) "default" 1) -}}
+{{- end }}
+
+{{- define "caradhras.livenessProbeTimeoutSeconds" -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.livenessProbe.timeoutSeconds "oldVal" (dig "backend" "livenessProbe" "timeoutSeconds" "" .Values.auth) "default" 1) -}}
+{{- end }}
+
+{{/*
 Create the name of the identity service account to use
 */}}
 {{- define "plugin-identity.serviceAccountName" -}}

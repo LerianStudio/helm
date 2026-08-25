@@ -30,13 +30,18 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
-        runAsGroup: 1000
+        # -- gid 0 (root group), NOT 1000: verified against the real image
+        # (ghcr.io/lerianstudio/caradhras-ui) that /etc/nginx/conf.d and
+        # friends are owned `nginx:root` with group-write (arbitrary-uid
+        # nginx image convention) — uid 1000/gid 1000 gets EACCES from the
+        # docker-entrypoint.d envsubst scripts; uid 1000/gid 0 can write.
+        runAsGroup: 0
       containers:
         - name: {{ include "plugin-caradhras-ui.fullname" . }}
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
-            runAsGroup: 1000
+            runAsGroup: 0
             allowPrivilegeEscalation: false
             capabilities:
               drop:

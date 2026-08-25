@@ -1,8 +1,17 @@
 {{- if and .Values.ledger.enabled .Values.ledger.autoscaling.enabled }}
+{{- $migrationSyncWave := dig "deploymentSyncWave" "1" (.Values.ledger.migrations | default dict) | toString }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "midaz-ledger.fullname" . }}
+  {{- if and (include "midaz.ledgerMigrationsEnabled" .) $migrationSyncWave }}
+  {{- /* Match the Deployment sync-wave so the HPA is applied in the same wave as
+         its target (never an earlier wave): otherwise a wave-0 HPA waits on a
+         target Deployment that only lands in a later wave, and the wave never
+         goes healthy — a bootstrap deadlock on first install. */}}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $migrationSyncWave | quote }}
+  {{- end }}
   labels:
     {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
 spec:

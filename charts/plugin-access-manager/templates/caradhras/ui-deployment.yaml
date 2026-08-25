@@ -73,8 +73,17 @@ spec:
             # as `proxy_pass http://$caradhras_backend;`. A value with "http://"
             # already in it (the old CARADHRAS_BACKEND_URL name/shape) breaks the
             # proxy_pass URL.
+            #
+            # MUST be the fully-qualified in-cluster name (<svc>.<ns>.svc.cluster.local),
+            # not the short Service name: since proxy_pass's target is a variable,
+            # nginx re-resolves it at request time via its OWN resolver module
+            # (the `resolver` directive above) instead of glibc/musl getaddrinfo —
+            # and nginx's resolver does NOT consult /etc/resolv.conf's `search`
+            # list the way normal DNS clients do. A short name here fails with
+            # "could not be resolved (3: Host not found)" even though the same
+            # short name resolves fine for any other client in the pod.
             - name: CARADHRAS_BACKEND_ADDR
-              value: {{ printf "%s:%s" (include "plugin-caradhras.fullname" .) (include "caradhras.servicePort" .) | quote }}
+              value: {{ printf "%s.%s.svc.cluster.local:%s" (include "plugin-caradhras.fullname" .) .Release.Namespace (include "caradhras.servicePort" .) | quote }}
             # NGINX_RESOLVER_ADDR: the config's `resolver` directive is templated
             # too (proxy_pass uses a variable, so nginx re-resolves the upstream
             # at request time — Docker's embedded 127.0.0.11 default doesn't exist

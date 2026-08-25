@@ -3,6 +3,32 @@
 ## [9.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.1.0)
 
 - **Features:**
+  - Added cloud mask feature for plugin-access-manager.
+  - Introduced datastore masks, global.cloud, and telemetry support.
+  - Productized on the lerian-common library without regression.
+  - Wired SD_* service discovery through the lerian-common mask.
+
+- **Fixes:**
+  - Restored backward compatibility for SD_* and wired ingress global mask.
+  - Derived AUTHORIZER_PORT/ADDRESS from backend port and fixed invalid commented YAML.
+  - Bound Job's ADMIN_PASSWORD secret reference and migration/init-user Job names to 63 characters.
+  - Routed ENV_NAME/MULTI_TENANT_ENABLED through the global mask.
+
+- **Improvements:**
+  - Documented external DB/Redis credentials in the managed-cloud example.
+  - Added Managed Cloud (global.cloud) section to README.
+  - Added copy-paste examples under each global.* mask in values.yaml.
+  - Declared global.cloud in values.schema.json and documented global.observability.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.0.0...plugin-access-manager-v9.1.0)
+
+---
+
+## [9.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.1.0)
+
+- **Features:**
   - Added support for cloud mask in plugin-access-manager.
   - Introduced datastore masks, global.cloud, and telemetry features.
   - Enabled SD_* service discovery through the lerian-common mask.

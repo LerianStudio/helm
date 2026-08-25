@@ -2,6 +2,33 @@
 
 ## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.0)
 
+- **Features:**
+  - Default inter-service hosts to cross-namespace FQDN.
+  - Adopt lerian-common-helm cloud masks.
+
+- **Fixes:**
+  - Default ALLOWED_ORIGINS from the ingress host.
+  - Mongosh has no --tlsInsecure flag, use the two real flags.
+  - Mark bootstrap-mongodb Job as a native Helm hook.
+  - Make bootstrap-mongodb Job self-healing on ArgoCD Sync.
+  - Bootstrap-mongodb Job hangs against TLS-required managed MongoDB.
+  - Drop dead env var, derive NEXTAUTH_URL from ingress, sync NEXT_PUBLIC_PLUGIN_AUTH_ENABLED, allow client_id via secret.
+  - Use lerian-common.auth.env helper for plugin-auth mask.
+
+- **Improvements:**
+  - Pin lerian-common-helm to stable 2.0.0.
+  - Pass namespace to hpa/pdb/ingress lerian-common includes.
+  - Move configmap keys+defaults out of values.yaml.
+  - Drop default-value duplication in values.yaml.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v3.3.0...product-console-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.0)
+
 - **Features**
   - Default inter-service hosts to cross-namespace FQDN.
   - Adopt lerian-common-helm cloud masks.

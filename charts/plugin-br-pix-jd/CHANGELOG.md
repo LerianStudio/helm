@@ -2,6 +2,18 @@
 
 ## [0.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.2.0)
 
+- Features:
+  - Initial release of plugin-br-pix-jd version 0.1.0.
+
+- Contributors:
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.1.0...plugin-br-pix-jd-v0.2.0)
+
+---
+
+## [0.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.2.0)
+
 - Initial release of plugin-br-pix-jd.
 - Basic functionality for processing PIX transactions.
 - Integration with JD payment systems.

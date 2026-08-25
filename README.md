@@ -95,6 +95,23 @@ For implementation and configuration details, see the [README](https://charts.le
 | `3.0.0` | 1.2.1-beta.11 | 1.2.1-beta.12 |
 -----------------
 
+### Plugin BR Pix JD
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-jd).
+
+Multi-component chart (`api` + `worker`) for the Go PIX Direct plugin. Not a rename of
+`plugin-br-pix-direct-jd`, which targets the retired TypeScript service and stays as it is.
+The app publishes one image per entry point — `plugin-br-pix-jd` (`cmd/app`) and
+`plugin-br-pix-jd-worker` (`cmd/worker`) — and the release pipeline builds only the
+component that changed, so their tags may legitimately differ.
+
+#### Application Version Mapping
+
+| Chart Version | API Version | Worker Version |
+| :---: | :---: | :---: |
+| `1.0.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
+-----------------
+
 ### Plugin BR Pix Switch
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-switch).

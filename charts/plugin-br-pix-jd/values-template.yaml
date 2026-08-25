@@ -1,0 +1,98 @@
+# Operator-provided values for plugin-br-pix-jd.
+#
+# Every key here is either REQUIRED by a chart gate or must be reviewed before a
+# production install. Placeholders are empty on purpose — this file is a template,
+# never a credential store. Fill it in your own secret management, not in git.
+#
+# Not exhaustive: see values.yaml for the full annotated surface.
+
+api:
+  image:
+    # REQUIRED in practice. The chart's appVersion is a placeholder
+    # (0.0.0-unreleased) because no image has been published under the name
+    # plugin-br-pix-jd yet. Pin a real tag.
+    tag: ""
+
+  configmap:
+    # REQUIRED. The rate limiter is fail-closed, so an unset Redis authority makes
+    # every request 4xx instead of degrading. Format: host:port.
+    REDIS_HOST: ""
+
+    # Arms the app's production security gates: auth forced on, Postgres password
+    # and SSL required, and every ALLOW_* bypass plus IS_DEVELOPMENT=true rejected
+    # at boot. Leave empty only for development.
+    ENVIRONMENT_NAME: ""
+
+    # A production ENVIRONMENT_NAME requires SSL. Raise this from the bundled
+    # subchart's "disable" to require / verify-full for an external datastore.
+    POSTGRES_SSLMODE: ""
+
+    # REQUIRED when the bundled Postgres is disabled or external.
+    POSTGRES_HOST: ""
+
+    # Comma-separated list of organization UUIDs the license covers. Not a secret.
+    ORGANIZATION_IDS: ""
+
+    # Access Manager. PLUGIN_AUTH_HOST is the key this app reads — NOT
+    # PLUGIN_AUTH_ADDRESS.
+    PLUGIN_AUTH_ENABLED: ""
+    PLUGIN_AUTH_HOST: ""
+
+    # Telemetry collector endpoint (host:port), when ENABLE_TELEMETRY is true.
+    ENABLE_TELEMETRY: ""
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+    # Browser origins allowed to call the API. Never use the ALLOW_CORS_WILDCARD
+    # bypass in production — the app rejects it at boot.
+    CORS_ALLOWED_ORIGINS: ""
+
+    # Set to "true" when the datastores have NO TLS — which is the case in the
+    # benedita dev-st / stg-mt environments, where lib-commons otherwise refuses the
+    # plaintext connection to Postgres, Valkey and RabbitMQ.
+    # Unlike the other ALLOW_* switches this one is permitted in production (the app
+    # treats it as the sovereign TLS switch), so set it deliberately. It does NOT let
+    # you keep POSTGRES_SSLMODE=disable under ENVIRONMENT_NAME=production — that is a
+    # separate check that still fires.
+    ALLOW_INSECURE_TLS: ""
+
+  secrets:
+    # Required only for the WORKER, which validates at startup and on every tick.
+    # The api does not validate a license at all. IS_DEVELOPMENT=true skips it.
+    LICENSE_KEY: ""
+
+    # Optional: an in-cluster Redis with no auth is a legitimate topology.
+    REDIS_PASSWORD: ""
+
+    # REQUIRED only when the bundled Postgres subchart is disabled or external.
+    # With the subchart bundled, LEAVE THIS UNSET — the password is read from the
+    # subchart's own Secret, and a second copy here is the dual-secret smell the
+    # repository validator rejects.
+    POSTGRES_PASSWORD: ""
+
+  existingSecret:
+    # Preferred for production: read every Secret key from a pre-existing Secret
+    # instead of having the chart render one. Setting this disables the inline
+    # required gates, since the values then live outside the chart.
+    name: ""
+
+  ingress:
+    enabled: false
+    className: ""
+    hosts: []
+    tls: []
+
+worker:
+  # Keep false until the app publishes an image that carries /worker. See README.
+  enabled: false
+
+postgresql:
+  # true bundles the Bitnami subchart (default); false expects an operator-provided
+  # Postgres and requires api.configmap.POSTGRES_HOST plus a password.
+  enabled: true
+  external: false
+  auth:
+    # LEAVE EMPTY for the bundled subchart: it generates the password into its own
+    # Secret, which is the single source the app reads from.
+    password: ""
+    # Point the subchart at an operator-managed Secret instead of a generated one.
+    existingSecret: ""

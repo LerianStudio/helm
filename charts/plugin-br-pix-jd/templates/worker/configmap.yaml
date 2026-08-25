@@ -1,0 +1,35 @@
+{{- if .Values.worker.enabled }}
+{{- include "plugin-br-pix-jd.consistencyGates" . }}
+{{- /* Same dict-merge shape as the api ConfigMap: one key can only appear once and
+   precedence is the merge order, not the line order.
+
+   platformEnv merges the api's configmap UNDER the worker's, so the worker inherits
+   every shared value (one datastore set, one auth, one telemetry backend) and can
+   still override any single key. That inheritance is the point: a worker pointed at a
+   different Postgres than the api would reconcile money against the wrong ledger. */ -}}
+{{- $platform := fromYaml (include "plugin-br-pix-jd.platformEnv" (dict "root" $ "configmap" .Values.worker.configmap "serviceName" "plugin-br-pix-jd-worker")) -}}
+{{- $domain := fromYaml (include "plugin-br-pix-jd.domainEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
+{{- $cron := fromYaml (include "plugin-br-pix-jd.workerCronEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
+{{- $mt := fromYaml (include "plugin-br-pix-jd.multiTenantEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
+{{- $streaming := fromYaml (include "plugin-br-pix-jd.streamingEnv" (dict "root" $ "configmap" .Values.worker.configmap "graceSeconds" .Values.worker.terminationGracePeriodSeconds)) -}}
+{{- $cfg := .Values.worker.configmap | default dict -}}
+{{- /* NO rate-limit, CORS, Swagger or SERVER_ADDRESS block here: cmd/worker has no HTTP
+   listener at all, so those keys would be inert noise the operator has to reason about.
+   The worker's own surface is the cron cadence. */ -}}
+{{- $data := mergeOverwrite $platform $domain $cron $mt $streaming (.Values.worker.extraConfigmap | default dict) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "worker") }}
+  namespace: {{ include "plugin-br-pix-jd.namespace" $ }}
+  labels:
+    {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "worker") | nindent 4 }}
+  {{- with (include "plugin-br-pix-jd.commonAnnotations" (dict "root" $)) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  {{- range $key, $value := $data }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,60 @@
+apiVersion: v2
+name: plugin-br-pix-jd-helm
+description: >-
+  Helm chart for plugin-br-pix-jd — the Lerian Bacen/JDPI Pix plugin (DICT keys
+  and claims, SPI transactions, refunds and limits, QR codes, inbound JDPI
+  webhooks, MED 2.0, Pix Automático, and indirect participants). Ships two
+  components built from ONE image: the HTTP api and the cron worker.
+
+type: application
+annotations:
+  lerian.studio/chart-type: multi-component
+
+home: https://github.com/LerianStudio/helm
+
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-pix-jd
+  - https://github.com/LerianStudio/plugin-br-pix-jd
+
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+
+version: 0.1.0
+
+# First release published under the new name: the plugin tagged v1.12.0-beta.8 on
+# 2026-08-05 (the merge of integration/jdpi-compliance-run into develop, PR #52) and
+# ghcr.io/lerianstudio/plugin-br-pix-jd carries the tag `1.12.0-beta.8` — note the
+# registry tag has NO leading `v`, unlike the git tag. This is the tag of the release
+# train the chart was cut against; production values still pin `api.image.tag`
+# explicitly rather than inheriting it.
+appVersion: "1.12.0-beta.8"
+
+keywords:
+  - midaz
+  - lerian
+  - ledger
+  - plugins
+  - pix
+  - jdpi
+  - bacen
+
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+dependencies:
+  # Library chart — renders nothing on its own; provides the shared env
+  # contracts (multi-tenant, otel, rate-limit, auth, streaming) and the workload
+  # helpers (service, ingress, hpa, pdb, probes, scheduling, serviceAccount).
+  # `name` must be the library's real chart name (`lerian-common-helm`), not the
+  # directory name. No `condition`: the helpers are needed at template time.
+  - name: lerian-common-helm
+    version: 2.1.0
+    repository: "file://../lerian-common"
+  # Bundled by default; `postgresql.external: true` or `postgresql.enabled: false`
+  # switches the chart to an operator-provided Postgres. Exact pin (no ~/^) per
+  # docs/helm-chart-standard.md — the generated Secret name and data keys are
+  # version-sensitive and must be re-verified on any bump.
+  - name: postgresql
+    version: "16.3.5"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled

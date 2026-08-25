@@ -167,6 +167,7 @@ data:
   {{- include "plugin-br-pix-indirect-btg.mtlsConfig" . | nindent 2 }}
   {{- end }}
 
+  SWAGGER_ENABLED: {{ .Values.pix.configmap.SWAGGER_ENABLED | default "true" | quote }}
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

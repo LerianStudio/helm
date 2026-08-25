@@ -321,6 +321,15 @@ data:
   RATE_LIMIT_ENABLED: {{ .Values.outbound.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.outbound.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_BACKOFF_MULTIPLIER | default "2" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_BATCH_SIZE | default "50" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_ENABLED | default "true" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_CONCURRENT | default "2" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_RETRIES | default "10" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_POLLING_INTERVAL | default "1s" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_REQUEST_TIMEOUT | default "5s" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_URL: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_URL | default "https://client-api/v1/webhooks/tempos-transacoes" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_WORKER_COUNT | default "1" | quote }}
   # Extra Env Vars
   {{- with .Values.outbound.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

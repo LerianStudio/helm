@@ -109,7 +109,7 @@ spec:
             {{- toYaml .Values.caradhras.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.caradhras.readinessProbe.path | default "/readyz" }}
+              path: {{ .Values.caradhras.readinessProbe.path | default "/api/readyz" }}
               port: 8000
             initialDelaySeconds: {{ .Values.caradhras.readinessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ .Values.caradhras.readinessProbe.periodSeconds | default 5 }}

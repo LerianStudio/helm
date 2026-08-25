@@ -1,9 +1,0 @@
-{{- if .Values.auth.pdb.enabled }}
-{{- include "lerian-common.pdb" (dict
-      "pdb" .Values.auth.pdb
-      "name" (include "plugin-auth-backend.fullname" .)
-      "labels" (include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name))
-      "selector" (include "plugin-auth-backend.selectorLabels" (dict "context" . "name" .Values.auth.backend.name))
-      "minAvailableDefault" 1
-    ) }}
-{{- end }}

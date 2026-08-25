@@ -32,7 +32,7 @@ global:
 
 common:
   authorizer:
-    # -- Casdoor application client id, shared by the identity and auth
+    # -- Caradhras application client id, shared by the identity and auth
     # components. Set ONCE here instead of per-component
     # {identity,auth}.configmap.AUTHORIZER_CLIENT_ID.
     clientId: "ac56c81d4d6d95c0ac12"
@@ -82,6 +82,14 @@ auth:
 
   initUser:
     enabled: true
+
+# Caradhras (auth backend — formerly the nested `auth.backend`/Casdoor path)
+# is now a top-level component. Its image/service/replicaCount default from
+# the chart (see values.yaml comments); set caradhras.* here only to override.
+# The Caradhras UI (SPA console) stays disabled by default.
+caradhras:
+  ui:
+    enabled: false
 
 # Bundled dependencies. On a managed-cloud install (global.cloud set), turn
 # both off — you're pointing at RDS/ElastiCache instead of the in-cluster bundle.

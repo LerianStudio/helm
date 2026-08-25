@@ -26,8 +26,8 @@ data:
   VERSION: {{ .Values.identity.image.tag | quote }}
 
   # AUTHORIZER
-  AUTHORIZER_PORT: {{ .Values.identity.configmap.AUTHORIZER_PORT | default (.Values.auth.backend.service.port | toString) | quote }}
-  AUTHORIZER_ADDRESS: {{ .Values.identity.configmap.AUTHORIZER_ADDRESS | default (printf "http://%s:%v" (include "plugin-auth-backend.fullname" .) .Values.auth.backend.service.port) | quote }}
+  AUTHORIZER_PORT: {{ .Values.identity.configmap.AUTHORIZER_PORT | default (include "caradhras.servicePort" .) | quote }}
+  AUTHORIZER_ADDRESS: {{ .Values.identity.configmap.AUTHORIZER_ADDRESS | default (printf "http://%s:%v" (include "plugin-caradhras.fullname" .) (include "caradhras.servicePort" .)) | quote }}
   AUTHORIZER_CLIENT_ID: {{ .Values.identity.configmap.AUTHORIZER_CLIENT_ID | default .Values.common.authorizer.clientId | quote }}
   AUTHORIZER_ORGANIZATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_ORGANIZATION_NAME | default "lerian" | quote }}
   AUTHORIZER_APPLICATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_APPLICATION_NAME | default "app-lerian" | quote }}
@@ -120,7 +120,7 @@ data:
   HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST: {{ .Values.identity.configmap.HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST | default "100" | quote }}
   HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC: {{ .Values.identity.configmap.HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC | default "90" | quote }}
 
-  # AUTHORIZER (casbin model/enforcer names — kept consistent with the auth component's Casdoor)
+  # AUTHORIZER (casbin model/enforcer names — kept consistent with the auth component's caradhras backend)
   AUTHORIZER_ENFORCER_NAME: {{ .Values.identity.configmap.AUTHORIZER_ENFORCER_NAME | default "lerian-user-enforcer" | quote }}
   AUTHORIZER_MODEL_NAME: {{ .Values.identity.configmap.AUTHORIZER_MODEL_NAME | default "api-model" | quote }}
 

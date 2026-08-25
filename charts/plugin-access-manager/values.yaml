@@ -42,7 +42,7 @@ global:
 common:
   # Common secrets and configurations
   authorizer:
-    # -- Casdoor application client id, shared by the identity and auth components.
+    # -- Caradhras application client id, shared by the identity and auth components.
     # Consumed by templates/{identity,auth}/configmap.yaml — values.yaml is NOT
     # templated by Helm, so components must never self-reference this with `{{ }}`.
     # Per-component override: {identity,auth}.configmap.AUTHORIZER_CLIENT_ID.
@@ -361,100 +361,128 @@ auth:
     SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
-  backend:
-    # -- Readiness probe configuration. All fields override chart defaults.
-    readinessProbe: {}
-    # -- Liveness probe configuration. All fields override chart defaults.
-    livenessProbe: {}
-    replicaCount: 1
-    revisionHistoryLimit: 10
-    # -- Component name. Empty derives it from the release name (<release>-auth-backend).
-    name: ""
-    # -- Whether to create database on startup (requires CREATEDB permission)
-    createDatabase: true
-    service:
-      # -- Kubernetes service type for the auth-backend (casdoor) component
-      type: ClusterIP
-      # -- Service port for the auth-backend (casdoor) component
-      port: 8000
-    image:
-      # -- Repository for the auth backend (casdoor) container image
-      repository: ghcr.io/lerianstudio/casdoor
-      # -- Image pull policy
-      pullPolicy: Always
-      # -- Image tag used for deployment
-      tag: "3.1.0"
-    resources:
-      # -- CPU and memory limits for pods
-      limits:
-        cpu: 1
-        memory: 1024Mi
-      # -- Minimum CPU and memory requests
-      requests:
-        cpu: 500m
-        memory: 256Mi
-    autoscaling:
-      # -- Enable or disable horizontal pod autoscaling
-      enabled: true
-      # -- Minimum number of replicas
-      minReplicas: 1
-      # -- Maximum number of replicas
-      maxReplicas: 3
-      # -- Target CPU utilization percentage for autoscaling
-      targetCPUUtilizationPercentage: 80
-      targetMemoryUtilizationPercentage: 80
-    migrations:
-      image:
-        # -- Repository for the casdoor-migrations container image
-        repository: ghcr.io/lerianstudio/casdoor-migrations
-        # -- Image pull policy
-        pullPolicy: Always
-        # -- Image tag used for deployment
-        tag: "3.1.0"
-  # -- Init User Job configuration
-  # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
-  # -- If the admin user is deleted by the customer, it will NOT be recreated
+  # -- Init User Job: creates the admin user on FIRST INSTALL ONLY (not on
+  # -- upgrades; if deleted by the customer, it is NOT recreated). Disabled
+  # -- by default and intentionally not advertised here — no environment
+  # -- across benedita/anacleto/AWS staging+production relies on the
+  # -- implicit default, every one of them sets this explicitly either way.
+  # -- All defaults (image, adminEmail/adminDisplayName, timeouts, resources)
+  # -- live in templates/auth/init_user.yaml — set initUser.enabled=true and
+  # -- adminPassword (or useExistingSecret + adminPasswordSecretName) to turn
+  # -- it on.
   initUser:
-    # -- Enable or disable the init user job
+    enabled: false
+
+# -- Caradhras: the auth backend/authorization service, promoted to a
+# top-level component sibling of `identity`/`auth` (formerly nested as
+# `auth.backend`, which ran the legacy Casdoor image). Lerian's Caradhras
+# product replaces Casdoor; the image family is renamed accordingly
+# (casdoor -> caradhras, casdoor-migrations -> caradhras-migrations).
+#
+# Backward-compat: `image.repository`, `image.tag`, `image.pullPolicy`,
+# `service.port`, and `replicaCount` below ship EMPTY on purpose. They are
+# resolved through _helpers.tpl helpers (caradhras.imageRepository/.imageTag/
+# .imagePullPolicy/.servicePort/.replicaCount) using "new key wins, old key
+# is a fallback alias" precedence:
+#   1. caradhras.<field>       (this block, if set)
+#   2. auth.backend.<field>    (legacy path — only relevant for installs that
+#                               still set it in THEIR OWN values overrides;
+#                               this chart's own values.yaml no longer ships
+#                               a real `auth.backend` block)
+#   3. hardcoded chart default (see the helper in _helpers.tpl)
+caradhras:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
+  # -- See "Backward-compat" note above — resolved via caradhras.replicaCount.
+  replicaCount: ""
+  revisionHistoryLimit: 10
+  # -- Component name. Empty derives it from the release name (<release>-caradhras).
+  name: ""
+  # -- Whether to create database on startup (requires CREATEDB permission).
+  # Defaults to false: most DB users granted to caradhras have no CREATEDB
+  # privilege, and the target database/schema is typically provisioned ahead
+  # of time (see benedita sandbox permission-denied incident, 2026-08-25).
+  createDatabase: false
+  service:
+    # -- Kubernetes service type for the caradhras component
+    type: ClusterIP
+    # -- See "Backward-compat" note above — resolved via caradhras.servicePort.
+    port: ""
+    annotations: {}
+  # -- Ingress for the caradhras component itself (admin panel/API, port
+  # -- 8000). Disabled by default. Set caradhras.ingress.enabled=true plus
+  # -- className/annotations/hosts/tls (same shape as auth.ingress/
+  # -- identity.ingress) to turn it on — do not confuse with caradhras.ui.ingress,
+  # -- which fronts the separate SPA console.
+  ingress:
+    enabled: false
+  pdb:
+    # -- Enable or disable PodDisruptionBudget for the caradhras component.
+    # -- Own toggle: caradhras is now an independent top-level component, so
+    # -- it no longer shares (or is affected by) auth.pdb.
     enabled: true
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Minimum number of available pods
+    minAvailable: 0
+    # -- Annotations for PodDisruptionBudget
+    annotations: {}
+  image:
+    # -- NOTE: explicit (non-empty) on purpose, unlike migrations.image.* below.
+    # -- This means an install that only overrides the legacy
+    # -- auth.backend.image.repository/.tag path (and never sets
+    # -- caradhras.image.*) will NOT fall through to that legacy value anymore
+    # -- — this explicit default always wins. Set caradhras.image.* directly
+    # -- to override.
+    repository: ghcr.io/lerianstudio/caradhras
+    pullPolicy: Always
+    tag: "1.2.0"
+  resources:
+    # -- CPU and memory limits for pods
+    limits:
+      cpu: 1
+      memory: 1024Mi
+    # -- Minimum CPU and memory requests
+    requests:
+      cpu: 500m
+      memory: 256Mi
+  autoscaling:
+    # -- Enable or disable horizontal pod autoscaling
+    enabled: true
+    # -- Minimum number of replicas
+    minReplicas: 1
+    # -- Maximum number of replicas
+    maxReplicas: 3
+    # -- Target CPU utilization percentage for autoscaling
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  migrations:
     image:
-      # -- Repository for the casdoor-user-init container image
-      repository: ghcr.io/lerianstudio/casdoor-user-init
-      # -- Image pull policy
-      pullPolicy: Always
-      # -- Image tag used for deployment
-      tag: "3.1.0"
-    # -- Admin user email (default: admin@midaz.tech)
-    adminEmail: "admin@midaz.tech"
-    # -- Admin user display name
-    adminDisplayName: "Admin"
-    # -- Admin password (will be stored in a secret). REQUIRED when initUser is
-    # -- enabled and useExistingSecret is false — the install fails loud if it is
-    # -- empty. The chart ships no default on purpose: a published default password
-    # -- on the platform admin account is a live credential in every install that
-    # -- never overrode it.
-    adminPassword: ""
-    # -- Use existing secret for admin password instead of creating one
-    # -- IMPORTANT: If set to true, adminPasswordSecretName MUST be specified
-    useExistingSecret: false
-    # -- Name of the existing secret containing ADMIN_PASSWORD
-    # -- REQUIRED when useExistingSecret is true
-    # -- The secret must exist in the same namespace and contain the key specified in adminPasswordSecretKey
-    adminPasswordSecretName: ""
-    # -- Key in the secret containing the admin password
-    adminPasswordSecretKey: "ADMIN_PASSWORD"
-    # -- Timeout waiting for Casdoor to be ready (in seconds)
-    casdoorTimeout: 120
-    # -- Timeout waiting for user table to exist (in seconds)
-    tableTimeout: 60
-    # -- Resources for the init user job
-    resources:
-      limits:
-        cpu: 100m
-        memory: 128Mi
-      requests:
-        cpu: 50m
-        memory: 64Mi
+      # -- See "Backward-compat" note above — resolved via
+      # -- caradhras.migrationsImageRepository. NOTE: the GHCR repo
+      # -- `caradhras-migrations` carries TWO unrelated version trains —
+      # -- 1.2.0-beta.x (caradhras's own migrations, correct) and 3.2.0-beta.x
+      # -- (a different, legacy plugin-access-manager applier). The chart
+      # -- default (see templates/_helpers.tpl) always pins the 1.2.0-beta.x
+      # -- train — if you override this, keep it on that train.
+      repository: ""
+      # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
+      pullPolicy: ""
+      # -- See "Backward-compat" note above — resolved via caradhras.migrationsImageTag.
+      # -- Must stay on the 1.2.0-beta.x train if overridden.
+      tag: ""
+  # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
+  # -- same-origin to the caradhras backend Service. Disabled by default.
+  # -- Caradhras console (SPA), disabled by default and intentionally not
+  # -- advertised here. All defaults (image, service port, resources, probes,
+  # -- ingress shape) live in templates/caradhras/ui-*.yaml — set
+  # -- caradhras.ui.enabled=true and any of the fields those templates read
+  # -- (image, service, ingress, resources, autoscaling, ...) to turn it on.
+  ui:
+    enabled: false
+
 auth-database:
   # Database dependency for identity and access management.
   # For more details, refer to the documentation:

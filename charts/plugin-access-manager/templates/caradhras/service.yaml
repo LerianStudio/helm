@@ -1,0 +1,6 @@
+{{- include "lerian-common.service" (dict
+      "service" (dict "type" (.Values.caradhras.service.type | default "ClusterIP") "port" (include "caradhras.servicePort" .) "annotations" .Values.caradhras.service.annotations)
+      "name" (include "plugin-caradhras.fullname" .)
+      "labels" (printf "%s " (include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name)))
+      "selector" (include "plugin-caradhras.selectorLabels" (dict "context" . "name" .Values.caradhras.name))
+    ) }}

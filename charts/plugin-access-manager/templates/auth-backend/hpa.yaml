@@ -1,7 +1,0 @@
-{{- if .Values.auth.backend.autoscaling.enabled }}
-{{- include "lerian-common.hpa" (dict
-      "autoscaling" .Values.auth.backend.autoscaling
-      "name" (include "plugin-auth-backend.fullname" .)
-      "labels" (printf "%s " (include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name)))
-    ) }}
-{{- end }}

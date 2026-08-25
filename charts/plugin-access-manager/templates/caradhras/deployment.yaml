@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "plugin-auth-backend.fullname" . }}
+  name: {{ include "plugin-caradhras.fullname" . }}
   labels:
-    {{- include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name ) | nindent 4 }} 
+    {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 4 }}
 spec:
-  revisionHistoryLimit: {{ .Values.auth.backend.revisionHistoryLimit | default 10 }}
+  revisionHistoryLimit: {{ .Values.caradhras.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.auth.backend.autoscaling.enabled }}
-  replicas: {{ .Values.auth.backend.replicaCount }}
+  {{- if not .Values.caradhras.autoscaling.enabled }}
+  replicas: {{ include "caradhras.replicaCount" . }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "plugin-auth-backend.selectorLabels" (dict "context" . "name" .Values.auth.backend.name) | nindent 6 }}
+      {{- include "plugin-caradhras.selectorLabels" (dict "context" . "name" .Values.caradhras.name) | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "plugin-auth-backend.labels" (dict "context" . "name" .Values.auth.backend.name ) | nindent 8 }}
+        {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 8 }}
     spec:
       {{- with .Values.auth.imagePullSecrets }}
       imagePullSecrets:
@@ -47,16 +47,16 @@ spec:
                 echo "$svc is ready!";
               done;
       containers:
-        - name: {{ include "plugin-auth-backend.fullname" . }}
-          # Casdoor (beego) writes to its working dir at runtime — logs/casdoor.log and
-          # tmp/<session> files — so it cannot run on a read-only root (the upstream
-          # casdoor-helm chart does not enable it either). Disable it for THIS container only;
-          # the init container and the other components keep readOnlyRootFilesystem=true.
+        - name: {{ include "plugin-caradhras.fullname" . }}
+          # Caradhras (beego) writes to its working dir at runtime — logs/caradhras.log and
+          # tmp/<session> files — so it cannot run on a read-only root. Disable it for THIS
+          # container only; the init container and the other components keep
+          # readOnlyRootFilesystem=true.
           securityContext:
             {{- toYaml (omit .Values.auth.securityContext "readOnlyRootFilesystem") | nindent 12 }}
             readOnlyRootFilesystem: false
-          image: "{{ .Values.auth.backend.image.repository }}:{{ .Values.auth.backend.image.tag }}"
-          imagePullPolicy: {{ .Values.auth.backend.image.pullPolicy }}
+          image: "{{ include "caradhras.imageRepository" . }}:{{ include "caradhras.imageTag" . }}"
+          imagePullPolicy: {{ include "caradhras.imagePullPolicy" . }}
           ports:
             - name: http
               containerPort: 8000
@@ -66,10 +66,10 @@ spec:
             - -c
             - |
               export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} dbname=${DB_NAME}"
-              exec /server --createDatabase={{- if hasKey .Values.auth.backend "createDatabase" }}{{ .Values.auth.backend.createDatabase }}{{- else }}true{{- end }}
+              exec /server --createDatabase={{- if hasKey .Values.caradhras "createDatabase" }}{{ .Values.caradhras.createDatabase }}{{- else }}false{{- end }}
           envFrom:
           - configMapRef:
-              name: {{ include "plugin-auth-backend.fullname" . }}
+              name: {{ include "plugin-caradhras.fullname" . }}
           env:
           - name: DB_HOST
             valueFrom:
@@ -106,25 +106,25 @@ spec:
             value: "$(HOST_IP):4317"
           {{ end }}
           resources:
-            {{- toYaml .Values.auth.backend.resources | nindent 12 }}
+            {{- toYaml .Values.caradhras.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.auth.backend.readinessProbe.path | default "/readyz" }}
+              path: {{ .Values.caradhras.readinessProbe.path | default "/api/readyz" }}
               port: 8000
-            initialDelaySeconds: {{ .Values.auth.backend.readinessProbe.initialDelaySeconds | default 15 }}
-            periodSeconds: {{ .Values.auth.backend.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.auth.backend.readinessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.auth.backend.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.auth.backend.readinessProbe.failureThreshold | default 3 }}
+            initialDelaySeconds: {{ .Values.caradhras.readinessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.caradhras.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ include "caradhras.readinessProbeTimeoutSeconds" . }}
+            successThreshold: {{ .Values.caradhras.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.caradhras.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.auth.backend.livenessProbe.path | default "/api/health" }}
+              path: {{ .Values.caradhras.livenessProbe.path | default "/api/health" }}
               port: 8000
-            initialDelaySeconds: {{ .Values.auth.backend.livenessProbe.initialDelaySeconds | default 20 }}
-            periodSeconds: {{ .Values.auth.backend.livenessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.auth.backend.livenessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.auth.backend.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.auth.backend.livenessProbe.failureThreshold | default 3 }}
+            initialDelaySeconds: {{ .Values.caradhras.livenessProbe.initialDelaySeconds | default 20 }}
+            periodSeconds: {{ .Values.caradhras.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ include "caradhras.livenessProbeTimeoutSeconds" . }}
+            successThreshold: {{ .Values.caradhras.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.caradhras.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.auth.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

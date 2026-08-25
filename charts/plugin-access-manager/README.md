@@ -5,8 +5,8 @@
 - Chart type: `multi-component`
 - Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the bundled `auth-database` subchart Secret (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
-- Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/auth-backend image tags, ingress, resources, and persistence.
-- Initial admin: the Casdoor bootstrap admin (`admin@midaz.tech`) is first seeded from `init_data.json` baked into the `ghcr.io/lerianstudio/casdoor` image at first boot, with a placeholder password. While `auth.initUser.enabled` is true (the default), a `post-install` hook Job then sets that account's password to the operator-supplied credential, which therefore always replaces the image placeholder: `auth.initUser.adminPassword` when `auth.initUser.useExistingSecret=false`, otherwise the `adminPasswordSecretKey` value from the Secret named by `auth.initUser.adminPasswordSecretName`. The hook runs on `helm install` only, never on upgrades, so upgrades and later value changes neither reset the password nor recreate a deleted admin account, and passwords rotated inside Casdoor are preserved. If `auth.initUser.enabled=false`, the chart never touches the account and the image placeholder stays live; rotate it immediately after the first login.
+- Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence.
+- Initial admin: the bootstrap admin (`admin@midaz.tech`) is first seeded from `init_data.json` baked into the `ghcr.io/lerianstudio/caradhras` image at first boot, with a placeholder password. While `auth.initUser.enabled` is true (the default), a `post-install` hook Job then sets that account's password to the operator-supplied credential, which therefore always replaces the image placeholder: `auth.initUser.adminPassword` when `auth.initUser.useExistingSecret=false`, otherwise the `adminPasswordSecretKey` value from the Secret named by `auth.initUser.adminPasswordSecretName`. The hook runs on `helm install` only, never on upgrades, so upgrades and later value changes neither reset the password nor recreate a deleted admin account, and passwords rotated inside Caradhras are preserved. If `auth.initUser.enabled=false`, the chart never touches the account and the image placeholder stays live; rotate it immediately after the first login.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
 This helm chart installs [Plugin Acess Manager](https://docs.lerian.studio/docs/auth-identity) for Midaz, a high-performance and open-source ledger.
@@ -33,7 +33,7 @@ $ helm list -n midaz-plugins
 ## Managed Cloud (`global.cloud`)
 
 Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
-bundled in-cluster Casdoor/Postgres/Redis with one knob:
+bundled in-cluster Caradhras/Postgres/Redis with one knob:
 
 ```yaml
 global:
@@ -228,9 +228,30 @@ ingress:
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
-| `backend.replicaCount` | Number of replicas for the backend | `1` |
-| `backend.name` | Name of the backend service | `plugin-access-manager-auth-backend` |
-| `backend.autoscaling` | Autoscaling configuration for the backend | See `values.yaml` |
+
+### Caradhras Service (auth backend)
+
+Caradhras is a top-level component, sibling to `identity`/`auth` (formerly the
+nested `auth.backend`, which ran the legacy Casdoor image). A legacy
+`auth.backend.*` override in your OWN values file is still honored as a
+fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
+`replicaCount` — see `docs/UPGRADE-10.0.md`.
+
+| Parameter | Description | Default |
+| --- | --- | --- |
+| `caradhras.replicaCount` | Number of replicas | `1` |
+| `caradhras.name` | Name of the caradhras component | `<release>-caradhras` |
+| `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
+| `caradhras.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
+| `caradhras.service.port` | Service port | `8000` |
+| `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
+| `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
+| `caradhras.migrations.image.tag` | Image tag — MUST stay on the `1.2.0-beta.x` train, not the unrelated `3.2.0-beta.x` train also present in this GHCR repo | `1.2.0-beta.59` |
+| `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
+| `caradhras.ui.image.repository` | Repository for the caradhras-ui container image | `ghcr.io/lerianstudio/caradhras-ui` |
+| `caradhras.ui.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
+| `caradhras.ui.service.port` | Service port | `80` |
+| `caradhras.ui.ingress.enabled` | Enable ingress for the UI | `false` |
 
 ### Auth Database (PostgreSQL)
 
@@ -296,8 +317,8 @@ ingress:
   auth:
     configmap:
       DB_HOST: { your-host }
-      CASDOOR_DB_USER: { your-host-user }
-      CASDOOR_DB_PORT: { your-host-port }
+      DB_USER: { your-host-user }
+      DB_PORT: { your-host-port }
     
     secrets:
       DB_PASSWORD: { your-host-pass }

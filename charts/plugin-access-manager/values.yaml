@@ -433,8 +433,11 @@ caradhras:
   revisionHistoryLimit: 10
   # -- Component name. Empty derives it from the release name (<release>-caradhras).
   name: ""
-  # -- Whether to create database on startup (requires CREATEDB permission)
-  createDatabase: true
+  # -- Whether to create database on startup (requires CREATEDB permission).
+  # Defaults to false: most DB users granted to caradhras have no CREATEDB
+  # privilege, and the target database/schema is typically provisioned ahead
+  # of time (see benedita sandbox permission-denied incident, 2026-08-25).
+  createDatabase: false
   service:
     # -- Kubernetes service type for the caradhras component
     type: ClusterIP

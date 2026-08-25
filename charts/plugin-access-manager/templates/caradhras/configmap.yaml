@@ -20,3 +20,14 @@ data:
   quota: '{"organization": -1, "user": -1, "application": -1, "provider": -1}'
   logConfig: '{"filename": "logs/caradhras.log", "maxdays": 99999, "perm": "0770"}'
   initDataFile: {{ .Values.caradhras.initDataFile | default "./init_data.json" | quote }}
+  # lib-streaming v3 fail-fast: caradhras >= 1.2.0-beta.31 refuses to boot
+  # without its roster name as the CloudEvents source. This is the binary's
+  # own service identity, not an environment-specific setting, so it is
+  # fixed here rather than left to an override. Do NOT also set
+  # STREAMING_CLOUDEVENTS_SOURCE via caradhras.extraEnvVars below — a second
+  # ConfigMap key with the same name is undefined behavior.
+  STREAMING_CLOUDEVENTS_SOURCE: "caradhras"
+  # Extra Env Vars
+  {{- with .Values.caradhras.extraEnvVars }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

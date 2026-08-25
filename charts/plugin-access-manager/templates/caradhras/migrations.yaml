@@ -37,14 +37,8 @@ spec:
             done;
       containers:
         - name: migrate
-          {{- $migrationImage := .Values.caradhras.migrations.image -}}
-          {{- if kindIs "string" $migrationImage }}
-          image: {{ $migrationImage | quote }}
-          imagePullPolicy: Always
-          {{- else }}
-          image: "{{ $migrationImage.repository | default "ghcr.io/lerianstudio/caradhras-migrations" }}:{{ $migrationImage.tag | default "1.2.0-beta.59" }}"
-          imagePullPolicy: {{ $migrationImage.pullPolicy | default "Always" }}
-          {{- end }}
+          image: "{{ include "caradhras.migrationsImageRepository" . }}:{{ include "caradhras.migrationsImageTag" . }}"
+          imagePullPolicy: {{ include "caradhras.migrationsImagePullPolicy" . }}
           env:
             - name: DB_HOST
               valueFrom:

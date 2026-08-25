@@ -480,16 +480,19 @@ caradhras:
     targetMemoryUtilizationPercentage: 80
   migrations:
     image:
-      # -- Repository for the caradhras-migrations container image. NOTE: the
-      # -- GHCR repo `caradhras-migrations` carries TWO unrelated version
-      # -- trains — 1.2.0-beta.x (caradhras's own migrations, correct) and
-      # -- 3.2.0-beta.x (a different, legacy plugin-access-manager applier).
-      # -- Always pin the 1.2.0-beta.x train here.
-      repository: ghcr.io/lerianstudio/caradhras-migrations
-      # -- Image pull policy
-      pullPolicy: Always
-      # -- Image tag used for deployment — must stay on the 1.2.0-beta.x train.
-      tag: "1.2.0-beta.59"
+      # -- See "Backward-compat" note above — resolved via
+      # -- caradhras.migrationsImageRepository. NOTE: the GHCR repo
+      # -- `caradhras-migrations` carries TWO unrelated version trains —
+      # -- 1.2.0-beta.x (caradhras's own migrations, correct) and 3.2.0-beta.x
+      # -- (a different, legacy plugin-access-manager applier). The chart
+      # -- default (see templates/_helpers.tpl) always pins the 1.2.0-beta.x
+      # -- train — if you override this, keep it on that train.
+      repository: ""
+      # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
+      pullPolicy: ""
+      # -- See "Backward-compat" note above — resolved via caradhras.migrationsImageTag.
+      # -- Must stay on the 1.2.0-beta.x train if overridden.
+      tag: ""
   # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
   # -- same-origin to the caradhras backend Service. Disabled by default.
   # -- Caradhras console (SPA), disabled by default and intentionally not

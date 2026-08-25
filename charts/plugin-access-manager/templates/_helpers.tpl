@@ -222,6 +222,29 @@ here are the single source of truth.
 {{- end }}
 
 {{/*
+caradhras.migrationsImageRepository / .migrationsImageTag /
+.migrationsImagePullPolicy — same "new wins, old is a fallback alias"
+precedence as caradhras.imageRepository/etc above, but for the migrations
+Job image. Without this, an install that only overrode the legacy
+auth.backend.migrations.image.* path would silently start running the NEW
+caradhras-migrations image against a database still on the OLD (Casdoor)
+schema the moment it upgraded — the exact kind of wrong-migration-chain
+risk the 1.2.0-beta.x vs 3.2.0-beta.x GHCR-train warning above is about,
+just triggered by a missing fallback instead of a tag typo.
+*/}}
+{{- define "caradhras.migrationsImageRepository" -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.repository "oldVal" (dig "backend" "migrations" "image" "repository" "" .Values.auth) "default" "ghcr.io/lerianstudio/caradhras-migrations") -}}
+{{- end }}
+
+{{- define "caradhras.migrationsImageTag" -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.2.0-beta.59") -}}
+{{- end }}
+
+{{- define "caradhras.migrationsImagePullPolicy" -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.pullPolicy "oldVal" (dig "backend" "migrations" "image" "pullPolicy" "" .Values.auth) "default" "Always") -}}
+{{- end }}
+
+{{/*
 Create the name of the identity service account to use
 */}}
 {{- define "plugin-identity.serviceAccountName" -}}

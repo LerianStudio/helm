@@ -176,6 +176,82 @@ collection:
   # operamos.
   nodeInfrastructure: false
 
+  # ⚠️ ALLOWLIST DE OBJETOS DE CLUSTER — o kube-state-metrics NÃO tem allowlist
+  # própria. MEDIDO em aws-devops (2026-08-25): sem este filtro ele entrega o
+  # conjunto padrão INTEIRO, 184 famílias e 5.272 séries. Estas 46 famílias são
+  # 1.254 séries — corte de 76%.
+  #
+  # O corte é por VALOR DIAGNÓSTICO, não por volume. Dois critérios:
+  #   1. responde pergunta operacional (por que caiu, por que reiniciou, está no
+  #      limite, saturou)?
+  #   2. é ESTADO ou INVENTÁRIO? Estado muda e alerta; inventário só descreve o que
+  #      existe — e `kubectl` responde melhor e de graça.
+  #
+  # ⚠️ COLETAMOS O MÍNIMO. Cinco grupos aqui (nó, job, PVC, PDB, init container) não
+  # têm alerta nem dashboard hoje: entram porque respondem pergunta real, não porque
+  # já são consultados. Habilitar mais é acrescentar um nome nesta lista — o que foi
+  # removido, por quê, e como ver de outra forma está em
+  # `docs/metricas-removidas-ksm.md`, com o custo em séries de cada um.
+  clusterObjectAllowlist:
+    # --- SAÚDE DE CONTÊINER: por que caiu, por que reiniciou (400 séries) ---
+    - kube_pod_container_status_running
+    - kube_pod_container_status_waiting
+    - kube_pod_container_status_terminated
+    - kube_pod_container_status_ready
+    - kube_pod_container_status_restarts_total
+    - kube_pod_container_status_waiting_reason
+    - kube_pod_container_status_terminated_reason
+    - kube_pod_container_status_last_terminated_reason
+    # --- FASE DE POD: substitui k8s_pod_phase (285) ---
+    - kube_pod_status_phase
+    # --- RECURSOS: o denominador da razão uso/limite (172) ---
+    - kube_pod_container_resource_requests
+    - kube_pod_container_resource_limits
+    # --- WORKLOAD desejado vs real: o alerta de réplica faltando (111) ---
+    - kube_deployment_spec_replicas
+    - kube_deployment_status_replicas_available
+    - kube_deployment_status_replicas_unavailable
+    - kube_statefulset_replicas
+    - kube_statefulset_status_replicas_ready
+    - kube_daemonset_status_desired_number_scheduled
+    - kube_daemonset_status_number_ready
+    - kube_daemonset_status_number_unavailable
+    # --- NÓ: NotReady, MemoryPressure, DiskPressure (75) — sem alerta hoje ---
+    - kube_node_status_condition
+    - kube_node_status_capacity
+    - kube_node_status_allocatable
+    - kube_node_spec_unschedulable
+    # --- HPA: teto de escala, 69 refs hoje (26) ---
+    - kube_horizontalpodautoscaler_spec_max_replicas
+    - kube_horizontalpodautoscaler_spec_min_replicas
+    - kube_horizontalpodautoscaler_status_current_replicas
+    - kube_horizontalpodautoscaler_status_desired_replicas
+    - kube_horizontalpodautoscaler_status_condition
+    # --- JOB/CRONJOB: batch falhando em silêncio (34) — sem alerta hoje ---
+    - kube_job_status_failed
+    - kube_job_status_succeeded
+    - kube_job_status_active
+    - kube_job_complete
+    - kube_cronjob_status_last_schedule_time
+    - kube_cronjob_status_last_successful_time
+    # --- ARMAZENAMENTO: PVC Pending derruba banco (20) — sem alerta hoje ---
+    - kube_persistentvolumeclaim_status_phase
+    - kube_persistentvolumeclaim_resource_requests_storage_bytes
+    - kube_persistentvolume_status_phase
+    - kube_persistentvolume_capacity_bytes
+    # --- PDB: bloqueia drain e trava upgrade de cluster (12) — sem alerta hoje ---
+    - kube_poddisruptionbudget_status_current_healthy
+    - kube_poddisruptionbudget_status_desired_healthy
+    - kube_poddisruptionbudget_status_pod_disruptions_allowed
+    # --- INIT CONTAINER: pod preso em Init: é invisível sem isto (27) ---
+    - kube_pod_init_container_status_waiting
+    - kube_pod_init_container_status_terminated_reason
+    - kube_pod_init_container_status_restarts_total
+    # --- CORRELAÇÃO: 1 série/pod, liga pod → Deployment (57) ---
+    - kube_pod_owner
+    # --- NAMESPACE: preso em Terminating (28) ---
+    - kube_namespace_status_phase
+
   # Consumo REAL de CPU, memória, disco e rede por contêiner, raspado do cAdvisor
   # embutido no kubelet de cada nó.
   #

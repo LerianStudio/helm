@@ -600,11 +600,36 @@ prometheus.scrape "objetos_de_cluster" {
     __address__ = {{ $alvoObjetos | quote }},
   }]
   scrape_interval = {{ $interval | quote }}
-  forward_to      = [prometheus.relabel.procedencia.receiver]
+  forward_to      = [prometheus.relabel.allowlist_objetos.receiver]
 }
 
-// Origin marking for the scraped series.
-prometheus.relabel "procedencia" {
+// Allowlist, then origin marking. `keep` on __name__ discards everything absent
+// from the list BEFORE it reaches the destination, so the cost is never paid.
+//
+// ⚠️ WITHOUT this filter kube-state-metrics ships its FULL default set: 184
+// families, 5.272 series measured in aws-devops on 2026-08-25. The allowlist keeps
+// 46 families / 1.254 series — a 76% cut.
+//
+// The cut is by DIAGNOSTIC VALUE, not by volume. Two questions decide it:
+//   1. does the family answer an operational question (why did it fall, why did it
+//      restart, is it near the limit, did it saturate)?
+//   2. is it STATE or INVENTORY? State changes and alerts; inventory only describes
+//      what exists, and `kubectl` answers that better and for free.
+//
+// The removed families and where to see that information another way are documented
+// in docs/metricas-removidas-ksm.md. WE COLLECT THE MINIMUM: enabling more is adding
+// a name to `collection.clusterObjectAllowlist`, and the doc says what each one costs.
+{{- $listaObjetos := (.Values.collection).clusterObjectAllowlist }}
+{{- if not $listaObjetos }}
+{{- fail "\nalloy-lerian: `collection.clusterObjectAllowlist` esta vazia, mas ha um produtor\nde objetos de cluster configurado.\n\nUma allowlist vazia gera `regex = \"\"` com `action = \"keep\"`, e isso descarta TODA\nmetrica de objeto de cluster — silenciosamente. Nenhum erro, componente saudavel,\ne a perda so aparece quando um painel fica vazio ou um alerta nunca dispara.\n\nDeclare as familias que este ambiente precisa, ou desligue o produtor:\n\n  kube-state-metrics:\n    enabled: false\n" }}
+{{- end }}
+prometheus.relabel "allowlist_objetos" {
+  rule {
+    source_labels = ["__name__"]
+    regex         = "{{ join "|" $listaObjetos }}"
+    action        = "keep"
+  }
+
   rule {
     target_label = "client_id"
     replacement  = {{ $origin | quote }}

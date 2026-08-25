@@ -1,4 +1,80 @@
 {{- /*
+Shared partial that renders the migration-only Secret for one component.
+
+WHY THIS EXISTS. The migration Job below is a Helm hook (pre-upgrade,
+post-install), which ArgoCD maps to PreSync. Hook resources are applied BEFORE
+the release's normal resources, but the component's application Secret is a
+normal resource. For a component that is NEW to an already-installed release
+that is a deadlock:
+
+  1. PreSync starts <component>-migrations
+  2. the application Secret does not exist yet, so the pod cannot start
+     (CreateContainerConfigError: secret "<component>" not found)
+  3. PreSync fails, the sync aborts, and the Secret is therefore never applied
+  4. repeat forever
+
+Components already present in the release are immune only because their Secrets
+predate the change, which is why this stayed invisible until pixauto was added.
+
+The fix is a minimal Secret carrying ONLY DATABASE_URL, applied as a hook one
+weight EARLIER than the Job (-10 vs -5) so it is guaranteed to exist when the
+Job runs. The full application Secret deliberately stays a NORMAL resource so
+its sensitive runtime keys are never left behind as orphaned hooks on uninstall.
+Same pattern as charts/streaming-hub and charts/br-ccs.
+
+DELETE POLICY is before-hook-creation ONLY - deliberately NOT hook-succeeded.
+Both Helm and ArgoCD treat a Secret as "succeeded" the moment it applies, so a
+hook-succeeded policy would delete the DSN at the end of weight -10, BEFORE the
+Job at weight -5 can read it, reintroducing the very failure this exists to fix.
+The Secret lingers after the run, but it only duplicates a DSN the application
+Secret already holds permanently, so it adds no new exposure.
+
+NOT rendered when useExistingSecret=true: the operator owns that Secret and it
+is a normal cluster object that already exists before any sync, so the Job reads
+it directly.
+
+Required inputs in the dict:
+  context     -- root $ context
+  component   -- yaml key (e.g. "spi", "dictHub", "cobHub")
+  serviceName -- kebab-case service suffix (e.g. "spi", "dict-hub", "cob-hub")
+*/}}
+{{- define "plugin-br-pix-switch.migrationSecret" -}}
+{{- $ctx := .context -}}
+{{- $component := .component -}}
+{{- $serviceName := .serviceName -}}
+{{- $componentValues := index $ctx.Values $component -}}
+{{- $migrationsCfg := default (dict) $componentValues.migrations -}}
+{{- $migrationsEnabled := true }}
+{{- if hasKey $migrationsCfg "enabled" }}
+  {{- $migrationsEnabled = $migrationsCfg.enabled }}
+{{- end }}
+{{- $dsn := "" }}
+{{- with $componentValues.secrets }}
+{{- $dsn = default "" (index . "DATABASE_URL") }}
+{{- end }}
+{{- if and $componentValues.enabled $migrationsEnabled (not $componentValues.useExistingSecret) $dsn }}
+{{- $componentFullname := include "plugin-br-pix-switch.componentFullname" (dict "context" $ctx "component" $serviceName) }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ printf "%s-migrations" $componentFullname | trunc 63 | trimSuffix "-" }}
+  namespace: {{ include "global.namespace" $ctx }}
+  labels:
+    {{- include "plugin-br-pix-switch.labels" (dict "context" $ctx "component" (printf "%s-migrations" $serviceName)) | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+type: Opaque
+stringData:
+  DATABASE_URL: {{ $dsn | quote }}
+{{- end }}
+{{- end }}
+
+{{- /*
 Shared partial that renders a Postgres migration Job for one component.
 
 The per-component image (built from apps/<app>/components/<comp>/Dockerfile)
@@ -42,6 +118,28 @@ Required inputs in the dict:
 {{- end }}
 {{- if and $componentValues.enabled $migrationsEnabled }}
 {{- $componentFullname := include "plugin-br-pix-switch.componentFullname" (dict "context" $ctx "component" $serviceName) }}
+{{- /*
+  Resolve which Secret carries DATABASE_URL for this Job.
+
+  Default: the migration-only Secret rendered by the partial above, a hook at
+  weight -10 that is guaranteed to exist when this Job runs at -5. Pointing at
+  the application Secret instead is the deadlock documented there - it is a
+  normal resource and does not exist yet on the sync that first enables a
+  component.
+
+  Fall back to componentSecretName when useExistingSecret=true (operator-owned
+  Secret, already in the cluster, no hook needed) or when the component declares
+  no DATABASE_URL, in which case the partial rendered nothing and this Job would
+  fail on a dangling reference.
+*/}}
+{{- $migrationDsn := "" }}
+{{- with $componentValues.secrets }}
+{{- $migrationDsn = default "" (index . "DATABASE_URL") }}
+{{- end }}
+{{- $migrationSecretName := include "plugin-br-pix-switch.componentSecretName" (dict "context" $ctx "component" $serviceName "componentValues" $componentValues) }}
+{{- if and (not $componentValues.useExistingSecret) $migrationDsn }}
+{{- $migrationSecretName = printf "%s-migrations" $componentFullname | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- $componentImage := include "plugin-br-pix-switch.componentImage" (dict "context" $ctx "componentValues" $componentValues) }}
 {{- $componentPullPolicy := include "plugin-br-pix-switch.componentPullPolicy" (dict "context" $ctx "componentValues" $componentValues) }}
 apiVersion: batch/v1
@@ -86,7 +184,7 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ $componentFullname }}
+                  name: {{ $migrationSecretName }}
                   key: DATABASE_URL
           command:
             - /migrate

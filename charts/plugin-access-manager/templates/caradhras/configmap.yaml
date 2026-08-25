@@ -1,9 +1,9 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ include "plugin-auth-backend.fullname" . }}
+  name: {{ include "plugin-caradhras.fullname" . }}
 data:
-  appname: plugin-auth-casdoor-backend
+  appname: plugin-auth-caradhras-backend
   runmode: dev
   httpport: "8000"
   driverName: "postgres"
@@ -18,5 +18,5 @@ data:
   enableErrorMask: "false"
   enableGzip: "true"
   quota: '{"organization": -1, "user": -1, "application": -1, "provider": -1}'
-  logConfig: '{"filename": "logs/casdoor.log", "maxdays": 99999, "perm": "0770"}'
-  initDataFile: {{ .Values.auth.backend.initDataFile | default "./init_data.json" | quote }}
+  logConfig: '{"filename": "logs/caradhras.log", "maxdays": 99999, "perm": "0770"}'
+  initDataFile: {{ .Values.caradhras.initDataFile | default "./init_data.json" | quote }}

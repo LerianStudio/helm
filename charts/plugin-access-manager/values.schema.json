@@ -31,6 +31,22 @@
       },
       "additionalProperties": true
     },
+    "caradhras": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        },
+        "ui": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
     "auth-database": {
       "type": "object",
       "additionalProperties": true

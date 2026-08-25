@@ -1,0 +1,94 @@
+{{- if .Values.caradhras.ui.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-caradhras-ui.fullname" . }}
+  labels:
+    {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" .Values.caradhras.ui.name ) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.caradhras.ui.revisionHistoryLimit | default 10 }}
+  {{- if not .Values.caradhras.ui.autoscaling.enabled }}
+  replicas: {{ .Values.caradhras.ui.replicaCount | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-caradhras-ui.selectorLabels" (dict "context" . "name" .Values.caradhras.ui.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" .Values.caradhras.ui.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.caradhras.ui.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: {{ include "plugin-caradhras-ui.fullname" . }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            # The bundled nginx (SPA + same-origin reverse proxy to the caradhras
+            # backend) writes its default cache/pid paths at runtime, so the root
+            # filesystem is left writable for this container only — same rationale
+            # as the caradhras backend container.
+            readOnlyRootFilesystem: false
+          {{- $img := .Values.caradhras.ui.image -}}
+          {{- if kindIs "string" $img }}
+          image: {{ $img | quote }}
+          imagePullPolicy: Always
+          {{- else }}
+          image: "{{ $img.repository | default "ghcr.io/lerianstudio/caradhras-ui" }}:{{ $img.tag | default "1.2.0-beta.59" }}"
+          imagePullPolicy: {{ $img.pullPolicy | default "Always" }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.caradhras.ui.service.port | default 80 }}
+              protocol: TCP
+          env:
+            # Same-origin reverse-proxy target: the SPA's nginx forwards API calls
+            # to the caradhras backend Service instead of a cross-origin host.
+            # NOTE: the exact env var the caradhras-ui image expects for this is
+            # unverified (no application source available at chart-authoring time)
+            # — verify against the real image before relying on this in production;
+            # use caradhras.ui.extraEnvVars to override/add the correct one meanwhile.
+            - name: CARADHRAS_BACKEND_URL
+              value: {{ printf "http://%s:%s" (include "plugin-caradhras.fullname" .) (include "caradhras.servicePort" .) | quote }}
+          {{- with .Values.caradhras.ui.extraEnvVars }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml (.Values.caradhras.ui.resources | default (dict "limits" (dict "cpu" "200m" "memory" "256Mi") "requests" (dict "cpu" "100m" "memory" "128Mi"))) | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.caradhras.ui.readinessProbe.path | default "/" }}
+              port: {{ .Values.caradhras.ui.service.port | default 80 }}
+            initialDelaySeconds: {{ .Values.caradhras.ui.readinessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.caradhras.ui.readinessProbe.periodSeconds | default 5 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.caradhras.ui.livenessProbe.path | default "/" }}
+              port: {{ .Values.caradhras.ui.service.port | default 80 }}
+            initialDelaySeconds: {{ .Values.caradhras.ui.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.caradhras.ui.livenessProbe.periodSeconds | default 20 }}
+      {{- with .Values.caradhras.ui.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.caradhras.ui.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.caradhras.ui.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,8 @@
+{{- if .Values.caradhras.ui.enabled }}
+{{- include "lerian-common.service" (dict
+      "service" .Values.caradhras.ui.service
+      "name" (include "plugin-caradhras-ui.fullname" .)
+      "labels" (printf "%s " (include "plugin-caradhras-ui.labels" (dict "context" . "name" .Values.caradhras.ui.name)))
+      "selector" (include "plugin-caradhras-ui.selectorLabels" (dict "context" . "name" .Values.caradhras.ui.name))
+    ) }}
+{{- end }}

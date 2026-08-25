@@ -5,7 +5,7 @@ metadata:
   # whose VALUE is the Job name; >63 chars makes spec.template.labels invalid and
   # the post-install hook fails. The release-prefixed fullname (lp-<module>-<key>)
   # is already ~63, so the "-migrations" suffix overflows without the trunc.
-  name: {{ printf "%s-migrations" (include "plugin-auth-backend.fullname" .) | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s-migrations" (include "plugin-caradhras.fullname" .) | trunc 63 | trimSuffix "-" }}
   annotations:
     helm.sh/hook: pre-upgrade, post-install
     helm.sh/hook-delete-policy: before-hook-creation
@@ -37,12 +37,12 @@ spec:
             done;
       containers:
         - name: migrate
-          {{- $migrationImage := .Values.auth.backend.migrations.image -}}
+          {{- $migrationImage := .Values.caradhras.migrations.image -}}
           {{- if kindIs "string" $migrationImage }}
           image: {{ $migrationImage | quote }}
           imagePullPolicy: Always
           {{- else }}
-          image: "{{ $migrationImage.repository | default "ghcr.io/lerianstudio/casdoor-migrations" }}:{{ $migrationImage.tag | default "latest" }}"
+          image: "{{ $migrationImage.repository | default "ghcr.io/lerianstudio/caradhras-migrations" }}:{{ $migrationImage.tag | default "1.2.0-beta.59" }}"
           imagePullPolicy: {{ $migrationImage.pullPolicy | default "Always" }}
           {{- end }}
           env:

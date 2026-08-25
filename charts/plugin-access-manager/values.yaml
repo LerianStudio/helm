@@ -42,7 +42,7 @@ global:
 common:
   # Common secrets and configurations
   authorizer:
-    # -- Casdoor application client id, shared by the identity and auth components.
+    # -- Caradhras application client id, shared by the identity and auth components.
     # Consumed by templates/{identity,auth}/configmap.yaml — values.yaml is NOT
     # templated by Helm, so components must never self-reference this with `{{ }}`.
     # Per-component override: {identity,auth}.configmap.AUTHORIZER_CLIENT_ID.
@@ -361,56 +361,6 @@ auth:
     SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
-  backend:
-    # -- Readiness probe configuration. All fields override chart defaults.
-    readinessProbe: {}
-    # -- Liveness probe configuration. All fields override chart defaults.
-    livenessProbe: {}
-    replicaCount: 1
-    revisionHistoryLimit: 10
-    # -- Component name. Empty derives it from the release name (<release>-auth-backend).
-    name: ""
-    # -- Whether to create database on startup (requires CREATEDB permission)
-    createDatabase: true
-    service:
-      # -- Kubernetes service type for the auth-backend (casdoor) component
-      type: ClusterIP
-      # -- Service port for the auth-backend (casdoor) component
-      port: 8000
-    image:
-      # -- Repository for the auth backend (casdoor) container image
-      repository: ghcr.io/lerianstudio/casdoor
-      # -- Image pull policy
-      pullPolicy: Always
-      # -- Image tag used for deployment
-      tag: "3.1.0"
-    resources:
-      # -- CPU and memory limits for pods
-      limits:
-        cpu: 1
-        memory: 1024Mi
-      # -- Minimum CPU and memory requests
-      requests:
-        cpu: 500m
-        memory: 256Mi
-    autoscaling:
-      # -- Enable or disable horizontal pod autoscaling
-      enabled: true
-      # -- Minimum number of replicas
-      minReplicas: 1
-      # -- Maximum number of replicas
-      maxReplicas: 3
-      # -- Target CPU utilization percentage for autoscaling
-      targetCPUUtilizationPercentage: 80
-      targetMemoryUtilizationPercentage: 80
-    migrations:
-      image:
-        # -- Repository for the casdoor-migrations container image
-        repository: ghcr.io/lerianstudio/casdoor-migrations
-        # -- Image pull policy
-        pullPolicy: Always
-        # -- Image tag used for deployment
-        tag: "3.1.0"
   # -- Init User Job configuration
   # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
   # -- If the admin user is deleted by the customer, it will NOT be recreated
@@ -418,12 +368,12 @@ auth:
     # -- Enable or disable the init user job
     enabled: true
     image:
-      # -- Repository for the casdoor-user-init container image
-      repository: ghcr.io/lerianstudio/casdoor-user-init
+      # -- Repository for the caradhras-user-init container image
+      repository: ghcr.io/lerianstudio/caradhras-user-init
       # -- Image pull policy
       pullPolicy: Always
       # -- Image tag used for deployment
-      tag: "3.1.0"
+      tag: "3.2.0-beta.67"
     # -- Admin user email (default: admin@midaz.tech)
     adminEmail: "admin@midaz.tech"
     # -- Admin user display name
@@ -443,7 +393,7 @@ auth:
     adminPasswordSecretName: ""
     # -- Key in the secret containing the admin password
     adminPasswordSecretKey: "ADMIN_PASSWORD"
-    # -- Timeout waiting for Casdoor to be ready (in seconds)
+    # -- Timeout waiting for caradhras backend to be ready (in seconds)
     casdoorTimeout: 120
     # -- Timeout waiting for user table to exist (in seconds)
     tableTimeout: 60
@@ -455,6 +405,134 @@ auth:
       requests:
         cpu: 50m
         memory: 64Mi
+
+# -- Caradhras: the auth backend/authorization service, promoted to a
+# top-level component sibling of `identity`/`auth` (formerly nested as
+# `auth.backend`, which ran the legacy Casdoor image). Lerian's Caradhras
+# product replaces Casdoor; the image family is renamed accordingly
+# (casdoor -> caradhras, casdoor-migrations -> caradhras-migrations).
+#
+# Backward-compat: `image.repository`, `image.tag`, `image.pullPolicy`,
+# `service.port`, and `replicaCount` below ship EMPTY on purpose. They are
+# resolved through _helpers.tpl helpers (caradhras.imageRepository/.imageTag/
+# .imagePullPolicy/.servicePort/.replicaCount) using "new key wins, old key
+# is a fallback alias" precedence:
+#   1. caradhras.<field>       (this block, if set)
+#   2. auth.backend.<field>    (legacy path — only relevant for installs that
+#                               still set it in THEIR OWN values overrides;
+#                               this chart's own values.yaml no longer ships
+#                               a real `auth.backend` block)
+#   3. hardcoded chart default (see the helper in _helpers.tpl)
+caradhras:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
+  # -- See "Backward-compat" note above — resolved via caradhras.replicaCount.
+  replicaCount: ""
+  revisionHistoryLimit: 10
+  # -- Component name. Empty derives it from the release name (<release>-caradhras).
+  name: ""
+  # -- Whether to create database on startup (requires CREATEDB permission)
+  createDatabase: true
+  service:
+    # -- Kubernetes service type for the caradhras component
+    type: ClusterIP
+    # -- See "Backward-compat" note above — resolved via caradhras.servicePort.
+    port: ""
+    annotations: {}
+  image:
+    # -- See "Backward-compat" note above — resolved via caradhras.imageRepository.
+    repository: ""
+    # -- See "Backward-compat" note above — resolved via caradhras.imagePullPolicy.
+    pullPolicy: ""
+    # -- See "Backward-compat" note above — resolved via caradhras.imageTag.
+    tag: ""
+  resources:
+    # -- CPU and memory limits for pods
+    limits:
+      cpu: 1
+      memory: 1024Mi
+    # -- Minimum CPU and memory requests
+    requests:
+      cpu: 500m
+      memory: 256Mi
+  autoscaling:
+    # -- Enable or disable horizontal pod autoscaling
+    enabled: true
+    # -- Minimum number of replicas
+    minReplicas: 1
+    # -- Maximum number of replicas
+    maxReplicas: 3
+    # -- Target CPU utilization percentage for autoscaling
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  migrations:
+    image:
+      # -- Repository for the caradhras-migrations container image. NOTE: the
+      # -- GHCR repo `caradhras-migrations` carries TWO unrelated version
+      # -- trains — 1.2.0-beta.x (caradhras's own migrations, correct) and
+      # -- 3.2.0-beta.x (a different, legacy plugin-access-manager applier).
+      # -- Always pin the 1.2.0-beta.x train here.
+      repository: ghcr.io/lerianstudio/caradhras-migrations
+      # -- Image pull policy
+      pullPolicy: Always
+      # -- Image tag used for deployment — must stay on the 1.2.0-beta.x train.
+      tag: "1.2.0-beta.59"
+  # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
+  # -- same-origin to the caradhras backend Service. Disabled by default.
+  ui:
+    enabled: false
+    # -- Component name. Empty derives it from the release name
+    # -- (<release>-caradhras-ui).
+    name: ""
+    replicaCount: 1
+    revisionHistoryLimit: 10
+    image:
+      # -- Repository for the caradhras-ui container image
+      repository: ghcr.io/lerianstudio/caradhras-ui
+      # -- Image pull policy
+      pullPolicy: Always
+      # -- Image tag used for deployment
+      tag: "1.2.0-beta.59"
+    imagePullSecrets: []
+    service:
+      # -- Kubernetes service type
+      type: ClusterIP
+      # -- Service port (nginx convention for a plain-HTTP SPA container)
+      port: 80
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts:
+        - host: ""
+          paths:
+            - path: /
+              pathType: Prefix
+      tls: []
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+    readinessProbe: {}
+    livenessProbe: {}
+    nodeSelector: {}
+    tolerations: {}
+    affinity: {}
+    # -- Extra environment variables (e.g. the real backend-URL env var name
+    # -- once verified against the caradhras-ui image).
+    extraEnvVars: {}
+
 auth-database:
   # Database dependency for identity and access management.
   # For more details, refer to the documentation:

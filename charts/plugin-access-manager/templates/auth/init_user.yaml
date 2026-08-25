@@ -42,7 +42,7 @@ spec:
           image: {{ $initUserImage | quote }}
           imagePullPolicy: Always
           {{- else }}
-          image: "{{ $initUserImage.repository | default "ghcr.io/lerianstudio/casdoor-user-init" }}:{{ $initUserImage.tag | default "latest" }}"
+          image: "{{ $initUserImage.repository | default "ghcr.io/lerianstudio/caradhras-user-init" }}:{{ $initUserImage.tag | default "3.2.0-beta.67" }}"
           imagePullPolicy: {{ $initUserImage.pullPolicy | default "Always" }}
           {{- end }}
           securityContext:
@@ -79,9 +79,9 @@ spec:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_SSLMODE
             {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASS") | nindent 12 }}
-            # Casdoor configuration
+            # Caradhras (auth backend) configuration
             - name: CASDOOR_URL
-              value: "http://{{ include "plugin-auth-backend.fullname" . }}:8000"
+              value: {{ printf "http://%s:%v" (include "plugin-caradhras.fullname" .) (include "caradhras.servicePort" .) | quote }}
             # Admin user configuration
             - name: ADMIN_PASSWORD
               valueFrom:

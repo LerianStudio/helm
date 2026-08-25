@@ -29,6 +29,14 @@ global:
   # all; every other object gets them, with a component's own annotations winning on
   # a key collision.
   commonAnnotations: {}
+  # -- Environment-wide datastore defaults, read via lerian-common.datastore.value
+  # (native api.configmap.<KEY> still wins when set — see the escape-hatch note
+  # near api.extraConfigmap below). Postgres host has no field here: it is
+  # derived per bundled/external topology by plugin-br-pix-jd.postgresHost, not
+  # by this mask.
+  # Fields: postgres.{port, user, ssl}, redis.{host}.
+  # Example: datastores: { postgres: { user: "plugin_br_pix_jd" }, redis: { host: "redis.example.com:6379" } }
+  datastores: {}
   # -- Environment-wide tenant-manager infra, read by lerian-common.multiTenant.env
   multiTenant: {}
   # -- Environment-wide auth defaults, read by lerian-common.auth.env

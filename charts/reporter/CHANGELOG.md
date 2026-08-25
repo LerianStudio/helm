@@ -3,6 +3,20 @@
 ## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
 
 - **Features**
+  - Made the datasource credential-encryption key a first-class feature, enhancing security and management of credentials. (#1943)
+
+- **Improvements**
+  - Added a Helm upgrade guide for reporter v4.0.0 to assist users in transitioning smoothly to the new version.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
   - Made the datasource credential-encryption key a first-class feature.
 
 - **Improvements**

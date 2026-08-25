@@ -8,6 +8,8 @@ on:
       - '.github/configs/helm-chart-standard-baseline.yaml'
       - '.github/configs/helm-render-values/**'
       - '.github/scripts/validate-helm-charts/**'
+      - '.github/scripts/generate-compatibility/**'
+      - '.github/scripts/tableutil/**'
       - '.github/workflows/helm-chart-standard.yml'
   workflow_dispatch:
   schedule:
@@ -39,6 +41,13 @@ jobs:
       - name: Validate chart standard
         working-directory: .github/scripts
         run: go run ./validate-helm-charts --root ../.. --strict
+
+      - name: Check compatibility matrix drift (non-blocking)
+        working-directory: .github/scripts
+        # Drift is non-blocking by design: --check returns exit 0 on drift (ADR-4),
+        # exit 1/2 only on operational/usage errors (compile, module, FS). No
+        # `|| true` — that would also swallow those real failures.
+        run: go run ./generate-compatibility --root ../.. --check
 
       - name: Determine render scope
         id: render-scope

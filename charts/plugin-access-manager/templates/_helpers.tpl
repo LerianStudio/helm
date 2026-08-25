@@ -206,7 +206,7 @@ here are the single source of truth.
 {{- end }}
 
 {{- define "caradhras.imageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.2.0-beta.59") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.2.0") -}}
 {{- end }}
 
 {{- define "caradhras.imagePullPolicy" -}}
@@ -237,7 +237,7 @@ just triggered by a missing fallback instead of a tag typo.
 {{- end }}
 
 {{- define "caradhras.migrationsImageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.2.0-beta.59") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.2.0") -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImagePullPolicy" -}}

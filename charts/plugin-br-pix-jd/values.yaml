@@ -1,10 +1,11 @@
 # Default values for plugin-br-pix-jd.
 # This is a YAML-formatted file.
 #
-# TWO COMPONENTS, ONE IMAGE. `api` runs the image's default entry point
-# (`/service` = cmd/app) and `worker` runs the same image with `/worker`
-# (cmd/worker). They are deliberately not two builds — see the imageConsistent
-# gate in templates/_helpers.tpl.
+# TWO COMPONENTS. The app publishes an image per entry point —
+# plugin-br-pix-jd (cmd/app, ENTRYPOINT /service) and plugin-br-pix-jd-worker
+# (cmd/worker, ENTRYPOINT /worker). The older single-image shape, where one image
+# carries both binaries and the chart overrides the command to reach /worker, is
+# still supported: leave worker.image.repository unset.
 #
 # The component key is `api` because the plugin's release pipeline writes the
 # promoted tag there: gitops_yaml_key_mappings '{"plugin-br-pix-jd.tag": ".api.image.tag"}'.
@@ -289,9 +290,13 @@ worker:
   # Leaving worker.image.repository unset keeps the older one-image shape, where the
   # api image carries both binaries and the chart overrides the entrypoint. Both work.
   #
-  # The TAG must match the api's in either shape — the chart fails the render
-  # otherwise. Repositories may differ; the tag is the build identity, and the two
-  # processes share one database and one schema.
+  # TAGS MAY DIVERGE, and the chart does not police it. The release pipeline builds
+  # only the component that changed, so an api-only release legitimately leaves the
+  # worker a tag behind. An earlier version of this chart failed the render on any
+  # mismatch; that gate blocked the pipeline's normal output and was removed.
+  #
+  # What it was trying to protect — the two processes sharing one database and one
+  # schema — is owned by the release pipeline, not by this values file.
   enabled: false
   # -- Replicas. The jobs take cross-replica Postgres advisory locks, so >1 is safe,
   # but there is nothing to gain: each tick is single-flight per job.

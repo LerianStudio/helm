@@ -27,7 +27,7 @@ Helm chart for [`plugin-br-pix-jd`](https://github.com/LerianStudio/plugin-br-pi
 | API | `api` | Deployment + Service (+ Ingress / HPA / PDB) | image default (`/service` = `cmd/app`) | Listens on `8080`. `/health`, `/readyz`, `/metrics`, `/version` are auth-exempt. |
 | Worker | `worker` | Deployment | `/worker` (`cmd/worker`) | No Service, no Ingress, no HPA, no probes — it runs cron jobs, not a listener. Disabled by default. |
 
-Both components run **the same image**. Setting `worker.image.repository`/`tag` to anything other than the api's fails the render: the two are entry points of one build, and mismatched tags would deploy an api and a worker compiled from different commits.
+Each component has its own image: `plugin-br-pix-jd` (api) and `plugin-br-pix-jd-worker`. Point `worker.image.repository` at the latter and the chart stops overriding the command, since that image's own ENTRYPOINT is already `/worker`. Leaving it unset keeps the older single-image shape, where the api image carries both binaries. **Tags may differ between the two** — the release pipeline builds only the component that changed, so an api-only release legitimately leaves the worker a tag behind; the chart does not police this.
 
 ## Credentials
 

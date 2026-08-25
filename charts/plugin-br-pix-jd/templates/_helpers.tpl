@@ -197,38 +197,6 @@ Input dict: root, comp.
 
 {{/*
 ------------------------------------------------------------------------------
-imageConsistent — CONSISTENCY GATE, not cosmetics.
-
-`api` and `worker` are two processes of ONE build. The plugin's own topology says
-why: Dockerfile.smoke ships both entry points into a single image so "the two
-processes can never be built from different source"
-(docker-compose.smoke.yml:303-304), and the worker runs that same image with
-`entrypoint: ["/worker"]`. Two different tags here would deploy an api and a
-worker compiled from different commits — the api answering one contract while
-the worker reconciles money against another. That is a silent, and in the MED
-settlement path a money-affecting, divergence.
-
-So: when the worker is enabled, its image MUST match the api's. Fails the render
-rather than emitting the mismatch, per the standard's fail-loud gate rules.
-
-Input: root context ($).
-------------------------------------------------------------------------------
-*/}}
-{{- define "plugin-br-pix-jd.imageConsistent" -}}
-{{- $api := .Values.api -}}
-{{- $worker := .Values.worker | default dict -}}
-{{- if $worker.enabled -}}
-{{- $workerImage := $worker.image | default dict -}}
-{{- $apiTag := ($api.image.tag | default .Chart.AppVersion) -}}
-{{- $workerTag := ($workerImage.tag | default $apiTag) -}}
-{{- if ne $workerTag $apiTag -}}
-{{- fail (printf "\n\nERROR: api and worker must run the SAME TAG — they are two images of ONE build.\n  api:    %s:%s\n  worker: %s:%s\nThe repositories may differ (the app publishes plugin-br-pix-jd and\nplugin-br-pix-jd-worker separately), but the tag is the build identity and the two\nprocesses share one database and one schema. Different tags mean two commits over\none schema, on a path that includes the MED settlement reconciler.\nPin both to the same tag, or leave worker.image.tag unset to inherit the api's.\n" $api.image.repository $apiTag ($workerImage.repository | default $api.image.repository) $workerTag) -}}
-{{- end -}}
-{{- end -}}
-{{- end }}
-
-{{/*
-------------------------------------------------------------------------------
 TWO SEPARATE QUESTIONS about the bundled Postgres, deliberately not one helper.
 
 They were conflated in the first cut and it produced a dangling host: with
@@ -284,7 +252,6 @@ Input: root context ($).
 {{- end }}
 
 {{- define "plugin-br-pix-jd.consistencyGates" -}}
-{{- include "plugin-br-pix-jd.imageConsistent" . -}}
 {{- $cfg := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .) -}}
 {{- /* ENVIRONMENT_NAME is REQUIRED, and this is the highest-leverage gate in the
    chart. The app resolves an empty value to "development", which does not merely

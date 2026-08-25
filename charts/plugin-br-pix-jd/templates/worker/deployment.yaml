@@ -67,10 +67,11 @@ spec:
         - name: worker
           image: {{ include "plugin-br-pix-jd.componentImage" (dict "root" $ "comp" (dict "image" (dict "repository" (.Values.worker.image.repository | default .Values.api.image.repository) "tag" (.Values.worker.image.tag | default .Values.api.image.tag)))) | quote }}
           imagePullPolicy: {{ .Values.worker.image.pullPolicy | default .Values.api.image.pullPolicy }}
-          {{- /* THE ONLY DIFFERENCE FROM THE API. Same image, second entry point — the
-             pattern the plugin's own Dockerfile.smoke and docker-compose.smoke.yml
-             already use, precisely so the two processes can never come from different
-             builds. `command` overrides the image ENTRYPOINT (/service). */}}
+          {{- /* THE ONLY DIFFERENCE FROM THE API on the single-image path: `command`
+             overrides that image's ENTRYPOINT (/service) to reach the second binary.
+             With a dedicated worker image the override is skipped — its own ENTRYPOINT
+             is already /worker, and asserting a binary path inside an image this chart
+             does not build is not the chart's to promise. */}}
           {{- if not (include "plugin-br-pix-jd.workerOwnImage" .) }}
           command: ["/worker"]
           {{- end }}

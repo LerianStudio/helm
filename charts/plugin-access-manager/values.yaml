@@ -492,57 +492,13 @@ caradhras:
       tag: "1.2.0-beta.59"
   # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
   # -- same-origin to the caradhras backend Service. Disabled by default.
+  # -- Caradhras console (SPA), disabled by default and intentionally not
+  # -- advertised here. All defaults (image, service port, resources, probes,
+  # -- ingress shape) live in templates/caradhras/ui-*.yaml — set
+  # -- caradhras.ui.enabled=true and any of the fields those templates read
+  # -- (image, service, ingress, resources, autoscaling, ...) to turn it on.
   ui:
     enabled: false
-    # -- Component name. Empty derives it from the release name
-    # -- (<release>-caradhras-ui).
-    name: ""
-    replicaCount: 1
-    revisionHistoryLimit: 10
-    image:
-      # -- Repository for the caradhras-ui container image
-      repository: ghcr.io/lerianstudio/caradhras-ui
-      # -- Image pull policy
-      pullPolicy: Always
-      # -- Image tag used for deployment
-      tag: "1.2.0-beta.59"
-    imagePullSecrets: []
-    service:
-      # -- Kubernetes service type
-      type: ClusterIP
-      # -- Service port (nginx convention for a plain-HTTP SPA container)
-      port: 80
-    ingress:
-      enabled: false
-      className: ""
-      annotations: {}
-      hosts:
-        - host: ""
-          paths:
-            - path: /
-              pathType: Prefix
-      tls: []
-    resources:
-      limits:
-        cpu: 200m
-        memory: 256Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 3
-      targetCPUUtilizationPercentage: 80
-      targetMemoryUtilizationPercentage: 80
-    readinessProbe: {}
-    livenessProbe: {}
-    nodeSelector: {}
-    tolerations: {}
-    affinity: {}
-    # -- Extra environment variables (e.g. the real backend-URL env var name
-    # -- once verified against the caradhras-ui image).
-    extraEnvVars: {}
 
 auth-database:
   # Database dependency for identity and access management.

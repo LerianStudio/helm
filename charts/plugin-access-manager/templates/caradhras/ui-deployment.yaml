@@ -1,24 +1,29 @@
 {{- if .Values.caradhras.ui.enabled }}
+{{- $ui := .Values.caradhras.ui -}}
+{{- $uiAS := $ui.autoscaling | default dict -}}
+{{- $uiSvc := $ui.service | default dict -}}
+{{- $uiRP := $ui.readinessProbe | default dict -}}
+{{- $uiLP := $ui.livenessProbe | default dict -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "plugin-caradhras-ui.fullname" . }}
   labels:
-    {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" .Values.caradhras.ui.name ) | nindent 4 }}
+    {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" $ui.name ) | nindent 4 }}
 spec:
-  revisionHistoryLimit: {{ .Values.caradhras.ui.revisionHistoryLimit | default 10 }}
-  {{- if not .Values.caradhras.ui.autoscaling.enabled }}
-  replicas: {{ .Values.caradhras.ui.replicaCount | default 1 }}
+  revisionHistoryLimit: {{ $ui.revisionHistoryLimit | default 10 }}
+  {{- if not $uiAS.enabled }}
+  replicas: {{ $ui.replicaCount | default 1 }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "plugin-caradhras-ui.selectorLabels" (dict "context" . "name" .Values.caradhras.ui.name) | nindent 6 }}
+      {{- include "plugin-caradhras-ui.selectorLabels" (dict "context" . "name" $ui.name) | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" .Values.caradhras.ui.name ) | nindent 8 }}
+        {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" $ui.name ) | nindent 8 }}
     spec:
-      {{- with .Values.caradhras.ui.imagePullSecrets }}
+      {{- with $ui.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -41,7 +46,7 @@ spec:
             # filesystem is left writable for this container only — same rationale
             # as the caradhras backend container.
             readOnlyRootFilesystem: false
-          {{- $img := .Values.caradhras.ui.image -}}
+          {{- $img := $ui.image | default dict -}}
           {{- if kindIs "string" $img }}
           image: {{ $img | quote }}
           imagePullPolicy: Always
@@ -51,7 +56,7 @@ spec:
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.caradhras.ui.service.port | default 80 }}
+              containerPort: {{ $uiSvc.port | default 80 }}
               protocol: TCP
           env:
             # Same-origin reverse-proxy target: the SPA's nginx forwards API calls
@@ -62,32 +67,32 @@ spec:
             # use caradhras.ui.extraEnvVars to override/add the correct one meanwhile.
             - name: CARADHRAS_BACKEND_URL
               value: {{ printf "http://%s:%s" (include "plugin-caradhras.fullname" .) (include "caradhras.servicePort" .) | quote }}
-          {{- with .Values.caradhras.ui.extraEnvVars }}
+          {{- with $ui.extraEnvVars }}
           {{- toYaml . | nindent 12 }}
           {{- end }}
           resources:
-            {{- toYaml (.Values.caradhras.ui.resources | default (dict "limits" (dict "cpu" "200m" "memory" "256Mi") "requests" (dict "cpu" "100m" "memory" "128Mi"))) | nindent 12 }}
+            {{- toYaml ($ui.resources | default (dict "limits" (dict "cpu" "200m" "memory" "256Mi") "requests" (dict "cpu" "100m" "memory" "128Mi"))) | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.caradhras.ui.readinessProbe.path | default "/" }}
-              port: {{ .Values.caradhras.ui.service.port | default 80 }}
-            initialDelaySeconds: {{ .Values.caradhras.ui.readinessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ .Values.caradhras.ui.readinessProbe.periodSeconds | default 5 }}
+              path: {{ $uiRP.path | default "/" }}
+              port: {{ $uiSvc.port | default 80 }}
+            initialDelaySeconds: {{ $uiRP.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ $uiRP.periodSeconds | default 5 }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.caradhras.ui.livenessProbe.path | default "/" }}
-              port: {{ .Values.caradhras.ui.service.port | default 80 }}
-            initialDelaySeconds: {{ .Values.caradhras.ui.livenessProbe.initialDelaySeconds | default 15 }}
-            periodSeconds: {{ .Values.caradhras.ui.livenessProbe.periodSeconds | default 20 }}
-      {{- with .Values.caradhras.ui.nodeSelector }}
+              path: {{ $uiLP.path | default "/" }}
+              port: {{ $uiSvc.port | default 80 }}
+            initialDelaySeconds: {{ $uiLP.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ $uiLP.periodSeconds | default 20 }}
+      {{- with $ui.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.caradhras.ui.affinity }}
+      {{- with $ui.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.caradhras.ui.tolerations }}
+      {{- with $ui.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

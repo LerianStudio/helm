@@ -208,8 +208,8 @@ adapterLerianSystemplane:
 
 # ------------------------------------------------------------
 # pixauto/api — Pix Automático payer side
-# DECLARATION_ENABLED stays "false" until an M2M application is registered for
-# the plugin-br-pix-switch-pixauto slug; STREAMING_ENABLED stays "false" until
+# IDP_DECLARATION_ENABLED stays "false" until an M2M application is registered
+# for the plugin-br-pix-switch-pixauto slug; STREAMING_ENABLED stays "false" until
 # the br-sfn rail carries the recurrence message family (GAP-BRSFN-001).
 # ------------------------------------------------------------
 pixauto:
@@ -223,7 +223,7 @@ pixauto:
     # ORGANIZATION_IDS; no code reads this name.
     LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
-    DECLARATION_ENABLED: "false"
+    IDP_DECLARATION_ENABLED: "false"
     STREAMING_ENABLED: "false"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"

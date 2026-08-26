@@ -270,6 +270,46 @@ collection:
   # série no destino, e a duplicata é indistinguível do original.
   containerUsage: true
 
+  # ⚠️ PERÍMETRO DE NAMESPACE do consumo de contêiner — DUAS listas, não uma
+  # invertida, porque os conjuntos são diferentes.
+  #
+  # `own`    usa `excludeNamespaces` (ação drop): nossos clusters, operamos tudo
+  #          menos o que é do provedor.
+  # `client` usa `onlyNamespaces` (ação keep): cluster do cliente, olhamos só onde
+  #          instalamos nossos produtos.
+  #
+  # MEDIDO: aws-staging já dropava os namespaces de sistema no collector e emitia
+  # 488 séries `container_*`; aws-devops, SEM o filtro, emitia 2.284 com número de
+  # pods equivalente. A diferença é este filtro, não o tamanho do cluster — e sem
+  # ele a migração de staging INFLARIA o consumo em ~1.800 séries sem ninguém pedir.
+  #
+  # Por que estes três: kube-proxy, VPC CNI, coredns, csi e afins vivem aqui. São
+  # volume alto e responsabilidade do provedor — saúde de nó e de EKS vem por
+  # CloudWatch, não por esta coleta.
+  excludeNamespaces:
+    - ^kube-system$
+    - ^kube-public$
+    - ^kube-node-lease$
+
+  # ⚠️ SEM DEFAULT, e é deliberado: o chart RECUSA renderizar com `profile: client`
+  # e esta lista vazia. Um default aqui seria um chute sobre quais namespaces o
+  # cliente usa, e errar para o lado permissivo significa coletar — e pagar por —
+  # carga que não é nossa.
+  #
+  # Regex de namespace, uma entrada por produto instalado:
+  #
+  #   onlyNamespaces:
+  #     - ^midaz$
+  #     - ^plugin-.*
+  #
+  # Para coletar o cluster inteiro deliberadamente: `onlyNamespaces: [".*"]`.
+  #
+  # ⚠️ O filtro `keep` gerado inclui a alternativa `|^$` automaticamente. MEDIDO em
+  # aws-devops: 272 séries `container_*` têm namespace VAZIO — agregados de nó e
+  # sandboxes de pod. Sem essa alternativa elas cairiam em silêncio, levando com
+  # elas o denominador da razão uso/limite.
+  onlyNamespaces: []
+
   # Onde raspar o cAdvisor. Vazio = via API server, o caminho que funciona sem
   # depender de a porta do kubelet estar alcançável do pod.
   #

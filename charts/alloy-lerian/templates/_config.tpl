@@ -433,6 +433,55 @@ prometheus.relabel "allowlist_consumo" {
     regex         = {{ join "|" ((.Values.collection).containerUsageAllowlist | default list) | quote }}
     action        = "keep"
   }
+{{- $perfil := include "alloy-lerian.profile" . }}
+{{- $excluir := join "|" ((.Values.collection).excludeNamespaces | default list) }}
+{{- $somente := join "|" ((.Values.collection).onlyNamespaces | default list) }}
+{{- if and (eq $perfil "client") (not $somente) }}
+{{- fail "\n\nalloy-lerian: `profile: client` exige `collection.onlyNamespaces`.\n\nEm cluster do cliente o perímetro é POSITIVO: coletamos consumo APENAS dos\nnamespaces onde instalamos nossos produtos. Sem a lista, o filtro nao e aplicado\ne passamos a medir — e a PAGAR por — carga que nao e nossa.\n\n  collection:\n    onlyNamespaces:\n      - ^midaz$\n      - ^plugin-.*\n\nPara coletar o cluster inteiro deliberadamente, declare a intencao:\n\n  collection:\n    onlyNamespaces: [\".*\"]\n" }}
+{{- end }}
+
+  // ⚠️ PERÍMETRO DE NAMESPACE — a DIREÇÃO do filtro depende do perfil, e as duas
+  // direções usam LISTAS DIFERENTES, não a mesma invertida.
+  //
+  //   own    -> `excludeNamespaces`, ação `drop`. São NOSSOS clusters: operamos
+  //             tudo, menos o que é do provedor. Os namespaces de sistema
+  //             (kube-proxy, CNI, coredns, csi) têm volume alto e responsabilidade
+  //             da AWS; saúde de nó e de EKS vem por CloudWatch.
+  //
+  //   client -> `onlyNamespaces`, ação `keep`. É cluster DO CLIENTE: olhamos só os
+  //             namespaces onde instalamos nossos produtos. Não é a lista de
+  //             sistema invertida — é outro conjunto, o dos nossos serviços.
+  //             Coletar namespace alheio é medir carga que não é nossa com o custo
+  //             caindo na nossa conta.
+  //
+  // Perfil deste render: {{ $perfil }}.
+  //
+  // MEDIDO: o collector de aws-staging já dropava os namespaces de sistema e emitia
+  // 488 séries `container_*`; aws-devops, SEM o filtro, emitia 2.284 com número de
+  // pods equivalente. A diferença é este filtro, não o tamanho do cluster.
+{{- if and (eq $perfil "own") $excluir }}
+  rule {
+    source_labels = ["namespace"]
+    regex         = {{ $excluir | quote }}
+    action        = "drop"
+  }
+{{- else if and (eq $perfil "client") $somente }}
+  // ⚠️ `keep` com ALTERNATIVA VAZIA — o `|^$` no fim não é descuido.
+  //
+  // MEDIDO em aws-devops: 272 séries `container_*` têm `namespace` VAZIO. São os
+  // agregados de nó e os sandboxes de pod que o cAdvisor reporta fora de qualquer
+  // namespace — `container_cpu_usage_seconds_total` (18),
+  // `container_network_*` (52 cada), `container_fs_*` (12 cada) e outras.
+  //
+  // Um `keep` sem essa alternativa as descartaria em SILÊNCIO, e com elas a
+  // resposta para "quanto este nó está consumindo?" — que é o denominador da razão
+  // uso/limite, não carga de ninguém.
+  rule {
+    source_labels = ["namespace"]
+    regex         = {{ printf "%s|^$" $somente | quote }}
+    action        = "keep"
+  }
+{{- end }}
 
   rule {
     target_label = "client_id"

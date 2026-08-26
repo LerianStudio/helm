@@ -127,6 +127,25 @@ data:
         "port" .Values.tracer.service.port
         "namespace" (include "global.namespace" .)
         "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.tracer.ingress))) | nindent 2 }}
+
+  # =============================================================================
+  # STREAMING — knob inline; brokers/SASL/TLS from global.streaming (gated via helper).
+  # =============================================================================
+  {{- /* enabled precedence: configmap.STREAMING_ENABLED > global.streaming.enabled > false. */ -}}
+  {{- $streamingGlobalEnabled := toString (((.Values.global | default dict).streaming | default dict).enabled | default false) }}
+  {{- $streamingRaw := $streamingGlobalEnabled }}{{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = toString (index $cm "STREAMING_ENABLED") }}{{- end }}
+  {{- $streamingEnabled := eq (include "midaz.isTrue" $streamingRaw) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  # Billing events use the Schema Registry independently of the Kafka broker endpoint.
+  # Empty is intentional: billing emission stays disabled until an operator configures it.
+  STREAMING_SCHEMA_REGISTRY_URL: {{ $cm.STREAMING_SCHEMA_REGISTRY_URL | default "" | quote }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $cm
+        "clientId" (include "midaz-tracer.fullname" .)
+        "cloudeventsSource" "tracer") | nindent 2 }}
+
   # Extra Env Vars
   {{- with .Values.tracer.extraEnvVars }}
   {{- range $key, $value := . }}

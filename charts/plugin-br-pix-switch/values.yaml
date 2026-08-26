@@ -1879,10 +1879,17 @@ pixauto:
     # is authored and gated, not published. Flipping this needs the M2M pair
     # below AND PLUGIN_AUTH_ENABLED=true, or the token mints empty and the
     # fail-open publisher skips publication silently.
-    DECLARATION_ENABLED: "false"
-    PLUGIN_IDENTITY_HOST: ""
+    # The IDP_ prefix is the canonical name as of lib-auth v3.4.0-beta.6
+    # (#4232). The pre-prefix names (DECLARATION_ENABLED, PLUGIN_IDENTITY_HOST,
+    # M2M_CLIENT_ID, M2M_CLIENT_SECRET) still resolve as deprecated aliases for
+    # one release. lib-auth consults an alias ONLY when the canonical name is
+    # unset or empty, and logs a WARN on that boot when it does; set both and
+    # the canonical value wins with no WARN. PLUGIN_AUTH_ENABLED /
+    # PLUGIN_AUTH_HOST are out of scope for the rename and keep their names.
+    IDP_DECLARATION_ENABLED: "false"
+    IDP_HOST: ""
     PLUGIN_AUTH_HOST: ""
-    M2M_CLIENT_ID: ""
+    IDP_M2M_CLIENT_ID: ""
     # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true).
     # MULTI_TENANT_API_KEY lives under secrets.
     MULTI_TENANT_ENABLED: "false"
@@ -1911,7 +1918,7 @@ pixauto:
     MULTI_TENANT_API_KEY: ""
     # -- This app's OWN M2M pair (never shared): the declaration BOLA guard
     # checks the token's azp against the slug being declared.
-    M2M_CLIENT_SECRET: ""
+    IDP_M2M_CLIENT_SECRET: ""
     # -- Broker SASL credentials + CA bundle. Only consumed when
     # STREAMING_ENABLED=true.
     STREAMING_SASL_USERNAME: ""

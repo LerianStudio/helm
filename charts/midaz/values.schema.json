@@ -1957,6 +1957,7 @@
               "SERVER_ADDRESS",
               "SERVER_PORT",
               "STREAMING_ENABLED",
+              "STREAMING_SCHEMA_REGISTRY_URL",
               "SWAGGER_BASE_PATH",
               "SWAGGER_DESCRIPTION",
               "SWAGGER_HOST",

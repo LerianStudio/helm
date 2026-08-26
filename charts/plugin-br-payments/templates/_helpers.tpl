@@ -169,6 +169,25 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.configmap.BTG_AUTH_URL is REQUIRED.\n   Set the BTG OAuth2 token endpoint URL.\n" }}
 {{- end }}
 
+{{/* ONE tenancy toggle, and this refuses the other one rather than guessing.
+
+     MULTI_TENANCY_ENABLED is the app's DEPRECATED spelling of MULTI_TENANT_ENABLED.
+     This chart no longer ships or reads it, so an overlay that still sets it would
+     read as single-tenant to every guard below — and a multi-tenant environment
+     would then be refused with "PROVIDER_CLIENT_ID is REQUIRED in single-tenant
+     mode", which points at the wrong problem. Failing here instead names the actual
+     fix in the message.
+
+     A hard fail rather than a warning, because the quiet outcome is worse than a
+     blocked render: the app resolves the canonical name through bare os.LookupEnv,
+     so once anything sets MULTI_TENANT_ENABLED the deprecated value stops being
+     adopted, and a deployment that reads as multi-tenant in its own values file
+     runs SINGLE-TENANT. There is no version of that which is safe to let through
+     silently. */}}
+{{- if hasKey .Values.app.configmap "MULTI_TENANCY_ENABLED" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANCY_ENABLED was RENAMED to app.configmap.MULTI_TENANT_ENABLED.\n   The application deprecated the MULTI_TENANCY_ prefix; this chart now reads MULTI_TENANT_ENABLED only.\n   Rename the key in your values overlay — the value itself does not change.\n   Leaving both set is not supported: the app resolves the canonical name first, so the deprecated one would be ignored and a multi-tenant overlay would run single-tenant.\n" }}
+{{- end }}
+
 {{/* The OAuth2 credential pair — named for the ROLE, not the vendor, and required
      only in SINGLE-TENANT mode.
 
@@ -185,21 +204,29 @@ plugin-br-payments README.
      pair is resolved PER TENANT from the credential row, nothing reads these two,
      and the app logs a WARN at boot naming each one left set. Demanding them
      anyway made a legitimate multi-tenant deployment fail to render — verified
-     against this chart: `helm template` with MULTI_TENANCY_ENABLED=true refused
+     against this chart: `helm template` with the tenancy toggle on refused
      with "app.secrets.BTG_CLIENT_ID is REQUIRED" before this change.
 
-     Either spelling of the toggle counts as multi-tenant, on purpose. The app
-     prefers MULTI_TENANT_ENABLED and treats MULTI_TENANCY_ENABLED as a deprecated
-     alias (reconcileDeprecatedMultiTenantEnv), while this chart's values.yaml still
-     ships the deprecated one — so keying on only one of them would refuse a deploy
-     that sets the other. Being permissive here is the safe direction: the app's own
-     production validation still refuses to boot without the pair in single-tenant,
-     so a wrongly-skipped check costs a precise boot error, while a wrongly-enforced
-     one costs a deployment that cannot render at all. */}}
-{{- $providerCredentialsPerTenant := or
-      (eq (.Values.app.configmap.MULTI_TENANT_ENABLED | default "" | toString) "true")
-      (eq (.Values.app.configmap.MULTI_TENANCY_ENABLED | default "" | toString) "true") }}
-{{- if not $providerCredentialsPerTenant }}
+     ONE toggle, and it is MULTI_TENANT_ENABLED — the name the app actually prefers.
+     MULTI_TENANCY_ENABLED is the app's DEPRECATED alias
+     (reconcileDeprecatedMultiTenantEnv) and this chart no longer ships or reads it.
+
+     ⛔ AND THE CHART MUST NOT SHIP A VALUE FOR MULTI_TENANT_ENABLED EITHER, which is
+     why values.yaml leaves it commented out. The app's reconciliation asks bare
+     os.LookupEnv for the canonical name, so a PRESENT BUT BLANK MULTI_TENANT_ENABLED
+     makes the canonical "set" and the deprecated alias is then NOT adopted. An
+     overlay that still says MULTI_TENANCY_ENABLED=true would silently run
+     SINGLE-TENANT. The ConfigMap template renders every key in app.configmap,
+     empty strings included, so a chart default here is not a harmless placeholder —
+     it is that silent mode flip. Overlays on the deprecated name keep working
+     precisely because the chart declares nothing.
+
+     An overlay still on the deprecated name therefore reads as single-tenant HERE
+     and keeps being asked for the pair. That is deliberate and safe: it is the
+     behaviour those overlays already have, the app still runs multi-tenant because
+     it adopts the alias, and the way out is to rename the toggle in the overlay —
+     not to make this guard guess. */}}
+{{- if ne (.Values.app.configmap.MULTI_TENANT_ENABLED | default "" | toString) "true" }}
 {{- if not .Values.app.secrets.PROVIDER_CLIENT_ID }}
 {{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_ID is REQUIRED in single-tenant mode.\n   Set the provider OAuth2 client ID in the secrets section.\n   (In multi-tenant it is resolved per tenant and must be left unset.)\n" }}
 {{- end }}
@@ -232,13 +259,18 @@ plugin-br-payments README.
      for the bundled subchart the value is generated; for external Postgres the
      operator supplies postgresql.auth.existingSecret or app.secrets.POSTGRES_PASSWORD. */}}
 
-{{/* Multi-tenant required fields when enabled */}}
-{{- if eq (.Values.app.configmap.MULTI_TENANCY_ENABLED | toString) "true" }}
+{{/* Multi-tenant required fields when enabled. Same single toggle as above, and
+     the same reason: the canonical name only. An overlay still on the deprecated
+     MULTI_TENANCY_ENABLED skips this block, and the app is the backstop — it
+     asserts MULTI_TENANT_URL is present when tenancy is on
+     (internal/bootstrap/config_multitenant.go), so the failure is a precise boot
+     error rather than a missing check. */}}
+{{- if eq (.Values.app.configmap.MULTI_TENANT_ENABLED | default "" | toString) "true" }}
 {{- if not .Values.app.configmap.MULTI_TENANT_MANAGER_URL }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_MANAGER_URL is REQUIRED when MULTI_TENANCY_ENABLED=true.\n" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_MANAGER_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
-{{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANCY_ENABLED=true.\n" }}
+{{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- end }}
 

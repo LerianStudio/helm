@@ -42,7 +42,8 @@ app:
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: ""
     # Multi-tenancy (set to "true" to enable)
-    MULTI_TENANCY_ENABLED: "false"
+    # Multi-tenancy: set MULTI_TENANT_ENABLED: "true" to turn it on. Left unset on
+    # purpose — see values.yaml for why a default here would flip the mode silently.
     # MULTI_TENANT_MANAGER_URL: ""
     # OpenTelemetry (use otel-collector-lerian.enabled below for host injection)
     ENABLE_TELEMETRY: "true"
@@ -64,7 +65,7 @@ app:
     # License (REQUIRED in production)
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
-    # Multi-tenancy (REQUIRED when MULTI_TENANCY_ENABLED=true)
+    # Multi-tenancy (REQUIRED when MULTI_TENANT_ENABLED=true)
     # MULTI_TENANT_SERVICE_API_KEY: ""
   autoscaling:
     enabled: true

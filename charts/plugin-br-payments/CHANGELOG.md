@@ -36,11 +36,22 @@ and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   values, and it logs a WARN at boot naming each one left set — but
   `validateRequired` demanded them anyway, so a legitimate multi-tenant deployment
   could not render at all (`helm template` refused with
-  `app.secrets.BTG_CLIENT_ID is REQUIRED`). The guard now skips when either
-  `MULTI_TENANT_ENABLED` or the deprecated `MULTI_TENANCY_ENABLED` is `"true"`:
-  the app prefers the former and treats the latter as an alias, while this chart
-  still ships the latter, so keying on one alone would refuse a deploy that set the
-  other.
+  `app.secrets.BTG_CLIENT_ID is REQUIRED`). The guard now skips when
+  `app.configmap.MULTI_TENANT_ENABLED` is `"true"`.
+
+- **The chart keys tenancy on ONE variable, `MULTI_TENANT_ENABLED`, and ships no
+  value for it.** `MULTI_TENANCY_ENABLED: "false"` is gone from `values.yaml` and
+  `values-template.yaml`, and every guard, note and README row now names the
+  canonical spelling. Shipping a default for either name was unsafe: the app's
+  reconciliation asks bare `os.LookupEnv` for the canonical name and the ConfigMap
+  template renders every key in `app.configmap` including empty strings, so a chart
+  default makes the canonical name "set" — after which an overlay still saying
+  `MULTI_TENANCY_ENABLED=true` is NOT adopted and the deployment silently runs
+  single-tenant. Declaring nothing is what keeps existing overlays on the
+  deprecated spelling working; those overlays read as single-tenant to the chart's
+  guards, which is the behaviour they already had, and the app is the backstop that
+  asserts the multi-tenant fields when tenancy is on. Rename the toggle in the
+  overlay to move it onto the canonical name.
 
 ## [1.0.0-beta.2] — Unreleased
 

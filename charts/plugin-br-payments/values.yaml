@@ -183,9 +183,21 @@ app:
     ACCESS_CONTROL_ALLOW_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
     ACCESS_CONTROL_EXPOSE_HEADERS: ""
     ACCESS_CONTROL_ALLOW_CREDENTIALS: "false"
-    # Multi-Tenancy (database-per-tenant via tenant-manager)
-    # When enabled, MULTI_TENANT_MANAGER_URL and MULTI_TENANT_SERVICE_API_KEY become required.
-    MULTI_TENANCY_ENABLED: "false"
+    # Multi-Tenancy (database-per-tenant via tenant-manager).
+    #
+    # ⛔ DELIBERATELY NOT SET, AND NOT AS TIDINESS. Set it in your overlay:
+    #   MULTI_TENANT_ENABLED: "true"
+    # When on, MULTI_TENANT_MANAGER_URL and MULTI_TENANT_SERVICE_API_KEY become
+    # required; off is the app's own default.
+    #
+    # This line used to read MULTI_TENANCY_ENABLED: "false" — the app's DEPRECATED
+    # spelling. Shipping a value for EITHER name here is unsafe. The app's
+    # reconciliation asks bare os.LookupEnv for the canonical MULTI_TENANT_ENABLED,
+    # and the ConfigMap template renders every key in app.configmap including empty
+    # strings, so a chart default makes the canonical name "set" — after which an
+    # overlay still saying MULTI_TENANCY_ENABLED=true is NOT adopted and the
+    # deployment silently runs SINGLE-TENANT. Declaring nothing is what keeps both
+    # spellings working in overlays.
     MULTI_TENANT_MANAGER_URL: ""
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
     MULTI_TENANT_POSTGRES_MODULE: ""
@@ -340,7 +352,7 @@ app:
     # License (required in production)
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
-    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANCY_ENABLED=true)
+    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_SERVICE_API_KEY: ""
     # Midaz M2M (optional)
     # MIDAZ_CLIENT_ID: ""

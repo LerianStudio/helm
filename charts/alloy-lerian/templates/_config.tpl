@@ -35,7 +35,7 @@ logging {
   level  = {{ .Values.logging.level | default "info" | quote }}
   format = "logfmt"
 }
-{{ include "alloy-lerian.config.fleet" . }}
+{{ include "alloy-lerian.config.fleet" (dict "ctx" . "papel" "node") }}
 {{ if eq (include "alloy-lerian.livedebugEnabled" .) "true" -}}
 // Enabled only in the own profile. Streams raw pipeline payloads.
 livedebugging {
@@ -577,7 +577,7 @@ logging {
   level  = {{ .Values.logging.level | default "info" | quote }}
   format = "logfmt"
 }
-{{ include "alloy-lerian.config.fleet" . }}
+{{ include "alloy-lerian.config.fleet" (dict "ctx" . "papel" "singleton") }}
 
 {{- $alvoNo := include "alloy-lerian.nodeExporterTarget" . }}
 {{ if and (.Values.collection).nodeInfrastructure $alvoNo -}}

@@ -44,8 +44,10 @@ Renders the remotecfg block. Emits nothing when disabled, so the rendered config
 is byte-identical to today's until someone opts in.
 */}}
 {{- define "alloy-lerian.config.fleet" -}}
-{{- if eq (include "alloy-lerian.fleetEnabled" .) "true" -}}
-{{- $f := .Values.fleetManagement -}}
+{{- $ctx := .ctx | default . -}}
+{{- $papel := .papel | default "node" -}}
+{{- if eq (include "alloy-lerian.fleetEnabled" $ctx) "true" -}}
+{{- $f := $ctx.Values.fleetManagement -}}
 {{- if not $f.url -}}
 {{- fail "\n\nalloy-lerian: fleetManagement.enabled is true but `fleetManagement.url` is empty.\n\nCopy the endpoint verbatim from the Fleet Management UI — the host format varies\nby stack and region, and building it by hand is a documented mistake.\n" -}}
 {{- end -}}
@@ -76,9 +78,31 @@ remotecfg {
   // auto-generated seed: the seed is persisted to the agent's storage path,
   // which an ephemeral pod loses on every restart — producing a new collector
   // identity each time and churn in the fleet registry.
-  id = {{ printf "%s-" (include "alloy-lerian.originId" .) | quote }} + sys.env("ALLOY_FLEET_POD_NAME")
+  id = {{ printf "%s-" (include "alloy-lerian.originId" $ctx) | quote }} + sys.env("ALLOY_FLEET_POD_NAME")
 
+  // ⚠️ ATRIBUTOS SÃO O QUE FAZ O FLEET FUNCIONAR. Os pipelines são entregues por
+  // MATCHER sobre eles, e um conjunto VAZIO não casa com matcher nenhum: o coletor
+  // registra e nunca recebe configuração.
+  //
+  // O modo de falha é silencioso — pod Running, log mostrando registro bem-sucedido,
+  // e nada chegando. Por isso os quatro primeiros são DERIVADOS, não digitados no
+  // values de cada ambiente.
+  //
+  // `platform` e `collector.os`: VERIFICADO na Pipeline API desta stack — os 5
+  // pipelines que a Grafana gera por padrão casam por `platform="kubernetes"` e
+  // `collector.os="linux"|"darwin"|"windows"`. São invariantes deste chart (só roda
+  // em Kubernetes, imagem Linux), então não há o que configurar.
   attributes = {
+    "platform"     = "kubernetes",
+    "collector.os" = "linux",
+    // Permite pipeline POR CLIENTE: um matcher `client_id="acme-prd"` entrega
+    // configuração só àquele cluster. Mesmo valor que marca as séries, então o
+    // que se vê no painel é o que se endereça no Fleet.
+    "client_id"    = {{ include "alloy-lerian.originId" $ctx | quote }},
+    // Permite pipeline POR PAPEL. O papel node e o singleton coletam coisas
+    // diferentes; sem isto um pipeline cairia nos dois, e o de escopo de cluster
+    // replicado no DaemonSet é exatamente a duplicação que esta migração corrigiu.
+    "role"         = {{ $papel | quote }},
 {{- range $k, $v := ($f.attributes | default dict) }}
     {{ $k | quote }} = {{ $v | quote }},
 {{- end }}

@@ -169,12 +169,44 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.configmap.BTG_AUTH_URL is REQUIRED.\n   Set the BTG OAuth2 token endpoint URL.\n" }}
 {{- end }}
 
-{{- if not .Values.app.secrets.BTG_CLIENT_ID }}
-{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_ID is REQUIRED.\n   Set the BTG OAuth2 client ID in the secrets section.\n" }}
+{{/* The OAuth2 credential pair — named for the ROLE, not the vendor, and required
+     only in SINGLE-TENANT mode.
+
+     RENAMED from BTG_CLIENT_ID / BTG_CLIENT_SECRET. plugin-br-payments is
+     provider-agnostic by design and BTG is its first adapter, not its only one; a
+     client id and a client secret are what any OAuth2 provider issues, unlike the
+     URLs and the webhook keys above, which point at something vendor-specific and
+     keep their BTG_ prefix. The app reads PROVIDER_CLIENT_ID /
+     PROVIDER_CLIENT_SECRET (internal/bootstrap/config.go). Note this reverses part
+     of the 1.0.0 rename — the deployment repositories' Vault field names were
+     PROVIDER_CLIENT_ID all along and never followed it.
+
+     ⛔ CONDITIONAL, AND THE UNCONDITIONAL VERSION WAS A DEFECT. In multi-tenant the
+     pair is resolved PER TENANT from the credential row, nothing reads these two,
+     and the app logs a WARN at boot naming each one left set. Demanding them
+     anyway made a legitimate multi-tenant deployment fail to render — verified
+     against this chart: `helm template` with MULTI_TENANCY_ENABLED=true refused
+     with "app.secrets.BTG_CLIENT_ID is REQUIRED" before this change.
+
+     Either spelling of the toggle counts as multi-tenant, on purpose. The app
+     prefers MULTI_TENANT_ENABLED and treats MULTI_TENANCY_ENABLED as a deprecated
+     alias (reconcileDeprecatedMultiTenantEnv), while this chart's values.yaml still
+     ships the deprecated one — so keying on only one of them would refuse a deploy
+     that sets the other. Being permissive here is the safe direction: the app's own
+     production validation still refuses to boot without the pair in single-tenant,
+     so a wrongly-skipped check costs a precise boot error, while a wrongly-enforced
+     one costs a deployment that cannot render at all. */}}
+{{- $providerCredentialsPerTenant := or
+      (eq (.Values.app.configmap.MULTI_TENANT_ENABLED | default "" | toString) "true")
+      (eq (.Values.app.configmap.MULTI_TENANCY_ENABLED | default "" | toString) "true") }}
+{{- if not $providerCredentialsPerTenant }}
+{{- if not .Values.app.secrets.PROVIDER_CLIENT_ID }}
+{{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_ID is REQUIRED in single-tenant mode.\n   Set the provider OAuth2 client ID in the secrets section.\n   (In multi-tenant it is resolved per tenant and must be left unset.)\n" }}
 {{- end }}
 
-{{- if not .Values.app.secrets.BTG_CLIENT_SECRET }}
-{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_SECRET is REQUIRED.\n   Set the BTG OAuth2 client secret in the secrets section.\n" }}
+{{- if not .Values.app.secrets.PROVIDER_CLIENT_SECRET }}
+{{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_SECRET is REQUIRED in single-tenant mode.\n   Set the provider OAuth2 client secret in the secrets section.\n   (In multi-tenant it is resolved per tenant and must be left unset.)\n" }}
+{{- end }}
 {{- end }}
 
 {{- if not .Values.app.secrets.BTG_WEBHOOK_SECRET }}

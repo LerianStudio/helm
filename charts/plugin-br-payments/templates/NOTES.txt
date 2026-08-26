@@ -47,8 +47,8 @@ The following values MUST be set for the deployment to start successfully:
   - app.configmap.BTG_API_BASE_URL        (BTG API base URL)
   - app.configmap.BTG_AUTH_URL            (BTG OAuth2 token URL)
   - app.configmap.MIDAZ_LEDGER_URL        (Midaz Ledger service URL; deprecated MIDAZ_ONBOARDING_URL + MIDAZ_TRANSACTION_URL pair still accepted as a fallback)
-  - app.secrets.BTG_CLIENT_ID             (BTG OAuth2 client ID)
-  - app.secrets.BTG_CLIENT_SECRET         (BTG OAuth2 client secret)
+  - app.secrets.PROVIDER_CLIENT_ID        (provider OAuth2 client ID — single-tenant only)
+  - app.secrets.PROVIDER_CLIENT_SECRET    (provider OAuth2 client secret — single-tenant only)
   - app.secrets.BTG_WEBHOOK_SECRET        (BTG webhook bearer token)
   - app.secrets.POSTGRES_PASSWORD         (PostgreSQL application password)
   - app.secrets.INTERNAL_API_KEY          (>=32 chars; required for SERVICE_TYPE=both/worker)
@@ -58,6 +58,9 @@ The following values MUST be set for the deployment to start successfully:
 When MULTI_TENANCY_ENABLED=true, additionally:
   - app.configmap.MULTI_TENANT_MANAGER_URL
   - app.secrets.MULTI_TENANT_SERVICE_API_KEY
+
+and the PROVIDER_CLIENT_* pair above is NOT required — it is resolved per tenant
+from the credential row, and the app logs a WARN at boot naming each one left set.
 
 ## Accessing the API
 

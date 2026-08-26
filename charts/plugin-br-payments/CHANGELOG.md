@@ -5,6 +5,43 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **BREAKING:** Renamed the OAuth2 credential pair BACK from `BTG_*` to `PROVIDER_*`,
+  and only that pair:
+  - `app.secrets.BTG_CLIENT_ID` → `app.secrets.PROVIDER_CLIENT_ID`
+  - `app.secrets.BTG_CLIENT_SECRET` → `app.secrets.PROVIDER_CLIENT_SECRET`
+
+  The `1.0.0-beta.2` entry below renamed these the other way, and it was right
+  about its reason at the time — the binary read `BTG_*`. The binary has now moved
+  to `PROVIDER_*` (`internal/bootstrap/config.go`), because `plugin-br-payments` is
+  provider-agnostic by design and BTG is its first adapter rather than its only
+  one: a client id and a client secret are what any OAuth2 provider issues, unlike
+  a BTG host or a BTG webhook mechanism. `BTG_API_BASE_URL`, `BTG_AUTH_URL`,
+  `BTG_TOKEN_REFRESH_INTERVAL` and `BTG_WEBHOOK_SECRET` therefore keep their
+  prefix and are NOT affected.
+
+  Worth knowing when migrating an overlay: the Vault field names in the deployment
+  repositories were `PROVIDER_CLIENT_ID` all along and never followed the
+  `1.0.0-beta.2` rename, so this restores agreement rather than introducing a new
+  divergence.
+
+### Fixed
+
+- The `PROVIDER_CLIENT_ID` / `PROVIDER_CLIENT_SECRET` requirement is now
+  **conditional on tenancy mode** instead of unconditional. In multi-tenant the app
+  resolves the pair per tenant from the credential row, nothing reads the global
+  values, and it logs a WARN at boot naming each one left set — but
+  `validateRequired` demanded them anyway, so a legitimate multi-tenant deployment
+  could not render at all (`helm template` refused with
+  `app.secrets.BTG_CLIENT_ID is REQUIRED`). The guard now skips when either
+  `MULTI_TENANT_ENABLED` or the deprecated `MULTI_TENANCY_ENABLED` is `"true"`:
+  the app prefers the former and treats the latter as an alias, while this chart
+  still ships the latter, so keying on one alone would refuse a deploy that set the
+  other.
+
 ## [1.0.0-beta.2] — Unreleased
 
 ### Changed

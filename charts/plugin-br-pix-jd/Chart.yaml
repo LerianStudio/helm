@@ -58,3 +58,13 @@ dependencies:
     version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
+  # Valkey EMBARCADO, desligado por default — mesma postura do postgresql acima e do
+  # go-boilerplate-ddd-helm, que é o chart de referência desta wiring. Só a lane
+  # `chaos` do anacleto liga: injeção de falha precisa de datastore descartável.
+  # `bitnamisecure` porque o bitnami/valkey perdeu as tags gratuitas do catálogo
+  # público; o digest é pinado, e allowInsecureImages é o que o subchart exige para
+  # aceitar um repositório que não bate com o esperado.
+  - name: valkey
+    version: 2.4.7
+    repository: https://charts.bitnami.com/bitnami
+    condition: valkey.enabled

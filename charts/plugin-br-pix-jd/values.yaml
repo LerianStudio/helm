@@ -443,3 +443,32 @@ postgresql:
     persistence:
       enabled: true
       size: 8Gi
+
+# =============================================================================
+# Valkey EMBARCADO — desligado por default, como o postgresql acima.
+#
+# `enabled: false` + `external: true` mantém TODO install existente
+# byte-idêntico: o REDIS_HOST continua vindo de api.configmap e nenhum objeto novo
+# é renderizado. Ligar (`enabled: true`, `external: false`) faz o chart derivar
+# REDIS_HOST do Service do subchart e ler REDIS_PASSWORD do Secret dele, do mesmo
+# jeito que já faz para o Postgres.
+#
+# Modelado no go-boilerplate-ddd-helm, que é o chart de referência: mesma imagem
+# `bitnamisecure/valkey` com digest pinado (o bitnami/valkey perdeu as tags
+# gratuitas do catálogo público) e o mesmo allowInsecureImages, que o subchart
+# exige para aceitar um repositório fora do esperado.
+valkey:
+  # -- Renderiza o Valkey embarcado. false = usar o externo de api.configmap.REDIS_HOST
+  enabled: false
+  # -- Declara que o Valkey é externo a este release. Combinar external=true com
+  # enabled=true é contraditório e o chart recusa o render.
+  external: true
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/valkey
+    tag: ""
+    digest: "sha256:5d43ca8bb57aa263ef78d1684dbf1e4b4f63844727eafdd5ea2b0e102a25b141"
+  auth:
+    enabled: true

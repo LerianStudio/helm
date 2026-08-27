@@ -67,6 +67,10 @@
     "postgresql": {
       "type": "object",
       "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "additionalProperties": true
     }
   }
 }

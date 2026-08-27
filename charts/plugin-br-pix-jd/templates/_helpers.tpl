@@ -327,6 +327,56 @@ true
 {{- end -}}
 {{- end }}
 
+{{/*
+------------------------------------------------------------------------------
+valkeyRenders / redisHostDefault / redisPasswordEnv — o trio do Valkey embarcado,
+espelhando exatamente o do Postgres logo acima. Modelado no
+go-boilerplate-ddd-helm, o chart de referência desta wiring.
+
+valkeyRenders responde UMA pergunta: o subchart do Valkey renderiza um Service
+NESTE release? É a mesma distinção que postgresRenders faz e pelo mesmo motivo —
+derivar um host de um Service que não existe foi o defeito que a nota do
+postgresHost documenta.
+
+enabled=true junto com external=true é contraditório e falha o render: a condição
+do subchart é `valkey.enabled`, então o StatefulSet subiria enquanto o app fala com
+outro servidor.
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.valkeyRenders" -}}
+{{- $vk := .Values.valkey | default dict -}}
+{{- if and (ne (toString $vk.enabled) "false") $vk.external -}}
+{{- fail "\n\nERROR: valkey.enabled=true junto com valkey.external=true é contraditório.\nA condição do subchart é `valkey.enabled`, então o StatefulSet do Valkey seria\ncriado enquanto o app conecta em outro servidor. Para o Valkey embarcado use\nvalkey.enabled=true e valkey.external=false; para o externo, valkey.enabled=false.\n" -}}
+{{- end -}}
+{{- if and (ne (toString $vk.enabled) "false") (not $vk.external) -}}
+true
+{{- end -}}
+{{- end }}
+
+{{/* redisHostDefault — authority do Valkey embarcado, ou vazio no caminho externo.
+   Sempre QUALIFICADO com namespace: o Service do subchart fica em
+   .Release.Namespace mesmo quando namespaceOverride move os objetos deste chart, e
+   um nome nu não resolve entre namespaces. */}}
+{{- define "plugin-br-pix-jd.redisHostDefault" -}}
+{{- if include "plugin-br-pix-jd.valkeyRenders" . -}}
+{{- $svc := include "lerian-common.dependency.fullname" (dict "chartName" "valkey" "chartValues" (.Values.valkey | default dict) "context" .) -}}
+{{- printf "%s-primary.%s.svc.cluster.local:6379" $svc .Release.Namespace -}}
+{{- end -}}
+{{- end }}
+
+{{/* redisPasswordEnv — REDIS_PASSWORD como env discreta, de fonte única.
+   A chave no Secret do subchart do Valkey é `valkey-password`, NÃO `password` como
+   no Postgres — copiar a do Postgres aqui produz um secretKeyRef que aponta para
+   chave inexistente e o pod sobe sem senha contra um Valkey que exige AUTH.
+   No caminho externo NADA é emitido, pelo mesmo motivo do dbPasswordEnv: a senha
+   vive no Secret deste chart, que o container já carrega inteiro via envFrom, e uma
+   env discreta a definiria duas vezes. */}}
+{{- define "plugin-br-pix-jd.redisPasswordEnv" -}}
+{{- if include "plugin-br-pix-jd.valkeyRenders" . -}}
+{{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") -}}
+{{- end -}}
+{{- end }}
+
 {{- define "plugin-br-pix-jd.postgresPasswordSourced" -}}
 {{- $pg := .Values.postgresql | default dict -}}
 {{- $auth := $pg.auth | default dict -}}
@@ -538,7 +588,9 @@ ALLOW_INSECURE_TLS: {{ . | quote }}
 
 {{- /* Redis (Valkey). Required in practice: the rate limiter is fail-closed by
    default, so an unreachable Redis rejects traffic rather than degrading. */}}
-REDIS_HOST: {{ required "\n\nERROR: api.configmap.REDIS_HOST is required.\nThe rate limiter is fail-closed by default, so an unset Redis authority makes\nevery request 4xx instead of degrading. Set it to host:port.\n" (include "lerian-common.datastore.value" (dict "context" $root "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "")) | quote }}
+{{- /* O default é o Service do Valkey embarcado quando ele renderiza; vazio no
+   caminho externo, onde o required abaixo continua sendo a rede de segurança. */}}
+REDIS_HOST: {{ required "\n\nERROR: api.configmap.REDIS_HOST is required.\nThe rate limiter is fail-closed by default, so an unset Redis authority makes\nevery request 4xx instead of degrading. Set it to host:port, or enable the\nbundled Valkey (valkey.enabled=true, valkey.external=false) to have it derived.\n" (include "lerian-common.datastore.value" (dict "context" $root "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (include "plugin-br-pix-jd.redisHostDefault" $root))) | quote }}
 REDIS_DB: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "REDIS_DB" "default" "0") | quote }}
 REDIS_PROTOCOL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "REDIS_PROTOCOL" "default" "3") | quote }}
 REDIS_POOL_SIZE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "REDIS_POOL_SIZE" "default" "10") | quote }}

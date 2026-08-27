@@ -2,7 +2,7 @@
 # knobs so the render-gate covers the configured paths (not just the defaults): the
 # datastore masks flow into the migration Jobs / bootstrap / init.sql, the tracer accepts
 # a masked host, the gRPC container/Service port tracks TRACER_GRPC_PORT, and a
-# template-supported configmap key (ACCOUNT_TYPE_VALIDATION) is on the schema allowlist.
+# template-supported configmap key (AUDIT_LOG_ENABLED) is on the schema allowlist.
 tracer:
   # Exercise the tracer deployment templates in the render-gate.
   enabled: true
@@ -23,7 +23,7 @@ ledger:
     postgresTransaction:
       name: "tx_ci"
   configmap:
-    ACCOUNT_TYPE_VALIDATION: "external"
+    AUDIT_LOG_ENABLED: "true"
   secrets:
     LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

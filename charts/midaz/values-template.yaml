@@ -130,9 +130,6 @@ ledger:
     IDP_DECLARATION_ENABLED: "false"
     IDP_HOST: ""
     IDP_M2M_CLIENT_ID: ""
-    # -- Accounting config
-    ACCOUNT_TYPE_VALIDATION: ""
-    TRANSACTION_ROUTE_VALIDATION: ""
     # -- PostgreSQL Onboarding module (host/user/port/replicaHost come from
     # global.datastores.postgresOnboarding above; only the per-module db name
     # is native)

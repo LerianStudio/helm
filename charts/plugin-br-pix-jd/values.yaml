@@ -394,7 +394,7 @@ migrations:
   # -- Image used to wait for the datastore to accept connections
   waitImage: busybox:1.37
   # -- Dedicated migrations image: golang-migrate with this app's SQL baked in. NOT the
-  # app image — that one is distroless and has no shell, which is why the pre-0.3.0
+  # app image — that one is distroless and has no shell, which is why the previous
   # extract-from-the-app-image approach could never run (see the Job template).
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-migrations

@@ -88,7 +88,7 @@ spec:
       containers:
         {{- /* THE DEDICATED MIGRATIONS IMAGE, not the app image.
 
-           Until 0.3.0 this Job extracted /migrations out of the APP image with an
+           This Job used to extract /migrations out of the APP image with an
            initContainer running `/bin/sh -c cp`, then applied it from a generic
            migrate/migrate container over a shared emptyDir. That could never work: the
            app image is gcr.io/distroless/static-debian12, which ships no shell and no

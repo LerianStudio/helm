@@ -20,7 +20,7 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 0.3.0
+version: 0.2.0
 
 # First release published under the new name: the plugin tagged v1.12.0-beta.8 on
 # 2026-08-05 (the merge of integration/jdpi-compliance-run into develop, PR #52) and

@@ -14,6 +14,7 @@ maintainers:
     email: "support@lerian.studio"
 version: 2.3.0-beta.1
 deprecated: true
+# Tracks the go-boilerplate-ddd application image tag, not this chart's own version.
 appVersion: "1.0.0"
 keywords:
   - boilerplate

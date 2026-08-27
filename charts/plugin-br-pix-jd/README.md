@@ -18,7 +18,7 @@ Helm chart for [`plugin-br-pix-jd`](https://github.com/LerianStudio/plugin-br-pi
 
 **The `worker` component ships disabled.** The production Dockerfile builds only `./cmd/app`, so the image carries no `/worker` binary. Until the app ships a build with both entry points (the pattern already present in its `Dockerfile.smoke`), enabling `worker` yields a CrashLoopBackOff — and transaction reconciliation, the MED pollers and the indirect-delivery drainer do not run.
 
-**The app does not apply migrations on boot** — it reads `MIGRATIONS_PATH` and never calls `golang-migrate`. The chart therefore ships a segregated migration Job whose hook phase follows the datastore: `PostSync` for the bundled Postgres (provisioned during Sync, so the api briefly serves against an empty schema), `PreSync` for an external one (schema-first). In multi-tenant mode the Tenant Manager owns per-tenant migrations and the chart REFUSES `migrations.enabled=true`.
+**The app does not apply migrations on boot** — it reads `MIGRATIONS_PATH` and never calls `golang-migrate`. The chart therefore ships a segregated migration Job whose hook phase follows the datastore: `PostSync` for the bundled Postgres (provisioned during Sync, so the api briefly serves against an empty schema), `PreSync` for an external one (schema-first). The Job runs the dedicated `plugin-br-pix-jd-migrations` image (golang-migrate with the SQL baked in) — not the app image, which is distroless and has no shell. In multi-tenant mode the Tenant Manager owns per-tenant migrations and the chart SKIPS the Job automatically, reporting the skip in `NOTES.txt`; `migrations.enabled` does not need to be set.
 
 ## Components
 

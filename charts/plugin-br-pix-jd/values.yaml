@@ -393,11 +393,21 @@ migrations:
   resources: {}
   # -- Image used to wait for the datastore to accept connections
   waitImage: busybox:1.37
-  # -- golang-migrate image that applies the SQL
-  migrateImage: migrate/migrate:v4.18.1
-  # -- Where the migrations live inside the app image (Dockerfile copies them here)
-  sourcePath: /migrations
-  # -- Optional x-migrations-table override; empty uses golang-migrate's default
+  # -- Dedicated migrations image: golang-migrate with this app's SQL baked in. NOT the
+  # app image — that one is distroless and has no shell, which is why the pre-0.3.0
+  # extract-from-the-app-image approach could never run (see the Job template).
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-pix-jd-migrations
+    # -- PIN THIS. The fallback to .Chart.AppVersion is a convention-compliant default,
+    # not a correct one: the release pipeline builds only the components a commit
+    # touched, so api, worker and migrations tags legitimately DIVERGE and no single tag
+    # names all three. Measured 2026-08-27 — api and migrations exist at 1.13.0-beta.4,
+    # worker stops at 1.13.0-beta.3. An unpinned tag surfaces as ImagePullBackOff on a
+    # PreSync hook, which blocks the whole sync.
+    tag: ""
+    pullPolicy: IfNotPresent
+  # -- Optional x-migrations-table override, passed to the image as
+  # POSTGRES_MIGRATIONS_TABLE; empty uses golang-migrate's default (schema_migrations)
   table: ""
 
 # -- Values block for the lerian-common library dependency. It is INERT — a library

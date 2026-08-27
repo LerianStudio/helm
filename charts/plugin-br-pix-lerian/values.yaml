@@ -1463,7 +1463,10 @@ appsIngress:
     # does) BEFORE enabling appsIngress. This is no longer prose-only: with this
     # route present, appsIngress.enabled and pixauto.enabled both true and
     # PLUGIN_AUTH_ENABLED anything other than "true", templates/ingress-apps.yaml
-    # fails the render rather than publish the internal group unauthenticated.
+    # emits a WARNING comment into the rendered manifest. It deliberately does
+    # NOT fail the render: that combination is the current, intentional state of
+    # at least one internal environment, so a hard fail would block a legitimate
+    # deploy instead of flagging it.
     # The bare
     # prefix also keeps /pixauto/readyz reachable through the ingress, which the
     # gethomepage.dev/href dashboard annotation targets.
@@ -1949,10 +1952,16 @@ pixauto:
     # is authored and gated, not published. Flipping this needs the M2M pair
     # below AND PLUGIN_AUTH_ENABLED=true, or the token mints empty and the
     # fail-open publisher skips publication silently.
-    DECLARATION_ENABLED: "false"
-    PLUGIN_IDENTITY_HOST: ""
+    # The IDP_ prefix is the canonical name as of lib-auth v3.4.0-beta.6
+    # (#4232). The pre-prefix names (DECLARATION_ENABLED, PLUGIN_IDENTITY_HOST,
+    # M2M_CLIENT_ID, M2M_CLIENT_SECRET) still resolve as deprecated aliases for
+    # one release and log a WARN on every boot; canonical wins when both are
+    # set. PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST are out of scope for the
+    # rename and keep their names.
+    IDP_DECLARATION_ENABLED: "false"
+    IDP_HOST: ""
     PLUGIN_AUTH_HOST: ""
-    M2M_CLIENT_ID: ""
+    IDP_M2M_CLIENT_ID: ""
     # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true).
     # MULTI_TENANT_API_KEY lives under secrets.
     MULTI_TENANT_ENABLED: "false"
@@ -1981,7 +1990,7 @@ pixauto:
     MULTI_TENANT_API_KEY: ""
     # -- This app's OWN M2M pair (never shared): the declaration BOLA guard
     # checks the token's azp against the slug being declared.
-    M2M_CLIENT_SECRET: ""
+    IDP_M2M_CLIENT_SECRET: ""
     # -- Broker SASL credentials + CA bundle. Only consumed when
     # STREAMING_ENABLED=true.
     STREAMING_SASL_USERNAME: ""

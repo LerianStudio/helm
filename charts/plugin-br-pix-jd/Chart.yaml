@@ -28,7 +28,7 @@ version: 0.2.0
 # registry tag has NO leading `v`, unlike the git tag. This is the tag of the release
 # train the chart was cut against; production values still pin `api.image.tag`
 # explicitly rather than inheriting it.
-appVersion: "1.12.0-beta.8"
+appVersion: "1.13.0-beta.4"
 
 keywords:
   - midaz

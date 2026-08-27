@@ -60,8 +60,8 @@ spec:
       {{- with (.Values.api.imagePullSecrets | default (.Values.global).imagePullSecrets) }}
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
+      {{- if $bundled }}
       initContainers:
-        {{- if $bundled }}
         {{- /* Bounded wait, not an infinite loop: an unreachable datastore should fail the
            Job with a clear timeout rather than sit in Init forever until someone notices. */}}
         - name: wait-for-postgres
@@ -84,41 +84,40 @@ spec:
               value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_PORT" "default" "5432") | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-        {{- end }}
-        {{- /* No separate migrations image exists for this plugin — unlike
-           plugin-br-bank-transfer, which publishes `<app>-migrations`. The app image is
-           the ONLY source of the migrations tree (its Dockerfile copies them to
-           /migrations), so extract them into an emptyDir and let the generic
-           golang-migrate image apply them. This keeps the migrate container from ever
-           executing the service binary, and keeps schema and app from drifting: they
-           come from the same tag by construction. */}}
-        - name: extract-migrations
-          image: {{ include "plugin-br-pix-jd.componentImage" (dict "root" $ "comp" .Values.api) | quote }}
-          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
-          command:
-            - /bin/sh
-            - -c
-            - cp -R {{ $mig.sourcePath | default "/migrations" }}/. /workdir/
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          volumeMounts:
-            - name: migrations
-              mountPath: /workdir
+      {{- end }}
       containers:
+        {{- /* THE DEDICATED MIGRATIONS IMAGE, not the app image.
+
+           This Job used to extract /migrations out of the APP image with an
+           initContainer running `/bin/sh -c cp`, then applied it from a generic
+           migrate/migrate container over a shared emptyDir. That could never work: the
+           app image is gcr.io/distroless/static-debian12, which ships no shell and no
+           cp, so the initContainer died with
+             exec: "/bin/sh": stat /bin/sh: no such file or directory
+           The bug stayed invisible because the only two installs were MULTI-TENANT,
+           where this whole Job is skipped (see the note above). The first single-tenant
+           install hit it immediately.
+
+           The app now publishes ghcr.io/lerianstudio/plugin-br-pix-jd-migrations —
+           FROM migrate/migrate with migrations/ baked in — which is also what every
+           sibling chart consumes (br-ccs, br-sisbajud, br-sfn, matcher,
+           plugin-access-manager, plugin-br-bank-transfer, streaming-hub). No shell, no
+           emptyDir, no initContainer: the image's ENTRYPOINT assembles the DSN from the
+           POSTGRES_* env below and applies the schema.
+
+           NO `command:` HERE ON PURPOSE. Overriding it would bypass the entrypoint's
+           password percent-encoding, which is the thing that lets the password contain
+           @ : / ? # & + or a space without breaking URL parsing — the old in-shell DSN
+           could not, and that constraint used to leak all the way out to whoever
+           generated the credential. */}}
+        {{- $migImage := $mig.image | default dict -}}
+        {{- /* An empty repository renders ":<tag>", which the API server rejects with
+           InvalidImageName — on a PreSync hook, so it blocks the entire sync. Fail at
+           render naming the value, the same way componentImage does for the app. */ -}}
+        {{- $migRepo := required "\n\nERROR: migrations.image.repository is empty.\nAn empty repository renders as \":<tag>\", which the API server rejects with\nInvalidImageName — and this Job is a PreSync hook, so it blocks the whole sync.\nSet migrations.image.repository (default: ghcr.io/lerianstudio/plugin-br-pix-jd-migrations).\n" ($migImage.repository | default "") }}
         - name: migrations
-          image: {{ $mig.migrateImage | default "migrate/migrate:v4.18.1" | quote }}
-          imagePullPolicy: {{ $mig.imagePullPolicy | default "IfNotPresent" }}
-          {{- /* The URL is assembled in-shell so the password rides a Secret-backed env
-             var and never appears in the rendered manifest. It must be URL-safe: an
-             @ : / ? # % in the password would break parsing. The bundled subchart
-             generates an alphanumeric password; an operator-supplied one is on them. */}}
-          command:
-            - /bin/sh
-            - -c
-            - >-
-              migrate -path /migrations
-              -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_NAME}?sslmode=${POSTGRES_SSLMODE}{{ with $mig.table }}&x-migrations-table={{ . }}{{ end }}"
-              up
+          image: {{ printf "%s:%s" $migRepo ($migImage.tag | default $.Chart.AppVersion) | quote }}
+          imagePullPolicy: {{ ($migImage.pullPolicy | default $mig.imagePullPolicy) | default "IfNotPresent" }}
           env:
             - name: POSTGRES_HOST
               value: {{ include "plugin-br-pix-jd.postgresHost" . | quote }}
@@ -130,18 +129,15 @@ spec:
               value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_NAME" "default" "plugin-br-pix-jd") | quote }}
             - name: POSTGRES_SSLMODE
               value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+            {{- with $mig.table }}
+            - name: POSTGRES_MIGRATIONS_TABLE
+              value: {{ . | quote }}
+            {{- end }}
             {{- include "plugin-br-pix-jd.migrationPasswordEnv" . | nindent 12 }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           resources:
             {{- toYaml ($mig.resources | default (dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi"))) | nindent 12 }}
-          volumeMounts:
-            - name: migrations
-              mountPath: /migrations
-              readOnly: true
-      volumes:
-        - name: migrations
-          emptyDir: {}
       {{- if or .Values.api.nodeSelector .Values.api.affinity .Values.api.tolerations }}
       {{- include "lerian-common.scheduling" .Values.api | nindent 6 }}
       {{- end }}

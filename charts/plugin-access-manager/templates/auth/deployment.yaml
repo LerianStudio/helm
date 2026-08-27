@@ -29,7 +29,11 @@ spec:
         - name: wait-for-dependencies
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: busybox
+          # curl, not busybox wget: busybox's wget cannot complete a TLS
+          # handshake against SNI-routed endpoints (alert 40), so an https
+          # AUTHORIZER_ADDRESS -- required by the 3.3.0 JWKS TLS gate outside
+          # dev/staging/local ENV_NAME -- wedged this init forever.
+          image: curlimages/curl:8.10.1
           envFrom:
           - configMapRef:
               name: {{ include "plugin-auth.fullname" . }}
@@ -37,8 +41,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              #!/bin/bash
-              until wget --spider -q "$AUTHORIZER_ADDRESS/api/health"; do
+              until curl -sf -o /dev/null "$AUTHORIZER_ADDRESS/api/health"; do
                 echo "Wait for backend...";
                 sleep 5;
               done;

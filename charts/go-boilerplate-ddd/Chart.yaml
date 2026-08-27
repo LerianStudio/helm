@@ -13,7 +13,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 2.3.0-beta.4
+version: 2.3.0-beta.5
 deprecated: true
 # Tracks the go-boilerplate-ddd application image tag, not this chart's own version.
 appVersion: "1.0.0"

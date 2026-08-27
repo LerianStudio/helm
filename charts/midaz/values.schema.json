@@ -467,7 +467,6 @@
           "description": "Escape hatch: any native env var (e.g. DB_ONBOARDING_MAX_OPEN_CONNS) overrides the template default.",
           "propertyNames": {
             "enum": [
-              "ACCOUNT_TYPE_VALIDATION",
               "AGGRESSIVE_RATE_LIMIT_MAX",
               "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
               "ALLOW_INSECURE_TLS",
@@ -529,7 +528,6 @@
               "DB_TRANSACTION_SSLMODE",
               "DB_TRANSACTION_USER",
               "DB_USER",
-              "DEFAULT_CURRENCY",
               "DEPLOYMENT_MODE",
               "ENABLE_TELEMETRY",
               "ENV_NAME",
@@ -640,7 +638,6 @@
               "RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE",
               "RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY",
               "RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE",
-              "RABBITMQ_TRANSACTION_EVENTS_ENABLED",
               "RABBITMQ_TRANSACTION_EVENTS_EXCHANGE",
               "RABBITMQ_URI",
               "RABBITMQ_VHOST",
@@ -718,7 +715,6 @@
               "TRACER_TLS_KEY_FILE",
               "TRACER_TLS_MODE",
               "TRACER_TRANSPORT",
-              "TRANSACTION_ROUTE_VALIDATION",
               "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
               "VERSION"
@@ -1041,7 +1037,6 @@
           "description": "Escape hatch: any native env var overrides the template default.",
           "propertyNames": {
             "enum": [
-              "ACCOUNT_TYPE_VALIDATION",
               "AGGRESSIVE_RATE_LIMIT_MAX",
               "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
               "ALLOW_INSECURE_TLS",
@@ -1103,7 +1098,6 @@
               "DB_TRANSACTION_SSLMODE",
               "DB_TRANSACTION_USER",
               "DB_USER",
-              "DEFAULT_CURRENCY",
               "DEPLOYMENT_MODE",
               "ENABLE_TELEMETRY",
               "ENV_NAME",
@@ -1221,7 +1215,6 @@
               "RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE",
               "RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY",
               "RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE",
-              "RABBITMQ_TRANSACTION_EVENTS_ENABLED",
               "RABBITMQ_TRANSACTION_EVENTS_EXCHANGE",
               "RABBITMQ_URI",
               "RABBITMQ_VHOST",
@@ -1314,7 +1307,6 @@
               "TRACER_TLS_KEY_FILE",
               "TRACER_TLS_MODE",
               "TRACER_TRANSPORT",
-              "TRANSACTION_ROUTE_VALIDATION",
               "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
               "VERSION"
@@ -1725,7 +1717,6 @@
           "description": "Escape hatch: any native env var overrides the template default.",
           "propertyNames": {
             "enum": [
-              "ACCOUNT_TYPE_VALIDATION",
               "AGGRESSIVE_RATE_LIMIT_MAX",
               "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
               "ALLOW_INSECURE_TLS",
@@ -1787,7 +1778,6 @@
               "DB_TRANSACTION_SSLMODE",
               "DB_TRANSACTION_USER",
               "DB_USER",
-              "DEFAULT_CURRENCY",
               "DEPLOYMENT_MODE",
               "ENABLE_TELEMETRY",
               "ENV_NAME",
@@ -1898,7 +1888,6 @@
               "RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE",
               "RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY",
               "RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE",
-              "RABBITMQ_TRANSACTION_EVENTS_ENABLED",
               "RABBITMQ_TRANSACTION_EVENTS_EXCHANGE",
               "RABBITMQ_URI",
               "RABBITMQ_VHOST",
@@ -1976,7 +1965,6 @@
               "TRACER_TLS_KEY_FILE",
               "TRACER_TLS_MODE",
               "TRACER_TRANSPORT",
-              "TRANSACTION_ROUTE_VALIDATION",
               "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
               "VERSION"

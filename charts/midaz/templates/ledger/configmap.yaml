@@ -92,12 +92,6 @@ data:
         "requiredRedisHost" true) | nindent 2 }}
 
   # =============================================================================
-  # ACCOUNTING CONFIG
-  # =============================================================================
-  ACCOUNT_TYPE_VALIDATION: {{ $cm.ACCOUNT_TYPE_VALIDATION | default "" | quote }}
-  TRANSACTION_ROUTE_VALIDATION: {{ $cm.TRANSACTION_ROUTE_VALIDATION | default "" | quote }}
-
-  # =============================================================================
   # DB POSTGRESQL - ONBOARDING MODULE (host/user/port/ssl/replicaHost via datastore mask)
   # =============================================================================
   # Primary
@@ -333,7 +327,6 @@ data:
   BULK_RECORDER_MAX_ROWS_PER_INSERT: {{ $cm.BULK_RECORDER_MAX_ROWS_PER_INSERT | default "1000" | quote }}
 
   # TRANSACTION EXCHANGE EVENTS
-  RABBITMQ_TRANSACTION_EVENTS_ENABLED: {{ $cm.RABBITMQ_TRANSACTION_EVENTS_ENABLED | default "false" | quote }}
   RABBITMQ_TRANSACTION_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_TRANSACTION_EVENTS_EXCHANGE | default "transaction.transaction_events.exchange" | quote }}
 
   # OVERDRAFT EVENTS
@@ -417,11 +410,6 @@ data:
         "configmap" $cm
         "clientId" (include "midaz-ledger.fullname" .)
         "cloudeventsSource" "ledger") | nindent 2 }}
-
-  # =============================================================================
-  # FEE ENGINE
-  # =============================================================================
-  DEFAULT_CURRENCY: {{ $cm.DEFAULT_CURRENCY | default "USD" | quote }}
 
   # =============================================================================
   # CASDOOR

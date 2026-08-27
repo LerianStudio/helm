@@ -5,7 +5,7 @@
 - **[Overview](#overview)**
 - **[Features](#features)**
   - [1. Configurable liveness and readiness probes](#1-configurable-liveness-and-readiness-probes)
-  - [2. Default readiness path changed to /readyz](#2-default-readiness-path-changed-to-readyz)
+  - [2. Default readiness path changed to /api/admin/health/readyz](#2-default-readiness-path-changed-to-apiadminhealthreadyz)
 - **[Configuration Changes](#configuration-changes)**
 - **[Migration Steps](#migration-steps)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
@@ -43,7 +43,7 @@ livenessProbe:
   successThreshold: 1
   failureThreshold: 3
 readinessProbe:
-  path: /readyz
+  path: /api/admin/health/readyz
   initialDelaySeconds: 10
   periodSeconds: 5
   timeoutSeconds: 3
@@ -58,20 +58,20 @@ livenessProbe:
   initialDelaySeconds: 45
   failureThreshold: 5
 readinessProbe:
-  path: /healthz
+  path: /api/admin/health/readyz
   periodSeconds: 10
 ```
 
-### 2. Default readiness path changed to /readyz
+### 2. Default readiness path changed to /api/admin/health/readyz
 
-The readiness probe HTTP path default has changed from `/` to `/readyz`. The liveness probe default path remains `/`.
+The readiness probe HTTP path default has changed from `/` to `/api/admin/health/readyz`. The liveness probe default path remains `/`.
 
 | Probe | v2.3.x default | v2.4.x default |
 |-------|----------------|----------------|
 | `livenessProbe.path` | `/` | `/` |
-| `readinessProbe.path` | `/` | `/readyz` |
+| `readinessProbe.path` | `/` | `/api/admin/health/readyz` |
 
-If the `product-console` application image you deploy does not yet expose `/readyz`, override the path back to `/` in your values:
+If the `product-console` application image you deploy does not yet expose `/api/admin/health/readyz`, override the path back to `/` in your values:
 
 ```yaml
 readinessProbe:
@@ -88,7 +88,7 @@ No existing keys were removed or renamed. The `livenessProbe` and `readinessProb
 |---------|--------|--------|-------|
 | `livenessProbe` | absent | `{}` | New, optional, overrides built-in defaults |
 | `readinessProbe` | absent | `{}` | New, optional, overrides built-in defaults |
-| `readinessProbe.path` (default) | `/` (hardcoded) | `/readyz` | Override to `/` if your app does not serve `/readyz` |
+| `readinessProbe.path` (default) | `/` (hardcoded) | `/api/admin/health/readyz` | Override to `/` if your app does not serve `/api/admin/health/readyz` |
 
 ## Migration Steps
 
@@ -97,7 +97,7 @@ This upgrade requires no mandatory values changes. The Helm upgrade will roll th
 **Recommended upgrade process:**
 
 1. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
-2. If your image does not expose `/readyz`, set `readinessProbe.path: /` in your values before upgrading.
+2. If your image does not expose `/api/admin/health/readyz`, set `readinessProbe.path: /` in your values before upgrading.
 3. Run the upgrade command during a maintenance window.
 4. Verify all pods are running and healthy after the upgrade:
 

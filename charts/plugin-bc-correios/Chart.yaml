@@ -15,6 +15,7 @@ maintainers:
 
 version: 2.2.0
 
+# Tracks the plugin-bc-correios application image tag, not this chart's own version.
 appVersion: "1.2.0"
 keywords:
   - bc-correios

@@ -142,6 +142,7 @@ jobs:
         run: git pull origin ${{ github.ref_name }}
 
       - name: Set up Helm
+        id: setup-helm
         continue-on-error: true
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
@@ -221,27 +222,21 @@ jobs:
           CHART_NAME="${{ matrix.chart.name }}"
           CHART_PATH="${{ matrix.chart.working_dir }}"
 
-          if [ "$CHART_NAME" == "plugin-access-manager" ] || [ "$CHART_NAME" == "otel-collector-lerian" ]; then
-            PUSH_FILE="$CHART_NAME-\${nextRelease.version}.tgz"
-          else
-            PUSH_FILE="$CHART_NAME-helm-\${nextRelease.version}.tgz"
-          fi
-
           # cwd for Semantic Release is the chart dir (working_directory below),
           # so exec/helm3/git plugin paths must be relative to it, not repo root.
           #
           # semantic-release-monorepo rewrites ${nextRelease.version} to the full
           # git tag (not the plain semver) for the exec plugin's "success"/"fail"
           # steps specifically — it still resolves to plain semver in "prepare".
-          # So the helm package+push (which needs the plain version in the
-          # filename) has to run inside prepareCmd, not successCmd; successCmd is
-          # left a no-op. prepareCmd also updates the repo-root README.md matrix,
-          # so it hops out with `cd ../..` and back in with `cd $CHART_PATH`
-          # (CHART_PATH is always charts/<name>, depth 2) to run `helm package .`.
+          # Keep the README update in prepareCmd so @semantic-release/git can
+          # commit it. Package and push only in successCmd, after the release
+          # commit/tag succeeds. A fresh temporary directory lets Helm determine
+          # the exact package filename from Chart.yaml, so successCmd never has
+          # to parse the rewritten nextRelease.version value.
           jq \
             --arg tagFormat "$CHART_NAME-v\${version}" \
-            --arg successCmd "true" \
-            --arg prepareCmd "cd ../.. && ./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version} && cd $CHART_PATH && helm package . && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
+            --arg successCmd "PACKAGE_DIR=\$(mktemp -d) && helm package . --destination \"\$PACKAGE_DIR\" && set -- \"\$PACKAGE_DIR\"/*.tgz && [ \"\$#\" -eq 1 ] && helm push \"\$1\" oci://ghcr.io/lerianstudio" \
+            --arg prepareCmd "cd ../.. && ./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
             '.plugins[2][1].chartPath = "." |
               .plugins[4][1].assets = ["Chart.yaml", "../../README.md"] |
               .tagFormat = $tagFormat |
@@ -274,7 +269,7 @@ jobs:
           semantic_version: 23.0.8
           extra_plugins: |
             conventional-changelog-conventionalcommits@v7.0.2
-            semantic-release-monorepo
+            semantic-release-monorepo@8.0.2
             semantic-release-helm3
             @semantic-release/exec@6.0.3
             @semantic-release/git

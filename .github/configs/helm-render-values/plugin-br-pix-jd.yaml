@@ -9,9 +9,21 @@
 #   api.configmap.REDIS_HOST  — required because the rate limiter is fail-closed
 #   api.configmap.ENVIRONMENT_NAME — required so the production gates are deliberate
 #   api.configmap.MIDAZ_ASSET_ID   — required; empty silently backfills a fake asset
+#   api.configmap.POSTGRES_HOST    — required desde que o default de
+#     postgresql.enabled virou `false` (alinhando ao go-boilerplate-ddd-helm e ao
+#     bloco valkey). Antes o host era DERIVADO do Service do subchart embarcado, que
+#     o default renderizava; com o Postgres externo por default não há de onde
+#     derivar e o chart falha o render nomeando a chave. Esta fixture representa o
+#     caminho EXTERNO, que é o default — o caminho embarcado é exercido pelos values
+#     reais do anacleto/chaos.
+#   api.secrets.POSTGRES_PASSWORD  — requerida pelo mesmo motivo: o Job de migrations
+#     roda como pre-install hook, ANTES de o Secret normal do chart existir, então no
+#     caminho externo ele precisa da senha declarada. No caminho embarcado ela vem do
+#     Secret do próprio subchart e esta chave é dispensável.
 api:
   configmap:
     REDIS_HOST: "valkey:6379"
+    POSTGRES_HOST: "postgresql"
     # Required gate: an empty value would resolve to "development" in the app and
     # silently disable every production security check.
     ENVIRONMENT_NAME: "development"
@@ -20,3 +32,4 @@ api:
     MIDAZ_ASSET_ID: "BRL"
   secrets:
     LICENSE_KEY: "ci-only-not-a-real-license"
+    POSTGRES_PASSWORD: "ci-only-not-a-real-password"

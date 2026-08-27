@@ -1,5 +1,16 @@
 # Plugin-access-manager Changelog
 
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.1)
+
+- **Fixes**
+  - Use curl-based wait init for HTTPS authorizer.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.0...plugin-access-manager-v9.2.1)
+
+---
+
 ## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.0)
 
 - **Features:**

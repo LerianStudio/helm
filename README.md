@@ -106,6 +106,17 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.1.0-beta.13` | 1.0.0-beta.101 |
 -----------------
 
+### Plugin BR Pix Lerian
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-lerian).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `2.1.0-beta.13` | 1.0.0-beta.101 |
+-----------------
+
 ### Plugin BR Pix Indirect BTG
 
 See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/indirect-pix-btg) for details.

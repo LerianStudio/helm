@@ -1,0 +1,279 @@
+# Production values template for plugin-br-pix-lerian (chart 2.0.0-beta.1+)
+#
+# Override only the fields you need to change from values.yaml defaults.
+# All 15 components are enabled by default except adapter-provider-mock, the
+# adapter-lerian trio (adapterLerian / adapterLerianConsumer /
+# adapterLerianSystemplane) and the pixauto pair (pixauto /
+# pixautoSystemplane); disable any component by setting `enabled: false`.
+
+# There is NO shared `global.image` key. Each of the 15 components publishes
+# and pulls its own image (ghcr.io/lerianstudio/plugin-br-pix-lerian-<component>),
+# set under `<component>.image.repository`; the helpers read only that
+# per-component block. A `global.image.tag` set here would be silently ignored
+# and every component would still deploy `.Chart.AppVersion`.
+#
+# Leave the tags unset: an unset `<component>.image.tag` falls back to
+# `.Chart.AppVersion`, which keeps the whole cohort in lockstep with the chart
+# version — that is the intended way to pin a release. Override
+# `<component>.image.tag` / `.pullPolicy` only to pin ONE component to an
+# off-cohort build (rare), for example:
+#
+#   spi:
+#     image:
+#       tag: "1.0.0-beta.101"
+#       pullPolicy: IfNotPresent
+global:
+  imagePullSecrets:
+    - name: ghcr-credential
+
+# ------------------------------------------------------------
+# spi/api — PIX SPI (single-tenant identity REQUIRED)
+# ------------------------------------------------------------
+spi:
+  enabled: true
+  configmap:
+    DEPLOYMENT_MODE: "saas"            # or "byoc" / "local"
+    ENV_NAME: "production"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_ORGANIZATION_IDS: "global"
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    # Point at the adapter this environment actually runs (adapter-lerian, or
+    # adapter-provider-mock only where it is enabled -- its URL carries the
+    # /provider-mock prefix). No default: the mock is disabled in production,
+    # and a wrong default would only mask the missing real configuration.
+    # Leaving it empty does NOT fail at boot -- the app does not validate this
+    # variable at startup; it resolves the effective value per request from
+    # TenantConfig, so a missing value surfaces as a rejected request.
+    ADAPTER_BASE_URL: ""
+    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
+    COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
+    MIDAZ_BASE_URL: "http://midaz-onboarding.midaz.svc.cluster.local:3000"
+    MIDAZ_LEDGER_ID: ""
+    MIDAZ_ORGANIZATION_ID: ""
+    MIDAZ_CLIENT_ID: ""
+    DICT_CLIENT_ID: ""
+    COB_CLIENT_ID: ""
+    CRM_BASE_URL: ""
+    CRM_CLIENT_ID: ""
+    CRM_ORGANIZATION_ID: ""
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    LICENSE_KEY: ""                   # use Vault / external-secret reference
+    DICT_CLIENT_SECRET: ""
+    COB_CLIENT_SECRET: ""
+    CRM_CLIENT_SECRET: ""
+    MIDAZ_CLIENT_SECRET: ""
+
+# ------------------------------------------------------------
+# spi/systemplane/api
+# ------------------------------------------------------------
+spiSystemplane:
+  enabled: true
+  configmap: {}
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+# ------------------------------------------------------------
+# adapter-provider-mock (disabled in production!)
+# ------------------------------------------------------------
+adapterProviderMock:
+  enabled: false
+
+# ------------------------------------------------------------
+# dict/hub/api — DICT hub
+# ------------------------------------------------------------
+dictHub:
+  enabled: true
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_ORGANIZATION_IDS: "global"
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    # Point at the adapter this environment actually runs (adapter-lerian, or
+    # adapter-provider-mock only where it is enabled -- its URL carries the
+    # /provider-mock prefix). No default: the mock is disabled in production,
+    # and a wrong default would only mask the missing real configuration.
+    # Leaving it empty does NOT fail at boot -- the app does not validate this
+    # variable at startup; it resolves the effective value per request from
+    # TenantConfig, so a missing value surfaces as a rejected request.
+    ADAPTER_BASE_URL: ""
+    KEY_CACHE_TTL_SEC: "60"
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    LICENSE_KEY: ""
+    CRM_CLIENT_SECRET: ""
+
+# ------------------------------------------------------------
+# dict/hub/vsync — singleton background worker
+# ------------------------------------------------------------
+dictHubVsync:
+  enabled: true
+  configmap:
+    VSYNC_ENABLED: "true"
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    # TLS-only: amqps:// on 5671. lib-commons v5.7.0 validates the broker cert
+    # against the system trust store (a private CA needs an app-code change).
+    RABBITMQ_URI: "amqps://pixswitch:<password>@rabbitmq-host:5671/"
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# dict/proxy/api
+# ------------------------------------------------------------
+dictProxy:
+  enabled: true
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+  secrets:
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# dict/systemplane/api
+# ------------------------------------------------------------
+dictSystemplane:
+  enabled: true
+  configmap: {}
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+# ------------------------------------------------------------
+# cob/hub/api — COB hub
+# ------------------------------------------------------------
+cobHub:
+  enabled: true
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_ORGANIZATION_IDS: "global"
+    ORGANIZATION_ID: "<your-org-id>"
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# cob/proxy/api
+# ------------------------------------------------------------
+cobProxy:
+  enabled: true
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+  secrets:
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# cob/systemplane/api
+# ------------------------------------------------------------
+cobSystemplane:
+  enabled: true
+  configmap: {}
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+# ------------------------------------------------------------
+# adapter-lerian (api) — Lerian provider adapter HTTP entry
+# ------------------------------------------------------------
+adapterLerian:
+  enabled: false
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    ORGANIZATION_IDS: "global"
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# adapter-lerian (consumer) — br-sfn Kafka consumer
+# ------------------------------------------------------------
+adapterLerianConsumer:
+  enabled: false
+  configmap:
+    ISPB: "<8-digit-ispb>"
+    KAFKA_BROKERS: "<broker-1:9092,broker-2:9092>"
+    KAFKA_GROUP_ID: "pix-adapter-lerian-cashin"
+  secrets:
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# adapter-lerian (systemplane) — runtime config plane
+# ------------------------------------------------------------
+adapterLerianSystemplane:
+  enabled: false
+  configmap: {}
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+# ------------------------------------------------------------
+# pixauto/api — Pix Automático payer side
+# IDP_DECLARATION_ENABLED stays "false" until an M2M application is registered
+# for the plugin-br-pix-lerian-pixauto slug; STREAMING_ENABLED stays "false" until
+# the br-sfn rail carries the recurrence message family (GAP-BRSFN-001).
+# ------------------------------------------------------------
+pixauto:
+  enabled: false
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    ORGANIZATION_IDS: "global"
+    # Parity with spi/dict-hub/cob-hub above. Inert — the live key is
+    # ORGANIZATION_IDS; no code reads this name.
+    LICENSE_ORGANIZATION_IDS: "global"
+    ORGANIZATION_ID: "<your-org-id>"
+    IDP_DECLARATION_ENABLED: "false"
+    STREAMING_ENABLED: "false"
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# pixauto/systemplane/api — runtime config plane for Pix Automático
+# ------------------------------------------------------------
+pixautoSystemplane:
+  enabled: false
+  configmap: {}
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+# ------------------------------------------------------------
+# Disable in-cluster subcharts (use external infra in production)
+# ------------------------------------------------------------
+postgresql:
+  enabled: false
+valkey:
+  enabled: false
+rabbitmq:
+  enabled: false
+otel-collector-lerian:
+  enabled: false

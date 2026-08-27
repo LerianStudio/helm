@@ -1,0 +1,18 @@
+{{- /*
+Systemplane Ingress — separate hostname routes admin/runtime-config traffic
+to the systemplane components (SPI, DICT, COB, adapter-lerian and Pix
+Automático systemplanes).
+
+Lives on its own hostname so the cluster operator can layer different ingress
+annotations (stricter auth, IP allowlists, separate WAF rules) than the apps
+ingress without coupling them.
+
+Each path under .Values.systemplaneIngress.routes maps to one component's
+Service. Same enabled-aware rendering as ingress-apps.yaml.
+
+The rendering logic itself lives in the shared
+"plugin-br-pix-lerian.routedIngress" helper (templates/_helpers.tpl).
+*/}}
+{{- if .Values.systemplaneIngress.enabled }}
+{{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "systemplane" "config" .Values.systemplaneIngress) }}
+{{- end }}

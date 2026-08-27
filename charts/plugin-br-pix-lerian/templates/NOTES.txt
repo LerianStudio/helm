@@ -1,0 +1,45 @@
+============================================================
+  Plugin BR Pix Lerian - Helm Chart Deployment Summary
+============================================================
+
+Release Name:    {{ .Release.Name }}
+Namespace:       {{ .Release.Namespace }}
+Chart:           {{ .Chart.Name }}-{{ .Chart.Version }}
+App Version:     {{ .Chart.AppVersion }}
+
+This chart deploys multiple independent components of the
+plugin-br-pix-lerian app. Each component has its own Deployment,
+Service, ConfigMap, and Secret.
+
+------------------------------------------------------------
+  Component Status
+------------------------------------------------------------
+{{ if .Values.spi.enabled }}  ✓ spi                  port {{ .Values.spi.service.port }}{{ else }}  ✗ spi                  (disabled){{ end }}
+{{ if .Values.spiSystemplane.enabled }}  ✓ spi-systemplane      port {{ .Values.spiSystemplane.service.port }}{{ else }}  ✗ spi-systemplane      (disabled){{ end }}
+{{ if .Values.adapterProviderMock.enabled }}  ✓ adapter-provider-mock port {{ .Values.adapterProviderMock.service.port }}{{ else }}  ✗ adapter-provider-mock (disabled){{ end }}
+{{ if .Values.adapterLerian.enabled }}  ✓ adapter-lerian       port {{ .Values.adapterLerian.service.port }}{{ else }}  ✗ adapter-lerian       (disabled){{ end }}
+{{ if .Values.adapterLerianConsumer.enabled }}  ✓ adapter-lerian-consumer port {{ .Values.adapterLerianConsumer.service.port }}{{ else }}  ✗ adapter-lerian-consumer (disabled){{ end }}
+{{ if .Values.adapterLerianSystemplane.enabled }}  ✓ adapter-lerian-systemplane port {{ .Values.adapterLerianSystemplane.service.port }}{{ else }}  ✗ adapter-lerian-systemplane (disabled){{ end }}
+{{ if .Values.dictHub.enabled }}  ✓ dict-hub             port {{ .Values.dictHub.service.port }}{{ else }}  ✗ dict-hub             (disabled){{ end }}
+{{ if .Values.dictHubVsync.enabled }}  ✓ dict-hub-vsync       port {{ .Values.dictHubVsync.service.port }}{{ else }}  ✗ dict-hub-vsync       (disabled){{ end }}
+{{ if .Values.dictProxy.enabled }}  ✓ dict-proxy           port {{ .Values.dictProxy.service.port }}{{ else }}  ✗ dict-proxy           (disabled){{ end }}
+{{ if .Values.dictSystemplane.enabled }}  ✓ dict-systemplane     port {{ .Values.dictSystemplane.service.port }}{{ else }}  ✗ dict-systemplane     (disabled){{ end }}
+{{ if .Values.cobHub.enabled }}  ✓ cob-hub              port {{ .Values.cobHub.service.port }}{{ else }}  ✗ cob-hub              (disabled){{ end }}
+{{ if .Values.cobProxy.enabled }}  ✓ cob-proxy            port {{ .Values.cobProxy.service.port }}{{ else }}  ✗ cob-proxy            (disabled){{ end }}
+{{ if .Values.cobSystemplane.enabled }}  ✓ cob-systemplane      port {{ .Values.cobSystemplane.service.port }}{{ else }}  ✗ cob-systemplane      (disabled){{ end }}
+{{ if .Values.pixauto.enabled }}  ✓ pixauto               port {{ .Values.pixauto.service.port }}{{ else }}  ✗ pixauto               (disabled){{ end }}
+{{ if .Values.pixautoSystemplane.enabled }}  ✓ pixauto-systemplane  port {{ .Values.pixautoSystemplane.service.port }}{{ else }}  ✗ pixauto-systemplane  (disabled){{ end }}
+
+------------------------------------------------------------
+  Useful Commands
+------------------------------------------------------------
+  # Get all resources for this release
+  kubectl get all -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
+
+  # Check pod status across all components
+  kubectl get pods -l app.kubernetes.io/part-of={{ include "plugin-br-pix-lerian.name" . }} -n {{ .Release.Namespace }}
+
+  # View logs for a specific component (replace <component>)
+  kubectl logs -l app.kubernetes.io/component=<component> -n {{ .Release.Namespace }} -f
+
+============================================================

@@ -1,0 +1,2256 @@
+# =============================================================================
+# Plugin BR Pix Lerian — Multi-Component Helm Values
+#
+# This chart deploys all 15 components of the plugin-br-pix-lerian app:
+#
+#   spi/api                  Single Person Interface (PIX SPI)
+#   spi/systemplane/api      Runtime config plane for SPI
+#   adapter-provider-mock/api BTG provider mock (dev/staging only)
+#   dict/hub/api             DICT hub (key directory operations)
+#   dict/hub/vsync           DICT verification sync worker
+#   dict/proxy/api           DICT proxy to BCB
+#   dict/systemplane/api     Runtime config plane for DICT
+#   cob/hub/api              COB hub (BR Code / charge operations)
+#   cob/proxy/api            COB proxy to BCB
+#   cob/systemplane/api      Runtime config plane for COB
+#   adapter-lerian/api       Lerian provider adapter (br-sfn)
+#   adapter-lerian/consumer  br-sfn CloudEvents Kafka consumer
+#   adapter-lerian/systemplane/api  Runtime config plane for adapter-lerian
+#   pixauto/api              Pix Automático payer side (recurrence authorization)
+#   pixauto/systemplane/api  Runtime config plane for Pix Automático
+#
+# Each component is independently enabled/disabled and configured.
+# All components share the same Docker image (parameterized by APP_NAME +
+# COMPONENT_NAME build args), so image.tag is shared by default but can be
+# overridden per component.
+#
+# Pattern adapted from helm/charts/plugin-access-manager and helm/charts/midaz.
+# =============================================================================
+
+# Override the chart name in resource names
+nameOverride: ""
+fullnameOverride: ""
+
+# Override the namespace where resources are created. Defaults to
+# .Release.Namespace (the -n flag passed to helm install).
+namespaceOverride: ""
+
+# =============================================================================
+# GLOBAL DEFAULTS — applied to all components unless overridden in their block
+# =============================================================================
+global:
+  # -- Image pull secrets propagated to every component when the component's
+  # own `imagePullSecrets` list is empty.
+  imagePullSecrets: []
+
+  # ---------------------------------------------------------------------------
+  # External PostgreSQL bootstrap
+  # ---------------------------------------------------------------------------
+  # When enabled, a Job runs for each database in `databases`, creating the
+  # role + database + grants if they don't exist (idempotent).
+  #
+  # Use cases:
+  #   - In-cluster Postgres subchart (postgresql.enabled=true) AND you want
+  #     the chart to create the 5 Pix Lerian databases for you. Set
+  #     connection.host to the in-cluster service name
+  #     (plugin-br-pix-lerian-postgresql).
+  #   - External Postgres (RDS, Cloud SQL, etc.) where the operator wants the
+  #     chart to provision the role+databases. The admin credentials below
+  #     must have privilege to CREATE ROLE / CREATE DATABASE on the target
+  #     server.
+  #
+  # CREDENTIALS:
+  #   - postgresAdminLogin: admin user used by the Job to provision objects.
+  #     For production, store admin password in an external Secret and set
+  #     useExistingSecret.name (the Job reads DB_USER_ADMIN + DB_ADMIN_PASSWORD
+  #     from that Secret). Never put real admin passwords in values.yaml.
+  #   - pixswitchCredentials: app user the Job creates. Provide the password
+  #     through explicit values or an existing Secret. Component DATABASE_URL
+  #     values live under component `secrets`, not `configmap`.
+  externalPostgresDefinitions:
+    enabled: false
+    # -- Databases to create (one Job per database). Pix Lerian needs 5.
+    databases:
+      - pix-spi
+      - pix-dict
+      - pix-cob
+      - pix-adapter-lerian
+      - pix-pixauto
+    connection:
+      host: ""
+      port: "5432"
+    # -- Postgres admin credentials (used to create role+databases)
+    postgresAdminLogin:
+      useExistingSecret:
+        name: ""   # PRODUCTION: set this, leave password empty
+      username: "postgres"
+      password: ""   # required when useExistingSecret.name is empty
+    # -- Application credentials for the role created by the bootstrap Job
+    pixswitchCredentials:
+      useExistingSecret:
+        name: ""   # PRODUCTION: set this, leave password empty
+      username: "pixswitch"
+      password: ""
+
+# =============================================================================
+# COMPONENTS
+# Each component renders its own Deployment, Service, ConfigMap, Secret, HPA,
+# PDB, and (when ingress.enabled=true) Ingress.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# spi/api — PIX SPI service
+# -----------------------------------------------------------------------------
+spi:
+  enabled: true
+  name: "spi"
+  description: "PIX SPI (Single Person Interface)"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    # Defaults to the per-component image published from
+    # apps/<path>/Dockerfile by the plugin-br-pix-lerian build pipeline.
+    # Override only when pinning to a different registry or fork.
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-spi-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: true
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4101
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  readinessProbe:
+    path: "/spi/readyz"
+  livenessProbe:
+    path: "/spi/health"
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    APPLICATION_NAME: "pix-spi"
+    SERVER_ADDRESS: ":4101"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-spi"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_ORGANIZATION_IDS: "global"
+    # Single-tenant identity
+    ORGANIZATION_ID: ""
+    ISPB: ""
+    # Sibling services
+    # -- Deliberately empty: the only adapter this chart can render is
+    # adapter-provider-mock, which ships disabled (see
+    # adapterProviderMock.enabled), so any default here would point at a
+    # Service that does not exist -- and the previous default also omitted the
+    # /provider-mock prefix every real environment appends, so it could only
+    # ever be wrong, masking the absence of real configuration.
+    # Empty does NOT fail at boot: the app does not validate this variable at
+    # startup (no `required` tag), it only seeds the systemplane provider key.
+    # The effective value is resolved per request from TenantConfig, so a
+    # request with no adapter base URL is rejected then, not at rollout.
+    # Example: http://plugin-br-pix-lerian-adapter-provider-mock:4103/provider-mock
+    ADAPTER_BASE_URL: ""
+    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
+    COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
+    # Upstream integrations
+    CRM_BASE_URL: ""
+    CRM_CLIENT_ID: ""
+    CRM_ORGANIZATION_ID: ""
+    DICT_CLIENT_ID: ""
+    COB_CLIENT_ID: ""
+    MIDAZ_BASE_URL: ""
+    MIDAZ_CLIENT_ID: ""
+    MIDAZ_LEDGER_ID: ""
+    MIDAZ_ORGANIZATION_ID: ""
+    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
+    # and MULTI_TENANT_API_KEY are seeds for the spi-systemplane store; once
+    # persisted there, env values become optional (a re-deploy without them is
+    # a supported rollback path). Circuit breaker defaults match the binary
+    # (pkg/config: DefaultMultiTenantCBThreshold=5, ...CBTimeoutSec=30).
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+
+  secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
+    LICENSE_KEY: ""
+    DICT_CLIENT_SECRET: ""
+    COB_CLIENT_SECRET: ""
+    CRM_CLIENT_SECRET: ""
+    MIDAZ_CLIENT_SECRET: ""
+    MULTI_TENANT_API_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+  # -- golang-migrate Job that applies SQL migrations from the component's
+  # /migrations directory against the database referenced by DATABASE_URL.
+  # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
+  # the chart renders a Job with command [/migrate] overriding the default
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  migrations:
+    enabled: true
+    # Image path holding the SQL files. Match the Dockerfile's COPY target.
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+
+# -----------------------------------------------------------------------------
+# spi/systemplane/api — runtime config plane for SPI
+# -----------------------------------------------------------------------------
+
+spiSystemplane:
+  enabled: true
+  name: "spi-systemplane"
+  description: "Runtime config plane for SPI"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-spi-systemplane-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: false
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4102
+
+  resources:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+
+  readinessProbe:
+    path: "/spi/readyz"
+  livenessProbe:
+    path: "/spi/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    APPLICATION_NAME: "pix-spi-systemplane"
+    SERVER_ADDRESS: ":4102"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-spi-systemplane"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- Multi-tenant seeds. When MULTI_TENANT_ENABLED=true, MULTI_TENANT_URL
+    # and MULTI_TENANT_API_KEY (masked) are seeded into the systemplane store
+    # at tenant.manager_url / tenant.manager_api_key on first boot. After
+    # the systemplane row exists, env values can be removed.
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+
+  secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+    # -- Tenant Manager API key (consumed when MULTI_TENANT_ENABLED=true on
+    # spi-systemplane). Seeded into the systemplane store on first boot.
+    MULTI_TENANT_API_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+# -----------------------------------------------------------------------------
+# adapter-provider-mock/api — BTG provider mock (DO NOT enable in production)
+# -----------------------------------------------------------------------------
+adapterProviderMock:
+  enabled: false   # safety default — explicitly enable in dev/staging values
+  name: "adapter-provider-mock"
+  description: "BTG provider mock"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-adapter-provider-mock-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: false
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4103
+
+  ingress:
+    enabled: false
+
+  resources:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+
+  readinessProbe:
+    path: "/provider-mock/readyz"
+  livenessProbe:
+    path: "/provider-mock/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    APPLICATION_NAME: "pix-adapter-provider-mock"
+    SERVER_ADDRESS: ":4103"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "false"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-adapter-provider-mock"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    ADAPTER_ISPB: ""
+    POLLER_INTERVAL_SEC: "30"
+    PROVIDER_BASE_URL: ""
+    SPI_BASE_URL: "http://plugin-br-pix-lerian-spi:4101"
+    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
+    COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
+    # -- Pix Automático callback target. Empty by default because pixauto
+    # ships disabled (see pixauto.enabled); set it whenever the mock has to
+    # deliver inbound recurrence callbacks.
+    # Example: http://plugin-br-pix-lerian-pixauto:4116/pixauto
+    PIXAUTO_BASE_URL: ""
+
+  secrets:
+    LICENSE_KEY: ""
+    PROVIDER_CLIENT_ID: ""
+    PROVIDER_CLIENT_SECRET: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+# -----------------------------------------------------------------------------
+# dict/hub/api — DICT hub (Postgres + Valkey)
+# -----------------------------------------------------------------------------
+dictHub:
+  enabled: true
+  name: "dict-hub"
+  description: "DICT hub (key directory operations)"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-dict-hub-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: true
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4104
+
+  resources:
+    limits: { cpu: 500m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 128Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+
+  readinessProbe:
+    path: "/dict-hub/readyz"
+  livenessProbe:
+    path: "/dict-hub/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    APPLICATION_NAME: "pix-dict-hub"
+    SERVER_ADDRESS: ":4104"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-dict-hub"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_ORGANIZATION_IDS: "global"
+    ORGANIZATION_ID: ""
+    ISPB: ""
+    # -- Deliberately empty: the only adapter this chart can render is
+    # adapter-provider-mock, which ships disabled (see
+    # adapterProviderMock.enabled), so any default here would point at a
+    # Service that does not exist -- and the previous default also omitted the
+    # /provider-mock prefix every real environment appends, so it could only
+    # ever be wrong, masking the absence of real configuration.
+    # Empty does NOT fail at boot: the app does not validate this variable at
+    # startup (no `required` tag), it only seeds the systemplane provider key.
+    # The effective value is resolved per request from TenantConfig, so a
+    # request with no adapter base URL is rejected then, not at rollout.
+    # Example: http://plugin-br-pix-lerian-adapter-provider-mock:4103/provider-mock
+    ADAPTER_BASE_URL: ""
+    CRM_BASE_URL: ""
+    CRM_CLIENT_ID: ""
+    CRM_ORGANIZATION_ID: ""
+    KEY_CACHE_TTL_SEC: "60"
+    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
+    # and MULTI_TENANT_API_KEY are seeds for the dict-systemplane store; the CB
+    # tunables size the tenant-manager client circuit breaker (defaults from
+    # pkg/config: threshold=5, timeoutSec=30).
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+
+  secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
+    LICENSE_KEY: ""
+    CRM_CLIENT_SECRET: ""
+    MULTI_TENANT_API_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+  # -- golang-migrate Job that applies SQL migrations from the component's
+  # /migrations directory against the database referenced by DATABASE_URL.
+  # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
+  # the chart renders a Job with command [/migrate] overriding the default
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  migrations:
+    enabled: true
+    # Image path holding the SQL files. Match the Dockerfile's COPY target.
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+
+# -----------------------------------------------------------------------------
+# dict/hub/vsync — DICT verification sync worker (background, no ingress)
+# -----------------------------------------------------------------------------
+
+dictHubVsync:
+  enabled: true
+  name: "dict-hub-vsync"
+  description: "DICT verification sync worker"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-dict-hub-vsync"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: false
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4105
+
+  resources:
+    limits: { cpu: 500m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 128Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1   # vsync is a singleton worker
+
+  readinessProbe:
+    path: "/readyz"
+  livenessProbe:
+    path: "/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    APPLICATION_NAME: "pix-dict-hub-vsync"
+    SERVER_ADDRESS: ":4105"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-dict-hub-vsync"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    ORGANIZATION_ID: ""
+    # -- Deliberately empty: the only adapter this chart can render is
+    # adapter-provider-mock, which ships disabled (see
+    # adapterProviderMock.enabled), so any default here would point at a
+    # Service that does not exist -- and the previous default also omitted the
+    # /provider-mock prefix every real environment appends, so it could only
+    # ever be wrong, masking the absence of real configuration.
+    # Empty does NOT fail at boot: the app does not validate this variable at
+    # startup (no `required` tag), it only seeds the systemplane provider key.
+    # The effective value is resolved per request from TenantConfig, so a
+    # request with no adapter base URL is rejected then, not at rollout.
+    # Example: http://plugin-br-pix-lerian-adapter-provider-mock:4103/provider-mock
+    ADAPTER_BASE_URL: ""
+    CRM_BASE_URL: ""
+    CRM_CLIENT_ID: ""
+    CRM_ORGANIZATION_ID: ""
+    # -- Multi-tenant (vsync uses the per-tenant DSN resolver only; no
+    # API key here, no CB tunables — the resolver shares the dict-hub
+    # tenant-manager client config).
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    # VSync tunables
+    VSYNC_ENABLED: "true"
+    VSYNC_CHUNK_PROCESSING_DEADLINE_MIN: "30"
+    VSYNC_EVENTSYNC_MAX_PAGES: "100"
+    VSYNC_FILE_RECON_ENABLED: "false"
+    VSYNC_GATE_TTL_SEC: "300"
+    VSYNC_MAX_JOB_ATTEMPTS: "5"
+    VSYNC_OK_CACHE_TTL_SEC: "60"
+    VSYNC_SCOPE_CONCURRENCY: "10"
+    VSYNC_START_TIME: ""
+    VSYNC_STUCK_JOB_SWEEP_TICK_SEC: "30"
+
+  secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
+    # RabbitMQ — required (vsync is a queue consumer). Must be amqps:// (TLS) on
+    # 5671; lib-commons v5.7.0 validates the broker cert against the system trust
+    # store. Supplied per environment via secret/Vault. Never set ALLOW_INSECURE_TLS.
+    RABBITMQ_URI: ""
+    LICENSE_KEY: ""
+    CRM_CLIENT_SECRET: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+# -----------------------------------------------------------------------------
+# dict/proxy/api — DICT proxy to BCB (BaseConfig only)
+# -----------------------------------------------------------------------------
+dictProxy:
+  enabled: true
+  name: "dict-proxy"
+  description: "DICT proxy to BCB"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-dict-proxy-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: true
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4106
+
+  resources:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+
+  readinessProbe:
+    path: "/dict-proxy/readyz"
+  livenessProbe:
+    path: "/dict-proxy/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    APPLICATION_NAME: "pix-dict-proxy"
+    SERVER_ADDRESS: ":4106"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-dict-proxy"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+  secrets:
+    LICENSE_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+# -----------------------------------------------------------------------------
+# dict/systemplane/api — runtime config plane for DICT
+# -----------------------------------------------------------------------------
+dictSystemplane:
+  enabled: true
+  name: "dict-systemplane"
+  description: "Runtime config plane for DICT"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-dict-systemplane-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: false
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4107
+
+  resources:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+
+  readinessProbe:
+    path: "/dict/readyz"
+  livenessProbe:
+    path: "/dict/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    APPLICATION_NAME: "pix-dict-systemplane"
+    SERVER_ADDRESS: ":4107"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-dict-systemplane"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- Multi-tenant flag. dict-systemplane reads only the boolean (URL +
+    # API key live on spi-systemplane). When enabled, the systemplane store
+    # is bootstrapped in MT mode.
+    MULTI_TENANT_ENABLED: "false"
+
+  secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+# -----------------------------------------------------------------------------
+# cob/hub/api — COB hub (Postgres)
+# -----------------------------------------------------------------------------
+cobHub:
+  enabled: true
+  name: "cob-hub"
+  description: "COB hub (BR Code / charge operations)"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-cob-hub-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: true
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4108
+
+  resources:
+    limits: { cpu: 500m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 128Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+
+  readinessProbe:
+    path: "/cob-hub/readyz"
+  livenessProbe:
+    path: "/cob-hub/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    APPLICATION_NAME: "pix-cob-hub"
+    SERVER_ADDRESS: ":4108"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-cob-hub"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_ORGANIZATION_IDS: "global"
+    ORGANIZATION_ID: ""
+    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
+    # and MULTI_TENANT_API_KEY are seeds for the cob-systemplane store; the CB
+    # tunables size the tenant-manager client circuit breaker (defaults from
+    # pkg/config: threshold=5, timeoutSec=30).
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+
+  secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    LICENSE_KEY: ""
+    MULTI_TENANT_API_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+  # -- golang-migrate Job that applies SQL migrations from the component's
+  # /migrations directory against the database referenced by DATABASE_URL.
+  # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
+  # the chart renders a Job with command [/migrate] overriding the default
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  migrations:
+    enabled: true
+    # Image path holding the SQL files. Match the Dockerfile's COPY target.
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+
+# -----------------------------------------------------------------------------
+# cob/proxy/api — COB proxy to BCB (BaseConfig only)
+# -----------------------------------------------------------------------------
+
+cobProxy:
+  enabled: true
+  name: "cob-proxy"
+  description: "COB proxy to BCB"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-cob-proxy-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: true
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4109
+
+  resources:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+
+  readinessProbe:
+    path: "/cob-proxy/readyz"
+  livenessProbe:
+    path: "/cob-proxy/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    APPLICATION_NAME: "pix-cob-proxy"
+    SERVER_ADDRESS: ":4109"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-cob-proxy"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+  secrets:
+    LICENSE_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+# -----------------------------------------------------------------------------
+# cob/systemplane/api — runtime config plane for COB
+# -----------------------------------------------------------------------------
+cobSystemplane:
+  enabled: true
+  name: "cob-systemplane"
+  description: "Runtime config plane for COB"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-cob-systemplane-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: false
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4110
+
+  resources:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+
+  readinessProbe:
+    path: "/cob/readyz"
+  livenessProbe:
+    path: "/cob/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    APPLICATION_NAME: "pix-cob-systemplane"
+    SERVER_ADDRESS: ":4110"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-cob-systemplane"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- Multi-tenant flag. cob-systemplane reads only the boolean (URL +
+    # API key live on spi-systemplane). When enabled, the systemplane store
+    # is bootstrapped in MT mode.
+    MULTI_TENANT_ENABLED: "false"
+
+  secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+# =============================================================================
+# OPTIONAL DEPENDENCIES (subcharts) — all disabled by default
+#
+# Per-component dependency usage (from source audit):
+#
+#   postgres   spi, spi-systemplane, dict-hub, dict-hub-vsync,
+#              dict-systemplane, cob-hub, cob-systemplane (7 components)
+#   valkey     spi (optional), dict-hub (optional), dict-hub-vsync (optional)
+#   rabbitmq   dict-hub-vsync only
+#
+# -----------------------------------------------------------------------------
+# CREDENTIALS
+# -----------------------------------------------------------------------------
+# This chart intentionally keeps credential-bearing DSNs in component `secrets`
+# blocks, never in `configmap` blocks. Operators must provide dependency
+# passwords and DSNs through explicit values or existing Kubernetes Secrets.
+#
+# IMPORTANT — for external databases (RDS, DocumentDB, ElastiCache,
+# AmazonMQ, etc.):
+#
+#   1. Set `<subchart>.enabled: false` for every external dependency.
+#   2. Provide real credentials via a Kubernetes Secret created out-of-band
+#      (Vault, AWS Secrets Manager + ESO, sealed-secrets, etc.) and reference
+#      it from each component's configmap/secrets override:
+#
+#        spi:
+#          useExistingSecret: true
+#          existingSecretName: "pix-lerian-spi-credentials"
+#          secrets:
+#            DATABASE_URL: "postgres://<user>:<password>@managed.example.com:5432/pix-spi?sslmode=require"
+#            VALKEY_URL: "redis://default:<password>@managed.example.com:6379/0"
+#
+#   3. Override `global.externalPostgresDefinitions.pixswitchCredentials.useExistingSecret.name`
+#      when running the bootstrap Job against external infra — never put real
+#      passwords in values.yaml.
+#
+# Image: Bitnami moved free images to bitnamisecure / bitnamilegacy in 2025;
+# the upstream subchart points at the now-removed bitnami/* tags by default.
+# Override repository to bitnamisecure/* and tolerate the unsigned-image flag.
+# =============================================================================
+
+# PostgreSQL (Bitnami chart)
+# Used by 7 components for DATABASE_URL / SYSTEMPLANE_POSTGRES_DSN.
+# =============================================================================
+# SHARED INGRESSES
+#
+# Two ingress objects, both routed by path prefix:
+#
+#   appsIngress         — user-facing traffic (SPI, DICT/COB hub+proxy). Single
+#                         hostname. adapter-provider-mock is routed separately
+#                         under providersIngress, below.
+#   systemplaneIngress  — admin/runtime-config traffic (SPI/DICT/COB systemplanes).
+#                         Separate hostname so operators can apply stricter
+#                         annotations (auth, IP allowlist, WAF) than the apps
+#                         ingress without coupling them.
+#
+# Each `routes` entry maps a path prefix to a component's Service. The chart
+# silently skips paths whose target component is disabled.
+#
+# NO path rewriting is performed at the ingress — apps own their /<component>
+# path namespace (e.g. SPI's router registers /spi/health, /spi/keys/lookup).
+# =============================================================================
+
+appsIngress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts: []
+  tls: []
+  # -- Path-to-component mapping. Each route renders one path rule on every
+  # host in `hosts`. The chart skips routes whose `component` is disabled.
+  #
+  # Each route has:
+  #   - `path`         (string, required): URL path prefix
+  #   - `pathType`     (string, optional, default "Prefix"): K8s Ingress pathType
+  #   - `component`    (string, required): values-key of the component
+  #                     (camelCase, e.g. dictHub) — the single source of the
+  #                     enabled flag, the Service name AND the backend port
+  #   - `serviceName`  (string, optional): kebab-case Service name suffix
+  #                     (e.g. dict-hub). Derived from `component` when omitted;
+  #                     when set it MUST equal `kebabcase component`, otherwise
+  #                     the render fails. The two spellings always describe the
+  #                     same component — letting them diverge would pair one
+  #                     component's Service with another component's port.
+  routes:
+    - path: /spi
+      pathType: Prefix
+      component: spi
+      serviceName: spi
+    - path: /v1/streaming/manifest
+      pathType: Exact
+      component: spi
+      serviceName: spi
+    - path: /dict-hub
+      pathType: Prefix
+      component: dictHub
+      serviceName: dict-hub
+    - path: /dict-proxy
+      pathType: Prefix
+      component: dictProxy
+      serviceName: dict-proxy
+    - path: /cob-hub
+      pathType: Prefix
+      component: cobHub
+      serviceName: cob-hub
+    - path: /cob-proxy
+      pathType: Prefix
+      component: cobProxy
+      serviceName: cob-proxy
+    # -- Bare prefix, same shape as every sibling above. This publishes the
+    # WHOLE /pixauto namespace on the apps host, including the M2M group
+    # /pixauto/internal/v1/* (inbound BACEN-derived recurrence callbacks and the
+    # scheduler expiry sweep). That is deliberate and is not the security
+    # boundary: the ingress hosts resolve to RFC1918 addresses on an internal
+    # network, and the pod answers on its ClusterIP regardless of any ingress
+    # rule, so a narrower path rule hides nothing an in-cluster caller could not
+    # already reach. Authentication on the internal group (lib-auth M2M) is the
+    # boundary — and it is OFF by default in this file: PLUGIN_AUTH_ENABLED is
+    # "false" for every component here, which makes the app's AuthEnabled() check
+    # false and omits the lib-auth handler from the route chain entirely. Set
+    # pixauto.configmap.PLUGIN_AUTH_ENABLED="true" (values-template.yaml already
+    # does) BEFORE enabling appsIngress. This is no longer prose-only: with this
+    # route present, appsIngress.enabled and pixauto.enabled both true and
+    # PLUGIN_AUTH_ENABLED anything other than "true", templates/ingress-apps.yaml
+    # emits a WARNING comment into the rendered manifest. It deliberately does
+    # NOT fail the render: that combination is the current, intentional state of
+    # at least one internal environment, so a hard fail would block a legitimate
+    # deploy instead of flagging it.
+    # The bare
+    # prefix also keeps /pixauto/readyz reachable through the ingress, which the
+    # gethomepage.dev/href dashboard annotation targets.
+    - path: /pixauto
+      pathType: Prefix
+      component: pixauto
+      serviceName: pixauto
+
+# -----------------------------------------------------------------------------
+# adapter-lerian (api) — Lerian provider adapter HTTP entry (br-sfn)
+# -----------------------------------------------------------------------------
+adapterLerian:
+  enabled: false   # safety default — explicitly enable in dev/staging values
+  name: "adapter-lerian"
+  description: "Lerian provider adapter (API)"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-adapter-lerian-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: false
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4113
+
+  ingress:
+    enabled: false
+
+  resources:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+
+  readinessProbe:
+    path: "/lerian/readyz"
+  livenessProbe:
+    path: "/lerian/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    APPLICATION_NAME: "pix-adapter-lerian"
+    SERVER_ADDRESS: ":4113"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    TELEMETRY_ENABLED: "false"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-adapter-lerian-api"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    # License allow-list (use "global" for single-license mode).
+    ORGANIZATION_IDS: ""
+    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
+    # is the tenant-manager address; MULTI_TENANT_API_KEY lives under secrets.
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+
+  secrets:
+    # -- DATABASE_URL backs the golang-migrate Job that applies the component's
+    # SQL migrations. SYSTEMPLANE_POSTGRES_DSN is the api's sole routing source
+    # (read-only consumer DSN for adapter_lerian.* runtime config).
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    LICENSE_KEY: ""
+    MULTI_TENANT_API_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+  # -- golang-migrate Job that applies SQL migrations from the component's
+  # /migrations directory against the database referenced by DATABASE_URL.
+  # Runs as a Helm hook on pre-upgrade + post-install.
+  migrations:
+    enabled: true
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+
+# -----------------------------------------------------------------------------
+# adapter-lerian (consumer) — br-sfn CloudEvents Kafka consumer (no ingress)
+# -----------------------------------------------------------------------------
+adapterLerianConsumer:
+  enabled: false   # safety default — explicitly enable in dev/staging values
+  name: "adapter-lerian-consumer"
+  description: "Lerian provider adapter (Kafka consumer)"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-adapter-lerian-consumer"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: false
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4114
+
+  resources:
+    limits: { cpu: 500m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 128Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+
+  readinessProbe:
+    path: "/lerian/readyz"
+  livenessProbe:
+    path: "/lerian/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    APPLICATION_NAME: "pix-adapter-lerian-consumer"
+    SERVER_ADDRESS: ":4114"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    TELEMETRY_ENABLED: "false"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-adapter-lerian-consumer"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    ORGANIZATION_IDS: ""
+    # -- This deployment's 8-digit BACEN participant ISPB. Read once at boot to
+    # scope the ce-id dedup keyspace. Set the real ISPB per deployment.
+    ISPB: ""
+    MULTI_TENANT_ENABLED: "false"
+    # -- Kafka consumer (franz-go). In production KAFKA_BROKERS points at the
+    # external br-sfn Kafka (ADR-002). SASL credentials live under secrets.
+    KAFKA_BROKERS: ""
+    KAFKA_GROUP_ID: "pix-adapter-lerian-cashin"
+    KAFKA_TLS_ENABLED: "false"
+    KAFKA_SASL_MECHANISM: ""
+    KAFKA_DLQ_TOPIC: "br-spi.adapter-lerian.dlq"
+    KAFKA_MAX_CONCURRENT_PARTITIONS: "8"
+    CONSUMER_DEDUP_TTL_SEC: "3600"
+
+  secrets:
+    # -- SYSTEMPLANE_POSTGRES_DSN: read-only routing config DSN (empty disables
+    # the consumer). VALKEY_URL backs the ce-id dedup cache. KAFKA_SASL_* are the
+    # broker credentials used when KAFKA_SASL_MECHANISM is set.
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
+    KAFKA_SASL_USER: ""
+    KAFKA_SASL_PASSWORD: ""
+    LICENSE_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+# -----------------------------------------------------------------------------
+# adapter-lerian (systemplane) — runtime config plane for adapter-lerian
+# -----------------------------------------------------------------------------
+adapterLerianSystemplane:
+  enabled: false   # safety default — explicitly enable in dev/staging values
+  name: "adapter-lerian-systemplane"
+  description: "Runtime config plane for adapter-lerian"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-adapter-lerian-systemplane-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: false
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4115
+
+  resources:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+
+  readinessProbe:
+    path: "/lerian/readyz"
+  livenessProbe:
+    path: "/lerian/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    APPLICATION_NAME: "pix-adapter-lerian-systemplane"
+    SERVER_ADDRESS: ":4115"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "false"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-adapter-lerian-systemplane"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    # -- Multi-tenant. MULTI_TENANT_URL + MULTI_TENANT_API_KEY (secret) are
+    # seeded into the store; the CB tunables size the tenant-manager client.
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # -- Address-book / instance routing seeds (first-boot only; operators
+    # manage them via the systemplane admin API afterwards).
+    SWITCH_BASE_URL: ""
+    INTEGRATION_MODE: ""
+    BRSFN_BASE_URL: ""
+    BRSFN_CLIENT_ID: ""
+
+  secrets:
+    DATABASE_URL: ""
+    LICENSE_KEY: ""
+    # -- 32-byte AES-256-GCM key; required in non-local deployment modes.
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+    MULTI_TENANT_API_KEY: ""
+    # -- OAuth token endpoint; classified as a secret to satisfy the credential-name chart standard.
+    BRSFN_TOKEN_URL: ""
+    BRSFN_CLIENT_SECRET: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+# -----------------------------------------------------------------------------
+# pixauto/api — Pix Automático payer side (recurrence authorization)
+#
+# Owns ONE migration chain (apps/pixauto/migrations, 000001-000007) covering
+# both the business tables and the systemplane_entries table, so the migration
+# Job below is the app's only one and lives on this API component.
+# -----------------------------------------------------------------------------
+pixauto:
+  # Onboarding default, same as adapter-lerian: the component ships in the chart
+  # so the release pipeline's `.pixauto.image.tag` key resolves, and each
+  # environment opts in once its `pix-pixauto` database and DSN secret exist.
+  enabled: false
+  name: "pixauto"
+  description: "Pix Automático payer API"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-pixauto-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: true
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4116
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  readinessProbe:
+    path: "/pixauto/readyz"
+  livenessProbe:
+    path: "/pixauto/health"
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    APPLICATION_NAME: "pix-pixauto"
+    SERVER_ADDRESS: ":4116"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-pixauto"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    ORGANIZATION_IDS: "global"
+    # -- Carried for parity with spi/dict-hub/cob-hub, which all set it. INERT:
+    # nothing reads this name — lib-license-go's organization list is bound to
+    # ORGANIZATION_IDS above (pkg/config BaseConfig.LicenseOrganizationIDs).
+    LICENSE_ORGANIZATION_IDS: "global"
+    # -- Single-tenant organization fallback. The tenant-config resolver reads
+    # pixauto.organization_id from the systemplane store first and only falls
+    # back to this. With NEITHER set every request answers 403
+    # TENANT_CONFIG_NOT_FOUND, and it MUST stay empty when
+    # MULTI_TENANT_ENABLED=true (the app refuses to boot otherwise).
+    ORGANIZATION_ID: ""
+    # -- Permission declaration (lib-auth/v3 auth/declaration.WireFromEnv).
+    # KEEP false: plugin-br-pix-lerian-pixauto has no registered M2M
+    # application at plugin-auth yet, so a real publish under this slug answers
+    # 422. The manifest (apps/pixauto/components/api/declaration/permissions.yaml)
+    # is authored and gated, not published. Flipping this needs the M2M pair
+    # below AND PLUGIN_AUTH_ENABLED=true, or the token mints empty and the
+    # fail-open publisher skips publication silently.
+    # The IDP_ prefix is the canonical name as of lib-auth v3.4.0-beta.6
+    # (#4232). The pre-prefix names (DECLARATION_ENABLED, PLUGIN_IDENTITY_HOST,
+    # M2M_CLIENT_ID, M2M_CLIENT_SECRET) still resolve as deprecated aliases for
+    # one release and log a WARN on every boot; canonical wins when both are
+    # set. PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST are out of scope for the
+    # rename and keep their names.
+    IDP_DECLARATION_ENABLED: "false"
+    IDP_HOST: ""
+    PLUGIN_AUTH_HOST: ""
+    IDP_M2M_CLIENT_ID: ""
+    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true).
+    # MULTI_TENANT_API_KEY lives under secrets.
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # -- Streaming (notification_outbox relay -> domain-fact CloudEvents).
+    # KEEP false: the br-sfn rail does not carry the recurrence message family
+    # yet (GAP-BRSFN-001), and the app refuses to boot with STREAMING_ENABLED=true
+    # and an empty STREAMING_BROKERS (it would drain claimed rows into a Noop
+    # emitter and lose the events) or with MULTI_TENANT_ENABLED=true. The command
+    # layer keeps writing facts to notification_outbox; they stay PENDING until
+    # this flips. Credentials + CA live under secrets.
+    STREAMING_ENABLED: "false"
+    STREAMING_BROKERS: ""
+    STREAMING_CLOUDEVENTS_SOURCE: ""
+    STREAMING_TLS_ENABLED: "false"
+    STREAMING_SASL_MECHANISM: ""
+    STREAMING_ALLOW_PLAINTEXT_SASL: "false"
+
+  secrets:
+    DATABASE_URL: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
+    LICENSE_KEY: ""
+    MULTI_TENANT_API_KEY: ""
+    # -- This app's OWN M2M pair (never shared): the declaration BOLA guard
+    # checks the token's azp against the slug being declared.
+    IDP_M2M_CLIENT_SECRET: ""
+    # -- Broker SASL credentials + CA bundle. Only consumed when
+    # STREAMING_ENABLED=true.
+    STREAMING_SASL_USERNAME: ""
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+  # -- golang-migrate Job that applies SQL migrations from the component's
+  # /migrations directory against the database referenced by DATABASE_URL.
+  # The migrate binary ships in the same image; the chart renders a Job with
+  # command [/migrate] overriding the default ENTRYPOINT (/app). Runs as a Helm
+  # hook on pre-upgrade + post-install. This is pixauto's ONLY migration Job —
+  # the single chain also creates the systemplane_entries table, so
+  # pixauto-systemplane has none.
+  migrations:
+    enabled: true
+    # Image path holding the SQL files. Match the Dockerfile's COPY target.
+    migrationsPath: /migrations
+    ttlSecondsAfterFinished: 300
+    backoffLimit: 3
+
+# -----------------------------------------------------------------------------
+# pixauto/systemplane/api — runtime config plane for Pix Automático
+#
+# Sole writer of the pixauto systemplane store; pixauto/api consumes it
+# read-only over a Postgres ChangeFeed (LISTEN/NOTIFY on systemplane_changes)
+# against the SAME database. No migration Job — see pixauto.migrations above.
+# -----------------------------------------------------------------------------
+pixautoSystemplane:
+  enabled: false
+  name: "pixauto-systemplane"
+  description: "Runtime config plane for Pix Automático"
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-pixauto-systemplane-api"
+    pullPolicy: ""
+    tag: ""
+
+  imagePullSecrets: []
+
+  # -- Override container entrypoint (e.g., to dispatch to a specific binary
+  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
+  command: []
+  # -- Container args
+  args: []
+
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  pdb:
+    enabled: false
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
+    maxUnavailable: 1
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  service:
+    type: ClusterIP
+    port: 4117
+
+  resources:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+
+  readinessProbe:
+    path: "/pixauto/readyz"
+  livenessProbe:
+    path: "/pixauto/health"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  configmap:
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    APPLICATION_NAME: "pix-pixauto-systemplane"
+    SERVER_ADDRESS: ":4117"
+    LOG_LEVEL: "info"
+    ENV_NAME: "development"
+    DEPLOYMENT_MODE: "byoc"
+    REQUEST_TIMEOUT_SEC: "30"
+    TELEMETRY_ENABLED: "true"
+    OTEL_RESOURCE_SERVICE_NAME: "pix-pixauto-systemplane"
+    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
+    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- Multi-tenant seeds. When MULTI_TENANT_ENABLED=true, MULTI_TENANT_URL
+    # and MULTI_TENANT_API_KEY (masked) are seeded into the systemplane store
+    # on first boot. After the systemplane row exists, env values can be removed.
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # -- First-boot seed of the per-app service-discovery advertise pair
+    # (pixauto.sd_advertise_address / pixauto.sd_advertise_port). These MUST live
+    # on the systemplane component: SeedFromEnv runs here, and pixauto/api reads
+    # the store first, so a present store value beats the pod's own env.
+    # Address carries NO port — the port lives in SD_ADVERTISE_PORT.
+    # Seeding applies only while the stored value still equals the registered
+    # default; once an operator sets a key via the admin API the seeder skips it.
+    SD_ADVERTISE_ADDRESS: ""
+    SD_ADVERTISE_PORT: ""
+
+  secrets:
+    DATABASE_URL: ""
+    # -- Alternative DSN for the systemplane store only; takes precedence over
+    # DATABASE_URL for the config store (config.SystemplaneDSN). Same key the
+    # spi/dict/cob systemplanes carry — in this chart's single-database layout
+    # it is set to the same DSN as DATABASE_URL.
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+    # -- Tenant Manager API key (consumed when MULTI_TENANT_ENABLED=true on
+    # pixauto-systemplane). Seeded into the systemplane store on first boot.
+    MULTI_TENANT_API_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  extraEnvVars: {}
+
+systemplaneIngress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts: []
+  tls: []
+  routes:
+    - path: /spi
+      pathType: Prefix
+      component: spiSystemplane
+      serviceName: spi-systemplane
+    - path: /dict
+      pathType: Prefix
+      component: dictSystemplane
+      serviceName: dict-systemplane
+    - path: /cob
+      pathType: Prefix
+      component: cobSystemplane
+      serviceName: cob-systemplane
+    - path: /pixauto
+      pathType: Prefix
+      component: pixautoSystemplane
+      serviceName: pixauto-systemplane
+    - path: /lerian
+      pathType: Prefix
+      component: adapterLerianSystemplane
+      serviceName: adapter-lerian-systemplane
+
+# -----------------------------------------------------------------------------
+# Providers Ingress — outbound-provider adapters (provider mock, BACEN, JD, ...).
+#
+# Single hostname routes provider traffic by path prefix. Each route names a
+# component already defined in the chart (or one a future PR adds) and the
+# kebab-case Service name suffix.
+#
+# Today only adapter-provider-mock is shipped; BACEN and JD providers will be
+# added as components in future PRs and exposed here under their own paths.
+# -----------------------------------------------------------------------------
+providersIngress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts: []
+  tls: []
+  routes:
+    # Path must match the source-side routePrefix:
+    #   apps/adapter-provider-mock/components/api/bootstrap/server.go
+    #     const routePrefix = "/provider-mock"
+    - path: /provider-mock
+      pathType: Prefix
+      component: adapterProviderMock
+      serviceName: adapter-provider-mock
+    - path: /lerian
+      pathType: Prefix
+      component: adapterLerian
+      serviceName: adapter-lerian
+    # Reserved for future components — uncomment when the bacen/jd
+    # adapter components ship in the chart:
+    # - path: /bacen
+    #   pathType: Prefix
+    #   component: bacenAdapter
+    #   serviceName: bacen-adapter
+    # - path: /jd
+    #   pathType: Prefix
+    #   component: jdAdapter
+    #   serviceName: jd-adapter
+
+postgresql:
+  enabled: false
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/postgresql
+    tag: "latest"
+  # Bitnami subchart credentials. Operator MUST override when enabled.
+  # For external Postgres set `enabled: false` and configure DATABASE_URL
+  # per component via component secrets or an existing Kubernetes Secret.
+  auth:
+    enablePostgresUser: true
+    postgresPassword: ""
+    username: "pixswitch"
+    password: ""
+    database: "postgres"
+
+# Valkey (Bitnami chart, OCI registry)
+# Used by spi, dict-hub, dict-hub-vsync for VALKEY_URL (optional — caching).
+valkey:
+  enabled: false
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/valkey
+    tag: "latest"
+  # Bitnami subchart credentials. Operator MUST override when enabled.
+  # For external Valkey/ElastiCache set `enabled: false` and configure
+  # VALKEY_URL per component via an existing Kubernetes Secret (see header).
+  auth:
+    enabled: true
+    password: ""
+
+# RabbitMQ (groundhog2k chart — same as plugin-br-bank-transfer / matcher)
+# Used only by dict-hub-vsync for RABBITMQ_URI.
+# Chosen path: EXTERNAL broker with a CA-signed TLS cert (trusted by the system
+# trust store) on amqps://:5671. The in-cluster subchart would present a
+# self-signed cert that lib-commons rejects, so it stays disabled — the anacleto
+# chaos/fuzzing overlays also migrate off the embedded broker to external.
+rabbitmq:
+  enabled: false
+  image:
+    tag: "3.13.6"
+  persistence:
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  podSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile: {type: RuntimeDefault}
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: {drop: ["ALL"]}
+  # groundhog2k subchart credentials. Operator MUST override when enabled.
+  # For external RabbitMQ / AmazonMQ set `enabled: false` and configure
+  # dictHubVsync.secrets.RABBITMQ_URI via component secrets or an existing Kubernetes Secret.
+  authentication:
+    user:
+      value: "pixswitch"
+    password:
+      value: ""
+    erlangCookie:
+      value: ""                  # MUST be set when enabled=true
+                                 # (groundhog2k chart requires it; generate
+                                 #  with `openssl rand -base64 32`)
+
+# OpenTelemetry Collector (Lerian)
+# Optional in-cluster collector. Disabled by default — set per-component
+# OTEL_EXPORTER_OTLP_ENDPOINT to an external collector for production.
+otel-collector-lerian:
+  enabled: false

@@ -182,7 +182,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.2.1"
+    tag: "2.0.0"
   # -- PostgreSQL migrations job (Helm hook pre-install,pre-upgrade; ArgoCD PreSync).
   # The chart-managed Secret is rendered as an earlier hook (weight -5 / sync-wave -5),
   # so it exists before this migration hook (weight -1) — migrations run against the
@@ -564,6 +564,10 @@ bankTransfer:
     # is configured via global.streaming.saslMechanism)
     # STREAMING_SASL_PASSWORD: ""
     # STREAMING_TLS_CA_CERT: ""
+
+    # Multi-tenant Redis CA (optional — only when MULTI_TENANT_REDIS_TLS=true
+    # and the cluster's CA isn't in the system trust pool)
+    # MULTI_TENANT_REDIS_CA_CERT: ""
   # RabbitMQ credentials (when RABBITMQ_ENABLED=true)
   # RABBITMQ_PASSWORD: ""
   # RABBITMQ_EVENT_SIGNING_SECRET: ""

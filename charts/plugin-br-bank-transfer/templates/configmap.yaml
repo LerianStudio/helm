@@ -51,6 +51,12 @@ data:
   {{- end }}
   {{- end }}
   ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
+  # -- REQUIRE_UPSTREAM_HTTPS: fleet-wide TLS gate on the PII-carrying
+  # CRM_BASE_URL/FEES_BASE_URL hops (v2.0.0). Default "false" keeps the
+  # bundled in-cluster http URLs working; set true in staging/homologation/BYOC
+  # deployments that carry real client data — production is already covered by
+  # the app's own ENV_NAME=production boot guard.
+  REQUIRE_UPSTREAM_HTTPS: {{ .Values.bankTransfer.configmap.REQUIRE_UPSTREAM_HTTPS | default "false" | quote }}
 
   # =====================================================================
   # CORS POLICY

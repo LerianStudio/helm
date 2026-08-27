@@ -1,6 +1,17 @@
 {{- if .Values.bankTransfer.enabled }}
-{{- $multiTenantEnabled := eq (toString (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
 {{- $namespace := include "global.namespace" . }}
+{{- /* Datastore masks (lerian-common): connection identity + TOPOLOGY resolved via
+   global.datastores.<type> (+ global.cloud presets) with native bankTransfer.configmap.<KEY>
+   and dedicated .Values.datastores overrides taking precedence. Defaults keep the
+   bundled-dev topology → render-equivalent for existing users. */ -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $ded := .Values.datastores | default dict -}}
+{{- $cm := .Values.bankTransfer.configmap -}}
+{{- /* Cross-cutting global masks (lerian-common.globalValue, same shape as
+   datastores): resolved once so both the emitted key AND the multi-tenant
+   control-flow gate below see the same value. */ -}}
+{{- $mtRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") -}}
+{{- $multiTenantEnabled := eq (toString $mtRaw) "true" }}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -11,7 +22,7 @@ data:
   # APPLICATION IDENTITY
   # Rendered in both modes — required by the bootstrap.
   # =====================================================================
-  ENV_NAME: {{ .Values.bankTransfer.configmap.ENV_NAME | default "production" | quote }}
+  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | quote }}
   APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}
   {{- if not $multiTenantEnabled }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
@@ -40,6 +51,12 @@ data:
   {{- end }}
   {{- end }}
   ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
+  # -- REQUIRE_UPSTREAM_HTTPS: fleet-wide TLS gate on the PII-carrying
+  # CRM_BASE_URL/FEES_BASE_URL hops (v2.0.0). Default "false" keeps the
+  # bundled in-cluster http URLs working; set true in staging/homologation/BYOC
+  # deployments that carry real client data — production is already covered by
+  # the app's own ENV_NAME=production boot guard.
+  REQUIRE_UPSTREAM_HTTPS: {{ .Values.bankTransfer.configmap.REQUIRE_UPSTREAM_HTTPS | default "false" | quote }}
 
   # =====================================================================
   # CORS POLICY
@@ -69,7 +86,7 @@ data:
   # All operational tuning (timeouts, pool sizes, circuit breaker) ships
   # via lib-commons defaults or is hot-reloadable via systemplane.
   # =====================================================================
-  MULTI_TENANT_ENABLED: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
   {{- if $multiTenantEnabled }}
   MULTI_TENANT_URL: {{ required "bankTransfer.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.MULTI_TENANT_URL | quote }}
   MULTI_TENANT_ENVIRONMENT: {{ required "bankTransfer.configmap.MULTI_TENANT_ENVIRONMENT is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.MULTI_TENANT_ENVIRONMENT | quote }}
@@ -98,11 +115,11 @@ data:
   # POSTGRES (primary) — single-tenant only.
   # MT mode resolves per-tenant DBs via tenant-manager.
   # =====================================================================
-  POSTGRES_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_HOST | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
-  POSTGRES_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_PORT | default "5432" | quote }}
-  POSTGRES_USER: {{ .Values.bankTransfer.configmap.POSTGRES_USER | default "bank_transfer" | quote }}
+  POSTGRES_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
+  POSTGRES_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "bank_transfer") | quote }}
   POSTGRES_DB: {{ .Values.bankTransfer.configmap.POSTGRES_DB | default "bank_transfer" | quote }}
-  POSTGRES_SSLMODE: {{ .Values.bankTransfer.configmap.POSTGRES_SSLMODE | default "require" | quote }}
+  POSTGRES_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
   POSTGRES_MAX_OPEN_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
   POSTGRES_MAX_IDLE_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
   POSTGRES_CONN_MAX_LIFETIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
@@ -113,12 +130,13 @@ data:
   # =====================================================================
   # POSTGRES (replica — optional, for CQRS read scaling)
   # =====================================================================
-  {{- if .Values.bankTransfer.configmap.POSTGRES_REPLICA_HOST }}
-  POSTGRES_REPLICA_HOST: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_HOST | quote }}
-  POSTGRES_REPLICA_PORT: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_PORT | default "5432" | quote }}
-  POSTGRES_REPLICA_USER: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_USER | quote }}
+  {{- $replicaHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") }}
+  {{- if $replicaHost }}
+  POSTGRES_REPLICA_HOST: {{ $replicaHost | quote }}
+  POSTGRES_REPLICA_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_REPLICA_PORT" "default" "5432") | quote }}
+  POSTGRES_REPLICA_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_REPLICA_USER" "default" "") | quote }}
   POSTGRES_REPLICA_DB: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_DB | quote }}
-  POSTGRES_REPLICA_SSLMODE: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_SSLMODE | default "require" | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_REPLICA_SSLMODE" "default" "require") | quote }}
   {{- end }}
   {{- end }}
 
@@ -127,11 +145,12 @@ data:
   # MT mode: only connection envs (HOST, DB, USER, TLS, CA_CERT) are rendered.
   # Pool/timeout tuning is single-tenant or systemplane-managed.
   # =====================================================================
-  REDIS_HOST: {{ .Values.bankTransfer.configmap.REDIS_HOST | default (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace) | quote }}
+  REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace)) | quote }}
   REDIS_DB: {{ .Values.bankTransfer.configmap.REDIS_DB | default "0" | quote }}
-  REDIS_TLS: {{ .Values.bankTransfer.configmap.REDIS_TLS | default "false" | quote }}
-  {{- if .Values.bankTransfer.configmap.REDIS_USER }}
-  REDIS_USER: {{ .Values.bankTransfer.configmap.REDIS_USER | quote }}
+  REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
+  {{- $redisUser := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") }}
+  {{- if $redisUser }}
+  REDIS_USER: {{ $redisUser | quote }}
   {{- end }}
   {{- if .Values.bankTransfer.configmap.REDIS_CA_CERT }}
   REDIS_CA_CERT: {{ .Values.bankTransfer.configmap.REDIS_CA_CERT | quote }}
@@ -171,17 +190,27 @@ data:
   {{- end }}
 
   # =====================================================================
-  # AUTHENTICATION (inbound) — required in both modes.
+  # AUTHENTICATION (inbound) — required in both modes. Resolved via the
+  # lerian-common auth mask (global.auth.{enabled,host}) instead of the
+  # convenience lerian-common.auth.env wrapper: that wrapper hardcodes
+  # enabled's default to "false", but this chart's own default has always
+  # been "true" — calling globalValue directly keeps the historical default
+  # render-equivalent while still picking up global.auth when set.
   # =====================================================================
-  PLUGIN_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.PLUGIN_AUTH_ENABLED | default "true" | quote }}
-  PLUGIN_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000") | quote }}
 
   # =====================================================================
   # LICENSE GATEWAY
   # ORGANIZATION_IDS is rendered in both modes (license tenancy hint).
   # LICENSE_SERVICE_ADDRESS is single-tenant only.
   # =====================================================================
-  {{- if .Values.bankTransfer.configmap.ORGANIZATION_IDS }}
+  {{- /* Can also be supplied via .Values.bankTransfer.secrets.ORGANIZATION_IDS
+     (rendered into the Secret by templates/secrets.yaml, or present in an
+     existingSecret when useExistingSecret=true) for operators who source it
+     from the same secret store as LICENSE_KEY rather than a ConfigMap. When
+     set there, this key is omitted here so envFrom doesn't declare it twice. */}}
+  {{- if and .Values.bankTransfer.configmap.ORGANIZATION_IDS (not (.Values.bankTransfer.secrets.ORGANIZATION_IDS | default "")) }}
   ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
   {{- end }}
   {{- if not $multiTenantEnabled }}
@@ -195,14 +224,58 @@ data:
   # MT mode: only the toggle + endpoint + SDK-disabled flag are rendered.
   # Library/service-name/version/deployment-env are systemplane-managed.
   # =====================================================================
-  ENABLE_TELEMETRY: {{ .Values.bankTransfer.configmap.ENABLE_TELEMETRY | default "false" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.bankTransfer.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
+  {{- /* Same global.observability mask lerian-common.otel.env derives this from
+     (block "observability" field "otlpEndpoint") — was a flat passthrough
+     defaulting to "", so global.observability alone could never supply an
+     endpoint, only a native configmap override could (same class of bug as
+     STREAMING_ENABLED). Default stays "": the app crashes at boot with its
+     own explicit error when ENABLE_TELEMETRY=true and this is still empty,
+     so an empty default here is intentional, not an oversight. */}}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
   OTEL_SDK_DISABLED: {{ .Values.bankTransfer.configmap.OTEL_SDK_DISABLED | default "false" | quote }}
   {{- if not $multiTenantEnabled }}
   OTEL_LIBRARY_NAME: {{ .Values.bankTransfer.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-bank-transfer" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-bank-transfer" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
+  {{- end }}
+
+  # =====================================================================
+  # STREAMING (lib-streaming v3 — business event publication)
+  # Rendered in both modes: STREAMING_CLOUDEVENTS_SOURCE is validated at
+  # startup regardless of MULTI_TENANT_ENABLED/STREAMING_ENABLED, so it can't
+  # sit behind either gate. STREAMING_ENABLED itself now goes through the
+  # same lerian-common.globalValue mask as MULTI_TENANT_ENABLED/
+  # ENABLE_TELEMETRY above — global.streaming.enabled (env-wide) with a
+  # native configmap.STREAMING_ENABLED override — instead of reading only the
+  # native key directly (that bug meant global.streaming.enabled alone could
+  # never turn streaming on, only a per-app override could). The
+  # broker/TLS/SASL constants come from the same global.streaming.* block
+  # (or a legacy flat STREAMING_BROKERS override) once enabled.
+  # =====================================================================
+  {{- $streamingEnabledRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") }}
+  {{- $streamingEnabled := eq (toString $streamingEnabledRaw) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabledRaw | quote }}
+  STREAMING_CLOUDEVENTS_SOURCE: {{ $cm.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-bank-transfer" | quote }}
+  {{- if $cm.STREAMING_CLIENT_ID }}
+  STREAMING_CLIENT_ID: {{ $cm.STREAMING_CLIENT_ID | quote }}
+  {{- end }}
+  {{- include "lerian-common.streaming.env" (dict "context" $ "enabled" $streamingEnabled "configmap" $cm) | nindent 2 }}
+  {{- if $cm.STREAMING_OUTBOX_DISPATCH_INTERVAL_SECONDS }}
+  STREAMING_OUTBOX_DISPATCH_INTERVAL_SECONDS: {{ $cm.STREAMING_OUTBOX_DISPATCH_INTERVAL_SECONDS | quote }}
+  {{- end }}
+  {{- if $cm.STREAMING_CB_FAILURE_RATIO }}
+  STREAMING_CB_FAILURE_RATIO: {{ $cm.STREAMING_CB_FAILURE_RATIO | quote }}
+  {{- end }}
+  {{- if $cm.STREAMING_CB_MIN_REQUESTS }}
+  STREAMING_CB_MIN_REQUESTS: {{ $cm.STREAMING_CB_MIN_REQUESTS | quote }}
+  {{- end }}
+  {{- if $cm.STREAMING_CB_TIMEOUT_S }}
+  STREAMING_CB_TIMEOUT_S: {{ $cm.STREAMING_CB_TIMEOUT_S | quote }}
+  {{- end }}
+  {{- if $cm.STREAMING_CLOSE_TIMEOUT_S }}
+  STREAMING_CLOSE_TIMEOUT_S: {{ $cm.STREAMING_CLOSE_TIMEOUT_S | quote }}
   {{- end }}
 
   # =====================================================================
@@ -213,13 +286,14 @@ data:
   # systemplane-managed at runtime.
   # =====================================================================
 
-  # Midaz
-  MIDAZ_BASE_URL: {{ required "bankTransfer.configmap.MIDAZ_BASE_URL is required" .Values.bankTransfer.configmap.MIDAZ_BASE_URL | quote }}
-  MIDAZ_TRANSACTION_URL: {{ .Values.bankTransfer.configmap.MIDAZ_TRANSACTION_URL | default .Values.bankTransfer.configmap.MIDAZ_BASE_URL | quote }}
+  # Midaz — defaults match the standard in-cluster Midaz ledger/auth service
+  # names (midaz-ledger.midaz / plugin-access-manager-auth.plugin-access-manager),
+  # same convention as the bundled-subchart datastore defaults elsewhere in
+  # this file. A non-standard install still overrides via the native key.
+  MIDAZ_BASE_URL: {{ .Values.bankTransfer.configmap.MIDAZ_BASE_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002" | quote }}
+  MIDAZ_TRANSACTION_URL: {{ .Values.bankTransfer.configmap.MIDAZ_TRANSACTION_URL | default .Values.bankTransfer.configmap.MIDAZ_BASE_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002" | quote }}
   MIDAZ_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ENABLED | default "false" | quote }}
-  {{- if .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS }}
-  MIDAZ_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS | quote }}
-  {{- end }}
+  MIDAZ_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS | default "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000" | quote }}
   {{- if .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS }}
   MIDAZ_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS | quote }}
   {{- end }}

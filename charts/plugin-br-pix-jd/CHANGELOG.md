@@ -1,5 +1,24 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.3.0)
+
+- **Features:**
+  - Released version 0.3.0 of the plugin-br-pix-jd.
+  - Added upgrade guide for version 0.2.0.
+  - Added upgrade guide for version 0.1.0.
+
+- **Fixes:**
+  - Consumed a dedicated image for migrations to enhance stability.
+
+- **Improvements:**
+  - Automated the process to avoid manual bumping of chart versions.
+
+Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.2.0...plugin-br-pix-jd-v0.3.0)
+
+---
+
 ## [0.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.2.0)
 
 - Features:

@@ -6,6 +6,27 @@
   - Added `caradhras.ingress` as the main component.
   - Promoted `auth.backend` to a top-level `caradhras` component.
   - Bumped `caradhras` image defaults to stable version 1.2.0.
+  - Explicitly defined `caradhras.image` and collapsed `initUser` default.
+
+- **Fixes:**
+  - Corrected `caradhras-ui` backend address to use FQDN instead of a short name.
+  - Resolved port, environment, and probe mismatches in `caradhras-ui`.
+  - Fixed `EACCES` issue on `nginx conf.d` by adjusting `runAsGroup` for `caradhras-ui`.
+  - Wired `ALLOW_INSECURE_TLS` into `caradhras`.
+  - Ensured `caradhras-migrations` reads `POSTGRES_*` instead of `DB_*`.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.1.0...plugin-access-manager-v9.2.0)
+
+---
+
+## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.0)
+
+- **Features:**
+  - Added `caradhras.ingress` as the main component.
+  - Promoted `auth.backend` to a top-level `caradhras` component.
+  - Bumped `caradhras` image defaults to stable version 1.2.0.
   - Added explicit `caradhras.image` and collapsed `initUser` default.
 
 - **Fixes:**

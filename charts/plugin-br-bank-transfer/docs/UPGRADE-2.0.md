@@ -47,16 +47,16 @@ Operators **must** review their datastore configuration, migrate removed ConfigM
 > chart-level changes.
 
 **What changed:**  
-`plugin-br-bank-transfer` v2.0.0 ships [LerianStudio/plugin-br-bank-transfer#291](https://github.com/LerianStudio/plugin-br-bank-transfer/pull/291) (`feat!: align TED transaction contracts and devolution identity`). Two things move together:
+`plugin-br-bank-transfer` v2.0.0 aligns TED transaction contracts and devolution identity (`feat!: align TED transaction contracts and devolution identity` in the application's own release history). Two things move together:
 
 1. A new deploy-critical migration, `000028_ted_in_devolution_identity_walk`, which the TED IN poller's inbound drain stays gated behind until it completes.
 2. The devolution sweep **no longer re-dispatches an `STR0010` on its own initiative** when the clearing house never received a devolution — it only asks and records the answer. An operator now moves that money by hand.
 
 **Why it matters — this is a money hazard, not a config change:**  
-Per the app's own `migrations/README.md` ("Operator notes" → "The deploy precondition, in one place"), a **rolling upgrade with old and new binaries coexisting can pay a bank twice**:
+Per the application's own migration runbook ("Operator notes" → "The deploy precondition, in one place"), a **rolling upgrade with old and new binaries coexisting can pay a bank twice**:
 
 - **No previous binary may still be draining the tenant's JD queue** when the migration runs — a pre-2.0.0 pod writes inbound rows under the old identity, invisible to the new credit guard forever, so a redelivered TED can be credited twice.
-- **No pod running a binary whose devolution sweep still auto-resends (anything built before app commit `a73f41a9`, which includes the `1.2.1` this chart previously shipped) may be alive at the same time as a 2.0.0 pod.** One pod that still dispatches is enough: if an aged devolution the clearing house never received gets swept by the old pod while the new one is also up, **two `STR0010`s go out for the same TED to the same paying bank — with no reversal path.** This condition is symmetric: it applies to upgrading *and* to rolling back.
+- **No pod running a binary whose devolution sweep still auto-resends (anything from before the application version that stopped the auto-resend, which includes the `1.2.1` this chart previously shipped) may be alive at the same time as a 2.0.0 pod.** One pod that still dispatches is enough: if an aged devolution the clearing house never received gets swept by the old pod while the new one is also up, **two `STR0010`s go out for the same TED to the same paying bank — with no reversal path.** This condition is symmetric: it applies to upgrading *and* to rolling back.
 
 **Operational impact:**  
 The chart's default `bankTransfer.deploymentUpdate` is `RollingUpdate` with `maxSurge: 100%` / `maxUnavailable: 0` — by design, it brings the new pod up *before* retiring the old one. That is exactly the coexistence window this breaking change warns against. **Do not rely on the default rolling strategy for this upgrade.**
@@ -66,7 +66,7 @@ Recommended sequencing, validated on `benedita/dev-st` and `benedita/stg-mt`:
 2. Only then run `helm upgrade` with the `2.0.0` image tag and replicas restored. The migration Job (hook) runs before any new pod exists, and no old binary is ever up at the same time as a new one.
 
 **Migration required:**  
-Yes — this is an operator deploy-sequencing step, not a values.yaml change. See the app's `migrations/README.md` for the full precondition text.
+Yes — this is an operator deploy-sequencing step, not a values.yaml change. See the application's migration runbook for the full precondition text.
 
 ### 1. New Dependency: lerian-common-helm
 

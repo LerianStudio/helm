@@ -3,6 +3,19 @@
 ## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
 
 - **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for clarity.
+  - Dropped volatile spanmetrics dimensions to improve stability.
+  - Removed duplicate GOMEMLIMIT setting and reduced kubeletstats DPM by half for better performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
   - Pinned spanmetrics resource key and refreshed README for better clarity and accuracy.
   - Dropped volatile spanmetrics dimensions to enhance stability.
   - Removed duplicate GOMEMLIMIT and halved kubeletstats DPM to optimize performance.

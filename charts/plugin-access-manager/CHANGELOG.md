@@ -3,6 +3,27 @@
 ## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.0)
 
 - **Features:**
+  - Added `caradhras.ingress` as the main component.
+  - Promoted `auth.backend` to a top-level `caradhras` component.
+  - Bumped `caradhras` image defaults to stable version 1.2.0.
+  - Added support for `STREAMING_CLOUDEVENTS_SOURCE` and `extraEnvVars` in `caradhras`.
+
+- **Fixes:**
+  - Corrected `caradhras-ui` backend address to use FQDN instead of a short name.
+  - Resolved port/environment/probe mismatches in `caradhras-ui`.
+  - Addressed `EACCES` issue on `nginx conf.d` by setting `runAsGroup` for `caradhras-ui`.
+  - Defaulted `caradhras.createDatabase` to false.
+  - Corrected `caradhras` readiness probe default path.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.1.0...plugin-access-manager-v9.2.0)
+
+---
+
+## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.0)
+
+- **Features:**
   - Explicitly specify `caradhras.image` and collapse `initUser` default.
   - Bump `caradhras` image defaults to stable version 1.2.0.
   - Add `caradhras.ingress` as the main component.

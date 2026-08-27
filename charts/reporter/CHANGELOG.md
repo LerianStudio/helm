@@ -3,6 +3,21 @@
 ## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
 
 - **Features**
+  - Introduced the datasource credential-encryption key as a first-class feature.
+
+- **Documentation**
+  - Added a Helm upgrade guide for reporter v4.0.0.
+  - Fixed common.configmap prefix and updated documentation to drop env from the enabled-gated list. Included a reminder to use `-f values.yaml`.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
   - Made the datasource credential-encryption key a first-class feature.
 
 - **Improvements**

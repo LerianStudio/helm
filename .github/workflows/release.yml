@@ -229,12 +229,19 @@ jobs:
 
           # cwd for Semantic Release is the chart dir (working_directory below),
           # so exec/helm3/git plugin paths must be relative to it, not repo root.
-          # prepareCmd updates the repo-root README.md matrix, so it hops back out
-          # with `cd ../..` (CHART_PATH is always charts/<name>, depth 2).
+          #
+          # semantic-release-monorepo rewrites ${nextRelease.version} to the full
+          # git tag (not the plain semver) for the exec plugin's "success"/"fail"
+          # steps specifically — it still resolves to plain semver in "prepare".
+          # So the helm package+push (which needs the plain version in the
+          # filename) has to run inside prepareCmd, not successCmd; successCmd is
+          # left a no-op. prepareCmd also updates the repo-root README.md matrix,
+          # so it hops out with `cd ../..` and back in with `cd $CHART_PATH`
+          # (CHART_PATH is always charts/<name>, depth 2) to run `helm package .`.
           jq \
             --arg tagFormat "$CHART_NAME-v\${version}" \
-            --arg successCmd "helm package . && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
-            --arg prepareCmd "cd ../.. && ./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
+            --arg successCmd "true" \
+            --arg prepareCmd "cd ../.. && ./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version} && cd $CHART_PATH && helm package . && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
             '.plugins[2][1].chartPath = "." |
               .plugins[4][1].assets = ["Chart.yaml", "../../README.md"] |
               .tagFormat = $tagFormat |

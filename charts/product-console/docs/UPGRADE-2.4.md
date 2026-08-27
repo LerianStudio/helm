@@ -71,7 +71,7 @@ The readiness probe HTTP path default has changed from `/` to `/api/admin/health
 | `livenessProbe.path` | `/` | `/` |
 | `readinessProbe.path` | `/` | `/api/admin/health/readyz` |
 
-If the `product-console` application image you deploy does not yet expose `/api/admin/health/readyz`, override the path back to `/` in your values:
+Deploy a `product-console` application image that exposes `/api/admin/health/readyz`. Use the `/` override only as a temporary compatibility or rollback escape hatch; it bypasses dependency readiness checks, including MongoDB:
 
 ```yaml
 readinessProbe:
@@ -88,7 +88,7 @@ No existing keys were removed or renamed. The `livenessProbe` and `readinessProb
 |---------|--------|--------|-------|
 | `livenessProbe` | absent | `{}` | New, optional, overrides built-in defaults |
 | `readinessProbe` | absent | `{}` | New, optional, overrides built-in defaults |
-| `readinessProbe.path` (default) | `/` (hardcoded) | `/api/admin/health/readyz` | Override to `/` if your app does not serve `/api/admin/health/readyz` |
+| `readinessProbe.path` (default) | `/` (hardcoded) | `/api/admin/health/readyz` | Use `/` only temporarily for compatibility or rollback; it bypasses dependency readiness checks |
 
 ## Migration Steps
 
@@ -97,7 +97,7 @@ This upgrade requires no mandatory values changes. The Helm upgrade will roll th
 **Recommended upgrade process:**
 
 1. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
-2. If your image does not expose `/api/admin/health/readyz`, set `readinessProbe.path: /` in your values before upgrading.
+2. Verify that the application image exposes `/api/admin/health/readyz` before upgrading. Do not promote an image that lacks the dependency readiness endpoint.
 3. Run the upgrade command during a maintenance window.
 4. Verify all pods are running and healthy after the upgrade:
 

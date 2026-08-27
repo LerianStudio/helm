@@ -59,6 +59,19 @@ metadata:
   namespace: {{ include "global.namespace" $ctx }}
   labels:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ctx "component" (printf "%s-migrations" $serviceName)) | nindent 4 }}
+  {{- /*
+  before-hook-creation, NOT hook-succeeded: the Job at weight -5 still has to read
+  this Secret after this hook completes.
+
+  Lifecycle, so operators know what to expect. Argo CD removes this Secret along with
+  the rest of the Application's resources on delete, because a hook is a child
+  resource of the Application. Helm does not: it does not track hook resources as
+  release resources, so `helm uninstall` leaves <component>-migrations behind, and so
+  does clearing DATABASE_URL or disabling migrations on a release that already created
+  it. Those cases need a manual `kubectl delete secret <component>-migrations`. The DSN
+  it carries is the same one the application Secret holds, so this widens exposure in
+  time, not in scope.
+  */}}
   annotations:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-weight: "-10"

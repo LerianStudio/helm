@@ -25,6 +25,7 @@ version: 1.0.0
 
 # This is the version number of the application being deployed.
 # It matches the appVersion of the pinned hashicorp/consul subchart (1.6.10 -> Consul 1.20.6).
+# Do not bump this independently of the consul dependency pin above.
 appVersion: "1.20.6"
 
 # A list of keywords about the chart. This helps others discover the chart.

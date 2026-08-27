@@ -85,6 +85,13 @@ spec:
                 name: {{ include "plugin-br-pix-jd.componentSecretName" (dict "root" $ "name" "worker" "comp" .Values.worker) }}
           env:
             {{- include "plugin-br-pix-jd.dbPasswordEnv" . | nindent 12 }}
+            {{- /* `with` em vez de include direto: no caminho externo o helper é vazio e
+               um nindent sobre string vazia deixa uma linha só de espaços no manifest
+               renderizado. Assim o render de todo install que NÃO usa o Valkey embarcado
+               fica byte-idêntico ao de antes desta mudança. */}}
+            {{- with (include "plugin-br-pix-jd.redisPasswordEnv" .) }}
+            {{- . | nindent 12 }}
+            {{- end }}
             {{- if include "plugin-br-pix-jd.rolesAnywhereEnabled" . }}
             {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 12 }}
             {{- end }}

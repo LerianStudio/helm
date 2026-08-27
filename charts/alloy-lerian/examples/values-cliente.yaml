@@ -21,9 +21,20 @@ destination:
 # ---------------------------------------------------------------------------
 # ÚNICO passo manual. Um Secret, com os valores que a Lerian entrega:
 #
+#   ⚠️ NÃO use `--from-literal` com token: a credencial fica visível em
+#   `ps -eo args` durante a execução e no histórico do shell depois. Demonstrado.
+#
+#   read -rs TELEMETRY_TOKEN; echo
+#   read -rs FLEET_TOKEN; echo          # só se o Fleet for usado
+#
 #   kubectl -n monitoring create secret generic alloy-lerian \
-#     --from-literal=telemetry-token='<token de telemetria>' \
-#     --from-literal=fleet-token='<token de fleet, se aplicável>'
+#     --from-file=telemetry-token=<(printf '%s' "$TELEMETRY_TOKEN") \
+#     --from-file=fleet-token=<(printf '%s' "$FLEET_TOKEN")
+#
+#   unset TELEMETRY_TOKEN FLEET_TOKEN
+#
+#   Exige bash ou zsh — `<(...)` não existe em sh. Para uma chave só:
+#   printf '%s' "$TOKEN" | kubectl ... --from-file=chave=/dev/stdin
 #
 # O chart apenas LÊ esse Secret; nunca o cria. No perfil `client` a credencial de
 # telemetria é obrigatória, porque o ponto de entrada a valida.
@@ -61,8 +72,12 @@ destination:
 # O Secret precisa existir ANTES do install — é o único passo manual, com o token
 # que entregamos:
 #
-#   kubectl -n monitoring create secret generic alloy-lerian \
-#     --from-literal=telemetry-token='<token que entregamos>'
+#   read -rs TELEMETRY_TOKEN; echo
+#   printf '%s' "$TELEMETRY_TOKEN" | kubectl -n monitoring create secret generic \
+#     alloy-lerian --from-file=telemetry-token=/dev/stdin
+#   unset TELEMETRY_TOKEN
+#
+#   (⚠️ não `--from-literal`: expõe o token em `ps` e no histórico)
 
 # ---------------------------------------------------------------------------
 # CONSUMO DE CONTÊINER — o único item que talvez precise de ajuste no cluster

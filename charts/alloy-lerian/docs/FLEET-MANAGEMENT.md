@@ -24,10 +24,24 @@ O cliente executa **um** comando antes do install, com os valores que entregamos
 — um Secret, duas chaves:
 
 ```bash
+# ⚠️ NÃO use `--from-literal` com token: DEMONSTRADO por execução — a credencial
+# fica visível em `ps -eo args` enquanto o comando roda, e no histórico do shell
+# depois. Qualquer usuário no host consegue ler.
+#
+# `read -rs` não ecoa e não vai para o histórico; `--from-file` lê de stdin.
+read -rs TELEMETRY_TOKEN; echo
+read -rs FLEET_TOKEN; echo
+
 kubectl -n monitoring create secret generic alloy-lerian \
-  --from-literal=telemetry-token='<token de telemetria>' \
-  --from-literal=fleet-token='<token de leitura de config remota>'
+  --from-file=telemetry-token=<(printf '%s' "$TELEMETRY_TOKEN") \
+  --from-file=fleet-token=<(printf '%s' "$FLEET_TOKEN")
+
+unset TELEMETRY_TOKEN FLEET_TOKEN
 ```
+
+Exige `bash` ou `zsh` — a substituição de processo `<(...)` não existe em `sh`. Para
+uma chave só, `printf '%s' "$TOKEN" | kubectl ... --from-file=chave=/dev/stdin`
+funciona em qualquer shell.
 
 É o único passo manual. Todo o resto o chart resolve.
 

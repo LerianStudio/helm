@@ -109,7 +109,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.2.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
+| `0.3.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Switch

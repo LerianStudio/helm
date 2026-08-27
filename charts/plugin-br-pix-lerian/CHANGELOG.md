@@ -18,14 +18,19 @@
     the other twelve components.
   - Version history starts fresh here; the pre-fork history stays in the
     `plugin-br-pix-switch` chart, which remains published and unchanged.
+  - MongoDB removed from the chart entirely: the `mongodb` subchart dependency,
+    the `global.externalMongoDefinitions` bootstrap Job, the `MONGO_URL` /
+    `MONGO_DB_NAME` env vars on `dict-hub` and the Mongo branch of the
+    wait-for-dependencies init container. No Pix Lerian component reads Mongo -
+    `dict-hub` state lives entirely in Postgres.
 
 - **Notes**
   - Selectors are a new identity: this chart is installed as a new release, not
     upgraded in place over an existing `plugin-br-pix-switch` release.
   - Database identifiers are deliberately unchanged (`pix-spi`, `pix-dict`,
     `pix-cob`, `pix-adapter-lerian`, `pix-pixauto`), as is the shared
-    `pixswitch` Postgres role and Mongo user - renaming those would require
-    migrating existing GRANTs.
+    `pixswitch` Postgres role - renaming those would require migrating existing
+    GRANTs.
   - Pix Automatico (`pixauto`, `pixautoSystemplane`) stays `enabled: false` by
     default, so this single chart serves both the 2.1.0-beta.7 and
     2.1.0-beta.12 deployment lines.

@@ -4,7 +4,7 @@
 
 - Chart type: `multi-component`
 - Required secrets: None for default render; credential-bearing DSNs, URLs, tokens, and passwords belong in component `secrets`, never in component `configmap`.
-- Dependency notes: Uses local MongoDB, PostgreSQL, RabbitMQ, and Redis/Valkey dependency charts unless external services are configured.
+- Dependency notes: Uses local PostgreSQL, RabbitMQ, and Redis/Valkey dependency charts unless external services are configured.
 - Production overrides: Provide SPI/DICT/COB/adapter credentials through component secrets or existing Secrets where supported; keep ConfigMaps limited to non-sensitive hosts, ports, flags, and identifiers.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
@@ -22,7 +22,7 @@ per component.
 | `spi` | `spi/api` | 4101 | PIX SPI service |
 | `spiSystemplane` | `spi/systemplane/api` | 4102 | Runtime config plane |
 | `adapterProviderMock` | `adapter-provider-mock/api` | 4103 | BTG provider mock (disabled by default) |
-| `dictHub` | `dict/hub/api` | 4104 | DICT hub (Postgres + Mongo + Valkey) |
+| `dictHub` | `dict/hub/api` | 4104 | DICT hub (Postgres + Valkey) |
 | `dictHubVsync` | `dict/hub/vsync` | 4105 | DICT verification sync worker (singleton) |
 | `dictProxy` | `dict/proxy/api` | 4106 | DICT proxy to BCB |
 | `dictSystemplane` | `dict/systemplane/api` | 4107 | Runtime config plane for DICT |
@@ -43,12 +43,10 @@ per component.
 ## Architecture
 
 The plugin uses a Proxy/Hub deployment model. A "hub" component owns business
-logic and local state (its own Postgres database, sometimes Mongo+Valkey),
+logic and local state (its own Postgres database, sometimes Valkey),
 while a "proxy" component is a stateless pass-through. Both expose identical
 APIs. Five Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`,
-`pix-adapter-lerian`, `pix-pixauto`) and one Mongo database (`pix-dict`) for `dict-hub`
-(`pix-cob` is a forward-compat slot the Mongo bootstrap provisions but no component
-reads yet).
+`pix-adapter-lerian`, `pix-pixauto`).
 
 ## Required infrastructure
 
@@ -56,14 +54,12 @@ For a full deployment:
 - **PostgreSQL**: 5 databases (`pix-spi`, `pix-dict`, `pix-cob`,
   `pix-adapter-lerian`, `pix-pixauto`) and a role `pixswitch` with full
   ownership of each
-- **MongoDB**: 1 database (`pix-dict`) used by `dict-hub`; the bootstrap also
-  provisions `pix-cob` as a forward-compat slot, but no component reads it yet
 - **Valkey** (Redis-compatible): used by `spi`, `dict-hub`, `dict-hub-vsync`
   for caching and by `pixauto` for its idempotency replay gate (optional there —
   without it the gated routes fall through to their durable backstops)
 - **RabbitMQ**: used by `dict-hub-vsync` only
 
-For development, the chart's `postgresql`, `valkey`, `rabbitmq`, and `mongodb`
+For development, the chart's `postgresql`, `valkey`, and `rabbitmq`
 subcharts can be enabled (set their `enabled: true`). For production, point
 the in-cluster components at managed external services and leave the
 subcharts disabled (default).
@@ -90,7 +86,6 @@ The chart accepts every env var the app reads at runtime; see
 
 The app reads:
 - `DATABASE_URL` (full Postgres DSN, not `DB_HOST/DB_PORT/...`)
-- `MONGO_URL`, `MONGO_DB_NAME` (only `dict-hub`)
 - `VALKEY_URL` (full Redis URL)
 - `RABBITMQ_URI` (only `dict-hub-vsync`)
 - `LICENSE_KEY`, `ORGANIZATION_IDS` (every component). `ORGANIZATION_IDS` is

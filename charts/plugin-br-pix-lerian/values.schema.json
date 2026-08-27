@@ -216,10 +216,6 @@
       "type": "object",
       "additionalProperties": true
     },
-    "mongodb": {
-      "type": "object",
-      "additionalProperties": true
-    },
     "rabbitmq": {
       "type": "object",
       "additionalProperties": true

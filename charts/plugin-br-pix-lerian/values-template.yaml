@@ -107,11 +107,9 @@ dictHub:
     # TenantConfig, so a missing value surfaces as a rejected request.
     ADAPTER_BASE_URL: ""
     KEY_CACHE_TTL_SEC: "60"
-    MONGO_DB_NAME: "pix-dict"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
-    MONGO_URL: "mongodb://user:<password>@mongo-host:27017/?authSource=admin"
     VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
     LICENSE_KEY: ""
     CRM_CLIENT_SECRET: ""
@@ -276,8 +274,6 @@ postgresql:
 valkey:
   enabled: false
 rabbitmq:
-  enabled: false
-mongodb:
   enabled: false
 otel-collector-lerian:
   enabled: false

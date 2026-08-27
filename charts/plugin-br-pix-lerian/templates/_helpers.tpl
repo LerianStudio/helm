@@ -196,7 +196,7 @@ When useExistingSecret=true, returns the externally-managed name; otherwise the 
 
 {{/*
 Wait-for-dependencies init container.
-Parses DATABASE_URL / VALKEY_URL / MONGO_URL / RABBITMQ_URI from the
+Parses DATABASE_URL / VALKEY_URL / RABBITMQ_URI from the
 component's ConfigMap and Secret and waits for each to be reachable via nc -z.
 Skips any URL that is empty / unset.
 
@@ -286,10 +286,6 @@ Usage:
       # Valkey/Redis (VALKEY_URL)
       set -- $(parse_url "${VALKEY_URL:-}")
       wait_for_service "valkey" "${1:-}" "${2:-6379}"
-
-      # MongoDB (MONGO_URL)
-      set -- $(parse_url "${MONGO_URL:-}")
-      wait_for_service "mongo" "${1:-}" "${2:-27017}"
 
       # RabbitMQ (RABBITMQ_URI) — TLS-only: default to the amqps port (5671).
       # All documented URIs carry an explicit :5671; this fallback only applies

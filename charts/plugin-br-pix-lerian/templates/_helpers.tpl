@@ -103,6 +103,86 @@ Usage: include "plugin-br-pix-lerian.componentServiceAccountName" (dict "context
 {{- end }}
 
 {{/*
+Routed Ingress body shared by ingress-apps.yaml, ingress-providers.yaml and
+ingress-systemplane.yaml. The three differ only in the values key, the ingress
+component label and their file header comment, so the rendering logic lives
+here once — the port-source defect that had to be fixed in all three files is
+exactly the maintenance cost this removes.
+
+Each route in `config.routes` names its target component twice:
+  component   -- values key (camelCase, e.g. dictHub): source of BOTH the
+                 enabled flag and service.port
+  serviceName -- kebab-case Service suffix (e.g. dict-hub), optional; it is
+                 derived from `component` when omitted
+Both spellings must describe the SAME component, otherwise the rule pairs one
+component's Service with another component's port and every request to that
+path fails. `kebabcase component` is exactly the Service suffix for all 15
+component keys, so a mismatch is a render error rather than a silent misroute.
+
+Usage:
+  {{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "apps" "config" .Values.appsIngress) }}
+*/}}
+{{- define "plugin-br-pix-lerian.routedIngress" -}}
+{{- $ctx := .context }}
+{{- $cfg := .config }}
+{{- $component := .component }}
+{{- $fullName := include "plugin-br-pix-lerian.componentFullname" (dict "context" $ctx "component" $component) }}
+{{- /* Collect routes whose target component is enabled. */}}
+{{- $renderedRoutes := list }}
+{{- range $route := $cfg.routes }}
+  {{- $componentValues := index $ctx.Values $route.component }}
+  {{- if not $componentValues }}
+    {{- fail (printf "\n\nERROR: %s ingress route %q names unknown component %q.\n" $component $route.path $route.component) }}
+  {{- end }}
+  {{- $expectedServiceName := kebabcase $route.component }}
+  {{- if and $route.serviceName (ne $route.serviceName $expectedServiceName) }}
+    {{- fail (printf "\n\nERROR: %s ingress route %q sets serviceName %q but component %q resolves to Service suffix %q — the two must name the same component, otherwise the rule pairs one component's Service with another component's port.\n" $component $route.path $route.serviceName $route.component $expectedServiceName) }}
+  {{- end }}
+  {{- if $componentValues.enabled }}
+    {{- $renderedRoutes = append $renderedRoutes $route }}
+  {{- end }}
+{{- end }}
+{{- if $renderedRoutes }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ include "global.namespace" $ctx }}
+  labels:
+    {{- include "plugin-br-pix-lerian.labels" (dict "context" $ctx "component" $component) | nindent 4 }}
+  {{- with $cfg.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $cfg.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with $cfg.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range $host := $cfg.hosts }}
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          {{- range $route := $renderedRoutes }}
+          {{- $componentValues := index $ctx.Values $route.component }}
+          {{- $serviceFullname := include "plugin-br-pix-lerian.componentFullname" (dict "context" $ctx "component" (default (kebabcase $route.component) $route.serviceName)) }}
+          - path: {{ $route.path }}
+            pathType: {{ default "Prefix" $route.pathType }}
+            backend:
+              service:
+                name: {{ $serviceFullname }}
+                port:
+                  number: {{ $componentValues.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Resolve the secret name to use for envFrom.
 When useExistingSecret=true, returns the externally-managed name; otherwise the chart-rendered one.
 */}}

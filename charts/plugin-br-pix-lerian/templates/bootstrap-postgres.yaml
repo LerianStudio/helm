@@ -95,7 +95,7 @@ spec:
             - name: DB_DATABASE
               value: postgres
           command:
-            - /bin/sh
+            - /bin/bash
             - -c
             - |
               set -euo pipefail

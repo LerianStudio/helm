@@ -9,7 +9,7 @@ metadata:
   labels:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
 spec:
-  revisionHistoryLimit: {{ $values.revisionHistoryLimit | default 10 }}
+  revisionHistoryLimit: {{ $values.revisionHistoryLimit }}
   {{- if not $values.autoscaling.enabled }}
   replicas: {{ $values.replicaCount }}
   {{- end }}

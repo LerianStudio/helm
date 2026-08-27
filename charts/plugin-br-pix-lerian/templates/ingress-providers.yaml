@@ -10,54 +10,10 @@ Each path under .Values.providersIngress.routes maps to one component's
 Service. Same enabled-aware rendering as ingress-apps.yaml — routes whose
 target component is disabled are silently skipped, so partial deployments
 render only the path rules with a backing Service.
+
+The rendering logic itself lives in the shared
+"plugin-br-pix-lerian.routedIngress" helper (templates/_helpers.tpl).
 */}}
 {{- if .Values.providersIngress.enabled }}
-{{- $ctx := . }}
-{{- $cfg := .Values.providersIngress }}
-{{- $fullName := include "plugin-br-pix-lerian.componentFullname" (dict "context" $ctx "component" "providers") }}
-{{- $renderedRoutes := list }}
-{{- range $route := $cfg.routes }}
-  {{- $componentValues := index $ctx.Values $route.component }}
-  {{- if and $componentValues $componentValues.enabled }}
-    {{- $renderedRoutes = append $renderedRoutes $route }}
-  {{- end }}
-{{- end }}
-{{- if $renderedRoutes }}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ $fullName }}
-  namespace: {{ include "global.namespace" . }}
-  labels:
-    {{- include "plugin-br-pix-lerian.labels" (dict "context" $ctx "component" "providers") | nindent 4 }}
-  {{- with $cfg.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  {{- with $cfg.className }}
-  ingressClassName: {{ . }}
-  {{- end }}
-  {{- with $cfg.tls }}
-  tls:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-  rules:
-    {{- range $host := $cfg.hosts }}
-    - host: {{ $host | quote }}
-      http:
-        paths:
-          {{- range $route := $renderedRoutes }}
-          {{- $componentValues := index $ctx.Values $route.component }}
-          {{- $serviceFullname := include "plugin-br-pix-lerian.componentFullname" (dict "context" $ctx "component" $route.serviceName) }}
-          - path: {{ $route.path }}
-            pathType: {{ default "Prefix" $route.pathType }}
-            backend:
-              service:
-                name: {{ $serviceFullname }}
-                port:
-                  number: {{ $componentValues.service.port }}
-          {{- end }}
-    {{- end }}
-{{- end }}
+{{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "providers" "config" .Values.providersIngress) }}
 {{- end }}

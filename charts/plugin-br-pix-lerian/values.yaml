@@ -174,7 +174,9 @@ spi:
 
   pdb:
     enabled: true
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -285,10 +287,6 @@ spi:
 
   extraEnvVars: {}
 
-# -----------------------------------------------------------------------------
-# spi/systemplane/api — runtime config plane for SPI
-# -----------------------------------------------------------------------------
-
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
@@ -300,6 +298,10 @@ spi:
     migrationsPath: /migrations
     ttlSecondsAfterFinished: 300
     backoffLimit: 3
+
+# -----------------------------------------------------------------------------
+# spi/systemplane/api — runtime config plane for SPI
+# -----------------------------------------------------------------------------
 
 spiSystemplane:
   enabled: true
@@ -336,7 +338,9 @@ spiSystemplane:
 
   pdb:
     enabled: false
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -444,7 +448,9 @@ adapterProviderMock:
 
   pdb:
     enabled: false
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -556,7 +562,9 @@ dictHub:
 
   pdb:
     enabled: true
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -648,10 +656,6 @@ dictHub:
 
   extraEnvVars: {}
 
-# -----------------------------------------------------------------------------
-# dict/hub/vsync — DICT verification sync worker (background, no ingress)
-# -----------------------------------------------------------------------------
-
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
@@ -663,6 +667,10 @@ dictHub:
     migrationsPath: /migrations
     ttlSecondsAfterFinished: 300
     backoffLimit: 3
+
+# -----------------------------------------------------------------------------
+# dict/hub/vsync — DICT verification sync worker (background, no ingress)
+# -----------------------------------------------------------------------------
 
 dictHubVsync:
   enabled: true
@@ -699,7 +707,9 @@ dictHubVsync:
 
   pdb:
     enabled: false
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -835,7 +845,9 @@ dictProxy:
 
   pdb:
     enabled: true
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -931,7 +943,9 @@ dictSystemplane:
 
   pdb:
     enabled: false
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -1034,7 +1048,9 @@ cobHub:
 
   pdb:
     enabled: true
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -1105,10 +1121,6 @@ cobHub:
 
   extraEnvVars: {}
 
-# -----------------------------------------------------------------------------
-# cob/proxy/api — COB proxy to BCB (BaseConfig only)
-# -----------------------------------------------------------------------------
-
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
@@ -1120,6 +1132,10 @@ cobHub:
     migrationsPath: /migrations
     ttlSecondsAfterFinished: 300
     backoffLimit: 3
+
+# -----------------------------------------------------------------------------
+# cob/proxy/api — COB proxy to BCB (BaseConfig only)
+# -----------------------------------------------------------------------------
 
 cobProxy:
   enabled: true
@@ -1156,7 +1172,9 @@ cobProxy:
 
   pdb:
     enabled: true
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -1252,7 +1270,9 @@ cobSystemplane:
 
   pdb:
     enabled: false
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -1395,9 +1415,14 @@ appsIngress:
   #   - `path`         (string, required): URL path prefix
   #   - `pathType`     (string, optional, default "Prefix"): K8s Ingress pathType
   #   - `component`    (string, required): values-key of the component
-  #                     (camelCase, e.g. dictHub) — used to look up enabled+port
-  #   - `serviceName`  (string, required): kebab-case Service name suffix
-  #                     (e.g. dict-hub) — matches the rendered Service object
+  #                     (camelCase, e.g. dictHub) — the single source of the
+  #                     enabled flag, the Service name AND the backend port
+  #   - `serviceName`  (string, optional): kebab-case Service name suffix
+  #                     (e.g. dict-hub). Derived from `component` when omitted;
+  #                     when set it MUST equal `kebabcase component`, otherwise
+  #                     the render fails. The two spellings always describe the
+  #                     same component — letting them diverge would pair one
+  #                     component's Service with another component's port.
   routes:
     - path: /spi
       pathType: Prefix
@@ -1435,8 +1460,11 @@ appsIngress:
     # "false" for every component here, which makes the app's AuthEnabled() check
     # false and omits the lib-auth handler from the route chain entirely. Set
     # pixauto.configmap.PLUGIN_AUTH_ENABLED="true" (values-template.yaml already
-    # does) BEFORE enabling appsIngress, otherwise the published internal group
-    # is reachable from the ingress with no authentication at all. The bare
+    # does) BEFORE enabling appsIngress. This is no longer prose-only: with this
+    # route present, appsIngress.enabled and pixauto.enabled both true and
+    # PLUGIN_AUTH_ENABLED anything other than "true", templates/ingress-apps.yaml
+    # fails the render rather than publish the internal group unauthenticated.
+    # The bare
     # prefix also keeps /pixauto/readyz reachable through the ingress, which the
     # gethomepage.dev/href dashboard annotation targets.
     - path: /pixauto
@@ -1482,7 +1510,9 @@ adapterLerian:
 
   pdb:
     enabled: false
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -1843,7 +1873,9 @@ pixauto:
 
   pdb:
     enabled: true
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -2017,7 +2049,9 @@ pixautoSystemplane:
 
   pdb:
     enabled: false
-    minAvailable: 0
+    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
+    # explicit null unsets a key). Setting both fails the render.
+    # minAvailable: 1
     maxUnavailable: 1
 
   deploymentStrategy:
@@ -2285,5 +2319,3 @@ rabbitmq:
 # OTEL_EXPORTER_OTLP_ENDPOINT to an external collector for production.
 otel-collector-lerian:
   enabled: false
-
-# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

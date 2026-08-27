@@ -40,7 +40,15 @@ Required inputs in the dict:
 {{- if hasKey $migrationsCfg "enabled" }}
   {{- $migrationsEnabled = $migrationsCfg.enabled }}
 {{- end }}
-{{- if and $componentValues.enabled $migrationsEnabled }}
+{{- /*
+  Skip the Job when the chart-managed Secret carries an empty DATABASE_URL:
+  /migrate -database "" is rejected by golang-migrate (no URL scheme), so the
+  hook would fail the release before any pod starts. The Job is still rendered
+  for useExistingSecret=true — the template cannot inspect an external Secret,
+  and skipping there would silently drop migrations from a valid deployment.
+*/}}
+{{- $hasDatabaseURL := or $componentValues.useExistingSecret (ne (toString (default "" (dig "secrets" "DATABASE_URL" "" $componentValues))) "") -}}
+{{- if and $componentValues.enabled $migrationsEnabled $hasDatabaseURL }}
 {{- $componentFullname := include "plugin-br-pix-lerian.componentFullname" (dict "context" $ctx "component" $serviceName) }}
 {{- $componentImage := include "plugin-br-pix-lerian.componentImage" (dict "context" $ctx "componentValues" $componentValues) }}
 {{- $componentPullPolicy := include "plugin-br-pix-lerian.componentPullPolicy" (dict "context" $ctx "componentValues" $componentValues) }}

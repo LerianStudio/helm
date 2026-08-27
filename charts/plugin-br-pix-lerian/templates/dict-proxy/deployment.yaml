@@ -9,7 +9,7 @@ metadata:
   labels:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
 spec:
-  revisionHistoryLimit: {{ $values.revisionHistoryLimit | default 10 }}
+  revisionHistoryLimit: {{ $values.revisionHistoryLimit }}
   {{- if not $values.autoscaling.enabled }}
   replicas: {{ $values.replicaCount }}
   {{- end }}
@@ -65,17 +65,18 @@ spec:
           Build the env: list when EITHER telemetry is enabled (HOST_IP +
           OTEL_EXPORTER_OTLP_ENDPOINT injected via downward API so each
           pod talks to its node-local OTel collector by default) OR the
-          operator has set extraEnvVars. The configmap-supplied
-          OTEL_EXPORTER_OTLP_ENDPOINT can still be overridden by setting
-          it in the configmap; the K8s rule is "later env entry wins",
-          so the configmap value (via envFrom) is overridden by the
-          explicit env entry below.
+          operator has set extraEnvVars. In Kubernetes, explicit env
+          entries always win over envFrom, so the node-local default is
+          only emitted when the configmap does NOT set a non-empty
+          OTEL_EXPORTER_OTLP_ENDPOINT (values ship the key as "") —
+          otherwise it would silently clobber the operator's endpoint.
           */}}
           {{- $telemetryOn := eq (toString (default "false" $values.configmap.TELEMETRY_ENABLED)) "true" }}
+          {{- $hasOtelEndpoint := ne (toString (default "" $values.configmap.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
           {{- $hasExtras := gt (len $values.extraEnvVars) 0 }}
-          {{- if or $telemetryOn $hasExtras }}
+          {{- if or (and $telemetryOn (not $hasOtelEndpoint)) $hasExtras }}
           env:
-            {{- if $telemetryOn }}
+            {{- if and $telemetryOn (not $hasOtelEndpoint) }}
             - name: HOST_IP
               valueFrom:
                 fieldRef:

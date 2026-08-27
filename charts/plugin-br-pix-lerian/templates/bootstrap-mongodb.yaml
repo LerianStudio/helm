@@ -106,7 +106,13 @@ spec:
               echo "Checking existing MongoDB user..."
               USER_EXISTS=0
 
-              if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'if (db.getSiblingDB("admin").getUser(process.env.MONGO_APP_USER) !== null) { print("EXISTS"); }' | grep -q "EXISTS"; then
+              # Capture the lookup output instead of piping mongosh into grep:
+              # neither `set -e` nor `pipefail` aborts a command used as an `if`
+              # condition, so a connection or auth failure would be misread as
+              # "user does not exist" and send the Job into a createUser loop.
+              # Same pattern as bootstrap-postgres.yaml.
+              USER_LOOKUP=$(mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'if (db.getSiblingDB("admin").getUser(process.env.MONGO_APP_USER) !== null) { print("EXISTS"); }')
+              if [ "$USER_LOOKUP" = "EXISTS" ]; then
                 USER_EXISTS=1
               fi
 

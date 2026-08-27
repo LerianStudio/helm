@@ -29,4 +29,3 @@
   - Pix Automatico (`pixauto`, `pixautoSystemplane`) stays `enabled: false` by
     default, so this single chart serves both the 2.1.0-beta.7 and
     2.1.0-beta.12 deployment lines.
-</content>

@@ -9,54 +9,10 @@ ingress without coupling them.
 
 Each path under .Values.systemplaneIngress.routes maps to one component's
 Service. Same enabled-aware rendering as ingress-apps.yaml.
+
+The rendering logic itself lives in the shared
+"plugin-br-pix-lerian.routedIngress" helper (templates/_helpers.tpl).
 */}}
 {{- if .Values.systemplaneIngress.enabled }}
-{{- $ctx := . }}
-{{- $cfg := .Values.systemplaneIngress }}
-{{- $fullName := include "plugin-br-pix-lerian.componentFullname" (dict "context" $ctx "component" "systemplane") }}
-{{- $renderedRoutes := list }}
-{{- range $route := $cfg.routes }}
-  {{- $componentValues := index $ctx.Values $route.component }}
-  {{- if and $componentValues $componentValues.enabled }}
-    {{- $renderedRoutes = append $renderedRoutes $route }}
-  {{- end }}
-{{- end }}
-{{- if $renderedRoutes }}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ $fullName }}
-  namespace: {{ include "global.namespace" . }}
-  labels:
-    {{- include "plugin-br-pix-lerian.labels" (dict "context" $ctx "component" "systemplane") | nindent 4 }}
-  {{- with $cfg.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  {{- with $cfg.className }}
-  ingressClassName: {{ . }}
-  {{- end }}
-  {{- with $cfg.tls }}
-  tls:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-  rules:
-    {{- range $host := $cfg.hosts }}
-    - host: {{ $host | quote }}
-      http:
-        paths:
-          {{- range $route := $renderedRoutes }}
-          {{- $componentValues := index $ctx.Values $route.component }}
-          {{- $serviceFullname := include "plugin-br-pix-lerian.componentFullname" (dict "context" $ctx "component" $route.serviceName) }}
-          - path: {{ $route.path }}
-            pathType: {{ default "Prefix" $route.pathType }}
-            backend:
-              service:
-                name: {{ $serviceFullname }}
-                port:
-                  number: {{ $componentValues.service.port }}
-          {{- end }}
-    {{- end }}
-{{- end }}
+{{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "systemplane" "config" .Values.systemplaneIngress) }}
 {{- end }}

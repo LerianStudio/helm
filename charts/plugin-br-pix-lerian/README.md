@@ -124,8 +124,10 @@ This chart follows the multi-component layout used by
 
 | Chart version | App image tag |
 |---|---|
-| 1.1.0-beta.2+ | 1.0.0-beta.51+ |
-| 1.0.0 – 1.1.0-beta.1 | (chart was incomplete; do not use) |
+| 2.1.0-beta.13 | 1.0.0-beta.101 |
+
+This chart's version history starts at `2.1.0-beta.13`; the pre-fork 1.x rows
+belong to `plugin-br-pix-switch` and stay in that chart's own README.
 
 There is no in-place upgrade path from the `plugin-br-pix-switch` chart — moving to this chart is a fresh install (cutover), not a `helm upgrade`; the switch chart's own history is kept in [../plugin-br-pix-switch/docs/UPGRADE-1.1.md](../plugin-br-pix-switch/docs/UPGRADE-1.1.md).
 

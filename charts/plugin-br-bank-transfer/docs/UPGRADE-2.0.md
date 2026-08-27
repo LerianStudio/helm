@@ -4,6 +4,7 @@
 
 - **[Overview](#overview)**
 - **[Breaking Changes](#breaking-changes)**
+  - [0. Application Money-Path Breaking Change: Devolution Sweep No Longer Auto-Resends](#0-application-money-path-breaking-change-devolution-sweep-no-longer-auto-resends)
   - [1. New Dependency: lerian-common-helm](#1-new-dependency-lerian-common-helm)
   - [2. Global Datastore Masks Replace Hardcoded Defaults](#2-global-datastore-masks-replace-hardcoded-defaults)
   - [3. ConfigMap Keys Removed or Moved to Masks](#3-configmap-keys-removed-or-moved-to-masks)
@@ -37,6 +38,35 @@ Version 2.0.0 is a **major release** that introduces breaking changes requiring 
 Operators **must** review their datastore configuration, migrate removed ConfigMap keys, and configure the new MongoDB bootstrap job if using external MongoDB. The chart now supports managed-cloud topology presets (AWS, GCP, Azure) and streaming event publication via RedPanda/Kafka.
 
 ## Breaking Changes
+
+### 0. Application Money-Path Breaking Change: Devolution Sweep No Longer Auto-Resends
+
+> ⚠️ **This is the reason 2.0.0 is a major bump on the application side, not the
+> chart refactor below.** It carries a real risk of double-paying a bank if the
+> deploy sequencing below isn't followed. Read this before any of the
+> chart-level changes.
+
+**What changed:**  
+`plugin-br-bank-transfer` v2.0.0 ships [LerianStudio/plugin-br-bank-transfer#291](https://github.com/LerianStudio/plugin-br-bank-transfer/pull/291) (`feat!: align TED transaction contracts and devolution identity`). Two things move together:
+
+1. A new deploy-critical migration, `000028_ted_in_devolution_identity_walk`, which the TED IN poller's inbound drain stays gated behind until it completes.
+2. The devolution sweep **no longer re-dispatches an `STR0010` on its own initiative** when the clearing house never received a devolution — it only asks and records the answer. An operator now moves that money by hand.
+
+**Why it matters — this is a money hazard, not a config change:**  
+Per the app's own `migrations/README.md` ("Operator notes" → "The deploy precondition, in one place"), a **rolling upgrade with old and new binaries coexisting can pay a bank twice**:
+
+- **No previous binary may still be draining the tenant's JD queue** when the migration runs — a pre-2.0.0 pod writes inbound rows under the old identity, invisible to the new credit guard forever, so a redelivered TED can be credited twice.
+- **No pod running a binary whose devolution sweep still auto-resends (anything built before app commit `a73f41a9`, which includes the `1.2.1` this chart previously shipped) may be alive at the same time as a 2.0.0 pod.** One pod that still dispatches is enough: if an aged devolution the clearing house never received gets swept by the old pod while the new one is also up, **two `STR0010`s go out for the same TED to the same paying bank — with no reversal path.** This condition is symmetric: it applies to upgrading *and* to rolling back.
+
+**Operational impact:**  
+The chart's default `bankTransfer.deploymentUpdate` is `RollingUpdate` with `maxSurge: 100%` / `maxUnavailable: 0` — by design, it brings the new pod up *before* retiring the old one. That is exactly the coexistence window this breaking change warns against. **Do not rely on the default rolling strategy for this upgrade.**
+
+Recommended sequencing, validated on `benedita/dev-st` and `benedita/stg-mt`:
+1. Scale `bankTransfer.replicaCount` to `0` and confirm the old pods are fully `Terminated` (not just `Terminating`).
+2. Only then run `helm upgrade` with the `2.0.0` image tag and replicas restored. The migration Job (hook) runs before any new pod exists, and no old binary is ever up at the same time as a new one.
+
+**Migration required:**  
+Yes — this is an operator deploy-sequencing step, not a values.yaml change. See the app's `migrations/README.md` for the full precondition text.
 
 ### 1. New Dependency: lerian-common-helm
 
@@ -458,3 +488,14 @@ The MongoDB bootstrap job now supports TLS connections with optional CA bundle m
 ```yaml
 global:
   externalMon
+```
+
+> ⚠️ **TODO — generation cut off here.** The auto-generated doc stopped mid-sentence
+> at this point and never reached "5. Multi-Tenant Redis CA Certificate Support",
+> "Configuration Reference" (which should cover the new `REQUIRE_UPSTREAM_HTTPS`
+> configmap key and `MULTI_TENANT_REDIS_CA_CERT` secret added alongside the
+> 2.0.0 bump), "Migration Steps", "Preview changes before upgrading", and
+> "Command to upgrade" — all still listed in the Topics index above but absent
+> from the body. Re-run the generator (or write these sections by hand) before
+> merging; an operator following this doc today has no upgrade command and no
+> config reference to finish the job.

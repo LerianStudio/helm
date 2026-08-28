@@ -104,7 +104,7 @@ spec:
             failureThreshold: {{ .Values.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.readinessProbe.path | default "/" }}
+              path: {{ .Values.readinessProbe.path | default "/api/admin/health/readyz" }}
               port: http
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds | default 5 }}

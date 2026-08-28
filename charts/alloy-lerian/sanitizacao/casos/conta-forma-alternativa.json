@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "conta 12880000007785418277 agência 2224"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

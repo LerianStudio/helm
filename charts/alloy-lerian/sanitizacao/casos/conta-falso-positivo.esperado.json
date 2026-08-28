@@ -1,0 +1,4 @@
+{
+  "body": "port=8080 count=7 http_latency_ms:3 http_status_code:200 k8s_pod_name:midaz-ledger-7cd476686-47fww",
+  "descricao": "⚠️ A razao de exigir nome de campo. Uma regra por FORMA mascararia `gateway:6`, `count=7`, `method:03` — indistinguiveis de `branch:1`. MEDIDO: 0 falso positivo."
+}

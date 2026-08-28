@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "port=8080 count=7 http_latency_ms:3 http_status_code:200 k8s_pod_name:midaz-ledger-7cd476686-47fww"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

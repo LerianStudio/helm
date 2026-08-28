@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "cobranca gerada sem inscricao fiscal"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

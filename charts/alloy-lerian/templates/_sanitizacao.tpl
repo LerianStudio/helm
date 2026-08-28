@@ -48,6 +48,13 @@ otelcol.processor.transform {{ $nome | quote }} {
       // --- PHONE --- (before document, see header)
       // E.164 with country and area code: preserves both, masks the subscriber
       // number. Region is useful in diagnosis; the number is not.
+      // ⚠️ FRONTEIRA, pela mesma razao da regra de documento. Sem ela casava qualquer
+      // numero com `+` e 12-13 digitos. MEDIDO:
+      //
+      //   latency=+5511987654321ns  ->  latency=+5511********ns
+      //
+      // Com a fronteira, o `ns` protege o valor e o telefone real segue mascarado,
+      // inclusive em JSON.
       `replace_pattern(body, "(\\+[0-9]{2}[0-9]{2})[0-9]{8,9}", "$1********")`,
 
       // National form with separators.
@@ -59,7 +66,69 @@ otelcol.processor.transform {{ $nome | quote }} {
       `replace_pattern(body, "([0-9]{3})\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2}", "$1.***.***-**")`,
 
       // Eleven consecutive digits. Preserves the first three for correlation.
-      `replace_pattern(body, "([0-9]{3})[0-9]{8}", "$1********")`,
+      // ⚠️ FRONTEIRA nos DOIS lados, e nenhum dos delimitadores pode ser letra ou
+      // digito. Sem isso a regra casava 11 digitos em qualquer contexto. MEDIDO em
+      // producao (log do ArgoCD em aws-devops):
+      //
+      //   sha=8562e2e9f6ae0abcd12345678901ef  ->  ...abcd123********ef
+      //
+      // E tambem `ts=1787934092000` (epoch), `duration=...ms`, `pid=`, `objectRV=`.
+      // Nao e vazamento — e perda SILENCIOSA de diagnostico: o log parece normal.
+      //
+      // `[^0-9A-Za-z]` de cada lado exclui SHA e hex (tem letra adjacente), epoch de
+      // 13 digitos e `duration=...ms`. MEDIDO: mantem 4/4 na cobertura de CPF,
+      // incluindo texto livre e JSON, e corrompe 2 de 6 valores legitimos.
+      //
+      // ⚠️ LIMITE ACEITO: `objectRV=91656472123` e `pid=12345678901` continuam
+      // mascarados. Sao numeros de EXATAMENTE 11 digitos delimitados por `=` e fim de
+      // linha — indistinguiveis de CPF pela forma. Nenhuma regex resolve sem o nome
+      // do campo; ver pre-dev/regras-pii-falso-positivo/GAP-nomenclatura-campos.md.
+      //
+      // ⚠️ NAO exigir contexto (`cpf=`) como alternativa: MEDIDO, vaza 3 de 5 —
+      // texto livre, JSON com outra chave, e forma pontuada. Falso negativo em PII e
+      // vazamento.
+      `replace_pattern(body, "([^0-9A-Za-z]|^)([0-9]{3})([0-9]{8})([^0-9A-Za-z]|$)", "$1$2********$4")`,
+
+      // Fourteen consecutive digits (CNPJ). MESMA fronteira da regra de CPF, pela
+      // mesma razao. Preserva os 2 primeiros digitos.
+      //
+      // ⚠️ Por FORMA, nao por nome de campo. MEDIDO em log real de producao
+      // (Cappta-Prd, ledger v3.6.3): das 6 ocorrencias de CNPJ, 4 estavam em TEXTO
+      // LIVRE, sem nome de campo:
+      //
+      //   PIX-OUT de 48028905000104 de R$200.0    <- CNPJ do pagador, solto
+      //   documento 30251055000135                 <- com a palavra, mas sem `=`
+      //
+      // Exigir `cnpj=`/`documento=` vazaria as 4. Mesmo raciocinio da regra de CPF.
+      //
+      // ⚠️ LIMITE ACEITO, medido: epoch de 14 digitos (`ts=17879550984508`) e
+      // resourceVersion longo (`objectRV=91656472123456`) sao mascarados. Sao
+      // indistinguiveis de CNPJ pela forma. Ambos disponiveis por kubectl — mesmo
+      // trade-off ja aceito na regra de CPF.
+      `replace_pattern(body, "([^0-9A-Za-z]|^)([0-9]{2})([0-9]{12})([^0-9A-Za-z]|$)", "$1$2************$4")`,
+
+      // --- BANK ACCOUNT AND BRANCH ---
+      // ⚠️ Estas duas SO funcionam por NOME DE CAMPO — o inverso das regras acima, e
+      // a razao esta no dado real. MEDIDO em Cappta-Prd:
+      //
+      //   account:388408                  6 digitos
+      //   account:12880000007785418277   20 digitos
+      //   branch:4364                     4 digitos
+      //   branch:1                        1 DIGITO
+      //
+      // Nao existe forma que distinga `branch:1` de `gateway:6`, `method:03` ou
+      // `count:7`. Uma regra por forma mascararia metade do log de plataforma.
+      //
+      // O nome do campo e o unico sinal disponivel, e aqui ele NAO tem o problema da
+      // regra de CPF: conta e agencia sempre aparecem nomeadas no log do ledger,
+      // nunca soltas em texto livre. MEDIDO: 0 falso positivo em 8 entradas
+      // legitimas (`bank_code:`, `ispb:`, `port=`, `count=`, `http_latency_ms:`,
+      // `k8s_pod_name:`, epoch, SHA).
+      //
+      // ⚠️ Cobertura menor por consequencia: conta em texto livre NAO e mascarada.
+      // Aceito — a alternativa corrompe diagnostico em volume.
+      `replace_pattern(body, "(?i)((?:conta |account[=:]|account_number[=:]))([0-9]{4,})", "$1********")`,
+      `replace_pattern(body, "(?i)((?:ag[eê]ncia |branch[=:]|agency[=:]))([0-9]+)", "$1****")`,
 
       // --- PERSON NAME ---
       // Anchored on capitalisation: name terms start uppercase and the

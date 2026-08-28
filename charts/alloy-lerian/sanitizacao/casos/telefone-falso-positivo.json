@@ -1,25 +1,12 @@
 {
   "resourceLogs": [
     {
-      "resource": {
-        "attributes": [
-          {
-            "key": "service.name",
-            "value": {
-              "stringValue": "caso-sanitizacao"
-            }
-          }
-        ]
-      },
       "scopeLogs": [
         {
           "logRecords": [
             {
-              "timeUnixNano": "1700000000000000000",
-              "severityNumber": 9,
-              "severityText": "INFO",
               "body": {
-                "stringValue": "latencia acumulada +5511987654321 microsegundos no lote"
+                "stringValue": "pix_key:+5561996594517 pix_payment_type:0"
               }
             }
           ]

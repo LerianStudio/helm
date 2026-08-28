@@ -1,5 +1,5 @@
 {
-  "body": "latencia acumulada +5511987654321 microsegundos no lote",
-  "descricao": "Numero com sinal de mais que nao e telefone. A regra E.164 exige 12-13 digitos apos o '+', sem contexto de campo.",
+  "body": "pix_key:+5561******** pix_payment_type:0",
+  "descricao": "REESCRITO em 2026-08-28 apos MEDIR log real. O caso anterior ('latencia acumulada +5511987654321 microsegundos') era IRREAL: 5511987654321 microsegundos = 63 dias, ninguem loga isso. Media em Cappta-Prd (2 dias, log de producao): TODA ocorrencia de '+' com 12-13 digitos era telefone/chave Pix de verdade — ledger update_operation.go:31 e plugin-br-pix-indirect-btg. ZERO falso positivo. Logo a regra de telefone NAO precisa de fronteira, e este caso passa a exercer a direcao normal: chave Pix E.164 real DEVE ser mascarada, preservando pais+DDD (+5561) para diagnostico de rota.",
   "categoria": "falsoPositivo"
 }

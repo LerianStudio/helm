@@ -163,9 +163,22 @@ mesmas credencial e URL respondem a `ListCollectors` e `ListPipelines` — chama
 de enumeração da stack:
 
 ```bash
-curl -d '{}' -u "<stack-id>:<token>" \
+# ⚠️ O header Content-Type é OBRIGATÓRIO: a API é Connect RPC e responde 415 sem
+# ele, porque `curl -d` sozinho envia application/x-www-form-urlencoded.
+curl -X POST -H 'Content-Type: application/json' -d '{}' -u "<stack-id>:<token>" \
   https://fleet-management-<stack>.grafana.net/collector.v1.CollectorService/ListCollectors
 ```
+
+Pipelines ficam em outro serviço, e trocar o par serviço/método dá 404:
+
+```bash
+curl -X POST -H 'Content-Type: application/json' -d '{}' -u "<stack-id>:<token>" \
+  https://fleet-management-<stack>.grafana.net/pipeline.v1.PipelineService/ListPipelines
+```
+
+Para comparar o que está publicado com o repositório, use
+`sanitizacao/verificar-fleet.sh` em vez de ler a saída à mão — ele confere as
+regras **na ordem** e acusa pipeline com exportador próprio.
 
 E o escopo mínimo de uma access policy é a **stack inteira**: seletores de rótulo,
 que seriam o mecanismo de sub-escopo, valem só para métricas e logs — não para

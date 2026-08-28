@@ -88,13 +88,22 @@ remotecfg {
   // e nada chegando. Por isso os quatro primeiros são DERIVADOS, não digitados no
   // values de cada ambiente.
   //
-  // `platform` e `collector.os`: VERIFICADO na Pipeline API desta stack — os 5
-  // pipelines que a Grafana gera por padrão casam por `platform="kubernetes"` e
-  // `collector.os="linux"|"darwin"|"windows"`. São invariantes deste chart (só roda
-  // em Kubernetes, imagem Linux), então não há o que configurar.
+  // `platform`: os 5 pipelines que a Grafana gera por padrão casam por
+  // `platform="kubernetes"` — VERIFICADO na Pipeline API desta stack. É invariante
+  // deste chart (só roda em Kubernetes), então não há o que configurar.
+  //
+  // ⚠️ `collector.os` NÃO PODE SER DECLARADO AQUI, e a lição custou um
+  // CrashLoopBackOff em devops (2026-08-27). O agente recusa a config inteira:
+  //
+  //   Failed to evaluate service: decoding configuration:
+  //   "collector" is a reserved namespace for remotecfg attribute keys
+  //
+  // O prefixo `collector.` é reservado e preenchido pelo PRÓPRIO agente — é dele
+  // que vêm `collector.os` e `collector.ID`. Os matchers dos pipelines usam
+  // `collector.os="linux"`, o que me levou a supor que era nossa responsabilidade
+  // declarar. Não é: quem casa o matcher é o valor que o agente injeta.
   attributes = {
     "platform"     = "kubernetes",
-    "collector.os" = "linux",
     // Permite pipeline POR CLIENTE: um matcher `client_id="acme-prd"` entrega
     // configuração só àquele cluster. Mesmo valor que marca as séries, então o
     // que se vê no painel é o que se endereça no Fleet.

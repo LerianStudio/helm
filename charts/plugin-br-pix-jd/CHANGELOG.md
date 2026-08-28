@@ -3,6 +3,20 @@
 ## [0.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.0)
 
 - **Features:**
+  - Added support for Valkey embedded, similar to existing Postgres functionality.
+
+- **Fixes:**
+  - Aligned the embedded Postgres setup with the boilerplate, similar to Valkey.
+
+Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.3.0...plugin-br-pix-jd-v0.4.0)
+
+---
+
+## [0.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.0)
+
+- **Features:**
   - Suporta Valkey embarcado, como o Postgres já faz.
 
 - **Fixes:**

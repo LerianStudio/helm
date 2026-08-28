@@ -1,0 +1,5 @@
+{
+  "body": "token_count=42 requisicoes processadas",
+  "descricao": "Campo que contem 'token' mas cujo valor e contagem numerica curta, abaixo do minimo de 8 caracteres da regra.",
+  "categoria": "falsoPositivo"
+}

@@ -1,0 +1,5 @@
+{
+  "body": "account_created=true ordem processada",
+  "descricao": "Termos que se parecem com os prefixos acc_/ord_ da regra, mas sem o sublinhado no formato que ela exige.",
+  "categoria": "falsoPositivo"
+}

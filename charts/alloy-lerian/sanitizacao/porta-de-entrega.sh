@@ -69,7 +69,7 @@ fi
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "[4/6] Cobertura: cada classe tem as 4 categorias obrigatorias"
+echo "[4/6] Cobertura: cada classe tem TODAS as categorias obrigatorias"
 # ---------------------------------------------------------------------------
 # A lista de classes e DERIVADA dos arquivos de caso, nao fixada aqui.
 #
@@ -81,7 +81,22 @@ echo "[4/6] Cobertura: cada classe tem as 4 categorias obrigatorias"
 #
 # 'interacao-*' e 'risco-*' sao casos transversais, nao classes: nomeiam
 # cenarios entre classes e nao seguem o eixo de 4 categorias.
-CATEGORIAS=(canonico forma-alternativa ausente preservacao-fragmento)
+# ⚠️ `falso-positivo` acrescentada em 2026-08-28, e a razao esta em producao: a
+# regra de documento mascarava SHA de commit, resourceVersion e timestamp epoch.
+# MEDIDO no log de aws-devops (evento do ArgoCD):
+#
+#   msg="Partial sync operation to 8562e2e9f6ae0abcd12345678901ef succeeded"
+#   -> ...abcd123********ef...
+#
+# As 4 categorias anteriores testavam UMA direcao: "entrada COM PII -> mascarou?".
+# A categoria `ausente` parecia cobrir o inverso, mas os 8 casos dela eram texto
+# SEM DIGITO ALGUM ("pedido processado sem identificador pessoal"), o que nao
+# exercita a regra. O gate passava 36/36 com dois defeitos em producao.
+#
+# `falso-positivo` = entrada que SE PARECE com a classe mas nao e PII, e cuja saida
+# tem de ser IDENTICA a entrada. Perda de diagnostico e silenciosa: o log parece
+# normal, so o valor esta corrompido.
+CATEGORIAS=(canonico forma-alternativa ausente preservacao-fragmento falso-positivo)
 mapfile -t CLASSES < <(
   find "${RAIZ}/casos" -name '*.json' ! -name '*.esperado.json' -printf '%f\n' \
     | sed 's/\.json$//' \
@@ -105,7 +120,10 @@ for classe in "${CLASSES[@]}"; do
   if [ ${#faltando[@]} -gt 0 ]; then
     erro "classe '${classe}' sem as categorias: ${faltando[*]}"
   else
-    ok "classe '${classe}': 4/4 categorias"
+    # Contagem DERIVADA da lista, nao fixa: com "4/4" fixo, acrescentar uma
+    # categoria e esquecer aqui reportaria 4/4 numa classe com 4 de 5 — verde
+    # enganoso, que e o modo de falha que este gate existe para evitar.
+    ok "classe '${classe}': ${#CATEGORIAS[@]}/${#CATEGORIAS[@]} categorias"
   fi
 done
 

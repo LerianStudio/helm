@@ -1,0 +1,5 @@
+{
+  "body": "latencia acumulada +5511987654321 microsegundos no lote",
+  "descricao": "Numero com sinal de mais que nao e telefone. A regra E.164 exige 12-13 digitos apos o '+', sem contexto de campo.",
+  "categoria": "falsoPositivo"
+}

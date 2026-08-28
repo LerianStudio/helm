@@ -19,7 +19,7 @@
               "severityNumber": 9,
               "severityText": "INFO",
               "body": {
-                "stringValue": "account_created=true ordem processada"
+                "stringValue": "acc_metadata_cache_hit=true saldo consultado"
               }
             }
           ]

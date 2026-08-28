@@ -85,7 +85,7 @@ remotecfg {
   // registra e nunca recebe configuração.
   //
   // O modo de falha é silencioso — pod Running, log mostrando registro bem-sucedido,
-  // e nada chegando. Por isso os quatro primeiros são DERIVADOS, não digitados no
+  // e nada chegando. Por isso os TRÊS abaixo são DERIVADOS, não digitados no
   // values de cada ambiente.
   //
   // `platform`: os 5 pipelines que a Grafana gera por padrão casam por

@@ -63,6 +63,22 @@
       "additionalProperties": true,
       "type": "object"
     },
+    "sanitizacao": {
+      "description": "Sanitizacao de dado regulado. local.enabled=true (padrao): regras vem do ConfigMap deste chart, unico modo coberto pela porta de entrega. false: cede a sanitizacao de log de APLICACAO a pipeline do Fleet, e o log passa a ser DESCARTADO enquanto essa via nao entregar (falha segura). Eventos de cluster seguem mascarados localmente nos dois casos.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "local": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
     "singleton": {
       "additionalProperties": true,
       "type": "object"

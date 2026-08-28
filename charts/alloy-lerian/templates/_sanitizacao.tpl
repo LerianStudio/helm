@@ -27,11 +27,17 @@ inverting it:
                           "Ana ********** Beatriz Costa Lima": the full name
                           stays exposed behind a decorative mask
 
-Known and accepted false positive: the document rule masks ANY 11+ digit run,
-including transaction identifiers and latency values. Measured at roughly 2% of
-log lines. Accepted because a false positive costs legibility while a false
-negative leaks a document. Requiring a field prefix was evaluated and rejected:
-the canonical case is a bare document in running text.
+⚠️ OBSOLETO ATE 2026-08-28, corrigido: este paragrafo dizia que a regra de
+documento mascara "ANY 11+ digit run", com ~2% das linhas afetadas. Isso era
+verdade e deixou de ser — as regras de documento e CNPJ agora exigem FRONTEIRA
+que nao seja letra nem digito dos dois lados, o que exclui SHA, hex, epoch de 13
+digitos e `duration=...ms`. Ver o comentario de cada regra abaixo para o que
+MEDIDO permanece como limite aceito.
+
+Requiring a field prefix was evaluated and rejected, and this remains true: the
+canonical case is a bare document in running text. MEDIDO em log de producao
+(Cappta-Prd): `PIX-OUT de 05147290150` e `PIX-OUT de 48028905000104` — CPF e CNPJ
+sem nome de campo. Exigir `cpf=`/`cnpj=` vazaria esses.
 */}}
 {{- define "alloy-lerian.config.sanitizacao" -}}
 {{- $nome := .nome | default "sanitizacao" -}}

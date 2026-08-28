@@ -933,6 +933,46 @@ receiver:
   preserveLegacyTimeouts: false
 
 # ---------------------------------------------------------------------------
+# SANITIZAÇÃO DE DADO REGULADO
+# ---------------------------------------------------------------------------
+# ⚠️ MUDAR ISTO É DECISÃO SOBRE DADO DE TITULAR. Leia até o fim.
+#
+# `local.enabled: true` (padrão): as regras vêm do ConfigMap deste chart. É o
+# único modo verificado de ponta a ponta pela porta de entrega
+# (`sanitizacao/porta-de-entrega.sh`), que roda em todo PR e semanalmente.
+#
+# `local.enabled: false`: cede a sanitização de log de APLICAÇÃO a uma pipeline
+# publicada no Fleet Management. Existe porque corrigir uma regra pelo chart exige
+# versão nova e cada cliente BYOC aplica quando quer — medido em semanas. Pelo
+# Fleet, propaga em 1 minuto (`poll_frequency`).
+#
+# ⚠️ O QUE ACONTECE AO DESLIGAR, e não é o óbvio:
+#
+#   - a ingestão de log passa a ser RECUSADA na borda, não descartada em silêncio.
+#     MEDIDO contra o agente real: `POST /v1/logs` responde
+#     `503 {"code":14,"message":"telemetry type is not supported"}`, enquanto
+#     `/v1/metrics` segue em 200. A aplicação vê o erro e o SDK retém em buffer,
+#     em vez de considerar entregue o que foi jogado fora.
+#     Falha segura deliberada: sem máscara local, a alternativa seria enviar PII
+#     em claro. Perder log é recuperável; vazar dado de titular não.
+#   - eventos de cluster CONTINUAM mascarados localmente. Eles não passam pelo
+#     receptor OTLP, então não há via alternativa para ceder.
+#   - a porta de entrega deixa de cobrir o que roda em produção, porque as regras
+#     passam a vir de fora do repositório. Auditar o publicado no Fleet passa a
+#     ser obrigação, não opção.
+#
+# ⚠️ PRÉ-REQUISITO ANTES DE DESLIGAR EM QUALQUER CLUSTER: o pipeline do Fleet tem
+# de estar COMPROVADAMENTE entregando. A porta 4318 não coexiste — medido:
+# `bind: address already in use`. Não é possível subir a via nova em paralelo e
+# depois desligar a antiga; há uma janela cega entre os dois passos.
+#
+# Ver docs/FLEET-MANAGEMENT.md e
+# pre-dev/alloy-collector-client/proxima-frente-pii-via-fleet.md.
+sanitizacao:
+  local:
+    enabled: true
+
+# ---------------------------------------------------------------------------
 # IN-TRANSIT DATA INSPECTION — own profile only
 # ---------------------------------------------------------------------------
 # The feature streams RAW pipeline payloads: log bodies and span attributes
@@ -969,8 +1009,16 @@ logging:
 # Uma pipeline remota com exportador próprio teria caminho de saída paralelo que
 # nunca passa pelo mascaramento.
 #
-# Mitigação é de POLÍTICA, não de config: usar Fleet Management para coleta e
-# descoberta, mantendo a EXPORTAÇÃO local. Ver docs/FLEET-MANAGEMENT.md.
+# ⚠️ CORRIGIDO 2026-08-28. Este comentário propunha como mitigação "usar Fleet
+# para coleta e descoberta, mantendo a EXPORTAÇÃO local". Essa política NÃO é
+# implementável, e o teste é que mostrou: o agente RECUSA pipeline remota sem
+# exportador próprio. Não é questão de disciplina, é impossibilidade técnica.
+#
+# A mitigação que resta é `sanitizacao.local.enabled`: enquanto ela for true, o
+# log de aplicação só sai mascarado pela config local, e uma pipeline remota que
+# tente exportar log por fora tem caminho paralelo — o que o gate não vê. Auditar
+# o que está publicado no Fleet é parte do controle, não opcional.
+# Ver docs/FLEET-MANAGEMENT.md.
 # ⚠️ LIGADO POR PADRÃO, e isso significa que url/username/token são OBRIGATÓRIOS:
 # um install sem eles FALHA NO RENDER, com mensagem dizendo o que copiar da
 # interface. É deliberado — a alternativa seria omitir o bloco remotecfg em

@@ -215,7 +215,33 @@ otelcol.processor.filter "ruido" {
 
   output {
     metrics = [otelcol.processor.batch.agrupamento.input]
+{{- if .Values.sanitizacao.local.enabled }}
     logs    = [otelcol.processor.transform.sanitizacao.input]
+{{- else }}
+    // ⚠️ FALHA SEGURA, deliberada: com a sanitizacao local desligada os logs NAO
+    // seguem para o agrupamento.
+    //
+    // A alternativa (encaminhar direto ao agrupamento) enviaria log de aplicacao
+    // SEM MASCARA para a Grafana Cloud. MEDIDO em producao que esse log carrega
+    // CPF, CNPJ, nome completo e chave Pix — ver
+    // pre-dev/regras-pii-falso-positivo/ACHADO-pii-em-claro-byoc.md.
+    //
+    // MEDIDO contra o agente real (v1.18.1, imagem por digest), com a MESMA
+    // entrada que a cadeia ligada entrega mascarada. O comportamento e melhor que
+    // descarte silencioso: a lista vazia faz o receptor OTLP deixar de anunciar o
+    // sinal, e a ingestao e RECUSADA na borda —
+    //
+    //   POST /v1/logs     -> 503 {"code":14,"message":"telemetry type is not supported"}
+    //   POST /v1/metrics  -> 200  (metricas e traces seguem intactos)
+    //
+    // A aplicacao ve o erro e o SDK retem em buffer, em vez de considerar
+    // entregue o que foi jogado fora. Perder log e recuperavel; vazar PII de
+    // titular nao.
+    //
+    // Quem desliga esta flag assume entregar a sanitizacao por outra via
+    // (pipeline do Fleet) e fica sem log de aplicacao enquanto ela nao entregar.
+    logs    = []
+{{- end }}
 {{- if .Values.spanMetrics.enabled }}
     // Traces fan out: the span itself continues to the destination unchanged,
     // AND feeds the RED derivation. The concentrator downstream sees no
@@ -297,7 +323,13 @@ otelcol.connector.spanmetrics "red" {
 // is exactly why correctness cannot depend on this mechanism reporting failure.
 // The delivery gate asserts each rule against a known input and expected
 // output, and blocks release on mismatch.
+//
+// ⚠️ Desligavel por `sanitizacao.local.enabled: false`, e desligar tem custo: o
+// estagio 5 passa a DESCARTAR os logs em vez de encaminha-los sem mascara. Ver o
+// comentario da falha segura no estagio 5.
+{{- if .Values.sanitizacao.local.enabled }}
 {{ include "alloy-lerian.config.sanitizacao" (dict "nome" "sanitizacao" "saida" "otelcol.processor.batch.agrupamento.input") }}
+{{- end }}
 
 // STAGE 7 — batching. Must be last: enrichment operates on individual records,
 // and batching destroys the connection context stage 2 depends on.
@@ -764,6 +796,12 @@ otelcol.processor.filter "perimetro_eventos" {
 // the application put in it. The SAME rule set as the node role, rendered from
 // one source: duplicating the rules would create two sets that can drift, and a
 // drifted copy is worse than no copy because it still looks protected.
+//
+// ⚠️ NAO obedece `sanitizacao.local.enabled`, e isso e deliberado. Aquela flag
+// existe para ceder a sanitizacao de log de APLICACAO a um pipeline do Fleet, que
+// recebe pelo receptor OTLP. Eventos de cluster nao passam por ali — o proprio
+// agente os coleta da API do K8s neste papel singleton. Nao ha via alternativa
+// para ceder, logo desligar aqui so criaria vazamento sem ganho.
 {{ include "alloy-lerian.config.sanitizacao" (dict "nome" "sanitizacao_eventos" "saida" "otelcol.exporter.otlphttp.destino.input") }}
 
 // Events do not pass through the node role, so they need their own origin mark.

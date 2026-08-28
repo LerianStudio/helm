@@ -126,7 +126,25 @@ otelcol.processor.transform {{ $nome | quote }} {
       // --- OPAQUE RESOURCE IDENTIFIER ---
       // Preserves the semantic prefix and four characters: enough to correlate
       // records for the same resource, not enough to reconstruct the value.
-      `replace_pattern(body, "((?:acc|txn|cus|ord)_[0-9a-zA-Z]{4})[0-9a-zA-Z]{4,}", "$1******")`,
+      // ⚠️ O GRUPO 2 CAPTURA O DELIMITADOR, e nao e enfeite. Sem ele a regra casava
+      // NOME DE CAMPO que comeca com o prefixo. MEDIDO:
+      //
+      //   acc_metadata_cache_hit=true  ->  acc_meta******_cache_hit=true
+      //
+      // E o comportamento era erratico, o que e pior que errado de forma
+      // consistente: `acc_metadata` casava (8 letras seguidas apos os 4), mas
+      // `acc_balance_snapshot` nao (o `_` interrompia antes dos 4 extras). Um campo
+      // corrompido, outro intacto, sem logica visivel para quem le o log.
+      //
+      // `[^0-9a-zA-Z_]|$` exige que o valor termine em delimitador que NAO seja
+      // sublinhado nem alfanumerico. Nao usa lookahead de proposito: o passo 3 do
+      // gate o proibe, e o agente nao o suporta.
+      //
+      // ⚠️ LIMITE CONHECIDO: id opaco com `_` INTERNO deixa de ser mascarado
+      // (`acc_9f8e_7d6c` fica intacto) — falso NEGATIVO. Aceito porque o contrato
+      // documentado desta regra e prefixo + 4 caracteres, e nenhum formato de id
+      // com sublinhado interno foi observado. Se aparecer, esta e a regra a revisar.
+      `replace_pattern(body, "((?:acc|txn|cus|ord)_[0-9a-zA-Z]{4})[0-9a-zA-Z]{4,}([^0-9a-zA-Z_]|$)", "$1******$2")`,
     ]
   }
 

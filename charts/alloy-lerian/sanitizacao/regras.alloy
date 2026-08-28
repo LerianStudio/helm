@@ -127,7 +127,7 @@ otelcol.processor.transform "sanitizacao" {
       // Preserva o prefixo semantico e os 4 primeiros caracteres — suficiente
       // para correlacionar registros do mesmo recurso em diagnostico, sem
       // permitir reconstruir o identificador.
-      `replace_pattern(body, "((?:acc|txn|cus|ord)_[0-9a-zA-Z]{4})[0-9a-zA-Z]{4,}", "$1******")`,
+      `replace_pattern(body, "((?:acc|txn|cus|ord)_[0-9a-zA-Z]{4})[0-9a-zA-Z]{4,}([^0-9a-zA-Z_]|$)", "$1******$2")`,
     ]
   }
 

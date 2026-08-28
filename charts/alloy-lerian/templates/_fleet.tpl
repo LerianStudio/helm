@@ -93,7 +93,17 @@ remotecfg {
   // deste chart (só roda em Kubernetes), então não há o que configurar.
   //
   // ⚠️ `collector.os` NÃO PODE SER DECLARADO AQUI, e a lição custou um
-  // CrashLoopBackOff em devops (2026-08-27). O agente recusa a config inteira:
+  // CrashLoopBackOff em devops (2026-08-27).
+  //
+  // ⚠️ E NENHUMA VALIDAÇÃO ESTÁTICA PEGA ISSO. Medido com a versão exata do agente
+  // (v1.18.1), na config que quebrou: `alloy fmt` exit 0, `alloy validate` exit 0 —
+  // no pod E em Docker, inclusive num trecho isolado só com o remotecfg. O erro é de
+  // decodificação de SERVIÇO, e só aparece quando o agente carrega no `run`.
+  //
+  // Consequência para quem editar este bloco: mudança em `remotecfg` exige subir num
+  // anel de menor risco e olhar o pod. Não há atalho por ferramenta.
+  //
+  // O agente recusa a config inteira:
   //
   //   Failed to evaluate service: decoding configuration:
   //   "collector" is a reserved namespace for remotecfg attribute keys

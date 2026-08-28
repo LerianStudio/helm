@@ -60,6 +60,18 @@ singleton:
             key: fleet-token
             optional: false
 
+# ⚠️ OBRIGATÓRIO no perfil client desde a guarda de perímetro de namespace: o chart
+# RECUSA o render com `profile: client` e `onlyNamespaces` vazia. A razão é que em
+# cluster do cliente o perímetro é POSITIVO — coletamos consumo apenas dos namespaces
+# onde instalamos nossos produtos, porque medir carga alheia é pagar por ela.
+#
+# Espelha `examples/values-cliente.yaml`: se divergir, a porta de render valida um
+# caminho que ninguém instala.
+collection:
+  onlyNamespaces:
+    - ^midaz$
+    - ^plugin-.*
+
 # Gestão remota DESLIGADA explicitamente. O default do chart é `true`, e ligada
 # exige url/username/token reais — que uma fixture de render não tem e não deve
 # inventar. Desligar aqui é a decisão sendo declarada, não omissão.

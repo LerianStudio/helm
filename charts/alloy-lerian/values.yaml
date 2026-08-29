@@ -948,13 +948,14 @@ receiver:
 #
 # ⚠️ O QUE ACONTECE AO DESLIGAR, e não é o óbvio:
 #
-#   - a ingestão de log passa a ser RECUSADA na borda, não descartada em silêncio.
-#     MEDIDO contra o agente real: `POST /v1/logs` responde
-#     `503 {"code":14,"message":"telemetry type is not supported"}`, enquanto
-#     `/v1/metrics` segue em 200. A aplicação vê o erro e o SDK retém em buffer,
-#     em vez de considerar entregue o que foi jogado fora.
-#     Falha segura deliberada: sem máscara local, a alternativa seria enviar PII
-#     em claro. Perder log é recuperável; vazar dado de titular não.
+#   - ⚠️ o log de aplicação é ACEITO e DESCARTADO em silêncio. CORRIGIDO em
+#     2026-08-29: este texto afirmava que a ingestão seria RECUSADA na borda com
+#     `503 telemetry type is not supported`. Aquela medição usou um config
+#     RECORTADO, sem o receptor OTLP. Com o receptor presente — que é o caso real,
+#     porque ele é compartilhado com métricas e traces — a aplicação recebe 200 e
+#     considera entregue o que foi jogado fora.
+#     Ainda é preferível a enviar PII em claro, mas NÃO é falha segura ruidosa:
+#     é perda silenciosa, e exige o alerta O11Y-LOG-001 para ser percebida.
 #   - eventos de cluster CONTINUAM mascarados localmente. Eles não passam pelo
 #     receptor OTLP, então não há via alternativa para ceder.
 #   - a porta de entrega deixa de cobrir o que roda em produção, porque as regras

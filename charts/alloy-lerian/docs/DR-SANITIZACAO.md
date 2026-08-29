@@ -158,18 +158,56 @@ idêntico ao padrão do chart. As 28 regras (14 × 2 cadeias) aparecem com
 
 ## O que se perde durante a indisponibilidade
 
-O log de aplicação daquele período. Medido contra o agente real: a ingestão é
-**recusada na borda**, não descartada em silêncio —
+O log de aplicação daquele período, **sem aviso**.
 
-    POST /v1/logs     ->  503 {"code":14,"message":"telemetry type is not supported"}
+⚠️ **CORRIGIDO em 2026-08-29.** Esta seção afirmava que a ingestão é *recusada na
+borda* com `503 {"code":14,"message":"telemetry type is not supported"}`, e que o SDK
+reteria em buffer.
+
+**Estava errado, e o erro era de método.** Aquela medição usou um config **recortado**,
+do qual eu havia removido o receptor OTLP para isolar a cadeia de log. Sem receptor, o
+sinal deixa de ser anunciado e o 503 aparece.
+
+Com o receptor **presente** — o caso real, porque ele é compartilhado com métricas e
+traces — o comportamento é:
+
+    POST /v1/logs     ->  200   (aceito, e DESCARTADO adiante)
     POST /v1/metrics  ->  200
 
-A aplicação vê o erro, e o SDK OTLP retém em buffer conforme sua própria política.
-Parte do log pode ser recuperada quando a via volta; o que exceder o buffer, não.
+A aplicação considera entregue o que foi jogado fora. **Não há buffer, não há retry, não
+há sinal.** É perda silenciosa, e é o motivo de o alerta `O11Y-LOG-001` ser
+pré-requisito e não complemento.
 
 ⚠️ Isso é melhor que a alternativa: encaminhar log sem máscara enviaria PII de titular
 em claro. Medido em produção que esse log carrega CPF, CNPJ, nome completo e chave Pix
 — ver `pre-dev/regras-pii-falso-positivo/ACHADO-pii-em-claro-byoc.md`.
+
+## ⚠️ O desenho da transição está EM ABERTO — teste de 2026-08-29
+
+O teste em aws-devops mostrou que **ceder apenas os logs ao Fleet é impossível** com o
+desenho atual, e o documento inteiro abaixo pressupunha o contrário.
+
+O que foi medido, com a flag desligada em cluster real:
+
+    linha  79 do config:  receptor OTLP continua ocupando a porta 4318
+    linha 238 do config:  logs = []   -> descarta
+
+O receptor **não** foi tornado condicional, e não podia ser: ele é **compartilhado**
+com métricas e traces. Removê-lo derrubaria os três sinais.
+
+Consequência: a porta 4318 nunca libera, a pipeline do Fleet nunca sobe, e o log é
+recebido e jogado fora.
+
+**Decisão tomada (2026-08-29):** a pipeline do Fleet passará a gerenciar os **três
+sinais** na porta padrão 4318. A porta não muda — a 4328 usada no teste existiu só para
+reduzir impacto e não é o padrão.
+
+⚠️ Isso amplia o risco do DR: nesse desenho, se o Fleet falhar, **param os três
+sinais**, não só o log. O alerta `O11Y-LOG-001` cobre a detecção de log; será preciso
+equivalente para métricas.
+
+Enquanto essa mudança não for feita, **não desligue `sanitizacao.local.enabled` em
+cluster nenhum** — o efeito é perda silenciosa de log, sem ganho.
 
 ## Voltando para a via do Fleet, depois
 

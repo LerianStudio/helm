@@ -226,20 +226,26 @@ otelcol.processor.filter "ruido" {
     // CPF, CNPJ, nome completo e chave Pix — ver
     // pre-dev/regras-pii-falso-positivo/ACHADO-pii-em-claro-byoc.md.
     //
-    // MEDIDO contra o agente real (v1.18.1, imagem por digest), com a MESMA
-    // entrada que a cadeia ligada entrega mascarada. O comportamento e melhor que
-    // descarte silencioso: a lista vazia faz o receptor OTLP deixar de anunciar o
-    // sinal, e a ingestao e RECUSADA na borda —
+    // ⚠️ CORRIGIDO 2026-08-29, apos teste em aws-devops. Este comentario afirmava
+    // que a ingestao e RECUSADA na borda com
+    // `503 {"code":14,"message":"telemetry type is not supported"}`.
     //
-    //   POST /v1/logs     -> 503 {"code":14,"message":"telemetry type is not supported"}
-    //   POST /v1/metrics  -> 200  (metricas e traces seguem intactos)
+    // ISSO ESTAVA ERRADO, e o erro era de METODO: aquela medicao usou um config
+    // RECORTADO, do qual eu havia removido o receptor OTLP para isolar a cadeia de
+    // log. Sem receptor, o sinal deixa de ser anunciado e o 503 aparece.
     //
-    // A aplicacao ve o erro e o SDK retem em buffer, em vez de considerar
-    // entregue o que foi jogado fora. Perder log e recuperavel; vazar PII de
-    // titular nao.
+    // Com o receptor PRESENTE — que e o caso real, porque ele e compartilhado com
+    // metricas e traces — o comportamento e outro: a ingestao e ACEITA (200) e o
+    // log e DESCARTADO aqui. Descarte silencioso, que e pior que recusa: a
+    // aplicacao considera entregue o que foi jogado fora.
     //
-    // Quem desliga esta flag assume entregar a sanitizacao por outra via
-    // (pipeline do Fleet) e fica sem log de aplicacao enquanto ela nao entregar.
+    // ⚠️ E ha uma consequencia maior, medida no mesmo teste: o receptor continua
+    // ocupando a porta 4318, entao uma pipeline do Fleet NAO consegue assumi-la.
+    // O desenho "Fleet assume so a porta de logs" e impossivel com receptor
+    // compartilhado — ou a pipeline remota recebe os TRES sinais, ou nenhum.
+    //
+    // Enquanto esta flag existir nesta forma, desliga-la significa PERDER log sem
+    // aviso. Ver pre-dev/alloy-collector-client/proxima-frente-pii-via-fleet.md.
     logs    = []
 {{- end }}
 {{- if .Values.spanMetrics.enabled }}

@@ -23,28 +23,44 @@ movimento", e é por isso que a detecção não pode depender de alguém notar.
 
 | causa | como se manifesta |
 |---|---|
-| pipeline deletado na console | agente sobe sem pipeline, sem erro |
-| **matcher deixa de casar** | idem — ver abaixo |
+| pipeline deletado ou desabilitado na console | agente sobe sem pipeline, sem erro |
+| **matcher errado ao PUBLICAR** | idem — ver abaixo |
 | token revogado | poll falha; se o pod reiniciar, o agente não sobe |
 | Fleet fora do ar | idem |
 | pod reinicia com o Fleet fora | ⚠️ **o agente inteiro não sobe** — ver abaixo |
 
-### Matcher deixa de casar
+### Matcher errado ao publicar
 
-O chart declara **três** atributos, derivados (ver `_fleet.tpl`):
+O chart declara **três** atributos (ver `_fleet.tpl`):
 
-    client_id = <cliente>
-    platform  = kubernetes
-    role      = node | singleton
+    platform  = kubernetes      literal no template
+    role      = node|singleton  o chart decide, conforme o papel
+    client_id = <cliente>       de global.client.id
 
-Um pipeline publicado com seletor `role=node` só é entregue aos DaemonSets. Mudar o
-valor no values, renomear o atributo ou publicar com seletor errado faz o coletor
-deixar de casar — e o pipeline **não chega**, sem erro.
+⚠️ **Nenhum dos três é editável de forma que quebre um matcher existente**, e isso é
+proteção do chart, não sorte:
+
+| atributo | por que não quebra |
+|---|---|
+| `platform` | literal, não há parâmetro |
+| `role` | derivado do papel, não há parâmetro |
+| `client_id` | vem do values, mas é o MESMO valor que marca séries e logs — mudá-lo faz o cliente desaparecer de todos os painéis ao mesmo tempo. Ruidoso, não silencioso |
+
+`fleetManagement.attributes` permite **acrescentar** atributos, o que não invalida
+matcher existente — só cria etiqueta nova.
+
+**Logo o risco real não é o coletor mudar de etiqueta; é o pipeline ser publicado com
+o seletor errado.** Um pipeline com `role=singleton` nunca chega aos DaemonSets, e é
+neles que está o receptor OTLP.
 
 ⚠️ Erro real desta classe, cometido nesta frente: um teste de conflito de porta usou
-matcher `role="singleton"`, e o singleton **não tem** receptor OTLP. O matcher não
-casava o que se supunha, o teste não exercia nada, e quase se concluiu "não há
-conflito" a partir dele.
+matcher `role="singleton"`, e o singleton **não tem** receptor OTLP (medido: 0 no seu
+ConfigMap). O matcher não casava o que se supunha, o teste não exercia nada, e quase
+se concluiu "não há conflito" a partir dele. Refeito com `role="node"`, o conflito
+apareceu de imediato: `bind: address already in use`.
+
+É o publicador (workflow) que fecha isso — publicação à mão na console é onde o
+seletor errado entra.
 
 ### Reinício de pod com o Fleet fora
 

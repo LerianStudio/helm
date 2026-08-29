@@ -23,11 +23,25 @@ movimento", e é por isso que a detecção não pode depender de alguém notar.
 
 | causa | como se manifesta |
 |---|---|
-| pipeline deletado ou desabilitado na console | agente sobe sem pipeline, sem erro |
+| pipeline **deletado** na console | agente sobe sem pipeline, sem erro |
+| pipeline **desmarcado como ativo** | idem — e ⚠️ PIOR, ver abaixo |
 | **matcher errado ao PUBLICAR** | idem — ver abaixo |
 | token revogado | poll falha; se o pod reiniciar, o agente não sobe |
 | Fleet fora do ar | idem |
 | pod reinicia com o Fleet fora | ⚠️ **o agente inteiro não sobe** — ver abaixo |
+
+### Pipeline desmarcado como ativo é pior que deletado
+
+Do ponto de vista do agente, inativo e inexistente são a **mesma coisa**: o Fleet não
+entrega pipeline inativo, e o agente sobe sem ele.
+
+⚠️ A diferença é para quem investiga: deletado desaparece da lista; **inativo continua
+visível na console, com as regras corretas**. Quem abrir para conferir vê o pipeline
+lá e conclui que está funcionando.
+
+Por isso `verificar-fleet.sh` trata os dois casos de forma distinta — habilitado
+divergente **bloqueia**, desabilitado divergente **avisa e lista**. Sem esse aviso, um
+pipeline inativo seria invisível para a verificação.
 
 ### Matcher errado ao publicar
 
@@ -44,7 +58,24 @@ proteção do chart, não sorte:
 |---|---|
 | `platform` | literal, não há parâmetro |
 | `role` | derivado do papel, não há parâmetro |
-| `client_id` | vem do values, mas é o MESMO valor que marca séries e logs — mudá-lo faz o cliente desaparecer de todos os painéis ao mesmo tempo. Ruidoso, não silencioso |
+| `client_id` | **é o único editável, e quebra sim** — ver abaixo |
+
+⚠️ Sobre o `client_id`, corrigindo uma afirmação anterior: mudá-lo **não gera erro
+algum**. Ele serve a dois propósitos ao mesmo tempo — endereça a config no Fleet E
+rotula métricas e logs. Trocar `cappta-prd` por `cappta-producao` faz:
+
+| | efeito |
+|---|---|
+| Fleet | pipeline com matcher `client_id="cappta-prd"` deixa de casar → config não chega |
+| painéis | todo dashboard e alerta filtrado por `cappta-prd` fica vazio |
+
+A segunda linha é um sintoma **adicional**, não um alarme: depende de alguém estar
+olhando aquele painel. Não trate como falha ruidosa — é mais uma falha silenciosa, com
+um efeito colateral visível para quem procurar.
+
+Mudança de `client_id` é, portanto, mudança que exige republicar o pipeline com o
+matcher novo. O padrão de nomenclatura (`<cliente>-<stg|prd>`, validado pelo chart)
+reduz a chance disso acontecer por capricho.
 
 `fleetManagement.attributes` permite **acrescentar** atributos, o que não invalida
 matcher existente — só cria etiqueta nova.

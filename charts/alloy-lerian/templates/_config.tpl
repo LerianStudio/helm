@@ -372,9 +372,33 @@ otelcol.exporter.otlphttp "destino" {
     enabled       = true
     queue_size    = {{ .Values.destination.queue.size | default 1000 }}
     num_consumers = {{ .Values.destination.queue.consumers | default 10 }}
-    // Not blocking on overflow: back-pressure would propagate to the client's
-    // applications, which is not ours to impose.
-    block_on_overflow = false
+    // ⚠️ MUDADO PARA `true` em 2026-08-29. O comentario anterior dizia: "nao
+    // bloquear no overflow, porque a contrapressao chegaria as aplicacoes do
+    // cliente, e isso nao cabe a nos impor". O raciocinio e legitimo, mas MEDIDO
+    // ele produz um resultado pior.
+    //
+    // Com `false`, fila cheia significa DESCARTE — e a aplicacao recebe 200. Ela
+    // considera entregue o que foi jogado fora. MEDIDO com a fila padrao (1000) e
+    // o destino fora:
+    //
+    //   1800 envios -> 300 respostas 200, 58 retries, 800 DESCARTES
+    //   level=error "Exporting failed. Rejecting data." error="sending queue is full"
+    //
+    // Com `true`, o mesmo cenario (fila 50, destino fora, 80 envios):
+    //
+    //   50 aceitos, 30 BLOQUEADOS, ZERO descartes
+    //
+    // A aplicacao ve o timeout e o SDK OTLP retem do lado dela, conforme a propria
+    // politica. Nao ha perda dentro do agente.
+    //
+    // ⚠️ O custo e real e precisa ser dito: se o destino ficar fora por muito
+    // tempo, a contrapressao CHEGA a aplicacao. Aceito porque este agente carrega
+    // dado regulado, e para dado regulado bloquear e preferivel a descartar em
+    // silencio — a mesma logica que justifica a sanitizacao existir.
+    //
+    // Quem precisar do comportamento antigo: `destination.queue.blockOnOverflow:
+    // false`. A decisao de perder dado em silencio passa a ser explicita.
+    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}true{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
   }
 
   retry_on_failure {
@@ -864,8 +888,10 @@ otelcol.exporter.otlphttp "destino" {
     enabled       = true
     queue_size    = {{ .Values.destination.queue.singletonSize | default 5000 }}
     num_consumers = {{ .Values.destination.queue.consumers | default 10 }}
-    // Same reasoning as the node role: back-pressure is not ours to impose.
-    block_on_overflow = false
+    // Mesma mudanca e mesma razao do papel node — ver o comentario extenso la.
+    // Resumo: `false` descartava em silencio com a aplicacao recebendo 200;
+    // `true` bloqueia e nao perde nada dentro do agente. MEDIDO.
+    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}true{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
   }
 
   // The node role had retry and this one did not — an inconsistency, not a

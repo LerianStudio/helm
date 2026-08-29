@@ -112,6 +112,31 @@ destination:
     # never replay a backlog.
     singletonSize: 5000
 
+    # ⚠️ MUDADO PARA `true` em 2026-08-29, e é mudança de comportamento para todos
+    # os clientes. Leia antes de reverter.
+    #
+    # Com `false` (o padrão anterior), fila cheia significa DESCARTE — e a
+    # aplicação recebe `200`. Ela considera entregue o que foi jogado fora.
+    # MEDIDO com a fila padrão e o destino fora:
+    #
+    #   1800 envios -> 300 respostas 200, 58 retries, 800 DESCARTES
+    #
+    # ⚠️ A perda de 256 eventos documentada acima, no `singletonSize`, é
+    # exatamente este mecanismo. Aumentar a fila adiou o problema; não o resolveu.
+    #
+    # Com `true`, o mesmo cenário: 50 aceitos, 30 BLOQUEADOS, ZERO descartes. A
+    # aplicação vê o timeout e o SDK OTLP retém do lado dela.
+    #
+    # ⚠️ O custo: se o destino ficar fora por muito tempo, a contrapressão CHEGA à
+    # aplicação. Aceito porque este agente carrega dado regulado, e para dado
+    # regulado bloquear é preferível a descartar em silêncio.
+    #
+    # Medição de quanto a fila aguenta, com linha média de 909 bytes (medido em
+    # produção): 1.000 itens cobrem ~17 min em aws-devops, ~18 s em Cappta-Prd e
+    # **1,7 s em Voluti-prd**. Para o maior cliente a fila é irrelevante — é a
+    # contrapressão que protege, não o tamanho.
+    blockOnOverflow: true
+
   retry:
     # Effective survivable outage window. Beyond it, records are discarded and
     # the discard is counted — silent loss is what this replaces.

@@ -15,6 +15,63 @@ a queda. Medido: com o Fleet inalcançável ou respondendo 401, um agente que re
 **não sobe** (`could not perform the initial load successfully`). E pod reinicia por
 rollout de nó, OOM, drain e upgrade de cluster.
 
+## O que faz a via do Fleet parar
+
+Todos estes têm o **mesmo sintoma**: o log de aplicação desaparece. Os pods seguem
+`Running`, métricas e traces continuam chegando. Log ausente parece com "cliente sem
+movimento", e é por isso que a detecção não pode depender de alguém notar.
+
+| causa | como se manifesta |
+|---|---|
+| pipeline deletado na console | agente sobe sem pipeline, sem erro |
+| **matcher deixa de casar** | idem — ver abaixo |
+| token revogado | poll falha; se o pod reiniciar, o agente não sobe |
+| Fleet fora do ar | idem |
+| pod reinicia com o Fleet fora | ⚠️ **o agente inteiro não sobe** — ver abaixo |
+
+### Matcher deixa de casar
+
+O chart declara **três** atributos, derivados (ver `_fleet.tpl`):
+
+    client_id = <cliente>
+    platform  = kubernetes
+    role      = node | singleton
+
+Um pipeline publicado com seletor `role=node` só é entregue aos DaemonSets. Mudar o
+valor no values, renomear o atributo ou publicar com seletor errado faz o coletor
+deixar de casar — e o pipeline **não chega**, sem erro.
+
+⚠️ Erro real desta classe, cometido nesta frente: um teste de conflito de porta usou
+matcher `role="singleton"`, e o singleton **não tem** receptor OTLP. O matcher não
+casava o que se supunha, o teste não exercia nada, e quase se concluiu "não há
+conflito" a partir dele.
+
+### Reinício de pod com o Fleet fora
+
+A assimetria aqui é o que importa, e foi medida com o agente v1.18.1:
+
+| situação | resultado |
+|---|---|
+| Fleet inalcançável, agente **já rodando** | segue com a última config; o poll falha sem derrubar |
+| Fleet inalcançável, agente **iniciando** | **não sobe**: `could not perform the initial load successfully` |
+| Fleet responde 401, agente **iniciando** | idem |
+
+Não é "o log para" — é o agente **inteiro** que não inicia: métricas, traces, tudo. E
+pod reinicia por rollout de nó, OOM, drain e upgrade de cluster.
+
+⚠️ Isso vale enquanto `fleetManagement.enabled: true`, **independente** de
+`sanitizacao.local.enabled`. Risco aceito conscientemente, com o raciocínio de que a
+janela de exposição é o reinício, não a queda.
+
+### Sobre o token — correção de um erro comum
+
+O token do Fleet é um Access Policy token da Grafana Cloud (`glc_`). **Não expira por
+tempo.** Os metadados que ele carrega são org, nome e região; não há campo de validade,
+e este foi criado sem expiração opcional.
+
+O modo de falha é **revogação** — manual, ou por engano numa limpeza de tokens. Tratar
+como "vai expirar sozinho" leva a diagnosticar a coisa errada quando parar.
+
 ## O procedimento
 
 ```yaml

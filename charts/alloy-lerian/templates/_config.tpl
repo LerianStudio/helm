@@ -215,68 +215,7 @@ otelcol.processor.filter "ruido" {
 
   output {
     metrics = [otelcol.processor.batch.agrupamento.input]
-{{- if eq (include "alloy-lerian.sanitizacaoModo" .) "ponte" }}
-    // MODO PONTE: a sanitizacao vem de um modulo publicado no Fleet. Os logs saem
-    // para uma porta INTERNA ao pod, sao mascarados la, e VOLTAM no estagio 6b.
-    //
-    // ⚠️ Sai daqui e volta ANTES do agrupamento, de proposito: o `client.id` ja foi
-    // aplicado no estagio 3, e MEDIDO que exportar direto do modulo remoto para o
-    // destino perde esse rotulo — o log chega sem `client_id` e some dos paineis.
-    //
-    // ⚠️ Se o modulo do Fleet nao estiver la, NADA sai em claro — mas o log PODE
-    // SER DESCARTADO, e isso depende de COMO a porta falha. Corrigido em
-    // 2026-08-30, depois de medir os dois casos em cluster:
-    //
-    //   porta aceita conexao e demora  -> RETEM com retry
-    //                                     (300 envios, 29 retries, 0 descartes)
-    //   porta RECUSA conexao           -> retry esgota e DESCARTA
-    //                                     ("connection refused", dropped_items=1)
-    //
-    // Eu havia registrado so o primeiro caso, como se cobrisse os dois.
-    //
-    // ⚠️ E ha uma lacuna maior, medida no mesmo teste: um modulo do Fleet que
-    // falha ao SUBIR (porta ocupada no instante da carga) NAO se recupera. O
-    // agente nao tenta de novo, e o Fleet so reage a mudanca na configuracao
-    // publicada — nao a componente quebrado. Republicar com conteudo diferente
-    // tambem nao resolveu.
-    //
-    // Consequencia: o modo ponte e fragil a conflito transitorio de porta, que e
-    // o que uma republicacao provoca. Ver
-    // pre-dev/alloy-collector-client/ponte-sanitizacao-viabilidade.md.
-    logs    = [otelcol.exporter.otlphttp.ponte_saida.input]
-{{- else if .Values.sanitizacao.local.enabled }}
     logs    = [otelcol.processor.transform.sanitizacao.input]
-{{- else }}
-    // ⚠️ FALHA SEGURA, deliberada: com a sanitizacao local desligada os logs NAO
-    // seguem para o agrupamento.
-    //
-    // A alternativa (encaminhar direto ao agrupamento) enviaria log de aplicacao
-    // SEM MASCARA para a Grafana Cloud. MEDIDO em producao que esse log carrega
-    // CPF, CNPJ, nome completo e chave Pix — ver
-    // pre-dev/regras-pii-falso-positivo/ACHADO-pii-em-claro-byoc.md.
-    //
-    // ⚠️ CORRIGIDO 2026-08-29, apos teste em aws-devops. Este comentario afirmava
-    // que a ingestao e RECUSADA na borda com
-    // `503 {"code":14,"message":"telemetry type is not supported"}`.
-    //
-    // ISSO ESTAVA ERRADO, e o erro era de METODO: aquela medicao usou um config
-    // RECORTADO, do qual eu havia removido o receptor OTLP para isolar a cadeia de
-    // log. Sem receptor, o sinal deixa de ser anunciado e o 503 aparece.
-    //
-    // Com o receptor PRESENTE — que e o caso real, porque ele e compartilhado com
-    // metricas e traces — o comportamento e outro: a ingestao e ACEITA (200) e o
-    // log e DESCARTADO aqui. Descarte silencioso, que e pior que recusa: a
-    // aplicacao considera entregue o que foi jogado fora.
-    //
-    // ⚠️ E ha uma consequencia maior, medida no mesmo teste: o receptor continua
-    // ocupando a porta 4318, entao uma pipeline do Fleet NAO consegue assumi-la.
-    // O desenho "Fleet assume so a porta de logs" e impossivel com receptor
-    // compartilhado — ou a pipeline remota recebe os TRES sinais, ou nenhum.
-    //
-    // Enquanto esta flag existir nesta forma, desliga-la significa PERDER log sem
-    // aviso. Ver pre-dev/alloy-collector-client/proxima-frente-pii-via-fleet.md.
-    logs    = []
-{{- end }}
 {{- if .Values.spanMetrics.enabled }}
     // Traces fan out: the span itself continues to the destination unchanged,
     // AND feeds the RED derivation. The concentrator downstream sees no
@@ -358,75 +297,7 @@ otelcol.connector.spanmetrics "red" {
 // is exactly why correctness cannot depend on this mechanism reporting failure.
 // The delivery gate asserts each rule against a known input and expected
 // output, and blocks release on mismatch.
-//
-// ⚠️ Desligavel por `sanitizacao.local.enabled: false`, e desligar tem custo: o
-// estagio 5 passa a DESCARTAR os logs em vez de encaminha-los sem mascara. Ver o
-// comentario da falha segura no estagio 5.
-{{- if .Values.sanitizacao.local.enabled }}
 {{ include "alloy-lerian.config.sanitizacao" (dict "nome" "sanitizacao" "saida" "otelcol.processor.batch.agrupamento.input") }}
-{{- end }}
-{{- if eq (include "alloy-lerian.sanitizacaoModo" .) "ponte" }}
-
-// STAGE 6-PONTE — a sanitizacao vem de um modulo publicado no Fleet Management.
-//
-// POR QUE ESTA FORMA, e nao a obvia. Duas alternativas foram testadas e falharam:
-//
-//   1. o config local referenciar o componente remoto PELO NOME. O agente nem
-//      sobe: `component "..." does not exist or is out of scope`. O Fleet embrulha
-//      cada pipeline num `declare`, e modulo tem escopo proprio.
-//
-//   2. o modulo remoto assumir a porta 4318. Impossivel: o receptor OTLP local e
-//      COMPARTILHADO com metricas e traces, entao continua ocupando a porta.
-//      MEDIDO: `bind: address already in use`, e o log era aceito e descartado.
-//
-// A ponte e por REDE, dentro do pod. O trafego nunca sai do localhost.
-//
-//   estagio 5 -> [porta {{ .Values.sanitizacao.ponte.portaSaida | default 4319 }}] -> MODULO DO FLEET -> [porta {{ .Values.sanitizacao.ponte.portaRetorno | default 4320 }}] -> estagio 7
-//
-// ⚠️ O RETORNO e o que preserva o `client.id`. MEDIDO: um modulo que exporta
-// direto ao destino entrega o log SEM esse rotulo, e ele some de todo painel e do
-// alerta O11Y-LOG-001. O modulo publicado DEVE devolver para a porta de retorno.
-otelcol.exporter.otlphttp "ponte_saida" {
-  client {
-    endpoint = "http://localhost:{{ .Values.sanitizacao.ponte.portaSaida | default 4319 }}"
-    tls {
-      insecure = true
-    }
-  }
-
-  // Mesma fila do destino real, e herda `blockOnOverflow` dele.
-  //
-  // ⚠️ COM O PADRAO (`false`), modulo do Fleet ausente significa: retem com retry
-  // enquanto a fila aguentar, e DESCARTA depois. MEDIDO — 300 envios: 29 retries,
-  // 0 descartes; 1800 envios: 800 descartes. Nada sai em claro em nenhum dos
-  // casos, mas o log SOME em silencio quando a fila enche.
-  //
-  // Quanto a fila aguenta e por cliente: ~17 min em aws-devops, ~18 s em
-  // Cappta-Prd, ~1,7 s em Voluti-prd (linha media de 909 bytes, medida).
-  //
-  // ⚠️ Logo o modo ponte DEPENDE do alerta de saturacao de fila para nao perder
-  // log sem ninguem perceber. Nao e refinamento — e parte da entrega.
-  sending_queue {
-    enabled       = true
-    queue_size    = {{ .Values.destination.queue.size | default 1000 }}
-    num_consumers = {{ .Values.destination.queue.consumers | default 10 }}
-    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}false{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
-  }
-}
-
-// STAGE 6b — retorno da ponte. Recebe o log JA MASCARADO e o devolve ao fluxo,
-// que segue para o agrupamento como se nada tivesse acontecido.
-otelcol.receiver.otlp "ponte_retorno" {
-  http {
-    endpoint = "127.0.0.1:{{ .Values.sanitizacao.ponte.portaRetorno | default 4320 }}"
-  }
-
-  output {
-    logs = [otelcol.processor.batch.agrupamento.input]
-  }
-}
-{{- end }}
-
 // STAGE 7 — batching. Must be last: enrichment operates on individual records,
 // and batching destroys the connection context stage 2 depends on.
 otelcol.processor.batch "agrupamento" {
@@ -915,12 +786,7 @@ otelcol.processor.filter "perimetro_eventos" {
 // the application put in it. The SAME rule set as the node role, rendered from
 // one source: duplicating the rules would create two sets that can drift, and a
 // drifted copy is worse than no copy because it still looks protected.
-//
-// ⚠️ NAO obedece `sanitizacao.local.enabled`, e isso e deliberado. Aquela flag
-// existe para ceder a sanitizacao de log de APLICACAO a um pipeline do Fleet, que
-// recebe pelo receptor OTLP. Eventos de cluster nao passam por ali — o proprio
-// agente os coleta da API do K8s neste papel singleton. Nao ha via alternativa
-// para ceder, logo desligar aqui so criaria vazamento sem ganho.
+
 {{ include "alloy-lerian.config.sanitizacao" (dict "nome" "sanitizacao_eventos" "saida" "otelcol.exporter.otlphttp.destino.input") }}
 
 // Events do not pass through the node role, so they need their own origin mark.

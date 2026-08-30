@@ -398,23 +398,3 @@ Default: our own service, when enabled. Override to point at the existing one.
 {{- end -}}
 {{- end -}}
 
-{{/*
-Modo da sanitizacao de log de aplicacao. Deriva UM valor de dois campos, para que
-o resto do template nao precise repetir a logica — e para que a combinacao
-invalida falhe no render, nao em producao.
-
-  local     regras vem do ConfigMap deste chart. Padrao, e o unico modo coberto
-            de ponta a ponta pela porta de entrega.
-  ponte     regras vem de um modulo publicado no Fleet. O log sai para uma porta
-            interna, e mascarado la, e volta ao fluxo local antes do agrupamento.
-  nenhum    sem sanitizacao de log de aplicacao. O log e DESCARTADO, nao
-            encaminhado — ver a falha segura no estagio 5.
-*/}}
-{{- define "alloy-lerian.sanitizacaoModo" -}}
-{{- $local := .Values.sanitizacao.local.enabled -}}
-{{- $ponte := .Values.sanitizacao.ponte.enabled -}}
-{{- if and $local $ponte -}}
-{{- fail "\n\nalloy-lerian: `sanitizacao.local.enabled` e `sanitizacao.ponte.enabled` nao podem estar ambos ligados.\n\nSao duas vias para a MESMA etapa, e ligar as duas mascararia o log duas vezes:\na segunda passagem operaria sobre valores ja substituidos por asteriscos.\n\nEscolha uma:\n\n  sanitizacao:\n    local:\n      enabled: true      # regras do ConfigMap deste chart (padrao)\n      ponte:\n        enabled: false\n\n  sanitizacao:\n    local:\n      enabled: false\n    ponte:\n      enabled: true      # regras publicadas no Fleet\n" -}}
-{{- end -}}
-{{- if $ponte -}}ponte{{- else if $local -}}local{{- else -}}nenhum{{- end -}}
-{{- end -}}

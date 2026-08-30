@@ -63,42 +63,6 @@
       "additionalProperties": true,
       "type": "object"
     },
-    "sanitizacao": {
-      "description": "Sanitizacao de dado regulado. local.enabled=true (padrao): regras vem do ConfigMap deste chart, unico modo coberto pela porta de entrega. false: cede a sanitizacao de log de APLICACAO a pipeline do Fleet, e o log passa a ser DESCARTADO enquanto essa via nao entregar (falha segura). Eventos de cluster seguem mascarados localmente nos dois casos.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "local": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            }
-          }
-        },
-        "ponte": {
-          "description": "Modo ponte: a sanitizacao de log vem de um modulo publicado no Fleet, em vez do ConfigMap. Exige local.enabled=false — as duas juntas falham no render. O log sai por portaSaida, e mascarado remotamente, e VOLTA por portaRetorno antes do agrupamento; o retorno e o que preserva o rotulo client.id.",
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            },
-            "portaSaida": {
-              "type": "integer",
-              "minimum": 1024,
-              "maximum": 65535
-            },
-            "portaRetorno": {
-              "type": "integer",
-              "minimum": 1024,
-              "maximum": 65535
-            }
-          }
-        }
-      }
-    },
     "singleton": {
       "additionalProperties": true,
       "type": "object"

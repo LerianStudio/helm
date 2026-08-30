@@ -998,6 +998,43 @@ sanitizacao:
   local:
     enabled: true
 
+  # ⚠️ MODO PONTE — a sanitização vem de um módulo publicado no Fleet Management,
+  # em vez do ConfigMap deste chart. Ligar isto exige `local.enabled: false`; as
+  # duas juntas falham no render (mascararia duas vezes).
+  #
+  # PARA QUE SERVE: corrigir uma regra de PII pelo chart exige versão nova, e cada
+  # cliente BYOC aplica quando quer — medido em semanas. Pelo Fleet, propaga em
+  # 1 minuto. A motivação está em
+  # pre-dev/regras-pii-falso-positivo/ACHADO-pii-em-claro-byoc.md: PII de titular
+  # chegando em claro na Grafana Cloud, em 3 clientes de produção.
+  #
+  # COMO FUNCIONA: o log sai para uma porta interna ao pod, é mascarado pelo módulo
+  # remoto, e VOLTA para a porta de retorno antes do agrupamento. O tráfego nunca
+  # sai do localhost.
+  #
+  # ⚠️ O MÓDULO PUBLICADO NO FLEET TEM DE DEVOLVER. Um módulo que exporte direto ao
+  # destino entrega o log SEM o rótulo `client.id` — MEDIDO — e ele some de todo
+  # painel e do alerta O11Y-LOG-001.
+  #
+  # ⚠️ SE O MÓDULO NÃO ESTIVER LÁ, nada sai em claro: o exportador retém com retry
+  # (medido: 300 envios, 29 retries, 0 descartes) e, passando da fila,
+  # `blockOnOverflow: true` aplica contrapressão. O custo é a aplicação travar, não
+  # o dado vazar.
+  #
+  # ⚠️ Duas alternativas mais simples foram testadas e NÃO funcionam:
+  #   - o config local referenciar o componente remoto pelo nome: o agente não sobe
+  #   - o módulo remoto assumir a porta 4318: o receptor local é compartilhado com
+  #     métricas e traces e não libera a porta
+  #
+  # Ver charts/alloy-lerian/docs/DR-SANITIZACAO.md e
+  # pre-dev/alloy-collector-client/ponte-sanitizacao-viabilidade.md.
+  ponte:
+    enabled: false
+    # Portas internas ao pod. Só mude se colidirem com algo no mesmo container —
+    # o padrão evita 4317/4318 (receptor local) e as portas do próprio agente.
+    portaSaida: 4319
+    portaRetorno: 4320
+
 # ---------------------------------------------------------------------------
 # IN-TRANSIT DATA INSPECTION — own profile only
 # ---------------------------------------------------------------------------

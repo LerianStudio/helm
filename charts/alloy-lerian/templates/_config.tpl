@@ -215,7 +215,20 @@ otelcol.processor.filter "ruido" {
 
   output {
     metrics = [otelcol.processor.batch.agrupamento.input]
-{{- if .Values.sanitizacao.local.enabled }}
+{{- if eq (include "alloy-lerian.sanitizacaoModo" .) "ponte" }}
+    // MODO PONTE: a sanitizacao vem de um modulo publicado no Fleet. Os logs saem
+    // para uma porta INTERNA ao pod, sao mascarados la, e VOLTAM no estagio 6b.
+    //
+    // ⚠️ Sai daqui e volta ANTES do agrupamento, de proposito: o `client.id` ja foi
+    // aplicado no estagio 3, e MEDIDO que exportar direto do modulo remoto para o
+    // destino perde esse rotulo — o log chega sem `client_id` e some dos paineis.
+    //
+    // ⚠️ Se o modulo do Fleet nao estiver la, este exportador NAO entrega sem
+    // mascara: ele RETEM com retry. MEDIDO — 300 envios, 29 retries, 0 descartes.
+    // Passando da fila, `block_on_overflow = true` aplica contrapressao em vez de
+    // descartar. Nada sai em claro em nenhum dos dois casos.
+    logs    = [otelcol.exporter.otlphttp.ponte_saida.input]
+{{- else if .Values.sanitizacao.local.enabled }}
     logs    = [otelcol.processor.transform.sanitizacao.input]
 {{- else }}
     // ⚠️ FALHA SEGURA, deliberada: com a sanitizacao local desligada os logs NAO
@@ -335,6 +348,57 @@ otelcol.connector.spanmetrics "red" {
 // comentario da falha segura no estagio 5.
 {{- if .Values.sanitizacao.local.enabled }}
 {{ include "alloy-lerian.config.sanitizacao" (dict "nome" "sanitizacao" "saida" "otelcol.processor.batch.agrupamento.input") }}
+{{- end }}
+{{- if eq (include "alloy-lerian.sanitizacaoModo" .) "ponte" }}
+
+// STAGE 6-PONTE — a sanitizacao vem de um modulo publicado no Fleet Management.
+//
+// POR QUE ESTA FORMA, e nao a obvia. Duas alternativas foram testadas e falharam:
+//
+//   1. o config local referenciar o componente remoto PELO NOME. O agente nem
+//      sobe: `component "..." does not exist or is out of scope`. O Fleet embrulha
+//      cada pipeline num `declare`, e modulo tem escopo proprio.
+//
+//   2. o modulo remoto assumir a porta 4318. Impossivel: o receptor OTLP local e
+//      COMPARTILHADO com metricas e traces, entao continua ocupando a porta.
+//      MEDIDO: `bind: address already in use`, e o log era aceito e descartado.
+//
+// A ponte e por REDE, dentro do pod. O trafego nunca sai do localhost.
+//
+//   estagio 5 -> [porta {{ .Values.sanitizacao.ponte.portaSaida | default 4319 }}] -> MODULO DO FLEET -> [porta {{ .Values.sanitizacao.ponte.portaRetorno | default 4320 }}] -> estagio 7
+//
+// ⚠️ O RETORNO e o que preserva o `client.id`. MEDIDO: um modulo que exporta
+// direto ao destino entrega o log SEM esse rotulo, e ele some de todo painel e do
+// alerta O11Y-LOG-001. O modulo publicado DEVE devolver para a porta de retorno.
+otelcol.exporter.otlphttp "ponte_saida" {
+  client {
+    endpoint = "http://localhost:{{ .Values.sanitizacao.ponte.portaSaida | default 4319 }}"
+    tls {
+      insecure = true
+    }
+  }
+
+  // Mesma fila do destino real, pela mesma razao. Com `block_on_overflow = true`,
+  // modulo ausente significa contrapressao — nunca log em claro, nunca descarte.
+  sending_queue {
+    enabled       = true
+    queue_size    = {{ .Values.destination.queue.size | default 1000 }}
+    num_consumers = {{ .Values.destination.queue.consumers | default 10 }}
+    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}true{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
+  }
+}
+
+// STAGE 6b — retorno da ponte. Recebe o log JA MASCARADO e o devolve ao fluxo,
+// que segue para o agrupamento como se nada tivesse acontecido.
+otelcol.receiver.otlp "ponte_retorno" {
+  http {
+    endpoint = "127.0.0.1:{{ .Values.sanitizacao.ponte.portaRetorno | default 4320 }}"
+  }
+
+  output {
+    logs = [otelcol.processor.batch.agrupamento.input]
+  }
+}
 {{- end }}
 
 // STAGE 7 — batching. Must be last: enrichment operates on individual records,

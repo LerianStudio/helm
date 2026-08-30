@@ -49,7 +49,7 @@ echo "  stack: ${FLEET_URL}"
 echo ""
 
 # ---------------------------------------------------------------------------
-echo "[1/3] Pipelines publicadas sao alcancaveis"
+echo "[1/4] Pipelines publicadas sao alcancaveis"
 # ---------------------------------------------------------------------------
 RESP="$(mktemp)"; trap 'rm -f "$RESP"' EXIT
 # ⚠️ `Content-Type: application/json` e OBRIGATORIO. A API e Connect RPC e
@@ -76,7 +76,7 @@ esac
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "[2/3] Toda pipeline habilitada com regra de PII confere com o repositorio"
+echo "[2/4] Toda pipeline habilitada com regra de PII confere com o repositorio"
 # ---------------------------------------------------------------------------
 # ⚠️ Só as HABILITADAS. Uma pipeline desabilitada nao processa dado, e bloquear
 # por causa dela transformaria rascunho em impedimento de entrega. Mas ela e
@@ -139,7 +139,7 @@ fi
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "[3/3] Nenhuma pipeline exporta telemetria por fora"
+echo "[3/4] Nenhuma pipeline exporta telemetria por fora"
 # ---------------------------------------------------------------------------
 # ⚠️ O risco que o values.yaml registra: como config local e remota tem
 # controladores separados, uma pipeline remota com exportador proprio tem caminho
@@ -174,6 +174,65 @@ else
       echo "  ⚠ [$NOME] desabilitada, com exportador: $COMPS"
     fi
   done
+fi
+
+# ---------------------------------------------------------------------------
+echo ""
+echo "[4/4] Filtro de metrica publicado — inventario, nao veredito"
+# ---------------------------------------------------------------------------
+# ⚠️ POR QUE ESTE PASSO NAO BLOQUEIA, ao contrario do passo 2.
+#
+# A allowlist de metricas PODE, por decisao do usuario (2026-08-30), ser gerida
+# pelo Fleet: "se quiser ligar uma metrica, alterar metrica, ou qualquer outra
+# coisa conseguimos alterar pelo Fleet, sem deploy em cliente — a ideia do Fleet
+# e exatamente essa". Medido viavel: a ponte funciona tambem para metricas.
+#
+# Logo divergir do chart aqui e o COMPORTAMENTO ESPERADO, nao um defeito. Bloquear
+# transformaria o recurso em impedimento.
+#
+# Mas a divergencia nao pode ser INVISIVEL: allowlist de metrica falha por
+# EXCESSO — serie a mais e cobranca imediata na Grafana Cloud. E o perfil de risco
+# oposto ao da regra de PII, que falha por omissao e em silencio.
+#
+# Entao este passo LISTA o que esta publicado, para que a revisao seja possivel.
+# Quem publica assume o custo; o script garante que ele seja visivel.
+mapfile -t FILTROS < <(python3 - "$RESP" <<'PY'
+import json, re, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+for p in d.get("pipelines", []):
+    c = p.get("contents","") or ""
+    # componentes que decidem o que passa: relabel do caminho prometheus e
+    # filter/transform do caminho OTLP aplicados a metrica
+    if not re.search(r'prometheus\.relabel|otelcol\.processor\.filter', c):
+        continue
+    if 'replace_pattern(body' in c:   # ja coberto pelo passo 2
+        continue
+    hab = p.get("enabled", True)
+    acoes = re.findall(r'action\s*=\s*"(\w+)"', c)
+    regexes = re.findall(r'regex\s*=\s*"([^"]{0,60})', c)
+    resumo = f"{len(acoes)} regra(s)"
+    if regexes:
+        resumo += f" | 1a: {regexes[0][:50]}..."
+    print(f"{p.get('name','(sem nome)')}\t{'sim' if hab else 'nao'}\t{resumo}")
+PY
+)
+
+if [ "${#FILTROS[@]}" -eq 0 ]; then
+  ok "nenhum filtro de metrica publicado — a allowlist vem so do chart"
+else
+  for linha in "${FILTROS[@]}"; do
+    IFS=$'\t' read -r NOME HAB RESUMO <<< "$linha"
+    if [ "$HAB" = "sim" ]; then
+      echo "  ⚠ [$NOME] ATIVO, filtrando metrica: $RESUMO"
+      echo "      revise: metrica a mais e cobranca; metrica a menos e painel cego"
+    else
+      echo "  · [$NOME] publicado e desabilitado: $RESUMO"
+    fi
+  done
+  echo "      (inventario — nao bloqueia, por decisao registrada)"
 fi
 
 echo ""

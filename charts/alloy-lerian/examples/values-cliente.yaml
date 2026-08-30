@@ -16,6 +16,21 @@ origin:
 destination:
   endpoint: https://telemetry.lerian.io
 
+# ⚠️ PERIMETRO — o unico campo, alem de `origin.id`, que muda por cliente.
+#
+# Em cluster do cliente o perimetro e POSITIVO: coletamos consumo APENAS dos
+# namespaces onde instalamos NOSSOS produtos. Medir carga alheia e pagar por ela.
+#
+# O chart RECUSA o render sem esta lista quando `profile: client` — deliberado,
+# porque a lista vazia seria interpretada como "coletar tudo".
+#
+# Ajuste conforme onde os produtos foram instalados naquele cliente. MEDIDO em
+# Cappta-Prd: `midaz` e `midaz-plugins` — dois namespaces, nao um.
+collection:
+  onlyNamespaces:
+    - ^midaz$
+    - ^midaz-plugins$
+
 # ---------------------------------------------------------------------------
 # PRÉ-REQUISITO: o Secret da credencial deve existir ANTES do install
 # ---------------------------------------------------------------------------

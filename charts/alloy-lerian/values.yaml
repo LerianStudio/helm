@@ -1094,8 +1094,28 @@ logging:
 # sem ninguém perceber. Este projeto já corrigiu esse modo de falhar três vezes
 # (credencial, cAdvisor 403, overlay nulo); não vamos criar a quarta.
 #
-# Para instalar sem gestão remota, declare explicitamente `enabled: false`. A
-# recusa é a decisão sendo tomada, não um obstáculo.
+# ⚠️ `enabled: false` É O BOTÃO DE DR, e não "cliente que não usa Fleet".
+#
+# A configuração de coleta vem do Fleet. Se ele ficar indisponível E um pod
+# reiniciar, o agente NÃO SOBE — medido: `could not perform the initial load
+# successfully`. Nesse caso não se perde só o log; perde-se toda a telemetria.
+#
+# Desligar aqui faz o chart renderizar a corrente COMPLETA no ConfigMap local, e o
+# agente volta a funcionar sem depender do Fleet:
+#
+#     fleetManagement:
+#       enabled: false      # DR: usa a config local
+#     helm upgrade ...
+#
+# Quando o Fleet voltar: `true` e upgrade de novo.
+#
+# ⚠️ POR ISSO A CONFIG LOCAL TEM DE ESTAR SEMPRE ATUALIZADA. Ela é o artefato de
+# DR, não código morto. Quem garante isso é `sanitizacao/verificar-fleet.sh`: ele
+# compara o publicado no Fleet com o template do chart. Iguais, o DR está em dia.
+#
+# ⚠️ LIMITE CONHECIDO em BYOC: se não tivermos acesso ao cluster do cliente,
+# alguém do lado dele precisa executar o upgrade. Não há saída técnica para isso —
+# só procedimento e comunicação prévia.
 fleetManagement:
   enabled: true
 

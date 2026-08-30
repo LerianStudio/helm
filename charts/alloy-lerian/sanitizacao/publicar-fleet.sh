@@ -1,39 +1,42 @@
 #!/usr/bin/env bash
-# Publica as regras de sanitizacao no Fleet Management, gerando o modulo a partir
-# do template do chart.
+# Publica no Fleet Management a configuracao de coleta COMPLETA de um cliente,
+# renderizada a partir do chart.
 #
-# ⚠️ NAO EXECUTE ESTE SCRIPT SEM A PORTA DE ENTREGA TER PASSADO. Ele nao a executa
-# por conta propria — quem garante a ordem e o workflow que o chama. Rodar a mao,
-# pulando a porta, e exatamente o que ele existe para evitar.
+# ⚠️ NAO EXECUTE SEM A PORTA DE ENTREGA TER PASSADO. Este script nao a executa —
+# quem garante a ordem e o workflow que o chama. Rodar a mao, pulando a porta, e
+# exatamente o que ele existe para evitar.
 #
 # POR QUE ELE EXISTE
 #
-# Publicar pela console do Grafana e um caminho que NAO passa pelo gate. Uma regra
-# editada la chega a todos os coletores em 1 minuto, sem que nada verifique se ela
-# funciona. E `error_mode` em producao e "ignore": regra malformada nao gera erro,
-# so saida que aparenta estar mascarada.
+# Publicar pela console do Grafana e um caminho que NAO passa pelo gate. Uma
+# configuracao editada la chega aos coletores em 1 minuto sem que nada verifique
+# se as regras de PII funcionam. E `error_mode` em producao e "ignore": regra
+# malformada nao gera erro, so saida que aparenta estar mascarada.
 #
-# Este script fecha a console como via de edicao. Ela continua servindo para VER o
-# que esta publicado; quem ESCREVE e o workflow, e so depois da porta liberar.
+# ⚠️ O QUE E PUBLICADO E O RENDER DO CHART, nao um arquivo separado. Isso importa:
+# a config LOCAL (o ConfigMap, ativo quando `fleetManagement.enabled: false`) e o
+# artefato de DR. Publicar o mesmo render garante que os dois nao divergem — se
+# divergissem, o DR restauraria uma versao desatualizada, que e exatamente o
+# problema que o Fleet existe para resolver.
 #
-# O QUE ELE GARANTE, alem de enviar
+# ⚠️ SEGREDO NAO VAI NO TEXTO. O render contem `sys.env("ALLOY_...")`, que o
+# agente resolve do ambiente do pod. VERIFICADO em cluster: um modulo remoto com
+# `sys.env()` carrega e resolve normalmente. O Fleet nunca ve o valor.
 #
-#   1. as regras saem do template do chart, nao de uma copia
-#   2. a ORDEM e preservada — e contrato, medido: inverter telefone e documento
-#      produz "+551********21", perdendo o codigo de area
-#   3. o modulo DEVOLVE ao fluxo local, nunca exporta direto — medido: exportar
-#      direto perde o rotulo client.id e o log some dos paineis
-#   4. o publicado e reconferido depois de enviar, pelo verificar-fleet.sh
+# ⚠️ SO O CLIENT_ID VARIA entre clientes. O resto do values e identico: perfil,
+# endpoint e as referencias de Secret sao as mesmas em todos, e o valor da
+# credencial vive no Secret do cluster, nao no values. Por isso este script
+# renderiza com o exemplo do chart, injetando apenas `origin.id`.
 #
 # Uso:
-#   FLEET_URL=... FLEET_USER=... FLEET_TOKEN=... CLIENT_ID=aws-devops \
+#   FLEET_URL=... FLEET_USER=... FLEET_TOKEN=... CLIENT_ID=acme-prd \
 #     ./publicar-fleet.sh [--dry-run]
 set -euo pipefail
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATE="${RAIZ}/../templates/_sanitizacao.tpl"
-PORTA_ENTRADA="${PORTA_ENTRADA_PONTE:-4319}"
-PORTA_RETORNO="${PORTA_RETORNO_PONTE:-4320}"
+CHART="$(cd "${RAIZ}/.." && pwd)"
+TEMPLATE="${CHART}/templates/_sanitizacao.tpl"
+VALUES_BASE="${VALUES_BASE:-${CHART}/examples/values-cliente.yaml}"
 DRY_RUN=0
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=1
 
@@ -41,269 +44,178 @@ for v in FLEET_URL FLEET_USER FLEET_TOKEN CLIENT_ID; do
   if [ -z "${!v:-}" ]; then
     echo "FALHA: $v nao definida."
     echo ""
-    echo "  CLIENT_ID identifica o destinatario e entra no matcher da pipeline."
-    echo "  Sem ele a regra iria para TODOS os coletores da stack, incluindo os de"
-    echo "  outros clientes — o escopo minimo de uma access policy do Fleet e a"
-    echo "  stack inteira, entao o matcher e a unica delimitacao que existe."
+    echo "  CLIENT_ID entra no matcher e DELIMITA o destinatario. Sem ele a"
+    echo "  configuracao iria para TODOS os coletores da stack — o escopo minimo"
+    echo "  de uma access policy do Fleet e a stack inteira, entao o matcher e a"
+    echo "  unica separacao entre clientes que existe."
     exit 2
   fi
 done
 
+[ -f "$VALUES_BASE" ] || { echo "FALHA: values base ausente: $VALUES_BASE"; exit 2; }
+
 echo "=============================================="
-echo " Publicar regras de sanitizacao no Fleet"
+echo " Publicar configuracao de coleta no Fleet"
 echo "=============================================="
 echo "  stack:     ${FLEET_URL}"
 echo "  client_id: ${CLIENT_ID}"
+echo "  base:      ${VALUES_BASE}"
 [ "$DRY_RUN" = "1" ] && echo "  MODO:      dry-run (nao envia)"
 echo ""
 
 # ---------------------------------------------------------------------------
-echo "[1/4] Extrair as regras do template do chart"
+echo "[1/5] Renderizar a configuracao do chart"
 # ---------------------------------------------------------------------------
-# Mesmo extrator da porta de entrega e do verificador. Tres lugares, um extrator:
-# se ele mudar, muda para todos, e nao ha como um validar o que o outro nao ve.
-mapfile -t REGRAS < <(grep -oE 'replace_pattern\(body, "[^"]+", "[^"]*"\)' "$TEMPLATE")
+MODULO="$(mktemp)"
+trap 'rm -f "$MODULO" "${CORPO:-}" "${RESP:-}"' EXIT
 
-if [ "${#REGRAS[@]}" -eq 0 ]; then
-  echo "  ✗ nenhuma regra extraida de $TEMPLATE"
-  echo "    Publicar um modulo VAZIO desligaria a sanitizacao de todos os"
-  echo "    coletores que casam o matcher. Abortado."
+if ! helm template publicar "$CHART" -f "$VALUES_BASE" \
+      --set "origin.id=${CLIENT_ID}" 2>/dev/null \
+    | python3 "${RAIZ}/publicar-fleet-extrair.py" > "$MODULO"; then
+  echo "  ✗ falha ao renderizar ou extrair a config do papel node"
+  echo "    Reproduza com: helm template . -f ${VALUES_BASE} --set origin.id=${CLIENT_ID}"
   exit 1
 fi
-echo "  ✓ ${#REGRAS[@]} regra(s), na ordem do template"
+
+BYTES=$(wc -c < "$MODULO" | tr -d ' ')
+if [ "$BYTES" -lt 1000 ]; then
+  echo "  ✗ config renderizada tem so ${BYTES} bytes — suspeito"
+  echo "    Publicar uma config truncada deixaria o cliente sem coleta."
+  exit 1
+fi
+echo "  ✓ ${BYTES} bytes, $(grep -c '' "$MODULO") linhas"
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "[2/4] Montar o modulo"
+echo "[2/5] Conferir o que foi renderizado"
 # ---------------------------------------------------------------------------
-MODULO="$(mktemp)"; trap 'rm -f "$MODULO" "${CORPO:-}" "${RESP:-}"' EXIT
-{
-  echo "// GERADO por sanitizacao/publicar-fleet.sh — nao edite pela console."
-  echo "// Edicao manual e sobrescrita na proxima publicacao, e nao passa pela"
-  echo "// porta de entrega. Para mudar uma regra: PR em templates/_sanitizacao.tpl."
-  echo "//"
-  echo "// origem:  ${GITHUB_SHA:-<local>}"
-  echo "// regras:  ${#REGRAS[@]}"
-  echo ""
-  echo "otelcol.receiver.otlp \"ponte_mod_entrada\" {"
-  echo "  http {"
-  echo "    endpoint = \"127.0.0.1:${PORTA_ENTRADA}\""
-  echo "  }"
-  echo "  output {"
-  echo "    logs = [otelcol.processor.transform.ponte_mod_sanit.input]"
-  echo "  }"
-  echo "}"
-  echo ""
-  echo "otelcol.processor.transform \"ponte_mod_sanit\" {"
-  echo "  // \"ignore\" e o mesmo de producao. E por isso que a correcao das regras"
-  echo "  // e provada pela porta de entrega, e nao confiada a este mecanismo:"
-  echo "  // regra malformada nao gera erro, so saida que aparenta estar mascarada."
-  echo "  error_mode = \"ignore\""
-  echo ""
-  echo "  log_statements {"
-  echo "    context = \"log\""
-  echo "    statements = ["
-  for r in "${REGRAS[@]}"; do
-    echo "      \`${r}\`,"
-  done
-  echo "    ]"
-  echo "  }"
-  echo ""
-  echo "  output {"
-  echo "    logs = [otelcol.exporter.otlphttp.ponte_mod_saida.input]"
-  echo "  }"
-  echo "}"
-  echo ""
-  echo "// ⚠️ DEVOLVE ao fluxo local. Exportar direto ao destino perderia o rotulo"
-  echo "// client.id, que o chart aplica num estagio POSTERIOR — medido: o log"
-  echo "// chega sem client_id e some de todo painel e do alerta O11Y-LOG-001."
-  echo "otelcol.exporter.otlphttp \"ponte_mod_saida\" {"
-  echo "  client {"
-  echo "    endpoint = \"http://127.0.0.1:${PORTA_RETORNO}\""
-  echo "    tls {"
-  echo "      insecure = true"
-  echo "    }"
-  echo "  }"
-  echo "}"
-} > "$MODULO"
-echo "  ✓ modulo montado, $(wc -c < "$MODULO" | tr -d ' ') bytes"
-echo "    entrada ${PORTA_ENTRADA} -> sanitizacao -> retorno ${PORTA_RETORNO}"
+# ⚠️ Verificacoes sobre o RENDER, antes de publicar. Um render que perdeu as
+# regras de PII, ou que carrega o client_id errado, so seria notado em producao.
+N_REGRAS=$(grep -c 'replace_pattern(body' "$MODULO" || true)
+N_ESPERADO=$(grep -c 'replace_pattern(body' "$TEMPLATE" || true)
+if [ "${N_REGRAS:-0}" -lt "${N_ESPERADO:-0}" ]; then
+  echo "  ✗ o render tem ${N_REGRAS} regras de PII; o template tem ${N_ESPERADO}"
+  exit 1
+fi
+echo "  ✓ ${N_REGRAS} regra(s) de PII presentes"
+
+if ! grep -q "\"client.id\"\], \"${CLIENT_ID}\"" "$MODULO"; then
+  echo "  ✗ o render NAO marca client.id = ${CLIENT_ID}"
+  echo "    Sem essa marca a telemetria chega inatribuivel. Abortado."
+  exit 1
+fi
+echo "  ✓ marca client.id = ${CLIENT_ID}"
+
+# Segredo em texto claro seria o pior defeito possivel aqui: o Fleet passaria a
+# guardar credencial de cliente.
+#
+# ⚠️ A verificacao EXCLUI linhas com `sys.env(` — foi falso positivo na primeira
+# versao, porque `sys.env("ALLOY_DESTINATION_CREDENTIAL")` casa qualquer regex que
+# procure "coisa longa depois de x-api-key". O que se procura e VALOR literal, e
+# `sys.env` e justamente a forma correta de nao ter valor no texto.
+if grep -vE 'sys\.env\(' "$MODULO" \
+   | grep -qE '(x-api-key|password|token|api_key)[^=]*=[^=]*"[A-Za-z0-9_.-]{20,}"'; then
+  echo "  ✗ ha CREDENCIAL EM TEXTO CLARO no render"
+  echo "    A config deve usar sys.env(). Publicar assim exporia o segredo."
+  exit 1
+fi
+echo "  ✓ nenhuma credencial em texto claro (usa sys.env)"
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "[3/4] Publicar"
+echo "[3/5] Montar o envio"
 # ---------------------------------------------------------------------------
-NOME="sanitizacao_pii_$(echo "$CLIENT_ID" | tr '[:upper:]-' '[:lower:]_')"
+NOME="config_$(echo "$CLIENT_ID" | tr '[:upper:]-' '[:lower:]_')"
 CORPO="$(mktemp)"
-python3 - "$MODULO" "$NOME" "$CLIENT_ID" > "$CORPO" <<'PY'
-import json, sys
-conteudo = open(sys.argv[1], encoding="utf-8").read()
-# ⚠️ O matcher DELIMITA o destinatario. Sem client_id a regra iria para todos os
-# coletores da stack — o escopo minimo de uma access policy do Fleet e a stack
-# inteira, entao o matcher e a unica separacao entre clientes que existe.
-print(json.dumps({"pipeline": {
-    "name": sys.argv[2],
-    "contents": conteudo,
-    "matchers": ['collector.os="linux"', 'role="node"', f'client_id="{sys.argv[3]}"'],
-    "enabled": True,
-}}))
-PY
+python3 "${RAIZ}/publicar-fleet-corpo.py" "$MODULO" "$NOME" "$CLIENT_ID" > "$CORPO"
+echo "  ✓ pipeline '${NOME}', matcher client_id=\"${CLIENT_ID}\""
 
 if [ "$DRY_RUN" = "1" ]; then
-  echo "  · dry-run: nao enviado. Modulo que seria publicado como '$NOME':"
-  sed 's/^/      /' "$MODULO"
+  echo ""
+  echo "  · dry-run: nao enviado. Primeiras 15 linhas do que seria publicado:"
+  head -15 "$MODULO" | sed 's/^/      /'
+  echo "      [...]"
   echo ""
   echo " ✓ dry-run concluido"
   exit 0
 fi
 
-# CreatePipeline falha se o nome ja existe; UpdatePipeline exige o id. Descobre
-# qual usar consultando o que esta publicado.
+# ---------------------------------------------------------------------------
+echo ""
+echo "[4/5] Publicar"
+# ---------------------------------------------------------------------------
 RESP="$(mktemp)"
 curl -s -o "$RESP" -X POST -H 'Content-Type: application/json' --max-time 20 \
   -d '{}' -u "${FLEET_USER}:${FLEET_TOKEN}" \
   "${FLEET_URL}/pipeline.v1.PipelineService/ListPipelines" >/dev/null 2>&1 || true
-ID_EXISTENTE=$(python3 - "$RESP" "$NOME" <<'PY'
-import json, sys
-try:
-    d = json.load(open(sys.argv[1]))
-except Exception:
-    print(""); raise SystemExit
-for p in d.get("pipelines", []):
-    if p.get("name") == sys.argv[2]:
-        print(p.get("id", "")); raise SystemExit
-print("")
-PY
-)
-
-# ⚠️ OUTRO modulo ja escutando a MESMA porta para o MESMO cliente?
-#
-# MEDIDO na primeira publicacao real: havia um modulo publicado A MAO com outro
-# NOME e o mesmo matcher. Os dois casaram o mesmo coletor, disputaram a porta
-# 4319, e o segundo falhou com "address already in use". O log seguiu funcionando
-# pelo primeiro — a falha era SILENCIOSA do ponto de vista do dado.
-#
-# Qual dos dois vence depende da ordem de carga, que nao e deterministica.
-# Publicar por cima disso deixaria a duvida em producao. Aborta.
-CONFLITANTES=$("${RAIZ}/publicar-fleet-conflitos.py" "$RESP" "$NOME" "$CLIENT_ID" "$PORTA_ENTRADA")
-
-if [ -n "$CONFLITANTES" ]; then
-  echo "  ✗ OUTRO modulo ja escuta a porta ${PORTA_ENTRADA} para ${CLIENT_ID}:"
-  echo "$CONFLITANTES" | sed 's/^/        /'
-  echo ""
-  echo "    Publicar deixaria dois modulos disputando a mesma porta. Um deles"
-  echo "    falha com address already in use, e qual deles depende da ordem de"
-  echo "    carga — o log continua fluindo pelo vencedor, entao a falha e"
-  echo "    silenciosa do ponto de vista do dado."
-  echo ""
-  echo "    Remova ou desabilite o outro modulo antes de publicar."
-  echo ""
-  echo " ✗ ABORTADO — nada foi publicado"
-  exit 1
-fi
+ID_EXISTENTE=$(python3 "${RAIZ}/publicar-fleet-id.py" "$RESP" "$NOME")
 
 # ⚠️ SEQUENCIA DELETE -> ESPERAR -> CREATE, e nao UpdatePipeline.
 #
 # MEDIDO em aws-devops: `UpdatePipeline` substitui o conteudo sem que o modulo
-# antigo libere a porta primeiro. O novo carrega mas nao sobe o receptor, e quando
-# o antigo sai o Fleet NAO realoca — a porta fica vazia e o log e DESCARTADO
-# (`connection refused` esgota o retry).
+# antigo libere as portas primeiro. O novo carrega mas nao sobe os receptores, e
+# quando o antigo sai o Fleet NAO realoca — o agente fica sem coleta.
 #
-# Testadas tres saidas:
-#
-#   forcar reavaliacao do remotecfg  -> NAO EXISTE. `/-/reload` responde 200 mas
-#                                       recarrega so a config local (service=http);
-#                                       nao toca controller_id=remotecfg
-#   reiniciar o agente pelo Fleet    -> NAO EXISTE. RestartCollector e RestartAgent
-#                                       respondem 404
-#   dois slots de porta em paralelo  -> elimina a janela mas DUPLICA o log: com os
-#                                       dois ativos, a mesma linha e processada
-#                                       duas vezes. 35.019 duplicatas/min no maior
-#                                       cliente. Pior que a perda que evita
-#
-# Restou separar os dois momentos por um ciclo de poll. MEDIDO: funciona, sem
-# reiniciar pod e sem duplicar.
-#
-# ⚠️ O CUSTO E UMA JANELA de ~1 min sem sanitizacao remota, em que o log e
-# descartado. Publique em horario de baixo volume: para o maior cliente sao ~3.500
-# linhas por pod na janela, e madrugada reduz isso numa ordem de magnitude.
+# Tres saidas testadas e descartadas:
+#   forcar reavaliacao do remotecfg  -> NAO EXISTE (`/-/reload` so recarrega local)
+#   reiniciar o agente pelo Fleet    -> NAO EXISTE (RestartCollector da 404)
+#   dois slots de porta em paralelo  -> DUPLICA a telemetria
 if [ -n "$ID_EXISTENTE" ]; then
-  echo "  · pipeline '$NOME' ja existe (id $ID_EXISTENTE)"
-  echo "  · DELETANDO antes de recriar — ver o comentario acima sobre por que"
-  echo "    UpdatePipeline nao serve"
-
+  echo "  · '${NOME}' ja existe (id ${ID_EXISTENTE}) — deletando antes de recriar"
   COD_DEL=$(curl -s -o /dev/null -w '%{http_code}' -X POST --max-time 20 \
     -H 'Content-Type: application/json' -u "${FLEET_USER}:${FLEET_TOKEN}" \
     -d "{\"id\":\"${ID_EXISTENTE}\"}" \
     "${FLEET_URL}/pipeline.v1.PipelineService/DeletePipeline")
-
   if [ "$COD_DEL" != "200" ]; then
     echo "  ✗ DeletePipeline respondeu HTTP ${COD_DEL}"
-    echo " ✗ ABORTADO — nada foi publicado, o antigo segue no ar"
+    echo " ✗ ABORTADO — o antigo segue no ar, nada mudou"
     exit 1
   fi
   echo "  ✓ removido"
 
-  # ⚠️ ESPERA CEGA, e nao ha alternativa hoje. Verificado:
-  #   - o Fleet nao expoe estado de aplicacao: os campos de um coletor sao
-  #     id, createdAt, updatedAt, attributes, enabled, collectorType
-  #   - `/api/v0/web/components` do agente lista so componentes LOCAIS, nenhum do
-  #     remotecfg — e exigiria acesso ao cluster, que em BYOC nao temos
+  # ⚠️ ESPERA CEGA, sem alternativa hoje. VERIFICADO: o Fleet nao expoe estado de
+  # aplicacao (campos do coletor: id, createdAt, updatedAt, attributes, enabled,
+  # collectorType), e `/api/v0/web/components` do agente lista so componentes
+  # LOCAIS — exigiria acesso ao cluster, que em BYOC nao temos.
   #
-  # Entao espera-se o poll com margem. `ESPERA_POLL` permite ajustar se o
-  # poll_frequency do cliente for diferente de 1m.
+  # ⚠️ NESTA JANELA O CLIENTE FICA SEM COLETA — nao so sem log: sem metrica e sem
+  # trace tambem, porque a config inteira vem daqui. Publique em horario de baixo
+  # volume. ESPERA_POLL ajusta se o poll_frequency do cliente diferir de 1m.
   ESPERA="${ESPERA_POLL:-75}"
-  echo "  · aguardando ${ESPERA}s para a porta ${PORTA_ENTRADA} liberar"
-  echo "    (poll_frequency e 1m; a espera e cega porque nem o Fleet nem o agente"
-  echo "     expoem se o modulo ja saiu — ambos verificados)"
+  echo "  · aguardando ${ESPERA}s (poll_frequency e 1m)"
+  echo "    ⚠️ o cliente fica SEM COLETA nesta janela — log, metrica e trace"
   sleep "$ESPERA"
 
-  # Confirma no Fleet que o antigo realmente saiu antes de recriar. Nao prova que
-  # o AGENTE ja o descarregou, mas pega o caso de o delete nao ter surtido efeito.
   curl -s -o "$RESP" -X POST -H 'Content-Type: application/json' --max-time 20 \
     -d '{}' -u "${FLEET_USER}:${FLEET_TOKEN}" \
     "${FLEET_URL}/pipeline.v1.PipelineService/ListPipelines" >/dev/null 2>&1 || true
-  AINDA_LA=$(python3 -c "
-import json, sys
-try:
-    d = json.load(open('$RESP'))
-except Exception:
-    raise SystemExit
-for p in d.get('pipelines', []):
-    if p.get('name') == '$NOME':
-        print('sim'); break
-")
-  if [ "$AINDA_LA" = "sim" ]; then
-    echo "  ✗ o pipeline '$NOME' ainda consta no Fleet apos o delete"
+  if [ -n "$(python3 "${RAIZ}/publicar-fleet-id.py" "$RESP" "$NOME")" ]; then
+    echo "  ✗ '${NOME}' ainda consta no Fleet apos o delete"
     echo " ✗ ABORTADO — nao recria por cima"
     exit 1
   fi
-  echo "  ✓ confirmado ausente no Fleet"
-  METODO="CreatePipeline"
-else
-  METODO="CreatePipeline"
-  echo "  · pipeline '$NOME' nao existe — criando"
+  echo "  ✓ confirmado ausente"
 fi
 
 CODIGO=$(curl -s -o "$RESP" -w '%{http_code}' -X POST --max-time 30 \
   -H 'Content-Type: application/json' -u "${FLEET_USER}:${FLEET_TOKEN}" \
   --data-binary @"$CORPO" \
-  "${FLEET_URL}/pipeline.v1.PipelineService/${METODO}")
+  "${FLEET_URL}/pipeline.v1.PipelineService/CreatePipeline")
 
 if [ "$CODIGO" != "200" ]; then
-  echo "  ✗ ${METODO} respondeu HTTP ${CODIGO}"
+  echo "  ✗ CreatePipeline respondeu HTTP ${CODIGO}"
   head -c 300 "$RESP" | sed 's/^/      /'
   echo ""
-  echo " ✗ FALHOU — nada foi publicado"
+  echo " ✗ FALHOU — e o antigo JA FOI REMOVIDO. O cliente esta SEM CONFIGURACAO."
+  echo "   Republique imediatamente, ou acione o DR:"
+  echo "   fleetManagement.enabled: false + helm upgrade"
   exit 1
 fi
-echo "  ✓ ${METODO} respondeu 200"
+echo "  ✓ CreatePipeline respondeu 200"
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "[4/4] Reconferir o publicado"
+echo "[5/5] Reconferir o publicado"
 # ---------------------------------------------------------------------------
-# ⚠️ Publicar sem reconferir deixa o resultado por suposicao. O verificador compara
-# o que ESTA la com o template, na ordem, e acusa exportador que nao devolva.
 echo ""
-PORTA_RETORNO_PONTE="$PORTA_RETORNO" "${RAIZ}/verificar-fleet.sh"
+"${RAIZ}/verificar-fleet.sh"

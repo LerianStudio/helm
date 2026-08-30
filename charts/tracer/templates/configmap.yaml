@@ -1,15 +1,25 @@
 {{- if .Values.tracer.enabled }}
+{{- $namespace := include "global.namespace" . }}
+{{- /* Datastore masks (lerian-common): connection identity + TOPOLOGY resolved via
+   global.datastores.<type> (+ global.cloud presets) with native tracer.configmap.<KEY>
+   and dedicated .Values.datastores overrides taking precedence. Defaults keep the
+   bundled-dev topology → render-equivalent for existing users. */ -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $ded := .Values.datastores | default dict -}}
+{{- $cm := .Values.tracer.configmap -}}
+{{- $mtRaw := $cm.MULTI_TENANT_ENABLED | default "false" -}}
+{{- $multiTenantEnabled := eq (toString $mtRaw) "true" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "tracer.fullname" . }}
-  namespace: {{ include "global.namespace" . }}
+  namespace: {{ $namespace }}
   labels:
     {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
 data:
   # Application Configuration
   ALLOW_INSECURE_TLS: {{ .Values.tracer.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
-  ENV_NAME: {{ .Values.tracer.configmap.ENV_NAME | default "production" | quote }}
+  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | quote }}
   SERVER_PORT: {{ .Values.tracer.configmap.SERVER_PORT | default "4020" | quote }}
   SERVER_ADDRESS: {{ .Values.tracer.configmap.SERVER_ADDRESS | default ":4020" | quote }}
 
@@ -22,16 +32,18 @@ data:
   # CORS
   CORS_ALLOWED_ORIGINS: {{ .Values.tracer.configmap.CORS_ALLOWED_ORIGINS | default "*" | quote }}
 
-  # Auth Plugin (Access Manager)
-  PLUGIN_AUTH_ENABLED: {{ .Values.tracer.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_ADDRESS: {{ .Values.tracer.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-auth:4000" | quote }}
+  # Auth Plugin (Access Manager) — resolved via the lerian-common auth mask
+  # (global.auth.{enabled,host}); a native configmap.PLUGIN_AUTH_* always wins.
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local.:4000") | nindent 2 }}
 
-  # PostgreSQL Database
-  DB_HOST: {{ .Values.tracer.configmap.DB_HOST | default "tracer-postgresql" | quote }}
-  DB_PORT: {{ .Values.tracer.configmap.DB_PORT | default "5432" | quote }}
+  # PostgreSQL Database — host/port/user/sslmode resolved via the postgres
+  # datastore mask (global.datastores.postgres / global.cloud). A native
+  # configmap.<KEY> always wins over the mask.
+  DB_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "tracer-postgresql.tracer.svc.cluster.local.") | quote }}
+  DB_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
   DB_NAME: {{ .Values.tracer.configmap.DB_NAME | default "tracer" | quote }}
-  DB_USER: {{ .Values.tracer.configmap.DB_USER | default "tracer" | quote }}
-  DB_SSL_MODE: {{ .Values.tracer.configmap.DB_SSL_MODE | default "disable" | quote }}
+  DB_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "tracer") | quote }}
+  DB_SSL_MODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSL_MODE" "default" "disable") | quote }}
   MIGRATIONS_PATH: {{ .Values.tracer.configmap.MIGRATIONS_PATH | default "./migrations" | quote }}
 
   # Swagger Documentation
@@ -44,31 +56,44 @@ data:
   # CEL Expression Engine
   CEL_COST_LIMIT: {{ .Values.tracer.configmap.CEL_COST_LIMIT | default "10000" | quote }}
 
-  # OpenTelemetry (Observability)
+  # OpenTelemetry (Observability) — OTEL_RESOURCE_SERVICE_NAME/OTEL_LIBRARY_NAME
+  # are per-service identity and stay native passthrough (otel.env/.envFlat would
+  # emit keys tracer doesn't have, e.g. OTEL_RESOURCE_SERVICE_VERSION).
   OTEL_RESOURCE_SERVICE_NAME: {{ .Values.tracer.configmap.OTEL_RESOURCE_SERVICE_NAME | default "tracer" | quote }}
   OTEL_LIBRARY_NAME: {{ .Values.tracer.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/tracer" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.tracer.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.tracer.configmap.ENABLE_TELEMETRY | default "false" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
 
   # Cleanup Worker
   CLEANUP_WORKER_ENABLED: {{ .Values.tracer.configmap.CLEANUP_WORKER_ENABLED | default "false" | quote }}
   CLEANUP_INTERVAL_HOURS: {{ .Values.tracer.configmap.CLEANUP_INTERVAL_HOURS | default "24" | quote }}
 
-  # Multi-Tenant
-  MULTI_TENANT_ENABLED: {{ .Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if eq (.Values.tracer.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
-  MULTI_TENANT_URL: {{ required "tracer.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.tracer.configmap.MULTI_TENANT_URL | quote }}
-  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.tracer.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
-  MULTI_TENANT_REDIS_HOST: {{ required "tracer.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.tracer.configmap.MULTI_TENANT_REDIS_HOST | quote }}
-  MULTI_TENANT_REDIS_PORT: {{ .Values.tracer.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
-  MULTI_TENANT_REDIS_TLS: {{ .Values.tracer.configmap.MULTI_TENANT_REDIS_TLS | default "true" | quote }}
-  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.tracer.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
-  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
-  MULTI_TENANT_TIMEOUT: {{ .Values.tracer.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.tracer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
-  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
-  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
+  # Multi-Tenant — flat-passthrough mirror of the chart's existing block via
+  # lerian-common.multiTenant.envFlat (no derivation, no global.multiTenant).
+  {{- include "lerian-common.multiTenant.envFlat" (dict
+        "configmap" $cm
+        "keys" (list
+          "MULTI_TENANT_URL"
+          "MULTI_TENANT_ALLOW_INSECURE_HTTP"
+          "MULTI_TENANT_REDIS_HOST"
+          "MULTI_TENANT_REDIS_PORT"
+          "MULTI_TENANT_REDIS_TLS"
+          "MULTI_TENANT_MAX_TENANT_POOLS"
+          "MULTI_TENANT_IDLE_TIMEOUT_SEC"
+          "MULTI_TENANT_TIMEOUT"
+          "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD"
+          "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
+          "MULTI_TENANT_CACHE_TTL_SEC"
+          "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC")
+        "defaults" (dict "MULTI_TENANT_REDIS_TLS" "true")
+        "required" (dict
+          "MULTI_TENANT_URL" "tracer.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true"
+          "MULTI_TENANT_REDIS_HOST" "tracer.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true"))
+    | nindent 2 }}
+  {{- /* MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT/_IDLE_CONNS_PER_TENANT are NOT in
+     the multiTenant.envFlat standard key set ($std) — emitted here, unchanged,
+     after the include, so they are not silently dropped. */}}
+  {{- if $multiTenantEnabled }}
   {{- if .Values.tracer.configmap.MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT }}
   MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: {{ .Values.tracer.configmap.MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT | quote }}
   {{- end }}

@@ -1,4 +1,12 @@
 {{- if .Values.global.externalPostgresDefinitions.enabled }}
+{{- /* Keep this bootstrap Job's host/port in lockstep with the configmap's
+   DB_HOST/DB_PORT (same postgres datastore mask + same nativeKeys) so the two
+   configuration points for Postgres host/port can never silently diverge. */ -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $ded := .Values.datastores | default dict -}}
+{{- $cm := .Values.tracer.configmap -}}
+{{- $bootstrapHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" .Values.global.externalPostgresDefinitions.connection.host) -}}
+{{- $bootstrapPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" .Values.global.externalPostgresDefinitions.connection.port) -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -19,9 +27,9 @@ spec:
         image: busybox:1.37
         env:
         - name: DB_HOST
-          value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+          value: {{ $bootstrapHost | quote }}
         - name: DB_PORT
-          value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+          value: {{ $bootstrapPort | quote }}
         command:
         - /bin/sh
         - -c
@@ -44,9 +52,9 @@ spec:
         image: postgres:17
         env:
         - name: DB_HOST
-          value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+          value: {{ $bootstrapHost | quote }}
         - name: DB_PORT
-          value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+          value: {{ $bootstrapPort | quote }}
         - name: DB_USER_ADMIN
           {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
           valueFrom:

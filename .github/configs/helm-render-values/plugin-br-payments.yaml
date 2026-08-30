@@ -5,8 +5,11 @@ app:
     MIDAZ_ONBOARDING_URL: "http://midaz-onboarding:3000"
     MIDAZ_TRANSACTION_URL: "http://midaz-transaction:3000"
   secrets:
-    BTG_CLIENT_ID: "sample"
-    BTG_CLIENT_SECRET: "sample"
+    # Renamed from BTG_CLIENT_ID / BTG_CLIENT_SECRET. These sample values exercise
+    # the SINGLE-TENANT branch of validateRequired, which is the only branch that
+    # requires the pair — in multi-tenant the app resolves it per tenant.
+    PROVIDER_CLIENT_ID: "sample"
+    PROVIDER_CLIENT_SECRET: "sample"
     BTG_WEBHOOK_SECRET: "sample"
     INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
     CREDENTIAL_ENCRYPTION_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="

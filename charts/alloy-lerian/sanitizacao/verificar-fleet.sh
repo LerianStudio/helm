@@ -49,7 +49,7 @@ echo "  stack: ${FLEET_URL}"
 echo ""
 
 # ---------------------------------------------------------------------------
-echo "[1/4] Pipelines publicadas sao alcancaveis"
+echo "[1/5] Pipelines publicadas sao alcancaveis"
 # ---------------------------------------------------------------------------
 RESP="$(mktemp)"; trap 'rm -f "$RESP"' EXIT
 # ⚠️ `Content-Type: application/json` e OBRIGATORIO. A API e Connect RPC e
@@ -76,7 +76,7 @@ esac
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "[2/4] Toda pipeline habilitada com regra de PII confere com o repositorio"
+echo "[2/5] Toda pipeline habilitada com regra de PII confere com o repositorio"
 # ---------------------------------------------------------------------------
 # ⚠️ Só as HABILITADAS. Uma pipeline desabilitada nao processa dado, e bloquear
 # por causa dela transformaria rascunho em impedimento de entrega. Mas ela e
@@ -139,7 +139,7 @@ fi
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "[3/4] Nenhuma pipeline exporta telemetria por fora"
+echo "[3/5] Nenhuma pipeline exporta telemetria por fora"
 # ---------------------------------------------------------------------------
 # ⚠️ O risco que o values.yaml registra: como config local e remota tem
 # controladores separados, uma pipeline remota com exportador proprio tem caminho
@@ -171,15 +171,33 @@ echo "[3/4] Nenhuma pipeline exporta telemetria por fora"
 # chega. Este passo aprova (o destino e legitimo) e nao detecta. Quem detecta e o
 # alerta O11Y-LOG-001, por log ausente.
 PORTA_RETORNO="${PORTA_RETORNO_PONTE:-4320}"
-mapfile -t EXPORTADORES < <(PORTA="$PORTA_RETORNO" python3 "${RAIZ}/verificar-fleet-saidas.py" "$RESP")
+
+# ⚠️ O DESTINO ESPERADO vem do proprio chart, nao de um valor fixo aqui. Com a
+# config completa no Fleet, a pipeline publicada EXPORTA para o nosso destino — e
+# isso e o funcionamento normal. Fuga e apontar para OUTRO lugar.
+#
+# Extrair do values evita que este script e o chart discordem sobre qual e o
+# destino legitimo.
+DESTINO_ESPERADO="${DESTINO_ESPERADO:-$(python3 - "${RAIZ}/../examples/values-cliente.yaml" <<'PYX'
+import sys, yaml
+try:
+    v = yaml.safe_load(open(sys.argv[1], encoding="utf-8")) or {}
+    print((v.get("destination") or {}).get("endpoint", ""))
+except Exception:
+    print("")
+PYX
+)}"
+
+mapfile -t EXPORTADORES < <(PORTA="$PORTA_RETORNO" DESTINO_ESPERADO="$DESTINO_ESPERADO" \
+  python3 "${RAIZ}/verificar-fleet-saidas.py" "$RESP")
 
 if [ "${#EXPORTADORES[@]}" -eq 0 ]; then
   ok "nenhuma pipeline declara exportador com saida"
 else
   for linha in "${EXPORTADORES[@]}"; do
     IFS=$'\t' read -r NOME HAB PAPEL DETALHE <<< "$linha"
-    if [ "$PAPEL" = "ponte" ]; then
-      ok "[$NOME] exportador da PONTE — $DETALHE"
+    if [ "$PAPEL" = "legitimo" ]; then
+      ok "[$NOME] $DETALHE"
     elif [ "$HAB" = "sim" ]; then
       erro "[$NOME] HABILITADA com saida externa: $DETALHE"
       echo "        caminho paralelo — escapa da allowlist e do perimetro locais"
@@ -191,7 +209,7 @@ fi
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "[4/4] Filtro de metrica publicado — inventario, nao veredito"
+echo "[4/5] Filtro de metrica publicado — inventario, nao veredito"
 # ---------------------------------------------------------------------------
 # ⚠️ POR QUE ESTE PASSO NAO BLOQUEIA, ao contrario do passo 2.
 #
@@ -246,6 +264,49 @@ else
     fi
   done
   echo "      (inventario — nao bloqueia, por decisao registrada)"
+fi
+
+# ---------------------------------------------------------------------------
+echo ""
+echo "[5/5] Configuracao publicada identica ao render do chart"
+# ---------------------------------------------------------------------------
+# ⚠️ O passo 2 confere as REGRAS DE PII. Este confere a CONFIG INTEIRA, e a
+# diferenca importa: com a configuracao completa vindo do Fleet, regras corretas
+# nao garantem o resto — allowlist, perimetro, filtro de ruido e destino tambem
+# vem de la.
+#
+# Allowlist editada na console nao e vazamento; e COBRANCA IMEDIATA na Grafana
+# Cloud. O passo 2 nao a veria.
+#
+# ⚠️ E ha um segundo motivo: a config publicada e o gemeo do ConfigMap local, que
+# e o artefato de DR (`fleetManagement.enabled: false`). Divergindo, o DR
+# restauraria uma versao desatualizada — o problema que o Fleet existe para
+# resolver.
+#
+# So roda se CLIENT_ID estiver definido: sem ele nao ha como saber qual pipeline
+# comparar nem com que `origin.id` renderizar.
+if [ -z "${CLIENT_ID:-}" ]; then
+  echo "  · CLIENT_ID nao definido — comparacao da config completa ignorada"
+  echo "    Defina CLIENT_ID para conferir a config inteira, nao so as regras."
+else
+  NOME_CFG="config_$(echo "$CLIENT_ID" | tr '[:upper:]-' '[:lower:]_')"
+  RENDER="$(mktemp)"
+  VALUES_BASE="${VALUES_BASE:-${RAIZ}/../examples/values-cliente.yaml}"
+  if helm template verificar "${RAIZ}/.." -f "$VALUES_BASE" \
+        --set "origin.id=${CLIENT_ID}" 2>/dev/null \
+      | python3 "${RAIZ}/publicar-fleet-extrair.py" > "$RENDER" 2>/dev/null; then
+    if SAIDA=$(python3 "${RAIZ}/verificar-fleet-diff.py" "$RESP" "$NOME_CFG" "$RENDER"); then
+      ok "[$NOME_CFG] config publicada identica ao render"
+    else
+      erro "[$NOME_CFG] config publicada DIVERGE do render do chart"
+      echo "$SAIDA" | sed 's/^/      /'
+      echo "      Republique com sanitizacao/publicar-fleet.sh — editar pela"
+      echo "      console contorna a porta de entrega."
+    fi
+  else
+    echo "  ⚠ nao foi possivel renderizar o chart para comparar"
+  fi
+  rm -f "$RENDER"
 fi
 
 echo ""

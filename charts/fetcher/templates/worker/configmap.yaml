@@ -5,8 +5,43 @@ metadata:
   labels:
     {{- include "fetcher-worker.labels" . | nindent 4 }}
 data:
-  {{- range $key, $value := .Values.worker.configmap }}
+  {{- $wc := .Values.worker.configmap | default dict }}
+  {{- $wcExplicit := list
+        "STREAMING_ENABLED" "STREAMING_BROKERS" "STREAMING_TLS_ENABLED"
+        "STREAMING_SASL_MECHANISM" "STREAMING_SASL_USERNAME" "STREAMING_CLOUDEVENTS_SOURCE"
+        "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_BUCKET" "OBJECT_STORAGE_USE_PATH_STYLE"
+  }}
+  {{- range $key, $value := $wc }}
+  {{- if not (has $key $wcExplicit) }}
   {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  # Storage (S3/SeaweedFS) via lerian-common.objectStorage.value (name "fetcher");
+  # see global.objectStorage.fetcher. worker.configmap.OBJECT_STORAGE_* still overrides.
+  OBJECT_STORAGE_ENDPOINT: {{ include "lerian-common.objectStorage.value" (dict "context" $ "configmap" $wc "name" "fetcher" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "") | quote }}
+  OBJECT_STORAGE_REGION: {{ include "lerian-common.objectStorage.value" (dict "context" $ "configmap" $wc "name" "fetcher" "field" "region" "nativeKey" "OBJECT_STORAGE_REGION" "default" "us-east-1") | quote }}
+  OBJECT_STORAGE_BUCKET: {{ include "lerian-common.objectStorage.value" (dict "context" $ "configmap" $wc "name" "fetcher" "field" "bucket" "nativeKey" "OBJECT_STORAGE_BUCKET" "default" "external-data") | quote }}
+  OBJECT_STORAGE_USE_PATH_STYLE: {{ include "lerian-common.objectStorage.value" (dict "context" $ "configmap" $wc "name" "fetcher" "field" "usePathStyle" "nativeKey" "OBJECT_STORAGE_USE_PATH_STYLE" "default" "false") | quote }}
+  # Streaming (lib-streaming/CloudEvents) - the worker hard-requires
+  # STREAMING_ENABLED=true at startup for mandatory job event notifications.
+  # brokers/SASL/TLS transport via global.streaming (lerian-common.streaming.env),
+  # gated on enabled AND a configured broker; worker.configmap.STREAMING_* still
+  # overrides. STREAMING_BROKERS has no working default in either place - it
+  # MUST be set (global.streaming.brokers or worker.configmap.STREAMING_BROKERS)
+  # to a real Kafka/Redpanda bootstrap address before installing with the
+  # bundled worker.
+  {{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled }}
+  {{- if hasKey $wc "STREAMING_ENABLED" }}{{- $streamingRaw = index $wc "STREAMING_ENABLED" }}{{- end }}
+  {{- if kindIs "invalid" $streamingRaw }}{{- $streamingRaw = "true" }}{{- end }}
+  STREAMING_ENABLED: {{ $streamingRaw | quote }}
+  {{- $streamingEnabled := eq (include "fetcher.isTrue" $streamingRaw) "true" }}
+  {{- if $streamingEnabled }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $wc
+        "clientId" ($wc.STREAMING_CLIENT_ID | default "fetcher-worker")
+        "cloudeventsSource" ($wc.STREAMING_CLOUDEVENTS_SOURCE | default "fetcher-worker")) | nindent 2 }}
   {{- end }}
   # Rate Limiting - Three-tier system with Redis backend
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)

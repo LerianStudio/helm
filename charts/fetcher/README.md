@@ -70,6 +70,46 @@ helm uninstall fetcher -n midaz-plugins
 
 The following table lists the configurable parameters and their default values.
 
+### Managed Cloud (`global.cloud`)
+
+Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster MongoDB/Valkey/RabbitMQ/SeaweedFS with one knob, via the
+[lerian-common](https://github.com/LerianStudio/helm/tree/main/charts/lerian-common)
+dependency:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    mongo: { host: "my-documentdb.example.com", port: "27017" }
+    redis: { host: "my-elasticache.example.com", port: "6379" }
+    broker: { host: "my-amazonmq.example.com" }
+  objectStorage:
+    fetcher: { endpoint: "https://s3.us-east-1.amazonaws.com", region: "us-east-1", bucket: "my-bucket" }
+  observability:
+    enabled: true
+  auth:
+    enabled: true
+    host: "http://plugin-access-manager-auth:4000"
+  streaming:
+    enabled: true
+    brokers: "redpanda.<namespace>:9092"   # mandatory: the worker will not boot without it
+  multiTenant:
+    enabled: true
+    url: "http://tenant-manager:8080"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, AMQP scheme/ports, S3
+path-style) for the masks above; only the ENDPOINTS (host/port) still come
+from `global.datastores`/`global.objectStorage` — a cloud preset can't know
+your DocumentDB/ElastiCache/AmazonMQ host. A native `common.configmap.<KEY>`
+(or `manager.configmap.<KEY>` / `worker.configmap.<KEY>` for their own masked
+fields) always overrides any mask.
+
+fetcher does **not** adopt `lerian-common.serviceDiscovery` — this chart has
+no `SD_*` contract at all today (no Consul/lib-service-discovery integration),
+so there is nothing to migrate onto that mask.
+
 ### Global Settings
 
 | Parameter | Description | Default |
@@ -122,6 +162,9 @@ The following table lists the configurable parameters and their default values.
 | `common.configmap.SEAWEEDFS_HOST` | SeaweedFS host | `seaweedfs-filer` |
 | `common.configmap.REDIS_HOST` | Redis/Valkey host | `valkey` |
 | `common.configmap.REDIS_PORT` | Redis/Valkey port | `6379` |
+| `common.configmap.ALLOW_INSECURE_TLS` | Skip TLS certificate validation for MongoDB/RabbitMQ/Redis connections. Bundled dev-mode dependencies have no TLS, so the app refuses to connect unless this is `"true"`. Set to `"false"` in production with TLS-terminated backends. | `"true"` |
+| `worker.configmap.STREAMING_ENABLED` | Enable lib-streaming (CloudEvents) job notifications. The worker hard-requires this to be `"true"` and will not start without a reachable broker. | `"true"` |
+| `worker.configmap.STREAMING_BROKERS` | **REQUIRED when the worker is deployed** - Kafka/Redpanda bootstrap address(es), e.g. `redpanda.<namespace>:9092`. No working default; not bundled by this chart. | `""` |
 
 ### Secrets
 
@@ -132,7 +175,7 @@ The following table lists the configurable parameters and their default values.
 | `secrets.MONGO_USER` | **REQUIRED** - MongoDB username | `fetcher` |
 | `secrets.MONGO_PASSWORD` | **REQUIRED** - MongoDB password | `""` |
 | `secrets.RABBITMQ_DEFAULT_USER` | **REQUIRED** - RabbitMQ username | `plugin` |
-| `secrets.RABBITMQ_DEFAULT_PASS` | **REQUIRED** - RabbitMQ password | `""` |
+| `secrets.RABBITMQ_DEFAULT_PASS` | RabbitMQ password for the `plugin` user. Defaults to a fixed dev-only credential matching the hash baked into `files/rabbitmq/load_definitions.json` (used when `rabbitmq.enabled=true`). Override for production/external RabbitMQ. | `"fetcher-dev-only"` |
 | `secrets.LICENSE_KEY` | **REQUIRED** - Lerian license key | `""` |
 
 ### External RabbitMQ Bootstrap

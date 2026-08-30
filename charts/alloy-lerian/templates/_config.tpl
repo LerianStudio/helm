@@ -378,13 +378,23 @@ otelcol.exporter.otlphttp "ponte_saida" {
     }
   }
 
-  // Mesma fila do destino real, pela mesma razao. Com `block_on_overflow = true`,
-  // modulo ausente significa contrapressao — nunca log em claro, nunca descarte.
+  // Mesma fila do destino real, e herda `blockOnOverflow` dele.
+  //
+  // ⚠️ COM O PADRAO (`false`), modulo do Fleet ausente significa: retem com retry
+  // enquanto a fila aguentar, e DESCARTA depois. MEDIDO — 300 envios: 29 retries,
+  // 0 descartes; 1800 envios: 800 descartes. Nada sai em claro em nenhum dos
+  // casos, mas o log SOME em silencio quando a fila enche.
+  //
+  // Quanto a fila aguenta e por cliente: ~17 min em aws-devops, ~18 s em
+  // Cappta-Prd, ~1,7 s em Voluti-prd (linha media de 909 bytes, medida).
+  //
+  // ⚠️ Logo o modo ponte DEPENDE do alerta de saturacao de fila para nao perder
+  // log sem ninguem perceber. Nao e refinamento — e parte da entrega.
   sending_queue {
     enabled       = true
     queue_size    = {{ .Values.destination.queue.size | default 1000 }}
     num_consumers = {{ .Values.destination.queue.consumers | default 10 }}
-    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}true{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
+    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}false{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
   }
 }
 
@@ -436,33 +446,32 @@ otelcol.exporter.otlphttp "destino" {
     enabled       = true
     queue_size    = {{ .Values.destination.queue.size | default 1000 }}
     num_consumers = {{ .Values.destination.queue.consumers | default 10 }}
-    // ⚠️ MUDADO PARA `true` em 2026-08-29. O comentario anterior dizia: "nao
-    // bloquear no overflow, porque a contrapressao chegaria as aplicacoes do
-    // cliente, e isso nao cabe a nos impor". O raciocinio e legitimo, mas MEDIDO
-    // ele produz um resultado pior.
+    // NAO bloquear no overflow: a contrapressao se propagaria as aplicacoes do
+    // cliente, e isso nao cabe a nos impor. Telemetria e auxiliar; a transacao e
+    // o negocio. Um coletor que trava o ledger porque o destino esta fora e uma
+    // troca ruim.
     //
-    // Com `false`, fila cheia significa DESCARTE — e a aplicacao recebe 200. Ela
-    // considera entregue o que foi jogado fora. MEDIDO com a fila padrao (1000) e
-    // o destino fora:
+    // ⚠️ E O CUSTO DISSO, MEDIDO, precisa estar visivel: fila cheia significa
+    // DESCARTE, e a aplicacao recebe 200 — ela considera entregue o que foi
+    // jogado fora. Com a fila padrao (1000) e o destino fora:
     //
     //   1800 envios -> 300 respostas 200, 58 retries, 800 DESCARTES
     //   level=error "Exporting failed. Rejecting data." error="sending queue is full"
     //
-    // Com `true`, o mesmo cenario (fila 50, destino fora, 80 envios):
+    // Quanto a fila aguenta, com linha media de 909 bytes medida em producao:
+    // ~17 min em aws-devops, ~18 s em Cappta-Prd, ~1,7 s em Voluti-prd.
     //
-    //   50 aceitos, 30 BLOQUEADOS, ZERO descartes
+    // ⚠️ Logo a fila NAO e a protecao para cliente de alto volume. O que torna
+    // essa perda percebida e o ALERTA de saturacao (`otelcol_exporter_queue_size`
+    // sobre `_capacity`), nao o tamanho da fila. Sem ele o dado some em silencio.
     //
-    // A aplicacao ve o timeout e o SDK OTLP retem do lado dela, conforme a propria
-    // politica. Nao ha perda dentro do agente.
+    // ⚠️ A mesma evidencia aparece no values, no comentario de `singletonSize`:
+    // 256 eventos perdidos na benedita por fila cheia. Aumentar a fila adiou
+    // aquele caso; nao resolveu a classe do problema.
     //
-    // ⚠️ O custo e real e precisa ser dito: se o destino ficar fora por muito
-    // tempo, a contrapressao CHEGA a aplicacao. Aceito porque este agente carrega
-    // dado regulado, e para dado regulado bloquear e preferivel a descartar em
-    // silencio — a mesma logica que justifica a sanitizacao existir.
-    //
-    // Quem precisar do comportamento antigo: `destination.queue.blockOnOverflow:
-    // false`. A decisao de perder dado em silencio passa a ser explicita.
-    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}true{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
+    // `destination.queue.blockOnOverflow: true` inverte para contrapressao. Use
+    // apenas onde a aplicacao tolerar bloqueio — nao e o padrao por decisao.
+    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}false{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
   }
 
   retry_on_failure {
@@ -952,10 +961,10 @@ otelcol.exporter.otlphttp "destino" {
     enabled       = true
     queue_size    = {{ .Values.destination.queue.singletonSize | default 5000 }}
     num_consumers = {{ .Values.destination.queue.consumers | default 10 }}
-    // Mesma mudanca e mesma razao do papel node — ver o comentario extenso la.
-    // Resumo: `false` descartava em silencio com a aplicacao recebendo 200;
-    // `true` bloqueia e nao perde nada dentro do agente. MEDIDO.
-    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}true{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
+    // Mesma razao do papel node: contrapressao nao e nossa para impor. E o mesmo
+    // custo — fila cheia descarta em silencio, e o alerta de saturacao e o que
+    // torna isso percebido. Ver o comentario extenso la.
+    block_on_overflow = {{ if kindIs "invalid" .Values.destination.queue.blockOnOverflow }}false{{ else }}{{ .Values.destination.queue.blockOnOverflow }}{{ end }}
   }
 
   // The node role had retry and this one did not — an inconsistency, not a

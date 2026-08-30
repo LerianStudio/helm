@@ -112,30 +112,35 @@ destination:
     # never replay a backlog.
     singletonSize: 5000
 
-    # ⚠️ MUDADO PARA `true` em 2026-08-29, e é mudança de comportamento para todos
-    # os clientes. Leia antes de reverter.
+    # ⚠️ `false` é o padrão POR DECISÃO, e o custo está medido abaixo.
     #
-    # Com `false` (o padrão anterior), fila cheia significa DESCARTE — e a
-    # aplicação recebe `200`. Ela considera entregue o que foi jogado fora.
-    # MEDIDO com a fila padrão e o destino fora:
+    # Contrapressão não cabe a nós impor: telemetria é auxiliar, a transação é o
+    # negócio. Um coletor que trava o ledger de um cliente porque o destino de
+    # telemetria está fora é uma troca ruim.
+    #
+    # ⚠️ MAS O CUSTO É REAL: fila cheia significa DESCARTE, e a aplicação recebe
+    # `200` — ela considera entregue o que foi jogado fora. MEDIDO com a fila
+    # padrão e o destino fora:
     #
     #   1800 envios -> 300 respostas 200, 58 retries, 800 DESCARTES
     #
-    # ⚠️ A perda de 256 eventos documentada acima, no `singletonSize`, é
-    # exatamente este mecanismo. Aumentar a fila adiou o problema; não o resolveu.
+    # A perda de 256 eventos documentada acima, no `singletonSize`, é exatamente
+    # este mecanismo. Aumentar a fila adiou aquele caso; não resolveu a classe.
     #
-    # Com `true`, o mesmo cenário: 50 aceitos, 30 BLOQUEADOS, ZERO descartes. A
-    # aplicação vê o timeout e o SDK OTLP retém do lado dela.
+    # Quanto a fila aguenta, com linha média de 909 bytes medida em produção:
     #
-    # ⚠️ O custo: se o destino ficar fora por muito tempo, a contrapressão CHEGA à
-    # aplicação. Aceito porque este agente carrega dado regulado, e para dado
-    # regulado bloquear é preferível a descartar em silêncio.
+    #   aws-devops     ~17 minutos
+    #   Cappta-Prd     ~18 segundos
+    #   Voluti-prd     ~1,7 SEGUNDOS
     #
-    # Medição de quanto a fila aguenta, com linha média de 909 bytes (medido em
-    # produção): 1.000 itens cobrem ~17 min em aws-devops, ~18 s em Cappta-Prd e
-    # **1,7 s em Voluti-prd**. Para o maior cliente a fila é irrelevante — é a
-    # contrapressão que protege, não o tamanho.
-    blockOnOverflow: true
+    # ⚠️ Para cliente de alto volume a fila não protege — 1 h de retenção no
+    # Voluti exigiria ~1,8 GB de RAM contra um limite de container de 512 Mi.
+    # O que torna essa perda percebida é o ALERTA de saturação
+    # (`otelcol_exporter_queue_size` sobre `_capacity`), não o tamanho da fila.
+    #
+    # `true` inverte para contrapressão — MEDIDO: 50 aceitos, 30 bloqueados, zero
+    # descartes. Use apenas onde a aplicação tolerar bloqueio.
+    blockOnOverflow: false
 
   retry:
     # Effective survivable outage window. Beyond it, records are discarded and

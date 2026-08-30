@@ -202,15 +202,84 @@ if [ -n "$CONFLITANTES" ]; then
   exit 1
 fi
 
+# ⚠️ SEQUENCIA DELETE -> ESPERAR -> CREATE, e nao UpdatePipeline.
+#
+# MEDIDO em aws-devops: `UpdatePipeline` substitui o conteudo sem que o modulo
+# antigo libere a porta primeiro. O novo carrega mas nao sobe o receptor, e quando
+# o antigo sai o Fleet NAO realoca — a porta fica vazia e o log e DESCARTADO
+# (`connection refused` esgota o retry).
+#
+# Testadas tres saidas:
+#
+#   forcar reavaliacao do remotecfg  -> NAO EXISTE. `/-/reload` responde 200 mas
+#                                       recarrega so a config local (service=http);
+#                                       nao toca controller_id=remotecfg
+#   reiniciar o agente pelo Fleet    -> NAO EXISTE. RestartCollector e RestartAgent
+#                                       respondem 404
+#   dois slots de porta em paralelo  -> elimina a janela mas DUPLICA o log: com os
+#                                       dois ativos, a mesma linha e processada
+#                                       duas vezes. 35.019 duplicatas/min no maior
+#                                       cliente. Pior que a perda que evita
+#
+# Restou separar os dois momentos por um ciclo de poll. MEDIDO: funciona, sem
+# reiniciar pod e sem duplicar.
+#
+# ⚠️ O CUSTO E UMA JANELA de ~1 min sem sanitizacao remota, em que o log e
+# descartado. Publique em horario de baixo volume: para o maior cliente sao ~3.500
+# linhas por pod na janela, e madrugada reduz isso numa ordem de magnitude.
 if [ -n "$ID_EXISTENTE" ]; then
-  METODO="UpdatePipeline"
-  python3 - "$CORPO" "$ID_EXISTENTE" <<'PY'
+  echo "  · pipeline '$NOME' ja existe (id $ID_EXISTENTE)"
+  echo "  · DELETANDO antes de recriar — ver o comentario acima sobre por que"
+  echo "    UpdatePipeline nao serve"
+
+  COD_DEL=$(curl -s -o /dev/null -w '%{http_code}' -X POST --max-time 20 \
+    -H 'Content-Type: application/json' -u "${FLEET_USER}:${FLEET_TOKEN}" \
+    -d "{\"id\":\"${ID_EXISTENTE}\"}" \
+    "${FLEET_URL}/pipeline.v1.PipelineService/DeletePipeline")
+
+  if [ "$COD_DEL" != "200" ]; then
+    echo "  ✗ DeletePipeline respondeu HTTP ${COD_DEL}"
+    echo " ✗ ABORTADO — nada foi publicado, o antigo segue no ar"
+    exit 1
+  fi
+  echo "  ✓ removido"
+
+  # ⚠️ ESPERA CEGA, e nao ha alternativa hoje. Verificado:
+  #   - o Fleet nao expoe estado de aplicacao: os campos de um coletor sao
+  #     id, createdAt, updatedAt, attributes, enabled, collectorType
+  #   - `/api/v0/web/components` do agente lista so componentes LOCAIS, nenhum do
+  #     remotecfg — e exigiria acesso ao cluster, que em BYOC nao temos
+  #
+  # Entao espera-se o poll com margem. `ESPERA_POLL` permite ajustar se o
+  # poll_frequency do cliente for diferente de 1m.
+  ESPERA="${ESPERA_POLL:-75}"
+  echo "  · aguardando ${ESPERA}s para a porta ${PORTA_ENTRADA} liberar"
+  echo "    (poll_frequency e 1m; a espera e cega porque nem o Fleet nem o agente"
+  echo "     expoem se o modulo ja saiu — ambos verificados)"
+  sleep "$ESPERA"
+
+  # Confirma no Fleet que o antigo realmente saiu antes de recriar. Nao prova que
+  # o AGENTE ja o descarregou, mas pega o caso de o delete nao ter surtido efeito.
+  curl -s -o "$RESP" -X POST -H 'Content-Type: application/json' --max-time 20 \
+    -d '{}' -u "${FLEET_USER}:${FLEET_TOKEN}" \
+    "${FLEET_URL}/pipeline.v1.PipelineService/ListPipelines" >/dev/null 2>&1 || true
+  AINDA_LA=$(python3 -c "
 import json, sys
-d = json.load(open(sys.argv[1]))
-d["pipeline"]["id"] = sys.argv[2]
-open(sys.argv[1], "w").write(json.dumps(d))
-PY
-  echo "  · pipeline '$NOME' ja existe (id $ID_EXISTENTE) — atualizando"
+try:
+    d = json.load(open('$RESP'))
+except Exception:
+    raise SystemExit
+for p in d.get('pipelines', []):
+    if p.get('name') == '$NOME':
+        print('sim'); break
+")
+  if [ "$AINDA_LA" = "sim" ]; then
+    echo "  ✗ o pipeline '$NOME' ainda consta no Fleet apos o delete"
+    echo " ✗ ABORTADO — nao recria por cima"
+    exit 1
+  fi
+  echo "  ✓ confirmado ausente no Fleet"
+  METODO="CreatePipeline"
 else
   METODO="CreatePipeline"
   echo "  · pipeline '$NOME' nao existe — criando"

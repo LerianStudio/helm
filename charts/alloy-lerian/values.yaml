@@ -321,24 +321,29 @@ collection:
     - ^kube-public$
     - ^kube-node-lease$
 
-  # ⚠️ SEM DEFAULT, e é deliberado: o chart RECUSA renderizar com `profile: client`
-  # e esta lista vazia. Um default aqui seria um chute sobre quais namespaces o
-  # cliente usa, e errar para o lado permissivo significa coletar — e pagar por —
-  # carga que não é nossa.
+  # ⚠️ TEM DEFAULT desde 2026-08-30, e antes não tinha. O comentário anterior dizia
+  # que um default seria "um chute sobre quais namespaces o cliente usa".
   #
-  # Regex de namespace, uma entrada por produto instalado:
+  # Não é chute: nossos produtos são instalados SEMPRE em `midaz` e `midaz-plugins`,
+  # em todo cliente. Confirmado com a operação.
   #
-  #   onlyNamespaces:
-  #     - ^midaz$
-  #     - ^plugin-.*
+  # A ausência de default tinha custo real e não percebido: o
+  # `examples/values-cliente.yaml` que entregávamos ao cliente NÃO RENDERIZAVA,
+  # porque não preenchia esta lista. O defeito passou despercebido até esta data.
   #
-  # Para coletar o cluster inteiro deliberadamente: `onlyNamespaces: [".*"]`.
+  # Sobrescreva apenas se o cliente instalou em outro lugar. Para coletar o cluster
+  # inteiro deliberadamente: `onlyNamespaces: [".*"]`.
+  #
+  # ⚠️ O chart segue RECUSANDO `profile: client` com a lista VAZIA — quem a esvaziar
+  # está pedindo para não filtrar nada, e isso não pode ser silencioso.
   #
   # ⚠️ O filtro `keep` gerado inclui a alternativa `|^$` automaticamente. MEDIDO em
   # aws-devops: 272 séries `container_*` têm namespace VAZIO — agregados de nó e
   # sandboxes de pod. Sem essa alternativa elas cairiam em silêncio, levando com
   # elas o denominador da razão uso/limite.
-  onlyNamespaces: []
+  onlyNamespaces:
+    - ^midaz$
+    - ^midaz-plugins$
 
   # Onde raspar o cAdvisor. Vazio = via API server, o caminho que funciona sem
   # depender de a porta do kubelet estar alcançável do pod.

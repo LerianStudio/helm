@@ -223,10 +223,26 @@ otelcol.processor.filter "ruido" {
     // aplicado no estagio 3, e MEDIDO que exportar direto do modulo remoto para o
     // destino perde esse rotulo — o log chega sem `client_id` e some dos paineis.
     //
-    // ⚠️ Se o modulo do Fleet nao estiver la, este exportador NAO entrega sem
-    // mascara: ele RETEM com retry. MEDIDO — 300 envios, 29 retries, 0 descartes.
-    // Passando da fila, `block_on_overflow = true` aplica contrapressao em vez de
-    // descartar. Nada sai em claro em nenhum dos dois casos.
+    // ⚠️ Se o modulo do Fleet nao estiver la, NADA sai em claro — mas o log PODE
+    // SER DESCARTADO, e isso depende de COMO a porta falha. Corrigido em
+    // 2026-08-30, depois de medir os dois casos em cluster:
+    //
+    //   porta aceita conexao e demora  -> RETEM com retry
+    //                                     (300 envios, 29 retries, 0 descartes)
+    //   porta RECUSA conexao           -> retry esgota e DESCARTA
+    //                                     ("connection refused", dropped_items=1)
+    //
+    // Eu havia registrado so o primeiro caso, como se cobrisse os dois.
+    //
+    // ⚠️ E ha uma lacuna maior, medida no mesmo teste: um modulo do Fleet que
+    // falha ao SUBIR (porta ocupada no instante da carga) NAO se recupera. O
+    // agente nao tenta de novo, e o Fleet so reage a mudanca na configuracao
+    // publicada — nao a componente quebrado. Republicar com conteudo diferente
+    // tambem nao resolveu.
+    //
+    // Consequencia: o modo ponte e fragil a conflito transitorio de porta, que e
+    // o que uma republicacao provoca. Ver
+    // pre-dev/alloy-collector-client/ponte-sanitizacao-viabilidade.md.
     logs    = [otelcol.exporter.otlphttp.ponte_saida.input]
 {{- else if .Values.sanitizacao.local.enabled }}
     logs    = [otelcol.processor.transform.sanitizacao.input]

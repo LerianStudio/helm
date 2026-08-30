@@ -1,3 +1,5 @@
 {{- if $.Values.spb.enabled -}}
-{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spb" "comp" $.Values.spb "defaultPort" 3000 "livenessPath" "/health" "readyPath" "/readyz") }}
+{{- /* Pass the productized ConfigMap body as configDataOverride so envFrom always
+   wires the ConfigMap and checksum/config tracks the real rendered content. */ -}}
+{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spb" "comp" $.Values.spb "defaultPort" 3000 "livenessPath" "/health" "readyPath" "/readyz" "configDataOverride" (include "br-sfn.spbConfigData" (dict "root" $ "comp" $.Values.spb "port" ($.Values.spb.service.port | default 3000)))) }}
 {{- end -}}

@@ -146,32 +146,45 @@ echo "[3/4] Nenhuma pipeline exporta telemetria por fora"
 # de saida PARALELO, que nunca passa pela nossa sanitizacao. Nao e hipotese —
 # medido nesta frente: 82 series de kube_replicaset_owner (que a allowlist CORTA)
 # chegaram na Grafana Cloud por um pipeline de teste com exportador proprio.
-mapfile -t EXPORTADORES < <(python3 - "$RESP" <<'PY'
-import json, re, sys
-try:
-    d = json.load(open(sys.argv[1]))
-except Exception:
-    sys.exit(0)
-for p in d.get("pipelines", []):
-    c = p.get("contents","") or ""
-    achados = set(re.findall(
-        r'(prometheus\.remote_write|loki\.write|otelcol\.exporter\.\w+)', c))
-    if achados:
-        hab = p.get("enabled", True)
-        print(f"{p.get('name','(sem nome)')}\t{'sim' if hab else 'nao'}\t{','.join(sorted(achados))}")
-PY
-)
+#
+# ⚠️ MAS O CRITERIO NAO E "TER" EXPORTADOR — E PARA ONDE ELE APONTA. Corrigido em
+# 2026-08-30, depois de esta verificacao bloquear a ponte funcionando corretamente.
+#
+# O modo ponte EXIGE um exportador: o modulo publicado recebe o log, mascara, e
+# precisa DEVOLVER ao fluxo local. Sem exportador nao ha devolucao. A regra
+# anterior tratava isso como fuga — contradicao minha, por ter escrito o passo 3
+# antes de projetar a ponte e nao ter revisado.
+#
+# A distincao que importa:
+#
+#   localhost:<porta de retorno>  -> volta ao fluxo local, e passa por perimetro,
+#                                    agrupamento e allowlist depois. LEGITIMO.
+#   qualquer endereco externo     -> sai do pod e escapa de tudo. FUGA.
+#   localhost:<outra porta>       -> nao ha receptor la. Erro ou desvio. BLOQUEIA.
+#
+# Mesmo componente, papeis opostos. A regra ficou MAIS PRECISA, nao mais frouxa:
+# tudo que era bloqueado continua sendo, menos o caso em que o dado comprovadamente
+# retorna para dentro do pipeline local.
+#
+# ⚠️ LIMITE CONHECIDO: se o modulo exportar para a porta de retorno mas o chart
+# estiver com a ponte DESLIGADA, nao ha receptor la — o dado fica retido e nunca
+# chega. Este passo aprova (o destino e legitimo) e nao detecta. Quem detecta e o
+# alerta O11Y-LOG-001, por log ausente.
+PORTA_RETORNO="${PORTA_RETORNO_PONTE:-4320}"
+mapfile -t EXPORTADORES < <(PORTA="$PORTA_RETORNO" python3 "${RAIZ}/verificar-fleet-saidas.py" "$RESP")
 
 if [ "${#EXPORTADORES[@]}" -eq 0 ]; then
-  ok "nenhuma pipeline declara exportador"
+  ok "nenhuma pipeline declara exportador com saida"
 else
   for linha in "${EXPORTADORES[@]}"; do
-    IFS=$'\t' read -r NOME HAB COMPS <<< "$linha"
-    if [ "$HAB" = "sim" ]; then
-      erro "[$NOME] HABILITADA com exportador proprio: $COMPS"
-      echo "        caminho de saida paralelo — nao passa pela sanitizacao local"
+    IFS=$'\t' read -r NOME HAB PAPEL DETALHE <<< "$linha"
+    if [ "$PAPEL" = "ponte" ]; then
+      ok "[$NOME] exportador da PONTE — $DETALHE"
+    elif [ "$HAB" = "sim" ]; then
+      erro "[$NOME] HABILITADA com saida externa: $DETALHE"
+      echo "        caminho paralelo — escapa da allowlist e do perimetro locais"
     else
-      echo "  ⚠ [$NOME] desabilitada, com exportador: $COMPS"
+      echo "  ⚠ [$NOME] desabilitada, com saida externa: $DETALHE"
     fi
   done
 fi

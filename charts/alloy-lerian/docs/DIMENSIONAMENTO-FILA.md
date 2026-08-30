@@ -42,7 +42,14 @@ sum(count_over_time({client_id="<cliente>"} [1h]))
 max(k8s_daemonset_desired_scheduled_nodes{client_id="<cliente>"})
 # vocabulário novo (pós-Alloy):
 max(kube_daemonset_status_desired_number_scheduled{client_id="<cliente>"})
+
+# ⚠️ Se as duas acima não retornarem nada — acontece: nem todo cliente envia
+# métrica de DaemonSet — conte os nós distintos vistos nos contêineres:
+count(count by (k8s_node_name) (k8s_container_ready{client_id="<cliente>"}))
 ```
+
+⚠️ A terceira forma é a que funcionou para o Cappta-Prd, cujas 37 famílias de métrica
+não incluem nenhuma de node ou daemonset.
 
 ## A tabela
 
@@ -82,13 +89,13 @@ prometida.
 | cliente | linhas/h | nós | linhas/s/pod | faixa |
 |---|---|---|---|---|
 | **Voluti-prd** | 2.101.145 | 10 | **58,4** | até 100 → padrão serve |
-| Cappta-Prd | 196.523 | ? | ? | nós não medidos |
+| Cappta-Prd | 196.523 | 9 | 6,1 | até 10 → padrão serve |
 | aws-production | 68.580 | 4 | 4,8 | padrão |
 | aws-staging | 27.779 | 6 | 1,3 | padrão |
 | Banqi-Prd | 5.523 | 4 | 0,4 | padrão |
 | aws-devops | 3.601 | 3 | 0,3 | padrão |
 
-⚠️ **O maior cliente cabe no padrão de memória.** Para 30 min de retenção o Voluti
+⚠️ **TODOS os clientes atuais cabem no padrão de memória.** Para 30 min de retenção o Voluti
 precisa de `queue_size: 105000` — mas apenas 91 MB, dentro dos 512 Mi atuais. O que
 muda é o `queue_size`, não o limite.
 

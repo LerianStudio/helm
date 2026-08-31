@@ -23,6 +23,11 @@ destination:
 node:
   alloy:
     extraEnv:
+      # ⚠️ A config publicada no Fleet e UMA SO para todos os clientes.
+      # Esta variavel e o que distingue um do outro — sem ela a telemetria
+      # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
+      - name: ALLOY_CLIENT_ID
+        value: SUBSTITUIR-prd
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
           secretKeyRef:
@@ -43,6 +48,11 @@ node:
 singleton:
   alloy:
     extraEnv:
+      # ⚠️ A config publicada no Fleet e UMA SO para todos os clientes.
+      # Esta variavel e o que distingue um do outro — sem ela a telemetria
+      # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
+      - name: ALLOY_CLIENT_ID
+        value: SUBSTITUIR-prd
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
           secretKeyRef:

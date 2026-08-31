@@ -234,3 +234,45 @@ to the strict requirement by this guard.
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Guarda do ALLOY_CLIENT_ID.
+
+⚠️ A CONFIGURAÇÃO PUBLICADA NO FLEET É UMA SÓ, para todos os clientes. O que
+distingue um cliente do outro é esta variável, resolvida do ambiente do pod:
+
+    set(attributes["client.id"], sys.env("ALLOY_CLIENT_ID"))
+    replacement = sys.env("ALLOY_CLIENT_ID")
+
+Oito ocorrências no render, entre `transform` e `relabel`. VERIFICADO em contêiner
+que as duas formas resolvem.
+
+⚠️ SEM ESTA VARIÁVEL a telemetria chega INATRIBUÍVEL: `sys.env` de variável
+ausente devolve string vazia, e o agente sobe normalmente. Nada falha — só o
+`client_id` fica em branco, e o cliente desaparece de todo painel e de todos os
+quatro alertas de ingestão.
+
+Esse é exatamente o modo de falha silenciosa que este chart já corrigiu quatro
+vezes (credencial, cAdvisor 403, overlay nulo, token do Fleet `optional: true`).
+Daí a guarda no render.
+
+O valor VEM de `origin.id`, e o cliente não o repete: o exemplo declara
+`valueFrom` apontando para o mesmo lugar. O chart não consegue injetar sozinho —
+`extraEnv` é do subchart, estático no values.
+*/}}
+{{- define "alloy-lerian.assertClientIdEnv" -}}
+{{- range $papel := list "node" "singleton" -}}
+{{- $cfg := index $.Values $papel -}}
+{{- if $cfg -}}
+{{- if $cfg.enabled -}}
+{{- $nomes := list -}}
+{{- range $e := (($cfg.alloy).extraEnv | default list) -}}
+{{- $nomes = append $nomes $e.name -}}
+{{- end -}}
+{{- if not (has "ALLOY_CLIENT_ID" $nomes) -}}
+{{- fail (printf "\n\nalloy-lerian: `%s.alloy.extraEnv` nao declara ALLOY_CLIENT_ID.\n\nA configuracao de coleta e a MESMA para todos os clientes; o que distingue um do\noutro e esta variavel. Sem ela a telemetria chega INATRIBUIVEL — `sys.env` de\nvariavel ausente devolve string vazia, o agente sobe normalmente, e o cliente\ndesaparece de todo painel e dos alertas de ingestao.\n\nAcrescente em `%s.alloy.extraEnv`:\n\n  - name: ALLOY_CLIENT_ID\n    value: <o mesmo valor de origin.id>\n\nVer examples/values-cliente.yaml.\n" $papel $papel) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

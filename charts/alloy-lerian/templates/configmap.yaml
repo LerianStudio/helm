@@ -11,6 +11,7 @@ release-prefixed ConfigMap.
 {{- include "alloy-lerian.assertNodeExporterTarget" . -}}
 {{- include "alloy-lerian.assertFleetEnv" . -}}
 {{- include "alloy-lerian.assertCredentialEnv" . -}}
+{{- include "alloy-lerian.assertClientIdEnv" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

@@ -125,15 +125,15 @@ otelcol.processor.transform "procedencia" {
 
   trace_statements {
     context    = "resource"
-    statements = [`set(attributes["client.id"], {{ $origin | quote }})`]
+    statements = [`set(attributes["client.id"], ` + sys.env("ALLOY_CLIENT_ID") + `)`]
   }
   metric_statements {
     context    = "resource"
-    statements = [`set(attributes["client.id"], {{ $origin | quote }})`]
+    statements = [`set(attributes["client.id"], ` + sys.env("ALLOY_CLIENT_ID") + `)`]
   }
   log_statements {
     context    = "resource"
-    statements = [`set(attributes["client.id"], {{ $origin | quote }})`]
+    statements = [`set(attributes["client.id"], ` + sys.env("ALLOY_CLIENT_ID") + `)`]
   }
 
   output {
@@ -507,7 +507,7 @@ prometheus.relabel "allowlist_consumo" {
 
   rule {
     target_label = "client_id"
-    replacement  = {{ $origin | quote }}
+    replacement  = sys.env("ALLOY_CLIENT_ID")
   }
 
   forward_to = [otelcol.receiver.prometheus.ponte_consumo.receiver]
@@ -568,7 +568,7 @@ prometheus.relabel "allowlist_agente" {
 
   rule {
     target_label = "client_id"
-    replacement  = {{ include "alloy-lerian.originId" . | quote }}
+    replacement  = sys.env("ALLOY_CLIENT_ID")
   }
 
   forward_to = [otelcol.receiver.prometheus.ponte_agente.receiver]
@@ -650,7 +650,7 @@ prometheus.relabel "allowlist_no" {
 
   rule {
     target_label = "client_id"
-    replacement  = {{ $origin | quote }}
+    replacement  = sys.env("ALLOY_CLIENT_ID")
   }
 
   forward_to = [otelcol.receiver.prometheus.ponte_metricas.receiver]
@@ -703,7 +703,7 @@ prometheus.relabel "allowlist_objetos" {
 
   rule {
     target_label = "client_id"
-    replacement  = {{ $origin | quote }}
+    replacement  = sys.env("ALLOY_CLIENT_ID")
   }
   forward_to = [otelcol.receiver.prometheus.ponte_metricas.receiver]
 }
@@ -795,7 +795,7 @@ otelcol.processor.transform "procedencia_eventos" {
   log_statements {
     context = "resource"
     statements = [
-      `set(attributes["client.id"], {{ $origin | quote }})`,
+      `set(attributes["client.id"], ` + sys.env("ALLOY_CLIENT_ID") + `),
     ]
   }
   output {

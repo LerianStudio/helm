@@ -57,8 +57,8 @@ otelcol.processor.transform "sanitizacao" {
       // --- CONTA E AGENCIA ---
       // Por NOME DE CAMPO, nao por forma: a forma varia de 1 (`branch:1`) a 20
       // (`account:12880000007785418277`) digitos, indistinguivel de `gateway:6`.
-      `replace_pattern(body, "(?i)((?:conta |account[=:]|account_number[=:]))([0-9]{4,})", "$1********")`,
-      `replace_pattern(body, "(?i)((?:ag[eê]ncia |branch[=:]|agency[=:]))([0-9]+)", "$1****")`,
+      `replace_pattern(body, "(?i)((?:conta |account(?:_?number)?(?:origin|destination|source|target|from|to)?[=:]))([0-9]{4,})", "$1********")`,
+      `replace_pattern(body, "(?i)((?:ag[eê]ncia |(?:agency|branch)(?:_?number)?(?:origin|destination|source|target|from|to)?[=:]))([0-9]+)", "$1****")`,
 
       // --- NOME DE PESSOA ---
       // Campos conhecidos: customerName, senderName, recipientName,

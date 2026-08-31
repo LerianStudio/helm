@@ -6,7 +6,7 @@
           "logRecords": [
             {
               "body": {
-                "stringValue": "conta 12880000007785418277 agência 2224"
+                "stringValue": "conta 12880000007785418277 agência 2224 accountNumberDestination=123456789 agencyNumber=0001"
               }
             }
           ]

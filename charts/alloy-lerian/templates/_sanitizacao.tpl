@@ -133,8 +133,31 @@ otelcol.processor.transform {{ $nome | quote }} {
       //
       // ⚠️ Cobertura menor por consequencia: conta em texto livre NAO e mascarada.
       // Aceito — a alternativa corrompe diagnostico em volume.
-      `replace_pattern(body, "(?i)((?:conta |account[=:]|account_number[=:]))([0-9]{4,})", "$1********")`,
-      `replace_pattern(body, "(?i)((?:ag[eê]ncia |branch[=:]|agency[=:]))([0-9]+)", "$1****")`,
+      //
+      // ⚠️ OS SUFIXOS SAO ENUMERADOS, e nao `[A-Za-z]*`, de proposito.
+      //
+      // A primeira versao aceitava so `account=`, `account_number=`, `branch=` e
+      // `agency=` exatos. MEDIDO contra o log do Banqi: nao mascarava nada la, porque
+      // os campos sao camelCase com sufixo — `accountNumberDestination`, `agencyNumber`
+      // — e nem `accountNumber=` sozinho casava.
+      //
+      // Alargar para `account[A-Za-z]*[=:]` resolveria a cobertura e abriria dois
+      // falsos positivos MEDIDOS:
+      //
+      //   accountingPeriod=202608  -> accountingPeriod=********
+      //   branchless=0             -> branchless=****
+      //
+      // Enumerar `_?number` e a lista de papeis (origin|destination|source|target|
+      // from|to) cobre as formas reais e recusa as duas acima. Verificado: 15 formas
+      // que devem mascarar, 14 entradas legitimas que nao devem — 0 falha nas duas
+      // direcoes.
+      //
+      // ⚠️ Um campo com sufixo FORA da lista volta a passar em claro. E o preco de
+      // nao ter falso positivo, e a razao de a lista estar visivel aqui em vez de
+      // escondida num `*`: acrescentar um sufixo novo e uma linha, e o caso de teste
+      // correspondente prova que funcionou.
+      `replace_pattern(body, "(?i)((?:conta |account(?:_?number)?(?:origin|destination|source|target|from|to)?[=:]))([0-9]{4,})", "$1********")`,
+      `replace_pattern(body, "(?i)((?:ag[eê]ncia |(?:agency|branch)(?:_?number)?(?:origin|destination|source|target|from|to)?[=:]))([0-9]+)", "$1****")`,
 
       // --- PERSON NAME ---
       // Anchored on capitalisation: name terms start uppercase and the

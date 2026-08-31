@@ -700,10 +700,33 @@ node:
     #   failed to create the remotecfg service:
     #   mkdir /tmp/alloy: read-only file system
     #
-    # emptyDir, not a claim: the path holds the remotecfg service's working state,
-    # which is rebuildable. Persisting it across restarts is neither needed nor
-    # wanted — see docs/FLEET-MANAGEMENT.md on why we compose the collector id
-    # from the pod name instead of relying on the persisted seed.
+    # emptyDir, not a claim. Isso tem uma CONSEQUENCIA MEDIDA que vale registrar.
+    #
+    # O remotecfg guarda a ultima configuracao buscada sob este caminho, e cai
+    # nela quando o Fleet nao responde:
+    #
+    #   level=error msg="failed to fetch remote config, falling back to cache"
+    #     service=remotecfg cache_path=/tmp/alloy/remotecfg/<hash>
+    #
+    # Sendo emptyDir, esse cache morre junto com o pod. Entao o fallback so
+    # protege o pod que JA carregou a config e perdeu o Fleet DEPOIS. Num pod que
+    # reinicia com o Fleet fora, nao ha cache, e o agente NAO SOBE:
+    #
+    #   Error: Failed to evaluate service: updating service: unavailable: ...
+    #   Error: could not perform the initial load successfully
+    #
+    # MEDIDO no agente v1.18.1, tanto para Fleet inalcancavel quanto para token
+    # invalido. Ou seja: uma indisponibilidade do Fleet nao derruba a frota, mas
+    # derruba qualquer pod que reiniciar durante ela (OOM, drain, autoscaler).
+    #
+    # ⚠️ Trocar por um volume persistente NAO e a correcao obvia que parece: o
+    # cache e por hash de configuracao, e um cache velho reintroduziria uma versao
+    # antiga das regras de PII — exatamente o que o Fleet existe para evitar.
+    # Registrado como risco conhecido; a mitigacao e o alerta de ausencia de
+    # ingestao, nao a persistencia. Ver docs/DR-SANITIZACAO.md.
+    #
+    # Sobre o id do coletor, composto do nome do pod em vez do seed persistido:
+    # ver docs/FLEET-MANAGEMENT.md.
     mounts:
       extra:
         - name: alloy-storage
@@ -891,10 +914,33 @@ singleton:
     #   failed to create the remotecfg service:
     #   mkdir /tmp/alloy: read-only file system
     #
-    # emptyDir, not a claim: the path holds the remotecfg service's working state,
-    # which is rebuildable. Persisting it across restarts is neither needed nor
-    # wanted — see docs/FLEET-MANAGEMENT.md on why we compose the collector id
-    # from the pod name instead of relying on the persisted seed.
+    # emptyDir, not a claim. Isso tem uma CONSEQUENCIA MEDIDA que vale registrar.
+    #
+    # O remotecfg guarda a ultima configuracao buscada sob este caminho, e cai
+    # nela quando o Fleet nao responde:
+    #
+    #   level=error msg="failed to fetch remote config, falling back to cache"
+    #     service=remotecfg cache_path=/tmp/alloy/remotecfg/<hash>
+    #
+    # Sendo emptyDir, esse cache morre junto com o pod. Entao o fallback so
+    # protege o pod que JA carregou a config e perdeu o Fleet DEPOIS. Num pod que
+    # reinicia com o Fleet fora, nao ha cache, e o agente NAO SOBE:
+    #
+    #   Error: Failed to evaluate service: updating service: unavailable: ...
+    #   Error: could not perform the initial load successfully
+    #
+    # MEDIDO no agente v1.18.1, tanto para Fleet inalcancavel quanto para token
+    # invalido. Ou seja: uma indisponibilidade do Fleet nao derruba a frota, mas
+    # derruba qualquer pod que reiniciar durante ela (OOM, drain, autoscaler).
+    #
+    # ⚠️ Trocar por um volume persistente NAO e a correcao obvia que parece: o
+    # cache e por hash de configuracao, e um cache velho reintroduziria uma versao
+    # antiga das regras de PII — exatamente o que o Fleet existe para evitar.
+    # Registrado como risco conhecido; a mitigacao e o alerta de ausencia de
+    # ingestao, nao a persistencia. Ver docs/DR-SANITIZACAO.md.
+    #
+    # Sobre o id do coletor, composto do nome do pod em vez do seed persistido:
+    # ver docs/FLEET-MANAGEMENT.md.
     mounts:
       extra:
         - name: alloy-storage

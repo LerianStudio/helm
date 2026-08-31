@@ -1,0 +1,14 @@
+# CI-ONLY render fixture for charts/streaming-hub.
+#
+# NOT a production example and NOT a credential store. Every value here exists so
+# the repository render gate can satisfy the chart's fail-loud gates; the strings
+# are deliberately self-describing placeholders, never real secrets.
+#
+# Gate this file satisfies:
+#   streamingHub.secrets.STREAMING_HUB_POSTGRES_DSN — required whenever
+#     streamingHub.useExistingSecret=false (the default): the app cannot start
+#     without PostgreSQL, and the same key gates the migration-only Secret hook
+#     (templates/migrations.yaml via templates/_helpers.tpl migrationDSN).
+streamingHub:
+  secrets:
+    STREAMING_HUB_POSTGRES_DSN: "postgres://ci-only:not-a-real-password@postgresql:5432/streaming_hub?sslmode=disable"

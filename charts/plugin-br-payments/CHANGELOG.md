@@ -5,15 +5,14 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0-beta.5] - 2026-08-31
+## [Unreleased]
 
 Consolidated entry for the whole MT-01 phase-2 control-plane branch's helm
-changes (rename + PreSync migrations Job + hardening), replacing what had
-been three separate hand-picked prerelease bumps (`1.2.0-beta.3`,
-`.4`, `.5`) on this branch. This chart's actual published version is
-assigned by `semantic-release` at merge time
-(`.github/workflows/release.yml`); the header above is a development-time
-placeholder, not the eventual release tag.
+changes (rename + PreSync migrations Job + hardening). This chart's actual
+published version is assigned by `semantic-release` at merge time
+(`.github/workflows/release.yml`); no chart release ever carried the
+intermediate bugs fixed during this branch's own development, so only the
+final shipped state is documented below.
 
 ### Added
 
@@ -21,16 +20,22 @@ placeholder, not the eventual release tag.
   applies the app's control-plane migrations (ADR-013, `plugin-br-payments`
   repo) via the `/controlplane-migrate` binary before the app rolls out.
 
-  Renders only when **all three** are true:
+  Renders only when **all four** are true:
   - `app.configmap.MULTI_TENANT_ENABLED=true` — single-tenant already applies
     every migration automatically at boot, so running this Job too would be
     redundant, not incorrect.
-  - `global.externalPostgresDefinitions.enabled=true` — the same flag
-    `templates/bootstrap-postgres.yaml` gates on. This Job assumes an
-    external Postgres host with no in-cluster ordering guarantee relative to
-    a bundled `postgresql` subchart's Sync-phase StatefulSet, so it is gated
-    to the external-Postgres mode it is actually designed and tested for; it
-    never renders against the chart's default bundled Postgres.
+  - `global.externalPostgresDefinitions.enabled=true` **and** the chart's
+    `postgresql.enabled` helper resolves to `false` — i.e. Postgres is
+    genuinely external, not just flagged as such.
+    `externalPostgresDefinitions.enabled` alone is independent of
+    `postgresql.enabled`/`postgresql.external`, and the chart's own default
+    is a **bundled** Postgres (`postgresql.enabled: true`,
+    `postgresql.external: false`); this Job assumes an external Postgres
+    host with no in-cluster ordering guarantee relative to a bundled
+    `postgresql` subchart's Sync-phase StatefulSet, so both conditions are
+    required to keep it gated out of the bundled-Postgres path entirely.
+    `templates/bootstrap-postgres.yaml` shares the identical two-condition
+    gate.
   - `app.controlplaneMigrations.enabled=true` — **new values key, default
     `false`.** `app.image` resolves to the currently released
     `plugin-br-payments` image today, which does not yet contain the
@@ -38,14 +43,23 @@ placeholder, not the eventual release tag.
     not** flip this on until a `plugin-br-payments` release containing the
     binary is deployed.
 
-  Postgres connection env vars are inlined from `.Values.app.configmap`
-  (`POSTGRES_HOST`/`PORT`/`USER`/`DB`/`SSLMODE`/`CONNECT_TIMEOUT_SEC`),
-  mirroring `templates/configmap.yaml`'s own `POSTGRES_HOST` resolution, plus
-  the existing `POSTGRES_PASSWORD` secretRef — **not** `envFrom` the app
+  Postgres connection env vars are inlined rather than `envFrom` the app
   ConfigMap, which is a plain Sync-phase resource that does not exist yet
-  when this `PreSync` hook runs on a first install. Mirrors
+  when this `PreSync` hook runs on a first install. `POSTGRES_HOST`/
+  `POSTGRES_PORT` read unconditionally from
+  `global.externalPostgresDefinitions.connection.host`/`.port` — mirroring
+  `templates/bootstrap-postgres.yaml`'s own `DB_HOST`/`DB_PORT` exactly, so
+  the migration Job can never target a different host than the one
+  `bootstrap-postgres.yaml` just provisioned the role/database on;
+  `USER`/`DB`/`SSLMODE`/`CONNECT_TIMEOUT_SEC` come from `.Values.app.configmap`
+  with the same defaults the app itself uses, plus the existing
+  `POSTGRES_PASSWORD` secretRef. Mirrors
   `plugin-br-bank-transfer/templates/migrations.yaml`'s and `charts/br-slc`'s
   inline-env pattern for the same reason.
+
+  `activeDeadlineSeconds: 300` keeps the Job within Helm's default 300s
+  release timeout (`helm upgrade --timeout`); deployments that need a longer
+  migration budget must pass a matching `--timeout` explicitly.
 
   `templates/bootstrap-postgres.yaml` now carries its own `PreSync` hook at
   weight `-10` (mirroring `charts/streaming-hub`'s own bootstrap Job), so it
@@ -56,9 +70,10 @@ placeholder, not the eventual release tag.
   match on, so the app's `PodDisruptionBudget` and `Service` cannot select
   this transient pod — mirroring `plugin-br-bank-transfer`'s
   component-scoped selector labels. It gets its own smaller resource
-  defaults (`app.controlplaneMigrations.resources`, ~50m/64Mi requests,
-  250m/256Mi limits) instead of reusing `app.resources`, and an
-  `argocd.argoproj.io/sync-wave` annotation matching its hook weight.
+  defaults via the **new values key** `app.controlplaneMigrations.resources`
+  (~50m/64Mi requests, 250m/256Mi limits) instead of reusing
+  `app.resources`, and an `argocd.argoproj.io/sync-wave` annotation matching
+  its hook weight.
 
 ### Changed
 
@@ -69,10 +84,28 @@ placeholder, not the eventual release tag.
   - `app.configmap.MULTI_TENANT_MANAGER_URL` → `app.configmap.MULTI_TENANT_URL`
   - `app.configmap.MULTI_TENANT_CLIENT_TIMEOUT_SEC` → `app.configmap.MULTI_TENANT_TIMEOUT`
   - `app.configmap.MULTI_TENANT_CACHE_TTL_MINUTES` → `app.configmap.MULTI_TENANT_CACHE_TTL_SEC`
-    (**unit conversion**, not just a rename: the default changes from `"60"`
-    minutes to `"3600"` seconds)
+    (**unit conversion**, not just a rename: the canonical default moves
+    from `"60"` minutes to `"3600"` seconds)
   - `app.configmap.MULTI_TENANT_CB_THRESHOLD` → `app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD`
   - `app.configmap.MULTI_TENANT_CB_TIMEOUT_SEC` → `app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC`
+
+  Shipped end state: all 6 renamed keys' explicit literal defaults (e.g.
+  `MULTI_TENANT_ENABLED: "false"`, `MULTI_TENANT_CACHE_TTL_SEC: "3600"`) are
+  **removed from `values.yaml`** — they exist only as commented-out
+  reference values there now, and render into the ConfigMap only when an
+  overlay sets them explicitly. This matters because
+  `templates/configmap.yaml` `range`s generically over the merged
+  `app.configmap` map: a non-blank literal default shipped in this chart's
+  own `values.yaml` would render into every ConfigMap, including one built
+  from an overlay that still sets only the *old*, pre-rename key names
+  (exactly `stg-mt`'s situation, pending Task 2.2.2 in the
+  `plugin-br-payments` repo) — the app's `reconcileDeprecatedMultiTenantEnv`
+  only falls back to a deprecated key when the canonical one is unset/blank,
+  so a chart-shipped `MULTI_TENANT_ENABLED: "false"` would silently outrank
+  and disable an overlay's deprecated `MULTI_TENANCY_ENABLED: "true"`.
+  `_helpers.tpl` and `templates/controlplane-migrations.yaml`'s gates
+  already default an absent `MULTI_TENANT_ENABLED` to `"false"`, so
+  chart-only-install behavior is unchanged.
 
   Updated `values.yaml`, `values-template.yaml`, the required-value
   validation (`_helpers.tpl`), `NOTES.txt`, and `README.md`.
@@ -80,67 +113,15 @@ placeholder, not the eventual release tag.
   `MULTI_TENANT_ALLOW_INSECURE_HTTP`, `MULTI_TENANT_MAX_TENANT_POOLS`, and
   `MULTI_TENANT_SERVICE_API_KEY` were already canonical and are untouched.
 
-- `templates/controlplane-migrations.yaml`'s `MULTI_TENANT_ENABLED` gate now
+- `templates/controlplane-migrations.yaml`'s `MULTI_TENANT_ENABLED` gate
   reads `.Values.app.configmap.MULTI_TENANT_ENABLED | toString`, matching
-  `_helpers.tpl` and `NOTES.txt`'s existing form, instead of its own one-off
-  `lower (toString (get ... | default "false"))`.
+  `_helpers.tpl` and `NOTES.txt`'s existing form.
 
-### Fixed
-
-- **CRITICAL:** removed the 6 renamed keys' explicit literal defaults (e.g.
-  `MULTI_TENANT_ENABLED: "false"`) from `values.yaml`. Because
-  `templates/configmap.yaml` `range`s generically over the merged
-  `app.configmap` map, those literals rendered into every ConfigMap —
-  including one built from an overlay that still sets only the *old*,
-  pre-rename key names (exactly `stg-mt`'s situation, pending Task 2.2.2 in
-  the `plugin-br-payments` repo). The app's
-  `reconcileDeprecatedMultiTenantEnv` only falls back to a deprecated key
-  when the canonical one is unset/blank, so the chart's own non-blank
-  `MULTI_TENANT_ENABLED: "false"` default outranked the overlay's deprecated
-  `MULTI_TENANCY_ENABLED: "true"` and silently turned multi-tenancy **off**.
-  The keys are now simply **absent** when not overridden by an overlay;
-  `_helpers.tpl` and `templates/controlplane-migrations.yaml`'s gates
-  already default an absent `MULTI_TENANT_ENABLED` to `"false"`, so
-  chart-only-install behavior is unchanged.
-
-- **HIGH — first-install ordering:** `templates/controlplane-migrations.yaml`
-  referenced the app ConfigMap via `envFrom.configMapRef`, but that
-  ConfigMap carries no hook annotation and is a normal Sync-phase resource.
-  A `PreSync` hook runs before any Sync resource exists, so on a first
-  install the ConfigMap did not exist yet and the Job failed with
-  `CreateContainerConfigError`, forever, blocking the release. Fixed by
-  inlining the needed `POSTGRES_*` values instead (see Added, above).
-
-- **HIGH — false "always-external Postgres" premise:** the Job's header
-  comment claimed `plugin-br-payments` is always-external Postgres, but the
-  chart's own default (`postgresql.enabled: true`, `postgresql.external:
-  false`) bundles Postgres via the Bitnami subchart, whose StatefulSet is an
-  ordinary Sync-phase resource with no ordering guarantee relative to a
-  `PreSync` Job and no wait-for-Postgres init container. Fixed by gating the
-  Job on `global.externalPostgresDefinitions.enabled` in addition to
-  `MULTI_TENANT_ENABLED`, and giving `templates/bootstrap-postgres.yaml` its
-  own `PreSync` hook at weight `-10` so it always runs first in that mode.
-
-- **HIGH — image without the binary:** the Job pinned `.Values.app.image`,
-  which resolves to the currently released app image
-  (`appVersion 1.0.0-beta.9`) — that image does not contain
-  `/controlplane-migrate`; the binary exists only on an unmerged
-  `plugin-br-payments` branch. Shipping this chart as-is would crash the Job
-  with `no such file or directory` the moment `MULTI_TENANT_ENABLED` and
-  `externalPostgresDefinitions.enabled` were both true. Fixed with a new,
-  default-`false` `app.controlplaneMigrations.enabled` flag gating the whole
-  Job; **do not** flip it on until a `plugin-br-payments` release containing
-  the binary exists.
-
-- Low-severity cleanup in the same file: the `MULTI_TENANT_ENABLED` gate's
-  case-handling now matches `_helpers.tpl`/`NOTES.txt` (see Changed, above);
-  added `argocd.argoproj.io/sync-wave: "-1"` matching the hook weight
-  (mirroring `charts/streaming-hub`); the Job now has its own smaller
-  resource defaults instead of reusing `app.resources`; the Job's pod
-  template no longer carries the `app.kubernetes.io/name`/`instance` labels
-  that `pdb.yaml` and `service.yaml` select on, so a transient migration pod
-  can no longer be double-counted against the PodDisruptionBudget or receive
-  live Service traffic.
+- The Job's pod template no longer carries the `app.kubernetes.io/name`/
+  `instance` labels that `pdb.yaml` and `service.yaml` select on, so a
+  transient migration pod can never be double-counted against the
+  `PodDisruptionBudget` or receive live Service traffic; it also carries an
+  `argocd.argoproj.io/sync-wave` annotation matching its hook weight.
 
 ### Deprecated
 

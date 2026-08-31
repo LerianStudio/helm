@@ -42,6 +42,33 @@ livedebugging {
   enabled = true
 }
 {{ end -}}
+{{- if eq (include "alloy-lerian.fleetEnabled" .) "true" }}
+// ============================================================================
+// A CORRENTE DE COLETA VEM DO FLEET — este arquivo termina aqui.
+// ============================================================================
+//
+// ⚠️ O agente NAO escolhe entre config local e remota: ele carrega as DUAS. Se
+// este template rendesse a corrente completa, os dois receptores disputariam a
+// porta 4318. MEDIDO em aws-devops:
+//
+//   level=error "failed to start scheduled component"
+//     component_id=otelcol.receiver.otlp.entrada
+//     err="listen tcp 0.0.0.0:4318: bind: address already in use"
+//
+// Qual dos dois vence NAO e deterministico.
+//
+// Com o Fleet ligado (o padrao), este arquivo contem so o que NAO PODE vir de um
+// modulo remoto:
+//
+//   logging    bloco de servico — "logging block not allowed inside a module"
+//   remotecfg  idem, e alem disso e ELE que busca a configuracao; vindo do Fleet,
+//              nao haveria como buscar coisa alguma
+//
+// ⚠️ CONSEQUENCIA A ASSUMIR: sem o Fleet este agente nao coleta NADA. Nao ha
+// corrente local de reserva, e isso vale para os tres sinais. E por isso que
+// `fleetManagement.enabled: false` e o procedimento de DR — desligar faz este
+// template render a corrente completa outra vez. Ver docs/DR-SANITIZACAO.md.
+{{- else }}
 
 otelcol.receiver.otlp "entrada" {
   grpc {
@@ -523,6 +550,7 @@ otelcol.receiver.prometheus "ponte_consumo" {
 {{- end }}
 {{- if (.Values.collection).selfMetrics }}
 {{ include "alloy-lerian.config.selfMetrics" . }}
+{{- end }}
 {{- end }}
 {{- end -}}
 

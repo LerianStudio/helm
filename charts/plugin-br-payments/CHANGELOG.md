@@ -5,6 +5,31 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0-beta.4] - 2026-08-31
+
+### Added
+
+- `templates/controlplane-migrations.yaml`: a `PreSync` Helm hook Job
+  (`helm.sh/hook: pre-install,pre-upgrade` + `argocd.argoproj.io/hook: PreSync`,
+  `helm.sh/hook-weight: "-1"`) that applies the app's control-plane migrations
+  (ADR-013, `plugin-br-payments` repo) via the `/controlplane-migrate` binary
+  before the app rolls out. `plugin-br-payments` is always-external Postgres
+  (`templates/bootstrap-postgres.yaml`), so — unlike
+  `plugin-br-bank-transfer` — there is no bundled-Postgres `PostSync` branch:
+  always `PreSync`.
+
+  Gated directly on `app.configmap.MULTI_TENANT_ENABLED` (the canonical key
+  from the `1.2.0-beta.3` rename above) — no new values-key of its own, same
+  inline-configmap-read pattern every chart in this repo already uses for
+  that flag. The Job renders only when multi-tenancy is on: single-tenant
+  already applies every migration automatically at boot, so running this Job
+  too would be redundant, not incorrect, and stays gated out.
+
+  Reuses `.Values.app.image` (same image as `templates/deployment.yaml`,
+  entrypoint overridden to `/controlplane-migrate`) and the exact same
+  ConfigMap/Secret Postgres connection references as the Deployment — no new
+  connection definition.
+
 ## [1.2.0-beta.3] - 2026-08-31
 
 ### Changed

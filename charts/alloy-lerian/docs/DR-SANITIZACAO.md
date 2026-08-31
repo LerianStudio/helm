@@ -1,228 +1,140 @@
-# DR — restaurar a sanitização local
+# DR — restaurar a coleta quando o Fleet falha
 
-Procedimento para quando a sanitização de log de aplicação foi cedida a uma pipeline
-do Fleet Management e essa via **para de entregar**.
+Procedimento para quando a configuração vem do Fleet Management e essa via **para de
+entregar**.
+
+## O que está em jogo
+
+Com `fleetManagement.enabled: true` (o padrão), a configuração de coleta **inteira**
+vem do Fleet — receptor, sanitização, allowlists, perímetro e destino. O ConfigMap
+local existe mas não é usado.
+
+⚠️ **Isso significa que os três sinais dependem da mesma origem.** Se a configuração
+sumir, não se perde só o log: param métricas e traces também.
 
 ## Quando acionar
 
-| duração da indisponibilidade | ação |
+| situação | ação |
 |---|---|
-| até ~30 min | nada. O agente que já está rodando sobrevive com a última config; o poll falha sem derrubar |
-| acima de ~2h | **acione este procedimento** |
+| Fleet fora, agente **rodando** | nada — ele segue com a última configuração |
+| Fleet fora **e um pod reinicia** | ⚠️ **acione o DR** — esse pod não sobe |
+| configuração perdida ou corrompida no Fleet | republique; se não resolver, DR |
 
-⚠️ A janela de exposição real não é o tempo de queda — é o **reinício de pod** durante
-a queda. Medido: com o Fleet inalcançável ou respondendo 401, um agente que reinicia
-**não sobe** (`could not perform the initial load successfully`). E pod reinicia por
-rollout de nó, OOM, drain e upgrade de cluster.
-
-## O que faz a via do Fleet parar
-
-Todos estes têm o **mesmo sintoma**: o log de aplicação desaparece. Os pods seguem
-`Running`, métricas e traces continuam chegando. Log ausente parece com "cliente sem
-movimento", e é por isso que a detecção não pode depender de alguém notar.
-
-| causa | como se manifesta |
-|---|---|
-| pipeline **deletado** na console | agente sobe sem pipeline, sem erro |
-| pipeline **desmarcado como ativo** | idem — e ⚠️ PIOR, ver abaixo |
-| **matcher errado ao PUBLICAR** | idem — ver abaixo |
-| token revogado | poll falha; se o pod reiniciar, o agente não sobe |
-| Fleet fora do ar | idem |
-| pod reinicia com o Fleet fora | ⚠️ **o agente inteiro não sobe** — ver abaixo |
-
-### Pipeline desmarcado como ativo é pior que deletado
-
-Do ponto de vista do agente, inativo e inexistente são a **mesma coisa**: o Fleet não
-entrega pipeline inativo, e o agente sobe sem ele.
-
-⚠️ A diferença é para quem investiga: deletado desaparece da lista; **inativo continua
-visível na console, com as regras corretas**. Quem abrir para conferir vê o pipeline
-lá e conclui que está funcionando.
-
-Por isso `verificar-fleet.sh` trata os dois casos de forma distinta — habilitado
-divergente **bloqueia**, desabilitado divergente **avisa e lista**. Sem esse aviso, um
-pipeline inativo seria invisível para a verificação.
-
-### Matcher errado ao publicar
-
-O chart declara **três** atributos (ver `_fleet.tpl`):
-
-    platform  = kubernetes      literal no template
-    role      = node|singleton  o chart decide, conforme o papel
-    client_id = <cliente>       de global.client.id
-
-⚠️ **Nenhum dos três é editável de forma que quebre um matcher existente**, e isso é
-proteção do chart, não sorte:
-
-| atributo | por que não quebra |
-|---|---|
-| `platform` | literal, não há parâmetro |
-| `role` | derivado do papel, não há parâmetro |
-| `client_id` | **é o único editável, e quebra sim** — ver abaixo |
-
-⚠️ Sobre o `client_id`, corrigindo uma afirmação anterior: mudá-lo **não gera erro
-algum**. Ele serve a dois propósitos ao mesmo tempo — endereça a config no Fleet E
-rotula métricas e logs. Trocar `cappta-prd` por `cappta-producao` faz:
-
-| | efeito |
-|---|---|
-| Fleet | pipeline com matcher `client_id="cappta-prd"` deixa de casar → config não chega |
-| painéis | todo dashboard e alerta filtrado por `cappta-prd` fica vazio |
-
-A segunda linha é um sintoma **adicional**, não um alarme: depende de alguém estar
-olhando aquele painel. Não trate como falha ruidosa — é mais uma falha silenciosa, com
-um efeito colateral visível para quem procurar.
-
-Mudança de `client_id` é, portanto, mudança que exige republicar o pipeline com o
-matcher novo. O padrão de nomenclatura (`<cliente>-<stg|prd>`, validado pelo chart)
-reduz a chance disso acontecer por capricho.
-
-`fleetManagement.attributes` permite **acrescentar** atributos, o que não invalida
-matcher existente — só cria etiqueta nova.
-
-**Logo o risco real não é o coletor mudar de etiqueta; é o pipeline ser publicado com
-o seletor errado.** Um pipeline com `role=singleton` nunca chega aos DaemonSets, e é
-neles que está o receptor OTLP.
-
-⚠️ Erro real desta classe, cometido nesta frente: um teste de conflito de porta usou
-matcher `role="singleton"`, e o singleton **não tem** receptor OTLP (medido: 0 no seu
-ConfigMap). O matcher não casava o que se supunha, o teste não exercia nada, e quase
-se concluiu "não há conflito" a partir dele. Refeito com `role="node"`, o conflito
-apareceu de imediato: `bind: address already in use`.
-
-É o publicador (workflow) que fecha isso — publicação à mão na console é onde o
-seletor errado entra.
-
-### Reinício de pod com o Fleet fora
-
-A assimetria aqui é o que importa, e foi medida com o agente v1.18.1:
-
-| situação | resultado |
-|---|---|
-| Fleet inalcançável, agente **já rodando** | segue com a última config; o poll falha sem derrubar |
-| Fleet inalcançável, agente **iniciando** | **não sobe**: `could not perform the initial load successfully` |
-| Fleet responde 401, agente **iniciando** | idem |
-
-Não é "o log para" — é o agente **inteiro** que não inicia: métricas, traces, tudo. E
-pod reinicia por rollout de nó, OOM, drain e upgrade de cluster.
-
-⚠️ Isso vale enquanto `fleetManagement.enabled: true`, **independente** de
-`sanitizacao.local.enabled`. Risco aceito conscientemente, com o raciocínio de que a
-janela de exposição é o reinício, não a queda.
-
-### Sobre o token — correção de um erro comum
-
-O token do Fleet é um Access Policy token da Grafana Cloud (`glc_`). **Não expira por
-tempo.** Os metadados que ele carrega são org, nome e região; não há campo de validade,
-e este foi criado sem expiração opcional.
-
-O modo de falha é **revogação** — manual, ou por engano numa limpeza de tokens. Tratar
-como "vai expirar sozinho" leva a diagnosticar a coisa errada quando parar.
+⚠️ A janela de risco não é o tempo de queda — é o **reinício de pod durante** a queda.
+Medido: com o Fleet inalcançável ou respondendo 401, um agente que reinicia **não
+sobe** (`could not perform the initial load successfully`). E pod reinicia por rollout
+de nó, OOM, drain e upgrade de cluster.
 
 ## O procedimento
 
 ```yaml
-sanitizacao:
-  local:
-    enabled: true
+fleetManagement:
+  enabled: false
 ```
 
-Aplique e sincronize. É isso.
+E `helm upgrade`. O chart passa a renderizar a configuração completa no ConfigMap
+local, e o agente sobe sem depender do Fleet.
 
-## Por que é só isso — e por que era para ser mais
+Quando o Fleet voltar: `true` e upgrade de novo.
 
-O desenho original previa um "values de emergência" contendo a corrente de log
-inteira, porque supunha que o chart deixaria de tê-la. **Não é o caso.** As 14 regras
-vivem sempre em `templates/_sanitizacao.tpl`; a flag decide apenas para onde os logs
-são encaminhados.
+⚠️ **O ConfigMap local só serve como DR se estiver atualizado.** Quem garante isso é
+`sanitizacao/verificar-fleet.sh`, passo 5: ele compara a configuração publicada no
+Fleet com o render do chart. Iguais, o DR está em dia. **Rode-o depois de cada
+publicação** — o publicador já o chama automaticamente.
 
-Isso elimina três custos que estavam previstos:
+## ⚠️ Em BYOC, o DR depende do cliente
 
-| custo previsto | situação real |
+Se não tivermos acesso ao cluster, **alguém do lado do cliente precisa executar o
+upgrade**. Não há saída técnica pelo nosso lado.
+
+Isso deve ser comunicado antes, não durante o incidente: o cliente precisa saber que
+existe um procedimento e quem executá-lo.
+
+## O que faz a via do Fleet parar
+
+Todos com o **mesmo sintoma**: a telemetria desaparece. Os pods seguem `Running`.
+
+| causa | detalhe |
 |---|---|
-| regra de PII existindo em dois lugares, podendo divergir | fonte única, não há segunda cópia |
-| o DR não pode copiar `regras.alloy` (usa `error_mode = "propagate"`) | não há cópia; o chart renderiza com `"ignore"` |
-| o gate teria de comparar **3** alvos | segue comparando **2** |
+| pipeline **deletado** na console | agente sobe sem configuração |
+| pipeline **desmarcado como ativo** | idem — e ⚠️ **pior**, ver abaixo |
+| **cache preso a um módulo antigo** | ⚠️ o mais insidioso, ver abaixo |
+| matcher errado ao publicar | a configuração não chega àquele coletor |
+| token revogado | poll falha; se o pod reiniciar, não sobe |
+| Fleet fora do ar | idem |
 
-**Verificado, não suposto:** o render com `enabled: true` explícito é byte a byte
-idêntico ao padrão do chart. As 28 regras (14 × 2 cadeias) aparecem com
-`error_mode = "ignore"` nos 7 processadores.
+### Pipeline desmarcado como ativo é pior que deletado
 
-## O que volta e o que não volta
+Para o agente, inativo e inexistente são a **mesma coisa**. A diferença é para quem
+investiga: deletado desaparece da lista; **inativo continua visível na console, com a
+configuração correta**, e quem abrir para conferir conclui que está funcionando.
 
-| | |
-|---|---|
-| log de aplicação | volta a ser aceito e mascarado localmente |
-| métricas e traces | **nunca pararam** — a flag não os toca (verificado por diff) |
-| eventos de cluster | **nunca pararam de ser mascarados** — não obedecem a flag |
+Por isso `verificar-fleet.sh` lista os desabilitados em vez de ignorá-los.
+
+### ⚠️ Cache preso — a falha que exige reinício
+
+MEDIDO em aws-devops (2026-08-31): um módulo publicado, depois **deletado** do Fleet,
+permaneceu no cache do agente e **impediu qualquer configuração nova de carregar**:
+
+    level=error msg="failed to parse and load configuration" service=remotecfg
+    err="a loader exists already for remotecfg/<modulo>.default"
+
+O agente seguia funcionando com a configuração anterior. **Nenhum erro visível fora do
+log do agente** — a via do Fleet estava travada e nada apontava isso.
+
+**Só o reinício do pod resolve**: o cache é em memória.
+
+    kubectl rollout restart daemonset/alloy-lerian-node -n monitoring
+
+⚠️ **Em BYOC isso também depende do cliente.** E é a razão mais provável de precisar
+acionar alguém do outro lado.
+
+### Sobre o token — correção de um erro comum
+
+O token do Fleet é um Access Policy token da Grafana Cloud (`glc_`). **Não expira por
+tempo** — os metadados que ele carrega são org, nome e região, sem campo de validade.
+
+O modo de falha é **revogação**, manual ou por engano numa limpeza. Tratar como "vai
+expirar sozinho" leva a diagnosticar a coisa errada.
 
 ## O que se perde durante a indisponibilidade
 
-O log de aplicação daquele período, **sem aviso**.
+Depende de onde a coleta para:
 
-⚠️ **CORRIGIDO em 2026-08-29.** Esta seção afirmava que a ingestão é *recusada na
-borda* com `503 {"code":14,"message":"telemetry type is not supported"}`, e que o SDK
-reteria em buffer.
+| ponto de falha | efeito |
+|---|---|
+| agente rodando, Fleet fora | **nada** — segue com a última configuração |
+| pod reinicia sem Fleet | tudo daquele nó, até o DR |
+| configuração sem receptor | a ingestão é recusada; o SDK da aplicação retém conforme sua política |
+| fila cheia | ⚠️ **descarte silencioso** — a aplicação recebe `200` |
 
-**Estava errado, e o erro era de método.** Aquela medição usou um config **recortado**,
-do qual eu havia removido o receptor OTLP para isolar a cadeia de log. Sem receptor, o
-sinal deixa de ser anunciado e o 503 aparece.
-
-Com o receptor **presente** — o caso real, porque ele é compartilhado com métricas e
-traces — o comportamento é:
-
-    POST /v1/logs     ->  200   (aceito, e DESCARTADO adiante)
-    POST /v1/metrics  ->  200
-
-A aplicação considera entregue o que foi jogado fora. **Não há buffer, não há retry, não
-há sinal.** É perda silenciosa, e é o motivo de o alerta `O11Y-LOG-001` ser
-pré-requisito e não complemento.
-
-⚠️ Isso é melhor que a alternativa: encaminhar log sem máscara enviaria PII de titular
-em claro. Medido em produção que esse log carrega CPF, CNPJ, nome completo e chave Pix
-— ver `pre-dev/regras-pii-falso-positivo/ACHADO-pii-em-claro-byoc.md`.
-
-## ⚠️ O desenho da transição está EM ABERTO — teste de 2026-08-29
-
-O teste em aws-devops mostrou que **ceder apenas os logs ao Fleet é impossível** com o
-desenho atual, e o documento inteiro abaixo pressupunha o contrário.
-
-O que foi medido, com a flag desligada em cluster real:
-
-    linha  79 do config:  receptor OTLP continua ocupando a porta 4318
-    linha 238 do config:  logs = []   -> descarta
-
-O receptor **não** foi tornado condicional, e não podia ser: ele é **compartilhado**
-com métricas e traces. Removê-lo derrubaria os três sinais.
-
-Consequência: a porta 4318 nunca libera, a pipeline do Fleet nunca sobe, e o log é
-recebido e jogado fora.
-
-**Decisão tomada (2026-08-29):** a pipeline do Fleet passará a gerenciar os **três
-sinais** na porta padrão 4318. A porta não muda — a 4328 usada no teste existiu só para
-reduzir impacto e não é o padrão.
-
-⚠️ Isso amplia o risco do DR: nesse desenho, se o Fleet falhar, **param os três
-sinais**, não só o log. O alerta `O11Y-LOG-001` cobre a detecção de log; será preciso
-equivalente para métricas.
-
-Enquanto essa mudança não for feita, **não desligue `sanitizacao.local.enabled` em
-cluster nenhum** — o efeito é perda silenciosa de log, sem ganho.
-
-## Voltando para a via do Fleet, depois
-
-Não faça na pressa. Antes de desligar a flag de novo:
-
-1. confirme que a pipeline está publicada e o coletor a recebeu (`poll_frequency` é 1 min)
-2. confirme que o log está chegando mascarado, com dado real
-3. só então `enabled: false`
-
-⚠️ **A porta 4318 não coexiste.** Medido: `bind: address already in use`. Não é
-possível subir a via nova em paralelo e desligar a antiga depois — há uma janela cega
-entre os dois passos, e é por isso que o passo 2 vem antes.
+⚠️ O último é o mais perigoso e é deliberado: `blockOnOverflow: false`, porque
+contrapressão travaria a aplicação do cliente. O alerta `O11Y-FILA-001` existe para
+que esse descarte não passe despercebido. Ver `docs/DIMENSIONAMENTO-FILA.md`.
 
 ## Detecção
 
-Este procedimento depende de alguém perceber que o log parou. O alerta de log ausente
-por `client_id` é o que torna isso detectável em vez de silencioso — enquanto ele não
-existir, a detecção é manual.
+Quatro alertas na Grafana Cloud, pasta `OBSERVABILITY`:
+
+| alerta | detecta |
+|---|---|
+| `O11Y-LOG-001` | log de aplicação ausente |
+| `O11Y-METRICA-001` | métrica ausente |
+| `O11Y-TRACE-001` | trace ausente |
+| `O11Y-FILA-001` | fila do exportador enchendo |
+
+⚠️ **Todos PAUSADOS** até 100% de produção estar na versão nova. Enquanto isso, a
+detecção é manual.
+
+⚠️ E os três de ausência **disparam juntos** quando a configuração some — é o sinal de
+que o problema não é de um sinal específico, e sim da via de configuração.
+
+## Voltando para o Fleet, depois
+
+1. confirme que a configuração está publicada: `sanitizacao/verificar-fleet.sh` com
+   `CLIENT_ID` definido
+2. `fleetManagement.enabled: true` e `helm upgrade`
+3. confirme que a coleta voltou — os três sinais, não só o log
+
+⚠️ Se o agente não pegar a configuração após alguns minutos, verifique o log por
+`loader exists already`: pode ser o cache preso, e aí é reinício de pod.

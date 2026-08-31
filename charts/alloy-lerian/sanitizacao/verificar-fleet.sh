@@ -289,7 +289,21 @@ if [ -z "${CLIENT_ID:-}" ]; then
   echo "  · CLIENT_ID nao definido — comparacao da config completa ignorada"
   echo "    Defina CLIENT_ID para conferir a config inteira, nao so as regras."
 else
-  NOME_CFG="config_$(echo "$CLIENT_ID" | tr '[:upper:]-' '[:lower:]_')"
+  # ⚠️ A config e GLOBAL e o nome carrega a VERSAO: `config_global_<versao>`.
+  #
+  # Este passo derivava `config_<client_id>` — de quando havia uma config por
+  # cliente e o nome era fixo. As duas premissas mudaram, e o passo passou a
+  # procurar uma pipeline que nunca existe, bloqueando com "nao existe no Fleet"
+  # enquanto a config publicada estava correta. MEDIDO em 2026-08-31.
+  #
+  # Agora acha a pipeline PELO PREFIXO. Se houver mais de uma (janela de transicao
+  # entre publicar a nova e remover a antiga), compara a MAIS RECENTE — que e a que
+  # o agente vai carregar depois do proximo poll.
+  NOME_CFG="$(python3 "${RAIZ}/verificar-fleet-nome.py" "$RESP" config_global)"
+  if [ -z "$NOME_CFG" ]; then
+    erro "nenhuma pipeline 'config_global_*' publicada no Fleet — publique com sanitizacao/publicar-fleet.sh"
+    NOME_CFG="config_global_ausente"
+  fi
   RENDER="$(mktemp)"
   VALUES_BASE="${VALUES_BASE:-${RAIZ}/../examples/values-cliente.yaml}"
   if helm template verificar "${RAIZ}/.." -f "$VALUES_BASE" \

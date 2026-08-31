@@ -197,6 +197,36 @@ client's network.
 {{- $e -}}
 {{- end -}}
 
+{{/*
+The endpoint AS IT GOES INTO THE PUBLISHED CONFIGURATION.
+
+⚠️ WHY THIS IS NOT SIMPLY `destinationEndpoint`.
+
+The configuration published to Fleet is ONE, shared by every client. The endpoint
+was the last thing still baked into its text, and that made the sharing work only
+by coincidence: every BYOC client happens to use the same public gateway. Our own
+internal environments do NOT — they reach an internal load balancer that bypasses
+the gateway entirely, and MEASURED, a configuration carrying the public endpoint
+gets `403 PermissionDenied` there, which is a PERMANENT failure: dropped on the
+spot, no retry.
+
+So the published text carries a reference, and the pod supplies the value.
+
+⚠️ THE VALIDATION ABOVE STILL RUNS, and that is the point of routing through
+`destinationEndpoint` rather than emitting `sys.env` directly. The helper is
+invoked for its side effect — it refuses plain http when a credential travels —
+and only then is the result DISCARDED in favour of the environment reference.
+
+Without that call the guard would silently disappear: a client configured with
+http would render fine and ship the token in the clear, because at render time the
+value no longer exists to inspect. The variable is what reaches the agent; the
+values entry is what gets checked.
+*/}}
+{{- define "alloy-lerian.destinationEndpointRef" -}}
+{{- $_ := include "alloy-lerian.destinationEndpoint" . -}}
+{{- printf "sys.env(\"ALLOY_DESTINATION_ENDPOINT\")" -}}
+{{- end -}}
+
 {{- define "alloy-lerian.credentialSecretName" -}}
 {{- .Values.destination.credential.secretName | default "alloy-lerian" -}}
 {{- end -}}

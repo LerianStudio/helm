@@ -28,6 +28,18 @@ node:
       # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
       - name: ALLOY_CLIENT_ID
         value: sample-prd
+      # ⚠️ Precisa dizer o MESMO que `destination.endpoint` acima.
+      #
+      # O destino saiu do texto da configuracao publicada no Fleet: aquela
+      # configuracao e UMA para todos os clientes, e o destino nao e igual para
+      # todos — os ambientes internos entregam a um balanceador interno que nao
+      # passa pelo gateway.
+      #
+      # A entrada do values continua obrigatoria: e ela que o chart valida
+      # (recusa http quando o perfil envia credencial, para o token nao viajar
+      # em texto claro). Esta variavel e o que chega ao agente.
+      - name: ALLOY_DESTINATION_ENDPOINT
+        value: https://telemetry.invalid/v1
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
           secretKeyRef:
@@ -53,6 +65,18 @@ singleton:
       # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
       - name: ALLOY_CLIENT_ID
         value: sample-prd
+      # ⚠️ Precisa dizer o MESMO que `destination.endpoint` acima.
+      #
+      # O destino saiu do texto da configuracao publicada no Fleet: aquela
+      # configuracao e UMA para todos os clientes, e o destino nao e igual para
+      # todos — os ambientes internos entregam a um balanceador interno que nao
+      # passa pelo gateway.
+      #
+      # A entrada do values continua obrigatoria: e ela que o chart valida
+      # (recusa http quando o perfil envia credencial, para o token nao viajar
+      # em texto claro). Esta variavel e o que chega ao agente.
+      - name: ALLOY_DESTINATION_ENDPOINT
+        value: https://telemetry.invalid/v1
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
           secretKeyRef:

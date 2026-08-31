@@ -272,6 +272,17 @@ O valor VEM de `origin.id`, e o cliente não o repete: o exemplo declara
 {{- if not (has "ALLOY_CLIENT_ID" $nomes) -}}
 {{- fail (printf "\n\nalloy-lerian: `%s.alloy.extraEnv` nao declara ALLOY_CLIENT_ID.\n\nA configuracao de coleta e a MESMA para todos os clientes; o que distingue um do\noutro e esta variavel. Sem ela a telemetria chega INATRIBUIVEL — `sys.env` de\nvariavel ausente devolve string vazia, o agente sobe normalmente, e o cliente\ndesaparece de todo painel e dos alertas de ingestao.\n\nAcrescente em `%s.alloy.extraEnv`:\n\n  - name: ALLOY_CLIENT_ID\n    value: <o mesmo valor de origin.id>\n\nVer examples/values-cliente.yaml.\n" $papel $papel) -}}
 {{- end -}}
+{{/*
+Mesma familia de falha que a variavel acima, com consequencia diferente: sem
+destino o agente coleta e nao entrega.
+
+⚠️ `sys.env` de variavel ausente devolve STRING VAZIA, e o exportador com endpoint
+vazio nao recusa a config — ele tenta, falha, e a telemetria fica na fila ate
+estourar. O sintoma e "nao chega nada", sem nenhum erro que aponte a causa.
+*/}}
+{{- if not (has "ALLOY_DESTINATION_ENDPOINT" $nomes) -}}
+{{- fail (printf "\n\nalloy-lerian: `%s.alloy.extraEnv` nao declara ALLOY_DESTINATION_ENDPOINT.\n\nO destino saiu do texto da configuracao publicada e passou a vir do ambiente do\npod, porque a configuracao no Fleet e UMA para todos e o destino NAO e igual para\ntodos: os ambientes internos entregam a um balanceador interno que nao passa pelo\ngateway.\n\nMEDIDO: com o endpoint errado o ponto de entrada responde 403, que e falha\nPERMANENTE — o dado e descartado na hora, sem reenvio.\n\nAcrescente em `%s.alloy.extraEnv`:\n\n  - name: ALLOY_DESTINATION_ENDPOINT\n    value: <o mesmo valor de destination.endpoint>\n\n⚠️ O valor de `destination.endpoint` no values CONTINUA sendo obrigatorio: e ele\nque o chart valida (recusa http quando o perfil envia credencial). A variavel e o\nque chega ao agente; a entrada do values e o que e conferido. Os dois precisam\ndizer a mesma coisa.\n\nVer examples/values-cliente.yaml.\n" $papel $papel) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

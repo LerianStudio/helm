@@ -348,7 +348,7 @@ otelcol.processor.batch "agrupamento" {
 // queue — which is why permanent discard is alerted separately.
 otelcol.exporter.otlphttp "destino" {
   client {
-    endpoint = {{ include "alloy-lerian.destinationEndpoint" . | quote }}
+    endpoint = {{ include "alloy-lerian.destinationEndpointRef" . }}
 {{- if $authenticated }}
     headers = {
       "x-api-key" = sys.env("ALLOY_DESTINATION_CREDENTIAL"),
@@ -847,7 +847,7 @@ otelcol.processor.transform "procedencia_eventos" {
 // treats this role exactly like any other producer.
 otelcol.exporter.otlphttp "destino" {
   client {
-    endpoint = {{ include "alloy-lerian.destinationEndpoint" . | quote }}
+    endpoint = {{ include "alloy-lerian.destinationEndpointRef" . }}
 {{- if $authenticated }}
     headers = {
       "x-api-key" = sys.env("ALLOY_DESTINATION_CREDENTIAL"),

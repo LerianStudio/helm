@@ -25,6 +25,26 @@ Medido: com o Fleet inalcançável ou respondendo 401, um agente que reinicia **
 sobe** (`could not perform the initial load successfully`). E pod reinicia por rollout
 de nó, OOM, drain e upgrade de cluster.
 
+### Existe cache, e ele não salva o reinício
+
+O `remotecfg` guarda a última configuração buscada em disco e cai nela quando o Fleet
+não responde:
+
+    level=error msg="failed to fetch remote config, falling back to cache"
+      service=remotecfg cache_path=/tmp/alloy/remotecfg/<hash>
+
+Mas o volume é `emptyDir`. O cache **morre junto com o pod**, então o fallback só
+protege o agente que já carregou a configuração e perdeu o Fleet **depois**. Num pod
+que reinicia com o Fleet fora não há cache nenhum, e é por isso que ele não sobe.
+
+⚠️ **Trocar por um volume persistente não é a correção.** O cache é indexado por hash
+de configuração; um cache velho sobreviveria ao reinício e reintroduziria uma versão
+**antiga das regras de PII** — exatamente o que o Fleet existe para evitar. Um agente
+que não sobe é ruidoso e detectável; um agente que sobe mascarando de menos, não.
+
+Isto é um risco aceito, não um problema em aberto. A mitigação é a detecção
+(`O11Y-*-001`) e o DR abaixo, não a persistência.
+
 ## O procedimento
 
 ```yaml
@@ -82,7 +102,10 @@ permaneceu no cache do agente e **impediu qualquer configuração nova de carreg
 O agente seguia funcionando com a configuração anterior. **Nenhum erro visível fora do
 log do agente** — a via do Fleet estava travada e nada apontava isso.
 
-**Só o reinício do pod resolve**: o cache é em memória.
+**Só o reinício do pod resolve.** Não porque o cache seja em memória — ele é em
+disco, sob `--storage.path` (`/tmp/alloy/remotecfg/<hash>`) — mas porque o volume é
+`emptyDir`: o pod novo começa com o diretório vazio, e é isso que solta o nome do
+módulo preso.
 
     kubectl rollout restart daemonset/alloy-lerian-node -n monitoring
 

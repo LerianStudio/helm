@@ -76,7 +76,7 @@ def main() -> int:
     if a == b:
         return 0
 
-    # Resumo, não o diff inteiro: 655 linhas de saída esconderiam o que importa.
+    # Resumo, não o diff inteiro: ~660 linhas de saída esconderiam o que importa.
     print(f"divergencia: render tem {len(a)} linhas, publicado tem {len(b)}")
     n = 0
     for linha in difflib.unified_diff(a, b, "render", "publicado", lineterm="", n=1):

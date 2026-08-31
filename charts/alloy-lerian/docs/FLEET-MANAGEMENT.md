@@ -59,6 +59,25 @@ O último foi encontrado em revisão: declarar a variável não basta, ela preci
 obrigatória. Enquanto Fleet está inativo o token permanece opcional, para que
 nenhum Secret seja exigido antes da hora.
 
+Há uma quinta guarda, sobre a **outra** credencial: se o perfil autentica no destino,
+`ALLOY_DESTINATION_CREDENTIAL` com `optional: true` também recusa o render. O motivo é
+o mesmo modo de falha, com consequência pior — o pod subiria com o header vazio, o
+ponto de entrada responderia `401`, que é falha **permanente**: o dado é descartado na
+hora, sem reenvio, e nada reinicia nem alerta.
+
+### ⚠️ Nos ambientes internos são duas chaves; em `aws-devops`, uma
+
+Isto parece inconsistência e não é. Os ambientes internos `aws-*` entregam telemetria
+ao **NLB interno**, sem passar pelo gateway — não há api-key a enviar, então
+`destination.credential.enabled: false`, o Secret tem **só** `fleet-token`, e
+`ALLOY_DESTINATION_CREDENTIAL` fica `optional: true` legitimamente.
+
+A guarda acima não dispara ali justamente porque o perfil não autentica. Em BYOC, onde
+autentica, ela dispara — que é o comportamento pretendido.
+
+Ao comparar um cluster interno com um de cliente, conferir **primeiro** se o destino
+autentica; sem isso a diferença de chaves parece um erro de provisionamento.
+
 ### Sobre o `username`
 
 **Não é identidade — é o ID numérico da stack, igual para todos os clientes.** Não

@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "document:30251055000135 fee_amount:0"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

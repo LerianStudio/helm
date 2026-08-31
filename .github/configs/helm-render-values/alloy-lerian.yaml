@@ -1,0 +1,113 @@
+# CI-only fixture. Not a production example; must not contain real credentials.
+#
+# Exists because `profile`, `origin.id` and `destination.endpoint` are required
+# with no default, so the chart cannot render without them. The chart it replaces
+# had no fixture, which is why the render gate never exercised it — and why it
+# shipped unable to render with its own values.
+#
+# Exercises the `client` profile: the stricter of the two (credential required,
+# node infrastructure excluded, inspection parameter absent).
+profile: client
+origin:
+  id: sample-prd
+destination:
+  endpoint: https://telemetry.invalid/v1
+
+# A credencial é OBRIGATÓRIA no perfil client, e a guarda do chart recusa o render
+# sem isto — de propósito: um pod que sobe sem credencial recebe 401, que é falha
+# PERMANENTE, e perde telemetria em silêncio.
+#
+# Espelha examples/values-cliente.yaml, que é o que o cliente realmente usa. A
+# fixture precisa exercitar a mesma configuração; se divergir, a porta de render
+# valida um caminho que ninguém instala.
+node:
+  alloy:
+    extraEnv:
+      # ⚠️ A config publicada no Fleet e UMA SO para todos os clientes.
+      # Esta variavel e o que distingue um do outro — sem ela a telemetria
+      # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
+      - name: ALLOY_CLIENT_ID
+        value: sample-prd
+      # ⚠️ Precisa dizer o MESMO que `destination.endpoint` acima.
+      #
+      # O destino saiu do texto da configuracao publicada no Fleet: aquela
+      # configuracao e UMA para todos os clientes, e o destino nao e igual para
+      # todos — os ambientes internos entregam a um balanceador interno que nao
+      # passa pelo gateway.
+      #
+      # A entrada do values continua obrigatoria: e ela que o chart valida
+      # (recusa http quando o perfil envia credencial, para o token nao viajar
+      # em texto claro). Esta variavel e o que chega ao agente.
+      - name: ALLOY_DESTINATION_ENDPOINT
+        value: https://telemetry.invalid/v1
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+singleton:
+  alloy:
+    extraEnv:
+      # ⚠️ A config publicada no Fleet e UMA SO para todos os clientes.
+      # Esta variavel e o que distingue um do outro — sem ela a telemetria
+      # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
+      - name: ALLOY_CLIENT_ID
+        value: sample-prd
+      # ⚠️ Precisa dizer o MESMO que `destination.endpoint` acima.
+      #
+      # O destino saiu do texto da configuracao publicada no Fleet: aquela
+      # configuracao e UMA para todos os clientes, e o destino nao e igual para
+      # todos — os ambientes internos entregam a um balanceador interno que nao
+      # passa pelo gateway.
+      #
+      # A entrada do values continua obrigatoria: e ela que o chart valida
+      # (recusa http quando o perfil envia credencial, para o token nao viajar
+      # em texto claro). Esta variavel e o que chega ao agente.
+      - name: ALLOY_DESTINATION_ENDPOINT
+        value: https://telemetry.invalid/v1
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+# ⚠️ OBRIGATÓRIO no perfil client desde a guarda de perímetro de namespace: o chart
+# RECUSA o render com `profile: client` e `onlyNamespaces` vazia. A razão é que em
+# cluster do cliente o perímetro é POSITIVO — coletamos consumo apenas dos namespaces
+# onde instalamos nossos produtos, porque medir carga alheia é pagar por ela.
+#
+# Espelha `examples/values-cliente.yaml`: se divergir, a porta de render valida um
+# caminho que ninguém instala.
+collection:
+  onlyNamespaces:
+    - ^midaz$
+    - ^plugin-.*
+
+# Gestão remota DESLIGADA explicitamente. O default do chart é `true`, e ligada
+# exige url/username/token reais — que uma fixture de render não tem e não deve
+# inventar. Desligar aqui é a decisão sendo declarada, não omissão.
+fleetManagement:
+  enabled: false

@@ -1,0 +1,1187 @@
+# alloy-lerian — telemetry collection agent for client clusters.
+#
+# The surface below is SEMANTIC INTENT, not pipeline topology. The processing
+# chain (admission, enrichment, origin marking, perimeter, sanitisation,
+# batching) is rendered by the chart and deliberately not configurable:
+#
+#   - ordering is a contract. In this agent components form a graph, so swapping
+#     two stages produces no error — it produces telemetry without enrichment,
+#     silently
+#   - sanitisation of regulated data is not negotiable. There is no value that
+#     disables or weakens a rule
+#
+# Two parameters have NO default and fail the render when absent: `profile` and
+# `origin.id`. That is intentional. The chart this one replaces shipped a
+# default origin identifier that violated its own schema, which is why it could
+# not render with its own values.
+
+nameOverride: ""
+fullnameOverride: ""
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# ---------------------------------------------------------------------------
+# PROFILE — required, no default, not inferable
+# ---------------------------------------------------------------------------
+# own     our own environment. Collects node infrastructure, because the node
+#         is ours and its capacity and scheduling are our concern.
+# client  a client cluster. Does NOT collect node infrastructure: the node
+#         belongs to the client, collecting it asks for data we have no
+#         standing to act on, and it adds traffic across the public network.
+#
+# The boundary is operational responsibility. Inferring it from a cluster
+# property would silently produce the wrong profile in the ambiguous case.
+profile: ""
+
+# ---------------------------------------------------------------------------
+# ORIGIN — required, no default
+# ---------------------------------------------------------------------------
+# Marks every record with the environment it came from. Without it, telemetry
+# reaches the destination unattributable.
+#
+# Form: <client>-<stage>, lowercase, stage = stg | prd. The client name is a
+# SINGLE word — acme-prd, never acme-corp-prd. Our three SaaS environments are the
+# only exempt values; internal test clusters do not run this chart and get no
+# exemption.
+#
+# Note: this marks PROVENANCE, not identity. The credential authenticates the
+# sender; the marker is self-declared. Changing it for a live environment is a
+# data migration, not a configuration tweak: the marker is part of series
+# identity at the destination, so a new value orphans every existing series.
+origin:
+  id: ""
+
+# ---------------------------------------------------------------------------
+# DESTINATION
+# ---------------------------------------------------------------------------
+destination:
+  # Default: o ponto de entrada de produção, que é o de TODO cliente BYOC. Estava
+  # vazio e obrigava cada consumidor a repetir o mesmo valor — e repetir um valor
+  # que é igual em todos os lugares é onde o erro de digitação nasce.
+  #
+  # ⚠️ Os ambientes internos `aws-*` SOBRESCREVEM: eles entregam a um balanceador
+  # interno que não passa pelo gateway, e portanto não usa api-key. MEDIDO: uma
+  # configuração com o endereço público recebe 403 lá, que é falha PERMANENTE —
+  # descarta na hora, sem reenvio.
+  #
+  # Ao sobrescrever, os DOIS lugares precisam mudar juntos: esta entrada e a
+  # variável `ALLOY_DESTINATION_ENDPOINT` no `extraEnv` do papel. A variável é o
+  # que chega ao agente; esta entrada é o que o chart valida (recusa http quando o
+  # perfil envia credencial). Uma guarda recusa o render se faltar a variável.
+  endpoint: https://telemetry.lerian.io
+
+  credential:
+    # Derivado do perfil: ausente em `own`, obrigatório em `client`. Defina
+    # explicitamente para sobrescrever.
+    #
+    # POR QUE `own` NÃO AUTENTICA — é topologia, não relaxamento:
+    # em aws-staging e aws-production a entrega vai por um LOAD BALANCER INTERNO E
+    # PRIVADO, dentro da VPC. A autenticação da plataforma vive na borda, no API
+    # Gateway; o tráfego de telemetria não sai para a internet. Autenticar neste
+    # salto significaria sair e voltar só para validar credencial — latência e um
+    # ponto de falha a mais, sem ganhar isolamento, porque quem alcança o LB
+    # privado já está dentro do perímetro.
+    #
+    # Confirmado no estado atual: o otel-collector-client de staging exporta com
+    # `headers: []` e funciona.
+    #
+    # Em `client` (BYOC) o cluster é de terceiro e a entrega cruza a internet
+    # pública — daí a credencial ser obrigatória, e 401 ser descarte permanente.
+    # enabled: true
+
+    # Referência apenas. O chart LÊ este Secret e nunca o cria.
+    #
+    # O cliente executa UM comando antes do install, com os valores que
+    # entregamos. Ver README, seção de instalação.
+    #
+    # Registrado na allowlist de secret provisionado fora de banda do
+    # repositório, para que a porta de renderização não o trate como referência
+    # pendente.
+    secretName: "alloy-lerian"
+    secretKey: "telemetry-token"
+
+  # In-memory queue. Persistence is deliberately out of scope: the durable
+  # backend is below the agent's stable component tier, and enabling it would
+  # require lowering the stability floor GLOBALLY, which un-gates every
+  # unstable component in a financial-institution cluster.
+  #
+  # Consequence accepted: a process restart loses the in-flight queue. The main
+  # gain — retry on transient failure — does not depend on persistence and does
+  # not exist today.
+  queue:
+    size: 1000
+    consumers: 10
+    # Singleton role only, and deliberately deeper than `size` above.
+    #
+    # MEASURED on benedita: with the node role's 1000, the singleton lost 256
+    # event records in its first seconds — loki.source.kubernetes_events replays
+    # the cluster's existing event history the moment it starts, so the opening
+    # burst is far above steady state. No HTTP error at any point: the destination
+    # accepted everything it was offered, the local queue simply filled.
+    #
+    # The node role does not need this: applications push at their own pace and
+    # never replay a backlog.
+    singletonSize: 5000
+
+    # ⚠️ `false` é o padrão POR DECISÃO, e o custo está medido abaixo.
+    #
+    # Contrapressão não cabe a nós impor: telemetria é auxiliar, a transação é o
+    # negócio. Um coletor que trava o ledger de um cliente porque o destino de
+    # telemetria está fora é uma troca ruim.
+    #
+    # ⚠️ MAS O CUSTO É REAL: fila cheia significa DESCARTE, e a aplicação recebe
+    # `200` — ela considera entregue o que foi jogado fora. MEDIDO com a fila
+    # padrão e o destino fora:
+    #
+    #   1800 envios -> 300 respostas 200, 58 retries, 800 DESCARTES
+    #
+    # A perda de 256 eventos documentada acima, no `singletonSize`, é exatamente
+    # este mecanismo. Aumentar a fila adiou aquele caso; não resolveu a classe.
+    #
+    # Quanto a fila aguenta, com linha média de 909 bytes medida em produção:
+    #
+    #   aws-devops     ~17 minutos
+    #   Cappta-Prd     ~18 segundos
+    #   Voluti-prd     ~1,7 SEGUNDOS
+    #
+    # ⚠️ Para cliente de alto volume a fila não protege — 1 h de retenção no
+    # Voluti exigiria ~1,8 GB de RAM contra um limite de container de 512 Mi.
+    # O que torna essa perda percebida é o ALERTA de saturação
+    # (`otelcol_exporter_queue_size` sobre `_capacity`), não o tamanho da fila.
+    #
+    # `true` inverte para contrapressão — MEDIDO: 50 aceitos, 30 bloqueados, zero
+    # descartes. Use apenas onde a aplicação tolerar bloqueio.
+    blockOnOverflow: false
+
+  retry:
+    # Effective survivable outage window. Beyond it, records are discarded and
+    # the discard is counted — silent loss is what this replaces.
+    #
+    # To be sized from measured volume per environment rather than guessed.
+    maxElapsedTime: "5m"
+
+# ---------------------------------------------------------------------------
+# COLLECTION
+# ---------------------------------------------------------------------------
+collection:
+  # Floor of 60s, enforced. A lower value is REJECTED, not clamped: clamping
+  # would hide the divergent intent of whoever set it.
+  #
+  # Cost at the destination is series x writes per minute. Collecting faster
+  # than anyone queries wastes CPU in the client cluster, bandwidth across the
+  # public network, and processing at the destination.
+  interval: "60s"
+
+  namespaces:
+    # DERIVED FROM THE PROFILE — leave empty unless the environment genuinely
+    # differs. The defaults are:
+    #
+    #   client  include ^(midaz|midaz-plugins)$   — only what we operate.
+    #           Everything else in that cluster belongs to the client and would
+    #           cross the public network for no return.
+    #   own     exclude ^(kube-system|kube-public|kube-node-lease)$ — the whole
+    #           cluster is ours, minus plumbing.
+    #
+    # `include` takes precedence. Both empty does NOT mean "collect everything":
+    # it means the profile default applies. An empty perimeter read as
+    # unrestricted is the failure mode that exposes data.
+    include: ""
+    exclude: ""
+
+  # Where to scrape cluster-object metrics from. Empty means our own producer,
+  # when enabled. Set this to reuse an existing producer — deploying it and
+  # scraping it are separate decisions, and disabling ours must not silently
+  # remove the collection.
+  clusterObjectTarget: ""
+
+  # Métricas de NÓ — CPU, memória, filesystem e rede do HOST, não dos workloads.
+  #
+  # Ligar isto faz DUAS coisas, e a segunda é a que importa:
+  #   1. instala o node-exporter (dependência `node-exporter`, abaixo)
+  #   2. o papel singleton passa a RASPAR o endpoint dele
+  #
+  # Segue o padrão do chart guarda-chuva da Grafana, que separa
+  # `telemetryServices.node-exporter.deploy` de `hostMetrics.collector` — o
+  # exportador é um componente, o agente só coleta. O agente NÃO monta /proc nem
+  # /sys e não ganha privilégio nenhum.
+  #
+  # Disponível só no perfil `own`: com `profile: client` o render falha, porque o
+  # nó pertence ao cliente e não temos competência para agir sobre ele.
+  #
+  # ⚠️ VOLUME. Medido na benedita: 3 nós produzem 612 famílias e **46.575 séries**
+  # — 11% de todas as séries daquele cluster. Escala com o número de nós. Ligar
+  # sem a allowlist de métricas infla exatamente o que esta migração reduz.
+  #
+  # Métricas de OBJETO de cluster (fase do pod, estado do deployment) são outra
+  # coisa e vêm do kube-state-metrics nos dois perfis — descrevem workloads que
+  # operamos.
+  nodeInfrastructure: false
+
+  # ⚠️ ALLOWLIST DE OBJETOS DE CLUSTER — o kube-state-metrics NÃO tem allowlist
+  # própria. MEDIDO em aws-devops (2026-08-25): sem este filtro ele entrega o
+  # conjunto padrão INTEIRO, 184 famílias e 5.272 séries. Estas 46 famílias são
+  # 1.254 séries — corte de 76%.
+  #
+  # O corte é por VALOR DIAGNÓSTICO, não por volume. Dois critérios:
+  #   1. responde pergunta operacional (por que caiu, por que reiniciou, está no
+  #      limite, saturou)?
+  #   2. é ESTADO ou INVENTÁRIO? Estado muda e alerta; inventário só descreve o que
+  #      existe — e `kubectl` responde melhor e de graça.
+  #
+  # ⚠️ COLETAMOS O MÍNIMO. Cinco grupos aqui (nó, job, PVC, PDB, init container) não
+  # têm alerta nem dashboard hoje: entram porque respondem pergunta real, não porque
+  # já são consultados. Habilitar mais é acrescentar um nome nesta lista — o que foi
+  # removido, por quê, e como ver de outra forma está em
+  # `docs/metricas-removidas-ksm.md`, com o custo em séries de cada um.
+  clusterObjectAllowlist:
+    # --- SAÚDE DE CONTÊINER: por que caiu, por que reiniciou (400 séries) ---
+    - kube_pod_container_status_running
+    - kube_pod_container_status_waiting
+    - kube_pod_container_status_terminated
+    - kube_pod_container_status_ready
+    - kube_pod_container_status_restarts_total
+    - kube_pod_container_status_waiting_reason
+    - kube_pod_container_status_terminated_reason
+    - kube_pod_container_status_last_terminated_reason
+    # --- FASE DE POD: substitui k8s_pod_phase (285) ---
+    - kube_pod_status_phase
+    # --- RECURSOS: o denominador da razão uso/limite (172) ---
+    - kube_pod_container_resource_requests
+    - kube_pod_container_resource_limits
+    # --- WORKLOAD desejado vs real: o alerta de réplica faltando (111) ---
+    - kube_deployment_spec_replicas
+    - kube_deployment_status_replicas_available
+    - kube_deployment_status_replicas_unavailable
+    - kube_statefulset_replicas
+    - kube_statefulset_status_replicas_ready
+    - kube_daemonset_status_desired_number_scheduled
+    - kube_daemonset_status_number_ready
+    - kube_daemonset_status_number_unavailable
+    # --- NÓ: NotReady, MemoryPressure, DiskPressure (75) — sem alerta hoje ---
+    - kube_node_status_condition
+    - kube_node_status_capacity
+    - kube_node_status_allocatable
+    - kube_node_spec_unschedulable
+    # --- HPA: teto de escala, 69 refs hoje (26) ---
+    - kube_horizontalpodautoscaler_spec_max_replicas
+    - kube_horizontalpodautoscaler_spec_min_replicas
+    - kube_horizontalpodautoscaler_status_current_replicas
+    - kube_horizontalpodautoscaler_status_desired_replicas
+    - kube_horizontalpodautoscaler_status_condition
+    # --- JOB/CRONJOB: batch falhando em silêncio (34) — sem alerta hoje ---
+    - kube_job_status_failed
+    - kube_job_status_succeeded
+    - kube_job_status_active
+    - kube_job_complete
+    - kube_cronjob_status_last_schedule_time
+    - kube_cronjob_status_last_successful_time
+    # --- ARMAZENAMENTO: PVC Pending derruba banco (20) — sem alerta hoje ---
+    - kube_persistentvolumeclaim_status_phase
+    - kube_persistentvolumeclaim_resource_requests_storage_bytes
+    - kube_persistentvolume_status_phase
+    - kube_persistentvolume_capacity_bytes
+    # --- PDB: bloqueia drain e trava upgrade de cluster (12) — sem alerta hoje ---
+    - kube_poddisruptionbudget_status_current_healthy
+    - kube_poddisruptionbudget_status_desired_healthy
+    - kube_poddisruptionbudget_status_pod_disruptions_allowed
+    # --- INIT CONTAINER: pod preso em Init: é invisível sem isto (27) ---
+    - kube_pod_init_container_status_waiting
+    - kube_pod_init_container_status_terminated_reason
+    - kube_pod_init_container_status_restarts_total
+    # --- CORRELAÇÃO: 1 série/pod, liga pod → Deployment (57) ---
+    - kube_pod_owner
+    # --- NAMESPACE: preso em Terminating (28) ---
+    - kube_namespace_status_phase
+
+  # Consumo REAL de CPU, memória, disco e rede por contêiner, raspado do cAdvisor
+  # embutido no kubelet de cada nó.
+  #
+  # ⚠️ SEM ISTO, A MIGRAÇÃO PERDE OBSERVAÇÃO. O agente que este chart substitui usa
+  # o receptor `kubeletstats`, e é dele que vêm as famílias `container_*` que já
+  # existem no destino hoje — MEDIDO: 68 séries em aws-devops, 72 em
+  # aws-production, 44 em aws-staging. O kube-state-metrics NÃO cobre isso: ele
+  # descreve o ESTADO declarado do objeto (limite, réplica desejada, fase), nunca
+  # o consumo observado. Trocar de agente sem esta coleta apaga a resposta para
+  # "este pod está estourando o limite?".
+  #
+  # É `true` por padrão porque é reposição de coleta existente, não recurso novo.
+  #
+  # ⚠️ DESLIGAR quando o cluster já raspa cAdvisor por outro caminho (um Prometheus
+  # próprio, um agente do cliente). Duas coletas do mesmo endpoint duplicam cada
+  # série no destino, e a duplicata é indistinguível do original.
+  containerUsage: true
+
+  # ⚠️ PERÍMETRO DE NAMESPACE do consumo de contêiner — DUAS listas, não uma
+  # invertida, porque os conjuntos são diferentes.
+  #
+  # `own`    usa `excludeNamespaces` (ação drop): nossos clusters, operamos tudo
+  #          menos o que é do provedor.
+  # `client` usa `onlyNamespaces` (ação keep): cluster do cliente, olhamos só onde
+  #          instalamos nossos produtos.
+  #
+  # MEDIDO: aws-staging já dropava os namespaces de sistema no collector e emitia
+  # 488 séries `container_*`; aws-devops, SEM o filtro, emitia 2.284 com número de
+  # pods equivalente. A diferença é este filtro, não o tamanho do cluster — e sem
+  # ele a migração de staging INFLARIA o consumo em ~1.800 séries sem ninguém pedir.
+  #
+  # Por que estes três: kube-proxy, VPC CNI, coredns, csi e afins vivem aqui. São
+  # volume alto e responsabilidade do provedor — saúde de nó e de EKS vem por
+  # CloudWatch, não por esta coleta.
+  excludeNamespaces:
+    - ^kube-system$
+    - ^kube-public$
+    - ^kube-node-lease$
+
+  # ⚠️ TEM DEFAULT desde 2026-08-30, e antes não tinha. O comentário anterior dizia
+  # que um default seria "um chute sobre quais namespaces o cliente usa".
+  #
+  # Não é chute: nossos produtos são instalados SEMPRE em `midaz` e `midaz-plugins`,
+  # em todo cliente. Confirmado com a operação.
+  #
+  # A ausência de default tinha custo real e não percebido: o
+  # `examples/values-cliente.yaml` que entregávamos ao cliente NÃO RENDERIZAVA,
+  # porque não preenchia esta lista. O defeito passou despercebido até esta data.
+  #
+  # Sobrescreva apenas se o cliente instalou em outro lugar. Para coletar o cluster
+  # inteiro deliberadamente: `onlyNamespaces: [".*"]`.
+  #
+  # ⚠️ O chart segue RECUSANDO `profile: client` com a lista VAZIA — quem a esvaziar
+  # está pedindo para não filtrar nada, e isso não pode ser silencioso.
+  #
+  # ⚠️ O filtro `keep` gerado inclui a alternativa `|^$` automaticamente. MEDIDO em
+  # aws-devops: 272 séries `container_*` têm namespace VAZIO — agregados de nó e
+  # sandboxes de pod. Sem essa alternativa elas cairiam em silêncio, levando com
+  # elas o denominador da razão uso/limite.
+  onlyNamespaces:
+    - ^midaz$
+    - ^midaz-plugins$
+
+  # Onde raspar o cAdvisor. Vazio = via API server, o caminho que funciona sem
+  # depender de a porta do kubelet estar alcançável do pod.
+  #
+  # O cAdvisor NÃO é um componente a instalar — vem embutido no kubelet, então não
+  # há subchart aqui, ao contrário de kube-state-metrics e node-exporter. A decisão
+  # é só raspar ou não.
+  containerUsageTarget: ""
+
+  # ⚠️ ALLOWLIST, não coleta integral. MEDIDO na benedita: o endpoint expõe 78
+  # famílias e 90.948 séries; estas 16 são 4.893 (−94,6%).
+  #
+  # O corte não foi por volume, foi por valor: as famílias caras não respondem
+  # pergunta nenhuma — `container_tasks_state` (5.255 séries),
+  # `container_blkio_device_usage_total` (5.048), `container_memory_failures_total`
+  # (4.204). As que importam são baratas.
+  #
+  # ⚠️ AS 4 ÚLTIMAS SÃO POR POD, NÃO POR CONTÊINER. O cAdvisor mede filesystem e
+  # rede no nível do pod, e MEDIDO: elas têm ZERO séries com nome de contêiner. Um
+  # filtro `container!=""` as eliminaria por inteiro — foi o erro que essa medição
+  # pegou.
+  containerUsageAllowlist:
+    # por contêiner
+    - container_cpu_usage_seconds_total
+    - container_memory_usage_bytes
+    - container_memory_working_set_bytes      # o que importa para OOM
+    - container_memory_rss
+    - container_memory_cache
+    - container_last_seen
+    - container_spec_memory_limit_bytes       # o limite, para a razão uso/limite
+    - container_spec_cpu_period
+    - container_spec_cpu_quota
+    - container_cpu_cfs_periods_total
+    - container_cpu_cfs_throttled_periods_total
+    - container_cpu_cfs_throttled_seconds_total
+    # por POD — fs e rede não têm nome de contêiner
+    - container_network_receive_bytes_total
+    - container_network_transmit_bytes_total
+    - container_fs_usage_bytes
+    - container_fs_limit_bytes
+
+  # Drops records below INFO at the edge. Records with no severity are kept:
+  # absence of the field is not evidence of low value.
+  dropDebugLogs: true
+
+  # As métricas do PRÓPRIO agente: fila, descarte, falha de envio. É a única forma
+  # de responder "perdi dado?" — e essa resposta importa mais que qualquer métrica
+  # do cluster, porque sem ela toda a coleta é afirmação não verificada.
+  #
+  # ⚠️ REPOSIÇÃO, não recurso novo. O agente que sai tem um pipeline
+  # `metrics/internal` raspando localhost:8887, e dele vêm as famílias `otelcol_*`
+  # presentes no destino hoje — MEDIDO: 288 séries em aws-devops. Sem isto a
+  # migração as apaga, e a perda é invisível por construção: você deixa de ver
+  # justamente o mecanismo que reportaria perda.
+  #
+  # Cada agente rapa a SI MESMO na porta do próprio servidor HTTP. Não há alvo a
+  # configurar e nada é exposto fora do pod.
+  selfMetrics: true
+
+  # ⚠️ ALLOWLIST por valor diagnóstico. O endpoint expõe centenas de famílias —
+  # runtime do Go, contadores por componente, histogramas internos. Estas
+  # respondem as perguntas que motivam a coleta:
+  #
+  #   a fila está saturando?      queue_size vs queue_capacity
+  #   houve descarte PERMANENTE?  send_failed_* (o que o retry não recupera)
+  #   o destino está recusando?   refused_* / failed_*
+  #   a raspagem falhou?          up / scrape_samples_scraped
+  #   o agente está saudável?     alloy_build_info, cpu, memória
+  #
+  # ⚠️ `alloy_*` E `otelcol_*` juntos, de propósito: o Alloy embute o OTel
+  # Collector, então os componentes `otelcol.*` da nossa cadeia reportam com o
+  # prefixo antigo e os nativos com o novo. Cobrir um lado só deixa metade da
+  # cadeia sem observação.
+  selfMetricsAllowlist:
+    - otelcol_exporter_sent_metric_points_total
+    - otelcol_exporter_sent_log_records_total
+    - otelcol_exporter_sent_spans_total
+    - otelcol_exporter_send_failed_metric_points_total
+    - otelcol_exporter_send_failed_log_records_total
+    - otelcol_exporter_send_failed_spans_total
+    - otelcol_exporter_queue_size
+    - otelcol_exporter_queue_capacity
+    - otelcol_receiver_accepted_metric_points_total
+    - otelcol_receiver_refused_metric_points_total
+    - otelcol_receiver_accepted_log_records_total
+    - otelcol_receiver_refused_log_records_total
+    - otelcol_receiver_accepted_spans_total
+    - otelcol_receiver_refused_spans_total
+    - otelcol_scraper_errored_metric_points_total
+    - up
+    - scrape_samples_scraped
+    - alloy_build_info
+    - alloy_component_evaluation_seconds_count
+    - alloy_resources_process_cpu_seconds_total
+    - alloy_resources_process_resident_memory_bytes
+
+# ---------------------------------------------------------------------------
+# RED METRICS DERIVED FROM SPANS
+# ---------------------------------------------------------------------------
+# Counts spans to produce request rate, error rate and latency
+# (`calls_total`, `duration_milliseconds_*`). It is NOT a separate service: the
+# component runs inside the same agent process, reading the traces that already
+# flow through it. Nothing is scraped and nothing extra is instrumented.
+#
+# ⚠️ THIS IS NOT OPTIONAL IN PRACTICE — it replaces a producer that exists
+# today. The connector lives in the otel-collector-client being retired, so an
+# agent without it silently stops producing the RED series. MEASURED: benedita
+# migrated to Alloy on 2026-08-11 and `calls_total` disappeared for that
+# cluster while it still exists for the six clusters that kept the old agent.
+#
+# Turning it off is defensible only where nothing consumes the RED series —
+# never as an oversight.
+spanMetrics:
+  enabled: true
+
+  # Identical to the retiring agent. Changing them renames every `_bucket`
+  # series and orphans the history, so treat this as a data migration.
+  buckets: ["10ms", "50ms", "100ms", "200ms", "500ms", "1s", "5s", "10s"]
+
+  # How often the derived metrics are emitted. Set EXPLICITLY because it is a
+  # cost parameter, not a detail: the destination charges series x writes per
+  # minute, so a shorter interval multiplies the bill for the same information.
+  #
+  # 60s matches `collection.interval` and holds the DPM-of-1 property that this
+  # migration exists to establish. Leaving it to the component default would
+  # make the write rate of the RED series depend on an upstream default nobody
+  # here chose — which is how the retiring agent ended up at DPM 6.00.
+  flushInterval: "60s"
+
+  # Empty means bare `calls_total` / `duration_milliseconds_*`.
+  #
+  # Grafana Cloud's own convention is `traces_span_metrics_*`, and the Tempo
+  # generator already emits that. Adopting it here would rename the series and
+  # break the dashboards and alert rules that query the current names — a
+  # separate decision from swapping agents, deliberately not taken now.
+  namespace: ""
+
+  # Series with no new datapoint for this long are dropped. It bounds the cost
+  # of short-lived series rather than letting them accumulate.
+  expiration: "5m"
+
+  # Circuit breaker on cardinality: the ceiling on distinct dimension
+  # combinations the connector will track.
+  #
+  # ⚠️ IT DOES NOT DISCARD SILENTLY, which is why it is safe to enable. Past the
+  # ceiling, further combinations are folded into a single entry carrying
+  # `otel.metric.overflow="true"`. So hitting the limit is VISIBLE at the
+  # destination — query for that label to find out. A limit that dropped data
+  # without a trace would be worse than no limit.
+  #
+  # WHY IT IS NEEDED HERE SPECIFICALLY: `span_name` is always a dimension. The
+  # connector includes it by construction and it cannot be removed through
+  # `dimensions`. MEASURED in aws-staging: 154 distinct span names, more than
+  # any dimension we chose. Upstream documents this as the usual cause of
+  # span-metric cardinality blowups — span names that violate the semantic
+  # convention of staying low-cardinality (an id in the name, one span name per
+  # request). One badly named span in one service is enough.
+  #
+  # SIZING, from measured totals of the four spanmetrics families per cluster
+  # (2026-08-12):
+  #
+  #   aws-staging       8.676   <- the largest
+  #   aws-production    3.924
+  #   Cappta-Prd        3.024
+  #   Voluti-prd          996
+  #   Banqi-Prd           144
+  #   Cappta-Stg           96
+  #
+  # 20000 is ~2.3x the largest observed. Deliberately loose: the purpose is to
+  # cap a runaway, not to trim steady-state traffic. Too tight and normal growth
+  # lands in the overflow bucket, losing the per-endpoint detail that the RED
+  # dashboards exist for.
+  #
+  # ⚠️ The ceiling is PER AGENT, and the node role is a DaemonSet, so each pod
+  # counts only the spans of the applications on its own node. The figures above
+  # are cluster-wide totals, which makes 20000 per agent looser still — and that
+  # is the intended direction.
+  #
+  # 0 disables the limit, which is the component default.
+  cardinalityLimit: 20000
+
+  # ⚠️ EVERY DIMENSION MULTIPLIES CARDINALITY. Each distinct combination is a
+  # billable series, and the destination charges series x writes per minute.
+  #
+  # MEASURED on calls_total{client_id="aws-staging"} (723 series), 2026-08-12:
+  #
+  #   http.route                  176 values  the axis of per-endpoint RED
+  #   k8s.namespace.name           17 values  stable; 153 alert rules use it
+  #   k8s.deployment.name          10 values  stable; the useful workload grain
+  #   http.method                   7 values  LEGACY FORM — see below
+  #   http.request.method           7 values  canonical form
+  #   http.status_code              7 values  LEGACY FORM — see below
+  #   http.response.status_code     7 values  canonical form
+  #   tenant.id                     2 values  multi-tenant attribution
+  #
+  # The legacy `http.method`/`http.status_code` pair is redundant with the
+  # canonical form and doubles their cardinality contribution. It stays because
+  # MEASURED: 75 alert rules query `http_status_code` and ZERO query
+  # `http_response_status_code`. Dropping the legacy form silently breaks all
+  # 75. Remove it only after those rules are migrated.
+  #
+  # DELIBERATELY ABSENT, and both were emitted by the retiring agent:
+  #
+  #   k8s.container.name   MEASURED: 1 distinct value. A dimension that never
+  #                        varies distinguishes nothing and only widens the
+  #                        series identity.
+  #
+  #   k8s.pod.name         MEASURED: 13 pods against 10 deployments. The pod is
+  #                        ephemeral, so every rollout mints series that never
+  #                        receive another datapoint — cardinality churn with
+  #                        no analytical gain over the deployment.
+  #
+  #                        The concentrator already carries a workaround for
+  #                        this (`transform/aggregate_unmigrated_spanmetrics`,
+  #                        whose comment asks for the client to be fixed);
+  #                        removing the dimension here is what closes it.
+  #
+  #                        VERIFIED before removing: of 84 dashboards, 35 query
+  #                        spanmetrics across 769 queries, and NONE reference
+  #                        k8s_pod_name or k8s_container_name. The 12 `$pod`
+  #                        template variables read `k8s_pod_phase`, an
+  #                        infrastructure metric, not these.
+  #
+  # ⚠️ CONSEQUENCE OF THE REMOVAL: series identity changes, so old and new are
+  # distinct series. RED panels show a discontinuity at rollout. This is
+  # visible, not silent — and it lands in the same window as the k8s_* to
+  # kube_* rename, which is better than two separate breaks.
+  dimensions:
+    - k8s.namespace.name
+    - k8s.deployment.name
+    - http.method
+    - http.request.method
+    - http.route
+    - http.status_code
+    - http.response.status_code
+    - tenant.id
+
+# ---------------------------------------------------------------------------
+# ROLES — segregated by observation scope
+# ---------------------------------------------------------------------------
+# The chart delivers roles, not one agent. A cluster-scoped watcher replicated
+# per node writes the same series from every replica, with no attribute
+# distinguishing the writers: cost grows with cluster size while information
+# does not. Measured before this chart existed: writes per minute equalled the
+# node count exactly, across five environments.
+#
+# Each role is an aliased instance of the upstream agent chart, so upstream owns
+# probes, RBAC, security context and the config-reloader sidecar. The blocks
+# below are the upstream values surface under the alias name — see the `node:`
+# and `singleton:` blocks further down.
+#
+# There is deliberately NO `roles.<role>.enabled` surface. It existed and did
+# nothing: the subchart conditions in Chart.yaml read `node.enabled` and
+# `singleton.enabled`, so `--set roles.singleton.enabled=false` still rendered the
+# singleton — measured. A value that looks like a control and is not is worse than
+# no value.
+#
+# A nested `condition: roles.singleton.enabled` DOES work in Helm and was verified,
+# so pointing the conditions at `roles` was a real alternative. It was rejected
+# because it leaves two names for one switch, and the templates plus the subchart
+# aliases already speak `node`/`singleton`. One name, where the subchart actually
+# reads it.
+# ---------------------------------------------------------------------------
+# NODE ROLE — upstream agent values under the `node` alias
+# ---------------------------------------------------------------------------
+node:
+  # ---------------------------------------------------------------------------
+  # IMAGEM — oficial da Grafana, fixada por DIGEST
+  # ---------------------------------------------------------------------------
+  # Imagem upstream, não uma imagem nossa. Segue o precedente do
+  # otel-collector-lerian, que encapsula um coletor de terceiro e usa
+  # `otel/opentelemetry-collector-contrib` upstream com versão fixada. Reempacotar
+  # entregaria o mesmo binário ao custo de build, varredura e republicação a cada
+  # CVE do upstream — e faria perder a proveniência que o cliente pode verificar.
+  #
+  # DIGEST, não tag. Tag é mutável: `v1.18.1` pode ser republicada apontando para
+  # outros bits, e num cluster de instituição financeira "qual bit exatamente está
+  # rodando" precisa ter resposta. O chart oficial já fixa por digest a imagem do
+  # config-reloader e NÃO fixa a do agente — corrigimos essa assimetria.
+  #
+  # VERIFICADO que este digest é o do ÍNDICE multiplataforma, não de uma
+  # arquitetura: o índice resolve linux/amd64, arm64, ppc64le e s390x. Fixar o
+  # digest de uma arquitetura quebraria em nó ARM.
+  #
+  # `tag` é IGNORADA quando `digest` está presente (upstream _helpers.tpl:90 —
+  # digest tem precedência). Mantida só como legenda legível: sem ela, o values
+  # não diria qual versão é este digest.
+  #
+  # Ao atualizar: obter o digest do índice com
+  #   docker buildx imagetools inspect grafana/alloy:<versão>
+  # e trocar os dois campos juntos.
+  image:
+    registry: docker.io
+    repository: grafana/alloy
+    tag: v1.18.1
+    digest: sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33
+
+  enabled: true
+  alloy:
+    # Config comes from the ConfigMap this chart renders; upstream must not
+    # create its own.
+    configMap:
+      create: false
+      name: alloy-lerian-node
+      key: config.alloy
+    # Ports the applications push to. Upstream opens none by default.
+    extraPorts:
+      - name: otlp-grpc
+        port: 4317
+        targetPort: 4317
+        protocol: TCP
+      - name: otlp-http
+        port: 4318
+        targetPort: 4318
+        protocol: TCP
+    # Usage reporting to the vendor is inappropriate in a client cluster.
+    enableReporting: false
+    # Held at the strictest tier. Lowering it would un-gate every unstable
+    # component; the durable send queue is the only thing that would need it,
+    # and that trade was rejected.
+    stabilityLevel: generally-available
+    # MEASURED: without this, the agent runs as ROOT. The upstream chart ships
+    # `securityContext: {}` and the image's own default user is uid 0, so the
+    # config-reloader sidecar the chart injects ends up MORE restricted than the
+    # agent it watches.
+    #
+    # Upstream asks for `runAsUser: 0` (with privileged: true) in exactly two
+    # scenarios, and NEITHER is ours: collecting logs by mounting the host
+    # filesystem, and host telemetry from /proc and /sys. This agent only
+    # receives OTLP and scrapes HTTP.
+    #
+    # VERIFIED against the real binary with the rendered node config: uid 473
+    # starts clean, "now listening for http traffic", no permission error. Root
+    # was the image default, not a requirement of our use.
+    #
+    # Non-negotiable for BYOC: this runs in a financial institution's cluster, and
+    # "does your agent run as root" is a question we should never answer with yes.
+    securityContext:
+      runAsUser: 473
+      runAsGroup: 473
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+
+    # Required BY readOnlyRootFilesystem above, not optional alongside it.
+    #
+    # MEASURED: the upstream chart mounts only the ConfigMap at /etc/alloy — it
+    # provides no volume for `storagePath` (default /tmp/alloy). With a read-only
+    # root and no writable mount the agent dies at startup:
+    #
+    #   failed to create the remotecfg service:
+    #   mkdir /tmp/alloy: read-only file system
+    #
+    # emptyDir, not a claim. Isso tem uma CONSEQUENCIA MEDIDA que vale registrar.
+    #
+    # O remotecfg guarda a ultima configuracao buscada sob este caminho, e cai
+    # nela quando o Fleet nao responde:
+    #
+    #   level=error msg="failed to fetch remote config, falling back to cache"
+    #     service=remotecfg cache_path=/tmp/alloy/remotecfg/<hash>
+    #
+    # Sendo emptyDir, esse cache morre junto com o pod. Entao o fallback so
+    # protege o pod que JA carregou a config e perdeu o Fleet DEPOIS. Num pod que
+    # reinicia com o Fleet fora, nao ha cache, e o agente NAO SOBE:
+    #
+    #   Error: Failed to evaluate service: updating service: unavailable: ...
+    #   Error: could not perform the initial load successfully
+    #
+    # MEDIDO no agente v1.18.1, tanto para Fleet inalcancavel quanto para token
+    # invalido. Ou seja: uma indisponibilidade do Fleet nao derruba a frota, mas
+    # derruba qualquer pod que reiniciar durante ela (OOM, drain, autoscaler).
+    #
+    # ⚠️ Trocar por um volume persistente NAO e a correcao obvia que parece: o
+    # cache e por hash de configuracao, e um cache velho reintroduziria uma versao
+    # antiga das regras de PII — exatamente o que o Fleet existe para evitar.
+    # Registrado como risco conhecido; a mitigacao e o alerta de ausencia de
+    # ingestao, nao a persistencia. Ver docs/DR-SANITIZACAO.md.
+    #
+    # Sobre o id do coletor, composto do nome do pod em vez do seed persistido:
+    # ver docs/FLEET-MANAGEMENT.md.
+    mounts:
+      extra:
+        - name: alloy-storage
+          mountPath: /tmp/alloy
+
+    # Credential read from the Secret the onboarding process provisions in this
+    # namespace. The chart never creates it — registered in the repository's
+    # out-of-band secret allowlist so the render gate does not flag it.
+    # Remove this entry for the own profile, where the platform does not
+    # validate the credential.
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            # `true` aqui, e a EXIGÊNCIA vem da guarda do chart, não deste
+            # arquivo — porque quem decide é o PERFIL, e YAML estático não
+            # consegue perguntar qual é.
+            #
+            # No perfil client a credencial é obrigatória de verdade: 401 é falha
+            # PERMANENTE, o dado é descartado na hora, e um pod que sobe sem
+            # credencial perde em silêncio e continuamente. Falhar é o modo de
+            # falha correto — e `assertCredentialRequired` é quem impõe isso,
+            # exigindo que o Secret exista antes do install.
+            #
+            # No perfil own o destino não valida nada e a variável nem é lida.
+            # MEDIDO na benedita: com `optional: false` fixo aqui, TODO ambiente
+            # próprio travava em CreateContainerConfigError e precisava repetir
+            # ~20 linhas de extraEnv só para desfazer este default. Um default que
+            # o caso mais simples precisa sobrescrever é o default errado.
+            optional: true
+      # --- Fleet Management ---
+      # Presentes desde já para que ligar `fleetManagement.enabled` não exija
+      # editar env no cluster do cliente. Inertes enquanto o bloco remotecfg
+      # não é renderizado: são apenas variáveis não lidas.
+      #
+      # A identidade é origem + nome do pod: estável na vida do pod e única no
+      # DaemonSet. O padrão do agente seria um UUID persistido no diretório de
+      # armazenamento, que pod efêmero perde a cada reinício — gerando
+      # identidade nova toda vez e churn no registro da frota.
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            # Opcional aqui, ao contrário da credencial de telemetria: enquanto
+            # o Fleet Management estiver desligado a chave não precisa existir
+            # no Secret. Quando ligado, a guarda do chart exige a variável, e a
+            # ausência da chave falha na criação do pod.
+            optional: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+  controller:
+    # Writable volume for `storagePath` — REQUIRED by readOnlyRootFilesystem.
+    # The upstream chart mounts only the ConfigMap and provides nothing writable,
+    # so a read-only root kills the agent at startup:
+    #   mkdir /tmp/alloy: read-only file system
+    # emptyDir because the content is rebuildable working state.
+    volumes:
+      extra:
+        - name: alloy-storage
+          emptyDir: {}
+    type: daemonset
+    # ⚠️ DIVERGE do default upstream (false), e a alternativa upstream FOI TESTADA
+    # e nao serve. Documentado porque a pergunta "por que nao usam o padrao do
+    # Alloy aqui?" e legitima e merece numero, nao opiniao.
+    #
+    # O padrao upstream para um DaemonSet que recebe trafego e `extraPorts` com
+    # `hostPort` — o README oficial diz "Daemonsets taking traffic might find this
+    # useful" — sem hostNetwork. MEDIDO na benedita, com hostNetwork:false e
+    # hostPort nas portas OTLP:
+    #
+    #   trafego chega            SIM (10.792 spans aceitos)
+    #   enriquecimento k8s       92 de 94 registros PERDERAM k8s.pod.name
+    #
+    # Por que: hostPort faz NAT, entao o agente ve o IP de origem como o IP do NO,
+    # nao do pod. O tier `connection` do k8sattributes nao resolve, e o tier
+    # `k8s.pod.ip` so cobre as aplicacoes que declaram o atributo — nao todas.
+    #
+    # O resultado e telemetria SEM atribuicao de pod, e sem erro nenhum: chega,
+    # so nao da para saber de quem. Esse e o modo de falha que hostNetwork evita.
+    #
+    # Custo aceito: o pod compartilha a pilha de rede do no (verificado — com
+    # hostNetwork ele reporta o hostname do NO; sem, o proprio). E o unico
+    # privilegio do chart, e o que a lacuna de NetworkPolicy no perfil de cliente
+    # se refere.
+    #
+    # CAMINHO PARA REMOVER, em ordem: (1) toda aplicacao declarar k8s.pod.ip via
+    # lib-o11y, (2) confirmar 100% de enriquecimento medindo, (3) trocar para o
+    # padrao upstream hostPort e remover isto. O passo 2 e o que faltava — sem ele
+    # a troca degrada em silencio.
+    hostNetwork: true
+    # Obrigatorio COM hostNetwork: sem isto o nome de Service nao resolve, porque
+    # a resolucao passa a usar o DNS do host. Medido no T-005 — a sonda ficou com
+    # ClusterFirst e o exportador falhou com "server misbehaving" contra o proprio
+    # Service do destino.
+    dnsPolicy: ClusterFirstWithHostNet
+  crds:
+    create: false
+
+# ---------------------------------------------------------------------------
+# SINGLETON ROLE — upstream agent values under the `singleton` alias
+# ---------------------------------------------------------------------------
+singleton:
+  # ---------------------------------------------------------------------------
+  # IMAGEM — oficial da Grafana, fixada por DIGEST
+  # ---------------------------------------------------------------------------
+  # Imagem upstream, não uma imagem nossa. Segue o precedente do
+  # otel-collector-lerian, que encapsula um coletor de terceiro e usa
+  # `otel/opentelemetry-collector-contrib` upstream com versão fixada. Reempacotar
+  # entregaria o mesmo binário ao custo de build, varredura e republicação a cada
+  # CVE do upstream — e faria perder a proveniência que o cliente pode verificar.
+  #
+  # DIGEST, não tag. Tag é mutável: `v1.18.1` pode ser republicada apontando para
+  # outros bits, e num cluster de instituição financeira "qual bit exatamente está
+  # rodando" precisa ter resposta. O chart oficial já fixa por digest a imagem do
+  # config-reloader e NÃO fixa a do agente — corrigimos essa assimetria.
+  #
+  # VERIFICADO que este digest é o do ÍNDICE multiplataforma, não de uma
+  # arquitetura: o índice resolve linux/amd64, arm64, ppc64le e s390x. Fixar o
+  # digest de uma arquitetura quebraria em nó ARM.
+  #
+  # `tag` é IGNORADA quando `digest` está presente (upstream _helpers.tpl:90 —
+  # digest tem precedência). Mantida só como legenda legível: sem ela, o values
+  # não diria qual versão é este digest.
+  #
+  # Ao atualizar: obter o digest do índice com
+  #   docker buildx imagetools inspect grafana/alloy:<versão>
+  # e trocar os dois campos juntos.
+  image:
+    registry: docker.io
+    repository: grafana/alloy
+    tag: v1.18.1
+    digest: sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33
+
+  enabled: true
+  alloy:
+    configMap:
+      create: false
+      name: alloy-lerian-singleton
+      key: config.alloy
+    enableReporting: false
+    stabilityLevel: generally-available
+    # MEASURED: without this, the agent runs as ROOT. The upstream chart ships
+    # `securityContext: {}` and the image's own default user is uid 0, so the
+    # config-reloader sidecar the chart injects ends up MORE restricted than the
+    # agent it watches.
+    #
+    # Upstream asks for `runAsUser: 0` (with privileged: true) in exactly two
+    # scenarios, and NEITHER is ours: collecting logs by mounting the host
+    # filesystem, and host telemetry from /proc and /sys. This agent only
+    # receives OTLP and scrapes HTTP.
+    #
+    # VERIFIED against the real binary with the rendered node config: uid 473
+    # starts clean, "now listening for http traffic", no permission error. Root
+    # was the image default, not a requirement of our use.
+    #
+    # Non-negotiable for BYOC: this runs in a financial institution's cluster, and
+    # "does your agent run as root" is a question we should never answer with yes.
+    securityContext:
+      runAsUser: 473
+      runAsGroup: 473
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+
+    # Required BY readOnlyRootFilesystem above, not optional alongside it.
+    #
+    # MEASURED: the upstream chart mounts only the ConfigMap at /etc/alloy — it
+    # provides no volume for `storagePath` (default /tmp/alloy). With a read-only
+    # root and no writable mount the agent dies at startup:
+    #
+    #   failed to create the remotecfg service:
+    #   mkdir /tmp/alloy: read-only file system
+    #
+    # emptyDir, not a claim. Isso tem uma CONSEQUENCIA MEDIDA que vale registrar.
+    #
+    # O remotecfg guarda a ultima configuracao buscada sob este caminho, e cai
+    # nela quando o Fleet nao responde:
+    #
+    #   level=error msg="failed to fetch remote config, falling back to cache"
+    #     service=remotecfg cache_path=/tmp/alloy/remotecfg/<hash>
+    #
+    # Sendo emptyDir, esse cache morre junto com o pod. Entao o fallback so
+    # protege o pod que JA carregou a config e perdeu o Fleet DEPOIS. Num pod que
+    # reinicia com o Fleet fora, nao ha cache, e o agente NAO SOBE:
+    #
+    #   Error: Failed to evaluate service: updating service: unavailable: ...
+    #   Error: could not perform the initial load successfully
+    #
+    # MEDIDO no agente v1.18.1, tanto para Fleet inalcancavel quanto para token
+    # invalido. Ou seja: uma indisponibilidade do Fleet nao derruba a frota, mas
+    # derruba qualquer pod que reiniciar durante ela (OOM, drain, autoscaler).
+    #
+    # ⚠️ Trocar por um volume persistente NAO e a correcao obvia que parece: o
+    # cache e por hash de configuracao, e um cache velho reintroduziria uma versao
+    # antiga das regras de PII — exatamente o que o Fleet existe para evitar.
+    # Registrado como risco conhecido; a mitigacao e o alerta de ausencia de
+    # ingestao, nao a persistencia. Ver docs/DR-SANITIZACAO.md.
+    #
+    # Sobre o id do coletor, composto do nome do pod em vez do seed persistido:
+    # ver docs/FLEET-MANAGEMENT.md.
+    mounts:
+      extra:
+        - name: alloy-storage
+          mountPath: /tmp/alloy
+
+    # No inbound ports: this role watches the cluster API and scrapes, it does
+    # not receive pushes.
+    extraPorts: []
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            # `true` aqui, e a EXIGÊNCIA vem da guarda do chart, não deste
+            # arquivo — porque quem decide é o PERFIL, e YAML estático não
+            # consegue perguntar qual é.
+            #
+            # No perfil client a credencial é obrigatória de verdade: 401 é falha
+            # PERMANENTE, o dado é descartado na hora, e um pod que sobe sem
+            # credencial perde em silêncio e continuamente. Falhar é o modo de
+            # falha correto — e `assertCredentialRequired` é quem impõe isso,
+            # exigindo que o Secret exista antes do install.
+            #
+            # No perfil own o destino não valida nada e a variável nem é lida.
+            # MEDIDO na benedita: com `optional: false` fixo aqui, TODO ambiente
+            # próprio travava em CreateContainerConfigError e precisava repetir
+            # ~20 linhas de extraEnv só para desfazer este default. Um default que
+            # o caso mais simples precisa sobrescrever é o default errado.
+            optional: true
+      # --- Fleet Management --- ver a nota no papel node
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+  controller:
+    # Writable volume for `storagePath` — REQUIRED by readOnlyRootFilesystem.
+    # The upstream chart mounts only the ConfigMap and provides nothing writable,
+    # so a read-only root kills the agent at startup:
+    #   mkdir /tmp/alloy: read-only file system
+    # emptyDir because the content is rebuildable working state.
+    volumes:
+      extra:
+        - name: alloy-storage
+          emptyDir: {}
+    type: deployment
+    # EXACTLY ONE. More than one replica duplicates every series with no
+    # attribute distinguishing the writers — the defect this chart exists to
+    # fix. Enforced by the chart, not merely defaulted.
+    replicas: 1
+  crds:
+    create: false
+
+receiver:
+  # Restores the pre-v1.18.0 behaviour of no HTTP timeout. The pinned version
+  # changed the defaults to 1m/1m/30s, which can cut a long-lived connection.
+  # Set only for an application shown to be affected — as an exception for that
+  # application, not globally.
+  preserveLegacyTimeouts: false
+
+
+# ---------------------------------------------------------------------------
+# IN-TRANSIT DATA INSPECTION — own profile only
+# ---------------------------------------------------------------------------
+# The feature streams RAW pipeline payloads: log bodies and span attributes
+# from a core banking ledger. The upstream project's only stated mitigation is
+# transport TLS, which protects the channel and not the access, and the agent
+# UI carries no documented authentication.
+#
+# Supplying this in the client profile is a configuration error, not an
+# override — the render fails.
+inspection:
+  enabled: false
+
+logging:
+  level: "info"
+
+# ---------------------------------------------------------------------------
+# FLEET MANAGEMENT — gestão remota de configuração, desligada por padrão
+# ---------------------------------------------------------------------------
+# Ligar é mudar `enabled` e informar url/username/token — nenhuma edição de
+# config no cluster do cliente.
+#
+# NÃO exige o operator do agente: `remotecfg` é bloco de config do runtime, então
+# o chart standalone é caminho suportado e o `bind`/`escalate` do operator fica
+# fora do cluster.
+#
+# Transporte: PULL, HTTPS 443 de saída. Nada disca para dentro do cluster.
+#
+# As regras de sanitização vivem na config LOCAL e não podem ser desligadas
+# remotamente — config local e remota têm controladores de componente separados
+# e, pela documentação, "cannot be in conflict".
+#
+# ⚠️ O risco real é o oposto do óbvio: como os controladores são isolados, uma
+# pipeline remota também NÃO consegue encaminhar para a nossa sanitização local.
+# Uma pipeline remota com exportador próprio teria caminho de saída paralelo que
+# nunca passa pelo mascaramento.
+#
+# ⚠️ CORRIGIDO 2026-08-28. Este comentário propunha como mitigação "usar Fleet
+# para coleta e descoberta, mantendo a EXPORTAÇÃO local". Essa política NÃO é
+# implementável, e o teste é que mostrou: o agente RECUSA pipeline remota sem
+# exportador próprio. Não é questão de disciplina, é impossibilidade técnica.
+#
+# A mitigação é de PROCESSO: a configuração publicada no Fleet vem do render deste
+# chart, por `sanitizacao/publicar-fleet.sh`, e só depois de a porta de entrega
+# passar. E `sanitizacao/verificar-fleet.sh` confere o que está publicado contra o
+# template — inclusive acusando pipeline com exportador que não devolva ao fluxo.
+#
+# ⚠️ Auditar o publicado é parte do controle, não opcional: quem tem acesso à
+# console pode publicar por fora do gate, e o verificador é o que torna isso
+# visível.
+# Ver docs/FLEET-MANAGEMENT.md.
+# ⚠️ LIGADO POR PADRÃO, e isso significa que url/username/token são OBRIGATÓRIOS:
+# um install sem eles FALHA NO RENDER, com mensagem dizendo o que copiar da
+# interface. É deliberado — a alternativa seria omitir o bloco remotecfg em
+# silêncio, e aí o agente subiria com a gestão remota simplesmente inexistente,
+# sem ninguém perceber. Este projeto já corrigiu esse modo de falhar três vezes
+# (credencial, cAdvisor 403, overlay nulo); não vamos criar a quarta.
+#
+# ⚠️ `enabled: false` É O BOTÃO DE DR, e não "cliente que não usa Fleet".
+#
+# A configuração de coleta vem do Fleet. Se ele ficar indisponível E um pod
+# reiniciar, o agente NÃO SOBE — medido: `could not perform the initial load
+# successfully`. Nesse caso não se perde só o log; perde-se toda a telemetria.
+#
+# Desligar aqui faz o chart renderizar a corrente COMPLETA no ConfigMap local, e o
+# agente volta a funcionar sem depender do Fleet:
+#
+#     fleetManagement:
+#       enabled: false      # DR: usa a config local
+#     helm upgrade ...
+#
+# Quando o Fleet voltar: `true` e upgrade de novo.
+#
+# ⚠️ POR ISSO A CONFIG LOCAL TEM DE ESTAR SEMPRE ATUALIZADA. Ela é o artefato de
+# DR, não código morto. Quem garante isso é `sanitizacao/verificar-fleet.sh`: ele
+# compara o publicado no Fleet com o template do chart. Iguais, o DR está em dia.
+#
+# ⚠️ LIMITE CONHECIDO em BYOC: se não tivermos acesso ao cluster do cliente,
+# alguém do lado dele precisa executar o upgrade. Não há saída técnica para isso —
+# só procedimento e comunicação prévia.
+fleetManagement:
+  enabled: true
+
+  # Copiar VERBATIM da interface do Fleet Management. O formato do host varia por
+  # stack e região, e construí-lo à mão é erro documentado.
+  url: ""
+
+  # Identificador numérico da stack, mostrado na mesma interface.
+  username: ""
+
+  # Token de leitura de config remota. Mesmo Secret da credencial de telemetria,
+  # chave distinta — o cliente cria UM Secret, não dois.
+  #
+  # Aponte para outro Secret se preferir separar as credenciais.
+  tokenSecret:
+    name: "alloy-lerian"
+    key: "fleet-token"
+
+  # Intervalo de consulta. Mínimo aceito pelo agente: 10s.
+  pollFrequency: "1m"
+
+  # Atributos usados pelo serviço para decidir qual configuração enviar a este
+  # collector.
+  #
+  # ⚠️ Atributos LOCAIS são auto-declarados e não há validação de conteúdo
+  # documentada. Para segmentação com significado de segurança, prefira
+  # atributos REMOTOS (definidos na interface, que têm precedência) — um
+  # collector poderia declarar o atributo de outro cliente e receber config
+  # alheia.
+  #
+  # Os reservados (collector.os, collector.version, collector.ID) são injetados
+  # pelo serviço e não podem ser sobrescritos.
+  attributes: {}
+
+# ---------------------------------------------------------------------------
+# UPSTREAM DEPENDENCIES
+# ---------------------------------------------------------------------------
+# Sole source of cluster-object metrics: this agent has no equivalent of the
+# collector's cluster receiver. Single-replica by default, which is what makes
+# it a single writer.
+#
+# Disable to reuse an existing instance — many client clusters already run one,
+# and running two is waste plus a potential write conflict.
+kube-state-metrics:
+  enabled: true
+  replicas: 1
+  # Automatic sharding is documented upstream as experimental and liable to
+  # break or be removed without notice. Our scale does not require it.
+  autosharding:
+    enabled: false
+
+# ---------------------------------------------------------------------------
+# NODE-EXPORTER — métricas de nó, DESLIGADO por padrão
+# ---------------------------------------------------------------------------
+# Mesmo padrão do chart guarda-chuva da Grafana
+# (`telemetryServices.node-exporter.deploy`): o exportador é um componente
+# separado e o agente apenas raspa o endpoint dele.
+#
+# Habilitar exige DUAS coisas, de propósito:
+#   node-exporter:
+#     enabled: true
+#   collection:
+#     nodeInfrastructure: true    # liga o scrape no papel singleton
+#
+# Separado porque instalar e coletar são decisões distintas — um ambiente que já
+# rode node-exporter (como benedita hoje) mantém `enabled: false` e aponta o
+# scrape para o existente, exatamente como fazemos com o kube-state-metrics.
+#
+# Ligar só em ambiente NOSSO. No perfil `client` a guarda recusa.
+node-exporter:
+  enabled: false
+
+  # O privilégio que o node-exporter pede fica CONTIDO nele, e não no agente:
+  # roda não-root, sem eBPF, com rootfs somente-leitura, e monta o rootfs do nó
+  # em leitura. Bem menos que o `privileged: true` + root que o agente exigiria
+  # para ler /proc e /sys diretamente.
+  hostRootFsMount:
+    enabled: true

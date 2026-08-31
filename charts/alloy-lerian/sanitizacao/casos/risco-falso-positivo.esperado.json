@@ -1,0 +1,5 @@
+{
+  "body": "latencia 12************ ns e transactionId=98765432109876543210",
+  "descricao": "⚠️ LIMITE ACEITO da regra de CNPJ, medido e decidido em 2026-08-28. A latencia de 14 digitos E mascarada — 14 digitos delimitados sao indistinguiveis de CNPJ pela forma. MEDIDO em 2 dias de log real de producao (Cappta-Prd + Voluti-prd), filtro '[^0-9A-Za-z][0-9]{14}[^0-9A-Za-z]' excluindo PIX-OUT/document: TODA ocorrencia era CNPJ de verdade — plugin-br-pix-indirect-btg (CNPJ no path da URL), plugin-fees (initiatorTaxId:43394419000188), decode_client (chave Pix CNPJ). ZERO epoch, ZERO resourceVersion. O falso positivo previsto nao ocorre na pratica; se ocorrer, epoch e resourceVersion estao disponiveis por kubectl. O transactionId de 20 digitos sobrevive intacto (acima de 14). Ver ACHADO-pii-em-claro-byoc.md.",
+  "categoria": "falsoPositivo"
+}

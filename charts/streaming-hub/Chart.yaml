@@ -29,8 +29,35 @@ keywords:
   - lerian
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 
-# NO dependencies block by deliberate design (deviation from reporter/midaz):
-# OTEL is env-wired via the OTEL_EXPORTER_OTLP_ENDPOINT downward-API override,
-# not bundled as an otel-collector-lerian subchart. Declaring it would force an
-# OCI pull on every `helm lint` / `helm template`. Kafka/Redpanda and Postgres
-# are shared external infra, never subcharts here.
+# lerian-common-helm adopted as a LOCAL file dependency (file://../lerian-common,
+# not oci://ghcr.io/lerianstudio) — this is the in-repo monorepo pattern (see
+# charts/plugin-br-pix-jd/Chart.yaml), which resolves purely from disk and needs
+# NO network/OCI access on `helm lint` / `helm template`. The earlier "no
+# dependencies block" stance was based on a stale assumption (that any
+# lerian-common dependency forces an OCI pull); it doesn't hold for the
+# file://../lerian-common form, so it has been dropped.
+#
+# Still NO otel-collector-lerian subchart: lerian-common's otel.* helpers
+# (otel.env, otel.podEnv, otel.envFlat) are pure env-var/template functions, not
+# a bundled collector — adopting them does not imply bundling one. OTEL stays
+# env-wired via the OTEL_EXPORTER_OTLP_ENDPOINT downward-API override, same as
+# before. Kafka/Redpanda and Postgres remain shared external infra, never
+# subcharts here.
+dependencies:
+  # Library chart — renders nothing on its own. Adopted here ONLY for the
+  # workload-boilerplate fragments that are a genuine behavioral match for what
+  # streaming-hub already hand-rolls (service/hpa/pdb/serviceAccount structure,
+  # scheduling/imagePullSecrets pod-spec fragments, the OTEL downward-API podEnv
+  # snippet, httpProbe, and the AWS IAM Roles Anywhere sidecar/volume/imdsEnv
+  # fragments). Naming/labels/secret-key derivation stays streaming-hub's own
+  # (templates/_helpers.tpl) — lerian-common does not model those. The
+  # lib-streaming CloudEvents env contract (lerian-common.streaming.*) and the
+  # global.observability-derived otel.env/globalValue/datastore/multiTenant/cloud
+  # helpers are NOT adopted: streaming-hub has no global.streaming /
+  # global.observability / global.cloud contract wired up, and its own
+  # STREAMING_HUB_KAFKA_* / STREAMING_HUB_* env vars are a different,
+  # chart-specific contract than the STREAMING_BROKERS/STREAMING_SASL_* shape
+  # those helpers standardize.
+  - name: lerian-common-helm
+    version: 2.1.0
+    repository: "file://../lerian-common"

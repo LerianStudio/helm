@@ -55,8 +55,7 @@ spec:
       {{- end }}
     spec:
       {{- with $sh.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
       serviceAccountName: {{ include "streaming-hub.serviceAccountName" $ }}
       automountServiceAccountToken: {{ $sh.serviceAccount.automountServiceAccountToken | default false }}
@@ -117,39 +116,23 @@ spec:
             {{- if $sh.telemetry.enabled }}
             # OTEL endpoint is overridden per-pod via the node host IP (DaemonSet
             # collector pattern). Gated on the CHART-level streamingHub.telemetry.enabled.
-            - name: HOST_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "$(HOST_IP):4317"
+            {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 12 }}
             {{- end }}
             {{- if $rolesAnywhere }}
             # Point the AWS SDK's IMDS lookup at the aws-signing-helper sidecar, which
             # vends short-lived credentials from the IAM Roles Anywhere exchange.
-            - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
-              value: "http://127.0.0.1:{{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
-            - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
-              value: "IPv4"
+            {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" $.Values.aws) | nindent 12 }}
             {{- end }}
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: {{ $sh.livenessProbe.initialDelaySeconds | default 15 }}
-            periodSeconds: {{ $sh.livenessProbe.periodSeconds | default 20 }}
-            timeoutSeconds: {{ $sh.livenessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ $sh.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ $sh.livenessProbe.failureThreshold | default 3 }}
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: http
-            initialDelaySeconds: {{ $sh.readinessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ $sh.readinessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ $sh.readinessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ $sh.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ $sh.readinessProbe.failureThreshold | default 3 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "livenessProbe" "probe" $sh.livenessProbe
+                "port" "http" "path" "/healthz"
+                "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "readinessProbe" "probe" $sh.readinessProbe
+                "port" "http" "path" "/readyz"
+                "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
           resources:
             {{- toYaml $cfg.resources | nindent 12 }}
         {{- if $rolesAnywhere }}
@@ -157,73 +140,19 @@ spec:
         # 127.0.0.1:<port>, exchanging the X.509 client cert (mounted from iam-certs)
         # for short-lived AWS credentials. Shared by every role, since this define
         # renders all of them (all / ingest / delivery).
-        - name: aws-signing-helper
-          image: "{{ $.Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ $.Values.aws.rolesAnywhere.sidecar.image.tag }}"
-          imagePullPolicy: {{ $.Values.aws.rolesAnywhere.sidecar.image.pullPolicy | default "IfNotPresent" }}
-          args:
-            - serve
-            - --certificate
-            - /certs/tls.crt
-            - --private-key
-            - /certs/tls.key
-            - --trust-anchor-arn
-            - "{{ required "aws.rolesAnywhere.trustAnchorArn is required when rolesAnywhere is enabled" $.Values.aws.rolesAnywhere.trustAnchorArn }}"
-            - --profile-arn
-            - "{{ required "aws.rolesAnywhere.profileArn is required when rolesAnywhere is enabled" $.Values.aws.rolesAnywhere.profileArn }}"
-            - --role-arn
-            - "{{ required "aws.rolesAnywhere.roleArn is required when rolesAnywhere is enabled" $.Values.aws.rolesAnywhere.roleArn }}"
-            - --region
-            - "{{ $.Values.aws.rolesAnywhere.region | default "us-east-2" }}"
-            - --session-duration
-            - "{{ $.Values.aws.rolesAnywhere.sessionDuration | default 3600 }}"
-            - --port
-            - "{{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
-          ports:
-            - name: imds
-              containerPort: {{ $.Values.aws.rolesAnywhere.sidecar.port | default 9911 }}
-              protocol: TCP
-          volumeMounts:
-            - name: iam-certs
-              mountPath: /certs
-              readOnly: true
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 65532
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
-          resources:
-            {{- toYaml $.Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" $.Values.aws) | nindent 8 }}
         {{- end }}
       {{- if $rolesAnywhere }}
       # X.509 client cert/key for the Roles Anywhere exchange. Produced outside the
       # chart (a cert-manager Certificate in the deploying overlay) and mounted 0440
       # so only the sidecar's fsGroup can read it.
-      volumes:
-        - name: iam-certs
-          secret:
-            secretName: {{ $.Values.aws.rolesAnywhere.certificateSecretName | default (printf "%s-iam-tls" (include "streaming-hub.fullname" $)) }}
-            defaultMode: 0440
-            items:
-              - key: tls.crt
-                path: tls.crt
-              - key: tls.key
-                path: tls.key
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" (printf "%s-iam-tls" (include "streaming-hub.fullname" $))) | nindent 6 }}
       {{- end }}
-      {{- with $cfg.nodeSelector | default $sh.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $cfg.affinity | default $sh.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $cfg.tolerations | default $sh.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "lerian-common.scheduling" (dict
+            "nodeSelector" ($cfg.nodeSelector | default $sh.nodeSelector)
+            "affinity" ($cfg.affinity | default $sh.affinity)
+            "tolerations" ($cfg.tolerations | default $sh.tolerations)
+          ) | nindent 6 }}
 {{- end -}}
 
 
@@ -238,26 +167,13 @@ that role's pods via componentSelectorLabels.
 {{- $ := .root -}}
 {{- $component := .component -}}
 {{- $sh := $.Values.streamingHub -}}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "streaming-hub.componentFullname" (dict "context" $ "component" $component) }}
-  namespace: {{ include "global.namespace" $ }}
-  labels:
-    {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 4 }}
-  {{- with $sh.service.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  type: {{ $sh.service.type }}
-  ports:
-    - port: {{ $sh.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    {{- include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component) | nindent 4 }}
+{{- include "lerian-common.service" (dict
+      "service" $sh.service
+      "name" (include "streaming-hub.componentFullname" (dict "context" $ "component" $component))
+      "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
+      "selector" (include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component))
+      "namespace" (include "global.namespace" $)
+    ) }}
 {{- end -}}
 
 
@@ -273,37 +189,12 @@ Postgres connection draw — Σ(maxReplicas × poolMaxOpenConns) ≤ max_connect
 {{- $ := .root -}}
 {{- $component := .component -}}
 {{- $cfg := index $.Values.streamingHub $component -}}
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: {{ include "streaming-hub.componentFullname" (dict "context" $ "component" $component) }}
-  namespace: {{ include "global.namespace" $ }}
-  labels:
-    {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 4 }}
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: {{ include "streaming-hub.componentFullname" (dict "context" $ "component" $component) }}
-  minReplicas: {{ $cfg.autoscaling.minReplicas }}
-  maxReplicas: {{ $cfg.autoscaling.maxReplicas }}
-  metrics:
-    {{- if $cfg.autoscaling.targetCPUUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: {{ $cfg.autoscaling.targetCPUUtilizationPercentage }}
-    {{- end }}
-    {{- if $cfg.autoscaling.targetMemoryUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: {{ $cfg.autoscaling.targetMemoryUtilizationPercentage }}
-    {{- end }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" $cfg.autoscaling
+      "name" (include "streaming-hub.componentFullname" (dict "context" $ "component" $component))
+      "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
+      "namespace" (include "global.namespace" $)
+    ) }}
 {{- end -}}
 
 
@@ -318,24 +209,12 @@ maxUnavailable wins over minAvailable when both are set (mirrors the template).
 {{- $ := .root -}}
 {{- $component := .component -}}
 {{- $cfg := index $.Values.streamingHub $component -}}
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: {{ include "streaming-hub.componentFullname" (dict "context" $ "component" $component) }}
-  namespace: {{ include "global.namespace" $ }}
-  labels:
-    {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 4 }}
-  {{- with $cfg.pdb.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  {{- if and (hasKey $cfg.pdb "maxUnavailable") (ne $cfg.pdb.maxUnavailable nil) }}
-  maxUnavailable: {{ $cfg.pdb.maxUnavailable }}
-  {{- else }}
-  minAvailable: {{ $cfg.pdb.minAvailable | default 1 }}
-  {{- end }}
-  selector:
-    matchLabels:
-      {{- include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component) | nindent 6 }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" $cfg.pdb
+      "name" (include "streaming-hub.componentFullname" (dict "context" $ "component" $component))
+      "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
+      "selector" (include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component))
+      "namespace" (include "global.namespace" $)
+      "minAvailableDefault" 1
+    ) }}
 {{- end -}}

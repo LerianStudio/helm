@@ -14,29 +14,28 @@ streamingHub:
   image:
     tag: ""  # defaults to the chart appVersion
 
-  common:
-    configmap:
-      STREAMING_HUB_ENV: production          # local | staging | production
-      STREAMING_HUB_LOG_LEVEL: info
-      STREAMING_HUB_KAFKA_BROKERS: ""         # e.g. redpanda.dev-st.lerian.net:9092
-      STREAMING_HUB_KAFKA_SCRAM_MECHANISM: "" # e.g. SCRAM-SHA-256 (empty = no SASL)
-      STREAMING_HUB_ALLOW_INSECURE_KAFKA: "false"
-      STREAMING_HUB_KEK_SOURCE: ""            # env | aws-kms | ...
-      PLUGIN_AUTH_ENABLED: "true"
-      PLUGIN_AUTH_ADDRESS: ""
-      STREAMING_HUB_TENANT_ID: default
-      # Multi-tenant: the switch plus the two values it REQUIRES when true. The
-      # hub refuses to boot with an empty or "local" ENV_NAME, and the credential
-      # sweep fails without a region the AWS SDK chain can resolve.
-      MULTI_TENANT_ENABLED: "false"
-      ENV_NAME: ""                            # staging | production (secrets path segment)
-      AWS_REGION: ""                          # e.g. us-east-2 (where the tenant credentials live)
+  configmap:
+    STREAMING_HUB_ENV: production          # local | staging | production
+    STREAMING_HUB_LOG_LEVEL: info
+    STREAMING_HUB_KAFKA_BROKERS: ""         # e.g. redpanda.dev-st.lerian.net:9092
+    STREAMING_HUB_KAFKA_SCRAM_MECHANISM: "" # e.g. SCRAM-SHA-256 (empty = no SASL)
+    STREAMING_HUB_ALLOW_INSECURE_KAFKA: "false"
+    STREAMING_HUB_KEK_SOURCE: ""            # env | aws-kms | ...
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_ADDRESS: ""
+    STREAMING_HUB_TENANT_ID: default
+    # Multi-tenant: the switch plus the two values it REQUIRES when true. The
+    # hub refuses to boot with an empty or "local" ENV_NAME, and the credential
+    # sweep fails without a region the AWS SDK chain can resolve.
+    MULTI_TENANT_ENABLED: "false"
+    ENV_NAME: ""                            # staging | production (secrets path segment)
+    AWS_REGION: ""                          # e.g. us-east-2 (where the tenant credentials live)
+    STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""  # SASL/SCRAM username (NOT a credential — the password is a secret)
+    STREAMING_HUB_KEK_REF: ""               # KEK reference / pointer (KMS key id / ARN / env-var name — not key material)
 
   secrets:
     STREAMING_HUB_POSTGRES_DSN: ""            # full Postgres DSN, credentials embedded
-    STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""
     STREAMING_HUB_KAFKA_SCRAM_PASSWORD: ""
-    STREAMING_HUB_KEK_REF: ""                 # KEK reference (KMS key id / ARN / ...)
     # STREAMING_HUB_DEV_KEK: ""               # dev only
     # Multi-tenant needs no extra secrets: the hub reads the tenant credentials
     # straight from AWS Secrets Manager with its own IAM identity. Set

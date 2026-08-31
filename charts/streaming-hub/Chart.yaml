@@ -44,20 +44,38 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # before. Kafka/Redpanda and Postgres remain shared external infra, never
 # subcharts here.
 dependencies:
-  # Library chart — renders nothing on its own. Adopted here ONLY for the
-  # workload-boilerplate fragments that are a genuine behavioral match for what
-  # streaming-hub already hand-rolls (service/hpa/pdb/serviceAccount structure,
-  # scheduling/imagePullSecrets pod-spec fragments, the OTEL downward-API podEnv
-  # snippet, httpProbe, and the AWS IAM Roles Anywhere sidecar/volume/imdsEnv
-  # fragments). Naming/labels/secret-key derivation stays streaming-hub's own
+  # Library chart — renders nothing on its own. Adopted at TWO tiers:
+  #
+  # (1) Workload boilerplate (templates/_deployment.tpl, serviceaccount.yaml) —
+  #     the fragments that are a genuine behavioral match for what streaming-hub
+  #     already hand-rolls: service/hpa/pdb/serviceAccount structure,
+  #     scheduling/imagePullSecrets pod-spec fragments, the OTEL downward-API
+  #     podEnv snippet, httpProbe, and the AWS IAM Roles Anywhere
+  #     sidecar/volume/imdsEnv fragments.
+  #
+  # (2) Domain-level productization (templates/configmap.yaml — ported from the
+  #     closed PR #1712 productize-chart-env pass) — the dependency-connection
+  #     env keys resolve through lerian-common domain masks/helpers so an
+  #     operator configures a typed surface instead of raw env:
+  #       - lerian-common.datastore.value  → global.datastores.postgres /
+  #         streamingHub.datastores.postgres (POSTGRES_HOST/PORT/USER/DB/SSLMODE)
+  #       - lerian-common.auth.env         → global.auth (PLUGIN_AUTH_* JWT)
+  #       - lerian-common.globalValue      → global.observability / global.multiTenant
+  #         (OTEL_*, ENV_NAME, MULTI_TENANT_ENABLED)
+  #       - lerian-common.multiTenant.env  → lib-commons/multitenancy base env
+  #     Every OTHER app key stays a `$cm.<KEY> | default` passthrough; the
+  #     configmap escape hatch (streamingHub.configmap.<KEY>) and extraEnvVars
+  #     keep an operator's overrides in charge.
+  #
+  # Naming/labels/secret-key derivation stays streaming-hub's own
   # (templates/_helpers.tpl) — lerian-common does not model those. The
-  # lib-streaming CloudEvents env contract (lerian-common.streaming.*) and the
-  # global.observability-derived otel.env/globalValue/datastore/multiTenant/cloud
-  # helpers are NOT adopted: streaming-hub has no global.streaming /
-  # global.observability / global.cloud contract wired up, and its own
-  # STREAMING_HUB_KAFKA_* / STREAMING_HUB_* env vars are a different,
-  # chart-specific contract than the STREAMING_BROKERS/STREAMING_SASL_* shape
-  # those helpers standardize.
+  # lib-streaming CloudEvents env contract (lerian-common.streaming.*) is still
+  # NOT adopted: streaming-hub's STREAMING_HUB_KAFKA_* / STREAMING_HUB_* env vars
+  # are a different, chart-specific contract than the STREAMING_BROKERS/
+  # STREAMING_SASL_* shape that helper standardizes. Still NO
+  # otel-collector-lerian subchart: OTEL stays env-wired via the
+  # OTEL_EXPORTER_OTLP_ENDPOINT downward-API override (streamingHub.telemetry),
+  # and Kafka/Redpanda + PostgreSQL remain shared external infra, never subcharts.
   - name: lerian-common-helm
     version: 2.1.0
     repository: "file://../lerian-common"

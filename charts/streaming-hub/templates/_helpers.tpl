@@ -115,17 +115,6 @@ must satisfy.
 {{- end -}}
 
 {{/*
-streaming-hub.requiredPostgresDSN — fail before rendering a chart-managed Secret
-without the Postgres DSN. The application rejects an empty DSN at boot, so
-rendering an empty Secret would only defer the error to a CrashLoopBackOff.
-The existing-Secret path is validated independently by streaming-hub.secretName.
-*/}}
-{{- define "streaming-hub.requiredPostgresDSN" -}}
-{{- $secrets := get (.Values.streamingHub | default dict) "secrets" | default dict -}}
-{{- $postgresDSN := required "\n\nERROR: streamingHub.secrets.STREAMING_HUB_POSTGRES_DSN is required when streamingHub.useExistingSecret=false because streaming-hub cannot start without PostgreSQL. Set it through a protected values source, or set streamingHub.useExistingSecret=true with streamingHub.existingSecretName to reference an operator-provisioned Secret." (get $secrets "STREAMING_HUB_POSTGRES_DSN") -}}
-{{- end -}}
-
-{{/*
 streaming-hub.migrationDSN — STREAMING_HUB_POSTGRES_DSN for the migration-only
 Secret hook. migration-secret.yaml renders only on the chart-managed credential
 path (NOT migrations.useExistingSecret), and runs as a PreSync hook BEFORE the

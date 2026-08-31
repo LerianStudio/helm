@@ -85,23 +85,23 @@ spec:
           value: {{ $defs.postgresAdminLogin.username | quote }}
           {{- end }}
         - name: DB_ADMIN_PASSWORD
-          {{- if $defs.postgresAdminLogin.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
+              {{- if $defs.postgresAdminLogin.useExistingSecret.name }}
               name: {{ $defs.postgresAdminLogin.useExistingSecret.name | quote }}
+              {{- else }}
+              name: {{ include "streaming-hub.fullname" . }}-bootstrap
+              {{- end }}
               key: DB_ADMIN_PASSWORD
-          {{- else }}
-          value: {{ $defs.postgresAdminLogin.password | quote }}
-          {{- end }}
         - name: DB_PASSWORD_HUB
-          {{- if $defs.hubCredentials.useExistingSecret.name }}
           valueFrom:
             secretKeyRef:
+              {{- if $defs.hubCredentials.useExistingSecret.name }}
               name: {{ $defs.hubCredentials.useExistingSecret.name | quote }}
+              {{- else }}
+              name: {{ include "streaming-hub.fullname" . }}-bootstrap
+              {{- end }}
               key: DB_PASSWORD_HUB
-          {{- else }}
-          value: {{ $defs.hubCredentials.password | quote }}
-          {{- end }}
         - name: DB_DATABASE
           value: postgres
         command:
@@ -150,12 +150,6 @@ spec:
               PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_ROLE\""
             fi
           fi
-
-          # Keep the role password in sync with the Secret (idempotent): when the
-          # role pre-exists with a stale password, CREATE ROLE is skipped and the
-          # app would fail auth even though bootstrap "succeeded".
-          echo "Synchronizing role password..."
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "ALTER ROLE \"$DB_ROLE\" WITH LOGIN PASSWORD '${DB_PASSWORD_HUB_LIT}'"
 
           # Privileges (safe to run repeatedly)
           echo "Ensuring privileges and schema permissions..."

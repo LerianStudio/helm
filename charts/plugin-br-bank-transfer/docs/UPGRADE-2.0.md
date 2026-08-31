@@ -1,4 +1,19 @@
-# Helm Upgrade from v1.5.0 to v2.0.0
+# Deploying the latest stable v2 versus v1
+
+This is the operator how-to for the two current stable lanes:
+
+| Lane | Helm chart | Application | Use when |
+|---|---:|---:|---|
+| Latest stable v1 | `1.5.0` | `1.2.1` | Keeping an existing deployment on the previous major |
+| Latest stable v2 | `2.0.0` | `2.0.0` | New deployments and controlled upgrades with a maintenance window |
+
+Both lanes deploy two coupled images:
+
+- `ghcr.io/lerianstudio/plugin-br-bank-transfer:<application-version>`
+- `ghcr.io/lerianstudio/plugin-br-bank-transfer-migrations:<application-version>`
+
+The chart version and application version are different in v1. Pin both
+explicitly. Do not infer the application image from the chart major.
 
 ## Topics
 
@@ -18,22 +33,26 @@
   - [4. MongoDB TLS and CA Bundle Support](#4-mongodb-tls-and-ca-bundle-support)
   - [5. Multi-Tenant Redis CA Certificate Support](#5-multi-tenant-redis-ca-certificate-support)
 - **[Configuration Reference](#configuration-reference)**
-  - [New Global Mask Fields](#new-global-mask-fields)
-  - [New Secret Fields](#new-secret-fields)
-  - [Removed ConfigMap Fields](#removed-configmap-fields)
-  - [New Environment Variables](#new-environment-variables)
 - **[Migration Steps](#migration-steps)**
-  - [Step 1: Review Datastore Configuration](#step-1-review-datastore-configuration)
-  - [Step 2: Migrate Removed ConfigMap Keys](#step-2-migrate-removed-configmap-keys)
-  - [Step 3: Configure MongoDB Bootstrap (If Using External MongoDB)](#step-3-configure-mongodb-bootstrap-if-using-external-mongodb)
-  - [Step 4: Review Streaming Configuration (Optional)](#step-4-review-streaming-configuration-optional)
-  - [Step 5: Update Application Version](#step-5-update-application-version)
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+  - [Step 1: Pin the lane and render it](#step-1-pin-the-lane-and-render-it)
+  - [Step 2: Prepare v2 configuration](#step-2-prepare-v2-configuration)
+  - [Step 3: Drain streaming while v1 is alive](#step-3-drain-streaming-while-v1-is-alive)
+  - [Step 4: Stop every v1 pod](#step-4-stop-every-v1-pod)
+  - [Step 5: Apply v2 and its migrations at zero replicas](#step-5-apply-v2-and-its-migrations-at-zero-replicas)
+  - [Step 6: Start and verify v2](#step-6-start-and-verify-v2)
+- **[Fresh installs](#fresh-installs)**
+- **[GitOps and ArgoCD sequence](#gitops-and-argocd-sequence)**
+- **[Rollback](#rollback)**
+- **[Verification checklist](#verification-checklist)**
 
 ## Overview
 
 Version 2.0.0 is a **major release** that introduces breaking changes requiring operator action before upgrading. This release adds a new chart dependency (`lerian-common-helm`), implements environment-wide configuration masks for datastores and cross-cutting concerns (multi-tenancy, observability, auth, streaming), removes hardcoded ConfigMap defaults in favor of mask-driven resolution, and adds a MongoDB bootstrap job for external MongoDB deployments. The application version is upgraded from 1.2.1 to 2.0.0.
+
+This is **not a normal image bump**. Upgrading v1 to v2 requires zero overlap
+between binaries. The v1 and v2 streaming outbox envelopes are mutually
+unreadable, and the TED IN identity migrations make old/new coexistence a money
+hazard. A rolling update is forbidden even when streaming is disabled.
 
 Operators **must** review their datastore configuration, migrate removed ConfigMap keys, and configure the new MongoDB bootstrap job if using external MongoDB. The chart now supports managed-cloud topology presets (AWS, GCP, Azure) and streaming event publication via RedPanda/Kafka.
 
@@ -141,7 +160,7 @@ global:
 | `REDIS_TLS` | `"false"` (pinned) | Resolved via `global.datastores.redis.tls` or defaulted to `"false"` in template |
 
 **Migration required:**  
-Yes — see [Step 1: Review Datastore Configuration](#step-1-review-datastore-configuration).
+Yes — see [Step 2: Prepare v2 configuration](#step-2-prepare-v2-configuration).
 
 ### 3. ConfigMap Keys Removed or Moved to Masks
 
@@ -226,7 +245,8 @@ Multiple ConfigMap keys have been removed from `values.yaml` because they are no
 - If you relied on the pinned value in `values.yaml` as documentation, refer to the inline comments in `values.yaml` or the template defaults in `templates/configmap.yaml`
 
 **Migration required:**  
-Yes, if you overrode any of the removed keys — see [Step 2: Migrate Removed ConfigMap Keys](#step-2-migrate-removed-configmap-keys).
+Yes, if you overrode any of the removed keys — see
+[Step 2: Prepare v2 configuration](#step-2-prepare-v2-configuration).
 
 ### 4. MongoDB Bootstrap Job Now Available
 
@@ -263,7 +283,8 @@ spec:
 - MongoDB is **mandatory** for this application (the app hard-requires `MONGO_ENABLED=true` for transfer audit persistence), so operators using external MongoDB must enable this job
 
 **Migration required:**  
-Yes, if you use external MongoDB — see [Step 3: Configure MongoDB Bootstrap (If Using External MongoDB)](#step-3-configure-mongodb-bootstrap-if-using-external-mongodb).
+Yes, if you use external MongoDB — see
+[Step 2: Prepare v2 configuration](#step-2-prepare-v2-configuration).
 
 ### 5. Bootstrap Job Hook Ordering Fixed
 
@@ -445,7 +466,8 @@ bankTransfer:
 - SASL password and TLS CA certificate are set via `bankTransfer.secrets`, not `global.streaming` (secrets never live in global blocks)
 
 **Migration required:**  
-No — streaming is disabled by default. See [Step 4: Review Streaming Configuration (Optional)](#step-4-review-streaming-configuration-optional) to enable it.
+No — streaming is disabled by default. See
+[Step 2: Prepare v2 configuration](#step-2-prepare-v2-configuration) to enable it.
 
 ### 3. Managed-Cloud Topology Presets
 
@@ -480,22 +502,298 @@ No — the preset is optional. Existing deployments continue to use explicit `ss
 
 ### 4. MongoDB TLS and CA Bundle Support
 
-**What changed:**  
-The MongoDB bootstrap job now supports TLS connections with optional CA bundle mounting. This is required for managed MongoDB services like AWS DocumentDB, which require TLS on every connection.
+The MongoDB bootstrap job supports TLS and an optional CA bundle for external
+MongoDB-compatible services such as AWS DocumentDB. When external MongoDB is
+used, the rendered bootstrap Job must receive the same host, database, TLS
+posture, CA, and credentials as the application. Do not enable the bootstrap
+Job until those values and Secret references render correctly.
 
-**New configuration:**
+### 5. Multi-Tenant Redis CA Certificate Support
 
-```yaml
-global:
-  externalMon
+`MULTI_TENANT_REDIS_CA_CERT` is an optional PEM CA bundle for the tenant-manager
+Redis/Valkey connection. Set it through `bankTransfer.secrets` only when
+`MULTI_TENANT_REDIS_TLS=true` and the issuer is not already trusted by the
+container image.
+
+## Configuration Reference
+
+The v2 chart can resolve datastore, environment, tenancy, observability, auth,
+and streaming settings from `global.*`. A native
+`bankTransfer.configmap.<KEY>` remains the highest-precedence application
+override. Render the final manifest instead of assuming which source won.
+
+Keep these new sensitive fields out of ConfigMaps and Git:
+
+- `bankTransfer.secrets.STREAMING_SASL_PASSWORD`
+- `bankTransfer.secrets.STREAMING_TLS_CA_CERT`
+- `bankTransfer.secrets.MULTI_TENANT_REDIS_CA_CERT`
+
+The deploy-critical environment additions are:
+
+- `STREAMING_CLOUDEVENTS_SOURCE=plugin-br-bank-transfer` — validated even when
+  streaming is disabled.
+- `STREAMING_*` broker/TLS/SASL settings — required when streaming is enabled.
+- `REQUIRE_UPSTREAM_HTTPS=true` — optional non-production/BYOC guard for the
+  CRM and enabled Fees HTTP clients. It refuses boot when a covered URL is
+  plain HTTP.
+- `MULTI_TENANT_REDIS_CA_CERT` — optional CA bundle described above.
+
+## Migration Steps
+
+### Step 1: Pin the lane and render it
+
+Set the operator variables once:
+
+```bash
+export RELEASE=plugin-br-bank-transfer
+export NAMESPACE=plugin-br-bank-transfer
+export CHART=oci://ghcr.io/lerianstudio/plugin-br-bank-transfer-helm
+export VALUES_V1=values-v1.yaml
+export VALUES_V2=values-v2.yaml
 ```
 
-> ⚠️ **TODO — generation cut off here.** The auto-generated doc stopped mid-sentence
-> at this point and never reached "5. Multi-Tenant Redis CA Certificate Support",
-> "Configuration Reference" (which should cover the new `REQUIRE_UPSTREAM_HTTPS`
-> configmap key and `MULTI_TENANT_REDIS_CA_CERT` secret added alongside the
-> 2.0.0 bump), "Migration Steps", "Preview changes before upgrading", and
-> "Command to upgrade" — all still listed in the Topics index above but absent
-> from the body. Re-run the generator (or write these sections by hand) before
-> merging; an operator following this doc today has no upgrade command and no
-> config reference to finish the job.
+Latest stable v1:
+
+```yaml
+bankTransfer:
+  image:
+    tag: "1.2.1"
+  migrations:
+    image:
+      tag: "1.2.1"
+```
+
+Latest stable v2:
+
+```yaml
+bankTransfer:
+  image:
+    tag: "2.0.0"
+  migrations:
+    image:
+      tag: "2.0.0"
+```
+
+Render before touching the cluster:
+
+```bash
+helm template "$RELEASE" "$CHART" \
+  --version 2.0.0 \
+  --namespace "$NAMESPACE" \
+  -f "$VALUES_V2" > /tmp/plugin-br-bank-transfer-v2.yaml
+```
+
+Confirm the rendered application and migrations images are both `2.0.0`, the
+namespace is correct, and every ConfigMap/Secret reference exists. The release
+workflow publishes both images for every stable release; moving only the API
+image is unsupported.
+
+### Step 2: Prepare v2 configuration
+
+Before the outage:
+
+1. Diff the live v1 values against v2 `values.yaml` and this guide.
+2. Move datastore/environment/tenancy/observability/streaming settings to
+   `global.*` where appropriate, or keep deliberate native overrides.
+3. For external MongoDB, render and verify the bootstrap Job and CA mount.
+4. Set `STREAMING_CLOUDEVENTS_SOURCE=plugin-br-bank-transfer`. The old URI form
+   is rejected by v2 even when streaming is disabled.
+5. If `DEPLOYMENT_MODE=saas` and streaming is enabled, set broker TLS. Plaintext
+   broker transport is rejected.
+6. Back up every affected PostgreSQL tenant database and record the current
+   `schema_migrations` value.
+
+Do not combine configuration discovery with the maintenance window. The values
+must already render successfully before the old pods are stopped.
+
+### Step 3: Drain streaming while v1 is alive
+
+Skip this SQL only when streaming has never been enabled and the table contains
+no `lerian.streaming.publish` rows. Otherwise run it in every database:
+
+```sql
+SELECT count(*)
+  FROM outbox_events
+ WHERE event_type = 'lerian.streaming.publish'
+   AND status <> 'PUBLISHED';
+```
+
+The result must be `0` everywhere while v1 is still alive. Only v1 can drain v1
+envelopes. Resolve `FAILED` and `INVALID` rows explicitly; they do not heal by
+waiting.
+
+Quiesce all emitters before the final count: public/API intake, the TED IN
+poller, reconciliation workers, and operator trigger routes. Do not set
+`STREAMING_ENABLED=false` to quiesce: disabled streaming discards new events
+instead of buffering them.
+
+### Step 4: Stop every v1 pod
+
+Disable the HPA first. With autoscaling enabled, `replicaCount: 0` is ignored and
+the HPA recreates pods from `minReplicas`.
+
+Apply this change while the release is still chart `1.5.0` / app `1.2.1`:
+
+```yaml
+bankTransfer:
+  autoscaling:
+    enabled: false
+  replicaCount: 0
+```
+
+```bash
+helm upgrade "$RELEASE" "$CHART" \
+  --version 1.5.0 \
+  --namespace "$NAMESPACE" \
+  -f "$VALUES_V1"
+
+kubectl -n "$NAMESPACE" wait \
+  --for=delete pod \
+  -l app.kubernetes.io/name=bank-transfer \
+  --timeout=10m
+
+kubectl -n "$NAMESPACE" get deploy,hpa,pod
+```
+
+Proceed only when no v1 pod is `Running` or `Terminating` and no HPA can recreate
+it. Re-run the outbox query through an administrative database connection; it
+must still return `0` everywhere.
+
+### Step 5: Apply v2 and its migrations at zero replicas
+
+Keep autoscaling disabled and replicas at zero. Upgrade the chart and both
+images together:
+
+```bash
+helm upgrade "$RELEASE" "$CHART" \
+  --version 2.0.0 \
+  --namespace "$NAMESPACE" \
+  -f "$VALUES_V2" \
+  --wait \
+  --timeout 15m
+```
+
+Migration ownership depends on tenancy:
+
+- **Single-tenant:** keep `bankTransfer.migrations.enabled=true`. The chart runs
+  the `2.0.0` migrations image before an external PostgreSQL rollout. Verify the
+  Job succeeded.
+- **Multi-tenant:** set `bankTransfer.migrations.enabled=false`. The chart
+  rejects migrations in MT mode because tenant-manager owns each tenant
+  database. Run the approved tenant-manager migration flow for every tenant
+  before starting the application.
+
+Verify every database:
+
+```sql
+SELECT version, dirty FROM schema_migrations;
+```
+
+For v2.0.0 the result must be `version = 28` and `dirty = false`. Run `VACUUM
+ANALYZE transfers;` after migration `000023`, because it rewrites existing
+inbound TED rows. Do not start v2 with a tenant below the required schema.
+
+### Step 6: Start and verify v2
+
+Restore the desired replicas or HPA only after migrations are verified:
+
+```bash
+helm upgrade "$RELEASE" "$CHART" \
+  --version 2.0.0 \
+  --namespace "$NAMESPACE" \
+  -f "$VALUES_V2" \
+  --wait \
+  --timeout 15m
+
+kubectl -n "$NAMESPACE" rollout status \
+  deployment/"$RELEASE" \
+  --timeout=10m
+```
+
+Confirm the running image is exactly `2.0.0`, readiness passes, tenant schemas
+are visible to the poller, and no v1 ReplicaSet has live pods. Then resume
+intake.
+
+When streaming is enabled:
+
+- `GET /streaming/manifest` must report topic
+  `lerian.streaming.plugin-br-bank-transfer`, DLQ topic
+  `lerian.streaming.plugin-br-bank-transfer.dlq`, no commands topic, and source
+  `plugin-br-bank-transfer`.
+- The outbox query must return to `0` after the first dispatch interval.
+- Consumers must subscribe to the single application topic and dispatch on
+  `ce-resourcetype` / `ce-eventtype`; the old per-event topics receive nothing.
+
+## Fresh installs
+
+Latest stable v1:
+
+```bash
+helm upgrade --install "$RELEASE" "$CHART" \
+  --version 1.5.0 \
+  --namespace "$NAMESPACE" \
+  --create-namespace \
+  -f "$VALUES_V1" \
+  --wait \
+  --timeout 15m
+```
+
+Latest stable v2, on a fresh database with no old binaries or outbox rows:
+
+```bash
+helm upgrade --install "$RELEASE" "$CHART" \
+  --version 2.0.0 \
+  --namespace "$NAMESPACE" \
+  --create-namespace \
+  -f "$VALUES_V2" \
+  --wait \
+  --timeout 15m
+```
+
+Do not mix chart `1.5.0` with application `2.0.0`.
+
+## GitOps and ArgoCD sequence
+
+Use three independently verifiable changes; do not collapse them into one sync:
+
+1. **Stop v1:** keep chart `1.5.0` and images `1.2.1`; disable HPA and set
+   replicas to zero. Sync and verify no pod remains.
+2. **Migrate at zero:** bump chart and both images to `2.0.0`; keep HPA disabled
+   and replicas at zero. Sync, verify hooks/Jobs, and verify every tenant schema.
+3. **Start v2:** restore replicas/HPA. Sync, verify readiness, outbox, streaming
+   manifest, and money-path telemetry; only then resume intake.
+
+An automated image-tag bump is insufficient because this migration also changes
+the chart version, values contract, scaling state, and migration ownership.
+
+## Rollback
+
+Do not use an ordinary `helm rollback` while v2 is serving traffic. Rollback has
+the same zero-overlap boundary:
+
+1. Quiesce all emitters.
+2. Drain v2 outbox rows to zero with v2 still running.
+3. Disable HPA, scale v2 to zero, and verify no v2 pod remains.
+4. Re-run the outbox query; it must remain zero everywhere.
+5. Restore the v1 values, including the previous CloudEvents source, chart
+   `1.5.0`, and both image tags `1.2.1`.
+6. Start only v1 pods, verify readiness and business flows, then resume intake.
+
+Do not run down migrations as part of an automatic rollback. Preserve the
+database backup and make an explicit data decision if schema reversal is ever
+required.
+
+## Verification checklist
+
+- [ ] Chart is exactly `1.5.0` + app/migrations `1.2.1`, or chart/app/migrations
+      are all exactly `2.0.0`.
+- [ ] Rendered manifests contain the intended namespace, images, ConfigMap keys,
+      Secret refs, and topology.
+- [ ] HPA is disabled during the zero-replica boundary.
+- [ ] No v1 and v2 pods overlap in either upgrade or rollback direction.
+- [ ] Outbox is zero in every database before crossing the version boundary.
+- [ ] Every v2 database reports schema `28`, `dirty=false`.
+- [ ] v2 readiness and rollout succeed before intake resumes.
+- [ ] Streaming manifest, topic/ACL consumers, webhook fanout, and outbox drain
+      are verified when streaming is enabled.
+- [ ] Rollback values and database backup are available before the window begins.

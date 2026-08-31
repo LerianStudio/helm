@@ -17,14 +17,8 @@ emits only the gated ConfigMap block. The SECRETS (MULTI_TENANT_SERVICE_API_KEY,
 MULTI_TENANT_REDIS_PASSWORD) are emitted into the chart's own Secret by the
 companion `lerian-common.multiTenant.secret` helper below (never in the ConfigMap).
 
-plugin-br-payments is intentionally OUT of scope. Its keys are canonical
-(same names this helper uses) but its ConfigMap is built by a generic `range`
-over the merged `app.configmap` map (templates/configmap.yaml), not a
-per-key emit like this helper's — so a default this helper injected for a
-key the component's own values.yaml leaves absent would render into that
-component's ConfigMap the same way a literal default in its own values.yaml
-would, which is exactly the class of bug this contract exists to avoid.
-Keep it inline.
+plugin-br-payments is intentionally OUT of scope (different contract:
+MULTI_TENANCY_ENABLED + range-generated configmap) — keep it inline.
 
 Usage (in a component configmap.yaml, replacing the hand-written gated block;
 keep the inline `MULTI_TENANT_ENABLED:` line as the knob):

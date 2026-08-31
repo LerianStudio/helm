@@ -185,7 +185,16 @@ app:
     ACCESS_CONTROL_ALLOW_CREDENTIALS: "false"
     # Multi-Tenancy (database-per-tenant via tenant-manager)
     # When enabled, MULTI_TENANT_URL and MULTI_TENANT_SERVICE_API_KEY become required.
-    # The 6 keys renamed to their canonical names in 1.2.0-beta.3 (MULTI_TENANT_ENABLED,
+    # This chart intentionally does NOT use charts/lerian-common's shared
+    # `lerian-common.multiTenant` env helper: this ConfigMap is built by a
+    # generic `range` over the merged app.configmap map
+    # (templates/configmap.yaml), not the helper's per-key emit, so a
+    # default the shared helper injected for a key left absent here would
+    # render into this ConfigMap the same way a literal default in this
+    # file would — exactly the class of bug the "leave renamed keys absent"
+    # rule below exists to avoid. Keep multi-tenant keys inline here.
+    # The 6 keys renamed to their canonical names on the MT-01 phase-2
+    # control-plane branch (see CHANGELOG.md) (MULTI_TENANT_ENABLED,
     # MULTI_TENANT_URL, MULTI_TENANT_TIMEOUT, MULTI_TENANT_CACHE_TTL_SEC,
     # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD, MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC) are
     # deliberately left ABSENT here rather than given explicit literal defaults. This

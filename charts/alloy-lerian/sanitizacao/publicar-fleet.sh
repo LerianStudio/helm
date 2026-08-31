@@ -198,9 +198,15 @@ if [ "$CODIGO" != "200" ]; then
   echo "  ✗ CreatePipeline respondeu HTTP ${CODIGO}"
   head -c 300 "$RESP" | sed 's/^/      /'
   echo ""
-  echo " ✗ FALHOU — e o antigo JA FOI REMOVIDO. O cliente esta SEM CONFIGURACAO."
-  echo "   Republique imediatamente, ou acione o DR:"
-  echo "   fleetManagement.enabled: false + helm upgrade"
+  if [ "$CODIGO" = "409" ]; then
+    echo "   409 = ja existe pipeline com o nome '${NOME}'."
+    echo "   O nome carrega o commit, entao publicar o MESMO commit duas vezes colide."
+    echo "   Se a intencao e republicar sem mudar codigo, use VERSAO_CONFIG:"
+    echo "     VERSAO_CONFIG=\$(date -u +%Y%m%d%H%M) ./publicar-fleet.sh"
+  fi
+  echo ""
+  echo " ✗ FALHOU — nada mudou. A configuracao ANTERIOR segue no ar, porque este"
+  echo "   script cria a nova ANTES de remover a antiga."
   exit 1
 fi
 echo "  ✓ CreatePipeline respondeu 200 — publicado como '${NOME}'"

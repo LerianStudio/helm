@@ -5,6 +5,44 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0-beta.3] - 2026-08-31
+
+### Changed
+
+- Renamed the 6 deprecated multi-tenant configmap/secret keys to the canonical
+  names the app itself accepts (`internal/bootstrap/config_multitenant.go`):
+  - `app.configmap.MULTI_TENANCY_ENABLED` → `app.configmap.MULTI_TENANT_ENABLED`
+  - `app.configmap.MULTI_TENANT_MANAGER_URL` → `app.configmap.MULTI_TENANT_URL`
+  - `app.configmap.MULTI_TENANT_CLIENT_TIMEOUT_SEC` → `app.configmap.MULTI_TENANT_TIMEOUT`
+  - `app.configmap.MULTI_TENANT_CACHE_TTL_MINUTES` → `app.configmap.MULTI_TENANT_CACHE_TTL_SEC`
+    (**unit conversion**, not just a rename: the default changes from `"60"` minutes
+    to `"3600"` seconds)
+  - `app.configmap.MULTI_TENANT_CB_THRESHOLD` → `app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD`
+  - `app.configmap.MULTI_TENANT_CB_TIMEOUT_SEC` → `app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC`
+
+  Updated `values.yaml`, `values-template.yaml`, the required-value validation
+  (`_helpers.tpl`), `NOTES.txt`, and `README.md`. `MULTI_TENANT_SERVICE_NAME`,
+  `MULTI_TENANT_POSTGRES_MODULE`, `MULTI_TENANT_ALLOW_INSECURE_HTTP`,
+  `MULTI_TENANT_MAX_TENANT_POOLS`, and `MULTI_TENANT_SERVICE_API_KEY` were
+  already canonical and are untouched.
+
+### Deprecated
+
+- The 6 old key names above are deprecated. Unlike the `MIDAZ_LEDGER_URL` rename,
+  the chart does **not** carry a fallback for them: `_helpers.tpl`'s
+  "required when enabled" gate now reads only the canonical
+  `MULTI_TENANT_ENABLED`/`MULTI_TENANT_URL`/`MULTI_TENANT_SERVICE_API_KEY`.
+  A values overlay that still sets the old names (e.g. `stg-mt` today) renders
+  fine and the app itself still accepts the old names with a startup `WARN`
+  fallback — but the chart's own required-value gate becomes a **blind spot**
+  for that overlay: since it never sets the canonical `MULTI_TENANT_ENABLED`,
+  the gate's `if` never fires and a missing `MULTI_TENANT_URL`/
+  `MULTI_TENANT_SERVICE_API_KEY` under the old names goes unvalidated by the
+  chart. This is an accepted, documented consequence, not a bug — closing it
+  is tracked as the follow-up rename of the `stg-mt` gitops values themselves
+  (Task 2.2.2 of the MT-01 control-plane plan, `plugin-br-payments` repo),
+  currently `Blocked` pending a release/rc that includes MT-01.
+
 ## [1.2.0-beta.1] - 2026-08-15
 
 ### Changed

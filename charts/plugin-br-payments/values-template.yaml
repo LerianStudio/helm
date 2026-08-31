@@ -42,8 +42,8 @@ app:
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: ""
     # Multi-tenancy (set to "true" to enable)
-    MULTI_TENANCY_ENABLED: "false"
-    # MULTI_TENANT_MANAGER_URL: ""
+    MULTI_TENANT_ENABLED: "false"
+    # MULTI_TENANT_URL: ""
     # OpenTelemetry (use otel-collector-lerian.enabled below for host injection)
     ENABLE_TELEMETRY: "true"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
@@ -63,7 +63,7 @@ app:
     # License (REQUIRED in production)
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
-    # Multi-tenancy (REQUIRED when MULTI_TENANCY_ENABLED=true)
+    # Multi-tenancy (REQUIRED when MULTI_TENANT_ENABLED=true)
     # MULTI_TENANT_SERVICE_API_KEY: ""
   autoscaling:
     enabled: true

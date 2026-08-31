@@ -201,12 +201,12 @@ plugin-br-payments README.
      operator supplies postgresql.auth.existingSecret or app.secrets.POSTGRES_PASSWORD. */}}
 
 {{/* Multi-tenant required fields when enabled */}}
-{{- if eq (.Values.app.configmap.MULTI_TENANCY_ENABLED | toString) "true" }}
-{{- if not .Values.app.configmap.MULTI_TENANT_MANAGER_URL }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_MANAGER_URL is REQUIRED when MULTI_TENANCY_ENABLED=true.\n" }}
+{{- if eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true" }}
+{{- if not .Values.app.configmap.MULTI_TENANT_URL }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
-{{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANCY_ENABLED=true.\n" }}
+{{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- end }}
 

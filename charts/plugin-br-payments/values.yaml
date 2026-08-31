@@ -184,16 +184,16 @@ app:
     ACCESS_CONTROL_EXPOSE_HEADERS: ""
     ACCESS_CONTROL_ALLOW_CREDENTIALS: "false"
     # Multi-Tenancy (database-per-tenant via tenant-manager)
-    # When enabled, MULTI_TENANT_MANAGER_URL and MULTI_TENANT_SERVICE_API_KEY become required.
-    MULTI_TENANCY_ENABLED: "false"
-    MULTI_TENANT_MANAGER_URL: ""
+    # When enabled, MULTI_TENANT_URL and MULTI_TENANT_SERVICE_API_KEY become required.
+    MULTI_TENANT_ENABLED: "false"
+    MULTI_TENANT_URL: ""
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
     MULTI_TENANT_POSTGRES_MODULE: ""
     MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
-    MULTI_TENANT_CLIENT_TIMEOUT_SEC: "10"
-    MULTI_TENANT_CACHE_TTL_MINUTES: "60"
-    MULTI_TENANT_CB_THRESHOLD: "5"
-    MULTI_TENANT_CB_TIMEOUT_SEC: "30"
+    MULTI_TENANT_TIMEOUT: "10"
+    MULTI_TENANT_CACHE_TTL_SEC: "3600"
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
     MULTI_TENANT_MAX_TENANT_POOLS: "100"
     # PostgreSQL Primary (host defaults to {Release.Name}-postgresql-primary)
     POSTGRES_HOST: ""  # Empty -> dynamic default in configmap template
@@ -296,7 +296,7 @@ app:
     # License (required in production)
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
-    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANCY_ENABLED=true)
+    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_SERVICE_API_KEY: ""
     # Midaz M2M (optional)
     # MIDAZ_CLIENT_ID: ""

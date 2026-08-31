@@ -63,11 +63,11 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
 | `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker. Generate with `openssl rand -base64 32`. |
 
-When `app.configmap.MULTI_TENANCY_ENABLED=true`, the following are additionally required:
+When `app.configmap.MULTI_TENANT_ENABLED=true`, the following are additionally required:
 
 | Field | Description |
 |-------|-------------|
-| `app.configmap.MULTI_TENANT_MANAGER_URL` | Tenant Manager service URL. |
+| `app.configmap.MULTI_TENANT_URL` | Tenant Manager service URL. |
 | `app.secrets.MULTI_TENANT_SERVICE_API_KEY` | Tenant Manager service API key. |
 
 > **Database password:** with the bundled PostgreSQL subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` — leave `app.secrets.POSTGRES_PASSWORD` empty. Only set it for an external Postgres that has no `postgresql.auth.existingSecret`.
@@ -78,7 +78,7 @@ When `app.configmap.MULTI_TENANCY_ENABLED=true`, the following are additionally 
 |-------|------|-------|
 | Liveness | `/health` | Lightweight startup self-probe. Returns 200 once startup completes. |
 | Readiness | `/readyz` | Deep per-dependency checks (Postgres, Provider, Midaz, Tenant Manager). Returns 503 if any dep is `down`/`degraded`. |
-| Tenant readiness | `/readyz/tenant/:id` | Mounted only when `MULTI_TENANCY_ENABLED=true`. Anti-enumeration uniform shape. |
+| Tenant readiness | `/readyz/tenant/:id` | Mounted only when `MULTI_TENANT_ENABLED=true`. Anti-enumeration uniform shape. |
 
 Default probe values match the canonical Lerian readiness contract documented in [`plugin-br-payments/docs/readyz-guide.md`](https://github.com/LerianStudio/plugin-br-payments/blob/main/docs/readyz-guide.md):
 
@@ -104,8 +104,8 @@ The plugin supports schema-per-tenant via Lerian's Tenant Manager. To enable:
 ```yaml
 app:
   configmap:
-    MULTI_TENANCY_ENABLED: "true"
-    MULTI_TENANT_MANAGER_URL: "https://tenant-manager.example.com"
+    MULTI_TENANT_ENABLED: "true"
+    MULTI_TENANT_URL: "https://tenant-manager.example.com"
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
   secrets:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
@@ -126,7 +126,7 @@ When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `prov
 | `app.terminationGracePeriodSeconds` | `60` | Required by the readyz contract. |
 | `app.configmap.SERVICE_TYPE` | `both` | Run API + worker in one process. |
 | `app.configmap.OUTBOX_ENABLED` | `"true"` | REQUIRED — the plugin won't register routes otherwise. |
-| `app.configmap.MULTI_TENANCY_ENABLED` | `"false"` | Toggle multi-tenant mode. |
+| `app.configmap.MULTI_TENANT_ENABLED` | `"false"` | Toggle multi-tenant mode. |
 | `postgresql.enabled` | `true` | Deploy the in-cluster PostgreSQL subchart. |
 | `postgresql.architecture` | `replication` | Primary + read replica. |
 | `global.externalPostgresDefinitions.enabled` | `false` | Run a bootstrap Job against an external PostgreSQL. |

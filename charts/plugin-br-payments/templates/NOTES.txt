@@ -19,7 +19,7 @@ HTTP API + reconciliation worker + outbox dispatcher run as goroutines in one pr
   Service: {{ include "plugin-br-payments.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ .Values.app.service.port }}
   Liveness:  /health
   Readiness: /readyz (deep dependency checks)
-  {{- if eq (.Values.app.configmap.MULTI_TENANCY_ENABLED | toString) "true" }}
+  {{- if eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true" }}
   Tenant readiness: /readyz/tenant/:id (multi-tenant mode)
   {{- end }}
 
@@ -55,8 +55,8 @@ The following values MUST be set for the deployment to start successfully:
   - app.secrets.CREDENTIAL_ENCRYPTION_KEY (base64 AES-256; required for SERVICE_TYPE=both/worker)
   - app.secrets.LICENSE_KEY               (recommended — required in production)
 
-When MULTI_TENANCY_ENABLED=true, additionally:
-  - app.configmap.MULTI_TENANT_MANAGER_URL
+When MULTI_TENANT_ENABLED=true, additionally:
+  - app.configmap.MULTI_TENANT_URL
   - app.secrets.MULTI_TENANT_SERVICE_API_KEY
 
 ## Accessing the API

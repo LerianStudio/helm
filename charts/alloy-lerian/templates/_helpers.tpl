@@ -178,8 +178,15 @@ gate does not flag it as a dangling reference.
 */}}
 {{- define "alloy-lerian.destinationEndpoint" -}}
 {{- $e := .Values.destination.endpoint | default "" -}}
+{{/*
+O chart TEM default (`https://telemetry.lerian.io`, o ponto de entrada de
+producao), entao chegar aqui vazio significa que alguem zerou o valor de
+proposito — nao que esqueceu de informar. A guarda continua porque endpoint vazio
+nao para o agente: o exportador tenta, falha, e a telemetria acumula na fila ate
+estourar. O sintoma seria "nao chega nada", sem erro que aponte a causa.
+*/}}
 {{- if not $e -}}
-{{- fail "\n\nalloy-lerian: `destination.endpoint` is required.\n\n  destination:\n    endpoint: https://telemetry.example.net/v1/logs\n" -}}
+{{- fail "\n\nalloy-lerian: `destination.endpoint` esta vazio.\n\nO chart tem default — `https://telemetry.lerian.io`, o ponto de entrada de\nproducao — entao isto significa que o valor foi zerado explicitamente.\n\nEndpoint vazio nao para o agente: ele coleta, tenta entregar, falha, e a\ntelemetria acumula na fila ate estourar. Nao chega nada, e nada diz por que.\n\nInforme um destino, ou remova a chave para usar o default:\n\n  destination:\n    endpoint: https://telemetry.lerian.io      # BYOC, o default\n    endpoint: http://nlb-interno...:4318       # ambientes internos\n" -}}
 {{- end -}}
 {{/*
 Plaintext is refused only when a CREDENTIAL travels to this endpoint. Cleartext

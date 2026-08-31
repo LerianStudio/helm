@@ -13,6 +13,13 @@ origin:
   # O nome do cliente é UMA palavra: acme-prd, nunca acme-corp-prd.
   id: SUBSTITUIR-prd
 
+# O DESTINO tem default no chart: `https://telemetry.lerian.io`, o ponto de entrada
+# de producao, que e o de todo cliente BYOC. Declarado aqui de proposito — este
+# arquivo e o que o cliente le, e o destino da telemetria dele nao deveria ser
+# invisivel — mas remover a chave produz o mesmo resultado.
+#
+# ⚠️ Se sobrescrever, mude TAMBEM `ALLOY_DESTINATION_ENDPOINT` no extraEnv abaixo:
+# esta entrada e o que o chart valida, a variavel e o que chega ao agente.
 destination:
   endpoint: https://telemetry.lerian.io
 

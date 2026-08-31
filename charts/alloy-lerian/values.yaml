@@ -57,7 +57,20 @@ origin:
 # DESTINATION
 # ---------------------------------------------------------------------------
 destination:
-  endpoint: ""
+  # Default: o ponto de entrada de produção, que é o de TODO cliente BYOC. Estava
+  # vazio e obrigava cada consumidor a repetir o mesmo valor — e repetir um valor
+  # que é igual em todos os lugares é onde o erro de digitação nasce.
+  #
+  # ⚠️ Os ambientes internos `aws-*` SOBRESCREVEM: eles entregam a um balanceador
+  # interno que não passa pelo gateway, e portanto não usa api-key. MEDIDO: uma
+  # configuração com o endereço público recebe 403 lá, que é falha PERMANENTE —
+  # descarta na hora, sem reenvio.
+  #
+  # Ao sobrescrever, os DOIS lugares precisam mudar juntos: esta entrada e a
+  # variável `ALLOY_DESTINATION_ENDPOINT` no `extraEnv` do papel. A variável é o
+  # que chega ao agente; esta entrada é o que o chart valida (recusa http quando o
+  # perfil envia credencial). Uma guarda recusa o render se faltar a variável.
+  endpoint: https://telemetry.lerian.io
 
   credential:
     # Derivado do perfil: ausente em `own`, obrigatório em `client`. Defina

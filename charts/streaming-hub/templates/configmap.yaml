@@ -1,0 +1,23 @@
+{{/*
+ONE shared ConfigMap — role-INVARIANT, non-sensitive env. Identical across all
+roles, so it is NOT duplicated per role (DRY). The role-specific vars
+(STREAMING_HUB_ROLE, the Postgres pool sizes) are deliberately ABSENT here —
+they are injected as explicit per-Deployment env in templates/<role>/deployment.yaml
+(see templates/_deployment.tpl), which wins over this envFrom layer.
+
+Ranged over .Values.streamingHub.common.configmap so operators can add/override
+keys without editing this template. Every key in that map MUST exist verbatim in
+streaming-hub/.env.reference (the env-parity cross-check enforces this); OTEL_*
+keys are the documented exception (lib-observability vars, not LoadConfig vars).
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "streaming-hub.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "streaming-hub.labels" (dict "context" . "component" "all") | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.streamingHub.common.configmap }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

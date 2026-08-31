@@ -35,8 +35,14 @@ $ helm list -n midaz-plugins
 To upgrade the chart to a new version:
 
 ```console
-$ helm upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-helm --version <new-version> -n midaz-plugins
+$ helm upgrade plugin-br-bank-transfer oci://ghcr.io/lerianstudio/plugin-br-bank-transfer-helm --version <new-version> -n midaz-plugins
 ```
+
+- Latest stable v1: chart `1.5.0`, application `1.2.1` — see
+  [UPGRADE-1.5.md](docs/UPGRADE-1.5.md).
+- Latest stable v2: chart/application `2.0.0` — see the mandatory
+  [v1-to-v2 deployment how-to](docs/UPGRADE-2.0.md). This major upgrade forbids
+  rolling old and new binaries together.
 
 ---
 
@@ -131,7 +137,7 @@ bankTransfer:
 | `bankTransfer.replicaCount` | Number of replicas for the deployment | `2` |
 | `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer` |
 | `bankTransfer.image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `bankTransfer.image.tag` | Image tag used for deployment | `2.4.0` |
+| `bankTransfer.image.tag` | Image tag used for deployment | `2.0.0` |
 | `bankTransfer.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `bankTransfer.revisionHistoryLimit` | Old ReplicaSets to retain | `10` |
 | `bankTransfer.nameOverride` | Overrides the default generated name by Helm | `""` |

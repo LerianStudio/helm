@@ -135,8 +135,21 @@ DEPENDENCY ENABLED HELPER
 ================================================================================
 */}}
 
+{{- /*
+"true" only when the bundled postgresql subchart is actually in play:
+postgresql.enabled is not explicitly "false" AND postgresql.external is not
+set. NOT `and (default true .Values.postgresql.enabled) ...` — Sprig's
+`default` substitutes its fallback for ANY "empty" input, and a Go bool
+`false` IS the zero value for its type, so `default true false` evaluates
+to `true`. That silently discarded an explicit postgresql.enabled=false
+override and made this helper report "bundled" even when a caller asked for
+external Postgres, which is exactly the exclusivity this helper exists to
+police (see templates/controlplane-migrations.yaml and
+templates/bootstrap-postgres.yaml, which gate on this helper resolving to
+"false" before ever running against a genuinely external Postgres).
+*/}}
 {{- define "postgresql.enabled" -}}
-{{- if and (default true .Values.postgresql.enabled) (not .Values.postgresql.external) -}}
+{{- if and (ne (.Values.postgresql.enabled | toString) "false") (not .Values.postgresql.external) -}}
 true
 {{- else -}}
 false

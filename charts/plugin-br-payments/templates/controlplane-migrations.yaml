@@ -4,24 +4,36 @@ Control-plane migrations Job (ADR-013, plugin-br-payments repo). Runs the
 which never applies at app boot — the control-plane inventory is declared,
 not a silent svc.DB fallback.
 
-Renders ONLY when all three are true:
+Renders ONLY when all four are true:
   - app.configmap.MULTI_TENANT_ENABLED=true. Single-tenant already applies
     every migration automatically at boot (internal/bootstrap/service.go,
     applyStartupMigrationsIfOwned), so running this Job too would be
     redundant, not incorrect — it stays gated out. Gate reads the same way
     _helpers.tpl and NOTES.txt already do (no `lower`/`get`/`default` of its
-    own — an absent key renders "" via toString, which is never "true").
-  - global.externalPostgresDefinitions.enabled=true — the same flag
-    templates/bootstrap-postgres.yaml gates on. plugin-br-payments is NOT
-    always-external Postgres: the chart's own default is a BUNDLED Postgres
-    (postgresql.enabled: true, postgresql.external: false), and in that mode
-    the Bitnami StatefulSet/Service/Secret are ordinary Sync-phase resources
-    with zero ordering guarantee relative to this PreSync Job, and there is
-    no wait-for-postgres init container here. This Job only supports, and is
-    only tested against, the external-Postgres mode bootstrap-postgres.yaml
-    provisions into (that template now carries its own PreSync hook at
-    weight -10, so the role/database is guaranteed to exist before this Job
-    runs at weight -1) — so it stays gated out of the bundled-Postgres path
+    own — an absent key renders "<nil>" via toString, not "", but that still
+    never equals "true", which is all the comparison needs).
+  - global.externalPostgresDefinitions.enabled=true AND the chart's own
+    "postgresql.enabled" helper (_helpers.tpl) resolves to "false" — i.e.
+    Postgres is genuinely external, not just flagged as such.
+    externalPostgresDefinitions.enabled alone is NOT a reliable stand-in for
+    "external Postgres": it is independent of postgresql.enabled/
+    postgresql.external, and the chart's own default is a BUNDLED Postgres
+    (postgresql.enabled: true, postgresql.external: false). Gating on
+    externalPostgresDefinitions.enabled alone let a caller set it to true
+    while leaving postgresql.enabled at its default true — the Job then
+    rendered and resolved its POSTGRES_HOST to the bundled subchart's own
+    Sync-phase Secret, which does not exist yet when this PreSync hook runs,
+    deadlocking the release. The extra "postgresql.enabled" != "true" check
+    (same helper templates/configmap.yaml and templates/deployment.yaml
+    already use to tell bundled from external) closes that gap: in the
+    bundled mode the Bitnami StatefulSet/Service/Secret are ordinary
+    Sync-phase resources with zero ordering guarantee relative to this
+    PreSync Job, and there is no wait-for-postgres init container here. This
+    Job only supports, and is only tested against, the external-Postgres
+    mode bootstrap-postgres.yaml provisions into (that template now carries
+    its own PreSync hook at weight -10, so the role/database is guaranteed
+    to exist before this Job runs at weight -1, and now shares the identical
+    exclusivity gate) — so it stays gated out of the bundled-Postgres path
     entirely rather than pretend to support it.
   - app.controlplaneMigrations.enabled=true (default false) — app.image
     resolves to the currently released plugin-br-payments image today, which
@@ -30,18 +42,40 @@ Renders ONLY when all three are true:
     plugin-br-payments release containing the binary is deployed — see
     CHANGELOG.md.
 
-Postgres connection env vars are inlined from .Values.app.configmap rather
-than envFrom-ing the app ConfigMap (templates/configmap.yaml): that ConfigMap
-carries no hook annotation and is a normal Sync-phase resource, so on a first
+Postgres connection env vars are inlined rather than envFrom-ing the app
+ConfigMap (templates/configmap.yaml): that ConfigMap carries no hook
+annotation and is a normal Sync-phase resource, so on a first
 install/first ArgoCD sync it does not exist yet when this PreSync hook runs —
 envFrom against it produced CreateContainerConfigError and a release that
 could never complete. Mirrors charts/plugin-br-bank-transfer/templates/migrations.yaml
-and charts/br-slc, which avoid the same trap the same way. POSTGRES_PASSWORD
-stays a secretRef (unchanged) — templates/secrets.yaml IS already a
-pre-install hook at weight -5, so it lands safely before this Job (-1).
+and charts/br-slc, which avoid the same trap the same way. POSTGRES_HOST and
+POSTGRES_PORT read UNCONDITIONALLY from
+global.externalPostgresDefinitions.connection.host/.port — mirroring
+templates/bootstrap-postgres.yaml's own DB_HOST/DB_PORT exactly, not merely
+"the same values" — rather than from app.configmap.POSTGRES_HOST/
+POSTGRES_PORT. Deliberately no app.configmap.POSTGRES_HOST/POSTGRES_PORT
+override branch here: app.configmap.POSTGRES_PORT ships a non-empty chart
+default ("5432" in values.yaml), so an "override wins when set" branch would
+have silently ignored global.externalPostgresDefinitions.connection.port
+every time — the exact class of bug this fix exists to close. It would also
+let this Job's migrations target a host different from the one
+bootstrap-postgres.yaml (weight -10) just created the role/database on,
+which is never correct once the gate above has established this render path
+is genuinely-external-only. templates/configmap.yaml's own dynamic
+POSTGRES_HOST resolution (for the app Deployment, which runs in both bundled
+and external modes) is untouched and unrelated to this Job.
+POSTGRES_PASSWORD stays a secretRef (unchanged) — templates/secrets.yaml IS
+already a pre-install hook at weight -5, so it lands safely before this Job
+(-1).
+
+activeDeadlineSeconds is kept at or below Helm's default 300s release
+timeout (`helm upgrade --timeout`) on purpose: a PreSync hook Job that can
+run longer than the release timeout risks `helm upgrade` giving up while the
+Job is still in flight. Deployments that need a longer migration budget must
+pass a matching `--timeout` explicitly.
 */}}
 {{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") }}
-{{- if and (eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true") .Values.global.externalPostgresDefinitions.enabled .Values.app.controlplaneMigrations.enabled }}
+{{- if and (eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true") .Values.global.externalPostgresDefinitions.enabled (ne (include "postgresql.enabled" .) "true") .Values.app.controlplaneMigrations.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -59,7 +93,7 @@ metadata:
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
 spec:
   backoffLimit: 3
-  activeDeadlineSeconds: 600
+  activeDeadlineSeconds: 300
   ttlSecondsAfterFinished: 600
   template:
     metadata:
@@ -103,27 +137,17 @@ spec:
           # Inlined connection settings — NOT envFrom the app ConfigMap. See
           # the file header comment: that ConfigMap is a plain Sync-phase
           # resource and does not exist yet when this PreSync hook runs on a
-          # first install. Mirrors templates/configmap.yaml's own POSTGRES_HOST
-          # resolution (explicit override, else the bundled subchart's dynamic
-          # default, else empty) so this Job and the app Deployment can never
-          # disagree about which host they connect to.
+          # first install. POSTGRES_HOST/POSTGRES_PORT read unconditionally
+          # from global.externalPostgresDefinitions.connection.host/.port —
+          # mirroring templates/bootstrap-postgres.yaml's own DB_HOST/DB_PORT
+          # exactly — because the render gate above guarantees this Job only
+          # ever runs in the genuinely-external mode, and this must be the
+          # same host bootstrap-postgres.yaml (weight -10) just provisioned.
           env:
             - name: POSTGRES_HOST
-              {{- if .Values.app.configmap.POSTGRES_HOST }}
-              value: {{ .Values.app.configmap.POSTGRES_HOST | quote }}
-              {{- else if eq (include "postgresql.enabled" .) "true" }}
-              {{- $pgArch := default "standalone" .Values.postgresql.architecture }}
-              {{- $pgFullname := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" (index .Values "postgresql") "context" .) }}
-              {{- if eq $pgArch "replication" }}
-              value: {{ printf "%s-primary.%s.svc.cluster.local" $pgFullname (include "global.namespace" .) | quote }}
-              {{- else }}
-              value: {{ printf "%s.%s.svc.cluster.local" $pgFullname (include "global.namespace" .) | quote }}
-              {{- end }}
-              {{- else }}
-              value: ""
-              {{- end }}
+              value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
             - name: POSTGRES_PORT
-              value: {{ .Values.app.configmap.POSTGRES_PORT | default "5432" | quote }}
+              value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
             - name: POSTGRES_USER
               value: {{ .Values.app.configmap.POSTGRES_USER | default "plugin_br_payments" | quote }}
             - name: POSTGRES_DB

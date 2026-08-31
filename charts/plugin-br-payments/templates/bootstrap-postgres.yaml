@@ -1,4 +1,23 @@
-{{- if .Values.global.externalPostgresDefinitions.enabled }}
+{{- /*
+Renders only when Postgres is genuinely external:
+global.externalPostgresDefinitions.enabled=true AND the chart's own
+"postgresql.enabled" helper (_helpers.tpl) resolves to "false".
+externalPostgresDefinitions.enabled alone is not a reliable stand-in for
+"external Postgres" — it is independent of postgresql.enabled/
+postgresql.external, and the chart's own default is a BUNDLED Postgres
+(postgresql.enabled: true, postgresql.external: false). Gating on
+externalPostgresDefinitions.enabled alone let a caller leave
+postgresql.enabled at its default true while also setting
+externalPostgresDefinitions.enabled true, in which case this Job's psql
+CREATE ROLE/CREATE DATABASE ran against a host that has nothing to do with
+the bundled subchart's own Service — and raced the bundled StatefulSet
+(an ordinary Sync-phase resource) with zero ordering guarantee against this
+PreSync hook. The extra "postgresql.enabled" != "true" check (same helper
+templates/configmap.yaml, templates/deployment.yaml, and
+templates/controlplane-migrations.yaml already use to tell bundled from
+external) closes that gap.
+*/}}
+{{- if and .Values.global.externalPostgresDefinitions.enabled (ne (include "postgresql.enabled" .) "true") }}
 apiVersion: batch/v1
 kind: Job
 metadata:

@@ -574,19 +574,33 @@ bankTransfer:
       tag: "2.0.0"
 ```
 
-Render before touching the cluster:
+Render both zero-replica transition states before the maintenance window. The
+explicit overrides below are safety controls for the transition; they do not
+replace the steady-state scaling configuration in either values file:
 
 ```bash
 helm template "$RELEASE" "$CHART" \
+  --version 1.5.0 \
+  --namespace "$NAMESPACE" \
+  -f "$VALUES_V1" \
+  --set bankTransfer.autoscaling.enabled=false \
+  --set bankTransfer.replicaCount=0 \
+  > /tmp/plugin-br-bank-transfer-v1-stop.yaml
+
+helm template "$RELEASE" "$CHART" \
   --version 2.0.0 \
   --namespace "$NAMESPACE" \
-  -f "$VALUES_V2" > /tmp/plugin-br-bank-transfer-v2.yaml
+  -f "$VALUES_V2" \
+  --set bankTransfer.autoscaling.enabled=false \
+  --set bankTransfer.replicaCount=0 \
+  > /tmp/plugin-br-bank-transfer-v2-stop.yaml
 ```
 
-Confirm the rendered application and migrations images are both `2.0.0`, the
-namespace is correct, and every ConfigMap/Secret reference exists. The release
-workflow publishes both images for every stable release; moving only the API
-image is unsupported.
+Confirm the v1 stop manifest has application and migrations images `1.2.1`, no
+HPA, and Deployment replicas `0`. Confirm the v2 stop manifest has both images
+at `2.0.0`, no HPA, and Deployment replicas `0`. In both manifests, verify the
+namespace and every ConfigMap/Secret reference. The release workflow publishes
+both images for every stable release; moving only the API image is unsupported.
 
 ### Step 2: Prepare v2 configuration
 
@@ -645,7 +659,9 @@ bankTransfer:
 helm upgrade "$RELEASE" "$CHART" \
   --version 1.5.0 \
   --namespace "$NAMESPACE" \
-  -f "$VALUES_V1"
+  -f "$VALUES_V1" \
+  --set bankTransfer.autoscaling.enabled=false \
+  --set bankTransfer.replicaCount=0
 
 kubectl -n "$NAMESPACE" wait \
   --for=delete pod \
@@ -669,6 +685,8 @@ helm upgrade "$RELEASE" "$CHART" \
   --version 2.0.0 \
   --namespace "$NAMESPACE" \
   -f "$VALUES_V2" \
+  --set bankTransfer.autoscaling.enabled=false \
+  --set bankTransfer.replicaCount=0 \
   --wait \
   --timeout 15m
 ```
@@ -676,8 +694,8 @@ helm upgrade "$RELEASE" "$CHART" \
 Migration ownership depends on tenancy:
 
 - **Single-tenant:** keep `bankTransfer.migrations.enabled=true`. The chart runs
-  the `2.0.0` migrations image before an external PostgreSQL rollout. Verify the
-  Job succeeded.
+  the `2.0.0` migrations image before the application pods start. Verify the Job
+  succeeded.
 - **Multi-tenant:** set `bankTransfer.migrations.enabled=false`. The chart
   rejects migrations in MT mode because tenant-manager owns each tenant
   database. Run the approved tenant-manager migration flow for every tenant
@@ -695,7 +713,10 @@ inbound TED rows. Do not start v2 with a tenant below the required schema.
 
 ### Step 6: Start and verify v2
 
-Restore the desired replicas or HPA only after migrations are verified:
+Restore the desired replicas or HPA only after migrations are verified. Remove
+the Step 5 transition overrides by applying `$VALUES_V2` alone; that file must
+already contain the intended steady-state `replicaCount` and `autoscaling`
+configuration:
 
 ```bash
 helm upgrade "$RELEASE" "$CHART" \

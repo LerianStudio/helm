@@ -185,15 +185,28 @@ app:
     ACCESS_CONTROL_ALLOW_CREDENTIALS: "false"
     # Multi-Tenancy (database-per-tenant via tenant-manager)
     # When enabled, MULTI_TENANT_URL and MULTI_TENANT_SERVICE_API_KEY become required.
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
+    # The 6 keys renamed to their canonical names in 1.2.0-beta.3 (MULTI_TENANT_ENABLED,
+    # MULTI_TENANT_URL, MULTI_TENANT_TIMEOUT, MULTI_TENANT_CACHE_TTL_SEC,
+    # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD, MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC) are
+    # deliberately left ABSENT here rather than given explicit literal defaults. This
+    # configmap is rendered by a generic `range` over the merged map (templates/configmap.yaml),
+    # so any literal shipped here — even "false" or a numeric default — is an explicit,
+    # non-blank value that wins over an overlay which still sets only the deprecated key name
+    # (the app's reconcileDeprecatedMultiTenantEnv only falls back to the deprecated key when
+    # the canonical one is unset/blank). Leaving them absent is safe for chart-only installs:
+    # `_helpers.tpl` and `templates/controlplane-migrations.yaml`'s gates already default an
+    # absent MULTI_TENANT_ENABLED to "false", so single-tenant behavior is unchanged. What it
+    # fixes is an overlay using only the old key names (e.g. `stg-mt`, pending Task 2.2.2),
+    # which is no longer silently overridden back to disabled/chart defaults.
+    # MULTI_TENANT_ENABLED: "false"
+    # MULTI_TENANT_URL: ""
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
     MULTI_TENANT_POSTGRES_MODULE: ""
     MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
-    MULTI_TENANT_TIMEOUT: "10"
-    MULTI_TENANT_CACHE_TTL_SEC: "3600"
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
+    # MULTI_TENANT_TIMEOUT: "10"
+    # MULTI_TENANT_CACHE_TTL_SEC: "3600"
+    # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    # MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
     MULTI_TENANT_MAX_TENANT_POOLS: "100"
     # PostgreSQL Primary (host defaults to {Release.Name}-postgresql-primary)
     POSTGRES_HOST: ""  # Empty -> dynamic default in configmap template

@@ -5,6 +5,34 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0-beta.5] - 2026-08-31
+
+### Fixed
+
+- **CRITICAL:** The `1.2.0-beta.3` rename shipped the 5 renamed configmap keys
+  (`MULTI_TENANT_ENABLED`, `MULTI_TENANT_URL`, `MULTI_TENANT_TIMEOUT`,
+  `MULTI_TENANT_CACHE_TTL_SEC`, `MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD`,
+  `MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC`) as explicit literal defaults in
+  `values.yaml` (e.g. `MULTI_TENANT_ENABLED: "false"`). Because
+  `templates/configmap.yaml` `range`s generically over the merged
+  `app.configmap` map, those literals rendered into every ConfigMap — including
+  one built from an overlay that still sets only the *old*, pre-rename key
+  names (exactly `stg-mt`'s situation, pending Task 2.2.2). The app's
+  `reconcileDeprecatedMultiTenantEnv` only falls back to a deprecated key when
+  the canonical one is unset/blank, so the chart's own non-blank
+  `MULTI_TENANT_ENABLED: "false"` default outranked the overlay's
+  `MULTI_TENANCY_ENABLED: "true"` and silently turned multi-tenancy **off** —
+  a functional regression, not just the validation blind spot the
+  `1.2.0-beta.3` entry below described.
+
+  Fixed by removing the 6 literals from `values.yaml`'s defaults so the keys
+  are simply **absent** when not overridden by an overlay. This does not
+  change chart-only-install behavior: `_helpers.tpl` and
+  `templates/controlplane-migrations.yaml`'s gates already default an absent
+  `MULTI_TENANT_ENABLED` to `"false"`. It does mean an overlay using only the
+  deprecated key names is no longer overridden back to disabled/chart
+  defaults.
+
 ## [1.2.0-beta.4] - 2026-08-31
 
 ### Added
@@ -67,6 +95,18 @@ and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.h
   is tracked as the follow-up rename of the `stg-mt` gitops values themselves
   (Task 2.2.2 of the MT-01 control-plane plan, `plugin-br-payments` repo),
   currently `Blocked` pending a release/rc that includes MT-01.
+
+  **Correction (`1.2.0-beta.5`):** the paragraph above originally described
+  the consequence as a validation blind spot only. It understated it: at the
+  time this entry was written, `values.yaml` also shipped the 6 canonical keys
+  as explicit non-blank literal defaults (`MULTI_TENANT_ENABLED: "false"` etc),
+  and since `templates/configmap.yaml` renders `app.configmap` generically via
+  `range`, those literals rendered into a `stg-mt`-shaped overlay's ConfigMap
+  too and outranked the overlay's deprecated-key values (the app only falls
+  back to a deprecated key when the canonical one is unset/blank) — turning
+  multi-tenancy off, not just leaving it unvalidated. `1.2.0-beta.5` removes
+  those literal defaults so the canonical keys are absent, not `"false"`,
+  until Task 2.2.2 migrates the overlay to the canonical names.
 
 ## [1.2.0-beta.1] - 2026-08-15
 

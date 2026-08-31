@@ -125,15 +125,15 @@ otelcol.processor.transform "procedencia" {
 
   trace_statements {
     context    = "resource"
-    statements = [`set(attributes["client.id"], ` + sys.env("ALLOY_CLIENT_ID") + `)`]
+    statements = [`set(attributes["client.id"], "` + sys.env("ALLOY_CLIENT_ID") + `")`]
   }
   metric_statements {
     context    = "resource"
-    statements = [`set(attributes["client.id"], ` + sys.env("ALLOY_CLIENT_ID") + `)`]
+    statements = [`set(attributes["client.id"], "` + sys.env("ALLOY_CLIENT_ID") + `")`]
   }
   log_statements {
     context    = "resource"
-    statements = [`set(attributes["client.id"], ` + sys.env("ALLOY_CLIENT_ID") + `)`]
+    statements = [`set(attributes["client.id"], "` + sys.env("ALLOY_CLIENT_ID") + `")`]
   }
 
   output {
@@ -795,7 +795,7 @@ otelcol.processor.transform "procedencia_eventos" {
   log_statements {
     context = "resource"
     statements = [
-      `set(attributes["client.id"], ` + sys.env("ALLOY_CLIENT_ID") + `),
+      `set(attributes["client.id"], "` + sys.env("ALLOY_CLIENT_ID") + `"),
     ]
   }
   output {

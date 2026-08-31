@@ -40,7 +40,7 @@ VALUES_BASE="${VALUES_BASE:-${CHART}/examples/values-cliente.yaml}"
 DRY_RUN=0
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=1
 
-for v in FLEET_URL FLEET_USER FLEET_TOKEN CLIENT_ID; do
+for v in FLEET_URL FLEET_USER FLEET_TOKEN; do
   if [ -z "${!v:-}" ]; then
     echo "FALHA: $v nao definida."
     echo ""
@@ -58,7 +58,7 @@ echo "=============================================="
 echo " Publicar configuracao de coleta no Fleet"
 echo "=============================================="
 echo "  stack:     ${FLEET_URL}"
-echo "  client_id: ${CLIENT_ID}"
+echo "  versao:    (definida abaixo)"
 echo "  base:      ${VALUES_BASE}"
 [ "$DRY_RUN" = "1" ] && echo "  MODO:      dry-run (nao envia)"
 echo ""
@@ -69,8 +69,11 @@ echo "[1/5] Renderizar a configuracao do chart"
 MODULO="$(mktemp)"
 trap 'rm -f "$MODULO" "${CORPO:-}" "${RESP:-}"' EXIT
 
+# `origin.id` ainda e exigido pelo chart (marca procedencia no render), mas o
+# valor NAO entra na config: os 8 pontos usam sys.env. Um marcador explicito deixa
+# isso visivel para quem inspecionar o render.
 if ! helm template publicar "$CHART" -f "$VALUES_BASE" \
-      --set "origin.id=${CLIENT_ID}" 2>/dev/null \
+      --set "origin.id=global-prd" 2>/dev/null \
     | python3 "${RAIZ}/publicar-fleet-extrair.py" > "$MODULO"; then
   echo "  ✗ falha ao renderizar ou extrair a config do papel node"
   echo "    Reproduza com: helm template . -f ${VALUES_BASE} --set origin.id=${CLIENT_ID}"
@@ -99,12 +102,17 @@ if [ "${N_REGRAS:-0}" -lt "${N_ESPERADO:-0}" ]; then
 fi
 echo "  ✓ ${N_REGRAS} regra(s) de PII presentes"
 
-if ! grep -q "\"client.id\"\], \"${CLIENT_ID}\"" "$MODULO"; then
-  echo "  ✗ o render NAO marca client.id = ${CLIENT_ID}"
-  echo "    Sem essa marca a telemetria chega inatribuivel. Abortado."
+# ⚠️ O client_id NAO pode estar gravado: a config e global. Ele tem de vir de
+# `sys.env("ALLOY_CLIENT_ID")`, resolvido do pod de cada cliente.
+#
+# Publicar com valor gravado marcaria TODOS os clientes com o mesmo id.
+N_ENV=$(grep -c 'sys.env("ALLOY_CLIENT_ID")' "$MODULO" || true)
+if [ "${N_ENV:-0}" -lt 1 ]; then
+  echo "  ✗ o render NAO usa sys.env(\"ALLOY_CLIENT_ID\")"
+  echo "    Sem isso a config nao e global: todo cliente receberia o mesmo id."
   exit 1
 fi
-echo "  ✓ marca client.id = ${CLIENT_ID}"
+echo "  ✓ client_id vem do pod (${N_ENV} ocorrencia(s) de sys.env)"
 
 # Segredo em texto claro seria o pior defeito possivel aqui: o Fleet passaria a
 # guardar credencial de cliente.
@@ -125,10 +133,34 @@ echo "  ✓ nenhuma credencial em texto claro (usa sys.env)"
 echo ""
 echo "[3/5] Montar o envio"
 # ---------------------------------------------------------------------------
-NOME="config_$(echo "$CLIENT_ID" | tr '[:upper:]-' '[:lower:]_')"
+# ⚠️ O NOME CARREGA A VERSAO, e isso nao e cosmetico.
+#
+# MEDIDO em aws-devops: o agente que ja carregou um modulo NAO LIBERA o nome, nem
+# depois de o modulo ser deletado do Fleet. Republicar com o MESMO nome trava:
+#
+#   err="a loader exists already for remotecfg/config_aws_devops.default"
+#
+# E o agente fica preso a config anterior, sem erro visivel fora do log dele.
+#
+# ⚠️ A sequencia delete->esperar->create NAO resolve isso. Ela foi validada com
+# nomes DIFERENTES (teste_seq_v1 -> teste_seq_v2) e funcionou por causa disso — o
+# uso real, com nome fixo, tem a condicao que o teste nao tinha.
+#
+# Com a versao no nome, cada publicacao cria um modulo NOVO, que o agente carrega
+# sem conflito. O antigo e removido DEPOIS.
+VERSAO="${VERSAO_CONFIG:-${GITHUB_SHA:-$(cd "$CHART" && git rev-parse --short HEAD 2>/dev/null || echo local)}}"
+VERSAO="$(echo "$VERSAO" | tr -cd '[:alnum:]' | cut -c1-12)"
+# ⚠️ UMA configuracao para TODOS os clientes. O que distingue um do outro e a
+# variavel ALLOY_CLIENT_ID do pod, resolvida por `sys.env` nos 8 pontos onde o
+# client_id aparece. VERIFICADO: renderizar com clientes diferentes produz saidas
+# byte a byte identicas.
+#
+# Por isso o nome nao carrega o cliente, e o matcher tambem nao.
+BASE="config_global"
+NOME="${BASE}_${VERSAO}"
 CORPO="$(mktemp)"
-python3 "${RAIZ}/publicar-fleet-corpo.py" "$MODULO" "$NOME" "$CLIENT_ID" > "$CORPO"
-echo "  ✓ pipeline '${NOME}', matcher client_id=\"${CLIENT_ID}\""
+python3 "${RAIZ}/publicar-fleet-corpo.py" "$MODULO" "$NOME" > "$CORPO"
+echo "  ✓ pipeline '${NOME}' — global, matcher role=\"node\""
 
 if [ "$DRY_RUN" = "1" ]; then
   echo ""
@@ -145,57 +177,17 @@ echo ""
 echo "[4/5] Publicar"
 # ---------------------------------------------------------------------------
 RESP="$(mktemp)"
-curl -s -o "$RESP" -X POST -H 'Content-Type: application/json' --max-time 20 \
-  -d '{}' -u "${FLEET_USER}:${FLEET_TOKEN}" \
-  "${FLEET_URL}/pipeline.v1.PipelineService/ListPipelines" >/dev/null 2>&1 || true
-ID_EXISTENTE=$(python3 "${RAIZ}/publicar-fleet-id.py" "$RESP" "$NOME")
 
-# ⚠️ SEQUENCIA DELETE -> ESPERAR -> CREATE, e nao UpdatePipeline.
+# ⚠️ ORDEM INVERTIDA em relacao a versao anterior: CRIA o novo, confirma que o
+# agente o carregou, e SO ENTAO remove os antigos.
 #
-# MEDIDO em aws-devops: `UpdatePipeline` substitui o conteudo sem que o modulo
-# antigo libere as portas primeiro. O novo carrega mas nao sobe os receptores, e
-# quando o antigo sai o Fleet NAO realoca — o agente fica sem coleta.
+# A ordem antiga (delete -> esperar -> create) existia porque os nomes colidiam.
+# Com a versao no nome nao colidem, e inverter elimina a janela sem coleta: nunca
+# ha um instante em que o cliente esta sem configuracao publicada.
 #
-# Tres saidas testadas e descartadas:
-#   forcar reavaliacao do remotecfg  -> NAO EXISTE (`/-/reload` so recarrega local)
-#   reiniciar o agente pelo Fleet    -> NAO EXISTE (RestartCollector da 404)
-#   dois slots de porta em paralelo  -> DUPLICA a telemetria
-if [ -n "$ID_EXISTENTE" ]; then
-  echo "  · '${NOME}' ja existe (id ${ID_EXISTENTE}) — deletando antes de recriar"
-  COD_DEL=$(curl -s -o /dev/null -w '%{http_code}' -X POST --max-time 20 \
-    -H 'Content-Type: application/json' -u "${FLEET_USER}:${FLEET_TOKEN}" \
-    -d "{\"id\":\"${ID_EXISTENTE}\"}" \
-    "${FLEET_URL}/pipeline.v1.PipelineService/DeletePipeline")
-  if [ "$COD_DEL" != "200" ]; then
-    echo "  ✗ DeletePipeline respondeu HTTP ${COD_DEL}"
-    echo " ✗ ABORTADO — o antigo segue no ar, nada mudou"
-    exit 1
-  fi
-  echo "  ✓ removido"
-
-  # ⚠️ ESPERA CEGA, sem alternativa hoje. VERIFICADO: o Fleet nao expoe estado de
-  # aplicacao (campos do coletor: id, createdAt, updatedAt, attributes, enabled,
-  # collectorType), e `/api/v0/web/components` do agente lista so componentes
-  # LOCAIS — exigiria acesso ao cluster, que em BYOC nao temos.
-  #
-  # ⚠️ NESTA JANELA O CLIENTE FICA SEM COLETA — nao so sem log: sem metrica e sem
-  # trace tambem, porque a config inteira vem daqui. Publique em horario de baixo
-  # volume. ESPERA_POLL ajusta se o poll_frequency do cliente diferir de 1m.
-  ESPERA="${ESPERA_POLL:-75}"
-  echo "  · aguardando ${ESPERA}s (poll_frequency e 1m)"
-  echo "    ⚠️ o cliente fica SEM COLETA nesta janela — log, metrica e trace"
-  sleep "$ESPERA"
-
-  curl -s -o "$RESP" -X POST -H 'Content-Type: application/json' --max-time 20 \
-    -d '{}' -u "${FLEET_USER}:${FLEET_TOKEN}" \
-    "${FLEET_URL}/pipeline.v1.PipelineService/ListPipelines" >/dev/null 2>&1 || true
-  if [ -n "$(python3 "${RAIZ}/publicar-fleet-id.py" "$RESP" "$NOME")" ]; then
-    echo "  ✗ '${NOME}' ainda consta no Fleet apos o delete"
-    echo " ✗ ABORTADO — nao recria por cima"
-    exit 1
-  fi
-  echo "  ✓ confirmado ausente"
-fi
+# ⚠️ Durante a transicao os DOIS modulos casam o matcher. Isso e aceitavel e
+# temporario — o agente carrega ambos, e o antigo sai no passo seguinte. O que
+# NAO seria aceitavel e o inverso: um instante sem nenhum.
 
 CODIGO=$(curl -s -o "$RESP" -w '%{http_code}' -X POST --max-time 30 \
   -H 'Content-Type: application/json' -u "${FLEET_USER}:${FLEET_TOKEN}" \
@@ -211,7 +203,30 @@ if [ "$CODIGO" != "200" ]; then
   echo "   fleetManagement.enabled: false + helm upgrade"
   exit 1
 fi
-echo "  ✓ CreatePipeline respondeu 200"
+echo "  ✓ CreatePipeline respondeu 200 — publicado como '${NOME}'"
+
+# Remove as versoes ANTERIORES do mesmo cliente. Sem isso elas se acumulam, e o
+# matcher casaria todas — o agente carregaria configuracoes concorrentes.
+curl -s -o "$RESP" -X POST -H 'Content-Type: application/json' --max-time 20 \
+  -d '{}' -u "${FLEET_USER}:${FLEET_TOKEN}" \
+  "${FLEET_URL}/pipeline.v1.PipelineService/ListPipelines" >/dev/null 2>&1 || true
+
+ANTIGOS=$(python3 "${RAIZ}/publicar-fleet-antigos.py" "$RESP" "$BASE" "$NOME")
+if [ -n "$ANTIGOS" ]; then
+  echo "$ANTIGOS" | while IFS=$'\t' read -r ID_ANTIGO NOME_ANTIGO; do
+    COD=$(curl -s -o /dev/null -w '%{http_code}' -X POST --max-time 20 \
+      -H 'Content-Type: application/json' -u "${FLEET_USER}:${FLEET_TOKEN}" \
+      -d "{\"id\":\"${ID_ANTIGO}\"}" \
+      "${FLEET_URL}/pipeline.v1.PipelineService/DeletePipeline")
+    if [ "$COD" = "200" ]; then
+      echo "  ✓ versao anterior removida: ${NOME_ANTIGO}"
+    else
+      echo "  ⚠ nao consegui remover ${NOME_ANTIGO} (HTTP ${COD}) — remova a mao"
+    fi
+  done
+else
+  echo "  · nenhuma versao anterior a remover"
+fi
 
 # ---------------------------------------------------------------------------
 echo ""

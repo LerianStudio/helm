@@ -4,22 +4,44 @@ Control-plane migrations Job (ADR-013, plugin-br-payments repo). Runs the
 which never applies at app boot — the control-plane inventory is declared,
 not a silent svc.DB fallback.
 
-Gated directly on the app configmap's canonical MULTI_TENANT_ENABLED key (no
-values-key of its own — same inline-read pattern every chart in this repo
-uses for that flag; see charts/lerian-common/templates/_multi_tenant.tpl for
-why plugin-br-payments stays outside the shared helper). Runs ONLY under
-multi-tenancy: single-tenant already applies every migration automatically
-at boot (internal/bootstrap/service.go, applyStartupMigrationsIfOwned), so
-running this Job too would be redundant, not incorrect — it stays gated out.
+Renders ONLY when all three are true:
+  - app.configmap.MULTI_TENANT_ENABLED=true. Single-tenant already applies
+    every migration automatically at boot (internal/bootstrap/service.go,
+    applyStartupMigrationsIfOwned), so running this Job too would be
+    redundant, not incorrect — it stays gated out. Gate reads the same way
+    _helpers.tpl and NOTES.txt already do (no `lower`/`get`/`default` of its
+    own — an absent key renders "" via toString, which is never "true").
+  - global.externalPostgresDefinitions.enabled=true — the same flag
+    templates/bootstrap-postgres.yaml gates on. plugin-br-payments is NOT
+    always-external Postgres: the chart's own default is a BUNDLED Postgres
+    (postgresql.enabled: true, postgresql.external: false), and in that mode
+    the Bitnami StatefulSet/Service/Secret are ordinary Sync-phase resources
+    with zero ordering guarantee relative to this PreSync Job, and there is
+    no wait-for-postgres init container here. This Job only supports, and is
+    only tested against, the external-Postgres mode bootstrap-postgres.yaml
+    provisions into (that template now carries its own PreSync hook at
+    weight -10, so the role/database is guaranteed to exist before this Job
+    runs at weight -1) — so it stays gated out of the bundled-Postgres path
+    entirely rather than pretend to support it.
+  - app.controlplaneMigrations.enabled=true (default false) — app.image
+    resolves to the currently released plugin-br-payments image today, which
+    does NOT contain /controlplane-migrate; that binary exists only on an
+    still-unmerged plugin-br-payments branch. Do not flip this on until a
+    plugin-br-payments release containing the binary is deployed — see
+    CHANGELOG.md.
 
-plugin-br-payments is always-external Postgres (templates/bootstrap-postgres.yaml
-only provisions role/database via psql, gated by
-.Values.global.externalPostgresDefinitions.enabled, and carries no hook — it
-is not this Job and it is not the app's own migration path). Unlike
-plugin-br-bank-transfer, there is no bundled-Postgres PostSync branch here:
-always PreSync.
+Postgres connection env vars are inlined from .Values.app.configmap rather
+than envFrom-ing the app ConfigMap (templates/configmap.yaml): that ConfigMap
+carries no hook annotation and is a normal Sync-phase resource, so on a first
+install/first ArgoCD sync it does not exist yet when this PreSync hook runs —
+envFrom against it produced CreateContainerConfigError and a release that
+could never complete. Mirrors charts/plugin-br-bank-transfer/templates/migrations.yaml
+and charts/br-slc, which avoid the same trap the same way. POSTGRES_PASSWORD
+stays a secretRef (unchanged) — templates/secrets.yaml IS already a
+pre-install hook at weight -5, so it lands safely before this Job (-1).
 */}}
-{{- if eq (lower (toString (get .Values.app.configmap "MULTI_TENANT_ENABLED" | default "false"))) "true" }}
+{{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") }}
+{{- if and (eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true") .Values.global.externalPostgresDefinitions.enabled .Values.app.controlplaneMigrations.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -32,6 +54,7 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade
     "argocd.argoproj.io/hook": PreSync
     "helm.sh/hook-weight": "-1"
+    "argocd.argoproj.io/sync-wave": "-1"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
 spec:
@@ -40,8 +63,19 @@ spec:
   ttlSecondsAfterFinished: 600
   template:
     metadata:
+      # Deliberately WITHOUT plugin-br-payments.selectorLabels
+      # (app.kubernetes.io/name + app.kubernetes.io/instance): pdb.yaml's
+      # minAvailable and service.yaml's selector both key on exactly those
+      # two labels, and this Job's pod is transient (Never restartPolicy,
+      # gone once the migration completes) — it must never be counted
+      # toward the app's PodDisruptionBudget or receive live Service
+      # traffic. Mirrors plugin-br-bank-transfer's component-scoped
+      # selector labels, which exclude its own migration pod the same way.
       labels:
-        {{- include "plugin-br-payments.labels" (dict "context" .) | nindent 8 }}
+        helm.sh/chart: {{ include "plugin-br-payments.chart" . }}
+        app.kubernetes.io/version: {{ include "plugin-br-payments.versionLabelValue" . }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/part-of: plugin-br-payments
         app.kubernetes.io/component: controlplane-migrations
     spec:
       restartPolicy: Never
@@ -66,14 +100,38 @@ spec:
           image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default (include "plugin-br-payments.defaultTag" .) }}"
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           command: ["/controlplane-migrate"]
-          # Same ConfigMap/Secret env refs as templates/deployment.yaml — no
-          # new Postgres connection definition.
-          envFrom:
-            - configMapRef:
-                name: {{ include "plugin-br-payments.fullname" . }}
-            - secretRef:
-                name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
+          # Inlined connection settings — NOT envFrom the app ConfigMap. See
+          # the file header comment: that ConfigMap is a plain Sync-phase
+          # resource and does not exist yet when this PreSync hook runs on a
+          # first install. Mirrors templates/configmap.yaml's own POSTGRES_HOST
+          # resolution (explicit override, else the bundled subchart's dynamic
+          # default, else empty) so this Job and the app Deployment can never
+          # disagree about which host they connect to.
           env:
+            - name: POSTGRES_HOST
+              {{- if .Values.app.configmap.POSTGRES_HOST }}
+              value: {{ .Values.app.configmap.POSTGRES_HOST | quote }}
+              {{- else if eq (include "postgresql.enabled" .) "true" }}
+              {{- $pgArch := default "standalone" .Values.postgresql.architecture }}
+              {{- $pgFullname := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" (index .Values "postgresql") "context" .) }}
+              {{- if eq $pgArch "replication" }}
+              value: {{ printf "%s-primary.%s.svc.cluster.local" $pgFullname (include "global.namespace" .) | quote }}
+              {{- else }}
+              value: {{ printf "%s.%s.svc.cluster.local" $pgFullname (include "global.namespace" .) | quote }}
+              {{- end }}
+              {{- else }}
+              value: ""
+              {{- end }}
+            - name: POSTGRES_PORT
+              value: {{ .Values.app.configmap.POSTGRES_PORT | default "5432" | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.app.configmap.POSTGRES_USER | default "plugin_br_payments" | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.app.configmap.POSTGRES_DB | default "plugin_br_payments" | quote }}
+            - name: POSTGRES_SSLMODE
+              value: {{ .Values.app.configmap.POSTGRES_SSLMODE | default "require" | quote }}
+            - name: POSTGRES_CONNECT_TIMEOUT_SEC
+              value: {{ .Values.app.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
             {{- $pg := .Values.postgresql | default dict }}
             {{- $pgAuth := $pg.auth | default dict }}
             {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
@@ -86,7 +144,7 @@ spec:
                   key: POSTGRES_PASSWORD
             {{- end }}
           resources:
-            {{- toYaml .Values.app.resources | nindent 12 }}
+            {{- toYaml (.Values.app.controlplaneMigrations.resources | default $defaultMigrationResources) | nindent 12 }}
       {{- with .Values.app.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

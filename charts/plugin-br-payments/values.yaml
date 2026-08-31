@@ -328,6 +328,28 @@ app:
     create: true
     annotations: {}
     name: ""
+  # -- Control-plane migrations PreSync Job (ADR-013, plugin-br-payments repo).
+  # See templates/controlplane-migrations.yaml for the full render gate.
+  # @default -- templates/controlplane-migrations.yaml
+  controlplaneMigrations:
+    # -- Enable the Job. Default OFF: app.image resolves to the currently
+    # released plugin-br-payments image, which does NOT yet contain the
+    # /controlplane-migrate binary (still on an unmerged branch). Do not set
+    # true until a plugin-br-payments release containing the binary is
+    # deployed — see CHANGELOG.md. Also requires
+    # app.configmap.MULTI_TENANT_ENABLED=true and
+    # global.externalPostgresDefinitions.enabled=true to actually render.
+    enabled: false
+    # -- Resource requests and limits for the migrations Job. Deliberately
+    # smaller than app.resources: this runs once, briefly, not steady-state
+    # API/worker traffic.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
 
 # ==============================================================================
 # POSTGRESQL SUB-CHART (Bitnami)

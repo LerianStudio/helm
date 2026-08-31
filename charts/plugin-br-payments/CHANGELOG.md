@@ -7,106 +7,158 @@ and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [1.2.0-beta.5] - 2026-08-31
 
-### Fixed
-
-- **CRITICAL:** The `1.2.0-beta.3` rename shipped the 5 renamed configmap keys
-  (`MULTI_TENANT_ENABLED`, `MULTI_TENANT_URL`, `MULTI_TENANT_TIMEOUT`,
-  `MULTI_TENANT_CACHE_TTL_SEC`, `MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD`,
-  `MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC`) as explicit literal defaults in
-  `values.yaml` (e.g. `MULTI_TENANT_ENABLED: "false"`). Because
-  `templates/configmap.yaml` `range`s generically over the merged
-  `app.configmap` map, those literals rendered into every ConfigMap — including
-  one built from an overlay that still sets only the *old*, pre-rename key
-  names (exactly `stg-mt`'s situation, pending Task 2.2.2). The app's
-  `reconcileDeprecatedMultiTenantEnv` only falls back to a deprecated key when
-  the canonical one is unset/blank, so the chart's own non-blank
-  `MULTI_TENANT_ENABLED: "false"` default outranked the overlay's
-  `MULTI_TENANCY_ENABLED: "true"` and silently turned multi-tenancy **off** —
-  a functional regression, not just the validation blind spot the
-  `1.2.0-beta.3` entry below described.
-
-  Fixed by removing the 6 literals from `values.yaml`'s defaults so the keys
-  are simply **absent** when not overridden by an overlay. This does not
-  change chart-only-install behavior: `_helpers.tpl` and
-  `templates/controlplane-migrations.yaml`'s gates already default an absent
-  `MULTI_TENANT_ENABLED` to `"false"`. It does mean an overlay using only the
-  deprecated key names is no longer overridden back to disabled/chart
-  defaults.
-
-## [1.2.0-beta.4] - 2026-08-31
+Consolidated entry for the whole MT-01 phase-2 control-plane branch's helm
+changes (rename + PreSync migrations Job + hardening), replacing what had
+been three separate hand-picked prerelease bumps (`1.2.0-beta.3`,
+`.4`, `.5`) on this branch. This chart's actual published version is
+assigned by `semantic-release` at merge time
+(`.github/workflows/release.yml`); the header above is a development-time
+placeholder, not the eventual release tag.
 
 ### Added
 
-- `templates/controlplane-migrations.yaml`: a `PreSync` Helm hook Job
-  (`helm.sh/hook: pre-install,pre-upgrade` + `argocd.argoproj.io/hook: PreSync`,
-  `helm.sh/hook-weight: "-1"`) that applies the app's control-plane migrations
-  (ADR-013, `plugin-br-payments` repo) via the `/controlplane-migrate` binary
-  before the app rolls out. `plugin-br-payments` is always-external Postgres
-  (`templates/bootstrap-postgres.yaml`), so — unlike
-  `plugin-br-bank-transfer` — there is no bundled-Postgres `PostSync` branch:
-  always `PreSync`.
+- `templates/controlplane-migrations.yaml`: a `PreSync` Helm hook Job that
+  applies the app's control-plane migrations (ADR-013, `plugin-br-payments`
+  repo) via the `/controlplane-migrate` binary before the app rolls out.
 
-  Gated directly on `app.configmap.MULTI_TENANT_ENABLED` (the canonical key
-  from the `1.2.0-beta.3` rename above) — no new values-key of its own, same
-  inline-configmap-read pattern every chart in this repo already uses for
-  that flag. The Job renders only when multi-tenancy is on: single-tenant
-  already applies every migration automatically at boot, so running this Job
-  too would be redundant, not incorrect, and stays gated out.
+  Renders only when **all three** are true:
+  - `app.configmap.MULTI_TENANT_ENABLED=true` — single-tenant already applies
+    every migration automatically at boot, so running this Job too would be
+    redundant, not incorrect.
+  - `global.externalPostgresDefinitions.enabled=true` — the same flag
+    `templates/bootstrap-postgres.yaml` gates on. This Job assumes an
+    external Postgres host with no in-cluster ordering guarantee relative to
+    a bundled `postgresql` subchart's Sync-phase StatefulSet, so it is gated
+    to the external-Postgres mode it is actually designed and tested for; it
+    never renders against the chart's default bundled Postgres.
+  - `app.controlplaneMigrations.enabled=true` — **new values key, default
+    `false`.** `app.image` resolves to the currently released
+    `plugin-br-payments` image today, which does not yet contain the
+    `/controlplane-migrate` binary (only an unmerged branch has it). **Do
+    not** flip this on until a `plugin-br-payments` release containing the
+    binary is deployed.
 
-  Reuses `.Values.app.image` (same image as `templates/deployment.yaml`,
-  entrypoint overridden to `/controlplane-migrate`) and the exact same
-  ConfigMap/Secret Postgres connection references as the Deployment — no new
-  connection definition.
+  Postgres connection env vars are inlined from `.Values.app.configmap`
+  (`POSTGRES_HOST`/`PORT`/`USER`/`DB`/`SSLMODE`/`CONNECT_TIMEOUT_SEC`),
+  mirroring `templates/configmap.yaml`'s own `POSTGRES_HOST` resolution, plus
+  the existing `POSTGRES_PASSWORD` secretRef — **not** `envFrom` the app
+  ConfigMap, which is a plain Sync-phase resource that does not exist yet
+  when this `PreSync` hook runs on a first install. Mirrors
+  `plugin-br-bank-transfer/templates/migrations.yaml`'s and `charts/br-slc`'s
+  inline-env pattern for the same reason.
 
-## [1.2.0-beta.3] - 2026-08-31
+  `templates/bootstrap-postgres.yaml` now carries its own `PreSync` hook at
+  weight `-10` (mirroring `charts/streaming-hub`'s own bootstrap Job), so it
+  is guaranteed to provision the role/database before this Job (`-1`) runs.
+
+  The Job's pod template omits the `app.kubernetes.io/name`/`instance`
+  labels that `pdb.yaml`'s `minAvailable: 1` and `service.yaml`'s selector
+  match on, so the app's `PodDisruptionBudget` and `Service` cannot select
+  this transient pod — mirroring `plugin-br-bank-transfer`'s
+  component-scoped selector labels. It gets its own smaller resource
+  defaults (`app.controlplaneMigrations.resources`, ~50m/64Mi requests,
+  250m/256Mi limits) instead of reusing `app.resources`, and an
+  `argocd.argoproj.io/sync-wave` annotation matching its hook weight.
 
 ### Changed
 
-- Renamed the 6 deprecated multi-tenant configmap/secret keys to the canonical
-  names the app itself accepts (`internal/bootstrap/config_multitenant.go`):
+- Renamed the 6 deprecated multi-tenant configmap/secret keys to the
+  canonical names the app itself accepts
+  (`internal/bootstrap/config_multitenant.go`):
   - `app.configmap.MULTI_TENANCY_ENABLED` → `app.configmap.MULTI_TENANT_ENABLED`
   - `app.configmap.MULTI_TENANT_MANAGER_URL` → `app.configmap.MULTI_TENANT_URL`
   - `app.configmap.MULTI_TENANT_CLIENT_TIMEOUT_SEC` → `app.configmap.MULTI_TENANT_TIMEOUT`
   - `app.configmap.MULTI_TENANT_CACHE_TTL_MINUTES` → `app.configmap.MULTI_TENANT_CACHE_TTL_SEC`
-    (**unit conversion**, not just a rename: the default changes from `"60"` minutes
-    to `"3600"` seconds)
+    (**unit conversion**, not just a rename: the default changes from `"60"`
+    minutes to `"3600"` seconds)
   - `app.configmap.MULTI_TENANT_CB_THRESHOLD` → `app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD`
   - `app.configmap.MULTI_TENANT_CB_TIMEOUT_SEC` → `app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC`
 
-  Updated `values.yaml`, `values-template.yaml`, the required-value validation
-  (`_helpers.tpl`), `NOTES.txt`, and `README.md`. `MULTI_TENANT_SERVICE_NAME`,
-  `MULTI_TENANT_POSTGRES_MODULE`, `MULTI_TENANT_ALLOW_INSECURE_HTTP`,
-  `MULTI_TENANT_MAX_TENANT_POOLS`, and `MULTI_TENANT_SERVICE_API_KEY` were
-  already canonical and are untouched.
+  Updated `values.yaml`, `values-template.yaml`, the required-value
+  validation (`_helpers.tpl`), `NOTES.txt`, and `README.md`.
+  `MULTI_TENANT_SERVICE_NAME`, `MULTI_TENANT_POSTGRES_MODULE`,
+  `MULTI_TENANT_ALLOW_INSECURE_HTTP`, `MULTI_TENANT_MAX_TENANT_POOLS`, and
+  `MULTI_TENANT_SERVICE_API_KEY` were already canonical and are untouched.
+
+- `templates/controlplane-migrations.yaml`'s `MULTI_TENANT_ENABLED` gate now
+  reads `.Values.app.configmap.MULTI_TENANT_ENABLED | toString`, matching
+  `_helpers.tpl` and `NOTES.txt`'s existing form, instead of its own one-off
+  `lower (toString (get ... | default "false"))`.
+
+### Fixed
+
+- **CRITICAL:** removed the 6 renamed keys' explicit literal defaults (e.g.
+  `MULTI_TENANT_ENABLED: "false"`) from `values.yaml`. Because
+  `templates/configmap.yaml` `range`s generically over the merged
+  `app.configmap` map, those literals rendered into every ConfigMap —
+  including one built from an overlay that still sets only the *old*,
+  pre-rename key names (exactly `stg-mt`'s situation, pending Task 2.2.2 in
+  the `plugin-br-payments` repo). The app's
+  `reconcileDeprecatedMultiTenantEnv` only falls back to a deprecated key
+  when the canonical one is unset/blank, so the chart's own non-blank
+  `MULTI_TENANT_ENABLED: "false"` default outranked the overlay's deprecated
+  `MULTI_TENANCY_ENABLED: "true"` and silently turned multi-tenancy **off**.
+  The keys are now simply **absent** when not overridden by an overlay;
+  `_helpers.tpl` and `templates/controlplane-migrations.yaml`'s gates
+  already default an absent `MULTI_TENANT_ENABLED` to `"false"`, so
+  chart-only-install behavior is unchanged.
+
+- **HIGH — first-install ordering:** `templates/controlplane-migrations.yaml`
+  referenced the app ConfigMap via `envFrom.configMapRef`, but that
+  ConfigMap carries no hook annotation and is a normal Sync-phase resource.
+  A `PreSync` hook runs before any Sync resource exists, so on a first
+  install the ConfigMap did not exist yet and the Job failed with
+  `CreateContainerConfigError`, forever, blocking the release. Fixed by
+  inlining the needed `POSTGRES_*` values instead (see Added, above).
+
+- **HIGH — false "always-external Postgres" premise:** the Job's header
+  comment claimed `plugin-br-payments` is always-external Postgres, but the
+  chart's own default (`postgresql.enabled: true`, `postgresql.external:
+  false`) bundles Postgres via the Bitnami subchart, whose StatefulSet is an
+  ordinary Sync-phase resource with no ordering guarantee relative to a
+  `PreSync` Job and no wait-for-Postgres init container. Fixed by gating the
+  Job on `global.externalPostgresDefinitions.enabled` in addition to
+  `MULTI_TENANT_ENABLED`, and giving `templates/bootstrap-postgres.yaml` its
+  own `PreSync` hook at weight `-10` so it always runs first in that mode.
+
+- **HIGH — image without the binary:** the Job pinned `.Values.app.image`,
+  which resolves to the currently released app image
+  (`appVersion 1.0.0-beta.9`) — that image does not contain
+  `/controlplane-migrate`; the binary exists only on an unmerged
+  `plugin-br-payments` branch. Shipping this chart as-is would crash the Job
+  with `no such file or directory` the moment `MULTI_TENANT_ENABLED` and
+  `externalPostgresDefinitions.enabled` were both true. Fixed with a new,
+  default-`false` `app.controlplaneMigrations.enabled` flag gating the whole
+  Job; **do not** flip it on until a `plugin-br-payments` release containing
+  the binary exists.
+
+- Low-severity cleanup in the same file: the `MULTI_TENANT_ENABLED` gate's
+  case-handling now matches `_helpers.tpl`/`NOTES.txt` (see Changed, above);
+  added `argocd.argoproj.io/sync-wave: "-1"` matching the hook weight
+  (mirroring `charts/streaming-hub`); the Job now has its own smaller
+  resource defaults instead of reusing `app.resources`; the Job's pod
+  template no longer carries the `app.kubernetes.io/name`/`instance` labels
+  that `pdb.yaml` and `service.yaml` select on, so a transient migration pod
+  can no longer be double-counted against the PodDisruptionBudget or receive
+  live Service traffic.
 
 ### Deprecated
 
-- The 6 old key names above are deprecated. Unlike the `MIDAZ_LEDGER_URL` rename,
-  the chart does **not** carry a fallback for them: `_helpers.tpl`'s
-  "required when enabled" gate now reads only the canonical
-  `MULTI_TENANT_ENABLED`/`MULTI_TENANT_URL`/`MULTI_TENANT_SERVICE_API_KEY`.
-  A values overlay that still sets the old names (e.g. `stg-mt` today) renders
-  fine and the app itself still accepts the old names with a startup `WARN`
-  fallback — but the chart's own required-value gate becomes a **blind spot**
-  for that overlay: since it never sets the canonical `MULTI_TENANT_ENABLED`,
-  the gate's `if` never fires and a missing `MULTI_TENANT_URL`/
-  `MULTI_TENANT_SERVICE_API_KEY` under the old names goes unvalidated by the
-  chart. This is an accepted, documented consequence, not a bug — closing it
-  is tracked as the follow-up rename of the `stg-mt` gitops values themselves
-  (Task 2.2.2 of the MT-01 control-plane plan, `plugin-br-payments` repo),
-  currently `Blocked` pending a release/rc that includes MT-01.
-
-  **Correction (`1.2.0-beta.5`):** the paragraph above originally described
-  the consequence as a validation blind spot only. It understated it: at the
-  time this entry was written, `values.yaml` also shipped the 6 canonical keys
-  as explicit non-blank literal defaults (`MULTI_TENANT_ENABLED: "false"` etc),
-  and since `templates/configmap.yaml` renders `app.configmap` generically via
-  `range`, those literals rendered into a `stg-mt`-shaped overlay's ConfigMap
-  too and outranked the overlay's deprecated-key values (the app only falls
-  back to a deprecated key when the canonical one is unset/blank) — turning
-  multi-tenancy off, not just leaving it unvalidated. `1.2.0-beta.5` removes
-  those literal defaults so the canonical keys are absent, not `"false"`,
-  until Task 2.2.2 migrates the overlay to the canonical names.
+- The 6 old multi-tenant key names above are deprecated. Unlike the
+  `MIDAZ_LEDGER_URL` rename, the chart does **not** carry a fallback for
+  them: `_helpers.tpl`'s "required when enabled" gate now reads only the
+  canonical `MULTI_TENANT_ENABLED`/`MULTI_TENANT_URL`/
+  `MULTI_TENANT_SERVICE_API_KEY`. A values overlay that still sets the old
+  names (e.g. `stg-mt` today) renders fine and the app itself still accepts
+  the old names with a startup `WARN` fallback — but the chart's own
+  required-value gate becomes a **blind spot** for that overlay: since it
+  never sets the canonical `MULTI_TENANT_ENABLED`, the gate's `if` never
+  fires and a missing `MULTI_TENANT_URL`/`MULTI_TENANT_SERVICE_API_KEY`
+  under the old names goes unvalidated by the chart. This is an accepted,
+  documented consequence, not a bug — closing it is tracked as the
+  follow-up rename of the `stg-mt` gitops values themselves (Task 2.2.2 of
+  the MT-01 control-plane plan, `plugin-br-payments` repo), currently
+  `Blocked` pending a release/rc that includes MT-01.
 
 ## [1.2.0-beta.1] - 2026-08-15
 

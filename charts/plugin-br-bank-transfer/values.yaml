@@ -182,7 +182,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.0.0"
+    tag: "2.1.0"
   # -- PostgreSQL migrations job (Helm hook pre-install,pre-upgrade; ArgoCD PreSync).
   # The chart-managed Secret is rendered as an earlier hook (weight -5 / sync-wave -5),
   # so it exists before this migration hook (weight -1) — migrations run against the
@@ -351,7 +351,6 @@ bankTransfer:
     CORS_ALLOWED_ORIGINS: ""
     CORS_ALLOWED_METHODS: ""
     CORS_ALLOWED_HEADERS: ""
-
     # =================================================================
     # Multi-tenancy
     # Only the toggle and the infrastructure endpoints live in the chart.
@@ -486,7 +485,6 @@ bankTransfer:
     # =================================================================
     ORGANIZATION_ID: ""
     ORGANIZATION_IDS: ""
-
     # =================================================================
     # Feature flags
     # WEBHOOK_ENABLED/BTF_FEE_ENABLED/RATE_LIMIT_ENABLED/ALLOW_INSECURE_TLS/
@@ -514,7 +512,6 @@ bankTransfer:
     # STREAMING_CB_MIN_REQUESTS: ""
     # STREAMING_CB_TIMEOUT_S: ""
     # STREAMING_CLOSE_TIMEOUT_S: ""
-
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:
@@ -559,15 +556,15 @@ bankTransfer:
     # Midaz M2M Credentials (optional)
     # MIDAZ_CLIENT_ID: ""
     # MIDAZ_CLIENT_SECRET: ""
+  # Streaming credentials (optional — only required when a SASL mechanism
+  # is configured via global.streaming.saslMechanism)
+  # STREAMING_SASL_PASSWORD: ""
+  # STREAMING_TLS_CA_CERT: ""
 
-    # Streaming credentials (optional — only required when a SASL mechanism
-    # is configured via global.streaming.saslMechanism)
-    # STREAMING_SASL_PASSWORD: ""
-    # STREAMING_TLS_CA_CERT: ""
+  # Multi-tenant Redis CA (optional — only when MULTI_TENANT_REDIS_TLS=true
+  # and the cluster's CA isn't in the system trust pool)
+  # MULTI_TENANT_REDIS_CA_CERT: ""
 
-    # Multi-tenant Redis CA (optional — only when MULTI_TENANT_REDIS_TLS=true
-    # and the cluster's CA isn't in the system trust pool)
-    # MULTI_TENANT_REDIS_CA_CERT: ""
   # RabbitMQ credentials (when RABBITMQ_ENABLED=true)
   # RABBITMQ_PASSWORD: ""
   # RABBITMQ_EVENT_SIGNING_SECRET: ""
@@ -749,4 +746,3 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
-  

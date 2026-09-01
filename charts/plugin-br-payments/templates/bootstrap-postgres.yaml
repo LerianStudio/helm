@@ -1,4 +1,59 @@
-{{- if .Values.global.externalPostgresDefinitions.enabled }}
+{{- /*
+Renders only when Postgres is genuinely external:
+global.externalPostgresDefinitions.enabled=true AND the chart's own
+"postgresql.enabled" helper (_helpers.tpl) resolves to "false".
+externalPostgresDefinitions.enabled alone is not a reliable stand-in for
+"external Postgres" — it is independent of postgresql.enabled/
+postgresql.external, and the chart's own default is a BUNDLED Postgres
+(postgresql.enabled: true, postgresql.external: false). Gating on
+externalPostgresDefinitions.enabled alone let a caller leave
+postgresql.enabled at its default true while also setting
+externalPostgresDefinitions.enabled true, in which case this Job's psql
+CREATE ROLE/CREATE DATABASE ran against a host that has nothing to do with
+the bundled subchart's own Service — and raced the bundled StatefulSet
+(an ordinary Sync-phase resource) with zero ordering guarantee against this
+PreSync hook. The extra "postgresql.enabled" != "true" check (same helper
+templates/configmap.yaml, templates/deployment.yaml, and
+templates/controlplane-migrations.yaml already use to tell bundled from
+external) closes that gap.
+
+That helper-based check is still not sufficient on its own: it is an OR of
+postgresql.enabled/postgresql.external, but Chart.yaml's dependency condition
+(`condition: postgresql.enabled`) reads only the literal postgresql.enabled,
+so postgresql.external=true with postgresql.enabled left at its default true
+still renders the bundled subchart even though the helper above would call
+that combination "external". plugin-br-payments.validatePostgresExclusivity
+(_helpers.tpl) fails the whole render on that literal combination — checking
+BOTH postgresql.external and global.externalPostgresDefinitions.enabled —
+independently of this render gate, so this Job never races the bundled
+StatefulSet no matter which of the two flags an operator sets.
+
+DB_HOST/DB_PORT are read from app.configmap.POSTGRES_HOST/POSTGRES_PORT — the
+SAME source templates/controlplane-migrations.yaml and templates/deployment.yaml
+(via templates/configmap.yaml's envFrom) already use — NOT from
+global.externalPostgresDefinitions.connection.host/.port. Those two Jobs used
+to read from different sources: this one from connection.host/.port (whose
+non-empty chart defaults name the BUNDLED subchart's own Service), the
+migrations Job from app.configmap.POSTGRES_HOST/POSTGRES_PORT. Nothing forced
+the two to agree, and the README's own "Production layout" instructions only
+asked operators to keep them in sync by hand — if they diverged, this Job
+provisioned the role/database on one server while the app and the migrations
+Job connected to another, so the install/upgrade failed (or worse, silently
+succeeded against the wrong host). Reading app.configmap.POSTGRES_HOST/
+POSTGRES_PORT here instead removes the two-source class of bug entirely
+rather than just detecting it: there is exactly one place that says which
+Postgres this release talks to. Admin credentials (DB_USER_ADMIN/
+DB_ADMIN_PASSWORD/DB_PASSWORD_PLUGIN_BR_PAYMENTS below) stay sourced from
+global.externalPostgresDefinitions.postgresAdminLogin/.paymentsCredentials —
+those are a genuinely separate concern (this Job provisions BEFORE the app's
+own role/database exist, so it legitimately needs elevated credentials the
+app itself never holds); only the connection endpoint is unified.
+global.externalPostgresDefinitions.connection.host/.port remain in values.yaml
+for backward compatibility but are no longer read by any template — see
+values.yaml's comment on that field.
+*/}}
+{{- include "plugin-br-payments.validatePostgresExclusivity" . }}
+{{- if and .Values.global.externalPostgresDefinitions.enabled (ne (include "postgresql.enabled" .) "true") }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -7,6 +62,18 @@ metadata:
   labels:
     {{- include "plugin-br-payments.labels" (dict "context" .) | nindent 4 }}
     app.kubernetes.io/component: bootstrap-postgres
+  annotations:
+    # PreSync hook at the FRONT of the chain (weight -10 / sync-wave -10):
+    # creates the role+database BEFORE templates/controlplane-migrations.yaml
+    # (-1) can run against them, and before the app rolls out. Idempotent —
+    # only creates the role/db when absent — so re-running on every sync is
+    # safe. Mirrors charts/streaming-hub's own bootstrap-postgres Job.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-10"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1
@@ -20,9 +87,9 @@ spec:
           image: busybox:1.37
           env:
             - name: DB_HOST
-              value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+              value: {{ .Values.app.configmap.POSTGRES_HOST | quote }}
             - name: DB_PORT
-              value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+              value: {{ .Values.app.configmap.POSTGRES_PORT | quote }}
           command:
             - /bin/sh
             - -c
@@ -45,9 +112,9 @@ spec:
           image: postgres:17
           env:
             - name: DB_HOST
-              value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+              value: {{ .Values.app.configmap.POSTGRES_HOST | quote }}
             - name: DB_PORT
-              value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+              value: {{ .Values.app.configmap.POSTGRES_PORT | quote }}
             - name: DB_USER_ADMIN
               {{- if .Values.global.externalPostgresDefinitions.postgresAdminLogin.useExistingSecret.name }}
               valueFrom:

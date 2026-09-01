@@ -41,9 +41,15 @@ app:
     # Auth
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: ""
-    # Multi-tenancy (set to "true" to enable)
-    MULTI_TENANCY_ENABLED: "false"
-    # MULTI_TENANT_MANAGER_URL: ""
+    # Multi-tenancy (set to "true" to enable). Left commented out rather than
+    # an explicit "false" literal: this overlay is merged over values.yaml's
+    # app.configmap, and an explicit literal here — even "false" — wins over
+    # a caller overlay that sets only the deprecated MULTI_TENANCY_ENABLED
+    # key name (the app's reconcileDeprecatedMultiTenantEnv only falls back
+    # to the deprecated key when the canonical one is unset/blank). See
+    # values.yaml's own MULTI_TENANT_ENABLED comment for the full rationale.
+    # MULTI_TENANT_ENABLED: "false"
+    # MULTI_TENANT_URL: ""
     # OpenTelemetry (use otel-collector-lerian.enabled below for host injection)
     ENABLE_TELEMETRY: "true"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
@@ -63,7 +69,7 @@ app:
     # License (REQUIRED in production)
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
-    # Multi-tenancy (REQUIRED when MULTI_TENANCY_ENABLED=true)
+    # Multi-tenancy (REQUIRED when MULTI_TENANT_ENABLED=true)
     # MULTI_TENANT_SERVICE_API_KEY: ""
   autoscaling:
     enabled: true
@@ -74,13 +80,19 @@ app:
 postgresql:
   enabled: false
 
-# When using a fresh external Postgres, optionally run the bootstrap Job once:
+# When using a fresh external Postgres, optionally run the bootstrap Job.
+# It connects to the same app.configmap.POSTGRES_HOST/POSTGRES_PORT set above —
+# only the admin credentials it needs to create the role and database go here.
+# The Job is a pre-install AND pre-upgrade hook: while this flag stays true it
+# runs on every install and every upgrade, not just once. It checks for the
+# role/database first and skips creating them if already present (the GRANT
+# statements re-run unconditionally either way, which is harmless), so
+# leaving it on is safe — just an extra admin-credentialed round trip on
+# every upgrade. Set it back to false once provisioning is done if you'd
+# rather avoid that.
 # global:
 #   externalPostgresDefinitions:
 #     enabled: true
-#     connection:
-#       host: my-rds.example.com
-#       port: "5432"
 #     postgresAdminLogin:
 #       username: postgres
 #       password: <admin password>

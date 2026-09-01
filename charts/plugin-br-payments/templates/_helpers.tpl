@@ -135,12 +135,61 @@ DEPENDENCY ENABLED HELPER
 ================================================================================
 */}}
 
+{{- /*
+"true" only when the bundled postgresql subchart is actually in play:
+postgresql.enabled is not explicitly "false" AND postgresql.external is not
+set. NOT `and (default true .Values.postgresql.enabled) ...` — Sprig's
+`default` substitutes its fallback for ANY "empty" input, and a Go bool
+`false` IS the zero value for its type, so `default true false` evaluates
+to `true`. That silently discarded an explicit postgresql.enabled=false
+override and made this helper report "bundled" even when a caller asked for
+external Postgres, which is exactly the exclusivity this helper exists to
+police (see templates/controlplane-migrations.yaml and
+templates/bootstrap-postgres.yaml, which gate on this helper resolving to
+"false" before ever running against a genuinely external Postgres).
+*/}}
 {{- define "postgresql.enabled" -}}
-{{- if and (default true .Values.postgresql.enabled) (not .Values.postgresql.external) -}}
+{{- if and (ne (.Values.postgresql.enabled | toString) "false") (not .Values.postgresql.external) -}}
 true
 {{- else -}}
 false
 {{- end -}}
+{{- end -}}
+
+{{- /*
+Exclusivity guard between the bundled postgresql subchart and
+global.externalPostgresDefinitions/postgresql.external, kept SEPARATE from
+the "postgresql.enabled" helper above on purpose: that helper is an OR of two
+flags (postgresql.enabled / postgresql.external) meant to answer "which host
+does this release talk to", but Chart.yaml's dependency condition
+(`condition: postgresql.enabled`) only ever reads the literal
+.Values.postgresql.enabled — it has no idea postgresql.external exists. So an
+operator who sets postgresql.external=true while leaving postgresql.enabled
+at its default true gets a "postgresql.enabled" helper that answers "false"
+(external) while Helm's own dependency condition still resolves true and
+renders the bundled StatefulSet/Service/Secret anyway. A gate built on the
+helper (templates/controlplane-migrations.yaml, templates/bootstrap-postgres.yaml)
+would then wrongly believe it is safe to also render against
+global.externalPostgresDefinitions.connection.host, producing the exact
+double-render/race this chart's exclusivity gates exist to prevent — with
+zero warning.
+
+This check is keyed on the SAME literal .Values.postgresql.enabled Chart.yaml
+itself uses, not the helper, and it fails closed on EITHER of the two ways an
+operator can signal "external": postgresql.external=true (README's documented
+path — postgresql.enabled left at its default true, only .external flipped)
+OR global.externalPostgresDefinitions.enabled=true. An earlier version of this
+guard checked only the externalPostgresDefinitions.enabled arm and let
+postgresql.enabled=true + postgresql.external=true through silently — the
+exact contradictory combination this guard exists to catch, since Chart.yaml
+would still render the bundled StatefulSet under it. Only actually turning off
+the literal postgresql.enabled (or turning off both external signals) avoids
+this fail().
+*/}}
+{{- define "plugin-br-payments.validatePostgresExclusivity" -}}
+{{- if and .Values.postgresql.enabled (or .Values.postgresql.external .Values.global.externalPostgresDefinitions.enabled) }}
+{{- fail "\n\nERROR: postgresql.enabled cannot be true at the same time as postgresql.external\n   or global.externalPostgresDefinitions.enabled.\n   Chart.yaml's postgresql dependency is gated on the literal postgresql.enabled\n   value alone (condition: postgresql.enabled), so leaving it at its default\n   true still renders the bundled PostgreSQL subchart even when\n   postgresql.external and/or global.externalPostgresDefinitions.enabled is\n   also set to true. Set postgresql.enabled: false to use an external Postgres\n   (postgresql.external / global.externalPostgresDefinitions), or leave both\n   postgresql.external and global.externalPostgresDefinitions.enabled false to\n   use the bundled one.\n" }}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -201,12 +250,12 @@ plugin-br-payments README.
      operator supplies postgresql.auth.existingSecret or app.secrets.POSTGRES_PASSWORD. */}}
 
 {{/* Multi-tenant required fields when enabled */}}
-{{- if eq (.Values.app.configmap.MULTI_TENANCY_ENABLED | toString) "true" }}
-{{- if not .Values.app.configmap.MULTI_TENANT_MANAGER_URL }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_MANAGER_URL is REQUIRED when MULTI_TENANCY_ENABLED=true.\n" }}
+{{- if eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true" }}
+{{- if not .Values.app.configmap.MULTI_TENANT_URL }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
-{{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANCY_ENABLED=true.\n" }}
+{{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- end }}
 

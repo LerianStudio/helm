@@ -63,11 +63,11 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
 | `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker. Generate with `openssl rand -base64 32`. |
 
-When `app.configmap.MULTI_TENANCY_ENABLED=true`, the following are additionally required:
+When `app.configmap.MULTI_TENANT_ENABLED=true`, the following are additionally required:
 
 | Field | Description |
 |-------|-------------|
-| `app.configmap.MULTI_TENANT_MANAGER_URL` | Tenant Manager service URL. |
+| `app.configmap.MULTI_TENANT_URL` | Tenant Manager service URL. |
 | `app.secrets.MULTI_TENANT_SERVICE_API_KEY` | Tenant Manager service API key. |
 
 > **Database password:** with the bundled PostgreSQL subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` — leave `app.secrets.POSTGRES_PASSWORD` empty. Only set it for an external Postgres that has no `postgresql.auth.existingSecret`.
@@ -78,7 +78,7 @@ When `app.configmap.MULTI_TENANCY_ENABLED=true`, the following are additionally 
 |-------|------|-------|
 | Liveness | `/health` | Lightweight startup self-probe. Returns 200 once startup completes. |
 | Readiness | `/readyz` | Deep per-dependency checks (Postgres, Provider, Midaz, Tenant Manager). Returns 503 if any dep is `down`/`degraded`. |
-| Tenant readiness | `/readyz/tenant/:id` | Mounted only when `MULTI_TENANCY_ENABLED=true`. Anti-enumeration uniform shape. |
+| Tenant readiness | `/readyz/tenant/:id` | Mounted only when `MULTI_TENANT_ENABLED=true`. Anti-enumeration uniform shape. |
 
 Default probe values match the canonical Lerian readiness contract documented in [`plugin-br-payments/docs/readyz-guide.md`](https://github.com/LerianStudio/plugin-br-payments/blob/main/docs/readyz-guide.md):
 
@@ -104,8 +104,8 @@ The plugin supports schema-per-tenant via Lerian's Tenant Manager. To enable:
 ```yaml
 app:
   configmap:
-    MULTI_TENANCY_ENABLED: "true"
-    MULTI_TENANT_MANAGER_URL: "https://tenant-manager.example.com"
+    MULTI_TENANT_ENABLED: "true"
+    MULTI_TENANT_URL: "https://tenant-manager.example.com"
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
   secrets:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
@@ -126,7 +126,9 @@ When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `prov
 | `app.terminationGracePeriodSeconds` | `60` | Required by the readyz contract. |
 | `app.configmap.SERVICE_TYPE` | `both` | Run API + worker in one process. |
 | `app.configmap.OUTBOX_ENABLED` | `"true"` | REQUIRED — the plugin won't register routes otherwise. |
-| `app.configmap.MULTI_TENANCY_ENABLED` | `"false"` | Toggle multi-tenant mode. |
+| `app.configmap.MULTI_TENANT_ENABLED` | `"false"` | Toggle multi-tenant mode. |
+| `app.controlplaneMigrations.enabled` | `false` | Enable the control-plane migrations `PreSync` Job. Renders only alongside `MULTI_TENANT_ENABLED=true` and a genuinely external Postgres — see `values.yaml`. |
+| `app.controlplaneMigrations.resources` | requests `50m`/`64Mi`, limits `250m`/`256Mi` | Resources for the control-plane migrations Job. |
 | `postgresql.enabled` | `true` | Deploy the in-cluster PostgreSQL subchart. |
 | `postgresql.architecture` | `replication` | Primary + read replica. |
 | `global.externalPostgresDefinitions.enabled` | `false` | Run a bootstrap Job against an external PostgreSQL. |
@@ -138,7 +140,15 @@ See [`values.yaml`](./values.yaml) for the full list, and [`values-template.yaml
 
 In production, you typically:
 
-1. **Disable the in-cluster PostgreSQL** and point at a managed service:
+1. **Disable the in-cluster PostgreSQL** and point at a managed service.
+   `app.configmap.POSTGRES_HOST`/`POSTGRES_PORT` is the single source the
+   app Deployment, the control-plane migrations Job, and the bootstrap Job
+   all read to reach Postgres — set it to your real external host/port.
+   `global.externalPostgresDefinitions.connection.host`/`.port` is no longer
+   read by any template (kept only for backward compatibility with older
+   overlays) — you do not need to set it, and setting it to a different
+   value than `app.configmap.POSTGRES_HOST`/`.PORT` has no effect on where
+   the bootstrap Job connects:
    ```yaml
    postgresql:
      enabled: false
@@ -146,6 +156,7 @@ In production, you typically:
    app:
      configmap:
        POSTGRES_HOST: my-rds-instance.example.com
+       POSTGRES_PORT: "5432"
        POSTGRES_SSLMODE: require
    ```
 
@@ -156,14 +167,14 @@ In production, you typically:
      existingSecretName: plugin-br-payments-secrets
    ```
 
-3. **Optional bootstrap** for a fresh external Postgres (creates DB + role + grants, idempotent):
+3. **Optional bootstrap** for a fresh external Postgres (creates DB + role + grants, idempotent).
+   It connects to the same `app.configmap.POSTGRES_HOST`/`POSTGRES_PORT` set in
+   step 1 above — only the admin credentials it needs to create the role and
+   database are configured here:
    ```yaml
    global:
      externalPostgresDefinitions:
        enabled: true
-       connection:
-         host: my-rds-instance.example.com
-         port: "5432"
        postgresAdminLogin:
          username: postgres
          password: <admin password>

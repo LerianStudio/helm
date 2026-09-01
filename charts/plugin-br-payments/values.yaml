@@ -18,7 +18,14 @@ global:
   externalPostgresDefinitions:
     # -- Enable or disable the PostgreSQL bootstrap job
     enabled: false
-    # -- PostgreSQL connection settings (used by the bootstrap job only)
+    # -- DEPRECATED / unused by any template: the bootstrap job
+    # (templates/bootstrap-postgres.yaml) and the control-plane migrations
+    # Job (templates/controlplane-migrations.yaml) both read the connection
+    # endpoint from app.configmap.POSTGRES_HOST/POSTGRES_PORT instead — the
+    # same source templates/deployment.yaml uses — so the two PreSync Jobs
+    # can never provision against a different host than the app connects to.
+    # Retained only for backward compatibility with existing overlays; set
+    # app.configmap.POSTGRES_HOST/POSTGRES_PORT to your external instance.
     connection:
       # -- PostgreSQL host
       host: "plugin-br-payments-postgresql-primary"
@@ -184,16 +191,38 @@ app:
     ACCESS_CONTROL_EXPOSE_HEADERS: ""
     ACCESS_CONTROL_ALLOW_CREDENTIALS: "false"
     # Multi-Tenancy (database-per-tenant via tenant-manager)
-    # When enabled, MULTI_TENANT_MANAGER_URL and MULTI_TENANT_SERVICE_API_KEY become required.
-    MULTI_TENANCY_ENABLED: "false"
-    MULTI_TENANT_MANAGER_URL: ""
+    # When enabled, MULTI_TENANT_URL and MULTI_TENANT_SERVICE_API_KEY become required.
+    # This chart intentionally does NOT use charts/lerian-common's shared
+    # `lerian-common.multiTenant` env helper: this ConfigMap is built by a
+    # generic `range` over the merged app.configmap map
+    # (templates/configmap.yaml), not the helper's per-key emit, so a
+    # default the shared helper injected for a key left absent here would
+    # render into this ConfigMap the same way a literal default in this
+    # file would — exactly the class of bug the "leave renamed keys absent"
+    # rule below exists to avoid. Keep multi-tenant keys inline here.
+    # The 6 keys renamed to their canonical names on the MT-01 phase-2
+    # control-plane branch (see CHANGELOG.md) (MULTI_TENANT_ENABLED,
+    # MULTI_TENANT_URL, MULTI_TENANT_TIMEOUT, MULTI_TENANT_CACHE_TTL_SEC,
+    # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD, MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC) are
+    # deliberately left ABSENT here rather than given explicit literal defaults. This
+    # configmap is rendered by a generic `range` over the merged map (templates/configmap.yaml),
+    # so any literal shipped here — even "false" or a numeric default — is an explicit,
+    # non-blank value that wins over an overlay which still sets only the deprecated key name
+    # (the app's reconcileDeprecatedMultiTenantEnv only falls back to the deprecated key when
+    # the canonical one is unset/blank). Leaving them absent is safe for chart-only installs:
+    # `_helpers.tpl` and `templates/controlplane-migrations.yaml`'s gates already default an
+    # absent MULTI_TENANT_ENABLED to "false", so single-tenant behavior is unchanged. What it
+    # fixes is an overlay using only the old key names (e.g. `stg-mt`, pending Task 2.2.2),
+    # which is no longer silently overridden back to disabled/chart defaults.
+    # MULTI_TENANT_ENABLED: "false"
+    # MULTI_TENANT_URL: ""
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
     MULTI_TENANT_POSTGRES_MODULE: ""
     MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
-    MULTI_TENANT_CLIENT_TIMEOUT_SEC: "10"
-    MULTI_TENANT_CACHE_TTL_MINUTES: "60"
-    MULTI_TENANT_CB_THRESHOLD: "5"
-    MULTI_TENANT_CB_TIMEOUT_SEC: "30"
+    # MULTI_TENANT_TIMEOUT: "10"
+    # MULTI_TENANT_CACHE_TTL_SEC: "3600"
+    # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    # MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
     MULTI_TENANT_MAX_TENANT_POOLS: "100"
     # PostgreSQL Primary (host defaults to {Release.Name}-postgresql-primary)
     POSTGRES_HOST: ""  # Empty -> dynamic default in configmap template
@@ -296,7 +325,7 @@ app:
     # License (required in production)
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
-    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANCY_ENABLED=true)
+    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_SERVICE_API_KEY: ""
     # Midaz M2M (optional)
     # MIDAZ_CLIENT_ID: ""
@@ -315,6 +344,36 @@ app:
     create: true
     annotations: {}
     name: ""
+  # -- Control-plane migrations PreSync Job (ADR-013, plugin-br-payments repo).
+  # See templates/controlplane-migrations.yaml for the full render gate.
+  # @default -- templates/controlplane-migrations.yaml
+  controlplaneMigrations:
+    # -- Enable the Job. Default OFF: app.image resolves to the currently
+    # released plugin-br-payments image, which does NOT yet contain the
+    # /controlplane-migrate binary (still on an unmerged branch). Do not set
+    # true until a plugin-br-payments release containing the binary is
+    # deployed — see CHANGELOG.md. The Job renders only when all four are
+    # true: app.configmap.MULTI_TENANT_ENABLED=true,
+    # global.externalPostgresDefinitions.enabled=true, the chart's own
+    # "postgresql.enabled" helper resolves to "false" (Postgres is
+    # genuinely external, not just flagged as such), and this
+    # controlplaneMigrations.enabled=true. See
+    # templates/controlplane-migrations.yaml's header comment for why each
+    # condition exists. Independently of this gate,
+    # plugin-br-payments.validatePostgresExclusivity fails the whole render
+    # with fail() if postgresql.enabled/postgresql.external are set to the
+    # contradictory bundled-and-external combination.
+    enabled: false
+    # -- Resource requests and limits for the migrations Job. Deliberately
+    # smaller than app.resources: this runs once, briefly, not steady-state
+    # API/worker traffic.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
 
 # ==============================================================================
 # POSTGRESQL SUB-CHART (Bitnami)

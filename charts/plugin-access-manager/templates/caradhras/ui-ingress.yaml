@@ -1,0 +1,13 @@
+{{- $ui := .Values.caradhras.ui -}}
+{{- $uiIngress := $ui.ingress | default dict -}}
+{{- if and $ui.enabled $uiIngress.enabled -}}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" $uiIngress
+      "global" (.Values.global).ingress
+      "subdomain" "caradhras"
+      "name" (include "plugin-caradhras-ui.fullname" .)
+      "labels" (printf "%s " (include "plugin-caradhras-ui.labels" (dict "context" . "name" $ui.name)))
+      "svcPort" (($ui.service | default dict).port | default 8080)
+    ) }}
+{{- end }}

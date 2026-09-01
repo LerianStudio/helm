@@ -2,6 +2,228 @@
 
 ## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
 
+- **Features**
+  - Released fetcher version 3.1.0.
+  - Added upgrade guide for fetcher v3.0.0.
+
+- **Fixes**
+  - Updated fetcher-manager to version 3.0.2.
+  - Updated fetcher-worker to version 3.0.2.
+  - Updated fetcher-manager to version 2.0.2.
+  - Updated fetcher-worker to version 2.0.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Fixes**
+  - Updated `fetcher-manager` to version 3.0.2 and `fetcher-worker` to version 3.0.2 for improved stability and performance.
+  - Updated `fetcher-manager` to version 2.0.2 and `fetcher-worker` to version 2.0.2 to address minor bugs.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Released version 3.1.0 of fetcher.
+
+- **Fixes**
+  - Updated dependencies: fetcher-manager to version 3.0.2 and fetcher-worker to version 3.0.2.
+  - Updated dependencies: fetcher-manager to version 2.0.2 and fetcher-worker to version 2.0.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Fixes**
+  - Updated `fetcher-manager` to version 3.0.2.
+  - Updated `fetcher-worker` to version 3.0.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Released version 3.1.0 of the fetcher component.
+
+- **Fixes**
+  - Updated dependencies: fetcher-manager to version 3.0.2 and fetcher-worker to version 3.0.2.
+  - Updated dependencies: fetcher-manager to version 2.0.2 and fetcher-worker to version 2.0.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Released fetcher version 3.1.0.
+  - Released fetcher version 3.0.0.
+
+- **Fixes**
+  - Updated fetcher-manager to version 3.0.2 and fetcher-worker to version 3.0.2.
+  - Updated fetcher-manager to version 2.0.2 and fetcher-worker to version 2.0.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Fixes:**
+  - Updated `fetcher-manager` to version 3.0.2.
+  - Updated `fetcher-worker` to version 3.0.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Fixes:**
+  - Updated `fetcher-manager` to version 3.0.2 and `fetcher-worker` to version 3.0.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Released fetcher version 3.0.0 with updated documentation and upgrade guide.
+
+- **Fixes**
+  - Updated fetcher-manager to version 3.0.2 and fetcher-worker to version 3.0.2 to address compatibility issues.
+  - Updated fetcher-manager to version 2.0.2 and fetcher-worker to version 2.0.2 for minor bug fixes.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Release of fetcher version 3.1.0.
+
+- **Fixes**
+  - Updated fetcher-manager to version 3.0.2.
+  - Updated fetcher-worker to version 3.0.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Released fetcher version 3.1.0.
+  - Added an upgrade guide for fetcher v3.0.0.
+
+- **Fixes**
+  - Updated dependencies: fetcher-manager to version 3.0.2 and fetcher-worker to version 3.0.2.
+  - Updated dependencies: fetcher-manager to version 2.0.2 and fetcher-worker to version 2.0.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Released fetcher version 3.1.0.
+
+- **Fixes**
+  - Updated fetcher-manager to version 3.0.2.
+  - Updated fetcher-worker to version 3.0.2.
+  - Updated fetcher-manager to version 2.0.2.
+  - Updated fetcher-worker to version 2.0.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Released version 3.0.0 of fetcher with updated documentation and upgrade guide.
+
+- **Fixes**
+  - Updated fetcher-manager to version 3.0.2 and fetcher-worker to version 3.0.2 to address minor issues.
+  - Updated fetcher-manager to version 2.0.2 and fetcher-worker to version 2.0.2 to fix specific bugs.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Released version 3.1.0 of fetcher.
+
+- **Fixes**
+  - Updated `fetcher-manager` to version 3.0.2.
+  - Updated `fetcher-worker` to version 3.0.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
+- **Features**
+  - Released fetcher version 3.1.0.
+  - Added upgrade guide for fetcher v3.0.0.
+
+- **Fixes**
+  - Updated fetcher-manager to version 3.0.2.
+  - Updated fetcher-worker to version 3.0.2.
+  - Updated fetcher-manager to version 2.0.2.
+  - Updated fetcher-worker to version 2.0.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.0.0...fetcher-v3.1.0)
+
+---
+
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.0)
+
 - **Fixes**
   - Updated `fetcher-manager` to version 3.0.2 and `fetcher-worker` to version 3.0.2 for improved stability and performance.
   - Updated `fetcher-manager` to version 2.0.2 and `fetcher-worker` to version 2.0.2 to address minor bugs.

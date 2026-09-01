@@ -14,7 +14,69 @@
     },
     "global": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "datastores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "host": {},
+              "port": {},
+              "user": {},
+              "ssl": {},
+              "tls": {},
+              "replicaHost": {}
+            }
+          },
+          "description": "Env-wide SHARED datastore mask (set once per environment). Consumed by lerian-common.datastore.value."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {}
+          },
+          "description": "Env-wide environment name. Consumed by lerian-common.globalValue (block \"env\")."
+        },
+        "multiTenant": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block \"multiTenant\")."
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {},
+            "otlpEndpoint": {}
+          },
+          "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
+        },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {},
+            "host": {}
+          },
+          "description": "Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue (block \"auth\")."
+        },
+        "cloud": {
+          "type": "string",
+          "enum": [
+            "",
+            "aws",
+            "gcp",
+            "azure"
+          ],
+          "description": "Managed-cloud topology preset. Empty = bundled in-cluster infra (plaintext)."
+        }
+      }
     },
     "bankTransfer": {
       "type": "object",

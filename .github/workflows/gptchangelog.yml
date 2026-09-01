@@ -31,6 +31,7 @@ jobs:
         charts/otel-collector-lerian
         charts/plugin-access-manager
         charts/plugin-br-pix-direct-jd
+        charts/plugin-br-pix-jd
         charts/plugin-br-pix-indirect-btg
         charts/plugin-br-pix-switch
         charts/plugin-crm

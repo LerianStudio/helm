@@ -127,6 +127,7 @@ jobs:
         run: git pull origin ${{ github.ref_name }}
 
       - name: Set up Helm
+        id: setup-helm
         continue-on-error: true
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
@@ -206,23 +207,29 @@ jobs:
           CHART_NAME="${{ matrix.chart.name }}"
           CHART_PATH="${{ matrix.chart.working_dir }}"
 
-          if [ "$CHART_NAME" == "plugin-access-manager" ] || [ "$CHART_NAME" == "otel-collector-lerian" ]; then
-            PUSH_FILE="$CHART_NAME-\${nextRelease.version}.tgz"
-          else
-            PUSH_FILE="$CHART_NAME-helm-\${nextRelease.version}.tgz"
-          fi
-
+          # cwd for Semantic Release is the chart dir (working_directory below),
+          # so exec/helm3/git plugin paths must be relative to it, not repo root.
+          #
+          # semantic-release-monorepo rewrites ${nextRelease.version} to the full
+          # git tag (not the plain semver) for the exec plugin's "success"/"fail"
+          # steps specifically — it still resolves to plain semver in "prepare"
+          # and "publish".
+          # Keep the README update in prepareCmd so @semantic-release/git can
+          # commit it. Package and push in publishCmd, after the release commit/tag
+          # succeeds and before the success notification. A fresh temporary
+          # directory lets Helm determine the exact package filename from
+          # Chart.yaml, so publishCmd does not depend on nextRelease.version.
           jq \
-            --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
-            --arg successCmd "helm package $CHART_PATH && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
-            --arg prepareCmd "./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
-            '.plugins[2][1].chartPath = $chartPath |
-              .plugins[4][1].assets = [($chartPath + "/Chart.yaml"), "README.md"] |
+            --arg publishCmd "PACKAGE_DIR=\$(mktemp -d) && helm package . --destination \"\$PACKAGE_DIR\" && set -- \"\$PACKAGE_DIR\"/*.tgz && [ \"\$#\" -eq 1 ] && helm push \"\$1\" oci://ghcr.io/lerianstudio" \
+            --arg prepareCmd "cd ../.. && ./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
+            '.plugins[2][1].chartPath = "." |
+              .plugins[4][1].assets = ["Chart.yaml", "../../README.md"] |
               .tagFormat = $tagFormat |
-              .plugins[3][1].successCmd = $successCmd |
+              del(.plugins[3][1].successCmd) |
+              .plugins[3][1].publishCmd = $publishCmd |
               .plugins[3][1].prepareCmd = $prepareCmd' \
-            .github/configs/.releaserc.json > .releaserc
+            .github/configs/.releaserc.json > "$CHART_PATH/.releaserc"
 
           # On a chart line branch, register it as a semantic-release maintenance
           # branch so the next version stays inside its range (e.g. 5.7.x -> 5.7.1)
@@ -231,19 +238,25 @@ jobs:
               --arg name "${BRANCH_NAME}" \
               --arg range "${CHART_LINE_RANGE}" \
               '.branches += [{name: $name, range: $range, channel: $range}]' \
-              .releaserc > .releaserc.tmp && mv .releaserc.tmp .releaserc
+              "$CHART_PATH/.releaserc" > "$CHART_PATH/.releaserc.tmp" && mv "$CHART_PATH/.releaserc.tmp" "$CHART_PATH/.releaserc"
           fi
 
-          jq . .releaserc
+          jq . "$CHART_PATH/.releaserc"
+
+      - name: Init ephemeral package.json
+        working-directory: ${{ matrix.chart.working_dir }}
+        run: '[ -f package.json ] || npm init -y >/dev/null'
 
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@16ca923e6ccbb50770c415a0ccd43709a8c5f7a4 # v4.2.2
         id: semantic_changelog
         with:
+          working_directory: ${{ matrix.chart.working_dir }}
           ci: false
           semantic_version: 23.0.8
           extra_plugins: |
             conventional-changelog-conventionalcommits@v7.0.2
+            semantic-release-monorepo@8.0.2
             semantic-release-helm3
             @semantic-release/exec@6.0.3
             @semantic-release/git
@@ -278,12 +291,12 @@ jobs:
 
       - name: Publish Release in Plugin Lifecycle Management
         if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.skip_lifecycle != 'true'
-        uses: LerianStudio/github-actions-lifecycle-management@main
+        uses: LerianStudio/github-actions-shared-workflows/src/deploy/lifecycle-management-publish@v1.57.0
         with:
-          chart_name: "${{ matrix.chart.name }}"
-          application_ids: ${{ vars.APPLICATION_IDS }}
-          lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
-          working_directory: ${{ matrix.chart.working_dir }}
+          chart-name: "${{ matrix.chart.name }}"
+          application-ids: ${{ vars.APPLICATION_IDS }}
+          lifecycle-api-token: ${{ secrets.LIFECYCLE_API_TOKEN }}
+          working-directory: ${{ matrix.chart.working_dir }}
 
   notify-release:
     needs:

@@ -243,6 +243,226 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- end }}
 
 {{/*
+reporter.datasourceCredEncKeyRequired — gate secrets.DATASOURCE_CRED_ENC_KEY.
+
+The reporter app >= 3.0.0 stores registered data-source credentials ENCRYPTED at rest and
+REFUSES TO BOOT without this key (unconfigured at request time surfaces as RPT-0074). It
+must be byte-identical on the manager and the worker, and that release has NO rotation —
+changing it makes every already-registered data source undecryptable.
+
+Presence is enforced only when the COMPONENT'S OWN resolved image tag parses as semver and
+is >= 3.0.0-0, so the chart's default appVersion (2.x, which ignores the key) still renders
+and a floating tag ("latest", a digest) is left alone rather than guessed at. Format and the
+values-template.yaml "CHANGE_ME" placeholder are checked regardless of tag — neither can ever
+be a correct value, and catching it now beats catching it at the 3.x upgrade.
+
+Input (dict): context (root .), component ("manager"|"worker"), tag (resolved image tag).
+*/}}
+{{- define "reporter.datasourceCredEncKeyRequired" -}}
+{{- $key := default "" .context.Values.secrets.DATASOURCE_CRED_ENC_KEY | toString -}}
+{{- if eq $key "CHANGE_ME" -}}
+{{- fail "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY is still the values-template.yaml placeholder \"CHANGE_ME\".\n   Generate a real key and set it before deploying: openssl rand -hex 32\n" -}}
+{{- end -}}
+{{- $tag := .tag | toString | trimPrefix "v" -}}
+{{- if and (not $key) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+([-+].*)?$" $tag) (semverCompare ">=3.0.0-0" $tag) -}}
+{{- fail (printf "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY is REQUIRED for reporter app >= 3.0.0 (%s.image.tag is %q).\n   The app encrypts data-source credentials at rest and will NOT boot without it.\n   Generate once: openssl rand -hex 32\n   Use the SAME value for the manager and the worker. There is NO rotation — changing it\n   makes every already-registered data source undecryptable.\n   See charts/reporter/docs/UPGRADE-4.1.md.\n" .component .tag) -}}
+{{- end -}}
+{{- if and $key (not (regexMatch "^([0-9a-fA-F]{32}|[0-9a-fA-F]{48}|[0-9a-fA-F]{64})$" $key)) -}}
+{{- fail "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY must be a hex-encoded AES key of 16, 24 or 32 bytes\n   (32, 48 or 64 hex characters). Generate one with: openssl rand -hex 32\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.isTrue — "true" when the value is a truthy token (case-insensitive).
+*/}}
+{{- define "reporter.isTrue" -}}
+{{- $v := lower (trim (toString .)) -}}
+{{- if or (eq $v "true") (eq $v "1") (eq $v "yes") (eq $v "on") -}}true{{- end -}}
+{{- end -}}
+
+{{/*
+reporter.commonConfigmapData — the SHARED (common) ConfigMap data block for both the
+manager and worker surfaces. Dependency CONNECTIONS are resolved through lerian-common
+typed masks/helpers (datastore.value / globalValue / streaming.env); everything else is
+an escape-hatch passthrough (`$cm.KEY | default "X"`). Native `common.configmap.<KEY>`
+still wins for every masked field (top mask precedence). An operator can add any other
+key under common.configmap and it flows through the guarded range at the end.
+Input: the root context ($).
+*/}}
+{{- define "reporter.commonConfigmapData" -}}
+{{- $ := . -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $ded := .Values.datastores | default dict -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $osv := "lerian-common.objectStorage.value" -}}
+{{- /* Broker host+mgmt-port resolved once (via the datastore mask) — reused by RABBITMQ_HOST,
+   RABBITMQ_PORT_HOST and the derived RABBITMQ_HEALTH_CHECK_URL (single-source). */ -}}
+{{- $rmqHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq.reporter.svc.cluster.local") -}}
+{{- $rmqMgmtPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") -}}
+{{- /* Management API scheme mirrors the AMQP scheme (amqp→http, amqps→https) — a managed
+   broker (TLS AMQP) also serves its management API over HTTPS. */ -}}
+{{- $rmqScheme := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") -}}
+{{- $rmqMgmtScheme := ternary "https" "http" (eq $rmqScheme "amqps") -}}
+{{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled -}}
+{{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = index $cm "STREAMING_ENABLED" -}}{{- end -}}
+{{- $streamingEnabled := eq (include "reporter.isTrue" ($streamingRaw | default "false")) "true" -}}
+{{- /* Multi-tenant toggle: configmap override > global.multiTenant.enabled > false.
+   Presence-based (hasKey), not sprig `default` — `default` treats boolean
+   `false` as empty, so an explicit `common.configmap.MULTI_TENANT_ENABLED: false`
+   would silently fall through to global.multiTenant.enabled if that's true,
+   contradicting the precedence above. Same hasKey pattern already used for
+   STREAMING_ENABLED two lines up. */ -}}
+{{- $mtRaw := (($.Values.global | default dict).multiTenant | default dict).enabled -}}
+{{- if hasKey $cm "MULTI_TENANT_ENABLED" }}{{- $mtRaw = index $cm "MULTI_TENANT_ENABLED" -}}{{- end -}}
+{{- if kindIs "invalid" $mtRaw }}{{- $mtRaw = "false" -}}{{- end -}}
+{{- /* Keys emitted explicitly below; the guarded range must not re-emit them. */ -}}
+{{- $explicit := list
+    "ENV_NAME" "ALLOW_INSECURE_TLS" "LOG_LEVEL"
+    "RABBITMQ_URI" "RABBITMQ_HOST" "RABBITMQ_PORT_HOST" "RABBITMQ_PORT_AMQP"
+    "RABBITMQ_NUMBERS_OF_WORKERS" "RABBITMQ_EXCHANGE" "RABBITMQ_GENERATE_REPORT_QUEUE"
+    "RABBITMQ_GENERATE_REPORT_KEY" "RABBITMQ_HEALTH_CHECK_URL" "RABBITMQ_REPORT_EVENTS_EXCHANGE"
+    "REDIS_HOST" "REDIS_USER" "REDIS_MASTER_NAME" "REDIS_DB" "REDIS_PROTOCOL" "REDIS_TLS" "REDIS_CA_CERT"
+    "GOOGLE_APPLICATION_CREDENTIALS" "REDIS_SERVICE_ACCOUNT"
+    "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_USE_PATH_STYLE"
+    "OBJECT_STORAGE_DISABLE_SSL" "OBJECT_STORAGE_BUCKET"
+    "MONGO_URI" "MONGO_HOST" "MONGO_NAME" "MONGO_USER" "MONGO_PORT" "MONGO_MAX_POOL_SIZE"
+    "MONGO_TLS_CA_CERT" "MONGO_PARAMETERS"
+    "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" "ENABLE_TELEMETRY" "OTEL_INSECURE_EXPORTER"
+    "FETCHER_ENABLED" "FETCHER_URL" "MULTI_TENANT_ENABLED"
+    "MULTI_TENANT_URL" "MULTI_TENANT_ENVIRONMENT" "MULTI_TENANT_ALLOW_INSECURE_HTTP"
+    "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC"
+    "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
+    "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS" "MULTI_TENANT_REDIS_CA_CERT"
+    "MULTI_TENANT_TIMEOUT" "MULTI_TENANT_CACHE_TTL_SEC" "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC"
+    "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS"
+    "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD"
+    "SD_TLS" "SD_TLS_SKIP_VERIFY" "STREAMING_ENABLED"
+    "STREAMING_BROKERS" "STREAMING_CLOUDEVENTS_SOURCE" "STREAMING_CLIENT_ID"
+    "STREAMING_COMPRESSION" "STREAMING_REQUIRED_ACKS"
+    "DATASOURCE_ONBOARDING_CONFIG_NAME" "DATASOURCE_ONBOARDING_HOST" "DATASOURCE_ONBOARDING_PORT"
+    "DATASOURCE_ONBOARDING_USER" "DATASOURCE_ONBOARDING_DATABASE" "DATASOURCE_ONBOARDING_TYPE"
+    "DATASOURCE_ONBOARDING_SSLMODE" "DATASOURCE_ONBOARDING_SSLROOTCERT"
+-}}
+{{- /* Reused below as OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT's default — the two
+   were previously independent hardcoded literals ("development" here,
+   "production" there), so a plain no-args install landed in ENV_NAME=development
+   but OTEL deployment_environment=production, and the app's own production
+   safety check then refused to boot with the bundled (non-https) OTel
+   endpoint. Keeping one source of truth avoids the chart contradicting its
+   own app on the happy path (helm install with no overrides). */ -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") -}}
+ENV_NAME: {{ $envName | quote }}
+{{/* The bundled/dev topology (mongo/redis/postgres/rabbitmq subcharts) has no
+   TLS on any of them — the app REQUIRES this flag to bypass, it isn't a
+   plain "don't use TLS" toggle (mongo hard-fails otherwise: "TLS required").
+   default "false" meant a plain `helm install` with zero overrides always
+   crashed. Same convention as plugin-access-manager: default "true" for the
+   bundled path; a managed-cloud profile flips it explicitly. */ -}}
+ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+{{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the
+   topology fields scheme (amqp|amqps) and amqpPort — so a managed-broker profile
+   (e.g. AmazonMQ over TLS) sets global.datastores.broker.{scheme,amqpPort,port}
+   once instead of scattering RABBITMQ_* into common.configmap. Defaults keep the
+   bundled amqp/5672/15672 topology → render-equivalent for existing users. */}}
+RABBITMQ_URI: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") | quote }}
+RABBITMQ_HOST: {{ $rmqHost | quote }}
+RABBITMQ_PORT_HOST: {{ $rmqMgmtPort | quote }}
+RABBITMQ_PORT_AMQP: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
+RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
+RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "reporter.generate-report.exchange" | quote }}
+RABBITMQ_GENERATE_REPORT_QUEUE: {{ $cm.RABBITMQ_GENERATE_REPORT_QUEUE | default "reporter.generate-report.queue" | quote }}
+RABBITMQ_GENERATE_REPORT_KEY: {{ $cm.RABBITMQ_GENERATE_REPORT_KEY | default "reporter.generate-report.key" | quote }}
+{{- /* Health-check URL single-sourced from the broker mask (host:mgmt-port); configmap override still wins. */}}
+RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default (printf "%s://%s:%s" $rmqMgmtScheme $rmqHost $rmqMgmtPort) | quote }}
+{{- /* Redis/Valkey connection via datastore mask (host carries host:port). */}}
+REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "reporter-valkey.reporter.svc.cluster.local:6379") | quote }}
+REDIS_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") | quote }}
+REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
+REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
+{{- /* Redis TLS topology via the mask (tls + caCert) — a managed-cache profile
+   (e.g. ElastiCache in-transit encryption) sets global.datastores.redis.{tls,caCert}
+   once. Defaults keep plaintext → render-equivalent for existing users. */}}
+REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
+REDIS_CA_CERT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "caCert" "nativeKey" "REDIS_CA_CERT" "default" "") | quote }}
+GOOGLE_APPLICATION_CREDENTIALS: {{ $cm.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+REDIS_SERVICE_ACCOUNT: {{ $cm.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+{{- /* Object storage (S3/SeaweedFS) — non-secret fields passthrough; keys stay in the Secret. */}}
+{{- /* Object storage via lerian-common.objectStorage.value mask (name "s3"); non-secret
+   fields only — keys stay in the Secret. configmap.OBJECT_STORAGE_* overrides objectStorage.s3
+   / global.objectStorage.s3 / default. */}}
+OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "http://seaweedfs-s3.reporter.svc.cluster.local:8333") | quote }}
+OBJECT_STORAGE_REGION: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "region" "nativeKey" "OBJECT_STORAGE_REGION" "default" "us-east-1") | quote }}
+OBJECT_STORAGE_USE_PATH_STYLE: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "usePathStyle" "nativeKey" "OBJECT_STORAGE_USE_PATH_STYLE" "default" "true") | quote }}
+OBJECT_STORAGE_DISABLE_SSL: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "disableSSL" "nativeKey" "OBJECT_STORAGE_DISABLE_SSL" "default" "true") | quote }}
+OBJECT_STORAGE_BUCKET: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "bucket" "nativeKey" "OBJECT_STORAGE_BUCKET" "default" "reporter-storage") | quote }}
+{{- /* MongoDB connection via datastore mask (host/port/user); name/tuning stay passthrough. */}}
+MONGO_URI: {{ $cm.MONGO_URI | default "mongodb" | quote }}
+MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "reporter-mongodb.reporter.svc.cluster.local") | quote }}
+MONGO_NAME: {{ $cm.MONGO_NAME | default "reporter-db" | quote }}
+MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "reporter") | quote }}
+MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
+MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "100" | quote }}
+MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
+MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "maxIdleTimeMS=60000") | quote }}
+{{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env (global.observability);
+   identity (library/port/insecure) stays inline. configmap.<KEY> still overrides via otel.env. */}}
+OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}
+OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote }}
+{{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "true" "endpointDefault" "otlp://midaz-otel-lgtm:4317" "deploymentEnvironmentDefault" $envName) | nindent 0 }}
+FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
+FETCHER_URL: {{ $cm.FETCHER_URL | default "" | quote }}
+MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
+{{- /* Multi-tenant (lib-commons/multitenancy) via lerian-common.multiTenant.env — gated on
+   MULTI_TENANT_ENABLED; emits nothing when off. RABBITMQ_MULTI_TENANT_* stay passthrough
+   (reporter-specific). configmap.MULTI_TENANT_* overrides global.multiTenant. */}}
+{{- include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm
+      "enabled" (eq (include "reporter.isTrue" $mtRaw) "true")
+      "emitRedis" true "emitRedisCaCert" true "emitPool" true "emitCache" true
+      "emitEnvironment" true "emitAllowInsecure" true) | nindent 0 }}
+{{- /* Auth (access-manager) via lerian-common.auth.env → global.auth.{enabled,host}. The reporter
+   app reads PLUGIN_AUTH_ADDRESS (NOT _HOST), so hostKey pins the correct native key. A native
+   common.configmap.PLUGIN_AUTH_ENABLED/_ADDRESS still overrides (globalValue precedence). */}}
+{{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 0 }}
+{{- /* Service discovery via lerian-common.serviceDiscovery.envFlat (lib-service-discovery
+   advertise contract: SD_ADDRESS + SD_ADVERTISE_* + SD_WORKLOAD + SD_TLS*). SD_ADDRESS default
+   "" (reporter) overrides the helper's "localhost:8500"; configmap.SD_* still overrides. */}}
+{{- include "lerian-common.serviceDiscovery.envFlat" (dict "configmap" $cm
+      "keys" (list "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD" "SD_TLS" "SD_TLS_SKIP_VERIFY")
+      "defaults" (dict "SD_ADDRESS" "")) | nindent 0 }}
+{{- /* Streaming: knob inline; brokers/SASL/TLS transport + identity via global.streaming
+   (gated — inert unless enabled AND global.streaming.brokers is set). RABBITMQ_REPORT_EVENTS_EXCHANGE
+   is reporter-specific (RabbitMQ transport) and stays passthrough. */}}
+STREAMING_ENABLED: {{ $streamingRaw | default "false" | quote }}
+RABBITMQ_REPORT_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_REPORT_EVENTS_EXCHANGE | default "reporter.events" | quote }}
+{{- if $streamingEnabled }}
+{{- include "lerian-common.streaming.env" (dict
+      "context" $
+      "enabled" $streamingEnabled
+      "configmap" $cm
+      "clientId" ($cm.STREAMING_CLIENT_ID | default "reporter")
+      "cloudeventsSource" ($cm.STREAMING_CLOUDEVENTS_SOURCE | default "//lerian.reporter")) | nindent 0 }}
+{{- end }}
+{{- /* External midaz datasource (direct-query mode) via postgres datastore mask. */}}
+DATASOURCE_ONBOARDING_CONFIG_NAME: {{ $cm.DATASOURCE_ONBOARDING_CONFIG_NAME | default "midaz_onboarding" | quote }}
+DATASOURCE_ONBOARDING_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DATASOURCE_ONBOARDING_HOST" "default" "midaz-postgresql-replication.midaz.svc.cluster.local") | quote }}
+DATASOURCE_ONBOARDING_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DATASOURCE_ONBOARDING_PORT" "default" "5432") | quote }}
+DATASOURCE_ONBOARDING_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DATASOURCE_ONBOARDING_USER" "default" "midaz") | quote }}
+DATASOURCE_ONBOARDING_DATABASE: {{ $cm.DATASOURCE_ONBOARDING_DATABASE | default "onboarding" | quote }}
+DATASOURCE_ONBOARDING_TYPE: {{ $cm.DATASOURCE_ONBOARDING_TYPE | default "postgresql" | quote }}
+DATASOURCE_ONBOARDING_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DATASOURCE_ONBOARDING_SSLMODE" "default" "disable") | quote }}
+DATASOURCE_ONBOARDING_SSLROOTCERT: {{ $cm.DATASOURCE_ONBOARDING_SSLROOTCERT | default "" | quote }}
+{{- /* Escape hatch: any OTHER key the operator adds under common.configmap. */}}
+{{- range $key, $value := $cm }}
+{{- if not (has $key $explicit) }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
 Secret/Service names render even when all bundled subcharts are disabled
 (external-infra path). Self-contained: no other common.* helpers required.

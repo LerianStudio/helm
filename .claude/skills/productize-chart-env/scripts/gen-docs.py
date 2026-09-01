@@ -120,8 +120,14 @@ def render(rows):
         out.write(f"## {sec}\n\n")
         out.write("| Key | Type | Default | Description |\n|-----|------|---------|-------------|\n")
         for key, typ, default, desc in sections[sec]:
+            # Escape pipes in EVERY cell — a `|` in a type (e.g. `enum: all|split`),
+            # default, or description otherwise reads as a column separator and shifts
+            # the whole row. (The `(enum: a|b)` annotation must keep its pipe for
+            # gen-schema, so the escaping has to happen here at render time.)
             d = default.replace("|", "\\|")
-            out.write(f"| `{key}` | {typ} | `{d}` | {desc} |\n")
+            t = typ.replace("|", "\\|")
+            ds = desc.replace("|", "\\|")
+            out.write(f"| `{key}` | {t} | `{d}` | {ds} |\n")
         out.write("\n")
     # Exactly one trailing newline (no blank line at EOF → passes `git diff --check`).
     return out.getvalue().rstrip("\n") + "\n"

@@ -1,6 +1,21 @@
 {{- if .Values.global.externalMongoDefinitions.enabled }}
 {{- $creds := .Values.global.externalMongoDefinitions.pluginFeesCredentials -}}
 {{- $rolesJSON := toJson $creds.roles -}}
+{{- $caCert := .Values.global.externalMongoDefinitions.caCert | default dict -}}
+{{- $mongoDatabase := .Values.fees.configmap.MONGO_NAME | default "plugin-fees-db" -}}
+{{- /* configmap.yaml resolves the app's MONGO_NAME from this same key/default —
+   if none of the granted roles target that database, the app authenticates fine
+   but every query against MONGO_NAME fails with an authorization error at
+   runtime instead of at deploy time. */ -}}
+{{- $dbRoleMatch := false -}}
+{{- range $creds.roles }}
+{{- if eq .db $mongoDatabase }}
+{{- $dbRoleMatch = true }}
+{{- end }}
+{{- end }}
+{{- if not $dbRoleMatch }}
+{{- fail (printf "global.externalMongoDefinitions.pluginFeesCredentials.roles has no entry for db %q (fees.configmap.MONGO_NAME) — the app would authenticate but be unauthorized against its own database" $mongoDatabase) }}
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -8,6 +23,19 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "plugin-fees.labels" (dict "context" . "name" "bootstrap-mongodb") | nindent 4 }}
+  annotations:
+    {{- /* App hard-requires Mongo (no MONGO_ENABLED toggle in this app), so this
+       must run before the app Deployment starts. Job.spec.template is also
+       immutable — Replace=true/before-hook-creation lets it self-heal on
+       upgrade instead of leaving a stale Job's pods retrying forever (same
+       pattern already applied to product-console/bank-transfer). */}}
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-5"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-options: Replace=true,Force=true
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1
@@ -16,6 +44,12 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      {{- if $caCert.secretName }}
+      volumes:
+      - name: mongo-ca-cert
+        secret:
+          secretName: {{ $caCert.secretName | quote }}
+      {{- end }}
       initContainers:
       - name: wait-for-dependencies
         image: busybox:1.37
@@ -49,6 +83,18 @@ spec:
           value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}
         - name: DB_PORT
           value: {{ .Values.global.externalMongoDefinitions.connection.port | quote }}
+        - name: MONGO_TLS_FLAGS
+          {{- /* mongosh has no single --tlsInsecure flag (that's a driver
+             connection-string option) — the CLI equivalent is these two
+             separate flags. A real CA bundle (caCert.secretName) takes
+             precedence over the insecure bypass flags when both are set. */}}
+          {{- if $caCert.secretName }}
+          value: "--tls --tlsCAFile=/tls/{{ $caCert.secretKey | default "ca.crt" }}"
+          {{- else if .Values.global.externalMongoDefinitions.tls }}
+          value: "--tls --tlsAllowInvalidCertificates --tlsAllowInvalidHostnames"
+          {{- else }}
+          value: ""
+          {{- end }}
         - name: MONGO_ROOT_USER
           {{- if .Values.global.externalMongoDefinitions.mongoAdminLogin.useExistingSecret.name }}
           valueFrom:
@@ -87,6 +133,12 @@ spec:
           {{- end }}
         - name: ROLES_JSON
           value: {{ $rolesJSON | quote }}
+        {{- if $caCert.secretName }}
+        volumeMounts:
+        - name: mongo-ca-cert
+          mountPath: /tls
+          readOnly: true
+        {{- end }}
         command:
         - /bin/bash
         - -c
@@ -100,16 +152,16 @@ spec:
           echo "Checking existing MongoDB objects..."
           USER_EXISTS=0
 
-          if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'if (db.getSiblingDB("admin").getUser(process.env.MONGO_APP_USER) !== null) { print("EXISTS"); }' | grep -q "EXISTS"; then
+          if mongosh --host "$DB_HOST" --port "$DB_PORT" $MONGO_TLS_FLAGS -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'if (db.getSiblingDB("admin").getUser(process.env.MONGO_APP_USER) !== null) { print("EXISTS"); }' | grep -q "EXISTS"; then
             USER_EXISTS=1
           fi
 
           if [ "$USER_EXISTS" = "1" ]; then
             echo "User '$MONGO_APP_USER' already exists. Updating password and replacing roles..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").updateUser(process.env.MONGO_APP_USER, {pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
+            mongosh --host "$DB_HOST" --port "$DB_PORT" $MONGO_TLS_FLAGS -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").updateUser(process.env.MONGO_APP_USER, {pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
           else
             echo "Creating user '$MONGO_APP_USER'..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").createUser({user: process.env.MONGO_APP_USER, pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
+            mongosh --host "$DB_HOST" --port "$DB_PORT" $MONGO_TLS_FLAGS -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").createUser({user: process.env.MONGO_APP_USER, pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
           fi
 
           echo ""

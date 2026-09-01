@@ -1,4 +1,8 @@
-{{- if and (eq (index .Values.configmap "ENABLE_TELEMETRY") "true") (not (or .Values.otel.enabled .Values.otel.external)) }}
+{{- /* ENABLE_TELEMETRY can now also flip to "true" via the global.observability.enabled
+   mask (see templates/configmap.yaml) without a native configmap key — resolve it the
+   same way here so this guard doesn't miss that case. */ -}}
+{{- $enableTelemetry := include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.configmap "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") }}
+{{- if and (eq $enableTelemetry "true") (not (or .Values.otel.enabled .Values.otel.external)) }}
 {{- fail "ENABLE_TELEMETRY is 'true' but no OTEL exporter is configured. Set either otel.enabled=true or otel.external=true to configure OTEL endpoints." }}
 {{- end }}
 apiVersion: apps/v1
@@ -100,7 +104,7 @@ spec:
             failureThreshold: {{ .Values.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.readinessProbe.path | default "/" }}
+              path: {{ .Values.readinessProbe.path | default "/api/admin/health/readyz" }}
               port: http
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds | default 5 }}

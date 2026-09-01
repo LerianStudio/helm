@@ -1,3 +1,10 @@
+{{- /* Datastore mask (lerian-common): MongoDB connection identity resolved via
+   global.datastores.mongo (shared, env-wide) with the native configmap.<KEY>
+   still taking precedence. Defaults keep the bundled-mongodb topology ->
+   render-equivalent for existing users. MONGODB_DB_NAME stays native (per-app
+   database name, not a masked field, per the dependency-contract). */ -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $cm := .Values.configmap | default dict -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,9 +13,102 @@ metadata:
   labels:
     {{- include "product-console.labels" . | nindent 4 }}
 data:
-  {{- range $key, $value := .Values.configmap }}
-  {{ $key }}: {{ $value | quote }}
+  # Application Configuration
+  NODE_ENV: {{ $cm.NODE_ENV | default "production" | quote }}
+  MIDAZ_CONSOLE_PORT: {{ $cm.MIDAZ_CONSOLE_PORT | default "8081" | quote }}
+
+  # OpenTelemetry Configuration
+  # Note: When otel.enabled=true or otel.external=true, OTEL_HOST and OTEL_URL_* are injected dynamically
+  {{- /* ENABLE_TELEMETRY via the global "observability" mask (global.observability.enabled),
+     same contract lerian-common already exposes for plugin-access-manager consumers — a
+     managed profile sets it ONCE for every component. OTEL_RECEIVER_HTTP_PORT stays a plain
+     passthrough: it has no corresponding lerian-common.otel field (product-console's real
+     OTEL wiring is the otel.enabled/otel.host/otel.port toggle in deployment.yaml, not a
+     configmap-driven OTLP endpoint), so masking it would invent a knob outside the contract. */}}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
+  OTEL_RECEIVER_HTTP_PORT: {{ $cm.OTEL_RECEIVER_HTTP_PORT | default "4318" | quote }}
+
+  # NextAuth Configuration
+  {{/*
+     $ingressOrigin ("https://<host>") is resolved once and shared by every
+     key that needs the app's own public origin, so operators don't have to
+     duplicate the hostname across them. Empty when ingress is disabled or
+     has no host (e.g. local/dev installs, or access via port-forward). */}}
+  {{- $ingressOrigin := "" -}}
+  {{- if and .Values.ingress.enabled .Values.ingress.hosts (gt (len .Values.ingress.hosts) 0) -}}
+  {{- $ingressHost := (first .Values.ingress.hosts).host -}}
+  {{- if $ingressHost -}}
+  {{- $ingressOrigin = printf "https://%s" $ingressHost -}}
+  {{- end -}}
+  {{- end -}}
+  NEXTAUTH_URL: {{ $cm.NEXTAUTH_URL | default ($ingressOrigin | default "http://localhost:8081") | quote }}
+  {{- /* ALLOWED_ORIGINS (CSV) gates the app's own CSRF guard (rejects every
+     mutating request outside /api/auth/* when unset) — not part of any
+     lerian-common mask; defaults to the same origin as NEXTAUTH_URL since
+     that's virtually always what operators want (the app calling itself). */}}
+  ALLOWED_ORIGINS: {{ $cm.ALLOWED_ORIGINS | default $ingressOrigin | quote }}
+
+  # Midaz API Configuration
+  # Defaults assume the standard in-cluster FQDN for the sibling midaz release
+  # (<service>.<namespace>.svc.cluster.local) so this chart works out of the
+  # box even when the client deploys midaz in a separate namespace.
+  MIDAZ_API_HOST: {{ $cm.MIDAZ_API_HOST | default "midaz-ledger.midaz.svc.cluster.local" | quote }}
+  MIDAZ_API_PORT: {{ $cm.MIDAZ_API_PORT | default "3002" | quote }}
+  MIDAZ_BASE_PATH: {{ $cm.MIDAZ_BASE_PATH | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1" | quote }}
+  MIDAZ_TRANSACTION_BASE_HOST: {{ $cm.MIDAZ_TRANSACTION_BASE_HOST | default "midaz-ledger.midaz.svc.cluster.local" | quote }}
+  MIDAZ_TRANSACTION_BASE_PORT: {{ $cm.MIDAZ_TRANSACTION_BASE_PORT | default "3002" | quote }}
+  MIDAZ_TRANSACTION_BASE_PATH: {{ $cm.MIDAZ_TRANSACTION_BASE_PATH | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1" | quote }}
+
+  # Plugin Auth Configuration
+  {{- /* PLUGIN_AUTH_ENABLED/HOST via the dedicated lerian-common.auth.env helper
+     (global.auth.{enabled,host}), the canonical helper for plugin-access-manager
+     consumers per the dependency-contract. PLUGIN_AUTH_CLIENT_ID/PORT/BASE_PATH
+     have no mask in the contract and stay native passthrough. $pluginAuthEnabled
+     is resolved the same way the helper resolves it, so NEXT_PUBLIC_PLUGIN_AUTH_ENABLED
+     (the frontend-visible mirror) defaults to the same value instead of drifting
+     from PLUGIN_AUTH_ENABLED when only the global mask is set. */}}
+  {{- $pluginAuthEnabled := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") -}}
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "plugin-access-manager-auth.plugin-access-manager.svc.cluster.local") | nindent 2 }}
+  {{- /* PLUGIN_AUTH_CLIENT_ID can also be supplied via .Values.secrets.PLUGIN_AUTH_CLIENT_ID
+     (rendered into the Secret by templates/secrets.yaml, or present in an
+     existingSecret when useExistingSecret=true) for deployments that don't want
+     a client_id — even though it's not a client_secret — sitting in a ConfigMap.
+     When set there, this key is omitted here so envFrom doesn't declare it twice. */}}
+  {{- if not (.Values.secrets.PLUGIN_AUTH_CLIENT_ID | default "") }}
+  PLUGIN_AUTH_CLIENT_ID: {{ $cm.PLUGIN_AUTH_CLIENT_ID | default "" | quote }}
   {{- end }}
+  PLUGIN_AUTH_PORT: {{ $cm.PLUGIN_AUTH_PORT | default "4000" | quote }}
+  PLUGIN_AUTH_BASE_PATH: {{ $cm.PLUGIN_AUTH_BASE_PATH | default "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000/v1" | quote }}
+
+  # Plugin Identity Configuration
+  PLUGIN_IDENTITY_HOST: {{ $cm.PLUGIN_IDENTITY_HOST | default "plugin-access-manager-identity.plugin-access-manager.svc.cluster.local" | quote }}
+  PLUGIN_IDENTITY_PORT: {{ $cm.PLUGIN_IDENTITY_PORT | default "4001" | quote }}
+  PLUGIN_IDENTITY_BASE_PATH: {{ $cm.PLUGIN_IDENTITY_BASE_PATH | default "http://plugin-access-manager-identity.plugin-access-manager.svc.cluster.local:4001/v1" | quote }}
+
+  # MongoDB Configuration
+  MONGODB_URI: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "uri" "nativeKey" "MONGODB_URI" "default" "mongodb") | quote }}
+  MONGO_HOST: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "mongodb") | quote }}
+  MONGO_PORT: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
+  MONGODB_DB_NAME: {{ $cm.MONGODB_DB_NAME | default "midaz-console" | quote }}
+  MONGODB_USER: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGODB_USER" "default" "midaz") | quote }}
+  # -- Additional MongoDB connection parameters (e.g., "tls=true&authSource=admin")
+  MONGO_PARAMETERS: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") | quote }}
+
+  # CRM Plugin Configuration
+  CRM_BASE_PATH: {{ $cm.CRM_BASE_PATH | default "http://midaz-crm.midaz.svc.cluster.local:4003/v1/" | quote }}
+
+  # Reporter Configuration
+  REPORTER_BASE_PATH: {{ $cm.REPORTER_BASE_PATH | default "http://reporter-manager.reporter.svc.cluster.local:4005/v1" | quote }}
+
+  # Account Type Validation
+  MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: {{ $cm.MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED | default "false" | quote }}
+  MIDAZ_ACCOUNT_TYPE_VALIDATION: {{ $cm.MIDAZ_ACCOUNT_TYPE_VALIDATION | default "" | quote }}
+
+  # NextJS Public Configuration
+  NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ $cm.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
+  NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: {{ $cm.NEXT_PUBLIC_PLUGIN_AUTH_ENABLED | default $pluginAuthEnabled | quote }}
+  NEXT_PUBLIC_MIDAZ_VERSION: {{ $cm.NEXT_PUBLIC_MIDAZ_VERSION | default "" | quote }}
+
   VERSION: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
   {{- with .Values.extraEnvVars }}
   {{- range $key, $value := . }}

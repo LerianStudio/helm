@@ -3,6 +3,14 @@
 {{- if ne $idCidrs $authCidrs -}}
 {{- fail "PLATFORM_INTERNAL_CIDRS must be identical on identity.configmap and auth.configmap: a skew leaks the platform ranges into the enforcement entry set, which on proxy-fronted environments allows everyone" -}}
 {{- end -}}
+{{- /* Datastore masks (lerian-common): connection identity + TOPOLOGY resolved via
+   global.datastores.<type> (shared, env-wide) with native auth.configmap.<KEY> and
+   dedicated .Values.datastores overrides taking precedence. Defaults keep the
+   bundled-dev topology → render-equivalent for existing users. A managed-cloud
+   profile sets redis.tls / postgres.ssl ONCE for both components. */ -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $ded := .Values.datastores | default dict -}}
+{{- $cm := .Values.auth.configmap -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -13,7 +21,10 @@ data:
   # -- Default Environment variables for the plugin-auth
   ALLOW_INSECURE_TLS: {{ .Values.auth.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   APPLICATION_NAME: {{ .Values.auth.configmap.APPLICATION_NAME | default "plugin-auth" | quote }}
-  ENV_NAME: {{ .Values.auth.configmap.ENV_NAME | default "development" | quote }}
+  {{- /* Environment name via the global mask (same shape as observability):
+     a managed profile / the operator sets global.env.name ONCE for every
+     component instead of the native ENV_NAME key on each. */}}
+  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") | quote }}
 
   # APP 
   SERVER_PORT: {{ .Values.auth.configmap.SERVER_PORT | default "4000" | quote }}
@@ -21,13 +32,13 @@ data:
   VERSION: {{ .Values.auth.image.tag | quote }}
 
   # REDIS
-  REDIS_HOST: {{ printf "%s:%s" (.Values.auth.configmap.REDIS_HOST | default (include "plugin-access-manager.valkeyHost" .)) (.Values.auth.configmap.REDIS_PORT | default "6379" | toString) | quote }}
-  REDIS_PORT: {{ .Values.auth.configmap.REDIS_PORT | default "6379" | quote }}
-  REDIS_USER: {{ .Values.auth.configmap.REDIS_USER | default "auth" | quote }}
+  REDIS_HOST: {{ printf "%s:%s" (include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (include "plugin-access-manager.valkeyHost" .))) (include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | toString) | quote }}
+  REDIS_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | quote }}
+  REDIS_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "auth") | quote }}
   REDIS_SCAN_COUNT: {{ .Values.auth.configmap.REDIS_SCAN_COUNT | default "500" | quote }}
   REDIS_MASTER_NAME: {{ .Values.auth.configmap.REDIS_MASTER_NAME | default "" | quote }}
-  REDIS_TLS: {{ .Values.auth.configmap.REDIS_TLS | default "false" | quote }}
-  REDIS_CA_CERT: {{ .Values.auth.configmap.REDIS_CA_CERT | default "" | quote }}
+  REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
+  REDIS_CA_CERT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "caCert" "nativeKey" "REDIS_CA_CERT" "default" "") | quote }}
   REDIS_USE_GCP_IAM: {{ .Values.auth.configmap.REDIS_USE_GCP_IAM | default "false" | quote }}
   REDIS_SERVICE_ACCOUNT: {{ .Values.auth.configmap.REDIS_SERVICE_ACCOUNT | default "" | quote }}
   GOOGLE_APPLICATION_CREDENTIALS: {{ .Values.auth.configmap.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
@@ -52,18 +63,20 @@ data:
   SECURE_LOG_FIELDS: {{ .Values.auth.configmap.SECURE_LOG_FIELDS | default "password,clientSecret" | quote }}
 
   # OPEN TELEMETRY
-  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.auth.configmap.OTEL_RESOURCE_SERVICE_NAME | default "auth" | quote }}
-  OTEL_LIBRARY_NAME: {{ .Values.auth.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/auth" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.auth.image.tag | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.auth.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "dev" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.auth.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.auth.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+  {{- include "lerian-common.otel.envFlat" (dict
+        "configmap" .Values.auth.configmap
+        "defaults" (dict
+          "OTEL_RESOURCE_SERVICE_NAME" "auth"
+          "OTEL_LIBRARY_NAME" "github.com/LerianStudio/auth"
+          "OTEL_RESOURCE_SERVICE_VERSION" .Values.auth.image.tag
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "dev"
+          "OTEL_EXPORTER_OTLP_ENDPOINT" "")) | nindent 2 }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
 
   # AUTHORIZER
   RUNNING_IN_DOCKER: {{ .Values.auth.configmap.RUNNING_IN_DOCKER | default "true" | quote }}
   AUTHORIZER_PORT: {{ .Values.auth.configmap.AUTHORIZER_PORT | default "8000" | quote }}
-  AUTHORIZER_ADDRESS: {{ .Values.auth.configmap.AUTHORIZER_ADDRESS | default (printf "http://%s:8000" (include "plugin-auth-backend.fullname" .)) | quote }}
+  AUTHORIZER_ADDRESS: {{ .Values.auth.configmap.AUTHORIZER_ADDRESS | default (printf "http://%s:%v" (include "plugin-caradhras.fullname" .) (include "caradhras.servicePort" .)) | quote }}
   AUTHORIZER_CLIENT_ID: {{ .Values.auth.configmap.AUTHORIZER_CLIENT_ID | default .Values.common.authorizer.clientId | quote }}
   AUTHORIZER_ORGANIZATION_NAME: {{ .Values.auth.configmap.AUTHORIZER_ORGANIZATION_NAME | default "lerian" | quote }}
   AUTHORIZER_APPLICATION_NAME: {{ .Values.auth.configmap.AUTHORIZER_APPLICATION_NAME | default "app-lerian" | quote }}
@@ -72,11 +85,11 @@ data:
   AUTHORIZER_M2M_ENFORCER_NAME: {{ .Values.auth.configmap.AUTHORIZER_M2M_ENFORCER_NAME | default "lerian-m2m-enforcer" | quote }}
 
   # DB
-  DB_HOST: {{ .Values.auth.configmap.DB_HOST | default (include "plugin-access-manager.authDatabaseHost" .) | quote }}
-  DB_USER: {{ .Values.auth.configmap.DB_USER | default "auth" | quote }}
+  DB_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" (include "plugin-access-manager.authDatabaseHost" .)) | quote }}
+  DB_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "auth") | quote }}
   DB_NAME: {{ .Values.auth.configmap.DB_NAME | default "casdoor" | quote }}
-  DB_PORT: {{ .Values.auth.configmap.DB_PORT | default "5432" | quote }}
-  DB_SSLMODE: {{ .Values.auth.configmap.DB_SSLMODE | default "disable" | quote }}
+  DB_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
+  DB_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSLMODE" "default" "disable") | quote }}
   USER_EXECUTE_COMMAND: {{ .Values.auth.configmap.USER_EXECUTE_COMMAND | default "postgres" | quote }}
 
   # CORS
@@ -97,7 +110,10 @@ data:
   RATE_LIMIT_PERMISSION_WINDOW_SEC: {{ .Values.auth.configmap.RATE_LIMIT_PERMISSION_WINDOW_SEC | default "60" | quote }}
 
   # MULTI-TENANCY
-  MULTI_TENANT_ENABLED: {{ .Values.auth.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- /* global.multiTenant.enabled: previously set by consumers but never
+     read by any template — wiring it through the mask makes it real instead
+     of dead configuration, and collapses the auth+identity duplication. */}}
+  MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
 
   # CIRCUIT BREAKER
   CIRCUIT_BREAKER_ENABLED: {{ .Values.auth.configmap.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
@@ -137,12 +153,34 @@ data:
   CACHE_MAX_ENTRIES_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_MAX_ENTRIES_ORG_PERMISSIONS | default "0" | quote }}
   CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS: {{ .Values.auth.configmap.CACHE_LOADER_TIMEOUT_ORG_PERMISSIONS | default "0" | quote }}
 
-  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false)
+  # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false). SD_ENABLED is the
+  # only key owned here. While disabled, the legacy static SD_* keys stay
+  # byte-identical to pre-productization (flat passthrough via envFlat) so
+  # existing installs (SD_ENABLED unset) render with zero diff. Once
+  # explicitly opted in (SD_ENABLED=true), the full derived SD_* sibling
+  # contract comes from the lerian-common mask (global.serviceDiscovery, same
+  # shape as datastores/env) instead of the legacy static block.
   SD_ENABLED: {{ .Values.auth.configmap.SD_ENABLED | default "false" | quote }}
-  SD_ADDRESS: {{ .Values.auth.configmap.SD_ADDRESS | default "localhost:8500" | quote }}
-  SD_EXTERNAL_ADDRESS: {{ .Values.auth.configmap.SD_EXTERNAL_ADDRESS | default "" | quote }}
-  SD_EXTERNAL_PORT: {{ .Values.auth.configmap.SD_EXTERNAL_PORT | default "0" | quote }}
-  SD_TLS: {{ .Values.auth.configmap.SD_TLS | default "false" | quote }}
+  {{- if eq (toString ($cm.SD_ENABLED | default "false")) "true" }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context"     $
+        "enabled"     true
+        "name"        (include "plugin-auth.fullname" .)
+        "port"        .Values.auth.service.port
+        "namespace"   .Release.Namespace
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.auth.ingress))
+        "configmap"   $cm
+      ) | nindent 2 }}
+  {{- else }}
+  {{- include "lerian-common.serviceDiscovery.envFlat" (dict
+        "configmap" $cm
+        "keys" (list "SD_ADDRESS" "SD_EXTERNAL_ADDRESS" "SD_EXTERNAL_PORT" "SD_TLS")
+        "defaults" (dict
+          "SD_ADDRESS" "localhost:8500"
+          "SD_EXTERNAL_ADDRESS" ""
+          "SD_EXTERNAL_PORT" "0"
+          "SD_TLS" "false")) | nindent 2 }}
+  {{- end }}
 
   # Extra Env Vars
   {{- with .Values.auth.extraEnvVars }}

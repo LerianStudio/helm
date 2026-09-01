@@ -11,10 +11,9 @@ metadata:
     {{- end }}
   {{- end }} 
 data:
-  # Common shared values
-  {{- range $key, $value := .Values.common.configmap }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
+  # Common shared values (dependency connections via lerian-common masks/helpers;
+  # everything else an escape-hatch passthrough — see reporter.commonConfigmapData)
+  {{- include "reporter.commonConfigmapData" . | nindent 2 }}
   # Service specific values
   {{- range $key, $value := .Values.manager.configmap }}
   {{ $key }}: {{ $value | quote }}
@@ -23,7 +22,7 @@ data:
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
   # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
   # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-  # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag
+  # VERSION and OTEL_RESOURCE_SERVICE_VERSION both track the running image tag
   VERSION: {{ .Values.manager.image.tag | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.manager.image.tag | quote }}
   # Extra Env Vars

@@ -1,3 +1,41 @@
+# Copy-paste starter for a managed/BYOC install. Every value here is set
+# through the lerian-common global masks — do NOT add native
+# {identity,auth}.configmap.<KEY> pins for ENV_NAME/AUTHORIZER_CLIENT_ID/
+# AUTH_ENABLED/AUTH_PORT/DB_NAME: a native key WINS over its mask and defeats
+# it (see values.yaml), and AUTH_ENABLED/AUTH_PORT/DB_NAME have no mask at all
+# — the chart already defaults them.
+
+global:
+  # -- Managed-cloud topology preset: aws | gcp | azure. Leave "" for the
+  # bundled in-cluster infra (plaintext). Endpoints (host/port/user) still
+  # come from global.datastores below.
+  cloud: ""
+  env:
+    name: "development"
+  multiTenant:
+    enabled: false
+  datastores:
+    redis:
+      port: 6379
+      user: "auth"
+    postgres:
+      port: 5432
+      user: "auth"
+  # -- Env-wide service discovery (Consul) tuning. Leave unset to keep it off
+  # (SD_ENABLED stays with {auth,identity}.configmap.SD_ENABLED per component).
+  # serviceDiscovery:
+  #   address: "consul.internal:8500"
+  #   tls: "true"
+  # -- Env-wide telemetry gate. Leave unset to keep the chart's own default.
+  # observability:
+  #   enabled: "true"
+
+common:
+  authorizer:
+    # -- Caradhras application client id, shared by the identity and auth
+    # components. Set ONCE here instead of per-component
+    # {identity,auth}.configmap.AUTHORIZER_CLIENT_ID.
+    clientId: "ac56c81d4d6d95c0ac12"
 
 identity:
   ingress:
@@ -13,12 +51,6 @@ identity:
 
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    ENV_NAME: "development"
-    AUTH_ENABLED: "true"
-    AUTH_PORT: "4000"
-    AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
-    REDIS_PORT: 6379
-    REDIS_USER: "auth"
 
   secrets:
     AUTHORIZER_CLIENT_SECRET: ""
@@ -40,13 +72,6 @@ auth:
 
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    DB_USER: "auth"
-    DB_PORT: 5432
-    DB_NAME: "casdoor"
-    ENV_NAME: "development"
-    REDIS_PORT: 6379
-    REDIS_USER: "auth"
-    AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
 
   secrets:
     DB_PASSWORD: ""
@@ -58,6 +83,16 @@ auth:
   initUser:
     enabled: true
 
+# Caradhras (auth backend — formerly the nested `auth.backend`/Casdoor path)
+# is now a top-level component. Its image/service/replicaCount default from
+# the chart (see values.yaml comments); set caradhras.* here only to override.
+# The Caradhras UI (SPA console) stays disabled by default.
+caradhras:
+  ui:
+    enabled: false
+
+# Bundled dependencies. On a managed-cloud install (global.cloud set), turn
+# both off — you're pointing at RDS/ElastiCache instead of the in-cluster bundle.
 auth-database:
   enabled: true
 

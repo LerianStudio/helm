@@ -33,10 +33,26 @@ fullnameOverride: ""
 namespaceOverride: "product-console"
 
 global:
+  # -- Env-wide SHARED MongoDB connection mask (set once per environment; a
+  # native configmap.<KEY> still overrides it). Consumed by
+  # lerian-common.datastore.value (type "mongo"). Fields: host, port, user,
+  # uri, params. MONGODB_DB_NAME is NOT masked (per-app database name).
+  datastores: {}
+  # -- Env-wide Access Manager (plugin-auth) gate/host. Consumed by
+  # lerian-common.globalValue (block "auth"). Fields: enabled, host.
+  # (configmap.PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST override.)
+  auth: {}
+  # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
+  # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  observability: {}
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
     enabled: false
+    # -- Connect mongosh with --tls --tlsInsecure (needed for managed MongoDB
+    # like AWS DocumentDB, which requires TLS on every connection — mirrors
+    # the app's own MONGO_PARAMETERS tlsInsecure=true cloud preset)
+    tls: false
     # -- MongoDB connection settings
     connection:
       # -- MongoDB host
@@ -188,65 +204,14 @@ otel:
   # -- OTEL collector HTTP port (OTLP/HTTP protocol)
   port: 4318
 
-# -- ConfigMap for environment variables and configurations
-# All values here will be set as environment variables in the deployment
-configmap:
-  # Application Configuration
-  NODE_ENV: "production"
-  MIDAZ_CONSOLE_PORT: "8081"
-
-  # OpenTelemetry Configuration
-  # Note: When otel.enabled=true or otel.external=true, OTEL_HOST and OTEL_URL_* are injected dynamically
-  ENABLE_TELEMETRY: "false"
-  OTEL_RECEIVER_HTTP_PORT: "4318"
-
-  # NextAuth Configuration
-  NEXTAUTH_URL: "http://localhost:8081"
-
-  # Midaz API Configuration
-  MIDAZ_API_HOST: "midaz-onboarding"
-  MIDAZ_API_PORT: "3000"
-  MIDAZ_BASE_PATH: "http://midaz-onboarding:3000/v1"
-  MIDAZ_TRANSACTION_BASE_HOST: "midaz-transaction"
-  MIDAZ_TRANSACTION_BASE_PORT: "3001"
-  MIDAZ_TRANSACTION_BASE_PATH: "http://midaz-transaction:3001/v1"
-
-  # Plugin Auth Configuration
-  PLUGIN_AUTH_ENABLED: "false"
-  PLUGIN_AUTH_CLIENT_ID: ""
-  PLUGIN_AUTH_HOST: "plugin-access-manager-auth"
-  PLUGIN_AUTH_PORT: "4000"
-  PLUGIN_AUTH_BASE_PATH: "http://plugin-access-manager-auth:4000/v1"
-
-  # Plugin Identity Configuration
-  PLUGIN_IDENTITY_HOST: "plugin-access-manager-identity"
-  PLUGIN_IDENTITY_PORT: "4001"
-  PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity:4001/v1"
-
-  # MongoDB Configuration
-  MONGODB_URI: "mongodb"
-  MONGO_HOST: "mongodb"
-  MONGO_PORT: "27017"
-  MONGODB_DB_NAME: "midaz-console"
-  MONGODB_USER: "midaz"
-  # -- Additional MongoDB connection parameters (e.g., "tls=true&authSource=admin")
-  MONGO_PARAMETERS: ""
-
-  # CRM Plugin Configuration
-  CRM_BASE_PATH: "http://crm-plugin:4003/v1/"
-
-  # Reporter Configuration
-  REPORTER_BASE_PATH: "http://reporter:3002/v1"
-
-  # Account Type Validation
-  MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: "false"
-  MIDAZ_ACCOUNT_TYPE_VALIDATION: ""
-
-  # NextJS Public Configuration
-  NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: "jpeg,jpg,png,svg"
-  NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: "midaz,plugin-fees,plugin-crm,plugin-smart-templates"
-  NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: "false"
-  NEXT_PUBLIC_MIDAZ_VERSION: ""
+# -- ConfigMap for environment variables and configurations.
+# All values here will be set as environment variables in the deployment.
+# Every key and its shipped default live ONLY in templates/configmap.yaml
+# (as `KEY | default "X"`, or via a lerian-common mask for
+# ENABLE_TELEMETRY/PLUGIN_AUTH_*/MONGODB_*/MONGO_*) — none are declared here.
+# Add a key below only when you need to override its shipped default, e.g.:
+#   NODE_ENV: "development"
+configmap: {}
 
 # -- Extra environment variables from ConfigMap (merged with configmap values)
 extraEnvVars: {}
@@ -254,6 +219,10 @@ extraEnvVars: {}
 # -- Secrets for storing sensitive data
 # All values here will be base64 encoded and set as environment variables
 secrets:
+  # -- Optional: set instead of configmap.PLUGIN_AUTH_CLIENT_ID when the
+  # client_id shouldn't sit in a ConfigMap. When non-empty, templates/configmap.yaml
+  # omits its own PLUGIN_AUTH_CLIENT_ID key so the env var isn't declared twice.
+  PLUGIN_AUTH_CLIENT_ID: ""
   PLUGIN_AUTH_CLIENT_SECRET: ""
   NEXTAUTH_SECRET: ""
   MONGODB_PASS: ""

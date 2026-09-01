@@ -55,15 +55,22 @@ Inputs (dict):
 {{- if hasKey . "dedicated" -}}{{- $ded = (.dedicated | default dict) -}}{{- end -}}
 {{- $dedicated := index $ded .name | default dict -}}
 {{- $shared := index ((.context.Values.global | default dict).objectStorage | default dict) .name | default dict -}}
+{{- /* Cloud preset tier: global.cloud selects object-storage topology (usePathStyle/
+   disableSSL — see _cloud.tpl), below an explicit shared/dedicated value and above
+   the hardcoded default. Keyed by the literal "objectStorage" kind (topology is
+   per-cloud, not per mask-instance name). */ -}}
+{{- $cloudBlk := include "lerian-common.cloud.block" (dict "context" .context "kind" "objectStorage") | fromYaml -}}
 {{/* Ordered presence checks (not chained sprig `default`) so an explicit `false`
-     at any tier — native key, dedicated, shared, or default — wins instead of
-     falling through to a lower-priority value. */}}
+     at any tier — native key, dedicated, shared, cloud preset, or default — wins
+     instead of falling through to a lower-priority value. */}}
 {{- if hasKey $cm .nativeKey -}}
 {{- index $cm .nativeKey -}}
 {{- else if hasKey $dedicated .field -}}
 {{- index $dedicated .field -}}
 {{- else if hasKey $shared .field -}}
 {{- index $shared .field -}}
+{{- else if hasKey $cloudBlk .field -}}
+{{- index $cloudBlk .field -}}
 {{- else if hasKey . "default" -}}
 {{- .default -}}
 {{- else -}}

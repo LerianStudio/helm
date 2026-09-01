@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.9.0` | 3.8.2 | 3.8.2 |
+| `9.0.0` | 3.8.3 | 3.8.2 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -35,9 +35,9 @@ For implementation and configuration details, see the [README](https://charts.le
 
 #### Application Version Mapping
 
-| Chart Version | Auth Version | Identity Version |
-| :---: | :---: | :---: |
-| `9.0.0` | 3.1.0 | 3.1.0 |
+| Chart Version | Auth Version | Identity Version | Caradhras Version |
+| :---: | :---: | :---: | :---: |
+| `9.2.0` | 3.1.0 | 3.1.0 | 1.2.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -50,7 +50,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `7.3.0` | 3.4.0 | `3.0.0` |
+| `8.0.1` | 3.4.0 | `3.0.0` |
 
 -----------------
 
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.2.0` | 2.3.0 | 2.3.0 |
+| `4.2.0` | 3.0.0 | 3.0.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -77,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `1.5.0` | 1.0.0 |
+| `2.0.0` | 1.0.0 |
 -----------------
 
 
@@ -93,6 +93,23 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Pix Version | Job Version |
 | :---: | :---: | :---: |
 | `3.0.0` | 1.2.1-beta.11 | 1.2.1-beta.12 |
+-----------------
+
+### Plugin BR Pix JD
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-jd).
+
+Multi-component chart (`api` + `worker`) for the Go PIX Direct plugin. Not a rename of
+`plugin-br-pix-direct-jd`, which targets the retired TypeScript service and stays as it is.
+The app publishes one image per entry point — `plugin-br-pix-jd` (`cmd/app`) and
+`plugin-br-pix-jd-worker` (`cmd/worker`) — and the release pipeline builds only the
+component that changed, so their tags may legitimately differ.
+
+#### Application Version Mapping
+
+| Chart Version | API Version | Worker Version |
+| :---: | :---: | :---: |
+| `0.4.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Switch
@@ -116,7 +133,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `3.8.0` | 1.9.1 | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 |
+| `4.0.0` | 1.10.0 | 1.10.0 | 1.10.0 | 1.10.0 | 1.10.0 |
 
 -----------------
 
@@ -191,7 +208,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `3.3.0` | 1.10.0 |
+| `4.0.0` | 1.10.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -272,5 +289,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `1.5.0` |
+| `2.1.0` |
 -----------------

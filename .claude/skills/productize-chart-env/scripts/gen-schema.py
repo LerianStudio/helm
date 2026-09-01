@@ -38,6 +38,10 @@ Usage:
 
 --env + --rendered-keys guard the `configmap` escape hatch with `propertyNames.enum` (the UNION
 of both — see the ENV_KEYS note). Omit both to leave `configmap` fully open (no typo protection).
+
+--open-prefixes DATASOURCE_ (comma-separated) relaxes the enum into `anyOf: [enum, pattern ^PREFIX...]`
+for key families the app fans out per-deploy and that can't be enumerated (reporter's
+`DATASOURCE_<name>_*` — the operator names the datasources). Typos OUTSIDE the namespace still fail.
 """
 import argparse, json, re, sys, os
 
@@ -90,8 +94,13 @@ try:
 except ImportError:
     sys.stderr.write("gen-schema needs PyYAML (pip install pyyaml)\n"); sys.exit(2)
 
+# Subchart value blocks stay permissive. Real subcharts are auto-detected from Chart.yaml
+# (see main()); this set is the fallback for when --chart-dir is omitted. NOTE: "common" is
+# NOT listed — Bitnami's `common` is a LIBRARY chart with no values block, and a chart may
+# legitimately use a top-level `common:` config block (e.g. reporter's shared configmap) that
+# MUST get the escape-hatch enum guard, not be treated as an opaque subchart.
 SUBCHARTS = {"postgresql", "valkey", "redis", "rabbitmq", "mongodb", "kafka",
-             "lerian-common-helm", "lerian-common", "common"}
+             "lerian-common-helm", "lerian-common"}
 OPEN_MAPS = {"configmap", "data", "extraEnvVars", "extraEnvVarsCM", "extraEnvVarsSecret",
              "podAnnotations", "podLabels", "annotations", "commonLabels", "labels",
              "matchLabels", "selectorLabels", "nodeSelector", "extraObjects", "secrets",
@@ -106,11 +115,27 @@ ENVLIKE = re.compile(r"^[A-Z][A-Z0-9_]+$")          # env-var-like key
 # `datastores`/`objectStorage` are keyed by <type>/<name> (each child is one mask instance);
 # `kms` is a single direct block. Keep this in sync with the contract table.
 MASK_FIELDS = {
-    "datastores":    ["host", "port", "user", "name", "ssl", "uri", "replicaHost"],
+    "datastores":    ["host", "port", "user", "name", "ssl", "uri", "replicaHost", "tls", "caCert", "scheme", "amqpPort", "params"],
     "objectStorage": ["endpoint", "region", "bucket", "disableSSL", "usePathStyle"],
     "kms":           ["vendor", "vaultAddr", "vaultAuthMethod", "vaultRoleId", "vaultMount"],
 }
 MASK_KEYED = {"datastores", "objectStorage"}        # child = <type>/<name>; kms is direct
+
+# GLOBAL-ONLY direct mask blocks: finite field sets from the lerian-common globalValue contract
+# (references/dependency-contract.md). Closed ONLY under `global` — the top-level operational
+# `observability:` block is a DIFFERENT, open chart config (see open_map_schema's leaf guard).
+# serviceDiscovery is deliberately NOT here: its lib-service-discovery contract is consumed
+# via .envFlat with no dedicated global.serviceDiscovery field set at all (chart-specific),
+# so there is nothing finite to close against — it stays open via open_map_schema below.
+GLOBAL_MASK_FIELDS = {
+    "observability": ["deploymentEnvironment", "enabled", "otlpEndpoint"],
+    "auth":          ["enabled", "host"],
+    "env":           ["name"],
+    "streaming":     ["enabled", "brokers", "compression", "requiredAcks",
+                       "saslAllowPlaintext", "saslMechanism", "saslUsername", "tlsEnabled",
+                       "batchLingerMs", "importantEmitTimeoutMs"],
+    "multiTenant":   ["enabled", "url", "redisHost", "redisPort", "redisTls"],
+}
 
 
 def _mask_block(fields):
@@ -130,6 +155,15 @@ def mask_schema(key, desc, path):
         s["description"] = d
     return s
 
+
+def global_mask_schema(key, desc, path):
+    # A global-only direct mask block (any GLOBAL_MASK_FIELDS key): finite + closed, like _mask_block.
+    s = _mask_block(GLOBAL_MASK_FIELDS[key])
+    d = desc.get(path, (None, None))[0]
+    if d:
+        s["description"] = d
+    return s
+
 # The valid NATIVE_KEY allowlist guarding the `configmap`/`data` escape hatch with
 # `propertyNames.enum`: a typo'd override (configmap.RATE_LIMIT_MAXX) is rejected while any real
 # key is accepted — typo protection for the tiered model WITHOUT typing every key as a knob.
@@ -139,6 +173,13 @@ def mask_schema(key, desc, path):
 # gap): those are legitimate escape-hatch overrides and a .env-only enum would wrongly reject
 # them. When neither source is given, `configmap` stays fully open (no enum).
 ENV_KEYS = set()
+# Namespaced OPEN prefixes (--open-prefixes): key families the app fans out at deploy time and
+# that CANNOT be enumerated — e.g. reporter lets an operator configure N datasources under
+# `DATASOURCE_<name>_*` where <name> is deployment-defined (TRANSACTION, FEES, CRM, ...). A closed
+# enum built from the .env can only ever list the EXAMPLE names, so real deploys get rejected. For
+# these, the propertyNames guard becomes `anyOf: [enum, pattern ^PREFIX...]` — still catches a typo
+# OUTSIDE the namespace (REDIS_HOSTX) while accepting any well-formed key INSIDE it.
+OPEN_PREFIXES = []
 _ENV_KEY = re.compile(r"^#?\s*([A-Z][A-Z0-9_]+)\s*=")   # active OR commented-optional env var
 _KEY = re.compile(r"^([A-Z][A-Z0-9_]+)\s*$")            # bare key (one per line) for --rendered-keys
 
@@ -161,6 +202,17 @@ def parse_key_list(path):
     return keys
 
 
+def _allow(keys):
+    """The propertyNames guard for a configmap escape hatch: the closed enum of known keys,
+    plus (when --open-prefixes is set) an OR'd pattern that accepts any well-formed key under a
+    deployment-namespaced prefix (see OPEN_PREFIXES). Keeps typo protection outside the namespace."""
+    enum = {"enum": sorted(keys)}
+    if OPEN_PREFIXES:
+        pat = "^(" + "|".join(re.escape(p) for p in OPEN_PREFIXES) + ")[A-Z0-9_]+$"
+        return {"anyOf": [enum, {"pattern": pat}]}
+    return enum
+
+
 def open_map_schema(child_path, node, desc):
     """Open passthrough object. For the `configmap`/`data` escape hatch, guard the KEYS with the
     .env allowlist (propertyNames.enum) — handles both the wrapped style (keys directly under
@@ -171,7 +223,15 @@ def open_map_schema(child_path, node, desc):
         cs["description"] = cd
     leaf = child_path.split(".")[-1]
     if ENV_KEYS and leaf in ("configmap", "data"):
-        allow = {"enum": sorted(ENV_KEYS)}
+        # The enum is env/rendered keys UNIONed with the block's OWN shipped sub-keys — a
+        # chart may carry reserved non-env keys (e.g. `annotations` for the ConfigMap
+        # metadata) that are valid by construction and must not be rejected. For a flat
+        # chart the shipped keys live under `configmap.data`, so read OWN from there (not the
+        # outer node, whose keys are `data`/`annotations`); wrapped charts read them directly.
+        own_node = (node["data"] if leaf == "configmap" and isinstance(node, dict)
+                    and isinstance(node.get("data"), dict) else node)
+        own = set(own_node) if isinstance(own_node, dict) else set()
+        allow = _allow(ENV_KEYS | own)
         if leaf == "configmap" and isinstance(node, dict) and "data" in node:
             # flat chart: the escape hatch is `configmap.data` — guard the nested map's keys.
             cs["properties"] = {"data": {"type": "object", "additionalProperties": True,
@@ -183,6 +243,23 @@ def open_map_schema(child_path, node, desc):
     # contract — the rest of the block stays open (additionalProperties: true).
     if isinstance(node, dict):
         masks = {k: mask_schema(k, desc, f"{child_path}.{k}") for k in node if k in MASK_FIELDS}
+        if leaf == "global":
+            # global-only direct mask blocks (any GLOBAL_MASK_FIELDS key): close them too so a typo like
+            # global.observability.otlpEndpointX is rejected. Scoped to `global` so the top-level
+            # operational `observability:` block (a different, open chart config) stays open.
+            masks.update({k: global_mask_schema(k, desc, f"{child_path}.{k}")
+                          for k in node if k in GLOBAL_MASK_FIELDS})
+            # Remaining dict-valued global children NOT in GLOBAL_MASK_FIELDS (e.g.
+            # serviceDiscovery, or any future uncontracted block) have no finite
+            # lerian-common field set to close against. Leaving them out of `properties`
+            # entirely means they'd fall through to global's blanket additionalProperties:true
+            # with ZERO type info, indistinguishable from a typo'd key. Declare them as open
+            # objects (type:object, additionalProperties:true) instead — still permissive,
+            # but now documented and typed as an object.
+            masks.update({k: open_map_schema(f"{child_path}.{k}", v, desc)
+                          for k, v in node.items()
+                          if isinstance(v, dict) and k not in MASK_FIELDS
+                          and k not in GLOBAL_MASK_FIELDS and k not in masks})
         if masks:
             cs.setdefault("properties", {}).update(masks)
     return cs
@@ -338,23 +415,51 @@ def main():
                     help="file of NATIVE_KEYs the chart RENDERS (one per line; e.g. "
                          "`helm template <enable-all> | yq '..data|keys'`). UNIONed with --env so "
                          "the allowlist covers helper-emitted keys the .env.example omits.")
+    ap.add_argument("--open-prefixes", default=None,
+                    help="comma-separated key prefixes the app fans out per-deploy and that CANNOT "
+                         "be enumerated (e.g. reporter's DATASOURCE_ — N deployment-defined "
+                         "datasources). The configmap guard becomes anyOf:[enum, pattern ^PREFIX...] "
+                         "so any well-formed key under the prefix passes while typos elsewhere fail.")
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args()
 
-    global ENV_KEYS
+    global ENV_KEYS, OPEN_PREFIXES
     if a.env:
         ENV_KEYS |= parse_env_keys(a.env)
     if a.rendered_keys:
         ENV_KEYS |= parse_key_list(a.rendered_keys)
+    if a.open_prefixes:
+        OPEN_PREFIXES = [p.strip() for p in a.open_prefixes.split(",") if p.strip()]
 
     values = yaml.safe_load(open(a.values)) or {}
     desc = descriptions(a.values)
     tgroups = template_group_fields(a.chart_dir) if a.chart_dir else {}
+    # Auto-detect this chart's subcharts from Chart.yaml so their (opaque, upstream)
+    # value blocks stay permissive — the hardcoded SUBCHARTS set can't know every
+    # dependency name (e.g. seaweedfs, keda, otel-collector-lerian). Union, never shrink.
+    # LIBRARY dependencies are NOT subcharts: a library chart (e.g. lerian-common) ships
+    # helpers, not a permissive values block — its typed masks must stay enum-guarded.
+    if a.chart_dir:
+        cy = os.path.join(a.chart_dir, "Chart.yaml")
+        if os.path.exists(cy):
+            with open(cy) as fh:
+                meta = yaml.safe_load(fh) or {}
+            for dep in (meta.get("dependencies") or []):
+                if dep.get("type") == "library":
+                    continue
+                nm = dep.get("alias") or dep.get("name")
+                if nm:
+                    SUBCHARTS.add(nm)
     # ROOT: always open (subcharts/global live here); enumerate top-level for docs but permit extras
     props = {}
     for k, v in values.items():
         cp = k
-        if is_open(k, v) and cp not in tgroups:
+        if k in MASK_FIELDS:
+            # A top-level dependency-mask block (e.g. a chart whose dedicated `datastores`
+            # lives at the root because more than one component shares it) — close it by the
+            # contract's finite field set, same as when it's nested under a component/global.
+            props[k] = mask_schema(k, desc, cp)
+        elif is_open(k, v) and cp not in tgroups:
             props[k] = open_map_schema(cp, v, desc)
         else:
             props[k] = build(v, cp, desc, tgroups)

@@ -140,21 +140,27 @@ See [`values.yaml`](./values.yaml) for the full list, and [`values-template.yaml
 
 In production, you typically:
 
-`global.externalPostgresDefinitions.connection.host`/`.port` must be set to
-the same real external host/port as `app.configmap.POSTGRES_HOST`/
-`POSTGRES_PORT` below — the app, the control-plane migrations Job, and the
-bootstrap Job all need to agree on one Postgres, and the chart's own default
-for `connection.host`/`.port` names the bundled subchart's Service, not your
-external instance.
-
-1. **Disable the in-cluster PostgreSQL** and point at a managed service:
+1. **Disable the in-cluster PostgreSQL** and point at a managed service.
+   `global.externalPostgresDefinitions.connection.host`/`.port` must be set
+   to the same real external host/port as `app.configmap.POSTGRES_HOST`/
+   `POSTGRES_PORT` — the app, the control-plane migrations Job, and the
+   bootstrap Job all need to agree on one Postgres, and the chart's own
+   default for `connection.host`/`.port` names the bundled subchart's
+   Service, not your external instance:
    ```yaml
    postgresql:
      enabled: false
 
+   global:
+     externalPostgresDefinitions:
+       connection:
+         host: my-rds-instance.example.com
+         port: "5432"
+
    app:
      configmap:
        POSTGRES_HOST: my-rds-instance.example.com
+       POSTGRES_PORT: "5432"
        POSTGRES_SSLMODE: require
    ```
 

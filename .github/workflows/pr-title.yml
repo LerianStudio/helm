@@ -58,6 +58,7 @@ jobs:
             br-ccs
             br-slc
             br-sfn
+            streaming-hub
             new
             charts
             common

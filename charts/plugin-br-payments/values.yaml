@@ -345,9 +345,17 @@ app:
     # released plugin-br-payments image, which does NOT yet contain the
     # /controlplane-migrate binary (still on an unmerged branch). Do not set
     # true until a plugin-br-payments release containing the binary is
-    # deployed — see CHANGELOG.md. Also requires
-    # app.configmap.MULTI_TENANT_ENABLED=true and
-    # global.externalPostgresDefinitions.enabled=true to actually render.
+    # deployed — see CHANGELOG.md. The Job renders only when all four are
+    # true: app.configmap.MULTI_TENANT_ENABLED=true,
+    # global.externalPostgresDefinitions.enabled=true, the chart's own
+    # "postgresql.enabled" helper resolves to "false" (Postgres is
+    # genuinely external, not just flagged as such), and this
+    # controlplaneMigrations.enabled=true. See
+    # templates/controlplane-migrations.yaml's header comment for why each
+    # condition exists. Independently of this gate,
+    # plugin-br-payments.validatePostgresExclusivity fails the whole render
+    # with fail() if postgresql.enabled/postgresql.external are set to the
+    # contradictory bundled-and-external combination.
     enabled: false
     # -- Resource requests and limits for the migrations Job. Deliberately
     # smaller than app.resources: this runs once, briefly, not steady-state

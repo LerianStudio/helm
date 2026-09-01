@@ -59,22 +59,35 @@ annotation and is a normal Sync-phase resource, so on a first
 install/first ArgoCD sync it does not exist yet when this PreSync hook runs —
 envFrom against it produced CreateContainerConfigError and a release that
 could never complete. Mirrors charts/plugin-br-bank-transfer/templates/migrations.yaml
-and charts/br-slc, which avoid the same trap the same way. POSTGRES_HOST and
-POSTGRES_PORT read UNCONDITIONALLY from
-global.externalPostgresDefinitions.connection.host/.port — mirroring
-templates/bootstrap-postgres.yaml's own DB_HOST/DB_PORT exactly, not merely
-"the same values" — rather than from app.configmap.POSTGRES_HOST/
-POSTGRES_PORT. Deliberately no app.configmap.POSTGRES_HOST/POSTGRES_PORT
-override branch here: app.configmap.POSTGRES_PORT ships a non-empty chart
-default ("5432" in values.yaml), so an "override wins when set" branch would
-have silently ignored global.externalPostgresDefinitions.connection.port
-every time — the exact class of bug this fix exists to close. It would also
-let this Job's migrations target a host different from the one
-bootstrap-postgres.yaml (weight -10) just created the role/database on,
-which is never correct once the gate above has established this render path
-is genuinely-external-only. templates/configmap.yaml's own dynamic
-POSTGRES_HOST resolution (for the app Deployment, which runs in both bundled
-and external modes) is untouched and unrelated to this Job.
+and charts/br-slc, which avoid the same trap the same way.
+
+POSTGRES_HOST/POSTGRES_PORT read from app.configmap.POSTGRES_HOST/
+POSTGRES_PORT — the SAME source templates/deployment.yaml's app container
+resolves via its envFrom of templates/configmap.yaml — NOT from
+global.externalPostgresDefinitions.connection.host/.port. This Job's
+migrations must land on the exact database the app is about to connect to,
+and that is never guaranteed to be the same value: connection.host/.port only
+default to the BUNDLED subchart's own Service name/port
+("plugin-br-payments-postgresql-primary" / "5432" in values.yaml) and exist
+to tell templates/bootstrap-postgres.yaml (weight -10) which external host to
+provision a role/database on — an operator following this chart's own README
+"Production layout" sets app.configmap.POSTGRES_HOST to the real external
+host but is never required to touch connection.host to the same value, so
+reading connection.host here rendered this Job against the bundled Service
+name while the app's ConfigMap correctly resolved to the real host: two
+templates, two different hosts, from the exact same values. Reading
+app.configmap.POSTGRES_HOST/POSTGRES_PORT here instead keeps this Job and the
+app Deployment in agreement by construction. configmap.yaml's resolution has
+a second branch — deriving a host dynamically from the bundled subchart's own
+name helper when postgresql.enabled is genuinely true — but the render gate
+above already requires "postgresql.enabled" to resolve to "false" before this
+Job renders at all, so that branch can never apply here and is intentionally
+not reproduced; app.configmap.POSTGRES_HOST is the only live source in this
+Job's own external-only context, exactly as it is for the app in that same
+context. POSTGRES_PORT is never derived in configmap.yaml either — it is a
+straight copy of app.configmap.POSTGRES_PORT (chart default "5432") — so this
+Job copies it the same way.
+
 POSTGRES_PASSWORD stays a secretRef (unchanged) — templates/secrets.yaml IS
 already a pre-install hook at weight -5, so it lands safely before this Job
 (-1).
@@ -149,17 +162,20 @@ spec:
           # Inlined connection settings — NOT envFrom the app ConfigMap. See
           # the file header comment: that ConfigMap is a plain Sync-phase
           # resource and does not exist yet when this PreSync hook runs on a
-          # first install. POSTGRES_HOST/POSTGRES_PORT read unconditionally
-          # from global.externalPostgresDefinitions.connection.host/.port —
-          # mirroring templates/bootstrap-postgres.yaml's own DB_HOST/DB_PORT
-          # exactly — because the render gate above guarantees this Job only
-          # ever runs in the genuinely-external mode, and this must be the
-          # same host bootstrap-postgres.yaml (weight -10) just provisioned.
+          # first install. POSTGRES_HOST/POSTGRES_PORT read from
+          # app.configmap.POSTGRES_HOST/POSTGRES_PORT — the same source
+          # templates/deployment.yaml's app container resolves via its
+          # envFrom of templates/configmap.yaml — so this Job's migrations
+          # always target the exact host/port the app itself will connect
+          # to, rather than global.externalPostgresDefinitions.connection.host/
+          # .port, whose non-empty chart defaults name the BUNDLED subchart's
+          # own Service and exist only to tell templates/bootstrap-postgres.yaml
+          # which external host to provision a role/database on.
           env:
             - name: POSTGRES_HOST
-              value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
+              value: {{ .Values.app.configmap.POSTGRES_HOST | quote }}
             - name: POSTGRES_PORT
-              value: {{ .Values.global.externalPostgresDefinitions.connection.port | quote }}
+              value: {{ .Values.app.configmap.POSTGRES_PORT | quote }}
             - name: POSTGRES_USER
               value: {{ .Values.app.configmap.POSTGRES_USER | default "plugin_br_payments" | quote }}
             - name: POSTGRES_DB

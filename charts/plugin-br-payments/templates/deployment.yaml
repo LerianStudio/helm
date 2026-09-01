@@ -49,7 +49,23 @@ spec:
       hostAliases:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if eq (include "postgresql.enabled" .) "true" }}
+      {{- /*
+      Render whenever a real Postgres host is actually going to be reachable:
+      the bundled subchart (postgresql.enabled helper resolves "true", host
+      derived dynamically in templates/configmap.yaml and always non-empty),
+      OR an external host explicitly configured via
+      app.configmap.POSTGRES_HOST — the exact same value
+      templates/configmap.yaml resolves POSTGRES_HOST to for this container's
+      own envFrom in that mode (see templates/controlplane-migrations.yaml's
+      header comment for the same resolution). Gating on the
+      "postgresql.enabled" helper alone silently dropped this init container
+      for every external-Postgres production install (this chart's own
+      documented README "Production layout": postgresql.enabled=false,
+      app.configmap.POSTGRES_HOST=<external host>) once that helper's
+      pre-existing Sprig `default` bug was fixed — pods then started racing a
+      Postgres that might not be reachable yet instead of waiting for it.
+      */}}
+      {{- if or (eq (include "postgresql.enabled" .) "true") .Values.app.configmap.POSTGRES_HOST }}
       initContainers:
         - name: wait-for-postgres
           image: busybox:1.37

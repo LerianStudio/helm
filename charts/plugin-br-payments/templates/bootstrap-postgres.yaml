@@ -16,7 +16,18 @@ PreSync hook. The extra "postgresql.enabled" != "true" check (same helper
 templates/configmap.yaml, templates/deployment.yaml, and
 templates/controlplane-migrations.yaml already use to tell bundled from
 external) closes that gap.
+
+That helper-based check is still not sufficient on its own: it is an OR of
+postgresql.enabled/postgresql.external, but Chart.yaml's dependency condition
+(`condition: postgresql.enabled`) reads only the literal postgresql.enabled,
+so postgresql.external=true with postgresql.enabled left at its default true
+still renders the bundled subchart even though the helper above would call
+that combination "external". plugin-br-payments.validatePostgresExclusivity
+(_helpers.tpl) fails the whole render on that literal combination,
+independently of this render gate, so this Job never races the bundled
+StatefulSet no matter which of the two flags an operator sets.
 */}}
+{{- include "plugin-br-payments.validatePostgresExclusivity" . }}
 {{- if and .Values.global.externalPostgresDefinitions.enabled (ne (include "postgresql.enabled" .) "true") }}
 apiVersion: batch/v1
 kind: Job

@@ -35,6 +35,17 @@ Renders ONLY when all four are true:
     to exist before this Job runs at weight -1, and now shares the identical
     exclusivity gate) — so it stays gated out of the bundled-Postgres path
     entirely rather than pretend to support it.
+
+    That "postgresql.enabled" helper is itself only an OR of two flags
+    (postgresql.enabled/postgresql.external) and does not track Chart.yaml's
+    actual dependency condition (`condition: postgresql.enabled`, the literal
+    value alone) — so postgresql.external=true with postgresql.enabled left
+    at its default true still renders the bundled subchart while this helper
+    reports "external", passing the render gate below straight into a double
+    render. plugin-br-payments.validatePostgresExclusivity (_helpers.tpl,
+    included unconditionally below, before the render gate) fails the whole
+    render on that literal combination regardless of which of the two flags
+    is set, closing that gap independently of this gate.
   - app.controlplaneMigrations.enabled=true (default false) — app.image
     resolves to the currently released plugin-br-payments image today, which
     does NOT contain /controlplane-migrate; that binary exists only on an
@@ -75,6 +86,7 @@ Job is still in flight. Deployments that need a longer migration budget must
 pass a matching `--timeout` explicitly.
 */}}
 {{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") }}
+{{- include "plugin-br-payments.validatePostgresExclusivity" . }}
 {{- if and (eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true") .Values.global.externalPostgresDefinitions.enabled (ne (include "postgresql.enabled" .) "true") .Values.app.controlplaneMigrations.enabled }}
 apiVersion: batch/v1
 kind: Job

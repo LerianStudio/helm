@@ -156,6 +156,34 @@ false
 {{- end -}}
 {{- end -}}
 
+{{- /*
+Exclusivity guard between the bundled postgresql subchart and
+global.externalPostgresDefinitions, kept SEPARATE from the "postgresql.enabled"
+helper above on purpose: that helper is an OR of two flags
+(postgresql.enabled / postgresql.external) meant to answer "which host does
+this release talk to", but Chart.yaml's dependency condition
+(`condition: postgresql.enabled`) only ever reads the literal
+.Values.postgresql.enabled — it has no idea postgresql.external exists. So an
+operator who sets postgresql.external=true while leaving postgresql.enabled
+at its default true gets a "postgresql.enabled" helper that answers "false"
+(external) while Helm's own dependency condition still resolves true and
+renders the bundled StatefulSet/Service/Secret anyway. A gate built on the
+helper (templates/controlplane-migrations.yaml, templates/bootstrap-postgres.yaml)
+would then wrongly believe it is safe to also render against
+global.externalPostgresDefinitions.connection.host, producing the exact
+double-render/race this chart's exclusivity gates exist to prevent — with
+zero warning. This check is keyed on the SAME literal .Values.postgresql.enabled
+Chart.yaml itself uses, not the helper, so it fails closed regardless of which
+of postgresql.enabled=false / postgresql.external=true an operator sets:
+either one alone still passes; only actually turning off the literal
+postgresql.enabled avoids it.
+*/}}
+{{- define "plugin-br-payments.validatePostgresExclusivity" -}}
+{{- if and .Values.postgresql.enabled .Values.global.externalPostgresDefinitions.enabled }}
+{{- fail "\n\nERROR: postgresql.enabled and global.externalPostgresDefinitions.enabled cannot both be true.\n   Chart.yaml's postgresql dependency is gated on the literal postgresql.enabled\n   value alone (condition: postgresql.enabled), so leaving it at its default\n   true still renders the bundled PostgreSQL subchart even when\n   postgresql.external is also set to true. Set postgresql.enabled: false to\n   use an external Postgres (global.externalPostgresDefinitions), or set\n   global.externalPostgresDefinitions.enabled: false to use the bundled one.\n" }}
+{{- end }}
+{{- end -}}
+
 {{/*
 ================================================================================
 VALIDATION HELPERS

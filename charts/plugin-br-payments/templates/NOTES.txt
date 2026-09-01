@@ -32,7 +32,7 @@ HTTP API + reconciliation worker + outbox dispatcher run as goroutines in one pr
    - User:     {{ .Values.postgresql.auth.username }}
 {{- else if .Values.global.externalPostgresDefinitions.enabled }}
 1. PostgreSQL (external, bootstrapped by Helm)
-   - Host: {{ .Values.global.externalPostgresDefinitions.connection.host }}:{{ .Values.global.externalPostgresDefinitions.connection.port }}
+   - Host: {{ .Values.app.configmap.POSTGRES_HOST }}:{{ .Values.app.configmap.POSTGRES_PORT }}
    - Database/Role: plugin_br_payments
 {{- else }}
 1. PostgreSQL (external, expected to be pre-provisioned)
@@ -50,7 +50,9 @@ The following values MUST be set for the deployment to start successfully:
   - app.secrets.BTG_CLIENT_ID             (BTG OAuth2 client ID)
   - app.secrets.BTG_CLIENT_SECRET         (BTG OAuth2 client secret)
   - app.secrets.BTG_WEBHOOK_SECRET        (BTG webhook bearer token)
-  - app.secrets.POSTGRES_PASSWORD         (PostgreSQL application password)
+{{- if and (ne (include "postgresql.enabled" .) "true") (not .Values.postgresql.auth.existingSecret) }}
+  - app.secrets.POSTGRES_PASSWORD         (PostgreSQL application password; required for external Postgres without postgresql.auth.existingSecret)
+{{- end }}
   - app.secrets.INTERNAL_API_KEY          (>=32 chars; required for SERVICE_TYPE=both/worker)
   - app.secrets.CREDENTIAL_ENCRYPTION_KEY (base64 AES-256; required for SERVICE_TYPE=both/worker)
   - app.secrets.LICENSE_KEY               (recommended — required in production)

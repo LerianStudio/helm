@@ -141,21 +141,17 @@ See [`values.yaml`](./values.yaml) for the full list, and [`values-template.yaml
 In production, you typically:
 
 1. **Disable the in-cluster PostgreSQL** and point at a managed service.
-   `global.externalPostgresDefinitions.connection.host`/`.port` must be set
-   to the same real external host/port as `app.configmap.POSTGRES_HOST`/
-   `POSTGRES_PORT` — the app, the control-plane migrations Job, and the
-   bootstrap Job all need to agree on one Postgres, and the chart's own
-   default for `connection.host`/`.port` names the bundled subchart's
-   Service, not your external instance:
+   `app.configmap.POSTGRES_HOST`/`POSTGRES_PORT` is the single source the
+   app Deployment, the control-plane migrations Job, and the bootstrap Job
+   all read to reach Postgres — set it to your real external host/port.
+   `global.externalPostgresDefinitions.connection.host`/`.port` is no longer
+   read by any template (kept only for backward compatibility with older
+   overlays) — you do not need to set it, and setting it to a different
+   value than `app.configmap.POSTGRES_HOST`/`.PORT` has no effect on where
+   the bootstrap Job connects:
    ```yaml
    postgresql:
      enabled: false
-
-   global:
-     externalPostgresDefinitions:
-       connection:
-         host: my-rds-instance.example.com
-         port: "5432"
 
    app:
      configmap:
@@ -171,14 +167,14 @@ In production, you typically:
      existingSecretName: plugin-br-payments-secrets
    ```
 
-3. **Optional bootstrap** for a fresh external Postgres (creates DB + role + grants, idempotent):
+3. **Optional bootstrap** for a fresh external Postgres (creates DB + role + grants, idempotent).
+   It connects to the same `app.configmap.POSTGRES_HOST`/`POSTGRES_PORT` set in
+   step 1 above — only the admin credentials it needs to create the role and
+   database are configured here:
    ```yaml
    global:
      externalPostgresDefinitions:
        enabled: true
-       connection:
-         host: my-rds-instance.example.com
-         port: "5432"
        postgresAdminLogin:
          username: postgres
          password: <admin password>

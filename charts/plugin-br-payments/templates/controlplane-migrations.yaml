@@ -32,9 +32,13 @@ Renders ONLY when all four are true:
     Job only supports, and is only tested against, the external-Postgres
     mode bootstrap-postgres.yaml provisions into (that template now carries
     its own PreSync hook at weight -10, so the role/database is guaranteed
-    to exist before this Job runs at weight -1, and now shares the identical
-    exclusivity gate) — so it stays gated out of the bundled-Postgres path
-    entirely rather than pretend to support it.
+    to exist before this Job runs at weight -1, shares the identical
+    exclusivity gate, AND now reads DB_HOST/DB_PORT from the same
+    app.configmap.POSTGRES_HOST/POSTGRES_PORT source this Job uses below —
+    see bootstrap-postgres.yaml's own header comment for why the two Jobs
+    used to read from different sources and why that was a bug) — so it
+    stays gated out of the bundled-Postgres path entirely rather than
+    pretend to support it.
 
     That "postgresql.enabled" helper is itself only an OR of two flags
     (postgresql.enabled/postgresql.external) and does not track Chart.yaml's

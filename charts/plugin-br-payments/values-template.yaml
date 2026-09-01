@@ -80,13 +80,12 @@ app:
 postgresql:
   enabled: false
 
-# When using a fresh external Postgres, optionally run the bootstrap Job once:
+# When using a fresh external Postgres, optionally run the bootstrap Job once.
+# It connects to the same app.configmap.POSTGRES_HOST/POSTGRES_PORT set above —
+# only the admin credentials it needs to create the role and database go here:
 # global:
 #   externalPostgresDefinitions:
 #     enabled: true
-#     connection:
-#       host: my-rds.example.com
-#       port: "5432"
 #     postgresAdminLogin:
 #       username: postgres
 #       password: <admin password>

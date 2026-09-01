@@ -18,7 +18,14 @@ global:
   externalPostgresDefinitions:
     # -- Enable or disable the PostgreSQL bootstrap job
     enabled: false
-    # -- PostgreSQL connection settings (used by the bootstrap job only)
+    # -- DEPRECATED / unused by any template: the bootstrap job
+    # (templates/bootstrap-postgres.yaml) and the control-plane migrations
+    # Job (templates/controlplane-migrations.yaml) both read the connection
+    # endpoint from app.configmap.POSTGRES_HOST/POSTGRES_PORT instead — the
+    # same source templates/deployment.yaml uses — so the two PreSync Jobs
+    # can never provision against a different host than the app connects to.
+    # Retained only for backward compatibility with existing overlays; set
+    # app.configmap.POSTGRES_HOST/POSTGRES_PORT to your external instance.
     connection:
       # -- PostgreSQL host
       host: "plugin-br-payments-postgresql-primary"

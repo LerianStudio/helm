@@ -53,17 +53,36 @@ final shipped state is documented below.
   when this `PreSync` hook runs on a first install. `POSTGRES_HOST`/
   `POSTGRES_PORT` read from `app.configmap.POSTGRES_HOST`/`POSTGRES_PORT` —
   the same source `templates/deployment.yaml`'s app container resolves via
-  its `envFrom` of `templates/configmap.yaml` — so the migration Job always
-  targets the exact host/port the app itself is about to connect to, rather
-  than `global.externalPostgresDefinitions.connection.host`/`.port`, whose
-  non-empty chart defaults name the bundled subchart's own Service and
-  exist only to tell `templates/bootstrap-postgres.yaml` which external host
-  to provision a role/database on;
+  its `envFrom` of `templates/configmap.yaml`, and the SAME source
+  `templates/bootstrap-postgres.yaml` now reads its own `DB_HOST`/`DB_PORT`
+  from too — so the migration Job, the bootstrap Job, and the app Deployment
+  all agree by construction on which Postgres this release talks to.
+  `global.externalPostgresDefinitions.connection.host`/`.port` is no longer
+  read by any template (retained in `values.yaml` only for backward
+  compatibility) — its non-empty chart defaults used to name the bundled
+  subchart's own Service and, before this Job and `bootstrap-postgres.yaml`
+  shared one source, an operator who correctly set
+  `app.configmap.POSTGRES_HOST` without also mirroring `connection.host`
+  left the bootstrap Job provisioning a role/database on the wrong host
+  while the app and this migration Job connected to the right one;
   `USER`/`DB`/`SSLMODE`/`CONNECT_TIMEOUT_SEC` come from `.Values.app.configmap`
   with the same defaults the app itself uses, plus the existing
   `POSTGRES_PASSWORD` secretRef. Mirrors
   `plugin-br-bank-transfer/templates/migrations.yaml`'s and `charts/br-slc`'s
   inline-env pattern for the same reason.
+
+- `plugin-br-payments.validatePostgresExclusivity` (`_helpers.tpl`): a
+  render-time `fail()` that blocks the contradictory combination of a
+  literal `postgresql.enabled: true` (the value `Chart.yaml`'s
+  `condition: postgresql.enabled` actually gates the bundled subchart on)
+  together with either `postgresql.external: true` or
+  `global.externalPostgresDefinitions.enabled: true`. Included
+  unconditionally at the top of both `templates/controlplane-migrations.yaml`
+  and `templates/bootstrap-postgres.yaml`, independently of each file's own
+  render gate, so a caller who signals "external" through either flag while
+  leaving `postgresql.enabled` at its default `true` gets a fast, explicit
+  `fail()` instead of a release that renders the bundled `StatefulSet`
+  alongside a Job provisioning a genuinely external host.
 
   `activeDeadlineSeconds: 300` keeps the Job within Helm's default 300s
   release timeout (`helm upgrade --timeout`); deployments that need a longer

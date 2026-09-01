@@ -2,6 +2,28 @@
 
 ## [9.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.0)
 
+- **Features:**
+  - Bumped `lerian-common-helm` to stable version 2.1.0.
+  - Removed four ledger configmap knobs.
+  - Added IDP_* RI declaration environment variables to ledger and tracer.
+  - Exposed ledger schema registry URL.
+  - Restored standalone CRM component (opt-in, `crm.enabled=false`).
+
+- **Fixes:**
+  - Updated `midaz-crm` and `midaz-ledger` to version 3.8.4.
+  - Aligned HPA sync-wave with its Deployment.
+  - Tolerated embedded port in redis mask host.
+  - Replaced removed `--tlsInsecure` mongosh flag with the modern equivalent.
+  - Supported TLS in the MongoDB bootstrap job (required for DocumentDB).
+
+Contributors: @Ygohr, @andreimatiazi, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.0.0...midaz-v9.1.0)
+
+---
+
+## [9.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.0)
+
 - **Features**
   - Bumped `lerian-common-helm` to stable version 2.1.0.
   - Added IDP_* RI declaration environment variables to ledger and tracer.

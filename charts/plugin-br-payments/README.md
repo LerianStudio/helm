@@ -127,6 +127,8 @@ When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `prov
 | `app.configmap.SERVICE_TYPE` | `both` | Run API + worker in one process. |
 | `app.configmap.OUTBOX_ENABLED` | `"true"` | REQUIRED — the plugin won't register routes otherwise. |
 | `app.configmap.MULTI_TENANT_ENABLED` | `"false"` | Toggle multi-tenant mode. |
+| `app.controlplaneMigrations.enabled` | `false` | Enable the control-plane migrations `PreSync` Job. Renders only alongside `MULTI_TENANT_ENABLED=true` and a genuinely external Postgres — see `values.yaml`. |
+| `app.controlplaneMigrations.resources` | requests `50m`/`64Mi`, limits `250m`/`256Mi` | Resources for the control-plane migrations Job. |
 | `postgresql.enabled` | `true` | Deploy the in-cluster PostgreSQL subchart. |
 | `postgresql.architecture` | `replication` | Primary + read replica. |
 | `global.externalPostgresDefinitions.enabled` | `false` | Run a bootstrap Job against an external PostgreSQL. |
@@ -137,6 +139,13 @@ See [`values.yaml`](./values.yaml) for the full list, and [`values-template.yaml
 ## Production layout
 
 In production, you typically:
+
+`global.externalPostgresDefinitions.connection.host`/`.port` must be set to
+the same real external host/port as `app.configmap.POSTGRES_HOST`/
+`POSTGRES_PORT` below — the app, the control-plane migrations Job, and the
+bootstrap Job all need to agree on one Postgres, and the chart's own default
+for `connection.host`/`.port` names the bundled subchart's Service, not your
+external instance.
 
 1. **Disable the in-cluster PostgreSQL** and point at a managed service:
    ```yaml

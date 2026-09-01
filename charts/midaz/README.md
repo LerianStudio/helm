@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided — see "Known limitation" below) plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled Bitnami subcharts and are only required when the matching backend is external.
+- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided — see "Known limitation" below) plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled Bitnami subcharts and are only required when the matching backend is external.
 - Dependency notes: PostgreSQL, MongoDB, and Valkey passwords are single-sourced from the bundled Bitnami subchart Secrets (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`, `<release>-valkey` key `valkey-password`) and injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ and optional OpenTelemetry are also bundled. When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
 - Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the bundled Bitnami subcharts own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -21,6 +21,69 @@ This helm chart installs [Midaz](https://lerian.studio/midaz#about), a high-perf
 The default installation is similar to the one provided in the [Midaz repo](https://github.com/LerianStudio/midaz?tab=readme-ov-file#quick-installation-guide-localhost).
 
 ---
+
+## Managed Cloud (`global.cloud`)
+
+Point ledger/crm/tracer at a managed-cloud environment (AWS/GCP/Azure) instead
+of the bundled in-cluster PostgreSQL/MongoDB/Valkey/RabbitMQ, with one knob:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    postgresOnboarding:  { host: "my-rds.example.com", user: "midaz" }
+    postgresTransaction: { host: "my-rds.example.com", user: "midaz" }
+    mongoOnboarding:     { host: "my-docdb.example.com", user: "midaz" }
+    mongoTransaction:    { host: "my-docdb.example.com", user: "midaz" }
+    mongoCrm:            { host: "my-docdb.example.com", user: "midaz" }
+    redis:               { host: "my-elasticache.example.com", port: "6379" }
+    broker:              { host: "my-amazonmq.example.com" }
+  env:
+    name: "production"
+  observability:
+    enabled: true
+  auth:
+    host: "http://plugin-access-manager-auth:4000"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, AMQP scheme/ports, sslmode,
+DocumentDB connection params) for the masks above. Per-module identity
+(host/port/user — `postgresOnboarding`/`postgresTransaction`/`mongoOnboarding`/
+`mongoTransaction`/`mongoCrm`/`mongoFees`) always comes from `global.datastores`
+or a dedicated `ledger.datastores`/`crm.datastores`/`tracer.datastores` override
+— a cloud preset can't know your RDS host. TOPOLOGY-only fields that a cloud
+preset actually sets (`postgres.ssl`, `mongo.params`, `redis.tls`,
+`broker.scheme`/`amqpPort`/`port`) are shared across every module through the
+generic `postgres`/`mongo`/`redis`/`broker` keys, since onboarding/transaction/
+crm/fees share one physical Postgres/Mongo engine in the overwhelming majority
+of real deployments even though their host/port/user can differ per module.
+
+Precedence (highest to lowest): native `<component>.configmap.<KEY>` >
+dedicated `<component>.datastores` (this component's own instance) > shared
+`global.datastores` (env-wide) > `global.cloud` topology preset (for the
+TOPOLOGY-only fields above) > chart default.
+
+`REDIS_HOST` combines `global.datastores.redis.host` and `.port` (or the
+matching dedicated-tier fields) into the single `host:port` string the ledger
+service expects (e.g. `host: "my-elasticache.example.com"` + `port: "6380"` →
+`REDIS_HOST=my-elasticache.example.com:6380`); a native
+`ledger.configmap.REDIS_HOST` override is expected to already carry its own
+`host:port` and is used verbatim.
+
+`ENV_NAME` is resolved once per component via `global.env.name` and reused as
+the default for that component's `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`, so
+the two can't drift out of sync; a native `<component>.configmap.ENV_NAME` (or
+`.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`) still overrides independently.
+
+The ledger's dedicated migration Job (`templates/ledger/migrations-job.yaml`)
+resolves its own `DB_ONBOARDING_*`/`DB_TRANSACTION_*` connection through the
+SAME masks as the ledger ConfigMap, so an operator who repoints the database
+via `global.datastores`/`ledger.datastores` migrates the exact host/db the app
+then connects to.
+
+Copy `values-template.yaml` as your starting point — it documents every
+`global.*` mask with a working example. `values.yaml` is the full power-user
+reference; `values.schema.json` validates it.
 
 ## Install Midaz Helm Chart:
 
@@ -294,6 +357,31 @@ crm:
   # secrets:
   #   MONGO_PASSWORD: "<your-mongo-password>"
 ```
+
+### Tracer
+
+The `tracer` service provides real-time transaction validation and fraud prevention. From midaz v4 it ships from the monorepo (`components/tracer`) and is published as `lerianstudio/midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates this configuration contract. It is disabled by default (`tracer.enabled=false`) and existing releases render unchanged.
+
+- **Database.** Tracer uses the bundled PostgreSQL with the same `midaz` role that owns `onboarding` and `transaction`. `tracer.configmap.DB_HOST` is empty by default and resolves to this release's PostgreSQL primary Service (`<release>-postgresql-primary`, or `<release>-postgresql` in the standalone topology), so a release name other than `midaz` still connects; set it explicitly for an external PostgreSQL, where the render fails rather than guessing. Its database (`tracer.configmap.DB_NAME`, default `tracer`) is created by `files/midaz/init.sql` on a fresh internal cluster, and by the external bootstrap Job (`global.externalPostgresDefinitions.enabled=true`) otherwise; both paths use the configured name. On a pre-existing internal cluster, initdb scripts no longer run: create the configured database once by hand before enabling tracer (`CREATE DATABASE tracer;` with the default `tracer.configmap.DB_NAME`).
+- **Migrations.** Neither tracer nor the v4 ledger migrates at startup anymore. `tracer.migrations` and `ledger.migrations` render the dedicated `midaz-tracer-migrations` / `midaz-ledger-migrations` runner Jobs, whose tag defaults to the matching application tag. The tracer Job renders when both `tracer.enabled` and `tracer.migrations.enabled` (default `true`) are true; the ledger Job is on for 4.x ledger tags only (`ledger.migrations.enabled` pins it either way). Setting either `migrations.enabled` to `false` means the schema must be applied out of band, because the v4 services no longer migrate themselves. Both Jobs are plain Sync-phase resources because the bundled PostgreSQL Secret they read is only created during Sync; while a Job renders, its Deployment carries `argocd.argoproj.io/sync-wave: "1"` (`<component>.migrations.deploymentSyncWave`) so Argo CD applies the service only after the Job reports Complete. Against a pre-provisioned database, set `argocd.argoproj.io/hook: PreSync` under `<component>.migrations.annotations` instead.
+- **Ledger to tracer transport.** `ledger.configmap.TRACER_TRANSPORT` defaults to `rest`, because the bundled tracer keeps its gRPC reservation seam off (the app only starts it when `TRACER_GRPC_PORT` is set) and its Service exposes HTTP only. To use gRPC, the seam's production transport, set `tracer.configmap.TRACER_GRPC_PORT` (e.g. `":4021"`), which publishes `tracer.service.grpcPort` on the Service and container, and point `ledger.configmap.TRACER_BASE_URL` at it. Selecting `grpc` against a bundled tracer with the seam off fails the render.
+- **Memory.** `tracer.configmap.GOMEMLIMIT` must track `tracer.resources.limits.memory` (~90%). The image ships `GOMEMLIMIT=1800MiB`, sized for a 2Gi container, so without the override the Go heap outgrows a 512Mi cgroup and the pod is OOM-killed.
+- **Fail-fast configuration.** The chart mirrors the tracer boot validators, so misconfiguration fails `helm template` instead of crash-looping: `API_KEY_ENABLED=true` requires an API key and rejects wildcard CORS; `MULTI_TENANT_ENABLED=true` requires `PLUGIN_AUTH_ENABLED=true`, a service API key, and rejects `API_KEY_ENABLED_ONLY_VALIDATION=true`; `tracer.useExistingSecret=true` requires `tracer.existingSecretName`. Booleans are matched the way the runtime parses them (`strconv.ParseBool`), so `TRUE`, `True`, `1`, `t` and `T` are treated as enabled here too.
+
+```yaml
+tracer:
+  enabled: true
+  configmap:
+    API_KEY_ENABLED: "true"
+    CORS_ALLOWED_ORIGINS: "https://app.example.com"
+  secrets:
+    API_KEY: "<your-api-key>"
+  # DB_PASSWORD is single-sourced from the bundled Bitnami postgresql subchart
+  # (Secret `midaz-postgresql`, key `password`) — only set it here when using an
+  # EXTERNAL PostgreSQL (postgresql.enabled=false / postgresql.external=true).
+```
+
+> **Images.** Every image this chart references is expected to be pullable anonymously, so no `imagePullSecrets` are needed for a default install. Three v4 packages do not satisfy that yet: `lerianstudio/midaz-tracer`, `lerianstudio/midaz-tracer-migrations`, and `lerianstudio/midaz-ledger-migrations` still answer `denied/unauthorized` on Docker Hub, while `lerianstudio/midaz-ledger` resolves. The chart keeps the coordinates the midaz release pipeline publishes; making those repositories public is the fix.
 
 ## Observability
 

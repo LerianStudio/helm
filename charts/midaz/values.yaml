@@ -74,6 +74,22 @@ global:
       host: "midaz-mongodb"
       # -- MongoDB port
       port: "27017"
+    # -- TLS for the bootstrap job's mongosh connection. Off by default (matches
+    # the bundled MongoDB subchart, which is plaintext); REQUIRED for managed
+    # TLS-only Mongo-API services like AWS DocumentDB.
+    # Example:
+    #   global:
+    #     externalMongoDefinitions:
+    #       tls:
+    #         enabled: true
+    #         insecure: true   # DocumentDB doesn't ship its CA in every client trust store
+    tls:
+      # -- Enable TLS on the mongosh connection (--tls)
+      enabled: false
+      # -- Skip certificate/hostname verification (--tlsAllowInvalidHostnames
+      # --tlsAllowInvalidCertificates; the mongo:8 image's mongosh removed the
+      # older --tlsInsecure shorthand). Only read when tls.enabled=true.
+      insecure: true
     # -- Admin credentials for MongoDB (rootUser from bitnami subchart)
     mongoAdminLogin:
       useExistingSecret:
@@ -100,6 +116,82 @@ global:
           db: "transaction"
         - role: "readWrite"
           db: "crm"
+        - role: "readWrite"
+          db: "fees"
+  # =============================================================================
+  # TIERED DEPENDENCY-CONNECTION SURFACE (env-wide masks / contracts)
+  # Set a connection ONCE here and every component emits its native env keys from
+  # it. Empty by default → each component falls through to its own default
+  # (render-identical to the un-productized chart). Per-component overrides live
+  # under `<component>.datastores` and each component's `configmap.<KEY>` still
+  # wins over everything (the escape hatch). See values-quickstart.yaml.
+  # =============================================================================
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets tls/scheme/ports/
+  # ssl/mongo-connection-params for the masks below in one knob — e.g. "aws"
+  # turns on Redis TLS, AmazonMQ amqps, RDS sslmode=require, DocumentDB TLS
+  # params. Leave "" for the bundled in-cluster infra (plaintext). Endpoints
+  # (host/port/user) still come from global.datastores below — a cloud preset
+  # can't know your RDS host. Ranks below an explicit global/dedicated
+  # datastores value and above the hardcoded chart default.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Shared datastore masks. Per-module IDENTITY keys (host/port/user/name/
+  # replicaHost): postgresOnboarding / postgresTransaction / mongoOnboarding /
+  # mongoTransaction / mongoCrm / mongoFees — each component's own instance.
+  # Shared TOPOLOGY keys (ssl/params/tls/scheme/amqpPort — the fields a
+  # `global.cloud` preset actually sets): postgres / mongo / redis / broker —
+  # generic, so one `global.cloud` knob (or one explicit override here) reaches
+  # every module uniformly, since onboarding/transaction/crm/fees share one
+  # physical Postgres/Mongo engine in the overwhelming majority of real
+  # deployments even though their per-module host/port/user can differ.
+  datastores: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   postgresOnboarding:  { host: "postgresql.internal", user: "midaz", name: "onboarding" }
+  #   postgresTransaction: { host: "postgresql.internal", user: "midaz", name: "transaction" }
+  #   mongoOnboarding:     { host: "mongodb.internal", user: "midaz", name: "onboarding" }
+  #   mongoTransaction:    { host: "mongodb.internal", user: "midaz", name: "transaction" }
+  #   mongoCrm:            { host: "mongodb.internal", user: "midaz", name: "midaz-crm" }
+  #   mongoFees:           { host: "mongodb.internal", user: "plugin-fees", name: "plugin-fees-db" }
+  #   postgres:            { ssl: "require" }
+  #   mongo:               { params: "tls=true" }
+  #   redis:               { host: "valkey.internal", port: "6379", tls: "true" }
+  #   broker:              { host: "rabbitmq.internal", user: "midaz" }
+  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
+  # "env", field "name"); each component's ENV_NAME (and, by default, its
+  # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT, single-sourced from it) resolve here.
+  # A native `<component>.configmap.ENV_NAME` still wins.
+  # Example: env: { name: "production" }
+  env: {}
+  # -- Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment.
+  observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   otlpEndpoint: "otel-collector-lerian:4317"
+  #   deploymentEnvironment: "production"
+  # -- Env-wide multi-tenant (tenant-manager): url / redisHost / redisPort / redisTls / ...
+  multiTenant: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   url: "http://tenant-manager:8080"
+  #   redisHost: "valkey.internal"
+  #   redisPort: "6379"
+  #   redisTls: "false"
+  # -- Env-wide streaming (lib-streaming / RedPanda): brokers / saslMechanism / saslUsername / tlsEnabled / ...
+  streaming: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   brokers: "kafka:9092"
+  #   saslMechanism: "PLAIN"
+  #   saslUsername: "midaz"
+  #   tlsEnabled: "true"
+  # -- Env-wide auth (plugin-access-manager): enabled / host.
+  auth: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   host: "plugin-access-manager:3000"
+  # -- Env-wide service discovery (Consul): see lerian-common.serviceDiscovery.env.
+  serviceDiscovery: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   address: "consul:8500"
+  #   namespace: "midaz"
 ledger:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -121,7 +213,57 @@ ledger:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.8.4"
+    tag: "4.0.0"
+  # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
+  # migrate/migrate) applying the onboarding and transaction migration sets.
+  migrations:
+    # -- Run the migration Job. Unset means auto: on for 4.x ledger tags, which
+    # removed in-process migration, off for 3.x, which still migrates at
+    # startup. Set false to keep it off when the schema is applied out-of-band.
+    enabled:
+    image:
+      # -- Repository for the ledger migration-runner image
+      repository: lerianstudio/midaz-ledger-migrations
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+      # -- Migration image tag. Empty tracks `ledger.image.tag` so the schema and
+      # the binary reading it cannot drift.
+      tag: ""
+    # -- Extra Job annotations. The Job is a plain Sync-phase resource by
+    # default because the bundled PostgreSQL Secret it reads is only created
+    # during Sync; against a pre-provisioned database, set
+    # `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment.
+    annotations: {}
+    # -- Argo CD sync wave stamped on the ledger Deployment while this Job
+    # renders, so the Deployment is applied only once the Job reports Complete
+    # (the Job itself stays in the default wave, with the bundled PostgreSQL
+    # Secret it reads). Set to "" to drop the annotation and let both apply
+    # together. Ignored by plain `helm install`.
+    deploymentSyncWave: "1"
+    # -- Retries before the Job is marked failed
+    backoffLimit: 6
+    # -- Hard timeout for the whole Job
+    activeDeadlineSeconds: 600
+    # -- How long the finished Job is kept for inspection
+    ttlSecondsAfterFinished: 259200
+    # -- Wait for the PostgreSQL endpoint before running migrate
+    waitForPostgres:
+      # -- Enable or disable the wait-for-postgres init container
+      enabled: true
+      image:
+        # -- Repository for the wait-for-postgres init container image
+        repository: busybox
+        # -- Image tag for the wait-for-postgres init container image
+        tag: "1.37"
+    resources:
+      # -- CPU and memory limits for the migration Job
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      # -- Minimum CPU and memory requests for the migration Job
+      requests:
+        cpu: 50m
+        memory: 64Mi
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -226,80 +368,29 @@ ledger:
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/ledger/configmap.yaml
+  # -- Dedicated datastore masks for this component (override global.datastores).
+  # Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding /
+  # mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/ssl/replicaHost).
+  datastores: {}
+  # -- Escape hatch: native environment variables override template defaults.
   configmap:
-    ALLOW_INSECURE_TLS: "true"
-    # -- Otel default configuration
+    # -- ledger ships with telemetry ON by default, unlike the mask's own
+    # (intentionally conservative) "false" fallback — pinned explicitly here so
+    # this component's shipped default doesn't depend on the mask's fallback.
     ENABLE_TELEMETRY: "true"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""
-    # -- Accounting config
-    ACCOUNT_TYPE_VALIDATION: ""
-    TRANSACTION_ROUTE_VALIDATION: ""
-    # -- PostgreSQL Onboarding module
-    DB_ONBOARDING_HOST: "midaz-postgresql-primary"
-    DB_ONBOARDING_USER: "midaz"
-    DB_ONBOARDING_NAME: "onboarding"
-    DB_ONBOARDING_PORT: "5432"
-    DB_ONBOARDING_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_ONBOARDING_REPLICA_USER: "midaz"
-    DB_ONBOARDING_REPLICA_NAME: "onboarding"
-    DB_ONBOARDING_REPLICA_PORT: "5432"
-    # -- MongoDB Onboarding module
-    MONGO_ONBOARDING_URI: "mongodb"
-    MONGO_ONBOARDING_HOST: "midaz-mongodb"
-    MONGO_ONBOARDING_NAME: "onboarding"
-    MONGO_ONBOARDING_USER: "midaz"
-    MONGO_ONBOARDING_PORT: "27017"
-    # -- PostgreSQL Transaction module
-    DB_TRANSACTION_HOST: "midaz-postgresql-primary"
-    DB_TRANSACTION_USER: "midaz"
-    DB_TRANSACTION_NAME: "transaction"
-    DB_TRANSACTION_PORT: "5432"
-    DB_TRANSACTION_REPLICA_HOST: "midaz-postgresql-replication"
-    DB_TRANSACTION_REPLICA_USER: "midaz"
-    DB_TRANSACTION_REPLICA_NAME: "transaction"
-    DB_TRANSACTION_REPLICA_PORT: "5432"
-    # -- MongoDB Transaction module
-    MONGO_TRANSACTION_URI: "mongodb"
-    MONGO_TRANSACTION_HOST: "midaz-mongodb"
-    MONGO_TRANSACTION_NAME: "transaction"
-    MONGO_TRANSACTION_USER: "midaz"
-    MONGO_TRANSACTION_PORT: "27017"
-    # -- Redis (shared)
-    REDIS_HOST: "midaz-valkey-primary:6379"
-    # -- RabbitMQ configuration
-    RABBITMQ_URI: "amqp"
-    RABBITMQ_HOST: "midaz-rabbitmq"
-    RABBITMQ_PORT_HOST: "5672"
-    RABBITMQ_PORT_AMQP: "15672"
-    RABBITMQ_DEFAULT_USER: "transaction"
-    RABBITMQ_CONSUMER_USER: "consumer"
-    RABBITMQ_TRANSACTION_ASYNC: "false"
-    # -- Audit
-    AUDIT_LOG_ENABLED: "false"
-    # -- Balance Sync Worker
-    BALANCE_SYNC_WORKER_ENABLED: "false"
-    BALANCE_SYNC_MAX_WORKERS: "5"
-    # -- Rate Limiting - Three-tier system with Redis backend
-    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+    # -- Schema Registry used by the billing serializer. Leave empty to keep billing emission disabled.
+    STREAMING_SCHEMA_REGISTRY_URL: ""
+    # -- RI permission declaration to the IdP identity service (:4001, distinct from auth :4000).
+    # IDP_DECLARATION_ENABLED turns on manifest publication at boot (default false, fail-open).
+    # Under DEPLOYMENT_MODE=saas, IDP_HOST MUST be an https:// URL.
+    IDP_DECLARATION_ENABLED: "false"
+    IDP_HOST: ""
+    IDP_M2M_CLIENT_ID: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
   # -- Extra environment variables
-  extraEnvVars: []
+  extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # @default -- templates/ledger/secrets.yaml
   secrets:
@@ -317,6 +408,21 @@ ledger:
     DB_TRANSACTION_PASSWORD: ""
     DB_TRANSACTION_REPLICA_PASSWORD: ""
     MONGO_TRANSACTION_PASSWORD: ""
+    # -- CRM and Fees module passwords. The unified ledger binary (midaz v4)
+    # opens these Mongo databases in-process; same single-source rule as the
+    # modules above. Rendered into the ledger Secret, never the ConfigMap.
+    MONGO_CRM_PASSWORD: ""
+    MONGO_FEES_PASSWORD: ""
+    # -- CRM holder-field crypto (lib-crypto). Operator-provided key material
+    # protecting PII at rest. Required when the ledger serves CRM and
+    # KMS_VENDOR is unset or "none" (legacy mode, local symmetric keys).
+    LCRYPTO_HASH_SECRET_KEY: ""
+    LCRYPTO_ENCRYPT_SECRET_KEY: ""
+    # -- Vault AppRole SecretID, the credential half of the KMS auth pair.
+    # Only set when ledger.configmap.KMS_VENDOR="hashicorp-vault" (envelope
+    # encryption). The RoleID counterpart is not secret and stays in the
+    # ConfigMap.
+    KMS_VAULT_SECRET_ID: ""
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
     # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an
@@ -328,6 +434,9 @@ ledger:
     # -- Service discovery (lib-service-discovery) Consul ACL token. Operator-provided;
     # only set when the Consul server enforces ACLs. Rendered into the ledger Secret.
     SD_TOKEN: ""
+    # -- RI permission declaration M2M client secret. Operator-provided; only set
+    # when IDP_DECLARATION_ENABLED=true. Rendered into the ledger Secret, never the ConfigMap.
+    IDP_M2M_CLIENT_SECRET: ""
     # -- Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set
     # when the streaming backend uses SASL auth and/or a private TLS CA. When set,
     # they are rendered into the ledger Secret (never the ConfigMap).
@@ -463,32 +572,10 @@ crm:
 
   # -- ConfigMap for environment variables and configurations
   # @default -- templates/crm/configmap.yaml
-  configmap:
-    ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
-    # -- Auth Plugin configuration
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    # -- MongoDB configuration
-    MONGO_HOST: "midaz-mongodb"
-    MONGO_NAME: "crm"
-    MONGO_PORT: "27017"
-    MONGO_USER: "midaz"
-    # -- Rate Limiting - Three-tier system with Redis backend
-    # -- Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
-    # -- ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
-    # -- ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-    RATE_LIMIT_ENABLED: "true"
-    RATE_LIMIT_MAX: "500"
-    RATE_LIMIT_WINDOW_SEC: "60"
-    AGGRESSIVE_RATE_LIMIT_MAX: "100"
-    AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-    RELAXED_RATE_LIMIT_MAX: "1000"
-    RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
-    RATE_LIMIT_REDIS_TIMEOUT_MS: "500"
-    ALLOW_RATELIMIT_DISABLED: ""
-    ALLOW_RATELIMIT_FAIL_OPEN: ""
+  # -- Dedicated datastore mask (override global.datastores). Sub-key: mongo (host/port/user).
+  datastores: {}
+  # -- Escape hatch: any native env var overrides the template default.
+  configmap: {}
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -510,6 +597,216 @@ crm:
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
   # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
+tracer:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
+  # -- Service name
+  name: tracer
+  # -- Enable or disable the Tracer service (disabled by default; opt-in per env)
+  enabled: false
+  # -- Number of replicas for the Tracer service
+  replicaCount: 1
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+  image:
+    # -- Repository for the Tracer service container image. In midaz v4 tracer
+    # ships from the monorepo (`components/tracer`) and the release pipeline
+    # publishes it as `midaz-tracer`; the standalone `lerianstudio/tracer` 1.x
+    # image predates the configuration contract this chart renders.
+    repository: lerianstudio/midaz-tracer
+    # -- Image pull policy
+    pullPolicy: Always
+    # -- Image tag used for deployment
+    tag: "4.0.0"
+  # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
+  # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
+  # against an already-migrated schema, so this Job has to apply it.
+  migrations:
+    # -- Enable or disable the tracer migration Job
+    enabled: true
+    image:
+      # -- Repository for the tracer migration-runner image
+      repository: lerianstudio/midaz-tracer-migrations
+      # -- Image pull policy
+      pullPolicy: IfNotPresent
+      # -- Migration image tag. Empty tracks `tracer.image.tag` so the schema and
+      # the binary reading it cannot drift.
+      tag: ""
+    # -- Extra Job annotations. The Job is a plain Sync-phase resource by
+    # default because the bundled PostgreSQL Secret it reads is only created
+    # during Sync; against a pre-provisioned database, set
+    # `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment.
+    annotations: {}
+    # -- Argo CD sync wave stamped on the tracer Deployment while this Job
+    # renders, so the Deployment is applied only once the Job reports Complete
+    # (the Job itself stays in the default wave, with the bundled PostgreSQL
+    # Secret it reads). Set to "" to drop the annotation and let both apply
+    # together. Ignored by plain `helm install`.
+    deploymentSyncWave: "1"
+    # -- Retries before the Job is marked failed (also absorbs a database that
+    # is reachable but not yet provisioned by the bootstrap Job)
+    backoffLimit: 6
+    # -- Hard timeout for the whole Job
+    activeDeadlineSeconds: 600
+    # -- How long the finished Job is kept for inspection
+    ttlSecondsAfterFinished: 259200
+    # -- Wait for the PostgreSQL endpoint before running migrate
+    waitForPostgres:
+      # -- Enable or disable the wait-for-postgres init container
+      enabled: true
+      image:
+        # -- Repository for the wait-for-postgres init container image
+        repository: busybox
+        # -- Image tag for the wait-for-postgres init container image
+        tag: "1.37"
+    resources:
+      # -- CPU and memory limits for the migration Job
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      # -- Minimum CPU and memory requests for the migration Job
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  # -- Secrets for pulling images from a private registry
+  imagePullSecrets: []
+  # -- Overrides the default generated name by Helm
+  nameOverride: ""
+  # -- Overrides the full name generated by Helm
+  fullnameOverride: ""
+  # -- Pod annotations for additional metadata
+  podAnnotations: {}
+  podSecurityContext: {}
+  # fsGroup: 2000
+
+  securityContext:
+    # -- Defines the group ID for the user running the process inside the container
+    runAsGroup: 1000
+    # -- Defines the user ID for the process running inside the container
+    runAsUser: 1000
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: true
+    # -- Minimum number of available pods. Setting `maxUnavailable` in an
+    # override takes precedence over this value.
+    minAvailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+  # -- Deployment update strategy
+  deploymentUpdate:
+    # -- Type of deployment strategy
+    type: RollingUpdate
+    # -- Maximum number of pods that can be created over the desired number of pods
+    maxSurge: 1
+    # -- Maximum number of pods that can be unavailable during the update
+    maxUnavailable: 1
+  service:
+    # -- Kubernetes service type
+    type: ClusterIP
+    # -- Service port (HTTP API)
+    port: 4020
+    # -- gRPC reservation seam port. Only exposed when
+    # `tracer.configmap.TRACER_GRPC_PORT` is set; the seam is off in the app
+    # until then, so the port would otherwise route to a closed socket.
+    grpcPort: 4021
+  ingress:
+    # -- Enable or disable ingress
+    enabled: false
+    # -- Ingress class name
+    className: ""
+    # -- Additional ingress annotations
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    # -- TLS configuration for ingress
+    tls: []
+    #  - secretName: chart-example-tls
+    #  hosts:
+    #      - chart-example.local
+  resources:
+    # -- CPU and memory limits for pods
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    # -- Minimum CPU and memory requests
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    # -- Enable or disable horizontal pod autoscaling
+    enabled: true
+    # -- Minimum number of replicas
+    minReplicas: 1
+    # -- Maximum number of replicas
+    maxReplicas: 5
+    # -- Target CPU utilization percentage for autoscaling
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: {}
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+  # -- ConfigMap for environment variables and configurations
+  # @default -- templates/tracer/configmap.yaml
+  # -- Dedicated datastore mask (override global.datastores). Sub-key: postgres (host/port/user/ssl).
+  datastores: {}
+  # -- Escape hatch: any native env var overrides the template default.
+  configmap:
+    # -- Schema Registry used by the billing serializer. Leave empty to keep billing emission disabled.
+    STREAMING_SCHEMA_REGISTRY_URL: ""
+    # -- RI permission declaration to the IdP identity service (:4001, distinct from auth :4000).
+    # IDP_DECLARATION_ENABLED turns on manifest publication at boot (default false, fail-open).
+    # Under DEPLOYMENT_MODE=saas, IDP_HOST MUST be an https:// URL.
+    IDP_DECLARATION_ENABLED: "false"
+    IDP_HOST: ""
+    IDP_M2M_CLIENT_ID: ""
+  # -- Extra environment variables
+  extraEnvVars: {}
+  # -- Secrets for storing sensitive data
+  # @default -- templates/tracer/secrets.yaml
+  secrets:
+    # -- PostgreSQL password. Single-sourced from the Bitnami postgresql subchart
+    # Secret (key `password`) when internal; only set for an EXTERNAL PostgreSQL
+    # (subchart disabled / .external=true) without an existingSecret override.
+    DB_PASSWORD: ""
+    # -- API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true).
+    API_KEY: ""
+    # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
+    # MULTI_TENANT_SERVICE_API_KEY: ""
+    # -- Optional Redis password for the tenant connection-pool registry.
+    # MULTI_TENANT_REDIS_PASSWORD: ""
+  # -- Existing secrets name
+    # -- Service discovery (lib-service-discovery) Consul ACL token. Operator-provided;
+    # only set when the Consul server enforces ACLs. Emitted into the tracer Secret only when set.
+    SD_TOKEN: ""
+    # -- RI permission declaration M2M client secret. Operator-provided; only set
+    # when IDP_DECLARATION_ENABLED=true. Rendered into the tracer Secret, never the ConfigMap.
+    IDP_M2M_CLIENT_SECRET: ""
+    # -- Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set
+    # when the streaming backend uses SASL auth and/or a private TLS CA. When set,
+    # they are rendered into the tracer Secret (never the ConfigMap).
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
   useExistingSecret: false
   existingSecretName: ""
 grafana:

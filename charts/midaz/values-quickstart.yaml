@@ -1,0 +1,113 @@
+# =============================================================================
+# midaz — QUICKSTART values (the layperson layer)
+# -----------------------------------------------------------------------------
+# The full values.yaml is the power-user API. This file is the short list of
+# DEPENDENCY-CONNECTION knobs a non-expert fills to get midaz running: where the
+# databases/cache/broker live, which components to deploy, the image tags, the
+# ingress host, and the operator-provided secrets. Everything else has a working
+# default in the chart; reach it only via `<component>.configmap.<KEY>` (the
+# escape hatch) when you must.
+#
+#   helm install midaz charts/midaz -f values-quickstart.yaml
+#
+# Anything with CHANGE_ME MUST be set. Bundled Bitnami subcharts (postgresql,
+# mongodb, valkey, rabbitmq) are ON by default, so the *host* knobs below only
+# matter when you point midaz at EXTERNAL infra (set <subchart>.enabled=false).
+# =============================================================================
+
+global:
+  # -- Set each dependency connection ONCE here; every component emits its native
+  #    env keys from it. Leave a block out to keep the in-cluster bundled default.
+  datastores:
+    # postgresOnboarding: { host: "pg-primary", port: "5432", user: "midaz", ssl: "require", replicaHost: "pg-replica" }
+    # postgresTransaction: { host: "pg-primary", port: "5432", user: "midaz", ssl: "require", replicaHost: "pg-replica" }
+    # mongoOnboarding: { host: "mongo-0", port: "27017", user: "midaz" }
+    # mongoTransaction: { host: "mongo-0", port: "27017", user: "midaz" }
+    # mongoCrm: { host: "mongo-0", port: "27017", user: "midaz" }
+    # mongoFees: { host: "mongo-0", port: "27017", user: "midaz" }
+    # redis: { host: "valkey-primary:6379" }
+    # broker: { host: "rabbitmq", port: "5672", user: "transaction" }
+  # -- OTel collector (leave empty to keep telemetry off / the bundled endpoint).
+  observability: {}
+    # enabled: "true"
+    # otlpEndpoint: "otel-collector:4317"
+    # deploymentEnvironment: "production"
+  # -- plugin-access-manager auth, env-wide (per-component override via configmap).
+  auth: {}
+    # enabled: "true"
+    # host: "http://plugin-access-manager-auth:4000"
+  # -- Tenant-manager (only needed when a component sets MULTI_TENANT_ENABLED=true).
+  multiTenant: {}
+    # url: "http://tenant-manager:4003"
+    # redisHost: "valkey-primary"
+  # -- Streaming backend (only needed when STREAMING_ENABLED=true somewhere).
+  streaming: {}
+    # brokers: "redpanda:9092"
+    # saslMechanism: "SCRAM-SHA-512"
+    # saslUsername: "midaz"
+    # tlsEnabled: "true"
+
+# --- LEDGER (the double-entry engine; onboarding + transaction + CRM + fees) ---
+ledger:
+  enabled: true
+  image:
+    tag: "4.0.0-beta.26"   # -- pin the ledger image version
+  ingress:
+    enabled: false
+    # hosts: [{ host: "ledger.example.com", paths: [{ path: "/", pathType: Prefix }] }]
+  # -- Turn on env-wide features here (they read global.multiTenant / global.streaming):
+  configmap: {}
+    # MULTI_TENANT_ENABLED: "true"
+    # STREAMING_ENABLED: "true"
+    # SD_ENABLED: "true"
+  secrets:
+    # -- RabbitMQ credentials are REQUIRED (not yet single-sourced from the subchart).
+    RABBITMQ_DEFAULT_PASS: "CHANGE_ME"
+    RABBITMQ_CONSUMER_PASS: "CHANGE_ME"
+    # -- CRM holder-PII crypto keys. REQUIRED for midaz 4.x ledger images when
+    #    KMS_VENDOR=none (the default). Hex-encoded AES key — regenerate with
+    #    `openssl rand -hex 32`; the all-zero value below is a placeholder so the
+    #    documented `helm install` renders — CHANGE IT before any real deploy.
+    LCRYPTO_HASH_SECRET_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+    # -- Only for EXTERNAL infra (subchart disabled / .external=true):
+    # DB_ONBOARDING_PASSWORD: "CHANGE_ME"
+    # MONGO_ONBOARDING_PASSWORD: "CHANGE_ME"
+    # REDIS_PASSWORD: "CHANGE_ME"
+    # -- Only when the matching feature is enabled:
+    # MULTI_TENANT_SERVICE_API_KEY: "CHANGE_ME"
+    # STREAMING_SASL_PASSWORD: "CHANGE_ME"
+
+# --- TRACER (real-time transaction validation / fraud prevention; opt-in) ---
+tracer:
+  enabled: false
+  image:
+    tag: "4.0.0-beta.25"
+  ingress:
+    enabled: false
+  configmap: {}
+    # API_KEY_ENABLED: "true"          # then set secrets.API_KEY and a concrete CORS origin
+    # CORS_ALLOWED_ORIGINS: "https://app.example.com"
+    # MULTI_TENANT_ENABLED: "true"     # requires PLUGIN_AUTH_ENABLED=true + secrets.MULTI_TENANT_SERVICE_API_KEY
+    # SD_ENABLED: "true"
+  secrets: {}
+    # API_KEY: "CHANGE_ME"
+    # MULTI_TENANT_SERVICE_API_KEY: "CHANGE_ME"
+    # DB_PASSWORD: "CHANGE_ME"         # EXTERNAL PostgreSQL only
+
+# --- CRM (standalone legacy CRM deployment; opt-in — the unified ledger already
+#     serves CRM in-process, so enable this only for the separate service) ---
+crm:
+  enabled: false
+  image:
+    tag: "3.8.0"
+  secrets: {}
+    # LCRYPTO_HASH_SECRET_KEY: "CHANGE_ME"   # REQUIRED when crm.enabled=true
+    # LCRYPTO_ENCRYPT_SECRET_KEY: "CHANGE_ME"
+
+# --- Bundled infrastructure (set enabled=false to use your own; then fill the
+#     matching global.datastores.* host above and the *_PASSWORD secrets) ---
+# postgresql: { enabled: true }
+# mongodb:    { enabled: true, auth: { enabled: true } }
+# valkey:     { enabled: true }
+# rabbitmq:   { enabled: true }

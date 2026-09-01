@@ -1,13 +1,43 @@
-crm:
-  secrets:
-    # App crypto material — operator-provided (external boundary).
-    LCRYPTO_HASH_SECRET_KEY: "sample"
-    LCRYPTO_ENCRYPT_SECRET_KEY: "sample"
+# Render-gate fixture. Beyond enabling the components, it EXERCISES the productization
+# knobs so the render-gate covers the configured paths (not just the defaults): the
+# datastore masks flow into the migration Jobs / bootstrap / init.sql, the tracer accepts
+# a masked host, the gRPC container/Service port tracks TRACER_GRPC_PORT, and a
+# template-supported configmap key (AUDIT_LOG_ENABLED) is on the schema allowlist.
+tracer:
+  # Exercise the tracer deployment templates in the render-gate.
+  enabled: true
+  # Exercise the tracer Postgres mask (host must NOT eager-fail; name flows to
+  # configmap + migration Job + bootstrap + init.sql) and the gRPC port knob.
+  datastores:
+    postgres:
+      host: "midaz-postgresql-primary"
+      name: "tracer_ci"
+  configmap:
+    TRACER_GRPC_PORT: ":5099"
 ledger:
+  # Exercise the per-module Postgres name masks (flow to migration Job + bootstrap + init.sql)
+  # and a template-supported configmap key that must be on the schema allowlist.
+  datastores:
+    postgresOnboarding:
+      name: "onb_ci"
+    postgresTransaction:
+      name: "tx_ci"
+  configmap:
+    AUDIT_LOG_ENABLED: "true"
   secrets:
+    LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     # RabbitMQ — operator-provided; not yet single-sourced (see chart README
     # "Known limitation"). The infra passwords (Postgres/Mongo/Valkey) are now
     # single-sourced from the Bitnami subchart Secrets, so they are intentionally
     # omitted here.
     RABBITMQ_DEFAULT_PASS: "sample"
     RABBITMQ_CONSUMER_PASS: "sample"
+crm:
+  # Exercise the standalone CRM deployment templates in the render-gate.
+  enabled: true
+  secrets:
+    # App crypto material — operator-provided (external boundary). Hex like the
+    # ledger fixture so any hex validation on the CRM cipher key is satisfied.
+    LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

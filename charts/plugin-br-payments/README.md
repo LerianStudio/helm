@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.BTG_CLIENT_ID` and `app.secrets.BTG_CLIENT_SECRET` in single-tenant mode; `BTG_WEBHOOK_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. In multi-tenant mode, BTG OAuth2 credentials are resolved per tenant. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -57,8 +57,8 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.configmap.BTG_API_BASE_URL` | BTG API base URL. |
 | `app.configmap.BTG_AUTH_URL` | BTG OAuth2 token URL. |
 | `app.configmap.MIDAZ_LEDGER_URL` | Midaz Ledger service URL (single plane). The deprecated `MIDAZ_ONBOARDING_URL` + `MIDAZ_TRANSACTION_URL` pair is still accepted as a fallback. |
-| `app.secrets.BTG_CLIENT_ID` | BTG OAuth2 client ID. |
-| `app.secrets.BTG_CLIENT_SECRET` | BTG OAuth2 client secret. |
+| `app.secrets.BTG_CLIENT_ID` | BTG OAuth2 client ID. Required only when `MULTI_TENANT_ENABLED` is not `true`. |
+| `app.secrets.BTG_CLIENT_SECRET` | BTG OAuth2 client secret. Required only when `MULTI_TENANT_ENABLED` is not `true`. |
 | `app.secrets.BTG_WEBHOOK_SECRET` | Bearer token for incoming BTG webhooks. |
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
 | `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker. Generate with `openssl rand -base64 32`. |
@@ -111,7 +111,7 @@ app:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
 ```
 
-When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead).
+When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead). Do not set `app.secrets.BTG_CLIENT_ID` or `app.secrets.BTG_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record.
 
 ## Common values
 

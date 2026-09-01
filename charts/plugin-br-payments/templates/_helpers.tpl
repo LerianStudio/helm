@@ -203,6 +203,7 @@ plugin-br-payments README.
 */}}
 
 {{- define "plugin-br-payments.validateRequired" -}}
+{{- $multiTenantEnabled := eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true" }}
 
 {{/* OUTBOX must be enabled for HTTP routes to register */}}
 {{- if ne (.Values.app.configmap.OUTBOX_ENABLED | toString) "true" }}
@@ -218,12 +219,15 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.configmap.BTG_AUTH_URL is REQUIRED.\n   Set the BTG OAuth2 token endpoint URL.\n" }}
 {{- end }}
 
+{{/* BTG OAuth2 credentials are resolved per tenant in multi-tenant mode. */}}
+{{- if not $multiTenantEnabled }}
 {{- if not .Values.app.secrets.BTG_CLIENT_ID }}
 {{- fail "\n\nERROR: app.secrets.BTG_CLIENT_ID is REQUIRED.\n   Set the BTG OAuth2 client ID in the secrets section.\n" }}
 {{- end }}
 
 {{- if not .Values.app.secrets.BTG_CLIENT_SECRET }}
 {{- fail "\n\nERROR: app.secrets.BTG_CLIENT_SECRET is REQUIRED.\n   Set the BTG OAuth2 client secret in the secrets section.\n" }}
+{{- end }}
 {{- end }}
 
 {{- if not .Values.app.secrets.BTG_WEBHOOK_SECRET }}
@@ -250,7 +254,7 @@ plugin-br-payments README.
      operator supplies postgresql.auth.existingSecret or app.secrets.POSTGRES_PASSWORD. */}}
 
 {{/* Multi-tenant required fields when enabled */}}
-{{- if eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true" }}
+{{- if $multiTenantEnabled }}
 {{- if not .Values.app.configmap.MULTI_TENANT_URL }}
 {{- fail "\n\nERROR: app.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}

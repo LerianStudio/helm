@@ -309,7 +309,8 @@ app:
     # See docs/helm-chart-standard.md "Single-Source Infra Secrets".
     POSTGRES_PASSWORD: ""
     # POSTGRES_REPLICA_PASSWORD: ""
-    # BTG OAuth2 (REQUIRED)
+    # BTG OAuth2 (REQUIRED only when MULTI_TENANT_ENABLED is not true;
+    # multi-tenant mode resolves these credentials per tenant)
     BTG_CLIENT_ID: ""
     BTG_CLIENT_SECRET: ""
     BTG_WEBHOOK_SECRET: ""

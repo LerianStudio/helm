@@ -1,0 +1,81 @@
+apiVersion: v2
+name: streaming-hub-helm
+description: >-
+  Lerian streaming-hub — consumes lib-streaming CloudEvents from Kafka/Redpanda
+  and fans them out to per-tenant SaaS/BYOC subscribers. Multi-component chart
+  with a runtime STREAMING_HUB_ROLE model (mode: all | split).
+type: application
+# version is a PLACEHOLDER. semantic-release in the `helm` repo owns the real
+# chart version on merge — do NOT hand-pick a final number here.
+
+version: 1.0.0-beta.7
+appVersion: "1.0.0"
+
+annotations:
+  lerian.studio/chart-type: multi-component
+home: https://github.com/LerianStudio/streaming-hub
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/streaming-hub
+  - https://github.com/LerianStudio/streaming-hub
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+keywords:
+  - streaming
+  - cloudevents
+  - kafka
+  - redpanda
+  - fan-out
+  - lerian
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+# lerian-common-helm adopted as a LOCAL file dependency (file://../lerian-common,
+# not oci://ghcr.io/lerianstudio) — this is the in-repo monorepo pattern (see
+# charts/plugin-br-pix-jd/Chart.yaml), which resolves purely from disk and needs
+# NO network/OCI access on `helm lint` / `helm template`. The earlier "no
+# dependencies block" stance was based on a stale assumption (that any
+# lerian-common dependency forces an OCI pull); it doesn't hold for the
+# file://../lerian-common form, so it has been dropped.
+#
+# Still NO otel-collector-lerian subchart: lerian-common's otel.* helpers
+# (otel.env, otel.podEnv, otel.envFlat) are pure env-var/template functions, not
+# a bundled collector — adopting them does not imply bundling one. OTEL stays
+# env-wired via the OTEL_EXPORTER_OTLP_ENDPOINT downward-API override, same as
+# before. Kafka/Redpanda and Postgres remain shared external infra, never
+# subcharts here.
+dependencies:
+  # Library chart — renders nothing on its own. Adopted at TWO tiers:
+  #
+  # (1) Workload boilerplate (templates/_deployment.tpl, serviceaccount.yaml) —
+  #     the fragments that are a genuine behavioral match for what streaming-hub
+  #     already hand-rolls: service/hpa/pdb/serviceAccount structure,
+  #     scheduling/imagePullSecrets pod-spec fragments, the OTEL downward-API
+  #     podEnv snippet, httpProbe, and the AWS IAM Roles Anywhere
+  #     sidecar/volume/imdsEnv fragments.
+  #
+  # (2) Domain-level productization (templates/configmap.yaml — ported from the
+  #     closed PR #1712 productize-chart-env pass) — the dependency-connection
+  #     env keys resolve through lerian-common domain masks/helpers so an
+  #     operator configures a typed surface instead of raw env:
+  #       - lerian-common.datastore.value  → global.datastores.postgres /
+  #         streamingHub.datastores.postgres (POSTGRES_HOST/PORT/USER/DB/SSLMODE)
+  #       - lerian-common.auth.env         → global.auth (PLUGIN_AUTH_* JWT)
+  #       - lerian-common.globalValue      → global.observability / global.multiTenant
+  #         (OTEL_*, ENV_NAME, MULTI_TENANT_ENABLED)
+  #       - lerian-common.multiTenant.env  → lib-commons/multitenancy base env
+  #     Every OTHER app key stays a `$cm.<KEY> | default` passthrough; the
+  #     configmap escape hatch (streamingHub.configmap.<KEY>) and extraEnvVars
+  #     keep an operator's overrides in charge.
+  #
+  # Naming/labels/secret-key derivation stays streaming-hub's own
+  # (templates/_helpers.tpl) — lerian-common does not model those. The
+  # lib-streaming CloudEvents env contract (lerian-common.streaming.*) is still
+  # NOT adopted: streaming-hub's STREAMING_HUB_KAFKA_* / STREAMING_HUB_* env vars
+  # are a different, chart-specific contract than the STREAMING_BROKERS/
+  # STREAMING_SASL_* shape that helper standardizes. Still NO
+  # otel-collector-lerian subchart: OTEL stays env-wired via the
+  # OTEL_EXPORTER_OTLP_ENDPOINT downward-API override (streamingHub.telemetry),
+  # and Kafka/Redpanda + PostgreSQL remain shared external infra, never subcharts.
+  - name: lerian-common-helm
+    version: 2.1.0
+    repository: "file://../lerian-common"

@@ -83,6 +83,14 @@ final shipped state is documented below.
   `app.resources`, and an `argocd.argoproj.io/sync-wave` annotation matching
   its hook weight.
 
+  **Known gap:** `.github/scripts/validate-helm-charts`'s render gate
+  renders exactly one fixture per chart, and this chart's fixture
+  (`.github/configs/helm-render-values/plugin-br-payments.yaml`) exercises
+  the chart's default bundled-Postgres deployment mode — so CI's render
+  gate does not yet cover the external-Postgres + control-plane migrations
+  Job path described above. Closing this (a second fixture, or an
+  equivalent render-gate change) is tracked as a follow-up.
+
 ### Changed
 
 - Renamed the 6 deprecated multi-tenant configmap/secret keys to the

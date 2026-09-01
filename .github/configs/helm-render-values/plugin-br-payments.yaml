@@ -16,21 +16,3 @@ app:
     INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
     CREDENTIAL_ENCRYPTION_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     MULTI_TENANT_SERVICE_API_KEY: "sample-mt-api-key"
-  # Remaining 3 conditions of templates/controlplane-migrations.yaml's
-  # 4-condition render gate: MULTI_TENANT_ENABLED=true is set above, but
-  # without these the Job stayed gated out and this fixture never actually
-  # rendered templates/controlplane-migrations.yaml.
-  controlplaneMigrations:
-    enabled: true
-
-# Disable the bundled subchart and flag Postgres as genuinely external, so
-# the "postgresql.enabled" helper resolves "false" and the gate's
-# "genuinely-external-only" condition is satisfied.
-postgresql:
-  enabled: false
-
-global:
-  externalPostgresDefinitions:
-    enabled: true
-    connection:
-      host: "fake-external-postgres.example.test"

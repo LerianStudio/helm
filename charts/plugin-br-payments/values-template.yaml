@@ -41,8 +41,14 @@ app:
     # Auth
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: ""
-    # Multi-tenancy (set to "true" to enable)
-    MULTI_TENANT_ENABLED: "false"
+    # Multi-tenancy (set to "true" to enable). Left commented out rather than
+    # an explicit "false" literal: this overlay is merged over values.yaml's
+    # app.configmap, and an explicit literal here — even "false" — wins over
+    # a caller overlay that sets only the deprecated MULTI_TENANCY_ENABLED
+    # key name (the app's reconcileDeprecatedMultiTenantEnv only falls back
+    # to the deprecated key when the canonical one is unset/blank). See
+    # values.yaml's own MULTI_TENANT_ENABLED comment for the full rationale.
+    # MULTI_TENANT_ENABLED: "false"
     # MULTI_TENANT_URL: ""
     # OpenTelemetry (use otel-collector-lerian.enabled below for host injection)
     ENABLE_TELEMETRY: "true"

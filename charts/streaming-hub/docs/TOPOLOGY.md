@@ -52,4 +52,5 @@ to pin them to a single replica.
 > `all` and `ingest` join the same consumer group → double-consume. See the
 > README's double-consume hazard callout.
 
-For the full architecture, see `streaming-hub/docs/architecture.md`.
+For the full architecture, see the app repo's
+[docs/architecture.md](https://github.com/LerianStudio/streaming-hub/blob/develop/docs/architecture.md).

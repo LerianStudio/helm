@@ -40,8 +40,12 @@ spec:
       http:
         paths:
           {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          {{- /* pathType is REQUIRED by networking.k8s.io/v1 — an omitted one
+                 renders `pathType: null` and the API server rejects the whole
+                 Ingress, failing the release. Quote the path so "/" stays a
+                 string rather than being re-parsed by the YAML loader. */}}
+          - path: {{ .path | quote }}
+            pathType: {{ .pathType | default "Prefix" }}
             backend:
               service:
                 name: {{ $svcName }}

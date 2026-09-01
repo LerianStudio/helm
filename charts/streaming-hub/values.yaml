@@ -190,7 +190,7 @@ streamingHub:
     failureThreshold: 3
   # -- Shared default scheduling (per-role blocks may override).
   nodeSelector: {}
-  tolerations: {}
+  tolerations: []
   affinity: {}
   # -- Extra non-sensitive env vars injected on every Deployment (key -> value map).
   #    The un-enumerated escape hatch; NEVER put credentials here (use secrets).
@@ -237,8 +237,8 @@ streamingHub:
   # unconstrained per-Deployment env hatch). NEVER put a credential here — those
   # go to `secrets` (routed to a Secret, never the ConfigMap).
   # ===========================================================================
-  # -- Operator ConfigMap overrides (key -> value). See templates/configmap.yaml.
-  # @default -- templates/configmap.yaml
+  # -- Operator ConfigMap overrides (key -> value). Ships empty; the built-in
+  #    defaults live in templates/configmap.yaml.
   configmap: {}
   # ===========================================================================
   # secrets — role-INVARIANT, SENSITIVE env (one shared Secret). Never rendered to
@@ -359,7 +359,7 @@ streamingHub:
       minAvailable: 1
       annotations: {}
     nodeSelector: {}
-    tolerations: {}
+    tolerations: []
     affinity: {}
   ingest:
     replicaCount: 1
@@ -384,7 +384,7 @@ streamingHub:
       minAvailable: 1
       annotations: {}
     nodeSelector: {}
-    tolerations: {}
+    tolerations: []
     affinity: {}
   delivery:
     replicaCount: 1
@@ -409,7 +409,7 @@ streamingHub:
       minAvailable: 1
       annotations: {}
     nodeSelector: {}
-    tolerations: {}
+    tolerations: []
     affinity: {}
 
 # =============================================================================

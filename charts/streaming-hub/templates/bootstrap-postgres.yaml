@@ -38,9 +38,27 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      # Restricted posture, MIRRORING templates/migrations.yaml. Both containers only
+      # open TCP sockets (nc / psql) and write nothing to disk, so uid/gid 65532 with a
+      # read-only root filesystem is workable. Without it the stock postgres:17 and
+      # busybox:1.37 images run as ROOT and a Pod Security Admission `restricted`
+      # namespace REJECTS the pod — and since this Job is a PreSync hook, that
+      # rejection blocks the whole sync rather than just skipping the bootstrap.
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
       - name: wait-for-dependencies
         image: busybox:1.37
+        securityContext:
+          runAsUser: 65532
+          runAsGroup: 65532
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
         env:
         - name: DB_HOST
           value: {{ $defs.connection.host | quote }}
@@ -66,6 +84,15 @@ spec:
       containers:
       - name: psql
         image: postgres:17
+        securityContext:
+          runAsUser: 65532
+          runAsGroup: 65532
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
         env:
         - name: DB_HOST
           value: {{ $defs.connection.host | quote }}

@@ -77,10 +77,12 @@ data:
   # --- crypto / KEK (KEK_REF is a POINTER to the env var; the material is a Secret) ---
   STREAMING_HUB_KEK_SOURCE: {{ $cm.STREAMING_HUB_KEK_SOURCE | default "env" | quote }}
   STREAMING_HUB_KEK_REF: {{ $cm.STREAMING_HUB_KEK_REF | default "" | quote }}
-  # --- tenancy (F4). STREAMING_HUB_MULTI_TENANT_ENABLED is the app's OWN flag (distinct
-  #     from the lib UNPREFIXED MULTI_TENANT_ENABLED above) ---
+  # --- tenancy (F4). The multi-tenant switch is the UNPREFIXED MULTI_TENANT_ENABLED
+  #     emitted above — the app's LoadConfig reads ONLY that name. There is NO
+  #     STREAMING_HUB_MULTI_TENANT_ENABLED in the app config surface (a prefixed
+  #     form is inert, and the app pins that with a test), so the chart must not
+  #     ship one: an operator setting it would silently stay single-tenant. ---
   STREAMING_HUB_TENANT_ID: {{ $cm.STREAMING_HUB_TENANT_ID | default "default" | quote }}
-  STREAMING_HUB_MULTI_TENANT_ENABLED: {{ $cm.STREAMING_HUB_MULTI_TENANT_ENABLED | default "false" | quote }}
   # --- postgres pool (shared defaults; per-role values override via _deployment.tpl env) ---
   STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS: {{ $cm.STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
   STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS: {{ $cm.STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS | default "12" | quote }}
@@ -135,7 +137,7 @@ data:
       "STREAMING_HUB_ALLOW_INSECURE_KAFKA" 1 "STREAMING_HUB_ALLOW_PRIVATE_SINKS" 1
       "STREAMING_HUB_ALLOW_INSECURE_DB_TLS" 1
       "STREAMING_HUB_KEK_SOURCE" 1 "STREAMING_HUB_KEK_REF" 1
-      "STREAMING_HUB_TENANT_ID" 1 "STREAMING_HUB_MULTI_TENANT_ENABLED" 1
+      "STREAMING_HUB_TENANT_ID" 1
       "STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS" 1 "STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS" 1
       "STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME" 1
       "STREAMING_HUB_DISPATCH_WORKERS" 1 "STREAMING_HUB_DISPATCH_CLAIM_BATCH" 1

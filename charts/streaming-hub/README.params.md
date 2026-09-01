@@ -35,7 +35,7 @@
 | `streamingHub.image.repository` | string | `ghcr.io/lerianstudio/streaming-hub` | Container image repository. |
 | `streamingHub.image.pullPolicy` | string | `IfNotPresent` | Image pull policy. |
 | `streamingHub.image.tag` | string | `""` | Image tag. Empty falls back to Chart.appVersion via the defaultTag helper. |
-| `streamingHub.imagePullSecrets` | object | `{}` | Secrets for pulling the image from a private registry. |
+| `streamingHub.imagePullSecrets` | list | `[{name: ghcr-credential}]` | Secrets for pulling the image from a private registry. |
 | `streamingHub.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for rollback. |
 | `streamingHub.annotations` | object | `{}` | Annotations applied to every Deployment resource. |
 | `streamingHub.podAnnotations` | object | `{}` | Annotations applied to every pod. |
@@ -64,7 +64,7 @@
 | `streamingHub.nodeSelector` | object | `{}` | Shared default scheduling (per-role blocks may override). |
 | `streamingHub.extraEnvVars` | object | `{}` | Extra non-sensitive env vars injected on every Deployment (key -> value map). The un-enumerated escape hatch; NEVER put credentials here (use secrets). |
 | `streamingHub.telemetry.enabled` | bool | `false` | Inject the per-pod OTLP endpoint override (HOST_IP downward API). |
-| `streamingHub.configmap` | object | `templates/configmap.yaml` | Operator ConfigMap overrides (key -> value). See templates/configmap.yaml. |
+| `streamingHub.configmap` | object | `{}` | Operator ConfigMap overrides (key -> value). Ships empty; the built-in defaults live in templates/configmap.yaml. |
 | `streamingHub.secrets.STREAMING_HUB_POSTGRES_DSN` | string | `""` | Single hub-owned Postgres DSN (password embedded → whole DSN is a secret). ALWAYS emitted; required for a working install (provide via a protected source). |
 | `streamingHub.secrets.STREAMING_HUB_KAFKA_CA_CERT` | string | `""` | Broker TLS CA cert PEM (ALWAYS emitted; used when KAFKA_TLS_ENABLED=true). |
 | `streamingHub.secrets.STREAMING_HUB_DEV_KEK` | string | `""` | DEV-ONLY KEK material holder, named by STREAMING_HUB_KEK_REF (local BYOC). ALWAYS emitted; leave empty in real deploys (use a KMS-backed KEK_SOURCE). |

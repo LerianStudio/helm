@@ -49,8 +49,20 @@ spec:
     metadata:
       labels:
         {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 8 }}
-      {{- with $sh.podAnnotations }}
       annotations:
+        # Config-rollout trigger. Every role consumes the shared ConfigMap and the
+        # chart Secret through envFrom ONLY, so a value change rewrites those objects
+        # while leaving the pod template byte-identical — `helm upgrade` then cuts no
+        # new ReplicaSet and the running pods keep the OLD config until an unrelated
+        # restart. Hashing the rendered manifests into the template closes that.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+        {{- if not $sh.useExistingSecret }}
+        # Only when the chart OWNS the Secret. Under useExistingSecret the Secret is
+        # Vault/gitops-managed and changes outside Helm's view, so a hash of the
+        # (empty) rendered template would be a constant that never triggers anything.
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") $ | sha256sum }}
+        {{- end }}
+      {{- with $sh.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
@@ -188,6 +200,17 @@ Postgres connection draw — Σ(maxReplicas × poolMaxOpenConns) ≤ max_connect
 {{- $ := .root -}}
 {{- $component := .component -}}
 {{- $cfg := index $.Values.streamingHub $component -}}
+{{/*
+Fail-loud gate. lerian-common.hpa emits each metric behind its own `if`, so an
+autoscaling block with BOTH targets unset (an operator nulling the values.yaml
+defaults) renders an HPA with an EMPTY `metrics:` list — accepted by the API
+server, permanently unable to scale — while the Deployment simultaneously omits
+`replicas:` (see the autoscaling.enabled branch above), pinning the role at the
+API default of 1. Refuse the render instead of shipping that silent pair.
+*/}}
+{{- if not (or $cfg.autoscaling.targetCPUUtilizationPercentage $cfg.autoscaling.targetMemoryUtilizationPercentage) -}}
+{{- fail (printf "streamingHub.%s.autoscaling: set targetCPUUtilizationPercentage and/or targetMemoryUtilizationPercentage when autoscaling.enabled=true (an HPA with no metric never scales, and the Deployment drops replicas:)" $component) -}}
+{{- end -}}
 {{- include "lerian-common.hpa" (dict
       "autoscaling" $cfg.autoscaling
       "name" (include "streaming-hub.componentFullname" (dict "context" $ "component" $component))

@@ -18,6 +18,11 @@
       "default": "",
       "description": "Override the namespace (defaults to .Release.Namespace)."
     },
+    "lerian-common-helm": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Coalesced values of the lerian-common-helm library dependency. Helm injects a key named after every dependency into the parent's values, so the root schema MUST accept it — the chart itself never reads this block."
+    },
     "global": {
       "type": "object",
       "additionalProperties": true,
@@ -282,8 +287,7 @@
           "description": "Shared default scheduling (per-role blocks may override)."
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true
+          "type": "array"
         },
         "affinity": {
           "type": "object",
@@ -373,7 +377,6 @@
               "STREAMING_HUB_LOG_LEVEL",
               "STREAMING_HUB_MANIFEST_REFRESH_INTERVAL",
               "STREAMING_HUB_METRICS_ENABLED",
-              "STREAMING_HUB_MULTI_TENANT_ENABLED",
               "STREAMING_HUB_PARTITION_CRON_INTERVAL",
               "STREAMING_HUB_PARTITION_FUTURE_BUFFER_WEEKS",
               "STREAMING_HUB_PARTITION_RETENTION_ENABLED",
@@ -576,8 +579,7 @@
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "object",
-              "additionalProperties": true
+              "type": "array"
             },
             "affinity": {
               "type": "object",
@@ -671,8 +673,7 @@
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "object",
-              "additionalProperties": true
+              "type": "array"
             },
             "affinity": {
               "type": "object",
@@ -766,8 +767,7 @@
               "additionalProperties": true
             },
             "tolerations": {
-              "type": "object",
-              "additionalProperties": true
+              "type": "array"
             },
             "affinity": {
               "type": "object",
@@ -875,5 +875,5 @@
       "additionalProperties": true
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

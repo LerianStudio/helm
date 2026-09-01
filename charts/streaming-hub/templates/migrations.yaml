@@ -28,7 +28,7 @@ so the ONLY required env is STREAMING_HUB_POSTGRES_DSN (secretKeyRef).
 {{- $migrationTag := get $migrationImage "tag" | default "" }}
 {{- $migrationDigest := get $migrationImage "digest" | default "" }}
 {{- if and (empty $migrationTag) (empty $migrationDigest) }}
-{{- $migrationTag = $streamingHub.image.tag | default .Chart.AppVersion }}
+{{- $migrationTag = (get ($streamingHub.image | default dict) "tag") | default .Chart.AppVersion }}
 {{- end }}
 {{- $migrationRepository := get $migrationImage "repository" | default "ghcr.io/lerianstudio/streaming-hub-migrations" }}
 apiVersion: batch/v1

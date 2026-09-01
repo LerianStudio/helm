@@ -16,6 +16,11 @@ final shipped state is documented below.
 
 ### Added
 
+- **New values keys:** `app.controlplaneMigrations.enabled` (default
+  `false`) and `app.controlplaneMigrations.resources` (default requests
+  `50m`/`64Mi`, limits `250m`/`256Mi`) — see the `templates/controlplane-migrations.yaml`
+  entry below for what they control.
+
 - `templates/controlplane-migrations.yaml`: a `PreSync` Helm hook Job that
   applies the app's control-plane migrations (ADR-013, `plugin-br-payments`
   repo) via the `/controlplane-migrate` binary before the app rolls out.
@@ -46,11 +51,14 @@ final shipped state is documented below.
   Postgres connection env vars are inlined rather than `envFrom` the app
   ConfigMap, which is a plain Sync-phase resource that does not exist yet
   when this `PreSync` hook runs on a first install. `POSTGRES_HOST`/
-  `POSTGRES_PORT` read unconditionally from
-  `global.externalPostgresDefinitions.connection.host`/`.port` — mirroring
-  `templates/bootstrap-postgres.yaml`'s own `DB_HOST`/`DB_PORT` exactly, so
-  the migration Job can never target a different host than the one
-  `bootstrap-postgres.yaml` just provisioned the role/database on;
+  `POSTGRES_PORT` read from `app.configmap.POSTGRES_HOST`/`POSTGRES_PORT` —
+  the same source `templates/deployment.yaml`'s app container resolves via
+  its `envFrom` of `templates/configmap.yaml` — so the migration Job always
+  targets the exact host/port the app itself is about to connect to, rather
+  than `global.externalPostgresDefinitions.connection.host`/`.port`, whose
+  non-empty chart defaults name the bundled subchart's own Service and
+  exist only to tell `templates/bootstrap-postgres.yaml` which external host
+  to provision a role/database on;
   `USER`/`DB`/`SSLMODE`/`CONNECT_TIMEOUT_SEC` come from `.Values.app.configmap`
   with the same defaults the app itself uses, plus the existing
   `POSTGRES_PASSWORD` secretRef. Mirrors
@@ -112,16 +120,6 @@ final shipped state is documented below.
   `MULTI_TENANT_SERVICE_NAME`, `MULTI_TENANT_POSTGRES_MODULE`,
   `MULTI_TENANT_ALLOW_INSECURE_HTTP`, `MULTI_TENANT_MAX_TENANT_POOLS`, and
   `MULTI_TENANT_SERVICE_API_KEY` were already canonical and are untouched.
-
-- `templates/controlplane-migrations.yaml`'s `MULTI_TENANT_ENABLED` gate
-  reads `.Values.app.configmap.MULTI_TENANT_ENABLED | toString`, matching
-  `_helpers.tpl` and `NOTES.txt`'s existing form.
-
-- The Job's pod template no longer carries the `app.kubernetes.io/name`/
-  `instance` labels that `pdb.yaml` and `service.yaml` select on, so a
-  transient migration pod can never be double-counted against the
-  `PodDisruptionBudget` or receive live Service traffic; it also carries an
-  `argocd.argoproj.io/sync-wave` annotation matching its hook weight.
 
 ### Deprecated
 

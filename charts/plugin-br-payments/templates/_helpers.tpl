@@ -158,10 +158,10 @@ false
 
 {{- /*
 Exclusivity guard between the bundled postgresql subchart and
-global.externalPostgresDefinitions, kept SEPARATE from the "postgresql.enabled"
-helper above on purpose: that helper is an OR of two flags
-(postgresql.enabled / postgresql.external) meant to answer "which host does
-this release talk to", but Chart.yaml's dependency condition
+global.externalPostgresDefinitions/postgresql.external, kept SEPARATE from
+the "postgresql.enabled" helper above on purpose: that helper is an OR of two
+flags (postgresql.enabled / postgresql.external) meant to answer "which host
+does this release talk to", but Chart.yaml's dependency condition
 (`condition: postgresql.enabled`) only ever reads the literal
 .Values.postgresql.enabled — it has no idea postgresql.external exists. So an
 operator who sets postgresql.external=true while leaving postgresql.enabled
@@ -172,15 +172,23 @@ helper (templates/controlplane-migrations.yaml, templates/bootstrap-postgres.yam
 would then wrongly believe it is safe to also render against
 global.externalPostgresDefinitions.connection.host, producing the exact
 double-render/race this chart's exclusivity gates exist to prevent — with
-zero warning. This check is keyed on the SAME literal .Values.postgresql.enabled
-Chart.yaml itself uses, not the helper, so it fails closed regardless of which
-of postgresql.enabled=false / postgresql.external=true an operator sets:
-either one alone still passes; only actually turning off the literal
-postgresql.enabled avoids it.
+zero warning.
+
+This check is keyed on the SAME literal .Values.postgresql.enabled Chart.yaml
+itself uses, not the helper, and it fails closed on EITHER of the two ways an
+operator can signal "external": postgresql.external=true (README's documented
+path — postgresql.enabled left at its default true, only .external flipped)
+OR global.externalPostgresDefinitions.enabled=true. An earlier version of this
+guard checked only the externalPostgresDefinitions.enabled arm and let
+postgresql.enabled=true + postgresql.external=true through silently — the
+exact contradictory combination this guard exists to catch, since Chart.yaml
+would still render the bundled StatefulSet under it. Only actually turning off
+the literal postgresql.enabled (or turning off both external signals) avoids
+this fail().
 */}}
 {{- define "plugin-br-payments.validatePostgresExclusivity" -}}
-{{- if and .Values.postgresql.enabled .Values.global.externalPostgresDefinitions.enabled }}
-{{- fail "\n\nERROR: postgresql.enabled and global.externalPostgresDefinitions.enabled cannot both be true.\n   Chart.yaml's postgresql dependency is gated on the literal postgresql.enabled\n   value alone (condition: postgresql.enabled), so leaving it at its default\n   true still renders the bundled PostgreSQL subchart even when\n   postgresql.external is also set to true. Set postgresql.enabled: false to\n   use an external Postgres (global.externalPostgresDefinitions), or set\n   global.externalPostgresDefinitions.enabled: false to use the bundled one.\n" }}
+{{- if and .Values.postgresql.enabled (or .Values.postgresql.external .Values.global.externalPostgresDefinitions.enabled) }}
+{{- fail "\n\nERROR: postgresql.enabled cannot be true at the same time as postgresql.external\n   or global.externalPostgresDefinitions.enabled.\n   Chart.yaml's postgresql dependency is gated on the literal postgresql.enabled\n   value alone (condition: postgresql.enabled), so leaving it at its default\n   true still renders the bundled PostgreSQL subchart even when\n   postgresql.external and/or global.externalPostgresDefinitions.enabled is\n   also set to true. Set postgresql.enabled: false to use an external Postgres\n   (postgresql.external / global.externalPostgresDefinitions), or leave both\n   postgresql.external and global.externalPostgresDefinitions.enabled false to\n   use the bundled one.\n" }}
 {{- end }}
 {{- end -}}
 

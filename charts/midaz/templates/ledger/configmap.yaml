@@ -269,6 +269,39 @@ data:
   SD_WORKLOAD: {{ .Values.ledger.configmap.SD_WORKLOAD | default "" | quote }}
   STREAMING_ENABLED: {{ .Values.ledger.configmap.STREAMING_ENABLED | default "false" | quote }}
   SWAGGER_VERSION: {{ .Values.ledger.configmap.SWAGGER_VERSION | default "${VERSION}" | quote }}
+  DB_TRANSACTION_ROUTE_TX_READS_TO_PRIMARY: {{ .Values.ledger.configmap.DB_TRANSACTION_ROUTE_TX_READS_TO_PRIMARY | default "false" | quote }}
+  IDP_DECLARATION_ENABLED: {{ .Values.ledger.configmap.IDP_DECLARATION_ENABLED | default "false" | quote }}
+  IDP_HOST: {{ .Values.ledger.configmap.IDP_HOST | default "" | quote }}
+  IDP_M2M_CLIENT_ID: {{ .Values.ledger.configmap.IDP_M2M_CLIENT_ID | default "" | quote }}
+  KMS_VAULT_ADDR: {{ .Values.ledger.configmap.KMS_VAULT_ADDR | default "http://localhost:8200" | quote }}
+  KMS_VAULT_AUTH_METHOD: {{ .Values.ledger.configmap.KMS_VAULT_AUTH_METHOD | default "token" | quote }}
+  KMS_VAULT_ROLE_ID: {{ .Values.ledger.configmap.KMS_VAULT_ROLE_ID | default "" | quote }}
+  KMS_VAULT_SECRET_ID: {{ .Values.ledger.configmap.KMS_VAULT_SECRET_ID | default "" | quote }}
+  KMS_VENDOR: {{ .Values.ledger.configmap.KMS_VENDOR | default "none" | quote }}
+  MONGO_CRM_HOST: {{ .Values.ledger.configmap.MONGO_CRM_HOST | default "midaz-mongodb" | quote }}
+  MONGO_CRM_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_CRM_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_CRM_NAME: {{ .Values.ledger.configmap.MONGO_CRM_NAME | default "crm" | quote }}
+  MONGO_CRM_PARAMETERS: {{ .Values.ledger.configmap.MONGO_CRM_PARAMETERS | default "" | quote }}
+  MONGO_CRM_PORT: {{ .Values.ledger.configmap.MONGO_CRM_PORT | default "5703" | quote }}
+  MONGO_CRM_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_CRM_TLS_CA_CERT | default "" | quote }}
+  MONGO_CRM_URI: {{ .Values.ledger.configmap.MONGO_CRM_URI | default "mongodb" | quote }}
+  MONGO_CRM_USER: {{ .Values.ledger.configmap.MONGO_CRM_USER | default "midaz" | quote }}
+  MONGO_FEES_HOST: {{ .Values.ledger.configmap.MONGO_FEES_HOST | default "midaz-mongodb" | quote }}
+  MONGO_FEES_MAX_POOL_SIZE: {{ .Values.ledger.configmap.MONGO_FEES_MAX_POOL_SIZE | default "100" | quote }}
+  MONGO_FEES_NAME: {{ .Values.ledger.configmap.MONGO_FEES_NAME | default "fees" | quote }}
+  MONGO_FEES_PARAMETERS: {{ .Values.ledger.configmap.MONGO_FEES_PARAMETERS | default "" | quote }}
+  MONGO_FEES_PORT: {{ .Values.ledger.configmap.MONGO_FEES_PORT | default "5703" | quote }}
+  MONGO_FEES_TLS_CA_CERT: {{ .Values.ledger.configmap.MONGO_FEES_TLS_CA_CERT | default "" | quote }}
+  MONGO_FEES_URI: {{ .Values.ledger.configmap.MONGO_FEES_URI | default "mongodb" | quote }}
+  MONGO_FEES_USER: {{ .Values.ledger.configmap.MONGO_FEES_USER | default "midaz" | quote }}
+  OPENAPI_DOCS_ENABLED: {{ .Values.ledger.configmap.OPENAPI_DOCS_ENABLED | default "false" | quote }}
+  TRACER_BASE_URL: {{ .Values.ledger.configmap.TRACER_BASE_URL | default "" | quote }}
+  TRACER_TIMEOUT_MS: {{ .Values.ledger.configmap.TRACER_TIMEOUT_MS | default "250" | quote }}
+  TRACER_TLS_CA_FILE: {{ .Values.ledger.configmap.TRACER_TLS_CA_FILE | default "" | quote }}
+  TRACER_TLS_CERT_FILE: {{ .Values.ledger.configmap.TRACER_TLS_CERT_FILE | default "" | quote }}
+  TRACER_TLS_KEY_FILE: {{ .Values.ledger.configmap.TRACER_TLS_KEY_FILE | default "" | quote }}
+  TRACER_TLS_MODE: {{ .Values.ledger.configmap.TRACER_TLS_MODE | default "" | quote }}
+  TRACER_TRANSPORT: {{ .Values.ledger.configmap.TRACER_TRANSPORT | default "grpc" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

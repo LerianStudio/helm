@@ -121,7 +121,7 @@ ledger:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.8.4"
+    tag: "4.0.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -702,3 +702,6 @@ rabbitmq:
 otel-collector-lerian:
   # -- Inject OTEL env vars into the midaz ledger and crm deployments
   enabled: true
+tracer:
+  image:
+    tag: 4.0.0

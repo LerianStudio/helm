@@ -80,9 +80,16 @@ app:
 postgresql:
   enabled: false
 
-# When using a fresh external Postgres, optionally run the bootstrap Job once.
+# When using a fresh external Postgres, optionally run the bootstrap Job.
 # It connects to the same app.configmap.POSTGRES_HOST/POSTGRES_PORT set above —
-# only the admin credentials it needs to create the role and database go here:
+# only the admin credentials it needs to create the role and database go here.
+# The Job is a pre-install AND pre-upgrade hook: while this flag stays true it
+# runs on every install and every upgrade, not just once. It checks for the
+# role/database first and skips creating them if already present (the GRANT
+# statements re-run unconditionally either way, which is harmless), so
+# leaving it on is safe — just an extra admin-credentialed round trip on
+# every upgrade. Set it back to false once provisioning is done if you'd
+# rather avoid that.
 # global:
 #   externalPostgresDefinitions:
 #     enabled: true

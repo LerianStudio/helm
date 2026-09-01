@@ -62,7 +62,7 @@ The following values MUST be set for the deployment to start successfully:
 When MULTI_TENANT_ENABLED=true, additionally:
   - app.configmap.MULTI_TENANT_URL
   - app.secrets.MULTI_TENANT_SERVICE_API_KEY
-  - BTG OAuth2 credentials are resolved per tenant; do not set app.secrets.BTG_CLIENT_ID or BTG_CLIENT_SECRET
+  - BTG OAuth2 credentials are resolved per tenant; do not set app.secrets.BTG_CLIENT_ID or app.secrets.BTG_CLIENT_SECRET
 
 ## Accessing the API
 

@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.BTG_CLIENT_ID` and `BTG_CLIENT_SECRET` in single-tenant mode; `BTG_WEBHOOK_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. In multi-tenant mode, BTG OAuth2 credentials are resolved per tenant. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.BTG_CLIENT_ID` and `app.secrets.BTG_CLIENT_SECRET` in single-tenant mode; `BTG_WEBHOOK_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. In multi-tenant mode, BTG OAuth2 credentials are resolved per tenant. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -111,7 +111,7 @@ app:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
 ```
 
-When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead). Do not set `app.secrets.BTG_CLIENT_ID` or `BTG_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record.
+When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead). Do not set `app.secrets.BTG_CLIENT_ID` or `app.secrets.BTG_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record.
 
 ## Common values
 

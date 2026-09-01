@@ -56,7 +56,8 @@ app:
   secrets:
     # Database
     POSTGRES_PASSWORD: ""        # REQUIRED
-    # BTG OAuth2 (REQUIRED)
+    # BTG OAuth2 (REQUIRED only in single-tenant mode; multi-tenant mode
+    # resolves these credentials from each tenant's control-plane record)
     BTG_CLIENT_ID: ""
     BTG_CLIENT_SECRET: ""
     BTG_WEBHOOK_SECRET: ""

@@ -41,7 +41,7 @@ app:
     BTG_AUTH_URL: ""
     BTG_TOKEN_REFRESH_INTERVAL: "1h"
   secrets:
-    # BTG OAuth2 (REQUIRED)
+    # BTG OAuth2 (REQUIRED only in single-tenant mode)
     BTG_CLIENT_ID: ""
     BTG_CLIENT_SECRET: ""
     BTG_WEBHOOK_SECRET: ""
@@ -64,8 +64,8 @@ The only configuration change in v1.0.0 is the rename described above. No new va
 | `app.configmap.BTG_API_BASE_URL` | n/a | required |
 | `app.configmap.BTG_AUTH_URL` | n/a | required |
 | `app.configmap.BTG_TOKEN_REFRESH_INTERVAL` | n/a | `"1h"` default |
-| `app.secrets.BTG_CLIENT_ID` | n/a | required |
-| `app.secrets.BTG_CLIENT_SECRET` | n/a | required |
+| `app.secrets.BTG_CLIENT_ID` | n/a | required only in single-tenant mode |
+| `app.secrets.BTG_CLIENT_SECRET` | n/a | required only in single-tenant mode |
 | `app.secrets.BTG_WEBHOOK_SECRET` | n/a | required |
 
 ## Migration Steps

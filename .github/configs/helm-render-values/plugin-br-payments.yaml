@@ -10,8 +10,7 @@ app:
     MULTI_TENANT_ENABLED: "true"
     MULTI_TENANT_URL: "http://tenant-manager:8080"
   secrets:
-    BTG_CLIENT_ID: "sample"
-    BTG_CLIENT_SECRET: "sample"
+    # Provider OAuth2 credentials are tenant-scoped when MT is enabled.
     BTG_WEBHOOK_SECRET: "sample"
     INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
     CREDENTIAL_ENCRYPTION_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="

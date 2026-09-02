@@ -1,1 +1,0 @@
-{{- include "plugin-br-pix-switch.migrationJob" (dict "context" . "component" "pixauto" "serviceName" "pixauto") }}

@@ -95,10 +95,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | `3.1.0-beta.4` | 1.2.1-beta.11 | 1.2.1-beta.12 |
 -----------------
 
-### Plugin BR Pix Switch
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-switch).
-
 #### Application Version Mapping
 
 | Chart Version | App Version |

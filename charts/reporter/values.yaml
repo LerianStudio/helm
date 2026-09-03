@@ -690,7 +690,10 @@ mongodb:
     type: ClusterIP
     port: 27017
 externalRabbitmqDefinitions:
-  # -- Enable or disable the RabbitMQ bootstrap job
+  # -- Enable or disable the RabbitMQ bootstrap job. The Job is topology-only: it
+  # applies exchanges, queues and bindings inside the default vhost "/". It does not
+  # create the application broker user or its permissions — provision those on the
+  # broker, outside this chart.
   enabled: false
   # -- RabbitMQ connection settings
   connection:
@@ -702,6 +705,10 @@ externalRabbitmqDefinitions:
     port: "15672"
     # -- RabbitMQ AMQP port (for connectivity check)
     portAmqp: "5672"
+    # -- Skip TLS certificate verification on the management API calls. Leave false
+    # (verify) whenever protocol is https — the Job sends the broker admin credential
+    # on those calls. Set true only for a broker with a self-signed certificate.
+    skipTlsVerify: false
   # -- Admin credentials for RabbitMQ management API
   rabbitmqAdminLogin:
     useExistingSecret:
@@ -711,13 +718,6 @@ externalRabbitmqDefinitions:
     username: "midaz"
     # -- Admin password (ignored if useExistingSecret.name is set)
     password: ""
-  # -- Credentials for the reporter application user created by the job
-  appCredentials:
-    useExistingSecret:
-      # -- Name of existing secret containing RABBITMQ_DEFAULT_PASS key
-      name: ""
-    # -- Password for reporter user (ignored if useExistingSecret.name is set)
-    reporterPassword: ""
 rabbitmq:
   enabled: true
   image:

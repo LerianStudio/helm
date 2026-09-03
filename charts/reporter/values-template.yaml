@@ -160,7 +160,9 @@ keda:
 otel-collector-lerian:
   enabled: true
 
-# -- Bootstrap job for external RabbitMQ (users/vhosts/permissions).
+# -- Topology bootstrap job for an external RabbitMQ (exchanges/queues/bindings in
+# the default vhost "/"). It does not create the app broker user, its permissions,
+# or any vhost — provision those on the broker, outside this chart.
 externalRabbitmqDefinitions:
   enabled: false
   connection:
@@ -168,12 +170,9 @@ externalRabbitmqDefinitions:
     host: "reporter-rabbitmq"
     port: "15672"
     portAmqp: "5672"
+    skipTlsVerify: false
   rabbitmqAdminLogin:
     useExistingSecret:
       name: ""
     username: "midaz"
     password: ""
-  appCredentials:
-    useExistingSecret:
-      name: ""
-    reporterPassword: ""

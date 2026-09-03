@@ -1,13 +1,248 @@
-{{- if .Values.externalRabbitmqDefinitions.enabled }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: reporter-bootstrap-rabbitmq-definitions
-  namespace: {{ .Release.Namespace }}
-data:
-  load_definitions.json: |
-{{ .Files.Get "files/rabbitmq/load_definitions.json" | indent 4 }}
+{{- /*
+  RabbitMQ topology bootstrap Job (external broker).
+
+  THE OBJECT LIST IS GENERATED AT RENDER TIME. files/rabbitmq/load_definitions.json is
+  parsed by Helm (fromJson) and expanded into one curl call per exchange, queue and
+  binding, inline in this container's command. Nothing is read from disk at run time:
+  there is no ConfigMap, no volume, and no encoded-payload env var — do not reintroduce
+  one. A hook runs BEFORE the normal resource batch is applied, so a payload mounted
+  from that batch would not exist yet. Generating at render time also means the exact
+  set of objects that will be created is visible in `helm template` output, so CI can
+  gate on it.
+
+  LOAD-BEARING COUPLING — DO NOT OPTIMISE THE DELETE POLICY AWAY. Because the generated
+  call list lives in spec.template.spec.containers[].command, and a Job's spec.template
+  is IMMUTABLE, EVERY edit to load_definitions.json changes this Job's pod template.
+  That is precisely the intended trigger for BeforeHookCreation: the Job name is fixed,
+  so the pre-existing Job must be deleted and recreated. Drop BeforeHookCreation and any
+  change to the declaration file becomes unappliable.
+
+  WHY PER OBJECT AND NOT THE BULK IMPORT: the bulk import answers with a single status
+  code for the whole file, so a partially applied topology is indistinguishable from a
+  complete one. Per object, every exchange/queue/binding reports its own code, and a
+  transport failure is distinguishable from a rejected declaration.
+
+  DIVERGENCE DETECTION IS ASYMMETRIC — MEASURED, NOT ASSUMED. Against a live
+  rabbitmq:3.13-management, with the rendered command run verbatim in the pinned image:
+    - EXCHANGES and QUEUES are fail-CLOSED. PUT of an altered declaration for an object
+      that already exists answers 400, the object is reported DIVERGENCE, and the Job
+      exits 1.
+    - BINDINGS are fail-OPEN AND GREEN. Bindings are POSTed (the management API has no
+      PUT for them) and a POST is ADDITIVE, never a replace. A binding's identity is
+      (source, destination, routing_key, arguments), and changing ANY component of it
+      ADDS a binding beside the old one — routing_key and arguments alike. Measured
+      from a baseline of one binding on the pair: change only routing_key -> 201, and
+      GET /api/bindings goes to 2, the original surviving; then change only arguments,
+      same routing_key -> 201, and it goes to 3, the original surviving again. An
+      IDENTICAL POST also answers 201 but does NOT accumulate, so it is the equality of
+      all four components that deduplicates. Run over that polluted state, the Job
+      reported OK for every object, "completed successfully" and exit 0, with three
+      bindings standing. This Job NEVER removes a binding it did not create.
+  The Job is blind to drift in either component, but the two do NOT feel the same from
+  the outside — which is exactly why neither can be waved away:
+    - routing_key drift leaves a LIVE stale route. Publishing with the obsolete key
+      delivered a message that was then consumed destructively. (The management API's
+      `messages` counter lagged behind the delivery, so checking statistics instead of
+      actually consuming would have reported the queue empty.)
+    - arguments drift on a direct or topic exchange has NO symptom. AMQP delivers once
+      per queue however many bindings match, so two bindings sharing the correct
+      routing key do not duplicate delivery: configuration drift with no signal at all.
+    - arguments drift on a HEADERS exchange leaves a LIVE stale route. With two
+      bindings differing only in arguments (tipo:A / tipo:B), publishing a header that
+      only the obsolete binding matches delivered a consumable message.
+  Do NOT read the middle bullet as "arguments are inert". Args drift is invisible only
+  because this chart declares topic and direct exchanges and no headers exchange TODAY;
+  one headers exchange entering load_definitions.json makes it live, with nobody having
+  touched this Job. And do NOT paper over any of it with a GET-and-compare here:
+  whether the Job may DELETE a binding it did not create is a deliberate open decision,
+  deferred to its own DR.
+
+  TOPOLOGY ONLY. This Job does not manage users or vhost permissions: those are
+  provisioned per tier, outside the chart. It does not create vhosts — only "/" is
+  declared, and "/" always exists. It does not manage the reporter APPLICATION user
+  either: `externalRabbitmqDefinitions.appCredentials` was removed, and a tier that
+  still sets it fails the render (see the check below) rather than silently having the
+  key ignored.
+
+  JSON NEVER ENTERS THE SHELL STRING. Render-time generation would otherwise trade the
+  byte-exact base64 payload for a third encoding — shell quoting of JSON inside `sh -c`
+  — which is exactly what the inlined-base64 design existed to avoid. So each object's
+  body travels as its OWN env var (TOPO_<KIND>_<NAME>_BODY) and the command passes only
+  a variable reference: `"$TOPO_...._BODY"`. A double-quoted parameter expansion in
+  POSIX sh is byte-exact for ANY content, so no value in the declaration can break out,
+  whatever quotes or backslashes it carries. Helm's `quote` (Go %q) emits only escapes
+  that a YAML double-quoted scalar also defines (\" \\ \n \t \xNN \uNNNN), so the
+  env value round-trips byte-exact through the manifest too. `squote` was rejected: sprig
+  wraps in single quotes WITHOUT escaping an embedded single quote, so one apostrophe in
+  an argument value would end the string and splice the rest as shell words.
+
+  The object list stays visible in `helm template` output — kind, name, verb and
+  endpoint are all still in the command, which is what the render-time approach was
+  chosen for; only the body moved out.
+
+  WHAT KEEPS THE TWO INTERPOLATED STRINGS SAFE — AND WHERE THE ASSERTION LIVES. Two
+  values from the declaration reach the shell string: the LABEL and the ENDPOINT. Both
+  are asserted IN THE CHOKEPOINT LOOP below, over the exact value that goes into the
+  command, NOT only in the per-category builders. That placement is load-bearing:
+  `quote` is Go %q, which neutralises " and \ for a double-quoted `sh` context but does
+  NOT neutralise $ or a backtick — so for the label the charset assertion is the ONLY
+  thing standing between the declaration file and a command substitution. A category
+  appended to $objs without its own inline check therefore still cannot reach the
+  manifest unasserted. The per-category checks are kept only because they name the
+  offending field (source/destination/name) in the message.
+  The binding label is COMPOSED ("src->dst#hash"), so the chokepoint charset admits >
+  and #; both are inert inside double quotes, unlike $ and backtick.
+
+  ON POL-1 (a hook's payload carrier must itself be a hook): there is no carrier to
+  order against. POL-1 governs the RELATION between two resources — hook and payload
+  carrier; generating the payload into the hook ELIMINATES the relation, and an ordering
+  norm does not apply to a set of one.
+*/}}
+{{- /* MUTUAL EXCLUSION. The embedded `rabbitmq` subchart loads
+    files/rabbitmq/load_definitions.json itself at broker startup, so with both enabled
+    the same declaration would be applied twice by two owners, and this Job would point
+    its ADMIN credential at a broker the chart also manages. Read defensively (`dig`):
+    `rabbitmq` is a subchart key and may be absent entirely — `dig` cannot be used, it
+    type-asserts map[string]interface{} and .Values is chartutil.Values. Style follows
+    charts/plugin-br-bank-transfer/templates/migrations.yaml:22 — say what to do, not
+    just what is wrong. */}}
+{{- $rmqSubchart := .Values.rabbitmq | default dict }}
+{{- $extDefs := .Values.externalRabbitmqDefinitions | default dict }}
+{{- if and (eq (lower (toString ($rmqSubchart.enabled | default false))) "true") (eq (lower (toString ($extDefs.enabled | default false))) "true") }}
+{{- fail "rabbitmq.enabled and externalRabbitmqDefinitions.enabled cannot both be true: externalRabbitmqDefinitions is for EXTERNAL brokers only, while the embedded rabbitmq subchart loads files/rabbitmq/load_definitions.json itself — disable one (set rabbitmq.enabled=false to use an external broker, or externalRabbitmqDefinitions.enabled=false to keep the embedded one)" }}
+{{- end }}
+{{- /* STALE KEY. appCredentials used to make this Job create the reporter application
+    user and its permissions. It no longer does, and the key is gone from values.yaml —
+    so a tier that still sets it would be silently ignored, believing a user is being
+    provisioned that nobody provisions. Fail loudly instead. Checked OUTSIDE the
+    `enabled` guard on purpose: the config is stale whether or not the Job runs.
+    nil-safe — $extDefs defaults to dict. */}}
+{{- if hasKey $extDefs "appCredentials" }}
+{{- fail "externalRabbitmqDefinitions.appCredentials was REMOVED: this bootstrap Job no longer manages the reporter application user or its vhost permissions — it applies TOPOLOGY ONLY (exchanges, queues, bindings). Delete the appCredentials block from your values and provision the application user on the broker per tier (the same place the admin credential in rabbitmqAdminLogin comes from); the app password the workloads read stays in the reporter secret, unchanged" }}
+{{- end }}
+{{- if $extDefs.enabled }}
+{{- $topology := .Files.Get "files/rabbitmq/load_definitions.json" | fromJson }}
+{{- /* UNKNOWN CATEGORIES FAIL THE RENDER. The Job applies exchanges, queues and
+    bindings, and asserts over vhosts; anything else in the declaration (permissions,
+    policies, users, parameters, ...) was measured to be SILENTLY DROPPED — it never
+    reaches the broker, and before render-time generation it still travelled inside the
+    always-rendered payload, looking applied. A silent drop becomes a visible error. */}}
+{{- $known := dict "vhosts" true "exchanges" true "queues" true "bindings" true }}
+{{- range $k, $ignored := $topology }}
+{{- if not (hasKey $known $k) }}
+{{- fail (printf "load_definitions.json declares top-level %q, which this Job does NOT apply (it handles vhosts, exchanges, queues and bindings only) and would SILENTLY DROP: remove it and provision %q on the broker per tier, or extend this template to apply it" $k $k) }}
+{{- end }}
+{{- end }}
+{{- /* Build the object list ONCE: the command and the env block must agree, so both
+    iterate the same $objs. Each entry carries the shell-safe label/endpoint plus the
+    env var that will hold its JSON body. */}}
+{{- $objs := list }}
+{{- $seen := dict }}
+{{- $safeName := "^[A-Za-z0-9._:@~-]+$" }}
+{{- /* Chokepoint charset: $safeName plus the two characters a COMPOSED binding label
+    adds (> from "src->dst" and # before the identity hash). Both are literal inside
+    double quotes. $ and backtick are deliberately absent — those are the two `quote`
+    does not neutralise. */}}
+{{- $safeLabel := "^[A-Za-z0-9._:@~#>-]+$" }}
+{{- $safeEndpoint := "^[A-Za-z0-9._~%+/:@-]+$" }}
+{{- range $v := ($topology.vhosts | default list) }}
+{{- if not (kindIs "string" $v.name) }}
+{{- fail (printf "load_definitions.json declares a vhost whose name is not a string (%v): only the default vhost \"/\" may be declared" $v.name) }}
+{{- end }}
+{{- if ne $v.name "/" }}
+{{- fail (printf "load_definitions.json declares vhost %q: this Job only applies topology inside the default vhost \"/\"; vhost creation is provisioned per tier" $v.name) }}
+{{- end }}
+{{- end }}
+{{- /* Exchanges and queues differ only in the API path segment and the message wording,
+    so they share one table-driven loop: a third PUT-shaped category is a row here, not
+    a copy of 10 lines. Bindings keep their own block below — different verb, composed
+    label, different defaulted fields. */}}
+{{- $putCategories := list (dict "key" "exchanges" "kind" "exchange" "api" "exchanges") (dict "key" "queues" "kind" "queue" "api" "queues") }}
+{{- range $c := $putCategories }}
+{{- range $x := ((index $topology $c.key) | default list) }}
+{{- if not (kindIs "string" $x.name) }}{{ fail (printf "a %s entry in load_definitions.json has a non-string name (%v): names must be strings" $c.kind $x.name) }}{{ end }}
+{{- if not (regexMatch $safeName $x.name) }}{{ fail (printf "%s name %q leaves the render-time safe charset %s; it is interpolated into a shell string as a label" $c.kind $x.name $safeName) }}{{ end }}
+{{- $vh := "/" }}{{ if hasKey $x "vhost" }}{{ $vh = $x.vhost }}{{ end }}
+{{- if not (kindIs "string" $vh) }}{{ fail (printf "%s %q declares a non-string vhost (%v): vhost must be the string \"/\"" $c.kind $x.name $vh) }}{{ end }}
+{{- if ne $vh "/" }}{{ fail (printf "%s %q declares vhost %q: this Job only applies topology inside the default vhost \"/\" — it holds the broker's ADMIN credential and must not write into a vhost the chart does not own; tenant vhost topology is owned by tenant-manager (TM POL-3), so take it there" $c.kind $x.name $vh) }}{{ end }}
+{{- $body := omit $x "name" "vhost" }}
+{{- if not (hasKey $body "durable") }}{{ $_ := set $body "durable" true }}{{ end }}
+{{- if not (hasKey $body "auto_delete") }}{{ $_ := set $body "auto_delete" false }}{{ end }}
+{{- if not (hasKey $body "arguments") }}{{ $_ := set $body "arguments" dict }}{{ end }}
+{{- $objs = append $objs (dict "kind" $c.kind "vhost" $vh "label" $x.name "verb" "PUT" "endpoint" (printf "/api/%s/%s/%s" $c.api (urlquery $vh) (urlquery $x.name)) "var" (printf "TOPO_%s_%s_BODY" (upper $c.kind) (regexReplaceAll "[^A-Za-z0-9]+" $x.name "_" | upper)) "body" (toJson $body)) }}
+{{- end }}
+{{- end }}
+{{- range $b := ($topology.bindings | default list) }}
+{{- if not (kindIs "string" $b.source) }}{{ fail (printf "a binding in load_definitions.json has a non-string source (%v)" $b.source) }}{{ end }}
+{{- if not (kindIs "string" $b.destination) }}{{ fail (printf "binding from %q has a non-string destination (%v)" $b.source $b.destination) }}{{ end }}
+{{- if not (regexMatch $safeName $b.source) }}{{ fail (printf "binding source %q leaves the render-time safe charset %s" $b.source $safeName) }}{{ end }}
+{{- if not (regexMatch $safeName $b.destination) }}{{ fail (printf "binding destination %q leaves the render-time safe charset %s" $b.destination $safeName) }}{{ end }}
+{{- $dstType := $b.destination_type | default "queue" }}
+{{- if and (ne $dstType "queue") (ne $dstType "exchange") }}{{ fail (printf "binding %s->%s declares destination_type %q: only \"queue\" and \"exchange\" exist, and any other value would silently be treated as \"queue\" and bind the wrong kind of object" $b.source $b.destination $dstType) }}{{ end }}
+{{- $vh := "/" }}{{ if hasKey $b "vhost" }}{{ $vh = $b.vhost }}{{ end }}
+{{- if not (kindIs "string" $vh) }}{{ fail (printf "binding %s->%s declares a non-string vhost (%v): vhost must be the string \"/\"" $b.source $b.destination $vh) }}{{ end }}
+{{- if ne $vh "/" }}{{ fail (printf "binding %s->%s declares vhost %q: this Job only applies topology inside the default vhost \"/\" — it holds the broker's ADMIN credential and must not write into a vhost the chart does not own; tenant vhost topology is owned by tenant-manager (TM POL-3), so take it there" $b.source $b.destination $vh) }}{{ end }}
+{{- $body := omit $b "source" "vhost" "destination" "destination_type" }}
+{{- if not (hasKey $body "routing_key") }}{{ $_ := set $body "routing_key" "" }}{{ end }}
+{{- if not (hasKey $body "arguments") }}{{ $_ := set $body "arguments" dict }}{{ end }}
+{{- $dstKind := ternary "e" "q" (eq $dstType "exchange") }}
+{{- $bodyJson := toJson $body }}
+{{- /* A binding's IDENTITY is (vhost, source, destination_type, destination,
+    routing_key, arguments) — not source+destination. Keying the env var and the dedup
+    dict on the pair alone made two bindings that differ only by routing_key collide and
+    FAIL THE RENDER, which makes legitimate multi-routing-key topology unrepresentable.
+    The identity is hashed (8 hex chars) into both the label and the env-var name, so
+    distinct bindings get distinct vars, the log line distinguishes them, and a TRUE
+    duplicate still hashes the same and is still caught by the chokepoint's dedup.
+    routing_key is deliberately NOT charset-asserted: AMQP topic wildcards # and * are
+    legitimate there, and the value never reaches the shell string — only the hash of it
+    does. */}}
+{{- $ident := printf "%s|%s|%s|%s|%s" $vh $b.source $dstKind $b.destination $bodyJson }}
+{{- $label := printf "%s->%s#%s" $b.source $b.destination ($ident | sha256sum | trunc 8) }}
+{{- $objs = append $objs (dict "kind" "binding" "vhost" $vh "label" $label "verb" "POST" "endpoint" (printf "/api/bindings/%s/e/%s/%s/%s" (urlquery $vh) (urlquery $b.source) $dstKind (urlquery $b.destination)) "var" (printf "TOPO_BINDING_%s_BODY" (regexReplaceAll "[^A-Za-z0-9]+" $label "_" | upper)) "body" $bodyJson) }}
+{{- end }}
+{{- /* CHOKEPOINT. Every category funnels through this loop, and EVERY invariant the
+    command's safety rests on is asserted HERE, over the value that actually goes into
+    the manifest — so a category appended to $objs later cannot reach the command
+    unasserted even if its own inline checks are forgotten. That was not true before:
+    the charset assertions lived only in the per-category loops, and a 5th category
+    appending a label containing $(id) rendered, and the substitution EXECUTED in the
+    container.
+      - label charset: the only defence against command substitution ($ and backtick
+        survive `quote`).
+      - endpoint charset: the endpoint is urlquery-encoded upstream; asserting it here
+        means a future category that forgets urlquery fails instead of interpolating.
+      - vhost: the vhosts[] array is NOT the field that builds the URL — each object's
+        own vhost is — which is why guarding vhosts[] alone left a real admin-credential
+        PUT into a foreign vhost reachable. An ABSENT vhost is normalised to "/"
+        (RabbitMQ's default, a legitimate omission); an EMPTY STRING is NOT absent and
+        fails, since it is both outside the owned vhost and would build a malformed
+        endpoint.
+      - one body per env var: a name collision would make two objects share a body and
+        apply the wrong one, so it fails the render instead. */}}
+{{- range $o := $objs }}
+{{- if not (kindIs "string" $o.vhost) }}{{ fail (printf "%s %v reached the endpoint builder with a non-string vhost (%v)" $o.kind $o.label $o.vhost) }}{{ end }}
+{{- if ne $o.vhost "/" }}{{ fail (printf "%s %q reached the endpoint builder with vhost %q; only the default vhost \"/\" is applied by this Job; tenant vhost topology is owned by tenant-manager (TM POL-3)" $o.kind $o.label $o.vhost) }}{{ end }}
+{{- if not (regexMatch $safeLabel $o.label) }}{{ fail (printf "%s label %q reached the command text outside the safe charset %s: the label is interpolated into the container's shell command, and Helm's quote (Go %%q) neutralises the double quote and the backslash but NOT $ or the backtick, so this charset is the only thing that stops a command substitution from the declaration file" $o.kind $o.label $safeLabel) }}{{ end }}
+{{- if not (regexMatch $safeEndpoint $o.endpoint) }}{{ fail (printf "%s %q reached the command text with endpoint %q, outside the safe charset %s: endpoints must be urlquery-encoded before they are interpolated into the shell string" $o.kind $o.label $o.endpoint $safeEndpoint) }}{{ end }}
+{{- if not (regexMatch "^[A-Z][A-Z0-9_]*$" $o.var) }}{{ fail (printf "%s %q derived the env var name %q, which is not a valid shell identifier" $o.kind $o.label $o.var) }}{{ end }}
+{{- if hasKey $seen $o.var }}{{ fail (printf "env var %s is claimed by both %q and %q: two topology objects sanitise to the same name" $o.var (index $seen $o.var) $o.label) }}{{ end }}
+{{- $_ := set $seen $o.var $o.label }}
+{{- end }}
+{{- /* TLS verification is ON unless a tier explicitly turns it off. Read defensively so
+    an ABSENT key means "verify": this Job carries the broker's ADMIN credential, and
+    an unconditional -k sent it over an unverified channel whenever protocol is https.
+    Pattern and env-var name follow
+    charts/plugin-br-bank-transfer/templates/bootstrap-rabbitmq.yaml:71-76 (same block
+    at charts/plugin-bc-correios/templates/bootstrap-rabbitmq.yaml:66-71) — the base-URL
+    block below was already copied from that sibling; this is the block that sits
+    directly above it there and was left behind.
+    Expected values key: externalRabbitmqDefinitions.connection.skipTlsVerify (bool,
+    default false). Resources are read from externalRabbitmqDefinitions.resources when a
+    tier sets it, otherwise the small default below. */}}
+{{- $conn := $extDefs.connection | default dict }}
+{{- $skipTLSVerify := $conn.skipTlsVerify | default false }}
+{{- $bootstrapResources := $extDefs.resources | default (dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "200m" "memory" "128Mi")) }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -19,18 +254,36 @@ metadata:
        helm.sh/chart label) makes a plain `helm upgrade` fail outright without this.
        Hook annotations for BOTH delivery paths: each controller reads only its own,
        safe to coexist. */}}
-    # PostSync (not Sync): this Job mounts the load_definitions.json ConfigMap
-    # rendered by THIS release — Sync-phase hooks can run before the normal
-    # resource batch is applied, same reasoning as post-upgrade below.
-    argocd.argoproj.io/hook: PostSync
+    # PreSync / pre-install,pre-upgrade: the RabbitMQ topology (exchanges, queues,
+    # bindings) has to exist BEFORE the reporter workloads that publish to and consume
+    # from it start. Running ahead of the normal resource batch is what this phase
+    # buys, and it carries one invariant: the definitions payload must travel WITH
+    # this hook (hook-annotated or generated into it), never be mounted from the normal
+    # batch, which is applied only after PreSync completes.
+    #
+    # Delete policy carries BOTH BeforeHookCreation and HookSucceeded.
+    # BeforeHookCreation is mandatory for SYNCHRONISATION (rule E-3'), not for
+    # auditability: the name is fixed and a Job's spec is immutable, so a surviving
+    # Job with an altered spec BLOCKS the next sync — and Jobs were measured to
+    # survive, so recreation is the normal case, not a hypothetical. HookSucceeded
+    # only keeps finished Jobs from accumulating. (E-3' was measured on a Sync-phase
+    # Job; carrying it to PreSync is an unverified mechanics premise, but it errs
+    # toward always being able to recreate.)
+    #
+    # Hook weight -1: the repo documents NO weight convention. This follows the
+    # br-sisbajud migrations precedent (charts/br-sisbajud/templates/migrations/ —
+    # Job at -1, its payload Secret at -2), matched independently by the
+    # streaming-hub migrations Job (also -1).
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "-1"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
-    # post-upgrade (not pre-upgrade): this Job mounts the load_definitions.json
-    # ConfigMap rendered by THIS release — pre-upgrade would run against the
-    # PREVIOUS revision's ConfigMap content, since hook resources apply before
-    # the normal resource batch on upgrade.
-    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-1"
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
+  # Retention only: how long the finished Job is kept around for inspection of its
+  # logs. It does not bound anything — deletion of the Job for the next run is the
+  # hook-delete-policy's job (see BeforeHookCreation above).
   ttlSecondsAfterFinished: 300
   completions: 1
   parallelism: 1
@@ -38,6 +291,12 @@ spec:
   template:
     spec:
       restartPolicy: OnFailure
+      # readOnlyRootFilesystem is set on the apply container, and curl writes its
+      # response body to /tmp — so /tmp has to be a writable mount, not the image's
+      # root filesystem.
+      volumes:
+        - name: tmp
+          emptyDir: {}
       initContainers:
         - name: wait-for-dependencies
           image: busybox:1.37
@@ -63,21 +322,55 @@ spec:
                 ELAPSED=$((ELAPSED + 5));
               done;
               echo "$RABBITMQ_HOST:$RABBITMQ_PORT is ready!";
+          {{- /* This Job carries the broker's ADMIN credential, so both containers run
+             restricted. Follows charts/br-sisbajud/templates/migrations/job.yaml:81-88
+             (matched by charts/streaming-hub/templates/migrations.yaml:101-111). */}}
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml $bootstrapResources | nindent 12 }}
       containers:
         - name: apply-definitions
           image: curlimages/curl:8.7.1
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           command:
             - sh
             - -c
             - |
-              set -u
-              FAILED=0
+              set -euo pipefail
+              # `pipefail` IS a correctness dependency, because `set -euo pipefail` is a
+              # SINGLE `set`: on a shell without the option the whole statement fails
+              # and -e kills the script on line 1. Measured supported in the pinned
+              # image (BusyBox ash 1.36.1 in curlimages/curl:8.7.1 -> rc 0). Support is
+              # guaranteed by the image PIN — re-check it when bumping the image.
+              FAILED=""
+              DIVERGED=""
+              CALLS=0
 
-              # jq builds the user-update JSON body safely (handles quotes, backslashes,
-              # control characters) — curlimages/curl ships no jq by default, but the
-              # underlying alpine base does carry apk, so install it once here rather
-              # than hand-roll JSON string escaping.
-              apk add --no-cache jq >/dev/null 2>&1
+              # TLS verification stays ON unless the tier explicitly disables it: this
+              # script sends the broker's ADMIN credential.
+              CURL_OPTS="-sS"
+              if [ "$RABBITMQ_SKIP_TLS_VERIFY" = "true" ]; then
+                CURL_OPTS="$CURL_OPTS -k"
+                echo "Warning: TLS verification is disabled"
+              fi
+
+              # The admin credential is handed to curl through a config file on STDIN
+              # (`curl -K -`), NOT on the command line: argv is world-readable through
+              # /proc inside this pod and shows up in `ps`. A curl config file processes
+              # backslash and double-quote escapes inside a quoted value, so both are
+              # escaped here; nothing is written to disk.
+              CURL_AUTH=$(printf '%s:%s' "$RABBITMQ_ADMIN_USER" "$RABBITMQ_ADMIN_PASS" \
+                | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
 
               # Build base URL - omit port for default HTTPS (443) or HTTP (80)
               if [ "$RABBITMQ_PROTOCOL" = "https" ] && [ "$RABBITMQ_PORT" = "443" ]; then
@@ -88,70 +381,98 @@ spec:
                 BASE_URL="$RABBITMQ_PROTOCOL://$RABBITMQ_HOST:$RABBITMQ_PORT"
               fi
 
-              echo "=== RabbitMQ Bootstrap ==="
+              echo "=== RabbitMQ topology bootstrap ==="
               echo "API URL: $BASE_URL"
               echo ""
 
-              # The three steps below (definitions import, user PUT, permissions PUT) are each
-              # idempotent on RabbitMQ's side and run UNCONDITIONALLY — no "already exists ->
-              # skip everything" check (would leave stale credentials/permissions in place after
-              # the first successful run) and no early exit on a prior step's failure (RabbitMQ's
-              # POST /api/definitions is NOT atomic — a mid-import failure must not skip
-              # reconciling the reporter user/permissions, which no longer live in the bulk
-              # definitions file precisely so they can be reconciled independently of it).
-              echo "Applying RabbitMQ definitions (queues/exchanges/bindings) from file..."
-              HTTP_CODE=$(curl -sSk --connect-timeout 10 --max-time 30 -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X POST \
-                --data-binary @/definitions/load_definitions.json \
-                "$BASE_URL/api/definitions")
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error applying definitions (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
-                FAILED=1
-              else
-                echo "Done."
-              fi
+              # apply KIND NAME VERB ENDPOINT BODY
+              #
+              # Never returns non-zero and never exits: it records the outcome and lets
+              # the run continue, so the summary at the end can name EVERY object that
+              # did not apply instead of only the first. The exit code is decided once,
+              # there.
+              #
+              # The response file is TRUNCATED first: it is one reused path, and on a
+              # connect failure curl writes nothing to it — so without the truncation
+              # the FAILURE branch would `cat` the PREVIOUS object's body and blame it
+              # on this one.
+              #
+              # `|| true` + `${CODE:-000}` + the digits-only guard exist because an
+              # EMPTY status variable makes a numeric comparison in ash *error out*,
+              # which reads as false and silently skips the failure branch. `|| true`
+              # rather than `|| echo 000`: the echo APPENDED to curl's own -w output, so
+              # a connection failure logged `000000` — a code that does not exist, and a
+              # trap for any future `000)` arm, which would never match. Dropping the
+              # fallback entirely is not an option either: under `set -e` a failing
+              # command substitution aborts the script before the summary prints.
+              apply() {
+                KIND="$1"; NAME="$2"; VERB="$3"; ENDPOINT="$4"; BODY="$5"
+                CALLS=$((CALLS + 1))
+                : > /tmp/response.txt
+                CODE=$(printf 'user = "%s"\n' "$CURL_AUTH" \
+                  | curl -K - $CURL_OPTS --connect-timeout 10 --max-time 30 \
+                    -o /tmp/response.txt -w '%{http_code}' \
+                    -H 'content-type: application/json' \
+                    -X "$VERB" --data-binary "$BODY" "$BASE_URL$ENDPOINT" || true)
+                CODE=${CODE:-000}
+                case "$CODE" in
+                  ''|*[!0-9]*) CODE=000 ;;
+                esac
+                case "$CODE" in
+                  200|201|204)
+                    echo "OK          $KIND/$NAME -> $CODE"
+                    ;;
+                  400|406)
+                    echo "DIVERGENCE  $KIND/$NAME -> $CODE (object exists with an incompatible declaration)"
+                    cat /tmp/response.txt 2>/dev/null || true
+                    echo ""
+                    DIVERGED="$DIVERGED $KIND/$NAME"
+                    ;;
+                  *)
+                    echo "FAILURE     $KIND/$NAME -> $CODE"
+                    cat /tmp/response.txt 2>/dev/null || true
+                    echo ""
+                    FAILED="$FAILED $KIND/$NAME"
+                    ;;
+                esac
+              }
 
-              echo "Updating RabbitMQ user: reporter..."
-              jq -n --arg password "$RABBITMQ_APP_PASS" '{password: $password, tags: "administrator"}' > /tmp/user-body.json
-              HTTP_CODE=$(curl -sSk --connect-timeout 10 --max-time 30 -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X PUT \
-                --data @/tmp/user-body.json \
-                "$BASE_URL/api/users/reporter")
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error updating reporter user (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
-                FAILED=1
-              else
-                echo "Done."
-              fi
+              {{- /* vhosts[] gets no call: only "/" is declared and "/" always exists, and a
+                  vhost the chart does not own must not be created here. A declaration
+                  that adds one fails the render (see the builder above) instead of
+                  being silently dropped. The body is a VARIABLE REFERENCE — no JSON
+                  is interpolated into this shell string. */}}
+              {{- range $o := $objs }}
+              apply {{ $o.kind }} {{ $o.label | quote }} {{ $o.verb }} {{ $o.endpoint | quote }} "${{ $o.var }}"
+              {{- end }}
 
-              echo "Setting permissions for RabbitMQ user: reporter..."
-              HTTP_CODE=$(curl -sSk --connect-timeout 10 --max-time 30 -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X PUT \
-                --data '{"configure":".*","write":".*","read":".*"}' \
-                "$BASE_URL/api/permissions/%2F/reporter")
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error setting reporter permissions (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
-                FAILED=1
-              else
-                echo "Done."
+              echo ""
+              echo "$CALLS topology object(s) processed."
+              if [ -n "$DIVERGED" ]; then
+                echo "DIVERGENT (declared incompatibly on the broker):$DIVERGED"
               fi
-
-              if [ "$FAILED" -ne 0 ]; then
-                echo "One or more bootstrap steps failed — see errors above."
+              if [ -n "$FAILED" ]; then
+                echo "FAILED:$FAILED"
+              fi
+              if [ -n "$FAILED" ] || [ -n "$DIVERGED" ]; then
+                echo "RabbitMQ topology bootstrap did NOT converge — see the sets above."
                 exit 1
               fi
 
-              echo ""
-              echo "=== RabbitMQ Bootstrap completed successfully ==="
+              echo "=== RabbitMQ topology bootstrap completed successfully ==="
+          {{- /* Same restricted profile as the init container; see the comment there.
+             readOnlyRootFilesystem is why /tmp is an emptyDir mount. */}}
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml $bootstrapResources | nindent 12 }}
           env:
             - name: RABBITMQ_PROTOCOL
               value: {{ .Values.externalRabbitmqDefinitions.connection.protocol | quote }}
@@ -159,15 +480,15 @@ spec:
               value: {{ .Values.externalRabbitmqDefinitions.connection.host | quote }}
             - name: RABBITMQ_PORT
               value: {{ .Values.externalRabbitmqDefinitions.connection.port | quote }}
-            - name: RABBITMQ_APP_PASS
-              {{- if .Values.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name | quote }}
-                  key: RABBITMQ_DEFAULT_PASS
-              {{- else }}
-              value: {{ .Values.externalRabbitmqDefinitions.appCredentials.reporterPassword | quote }}
-              {{- end }}
+            - name: RABBITMQ_SKIP_TLS_VERIFY
+              value: {{ $skipTLSVerify | quote }}
+            {{- /* One env var per topology object, holding its JSON body verbatim. The
+                script reads it as "$VAR" — a double-quoted expansion, byte-exact for
+                any content — so the JSON never has to survive shell quoting. */}}
+            {{- range $o := $objs }}
+            - name: {{ $o.var }}
+              value: {{ $o.body | quote }}
+            {{- end }}
             - name: RABBITMQ_ADMIN_PASS
               {{- if .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
               valueFrom:
@@ -186,14 +507,4 @@ spec:
               {{- else }}
               value: {{ .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.username | quote }}
               {{- end }}
-          volumeMounts:
-            - name: definitions
-              mountPath: /definitions
-      volumes:
-        - name: definitions
-          configMap:
-            name: reporter-bootstrap-rabbitmq-definitions
-            items:
-              - key: load_definitions.json
-                path: load_definitions.json
 {{- end }}

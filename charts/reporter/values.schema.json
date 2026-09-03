@@ -1291,13 +1291,15 @@
       "properties": {
         "enabled": {
           "default": false,
-          "description": "Enable or disable the RabbitMQ bootstrap job"
+          "description": "Enable or disable the RabbitMQ topology bootstrap job. The Job applies exchanges, queues and bindings inside the default vhost \"/\"; it does not create the application broker user or its permissions."
         },
         "connection": {
           "type": "object",
           "description": "RabbitMQ connection settings",
           "properties": {
             "protocol": {
+              "type": "string",
+              "enum": ["http", "https"],
               "default": "http",
               "description": "RabbitMQ protocol (http or https)"
             },
@@ -1312,6 +1314,11 @@
             "portAmqp": {
               "default": "5672",
               "description": "RabbitMQ AMQP port (for connectivity check)"
+            },
+            "skipTlsVerify": {
+              "type": "boolean",
+              "default": false,
+              "description": "Skip TLS certificate verification on the management API calls. Leave false (verify) whenever protocol is https: the Job sends the broker admin credential on those calls. Set true only for a broker with a self-signed certificate."
             }
           },
           "additionalProperties": true
@@ -1337,27 +1344,6 @@
             "password": {
               "default": "",
               "description": "Admin password (ignored if useExistingSecret.name is set)"
-            }
-          },
-          "additionalProperties": true
-        },
-        "appCredentials": {
-          "type": "object",
-          "description": "Credentials for the reporter application user created by the job",
-          "properties": {
-            "useExistingSecret": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "default": "",
-                  "description": "Name of existing secret containing RABBITMQ_DEFAULT_PASS key"
-                }
-              },
-              "additionalProperties": true
-            },
-            "reporterPassword": {
-              "default": "",
-              "description": "Password for reporter user (ignored if useExistingSecret.name is set)"
             }
           },
           "additionalProperties": true

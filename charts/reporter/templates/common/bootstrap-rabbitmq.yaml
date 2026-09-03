@@ -317,6 +317,11 @@ spec:
   template:
     spec:
       restartPolicy: OnFailure
+      {{- /* This Job talks to the RabbitMQ management API and to nothing else — it
+         never calls the Kubernetes API, so mounting a service account token only
+         hands a credential to a pod that carries the broker's admin password.
+         Same as the migration Jobs in br-sisbajud and streaming-hub. */}}
+      automountServiceAccountToken: false
       {{- /* Pod Security Standards `restricted` rejects a pod that does not pin a
          seccomp profile, so without this the Job is refused outright on a namespace
          that enforces it. Set on the pod AND on both containers: the pod-level value

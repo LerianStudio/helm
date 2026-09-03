@@ -138,10 +138,28 @@ This section is deliberately explicit about what was measured and what was not.
 
 2. Confirm the application's broker user exists on the broker independently of the chart, with permissions on the default vhost `/`:
 
+   The management API endpoint is not fixed by the chart: build it from
+   `externalRabbitmqDefinitions.connection.protocol`, `.host` and `.port` — the same
+   values the Job uses. Keep the admin password out of the command line, where it
+   would land in your shell history and in `/proc` for anyone on the host; put it in
+   a `netrc` file readable only by you.
+
    ```bash
-   # username as configured in secrets.RABBITMQ_DEFAULT_USER
-   curl -u <admin>:<admin-pass> https://<broker>:15672/api/users/<app-user>
-   curl -u <admin>:<admin-pass> https://<broker>:15672/api/permissions/%2F/<app-user>
+   # Values come from your release: helm get values reporter -n <namespace>
+   PROTOCOL=https; HOST=<broker>; PORT=15672
+   APP_USER=<username as configured in secrets.RABBITMQ_DEFAULT_USER>
+
+   # Read the password without echoing it, so it stays out of your shell history
+   read -rsp 'admin password: ' ADMIN_PASS; echo
+
+   # umask 077 makes the file 0600 — not readable by other users on the host
+   umask 077 && printf 'machine %s login %s password %s\n' "$HOST" '<admin>' "$ADMIN_PASS" > ~/.rmq-netrc
+   unset ADMIN_PASS
+
+   curl --netrc-file ~/.rmq-netrc "${PROTOCOL}://${HOST}:${PORT}/api/users/${APP_USER}"
+   curl --netrc-file ~/.rmq-netrc "${PROTOCOL}://${HOST}:${PORT}/api/permissions/%2F/${APP_USER}"
+
+   rm -f ~/.rmq-netrc
    ```
 
    If either returns `404`, create the user and grant its permissions on the broker **before** upgrading — the chart will no longer do it.

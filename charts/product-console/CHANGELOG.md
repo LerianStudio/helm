@@ -6,6 +6,24 @@
   - Updated readiness probe for improved dependency checks.
 
 - **Fixes**
+  - Resolved issues with the readiness endpoint to ensure proper probe functionality.
+
+- **Improvements**
+  - Clarified documentation regarding readiness rollback override.
+  - Aligned readiness endpoint documentation for consistency.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.0...product-console-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.1)
+
+- **Features**
+  - Updated readiness probe for improved dependency checks.
+
+- **Fixes**
   - Corrected readiness endpoint to ensure accurate probe dependency checks.
 
 - **Improvements**

@@ -3,3 +3,12 @@ secrets:
   RABBITMQ_ERLANG_COOKIE: "sample-stable-cookie"
   DATASOURCE_ONBOARDING_PASSWORD: "sample"
   DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
+
+# The reporter Job that applies the RabbitMQ topology (exchanges/queues/bindings) to an
+# EXTERNAL broker is off by default, so the render gate never exercised it. Enable it
+# here — and disable the embedded broker, since the two are mutually exclusive: the
+# subchart loads files/rabbitmq/load_definitions.json itself.
+rabbitmq:
+  enabled: false
+externalRabbitmqDefinitions:
+  enabled: true

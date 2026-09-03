@@ -160,17 +160,19 @@ This section is deliberately explicit about what was measured and what was not.
      CURL_OPTS="$CURL_OPTS -k"
    fi
 
+   # Arm the cleanup BEFORE the credential exists: a failing curl under `set -e`
+   # exits the script, and a `rm` written after the calls would never run.
+   umask 077                             # 0600 — not readable by other users
+   NETRC=$(mktemp)
+   trap 'rm -f "$NETRC"' EXIT
+
    # Read the password without echoing it, so it stays out of your shell history
    read -rsp 'admin password: ' ADMIN_PASS; echo
-
-   # umask 077 makes the file 0600 — not readable by other users on the host
-   umask 077 && printf 'machine %s login %s password %s\n' "$HOST" "$ADMIN_USER" "$ADMIN_PASS" > ~/.rmq-netrc
+   printf 'machine %s login %s password %s\n' "$HOST" "$ADMIN_USER" "$ADMIN_PASS" > "$NETRC"
    unset ADMIN_PASS
 
-   curl $CURL_OPTS --netrc-file ~/.rmq-netrc "${PROTOCOL}://${HOST}:${PORT}/api/users/${APP_USER}"
-   curl $CURL_OPTS --netrc-file ~/.rmq-netrc "${PROTOCOL}://${HOST}:${PORT}/api/permissions/%2F/${APP_USER}"
-
-   rm -f ~/.rmq-netrc
+   curl $CURL_OPTS --netrc-file "$NETRC" "${PROTOCOL}://${HOST}:${PORT}/api/users/${APP_USER}"
+   curl $CURL_OPTS --netrc-file "$NETRC" "${PROTOCOL}://${HOST}:${PORT}/api/permissions/%2F/${APP_USER}"
    ```
 
    If `connection.protocol` is `https` and you have **not** set `skipTlsVerify`, the

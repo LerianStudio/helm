@@ -145,34 +145,38 @@ This section is deliberately explicit about what was measured and what was not.
    a `netrc` file readable only by you.
 
    ```bash
-   # Fill these from your release: helm get values reporter -n <namespace>
-   # (the values below are placeholders — replace them, do not run them as-is)
-   PROTOCOL=https                        # connection.protocol
-   HOST=rabbitmq.example.internal        # connection.host
-   PORT=15672                            # connection.port
-   SKIP_TLS_VERIFY=false                 # connection.skipTlsVerify
-   ADMIN_USER=admin                      # rabbitmqAdminLogin.username
-   APP_USER=reporter                     # secrets.RABBITMQ_DEFAULT_USER
+   # Paste the whole block. It runs in a subshell, so `set -e` cannot leave your
+   # shell in a strict mode and the credential is removed when the block ends —
+   # including when a call fails. Replace the values; do not run them as-is.
+   (
+     set -euo pipefail
 
-   # Match the Job's own TLS behaviour: verification is on unless you turned it off
-   CURL_OPTS="-sS"
-   if [ "$PROTOCOL" = "https" ] && [ "$SKIP_TLS_VERIFY" = "true" ]; then
-     CURL_OPTS="$CURL_OPTS -k"
-   fi
+     PROTOCOL=https                      # connection.protocol
+     HOST=rabbitmq.example.internal      # connection.host
+     PORT=15672                          # connection.port
+     SKIP_TLS_VERIFY=false               # connection.skipTlsVerify
+     ADMIN_USER=admin                    # rabbitmqAdminLogin.username
+     APP_USER=reporter                   # secrets.RABBITMQ_DEFAULT_USER
 
-   # Arm the cleanup BEFORE the credential exists: a failing curl under `set -e`
-   # exits the script, and a `rm` written after the calls would never run.
-   umask 077                             # 0600 — not readable by other users
-   NETRC=$(mktemp)
-   trap 'rm -f "$NETRC"' EXIT
+     # Match the Job's TLS behaviour: verification is on unless you turned it off
+     CURL_OPTS="-sS"
+     if [ "$PROTOCOL" = "https" ] && [ "$SKIP_TLS_VERIFY" = "true" ]; then
+       CURL_OPTS="$CURL_OPTS -k"
+     fi
 
-   # Read the password without echoing it, so it stays out of your shell history
-   read -rsp 'admin password: ' ADMIN_PASS; echo
-   printf 'machine %s login %s password %s\n' "$HOST" "$ADMIN_USER" "$ADMIN_PASS" > "$NETRC"
-   unset ADMIN_PASS
+     # Arm the cleanup before the credential exists, so a failing call cannot
+     # leave the password on disk
+     umask 077                           # 0600 — not readable by other users
+     NETRC=$(mktemp)
+     trap 'rm -f "$NETRC"' EXIT
 
-   curl $CURL_OPTS --netrc-file "$NETRC" "${PROTOCOL}://${HOST}:${PORT}/api/users/${APP_USER}"
-   curl $CURL_OPTS --netrc-file "$NETRC" "${PROTOCOL}://${HOST}:${PORT}/api/permissions/%2F/${APP_USER}"
+     read -rsp 'admin password: ' ADMIN_PASS; echo
+     printf 'machine %s login %s password %s\n' "$HOST" "$ADMIN_USER" "$ADMIN_PASS" > "$NETRC"
+     unset ADMIN_PASS
+
+     curl $CURL_OPTS --netrc-file "$NETRC" "${PROTOCOL}://${HOST}:${PORT}/api/users/${APP_USER}"
+     curl $CURL_OPTS --netrc-file "$NETRC" "${PROTOCOL}://${HOST}:${PORT}/api/permissions/%2F/${APP_USER}"
+   )
    ```
 
    If `connection.protocol` is `https` and you have **not** set `skipTlsVerify`, the

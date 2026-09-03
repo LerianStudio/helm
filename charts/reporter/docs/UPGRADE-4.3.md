@@ -206,6 +206,31 @@ This section is deliberately explicit about what was measured and what was not.
 
 **Measured — Lerian-operated tiers are not affected.** Across the 12 reporter tier values files in the Lerian gitops repositories, `externalRabbitmqDefinitions` does not appear in any of them, so the Job runs in **0 of 12** tiers (the chart default is `false`). Separately, on the user those tiers authenticate as: 9 of the 12 files set `RABBITMQ_DEFAULT_USER: plugin`, 1 sets `reporter` explicitly, and 2 leave the key unset and therefore fall back to the chart default, which is `reporter`. So **3 of 12** tiers would use the user the Job used to create, and 9 would not — but the Job is enabled in **none** of the 12, so no tier depended on it having created that user.
 
+## Vault-sourced encryption key no longer fails the render
+
+`secrets.DATASOURCE_CRED_ENC_KEY` is validated as a hex-encoded AES key. When the value is
+supplied through argocd-vault-plugin — the inline `<path:secret/data/...#KEY>` form — that
+validation is now skipped, because at render time the value is still a reference and not a
+key at all.
+
+This is not a relaxation. The rendering order is `helmfile template | argocd-vault-plugin
+generate -`, so the chart's templates run **before** the reference is resolved; the previous
+behaviour failed the render outright for every tier that sources this key from Vault. What
+the check guaranteed has moved rather than disappeared: the plugin exits non-zero and emits
+no manifest when it cannot resolve a reference (measured on argocd-vault-plugin v1.18.1), so
+an unresolved reference cannot reach a cluster.
+
+Two limits, stated rather than papered over:
+
+- Only the inline `<path:...>` form is exempt. The annotation form, where the value is a bare
+  `<KEY>`, is **not** covered — a broad `<...>` exemption would also excuse a human
+  placeholder such as `<your-key-here>`, and catching those is the point of the check.
+- The exemption is on the **format** axis only. A key that is missing entirely still fails,
+  and so does a literal that is not valid hex.
+
+Nobody had hit this before: no reporter deployment was running a chart that carried the
+guard, so there was no tier in which the failure could show up.
+
 **Not measured — client single-tenant installations.** Those installations do not live in Lerian's gitops repositories, so their values were not inspected and their configuration is unknown here. An installation that both enabled `externalRabbitmqDefinitions` **and** relied on the Job to create the broker user it authenticates as will find that user is no longer provisioned by the upgrade. That case is the reason this document exists. It is not a known breakage — it is an unverified one, and it must be checked per installation before upgrading.
 
 ## Migration Steps

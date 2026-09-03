@@ -95,10 +95,15 @@ something else, and compaction would drop history by key.
 
 The consumer group's committed **offsets** expire on a separate, cluster-level
 timer that topic retention never touches (default 7 days on both brokers). A
-group that stays down past it loses its *position*, not the data: the client
-library silently resets to the start of the log and re-reads everything —
-event ids are deterministic, so a consumer that deduplicates by id survives
-the replay, but it is hours of redelivery nobody chose. Disable that timer too:
+group that stays down past it loses its *position*, not the data — and what
+happens next is decided by the **consumer's** offset-reset policy, which this
+chart does not control: a franz-go consumer (the default of Lerian's
+lib-streaming, `ConsumeResetOffset` at the start of the log) silently re-reads
+everything — event ids are deterministic, so a consumer that deduplicates by
+id survives it, but it is hours of redelivery nobody chose; a consumer with the
+Java client default `auto.offset.reset=latest` silently jumps to the head and
+**never sees the events it missed**. Neither outcome is chosen by anyone, so
+disable that timer too:
 
 - RedPanda: `rpk cluster config set group_offset_retention_sec null`
   (`null` is RedPanda's documented "off").

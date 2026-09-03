@@ -145,22 +145,38 @@ This section is deliberately explicit about what was measured and what was not.
    a `netrc` file readable only by you.
 
    ```bash
-   # Values come from your release: helm get values reporter -n <namespace>
-   PROTOCOL=https; HOST=<broker>; PORT=15672
-   APP_USER=<username as configured in secrets.RABBITMQ_DEFAULT_USER>
+   # Fill these from your release: helm get values reporter -n <namespace>
+   # (the values below are placeholders — replace them, do not run them as-is)
+   PROTOCOL=https                        # connection.protocol
+   HOST=rabbitmq.example.internal        # connection.host
+   PORT=15672                            # connection.port
+   SKIP_TLS_VERIFY=false                 # connection.skipTlsVerify
+   ADMIN_USER=admin                      # rabbitmqAdminLogin.username
+   APP_USER=reporter                     # secrets.RABBITMQ_DEFAULT_USER
+
+   # Match the Job's own TLS behaviour: verification is on unless you turned it off
+   CURL_OPTS="-sS"
+   if [ "$PROTOCOL" = "https" ] && [ "$SKIP_TLS_VERIFY" = "true" ]; then
+     CURL_OPTS="$CURL_OPTS -k"
+   fi
 
    # Read the password without echoing it, so it stays out of your shell history
    read -rsp 'admin password: ' ADMIN_PASS; echo
 
    # umask 077 makes the file 0600 — not readable by other users on the host
-   umask 077 && printf 'machine %s login %s password %s\n' "$HOST" '<admin>' "$ADMIN_PASS" > ~/.rmq-netrc
+   umask 077 && printf 'machine %s login %s password %s\n' "$HOST" "$ADMIN_USER" "$ADMIN_PASS" > ~/.rmq-netrc
    unset ADMIN_PASS
 
-   curl --netrc-file ~/.rmq-netrc "${PROTOCOL}://${HOST}:${PORT}/api/users/${APP_USER}"
-   curl --netrc-file ~/.rmq-netrc "${PROTOCOL}://${HOST}:${PORT}/api/permissions/%2F/${APP_USER}"
+   curl $CURL_OPTS --netrc-file ~/.rmq-netrc "${PROTOCOL}://${HOST}:${PORT}/api/users/${APP_USER}"
+   curl $CURL_OPTS --netrc-file ~/.rmq-netrc "${PROTOCOL}://${HOST}:${PORT}/api/permissions/%2F/${APP_USER}"
 
    rm -f ~/.rmq-netrc
    ```
+
+   If `connection.protocol` is `https` and you have **not** set `skipTlsVerify`, the
+   calls verify the broker's certificate — the same as the Job. A verification
+   failure here is the same failure the Job would hit, so fixing the CA trust now
+   fixes both.
 
    If either returns `404`, create the user and grant its permissions on the broker **before** upgrading — the chart will no longer do it.
 

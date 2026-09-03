@@ -1299,7 +1299,10 @@
           "properties": {
             "protocol": {
               "type": "string",
-              "enum": ["http", "https"],
+              "enum": [
+                "http",
+                "https"
+              ],
               "default": "http",
               "description": "RabbitMQ protocol (http or https)"
             },
@@ -1325,25 +1328,25 @@
         },
         "rabbitmqAdminLogin": {
           "type": "object",
-          "description": "Admin credentials for RabbitMQ management API",
+          "description": "Optional override for the credential the RabbitMQ topology bootstrap Job uses on the management API. Empty (default): the Job uses the application's broker credential, secrets.RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS, delivered in a dedicated PreSync Secret. No path renders a credential as an inline value in the Job manifest.",
           "properties": {
             "useExistingSecret": {
               "type": "object",
               "properties": {
                 "name": {
                   "default": "",
-                  "description": "Name of existing secret containing RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys"
+                  "description": "Name of an existing Secret containing the fixed keys RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS. When set, the chart emits no Secret of its own; username and password must be left empty."
                 }
               },
               "additionalProperties": true
             },
             "username": {
-              "default": "midaz",
-              "description": "Admin username (ignored if useExistingSecret.name is set)"
+              "default": "",
+              "description": "Admin username. Set username AND password together to override the application's broker credential; a half-declared override fails the render. Mutually exclusive with useExistingSecret.name."
             },
             "password": {
               "default": "",
-              "description": "Admin password (ignored if useExistingSecret.name is set)"
+              "description": "Admin password. Set together with username; see username. Mutually exclusive with useExistingSecret.name."
             }
           },
           "additionalProperties": true

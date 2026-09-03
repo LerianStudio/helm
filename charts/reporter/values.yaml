@@ -709,14 +709,23 @@ externalRabbitmqDefinitions:
     # (verify) whenever protocol is https — the Job sends the broker admin credential
     # on those calls. Set true only for a broker with a self-signed certificate.
     skipTlsVerify: false
-  # -- Admin credentials for RabbitMQ management API
+  # -- OPTIONAL override for the credential the topology bootstrap Job uses on the
+  # management API. Leave the whole block empty (the default) and the Job uses the
+  # APPLICATION's broker credential — secrets.RABBITMQ_DEFAULT_USER /
+  # RABBITMQ_DEFAULT_PASS — carried to it in a dedicated PreSync Secret. Nothing here is
+  # ever rendered as an inline value in the Job manifest.
   rabbitmqAdminLogin:
     useExistingSecret:
-      # -- Name of existing secret containing RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys
+      # -- Read the credential from your own Secret instead. It must contain the keys
+      # RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS (the key names are fixed). When set,
+      # the chart emits no Secret of its own, and username/password must be left empty.
       name: ""
-    # -- Admin username (ignored if useExistingSecret.name is set)
-    username: "midaz"
-    # -- Admin password (ignored if useExistingSecret.name is set)
+    # -- Admin username. Set username AND password together to override; a half-declared
+    # override fails the render rather than pairing one half with the application's
+    # credential. Empty means: use the application's broker credential.
+    username: ""
+    # -- Admin password. See username — both or neither. Mutually exclusive with
+    # useExistingSecret.name.
     password: ""
 rabbitmq:
   enabled: true

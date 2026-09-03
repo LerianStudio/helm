@@ -42,7 +42,7 @@ spec:
           image: {{ $initUserImage | quote }}
           imagePullPolicy: Always
           {{- else }}
-          image: "{{ $initUserImage.repository | default "ghcr.io/lerianstudio/caradhras-user-init" }}:{{ $initUserImage.tag | default "3.2.0-beta.67" }}"
+          image: "{{ $initUserImage.repository | default "ghcr.io/lerianstudio/caradhras-user-init" }}:{{ $initUserImage.tag | default "3.3.1" }}"
           imagePullPolicy: {{ $initUserImage.pullPolicy | default "Always" }}
           {{- end }}
           securityContext:

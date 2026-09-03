@@ -3,6 +3,17 @@
 ## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
 
 - **Fixes**
+  - Updated to use `reporter-manager@3.0.0` and `reporter-worker@3.0.0`.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
   - Updated `reporter-manager` to version 3.0.0.
   - Updated `reporter-worker` to version 3.0.0.
 

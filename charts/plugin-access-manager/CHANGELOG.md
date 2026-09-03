@@ -1,5 +1,22 @@
 # Plugin-access-manager Changelog
 
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.2)
+
+- **Fixes**
+  - Pin `caradhras-user-init` default to version 3.3.1.
+
+- **Improvements**
+  - Added upgrade guide for plugin-access-manager v9.2.1.
+  - Provided walkthrough for `values.yaml` preparation for Caradhras.
+  - Compressed the upgrade guide from version 8.6 to 9.2.
+  - Added a combined upgrade guide from v8.6.0 to v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.1...plugin-access-manager-v9.2.2)
+
+---
+
 ## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.1)
 
 - **Fixes:**

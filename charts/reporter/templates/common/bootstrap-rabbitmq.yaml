@@ -317,6 +317,16 @@ spec:
   template:
     spec:
       restartPolicy: OnFailure
+      {{- /* Pod Security Standards `restricted` rejects a pod that does not pin a
+         seccomp profile, so without this the Job is refused outright on a namespace
+         that enforces it. Set on the pod AND on both containers: the pod-level value
+         already applies to every container, and repeating it means a container added
+         later cannot inherit a weaker profile by being written without one.
+         Same form as charts/br-sisbajud/templates/migrations/job.yaml and
+         charts/streaming-hub/templates/migrations.yaml, which set it pod-level. */}}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       # readOnlyRootFilesystem is set on the apply container, and curl writes its
       # response body to /tmp — so /tmp has to be a writable mount, not the image's
       # root filesystem.
@@ -357,6 +367,8 @@ spec:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
             capabilities:
               drop:
                 - ALL
@@ -497,6 +509,8 @@ spec:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
             capabilities:
               drop:
                 - ALL

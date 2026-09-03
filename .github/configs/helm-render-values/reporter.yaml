@@ -12,7 +12,3 @@ rabbitmq:
   enabled: false
 externalRabbitmqDefinitions:
   enabled: true
-  rabbitmqAdminLogin:
-    # Render-gate placeholder only; real tiers point this at an existing Secret via
-    # rabbitmqAdminLogin.useExistingSecret.name.
-    password: "sample"

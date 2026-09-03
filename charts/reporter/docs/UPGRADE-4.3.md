@@ -174,8 +174,21 @@ This section is deliberately explicit about what was measured and what was not.
      printf 'machine %s login %s password %s\n' "$HOST" "$ADMIN_USER" "$ADMIN_PASS" > "$NETRC"
      unset ADMIN_PASS
 
-     curl $CURL_OPTS --netrc-file "$NETRC" "${PROTOCOL}://${HOST}:${PORT}/api/users/${APP_USER}"
-     curl $CURL_OPTS --netrc-file "$NETRC" "${PROTOCOL}://${HOST}:${PORT}/api/permissions/%2F/${APP_USER}"
+     # curl exits 0 on 4xx and 5xx, so the status has to be read and decided on:
+     # otherwise a 401 from the broker reads exactly like a user that exists.
+     check() {
+       local label=$1 url=$2 code
+       code=$(curl $CURL_OPTS -o /dev/null -w '%{http_code}' --netrc-file "$NETRC" "$url" || true)
+       case "${code:-000}" in
+         2??) echo "$label: present ($code)" ;;
+         404) echo "$label: MISSING (404) — create it on the broker before upgrading" ;;
+         *)   echo "$label: unexpected response (${code:-no response}) — check the endpoint and the admin credential" >&2
+              return 1 ;;
+       esac
+     }
+
+     check "user ${APP_USER}"        "${PROTOCOL}://${HOST}:${PORT}/api/users/${APP_USER}"
+     check "permissions on / for ${APP_USER}" "${PROTOCOL}://${HOST}:${PORT}/api/permissions/%2F/${APP_USER}"
    )
    ```
 

@@ -64,34 +64,54 @@
   still sets it fails the render (see the check below) rather than silently having the
   key ignored.
 
-  JSON NEVER ENTERS THE SHELL STRING. Render-time generation would otherwise trade the
-  byte-exact base64 payload for a third encoding — shell quoting of JSON inside `sh -c`
-  — which is exactly what the inlined-base64 design existed to avoid. So each object's
-  body travels as its OWN env var (TOPO_<KIND>_<NAME>_BODY) and the command passes only
-  a variable reference: `"$TOPO_...._BODY"`. A double-quoted parameter expansion in
-  POSIX sh is byte-exact for ANY content, so no value in the declaration can break out,
-  whatever quotes or backslashes it carries. Helm's `quote` (Go %q) emits only escapes
-  that a YAML double-quoted scalar also defines (\" \\ \n \t \xNN \uNNNN), so the
-  env value round-trips byte-exact through the manifest too. `squote` was rejected: sprig
-  wraps in single quotes WITHOUT escaping an embedded single quote, so one apostrophe in
-  an argument value would end the string and splice the rest as shell words.
+  NO DECLARATION-DERIVED STRING ENTERS THE SHELL STRING. Render-time generation would
+  otherwise trade the byte-exact base64 payload for a third encoding — shell quoting
+  inside `sh -c` — which is exactly what the inlined-base64 design existed to avoid. So
+  every value that comes out of load_definitions.json travels as its OWN env var, and
+  the command passes only a variable REFERENCE. Three per object, sharing one base name
+  TOPO_<KIND>_<NAME>:
+    _BODY      the JSON body, verbatim
+    _LABEL     the log/summary label (the object name; for a binding, "src->dst#hash")
+    _ENDPOINT  the management-API path
+  The command text therefore contains ONLY chart-fixed words (the kind and the HTTP
+  verb) and env var NAMES. Every declaration-derived value arrives as `"$VAR"` — a
+  double-quoted parameter expansion, which POSIX sh does NOT re-expand — so it is
+  byte-exact for ANY content and no value in the declaration can break out, whatever
+  quotes, backslashes, dollars or backticks it carries. That is the FIRST line of
+  defence and it is structural: there is no charset that defeats it.
+
+  WHY THE LABEL AND THE ENDPOINT HAD TO MOVE TOO, once the body had. `quote` is Go %q,
+  which neutralises " and \ for a double-quoted `sh` context but does NOT neutralise $
+  or a backtick. While the label was interpolated into the command text, a label of
+  `$(id -u)` was MEASURED to EXECUTE in a real container — and it expands identically
+  when the management API is unreachable, because the substitution happens while the
+  argument is being BUILT, before any network activity: a failed connection is not a
+  protection. The endpoint was urlquery-encoded ($ -> %24), so it was safe by ENCODING
+  rather than by containment; it moved with the label so the invariant is one rule with
+  no exceptions, and so CI can assert it by grepping the command text for declaration
+  values and expecting ZERO matches.
+
+  Helm's `quote` (Go %q) emits only escapes that a YAML double-quoted scalar also
+  defines (\" \\ \n \t \xNN \uNNNN), so every env value round-trips byte-exact through
+  the manifest. `squote` was rejected: sprig wraps in single quotes WITHOUT escaping an
+  embedded single quote, so one apostrophe in an argument value would end the string and
+  splice the rest as shell words.
 
   The object list stays visible in `helm template` output — kind, name, verb and
-  endpoint are all still in the command, which is what the render-time approach was
-  chosen for; only the body moved out.
+  endpoint are all still there, in the env block rather than the command, which is what
+  the render-time approach was chosen for; CI can still gate on the exact set.
 
-  WHAT KEEPS THE TWO INTERPOLATED STRINGS SAFE — AND WHERE THE ASSERTION LIVES. Two
-  values from the declaration reach the shell string: the LABEL and the ENDPOINT. Both
-  are asserted IN THE CHOKEPOINT LOOP below, over the exact value that goes into the
-  command, NOT only in the per-category builders. That placement is load-bearing:
-  `quote` is Go %q, which neutralises " and \ for a double-quoted `sh` context but does
-  NOT neutralise $ or a backtick — so for the label the charset assertion is the ONLY
-  thing standing between the declaration file and a command substitution. A category
-  appended to $objs without its own inline check therefore still cannot reach the
-  manifest unasserted. The per-category checks are kept only because they name the
-  offending field (source/destination/name) in the message.
-  The binding label is COMPOSED ("src->dst#hash"), so the chokepoint charset admits >
-  and #; both are inert inside double quotes, unlike $ and backtick.
+  THE RENDER-TIME CHARSET ASSERTIONS ARE NOW THE SECOND LAYER, NOT THE FIRST — and that
+  is why they are kept. Label and endpoint are still asserted IN THE CHOKEPOINT LOOP
+  below, over the exact value that goes into the manifest, NOT only in the per-category
+  builders; a category appended to $objs without its own inline check still cannot reach
+  the manifest unasserted. Nothing rests on them ALONE any more: a hostile label that
+  got past them would now arrive at the script as a quoted expansion and stay literal.
+  Do not remove them — they refuse a surprising value at render time, loudly, instead of
+  shipping it into a container to sit there inert-but-unintended. The per-category checks
+  are kept only because they name the offending field (source/destination/name) in the
+  message. The binding label is COMPOSED ("src->dst#hash"), so the chokepoint charset
+  admits > and #.
 
   ON POL-1 (a hook's payload carrier must itself be a hook): there is no carrier to
   order against. POL-1 governs the RELATION between two resources — hook and payload
@@ -134,15 +154,18 @@
 {{- end }}
 {{- end }}
 {{- /* Build the object list ONCE: the command and the env block must agree, so both
-    iterate the same $objs. Each entry carries the shell-safe label/endpoint plus the
-    env var that will hold its JSON body. */}}
+    iterate the same $objs. Each entry carries its label, endpoint and body plus the
+    BASE env var name: the command references <base>_LABEL/_ENDPOINT/_BODY and the env
+    block emits exactly those three, so ONE derivation and ONE collision guard (on the
+    base) cover all three. Distinct bases plus a fixed suffix cannot collide. */}}
 {{- $objs := list }}
 {{- $seen := dict }}
 {{- $safeName := "^[A-Za-z0-9._:@~-]+$" }}
 {{- /* Chokepoint charset: $safeName plus the two characters a COMPOSED binding label
-    adds (> from "src->dst" and # before the identity hash). Both are literal inside
-    double quotes. $ and backtick are deliberately absent — those are the two `quote`
-    does not neutralise. */}}
+    adds (> from "src->dst" and # before the identity hash). $ and backtick are
+    deliberately absent — those are the two `quote` does not neutralise. Since the label
+    now travels as an env value and never enters the command text, this is defence in
+    depth (see the header), not the last line. */}}
 {{- $safeLabel := "^[A-Za-z0-9._:@~#>-]+$" }}
 {{- $safeEndpoint := "^[A-Za-z0-9._~%+/:@-]+$" }}
 {{- range $v := ($topology.vhosts | default list) }}
@@ -161,7 +184,7 @@
 {{- range $c := $putCategories }}
 {{- range $x := ((index $topology $c.key) | default list) }}
 {{- if not (kindIs "string" $x.name) }}{{ fail (printf "a %s entry in load_definitions.json has a non-string name (%v): names must be strings" $c.kind $x.name) }}{{ end }}
-{{- if not (regexMatch $safeName $x.name) }}{{ fail (printf "%s name %q leaves the render-time safe charset %s; it is interpolated into a shell string as a label" $c.kind $x.name $safeName) }}{{ end }}
+{{- if not (regexMatch $safeName $x.name) }}{{ fail (printf "%s name %q leaves the render-time safe charset %s; it is carried into the container as this object's _LABEL env value" $c.kind $x.name $safeName) }}{{ end }}
 {{- $vh := "/" }}{{ if hasKey $x "vhost" }}{{ $vh = $x.vhost }}{{ end }}
 {{- if not (kindIs "string" $vh) }}{{ fail (printf "%s %q declares a non-string vhost (%v): vhost must be the string \"/\"" $c.kind $x.name $vh) }}{{ end }}
 {{- if ne $vh "/" }}{{ fail (printf "%s %q declares vhost %q: this Job only applies topology inside the default vhost \"/\" — it holds the broker's ADMIN credential and must not write into a vhost the chart does not own; tenant vhost topology is owned by tenant-manager (TM POL-3), so take it there" $c.kind $x.name $vh) }}{{ end }}
@@ -169,7 +192,7 @@
 {{- if not (hasKey $body "durable") }}{{ $_ := set $body "durable" true }}{{ end }}
 {{- if not (hasKey $body "auto_delete") }}{{ $_ := set $body "auto_delete" false }}{{ end }}
 {{- if not (hasKey $body "arguments") }}{{ $_ := set $body "arguments" dict }}{{ end }}
-{{- $objs = append $objs (dict "kind" $c.kind "vhost" $vh "label" $x.name "verb" "PUT" "endpoint" (printf "/api/%s/%s/%s" $c.api (urlquery $vh) (urlquery $x.name)) "var" (printf "TOPO_%s_%s_BODY" (upper $c.kind) (regexReplaceAll "[^A-Za-z0-9]+" $x.name "_" | upper)) "body" (toJson $body)) }}
+{{- $objs = append $objs (dict "kind" $c.kind "vhost" $vh "label" $x.name "verb" "PUT" "endpoint" (printf "/api/%s/%s/%s" $c.api (urlquery $vh) (urlquery $x.name)) "var" (printf "TOPO_%s_%s" (upper $c.kind) (regexReplaceAll "[^A-Za-z0-9]+" $x.name "_" | upper)) "body" (toJson $body)) }}
 {{- end }}
 {{- end }}
 {{- range $b := ($topology.bindings | default list) }}
@@ -195,38 +218,41 @@
     distinct bindings get distinct vars, the log line distinguishes them, and a TRUE
     duplicate still hashes the same and is still caught by the chokepoint's dedup.
     routing_key is deliberately NOT charset-asserted: AMQP topic wildcards # and * are
-    legitimate there, and the value never reaches the shell string — only the hash of it
-    does. */}}
+    legitimate there, and the value reaches neither the command text nor the label —
+    only the hash of it does. */}}
 {{- $ident := printf "%s|%s|%s|%s|%s" $vh $b.source $dstKind $b.destination $bodyJson }}
 {{- $label := printf "%s->%s#%s" $b.source $b.destination ($ident | sha256sum | trunc 8) }}
-{{- $objs = append $objs (dict "kind" "binding" "vhost" $vh "label" $label "verb" "POST" "endpoint" (printf "/api/bindings/%s/e/%s/%s/%s" (urlquery $vh) (urlquery $b.source) $dstKind (urlquery $b.destination)) "var" (printf "TOPO_BINDING_%s_BODY" (regexReplaceAll "[^A-Za-z0-9]+" $label "_" | upper)) "body" $bodyJson) }}
+{{- $objs = append $objs (dict "kind" "binding" "vhost" $vh "label" $label "verb" "POST" "endpoint" (printf "/api/bindings/%s/e/%s/%s/%s" (urlquery $vh) (urlquery $b.source) $dstKind (urlquery $b.destination)) "var" (printf "TOPO_BINDING_%s" (regexReplaceAll "[^A-Za-z0-9]+" $label "_" | upper)) "body" $bodyJson) }}
 {{- end }}
-{{- /* CHOKEPOINT. Every category funnels through this loop, and EVERY invariant the
-    command's safety rests on is asserted HERE, over the value that actually goes into
-    the manifest — so a category appended to $objs later cannot reach the command
-    unasserted even if its own inline checks are forgotten. That was not true before:
-    the charset assertions lived only in the per-category loops, and a 5th category
-    appending a label containing $(id) rendered, and the substitution EXECUTED in the
-    container.
-      - label charset: the only defence against command substitution ($ and backtick
-        survive `quote`).
-      - endpoint charset: the endpoint is urlquery-encoded upstream; asserting it here
-        means a future category that forgets urlquery fails instead of interpolating.
+{{- /* CHOKEPOINT. Every category funnels through this loop, and EVERY invariant is
+    asserted HERE, over the value that actually goes into the manifest — so a category
+    appended to $objs later cannot reach the manifest unasserted even if its own inline
+    checks are forgotten. That was not true before: the charset assertions lived only in
+    the per-category loops, and a 5th category appending a label containing $(id)
+    rendered, and — back when the label was still interpolated into the command text —
+    the substitution EXECUTED in the container.
+      - label charset: SECOND layer. The label now travels as an env value and the
+        command references only the var name, so a quoted expansion (never re-expanded)
+        is what actually contains it; this assertion refuses the value at render time
+        rather than shipping it. $ and backtick stay excluded — they survive `quote`.
+      - endpoint charset: also second layer now, and still worth having: the endpoint is
+        urlquery-encoded upstream, so this catches a future category that forgets
+        urlquery, at render time instead of on the wire.
       - vhost: the vhosts[] array is NOT the field that builds the URL — each object's
         own vhost is — which is why guarding vhosts[] alone left a real admin-credential
         PUT into a foreign vhost reachable. An ABSENT vhost is normalised to "/"
         (RabbitMQ's default, a legitimate omission); an EMPTY STRING is NOT absent and
         fails, since it is both outside the owned vhost and would build a malformed
         endpoint.
-      - one body per env var: a name collision would make two objects share a body and
-        apply the wrong one, so it fails the render instead. */}}
+      - one env base per object: a collision would make two objects share _LABEL,
+        _ENDPOINT and _BODY and apply the wrong one, so it fails the render instead. */}}
 {{- range $o := $objs }}
 {{- if not (kindIs "string" $o.vhost) }}{{ fail (printf "%s %v reached the endpoint builder with a non-string vhost (%v)" $o.kind $o.label $o.vhost) }}{{ end }}
 {{- if ne $o.vhost "/" }}{{ fail (printf "%s %q reached the endpoint builder with vhost %q; only the default vhost \"/\" is applied by this Job; tenant vhost topology is owned by tenant-manager (TM POL-3)" $o.kind $o.label $o.vhost) }}{{ end }}
-{{- if not (regexMatch $safeLabel $o.label) }}{{ fail (printf "%s label %q reached the command text outside the safe charset %s: the label is interpolated into the container's shell command, and Helm's quote (Go %%q) neutralises the double quote and the backslash but NOT $ or the backtick, so this charset is the only thing that stops a command substitution from the declaration file" $o.kind $o.label $safeLabel) }}{{ end }}
-{{- if not (regexMatch $safeEndpoint $o.endpoint) }}{{ fail (printf "%s %q reached the command text with endpoint %q, outside the safe charset %s: endpoints must be urlquery-encoded before they are interpolated into the shell string" $o.kind $o.label $o.endpoint $safeEndpoint) }}{{ end }}
-{{- if not (regexMatch "^[A-Z][A-Z0-9_]*$" $o.var) }}{{ fail (printf "%s %q derived the env var name %q, which is not a valid shell identifier" $o.kind $o.label $o.var) }}{{ end }}
-{{- if hasKey $seen $o.var }}{{ fail (printf "env var %s is claimed by both %q and %q: two topology objects sanitise to the same name" $o.var (index $seen $o.var) $o.label) }}{{ end }}
+{{- if not (regexMatch $safeLabel $o.label) }}{{ fail (printf "%s label %q reached the env block outside the safe charset %s: the label is carried to the container as %s_LABEL and read as a quoted expansion, so the shell will NOT re-expand it — this charset is the second layer, and it refuses a value this surprising at render time instead of shipping it (do not widen it to admit $ or a backtick: Helm's quote, Go %%q, neutralises the double quote and the backslash but not those two, so they must never become interpolatable again)" $o.kind $o.label $safeLabel $o.var) }}{{ end }}
+{{- if not (regexMatch $safeEndpoint $o.endpoint) }}{{ fail (printf "%s %q reached the env block with endpoint %q, outside the safe charset %s: endpoints must be urlquery-encoded before they are carried to the container as %s_ENDPOINT" $o.kind $o.label $o.endpoint $safeEndpoint $o.var) }}{{ end }}
+{{- if not (regexMatch "^[A-Z][A-Z0-9_]*$" $o.var) }}{{ fail (printf "%s %q derived the env var base %q, which does not form a valid shell identifier" $o.kind $o.label $o.var) }}{{ end }}
+{{- if hasKey $seen $o.var }}{{ fail (printf "env var base %s is claimed by both %q and %q: two topology objects sanitise to the same name and would share _LABEL, _ENDPOINT and _BODY" $o.var (index $seen $o.var) $o.label) }}{{ end }}
 {{- $_ := set $seen $o.var $o.label }}
 {{- end }}
 {{- /* TLS verification is ON unless a tier explicitly turns it off. Read defensively so
@@ -440,10 +466,13 @@ spec:
               {{- /* vhosts[] gets no call: only "/" is declared and "/" always exists, and a
                   vhost the chart does not own must not be created here. A declaration
                   that adds one fails the render (see the builder above) instead of
-                  being silently dropped. The body is a VARIABLE REFERENCE — no JSON
-                  is interpolated into this shell string. */}}
+                  being silently dropped.
+                  Label, endpoint and body are all VARIABLE REFERENCES: the only
+                  interpolated literals below are the chart-fixed kind and verb, so no
+                  string out of load_definitions.json exists in this shell text at all
+                  (CI greps for declaration values here and expects zero). */}}
               {{- range $o := $objs }}
-              apply {{ $o.kind }} {{ $o.label | quote }} {{ $o.verb }} {{ $o.endpoint | quote }} "${{ $o.var }}"
+              apply {{ $o.kind }} "${{ $o.var }}_LABEL" {{ $o.verb }} "${{ $o.var }}_ENDPOINT" "${{ $o.var }}_BODY"
               {{- end }}
 
               echo ""
@@ -482,11 +511,18 @@ spec:
               value: {{ .Values.externalRabbitmqDefinitions.connection.port | quote }}
             - name: RABBITMQ_SKIP_TLS_VERIFY
               value: {{ $skipTLSVerify | quote }}
-            {{- /* One env var per topology object, holding its JSON body verbatim. The
-                script reads it as "$VAR" — a double-quoted expansion, byte-exact for
-                any content — so the JSON never has to survive shell quoting. */}}
+            {{- /* THREE env vars per topology object — label, endpoint and JSON body,
+                each verbatim. The script reads every one as "$VAR": a double-quoted
+                expansion, byte-exact for any content and not re-expanded, so nothing
+                from load_definitions.json has to survive shell quoting and nothing from
+                it appears in the command text. This block is also where the object set
+                stays visible to `helm template` and to CI. */}}
             {{- range $o := $objs }}
-            - name: {{ $o.var }}
+            - name: {{ $o.var }}_LABEL
+              value: {{ $o.label | quote }}
+            - name: {{ $o.var }}_ENDPOINT
+              value: {{ $o.endpoint | quote }}
+            - name: {{ $o.var }}_BODY
               value: {{ $o.body | quote }}
             {{- end }}
             - name: RABBITMQ_ADMIN_PASS

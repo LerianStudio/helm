@@ -113,10 +113,34 @@
   message. The binding label is COMPOSED ("src->dst#hash"), so the chokepoint charset
   admits > and #.
 
-  ON POL-1 (a hook's payload carrier must itself be a hook): there is no carrier to
-  order against. POL-1 governs the RELATION between two resources — hook and payload
-  carrier; generating the payload into the hook ELIMINATES the relation, and an ordering
-  norm does not apply to a set of one.
+  ON POL-1 (a hook's payload carrier must itself be a hook): for the TOPOLOGY payload
+  there is no carrier to order against. POL-1 governs the RELATION between two resources
+  — hook and payload carrier; generating the payload into the hook ELIMINATES the
+  relation, and an ordering norm does not apply to a set of one.
+
+  THE ADMIN CREDENTIAL, HOWEVER, DOES HAVE A CARRIER, AND POL-1 APPLIES TO IT. The Job
+  authenticates to the management API, and that credential must never render as an inline
+  `value:` in the manifest: a tier that resolves `<path:secret/...>` at render time would
+  put the real password into the Job spec, readable through pod-read, `helm get manifest`
+  and the ArgoCD live view. So it travels in a dedicated Secret, emitted as the FIRST
+  document in this file — a PreSync hook at weight -2, one below this Job at -1, matching
+  charts/br-sisbajud/templates/migrations/ (payload Secret -2, migration Job -1). The
+  app's own Secrets cannot serve: reporter-manager / reporter-worker carry only helm.sh
+  hook annotations and none from ArgoCD, so under ArgoCD they are SYNC-phase and do not
+  exist yet when a PreSync hook runs.
+
+  BY DEFAULT THE CARRIER HOLDS THE APPLICATION'S BROKER CREDENTIAL —
+  secrets.RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS, the values the workloads already
+  live on (RABBITMQ_DEFAULT_PASS is already `required` in this chart, so no profile
+  breaks). Measured on the target tier: that user is `administrator` with
+  configure/write/read = '.*' on "/", which is everything this Job needs. A tier
+  therefore declares NOTHING beyond externalRabbitmqDefinitions.enabled and connection.*.
+  rabbitmqAdminLogin is an OPTIONAL override — see the block above the Secret.
+
+  THE ENV NAMES AND THE SECRET KEYS STAY RABBITMQ_ADMIN_USER / RABBITMQ_ADMIN_PASS, and
+  are deliberately NOT renamed to RABBITMQ_DEFAULT_*: env vars do not appear in the
+  container `command` text, and an external suite asserts on that text byte-for-byte. A
+  rename would buy nothing and move a byte that is under assertion.
 */}}
 {{- /* MUTUAL EXCLUSION. The embedded `rabbitmq` subchart loads
     files/rabbitmq/load_definitions.json itself at broker startup, so with both enabled
@@ -269,6 +293,77 @@
 {{- $conn := $extDefs.connection | default dict }}
 {{- $skipTLSVerify := $conn.skipTlsVerify | default false }}
 {{- $bootstrapResources := $extDefs.resources | default (dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "200m" "memory" "128Mi")) }}
+{{- /* ADMIN CREDENTIAL — SOURCE RESOLUTION. Exactly three shapes, and NONE of them puts a
+    credential into the manifest as an inline `value:` (see the header):
+      useExistingSecret.name set -> no Secret is emitted here; the Job's secretKeyRef
+        points at that external name. Unchanged behaviour.
+      username AND password both set -> the Secret below carries those instead of the
+        application credential. This is the OVERRIDE, for a broker where the reporter
+        application user is not permitted to declare topology.
+      neither set -> the Secret below carries the application's broker credential,
+        secrets.RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS. This is the default and
+        what the target tiers use.
+    Read defensively: rabbitmqAdminLogin and useExistingSecret may both be absent. */}}
+{{- $admin := $extDefs.rabbitmqAdminLogin | default dict }}
+{{- $adminExisting := ((($admin.useExistingSecret) | default dict).name) | default "" }}
+{{- $adminUser := $admin.username | default "" }}
+{{- $adminPass := $admin.password | default "" }}
+{{- $adminOverride := or (ne $adminUser "") (ne $adminPass "") }}
+{{- /* AMBIGUOUS SOURCE. An external Secret and an inline override name two different
+    credentials with no rule to pick between them, and the old template silently
+    preferred the external one — so an operator who added username/password to migrate
+    off the external Secret would have kept authenticating as the old identity. */}}
+{{- if and (ne $adminExisting "") $adminOverride }}
+{{- fail "externalRabbitmqDefinitions.rabbitmqAdminLogin declares BOTH useExistingSecret.name and an inline username/password: these are two different credentials and the chart will not choose between them — keep useExistingSecret.name to read the credential from your own Secret, or clear it and set username AND password to override, or clear all three to use the application's broker credential (secrets.RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS)" }}
+{{- end }}
+{{- /* HALF-DECLARED OVERRIDE. Filling in only one half would pair a foreign username
+    with the application's password (or the reverse) and reach the broker as a 401 at
+    PreSync — a failed hook that blocks the whole sync, diagnosed from a curl exit code.
+    Failing at render time is cheaper and says what to do. */}}
+{{- if and $adminOverride (or (eq $adminUser "") (eq $adminPass "")) }}
+{{- fail (printf "externalRabbitmqDefinitions.rabbitmqAdminLogin is half-declared (username=%q, password is %s): an override must set BOTH, otherwise one half would silently be paired with the application's credential and reach the broker as a 401 during PreSync — set both username and password to override, or clear both to use the application's broker credential (secrets.RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS)" $adminUser (ternary "set" "empty" (ne $adminPass ""))) }}
+{{- end }}
+{{- /* The emitted Secret shares the Job's fixed name (different kinds, so no collision),
+    the way br-sisbajud names its carrier after its own fullname helper. */}}
+{{- $adminSecretName := "reporter-bootstrap-rabbitmq" }}
+{{- $adminSecretRef := ternary $adminExisting $adminSecretName (ne $adminExisting "") }}
+{{- if eq $adminExisting "" }}
+---
+{{- /* Credential carrier for the Job below. FIRST document in this file on purpose: the
+    weight relationship (-2 here, -1 on the Job) is visible in one place, and the
+    top-of-file mutual-exclusion and stale-key guards already cover both documents. */}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $adminSecretName }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    # Hook annotations for BOTH delivery paths; each controller reads only its own.
+    # Weight -2, one below the Job's -1, so the carrier exists before the Job that
+    # reads it (charts/br-sisbajud/templates/migrations/ precedent).
+    #
+    # DELETE POLICY IS BeforeHookCreation ONLY — deliberately NOT HookSucceeded. Do not
+    # "tidy" HookSucceeded in: it would delete this Secret while the Job can still be
+    # retrying (backoffLimit 3), leaving the retry with no credential. The Secret
+    # persisting in the namespace between syncs adds NO exposure, because it holds the
+    # SAME credential that already lives in the reporter-manager Secret.
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "-2"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-2"
+    helm.sh/hook-delete-policy: before-hook-creation
+type: Opaque
+stringData:
+  {{- /* Keys match the Job's env names, which are under external assertion. */}}
+  {{- if $adminOverride }}
+  RABBITMQ_ADMIN_USER: {{ $adminUser | quote }}
+  RABBITMQ_ADMIN_PASS: {{ $adminPass | quote }}
+  {{- else }}
+  RABBITMQ_ADMIN_USER: {{ .Values.secrets.RABBITMQ_DEFAULT_USER | quote }}
+  RABBITMQ_ADMIN_PASS: {{ required "secrets.RABBITMQ_DEFAULT_PASS is required: the RabbitMQ topology bootstrap Job authenticates to the management API with the application's broker credential (set secrets.RABBITMQ_DEFAULT_PASS, or override it with externalRabbitmqDefinitions.rabbitmqAdminLogin.username + password)" .Values.secrets.RABBITMQ_DEFAULT_PASS | quote }}
+  {{- end }}
+{{- end }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -544,22 +639,19 @@ spec:
             - name: {{ $o.var }}_BODY
               value: {{ $o.body | quote }}
             {{- end }}
+            {{- /* ALWAYS a secretKeyRef — there is no inline branch any more. The old
+                `else` arm rendered the admin password as a literal `value:`, which on a
+                tier that resolves <path:secret/...> at render time put the real password
+                into this manifest. $adminSecretRef is either the external Secret the
+                tier named or the carrier emitted at the top of this file. */}}
             - name: RABBITMQ_ADMIN_PASS
-              {{- if .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name | quote }}
+                  name: {{ $adminSecretRef | quote }}
                   key: RABBITMQ_ADMIN_PASS
-              {{- else }}
-              value: {{ .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.password | quote }}
-              {{- end }}
             - name: RABBITMQ_ADMIN_USER
-              {{- if .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name | quote }}
+                  name: {{ $adminSecretRef | quote }}
                   key: RABBITMQ_ADMIN_USER
-              {{- else }}
-              value: {{ .Values.externalRabbitmqDefinitions.rabbitmqAdminLogin.username | quote }}
-              {{- end }}
 {{- end }}

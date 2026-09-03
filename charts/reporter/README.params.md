@@ -94,17 +94,15 @@
 | `keda.triggerAuthentication.secretName` | string | `""` | Secret name containing RabbitMQ credentials (defaults to reporter-manager secret) |
 | `keda.triggerAuthentication.usernameKey` | string | `"RABBITMQ_DEFAULT_USER"` | Key in secret for RabbitMQ username |
 | `keda.triggerAuthentication.passwordKey` | string | `"RABBITMQ_DEFAULT_PASS"` | Key in secret for RabbitMQ password |
-| `externalRabbitmqDefinitions.enabled` | bool | `false` | Enable or disable the RabbitMQ bootstrap job |
+| `externalRabbitmqDefinitions.enabled` | bool | `false` | Enable or disable the RabbitMQ topology bootstrap job. The Job applies exchanges, queues and bindings inside the default vhost `/`; it does not create the application broker user or its permissions |
 | `externalRabbitmqDefinitions.connection` | object | `{}` | RabbitMQ connection settings |
 | `externalRabbitmqDefinitions.connection.protocol` | string | `"http"` | RabbitMQ protocol (http or https) |
 | `externalRabbitmqDefinitions.connection.host` | string | `"reporter-rabbitmq"` | RabbitMQ host (management API endpoint) |
 | `externalRabbitmqDefinitions.connection.port` | string | `"15672"` | RabbitMQ HTTP management port |
 | `externalRabbitmqDefinitions.connection.portAmqp` | string | `"5672"` | RabbitMQ AMQP port (for connectivity check) |
+| `externalRabbitmqDefinitions.connection.skipTlsVerify` | bool | `false` | Skip TLS certificate verification on the management API calls. Leave `false` (verify) whenever `protocol` is `https` — the Job sends the broker admin credential on those calls. Set `true` only for a broker with a self-signed certificate |
 | `externalRabbitmqDefinitions.rabbitmqAdminLogin` | object | `{}` | Admin credentials for RabbitMQ management API |
 | `externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name` | string | `""` | Name of existing secret containing RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys |
 | `externalRabbitmqDefinitions.rabbitmqAdminLogin.username` | string | `"midaz"` | Admin username (ignored if useExistingSecret.name is set) |
 | `externalRabbitmqDefinitions.rabbitmqAdminLogin.password` | string | `""` | Admin password (ignored if useExistingSecret.name is set) |
-| `externalRabbitmqDefinitions.appCredentials` | object | `{}` | Credentials for the reporter application user created by the job |
-| `externalRabbitmqDefinitions.appCredentials.useExistingSecret.name` | string | `""` | Name of existing secret containing RABBITMQ_DEFAULT_PASS key |
-| `externalRabbitmqDefinitions.appCredentials.reporterPassword` | string | `""` | Password for reporter user (ignored if useExistingSecret.name is set) |
 | `aws` | object | `{}` | AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Clotilde/Proxmox) |

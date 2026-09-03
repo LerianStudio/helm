@@ -78,6 +78,38 @@ pre-provisioned services — this chart ships no infra subcharts and no
 dependencies. RedPanda topics for spb/spi are an environment concern (the
 compose `redpanda-topics` one-shot is dev-only).
 
+### SPB event topics: unlimited retention is a provisioning requirement
+
+The SPB rail publishes its money facts on one application topic,
+`lerian.streaming.br-spb`, with a dead-letter twin `lerian.streaming.br-spb.dlq`.
+The service never expires anything on its side (its durable outbox is never
+pruned), and it assumes the broker does not either — a consumer that comes back
+after days must find every event it missed. Provision **both** topics with:
+
+```text
+retention.ms=-1  retention.bytes=-1  cleanup.policy=delete
+```
+
+`cleanup.policy=delete` is deliberate: `retention.ms=-1` under `compact` means
+something else, and compaction would drop history by key.
+
+The consumer group's committed **offsets** expire on a separate, cluster-level
+timer that topic retention never touches (default 7 days on both brokers). A
+group that stays down past it loses its *position*, not the data: the client
+library silently resets to the start of the log and re-reads everything —
+event ids are deterministic, so a consumer that deduplicates by id survives
+the replay, but it is hours of redelivery nobody chose. Disable that timer too:
+
+- RedPanda: `rpk cluster config set group_offset_retention_sec null`
+  (`null` is RedPanda's documented "off").
+- Apache Kafka: `offsets.retention.minutes` accepts no "off" value
+  (`int`, `[1,...]`) — set it to its maximum, `2147483647` (~4085 years).
+
+Nothing in this chart provisions or verifies either setting today; both are the
+operator's duty. Source of the requirement and the mechanics:
+`docs/streaming/lib-streaming-v3-rollout.md` and
+`services/spb/docs/PROJECT_RULES.md` (§ Retenção) in the br-sfn repository.
+
 ## Cockpit caveat
 
 The SPA bakes `VITE_*` URLs at **image build time**. The published baseline

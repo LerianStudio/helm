@@ -181,6 +181,10 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_SECRET is REQUIRED.\n   Set the BTG webhook bearer token in the secrets section.\n" }}
 {{- end }}
 
+{{- if not .Values.app.secrets.BTG_WEBHOOK_HMAC_SECRET }}
+{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_HMAC_SECRET is REQUIRED.\n   Set the BTG webhook HMAC signing key in the secrets section.\n" }}
+{{- end }}
+
 {{/* Midaz Ledger URLs — required for production */}}
 {{- if not .Values.app.configmap.MIDAZ_ONBOARDING_URL }}
 {{- fail "\n\nERROR: app.configmap.MIDAZ_ONBOARDING_URL is REQUIRED.\n   Set the Midaz onboarding service URL.\n" }}

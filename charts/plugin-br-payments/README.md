@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -61,6 +61,7 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.secrets.BTG_CLIENT_ID` | BTG OAuth2 client ID. |
 | `app.secrets.BTG_CLIENT_SECRET` | BTG OAuth2 client secret. |
 | `app.secrets.BTG_WEBHOOK_SECRET` | Bearer token for incoming BTG webhooks. |
+| `app.secrets.BTG_WEBHOOK_HMAC_SECRET` | HMAC-SHA256 signing key for incoming BTG settlement webhooks: the plugin recomputes the signature over the raw request body under this key, with no second factor. At least 32 characters. NEVER reuse `BTG_WEBHOOK_SECRET` as this value — the bearer token travels in a request header on every delivery and survives in edge/WAF/APM logs, so reusing it here would let anyone who reads those logs forge signed settlement events indefinitely. |
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
 | `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker. Generate with `openssl rand -base64 32`. |
 

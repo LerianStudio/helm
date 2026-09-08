@@ -213,7 +213,7 @@ ledger:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.0.0"
+    tag: "4.0.2"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -621,7 +621,7 @@ tracer:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "4.0.0"
+    tag: "4.0.2"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -795,7 +795,8 @@ tracer:
     # MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Optional Redis password for the tenant connection-pool registry.
     # MULTI_TENANT_REDIS_PASSWORD: ""
-  # -- Existing secrets name
+
+    # -- Existing secrets name
     # -- Service discovery (lib-service-discovery) Consul ACL token. Operator-provided;
     # only set when the Consul server enforces ACLs. Emitted into the tracer Secret only when set.
     SD_TOKEN: ""

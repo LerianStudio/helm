@@ -267,6 +267,47 @@ jobs:
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
 
+      # What this leg published, recorded by the leg itself. A matrix cannot
+      # report a value per leg — every leg writes the same job output and the
+      # last one wins — so each leg leaves its result as an artifact instead.
+      - name: Record what this leg published
+        if: steps.semantic_changelog.outputs.new_release_published == 'true'
+        env:
+          CHART: ${{ matrix.chart.name }}
+          WORKING_DIR: ${{ matrix.chart.working_dir }}
+          VERSION: ${{ steps.semantic_changelog.outputs.new_release_version }}
+        run: |
+          set -euo pipefail
+
+          # The published artifact is the Chart.yaml `name`, which carries a
+          # -helm suffix the directory does not: charts/midaz publishes as
+          # midaz-helm. The deployment matrix in the GitOps repository, on the
+          # other hand, is keyed by the directory.
+          artifact=$(awk '
+            /^name:/ {
+              sub(/^name:[ \t]*/, ""); sub(/[ \t]*#.*$/, "")
+              gsub(/^["'"'"']|["'"'"']$/, ""); sub(/[ \t]+$/, "")
+              print; exit
+            }' "${WORKING_DIR}/Chart.yaml")
+
+          if [ -z "$artifact" ]; then
+            echo "::error::Could not read the chart name from ${WORKING_DIR}/Chart.yaml"
+            exit 1
+          fi
+
+          mkdir -p published
+          jq -n --arg name "$CHART" --arg artifact "$artifact" --arg version "$VERSION" \
+            '{name: $name, artifact: $artifact, version: $version}' \
+            | tee "published/${CHART}.json"
+
+      - name: Upload what this leg published
+        if: steps.semantic_changelog.outputs.new_release_published == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: published-${{ matrix.chart.name }}
+          path: published/${{ matrix.chart.name }}.json
+          retention-days: 1
+
 
 
       # Only deployable Lerian PRODUCTS/PLUGINS belong in the Plugin Lifecycle
@@ -317,3 +358,79 @@ jobs:
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
       SLACK_CHANNEL_OPS: ${{ secrets.SLACK_CHANNEL_OPS }}
       SLACK_GROUP_TECH_SUPPORT: ${{ secrets.SLACK_GROUP_TECH_SUPPORT }}
+
+  # ---------------------------------------------------------------------------
+  # Pin the freshly published charts into the GitOps repository.
+  #
+  # Only from the default branch. develop and the maintenance/*.x lines also
+  # release, but their versions are not what the internal tier should track: a
+  # maintenance release of an older line would pin the environments *backwards*.
+  # ---------------------------------------------------------------------------
+  collect-published-charts:
+    name: Collect Published Charts
+    needs: [get-changed-paths, release-helm-chart]
+    if: >-
+      needs.get-changed-paths.outputs.matrix != '[]' &&
+      github.ref_name == github.event.repository.default_branch
+    runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
+    outputs:
+      matrix: ${{ steps.collect.outputs.matrix }}
+    steps:
+      # No checkout: every version comes from the leg that published it, so
+      # there is no working tree to read and no token to persist.
+      - name: Download what each leg published
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: published-*
+          path: published
+          merge-multiple: true
+
+      - name: Collect them into one matrix
+        id: collect
+        run: |
+          set -euo pipefail
+
+          # download-artifact does not create the directory when its pattern
+          # matches nothing, which is a legitimate outcome rather than an error.
+          mkdir -p published
+
+          # Empty when no chart in this run produced a release — semantic-release
+          # finds nothing releasable on a docs-only or chore-only change.
+          MATRIX=$(find published -name '*.json' -type f -print0 2>/dev/null \
+            | sort -z \
+            | xargs -0 --no-run-if-empty jq -s -c '.' \
+            || echo '[]')
+          MATRIX=${MATRIX:-[]}
+
+          echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
+          printf '%s' "$MATRIX" | jq .
+
+  update-gitops:
+    name: Update GitOps
+    needs: collect-published-charts
+    if: needs.collect-published-charts.outputs.matrix != '[]'
+    strategy:
+      # Serial: every leg commits to the same GitOps repository, and racing
+      # pushes would spend the composite's single rebase retry on each other.
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        chart: ${{ fromJson(needs.collect-published-charts.outputs.matrix) }}
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/gitops-chart-update.yml@tier-2
+    with:
+      chart_name: ${{ matrix.chart.name }}
+      chart_version: ${{ matrix.chart.version }}
+      # Environments pinned to a different OCI repository — the alpha/ and
+      # alpha-internal/ channels — are left alone: the composite only edits
+      # releases whose chart matches this reference exactly.
+      chart_ref: oci://ghcr.io/lerianstudio/${{ matrix.chart.artifact }}
+    # Named rather than inherited: this job hands credentials to another
+    # repository's workflow, and `inherit` would pass everything this release
+    # holds — the Slack tokens, the App key — not the six it needs.
+    secrets:
+      MANAGE_TOKEN: ${{ secrets.MANAGE_TOKEN }}
+      ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+      LERIAN_CI_CD_USER_GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
+      LERIAN_CI_CD_USER_GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
+      LERIAN_CI_CD_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
+      LERIAN_CI_CD_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}

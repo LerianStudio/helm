@@ -221,16 +221,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: |
 | `2.2.0` | 1.0.0 |
 
-
-### Go Boilerplate DDD
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/go-boilerplate-ddd).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `2.2.0` | 1.0.0 |
 -----------------
 
 ### Notifications

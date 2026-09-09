@@ -69,8 +69,10 @@ Each component's top-level key has an `enabled: true|false` field. Set
 `enabled: false` to skip a component entirely (no resources rendered).
 Default `enabled` values:
 
-- `spi`, `spiSystemplane`, `dictHub`, `dictHubVsync`, `dictProxy`,
+- `spi`, `spiSystemplane`, `dictHub`, `dictProxy`,
   `dictSystemplane`, `cobHub`, `cobProxy`, `cobSystemplane`: `true`
+- `dictHubVsync`: `false` (RabbitMQ queue consumer — it does nothing without
+  `secrets.RABBITMQ_URI`, and enabling it without one fails the render)
 - `adapterProviderMock`: `false` (it's a mock — only enable in dev/staging)
 - `adapterLerian`, `adapterLerianSystemplane`: `false`
   (Lerian provider adapter — enable per environment)

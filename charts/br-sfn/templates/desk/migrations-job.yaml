@@ -1,3 +1,7 @@
 {{- if $.Values.desk.enabled -}}
-{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "desk" "comp" $.Values.desk "flavor" "baked") }}
+{{- /* desk's app reads DB_*, the baked migrator reads POSTGRES_* — deskMigrationConfig
+   re-maps the same postgres mask (nativeKey DB_*) to POSTGRES_*, and
+   desk.migrations.passwordSecret.key=DB_PASSWORD maps the app's DB_PASSWORD secret
+   into the migrator's POSTGRES_PASSWORD env (siloc pattern). */ -}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "desk" "comp" $.Values.desk "flavor" "baked" "configDataOverride" (include "br-sfn.deskMigrationConfig" (dict "root" $))) }}
 {{- end -}}

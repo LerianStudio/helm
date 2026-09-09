@@ -1,6 +1,43 @@
 # values-template.yaml — operator skeleton for the br-sfn chart.
+#
 # Modular contract: every component defaults OFF. Enable only what you run,
 # then fill the required secrets for each enabled rail.
+#
+# STYLE (canonical, mirrors the reporter/plugin-access-manager/
+# plugin-br-bank-transfer productized charts): the env-wide typed contract
+# lives in ONE `global:` block, FIRST — set a dependency connection ONCE with
+# its typed mask and every wired rail emits its native env keys from it.
+# TODAY only `spi` and `spb` read these masks (see values.yaml PILOT NOTE);
+# the remaining rails are still bespoke escape-hatch and ignore `global.*`
+# until migrated — set their `configmap.<KEY>` directly (documented per rail
+# below). A native `<rail>.configmap.<KEY>` always wins over a mask.
+
+# --- The env-wide typed contract (dependency connections + cross-cutting) ----
+global:
+  # -- Shared datastore masks. Keys per type: postgres / redis / broker
+  # (RabbitMQ). Consumed today by spi + spb; every other rail still reads its
+  # own configmap.<KEY> directly (see the per-rail blocks below).
+  datastores: {}
+  #   postgres: { host: "", port: "5432", user: "", name: "", ssl: "require" }
+  #   redis:    { host: "" }                # host:port combined, or host alone
+  #   broker:   { host: "", port: "5672", user: "" }
+  # -- Env-wide observability (OTel collector).
+  observability: {}
+  #   enabled: "true"
+  #   otlpEndpoint: "otel-collector-lerian:4317"
+  # -- Env-wide auth (plugin-access-manager).
+  auth: {}
+  #   enabled: "true"
+  #   host: "https://plugin-access-manager:4000"
+  # -- Env-wide multi-tenant (tenant-manager). Read by scr/sta.
+  multiTenant: {}
+  #   url: "https://tenant-manager.internal"
+  # -- Env-wide object storage (S3 / SeaweedFS), keyed by backend name. Read by
+  # correios today.
+  objectStorage: {}
+  #   default: { endpoint: "https://s3.amazonaws.com", region: "us-east-1" }
+
+# --- Component config ---------------------------------------------------------
 
 # spb:
 #   enabled: true
@@ -36,12 +73,13 @@
 # siloc:
 #   enabled: true
 #   configmap:
-#     POSTGRES_HOST: ""
-#     POSTGRES_PORT: "5432"
-#     POSTGRES_USER: ""
-#     POSTGRES_DB: ""
+#     DB_HOST: ""           # native key (was POSTGRES_HOST pre-1.x; still accepted as a fallback)
+#     DB_PORT: "5432"        # native key (was POSTGRES_PORT)
+#     DB_USER: ""
+#     DB_NAME: ""
+#     REDIS_ADDRESS: ""      # native key (was REDIS_HOST); combined host:port
 #   secrets:
-#     POSTGRES_PASSWORD: ""
+#     DB_PASSWORD: ""
 #   migrations:
 #     image:
 #       tag: ""              # br-siloc-migrations release
@@ -58,11 +96,28 @@
 # desk:
 #   enabled: true
 #   configmap:
+#     DB_HOST: ""            # native key (was POSTGRES_HOST pre-1.x; still accepted as a fallback)
+#     DB_PORT: "5432"        # native key (was POSTGRES_PORT)
+#     DB_USER: ""
+#     DB_NAME: ""
+#   secrets:
+#     DB_PASSWORD: ""
+
+# sta:
+#   enabled: true
+#   configmap:
 #     POSTGRES_HOST: ""
+#     POSTGRES_PORT: "5432"
 #     POSTGRES_USER: ""
-#     POSTGRES_DB: ""
+#     POSTGRES_NAME: ""     # NOT POSTGRES_DB — sta reads POSTGRES_NAME
+#     REDIS_HOST: ""        # host:port combined
 #   secrets:
 #     POSTGRES_PASSWORD: ""
+#   worker:
+#     enabled: true
+#     image:
+#       repository: ""      # REQUIRED — the worker runs cmd/worker, NOT the manager's image
+#       tag: ""
 
 # correios:
 #   enabled: true

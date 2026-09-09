@@ -16,5 +16,5 @@ PreSync Secret from the merged spi.secrets + spi.api.secrets maps. */ -}}
       "useExistingSecret" .Values.spi.api.useExistingSecret
       "existingSecretName" .Values.spi.api.existingSecretName
 -}}
-{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "spi" "secretComponent" "spi-api" "comp" $comp "shared" .Values.spi.configmap "sharedSecrets" .Values.spi.secrets "sharedCfg" .Values.spi "flavor" "dedicated") }}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "spi" "secretComponent" "spi-api" "comp" $comp "shared" .Values.spi.configmap "sharedSecrets" .Values.spi.secrets "sharedCfg" .Values.spi "flavor" "dedicated" "configDataOverride" (include "br-sfn.spiConfigData" (dict "root" $ "comp" .Values.spi.api "port" (.Values.spi.api.service.port | default 9800)))) }}
 {{- end -}}

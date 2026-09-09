@@ -1,3 +1,3 @@
 {{- if $.Values.spb.enabled -}}
-{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "spb" "comp" $.Values.spb) }}
+{{ include "br-sfn.spbConfigmap" (dict "root" $ "name" "spb" "comp" $.Values.spb "port" ($.Values.spb.service.port | default 3000)) }}
 {{- end -}}

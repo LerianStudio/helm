@@ -1,3 +1,3 @@
 {{- if $.Values.correios.enabled -}}
-{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "correios" "comp" $.Values.correios) }}
+{{ include "br-sfn.correiosConfigmap" (dict "root" $ "name" "correios" "comp" $.Values.correios "port" ($.Values.correios.service.port | default 8080)) }}
 {{- end -}}

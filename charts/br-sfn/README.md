@@ -71,6 +71,39 @@ need a chart change. On GitOps tiers the secrets map carries ArgoCD Vault
 Plugin `<path:...>` refs. `useExistingSecret: true` + `existingSecretName`
 switches the component to an operator-provided Secret.
 
+## Managed Cloud (`global.cloud`)
+
+br-sfn ships the env-wide typed contract (`global.datastores` / `global.observability`
+/ `global.auth` / `global.multiTenant` / `global.objectStorage`) that lets an operator
+set a dependency connection **once** instead of per-rail. Point it at a managed-cloud
+Postgres/Redis/broker instead of the bundled dev topology:
+
+```yaml
+global:
+  datastores:
+    postgres: { host: "my-rds.example.com", port: "5432", user: "br_sfn", ssl: "require" }
+    redis: { host: "my-elasticache.example.com:6379" }
+  observability:
+    enabled: "true"
+    otlpEndpoint: "otel-collector-lerian:4317"
+  auth:
+    host: "https://plugin-access-manager:4000"
+```
+
+**Adoption is per-rail, not chart-wide.** `spi` and `spb` are the current
+`global.datastores` consumers (see the values.yaml PILOT NOTE); the other six
+rails (siloc, scr, desk, sta, correios, slc-edge) are still bespoke escape-hatch
+and only read their own `<rail>.configmap.<KEY>` — set the connection directly
+under each of those rails' `configmap` until they migrate. Whichever surface
+applies, a native `<rail>.configmap.<KEY>` always wins over the mask.
+
+`global.cloud` (a one-knob `aws | gcp | azure` topology preset — TLS/SSL
+defaults for the masks above) is a `lerian-common` capability br-sfn has not
+yet adopted (the chart is pinned to `lerian-common-helm` 1.4.0; the preset
+shipped in a later `lerian-common` release). Until that dependency bump lands,
+set `ssl`/`tls` explicitly in `global.datastores` above instead of relying on
+a cloud preset.
+
 ## Infra contract
 
 Postgres, Valkey/Redis, RabbitMQ, RedPanda and IBM MQ are **external**,

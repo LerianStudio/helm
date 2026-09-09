@@ -1,3 +1,6 @@
 {{- if $.Values.scr.enabled -}}
-{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "scr" "comp" $.Values.scr "flavor" "baked") }}
+{{- /* scr's app AND baked migrator both consume POSTGRES_* — no name divergence,
+   so the plain productized ConfigMap body flows straight through (the migrator's
+   POSTGRES_* resolve from the same datastore mask the app reads). */ -}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "scr" "comp" $.Values.scr "flavor" "baked" "configDataOverride" (include "br-sfn.scrConfigData" (dict "root" $ "comp" $.Values.scr "port" ($.Values.scr.service.port | default 3003)))) }}
 {{- end -}}

@@ -1,0 +1,125 @@
+{{- if and $.Values.sta.enabled $.Values.sta.worker.enabled -}}
+{{- $mgr := $.Values.sta -}}
+{{- $w := $.Values.sta.worker | default dict -}}
+{{- $mgrId := dict "root" $ "name" "sta" -}}
+{{- $id := dict "root" $ "name" "sta-worker" -}}
+{{- $mgrFullname := include "br-sfn.componentFullname" $mgrId -}}
+{{- $workerFullname := include "br-sfn.componentFullname" $id -}}
+{{- $wImage := $w.image | default dict -}}
+{{- if not $wImage.repository -}}
+{{- fail "\n\nERROR: sta.worker.image.repository is REQUIRED.\n   The STA worker runs a DIFFERENT binary (cmd/worker) than the manager (cmd/app) —\n   it must NOT silently reuse the manager's image repository.\n   Set sta.worker.image.repository to the worker's own image (e.g. ghcr.io/lerianstudio/br-sta-worker).\n" -}}
+{{- end -}}
+{{- $repo := $wImage.repository -}}
+{{- $tag := $wImage.tag | default $mgr.image.tag | default $.Chart.AppVersion -}}
+{{- $pullPolicy := $wImage.pullPolicy | default $mgr.image.pullPolicy | default "IfNotPresent" -}}
+{{- $secCtx := $w.securityContext | default $.Values.securityContext -}}
+{{- $hasSecret := or $mgr.secrets $mgr.useExistingSecret -}}
+{{- $secretName := include "br-sfn.componentSecretName" (dict "root" $ "name" "sta" "comp" (dict "useExistingSecret" $mgr.useExistingSecret "existingSecretName" $mgr.existingSecretName) "sharedCfg" $mgr) -}}
+{{- if gt (int ($w.replicaCount | default 1)) 1 }}
+{{- fail "sta.worker.replicaCount must be 1: the worker has no leader election yet, so >1 duplicates background processing" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $workerFullname }}
+  namespace: {{ include "global.namespace" $ }}
+  labels:
+    {{- include "br-sfn.componentLabels" $id | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $w.revisionHistoryLimit | default 10 }}
+  # Leader-gated worker with no leader election yet: keep 1 replica, no HPA.
+  replicas: {{ $w.replicaCount | default 1 }}
+  strategy:
+    type: {{ (($w.deploymentStrategy | default dict).type) | default "Recreate" }}
+  selector:
+    matchLabels:
+      {{- include "br-sfn.componentSelectorLabels" $id | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- with $w.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- /* Worker envFrom also pulls the MANAGER's ConfigMap/Secret (see envFrom
+               below): a rotation on the manager side must roll the worker too, so the
+               checksum covers manager config + manager secret + worker's own config. */}}
+        checksum/config: {{ include "br-sfn.staConfigData" (dict "root" $ "comp" $mgr "port" (($mgr.service | default dict).port | default 8080) "cm" ($mgr.configmap | default dict)) | sha256sum }}
+        {{- if $hasSecret }}
+        checksum/secret: {{ include "br-sfn.componentSecretData" (dict "comp" $mgr "shared" dict) | sha256sum }}
+        {{- end }}
+        checksum/worker-config: {{ include "br-sfn.staWorkerConfigData" (dict "root" $ "port" (($w.service | default dict).port | default 8081)) | sha256sum }}
+      labels:
+        {{- include "br-sfn.componentSelectorLabels" $id | nindent 8 }}
+    spec:
+      {{- with (include "br-sfn.componentPullSecrets" (dict "root" $ "comp" (dict "imagePullSecrets" ($w.imagePullSecrets | default $mgr.imagePullSecrets)))) }}
+      imagePullSecrets:
+        {{- . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "br-sfn.serviceAccountName" $ }}
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ $w.terminationGracePeriodSeconds | default 60 }}
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: sta-worker
+          securityContext:
+            {{- toYaml $secCtx | nindent 12 }}
+          image: {{ printf "%s:%s" $repo $tag | quote }}
+          imagePullPolicy: {{ $pullPolicy }}
+          {{- with $w.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          # envFrom layering: manager ConfigMap (shared config) < shared Secret <
+          # worker ConfigMap (worker-only overrides win).
+          envFrom:
+            - configMapRef:
+                name: {{ $mgrFullname }}
+            {{- if $hasSecret }}
+            - secretRef:
+                name: {{ $secretName }}
+            {{- end }}
+            - configMapRef:
+                name: {{ $workerFullname }}
+          {{- with $w.extraEnvVars }}
+          # extraEnvVars is a LIST of {name,value} (same shape as every other rail).
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ ($w.service | default dict).port | default 8081 }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ ($w.readinessProbe | default dict).initialDelaySeconds | default 5 }}
+            periodSeconds: {{ ($w.readinessProbe | default dict).periodSeconds | default 5 }}
+            timeoutSeconds: {{ ($w.readinessProbe | default dict).timeoutSeconds | default 3 }}
+            successThreshold: {{ ($w.readinessProbe | default dict).successThreshold | default 1 }}
+            failureThreshold: {{ ($w.readinessProbe | default dict).failureThreshold | default 2 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: {{ ($w.livenessProbe | default dict).initialDelaySeconds | default 30 }}
+            periodSeconds: {{ ($w.livenessProbe | default dict).periodSeconds | default 10 }}
+            timeoutSeconds: {{ ($w.livenessProbe | default dict).timeoutSeconds | default 3 }}
+            successThreshold: {{ ($w.livenessProbe | default dict).successThreshold | default 1 }}
+            failureThreshold: {{ ($w.livenessProbe | default dict).failureThreshold | default 3 }}
+          resources:
+            {{- toYaml ($w.resources | default dict) | nindent 12 }}
+      {{- with $w.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $w.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $w.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end -}}

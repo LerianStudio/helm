@@ -1,3 +1,3 @@
 {{- if $.Values.correios.enabled -}}
-{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "correios" "comp" $.Values.correios "defaultPort" 8080 "livenessPath" "/health" "readyPath" "/readyz") }}
+{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "correios" "comp" $.Values.correios "defaultPort" 8080 "livenessPath" "/health" "readyPath" "/readyz" "configDataOverride" (include "br-sfn.correiosConfigData" (dict "root" $ "comp" $.Values.correios "port" ($.Values.correios.service.port | default 8080)))) }}
 {{- end -}}

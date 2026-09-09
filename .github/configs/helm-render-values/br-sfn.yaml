@@ -1,32 +1,98 @@
 # CI render fixture: every component ON with minimal required values, so the
 # render gate exercises all templates. NOT a production example.
+#
+# spi is PRODUCTIZED on lerian-common: its block below exercises the dependency
+# masks (each field a DISTINCT value) + the env-wide global.* contracts, so the
+# render gate covers the CONFIGURED paths (masks flow into the ConfigMap AND the
+# migration Job / Service port), not just the defaults.
+global:
+  observability:
+    enabled: "true"
+    otlpEndpoint: "otel-collector.ci:4317"
+    deploymentEnvironment: "ci"
+  auth:
+    enabled: "true"
+    host: "https://plugin-access-manager.ci:4000"
+  # Env-wide tenant-manager URL — scr reads it via multiTenant.env when MT is on.
+  multiTenant:
+    url: "https://tenant-manager.ci"
+  # SHARED datastore tier: set once, every wired rail inherits by default. spb below
+  # has NO dedicated postgres.host, so it must render this SHARED host in BOTH its
+  # ConfigMap and its migrations-job; spi overrides it with a DEDICATED host — the
+  # two-tier configured-path check.
+  datastores:
+    postgres:
+      host: shared-pg.ci
+    # SHARED redis tier with SEPARATE host + port. No rail sets a dedicated redis
+    # block, so all 5 redis rails inherit this: the combined-address rails
+    # (spi REDIS_HOST / siloc REDIS_ADDRESS / correios CACHE_ADDR) COMPOSE
+    # host:port, and the split rails (spb/scr) get REDIS_HOST=host + REDIS_PORT=port.
+    redis:
+      host: shared-valkey.ci
+      port: "6390"
 spb:
   enabled: true
+  # Productized on lerian-common. Dependency masks — each field a DISTINCT value so
+  # the configured-path check asserts flow into the ConfigMap AND the baked migration Job.
+  datastores:
+    postgres:
+      # NO host here on purpose: spb inherits global.datastores.postgres.host
+      # (shared-pg.ci). The other fields stay dedicated to exercise them.
+      port: "6544"
+      user: br_spb_ci
+      name: br_spb_ci_db
+      ssl: verify-full
+      replicaHost: spb-pg-replica.ci
+    broker:
+      host: spb-rabbitmq.ci
+      port: "5673"
+      user: br_spb_ci
+  # Escape-hatch passthrough override on the schema allowlist (typo protection check).
   configmap:
-    POSTGRES_HOST: spb-postgres
-    POSTGRES_PORT: "5432"
-    POSTGRES_USER: br_spb
-    POSTGRES_DB: br_bank_transfer_jota
+    LOG_LEVEL: debug
+    ENV_NAME: staging
   secrets:
     POSTGRES_PASSWORD: "ci-dummy"
 spi:
   enabled: true
+  # Dependency masks — each field a DISTINCT value so the configured-path check can
+  # assert it flows through the ConfigMap AND the dedicated migration Job.
+  datastores:
+    postgres:
+      host: spi-pg-primary.ci
+      port: "6543"
+      user: brspi_ci
+      name: brspi_ci_db
+      ssl: require
+      replicaHost: spi-pg-replica.ci
+  # Escape-hatch passthrough override on the schema allowlist (typo protection check).
   configmap:
-    POSTGRES_HOST: spi-postgres
-    POSTGRES_USER: brspi
-    POSTGRES_DB: brspi
+    LOG_LEVEL: debug
+    ENV_NAME: sandbox
   secrets:
     POSTGRES_PASSWORD: "ci-dummy"
 siloc:
   enabled: true
+  # Productized on lerian-common. Dependency masks — each field a DISTINCT value so
+  # the configured-path check asserts flow into the app ConfigMap (native DB_*) AND
+  # the dedicated migration Job (mapped to POSTGRES_*).
+  datastores:
+    postgres:
+      host: siloc-pg-primary.ci
+      port: "6545"
+      user: br_siloc_ci
+      name: br_siloc_ci_db
+      ssl: require
+      replicaHost: siloc-pg-replica.ci
   configmap:
-    POSTGRES_HOST: siloc-postgres
-    POSTGRES_USER: br_siloc
-    POSTGRES_DB: br_siloc
+    LOG_LEVEL: debug
+    ENV_NAME: sandbox
   secrets:
-    POSTGRES_PASSWORD: "ci-dummy"
+    # App reads DB_PASSWORD; the migrator maps it to POSTGRES_PASSWORD (passwordSecret.key).
+    DB_PASSWORD: "ci-dummy"
 scr:
   enabled: true
+  # Keep exercising the ingress/autoscaling/pdb templates.
   ingress:
     enabled: true
     hosts:
@@ -38,23 +104,103 @@ scr:
     enabled: true
   pdb:
     enabled: true
+  # Productized on lerian-common. Masks — each field DISTINCT (configured-path check:
+  # flow into the ConfigMap AND the baked migration Job, both POSTGRES_*).
+  datastores:
+    postgres:
+      host: scr-pg-primary.ci
+      port: "6546"
+      user: br_scr_ci
+      name: br_scr_ci_db
+      ssl: require
+  # Enable multi-tenant to exercise multiTenant.env (URL from global.multiTenant.url,
+  # required when enabled) + the MT secret. Plus a passthrough override (allowlist check).
   configmap:
-    POSTGRES_HOST: scr-postgres
-    POSTGRES_USER: br_scr
-    POSTGRES_DB: br_scr
+    LOG_LEVEL: debug
+    MULTI_TENANT_ENABLED: "true"
   secrets:
     POSTGRES_PASSWORD: "ci-dummy"
+    MULTI_TENANT_SERVICE_API_KEY: "ci-mt-key"
 desk:
   enabled: true
+  # Productized on lerian-common. Masks — each field DISTINCT (configured-path check:
+  # flow into the app ConfigMap as native DB_* AND the baked migration Job as POSTGRES_*).
+  datastores:
+    postgres:
+      host: desk-pg-primary.ci
+      port: "6547"
+      user: br_desk_ci
+      name: br_desk_ci_db
+      ssl: require
   configmap:
-    POSTGRES_HOST: desk-postgres
-    POSTGRES_USER: br_desk
-    POSTGRES_DB: br_desk
+    LOG_LEVEL: debug
+    ENV_NAME: sandbox
+  secrets:
+    # App reads DB_PASSWORD; the migrator maps it to POSTGRES_PASSWORD (passwordSecret.key).
+    DB_PASSWORD: "ci-dummy"
+correios:
+  enabled: true
+  # Productized on lerian-common. Masks — each field DISTINCT (configured-path check:
+  # postgres flows into the app ConfigMap AND the baked migration Job; redis via
+  # CACHE_ADDR; S3 via the objectStorage mask).
+  datastores:
+    postgres:
+      host: correios-pg-primary.ci
+      port: "6548"
+      user: br_correios_ci
+      name: br_correios_ci_db
+      ssl: require
+  objectStorage:
+    default:
+      endpoint: https://s3.ci.local
+      region: sa-east-1
+      bucket: correios-ci-bucket
+      usePathStyle: "false"
+  configmap:
+    LOG_LEVEL: debug
+    ENV_NAME: sandbox
   secrets:
     POSTGRES_PASSWORD: "ci-dummy"
+    OBJECT_STORAGE_ACCESS_KEY: "ci-ak"
+    OBJECT_STORAGE_SECRET_KEY: "ci-sk"
+    RABBITMQ_URL: "amqp://ci:ci@correios-rabbitmq.ci:5672/"
 slcEdge:
   enabled: true
+  # Productized on lerian-common. Stateless edge — no datastore masks. Exercise the
+  # inter-service upstream URL (native SLC_UPSTREAM_URL; the old SLC_CORE_URL was a
+  # non-existent key the app never read) + a passthrough override (allowlist check).
   configmap:
-    SLC_CORE_URL: http://br-slc:4000
+    SLC_UPSTREAM_URL: http://br-slc.ci:4000
+    LOG_LEVEL: debug
+sta:
+  enabled: true
+  # Productized (migrated from br-sta). postgres INHERITS the shared global tier host
+  # (proves shared reaches sta manager + worker + migrator); other postgres fields +
+  # broker are dedicated/distinct for the configured-path check. redis inherits the
+  # shared global.datastores.redis {host,port} (composed). Worker enabled.
+  datastores:
+    postgres:
+      # NO host: inherits global.datastores.postgres.host (shared-pg.ci).
+      port: "6549"
+      user: br_sta_ci
+      name: br_sta_ci_db
+      ssl: require
+      replicaHost: sta-pg-replica.ci
+    broker:
+      host: sta-rabbitmq.ci
+      port: "5674"
+      user: br_sta_ci
+  worker:
+    enabled: true
+    image:
+      repository: ghcr.io/lerianstudio/br-sta-worker
+      tag: "1.0.0-beta.1"
+  configmap:
+    LOG_LEVEL: debug
+    ENV_NAME: sandbox
+  secrets:
+    POSTGRES_PASSWORD: "ci-dummy"
 cockpit:
+  # BUILD-ARG-ONLY SPA: no runtime config surface (VITE_* are image build args).
+  # Nothing to exercise beyond enabling the Deployment/Service templates.
   enabled: true

@@ -1,0 +1,3 @@
+{{- if $.Values.sta.enabled -}}
+{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "sta" "comp" $.Values.sta "defaultPort" 8080 "livenessPath" "/health" "readyPath" "/health" "configDataOverride" (include "br-sfn.staConfigData" (dict "root" $ "comp" $.Values.sta "port" ($.Values.sta.service.port | default 8080) "cm" ($.Values.sta.configmap | default dict)))) }}
+{{- end -}}

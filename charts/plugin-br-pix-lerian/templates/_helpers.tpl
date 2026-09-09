@@ -116,7 +116,7 @@ Each route in `config.routes` names its target component twice:
                  derived from `component` when omitted
 Both spellings must describe the SAME component, otherwise the rule pairs one
 component's Service with another component's port and every request to that
-path fails. `kebabcase component` is exactly the Service suffix for all 15
+path fails. `kebabcase component` is exactly the Service suffix for all 14
 component keys, so a mismatch is a render error rather than a silent misroute.
 
 Usage:

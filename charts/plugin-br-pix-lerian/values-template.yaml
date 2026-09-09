@@ -1,12 +1,12 @@
 # Production values template for plugin-br-pix-lerian (chart 2.0.0-beta.1+)
 #
 # Override only the fields you need to change from values.yaml defaults.
-# All 15 components are enabled by default except adapter-provider-mock, the
-# adapter-lerian trio (adapterLerian / adapterLerianConsumer /
-# adapterLerianSystemplane) and the pixauto pair (pixauto /
-# pixautoSystemplane); disable any component by setting `enabled: false`.
+# All 14 components are enabled by default except adapter-provider-mock, the
+# adapter-lerian pair (adapterLerian / adapterLerianSystemplane) and the
+# pixauto pair (pixauto / pixautoSystemplane); disable any component by
+# setting `enabled: false`.
 
-# There is NO shared `global.image` key. Each of the 15 components publishes
+# There is NO shared `global.image` key. Each of the 14 components publishes
 # and pulls its own image (ghcr.io/lerianstudio/plugin-br-pix-lerian-<component>),
 # set under `<component>.image.repository`; the helpers read only that
 # per-component block. A `global.image.tag` set here would be silently ignored
@@ -202,20 +202,6 @@ adapterLerian:
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
-    LICENSE_KEY: ""
-
-# ------------------------------------------------------------
-# adapter-lerian (consumer) — br-sfn Kafka consumer
-# ------------------------------------------------------------
-adapterLerianConsumer:
-  enabled: false
-  configmap:
-    ISPB: "<8-digit-ispb>"
-    KAFKA_BROKERS: "<broker-1:9092,broker-2:9092>"
-    KAFKA_GROUP_ID: "pix-adapter-lerian-cashin"
-  secrets:
-    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
-    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------

@@ -10,7 +10,7 @@
 
 BACEN-compliant PIX instant payment platform for the Lerian ecosystem.
 
-The plugin is a Go monorepo that produces 15 independently-deployable binaries.
+The plugin is a Go monorepo that produces 14 independently-deployable binaries.
 This chart deploys all of them with one helm release. Each component has its
 own Deployment, Service, ConfigMap, Secret, HPA, and PDB; ingress is opt-in
 per component.
@@ -30,7 +30,6 @@ per component.
 | `cobProxy` | `cob/proxy/api` | 4109 | COB proxy to BCB |
 | `cobSystemplane` | `cob/systemplane/api` | 4110 | Runtime config plane for COB |
 | `adapterLerian` | `adapter-lerian/api` | 4113 | Lerian provider adapter (API, disabled by default) |
-| `adapterLerianConsumer` | `adapter-lerian/consumer` | 4114 | Lerian provider adapter Kafka consumer (disabled by default) |
 | `adapterLerianSystemplane` | `adapter-lerian/systemplane/api` | 4115 | Runtime config plane for adapter-lerian (disabled by default) |
 | `pixauto` | `pixauto/api` | 4116 | Pix Automático payer side (disabled by default) |
 | `pixautoSystemplane` | `pixauto/systemplane/api` | 4117 | Runtime config plane for Pix Automático (disabled by default) |
@@ -73,7 +72,7 @@ Default `enabled` values:
 - `spi`, `spiSystemplane`, `dictHub`, `dictHubVsync`, `dictProxy`,
   `dictSystemplane`, `cobHub`, `cobProxy`, `cobSystemplane`: `true`
 - `adapterProviderMock`: `false` (it's a mock — only enable in dev/staging)
-- `adapterLerian`, `adapterLerianConsumer`, `adapterLerianSystemplane`: `false`
+- `adapterLerian`, `adapterLerianSystemplane`: `false`
   (Lerian provider adapter — enable per environment)
 - `pixauto`, `pixautoSystemplane`: `false` (Pix Automático payer side — enable
   per environment once its `pix-pixauto` database and DSN secret exist)
@@ -103,8 +102,7 @@ The app reads:
 Each component publishes and pulls its own image
 (`ghcr.io/lerianstudio/plugin-br-pix-lerian-<component>-api`), set per
 component under `<component>.image.repository`. Worker components omit the
-`-api` suffix (e.g. `plugin-br-pix-lerian-dict-hub-vsync` and
-`plugin-br-pix-lerian-adapter-lerian-consumer`). There is no shared
+`-api` suffix (e.g. `plugin-br-pix-lerian-dict-hub-vsync`). There is no shared
 `global.image.repository`. When a component's `image.tag` is unset it falls
 back to `.Chart.AppVersion`, which keeps the cohort in lockstep by default;
 override `<component>.image.tag` to pin a specific build per component (rare).

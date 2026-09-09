@@ -110,8 +110,6 @@ ledger:
   # -- Service name
   name: ledger
   # -- Enable or disable the ledger service (unified onboarding + transaction)
-  # -- When enabled, onboarding and transaction services will not be deployed unless migration.allowAllServices is true
-  # -- NOTE: migration.allowAllServices is not in the public values.yaml - set it in your override values for internal testing
   enabled: true
   # -- Number of replicas for the ledger service
   replicaCount: 2

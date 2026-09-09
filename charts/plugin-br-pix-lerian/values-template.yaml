@@ -1,4 +1,7 @@
-# Production values template for plugin-br-pix-lerian (chart 2.0.0-beta.1+)
+# Production values template for plugin-br-pix-lerian.
+# No chart version is pinned in this header on purpose: Chart.yaml version is
+# owned by the release pipeline (semantic-release rewrites it on every
+# release), so any number written here goes stale on the next merge.
 #
 # Override only the fields you need to change from values.yaml defaults.
 # All 14 components are enabled by default except adapter-provider-mock, the

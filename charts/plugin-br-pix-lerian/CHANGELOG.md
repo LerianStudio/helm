@@ -7,15 +7,14 @@
     `plugin-br-pix-switch` at tag `plugin-br-pix-switch-v2.1.0-beta.12` as part
     of the Pix Switch to Pix Lerian product rename.
   - Chart identity renamed end to end: chart name (`plugin-br-pix-lerian-helm`),
-    helper templates, resource names and selectors, the 15 component image
-    repositories (`ghcr.io/lerianstudio/plugin-br-pix-lerian-*`), the 15
+    helper templates, resource names and selectors, the 14 component image
+    repositories (`ghcr.io/lerianstudio/plugin-br-pix-lerian-*`), the 14
     `OTEL_LIBRARY_NAME` values (`github.com/LerianStudio/plugin-br-pix-lerian`)
     and the in-cluster `*_BASE_URL` defaults that resolve to this chart's own
     Services.
-  - The three adapter-lerian components now carry component-scoped
+  - The two adapter-lerian components now carry component-scoped
     `APPLICATION_NAME` values (`pix-adapter-lerian`,
-    `pix-adapter-lerian-consumer`, `pix-adapter-lerian-systemplane`), matching
-    the other twelve components.
+    `pix-adapter-lerian-systemplane`), matching the other twelve components.
   - Version history starts fresh here; the pre-fork history stays in the
     `plugin-br-pix-switch` chart, which remains published and unchanged.
   - MongoDB removed from the chart entirely: the `mongodb` subchart dependency,

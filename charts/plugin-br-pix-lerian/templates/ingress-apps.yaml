@@ -1,0 +1,44 @@
+{{- /*
+Apps Ingress — single hostname routes user-facing traffic to the application
+components (SPI, DICT hub/proxy, COB hub/proxy, Pix Automático).
+
+Each path under .Values.appsIngress.routes maps to one component's Service.
+The chart renders one path rule per route only when the target component is
+enabled; rendering is skipped entirely when .Values.appsIngress.enabled is
+false or no routes resolve to enabled components.
+
+No path rewriting is performed at the ingress — apps own their /<component>
+path namespace (e.g. SPI's router registers /spi/health, /spi/keys/lookup).
+
+adapter-provider-mock retains its own per-component ingress block; this shared
+ingress only covers the externally-facing application components.
+
+The rendering logic itself lives in the shared
+"plugin-br-pix-lerian.routedIngress" helper (templates/_helpers.tpl).
+*/}}
+{{- if .Values.appsIngress.enabled }}
+{{- /*
+The /pixauto route publishes the WHOLE Pix Automatico namespace on the apps
+host, including the internal M2M group /pixauto/internal/v1/* (inbound
+BACEN-derived recurrence callbacks and the scheduler expiry sweep). lib-auth
+on that group is the only authentication boundary, and the app omits the
+lib-auth handler entirely when PLUGIN_AUTH_ENABLED is not "true" — which is
+the default in values.yaml. values-template.yaml already sets it to "true".
+
+This warns rather than failing the render. The condition is the current, and
+deliberate, state of at least one internal environment, so a hard fail would
+block that environment's cutover on a posture change that belongs to whoever
+operates Pix Automatico. The warning keeps the signal in every render until
+the environment either turns auth on or records why it stays off.
+*/}}
+{{- $pixautoRouted := false }}
+{{- range $route := .Values.appsIngress.routes }}
+  {{- if eq $route.component "pixauto" }}
+    {{- $pixautoRouted = true }}
+  {{- end }}
+{{- end }}
+{{- if and $pixautoRouted .Values.pixauto.enabled (ne (toString (default "false" .Values.pixauto.configmap.PLUGIN_AUTH_ENABLED)) "true") }}
+{{- printf "\n# WARNING: appsIngress publishes /pixauto, which includes the internal M2M group\n# /pixauto/internal/v1/*, but pixauto.configmap.PLUGIN_AUTH_ENABLED is not \"true\" — the app\n# serves that group with no authentication. Set it to \"true\" (see values-template.yaml),\n# drop the /pixauto route from appsIngress, or record why it stays off in this environment.\n" }}
+{{- end }}
+{{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "apps" "config" .Values.appsIngress) }}
+{{- end }}

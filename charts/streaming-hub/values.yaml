@@ -469,6 +469,3 @@ aws:
         requests:
           cpu: 10m
           memory: 64Mi
-streaming-hub:
-  image:
-    tag: 1.7.0

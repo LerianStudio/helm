@@ -126,7 +126,21 @@ spec:
               else
                 echo "Creating role '${DB_ROLE}'..."
                 ESCAPED_PW=$(printf '%s' "${DB_PASSWORD_PIXSWITCH}" | sed "s/'/''/g")
-                PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -c "CREATE ROLE \"${DB_ROLE}\" LOGIN PASSWORD '${ESCAPED_PW}'"
+                # The five sibling Jobs share ONE role and run concurrently, so the
+                # check-then-create above is racy: two of them can both observe the
+                # role as absent and both try to create it. The loser used to abort
+                # the Job on duplicate_object. Swallowing just that one error inside
+                # a DO block keeps the operation idempotent without hiding any other
+                # failure - ON_ERROR_STOP still aborts on anything else.
+                PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" -v role="${DB_ROLE}" -v pw="${ESCAPED_PW}" <<'SQL'
+                DO $$
+                BEGIN
+                  EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', :'role', :'pw');
+                EXCEPTION WHEN duplicate_object THEN
+                  RAISE NOTICE 'Role % already exists (created concurrently by a sibling Job).', :'role';
+                END
+                $$;
+                SQL
               fi
 
               if [ "${DB_EXISTS}" = "1" ]; then

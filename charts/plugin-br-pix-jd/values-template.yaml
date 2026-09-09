@@ -30,6 +30,11 @@ api:
     # REQUIRED when the bundled Postgres is disabled or external.
     POSTGRES_HOST: ""
 
+    # REQUIRED when the worker runs in single-tenant mode. The app reads JD_ISPB
+    # as its own institution identity and disables all six MED pollers when it is
+    # missing or not exactly 8 characters.
+    JD_ISPB: ""
+
     # Comma-separated list of organization UUIDs the license covers. Not a secret.
     ORGANIZATION_IDS: ""
 

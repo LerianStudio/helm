@@ -9,6 +9,8 @@
 #   api.configmap.REDIS_HOST  — required because the rate limiter is fail-closed
 #   api.configmap.ENVIRONMENT_NAME — required so the production gates are deliberate
 #   api.configmap.MIDAZ_ASSET_ID   — required; empty silently backfills a fake asset
+#   api.configmap.JD_ISPB          — own institution identity consumed by the app;
+#     the worker disables every MED poller when it is absent or malformed
 #   api.configmap.POSTGRES_HOST    — required desde que o default de
 #     postgresql.enabled virou `false` (alinhando ao go-boilerplate-ddd-helm e ao
 #     bloco valkey). Antes o host era DERIVADO do Service do subchart embarcado, que
@@ -30,6 +32,8 @@ api:
     # Required gate: an empty value is NOT inert — the app backfills "1" and posts
     # against a fabricated asset instead of failing closed.
     MIDAZ_ASSET_ID: "BRL"
+    # Own institution ISPB. The worker inherits this value from the api ConfigMap.
+    JD_ISPB: "12345678"
   secrets:
     LICENSE_KEY: "ci-only-not-a-real-license"
     POSTGRES_PASSWORD: "ci-only-not-a-real-password"

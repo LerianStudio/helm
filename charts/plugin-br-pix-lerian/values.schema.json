@@ -19,6 +19,9 @@
     "spi": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -31,6 +34,9 @@
     "spiSystemplane": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -43,6 +49,9 @@
     "adapterProviderMock": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -55,6 +64,9 @@
     "dictHub": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -67,6 +79,9 @@
     "dictHubVsync": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -79,6 +94,9 @@
     "dictProxy": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -91,6 +109,9 @@
     "dictSystemplane": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -103,6 +124,9 @@
     "adapterLerian": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -115,6 +139,9 @@
     "adapterLerianSystemplane": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -127,6 +154,9 @@
     "cobHub": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -139,6 +169,9 @@
     "cobProxy": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -151,6 +184,9 @@
     "cobSystemplane": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -163,6 +199,9 @@
     "pixauto": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -175,6 +214,9 @@
     "pixautoSystemplane": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "configmap": {
           "type": "object"
         },
@@ -186,14 +228,29 @@
     },
     "appsIngress": {
       "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
       "additionalProperties": true
     },
     "systemplaneIngress": {
       "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
       "additionalProperties": true
     },
     "providersIngress": {
       "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
       "additionalProperties": true
     },
     "postgresql": {

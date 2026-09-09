@@ -215,7 +215,19 @@ emitted as a broken manifest:
 {{- fail (printf "plugin-br-pix-lerian: %s.useExistingSecret must be a boolean, got %s (%#v). A quoted value such as \"false\" is truthy in Helm templates and would silently select an existing Secret; write it unquoted, and prefer --set over --set-string for this key." $component (kindOf $useExisting) $useExisting) -}}
 {{- end -}}
 {{- if $useExisting -}}
-{{- $existingName := trim (toString (default "" $values.existingSecretName)) -}}
+{{- $rawName := $values.existingSecretName -}}
+{{- /*
+  A non-string existingSecretName would survive toString as something like
+  "map[key:value]" — non-empty, so it passes the emptiness check below, and
+  then lands in secretRef.name where it is not a valid DNS subdomain and the
+  API server rejects the Deployment. The schema already types this key, but
+  --skip-schema-validation bypasses the schema and this helper is the last
+  gate before the name is emitted.
+*/ -}}
+{{- if and (not (kindIs "invalid" $rawName)) (not (kindIs "string" $rawName)) -}}
+{{- fail (printf "plugin-br-pix-lerian: %s.existingSecretName must be a string, got %s (%#v). secretRef.name has to be a DNS subdomain; a %s cannot render into one." $component (kindOf $rawName) $rawName (kindOf $rawName)) -}}
+{{- end -}}
+{{- $existingName := trim (toString (default "" $rawName)) -}}
 {{- if eq $existingName "" -}}
 {{- fail (printf "plugin-br-pix-lerian: %s.useExistingSecret is true but %s.existingSecretName is empty. Set existingSecretName to the name of the pre-existing Secret, or set useExistingSecret to false to let the chart render its own Secret." $component $component) -}}
 {{- end -}}

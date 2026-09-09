@@ -40,11 +40,14 @@ jobs:
 
       - name: Get changed paths
         id: changed-paths
-        uses: LerianStudio/github-actions-changed-paths@main
+        uses: LerianStudio/github-actions-shared-workflows/src/config/changed-paths@tier-2
         with:
-          filter_paths: charts/
-          get_app_name: true
-          path_level: 2
+          # No trailing slash. This composite matches "<filter>" or "<filter>/*",
+          # where the archived action did a plain prefix match, so "charts/"
+          # would match nothing here and empty the matrix without saying so.
+          filter-paths: charts
+          get-app-name: true
+          path-level: 2
 
       - name: Restrict matrix on chart line branches
         id: restrict

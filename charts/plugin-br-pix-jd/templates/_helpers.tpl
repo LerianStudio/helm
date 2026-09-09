@@ -708,17 +708,19 @@ Input dict: root, configmap (the component's map).
 {{- $root := .root -}}
 {{- $cm := mergeOverwrite (deepCopy ($root.Values.api.configmap | default dict)) (.configmap | default dict) -}}
 {{- $c := dict "configmap" $cm -}}
-{{- /* JD / JDPI. JD_BANK_ID is the plugin's own ISPB and is load-bearing far beyond
+{{- /* JD / JDPI. JD_ISPB is the plugin's own ISPB and is load-bearing far beyond
    an identifier: the worker gates EVERY MED poller on it being exactly 8 characters,
    and a missing or malformed value skips them all with a single WARN — including the
    settlement reconciler, which is the job that commits or cancels reserved money.
-   Silent partial function on a money path is worth a render-time gate. */ -}}
-{{- $bankId := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JD_BANK_ID" "default" "") -}}
-{{- if and $bankId (ne (len $bankId) 8) -}}
-{{- fail (printf "\n\nERROR: JD_BANK_ID must be exactly 8 characters (an ISPB); got %d.\nThe worker gates every MED poller on this length and skips them ALL with one WARN\nwhen it does not match — including med_settlement_reconcile, which commits or cancels\nreserved money. A wrong length degrades the money path silently.\n" (len $bankId)) -}}
+   Reject malformed values always, and reject a missing value when a single-tenant
+   worker is enabled. Multi-tenant workers resolve the ISPB from each tenant binding. */ -}}
+{{- $ispb := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JD_ISPB" "default" "") -}}
+{{- $multiTenant := eq (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MULTI_TENANT_ENABLED" "default" "false")) "true" -}}
+{{- if or (and $ispb (ne (len $ispb) 8)) (and $root.Values.worker.enabled (not $multiTenant) (not $ispb)) -}}
+{{- fail (printf "\n\nERROR: JD_ISPB must be exactly 8 characters when the worker runs in single-tenant mode; got %d.\nThe worker gates every MED poller on this length and skips them ALL with one WARN\nwhen it does not match — including med_settlement_reconcile, which commits or cancels\nreserved money. A missing or wrong-length value degrades the money path silently.\n" (len $ispb)) -}}
 {{- end }}
 JD_BASE_URL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JD_BASE_URL" "default" "") | quote }}
-JD_BANK_ID: {{ $bankId | quote }}
+JD_ISPB: {{ $ispb | quote }}
 JD_GRANT_TYPE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JD_GRANT_TYPE" "default" "client_credentials") | quote }}
 {{- /* DNS+Service+Path gateway mode: true inserts the fixed JDPI service segment for an
    APISIX-fronted JDPI; false keeps the direct-JDPI/mock scheme. */}}

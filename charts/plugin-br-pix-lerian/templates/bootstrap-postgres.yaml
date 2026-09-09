@@ -14,6 +14,15 @@ creating, and grants are safe to re-apply.
 {{- $admin := .Values.global.externalPostgresDefinitions.postgresAdminLogin -}}
 {{- $creds := .Values.global.externalPostgresDefinitions.pixswitchCredentials -}}
 {{- $conn := .Values.global.externalPostgresDefinitions.connection -}}
+{{- /*
+Resolve which Secret carries each credential. Inline values are written to the
+chart-managed Secret rendered by bootstrap-postgres-secret.yaml; an operator
+who names an existing Secret keeps using theirs. Either way the container reads
+them through secretKeyRef — no credential is ever emitted as an env value.
+*/ -}}
+{{- $managedSecret := printf "%s-bootstrap-postgres" (include "plugin-br-pix-lerian.name" $) -}}
+{{- $adminSecret := default $managedSecret $admin.useExistingSecret.name -}}
+{{- $credsSecret := default $managedSecret $creds.useExistingSecret.name -}}
 {{- range $db := .Values.global.externalPostgresDefinitions.databases }}
 ---
 apiVersion: batch/v1
@@ -62,32 +71,20 @@ spec:
             - name: DB_PORT
               value: {{ $conn.port | quote }}
             - name: DB_USER_ADMIN
-              {{- if $admin.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ $admin.useExistingSecret.name | quote }}
+                  name: {{ $adminSecret | quote }}
                   key: DB_USER_ADMIN
-              {{- else }}
-              value: {{ $admin.username | quote }}
-              {{- end }}
             - name: DB_ADMIN_PASSWORD
-              {{- if $admin.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ $admin.useExistingSecret.name | quote }}
+                  name: {{ $adminSecret | quote }}
                   key: DB_ADMIN_PASSWORD
-              {{- else }}
-              value: {{ $admin.password | quote }}
-              {{- end }}
             - name: DB_PASSWORD_PIXSWITCH
-              {{- if $creds.useExistingSecret.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ $creds.useExistingSecret.name | quote }}
+                  name: {{ $credsSecret | quote }}
                   key: DB_PASSWORD_PIXSWITCH
-              {{- else }}
-              value: {{ $creds.password | quote }}
-              {{- end }}
             - name: DB_ROLE
               value: {{ $creds.username | default "pixswitch" | quote }}
             - name: DB_NAME

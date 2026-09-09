@@ -10,8 +10,6 @@ plugin-br-pix-jd {{ .Chart.Version }} installed as release "{{ .Release.Name }}"
 
 {{ if eq .Chart.AppVersion "0.0.0-unreleased" -}}
 !! appVersion is a PLACEHOLDER and NO IMAGE EXISTS AT THAT TAG.
-   Nothing has been published under the name `plugin-br-pix-jd` yet — the plugin's
-   latest release is `plugin-br-pix-direct-jd:v1.11.0`, under the previous name.
    Pods will sit in ImagePullBackOff until you pin a real tag:
      --set api.image.tag=<tag>
 {{ end -}}

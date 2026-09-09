@@ -10,7 +10,7 @@
 
 BACEN-compliant PIX instant payment platform for the Lerian ecosystem.
 
-The plugin is a Go monorepo that produces 15 independently-deployable binaries.
+The plugin is a Go monorepo that produces 14 independently-deployable binaries.
 This chart deploys all of them with one helm release. Each component has its
 own Deployment, Service, ConfigMap, Secret, HPA, and PDB; ingress is opt-in
 per component.
@@ -120,9 +120,9 @@ This chart follows the multi-component layout used by
 | 1.0.0-beta.1 | 1.0.0-beta.101 |
 
 The rows above cover this chart only. Everything before the fork belongs to
-the retired `plugin-br-pix-switch` chart, whose source no longer lives in
-this repository; its published releases stay available on GHCR, and its
-history is in the git log up to the removal commit.
+the retired `plugin-br-pix-switch` chart. That chart is retired but has not
+been removed from this repository: `charts/plugin-br-pix-switch/` is still
+present on `main`, and its published releases stay available on GHCR.
 
 There is no in-place upgrade path from `plugin-br-pix-switch` — moving to this chart is a fresh install (cutover), not a `helm upgrade`.
 

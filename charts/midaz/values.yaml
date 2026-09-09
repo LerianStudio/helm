@@ -868,28 +868,6 @@ tracer:
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
-grafana:
-  # OpenTelemetry (OTel) dependency for observability.
-  # This component is responsible for collecting and exporting telemetry data
-  # such as traces and metrics, enhancing the monitoring of the application.
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/observability-in-midaz#midaz-observability-stack
-  enabled: false
-  name: grafana
-  # -- Configure the ingress for Access Grafana Dashboard
-  ingress:
-    enabled: false
-    className: ""
-    annotations: {}
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-    #  - secretName: chart-example-tls
-    #  hosts:
-    #      - chart-example.local
 valkey:
   # Valkey is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store

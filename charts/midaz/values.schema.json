@@ -40,10 +40,6 @@
       },
       "additionalProperties": true
     },
-    "grafana": {
-      "type": "object",
-      "additionalProperties": true
-    },
     "valkey": {
       "type": "object",
       "additionalProperties": true

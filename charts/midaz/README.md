@@ -322,48 +322,15 @@ tracer:
 
 ## Observability
 
-Midaz uses [Grafana Docker OpenTelemetry LGTM](https://github.com/grafana/docker-otel-lgtm) for observability. This component collects, processes, and exports telemetry data such as traces and metrics.
+This chart deploys no observability stack. It creates no Grafana Deployment,
+Service or Ingress, and it bundles no collector.
 
-You can access the observability dashboard in two ways:
-
-1. To access the observability dashboard, forward the Grafana port:
-
-```console
-$ kubectl port-forward svc/midaz-grafana 3000:3000 -n midaz
-```
-
-Then, open your browser and navigate to http://localhost:3000.
-
-2. Configuring Internal or External Ingress with Custom DNS
-
-If you want to access the observability dashboard internally using a custom DNS (e.g., within your Kubernetes cluster or private network), you can enable and configure the Ingress for the grafana component in the values.yaml file. Here's an example configuration for an internal Ingress:
-
-```yaml
-grafana:
-  enabled: true
-  name: grafana
-
-  ingress:
-    enabled: true
-    className: "nginx"  # Use an internal Ingress class (e.g., nginx-internal)
-    annotations:
-      nginx.ingress.kubernetes.io/rewrite-target: /
-      # Optional: Use the following annotation to restrict access to internal networks
-      nginx.ingress.kubernetes.io/whitelist-source-range: ""
-    hosts:
-      - host: "midaz-ote.example.com"  # Replace with your custom internal DNS
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []  # TLS is optional for internal access
-```
-
-If necessary, the deployment of this component can be disabled by setting `otel.enabled` to `false` in the values file.
-
-```yaml
-grafana:
-  enabled: false
-```
+The application workloads export OpenTelemetry traces and metrics to a
+collector you run yourself. That export is configured with
+`otel-collector-lerian.enabled` — see
+[OpenTelemetry Collector wiring](#opentelemetry-collector-wiring) for the
+supported settings and for how to point the workloads at a collector that is
+not node-local.
 
 ## Dependencies
 

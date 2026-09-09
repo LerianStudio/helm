@@ -1992,41 +1992,6 @@
       },
       "additionalProperties": true
     },
-    "grafana": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "default": false
-        },
-        "name": {
-          "default": "grafana"
-        },
-        "ingress": {
-          "type": "object",
-          "description": "Configure the ingress for Access Grafana Dashboard",
-          "properties": {
-            "enabled": {
-              "default": false
-            },
-            "className": {
-              "default": ""
-            },
-            "annotations": {
-              "type": "object",
-              "additionalProperties": true
-            },
-            "hosts": {
-              "type": "array"
-            },
-            "tls": {
-              "type": "array"
-            }
-          },
-          "additionalProperties": true
-        }
-      },
-      "additionalProperties": true
-    },
     "valkey": {
       "type": "object",
       "additionalProperties": true

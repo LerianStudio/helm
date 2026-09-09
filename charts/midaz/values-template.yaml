@@ -187,9 +187,6 @@ ledger:
   useExistingSecret: false
   existingSecretName: ""
 
-grafana:
-  enabled: false
-
 valkey:
   enabled: true
 

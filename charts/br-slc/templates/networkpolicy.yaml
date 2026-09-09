@@ -1,0 +1,45 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- /* Defense in depth over the same-pod sidecar ports. The signer (9101), the
+xsd-validator (9091) and the mqbridge (9121) each delegate no auth of their own,
+and NOT having a Service is not a boundary — a Service is DNS discovery, the pod
+IP answers directly. Each sidecar therefore binds 127.0.0.1 as the PRIMARY
+defense; this policy is the second layer, covering an operator who overrides a
+bind back to 0.0.0.0.
+
+Shape: allow the app port, deny everything else. It does NOT restrict WHO may
+reach the API — that needs a per-environment inventory and belongs in the tier
+overlay via networkPolicy.ingressFrom. With ingressFrom empty the app keeps
+exactly the reachability it had before this policy existed, so enabling it cannot
+regress the API; the only thing it closes is the sidecar ports.
+
+Ingress only. A default-deny egress would first need DNS, Postgres, RabbitMQ,
+RSFN/Núclea and OTLP enumerated, and getting that wrong fails closed on the money
+path.
+
+The selector matches ONLY the app pod: migrations (br-slc-migrations.labels) and
+mock-nuclea (br-slc-mock-nuclea.selectorLabels) carry their own label sets.
+
+The kubelet is not special-cased because it does not need to be: the sidecars use
+`exec` probes (br-slc.execProbe), which run inside the container and never touch
+the network, and the app's own httpGet probe rides the allowed app port. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "br-slc.fullname" . }}
+  labels:
+    {{- include "br-slc.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "br-slc.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.service.targetPort }}
+      {{- with .Values.networkPolicy.ingressFrom }}
+      from:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

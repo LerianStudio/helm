@@ -1,0 +1,294 @@
+{{- $cm := .Values.configmap.data | default dict -}}
+{{- $ds := .Values.datastores | default dict -}}
+{{- /* Dependency toggles kept as typed knobs (configmap.data.<KEY> > .Values.<toggle>.enabled > default). */ -}}
+{{- $multiTenantEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "MULTI_TENANT_ENABLED" "params" (.Values.multiTenant | default dict) "field" "enabled" "default" "false")) "true" -}}
+{{- $streamingEnabled := eq (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "STREAMING_ENABLED" "params" (.Values.streaming | default dict) "field" "enabled" "default" "false")) "true" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-slc.fullname" . }}
+  labels:
+    {{- include "br-slc.labels" . | nindent 4 }}
+data:
+  WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC: {{ $cm.WEBHOOK_NOTIFICATIONS_TOKEN_CACHE_TTL_SEC | default "60" | quote }}
+  WEBHOOK_HMAC_SECRET_FILE: {{ $cm.WEBHOOK_HMAC_SECRET_FILE | default "" | quote }}
+  # Config knobs — each resolves via lerian-common.cfgValue:
+  #   configmap.data.<NATIVE_KEY> (escape hatch) > .Values.<group>.<field> > chart default.
+  AGGRESSIVE_RATE_LIMIT_MAX: {{ $cm.AGGRESSIVE_RATE_LIMIT_MAX | default "100" | quote }}
+  AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ $cm.AGGRESSIVE_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  ALLOW_CORS_WILDCARD: {{ $cm.ALLOW_CORS_WILDCARD | default "false" | quote }}
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "false" | quote }}
+  {{- /* Which subject an M2M token authorizes under. "false" (lib-auth's own
+  default, kept here so the posture is explicit rather than inherited) makes
+  lib-auth IGNORE the token's sub and authorize under the fabricated
+  "admin/br-slc-editor-role" — a role the br-slc Casdoor seed does not declare,
+  so M2M tokens 403 on gated routes regardless of the role the client holds.
+  "true" uses the token's real sub, making a client bound to br-slc-operator-role
+  work. Flipping it changes who can call the API; coordinate with the Access
+  Manager team. See values.yaml (the auth block) for the full rationale. */}}
+  AUTH_M2M_INVERSION_ENABLED: {{ $cm.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
+  AWS_ACCESS_KEY_ID: {{ $cm.AWS_ACCESS_KEY_ID | default "" | quote }}
+  AWS_REGION: {{ $cm.AWS_REGION | default "us-east-2" | quote }}
+  CIRCUIT_BREAKER_ENABLED: {{ $cm.CIRCUIT_BREAKER_ENABLED | default "false" | quote }}
+  CORS_ALLOWED_HEADERS: {{ $cm.CORS_ALLOWED_HEADERS | default "Origin,Content-Type,Accept,Authorization,X-Request-ID" | quote }}
+  CORS_ALLOWED_METHODS: {{ $cm.CORS_ALLOWED_METHODS | default "GET,POST,PUT,PATCH,DELETE,OPTIONS" | quote }}
+  CORS_ALLOWED_ORIGINS: {{ $cm.CORS_ALLOWED_ORIGINS | default "" | quote }}
+  CORS_ALLOW_CREDENTIALS: {{ $cm.CORS_ALLOW_CREDENTIALS | default "false" | quote }}
+  CORS_EXPOSE_HEADERS: {{ $cm.CORS_EXPOSE_HEADERS | default "" | quote }}
+  DB_METRICS_INTERVAL_SEC: {{ $cm.DB_METRICS_INTERVAL_SEC | default "15" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
+  HTTP_BODY_LIMIT_BYTES: {{ $cm.HTTP_BODY_LIMIT_BYTES | default "104857600" | quote }}
+  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ $cm.IDEMPOTENCY_RETRY_WINDOW_SEC | default "300" | quote }}
+  INFRA_CONNECT_TIMEOUT_SEC: {{ $cm.INFRA_CONNECT_TIMEOUT_SEC | default "30" | quote }}
+  INTAKE_BATCH_MAX_LINES: {{ $cm.INTAKE_BATCH_MAX_LINES | default "50000" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  M2M_CREDENTIAL_CACHE_TTL_SEC: {{ $cm.M2M_CREDENTIAL_CACHE_TTL_SEC | default "300" | quote }}
+  MAX_PAGINATION_LIMIT: {{ $cm.MAX_PAGINATION_LIMIT | default "100" | quote }}
+  MAX_PAGINATION_MONTH_DATE_RANGE: {{ $cm.MAX_PAGINATION_MONTH_DATE_RANGE | default "3" | quote }}
+  MIGRATIONS_PATH: {{ $cm.MIGRATIONS_PATH | default "migrations" | quote }}
+  MOCK_NUCLEA_URL: {{ $cm.MOCK_NUCLEA_URL | default "" | quote }}
+  # IBM MQ connection descriptor: the sidecar holds no broker address, the app
+  # sends queueManager/channel/connName/queue in every POST /v1/drain body.
+  # Blank defaults keep the app fail-closed while the transport is "stub".
+  MQ_BRIDGE_CHANNEL: {{ $cm.MQ_BRIDGE_CHANNEL | default "" | quote }}
+  MQ_BRIDGE_CONN_NAME: {{ $cm.MQ_BRIDGE_CONN_NAME | default "" | quote }}
+  MQ_BRIDGE_MAX_DRAIN: {{ $cm.MQ_BRIDGE_MAX_DRAIN | default "16" | quote }}
+  MQ_BRIDGE_QUEUE: {{ $cm.MQ_BRIDGE_QUEUE | default "" | quote }}
+  MQ_BRIDGE_QUEUE_MANAGER: {{ $cm.MQ_BRIDGE_QUEUE_MANAGER | default "" | quote }}
+  MQ_BRIDGE_TENANT: {{ $cm.MQ_BRIDGE_TENANT | default "" | quote }}
+  MQ_BRIDGE_TIMEOUT_SEC: {{ $cm.MQ_BRIDGE_TIMEOUT_SEC | default "10" | quote }}
+  MQ_BRIDGE_URL: {{ $cm.MQ_BRIDGE_URL | default "http://localhost:9121" | quote }}
+  NUCLEA_REST_ALLOW_INSECURE_TLS: {{ $cm.NUCLEA_REST_ALLOW_INSECURE_TLS | default "false" | quote }}
+  NUCLEA_REST_BASE_URL: {{ $cm.NUCLEA_REST_BASE_URL | default "" | quote }}
+  NUCLEA_REST_CB_CONSECUTIVE_FAILURES: {{ $cm.NUCLEA_REST_CB_CONSECUTIVE_FAILURES | default "5" | quote }}
+  NUCLEA_REST_CB_OPEN_TIMEOUT_SEC: {{ $cm.NUCLEA_REST_CB_OPEN_TIMEOUT_SEC | default "30" | quote }}
+  NUCLEA_REST_TIMEOUT_SEC: {{ $cm.NUCLEA_REST_TIMEOUT_SEC | default "30" | quote }}
+  OUTBOX_ALLOW_EMPTY_TENANT: {{ $cm.OUTBOX_ALLOW_EMPTY_TENANT | default "true" | quote }}
+  OUTBOX_BATCH_SIZE: {{ $cm.OUTBOX_BATCH_SIZE | default "50" | quote }}
+  OUTBOX_DISPATCH_INTERVAL_SEC: {{ $cm.OUTBOX_DISPATCH_INTERVAL_SEC | default "2" | quote }}
+  OUTBOX_ENABLED: {{ $cm.OUTBOX_ENABLED | default "true" | quote }}
+  OUTBOX_INCLUDE_TENANT_METRICS: {{ $cm.OUTBOX_INCLUDE_TENANT_METRICS | default "false" | quote }}
+  OUTBOX_MAX_DISPATCH_ATTEMPTS: {{ $cm.OUTBOX_MAX_DISPATCH_ATTEMPTS | default "10" | quote }}
+  OUTBOX_MAX_FAILED_PER_BATCH: {{ $cm.OUTBOX_MAX_FAILED_PER_BATCH | default "25" | quote }}
+  OUTBOX_PROCESSING_TIMEOUT_SEC: {{ $cm.OUTBOX_PROCESSING_TIMEOUT_SEC | default "600" | quote }}
+  OUTBOX_PUBLISH_BACKOFF_MS: {{ $cm.OUTBOX_PUBLISH_BACKOFF_MS | default "200" | quote }}
+  OUTBOX_PUBLISH_MAX_ATTEMPTS: {{ $cm.OUTBOX_PUBLISH_MAX_ATTEMPTS | default "3" | quote }}
+  OUTBOX_RETRY_WINDOW_SEC: {{ $cm.OUTBOX_RETRY_WINDOW_SEC | default "300" | quote }}
+  OUTBOX_TABLE_NAME: {{ $cm.OUTBOX_TABLE_NAME | default "outbox_events" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
+  PLUGIN_AUTH_HOST: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "") | quote }}
+  POSTGRES_CONNECT_TIMEOUT_SEC: {{ $cm.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ $cm.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
+  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ $cm.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ $cm.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
+  POSTGRES_MAX_OPEN_CONNS: {{ $cm.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
+  POSTGRES_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "POSTGRES_NAME" "default" "br-slc") | quote }}
+  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ $cm.RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK | default "false" | quote }}
+  RABBITMQ_ALLOW_INSECURE_TLS: {{ $cm.RABBITMQ_ALLOW_INSECURE_TLS | default "false" | quote }}
+  RABBITMQ_ENABLED: {{ $cm.RABBITMQ_ENABLED | default "false" | quote }}
+  RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS: {{ $cm.RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS | default "" | quote }}
+  RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default "" | quote }}
+  RABBITMQ_PORT_HOST: {{ $cm.RABBITMQ_PORT_HOST | default "15672" | quote }}
+  RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: {{ $cm.RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS | default "false" | quote }}
+  RABBITMQ_VHOST: {{ $cm.RABBITMQ_VHOST | default "/" | quote }}
+  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "500" | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ $cm.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+  REDIS_DIAL_TIMEOUT: {{ $cm.REDIS_DIAL_TIMEOUT | default "5" | quote }}
+  REDIS_MAX_RETRIES: {{ $cm.REDIS_MAX_RETRIES | default "3" | quote }}
+  REDIS_MAX_RETRY_BACKOFF: {{ $cm.REDIS_MAX_RETRY_BACKOFF | default "8" | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ $cm.REDIS_MIN_IDLE_CONNS | default "2" | quote }}
+  REDIS_MIN_RETRY_BACKOFF: {{ $cm.REDIS_MIN_RETRY_BACKOFF | default "1" | quote }}
+  REDIS_POOL_SIZE: {{ $cm.REDIS_POOL_SIZE | default "10" | quote }}
+  REDIS_POOL_TIMEOUT: {{ $cm.REDIS_POOL_TIMEOUT | default "2" | quote }}
+  REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
+  REDIS_READ_TIMEOUT: {{ $cm.REDIS_READ_TIMEOUT | default "3" | quote }}
+  REDIS_WRITE_TIMEOUT: {{ $cm.REDIS_WRITE_TIMEOUT | default "3" | quote }}
+  RELAXED_RATE_LIMIT_MAX: {{ $cm.RELAXED_RATE_LIMIT_MAX | default "1000" | quote }}
+  RELAXED_RATE_LIMIT_WINDOW_SEC: {{ $cm.RELAXED_RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
+  RSFN_CONSUMER_ALLOW_INSECURE_TLS: {{ $cm.RSFN_CONSUMER_ALLOW_INSECURE_TLS | default "false" | quote }}
+  RSFN_CONSUMER_BASE_URL: {{ $cm.RSFN_CONSUMER_BASE_URL | default "" | quote }}
+  RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES: {{ $cm.RSFN_CONSUMER_CB_CONSECUTIVE_FAILURES | default "5" | quote }}
+  RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC: {{ $cm.RSFN_CONSUMER_CB_OPEN_TIMEOUT_SEC | default "30" | quote }}
+  RSFN_CONSUMER_TIMEOUT_SEC: {{ $cm.RSFN_CONSUMER_TIMEOUT_SEC | default "30" | quote }}
+  RSFN_CONSUMER_TRANSPORT: {{ $cm.RSFN_CONSUMER_TRANSPORT | default "stub" | quote }}
+  RSFN_INBOUND_XSD_VALIDATION_ENABLED: {{ $cm.RSFN_INBOUND_XSD_VALIDATION_ENABLED | default "true" | quote }}
+  SCHEDULE_CREDIT_WINDOW_CLOSE: {{ $cm.SCHEDULE_CREDIT_WINDOW_CLOSE | default "17:30" | quote }}
+  SCHEDULE_CREDIT_WINDOW_OPEN: {{ $cm.SCHEDULE_CREDIT_WINDOW_OPEN | default "00:30" | quote }}
+  SCHEDULE_CUTOFF_ALERT_LEAD_MIN: {{ $cm.SCHEDULE_CUTOFF_ALERT_LEAD_MIN | default "30" | quote }}
+  SCHEDULE_D1_CONFIRMATION_CUTOFF: {{ $cm.SCHEDULE_D1_CONFIRMATION_CUTOFF | default "19:00" | quote }}
+  SCHEDULE_D1_CONFIRMATION_ENABLED: {{ $cm.SCHEDULE_D1_CONFIRMATION_ENABLED | default "false" | quote }}
+  SCHEDULE_DEV_WINDOWS_ALWAYS_OPEN: {{ $cm.SCHEDULE_DEV_WINDOWS_ALWAYS_OPEN | default "false" | quote }}
+  SCHEDULE_DISPATCH_ENABLED: {{ $cm.SCHEDULE_DISPATCH_ENABLED | default "false" | quote }}
+  SCHEDULE_DISPATCH_PAGE_SIZE: {{ $cm.SCHEDULE_DISPATCH_PAGE_SIZE | default "1000" | quote }}
+  SCHEDULE_GRID_GATE_ENABLED: {{ $cm.SCHEDULE_GRID_GATE_ENABLED | default "false" | quote }}
+  SCHEDULE_HOLIDAYS: {{ $cm.SCHEDULE_HOLIDAYS | default "" | quote }}
+  SCHEDULE_RELAY_STATUS_ENABLED: {{ $cm.SCHEDULE_RELAY_STATUS_ENABLED | default "false" | quote }}
+  SCHEDULE_RETURN_POLL_ENABLED: {{ $cm.SCHEDULE_RETURN_POLL_ENABLED | default "false" | quote }}
+  SCHEDULE_RSFN_INGEST_ENABLED: {{ $cm.SCHEDULE_RSFN_INGEST_ENABLED | default "false" | quote }}
+  SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF: {{ $cm.SCHEDULE_SILOC_DEPOSIT_CYCLE1_CUTOFF | default "07:30" | quote }}
+  SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF: {{ $cm.SCHEDULE_SILOC_DEPOSIT_CYCLE2_CUTOFF | default "12:50" | quote }}
+  SCHEDULE_SILOC_WINDOWS_ENABLED: {{ $cm.SCHEDULE_SILOC_WINDOWS_ENABLED | default "false" | quote }}
+  SCHEDULE_STR_SETTLED_ENABLED: {{ $cm.SCHEDULE_STR_SETTLED_ENABLED | default "false" | quote }}
+  SCHEDULE_WORKER_ENABLED: {{ $cm.SCHEDULE_WORKER_ENABLED | default "true" | quote }}
+  SCHEDULE_WORKER_INTERVAL_SEC: {{ $cm.SCHEDULE_WORKER_INTERVAL_SEC | default "30" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4111" | quote }}
+  SIGNER_TIMEOUT_SEC: {{ $cm.SIGNER_TIMEOUT_SEC | default "10" | quote }}
+  SIGNER_URL: {{ $cm.SIGNER_URL | default "http://localhost:9101" | quote }}
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  {{- /* STREAMING (lerian-common.streaming.env + global.streaming). Toggle via
+     .Values.streaming.enabled; full SASL/broker block emitted only when enabled
+     AND brokers configured. STREAMING_SASL_PASSWORD is a Secret (secrets.yaml). */ -}}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $cm
+        "clientId" (include "br-slc.fullname" .)
+        "cloudeventsSource" "//lerian.midaz/br-slc") | nindent 2 }}
+  STREAMING_HEALTH_CHECK_TIMEOUT: {{ $cm.STREAMING_HEALTH_CHECK_TIMEOUT | default "2s" | quote }}
+  SWAGGER_BASE_PATH: {{ $cm.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "true" | quote }}
+  SWAGGER_LEFT_DELIM: {{ $cm.SWAGGER_LEFT_DELIM | default "{{" | quote }}
+  SWAGGER_RIGHT_DELIM: {{ $cm.SWAGGER_RIGHT_DELIM | default "}}" | quote }}
+  SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "BrSlc" | quote }}
+  SWAGGER_VERSION: {{ $cm.SWAGGER_VERSION | default "1.0.0" | quote }}
+  SYSTEMPLANE_ENABLED: {{ $cm.SYSTEMPLANE_ENABLED | default "false" | quote }}
+  TENANT_RUNTIME_CONFIG_ENABLED: {{ $cm.TENANT_RUNTIME_CONFIG_ENABLED | default "false" | quote }}
+  TLS_TERMINATED_UPSTREAM: {{ $cm.TLS_TERMINATED_UPSTREAM | default "false" | quote }}
+  {{- /* VERSION feeds the version field of /readyz (readyz.go readyzVersionValue).
+         DERIVED from the app image tag through the same expression "br-slc.image"
+         uses (_helpers.tpl), so the reported version cannot disagree with the image
+         the pod runs — the same rule OTEL_RESOURCE_SERVICE_VERSION follows below.
+         Stating it explicitly is deliberate: readyzVersionValue falls back to
+         Telemetry.ServiceVersion (OTEL_RESOURCE_SERVICE_VERSION) when VERSION is
+         unset, so /readyz would already be correct through that key alone — but
+         then an operator retuning the TELEMETRY version label would silently move
+         what /readyz reports. These are two different contracts; each gets its own
+         key. An explicit configmap.VERSION override still wins. */}}
+  VERSION: {{ $cm.VERSION | default (.Values.image.tag | default .Chart.AppVersion) | quote }}
+  # Mounted-file PATH (not a secret value) — configmap.data passthrough like
+  # WEBHOOK_HMAC_SECRET_FILE; excluded from the grouped API.
+  WEBHOOK_API_KEY_FILE: {{ $cm.WEBHOOK_API_KEY_FILE | default "" | quote }}
+  WEBHOOK_BACKOFF_BASE_SEC: {{ $cm.WEBHOOK_BACKOFF_BASE_SEC | default "30" | quote }}
+  WEBHOOK_CONSUME_BATCH: {{ $cm.WEBHOOK_CONSUME_BATCH | default "100" | quote }}
+  WEBHOOK_DELIVERY_PROVIDER: {{ $cm.WEBHOOK_DELIVERY_PROVIDER | default "direct" | quote }}
+  WEBHOOK_DELIVERY_TIMEOUT_SEC: {{ $cm.WEBHOOK_DELIVERY_TIMEOUT_SEC | default "10" | quote }}
+  WEBHOOK_MAX_ATTEMPTS: {{ $cm.WEBHOOK_MAX_ATTEMPTS | default "6" | quote }}
+  WEBHOOK_NOTIFICATIONS_BASE_URL: {{ $cm.WEBHOOK_NOTIFICATIONS_BASE_URL | default "" | quote }}
+  WEBHOOK_WORKER_ENABLED: {{ $cm.WEBHOOK_WORKER_ENABLED | default "false" | quote }}
+  WEBHOOK_WORKER_INTERVAL_SEC: {{ $cm.WEBHOOK_WORKER_INTERVAL_SEC | default "30" | quote }}
+  XSD_VALIDATOR_TIMEOUT_SEC: {{ $cm.XSD_VALIDATOR_TIMEOUT_SEC | default "10" | quote }}
+  XSD_VALIDATOR_URL: {{ $cm.XSD_VALIDATOR_URL | default "http://localhost:9091" | quote }}
+
+  # =====================================================================
+  # MULTI-TENANCY (lerian-common.multiTenant.env). Toggle via
+  # .Values.multiTenant.enabled; URL + Redis infra from global.multiTenant.
+  # MT infra keys render only when enabled; URL/REDIS_HOST required then.
+  # =====================================================================
+  MULTI_TENANT_ENABLED: {{ $multiTenantEnabled | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict
+        "context" $ "configmap" $cm "enabled" $multiTenantEnabled
+        "emitRedis" true "emitPool" true "emitCache" true
+        "requiredUrl" true "requiredRedisHost" true) | nindent 2 }}
+
+  # =====================================================================
+  # OPENTELEMETRY. Shared keys (ENABLE_TELEMETRY / OTLP endpoint /
+  # deployment-environment) derive from global.observability with a
+  # configmap.<KEY> override; identity (name/library/version) per-service.
+  # =====================================================================
+  {{- include "lerian-common.otel.env" (dict
+        "context" $ "configmap" $cm
+        "enabledDefault" "true"
+        "endpointDefault" "otel-collector-lerian:4317"
+        "deploymentEnvironmentDefault" "production") | nindent 2 }}
+  {{- /* OTEL_RESOURCE_SERVICE_VERSION is DERIVED from the app image tag, through the
+         same expression "br-slc.image" uses (_helpers.tpl), so the telemetry version
+         label cannot disagree with the image the pod runs. It used to be the literal
+         "1.0.0", which shipped to every install: br-slc-dev-st reported
+         service_version="1.0.0" while running 1.1.0-beta.54, mislabelling every
+         dashboard series. This is also the pattern lerian-common's own doc prescribes
+         for this key (see the plugin-fees example in _otel.tpl). A configmap.<KEY>
+         override still wins — envFlat resolves configmap > defaults > stdDefaults. */}}
+  {{- include "lerian-common.otel.envFlat" (dict
+        "configmap" $cm
+        "keys" (list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION")
+        "defaults" (dict
+          "OTEL_RESOURCE_SERVICE_NAME" "br-slc"
+          "OTEL_LIBRARY_NAME" "br-slc"
+          "OTEL_RESOURCE_SERVICE_VERSION" (.Values.image.tag | default .Chart.AppVersion))) | nindent 2 }}
+
+  # =====================================================================
+  # DATASTORES (external / client-managed in BYOC). HOST/PORT/USER/SSL from
+  # the datastore mask (.datastores.<type> → global.datastores.<type>) with a
+  # configmap.<KEY> override. No bundled subcharts, so no DNS derivation —
+  # POSTGRES_HOST / REDIS_HOST default "" (operator must set).
+  # =====================================================================
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" "") | quote }}
+  POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "br-slc") | quote }}
+  POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "") | quote }}
+  RABBITMQ_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "localhost") | quote }}
+  RABBITMQ_PORT_AMQP: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
+  RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "guest") | quote }}
+
+  # =====================================================================
+  # ADDITIONAL CONFIG — schedule / sfn / signing / intake / dispatch / nuclea / misc.
+  # Each resolves via cfgValue (configmap.data.<KEY> > .Values.<group>.<field> > default).
+  # =====================================================================
+  ASLC_INBOUND_XSD_VALIDATION_ENABLED: {{ $cm.ASLC_INBOUND_XSD_VALIDATION_ENABLED | default "true" | quote }}
+  DISPATCH_DEV_RECIPIENT_CERT_PATH: {{ $cm.DISPATCH_DEV_RECIPIENT_CERT_PATH | default "" | quote }}
+  INTAKE_BATCH_BULK_CHUNK_SIZE: {{ $cm.INTAKE_BATCH_BULK_CHUNK_SIZE | default "500" | quote }}
+  INTAKE_BATCH_SPOOL_DIR: {{ $cm.INTAKE_BATCH_SPOOL_DIR | default "" | quote }}
+  INTAKE_BATCH_SPOOL_MAX_BYTES: {{ $cm.INTAKE_BATCH_SPOOL_MAX_BYTES | default "268435456" | quote }}
+  {{- /* IS_DEVELOPMENT selects the LICENSE GATEWAY and nothing else: lib-license-go
+         compares it to the exact string "true" (validation/client.go) — "true" picks
+         the dev gateway, anything else the production one. br-slc itself never reads
+         it. Defaults to "false" to AGREE WITH ENV_NAME's own "production" default
+         above: a chart whose unstated posture is production must not silently point
+         at the dev gateway.
+         It used to default to "true", and that is a measured incident, not a
+         hypothetical: benedita/stg-st does not declare the key (only dev-st does),
+         so bumping that tier onto this chart flipped it to the dev gateway, where
+         its production LICENSE_KEY does not exist — "404 LCS-1002 License not found"
+         and a fail-closed boot exit, CrashLoopBackOff. sandbox and prd-st carry the
+         same shape and would have failed identically. A tier that wants the dev
+         gateway states so, as dev-st does. */}}
+  IS_DEVELOPMENT: {{ $cm.IS_DEVELOPMENT | default "false" | quote }}
+  SCHEDULE_ANTICIPATION_DISPATCH_ENABLED: {{ $cm.SCHEDULE_ANTICIPATION_DISPATCH_ENABLED | default "false" | quote }}
+  SCHEDULE_ANTICIPATION_FORWARD_ENABLED: {{ $cm.SCHEDULE_ANTICIPATION_FORWARD_ENABLED | default "false" | quote }}
+  SCHEDULE_ANTICIPATION_SETTLE_ENABLED: {{ $cm.SCHEDULE_ANTICIPATION_SETTLE_ENABLED | default "false" | quote }}
+  SCHEDULE_CANCELLATION_DISPATCH_ENABLED: {{ $cm.SCHEDULE_CANCELLATION_DISPATCH_ENABLED | default "false" | quote }}
+  SCHEDULE_CANCELLATION_FORWARD_ENABLED: {{ $cm.SCHEDULE_CANCELLATION_FORWARD_ENABLED | default "false" | quote }}
+  SCHEDULE_CERT_EXPIRY_ENABLED: {{ $cm.SCHEDULE_CERT_EXPIRY_ENABLED | default "false" | quote }}
+  SCHEDULE_DEBIT_DISPATCH_ENABLED: {{ $cm.SCHEDULE_DEBIT_DISPATCH_ENABLED | default "false" | quote }}
+  SCHEDULE_DEBIT_FORWARD_ENABLED: {{ $cm.SCHEDULE_DEBIT_FORWARD_ENABLED | default "false" | quote }}
+  SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK: {{ $cm.SCHEDULE_DISPATCH_MAX_PAGES_PER_TICK | default "100" | quote }}
+  SCHEDULE_DISPATCH_MAX_RECORDS: {{ $cm.SCHEDULE_DISPATCH_MAX_RECORDS | default "50000" | quote }}
+  SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS: {{ $cm.SCHEDULE_DISPATCH_MAX_TRANSMIT_ATTEMPTS | default "20" | quote }}
+  SCHEDULE_DOMICILE_RETURN_CLOSE: {{ $cm.SCHEDULE_DOMICILE_RETURN_CLOSE | default "10:00" | quote }}
+  SCHEDULE_DOMICILE_RETURN_OPEN: {{ $cm.SCHEDULE_DOMICILE_RETURN_OPEN | default "08:50" | quote }}
+  SCHEDULE_DOMICILE_RETURN_PM_CLOSE: {{ $cm.SCHEDULE_DOMICILE_RETURN_PM_CLOSE | default "18:30" | quote }}
+  SCHEDULE_DOMICILE_RETURN_PM_OPEN: {{ $cm.SCHEDULE_DOMICILE_RETURN_PM_OPEN | default "14:10" | quote }}
+  SCHEDULE_FORWARD_ENABLED: {{ $cm.SCHEDULE_FORWARD_ENABLED | default "false" | quote }}
+  SCHEDULE_OPERATION_STUCK_ENABLED: {{ $cm.SCHEDULE_OPERATION_STUCK_ENABLED | default "false" | quote }}
+  SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC: {{ $cm.SCHEDULE_OPERATION_STUCK_THRESHOLD_EXTERNAL_SEC | default "7200" | quote }}
+  SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC: {{ $cm.SCHEDULE_OPERATION_STUCK_THRESHOLD_INTERNAL_SEC | default "21600" | quote }}
+  SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC: {{ $cm.SCHEDULE_OPERATION_STUCK_THRESHOLD_SETTLED_SEC | default "93600" | quote }}
+  SCHEDULE_SPECIAL_GRADE: {{ $cm.SCHEDULE_SPECIAL_GRADE | default "none" | quote }}
+  SCHEDULE_VARREDURA_ENABLED: {{ $cm.SCHEDULE_VARREDURA_ENABLED | default "false" | quote }}
+  SFN_BUS_PROVIDER: {{ $cm.SFN_BUS_PROVIDER | default "kafka" | quote }}
+  SFN_INGEST_ENABLED: {{ $cm.SFN_INGEST_ENABLED | default "false" | quote }}
+  SFN_KAFKA_BATCH_SIZE: {{ $cm.SFN_KAFKA_BATCH_SIZE | default "100" | quote }}
+  SFN_KAFKA_GROUP_ID: {{ $cm.SFN_KAFKA_GROUP_ID | default "br-slc-sfn" | quote }}
+  SFN_KAFKA_TOPIC: {{ $cm.SFN_KAFKA_TOPIC | default "siloc.inbound" | quote }}
+  SFN_STUB_BASE_URL: {{ $cm.SFN_STUB_BASE_URL | default "" | quote }}
+  SFN_STUB_TIMEOUT_SEC: {{ $cm.SFN_STUB_TIMEOUT_SEC | default "30" | quote }}
+  SIGNING_CUSTODY_ADAPTER: {{ $cm.SIGNING_CUSTODY_ADAPTER | default "softkey" | quote }}
+  SIGNING_FAIL_CLOSED: {{ $cm.SIGNING_FAIL_CLOSED | default "true" | quote }}
+  SIGNING_REQUIRE_SIGNATURE: {{ $cm.SIGNING_REQUIRE_SIGNATURE | default "true" | quote }}
+  WEBHOOK_ALLOW_PRIVATE_NETWORK: {{ $cm.WEBHOOK_ALLOW_PRIVATE_NETWORK | default "false" | quote }}
+  WEBHOOK_RETRY_BATCH: {{ $cm.WEBHOOK_RETRY_BATCH | default "100" | quote }}

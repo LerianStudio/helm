@@ -1,5 +1,16 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.1)
+
+- **Fixes**
+  - Emit the ISPB environment variable consumed by the app.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.0...plugin-br-pix-jd-v0.4.1)
+
+---
+
 ## [0.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.0)
 
 - **Features:**

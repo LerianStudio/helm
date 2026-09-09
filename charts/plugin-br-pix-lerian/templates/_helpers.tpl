@@ -186,11 +186,42 @@ spec:
 Resolve the secret name to use for envFrom.
 When useExistingSecret=true, returns the externally-managed name; otherwise the chart-rendered one.
 */}}
+{{- /*
+Resolve the Secret name a component's envFrom should reference.
+
+Every component Deployment and the migration partial funnel through here, so
+this is the one place that can guarantee the rendered `secretRef.name` is a
+real, non-empty name. Two failure modes are rejected loudly instead of being
+emitted as a broken manifest:
+
+  1. useExistingSecret is a STRING. Go templates treat any non-empty string as
+     truthy, so `useExistingSecret: "false"` — the exact thing an operator
+     writes to turn the flag OFF, and what `--set-string` produces — selected
+     the existing-secret branch and suppressed the chart-managed Secret. The
+     schema now types this key, but a schema only guards values.yaml merges;
+     this guard also covers `--set-string` and any caller that bypasses it.
+
+  2. useExistingSecret is true while existingSecretName is empty. That produced
+     `secretRef: {name: null}`, which the API server rejects, and the
+     chart-managed Secret was suppressed as well, so there was nothing to fall
+     back to. Failing the render surfaces the mistake at `helm template` time
+     rather than as a CreateContainerConfigError after rollout.
+*/ -}}
 {{- define "plugin-br-pix-lerian.componentSecretName" -}}
-{{- if .componentValues.useExistingSecret -}}
-{{- .componentValues.existingSecretName -}}
+{{- $component := .component -}}
+{{- $values := .componentValues -}}
+{{- $useExisting := $values.useExistingSecret -}}
+{{- if and (not (kindIs "invalid" $useExisting)) (not (kindIs "bool" $useExisting)) -}}
+{{- fail (printf "plugin-br-pix-lerian: %s.useExistingSecret must be a boolean, got %s (%#v). A quoted value such as \"false\" is truthy in Helm templates and would silently select an existing Secret; write it unquoted, and prefer --set over --set-string for this key." $component (kindOf $useExisting) $useExisting) -}}
+{{- end -}}
+{{- if $useExisting -}}
+{{- $existingName := trim (toString (default "" $values.existingSecretName)) -}}
+{{- if eq $existingName "" -}}
+{{- fail (printf "plugin-br-pix-lerian: %s.useExistingSecret is true but %s.existingSecretName is empty. Set existingSecretName to the name of the pre-existing Secret, or set useExistingSecret to false to let the chart render its own Secret." $component $component) -}}
+{{- end -}}
+{{- $existingName -}}
 {{- else -}}
-{{- include "plugin-br-pix-lerian.componentFullname" (dict "context" .context "component" .component) -}}
+{{- include "plugin-br-pix-lerian.componentFullname" (dict "context" .context "component" $component) -}}
 {{- end -}}
 {{- end }}
 

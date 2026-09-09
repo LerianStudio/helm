@@ -102,7 +102,6 @@ spec:
               echo ""
 
               ROLE_EXISTS=0
-              DB_EXISTS=0
 
               # psql interpolates :'var' only for stdin/-f input, NOT for -c, so
               # the lookups are fed on stdin. Capturing the output (instead of
@@ -113,66 +112,64 @@ spec:
               if [ "${ROLE_LOOKUP}" = "1" ]; then
                 ROLE_EXISTS=1
               fi
-              DB_LOOKUP=$(printf '%s\n' "SELECT 1 FROM pg_database WHERE datname=:'db'" | PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -At -v ON_ERROR_STOP=1 -v db="${DB_NAME}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}")
-              if [ "${DB_LOOKUP}" = "1" ]; then
-                DB_EXISTS=1
-              fi
 
-              # ROLE CREATION. Three things have to hold at once here, and the
-              # obvious spellings break at least one of them:
+              # ROLE CREATION + PASSWORD, in two statements, deliberately.
               #
-              #   1. The five sibling Jobs share ONE role and run concurrently, so
-              #      the check-then-create above is racy - two Jobs can both see the
-              #      role as absent and both try to create it. Two conditions are
-              #      swallowed and only these two: duplicate_object (42710), raised
-              #      when the catalog check sees the role, and unique_violation
-              #      (23505) on pg_authid_rolname_index, which is what a real race
-              #      actually raises - verified against PostgreSQL 17 by running two
-              #      copies of this script concurrently. Inside this block the only
-              #      statement is CREATE ROLE, so a unique_violation here can only be
-              #      that collision. ON_ERROR_STOP=1 still aborts on anything else:
-              #      an auth, permission, connection or syntax failure still fails
-              #      the Job.
+              # The password is NEVER sent to the server in clear text. Step 1 creates the
+              # role with no password at all; step 2 uses psql's \password, which derives
+              # the SCRAM-SHA-256 verifier CLIENT-SIDE and sends only the verifier. Verified
+              # against PostgreSQL 17 with log_statement=all: the server logs
+              #   CREATE ROLE <role> LOGIN
+              #   ALTER USER "<role>" PASSWORD 'SCRAM-SHA-256$4096:...'
+              # and the clear-text password appears nowhere in the log. This needs no
+              # privilege beyond the CREATEROLE the admin already requires - no superuser,
+              # no GRANT SET, no log_statement tampering.
               #
-              #   2. The role is an IDENTIFIER and the password a LITERAL, so both go
-              #      through format() %I / %L rather than any string concatenation.
+              # IMAGE DEPENDENCY: \password is a psql meta-command. The container image
+              # below is postgres:17, which ships it. Anyone swapping that image for one
+              # without psql - or with a psql older than the \getenv used here (v11+) -
+              # breaks this script. Keep psql in the image.
               #
-              #   3. Neither value may reach psql's argv (visible in `ps`) or be
-              #      interpolated by the shell. They are read from the environment by
-              #      psql itself with \getenv, and the heredoc is quoted (<<'SQL') so
-              #      the shell expands nothing inside it.
+              # Step 1 is concurrency-safe: the five sibling Jobs share ONE role, so two can
+              # both see it as absent and both create it. Two conditions are swallowed and
+              # only these two - duplicate_object (42710) from the catalog check and
+              # unique_violation (23505) on pg_authid_rolname_index, which is what a real
+              # race raises, verified by running two copies concurrently. ON_ERROR_STOP=1
+              # still aborts on auth, permission, connection or syntax failures.
               #
-              # set_config/current_setting is the bridge: psql does NOT substitute
-              # :'var' inside a dollar-quoted body, so the values are bound OUTSIDE
-              # the DO block and read back inside it. The body is tagged $do$ so it
-              # cannot collide with the $$ the shell would otherwise see.
+              # Step 2 runs UNCONDITIONALLY, whether this Job created the role or found it
+              # already there. That is what makes it idempotent and self-healing:
+              #   - a Job that loses the creation race still sets the password, and since
+              #     every sibling reads the same Secret it sets the SAME password, so a
+              #     re-derived verifier never breaks an in-flight authentication;
+              #   - if a Job dies BETWEEN the two steps the role is left with no password.
+              #     That window is real and cannot be closed without a transaction, which
+              #     CREATE ROLE + \password cannot share. It is bounded: any sibling Job or
+              #     any retry of this one repairs it, because step 2 is unconditional. While
+              #     it lasts, a role with no password cannot authenticate under the
+              #     scram-sha-256 / md5 methods this deployment uses - it fails closed.
               #
-              # The heredoc terminator sits at column 0 of the RENDERED script - this
-              # template line is at the block-scalar base indent. An indented
-              # terminator is not recognised with <<'SQL' and the script dies with
-              # "syntax error: unexpected end of file".
+              # The role is an IDENTIFIER via format %I. Neither value reaches psql's argv
+              # (visible in `ps`) nor is expanded by the shell: psql reads them from the
+              # environment with \getenv inside a quoted heredoc. set_config/current_setting
+              # bridges them into the dollar-quoted body, where psql does NOT substitute
+              # :'var'. The heredoc terminator sits at column 0 of the RENDERED script.
               if [ "${ROLE_EXISTS}" = "1" ]; then
                 echo "Role '${DB_ROLE}' already exists. Skipping creation."
               else
                 echo "Creating role '${DB_ROLE}'..."
                 PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -q -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" <<'SQL'
-              -- terse suppresses psql's CONTEXT/DETAIL lines. On an UNHANDLED error
-              -- PL/pgSQL reports the statement it was executing, and for CREATE ROLE
-              -- that text carries the password literal - observed against PostgreSQL
-              -- 17 as: CONTEXT: SQL statement "CREATE ROLE x LOGIN PASSWORD E'...'".
-              -- The ERROR line itself still prints and the Job still fails.
+              -- terse suppresses psql's CONTEXT/DETAIL lines, which on an unhandled error
+              -- would echo the statement PL/pgSQL was running. No password appears in this
+              -- statement any more, but the ERROR line is what matters and terse keeps it.
               \set VERBOSITY terse
               \getenv bootstrap_role DB_ROLE
-              \getenv bootstrap_pw DB_PASSWORD_PIXSWITCH
               \o /dev/null
               SELECT set_config('bootstrap.role', :'bootstrap_role', false);
-              SELECT set_config('bootstrap.pw', :'bootstrap_pw', false);
               \o
               DO $do$
               BEGIN
-                EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L',
-                 current_setting('bootstrap.role'),
-                 current_setting('bootstrap.pw'));
+                EXECUTE format('CREATE ROLE %I LOGIN', current_setting('bootstrap.role'));
               EXCEPTION WHEN duplicate_object OR unique_violation THEN
                 RAISE NOTICE 'Role % already exists (created concurrently by a sibling Job).', current_setting('bootstrap.role');
               END
@@ -180,30 +177,103 @@ spec:
               SQL
               fi
 
-              if [ "${DB_EXISTS}" = "1" ]; then
-                echo "Database '${DB_NAME}' already exists. Skipping creation."
-              else
-                echo "Creating database '${DB_NAME}'..."
+              # Step 2 - set the password with the client-side SCRAM derivation.
+              #
+              # The commands come from a FILE and the password from STDIN, because \password
+              # reads its two confirmations from stdin: feeding the commands on stdin too
+              # would make it swallow them. The file carries no secret.
+              #
+              # The role name goes through psql's :"var" identifier quoting. Passing it as
+              # a bare meta-command argument breaks on a role containing a space - psql splits
+              # meta-command arguments on whitespace, so `\password pix space` targets `pix`.
+              #
+              # The advisory lock serialises this step across siblings. Step 2 runs
+              # unconditionally in every Job, so without it two Jobs issue ALTER USER against
+              # the same pg_authid row and one dies with 'tuple concurrently updated'
+              # (observed against PostgreSQL 17). The lock is keyed on the role, distinct from
+              # the database lock below.
+              #
+              # printf is a bash BUILTIN, so the password never becomes another process's argv.
+              echo "Setting password for role '${DB_ROLE}'..."
+              cat > /tmp/bootstrap-set-password.sql <<'SQL'
+              \set VERBOSITY terse
+              \getenv bootstrap_role DB_ROLE
+              \o /dev/null
+              SELECT set_config('bootstrap.role', :'bootstrap_role', false);
+              SELECT pg_advisory_lock(hashtext('plugin-br-pix-lerian:bootstrap-role:' || current_setting('bootstrap.role')));
+              \o
+              \password :"bootstrap_role"
+              \o /dev/null
+              SELECT pg_advisory_unlock(hashtext('plugin-br-pix-lerian:bootstrap-role:' || current_setting('bootstrap.role')));
+              \o
+              SQL
+              printf '%s\n%s\n' "${DB_PASSWORD_PIXSWITCH}" "${DB_PASSWORD_PIXSWITCH}" \
+                | PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -q -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" \
+                    -f /tmp/bootstrap-set-password.sql >/dev/null
+              rm -f /tmp/bootstrap-set-password.sql
+
+              # DATABASE CREATION, serialised by an advisory lock.
+              #
+              # The old check-then-create was racy in exactly the way the role creation was,
+              # but CREATE DATABASE cannot run inside a transaction or a DO block, so the
+              # PL/pgSQL exception trick is unavailable. Reproduced against PostgreSQL 17:
+              # two Jobs sharing a DB_NAME both saw it absent and one died with
+              # 'duplicate key value violates unique constraint "pg_database_datname_index"'
+              # BEFORE reaching the grants.
+              #
+              # A session-level advisory lock keyed on the database name makes the check and
+              # the create atomic with respect to any other Job doing the same thing. The
+              # lock lives in the shared lock space of DB_DATABASE, which every Job connects
+              # to, so siblings genuinely serialise. \gexec then runs the CREATE only when
+              # the SELECT returns a row, i.e. only when the database is still absent - no
+              # error to swallow, so no SQLSTATE matching and no localized text matching.
+              # ON_ERROR_STOP=1 keeps every other failure fatal.
+              echo "Ensuring database '${DB_NAME}' exists..."
                 PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -q -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" <<'SQL'
+              \set VERBOSITY terse
               \getenv bootstrap_role DB_ROLE
               \getenv bootstrap_db DB_NAME
-              CREATE DATABASE :"bootstrap_db" OWNER :"bootstrap_role";
+              \o /dev/null
+              SELECT set_config('bootstrap.role', :'bootstrap_role', false);
+              SELECT set_config('bootstrap.db', :'bootstrap_db', false);
+              SELECT pg_advisory_lock(hashtext('plugin-br-pix-lerian:bootstrap-db:' || current_setting('bootstrap.db')));
+              \o
+              SELECT format('CREATE DATABASE %I OWNER %I', current_setting('bootstrap.db'), current_setting('bootstrap.role'))
+               WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = current_setting('bootstrap.db'))
+              \gexec
+              \o /dev/null
+              SELECT pg_advisory_unlock(hashtext('plugin-br-pix-lerian:bootstrap-db:' || current_setting('bootstrap.db')));
+              \o
               SQL
-              fi
 
               echo "Ensuring privileges on '${DB_NAME}'..."
               PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -q -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" <<'SQL'
               \getenv bootstrap_role DB_ROLE
               \getenv bootstrap_db DB_NAME
+              \o /dev/null
+              SELECT set_config('bootstrap.db', :'bootstrap_db', false);
+              SELECT pg_advisory_lock(hashtext('plugin-br-pix-lerian:bootstrap-db:' || current_setting('bootstrap.db')));
+              \o
               GRANT ALL PRIVILEGES ON DATABASE :"bootstrap_db" TO :"bootstrap_role";
+              \o /dev/null
+              SELECT pg_advisory_unlock(hashtext('plugin-br-pix-lerian:bootstrap-db:' || current_setting('bootstrap.db')));
+              \o
               SQL
               PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -q -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_NAME}" <<'SQL'
               \getenv bootstrap_role DB_ROLE
+              \getenv bootstrap_db DB_NAME
+              \o /dev/null
+              SELECT set_config('bootstrap.db', :'bootstrap_db', false);
+              SELECT pg_advisory_lock(hashtext('plugin-br-pix-lerian:bootstrap-db:' || current_setting('bootstrap.db')));
+              \o
               GRANT ALL ON SCHEMA public TO :"bootstrap_role";
               GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO :"bootstrap_role";
               GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO :"bootstrap_role";
               ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO :"bootstrap_role";
               ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO :"bootstrap_role";
+              \o /dev/null
+              SELECT pg_advisory_unlock(hashtext('plugin-br-pix-lerian:bootstrap-db:' || current_setting('bootstrap.db')));
+              \o
               SQL
 
               echo ""

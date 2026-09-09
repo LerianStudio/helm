@@ -411,7 +411,6 @@ streamingHub:
     nodeSelector: {}
     tolerations: []
     affinity: {}
-
 # =============================================================================
 # aws — AWS IAM Roles Anywhere (X.509 -> short-lived AWS credentials).
 #

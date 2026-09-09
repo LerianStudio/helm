@@ -1,0 +1,42 @@
+{{- /*
+RBAC for the tracer Deployment's wait-for-migrations initContainer (see
+templates/tracer/deployment.yaml). Same reasoning/caveat as templates/ledger/
+rbac.yaml — `get` is resourceNames-scoped to the exact Job, but Kubernetes
+RBAC does not enforce resourceNames on list/watch, so this authorizes
+`kubectl wait`'s List+Watch for all Jobs in the namespace regardless. Still
+read-only, one namespace, tracer's own long-lived ServiceAccount.
+*/}}
+{{- if and .Values.tracer.enabled (dig "serviceAccount" "create" true .Values.tracer) .Values.tracer.migrations.enabled (dig "waitForCompletion" "enabled" true (.Values.tracer.migrations | default dict)) }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "midaz-tracer.fullname" . }}-wait-for-migrations
+  labels:
+    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+rules:
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    resourceNames:
+      - {{ include "midaz-tracer.migrationsFullname" . }}
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "midaz-tracer.fullname" . }}-wait-for-migrations
+  labels:
+    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "midaz-tracer.fullname" . }}-wait-for-migrations
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "midaz-tracer.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

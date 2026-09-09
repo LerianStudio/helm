@@ -78,6 +78,20 @@ Create the name of the service account to use for ledger
 {{- end }}
 
 {{/*
+Create the name of the service account to use for tracer. Mirrors
+midaz-ledger.serviceAccountName above — tracer had no dedicated ServiceAccount
+before templates/tracer/serviceaccount.yaml (added for the wait-for-migrations
+initContainer's RBAC; previously ran under the namespace's "default" SA).
+*/}}
+{{- define "midaz-tracer.serviceAccountName" -}}
+{{- if (dig "serviceAccount" "create" true .Values.tracer) }}
+{{- default (include "midaz-tracer.fullname" .) (dig "serviceAccount" "name" "" .Values.tracer) }}
+{{- else }}
+{{- default "default" (dig "serviceAccount" "name" "" .Values.tracer) }}
+{{- end }}
+{{- end }}
+
+{{/*
 Expand the namespace of the release.
 Allows overriding it for multi-namespace deployments in combined charts.
 */}}

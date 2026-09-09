@@ -40,6 +40,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
+      serviceAccountName: {{ include "midaz-tracer.serviceAccountName" . }}
     {{- with .Values.tracer.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -47,6 +48,46 @@ spec:
       {{- with .Values.tracer.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- /* See templates/ledger/deployment.yaml's wait-for-migrations
+      initContainer for the full reasoning (plain helm install/upgrade has no
+      ArgoCD sync-wave equivalent to gate on). Set
+      tracer.migrations.waitForCompletion.enabled: false to opt out. */}}
+      {{- if and .Values.tracer.migrations.enabled (dig "waitForCompletion" "enabled" true (.Values.tracer.migrations | default dict)) }}
+      initContainers:
+        - name: wait-for-migrations
+          image: {{ dig "waitForCompletion" "image" "alpine/k8s:1.31.1" (.Values.tracer.migrations | default dict) }}
+          {{- with .Values.tracer.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              JOB="{{ include "midaz-tracer.migrationsFullname" . }}"
+              NS="{{ .Release.Namespace }}"
+              TIMEOUT={{ dig "activeDeadlineSeconds" 600 (.Values.tracer.migrations | default dict) }}
+              ELAPSED=0
+              echo "Waiting for migrations Job $JOB to exist...";
+              until kubectl get job "$JOB" -n "$NS" >/dev/null 2>&1; do
+                if [ $ELAPSED -ge $TIMEOUT ]; then
+                  echo "Timeout waiting for Job $JOB to be created after ${TIMEOUT}s";
+                  exit 1;
+                fi;
+                sleep 5;
+                ELAPSED=$((ELAPSED + 5));
+              done;
+              echo "Waiting for migrations Job $JOB to complete...";
+              kubectl wait --for=condition=complete --timeout="${TIMEOUT}s" "job/$JOB" -n "$NS"
+          resources:
+            limits:
+              cpu: 100m
+              memory: 64Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
       {{- end }}
       containers:
         - name: {{ include "midaz-tracer.fullname" . }}

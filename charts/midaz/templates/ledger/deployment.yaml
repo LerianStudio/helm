@@ -51,6 +51,53 @@ spec:
       securityContext:
         {{- toYaml .Values.ledger.podSecurityContext | nindent 8 }}
       initContainers:
+        {{- /*
+        Plain `helm install`/`helm upgrade` (no ArgoCD) has no sync-wave
+        equivalent — the migration Job above and this Deployment apply in the
+        SAME manifest phase, so the app previously crash-looped against the
+        unmigrated schema until the Job finished (harmless but noisy; the
+        exact scenario ArgoCD's sync-wave annotation above already prevents).
+        This closes that gap for the plain-helm path by having the app itself
+        wait for the migrations Job to reach Complete before starting.
+        Requires the RBAC in templates/ledger/rbac.yaml (get/list/watch on
+        this exact Job name — see there for why resourceNames-scoped, not
+        wildcard). Set `ledger.migrations.waitForCompletion.enabled: false`
+        to opt out (e.g. a customer who runs migrations out-of-band and
+        doesn't want the app blocked on a Job it doesn't control).
+        */ -}}
+        {{- if and (include "midaz.ledgerMigrationsEnabled" .) (dig "waitForCompletion" "enabled" true (.Values.ledger.migrations | default dict)) }}
+        - name: wait-for-migrations
+          image: {{ dig "waitForCompletion" "image" "alpine/k8s:1.31.1" (.Values.ledger.migrations | default dict) }}
+          securityContext:
+            {{- toYaml .Values.ledger.securityContext | nindent 12 }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              JOB="{{ include "midaz-ledger.migrationsFullname" . }}"
+              NS="{{ .Release.Namespace }}"
+              TIMEOUT={{ dig "activeDeadlineSeconds" 600 (.Values.ledger.migrations | default dict) }}
+              ELAPSED=0
+              echo "Waiting for migrations Job $JOB to exist...";
+              until kubectl get job "$JOB" -n "$NS" >/dev/null 2>&1; do
+                if [ $ELAPSED -ge $TIMEOUT ]; then
+                  echo "Timeout waiting for Job $JOB to be created after ${TIMEOUT}s";
+                  exit 1;
+                fi;
+                sleep 5;
+                ELAPSED=$((ELAPSED + 5));
+              done;
+              echo "Waiting for migrations Job $JOB to complete...";
+              kubectl wait --for=condition=complete --timeout="${TIMEOUT}s" "job/$JOB" -n "$NS"
+          resources:
+            limits:
+              cpu: 100m
+              memory: 64Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
+        {{- end }}
         - name: wait-for-dependencies
           image: busybox:1.37
           envFrom:

@@ -1,0 +1,46 @@
+{{- /*
+RBAC for the ledger Deployment's wait-for-migrations initContainer (see
+templates/ledger/deployment.yaml). `get` is resourceNames-scoped to the EXACT
+migrations Job this release renders. Kubernetes RBAC does NOT enforce
+resourceNames on list/watch verbs (only get/update/patch/delete) — `kubectl
+wait`'s underlying List+Watch call is therefore authorized for ALL Jobs in
+this namespace regardless of the resourceNames entry below, a known K8s RBAC
+limitation, not an oversight here. Still scoped to read-only + one namespace
++ the ledger app's own long-lived ServiceAccount (the same identity the app
+container itself runs under, not a throwaway hook identity) — acceptable,
+but do not represent this as tighter than it actually is.
+*/}}
+{{- if and .Values.ledger.enabled .Values.ledger.serviceAccount.create (include "midaz.ledgerMigrationsEnabled" .) (dig "waitForCompletion" "enabled" true (.Values.ledger.migrations | default dict)) }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "midaz-ledger.fullname" . }}-wait-for-migrations
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
+rules:
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    resourceNames:
+      - {{ include "midaz-ledger.migrationsFullname" . }}
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "midaz-ledger.fullname" . }}-wait-for-migrations
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "midaz-ledger.fullname" . }}-wait-for-migrations
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "midaz-ledger.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

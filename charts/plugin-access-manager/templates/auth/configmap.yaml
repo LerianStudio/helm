@@ -129,7 +129,7 @@ data:
   # HTTP CLIENT
   HTTP_CLIENT_TIMEOUT_SEC: {{ .Values.auth.configmap.HTTP_CLIENT_TIMEOUT_SEC | default "30" | quote }}
   HTTP_CLIENT_MAX_IDLE_CONNS: {{ .Values.auth.configmap.HTTP_CLIENT_MAX_IDLE_CONNS | default "100" | quote }}
-  HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST: {{ .Values.auth.configmap.HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST | default "100" | quote }}
+  HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST: {{ .Values.auth.configmap.HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST | default "10" | quote }}
   HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC: {{ .Values.auth.configmap.HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC | default "90" | quote }}
 
   # MFA

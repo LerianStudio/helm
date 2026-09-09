@@ -308,7 +308,11 @@ Usage:
         local REST="${URL#*://}"
         # Strip userinfo if present
         case "$REST" in
-          *@*) REST="${REST#*@}" ;;
+          # ##*@ (longest match), not #*@: a password may contain a literal
+          # "@" - postgres://user:p@ss@db:5432/x - and the shortest match
+          # would leave HOST="ss". A host part cannot contain "@", so the
+          # last one is always the userinfo delimiter.
+          *@*) REST="${REST##*@}" ;;
         esac
         # Strip path/query/fragment
         REST="${REST%%/*}"

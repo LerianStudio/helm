@@ -280,6 +280,13 @@ ledger:
     ALLOW_INSECURE_TLS: "true"
     # -- Otel default configuration
     ENABLE_TELEMETRY: "true"
+    # -- OTLP collector endpoint. No default: the chart deploys no collector, so
+    # there is no in-cluster address it could point at. Left empty it is
+    # overridden by `otel-collector-lerian.enabled` (node-local collector).
+    # With that injection disabled, set this to your own collector or set
+    # ENABLE_TELEMETRY to "false" — an empty endpoint with telemetry enabled
+    # stops the service at boot instead of dropping telemetry silently.
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
     # -- Auth Plugin configuration
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_HOST: ""
@@ -563,6 +570,13 @@ crm:
     ALLOW_INSECURE_TLS: "true"
     # -- Default Environment
     ENV_NAME: "development"
+    # -- OTLP collector endpoint. No default: the chart deploys no collector, so
+    # there is no in-cluster address it could point at. Left empty it is
+    # overridden by `otel-collector-lerian.enabled` (node-local collector).
+    # With that injection disabled, set this to your own collector or set
+    # ENABLE_TELEMETRY to "false" — an empty endpoint with telemetry enabled
+    # stops the service at boot instead of dropping telemetry silently.
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
     # -- Auth Plugin configuration
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"

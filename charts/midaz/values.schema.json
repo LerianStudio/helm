@@ -62,7 +62,7 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "When true, inject OTEL env vars (HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_RESOURCE_ATTRIBUTES) into the midaz ledger, crm and tracer deployments. The endpoint is fixed at $(HOST_IP):4317 — apps require an OTEL collector listening on the node. To use a different endpoint, leave enabled=false and set OTEL_EXPORTER_OTLP_ENDPOINT directly in the application configmap (ledger.configmap / crm.configmap / tracer.configmap)."
+          "description": "When true, inject OTEL env vars (HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_RESOURCE_ATTRIBUTES) into the midaz ledger, crm and tracer deployments. The endpoint is fixed at $(HOST_IP):4317 — apps require an OTEL collector listening on the node. To use a different endpoint, leave enabled=false and set OTEL_EXPORTER_OTLP_ENDPOINT directly in the application configmap (ledger.configmap / crm.configmap / tracer.configmap). That endpoint has no chart default, because this chart deploys no collector: with injection disabled and the endpoint unset, a service that still has ENABLE_TELEMETRY=true stops at boot rather than discarding telemetry silently."
         }
       },
       "required": ["enabled"]

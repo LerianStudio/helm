@@ -1,12 +1,14 @@
 apiVersion: v2
 name: streaming-hub-helm
 description: >-
-  Lerian streaming-hub — consumes lib-streaming CloudEvents from Kafka/Redpanda and fans them out to per-tenant SaaS/BYOC subscribers. Multi-component chart with a runtime STREAMING_HUB_ROLE model (mode: all | split).
+  Lerian streaming-hub — consumes lib-streaming CloudEvents from Kafka/Redpanda
+  and fans them out to per-tenant SaaS/BYOC subscribers. Multi-component chart
+  with a runtime STREAMING_HUB_ROLE model (mode: all | split).
 type: application
 # version is a PLACEHOLDER. semantic-release in the `helm` repo owns the real
 # chart version on merge — do NOT hand-pick a final number here.
 
-version: 1.0.0
+version: 1.0.1
 appVersion: "1.7.0"
 annotations:
   lerian.studio/chart-type: multi-component

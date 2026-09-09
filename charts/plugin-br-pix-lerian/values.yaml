@@ -1,7 +1,7 @@
 # =============================================================================
 # Plugin BR Pix Lerian — Multi-Component Helm Values
 #
-# This chart deploys all 15 components of the plugin-br-pix-lerian app:
+# This chart deploys all 14 components of the plugin-br-pix-lerian app:
 #
 #   spi/api                  Single Person Interface (PIX SPI)
 #   spi/systemplane/api      Runtime config plane for SPI
@@ -14,7 +14,6 @@
 #   cob/proxy/api            COB proxy to BCB
 #   cob/systemplane/api      Runtime config plane for COB
 #   adapter-lerian/api       Lerian provider adapter (br-sfn)
-#   adapter-lerian/consumer  br-sfn CloudEvents Kafka consumer
 #   adapter-lerian/systemplane/api  Runtime config plane for adapter-lerian
 #   pixauto/api              Pix Automático payer side (recurrence authorization)
 #   pixauto/systemplane/api  Runtime config plane for Pix Automático
@@ -1556,124 +1555,6 @@ adapterLerian:
     migrationsPath: /migrations
     ttlSecondsAfterFinished: 300
     backoffLimit: 3
-
-# -----------------------------------------------------------------------------
-# adapter-lerian (consumer) — br-sfn CloudEvents Kafka consumer (no ingress)
-# -----------------------------------------------------------------------------
-adapterLerianConsumer:
-  enabled: false   # safety default — explicitly enable in dev/staging values
-  name: "adapter-lerian-consumer"
-  description: "Lerian provider adapter (Kafka consumer)"
-  replicaCount: 1
-  revisionHistoryLimit: 10
-
-  image:
-    repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-adapter-lerian-consumer"
-    pullPolicy: ""
-    tag: ""
-
-  imagePullSecrets: []
-
-  # -- Override container entrypoint (e.g., to dispatch to a specific binary
-  # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
-  command: []
-  # -- Container args
-  args: []
-
-  podAnnotations: {}
-  podSecurityContext: {}
-  securityContext:
-    runAsGroup: 1000
-    runAsUser: 1000
-    runAsNonRoot: true
-    capabilities:
-      drop: ["ALL"]
-    readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: false
-    seccompProfile:
-      type: RuntimeDefault
-
-  pdb:
-    enabled: false
-    # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
-    # explicit null unsets a key). Setting both fails the render.
-    # minAvailable: 1
-    maxUnavailable: 1
-
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
-
-  service:
-    type: ClusterIP
-    port: 4114
-
-  resources:
-    limits: { cpu: 500m, memory: 512Mi }
-    requests: { cpu: 100m, memory: 128Mi }
-
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 1
-
-  readinessProbe:
-    path: "/lerian/readyz"
-  livenessProbe:
-    path: "/lerian/health"
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-
-  serviceAccount:
-    create: true
-    annotations: {}
-    name: ""
-
-  configmap:
-    APPLICATION_NAME: "pix-adapter-lerian-consumer"
-    SERVER_ADDRESS: ":4114"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    TELEMETRY_ENABLED: "false"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-adapter-lerian-consumer"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    ORGANIZATION_IDS: ""
-    # -- This deployment's 8-digit BACEN participant ISPB. Read once at boot to
-    # scope the ce-id dedup keyspace. Set the real ISPB per deployment.
-    ISPB: ""
-    MULTI_TENANT_ENABLED: "false"
-    # -- Kafka consumer (franz-go). In production KAFKA_BROKERS points at the
-    # external br-sfn Kafka (ADR-002). SASL credentials live under secrets.
-    KAFKA_BROKERS: ""
-    KAFKA_GROUP_ID: "pix-adapter-lerian-cashin"
-    KAFKA_TLS_ENABLED: "false"
-    KAFKA_SASL_MECHANISM: ""
-    KAFKA_DLQ_TOPIC: "br-spi.adapter-lerian.dlq"
-    KAFKA_MAX_CONCURRENT_PARTITIONS: "8"
-    CONSUMER_DEDUP_TTL_SEC: "3600"
-
-  secrets:
-    # -- SYSTEMPLANE_POSTGRES_DSN: read-only routing config DSN (empty disables
-    # the consumer). VALKEY_URL backs the ce-id dedup cache. KAFKA_SASL_* are the
-    # broker credentials used when KAFKA_SASL_MECHANISM is set.
-    SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
-    KAFKA_SASL_USER: ""
-    KAFKA_SASL_PASSWORD: ""
-    LICENSE_KEY: ""
-
-  useExistingSecret: false
-  existingSecretName: ""
-
-  extraEnvVars: {}
 
 # -----------------------------------------------------------------------------
 # adapter-lerian (systemplane) — runtime config plane for adapter-lerian

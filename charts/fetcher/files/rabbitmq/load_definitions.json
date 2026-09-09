@@ -2,7 +2,7 @@
   "users": [
     {
       "name": "plugin",
-      "password_hash": "Pexngh1ls20Hs8hMsMFNJSwQuDPSybD+/ZrrnFM+SUM6Dcsx",
+      "password_hash": "mWuoTsZVBpA3/ZgXnJ1zjgCRfISUOOpuY9oRBXKUxE1YQ86Q",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "tags": "administrator"
     }

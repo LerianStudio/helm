@@ -4,7 +4,10 @@ name: Helm Alpha Cleanup
 # github-actions-shared-workflows. Enforces the TTL (~3 days) of alpha releases:
 # deletes GHCR packages under alpha/* with tag *-alpha* older than 3 days.
 # Real releases (lerianstudio/*-helm) are out of scope via the alpha/ guard.
-# Authenticates with a PAT that has delete:packages (GHCR_CLEANUP_PAT).
+# Authenticates with MANAGE_TOKEN, the org service-account PAT. The previous
+# GHCR_CLEANUP_PAT does not exist as a secret anywhere, and a named secret that
+# does not resolve is a startup_failure: the workflow never began, so the alpha
+# TTL has never actually been enforced.
 
 on:
   schedule:
@@ -23,10 +26,9 @@ jobs:
   cleanup:
     permissions:
       packages: write # delete alpha version packages from GHCR
-    # Testing: @develop. Once stable: @vX.Y.Z.
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-cleanup.yml@develop
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-cleanup.yml@tier-2
     with:
       # schedule deletes for real; manual dispatch previews unless you turn dry_run off
       dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
     secrets:
-      GHCR_CLEANUP_PAT: ${{ secrets.GHCR_CLEANUP_PAT }}
+      GHCR_CLEANUP_PAT: ${{ secrets.MANAGE_TOKEN }}

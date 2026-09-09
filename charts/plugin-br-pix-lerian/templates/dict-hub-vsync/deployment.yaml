@@ -1,4 +1,17 @@
 {{- if .Values.dictHubVsync.enabled }}
+{{- /*
+The worker is a RabbitMQ consumer: with an empty RABBITMQ_URI it starts and
+consumes nothing, and the shared wait-for-dependencies init container skips
+empty URLs, so nothing surfaces the misconfiguration at runtime. Enabling the
+component without the URI is always an operator mistake, so it is refused at
+render time instead. Not applicable when the Secret is supplied externally -
+the template cannot read a Secret it does not render.
+*/ -}}
+{{- if not .Values.dictHubVsync.useExistingSecret }}
+{{- if eq (toString (default "" .Values.dictHubVsync.secrets.RABBITMQ_URI)) "" }}
+{{- fail "plugin-br-pix-lerian: dictHubVsync.enabled is true but dictHubVsync.secrets.RABBITMQ_URI is empty. The component is a RabbitMQ queue consumer and does nothing without it. Set the URI, set dictHubVsync.useExistingSecret=true with a Secret that carries RABBITMQ_URI, or set dictHubVsync.enabled=false." }}
+{{- end }}
+{{- end }}
 {{- $component := "dict-hub-vsync" }}
 {{- $values := .Values.dictHubVsync }}
 apiVersion: apps/v1

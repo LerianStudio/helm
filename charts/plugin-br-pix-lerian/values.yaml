@@ -19,9 +19,11 @@
 #   pixauto/systemplane/api  Runtime config plane for Pix Automático
 #
 # Each component is independently enabled/disabled and configured.
-# All components share the same Docker image (parameterized by APP_NAME +
-# COMPONENT_NAME build args), so image.tag is shared by default but can be
-# overridden per component.
+# Each component publishes and pulls its OWN image: the helper
+# plugin-br-pix-lerian.componentImage reads only that component's image block,
+# and an empty image.tag falls back independently to .Chart.AppVersion. There
+# is no shared image and no shared tag key - a global.image.tag set here is
+# accepted by the schema and then silently ignored.
 #
 # Pattern adapted from helm/charts/plugin-access-manager and helm/charts/midaz.
 # =============================================================================
@@ -635,7 +637,13 @@ dictHub:
 # -----------------------------------------------------------------------------
 
 dictHubVsync:
-  enabled: true
+  # -- Ships DISABLED. The worker is a RabbitMQ queue consumer and cannot do
+  # anything without secrets.RABBITMQ_URI, which has no safe default; shipping
+  # it enabled meant the default render produced a Deployment that starts and
+  # then does nothing, because the dependency init container skips empty URLs.
+  # Enable it per environment together with the URI - templates/dict-hub-vsync
+  # fails the render if it is enabled with an empty RABBITMQ_URI.
+  enabled: false
   name: "dict-hub-vsync"
   description: "DICT verification sync worker"
   replicaCount: 1

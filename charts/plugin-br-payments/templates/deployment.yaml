@@ -43,7 +43,10 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.app.terminationGracePeriodSeconds | default 60 }}
       {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
       securityContext:
-        fsGroup: 65532
+        {{/* fsGroup: 65532 wins over any operator-configured fsGroup — the
+             iam-certs volume mount needs the credential-helper's UID/GID —
+             but every OTHER field of app.podSecurityContext still applies. */}}
+        {{- toYaml (merge (dict "fsGroup" 65532) .Values.app.podSecurityContext) | nindent 8 }}
       {{- else }}
       securityContext:
         {{- toYaml .Values.app.podSecurityContext | nindent 8 }}
@@ -158,12 +161,15 @@ spec:
             - /certs/tls.crt
             - --private-key
             - /certs/tls.key
+            {{/* trim BEFORE required: `required` only rejects nil/empty-string,
+                 so a whitespace-only value like " " would otherwise pass here
+                 and reach aws-signing-helper as a malformed ARN argument. */}}
             - --trust-anchor-arn
-            - "{{ required "aws.rolesAnywhere.trustAnchorArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.trustAnchorArn }}"
+            - "{{ required "aws.rolesAnywhere.trustAnchorArn is required when rolesAnywhere is enabled" (trim (.Values.aws.rolesAnywhere.trustAnchorArn | toString)) }}"
             - --profile-arn
-            - "{{ required "aws.rolesAnywhere.profileArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.profileArn }}"
+            - "{{ required "aws.rolesAnywhere.profileArn is required when rolesAnywhere is enabled" (trim (.Values.aws.rolesAnywhere.profileArn | toString)) }}"
             - --role-arn
-            - "{{ required "aws.rolesAnywhere.roleArn is required when rolesAnywhere is enabled" .Values.aws.rolesAnywhere.roleArn }}"
+            - "{{ required "aws.rolesAnywhere.roleArn is required when rolesAnywhere is enabled" (trim (.Values.aws.rolesAnywhere.roleArn | toString)) }}"
             - --region
             - "{{ .Values.aws.rolesAnywhere.region | default "us-east-2" }}"
             - --session-duration

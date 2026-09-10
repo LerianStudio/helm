@@ -134,6 +134,7 @@ aws:
     trustAnchorArn: "arn:aws:rolesanywhere:<region>:<account>:trust-anchor/<id>"
     profileArn: "arn:aws:rolesanywhere:<region>:<account>:profile/<id>"
     roleArn: "arn:aws:iam::<account>:role/<role>"
+    region: "<region>"  # MUST match the region trustAnchorArn/profileArn were created in — Roles Anywhere resources are regional; defaults to us-east-2
     certificateSecretName: "plugin-br-payments-iam-tls"  # cert-manager Secret the sidecar mounts
 ```
 

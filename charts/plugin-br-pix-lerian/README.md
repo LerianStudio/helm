@@ -324,7 +324,25 @@ Inline values never reach a Job manifest. The chart collects them into a single 
 
 An inline half left empty **fails at render time** rather than producing a Secret the Jobs would then authenticate with.
 
-`pixswitchCredentials` was renamed to `pixLerianCredentials` and there is **no alias**. `values.schema.json` rejects the retired key outright, so a stale override fails loudly instead of quietly ceasing to apply. Rename the key in your values.
+#### Migrating values from the retired key
+
+`global.externalPostgresDefinitions.pixswitchCredentials` was renamed to `pixLerianCredentials` and there is **no alias**. `values.schema.json` rejects the retired key outright, so a stale override fails loudly instead of quietly ceasing to apply:
+
+```text
+Error: values don't meet the specifications of the schema(s) in the following chart(s):
+plugin-br-pix-lerian-helm:
+- at '/global/externalPostgresDefinitions': 'allOf' failed
+  - at '/global/externalPostgresDefinitions/pixswitchCredentials': false schema
+```
+
+Two edits move a values file across:
+
+| Before | After |
+|---|---|
+| `global.externalPostgresDefinitions.pixswitchCredentials` | `global.externalPostgresDefinitions.pixLerianCredentials` |
+| `DB_PASSWORD_PIXSWITCH`, on the Secret named by `useExistingSecret.name` | `DB_PASSWORD_PIX_LERIAN`, on the same Secret |
+
+Nothing else in the block changes: `username`, `password` and `useExistingSecret` keep their names and meaning, and the Postgres role still defaults to `pixswitch` (see below).
 
 Guarantees the Jobs provide:
 

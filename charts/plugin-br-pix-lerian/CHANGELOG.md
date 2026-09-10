@@ -96,6 +96,13 @@
     `dict-hub` state lives entirely in Postgres.
 
 - **Fixes**
+  - `values.schema.json` now rejects the retired
+    `global.externalPostgresDefinitions.pixswitchCredentials` with an error that
+    names the key, by putting a `false` subschema on the property instead of a
+    `not` on the parent object. The rejection itself is not new; the message
+    was `'not' failed` and named nothing an operator could act on. The chart
+    README gained a "Migrating values from the retired key" section with the
+    exact error text and the two edits a values file needs.
   - `ORGANIZATION_ID` is documented the same way in all three places that
     describe it. The README claimed it was "not read by `dictProxy` or
     `pixauto`" in the same sentence that said a value on `pixauto` refuses the

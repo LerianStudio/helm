@@ -230,13 +230,11 @@
               }
             },
             {
-              "not": {
-                "required": [
-                  "pixswitchCredentials"
-                ]
+              "properties": {
+                "pixswitchCredentials": false
               },
               "title": "retired credentials key",
-              "description": "global.externalPostgresDefinitions.pixswitchCredentials was renamed to pixLerianCredentials. There is no alias: rename the key in your values."
+              "description": "global.externalPostgresDefinitions.pixswitchCredentials was renamed to pixLerianCredentials. There is no alias: rename the key in your values. Expressed as a false subschema on the property rather than a top-level 'not', so Helm's validator names the offending path (/global/externalPostgresDefinitions/pixswitchCredentials) instead of only reporting that a 'not' failed."
             }
           ]
         }

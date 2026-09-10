@@ -41,6 +41,13 @@ spi:
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    # ORGANIZATION_IDS is the LICENSE allow-list and is required on every
+    # workload that receives a LICENSE_KEY: the license client refuses to
+    # initialise with a key and no allow-list, and the workload exits at boot.
+    # "global" is the single-license value; a comma-separated list scopes it.
+    # It is a different key from ORGANIZATION_ID below, which is this
+    # deployment's single-tenant business identity. Set both.
+    ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     # Point at the adapter this environment actually runs (adapter-lerian, or
@@ -123,6 +130,8 @@ dictHub:
     DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    # License allow-list, required alongside LICENSE_KEY. See spi above.
+    ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     # Point at the adapter this environment actually runs (adapter-lerian, or
@@ -149,6 +158,10 @@ dictHubVsync:
   enabled: true
   configmap:
     VSYNC_ENABLED: "true"
+    # License allow-list, required alongside LICENSE_KEY. See spi above. The
+    # worker builds a license client for shutdown coupling even though it
+    # mounts no HTTP license middleware, so the key is needed here too.
+    ORGANIZATION_IDS: "global"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
@@ -164,6 +177,8 @@ dictProxy:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
+    # License allow-list, required alongside LICENSE_KEY. See spi above.
+    ORGANIZATION_IDS: "global"
   secrets:
     # Required at boot: the proxy has no business database, but it still needs
     # a DSN for its configuration-store consumer and refuses to start without
@@ -205,6 +220,8 @@ cobHub:
     DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    # License allow-list, required alongside LICENSE_KEY. See spi above.
+    ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
@@ -219,6 +236,8 @@ cobProxy:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
+    # License allow-list, required alongside LICENSE_KEY. See spi above.
+    ORGANIZATION_IDS: "global"
   secrets:
     # Required at boot, same reason as dictProxy above.
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"

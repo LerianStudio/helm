@@ -3,6 +3,17 @@
 ## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
 
 - Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
   - Removed the dead Grafana values block.
   - Deleted the retired migration note.
 

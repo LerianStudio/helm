@@ -7,6 +7,13 @@
     `values-template.yaml`. Use `ORGANIZATION_IDS` for the license organization
     list. No runtime behaviour changes; rename the key if your own values carry
     it.
+  - `BRSFN_TOKEN_URL` removed from `adapterLerianSystemplane.secrets`. The
+    application does not read it: there is no environment binding for it in the
+    published release and it is not among the keys that component seeds. The
+    key was the only place it appeared in the chart. Releases with
+    `adapterLerianSystemplane` enabled lose one key from that component's
+    Secret, so its pods roll once on the next upgrade; values of your own that
+    still set the key are passed through unchanged and remain inert.
 
 - **Breaking changes**
   - `global.externalPostgresDefinitions.pixswitchCredentials` renamed to

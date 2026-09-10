@@ -30,10 +30,11 @@ api:
     # REQUIRED when the bundled Postgres is disabled or external.
     POSTGRES_HOST: ""
 
-    # REQUIRED when the worker runs in single-tenant mode. The app reads JD_ISPB
-    # as its own institution identity and disables all six MED pollers when it is
-    # missing or not exactly 8 characters.
-    JD_ISPB: ""
+    # RETIRED — do not set. The app's own institution ISPB is no longer read from
+    # the environment in either deployment mode: it comes from the systemplane key
+    # tenancy/jd_integration_binding, field "ispb", and a missing or malformed value
+    # fails the boot with a named error. A JD_ISPB left set here is passed through
+    # and produces one startup WARN saying it was ignored.
 
     # Comma-separated list of organization UUIDs the license covers. Not a secret.
     ORGANIZATION_IDS: ""

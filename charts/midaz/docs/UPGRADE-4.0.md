@@ -75,7 +75,7 @@ Move away from Bitnami dependencies due to policy changes in bitnamisecure (#832
 
 We do not recommend using the Midaz Helm chart’s default dependencies (databases, cache, and message broker) in production environments. For production-grade deployments, follow our best practices to operate these dependencies with proper security, observability, backups, disaster recovery, and SLOs.
 
-Reference: [Midaz Production Best Practices](https://docs.lerian.studio/docs/midaz-production-best-practices)
+Reference: [Midaz Production Best Practices](https://docs.lerian.studio/en/products/midaz/midaz-production-best-practices)
 
 ## Command to upgrade
 

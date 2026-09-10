@@ -16,7 +16,7 @@ CI enforces the static contract and render gate. Required production secrets are
 
 ### Midaz Helm Chart
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/deploy-midaz-using-helm) for deployment guides.
+See the [official documentation](https://docs.lerian.studio/en/platform/deploy/midaz/midaz-installation) for deployment guides.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/midaz).
 
@@ -29,7 +29,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Plugin Access Manager Helm Chart
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/access-manager) for details.
+See the [official documentation](https://docs.lerian.studio/en/platform/access-manager) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-access-manager).
 
@@ -42,7 +42,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Plugin Fees Helm Chart
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/fees/fees-overview) for details.
+See the [official documentation](https://docs.lerian.studio/en/products/midaz/fees/fees-engine-overview) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-fees).
 
@@ -56,7 +56,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Reporter
 
-See the [official documentation](https://docs.lerian.studio/en/reporter) for details.
+See the [official documentation](https://docs.lerian.studio/en/products/reporter/what-is-reporter) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/reporter).
 
@@ -69,7 +69,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Plugin BR Bank Transfer 
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/bank-transfer/bank-transfer) for details.
+See the [official documentation](https://docs.lerian.studio/en/interfaces/ted/ted-overview) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-bank-transfer).
 
@@ -84,7 +84,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Plugin BR Pix Direct JD
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/direct-pix-jd) for details.
+See the [official documentation](https://docs.lerian.studio/en/interfaces/pix-jd/direct-pix-via-jd) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-direct-jd).
 
@@ -108,7 +108,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Plugin BR Pix Indirect BTG
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/indirect-pix-btg) for details.
+See the [official documentation](https://docs.lerian.studio/en/interfaces/pix-btg/indirect-pix-overview) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-indirect-btg).
 
@@ -133,8 +133,6 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Fetcher
 
-See the [official documentation](https://docs.lerian.studio/en/fetcher) for details.
-
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/fetcher).
 
 #### Application Version Mapping
@@ -146,7 +144,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Lender
 
-For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
+For more details, check out the [official documentation](https://docs.lerian.studio/en/products/lender/what-is-lender).
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lender).
 
@@ -159,7 +157,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Lender
 
-For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
+For more details, check out the [official documentation](https://docs.lerian.studio/en/products/lender/what-is-lender).
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lender).
 
@@ -172,7 +170,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Tracer
 
-For more details, check out the [official documentation](https://docs.lerian.studio/en/tracer).
+For more details, check out the [official documentation](https://docs.lerian.studio/en/products/tracer/what-is-tracer).
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/tracer).
 
@@ -196,7 +194,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Product Console
 
-See the [official documentation](https://docs.lerian.studio/en/console) for details.
+See the [official documentation](https://docs.lerian.studio/en/platform/console/about-lerian-console) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/product-console).
 

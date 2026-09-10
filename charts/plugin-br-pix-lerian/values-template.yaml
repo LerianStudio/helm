@@ -4,10 +4,12 @@
 # release), so any number written here goes stale on the next merge.
 #
 # Override only the fields you need to change from values.yaml defaults.
-# All 14 components are enabled by default except adapter-provider-mock, the
-# adapter-lerian pair (adapterLerian / adapterLerianSystemplane) and the
-# pixauto pair (pixauto / pixautoSystemplane); disable any component by
-# setting `enabled: false`.
+# 8 of the 14 components are enabled by default. Disabled by default:
+# adapter-provider-mock, dict-hub-vsync, the adapter-lerian pair
+# (adapterLerian / adapterLerianSystemplane) and the pixauto pair
+# (pixauto / pixautoSystemplane). Disable any component by setting
+# `enabled: false`; enabling one means supplying everything it requires --
+# see the chart README, "Required before installation".
 
 # There is NO shared `global.image` key. Each of the 14 components publishes
 # and pulls its own image (ghcr.io/lerianstudio/plugin-br-pix-lerian-<component>),
@@ -192,10 +194,15 @@ cobSystemplane:
 # ------------------------------------------------------------
 # adapter-lerian (api) — Lerian provider adapter HTTP entry
 # ------------------------------------------------------------
+# DEVELOPMENT ONLY IN THIS RELEASE: this component fails to boot when
+# DEPLOYMENT_MODE is anything other than "local", so it must stay disabled in a
+# byoc or saas deployment -- enabling it there crash-loops the pod. The mode
+# below is deliberately "local"; do not copy "saas" here from the components
+# above.
 adapterLerian:
   enabled: false
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "local"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
@@ -207,6 +214,7 @@ adapterLerian:
 # ------------------------------------------------------------
 # adapter-lerian (systemplane) — runtime config plane
 # ------------------------------------------------------------
+# Pairs with adapterLerian above: development only in this release.
 adapterLerianSystemplane:
   enabled: false
   configmap: {}

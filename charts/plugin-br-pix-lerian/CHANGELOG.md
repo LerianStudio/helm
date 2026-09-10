@@ -39,6 +39,15 @@
     to re-create them, which is a no-op on already-provisioned databases.
 
 - **Features**
+  - `appVersion` moves to `1.0.0-beta.337`, so every workload that leaves
+    `image.tag` empty now runs that cohort. `1.0.0-beta.337` is the first
+    application release that no longer reads `AUTH_JWT_VERIFY_CERT` or
+    `AUTH_JWT_ISSUER` on `pixauto`, which is what this chart's README already
+    documents; on `1.0.0-beta.318` `pixauto` still refused to boot without both
+    whenever authentication was enabled outside `local`/`development`. Between
+    the two releases those two names are the only change to the environment
+    contract of any of the 14 components, so nothing else in this chart's
+    documented surface moves with the bump.
   - Inline bootstrap credentials are collected into a chart-managed Secret
     (`templates/bootstrap-secret.yaml`, renamed from
     `bootstrap-postgres-secret.yaml`; the Secret's own resource name is
@@ -163,6 +172,12 @@
     `charts/streaming-hub/templates/bootstrap-postgres.yaml`.
 
 - **Notes**
+  - This chart releases as `2.1.0`. `2.1.0-beta.2` was published to
+    `oci://ghcr.io/lerianstudio/plugin-br-pix-lerian-helm` carrying
+    `appVersion: 1.0.0-beta.101`, and a published OCI artifact is immutable, so
+    that version is not reused here. `2.1.0` continues the line the chart it
+    replaces occupied (`plugin-br-pix-switch-helm` 2.0.0) and is not yet
+    published under either name.
   - The `pixswitch` Postgres role keeps its name. An audit of
     `lerian-internal-gitops` at commit `65836367` found the value pinned in four
     of the six environments, in three keys each, each backed by existing state;

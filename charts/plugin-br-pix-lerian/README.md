@@ -20,7 +20,7 @@ The DICT and COB domains each deploy as a hub tier or a proxy tier, chosen per d
 
 | Chart version | App image tag |
 |---|---|
-| 2.1.0-beta.2 | 1.0.0-beta.318 |
+| 2.1.0 | 1.0.0-beta.337 |
 
 The row above covers this chart only. There is no in-place upgrade path from any earlier chart — moving to this chart is a fresh install (cutover), not a `helm upgrade`. A cutover does not migrate or copy data; see [Upgrade and rollback](#upgrade-and-rollback).
 

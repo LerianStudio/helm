@@ -23,6 +23,20 @@
   - The bootstrap Jobs' environment variable `DB_PASSWORD_PIXSWITCH` renamed to
     `DB_PASSWORD_PIX_LERIAN`. An external Secret named by
     `pixLerianCredentials.useExistingSecret.name` must carry the new key.
+  - Migration and bootstrap resources are now all `pre-install,pre-upgrade`
+    hooks, ordered by weight: bootstrap Secret `-30`, bootstrap Jobs `-20`,
+    migration Secret `-10`, migration Job `-5`. The migration Job was
+    `pre-upgrade,post-install`, which on a fresh install applied the workloads
+    before the schema and, under `--wait`, put the workloads' readiness gate in
+    front of the hook meant to unblock them. Migrations now complete before any
+    workload is created or updated, and a failing migration aborts the release
+    with no Deployment created. Two consequences for operators: the database in
+    `DATABASE_URL` must be reachable when the hook runs, so a DSN pointing at
+    the bundled `postgresql` subchart no longer works on a fresh install
+    (install once with `<component>.migrations.enabled: false`, then enable it
+    — external and chart-bootstrapped databases are unaffected); and the
+    bootstrap Jobs now run on every upgrade instead of only where Helm happened
+    to re-create them, which is a no-op on already-provisioned databases.
 
 - **Features**
   - Inline bootstrap credentials are collected into a chart-managed Secret
@@ -44,6 +58,14 @@
     releases that set it through the open map keep the same effective value,
     but the component's Secret changes content, so its pods roll once on the
     next upgrade.
+  - `values-template.yaml` now sets `ORGANIZATION_IDS: "global"` on every
+    workload that builds a license client: added to `spi`, `dictHub`,
+    `dictProxy`, `dictHubVsync`, `cobHub` and `cobProxy`, alongside the
+    `adapterLerian` and `pixauto` entries that already carried it. The template
+    supplies `LICENSE_KEY` to each of them, and the license client refuses to
+    initialise with a key and an empty allow-list, so the workload exited at
+    boot. The Systemplane workloads and `adapterProviderMock` build no license
+    client and are unchanged. `values.yaml` defaults are unchanged.
 
 - **Notes**
   - The `pixswitch` Postgres role keeps its name. An audit of

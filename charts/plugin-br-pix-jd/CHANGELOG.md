@@ -3,6 +3,20 @@
 ## [0.4.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.4)
 
 - Fixes:
+  - Adjusted the QR payload path default and budget gate to comply with JDPI's 77-character limit.
+
+- Improvements:
+  - Added an upgrade guide for plugin-br-pix-jd v0.4.3.
+
+Contributors: @guimoreirar, @jeffersonrodrigues92, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.3...plugin-br-pix-jd-v0.4.4)
+
+---
+
+## [0.4.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.4)
+
+- Fixes:
   - Changed the `QRCODE_PAYLOAD_PATH` default from `v1/qrcodes/payload` to `qr`, matching the app default. The old 18-char default pushed every multi-tenant QR URL past JDPI's 77-char `urlPayloadJson` cap on the decided hosts (81/85 of 77); no environment pins the key and no QR was issued yet, so the default moved before it grew consumers. To keep the old route, pin `api.configmap.QRCODE_PAYLOAD_PATH`.
   - Made the render-time URL-budget validation tenant-aware: the `<base>/<payloadPath>/` prefix is now capped at 42 characters when `MULTI_TENANT_ENABLED=true` (the app also appends `<ispb:8>/cob/`) and 51 otherwise (`cob/` only). The previous single cap of 45 let multi-tenant prefixes of 43-45 chars render and then fail at every emission, while refusing valid single-tenant prefixes of 46-51 chars.
 

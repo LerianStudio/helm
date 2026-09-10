@@ -213,7 +213,7 @@ This chart follows the multi-component layout used by
 
 | Chart version | App image tag |
 |---|---|
-| 1.0.0-beta.1 | 1.0.0-beta.318 |
+| 2.1.0-beta.2 | 1.0.0-beta.318 |
 
 The rows above cover this chart only. Everything before the fork belongs to
 the retired `plugin-br-pix-switch` chart, whose source no longer lives in

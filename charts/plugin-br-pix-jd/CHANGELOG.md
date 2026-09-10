@@ -3,6 +3,17 @@
 ## [0.4.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.2)
 
 - Fixes:
+  - Dropped the JD_ISPB render guard as the app now fails its own boot.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.1...plugin-br-pix-jd-v0.4.2)
+
+---
+
+## [0.4.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.2)
+
+- Fixes:
   - Removed the JD_ISPB render guard as the app now manages its own boot process.
 
 Contributors: @jeffersonrodrigues92, @lerian-studio

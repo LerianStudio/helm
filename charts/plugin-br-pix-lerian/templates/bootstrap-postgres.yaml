@@ -68,9 +68,28 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      {{- /*
+        Pod-level seccomp, per-container hardening below. Modelled on
+        charts/streaming-hub/templates/bootstrap-postgres.yaml, and matching
+        what this chart's own migration Job already applies in _migrations.tpl.
+        Without these the Job is the one workload in the chart that cannot be
+        admitted under a PodSecurity `restricted` namespace.
+      */}}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-postgres
           image: busybox:1.37
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: DB_HOST
               value: {{ $conn.host | quote }}
@@ -93,6 +112,15 @@ spec:
       containers:
         - name: psql
           image: postgres:17
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: DB_HOST
               value: {{ $conn.host | quote }}
@@ -383,5 +411,17 @@ spec:
 
               echo ""
               echo "=== Pix Lerian PostgreSQL Bootstrap (${DB_NAME}) completed ==="
+          {{- /*
+            readOnlyRootFilesystem needs a writable /tmp: the script writes
+            /tmp/bootstrap-set-password.sql to keep the role password off the
+            process table, then removes it. An emptyDir is the whole of the
+            container's writable surface.
+          */}}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 {{- end }}
 {{- end }}

@@ -67,6 +67,20 @@
     boot. The Systemplane workloads and `adapterProviderMock` build no license
     client and are unchanged. `values.yaml` defaults are unchanged.
 
+- **Fixes**
+  - The bootstrap Postgres Jobs (`templates/bootstrap-postgres.yaml`) now carry a
+    security context. They were the only workload in the chart without one,
+    while the chart's own migration Job has been hardened since it was written:
+    the two containers (`busybox:1.37`, `postgres:17`) now run as UID/GID 65532
+    with `runAsNonRoot`, `allowPrivilegeEscalation: false`,
+    `readOnlyRootFilesystem: true` and `capabilities.drop: ["ALL"]`, under a
+    pod-level `seccompProfile: RuntimeDefault`. This is what the Jobs need to be
+    admitted in a namespace enforcing PodSecurity `restricted`. Because the
+    bootstrap script writes `/tmp/bootstrap-set-password.sql` to keep the role
+    password off the process table, the `psql` container also gets an `emptyDir`
+    mounted at `/tmp`. The script itself is unchanged. Modelled on
+    `charts/streaming-hub/templates/bootstrap-postgres.yaml`.
+
 - **Notes**
   - The `pixswitch` Postgres role keeps its name. An audit of
     `lerian-internal-gitops` at commit `65836367` found the value pinned in four

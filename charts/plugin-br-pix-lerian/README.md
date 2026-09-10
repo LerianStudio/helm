@@ -45,7 +45,21 @@ The plugin uses a Proxy/Hub deployment model. A "hub" component owns business
 logic and local state (its own Postgres database, sometimes Valkey),
 while a "proxy" component is a stateless pass-through. Both expose identical
 APIs. Five Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`,
-`pix-adapter-lerian`, `pix-pixauto`).
+`pix-adapter-lerian`, `pix-pixauto`); in a domain deployed as a proxy, that
+domain's database backs only the runtime-configuration (systemplane) store
+rather than business state.
+
+The choice is made per domain and follows the provider's capability: a provider
+that owns the state is fronted by the proxy, one that does not is fronted by the
+hub. The rails are independent — deploying DICT as a proxy does not affect COB,
+and vice versa. Callers pick the tier they resolve through the application's
+`*_ROUTING_MODE` setting, which defaults to `hub`; the matching `*_BASE_URL`
+must point at the same tier, because nothing cross-checks the two.
+
+The `dict-proxy` and `cob-proxy` components are Phase 2 in the application:
+today they serve `health`, `readyz` and their OpenAPI endpoints, with the
+business operations still to land, so a proxy enabled now becomes Ready without
+yet taking traffic.
 
 ## Required infrastructure
 

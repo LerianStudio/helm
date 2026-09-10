@@ -10,7 +10,7 @@
 
 BACEN-compliant PIX instant payment platform for the Lerian ecosystem.
 
-The plugin is a Go monorepo that produces 10 independently-deployable binaries.
+The plugin is a Go monorepo that produces 13 independently-deployable binaries.
 This chart deploys all of them with one helm release. Each component has its
 own Deployment, Service, ConfigMap, Secret, HPA, and PDB; ingress is opt-in
 per component.
@@ -29,21 +29,24 @@ per component.
 | `cobHub` | `cob/hub/api` | 4108 | COB hub |
 | `cobProxy` | `cob/proxy/api` | 4109 | COB proxy to BCB |
 | `cobSystemplane` | `cob/systemplane/api` | 4110 | Runtime config plane for COB |
+| `adapterLerian` | `adapter-lerian/api` | 4113 | Lerian provider adapter (API, disabled by default) |
+| `adapterLerianConsumer` | `adapter-lerian/consumer` | 4114 | Lerian provider adapter Kafka consumer (disabled by default) |
+| `adapterLerianSystemplane` | `adapter-lerian/systemplane/api` | 4115 | Runtime config plane for adapter-lerian (disabled by default) |
 
 ## Architecture
 
 The plugin uses a Proxy/Hub deployment model. A "hub" component owns business
 logic and local state (its own Postgres database, sometimes Mongo+Valkey),
 while a "proxy" component is a stateless pass-through. Both expose identical
-APIs. Three Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`)
-and one Mongo database (`pix-dict`) for `dict-hub` (`pix-cob` is a
+APIs. Four Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`,
+`pix-adapter-lerian`) and one Mongo database (`pix-dict`) for `dict-hub` (`pix-cob` is a
 forward-compat slot the Mongo bootstrap provisions but no component reads yet).
 
 ## Required infrastructure
 
 For a full deployment:
-- **PostgreSQL**: 3 databases (`pix-spi`, `pix-dict`, `pix-cob`) and a role
-  `pixswitch` with full ownership of each
+- **PostgreSQL**: 4 databases (`pix-spi`, `pix-dict`, `pix-cob`,
+  `pix-adapter-lerian`) and a role `pixswitch` with full ownership of each
 - **MongoDB**: 1 database (`pix-dict`) used by `dict-hub`; the bootstrap also
   provisions `pix-cob` as a forward-compat slot, but no component reads it yet
 - **Valkey** (Redis-compatible): used by `spi`, `dict-hub`, `dict-hub-vsync`
@@ -64,6 +67,8 @@ Default `enabled` values:
 - `spi`, `spiSystemplane`, `dictHub`, `dictHubVsync`, `dictProxy`,
   `dictSystemplane`, `cobHub`, `cobProxy`, `cobSystemplane`: `true`
 - `adapterBtgMock`: `false` (it's a mock — only enable in dev/staging)
+- `adapterLerian`, `adapterLerianConsumer`, `adapterLerianSystemplane`: `false`
+  (Lerian provider adapter — enable per environment)
 
 ## Configuration
 
@@ -87,7 +92,9 @@ The app reads:
 
 Each component publishes and pulls its own image
 (`ghcr.io/lerianstudio/plugin-br-pix-switch-<component>-api`), set per
-component under `<component>.image.repository`. There is no shared
+component under `<component>.image.repository`. Worker components omit the
+`-api` suffix (e.g. `plugin-br-pix-switch-dict-hub-vsync` and
+`plugin-br-pix-switch-adapter-lerian-consumer`). There is no shared
 `global.image.repository`. When a component's `image.tag` is unset it falls
 back to `.Chart.AppVersion`, which keeps the cohort in lockstep by default;
 override `<component>.image.tag` to pin a specific build per component (rare).

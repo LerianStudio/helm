@@ -248,6 +248,8 @@ spec:
         runAsGroup: 1000
         runAsUser: 1000
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: migrate
           image: {{ $componentImage | quote }}

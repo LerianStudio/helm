@@ -1,6 +1,6 @@
 # Plugin-br-pix-lerian Changelog
 
-## Unreleased
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.1.0)
 
 - **Removals**
   - `LICENSE_ORGANIZATION_IDS` removed from `values.yaml` and
@@ -66,8 +66,33 @@
     initialise with a key and an empty allow-list, so the workload exited at
     boot. The Systemplane workloads and `adapterProviderMock` build no license
     client and are unchanged. `values.yaml` defaults are unchanged.
+  - Initial release of the `plugin-br-pix-lerian` chart, forked from
+    `plugin-br-pix-switch` at tag `plugin-br-pix-switch-v2.1.0-beta.12` as part
+    of the Pix Switch to Pix Lerian product rename.
+  - Chart identity renamed end to end: chart name (`plugin-br-pix-lerian-helm`),
+    helper templates, resource names and selectors, the 14 component image
+    repositories (`ghcr.io/lerianstudio/plugin-br-pix-lerian-*`), the 14
+    `OTEL_LIBRARY_NAME` values (`github.com/LerianStudio/plugin-br-pix-lerian`)
+    and the in-cluster `*_BASE_URL` defaults that resolve to this chart's own
+    Services.
+  - The two adapter-lerian components now carry component-scoped
+    `APPLICATION_NAME` values (`pix-adapter-lerian`,
+    `pix-adapter-lerian-systemplane`), matching the other twelve components.
+  - Version history starts fresh here; the pre-fork history stays in the
+    `plugin-br-pix-switch` chart, which remains published and unchanged.
+  - MongoDB removed from the chart entirely: the `mongodb` subchart dependency,
+    the `global.externalMongoDefinitions` bootstrap Job, the `MONGO_URL` /
+    `MONGO_DB_NAME` env vars on `dict-hub` and the Mongo branch of the
+    wait-for-dependencies init container. No Pix Lerian component reads Mongo -
+    `dict-hub` state lives entirely in Postgres.
 
 - **Fixes**
+  - The migration Jobs now declare `seccompProfile.type: RuntimeDefault` at pod
+    level. They already ran as UID/GID 1000 with `runAsNonRoot`,
+    `allowPrivilegeEscalation: false`, `capabilities.drop: ["ALL"]` and a
+    read-only root filesystem, but a namespace enforcing Pod Security
+    `restricted` rejects a pod that leaves the seccomp profile unset, so the
+    pre-install hook failed there before any schema was applied.
   - `ingressClassName` is quoted at all three sites in this chart
     (`_helpers.tpl`, `adapter-lerian/ingress.yaml`,
     `adapter-provider-mock/ingress.yaml`). An unquoted class name that looks
@@ -149,31 +174,6 @@
     Renaming the role is a data operation and belongs in its own change,
     sequenced with the GitOps values that pin it. See the chart README,
     "Why the Postgres role is still named `pixswitch`".
-
-## [2.1.0-beta.13](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.1.0-beta.13)
-
-- **Features**
-  - Initial release of the `plugin-br-pix-lerian` chart, forked from
-    `plugin-br-pix-switch` at tag `plugin-br-pix-switch-v2.1.0-beta.12` as part
-    of the Pix Switch to Pix Lerian product rename.
-  - Chart identity renamed end to end: chart name (`plugin-br-pix-lerian-helm`),
-    helper templates, resource names and selectors, the 14 component image
-    repositories (`ghcr.io/lerianstudio/plugin-br-pix-lerian-*`), the 14
-    `OTEL_LIBRARY_NAME` values (`github.com/LerianStudio/plugin-br-pix-lerian`)
-    and the in-cluster `*_BASE_URL` defaults that resolve to this chart's own
-    Services.
-  - The two adapter-lerian components now carry component-scoped
-    `APPLICATION_NAME` values (`pix-adapter-lerian`,
-    `pix-adapter-lerian-systemplane`), matching the other twelve components.
-  - Version history starts fresh here; the pre-fork history stays in the
-    `plugin-br-pix-switch` chart, which remains published and unchanged.
-  - MongoDB removed from the chart entirely: the `mongodb` subchart dependency,
-    the `global.externalMongoDefinitions` bootstrap Job, the `MONGO_URL` /
-    `MONGO_DB_NAME` env vars on `dict-hub` and the Mongo branch of the
-    wait-for-dependencies init container. No Pix Lerian component reads Mongo -
-    `dict-hub` state lives entirely in Postgres.
-
-- **Notes**
   - Selectors are a new identity: this chart is installed as a new release, not
     upgraded in place over an existing `plugin-br-pix-switch` release.
   - Database identifiers are deliberately unchanged (`pix-spi`, `pix-dict`,

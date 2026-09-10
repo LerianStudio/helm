@@ -123,6 +123,12 @@ spiSystemplane:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     LICENSE_KEY: ""
+    # REQUIRED and must be NON-EMPTY whenever ENV_NAME is not "local" or
+    # "development" -- with the ENV_NAME above this workload refuses to start
+    # without it. Deliberately empty here: supply it from your secret manager
+    # through useExistingSecret / existingSecretName instead of committing a
+    # value to this file. No format or length is validated; keep the SAME value
+    # across upgrades and rollbacks, because it is re-checked at every boot.
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
 # ------------------------------------------------------------
@@ -237,6 +243,12 @@ dictSystemplane:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     LICENSE_KEY: ""
+    # REQUIRED and must be NON-EMPTY whenever ENV_NAME is not "local" or
+    # "development" -- with the ENV_NAME above this workload refuses to start
+    # without it. Deliberately empty here: supply it from your secret manager
+    # through useExistingSecret / existingSecretName instead of committing a
+    # value to this file. No format or length is validated; keep the SAME value
+    # across upgrades and rollbacks, because it is re-checked at every boot.
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
 # ------------------------------------------------------------
@@ -307,6 +319,12 @@ cobSystemplane:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     LICENSE_KEY: ""
+    # REQUIRED and must be NON-EMPTY whenever ENV_NAME is not "local" or
+    # "development" -- with the ENV_NAME above this workload refuses to start
+    # without it. Deliberately empty here: supply it from your secret manager
+    # through useExistingSecret / existingSecretName instead of committing a
+    # value to this file. No format or length is validated; keep the SAME value
+    # across upgrades and rollbacks, because it is re-checked at every boot.
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
 # ------------------------------------------------------------
@@ -355,6 +373,13 @@ adapterLerianSystemplane:
     COB_CLIENT_SECRET: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
     LICENSE_KEY: ""
+    # REQUIRED and must be NON-EMPTY whenever DEPLOYMENT_MODE is not "local"
+    # -- this workload's gate is DEPLOYMENT_MODE, not ENV_NAME, so the chart
+    # default ("byoc") already requires it. Deliberately empty here: supply it
+    # from your secret manager through useExistingSecret / existingSecretName
+    # instead of committing a value to this file. No format or length is
+    # validated; keep the SAME value across upgrades and rollbacks, because it
+    # is re-checked at every boot.
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
 # ------------------------------------------------------------
@@ -370,8 +395,12 @@ pixauto:
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
-    # Parity with spi/dict-hub/cob-hub above. Inert — the live key is
-    # ORGANIZATION_IDS; no code reads this name.
+    # Single-tenant business identity, and a DIFFERENT key from
+    # ORGANIZATION_IDS above (that one is the license allow-list). The
+    # tenant-config resolver reads pixauto.organization_id from the Systemplane
+    # store first and falls back to this value; with neither set every request
+    # answers 403 TENANT_CONFIG_NOT_FOUND. Leave it EMPTY when
+    # MULTI_TENANT_ENABLED is true -- a value there refuses the boot.
     ORGANIZATION_ID: "<your-org-id>"
     IDP_DECLARATION_ENABLED: "false"
     STREAMING_ENABLED: "false"
@@ -391,6 +420,12 @@ pixautoSystemplane:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
     LICENSE_KEY: ""
+    # REQUIRED and must be NON-EMPTY whenever ENV_NAME is not "local" or
+    # "development" -- with the ENV_NAME above this workload refuses to start
+    # without it. Deliberately empty here: supply it from your secret manager
+    # through useExistingSecret / existingSecretName instead of committing a
+    # value to this file. No format or length is validated; keep the SAME value
+    # across upgrades and rollbacks, because it is re-checked at every boot.
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 
 # ------------------------------------------------------------

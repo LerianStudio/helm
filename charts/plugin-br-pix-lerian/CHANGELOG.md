@@ -96,6 +96,22 @@
     `dict-hub` state lives entirely in Postgres.
 
 - **Fixes**
+  - `ORGANIZATION_ID` is documented the same way in all three places that
+    describe it. The README claimed it was "not read by `dictProxy` or
+    `pixauto`" in the same sentence that said a value on `pixauto` refuses the
+    boot, and `values-template.yaml` called it inert. Six workloads bind it --
+    `spi`, `dictHub`, `dictHubVsync`, `dictProxy`, `cobHub` and `pixauto` -- as
+    the single-tenant fallback behind the domain's Systemplane
+    `organization_id` key; on `pixauto` with neither source set every request
+    answers 403 `TENANT_CONFIG_NOT_FOUND`. The multi-tenant rule is unchanged.
+  - `values-template.yaml` now states, at each of the five Systemplane
+    workloads, that `SYSTEMPLANE_SECRET_MASTER_KEY` is required and must be
+    non-empty, and which gate applies (`ENV_NAME` for four of them,
+    `DEPLOYMENT_MODE` for `adapterLerianSystemplane`). The template ships
+    `ENV_NAME: "production"` on the workloads it enables, which turns that
+    requirement on, while the key itself was an unannotated empty string. The
+    value stays empty on purpose -- the template carries no credential material
+    -- and now points at `useExistingSecret` / `existingSecretName` instead.
   - The migration Jobs now declare `seccompProfile.type: RuntimeDefault` at pod
     level. They already ran as UID/GID 1000 with `runAsNonRoot`,
     `allowPrivilegeEscalation: false`, `capabilities.drop: ["ALL"]` and a

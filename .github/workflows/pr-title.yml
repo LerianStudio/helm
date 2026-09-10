@@ -39,7 +39,6 @@ jobs:
             plugin-br-pix-jd
             plugin-br-pix-indirect-btg
             plugin-br-pix-lerian
-            plugin-br-pix-switch
             plugin-br-bank-transfer
             lerian-notification
             plugin-br-bank-transfer-jd

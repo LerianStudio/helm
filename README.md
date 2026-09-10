@@ -98,17 +98,6 @@ component that changed, so their tags may legitimately differ.
 | `0.4.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
 -----------------
 
-### Plugin BR Pix Switch
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-switch).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `2.0.0` | 1.0.0-beta.1 |
------------------
-
 ### Plugin BR Pix Lerian
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-lerian).

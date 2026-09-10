@@ -121,6 +121,43 @@ else
   ok "no duplicate env names in the default, production or fixture render"
 fi
 
+# The fixture claims the two reserved names on three components. This claims
+# them on ALL FOURTEEN at once, on top of the fixture, so a template that
+# regressed the guard is caught wherever it lives.
+: > "$WORK/all-claimed.yaml"
+for component in spi spiSystemplane dictHub dictHubVsync dictProxy dictSystemplane \
+                 cobHub cobProxy cobSystemplane adapterProviderMock \
+                 adapterLerian adapterLerianSystemplane pixauto pixautoSystemplane; do
+  printf '%s:\n  extraEnvVars:\n    HOST_IP: "10.0.0.2"\n    OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel.example.invalid:4317"\n' "$component" >> "$WORK/all-claimed.yaml"
+done
+
+# Two -f files, not one concatenation: helm deep-merges across files, while a
+# repeated top-level key inside a single file simply replaces the earlier block
+# and would silently drop the fixture's enabled/secrets for that component.
+helm template review "$CHART_DIR" --namespace review \
+  -f "$FIXTURE" -f "$WORK/all-claimed.yaml" > "$WORK/all-claimed-render.yaml"
+
+claimed_dupes="$(awk '
+  /^---/                       { doc = NR; container = ""; delete seen; next }
+  /^ {8}- name: /              { container = $3; inenv = 0; next }
+  /^ {10}env:[[:space:]]*$/    { inenv = 1; next }
+  /^ {10}[a-zA-Z]/             { inenv = 0 }
+  inenv && /^ {12}- name: /    {
+                                 key = doc "|" container "|" $3
+                                 if (key in seen) print "duplicate " $3 " in container " container
+                                 seen[key] = 1
+                               }
+' "$WORK/all-claimed-render.yaml" || true)"
+
+if [[ -n "$claimed_dupes" ]]; then
+  bad "with all 14 components claiming HOST_IP and OTEL_EXPORTER_OTLP_ENDPOINT:"
+  printf '%s\n' "$claimed_dupes" >&2
+else
+  n="$(grep -c '^kind: Deployment$' "$WORK/all-claimed-render.yaml" || true)"
+  [[ "$n" == "14" ]] || bad "expected 14 Deployments in the all-claimed render, got $n"
+  ok "all $n Deployments stay duplicate-free when extraEnvVars claims both reserved names"
+fi
+
 # ---------------------------------------------------------------------------
 # 6. Every hook Job satisfies Pod Security Admission `restricted`.
 # ---------------------------------------------------------------------------

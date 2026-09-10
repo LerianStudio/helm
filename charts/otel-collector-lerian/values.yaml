@@ -357,6 +357,15 @@ opentelemetry-collector:
             - k8s.pod.name
             - k8s.deployment.name
             - k8s.namespace.name
+          # Pod labels -> resource attributes. `rollouts-pod-template-hash` is the
+          # label Argo Rollouts stamps on each ReplicaSet's pods (canary vs stable).
+          # Exposing it lets progressive-delivery analysis (AnalysisTemplate) isolate
+          # the canary's RED metrics from the stable's. Empty for pods that are not
+          # managed by a Rollout.
+          labels:
+            - tag_name: rollouts_pod_template_hash
+              key: rollouts-pod-template-hash
+              from: pod
 
       # Adds the client ID for multi-tenancy, as requested.
       resource/add_client_id:
@@ -415,6 +424,12 @@ opentelemetry-collector:
           - name: http.route
           - name: http.status_code
           - name: http.response.status_code
+          # Argo Rollouts canary/stable pod-template hash (from the k8sattributes
+          # pod-label extraction above). Low cardinality: "" for non-Rollout pods,
+          # plus the stable + canary hashes only while a rollout is in progress.
+          # Enables canary-isolated RED analysis for progressive delivery.
+          - name: rollouts_pod_template_hash
+            default: ""
         aggregation_cardinality_limit: 50000
 
     exporters:

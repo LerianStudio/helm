@@ -1,8 +1,8 @@
 {{- /*
 Shared partial that renders the migration-only Secret for one component.
 
-WHY THIS EXISTS. The migration Job below is a Helm hook (pre-upgrade,
-post-install), which ArgoCD maps to PreSync. Hook resources are applied BEFORE
+WHY THIS EXISTS. The migration Job below is a Helm hook (pre-install,
+pre-upgrade), which ArgoCD maps to PreSync. Hook resources are applied BEFORE
 the release's normal resources, but the component's application Secret is a
 normal resource. This chart is installed as a NEW release in a NEW namespace,
 so on the very first sync EVERY enabled component hits the same deadlock:
@@ -102,11 +102,43 @@ when useExistingSecret=true).
 The Job is a Helm hook so it runs before the regular pod rollout and is
 not part of the regular release lifecycle:
 
-  helm.sh/hook: pre-upgrade,post-install
-  helm.sh/hook-weight: -5     (run before bootstrap-postgres? no — that
-                              uses default 0; -5 ensures migrations run
-                              before pods come up on upgrade)
+  helm.sh/hook: pre-install,pre-upgrade
+  helm.sh/hook-weight: -5
   helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+
+WHY pre-install AND NOT post-install. The Job used to be
+`pre-upgrade,post-install`, which made the two lifecycles asymmetric: on an
+upgrade migrations ran before the rollout, but on a fresh install they ran
+AFTER every normal resource had been applied. That is wrong in two ways.
+Helm's install sequence is "apply normal resources -> (with --wait) wait for
+them to become ready -> run post-install hooks", so on a first install the
+workloads were created against a database with no schema, and a failing
+migration could not stop them because they already existed. With --wait the
+readiness gate sits between the workloads and the hook that would unblock
+them, so a workload whose readiness depends on the schema cannot be satisfied
+before the migration that would satisfy it is allowed to run.
+
+`pre-install,pre-upgrade` gives ONE ordering for both lifecycles:
+
+  weight -30  bootstrap Secret        (hook, bootstrap-secret.yaml)
+  weight -20  bootstrap Jobs          (hook, bootstrap-postgres.yaml)
+  weight -10  migration Secret        (hook, above)
+  weight  -5  migration Job           (hook, here)
+  weight   0  Deployments, Services, application Secrets and ConfigMaps
+
+Helm applies every hook of a phase in weight order and waits for each one to
+complete before starting the next, so a migration failure aborts the release
+with no workload created or updated. The bootstrap resources moved to hooks in
+the same change precisely so they keep preceding the migrations they provision
+for; see the comment in bootstrap-secret.yaml.
+
+The database must already be REACHABLE when this Job runs. That holds for an
+external server and for the chart's own bootstrap Jobs (ordered above), but NOT
+for the bundled `postgresql` subchart: its StatefulSet is a normal resource, so
+it cannot be ordered before a pre-install hook. Pointing a DSN at the bundled
+subchart and installing with migrations enabled fails at this hook, immediately
+and with the connection error in the Job log. That combination is
+development-only and the README documents the two-step flow for it.
 
 Required inputs in the dict:
   context     -- root $ context
@@ -167,10 +199,20 @@ metadata:
   namespace: {{ include "global.namespace" $ctx }}
   labels:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ctx "component" (printf "%s-migrations" $serviceName)) | nindent 4 }}
+  {{- /*
+  Argo CD annotations are declared explicitly rather than left to Argo's
+  conversion of the Helm ones. The previous `pre-upgrade,post-install` pair
+  converted to BOTH PreSync and PostSync, so Argo ran this Job twice per sync;
+  naming the phase removes that ambiguity. Wave -5 keeps it behind the
+  migration Secret's -10 and ahead of the default wave 0 the workloads use.
+  */}}
   annotations:
-    helm.sh/hook: pre-upgrade,post-install
+    helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-weight: "-5"
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-5"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   ttlSecondsAfterFinished: {{ default 300 $migrationsCfg.ttlSecondsAfterFinished }}
   backoffLimit: {{ default 3 $migrationsCfg.backoffLimit }}

@@ -19,9 +19,11 @@
 #   pixauto/systemplane/api  Runtime config plane for Pix Automático
 #
 # Each component is independently enabled/disabled and configured.
-# All components share the same Docker image (parameterized by APP_NAME +
-# COMPONENT_NAME build args), so image.tag is shared by default but can be
-# overridden per component.
+# Each component publishes and pulls its OWN image: the helper
+# plugin-br-pix-lerian.componentImage reads only that component's image block,
+# and an empty image.tag falls back independently to .Chart.AppVersion. There
+# is no shared image and no shared tag key - a global.image.tag set here is
+# accepted by the schema and then silently ignored.
 #
 # Pattern adapted from helm/charts/plugin-access-manager and helm/charts/midaz.
 # =============================================================================
@@ -51,8 +53,12 @@ global:
   # Use cases:
   #   - In-cluster Postgres subchart (postgresql.enabled=true) AND you want
   #     the chart to create the 5 Pix Lerian databases for you. Set
-  #     connection.host to the in-cluster service name
-  #     (plugin-br-pix-lerian-postgresql).
+  #     connection.host to the subchart's Service, which is RELEASE-prefixed,
+  #     not chart-prefixed: `<release-name>-postgresql`. A release named `pix`
+  #     therefore gives `pix-postgresql`; `plugin-br-pix-lerian-postgresql`
+  #     does not exist unless the release itself is named that. Only the
+  #     subcharts follow the release name — this chart's own Services keep the
+  #     `plugin-br-pix-lerian-*` prefix (e.g. plugin-br-pix-lerian-spi).
   #   - External Postgres (RDS, Cloud SQL, etc.) where the operator wants the
   #     chart to provision the role+databases. The admin credentials below
   #     must have privilege to CREATE ROLE / CREATE DATABASE on the target
@@ -63,7 +69,7 @@ global:
   #     For production, store admin password in an external Secret and set
   #     useExistingSecret.name (the Job reads DB_USER_ADMIN + DB_ADMIN_PASSWORD
   #     from that Secret). Never put real admin passwords in values.yaml.
-  #   - pixswitchCredentials: app user the Job creates. Provide the password
+  #   - pixLerianCredentials: app user the Job creates. Provide the password
   #     through explicit values or an existing Secret. Component DATABASE_URL
   #     values live under component `secrets`, not `configmap`.
   externalPostgresDefinitions:
@@ -85,12 +91,14 @@ global:
       username: "postgres"
       password: ""   # required when useExistingSecret.name is empty
     # -- Application credentials for the role created by the bootstrap Job
-    pixswitchCredentials:
+    pixLerianCredentials:
       useExistingSecret:
         name: ""   # PRODUCTION: set this, leave password empty
       username: "pixswitch"
       password: ""
 
+# Port allocation: 4111 and 4112 are intentionally unused. Allocate new
+# components from 4118 upward rather than filling the gap.
 # =============================================================================
 # COMPONENTS
 # Each component renders its own Deployment, Service, ConfigMap, Secret, HPA,
@@ -196,7 +204,6 @@ spi:
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
     # Single-tenant identity
     ORGANIZATION_ID: ""
     ISPB: ""
@@ -255,7 +262,7 @@ spi:
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
   # the chart renders a Job with command [/migrate] overriding the default
-  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
     # Image path holding the SQL files. Match the Dockerfile's COPY target.
@@ -466,9 +473,17 @@ adapterProviderMock:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- ISPB the mock presents as the provider, obtained together with
+    # sandbox access. Optional: the application falls back to a placeholder
+    # ISPB when this is empty, so set it to exercise your own.
     ADAPTER_ISPB: ""
     POLLER_INTERVAL_SEC: "30"
-    PROVIDER_BASE_URL: ""
+    # -- Lerian sandbox mock server this component talks to. Safe as a
+    # default: adapterProviderMock ships disabled, so this reaches no
+    # installation that does not enable the component explicitly, and an
+    # operator who does enable it gets the right endpoint instead of having
+    # to ask for it. Point it elsewhere only to target your own mock server.
+    PROVIDER_BASE_URL: "https://mock-pix-lerian-server.sandbox.lerian.net"
     SPI_BASE_URL: "http://plugin-br-pix-lerian-spi:4101"
     DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
     COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
@@ -480,6 +495,9 @@ adapterProviderMock:
 
   secrets:
     LICENSE_KEY: ""
+    # -- Sandbox credentials for the mock server above. Both are REQUIRED for
+    # this component to start, and both are obtained together with sandbox
+    # access. Deliberately empty here: no credential ships in this chart.
     PROVIDER_CLIENT_ID: ""
     PROVIDER_CLIENT_SECRET: ""
 
@@ -577,7 +595,6 @@ dictHub:
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: ""
     ISPB: ""
     # -- Deliberately empty: the only adapter this chart can render is
@@ -622,7 +639,7 @@ dictHub:
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
   # the chart renders a Job with command [/migrate] overriding the default
-  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
     # Image path holding the SQL files. Match the Dockerfile's COPY target.
@@ -635,7 +652,13 @@ dictHub:
 # -----------------------------------------------------------------------------
 
 dictHubVsync:
-  enabled: true
+  # -- Ships DISABLED. The worker is a RabbitMQ queue consumer and cannot do
+  # anything without secrets.RABBITMQ_URI, which has no safe default; shipping
+  # it enabled meant the default render produced a Deployment that starts and
+  # then does nothing, because the dependency init container skips empty URLs.
+  # Enable it per environment together with the URI - templates/dict-hub-vsync
+  # fails the render if it is enabled with an empty RABBITMQ_URI.
+  enabled: false
   name: "dict-hub-vsync"
   description: "DICT verification sync worker"
   replicaCount: 1
@@ -1061,7 +1084,6 @@ cobHub:
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: ""
     # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
     # and MULTI_TENANT_API_KEY are seeds for the cob-systemplane store; the CB
@@ -1075,6 +1097,7 @@ cobHub:
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
     LICENSE_KEY: ""
     MULTI_TENANT_API_KEY: ""
 
@@ -1087,7 +1110,7 @@ cobHub:
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
   # the chart renders a Job with command [/migrate] overriding the default
-  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
     # Image path holding the SQL files. Match the Dockerfile's COPY target.
@@ -1331,7 +1354,7 @@ cobSystemplane:
 #            DATABASE_URL: "postgres://<user>:<password>@managed.example.com:5432/pix-spi?sslmode=require"
 #            VALKEY_URL: "redis://default:<password>@managed.example.com:6379/0"
 #
-#   3. Override `global.externalPostgresDefinitions.pixswitchCredentials.useExistingSecret.name`
+#   3. Override `global.externalPostgresDefinitions.pixLerianCredentials.useExistingSecret.name`
 #      when running the bootstrap Job against external infra — never put real
 #      passwords in values.yaml.
 #
@@ -1408,30 +1431,27 @@ appsIngress:
       pathType: Prefix
       component: cobProxy
       serviceName: cob-proxy
-    # -- Bare prefix, same shape as every sibling above. This publishes the
-    # WHOLE /pixauto namespace on the apps host, including the M2M group
-    # /pixauto/internal/v1/* (inbound BACEN-derived recurrence callbacks and the
-    # scheduler expiry sweep). That is deliberate and is not the security
-    # boundary: the ingress hosts resolve to RFC1918 addresses on an internal
-    # network, and the pod answers on its ClusterIP regardless of any ingress
-    # rule, so a narrower path rule hides nothing an in-cluster caller could not
-    # already reach. Authentication on the internal group (lib-auth M2M) is the
-    # boundary — and it is OFF by default in this file: PLUGIN_AUTH_ENABLED is
-    # "false" for every component here, which makes the app's AuthEnabled() check
-    # false and omits the lib-auth handler from the route chain entirely. Set
-    # pixauto.configmap.PLUGIN_AUTH_ENABLED="true" (values-template.yaml already
-    # does) BEFORE enabling appsIngress. This is no longer prose-only: with this
-    # route present, appsIngress.enabled and pixauto.enabled both true and
-    # PLUGIN_AUTH_ENABLED anything other than "true", templates/ingress-apps.yaml
-    # emits a WARNING comment into the rendered manifest. It deliberately does
-    # NOT fail the render: that combination is the current, intentional state of
-    # at least one internal environment, so a hard fail would block a legitimate
-    # deploy instead of flagging it.
-    # The bare
-    # prefix also keeps /pixauto/readyz reachable through the ingress, which the
-    # gethomepage.dev/href dashboard annotation targets.
-    - path: /pixauto
+    # -- Pix Automatico is published as TWO narrow routes instead of the bare
+    # /pixauto prefix it used to carry. The bare prefix also published the M2M
+    # group /pixauto/internal/v1/* — the inbound BACEN-derived recurrence
+    # callbacks and the scheduler execution sweep — on the apps host.
+    #
+    # /pixauto/v1 covers everything a client needs: the payer surface
+    # (authorization requests, authorizations, scheduled payments), the
+    # notification-outbox reprocess endpoint, and the streaming manifest, which
+    # the app mounts at {prefix}/v1/streaming/manifest.
+    #
+    # /pixauto/readyz is kept as an Exact route because the gethomepage.dev/href
+    # dashboard annotation targets it. Exact, so it cannot widen into a prefix.
+    #
+    # /pixauto/internal/v1/* is deliberately absent and must stay absent.
+    # templates/ingress-apps.yaml fails the render if a route reintroduces it.
+    - path: /pixauto/v1
       pathType: Prefix
+      component: pixauto
+      serviceName: pixauto
+    - path: /pixauto/readyz
+      pathType: Exact
       component: pixauto
       serviceName: pixauto
 
@@ -1549,7 +1569,7 @@ adapterLerian:
 
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
-  # Runs as a Helm hook on pre-upgrade + post-install.
+  # Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
     migrationsPath: /migrations
@@ -1664,8 +1684,6 @@ adapterLerianSystemplane:
     # -- 32-byte AES-256-GCM key; required in non-local deployment modes.
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
     MULTI_TENANT_API_KEY: ""
-    # -- OAuth token endpoint; classified as a secret to satisfy the credential-name chart standard.
-    BRSFN_TOKEN_URL: ""
     BRSFN_CLIENT_SECRET: ""
 
   useExistingSecret: false
@@ -1777,10 +1795,6 @@ pixauto:
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
-    # -- Carried for parity with spi/dict-hub/cob-hub, which all set it. INERT:
-    # nothing reads this name — lib-license-go's organization list is bound to
-    # ORGANIZATION_IDS above (pkg/config BaseConfig.LicenseOrganizationIDs).
-    LICENSE_ORGANIZATION_IDS: "global"
     # -- Single-tenant organization fallback. The tenant-config resolver reads
     # pixauto.organization_id from the systemplane store first and only falls
     # back to this. With NEITHER set every request answers 403
@@ -1848,7 +1862,7 @@ pixauto:
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image; the chart renders a Job with
   # command [/migrate] overriding the default ENTRYPOINT (/app). Runs as a Helm
-  # hook on pre-upgrade + post-install. This is pixauto's ONLY migration Job —
+  # hook on pre-install + pre-upgrade. This is pixauto's ONLY migration Job —
   # the single chain also creates the systemplane_entries table, so
   # pixauto-systemplane has none.
   migrations:

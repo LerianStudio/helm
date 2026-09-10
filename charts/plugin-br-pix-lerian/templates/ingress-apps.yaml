@@ -18,27 +18,85 @@ The rendering logic itself lives in the shared
 */}}
 {{- if .Values.appsIngress.enabled }}
 {{- /*
-The /pixauto route publishes the WHOLE Pix Automatico namespace on the apps
-host, including the internal M2M group /pixauto/internal/v1/* (inbound
-BACEN-derived recurrence callbacks and the scheduler expiry sweep). lib-auth
-on that group is the only authentication boundary, and the app omits the
-lib-auth handler entirely when PLUGIN_AUTH_ENABLED is not "true" — which is
-the default in values.yaml. values-template.yaml already sets it to "true".
+Pix Automatico exposure guards.
 
-This warns rather than failing the render. The condition is the current, and
-deliberate, state of at least one internal environment, so a hard fail would
-block that environment's cutover on a posture change that belongs to whoever
-operates Pix Automatico. The warning keeps the signal in every render until
-the environment either turns auth on or records why it stays off.
+WHAT THE APP ACTUALLY DOES. An earlier version of this comment claimed the
+lib-auth middleware on /pixauto/internal/v1/* was "the only authentication
+boundary". That is wrong, and the mistake matters. In
+apps/pixauto/internal/adapters/http/in/routes.go the authorize middleware is
+appended by routeChain under a STRUCTURAL condition:
+
+    if sharedboot.AuthEnabled(wiring.Auth) {
+        chain = append(chain, authorize(wiring.Auth, ApplicationName, resource, action))
+    }
+
+and every route goes through routeChain — the internal callback and execution
+groups AND the twelve public payer routes under /pixauto/v1. So when
+PLUGIN_AUTH_ENABLED is not "true", authentication is absent from the WHOLE
+component, not just the internal group. Dropping the internal paths from the
+ingress therefore narrows the exposure but does not close it: /pixauto/v1
+still mutates mandates (decide, cancel, PATCH parameters) with no caller
+identity. Both guards below are needed; neither substitutes for the other.
+
+The previous behaviour here printed a WARNING comment into the rendered
+manifest and continued. A comment in a manifest is not an access control, and
+the render succeeded, so nothing stopped the deploy. It is replaced by two
+hard failures.
 */}}
-{{- $pixautoRouted := false }}
+{{- $pixautoRoutes := list }}
 {{- range $route := .Values.appsIngress.routes }}
   {{- if eq $route.component "pixauto" }}
-    {{- $pixautoRouted = true }}
+    {{- $pixautoRoutes = append $pixautoRoutes $route }}
   {{- end }}
 {{- end }}
-{{- if and $pixautoRouted .Values.pixauto.enabled (ne (toString (default "false" .Values.pixauto.configmap.PLUGIN_AUTH_ENABLED)) "true") }}
-{{- printf "\n# WARNING: appsIngress publishes /pixauto, which includes the internal M2M group\n# /pixauto/internal/v1/*, but pixauto.configmap.PLUGIN_AUTH_ENABLED is not \"true\" — the app\n# serves that group with no authentication. Set it to \"true\" (see values-template.yaml),\n# drop the /pixauto route from appsIngress, or record why it stays off in this environment.\n" }}
+{{- if and $pixautoRoutes .Values.pixauto.enabled }}
+{{- /*
+GUARD 1 — never publish the internal M2M namespace on the apps host.
+Independent of authentication: these routes take BACEN-derived recurrence
+callbacks and drive the scheduler sweep, and they have no business being
+reachable from the apps hostname. A Prefix rule at /pixauto or at / swallows
+/pixauto/internal/v1/* just as surely as naming it outright, so all three
+shapes are rejected.
+*/}}
+{{- range $route := $pixautoRoutes }}
+{{- $path := trimSuffix "/" (toString $route.path) }}
+{{- $prefixLike := ne (toString (default "Prefix" $route.pathType)) "Exact" }}
+{{- if or (hasPrefix "/pixauto/internal" $path) (and $prefixLike (or (eq $path "/pixauto") (eq $path ""))) }}
+{{- fail (printf "plugin-br-pix-lerian: appsIngress route %q (pathType %s) publishes the Pix Automatico internal M2M group /pixauto/internal/v1/* on the apps host. Those endpoints take inbound recurrence callbacks and drive the scheduler sweep and must not be externally routed. Use %q for the client-facing surface, plus an Exact route for /pixauto/readyz if the dashboard link is needed - that is what values.yaml ships by default." $route.path (default "Prefix" $route.pathType) "/pixauto/v1") }}
+{{- end }}
+{{- end }}
+{{- /*
+GUARD 2 — refuse to publish Pix Automatico at all while authentication is off.
+See the routeChain note above: with PLUGIN_AUTH_ENABLED not enabled the payer
+routes under /pixauto/v1 are unauthenticated too, so Guard 1 alone would still
+leave mandate mutations open to anyone who can reach the apps host.
+
+The state comes from "plugin-br-pix-lerian.envGateState", which resolves the
+key across all three sources the container reads, in the order Kubernetes
+actually applies (extraEnvVars > secrets > configmap), parses the value the way
+the app's strconv.ParseBool does, and fails on its own if two sources disagree.
+Reading .Values.pixauto.configmap directly - as this guard used to - inspected
+the LOWEST-priority source, so an operator who enabled auth in `secrets` or
+disabled it in `extraEnvVars` got a verdict from a value the container never
+sees.
+
+WHAT THIS GUARD CANNOT VERIFY. With pixauto.useExistingSecret=true the state is
+"unknown": the external Secret outranks the ConfigMap and Helm cannot read it,
+so the chart has no way to know whether auth is on. The guard then stays silent
+rather than failing closed - demanding inline proof of a value that deliberately
+lives outside the chart is the wrong contract, the same reasoning applied by
+templates/_migrations.tpl here and by lerian-common's streaming/multiTenant
+validators. In that configuration the Secret named by
+pixauto.existingSecretName MUST carry PLUGIN_AUTH_ENABLED set to a true value
+(true/TRUE/True/1/t/T) whenever a pixauto route is published on appsIngress;
+nothing in this chart can check it for you. Setting the key in
+pixauto.extraEnvVars instead keeps the guard effective, because explicit env
+entries outrank every envFrom source.
+*/}}
+{{- $authState := include "plugin-br-pix-lerian.envGateState" (dict "componentValues" .Values.pixauto "componentKey" "pixauto" "key" "PLUGIN_AUTH_ENABLED" "default" "false") }}
+{{- if eq $authState "off" }}
+{{- fail (printf "plugin-br-pix-lerian: appsIngress publishes Pix Automatico but the effective PLUGIN_AUTH_ENABLED for the pixauto component is not a true value. The app appends its authorize middleware only when auth is enabled, so EVERY pixauto route would be served without authentication - including the payer routes under /pixauto/v1 that create, decide and cancel mandates. Fix by setting pixauto.configmap.PLUGIN_AUTH_ENABLED=%q (values-template.yaml already does), or by removing the pixauto route(s) from appsIngress.routes if this environment should not expose Pix Automatico. The value is resolved across pixauto.extraEnvVars, pixauto.secrets and pixauto.configmap in that order of precedence." "true") }}
+{{- end }}
 {{- end }}
 {{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "apps" "config" .Values.appsIngress) }}
 {{- end }}

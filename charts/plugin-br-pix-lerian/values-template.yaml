@@ -1,10 +1,15 @@
-# Production values template for plugin-br-pix-lerian (chart 2.0.0-beta.1+)
+# Production values template for plugin-br-pix-lerian.
+# No chart version is pinned in this header on purpose: Chart.yaml version is
+# owned by the release pipeline (semantic-release rewrites it on every
+# release), so any number written here goes stale on the next merge.
 #
 # Override only the fields you need to change from values.yaml defaults.
-# All 14 components are enabled by default except adapter-provider-mock, the
-# adapter-lerian pair (adapterLerian / adapterLerianSystemplane) and the
-# pixauto pair (pixauto / pixautoSystemplane); disable any component by
-# setting `enabled: false`.
+# 8 of the 14 components are enabled by default. Disabled by default:
+# adapter-provider-mock, dict-hub-vsync, the adapter-lerian pair
+# (adapterLerian / adapterLerianSystemplane) and the pixauto pair
+# (pixauto / pixautoSystemplane). Disable any component by setting
+# `enabled: false`; enabling one means supplying everything it requires --
+# see the chart README, "Required before installation".
 
 # There is NO shared `global.image` key. Each of the 14 components publishes
 # and pulls its own image (ghcr.io/lerianstudio/plugin-br-pix-lerian-<component>),
@@ -32,11 +37,17 @@ global:
 spi:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"            # or "byoc" / "local"
+    DEPLOYMENT_MODE: "byoc"            # or "saas" / "local"
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
+    # ORGANIZATION_IDS is the LICENSE allow-list and is required on every
+    # workload that receives a LICENSE_KEY: the license client refuses to
+    # initialise with a key and no allow-list, and the workload exits at boot.
+    # "global" is the single-license value; a comma-separated list scopes it.
+    # It is a different key from ORGANIZATION_ID below, which is this
+    # deployment's single-tenant business identity. Set both.
+    ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     # Point at the adapter this environment actually runs (adapter-lerian, or
@@ -52,13 +63,13 @@ spi:
     MIDAZ_BASE_URL: "http://midaz-onboarding.midaz.svc.cluster.local:3000"
     MIDAZ_LEDGER_ID: ""
     MIDAZ_ORGANIZATION_ID: ""
+    CRM_BASE_URL: ""
+    CRM_ORGANIZATION_ID: ""
+  secrets:
     MIDAZ_CLIENT_ID: ""
     DICT_CLIENT_ID: ""
     COB_CLIENT_ID: ""
-    CRM_BASE_URL: ""
     CRM_CLIENT_ID: ""
-    CRM_ORGANIZATION_ID: ""
-  secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
@@ -73,8 +84,32 @@ spi:
 # ------------------------------------------------------------
 spiSystemplane:
   enabled: true
-  configmap: {}
+  # This component SEEDS the spi.* configuration store on first boot; spi reads
+  # those values back and gates /readyz on them. Setting them only on `spi`
+  # above is not enough. Keys below are the spi domain's seed mappings.
+  configmap:
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    # Provider adapter this environment runs, including its route prefix.
+    ADAPTER_BASE_URL: "<provider-adapter-url>"
+    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
+    DICT_ROUTING_MODE: "hub"
+    COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
+    COB_ROUTING_MODE: "hub"
+    CRM_BASE_URL: "<crm-base-url>"
+    MIDAZ_BASE_URL: "<midaz-base-url>"
+    MIDAZ_LEDGER_ID: "<midaz-ledger-id>"
+    # Tuning keys for this domain carry catalog defaults and are optional;
+    # set them through the systemplane admin surface when you need one.
   secrets:
+    DICT_CLIENT_ID: "<dict-client-id>"
+    COB_CLIENT_ID: "<cob-client-id>"
+    CRM_CLIENT_ID: "<crm-client-id>"
+    MIDAZ_CLIENT_ID: "<midaz-client-id>"
+    DICT_CLIENT_SECRET: ""
+    COB_CLIENT_SECRET: ""
+    CRM_CLIENT_SECRET: ""
+    MIDAZ_CLIENT_SECRET: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     LICENSE_KEY: ""
@@ -92,10 +127,11 @@ adapterProviderMock:
 dictHub:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
+    # License allow-list, required alongside LICENSE_KEY. See spi above.
+    ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     # Point at the adapter this environment actually runs (adapter-lerian, or
@@ -112,6 +148,7 @@ dictHub:
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
     LICENSE_KEY: ""
+    CRM_CLIENT_ID: "<crm-client-id>"
     CRM_CLIENT_SECRET: ""
 
 # ------------------------------------------------------------
@@ -121,6 +158,10 @@ dictHubVsync:
   enabled: true
   configmap:
     VSYNC_ENABLED: "true"
+    # License allow-list, required alongside LICENSE_KEY. See spi above. The
+    # worker builds a license client for shutdown coupling even though it
+    # mounts no HTTP license middleware, so the key is needed here too.
+    ORGANIZATION_IDS: "global"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
@@ -135,8 +176,14 @@ dictHubVsync:
 dictProxy:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
+    # License allow-list, required alongside LICENSE_KEY. See spi above.
+    ORGANIZATION_IDS: "global"
   secrets:
+    # Required at boot: the proxy has no business database, but it still needs
+    # a DSN for its configuration-store consumer and refuses to start without
+    # one. Point it at the same database as the domain's other workloads.
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------
@@ -144,8 +191,21 @@ dictProxy:
 # ------------------------------------------------------------
 dictSystemplane:
   enabled: true
-  configmap: {}
+  # Seeds the dict.* configuration store; dictHub and dictHubVsync read these
+  # back and gate /readyz on them.
+  configmap:
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    ADAPTER_BASE_URL: "<provider-adapter-url>"
+    CRM_BASE_URL: "<crm-base-url>"
+    SPI_BASE_URL: "http://plugin-br-pix-lerian-spi:4101"
+    # Tuning and outbound-callback keys for this domain carry catalog defaults
+    # and are optional; set them through the systemplane admin surface.
   secrets:
+    CRM_CLIENT_ID: "<crm-client-id>"
+    SPI_CLIENT_ID: "<spi-client-id>"
+    CRM_CLIENT_SECRET: ""
+    SPI_CLIENT_SECRET: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     LICENSE_KEY: ""
@@ -157,14 +217,16 @@ dictSystemplane:
 cobHub:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
+    # License allow-list, required alongside LICENSE_KEY. See spi above.
+    ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------
@@ -173,8 +235,12 @@ cobHub:
 cobProxy:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
+    # License allow-list, required alongside LICENSE_KEY. See spi above.
+    ORGANIZATION_IDS: "global"
   secrets:
+    # Required at boot, same reason as dictProxy above.
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------
@@ -182,8 +248,19 @@ cobProxy:
 # ------------------------------------------------------------
 cobSystemplane:
   enabled: true
-  configmap: {}
+  # Seeds the cob.* configuration store; cobHub reads these back and gates
+  # /readyz on organization_id, ispb, provider and dict_base_url.
+  configmap:
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    ADAPTER_BASE_URL: "<provider-adapter-url>"
+    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
+    DICT_ROUTING_MODE: "hub"
+    # Tuning keys for this domain carry catalog defaults and are optional;
+    # set them through the systemplane admin surface when you need one.
   secrets:
+    DICT_CLIENT_ID: "<dict-client-id>"
+    DICT_CLIENT_SECRET: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     LICENSE_KEY: ""
@@ -192,10 +269,15 @@ cobSystemplane:
 # ------------------------------------------------------------
 # adapter-lerian (api) — Lerian provider adapter HTTP entry
 # ------------------------------------------------------------
+# DEVELOPMENT ONLY IN THIS RELEASE: this component fails to boot when
+# DEPLOYMENT_MODE is anything other than "local", so it must stay disabled in a
+# byoc or saas deployment -- enabling it there crash-loops the pod. The mode
+# below is deliberately "local"; do not copy "byoc" or "saas" here from the
+# components above.
 adapterLerian:
   enabled: false
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "local"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
@@ -207,10 +289,27 @@ adapterLerian:
 # ------------------------------------------------------------
 # adapter-lerian (systemplane) — runtime config plane
 # ------------------------------------------------------------
+# Pairs with adapterLerian above: development only in this release.
 adapterLerianSystemplane:
   enabled: false
-  configmap: {}
+  # Seeds the adapter_lerian.* configuration store. Only relevant where the
+  # adapter-lerian pair runs, which this release supports for development only.
+  # Its seed mappings live in the shared adapter-lerian key package, which this
+  # component forwards; the identity/integration subset is below.
+  configmap:
+    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
+    SPI_BASE_URL: "http://plugin-br-pix-lerian-spi:4101"
+    COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
+    BRSFN_BASE_URL: "<brsfn-base-url>"
   secrets:
+    BRSFN_CLIENT_ID: "<brsfn-client-id>"
+    DICT_CLIENT_ID: "<dict-client-id>"
+    SPI_CLIENT_ID: "<spi-client-id>"
+    COB_CLIENT_ID: "<cob-client-id>"
+    BRSFN_CLIENT_SECRET: ""
+    DICT_CLIENT_SECRET: ""
+    SPI_CLIENT_SECRET: ""
+    COB_CLIENT_SECRET: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
@@ -224,13 +323,12 @@ adapterLerianSystemplane:
 pixauto:
   enabled: false
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
     # Parity with spi/dict-hub/cob-hub above. Inert — the live key is
     # ORGANIZATION_IDS; no code reads this name.
-    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     IDP_DECLARATION_ENABLED: "false"
     STREAMING_ENABLED: "false"

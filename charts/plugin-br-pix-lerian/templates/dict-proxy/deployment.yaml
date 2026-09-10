@@ -20,10 +20,11 @@ spec:
       {{- include "plugin-br-pix-lerian.selectorLabels" (dict "context" $ "component" $component) | nindent 6 }}
   template:
     metadata:
-      {{- with $values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "plugin-br-pix-lerian.podAnnotations" (dict
+          "context" $
+          "component" "dict-proxy"
+          "componentKey" "dictProxy"
+          "componentValues" $values) | nindent 6 }}
       labels:
         {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 8 }}
     spec:
@@ -71,9 +72,13 @@ spec:
           OTEL_EXPORTER_OTLP_ENDPOINT (values ship the key as "") —
           otherwise it would silently clobber the operator's endpoint.
           */}}
-          {{- $telemetryOn := eq (toString (default "false" $values.configmap.TELEMETRY_ENABLED)) "true" }}
-          {{- $hasOtelEndpoint := ne (toString (default "" $values.configmap.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
-          {{- $hasExtras := gt (len $values.extraEnvVars) 0 }}
+          {{- /* default dict: `configmap: null` in values yields nil, and a field
+               access on nil panics rather than falling through to the default. */}}
+          {{- $cm := $values.configmap | default dict }}
+          {{- $telemetryOn := eq (toString (default "false" $cm.TELEMETRY_ENABLED)) "true" }}
+          {{- $hasOtelEndpoint := ne (toString (default "" $cm.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
+          {{- $extraEnvVars := default (dict) $values.extraEnvVars }}
+          {{- $hasExtras := gt (len $extraEnvVars) 0 }}
           {{- if or (and $telemetryOn (not $hasOtelEndpoint)) $hasExtras }}
           env:
             {{- if and $telemetryOn (not $hasOtelEndpoint) }}
@@ -85,7 +90,7 @@ spec:
               value: "$(HOST_IP):4317"
             {{- end }}
             {{- if $hasExtras }}
-            {{- range $k, $v := $values.extraEnvVars }}
+            {{- range $k, $v := $extraEnvVars }}
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}

@@ -30,6 +30,13 @@
   - An inline credential left empty now fails at render time with a message
     naming the key, instead of producing a Secret the Jobs would authenticate
     with and surfacing as an opaque PostgreSQL authentication error.
+  - `VALKEY_URL` added to `cobHub.secrets`, matching `spi`, `dictHub`,
+    `dictHubVsync` and `pixauto`. The component already read the variable; the
+    chart was the only place it was missing, so enabling the cache meant adding
+    the key by hand. It defaults to `""` and the cache stays optional. Existing
+    releases that set it through the open map keep the same effective value,
+    but the component's Secret changes content, so its pods roll once on the
+    next upgrade.
 
 - **Notes**
   - The `pixswitch` Postgres role keeps its name. An audit of

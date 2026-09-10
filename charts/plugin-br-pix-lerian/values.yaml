@@ -469,9 +469,9 @@ adapterProviderMock:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    # -- ISPB the mock presents as the provider. Obtained together with
-    # sandbox access; no default, because a wrong ISPB is worse than an
-    # absent one.
+    # -- ISPB the mock presents as the provider, obtained together with
+    # sandbox access. Optional: the application falls back to a placeholder
+    # ISPB when this is empty, so set it to exercise your own.
     ADAPTER_ISPB: ""
     POLLER_INTERVAL_SEC: "30"
     # -- Lerian sandbox mock server this component talks to. Safe as a
@@ -1093,6 +1093,7 @@ cobHub:
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
     LICENSE_KEY: ""
     MULTI_TENANT_API_KEY: ""
 

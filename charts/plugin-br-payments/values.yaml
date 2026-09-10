@@ -497,7 +497,16 @@ aws:
     sidecar:
       image:
         repository: public.ecr.aws/rolesanywhere/credential-helper
-        tag: "latest-amd64"
+        # Pinned to an immutable version-platform-timestamp tag, not the
+        # rolling `latest-amd64` (Issue #352 review finding, Gandalf
+        # 2026-09-10 re-review): this sidecar is a credential-bearing
+        # workload, so a mutable tag is a supply-chain risk this chart does
+        # not accept for it even though other charts in this repo still use
+        # `latest-amd64` for the same image. Verified live against the
+        # public ECR registry API on 2026-09-10 — resolves to digest
+        # sha256:56b03f3acba0bda06c94189ab62c4a497fd1912f3d08311fb99ab24e4e4c2f84.
+        # Bump deliberately; do not revert to `latest-amd64`.
+        tag: "1.8.5-amd64-2026.08.24.20.52"
         pullPolicy: IfNotPresent
       port: 9911
       resources:

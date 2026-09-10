@@ -1,0 +1,19 @@
+{{- /*
+Providers Ingress — single hostname routes outbound-provider traffic to
+adapter components (BTG mock today; BACEN, JD, and other ISPs as they ship).
+
+Lives on its own hostname so the cluster operator can layer different ingress
+annotations (provider-specific mTLS, IP allowlists, per-provider WAF rules)
+than the apps/systemplane ingresses without coupling them.
+
+Each path under .Values.providersIngress.routes maps to one component's
+Service. Same enabled-aware rendering as ingress-apps.yaml — routes whose
+target component is disabled are silently skipped, so partial deployments
+render only the path rules with a backing Service.
+
+The rendering logic itself lives in the shared
+"plugin-br-pix-lerian.routedIngress" helper (templates/_helpers.tpl).
+*/}}
+{{- if .Values.providersIngress.enabled }}
+{{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "providers" "config" .Values.providersIngress) }}
+{{- end }}

@@ -469,9 +469,17 @@ adapterProviderMock:
     OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # -- ISPB the mock presents as the provider. Obtained together with
+    # sandbox access; no default, because a wrong ISPB is worse than an
+    # absent one.
     ADAPTER_ISPB: ""
     POLLER_INTERVAL_SEC: "30"
-    PROVIDER_BASE_URL: ""
+    # -- Lerian sandbox mock server this component talks to. Safe as a
+    # default: adapterProviderMock ships disabled, so this reaches no
+    # installation that does not enable the component explicitly, and an
+    # operator who does enable it gets the right endpoint instead of having
+    # to ask for it. Point it elsewhere only to target your own mock server.
+    PROVIDER_BASE_URL: "https://mock-pix-lerian-server.sandbox.lerian.net"
     SPI_BASE_URL: "http://plugin-br-pix-lerian-spi:4101"
     DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
     COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
@@ -483,6 +491,9 @@ adapterProviderMock:
 
   secrets:
     LICENSE_KEY: ""
+    # -- Sandbox credentials for the mock server above. Both are REQUIRED for
+    # this component to start, and both are obtained together with sandbox
+    # access. Deliberately empty here: no credential ships in this chart.
     PROVIDER_CLIENT_ID: ""
     PROVIDER_CLIENT_SECRET: ""
 

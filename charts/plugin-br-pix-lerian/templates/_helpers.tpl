@@ -156,7 +156,7 @@ metadata:
   {{- end }}
 spec:
   {{- with $cfg.className }}
-  ingressClassName: {{ . }}
+  ingressClassName: {{ . | quote }}
   {{- end }}
   {{- with $cfg.tls }}
   tls:

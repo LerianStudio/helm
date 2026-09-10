@@ -68,6 +68,11 @@
     client and are unchanged. `values.yaml` defaults are unchanged.
 
 - **Fixes**
+  - `ingressClassName` is quoted at all three sites in this chart
+    (`_helpers.tpl`, `adapter-lerian/ingress.yaml`,
+    `adapter-provider-mock/ingress.yaml`). An unquoted class name that looks
+    like a scalar of another type -- `className: "123"` -- rendered as the YAML
+    integer `123`, which the API server rejects for a string field.
   - `values-template.yaml` now ships `dictProxy` and `cobProxy` as
     `enabled: false`. The template enabled both while the chart's own README
     states that hub-only is the supported production shape, that the proxy tier

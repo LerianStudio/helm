@@ -267,7 +267,21 @@ Input (dict): context (root .), component ("manager"|"worker"), tag (resolved im
 {{- if and (not $key) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+([-+].*)?$" $tag) (semverCompare ">=3.0.0-0" $tag) -}}
 {{- fail (printf "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY is REQUIRED for reporter app >= 3.0.0 (%s.image.tag is %q).\n   The app encrypts data-source credentials at rest and will NOT boot without it.\n   Generate once: openssl rand -hex 32\n   Use the SAME value for the manager and the worker. There is NO rotation — changing it\n   makes every already-registered data source undecryptable.\n   See charts/reporter/docs/UPGRADE-4.1.md.\n" .component .tag) -}}
 {{- end -}}
-{{- if and $key (not (regexMatch "^([0-9a-fA-F]{32}|[0-9a-fA-F]{48}|[0-9a-fA-F]{64})$" $key)) -}}
+{{- /* A value that is still an argocd-vault-plugin reference is not a key yet, so there is
+   nothing to validate: the rendering order is `helmfile template | argocd-vault-plugin
+   generate -`, which means this template runs BEFORE the reference is resolved. Without
+   the exemption every tier that sources this key from Vault fails the render outright --
+   and none had noticed, because no reporter deployment ran a chart carrying this guard.
+   The guarantee is not lost, it moves: the plugin exits non-zero and emits no manifest
+   when it cannot resolve a reference (measured on avp v1.18.1), so an unresolved
+   reference never reaches a cluster.
+   Only the inline `<path:...>` form is exempt. The annotation form, where the value is a
+   bare `<KEY>`, is NOT covered -- deliberately, because a broad `<...>` exemption would
+   also excuse a human placeholder like `<your-key-here>`, which is the very class the
+   CHANGE_ME check above exists to catch.
+   The rule this states, for whoever adds the next validator: a format validator must not
+   look at a value that can legitimately still be a placeholder. */}}
+{{- if and $key (not (hasPrefix "<path:" $key)) (not (regexMatch "^([0-9a-fA-F]{32}|[0-9a-fA-F]{48}|[0-9a-fA-F]{64})$" $key)) -}}
 {{- fail "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY must be a hex-encoded AES key of 16, 24 or 32 bytes\n   (32, 48 or 64 hex characters). Generate one with: openssl rand -hex 32\n" -}}
 {{- end -}}
 {{- end }}

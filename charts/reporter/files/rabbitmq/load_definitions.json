@@ -32,6 +32,12 @@
       "durable": true
     },
     {
+      "name": "reporter.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true
+    },
+    {
       "name": "reporter.dlx",
       "vhost": "/",
       "type": "direct",

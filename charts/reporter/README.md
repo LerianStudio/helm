@@ -321,7 +321,9 @@ When `useExistingSecret` is enabled for manager/worker, datasource passwords mus
 
 ## External RabbitMQ Bootstrap
 
-When using an external RabbitMQ instance (not deployed by this chart), you can enable the bootstrap job to automatically apply the required definitions (exchanges, queues, bindings, and users).
+When using an external RabbitMQ instance (not deployed by this chart), you can enable the bootstrap job to apply the messaging **topology** the service needs: exchanges, queues and bindings, inside the default vhost `/`.
+
+The job is topology-only. It does **not** create the application broker user, its permissions, or any vhost — provision those on the broker before enabling it.
 
 ```yaml
 externalRabbitmqDefinitions:
@@ -333,16 +335,26 @@ externalRabbitmqDefinitions:
     portAmqp: "5672"
   rabbitmqAdminLogin:
     username: "admin"
-    password: "admin-password"
-  appCredentials:
-    reporterPassword: "Lerian@123"
+    password: "REPLACE_ME"
 ```
 
 The bootstrap job:
 
 1. Waits for the RabbitMQ instance to be reachable (AMQP port)
-2. Applies the definitions file (exchanges, queues, bindings, and the `reporter` user)
-3. Updates the `reporter` user password
+2. Declares each exchange, queue and binding from the definitions file via the management API, inside the default vhost `/`
+
+The application user the service authenticates as (`secrets.RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASS`) must already exist on the broker with permissions on `/`.
+
+### TLS verification
+
+When `connection.protocol` is `https`, the job verifies the broker's TLS certificate by default — it sends the admin credential on every management API call. For a broker with a self-signed certificate, set:
+
+```yaml
+externalRabbitmqDefinitions:
+  connection:
+    protocol: "https"
+    skipTlsVerify: true
+```
 
 ### Using Existing Secrets for Bootstrap Credentials
 
@@ -357,9 +369,6 @@ externalRabbitmqDefinitions:
   rabbitmqAdminLogin:
     useExistingSecret:
       name: "my-rabbitmq-admin-secret"  # must contain RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys
-  appCredentials:
-    useExistingSecret:
-      name: "my-rabbitmq-app-secret"    # must contain RABBITMQ_DEFAULT_PASS key
 ```
 
 ## KEDA Integration

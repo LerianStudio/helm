@@ -344,6 +344,8 @@ Two edits move a values file across:
 
 Nothing else in the block changes: `username`, `password` and `useExistingSecret` keep their names and meaning, and the Postgres role still defaults to `pixswitch` (see below).
 
+This is the only key in the retired chart's `values.yaml` that this chart refuses. A values file that never set `global.externalPostgresDefinitions` — the shape the retired chart's own `values-template.yaml` had — renders here unchanged.
+
 Guarantees the Jobs provide:
 
 - The role password is set client-side with `password_encryption = 'scram-sha-256'` pinned in the same session, so only the derived verifier reaches the server and the cleartext password never does. This works without superuser.

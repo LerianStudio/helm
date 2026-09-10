@@ -19,7 +19,10 @@
   - `global.externalPostgresDefinitions.pixswitchCredentials` renamed to
     `pixLerianCredentials`. There is no alias, and `values.schema.json` rejects
     the retired key so a stale override cannot silently stop taking effect.
-    Rename the key in your values.
+    Rename the key in your values; the chart README has the two-row migration
+    table. It is the only key of the retired chart this one refuses -- a values
+    file that never set `global.externalPostgresDefinitions`, which is the shape
+    the retired chart's own `values-template.yaml` had, renders here unchanged.
   - The bootstrap Jobs' environment variable `DB_PASSWORD_PIXSWITCH` renamed to
     `DB_PASSWORD_PIX_LERIAN`. An external Secret named by
     `pixLerianCredentials.useExistingSecret.name` must carry the new key.

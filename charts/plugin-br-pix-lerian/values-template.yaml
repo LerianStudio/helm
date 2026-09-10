@@ -37,7 +37,7 @@ global:
 spi:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"            # or "byoc" / "local"
+    DEPLOYMENT_MODE: "byoc"            # or "saas" / "local"
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
@@ -56,13 +56,13 @@ spi:
     MIDAZ_BASE_URL: "http://midaz-onboarding.midaz.svc.cluster.local:3000"
     MIDAZ_LEDGER_ID: ""
     MIDAZ_ORGANIZATION_ID: ""
+    CRM_BASE_URL: ""
+    CRM_ORGANIZATION_ID: ""
+  secrets:
     MIDAZ_CLIENT_ID: ""
     DICT_CLIENT_ID: ""
     COB_CLIENT_ID: ""
-    CRM_BASE_URL: ""
     CRM_CLIENT_ID: ""
-    CRM_ORGANIZATION_ID: ""
-  secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
@@ -77,8 +77,32 @@ spi:
 # ------------------------------------------------------------
 spiSystemplane:
   enabled: true
-  configmap: {}
+  # This component SEEDS the spi.* configuration store on first boot; spi reads
+  # those values back and gates /readyz on them. Setting them only on `spi`
+  # above is not enough. Keys below are the spi domain's seed mappings.
+  configmap:
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    # Provider adapter this environment runs, including its route prefix.
+    ADAPTER_BASE_URL: "<provider-adapter-url>"
+    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
+    DICT_ROUTING_MODE: "hub"
+    COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
+    COB_ROUTING_MODE: "hub"
+    CRM_BASE_URL: "<crm-base-url>"
+    MIDAZ_BASE_URL: "<midaz-base-url>"
+    MIDAZ_LEDGER_ID: "<midaz-ledger-id>"
+    # Tuning keys for this domain carry catalog defaults and are optional;
+    # set them through the systemplane admin surface when you need one.
   secrets:
+    DICT_CLIENT_ID: "<dict-client-id>"
+    COB_CLIENT_ID: "<cob-client-id>"
+    CRM_CLIENT_ID: "<crm-client-id>"
+    MIDAZ_CLIENT_ID: "<midaz-client-id>"
+    DICT_CLIENT_SECRET: ""
+    COB_CLIENT_SECRET: ""
+    CRM_CLIENT_SECRET: ""
+    MIDAZ_CLIENT_SECRET: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     LICENSE_KEY: ""
@@ -96,7 +120,7 @@ adapterProviderMock:
 dictHub:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_ID: "<your-org-id>"
@@ -115,6 +139,7 @@ dictHub:
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
     LICENSE_KEY: ""
+    CRM_CLIENT_ID: "<crm-client-id>"
     CRM_CLIENT_SECRET: ""
 
 # ------------------------------------------------------------
@@ -138,8 +163,12 @@ dictHubVsync:
 dictProxy:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
   secrets:
+    # Required at boot: the proxy has no business database, but it still needs
+    # a DSN for its configuration-store consumer and refuses to start without
+    # one. Point it at the same database as the domain's other workloads.
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------
@@ -147,8 +176,21 @@ dictProxy:
 # ------------------------------------------------------------
 dictSystemplane:
   enabled: true
-  configmap: {}
+  # Seeds the dict.* configuration store; dictHub and dictHubVsync read these
+  # back and gate /readyz on them.
+  configmap:
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    ADAPTER_BASE_URL: "<provider-adapter-url>"
+    CRM_BASE_URL: "<crm-base-url>"
+    SPI_BASE_URL: "http://plugin-br-pix-lerian-spi:4101"
+    # Tuning and outbound-callback keys for this domain carry catalog defaults
+    # and are optional; set them through the systemplane admin surface.
   secrets:
+    CRM_CLIENT_ID: "<crm-client-id>"
+    SPI_CLIENT_ID: "<spi-client-id>"
+    CRM_CLIENT_SECRET: ""
+    SPI_CLIENT_SECRET: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     LICENSE_KEY: ""
@@ -160,13 +202,14 @@ dictSystemplane:
 cobHub:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_ID: "<your-org-id>"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------
@@ -175,8 +218,10 @@ cobHub:
 cobProxy:
   enabled: true
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
   secrets:
+    # Required at boot, same reason as dictProxy above.
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------
@@ -184,8 +229,19 @@ cobProxy:
 # ------------------------------------------------------------
 cobSystemplane:
   enabled: true
-  configmap: {}
+  # Seeds the cob.* configuration store; cobHub reads these back and gates
+  # /readyz on organization_id, ispb, provider and dict_base_url.
+  configmap:
+    ORGANIZATION_ID: "<your-org-id>"
+    ISPB: "<8-digit-ispb>"
+    ADAPTER_BASE_URL: "<provider-adapter-url>"
+    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
+    DICT_ROUTING_MODE: "hub"
+    # Tuning keys for this domain carry catalog defaults and are optional;
+    # set them through the systemplane admin surface when you need one.
   secrets:
+    DICT_CLIENT_ID: "<dict-client-id>"
+    DICT_CLIENT_SECRET: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     LICENSE_KEY: ""
@@ -197,8 +253,8 @@ cobSystemplane:
 # DEVELOPMENT ONLY IN THIS RELEASE: this component fails to boot when
 # DEPLOYMENT_MODE is anything other than "local", so it must stay disabled in a
 # byoc or saas deployment -- enabling it there crash-loops the pod. The mode
-# below is deliberately "local"; do not copy "saas" here from the components
-# above.
+# below is deliberately "local"; do not copy "byoc" or "saas" here from the
+# components above.
 adapterLerian:
   enabled: false
   configmap:
@@ -217,8 +273,24 @@ adapterLerian:
 # Pairs with adapterLerian above: development only in this release.
 adapterLerianSystemplane:
   enabled: false
-  configmap: {}
+  # Seeds the adapter_lerian.* configuration store. Only relevant where the
+  # adapter-lerian pair runs, which this release supports for development only.
+  # Its seed mappings live in the shared adapter-lerian key package, which this
+  # component forwards; the identity/integration subset is below.
+  configmap:
+    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
+    SPI_BASE_URL: "http://plugin-br-pix-lerian-spi:4101"
+    COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
+    BRSFN_BASE_URL: "<brsfn-base-url>"
   secrets:
+    BRSFN_CLIENT_ID: "<brsfn-client-id>"
+    DICT_CLIENT_ID: "<dict-client-id>"
+    SPI_CLIENT_ID: "<spi-client-id>"
+    COB_CLIENT_ID: "<cob-client-id>"
+    BRSFN_CLIENT_SECRET: ""
+    DICT_CLIENT_SECRET: ""
+    SPI_CLIENT_SECRET: ""
+    COB_CLIENT_SECRET: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
@@ -232,7 +304,7 @@ adapterLerianSystemplane:
 pixauto:
   enabled: false
   configmap:
-    DEPLOYMENT_MODE: "saas"
+    DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"

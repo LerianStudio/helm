@@ -1,5 +1,43 @@
 # Plugin-br-pix-lerian Changelog
 
+## Unreleased
+
+- **Breaking changes**
+  - `global.externalPostgresDefinitions.pixswitchCredentials` renamed to
+    `pixLerianCredentials`. There is no alias, and `values.schema.json` rejects
+    the retired key so a stale override cannot silently stop taking effect.
+    Rename the key in your values.
+  - The bootstrap Jobs' environment variable `DB_PASSWORD_PIXSWITCH` renamed to
+    `DB_PASSWORD_PIX_LERIAN`. An external Secret named by
+    `pixLerianCredentials.useExistingSecret.name` must carry the new key.
+
+- **Features**
+  - Inline bootstrap credentials are collected into a chart-managed Secret
+    (`templates/bootstrap-secret.yaml`, renamed from
+    `bootstrap-postgres-secret.yaml`; the Secret's own resource name is
+    unchanged) and read by the Jobs through `secretKeyRef`. Previously an
+    operator who supplied them inline got the Postgres admin password as a
+    literal `env.value` in the Job spec, readable by any principal holding
+    `get job` in the namespace. Both supply paths now reach the container
+    identically, and the Secret carries only the halves that are actually
+    inline.
+  - An inline credential left empty now fails at render time with a message
+    naming the key, instead of producing a Secret the Jobs would authenticate
+    with and surfacing as an opaque PostgreSQL authentication error.
+
+- **Notes**
+  - The `pixswitch` Postgres role keeps its name. An audit of
+    `lerian-internal-gitops` at commit `65836367` found the value pinned in four
+    of the six environments, in three keys each, each backed by existing state;
+    the `initdb` script that creates the role only runs against an empty data
+    directory and will not re-run, and the remaining two environments provision
+    the role outside the chart's tree with their DSNs in Vault. Changing the
+    default would create a second role with no privileges on the five existing
+    databases while the applications kept authenticating as the old one.
+    Renaming the role is a data operation and belongs in its own change,
+    sequenced with the GitOps values that pin it. See the chart README,
+    "Why the Postgres role is still named `pixswitch`".
+
 ## [2.1.0-beta.13](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.1.0-beta.13)
 
 - **Features**

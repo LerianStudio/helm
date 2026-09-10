@@ -52,7 +52,8 @@ APIs. Five Postgres databases are required (`pix-spi`, `pix-dict`, `pix-cob`,
 For a full deployment:
 - **PostgreSQL**: 5 databases (`pix-spi`, `pix-dict`, `pix-cob`,
   `pix-adapter-lerian`, `pix-pixauto`) and a role `pixswitch` with full
-  ownership of each
+  ownership of each (see [Bootstrap credentials](#bootstrap-credentials) for how
+  the Jobs are credentialed and why the role keeps that name)
 - **Valkey** (Redis-compatible): used by `spi`, `dict-hub`, `dict-hub-vsync`
   for caching and by `pixauto` for its idempotency replay gate (optional there —
   without it the gated routes fall through to their durable backstops)
@@ -62,6 +63,63 @@ For development, the chart's `postgresql`, `valkey`, and `rabbitmq`
 subcharts can be enabled (set their `enabled: true`). For production, point
 the in-cluster components at managed external services and leave the
 subcharts disabled (default).
+
+## Bootstrap credentials
+
+When `global.externalPostgresDefinitions.enabled` is true the chart renders one
+bootstrap Job per database. Each Job needs two credentials, and each of the two
+can be supplied either from a Secret the operator already manages or inline in
+values:
+
+| Credential | External Secret | Inline values |
+|------------|-----------------|---------------|
+| Postgres admin login | `postgresAdminLogin.useExistingSecret.name`, on a Secret carrying `DB_USER_ADMIN` and `DB_ADMIN_PASSWORD` | `postgresAdminLogin.username` and `postgresAdminLogin.password` |
+| Application role password | `pixLerianCredentials.useExistingSecret.name`, on a Secret carrying `DB_PASSWORD_PIX_LERIAN` | `pixLerianCredentials.password` |
+
+The two halves are independent: one may come from an external Secret while the
+other stays inline.
+
+Inline values are never written into a Job manifest. The chart collects them
+into `templates/bootstrap-secret.yaml` and the Jobs read every credential
+through `secretKeyRef`, so both supply paths reach the container the same way
+and no password appears in the Job spec or in `kubectl describe job` output.
+That Secret carries only the halves that are actually inline, and when both
+halves name an external Secret it is not rendered at all.
+
+An inline half left empty fails at render time. Rendering it as an empty string
+would produce a Secret the Jobs then authenticate with, turning a values mistake
+into an opaque PostgreSQL authentication error.
+
+`pixswitchCredentials` was renamed to `pixLerianCredentials`, and there is no
+alias. `values.schema.json` rejects the retired key outright, so a stale
+override cannot quietly stop taking effect — it reports `'not' failed` at
+`/global/externalPostgresDefinitions`. Rename the key in your values.
+
+The Job sets the role password with psql's `\password` meta-command, which
+derives the SCRAM-SHA-256 verifier on the client and never sends the cleartext
+password to the server. The bootstrap image must therefore ship psql 10 or
+newer.
+
+### Why the Postgres role is still named `pixswitch`
+
+The chart identity was renamed end to end, but `pixLerianCredentials.username`
+still defaults to `pixswitch`. That default is deliberate: the name is live
+data, not chart identity. It is the role that already owns the five databases in
+every deployed environment.
+
+An audit of `lerian-internal-gitops` at commit `65836367` found the value pinned
+in four of the six environments, in three keys each — `postgresql.auth.username`,
+the `initdb` script that creates the extra databases, and the RabbitMQ user —
+each of them backed by existing state. The `initdb` script only runs against an
+empty data directory, so it will not re-run to create a differently named role.
+The remaining two environments provision the role outside the chart's tree
+altogether and hold their DSNs in Vault.
+
+Changing the default would therefore create a second role with no privileges on
+the five existing databases, while the applications kept authenticating as the
+old one. Renaming the role is a data operation — `ALTER ROLE ... RENAME`, or a
+new role plus reassignment of ownership and GRANTs — and belongs in its own
+change, sequenced together with the GitOps values that pin it.
 
 ## Enabling/disabling components
 

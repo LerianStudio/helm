@@ -38,6 +38,13 @@ spi:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"            # or "saas" / "local"
+    # ENV_NAME must be set on EVERY enabled component, not just here. The
+    # chart default in values.yaml is "development", and two behaviours key off
+    # it: a Systemplane skips the SYSTEMPLANE_SECRET_MASTER_KEY requirement
+    # when ENV_NAME is "local" or "development" (booting with secret encryption
+    # off), and SWAGGER_ENABLED, when unset, resolves to `envName != production`
+    # (serving /docs and /openapi.json). Every component below therefore
+    # repeats it.
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
@@ -88,6 +95,9 @@ spiSystemplane:
   # those values back and gates /readyz on them. Setting them only on `spi`
   # above is not enough. Keys below are the spi domain's seed mappings.
   configmap:
+    # Production environment gate. See spi above -- this template ships a
+    # production deployment, and the chart default is "development".
+    ENV_NAME: "production"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     # Provider adapter this environment runs, including its route prefix.
@@ -128,6 +138,9 @@ dictHub:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
+    # Production environment gate. See spi above -- this template ships a
+    # production deployment, and the chart default is "development".
+    ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
@@ -157,6 +170,9 @@ dictHub:
 dictHubVsync:
   enabled: true
   configmap:
+    # Production environment gate. See spi above -- this template ships a
+    # production deployment, and the chart default is "development".
+    ENV_NAME: "production"
     VSYNC_ENABLED: "true"
     # License allow-list, required alongside LICENSE_KEY. See spi above. The
     # worker builds a license client for shutdown coupling even though it
@@ -177,6 +193,9 @@ dictProxy:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
+    # Production environment gate. See spi above -- this template ships a
+    # production deployment, and the chart default is "development".
+    ENV_NAME: "production"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
     ORGANIZATION_IDS: "global"
   secrets:
@@ -194,6 +213,9 @@ dictSystemplane:
   # Seeds the dict.* configuration store; dictHub and dictHubVsync read these
   # back and gate /readyz on them.
   configmap:
+    # Production environment gate. See spi above -- this template ships a
+    # production deployment, and the chart default is "development".
+    ENV_NAME: "production"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     ADAPTER_BASE_URL: "<provider-adapter-url>"
@@ -218,6 +240,9 @@ cobHub:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
+    # Production environment gate. See spi above -- this template ships a
+    # production deployment, and the chart default is "development".
+    ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
@@ -236,6 +261,9 @@ cobProxy:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
+    # Production environment gate. See spi above -- this template ships a
+    # production deployment, and the chart default is "development".
+    ENV_NAME: "production"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
     ORGANIZATION_IDS: "global"
   secrets:
@@ -251,6 +279,9 @@ cobSystemplane:
   # Seeds the cob.* configuration store; cobHub reads these back and gates
   # /readyz on organization_id, ispb, provider and dict_base_url.
   configmap:
+    # Production environment gate. See spi above -- this template ships a
+    # production deployment, and the chart default is "development".
+    ENV_NAME: "production"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     ADAPTER_BASE_URL: "<provider-adapter-url>"

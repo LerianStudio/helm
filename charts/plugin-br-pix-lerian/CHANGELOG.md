@@ -68,6 +68,20 @@
     client and are unchanged. `values.yaml` defaults are unchanged.
 
 - **Fixes**
+  - `values-template.yaml` now sets `ENV_NAME: "production"` on every component
+    it enables. It enables nine (`spi`, `spiSystemplane`, `dictHub`,
+    `dictHubVsync`, `dictProxy`, `dictSystemplane`, `cobHub`, `cobProxy`,
+    `cobSystemplane`) and only `spi` carried the key, so the other eight
+    inherited `"development"` from `values.yaml`. Two consequences, both in a
+    file whose whole purpose is to describe a production deployment: a
+    Systemplane skips the `SYSTEMPLANE_SECRET_MASTER_KEY` requirement when
+    `ENV_NAME` is `local` or `development`, and the template ships that key
+    empty, so the three enabled Systemplanes booted with secret encryption
+    disabled under `DEPLOYMENT_MODE: byoc`; and `SWAGGER_ENABLED`, unset in both
+    values files, resolves to `envName != "production"`, so `dictHub`,
+    `dictProxy`, `cobHub` and `cobProxy` served `/docs` and `/openapi.json`. The
+    `values.yaml` default is deliberately unchanged -- flipping it is a separate
+    and breaking decision.
   - `extraEnvVars` no longer produces a duplicate `env` entry. All 14
     deployments emit `HOST_IP` and `OTEL_EXPORTER_OTLP_ENDPOINT` from the
     downward API when telemetry is on and `configmap.OTEL_EXPORTER_OTLP_ENDPOINT`

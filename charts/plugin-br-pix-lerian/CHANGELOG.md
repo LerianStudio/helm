@@ -3,15 +3,10 @@
 ## Unreleased
 
 - **Removals**
-  - `LICENSE_ORGANIZATION_IDS` dropped from `values.yaml` and
-    `values-template.yaml` (four components each). The name does not exist
-    anywhere in the application — a repository-wide search of
-    `plugin-br-pix-lerian` returns no hit — so the key configured nothing. The
-    license organization list is bound to `ORGANIZATION_IDS` (`pkg/config`
-    `BaseConfig.LicenseOrganizationIDs`), which is the name to use. No
-    behaviour changes: removing a key nothing reads cannot alter what any
-    component receives, and every rendered environment keeps its object count.
-    If your own values carry the old spelling, rename it.
+  - `LICENSE_ORGANIZATION_IDS` removed from `values.yaml` and
+    `values-template.yaml`. Use `ORGANIZATION_IDS` for the license organization
+    list. No runtime behaviour changes; rename the key if your own values carry
+    it.
 
 - **Breaking changes**
   - `global.externalPostgresDefinitions.pixswitchCredentials` renamed to

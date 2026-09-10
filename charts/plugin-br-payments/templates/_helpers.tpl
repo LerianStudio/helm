@@ -261,10 +261,18 @@ plugin-br-payments README.
 {{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
 {{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
-{{- if ne (.Values.app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE | toString) "vault" }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE must be \"vault\" when MULTI_TENANT_ENABLED=true.\n   The application fails closed at boot for any other value (empty, a typo, or the retired \"tenant_manager\" spelling) — there is no fallback credential source.\n" }}
+{{/* The app resolves this with strings.EqualFold(strings.TrimSpace(...), "vault")
+     (internal/bootstrap/config.go) — case-insensitive AND trimmed. Match that
+     trim-then-fold order here so a value like "Vault" or " vault " that boots
+     fine in the app doesn't fail this chart's render gate. */}}
+{{- if ne (trim (.Values.app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE | toString) | lower) "vault" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE must be \"vault\" (case-insensitive, whitespace-trimmed) when MULTI_TENANT_ENABLED=true.\n   The application fails closed at boot for any other value (empty, a typo, or the retired \"tenant_manager\" spelling) — there is no fallback credential source.\n" }}
 {{- end }}
-{{- if not .Values.app.configmap.AWS_REGION }}
+{{/* Helm's `not` only catches empty-string/nil: an all-whitespace value like
+     "   " would pass a bare `not` check and let the AWS SDK load with an
+     empty effective region, failing later on the first Secrets Manager call
+     instead of failing closed at render time. Validate the trimmed value. */}}
+{{- if not (trim (.Values.app.configmap.AWS_REGION | toString)) }}
 {{- fail "\n\nERROR: app.configmap.AWS_REGION is REQUIRED when MULTI_TENANT_ENABLED=true.\n   Read directly by the AWS SDK when building the Secrets Manager client for the per-tenant integrations bundle.\n" }}
 {{- end }}
 {{- end }}

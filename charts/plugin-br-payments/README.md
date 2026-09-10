@@ -117,6 +117,32 @@ app:
 
 When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead). Do not set `app.secrets.BTG_CLIENT_ID` or `app.secrets.BTG_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record.
 
+### AWS credentials for Secrets Manager (`aws.rolesAnywhere`)
+
+Multi-tenant mode with `MULTI_TENANT_CREDENTIAL_SOURCE: "vault"` calls AWS Secrets
+Manager to read each tenant's integrations bundle. On a cluster that already runs on
+AWS (IRSA), the pod gets credentials for free. On a **non-AWS cluster** (on-prem,
+Proxmox, another cloud) there is no such mechanism, so enable IAM Roles Anywhere: an
+`aws-signing-helper` sidecar exchanges an X.509 client certificate for temporary AWS
+credentials and serves them on a local metadata endpoint the app reads via the
+standard AWS SDK credential chain.
+
+```yaml
+aws:
+  rolesAnywhere:
+    enabled: true
+    trustAnchorArn: "arn:aws:rolesanywhere:<region>:<account>:trust-anchor/<id>"
+    profileArn: "arn:aws:rolesanywhere:<region>:<account>:profile/<id>"
+    roleArn: "arn:aws:iam::<account>:role/<role>"
+    certificateSecretName: "plugin-br-payments-iam-tls"  # cert-manager Secret the sidecar mounts
+```
+
+`trustAnchorArn`, `profileArn`, and `roleArn` are required once `enabled: true` — the
+render fails closed otherwise. The `certificateSecretName` Secret (containing
+`tls.crt`/`tls.key`) is provisioned by the GitOps deploy layer as a cert-manager
+`Certificate`, not by this chart; see the Roles Anywhere deploy docs for that half.
+Off by default — zero cost when unset.
+
 ## Common values
 
 | Key | Default | Description |
@@ -137,6 +163,7 @@ When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `prov
 | `postgresql.architecture` | `replication` | Primary + read replica. |
 | `global.externalPostgresDefinitions.enabled` | `false` | Run a bootstrap Job against an external PostgreSQL. |
 | `otel-collector-lerian.enabled` | `false` | Inject host-level OTLP endpoint env vars. |
+| `aws.rolesAnywhere.enabled` | `false` | Enable the `aws-signing-helper` sidecar for AWS credentials on non-AWS clusters. |
 
 See [`values.yaml`](./values.yaml) for the full list, and [`values-template.yaml`](./values-template.yaml) for a production-ready overlay starter.
 

@@ -222,5 +222,6 @@
     `pixswitch` Postgres role - renaming those would require migrating existing
     GRANTs.
   - Pix Automatico (`pixauto`, `pixautoSystemplane`) stays `enabled: false` by
-    default, so this single chart serves both the 2.1.0-beta.7 and
-    2.1.0-beta.12 deployment lines.
+    default, so this single chart serves both of the `plugin-br-pix-switch`
+    deployment lines it replaces (`plugin-br-pix-switch-v2.1.0-beta.7` and
+    `plugin-br-pix-switch-v2.1.0-beta.12`).

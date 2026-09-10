@@ -97,7 +97,32 @@ Routing mode accepts `hub` and `proxy` and defaults to `hub`. **Leave it at `hub
 
 ### `adapterProviderMock` — Development only
 
-A test double. It has no authorization on its routes. Keep `enabled: false` anywhere the pod can be reached by callers you do not control, and leave `MOCK_TEST_ENDPOINTS_ENABLED` off.
+A provider test double for development and homologation, shipped `enabled: false`. It stands in for a real provider so the rest of the platform can be exercised end to end without one.
+
+It talks to the Lerian sandbox mock server, which is the chart's default for that setting:
+
+```yaml
+adapterProviderMock:
+  configmap:
+    PROVIDER_BASE_URL: "https://mock-pix-lerian-server.sandbox.lerian.net"
+```
+
+Because the component ships disabled, that default reaches no installation that does not enable it explicitly. Override it only to target your own mock server.
+
+Three more settings have no default and cannot get one, because they identify *your* sandbox access. You receive them together with that access:
+
+| Setting | Where | Notes |
+|---|---|---|
+| `PROVIDER_CLIENT_ID` | `secrets` | **Required** — the component does not start without it |
+| `PROVIDER_CLIENT_SECRET` | `secrets` | **Required** — the component does not start without it |
+| `ADAPTER_ISPB` | `configmap` | The ISPB the mock presents as the provider |
+
+No credential ships in this chart. Supply these the same way as any other secret — see [Production secret management](#production-secret-management).
+
+Two cautions:
+
+- Its routes have **no authorization**, regardless of `PLUGIN_AUTH_ENABLED`. Keep `enabled: false` anywhere the pod can be reached by callers you do not control, and never publish it on a shared ingress.
+- Leave `MOCK_TEST_ENDPOINTS_ENABLED` off outside a controlled environment; it mounts routes that simulate provider callbacks.
 
 ### Supported production topology
 
@@ -265,6 +290,7 @@ Set these before `helm install`. "Required" means the workload **fails to start*
 | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_URL` | `configmap` | Defaults to `false` / an in-cluster placeholder. When enabled, `PLUGIN_AUTH_URL` **must be non-empty** or the workload refuses to start. **Required to be `true`** on `pixauto` whenever `ENV_NAME` is not `local` or `development`. |
 | `AUTH_JWT_VERIFY_CERT`, `AUTH_JWT_ISSUER` | `secrets` | **Required on `pixauto`** when `PLUGIN_AUTH_ENABLED=true` and `ENV_NAME` is not `local` or `development`. **The chart does not ship these keys** — add them through `pixauto.secrets`. Without them the workload refuses to start. |
 | `RABBITMQ_URI` | `secrets` | **Required when `dictHubVsync` is enabled.** The render fails without it. |
+| `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET` | `secrets` | **Required when `adapterProviderMock` is enabled** — it does not start without both. Issued with your sandbox access; see [`adapterProviderMock`](#adapterprovidermock--development-only). |
 | `VALKEY_URL` | `secrets` | **Required** on `dictHubVsync`. Optional elsewhere; not shipped for `cobHub`. |
 | `ADAPTER_BASE_URL` | `configmap` | Optional at boot — it is not validated at startup. A missing value surfaces as rejected requests at runtime, not as a failed rollout. Include the provider's route prefix. |
 

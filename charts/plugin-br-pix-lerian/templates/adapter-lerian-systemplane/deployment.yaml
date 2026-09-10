@@ -73,8 +73,11 @@ spec:
           OTEL_EXPORTER_OTLP_ENDPOINT (values ship the key as "") —
           otherwise it would silently clobber the operator's endpoint.
           */}}
-          {{- $telemetryOn := eq (toString (default "false" $values.configmap.TELEMETRY_ENABLED)) "true" }}
-          {{- $hasOtelEndpoint := ne (toString (default "" $values.configmap.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
+          {{- /* default dict: `configmap: null` in values yields nil, and a field
+               access on nil panics rather than falling through to the default. */}}
+          {{- $cm := $values.configmap | default dict }}
+          {{- $telemetryOn := eq (toString (default "false" $cm.TELEMETRY_ENABLED)) "true" }}
+          {{- $hasOtelEndpoint := ne (toString (default "" $cm.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
           {{- $extraEnvVars := default (dict) $values.extraEnvVars }}
           {{- $hasExtras := gt (len $extraEnvVars) 0 }}
           {{- if or (and $telemetryOn (not $hasOtelEndpoint)) $hasExtras }}

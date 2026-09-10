@@ -67,13 +67,35 @@ shapes are rejected.
 {{- end }}
 {{- /*
 GUARD 2 — refuse to publish Pix Automatico at all while authentication is off.
-See the routeChain note above: with PLUGIN_AUTH_ENABLED != "true" the payer
+See the routeChain note above: with PLUGIN_AUTH_ENABLED not enabled the payer
 routes under /pixauto/v1 are unauthenticated too, so Guard 1 alone would still
 leave mandate mutations open to anyone who can reach the apps host.
+
+The state comes from "plugin-br-pix-lerian.envGateState", which resolves the
+key across all three sources the container reads, in the order Kubernetes
+actually applies (extraEnvVars > secrets > configmap), parses the value the way
+the app's strconv.ParseBool does, and fails on its own if two sources disagree.
+Reading .Values.pixauto.configmap directly - as this guard used to - inspected
+the LOWEST-priority source, so an operator who enabled auth in `secrets` or
+disabled it in `extraEnvVars` got a verdict from a value the container never
+sees.
+
+WHAT THIS GUARD CANNOT VERIFY. With pixauto.useExistingSecret=true the state is
+"unknown": the external Secret outranks the ConfigMap and Helm cannot read it,
+so the chart has no way to know whether auth is on. The guard then stays silent
+rather than failing closed - demanding inline proof of a value that deliberately
+lives outside the chart is the wrong contract, the same reasoning applied by
+templates/_migrations.tpl here and by lerian-common's streaming/multiTenant
+validators. In that configuration the Secret named by
+pixauto.existingSecretName MUST carry PLUGIN_AUTH_ENABLED set to a true value
+(true/TRUE/True/1/t/T) whenever a pixauto route is published on appsIngress;
+nothing in this chart can check it for you. Setting the key in
+pixauto.extraEnvVars instead keeps the guard effective, because explicit env
+entries outrank every envFrom source.
 */}}
-{{- $auth := toString (default "false" .Values.pixauto.configmap.PLUGIN_AUTH_ENABLED) }}
-{{- if ne $auth "true" }}
-{{- fail (printf "plugin-br-pix-lerian: appsIngress publishes Pix Automatico but pixauto.configmap.PLUGIN_AUTH_ENABLED is %q, not \"true\". The app appends its authorize middleware only when auth is enabled, so EVERY pixauto route would be served without authentication - including the payer routes under /pixauto/v1 that create, decide and cancel mandates. Fix by setting pixauto.configmap.PLUGIN_AUTH_ENABLED=\"true\" (values-template.yaml already does), or by removing the pixauto route(s) from appsIngress.routes if this environment should not expose Pix Automatico." $auth) }}
+{{- $authState := include "plugin-br-pix-lerian.envGateState" (dict "componentValues" .Values.pixauto "componentKey" "pixauto" "key" "PLUGIN_AUTH_ENABLED" "default" "false") }}
+{{- if eq $authState "off" }}
+{{- fail (printf "plugin-br-pix-lerian: appsIngress publishes Pix Automatico but the effective PLUGIN_AUTH_ENABLED for the pixauto component is not a true value. The app appends its authorize middleware only when auth is enabled, so EVERY pixauto route would be served without authentication - including the payer routes under /pixauto/v1 that create, decide and cancel mandates. Fix by setting pixauto.configmap.PLUGIN_AUTH_ENABLED=%q (values-template.yaml already does), or by removing the pixauto route(s) from appsIngress.routes if this environment should not expose Pix Automatico. The value is resolved across pixauto.extraEnvVars, pixauto.secrets and pixauto.configmap in that order of precedence." "true") }}
 {{- end }}
 {{- end }}
 {{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "apps" "config" .Values.appsIngress) }}

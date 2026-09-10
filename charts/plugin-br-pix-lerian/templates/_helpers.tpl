@@ -347,3 +347,131 @@ Usage:
 
       echo "all dependencies ready"
 {{- end }}
+
+{{/*
+plugin-br-pix-lerian.isTrue — "true" when the value is one of the tokens
+strconv.ParseBool accepts as true, "" otherwise.
+
+The apps load boolean env vars through ParseBool, so `TRUE`, `True`, `1`, `t`
+and `T` all enable a feature at runtime. Comparing against the literal string
+"true" would reject a valid `PLUGIN_AUTH_ENABLED=TRUE` at render time while the
+process happily enables auth. Matching is exact (no trimming), like ParseBool:
+" true" is false at runtime, so it must be false here too.
+
+Modelled on midaz.isTrue (charts/midaz/templates/_helpers.tpl). It is duplicated
+rather than shared because this chart does not declare the lerian-common-helm
+dependency, and lerian-common ships no boolean helper anyway.
+*/}}
+{{- define "plugin-br-pix-lerian.isTrue" -}}
+{{- if has (. | toString) (list "1" "t" "T" "TRUE" "true" "True") -}}true{{- end -}}
+{{- end -}}
+
+{{/*
+plugin-br-pix-lerian.envGateState — the EFFECTIVE state of a boolean env var for
+one component, resolved across the three sources the container actually reads.
+
+WHY A RESOLVER. Every component's Deployment builds its environment as
+
+    envFrom:
+      - configMapRef: <component configmap>
+      - secretRef:    <component secret>
+    env:
+      - <extraEnvVars entries>
+
+Kubernetes resolves that in a fixed order: explicit `env` entries always win
+over `envFrom`, and among `envFrom` sources the LAST one wins on a duplicate
+key. All fourteen Deployments in this chart list configMapRef first and
+secretRef second, so the effective precedence is
+
+    extraEnvVars  >  secrets  >  configmap  >  default
+
+A gate that reads only `.configmap.<KEY>` therefore inspects the LOWEST-priority
+source. An operator who sets the key in `secrets` or `extraEnvVars` gets a
+render decision made from a value the container will never see.
+
+RETURN VALUE, one of:
+  "on"       the effective value parses as true
+  "off"      the effective value parses as false
+  "unknown"  the decision depends on a Secret this template cannot read
+
+"unknown" is returned when useExistingSecret=true AND the winning visible source
+sits BELOW the Secret in the precedence order (i.e. the value came from
+`configmap` or from the default). The external Secret can override those, and
+Helm cannot inspect it, so any verdict would be a guess. When the winner is
+`extraEnvVars` the answer is knowable even with an external Secret, because
+explicit `env` beats every envFrom source - so that case still returns on/off.
+This mirrors the repo's doctrine for external-Secret opacity, stated in
+charts/lerian-common/templates/_streaming.tpl ("the value lives outside the
+chart when useExistingSecret=true, so requiring it inline is wrong") and already
+applied by this chart in templates/_migrations.tpl.
+
+CONFLICTING OVERRIDES ARE FATAL. `secrets` and `extraEnvVars` are both
+deliberate operator overrides, and there is no reading under which setting them
+to opposing values is intentional, so that combination fails the render naming
+both sources and values. `configmap` is NOT treated as a conflicting source: the
+chart's own values.yaml already ships PLUGIN_AUTH_ENABLED there for all fourteen
+components, so requiring the key to live in exactly one place would make
+`secrets` and `extraEnvVars` unusable for it without first deleting the chart's
+default. Against `configmap` the precedence rule applies and the override simply
+wins - which is the whole point of an override. Identical values in several
+sources are redundant but unambiguous, so they pass. The fatal-conflict shape
+follows the modelled-key collision check in
+charts/br-ccs/templates/configmap.yaml.
+
+Inputs (dict):
+  componentValues (req)  the component's values block (.Values.pixauto, ...)
+  componentKey    (req)  its values path, for error messages ("pixauto")
+  key             (req)  the env var name
+  default         (opt)  value when no source carries the key (default "false")
+*/}}
+{{- define "plugin-br-pix-lerian.envGateState" -}}
+{{- $cv := .componentValues | default dict -}}
+{{- $key := .key -}}
+{{- $ck := .componentKey -}}
+{{/* `default dict` also absorbs an explicit `configmap: null` / `secrets: null`
+     / `extraEnvVars: null` in values, which yields nil and would panic hasKey. */}}
+{{- $cm := $cv.configmap | default dict -}}
+{{- $sec := $cv.secrets | default dict -}}
+{{- $extra := $cv.extraEnvVars | default dict -}}
+{{- $external := eq (include "plugin-br-pix-lerian.isTrue" (default false $cv.useExistingSecret)) "true" -}}
+{{/* Highest precedence first. An inline `secrets` map is not rendered at all
+     when useExistingSecret=true, so it is not a source in that case. */}}
+{{- $srcs := list -}}
+{{- $vals := list -}}
+{{- if hasKey $extra $key -}}
+{{- $srcs = append $srcs (printf "%s.extraEnvVars.%s" $ck $key) -}}
+{{- $vals = append $vals (toString (index $extra $key)) -}}
+{{- end -}}
+{{- if and (not $external) (hasKey $sec $key) -}}
+{{- $srcs = append $srcs (printf "%s.secrets.%s" $ck $key) -}}
+{{- $vals = append $vals (toString (index $sec $key)) -}}
+{{- end -}}
+{{- if hasKey $cm $key -}}
+{{- $srcs = append $srcs (printf "%s.configmap.%s" $ck $key) -}}
+{{- $vals = append $vals (toString (index $cm $key)) -}}
+{{- end -}}
+{{/* Conflict check across the two OVERRIDE sources only - see the note above on
+     why `configmap` is excluded. */}}
+{{- if and (hasKey $extra $key) (and (not $external) (hasKey $sec $key)) -}}
+{{- $ev := toString (index $extra $key) -}}
+{{- $sv := toString (index $sec $key) -}}
+{{- if ne (include "plugin-br-pix-lerian.isTrue" $ev) (include "plugin-br-pix-lerian.isTrue" $sv) -}}
+{{- fail (printf "plugin-br-pix-lerian: %s is overridden in two places with opposing values: %s.extraEnvVars.%s=%q and %s.secrets.%s=%q. Kubernetes would apply the extraEnvVars value (an explicit env entry beats every envFrom source), but two deliberate overrides disagreeing is an operator mistake rather than a preference to resolve. Remove one of them." $key $ck $key $ev $ck $key $sv) -}}
+{{- end -}}
+{{- end -}}
+{{- if and $external (or (eq (len $srcs) 0) (ne (index $srcs 0) (printf "%s.extraEnvVars.%s" $ck $key))) -}}
+{{- "unknown" -}}
+{{- else -}}
+{{/* if/else, not ternary: ternary evaluates BOTH branches, and `index` on an
+     empty list is an error - which is exactly the no-source case. */}}
+{{- $effective := toString (default "false" .default) -}}
+{{- if gt (len $vals) 0 -}}
+{{- $effective = index $vals 0 -}}
+{{- end -}}
+{{- if eq (include "plugin-br-pix-lerian.isTrue" $effective) "true" -}}
+{{- "on" -}}
+{{- else -}}
+{{- "off" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

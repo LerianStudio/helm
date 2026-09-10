@@ -244,6 +244,23 @@ spec:
               \set VERBOSITY terse
               \getenv bootstrap_role DB_ROLE
               \o /dev/null
+              -- lock_timeout bounds the advisory-lock wait below. Without it a
+              -- sibling holding the role lock makes this session block forever, and
+              -- the Job hangs until the hook times out with nothing in its log.
+              -- 60s is far above the milliseconds this critical section needs and
+              -- far below any sane hook timeout. A timeout raises an error and
+              -- ON_ERROR_STOP=1 makes it fatal - the retry is the Job's, not a
+              -- polling loop's.
+              SET lock_timeout = '60s';
+              -- password_encryption pins the verifier algorithm for THIS session,
+              -- in the SAME file psql -f processes, so it is guaranteed to be in
+              -- effect before \password runs below. \password reads this setting to
+              -- decide which verifier to derive CLIENT-SIDE; a server started with
+              -- password_encryption=md5 would otherwise get an MD5 verifier
+              -- (reproduced, then fixed by this line). The GUC has context 'user',
+              -- so no superuser and no extra GRANT is needed - verified with a role
+              -- holding only LOGIN CREATEROLE CREATEDB.
+              SET password_encryption = 'scram-sha-256';
               SELECT set_config('bootstrap.role', :'bootstrap_role', false);
               SELECT pg_advisory_lock(hashtext('plugin-br-pix-lerian:bootstrap-role:' || current_setting('bootstrap.role')));
               \o
@@ -281,6 +298,10 @@ spec:
               \o /dev/null
               SELECT set_config('bootstrap.role', :'bootstrap_role', false);
               SELECT set_config('bootstrap.db', :'bootstrap_db', false);
+              -- lock_timeout bounds the advisory-lock wait below: a sibling Job
+              -- holding this database's lock must not make this session block
+              -- forever. A timeout is an error, and ON_ERROR_STOP=1 keeps it fatal.
+              SET lock_timeout = '60s';
               SELECT pg_advisory_lock(hashtext('plugin-br-pix-lerian:bootstrap-db:' || current_setting('bootstrap.db')));
               \o
               SELECT format('CREATE DATABASE %I OWNER %I', current_setting('bootstrap.db'), current_setting('bootstrap.role'))
@@ -297,6 +318,10 @@ spec:
               \getenv bootstrap_db DB_NAME
               \o /dev/null
               SELECT set_config('bootstrap.db', :'bootstrap_db', false);
+              -- lock_timeout bounds the advisory-lock wait below: a sibling Job
+              -- holding this database's lock must not make this session block
+              -- forever. A timeout is an error, and ON_ERROR_STOP=1 keeps it fatal.
+              SET lock_timeout = '60s';
               SELECT pg_advisory_lock(hashtext('plugin-br-pix-lerian:bootstrap-db:' || current_setting('bootstrap.db')));
               \o
               GRANT ALL PRIVILEGES ON DATABASE :"bootstrap_db" TO :"bootstrap_role";
@@ -309,6 +334,10 @@ spec:
               \getenv bootstrap_db DB_NAME
               \o /dev/null
               SELECT set_config('bootstrap.db', :'bootstrap_db', false);
+              -- lock_timeout bounds the advisory-lock wait below: a sibling Job
+              -- holding this database's lock must not make this session block
+              -- forever. A timeout is an error, and ON_ERROR_STOP=1 keeps it fatal.
+              SET lock_timeout = '60s';
               SELECT pg_advisory_lock(hashtext('plugin-br-pix-lerian:bootstrap-db:' || current_setting('bootstrap.db')));
               \o
               GRANT ALL ON SCHEMA public TO :"bootstrap_role";

@@ -186,7 +186,7 @@ ELSE
 
 The CRM (Customer Relationship Management) service is now available as an integrated component in the Midaz helm chart. Previously available as a separate chart (`plugin-crm`) deployed in the `midaz-plugins` namespace, the CRM is being migrated to become a core component of Midaz, now deployed in the `midaz` namespace alongside other Midaz services.
 
-For more details, refer to the official documentation: [CRM Documentation](https://docs.lerian.studio/en/v2/crm)
+For more details, refer to the official documentation: [CRM Documentation](https://docs.lerian.studio/en/products/midaz/crm/crm-overview)
 
 **Key changes:**
 - **Namespace migration:** CRM moves from `midaz-plugins` to `midaz` namespace
@@ -424,7 +424,7 @@ ledger:
 
 We do not recommend using the Midaz Helm chart's default dependencies (databases, cache, and message broker) in production environments. For production-grade deployments, follow our best practices to operate these dependencies with proper security, observability, backups, disaster recovery, and SLOs.
 
-Reference: [Midaz Production Best Practices](https://docs.lerian.studio/en/midaz/midaz-production-best-practices)
+Reference: [Midaz Production Best Practices](https://docs.lerian.studio/en/products/midaz/midaz-production-best-practices)
 
 ## Command to upgrade
 

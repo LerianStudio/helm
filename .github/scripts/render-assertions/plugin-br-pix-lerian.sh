@@ -45,7 +45,34 @@ CHART_VERSION="$(awk '/^version:/ {print $2}' "$CHART_DIR/Chart.yaml")"
 # fetch would add a flake for nothing.
 # ---------------------------------------------------------------------------
 if [[ ! -d "$CHART_DIR/charts" ]] || [[ -z "$(ls -A "$CHART_DIR/charts" 2>/dev/null)" ]]; then
-  helm dependency build "$CHART_DIR" > /dev/null
+  # The classic http(s) dependencies have to be registered before
+  # `helm dependency build` will resolve them, and the render gate registers
+  # them in a config of its own that does not outlive its process. Register them
+  # here too, in a throwaway config under $WORK, so this never writes to the
+  # caller's ~/.config/helm. oci:// and file:// dependencies need no entry.
+  export HELM_REPOSITORY_CONFIG="$WORK/repositories.yaml"
+  export HELM_REPOSITORY_CACHE="$WORK/repository-cache"
+
+  i=0
+  while read -r repository; do
+    [[ -z "$repository" ]] && continue
+    i=$((i + 1))
+    helm repo add "chart-dep-$i" "$repository" > /dev/null
+  done < <(sed -nE 's/^[[:space:]]*repository:[[:space:]]*"?(https?:\/\/[^"[:space:]]+)"?.*/\1/p' "$CHART_DIR/Chart.yaml" | sort -u)
+
+  # Bitnami/OCI fetches are flaky in CI; the render gate retries for the same
+  # reason. A genuinely unresolvable dependency still fails all three attempts.
+  for attempt in 1 2 3; do
+    if helm dependency build "$CHART_DIR" > "$WORK/dependency-build.log" 2>&1; then
+      break
+    fi
+    if [[ "$attempt" == "3" ]]; then
+      echo "helm dependency build failed after 3 attempts:" >&2
+      cat "$WORK/dependency-build.log" >&2
+      exit 1
+    fi
+    sleep $((attempt * 5))
+  done
 fi
 
 helm template review "$CHART_DIR" --namespace review              > "$WORK/default.yaml"

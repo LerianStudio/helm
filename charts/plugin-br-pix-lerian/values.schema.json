@@ -76,7 +76,7 @@
                 }
               }
             },
-            "pixswitchCredentials": {
+            "pixLerianCredentials": {
               "type": "object",
               "additionalProperties": true,
               "properties": {
@@ -179,7 +179,7 @@
                     "anyOf": [
                       {
                         "properties": {
-                          "pixswitchCredentials": {
+                          "pixLerianCredentials": {
                             "properties": {
                               "useExistingSecret": {
                                 "properties": {
@@ -199,12 +199,12 @@
                           }
                         },
                         "required": [
-                          "pixswitchCredentials"
+                          "pixLerianCredentials"
                         ]
                       },
                       {
                         "properties": {
-                          "pixswitchCredentials": {
+                          "pixLerianCredentials": {
                             "properties": {
                               "password": {
                                 "type": "string",
@@ -217,13 +217,22 @@
                           }
                         },
                         "required": [
-                          "pixswitchCredentials"
+                          "pixLerianCredentials"
                         ]
                       }
                     ]
                   }
                 ]
               }
+            },
+            {
+              "not": {
+                "required": [
+                  "pixswitchCredentials"
+                ]
+              },
+              "title": "retired credentials key",
+              "description": "global.externalPostgresDefinitions.pixswitchCredentials was renamed to pixLerianCredentials. There is no alias: rename the key in your values."
             }
           ]
         }

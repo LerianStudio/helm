@@ -65,7 +65,7 @@ global:
   #     For production, store admin password in an external Secret and set
   #     useExistingSecret.name (the Job reads DB_USER_ADMIN + DB_ADMIN_PASSWORD
   #     from that Secret). Never put real admin passwords in values.yaml.
-  #   - pixswitchCredentials: app user the Job creates. Provide the password
+  #   - pixLerianCredentials: app user the Job creates. Provide the password
   #     through explicit values or an existing Secret. Component DATABASE_URL
   #     values live under component `secrets`, not `configmap`.
   externalPostgresDefinitions:
@@ -87,7 +87,7 @@ global:
       username: "postgres"
       password: ""   # required when useExistingSecret.name is empty
     # -- Application credentials for the role created by the bootstrap Job
-    pixswitchCredentials:
+    pixLerianCredentials:
       useExistingSecret:
         name: ""   # PRODUCTION: set this, leave password empty
       username: "pixswitch"
@@ -1339,7 +1339,7 @@ cobSystemplane:
 #            DATABASE_URL: "postgres://<user>:<password>@managed.example.com:5432/pix-spi?sslmode=require"
 #            VALKEY_URL: "redis://default:<password>@managed.example.com:6379/0"
 #
-#   3. Override `global.externalPostgresDefinitions.pixswitchCredentials.useExistingSecret.name`
+#   3. Override `global.externalPostgresDefinitions.pixLerianCredentials.useExistingSecret.name`
 #      when running the bootstrap Job against external infra — never put real
 #      passwords in values.yaml.
 #

@@ -12,11 +12,11 @@ Each Job is idempotent — it checks for existing role and database before
 creating, and grants are safe to re-apply.
 */}}
 {{- $admin := .Values.global.externalPostgresDefinitions.postgresAdminLogin -}}
-{{- $creds := .Values.global.externalPostgresDefinitions.pixswitchCredentials -}}
+{{- $creds := .Values.global.externalPostgresDefinitions.pixLerianCredentials -}}
 {{- $conn := .Values.global.externalPostgresDefinitions.connection -}}
 {{- /*
 Resolve which Secret carries each credential. Inline values are written to the
-chart-managed Secret rendered by bootstrap-postgres-secret.yaml; an operator
+chart-managed Secret rendered by bootstrap-secret.yaml; an operator
 who names an existing Secret keeps using theirs. Either way the container reads
 them through secretKeyRef — no credential is ever emitted as an env value.
 */ -}}
@@ -80,11 +80,11 @@ spec:
                 secretKeyRef:
                   name: {{ $adminSecret | quote }}
                   key: DB_ADMIN_PASSWORD
-            - name: DB_PASSWORD_PIXSWITCH
+            - name: DB_PASSWORD_PIX_LERIAN
               valueFrom:
                 secretKeyRef:
                   name: {{ $credsSecret | quote }}
-                  key: DB_PASSWORD_PIXSWITCH
+                  key: DB_PASSWORD_PIX_LERIAN
             - name: DB_ROLE
               value: {{ $creds.username | default "pixswitch" | quote }}
             - name: DB_NAME
@@ -207,7 +207,7 @@ spec:
               SELECT pg_advisory_unlock(hashtext('plugin-br-pix-lerian:bootstrap-role:' || current_setting('bootstrap.role')));
               \o
               SQL
-              printf '%s\n%s\n' "${DB_PASSWORD_PIXSWITCH}" "${DB_PASSWORD_PIXSWITCH}" \
+              printf '%s\n%s\n' "${DB_PASSWORD_PIX_LERIAN}" "${DB_PASSWORD_PIX_LERIAN}" \
                 | PGPASSWORD="${DB_ADMIN_PASSWORD}" psql -q -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER_ADMIN}" -d "${DB_DATABASE}" \
                     -f /tmp/bootstrap-set-password.sql >/dev/null
               rm -f /tmp/bootstrap-set-password.sql

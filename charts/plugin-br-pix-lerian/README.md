@@ -14,7 +14,7 @@ BACEN-compliant Pix platform for the Lerian ecosystem.
 
 This chart manages 14 independently deployable Pix Lerian workloads. Each one gets its own Deployment, Service, ConfigMap, Secret, ServiceAccount, and — where configured — HPA and PodDisruptionBudget. Ingress is opt-in and disabled by default on all three ingress surfaces.
 
-Read [Supported topologies and current limitations](#supported-topologies-and-current-limitations) before choosing which workloads to enable. Two of them are not usable outside a local environment in this release, and two more serve no business routes.
+The DICT and COB domains each deploy as a hub tier or a proxy tier, chosen per domain. Read [Supported topologies and current limitations](#supported-topologies-and-current-limitations) before choosing which workloads to enable: in this release only the hub tier carries business flows, and some workloads are development only.
 
 ## Compatibility
 
@@ -66,22 +66,23 @@ The application also ships an adapter consumer entrypoint that this chart does n
 
 ### Hub and proxy are not interchangeable
 
-Each domain (DICT, COB) has a hub tier and a proxy tier. **They do not have equivalent APIs.**
+The DICT and COB domains each deploy in one of two tiers, and the choice is made per domain.
 
-| | DICT Hub | DICT Proxy | COB Hub | COB Proxy |
-|---|---|---|---|---|
-| Business routes | 53 | **0** | 12 | **0** |
-| Internal callback routes | yes | **0** | yes | **0** |
-| Admin routes | yes | **0** | none | **0** |
-| `health`, `readyz`, OpenAPI | yes | yes | yes | yes |
+A **hub** owns the domain's business logic and its local state — its own database, and Valkey on some components. It carries the domain's operations itself.
 
-In this release `dictProxy` and `cobProxy` are scaffolding. They serve `health`, `readyz`, and an OpenAPI document that declares no operations, and they contain no request-forwarding logic. **Choosing the proxy tier does not deliver functional parity, and it does not fall back to the hub.**
+A **proxy** is the tier for a provider that already owns that state on its side, so it keeps no local business state of its own.
+
+Which tier a domain uses follows the provider's capability: a provider that owns the state is fronted by the proxy, one that does not is fronted by the hub. **The domains are independent.** Each rail carries its own mode, and setting DICT to proxy does not affect COB, so the model allows a deployment to combine DICT on proxy with COB on hub.
+
+**In this release, only the hub tier carries business flows.** The proxy tier serves no business route in either domain, so the hub is the tier that serves traffic today — including inside a mixed combination, where the domain placed on proxy would answer no business request at all.
+
+`dictProxy` and `cobProxy` serve `health`, `readyz`, and an OpenAPI document that declares no operations, and they contain no request-forwarding logic. **Choosing the proxy tier does not deliver functional parity, and it does not fall back to the hub.**
 
 If you route client traffic at a proxy:
 
 - Every business request returns 404. There is no forwarding and no fallback.
 - `health` and `readyz` still return 200, so monitoring stays green while the rail is dead.
-- Setting a routing mode to `proxy` on a **caller** redirects that caller at the proxy tier and breaks the corresponding flows: on `spi`, `DICT_ROUTING_MODE=proxy` breaks key-initiated flows and `COB_ROUTING_MODE=proxy` breaks QR-code initiation; on `cobHub`, `DICT_ROUTING_MODE=proxy` breaks the DICT lookups that gate charge creation.
+- Setting a routing mode to `proxy` on a **caller** points that caller at the proxy tier, so every operation that caller performs against the affected domain stops working. `spi` carries a mode for DICT and one for COB; `cobHub` carries one for DICT.
 - Routing mode selects only which service name a caller resolves. It is **not** cross-checked against the matching `*_BASE_URL`, so a mismatch between the two is not caught at boot. Keep them pointing at the same tier.
 - A proxy still needs a Postgres DSN for its configuration store. It is not a stateless drop-in.
 
@@ -430,7 +431,7 @@ Plan for that write as an explicit provisioning step. See [Troubleshooting](#tro
 
 Per-tenant configuration is resolved from the store on every request, keyed by the calling tenant. **There is no global fallback.** A request whose tenant configuration is missing or incomplete is rejected with **HTTP 403 and code `TENANT_CONFIG_NOT_FOUND`**, and a request arriving without a resolvable tenant is refused before any read. The log line names the cause and the missing keys, never the values.
 
-Provision each tenant's configuration before sending it traffic. `spi` needs its identity trio, four credential pairs, and the ledger identifier; `dictHub` needs the identity trio plus its CRM address and credential pair; `cobHub` needs the identity trio.
+Provision each tenant's configuration before sending it traffic. When a tenant is missing something, the rejection names the missing keys, which is the reliable way to enumerate what that workload requires in your version.
 
 ## Systemplane configuration lifecycle
 
@@ -686,7 +687,7 @@ Reading the responses:
 
 - **200 on `health`** means the process is up. It does **not** mean the workload can serve traffic.
 - **200 on `readyz`** means the process is up and its checked dependencies are satisfied.
-- **503 on `readyz`** means a dependency check failed. Postgres is checked on every workload. Valkey is checked on `dictHub` and `dictHubVsync` only. RabbitMQ is checked on `dictHubVsync` in single-tenant only. Streaming never blocks readiness.
+- **503 on `readyz`** means a dependency check failed. In this release, Postgres is checked on every workload, Valkey on `dictHub` and `dictHubVsync` only, and RabbitMQ on `dictHubVsync` in single-tenant only. Streaming never blocks readiness.
 - Readiness also gates on required configuration keys being present in the store. This is the usual reason a correctly configured pod stays 503 — the values were never seeded, or were never written for the tenant.
 - `health` and `readyz` are unauthenticated on every workload. See [Authentication and network boundaries](#authentication-and-network-boundaries).
 

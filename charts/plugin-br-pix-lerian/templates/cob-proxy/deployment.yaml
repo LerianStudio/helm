@@ -20,12 +20,11 @@ spec:
       {{- include "plugin-br-pix-lerian.selectorLabels" (dict "context" $ "component" $component) | nindent 6 }}
   template:
     metadata:
-      annotations:
-        checksum/configmap: {{ include (print $.Template.BasePath "/cob-proxy/configmap.yaml") . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath "/cob-proxy/secrets.yaml") . | sha256sum }}
-        {{- with $values.podAnnotations }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+      {{- include "plugin-br-pix-lerian.podAnnotations" (dict
+          "context" $
+          "component" "cob-proxy"
+          "componentKey" "cobProxy"
+          "componentValues" $values) | nindent 6 }}
       labels:
         {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 8 }}
     spec:

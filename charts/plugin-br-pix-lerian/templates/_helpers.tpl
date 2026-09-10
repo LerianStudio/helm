@@ -475,3 +475,61 @@ Inputs (dict):
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+plugin-br-pix-lerian.podAnnotations — the pod template's annotations block:
+the config-rollout checksums plus the operator's podAnnotations.
+
+WHY A HELPER. The checksums must be emitted BEFORE the operator's map so the
+block reads chart-owned-then-operator-owned, but that ordering is exactly what
+lets an operator's `podAnnotations` key of the same name win: duplicate YAML
+mapping keys resolve last-wins, so `podAnnotations["checksum/configmap"]` would
+silently replace the rollout trigger and pods would stop restarting on a config
+change. Six of the seven charts in this repo that emit checksums have that hole.
+The keys are therefore RESERVED: setting one is refused outright, naming the
+key, rather than dropped with `omit` - a silently ignored value is the same
+class of bug in the other direction. Same shape as the modelled-key collision
+check in charts/br-ccs/templates/configmap.yaml.
+
+checksum/secret is emitted only when the chart renders the Secret. With
+useExistingSecret=true the component's secrets.yaml renders nothing, so the hash
+would be a constant that never changes and never triggers a rollout - it would
+be noise claiming to be a trigger. Same gate as
+charts/br-ccs/templates/deployment.yaml and
+charts/plugin-fees/templates/fees/deployment.yaml. The annotation is still
+reserved in that case, so an operator cannot quietly occupy the name.
+
+The `checksum/configmap` spelling is kept as-is. Most charts here use
+`checksum/config`, but renaming an annotation on a live Deployment changes the
+pod template hash and forces one extra rollout across every component for no
+behavioural gain.
+
+Inputs (dict):
+  context         (req)  root context ($)
+  component       (req)  the component's template directory AND values-block
+                         name in kebab-case ("spi", "dict-hub-vsync")
+  componentKey    (req)  its values path, for error messages ("dictHubVsync")
+  componentValues (req)  the component's values block
+*/}}
+{{- define "plugin-br-pix-lerian.podAnnotations" -}}
+{{- $ctx := .context -}}
+{{- $component := .component -}}
+{{- $ck := .componentKey -}}
+{{- $values := .componentValues | default dict -}}
+{{- $reserved := list "checksum/configmap" "checksum/secret" -}}
+{{- $extern := eq (include "plugin-br-pix-lerian.isTrue" (default false $values.useExistingSecret)) "true" -}}
+{{- $pod := $values.podAnnotations | default dict -}}
+{{- range $k, $_ := $pod -}}
+{{- if has $k $reserved -}}
+{{- fail (printf "plugin-br-pix-lerian: %s.podAnnotations.%q is reserved by this chart. It carries the checksum that rolls the pods when the component's ConfigMap or Secret changes, so overriding it would stop config updates from restarting the pods. Remove the key from podAnnotations; the chart emits it. Reserved keys: %s." $ck $k (join ", " $reserved)) -}}
+{{- end -}}
+{{- end -}}
+annotations:
+  checksum/configmap: {{ include (print $ctx.Template.BasePath "/" $component "/configmap.yaml") $ctx | sha256sum }}
+  {{- if not $extern }}
+  checksum/secret: {{ include (print $ctx.Template.BasePath "/" $component "/secrets.yaml") $ctx | sha256sum }}
+  {{- end }}
+  {{- with $pod }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end -}}

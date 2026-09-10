@@ -4,7 +4,7 @@ Control-plane migrations Job (ADR-013, plugin-br-payments repo). Runs the
 which never applies at app boot — the control-plane inventory is declared,
 not a silent svc.DB fallback.
 
-Renders ONLY when all four are true:
+Renders ONLY when all three are true:
   - app.configmap.MULTI_TENANT_ENABLED=true. Single-tenant already applies
     every migration automatically at boot (internal/bootstrap/service.go,
     applyStartupMigrationsIfOwned), so running this Job too would be
@@ -12,33 +12,21 @@ Renders ONLY when all four are true:
     _helpers.tpl and NOTES.txt already do (no `lower`/`get`/`default` of its
     own — an absent key renders "<nil>" via toString, not "", but that still
     never equals "true", which is all the comparison needs).
-  - global.externalPostgresDefinitions.enabled=true AND the chart's own
-    "postgresql.enabled" helper (_helpers.tpl) resolves to "false" — i.e.
-    Postgres is genuinely external, not just flagged as such.
-    externalPostgresDefinitions.enabled alone is NOT a reliable stand-in for
-    "external Postgres": it is independent of postgresql.enabled/
-    postgresql.external, and the chart's own default is a BUNDLED Postgres
-    (postgresql.enabled: true, postgresql.external: false). Gating on
-    externalPostgresDefinitions.enabled alone let a caller set it to true
-    while leaving postgresql.enabled at its default true — the Job then
-    rendered and resolved its POSTGRES_HOST to the bundled subchart's own
-    Sync-phase Secret, which does not exist yet when this PreSync hook runs,
-    deadlocking the release. The extra "postgresql.enabled" != "true" check
-    (same helper templates/configmap.yaml and templates/deployment.yaml
-    already use to tell bundled from external) closes that gap: in the
-    bundled mode the Bitnami StatefulSet/Service/Secret are ordinary
+  - the chart's own "postgresql.enabled" helper (_helpers.tpl) resolves to
+    "false" — i.e. the bundled PostgreSQL dependency is disabled and the app
+    points at an external database through app.configmap.POSTGRES_*.
+    This deliberately does NOT require
+    global.externalPostgresDefinitions.enabled: that flag owns the optional
+    database/role bootstrap Job and is normally false for an already
+    provisioned database. Coupling control-plane migrations to it prevented
+    migrations from running in established environments such as Benedita
+    stg-mt, even though the application was already connected to the external
+    control-plane database. The migration Job reads the same POSTGRES_* values
+    as the app, so it needs an external connection, not bootstrap ownership.
+
+    In bundled mode the Bitnami StatefulSet/Service/Secret are ordinary
     Sync-phase resources with zero ordering guarantee relative to this
-    PreSync Job, and there is no wait-for-postgres init container here. This
-    Job only supports, and is only tested against, the external-Postgres
-    mode bootstrap-postgres.yaml provisions into (that template now carries
-    its own PreSync hook at weight -10, so the role/database is guaranteed
-    to exist before this Job runs at weight -1, shares the identical
-    exclusivity gate, AND now reads DB_HOST/DB_PORT from the same
-    app.configmap.POSTGRES_HOST/POSTGRES_PORT source this Job uses below —
-    see bootstrap-postgres.yaml's own header comment for why the two Jobs
-    used to read from different sources and why that was a bug) — so it
-    stays gated out of the bundled-Postgres path entirely rather than
-    pretend to support it.
+    PreSync Job, so the Job remains gated out of that path.
 
     That "postgresql.enabled" helper is itself only an OR of two flags
     (postgresql.enabled/postgresql.external) and does not track Chart.yaml's
@@ -104,7 +92,7 @@ pass a matching `--timeout` explicitly.
 */}}
 {{- $defaultMigrationResources := dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "250m" "memory" "256Mi") }}
 {{- include "plugin-br-payments.validatePostgresExclusivity" . }}
-{{- if and (eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true") .Values.global.externalPostgresDefinitions.enabled (ne (include "postgresql.enabled" .) "true") .Values.app.controlplaneMigrations.enabled }}
+{{- if and (eq (.Values.app.configmap.MULTI_TENANT_ENABLED | toString) "true") (ne (include "postgresql.enabled" .) "true") .Values.app.controlplaneMigrations.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:

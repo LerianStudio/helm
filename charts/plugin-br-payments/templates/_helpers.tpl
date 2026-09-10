@@ -261,6 +261,12 @@ plugin-br-payments README.
 {{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
 {{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
+{{- if ne (.Values.app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE | toString) "vault" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE must be \"vault\" when MULTI_TENANT_ENABLED=true.\n   The application fails closed at boot for any other value (empty, a typo, or the retired \"tenant_manager\" spelling) — there is no fallback credential source.\n" }}
+{{- end }}
+{{- if not .Values.app.configmap.AWS_REGION }}
+{{- fail "\n\nERROR: app.configmap.AWS_REGION is REQUIRED when MULTI_TENANT_ENABLED=true.\n   Read directly by the AWS SDK when building the Secrets Manager client for the per-tenant integrations bundle.\n" }}
+{{- end }}
 {{- end }}
 
 {{/* Internal API key + credential encryption — required when worker runs in-process or as worker pod */}}

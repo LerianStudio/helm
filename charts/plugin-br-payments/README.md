@@ -109,6 +109,8 @@ app:
     MULTI_TENANT_ENABLED: "true"
     MULTI_TENANT_URL: "https://tenant-manager.example.com"
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
+    MULTI_TENANT_CREDENTIAL_SOURCE: "vault"
+    AWS_REGION: "<aws-region>"
   secrets:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
 ```

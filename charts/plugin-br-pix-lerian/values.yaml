@@ -198,7 +198,6 @@ spi:
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
     # Single-tenant identity
     ORGANIZATION_ID: ""
     ISPB: ""
@@ -579,7 +578,6 @@ dictHub:
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: ""
     ISPB: ""
     # -- Deliberately empty: the only adapter this chart can render is
@@ -1069,7 +1067,6 @@ cobHub:
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: ""
     # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
     # and MULTI_TENANT_API_KEY are seeds for the cob-systemplane store; the CB
@@ -1782,10 +1779,6 @@ pixauto:
     PLUGIN_AUTH_ENABLED: "false"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
-    # -- Carried for parity with spi/dict-hub/cob-hub, which all set it. INERT:
-    # nothing reads this name — lib-license-go's organization list is bound to
-    # ORGANIZATION_IDS above (pkg/config BaseConfig.LicenseOrganizationIDs).
-    LICENSE_ORGANIZATION_IDS: "global"
     # -- Single-tenant organization fallback. The tenant-config resolver reads
     # pixauto.organization_id from the systemplane store first and only falls
     # back to this. With NEITHER set every request answers 403

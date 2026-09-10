@@ -39,7 +39,6 @@ spi:
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     # Point at the adapter this environment actually runs (adapter-lerian, or
@@ -98,7 +97,6 @@ dictHub:
     DEPLOYMENT_MODE: "saas"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
     # Point at the adapter this environment actually runs (adapter-lerian, or
@@ -163,7 +161,6 @@ cobHub:
     DEPLOYMENT_MODE: "saas"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
@@ -233,7 +230,6 @@ pixauto:
     ORGANIZATION_IDS: "global"
     # Parity with spi/dict-hub/cob-hub above. Inert — the live key is
     # ORGANIZATION_IDS; no code reads this name.
-    LICENSE_ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
     IDP_DECLARATION_ENABLED: "false"
     STREAMING_ENABLED: "false"

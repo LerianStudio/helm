@@ -778,10 +778,19 @@ qrcodeEnv — dynamic-QR JWS hosting. API-ONLY: the worker serves no QR payloads
 QRCODE_PUBLIC_BASE_URL has no safe default and two constraints that are easy to
 violate and expensive to discover, so both are gates rather than comments:
   - SCHEMA-LESS. JDPI rejects a value carrying http:// or https://.
-  - urlPayloadJson is capped at 77 characters by JDPI, and that URL is
-    "<base>/<payloadPath>/<id>" — so the base plus path must leave room for the id.
+  - urlPayloadJson is capped at 77 characters by JDPI, and the app composes it as
+      multi-tenant:  <base>/<payloadPath>/<ispb:8>/cob/<id: up to 22>
+      single-tenant: <base>/<payloadPath>/cob/<id: up to 22>
+    so "<base>/<payloadPath>/" may be at most 42 characters when
+    MULTI_TENANT_ENABLED=true and 51 otherwise.
 A wrong value advertises a payload nothing can serve, and the failure surfaces at a
 payer's PSP rather than at deploy.
+
+QRCODE_PAYLOAD_PATH defaults to "qr" to match the app's own default
+(internal/shared/qrlocation: DefaultPayloadPath). Anything longer than a few
+characters spends the id's room in the 77-char budget — the previous default,
+"v1/qrcodes/payload" (18 chars), alone pushed every multi-tenant emission past
+the cap on the decided lerian.io hosts.
 
 Input dict: root, configmap.
 ------------------------------------------------------------------------------
@@ -790,14 +799,22 @@ Input dict: root, configmap.
 {{- $root := .root -}}
 {{- $cm := mergeOverwrite (deepCopy ($root.Values.api.configmap | default dict)) (.configmap | default dict) -}}
 {{- $base := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "QRCODE_PUBLIC_BASE_URL" "default" "") -}}
-{{- $payloadPath := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "QRCODE_PAYLOAD_PATH" "default" "v1/qrcodes/payload") -}}
+{{- $payloadPath := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "QRCODE_PAYLOAD_PATH" "default" "qr") -}}
 {{- if $base -}}
 {{- if or (hasPrefix "http://" $base) (hasPrefix "https://" $base) -}}
 {{- fail (printf "\n\nERROR: QRCODE_PUBLIC_BASE_URL must be schema-less; got %q.\nJDPI rejects a value carrying http:// or https://. Use just the FQDN, e.g. pix.example.com\n" $base) -}}
 {{- end -}}
 {{- $advertised := printf "%s/%s/" $base $payloadPath -}}
-{{- if gt (len $advertised) 45 -}}
-{{- fail (printf "\n\nERROR: QRCODE_PUBLIC_BASE_URL + QRCODE_PAYLOAD_PATH is too long.\nJDPI caps urlPayloadJson at 77 characters and the advertised URL is\n  <base>/<payloadPath>/<id>\nThe prefix alone is already %d characters (%q), leaving too little room for the id.\nShorten the host or the path.\n" (len $advertised) $advertised) -}}
+{{- /* The id (up to 22 chars) plus the fixed segments the app appends — "cob/", and
+   "<ispb:8>/" only in multi-tenant — spend the rest of the 77-char budget, so the
+   cap on "<base>/<payloadPath>/" depends on MULTI_TENANT_ENABLED: 77-22-13=42 when
+   true, 77-22-4=51 when false. A single cap either lets MT prefixes through that the
+   app then rejects at every emission, or refuses ST prefixes that fit. */ -}}
+{{- $mt := eq (index $cm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
+{{- $prefixCap := ternary 42 51 $mt -}}
+{{- $urlShape := ternary "<base>/<payloadPath>/<ispb:8>/cob/<id: up to 22>" "<base>/<payloadPath>/cob/<id: up to 22>" $mt -}}
+{{- if gt (len $advertised) $prefixCap -}}
+{{- fail (printf "\n\nERROR: QRCODE_PUBLIC_BASE_URL + QRCODE_PAYLOAD_PATH is too long.\nJDPI caps urlPayloadJson at 77 characters and the app advertises\n  %s\nso \"<base>/<payloadPath>/\" may be at most %d characters (MULTI_TENANT_ENABLED=%v);\nit is already %d characters (%q). Shorten the host or the path.\n" $urlShape $prefixCap $mt (len $advertised) $advertised) -}}
 {{- end -}}
 {{- end }}
 QRCODE_PUBLIC_BASE_URL: {{ $base | quote }}

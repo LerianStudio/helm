@@ -34,11 +34,6 @@ per component.
 | `pixauto` | `pixauto/api` | 4116 | Pix Automático payer side (disabled by default) |
 | `pixautoSystemplane` | `pixauto/systemplane/api` | 4117 | Runtime config plane for Pix Automático (disabled by default) |
 
-> Ports 4111 and 4112 are deliberately skipped. 4111 belongs to `br-slc` — its
-> chart, two environments and a NetworkPolicy scoped to it — and the pair was
-> left free by the component allocated before Pix Automático. Do not fill the
-> gap; take the next number above 4117.
-
 ## Architecture
 
 The plugin uses a Proxy/Hub deployment model. A "hub" component owns business
@@ -53,13 +48,12 @@ The choice is made per domain and follows the provider's capability: a provider
 that owns the state is fronted by the proxy, one that does not is fronted by the
 hub. The rails are independent — deploying DICT as a proxy does not affect COB,
 and vice versa. Callers pick the tier they resolve through the application's
-`*_ROUTING_MODE` setting, which defaults to `hub`; the matching `*_BASE_URL`
-must point at the same tier, because nothing cross-checks the two.
+`*_ROUTING_MODE` setting, which defaults to `hub`; point the matching
+`*_BASE_URL` at the same tier.
 
-The `dict-proxy` and `cob-proxy` components are Phase 2 in the application:
-today they serve `health`, `readyz` and their OpenAPI endpoints, with the
-business operations still to land, so a proxy enabled now becomes Ready without
-yet taking traffic.
+The `dict-proxy` and `cob-proxy` components currently serve only `health`,
+`readyz` and their OpenAPI endpoints. Enable them when your provider topology
+requires the proxy tier.
 
 ## Required infrastructure
 
@@ -112,9 +106,8 @@ would produce a Secret the Jobs then authenticate with, turning a values mistake
 into an opaque PostgreSQL authentication error.
 
 `pixswitchCredentials` was renamed to `pixLerianCredentials`, and there is no
-alias. `values.schema.json` rejects the retired key outright, so a stale
-override cannot quietly stop taking effect — it reports `'not' failed` at
-`/global/externalPostgresDefinitions`. Rename the key in your values.
+alias. `values.schema.json` rejects the old key outright, so a stale override
+cannot quietly stop taking effect. Rename the key in your values.
 
 The Job sets the role password with psql's `\password` meta-command. The session
 first pins `password_encryption = 'scram-sha-256'`, in the same file `psql -f`

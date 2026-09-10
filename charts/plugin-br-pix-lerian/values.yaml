@@ -93,6 +93,8 @@ global:
       username: "pixswitch"
       password: ""
 
+# Port allocation: 4111 and 4112 are intentionally unused. Allocate new
+# components from 4118 upward rather than filling the gap.
 # =============================================================================
 # COMPONENTS
 # Each component renders its own Deployment, Service, ConfigMap, Secret, HPA,

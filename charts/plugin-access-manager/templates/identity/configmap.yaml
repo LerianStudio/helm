@@ -117,7 +117,7 @@ data:
   # HTTP CLIENT
   HTTP_CLIENT_TIMEOUT_SEC: {{ .Values.identity.configmap.HTTP_CLIENT_TIMEOUT_SEC | default "30" | quote }}
   HTTP_CLIENT_MAX_IDLE_CONNS: {{ .Values.identity.configmap.HTTP_CLIENT_MAX_IDLE_CONNS | default "100" | quote }}
-  HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST: {{ .Values.identity.configmap.HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST | default "100" | quote }}
+  HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST: {{ .Values.identity.configmap.HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST | default "10" | quote }}
   HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC: {{ .Values.identity.configmap.HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC | default "90" | quote }}
 
   # AUTHORIZER (casbin model/enforcer names — kept consistent with the auth component's caradhras backend)

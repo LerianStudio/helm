@@ -69,6 +69,8 @@ When `app.configmap.MULTI_TENANT_ENABLED=true`, the following are additionally r
 |-------|-------------|
 | `app.configmap.MULTI_TENANT_URL` | Tenant Manager service URL. |
 | `app.secrets.MULTI_TENANT_SERVICE_API_KEY` | Tenant Manager service API key. |
+| `app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE` | Must be `"vault"` — the only accepted value. The app fails closed at boot for any other value (empty, a typo, or the retired `"tenant_manager"` spelling). |
+| `app.configmap.AWS_REGION` | Standard AWS SDK region variable, read directly by the AWS SDK when building the Secrets Manager client for the per-tenant integrations bundle. |
 
 > **Database password:** with the bundled PostgreSQL subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` — leave `app.secrets.POSTGRES_PASSWORD` empty. Only set it for an external Postgres that has no `postgresql.auth.existingSecret`.
 
@@ -107,11 +109,40 @@ app:
     MULTI_TENANT_ENABLED: "true"
     MULTI_TENANT_URL: "https://tenant-manager.example.com"
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
+    MULTI_TENANT_CREDENTIAL_SOURCE: "vault"
+    AWS_REGION: "<aws-region>"
   secrets:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
 ```
 
 When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead). Do not set `app.secrets.BTG_CLIENT_ID` or `app.secrets.BTG_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record.
+
+### AWS credentials for Secrets Manager (`aws.rolesAnywhere`)
+
+Multi-tenant mode with `MULTI_TENANT_CREDENTIAL_SOURCE: "vault"` calls AWS Secrets
+Manager to read each tenant's integrations bundle. On a cluster that already runs on
+AWS (IRSA), the pod gets credentials for free. On a **non-AWS cluster** (on-prem,
+Proxmox, another cloud) there is no such mechanism, so enable IAM Roles Anywhere: an
+`aws-signing-helper` sidecar exchanges an X.509 client certificate for temporary AWS
+credentials and serves them on a local metadata endpoint the app reads via the
+standard AWS SDK credential chain.
+
+```yaml
+aws:
+  rolesAnywhere:
+    enabled: true
+    trustAnchorArn: "arn:aws:rolesanywhere:<region>:<account>:trust-anchor/<id>"
+    profileArn: "arn:aws:rolesanywhere:<region>:<account>:profile/<id>"
+    roleArn: "arn:aws:iam::<account>:role/<role>"
+    region: "<region>"  # MUST match the region trustAnchorArn/profileArn were created in — Roles Anywhere resources are regional; defaults to us-east-2
+    certificateSecretName: "plugin-br-payments-iam-tls"  # cert-manager Secret the sidecar mounts
+```
+
+`trustAnchorArn`, `profileArn`, and `roleArn` are required once `enabled: true` — the
+render fails closed otherwise. The `certificateSecretName` Secret (containing
+`tls.crt`/`tls.key`) is provisioned by the GitOps deploy layer as a cert-manager
+`Certificate`, not by this chart; see the Roles Anywhere deploy docs for that half.
+Off by default — zero cost when unset.
 
 ## Common values
 
@@ -133,6 +164,7 @@ When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `prov
 | `postgresql.architecture` | `replication` | Primary + read replica. |
 | `global.externalPostgresDefinitions.enabled` | `false` | Run a bootstrap Job against an external PostgreSQL. |
 | `otel-collector-lerian.enabled` | `false` | Inject host-level OTLP endpoint env vars. |
+| `aws.rolesAnywhere.enabled` | `false` | Enable the `aws-signing-helper` sidecar for AWS credentials on non-AWS clusters. |
 
 See [`values.yaml`](./values.yaml) for the full list, and [`values-template.yaml`](./values-template.yaml) for a production-ready overlay starter.
 

@@ -41,9 +41,15 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "plugin-br-payments.serviceAccountName" . }}
       terminationGracePeriodSeconds: {{ .Values.app.terminationGracePeriodSeconds | default 60 }}
-      {{- with .Values.app.podSecurityContext }}
+      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
       securityContext:
-        {{- toYaml . | nindent 8 }}
+        {{/* fsGroup: 65532 wins over any operator-configured fsGroup — the
+             iam-certs volume mount needs the credential-helper's UID/GID —
+             but every OTHER field of app.podSecurityContext still applies. */}}
+        {{- toYaml (merge (dict "fsGroup" 65532) .Values.app.podSecurityContext) | nindent 8 }}
+      {{- else }}
+      securityContext:
+        {{- toYaml .Values.app.podSecurityContext | nindent 8 }}
       {{- end }}
       {{- with .Values.app.hostAliases }}
       hostAliases:
@@ -118,6 +124,12 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
           {{- end }}
+          {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+            - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+              value: "http://127.0.0.1:{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+            - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
+              value: "IPv4"
+          {{- end }}
           resources:
             {{- toYaml .Values.app.resources | nindent 12 }}
           # Canonical Lerian readiness contract — see plugin docs/readyz-guide.md
@@ -139,6 +151,62 @@ spec:
             timeoutSeconds: {{ .Values.app.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.app.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.app.livenessProbe.failureThreshold | default 3 }}
+        {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+        - name: aws-signing-helper
+          image: "{{ .Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ .Values.aws.rolesAnywhere.sidecar.image.tag }}"
+          imagePullPolicy: {{ .Values.aws.rolesAnywhere.sidecar.image.pullPolicy | default "IfNotPresent" }}
+          args:
+            - serve
+            - --certificate
+            - /certs/tls.crt
+            - --private-key
+            - /certs/tls.key
+            {{/* trim BEFORE required: `required` only rejects nil/empty-string,
+                 so a whitespace-only value like " " would otherwise pass here
+                 and reach aws-signing-helper as a malformed ARN argument. */}}
+            - --trust-anchor-arn
+            - "{{ required "aws.rolesAnywhere.trustAnchorArn is required when rolesAnywhere is enabled" (trim (.Values.aws.rolesAnywhere.trustAnchorArn | toString)) }}"
+            - --profile-arn
+            - "{{ required "aws.rolesAnywhere.profileArn is required when rolesAnywhere is enabled" (trim (.Values.aws.rolesAnywhere.profileArn | toString)) }}"
+            - --role-arn
+            - "{{ required "aws.rolesAnywhere.roleArn is required when rolesAnywhere is enabled" (trim (.Values.aws.rolesAnywhere.roleArn | toString)) }}"
+            - --region
+            - "{{ .Values.aws.rolesAnywhere.region | default "us-east-2" }}"
+            - --session-duration
+            - "{{ .Values.aws.rolesAnywhere.sessionDuration | default 3600 }}"
+            - --port
+            - "{{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}"
+          ports:
+            - name: imds
+              containerPort: {{ .Values.aws.rolesAnywhere.sidecar.port | default 9911 }}
+              protocol: TCP
+          volumeMounts:
+            - name: iam-certs
+              mountPath: /certs
+              readOnly: true
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          resources:
+            {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
+        {{- end }}
+      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      volumes:
+        - name: iam-certs
+          secret:
+            secretName: {{ .Values.aws.rolesAnywhere.certificateSecretName | default "plugin-br-payments-iam-tls" }}
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+      {{- end }}
       {{- with .Values.app.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

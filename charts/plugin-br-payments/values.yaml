@@ -219,11 +219,25 @@ app:
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
     MULTI_TENANT_POSTGRES_MODULE: ""
     MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
+    # Selects where the per-tenant integrations credential bundle is read from.
+    # "vault" is the ONLY accepted value once MULTI_TENANT_ENABLED=true — the
+    # app fails closed at boot for anything else (empty, a typo, or the retired
+    # "tenant_manager" spelling); there is no fallback credential source
+    # (Issue #352 decision D1). No deprecated alias exists for this key, so
+    # (unlike the renamed keys above) it is safe to ship an explicit default
+    # here.
+    MULTI_TENANT_CREDENTIAL_SOURCE: ""
     # MULTI_TENANT_TIMEOUT: "10"
     # MULTI_TENANT_CACHE_TTL_SEC: "3600"
     # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
     # MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
     MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # Standard AWS SDK region variable. Read directly by the AWS SDK's own
+    # LoadDefaultConfig — NOT through this service's own Config/env: struct —
+    # when building the Secrets Manager client for the per-tenant integrations
+    # bundle. Only consulted in multi-tenant mode; without it (and no other AWS
+    # region source, e.g. EC2/ECS instance metadata) Secrets Manager calls fail.
+    AWS_REGION: ""
     # PostgreSQL Primary (host defaults to {Release.Name}-postgresql-primary)
     POSTGRES_HOST: ""  # Empty -> dynamic default in configmap template
     POSTGRES_PORT: "5432"
@@ -461,6 +475,47 @@ postgresql:
 # ==============================================================================
 otel-collector-lerian:
   enabled: false
+
+# ==============================================================================
+# AWS AUTHENTICATION - IAM Roles Anywhere for non-AWS clusters (e.g. Proxmox)
+# Enable when the deployment target has no native AWS credential mechanism
+# (no IRSA, no static keys) but the app still needs to call AWS Secrets
+# Manager for the per-tenant integrations bundle (MULTI_TENANT_CREDENTIAL_SOURCE=vault).
+# An aws-signing-helper sidecar exchanges an X.509 client cert (provisioned by
+# the GitOps deploy as a cert-manager Certificate, see helm-deploy docs) for
+# temporary AWS credentials served on a local metadata endpoint the app reads.
+# ==============================================================================
+aws:
+  rolesAnywhere:
+    enabled: false
+    trustAnchorArn: ""
+    profileArn: ""
+    roleArn: ""
+    region: "us-east-2"
+    sessionDuration: 3600
+    certificateSecretName: "plugin-br-payments-iam-tls"
+    sidecar:
+      image:
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        # Pinned to an immutable version-platform-timestamp tag, not the
+        # rolling `latest-amd64` (Issue #352 review finding, Gandalf
+        # 2026-09-10 re-review): this sidecar is a credential-bearing
+        # workload, so a mutable tag is a supply-chain risk this chart does
+        # not accept for it even though other charts in this repo still use
+        # `latest-amd64` for the same image. Verified live against the
+        # public ECR registry API on 2026-09-10 — resolves to digest
+        # sha256:56b03f3acba0bda06c94189ab62c4a497fd1912f3d08311fb99ab24e4e4c2f84.
+        # Bump deliberately; do not revert to `latest-amd64`.
+        tag: "1.8.5-amd64-2026.08.24.20.52"
+        pullPolicy: IfNotPresent
+      port: 9911
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
 
 # Tag at end of file for image-update tooling.
 plugin-br-payments:

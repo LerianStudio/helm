@@ -102,7 +102,7 @@ spec:
             httpGet:
               path: {{ $values.readinessProbe.path | default "/cob/readyz" }}
               port: http
-            initialDelaySeconds: {{ $values.readinessProbe.initialDelaySeconds | default 10 }}
+            initialDelaySeconds: {{ include "plugin-br-pix-lerian.probeInitialDelay" (dict "probe" $values.readinessProbe "default" 10) }}
             periodSeconds: {{ $values.readinessProbe.periodSeconds | default 5 }}
             timeoutSeconds: {{ $values.readinessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ $values.readinessProbe.successThreshold | default 1 }}
@@ -111,7 +111,7 @@ spec:
             httpGet:
               path: {{ $values.livenessProbe.path | default "/cob/health" }}
               port: http
-            initialDelaySeconds: {{ $values.livenessProbe.initialDelaySeconds | default 5 }}
+            initialDelaySeconds: {{ include "plugin-br-pix-lerian.probeInitialDelay" (dict "probe" $values.livenessProbe "default" 5) }}
             periodSeconds: {{ $values.livenessProbe.periodSeconds | default 10 }}
             timeoutSeconds: {{ $values.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ $values.livenessProbe.successThreshold | default 1 }}

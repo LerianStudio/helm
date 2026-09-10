@@ -213,9 +213,26 @@ metadata:
     argocd.argoproj.io/hook: PreSync
     argocd.argoproj.io/sync-wave: "-5"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+{{- /*
+  Read both knobs with hasKey, not `default`, for the same reason the
+  'enabled' flag above does it: Go templates treat 0 as empty, so
+  `default 300 .ttlSecondsAfterFinished` silently replaces an explicit 0.
+  Both keys ship on all five migrating components in values.yaml and
+  values.schema.json types them {"type":"integer","minimum":0}, so 0 is a
+  value an operator is explicitly allowed to set -- ttlSecondsAfterFinished: 0
+  deletes the Job as soon as it finishes, backoffLimit: 0 means do not retry.
+*/}}
+{{- $ttlSeconds := 300 }}
+{{- if hasKey $migrationsCfg "ttlSecondsAfterFinished" }}
+  {{- $ttlSeconds = $migrationsCfg.ttlSecondsAfterFinished }}
+{{- end }}
+{{- $backoffLimit := 3 }}
+{{- if hasKey $migrationsCfg "backoffLimit" }}
+  {{- $backoffLimit = $migrationsCfg.backoffLimit }}
+{{- end }}
 spec:
-  ttlSecondsAfterFinished: {{ default 300 $migrationsCfg.ttlSecondsAfterFinished }}
-  backoffLimit: {{ default 3 $migrationsCfg.backoffLimit }}
+  ttlSecondsAfterFinished: {{ $ttlSeconds }}
+  backoffLimit: {{ $backoffLimit }}
   template:
     metadata:
       labels:

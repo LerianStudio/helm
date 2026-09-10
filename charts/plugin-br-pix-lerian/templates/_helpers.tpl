@@ -533,3 +533,24 @@ annotations:
   {{- toYaml . | nindent 2 }}
   {{- end }}
 {{- end -}}
+
+{{/*
+Probe initialDelaySeconds, defaulted on key PRESENCE rather than truthiness.
+
+`{{ $values.readinessProbe.initialDelaySeconds | default 10 }}` is wrong for
+this one knob: Go templates treat 0 as empty, so an operator who sets
+`initialDelaySeconds: 0` -- a legal value meaning "start probing immediately" --
+silently gets the chart default instead. `dig` keys off whether the key is
+present, so an explicit 0 survives. Same trap `_migrations.tpl` documents for
+its own knobs.
+
+Only initialDelaySeconds needs this. periodSeconds, timeoutSeconds,
+successThreshold and failureThreshold all have a Kubernetes minimum of 1, so 0
+is not a value the API server accepts there and `default` is harmless.
+
+Usage:
+  {{ include "plugin-br-pix-lerian.probeInitialDelay" (dict "probe" $values.readinessProbe "default" 10) }}
+*/}}
+{{- define "plugin-br-pix-lerian.probeInitialDelay" -}}
+{{- dig "initialDelaySeconds" .default (.probe | default dict) -}}
+{{- end -}}

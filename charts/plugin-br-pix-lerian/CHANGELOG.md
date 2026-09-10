@@ -68,6 +68,21 @@
     client and are unchanged. `values.yaml` defaults are unchanged.
 
 - **Fixes**
+  - An explicit `0` is no longer discarded on four Job/probe knobs. Go templates
+    treat `0` as empty, so `default` silently substituted the chart default:
+    `migrations.ttlSecondsAfterFinished: 0` rendered as `300`,
+    `migrations.backoffLimit: 0` as `3`, and
+    `readinessProbe`/`livenessProbe.initialDelaySeconds: 0` as `10`/`5`. The
+    migration knobs are typed `{"type":"integer","minimum":0}` in
+    `values.schema.json` on all five migrating components, so `0` was always an
+    admitted value that never took effect. `_migrations.tpl` now reads both keys
+    with `hasKey`, the idiom the same file already uses for `migrations.enabled`,
+    and the 28 probe lines across the 14 deployments go through a new
+    `plugin-br-pix-lerian.probeInitialDelay` helper that defaults on key
+    presence. Only `initialDelaySeconds` changed: `periodSeconds`,
+    `timeoutSeconds`, `successThreshold` and `failureThreshold` have a
+    Kubernetes minimum of 1, so `default` is harmless there. A render with no
+    overrides is byte-identical to before.
   - The bootstrap Postgres Jobs (`templates/bootstrap-postgres.yaml`) now carry a
     security context. They were the only workload in the chart without one,
     while the chart's own migration Job has been hardened since it was written:

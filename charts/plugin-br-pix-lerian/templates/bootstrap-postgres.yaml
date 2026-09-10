@@ -101,6 +101,51 @@ spec:
               echo "Role: ${DB_ROLE}"
               echo ""
 
+              # INPUT VALIDATION, before any statement reaches PostgreSQL.
+              #
+              # These run first so a bad credential cannot leave the cluster
+              # half-bootstrapped: no role created, no database created, no GRANT
+              # issued. The chart's render-time guards cover inline values only -
+              # when the operator points useExistingSecret.name at a Secret the
+              # template cannot read it, so the same contract is enforced here at
+              # runtime, where the value is finally visible.
+              #
+              # Nothing below echoes a credential. Every test is a shell builtin
+              # ([ and case), so no value ever becomes another process's argv.
+              for required_var in DB_USER_ADMIN DB_ADMIN_PASSWORD DB_PASSWORD_PIX_LERIAN; do
+                # ${!name} is bash indirect expansion - no eval, no subshell, so the
+                # value is never re-parsed and never reaches a process argument list.
+                if [ -z "${!required_var:-}" ]; then
+                  echo "ERROR: ${required_var} is empty." >&2
+                  echo "  The bootstrap needs it to authenticate as the Postgres admin and to set the application role's password." >&2
+                  echo "  Supply it inline under global.externalPostgresDefinitions, or make sure the Secret named by useExistingSecret.name carries the key with a non-empty value." >&2
+                  exit 1
+                fi
+              done
+
+              # \password reads its two confirmations as newline-delimited lines on
+              # stdin, so a password containing LF or CR cannot be transported: the
+              # first embedded newline would end the first confirmation and the
+              # remainder would be read as the second, producing either a mismatch
+              # or - worse - a silently truncated password. Reject it here instead.
+              # Every other character survives the pipe, including spaces, quotes,
+              # backslashes, $, @ and /.
+              case "${DB_PASSWORD_PIX_LERIAN}" in
+                *$'\n'*)
+                  echo "ERROR: DB_PASSWORD_PIX_LERIAN contains a line feed (LF)." >&2
+                  echo "  psql's \\password reads its confirmations as newline-delimited lines, so a password with an embedded newline cannot be transported without corruption." >&2
+                  echo "  Choose a password without LF or CR. Spaces, quotes, backslashes and symbols such as \$ @ / are all supported." >&2
+                  exit 1
+                  ;;
+                *$'\r'*)
+                  echo "ERROR: DB_PASSWORD_PIX_LERIAN contains a carriage return (CR)." >&2
+                  echo "  psql's \\password reads its confirmations as newline-delimited lines, so a password with an embedded CR cannot be transported without corruption." >&2
+                  echo "  Choose a password without LF or CR. Spaces, quotes, backslashes and symbols such as \$ @ / are all supported." >&2
+                  exit 1
+                  ;;
+              esac
+              echo "Credentials validated."
+
               ROLE_EXISTS=0
 
               # psql interpolates :'var' only for stdin/-f input, NOT for -c, so

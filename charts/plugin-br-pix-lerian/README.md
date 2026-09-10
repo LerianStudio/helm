@@ -246,7 +246,6 @@ Set these before `helm install`. **"Required" does not mean the same thing on ev
 | `MULTI_TENANT_ENABLED` | `configmap` | Application boot | Defaults to `false`. See [Multi-tenant configuration](#multi-tenant-configuration). |
 | `MULTI_TENANT_URL`, `MULTI_TENANT_API_KEY` | `configmap` / `secrets` | Application boot | **Required when `MULTI_TENANT_ENABLED=true`** on the five Systemplane workloads, `cobHub`, `dictHubVsync`, `pixauto`, `adapterLerian`. `dictSystemplane` and `cobSystemplane` do **not** ship these keys — add them through the open maps. |
 | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_URL` | `configmap` | Application boot / Security posture | Defaults to `false` / an in-cluster placeholder. When enabled, `PLUGIN_AUTH_URL` **must be non-empty** or the workload refuses to start. **Required to be `true`** on `pixauto` whenever `ENV_NAME` is not `local` or `development`. |
-| `AUTH_JWT_VERIFY_CERT`, `AUTH_JWT_ISSUER` | `secrets` | Application boot | **Required on `pixauto`** when `PLUGIN_AUTH_ENABLED=true` and `ENV_NAME` is not `local` or `development`. **The chart does not ship these keys** — add them through `pixauto.secrets`. Without them the workload refuses to start. |
 | `RABBITMQ_URI` | `secrets` | Render | **Required when `dictHubVsync` is enabled.** The render fails without it. |
 | `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET` | `secrets` | Application boot | **Required when `adapterProviderMock` is enabled** — it does not start without both. Issued with your sandbox access; see [`adapterProviderMock`](#adapterprovidermock--development-only). |
 | `VALKEY_URL` | `secrets` | Application boot / Optional degradation | **Required** on `dictHubVsync`, which does not start without it. Optional on `spi`, `dictHub`, `cobHub` and `pixauto`, where its absence degrades the cache rather than failing the workload. |
@@ -698,7 +697,6 @@ kubectl logs -n <namespace> <pod> --previous | head -30
 | `DEPLOYMENT_MODE` must be explicitly set | Set it on that workload. Multi-tenant does not accept an implicit mode. |
 | `ORGANIZATION_ID` must be empty | Remove it from `cobHub` / `pixauto` in multi-tenant mode. |
 | `PLUGIN_AUTH_ENABLED` must be true | On `pixauto` outside `local`/`development`, enable auth or set `ENV_NAME` accordingly. |
-| `AUTH_JWT_VERIFY_CERT` / `AUTH_JWT_ISSUER` | Add both to `pixauto.secrets`. The chart does not ship them. |
 
 Also check the mode value itself: it is matched **case-sensitively and untrimmed**, so `SAAS` or a trailing space is not the mode you meant.
 

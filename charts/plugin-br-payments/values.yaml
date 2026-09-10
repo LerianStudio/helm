@@ -219,11 +219,25 @@ app:
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
     MULTI_TENANT_POSTGRES_MODULE: ""
     MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
+    # Selects where the per-tenant integrations credential bundle is read from.
+    # "vault" is the ONLY accepted value once MULTI_TENANT_ENABLED=true — the
+    # app fails closed at boot for anything else (empty, a typo, or the retired
+    # "tenant_manager" spelling); there is no fallback credential source
+    # (Issue #352 decision D1). No deprecated alias exists for this key, so
+    # (unlike the renamed keys above) it is safe to ship an explicit default
+    # here.
+    MULTI_TENANT_CREDENTIAL_SOURCE: ""
     # MULTI_TENANT_TIMEOUT: "10"
     # MULTI_TENANT_CACHE_TTL_SEC: "3600"
     # MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
     # MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
     MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # Standard AWS SDK region variable. Read directly by the AWS SDK's own
+    # LoadDefaultConfig — NOT through this service's own Config/env: struct —
+    # when building the Secrets Manager client for the per-tenant integrations
+    # bundle. Only consulted in multi-tenant mode; without it (and no other AWS
+    # region source, e.g. EC2/ECS instance metadata) Secrets Manager calls fail.
+    AWS_REGION: ""
     # PostgreSQL Primary (host defaults to {Release.Name}-postgresql-primary)
     POSTGRES_HOST: ""  # Empty -> dynamic default in configmap template
     POSTGRES_PORT: "5432"

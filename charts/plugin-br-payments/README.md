@@ -69,6 +69,8 @@ When `app.configmap.MULTI_TENANT_ENABLED=true`, the following are additionally r
 |-------|-------------|
 | `app.configmap.MULTI_TENANT_URL` | Tenant Manager service URL. |
 | `app.secrets.MULTI_TENANT_SERVICE_API_KEY` | Tenant Manager service API key. |
+| `app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE` | Must be `"vault"` — the only accepted value. The app fails closed at boot for any other value (empty, a typo, or the retired `"tenant_manager"` spelling). |
+| `app.configmap.AWS_REGION` | Standard AWS SDK region variable, read directly by the AWS SDK when building the Secrets Manager client for the per-tenant integrations bundle. |
 
 > **Database password:** with the bundled PostgreSQL subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` — leave `app.secrets.POSTGRES_PASSWORD` empty. Only set it for an external Postgres that has no `postgresql.auth.existingSecret`.
 

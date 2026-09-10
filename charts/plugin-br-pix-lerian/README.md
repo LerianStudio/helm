@@ -363,13 +363,13 @@ The migration Secret carries only `DATABASE_URL`. It is **not** rendered when `u
 2. weight `-20`: the bootstrap Jobs create the role, databases, and grants (only with the bootstrap enabled).
 3. weight `-10`: each component's migration Secret is applied.
 4. weight `-5`: each component's migration Job runs and must succeed.
-5. Weight `0`: the normal resources — Deployments, Services, ConfigMaps, and the application Secrets — are applied, and on an upgrade the new pods roll out.
+5. weight `0`: the normal resources — Deployments, Services, ConfigMaps, and the application Secrets — are applied, and on an upgrade the new pods roll out.
 
 What that gives you:
 
 - **Migrations complete before any workload is created or updated.** A failing migration aborts the release at step 4, so on a first install no Deployment is created at all, and on an upgrade the running pods are left untouched at the previous revision.
 - **The bootstrap Jobs are sequenced ahead of the migrations** that depend on the databases they create, which makes provisioning and migrating in a single fresh install a supported flow.
-- **`--wait` no longer interacts with the ordering.** The migrations are behind the workloads' readiness gate rather than in front of it, so a workload that cannot become ready until its schema exists is not waiting on a step that has yet to run. Still raise `--timeout` for large schema changes, since `--wait` waits for hook Jobs too.
+- **`--wait` no longer sits between a workload and its schema.** The migration now runs before the workloads exist, so the readiness gate comes after the schema is in place instead of in front of the step that applies it. A workload that cannot report ready until its tables exist is therefore no longer waiting on something that has yet to run. Still raise `--timeout` for large schema changes, since `--wait` waits for hook Jobs too.
 
 **The database must already be reachable when the migration Job runs.** That holds for an external or managed server, and for the databases the chart's own bootstrap Jobs create. It does **not** hold for the bundled `postgresql` subchart: its StatefulSet is a normal resource at weight `0`, so it cannot be started before a hook at weight `-5`. Pointing a DSN at the bundled subchart and installing with migrations enabled therefore fails at the migration hook, with the connection error in the Job log. That subchart is [development-only](#development-only-local-dependencies); when you do use it, install once with `<component>.migrations.enabled: false`, then enable migrations in a second step once Postgres is running.
 

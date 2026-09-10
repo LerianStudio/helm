@@ -190,7 +190,13 @@ dictHubVsync:
 # dict/proxy/api
 # ------------------------------------------------------------
 dictProxy:
-  enabled: true
+  # Hub-only is the supported production shape in this release -- see the chart
+  # README, "Example topologies", which spells out this exact pair as false, and
+  # the topology section above it: the proxy tier serves no business route, so
+  # every business request it receives returns 404 while health and readyz stay
+  # green. Enable it only if your provider topology requires the tier to exist,
+  # and never point client traffic at it.
+  enabled: false
   configmap:
     DEPLOYMENT_MODE: "byoc"
     # Production environment gate. See spi above -- this template ships a
@@ -258,7 +264,13 @@ cobHub:
 # cob/proxy/api
 # ------------------------------------------------------------
 cobProxy:
-  enabled: true
+  # Hub-only is the supported production shape in this release -- see the chart
+  # README, "Example topologies", which spells out this exact pair as false, and
+  # the topology section above it: the proxy tier serves no business route, so
+  # every business request it receives returns 404 while health and readyz stay
+  # green. Enable it only if your provider topology requires the tier to exist,
+  # and never point client traffic at it.
+  enabled: false
   configmap:
     DEPLOYMENT_MODE: "byoc"
     # Production environment gate. See spi above -- this template ships a

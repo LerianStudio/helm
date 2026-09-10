@@ -68,6 +68,15 @@
     client and are unchanged. `values.yaml` defaults are unchanged.
 
 - **Fixes**
+  - `values-template.yaml` now ships `dictProxy` and `cobProxy` as
+    `enabled: false`. The template enabled both while the chart's own README
+    states that hub-only is the supported production shape, that the proxy tier
+    carries no business flow, and that every business request sent to a proxy
+    returns 404 while `health` and `readyz` stay green -- and its "Example
+    topologies" section spells out this exact pair as `false`. The value was
+    inherited from the fork source, `plugin-br-pix-switch/values-template.yaml`,
+    which had the same. Operators who genuinely need the tier can still enable
+    it; the template no longer stands two workloads up by default.
   - `values-template.yaml` now sets `ENV_NAME: "production"` on every component
     it enables. It enables nine (`spi`, `spiSystemplane`, `dictHub`,
     `dictHubVsync`, `dictProxy`, `dictSystemplane`, `cobHub`, `cobProxy`,

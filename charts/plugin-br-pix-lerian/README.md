@@ -568,6 +568,8 @@ helm upgrade --install <release-name> \
   --wait --timeout 10m
 ```
 
+**One release per namespace.** Install only one Pix Lerian release in a given Kubernetes namespace. The chart uses stable workload names (`plugin-br-pix-lerian-<component>`) that do not carry the release name, so two releases of this chart cannot share a namespace. Two releases in two different namespaces are fine, and that is how you run more than one installation.
+
 `helm registry login` prompts for the token on stdin. **Do not pass a token on the command line** — it lands in your shell history and in the process list.
 
 Get `<chart-version>` from the chart release, or from `Chart.yaml` in this directory. **Always pin it explicitly.** An unpinned install resolves to whatever is newest, which makes the deployed version unreproducible.
@@ -647,7 +649,7 @@ Common checks are summarized below. The `readyz` response is the authoritative l
 | `cobSystemplane` | 4110 | `/cob/health` | `/cob/readyz` | Postgres | — |
 | `adapterLerian` | 4113 | `/lerian/health` | `/lerian/readyz` | Postgres | — |
 | `adapterLerianSystemplane` | 4115 | `/lerian/health` | `/lerian/readyz` | Postgres | — |
-| `pixauto` | 4116 | `/pixauto/health` | `/pixauto/readyz` | Postgres, `required_keys` | `auth.url` when auth is on; streaming when enabled |
+| `pixauto` | 4116 | `/pixauto/health` | `/pixauto/readyz` | `required_keys`; Postgres in single-tenant | `auth.url` when auth is on; streaming when enabled |
 | `pixautoSystemplane` | 4117 | `/pixauto/health` | `/pixauto/readyz` | Postgres | — |
 
 Note that a Systemplane workload's prefix is its **domain** prefix, not its own name: `dictSystemplane` answers under `/dict`, while `dictHub` answers under `/dict-hub`. Both `spi` and `spiSystemplane` answer under `/spi`, on different ports.
@@ -658,7 +660,7 @@ Reading the responses:
 - **200 on `readyz`** means the process is up and its checked dependencies are satisfied.
 - **503 on `readyz`** means a check failed. The two right-hand columns above say which checks a workload runs; a conditional probe exists only when that dependency or feature is configured. Note that the proxy workloads gate on configuration keys only, and `adapterProviderMock` probes its provider rather than a database, so "Postgres is checked everywhere" is not true. **Read the `readyz` body** — it names each check and its status, and is authoritative for your version and configuration.
 - Failure modes differ by check: `required_keys` means the configuration store has nothing for a key the workload needs; a Postgres, Valkey, or RabbitMQ check means the dependency is unreachable; an adapter, Midaz, CRM, provider, or `auth.url` check means an HTTP dependency did not answer; a notification outbox relay or streaming check means the event path is not healthy.
-- **Tenant mode changes the set, it does not just change the values.** A check that depends on a deployment-wide connection pool is registered only when that pool exists, which in single-tenant it does and in multi-tenant it does not — per-tenant pools are resolved per request instead. That is why `spi`, `dictHub`, `cobHub`, and `dictHubVsync` carry a Postgres check in single-tenant and none in multi-tenant, and why `dictHubVsync` additionally drops its RabbitMQ and adapter checks there while gaining `tenant_consumers`. The relay check runs the other way round: it exists only in multi-tenant, and only with streaming enabled. A workload reporting ready in multi-tenant is therefore making a narrower claim than the same workload in single-tenant, and a tenant whose own configuration is missing still fails at the request, not at `readyz`.
+- **Tenant mode changes the set, it does not just change the values.** A check that depends on a deployment-wide connection pool is registered only when that pool exists, which in single-tenant it does and in multi-tenant it does not — per-tenant pools are resolved per request instead. That is why `spi`, `dictHub`, `cobHub`, `dictHubVsync`, and `pixauto` carry a Postgres check in single-tenant and none in multi-tenant, and why `dictHubVsync` additionally drops its RabbitMQ and adapter checks there while gaining `tenant_consumers`. The relay check runs the other way round: it exists only in multi-tenant, and only with streaming enabled. A workload reporting ready in multi-tenant is therefore making a narrower claim than the same workload in single-tenant, and a tenant whose own configuration is missing still fails at the request, not at `readyz`.
 - Readiness also gates on required configuration keys being present in the store. This is the usual reason a correctly configured pod stays 503 — the values were never seeded, or were never written for the tenant.
 - `health` and `readyz` are unauthenticated on every workload. See [Authentication](#authentication).
 

@@ -29,7 +29,11 @@
             "databases": {
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 23,
+                "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                "description": "Database name, used verbatim in PostgreSQL and as the suffix of the bootstrap Job name plugin-br-pix-lerian-bootstrap-postgres-<database>. Lowercase letters, digits and hyphens only; must start and end with a letter or digit; no underscore, dot or uppercase. maxLength is 23 because the 40-character Job name prefix plus the name must stay within the 63-character DNS-1123 label limit. The value is never normalized: what you write here is the database created in PostgreSQL."
               },
               "uniqueItems": true
             },

@@ -262,7 +262,7 @@ spi:
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
   # the chart renders a Job with command [/migrate] overriding the default
-  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
     # Image path holding the SQL files. Match the Dockerfile's COPY target.
@@ -639,7 +639,7 @@ dictHub:
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
   # the chart renders a Job with command [/migrate] overriding the default
-  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
     # Image path holding the SQL files. Match the Dockerfile's COPY target.
@@ -1110,7 +1110,7 @@ cobHub:
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
   # the chart renders a Job with command [/migrate] overriding the default
-  # ENTRYPOINT (/app). Runs as a Helm hook on pre-upgrade + post-install.
+  # ENTRYPOINT (/app). Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
     # Image path holding the SQL files. Match the Dockerfile's COPY target.
@@ -1569,7 +1569,7 @@ adapterLerian:
 
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
-  # Runs as a Helm hook on pre-upgrade + post-install.
+  # Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
     migrationsPath: /migrations
@@ -1862,7 +1862,7 @@ pixauto:
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image; the chart renders a Job with
   # command [/migrate] overriding the default ENTRYPOINT (/app). Runs as a Helm
-  # hook on pre-upgrade + post-install. This is pixauto's ONLY migration Job —
+  # hook on pre-install + pre-upgrade. This is pixauto's ONLY migration Job —
   # the single chain also creates the systemplane_entries table, so
   # pixauto-systemplane has none.
   migrations:

@@ -53,8 +53,12 @@ global:
   # Use cases:
   #   - In-cluster Postgres subchart (postgresql.enabled=true) AND you want
   #     the chart to create the 5 Pix Lerian databases for you. Set
-  #     connection.host to the in-cluster service name
-  #     (plugin-br-pix-lerian-postgresql).
+  #     connection.host to the subchart's Service, which is RELEASE-prefixed,
+  #     not chart-prefixed: `<release-name>-postgresql`. A release named `pix`
+  #     therefore gives `pix-postgresql`; `plugin-br-pix-lerian-postgresql`
+  #     does not exist unless the release itself is named that. Only the
+  #     subcharts follow the release name — this chart's own Services keep the
+  #     `plugin-br-pix-lerian-*` prefix (e.g. plugin-br-pix-lerian-spi).
   #   - External Postgres (RDS, Cloud SQL, etc.) where the operator wants the
   #     chart to provision the role+databases. The admin credentials below
   #     must have privilege to CREATE ROLE / CREATE DATABASE on the target

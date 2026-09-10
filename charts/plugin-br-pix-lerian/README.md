@@ -157,7 +157,7 @@ Hub-only, with the two `Development only` pairs disabled:
 2. Image pull secret created in that namespace and named in `global.imagePullSecrets`.
 3. Postgres reachable; databases and role exist, or `global.externalPostgresDefinitions` is configured to create them.
 4. `secrets.DATABASE_URL` and/or `secrets.SYSTEMPLANE_POSTGRES_DSN` set for every workload you enable — **otherwise no migration Job is rendered for it.**
-5. `LICENSE_KEY` and `ORGANIZATION_IDS` set on every enabled workload if `DEPLOYMENT_MODE` is not `local`.
+5. `LICENSE_KEY` set on every enabled workload if `DEPLOYMENT_MODE` is not `local`, and `ORGANIZATION_IDS` set alongside it on the eight workloads that build a license client — see [`ORGANIZATION_IDS`](#required-before-installation) for the list.
 6. `SYSTEMPLANE_SECRET_MASTER_KEY` set on the Systemplane workloads that require it in your mode.
 7. `RABBITMQ_URI` set if `dictHubVsync` is enabled.
 8. `PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_URL` decided; `systemplaneIngress.enabled` left `false`.
@@ -237,7 +237,7 @@ Set these before `helm install`. **"Required" does not mean the same thing on ev
 |---|---|---|---|
 | `DEPLOYMENT_MODE` | `configmap` | Application boot | Accepts `local`, `byoc`, `saas`, lower-case and untrimmed. **Required to be set explicitly** on `spi`, `dictHub`, `dictProxy`, `cobHub`, `cobProxy`, `pixauto` when `MULTI_TENANT_ENABLED=true`. Chart default is `byoc`. |
 | `LICENSE_KEY` | `secrets` | Application boot | **Required** whenever `DEPLOYMENT_MODE` is anything other than `local`. Empty is tolerated only in `local`. The chart ships the key on all 14 workloads. |
-| `ORGANIZATION_IDS` | `configmap` | Application boot | **Required together with `LICENSE_KEY`** — the license client refuses to initialise without it. Use `global` for a single-license deployment. The chart ships the key only on `adapterLerian` and `pixauto`; add it to every other workload where you set `LICENSE_KEY`. |
+| `ORGANIZATION_IDS` | `configmap` | Application boot | **Required together with `LICENSE_KEY`** — the license client refuses to initialise without it and the workload exits at boot. Use `global` for a single-license deployment, or a comma-separated list to scope it. Eight workloads build a license client and need the key: `spi`, `dictHub`, `dictProxy`, `dictHubVsync`, `cobHub`, `cobProxy`, `pixauto`, and `adapterLerian`. The five Systemplane workloads and `adapterProviderMock` do not, so the key is not needed there even though they carry `LICENSE_KEY`. `values-template.yaml` sets it on all eight; `values.yaml` ships it only on `adapterLerian` and `pixauto`, so add it to the other six if you build your values file from the defaults. |
 | `ORGANIZATION_ID` | `configmap` | Application boot | Single-tenant business identity. Applies to `spi`, `dictHub`, `dictHubVsync`, `cobHub`. **Must be empty** when `MULTI_TENANT_ENABLED=true` on `cobHub` and `pixauto` — a value there refuses the boot. Not read by `dictProxy` or `pixauto`; the chart ships it there for parity only. Not interchangeable with `ORGANIZATION_IDS`. |
 | `ISPB` | `configmap` | Readiness | Single-tenant identity on `spi`, `dictHub`, `dictHubVsync`. Required to reach ready — see [Health and readiness reference](#health-and-readiness-reference). |
 | `DATABASE_URL` | `secrets` | Application boot | **Required** on `spi`, `dictHub`, `dictProxy`, `cobProxy` in every mode. **Required in single-tenant only** on `cobHub`, `dictHubVsync`, `pixauto`. Not used by `adapterLerian`, `adapterProviderMock`. |
@@ -310,7 +310,7 @@ A full single-tenant deployment uses five databases: `pix-spi`, `pix-dict`, `pix
 
 With `global.externalPostgresDefinitions.enabled: true` the chart renders one Job per database, creating role, database, and grants idempotently. The admin credentials need privilege to create roles and databases on the target server.
 
-The Jobs are **regular resources**, not hooks. On install they run alongside the rest of the release and before the migration hooks; on upgrade the migration hooks run first, by which point the databases already exist.
+The Jobs are `pre-install,pre-upgrade` hooks at weight `-20`, and the Secret carrying their credentials is a hook at `-30`. That places both ahead of the migration pair at `-10` and `-5`, so on a fresh install the role and the databases exist before the first migration runs against them. They run again on every upgrade; the Jobs are idempotent, so a re-run against already-provisioned databases is a no-op that re-asserts the role password and the grants.
 
 Each credential can come from an existing Secret or inline, independently of the other:
 
@@ -346,41 +346,34 @@ The role name defaults to `pixswitch`. Set `global.externalPostgresDefinitions.p
 
 Condition 3 is why the default render produces no Jobs: an empty DSN would make the hook fail the release before any pod starts, so the chart skips it instead. **A workload whose Job never renders never gets its schema applied.**
 
-Hook annotations:
+Hook annotations. Every database resource in the chart sits in the same `pre-install,pre-upgrade` phase, ordered by weight:
 
 | Resource | Hook | Weight | Delete policy |
 |---|---|---|---|
+| `plugin-br-pix-lerian-bootstrap-postgres` Secret | `pre-install,pre-upgrade` | `-30` | `before-hook-creation` |
+| `plugin-br-pix-lerian-bootstrap-postgres-<database>` Job | `pre-install,pre-upgrade` | `-20` | `before-hook-creation,hook-succeeded` |
 | `plugin-br-pix-lerian-<component>-migrations` Secret | `pre-install,pre-upgrade` | `-10` | `before-hook-creation` |
-| `plugin-br-pix-lerian-<component>-migrations` Job | `pre-upgrade,post-install` | `-5` | `before-hook-creation,hook-succeeded` |
+| `plugin-br-pix-lerian-<component>-migrations` Job | `pre-install,pre-upgrade` | `-5` | `before-hook-creation,hook-succeeded` |
 
-The Secret carries only `DATABASE_URL`. It is **not** rendered when `useExistingSecret: true` — the Job reads your Secret directly, which is why that Secret must exist before the install begins.
+The migration Secret carries only `DATABASE_URL`. It is **not** rendered when `useExistingSecret: true` — the Job reads your Secret directly, which is why that Secret must exist before the install begins.
 
-**The two lifecycles are not symmetric.** The Job is a `post-install` hook but a `pre-upgrade` hook, so read the one that applies to you.
+**Install and upgrade share one ordering.** Helm applies the hooks of a phase in weight order and waits for each one to finish before starting the next, so both lifecycles run:
 
-**On a fresh install:**
+1. weight `-30`: the bootstrap credential Secret is applied (only with the bootstrap enabled).
+2. weight `-20`: the bootstrap Jobs create the role, databases, and grants (only with the bootstrap enabled).
+3. weight `-10`: each component's migration Secret is applied.
+4. weight `-5`: each component's migration Job runs and must succeed.
+5. Weight `0`: the normal resources — Deployments, Services, ConfigMaps, and the application Secrets — are applied, and on an upgrade the new pods roll out.
 
-1. `pre-install`: the migration Secret is applied.
-2. Normal resources are applied — Deployments, Services, and the bootstrap Jobs, which are **not** hooks.
-3. `post-install`: the migration Job runs.
+What that gives you:
 
-Two consequences follow, and neither is a Helm guarantee you can lean on:
+- **Migrations complete before any workload is created or updated.** A failing migration aborts the release at step 4, so on a first install no Deployment is created at all, and on an upgrade the running pods are left untouched at the previous revision.
+- **The bootstrap Jobs are sequenced ahead of the migrations** that depend on the databases they create, which makes provisioning and migrating in a single fresh install a supported flow.
+- **`--wait` no longer interacts with the ordering.** The migrations are behind the workloads' readiness gate rather than in front of it, so a workload that cannot become ready until its schema exists is not waiting on a step that has yet to run. Still raise `--timeout` for large schema changes, since `--wait` waits for hook Jobs too.
 
-- **The migration Job runs after the workloads are created, not before.** Pods can start, and fail their readiness checks, before the schema exists. Expect restarts on a first install.
-- **Nothing sequences the bootstrap Jobs against the migration Job.** The bootstrap Jobs are ordinary resources, so Helm does not wait for them to finish before the `post-install` hook starts. If you provision the databases with them, verify they completed before treating a migration failure as a schema problem.
+**The database must already be reachable when the migration Job runs.** That holds for an external or managed server, and for the databases the chart's own bootstrap Jobs create. It does **not** hold for the bundled `postgresql` subchart: its StatefulSet is a normal resource at weight `0`, so it cannot be started before a hook at weight `-5`. Pointing a DSN at the bundled subchart and installing with migrations enabled therefore fails at the migration hook, with the connection error in the Job log. That subchart is [development-only](#development-only-local-dependencies); when you do use it, install once with `<component>.migrations.enabled: false`, then enable migrations in a second step once Postgres is running.
 
-If you install with `--wait`, Helm waits for the normal resources before running `post-install` hooks. Budget a generous `--timeout` on a first install, and check the Jobs and pod events rather than assuming the release is stuck.
-
-**On an upgrade:**
-
-1. `pre-upgrade` weight `-10`: the migration Secret is applied.
-2. `pre-upgrade` weight `-5`: the migration Job runs and must succeed.
-3. The new pods roll out.
-
-This is the ordering most operators expect: migrations complete before the rollout, so a failing migration blocks the release instead of leaving a partial rollout. `--wait` waits for hook Jobs, so raise `--timeout` for large schema changes.
-
-A rollback triggers the target revision's `pre-upgrade` hooks, which means a migration Job runs again with that revision's image. See [Upgrade and rollback](#upgrade-and-rollback).
-
-The chart also carries Argo CD annotations (`argocd.argoproj.io/hook`, `sync-wave`) alongside the Helm ones. Argo CD's phases are its own; do not assume they reproduce the Helm ordering above.
+The chart also carries Argo CD annotations (`argocd.argoproj.io/hook`, `sync-wave`) alongside the Helm ones, with the same waves as the weights above. All four resources are `PreSync`. Argo CD's phase model is its own and is not a restatement of Helm's; the waves express the same relative order within `PreSync`.
 
 ## Single-tenant configuration
 
@@ -638,16 +631,18 @@ kubectl get jobs -n <namespace> -o name | grep migrations
 
 Every workload serves liveness and readiness over HTTP on its Service port. Paths carry the workload's route prefix, **except `dictHubVsync`, which serves both at the root.**
 
+Common checks are summarized below. The `readyz` response is the authoritative list for the active version, tenant mode, and configuration.
+
 | Workload | Service port | Liveness | Readiness | Always probed | Probed when configured |
 |---|---|---|---|---|---|
-| `spi` | 4101 | `/spi/health` | `/spi/readyz` | Postgres, `required_keys` | streaming when enabled |
+| `spi` | 4101 | `/spi/health` | `/spi/readyz` | `required_keys`; Postgres in single-tenant | adapter and Midaz, each when its base URL is set; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
 | `spiSystemplane` | 4102 | `/spi/health` | `/spi/readyz` | Postgres | — |
 | `adapterProviderMock` | 4103 | `/provider-mock/health` | `/provider-mock/readyz` | — | its configured provider over HTTP |
-| `dictHub` | 4104 | `/dict-hub/health` | `/dict-hub/readyz` | Postgres, `required_keys` | Valkey when the cache connected at boot; streaming when enabled |
-| `dictHubVsync` | 4105 | `/health` | `/readyz` | Postgres, Valkey, `required_keys` | RabbitMQ in single-tenant |
+| `dictHub` | 4104 | `/dict-hub/health` | `/dict-hub/readyz` | `required_keys`; Postgres in single-tenant | CRM and adapter, each when its base URL is set; Valkey when the cache connected at boot; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
+| `dictHubVsync` | 4105 | `/health` | `/readyz` | `required_keys`, Valkey; Postgres and RabbitMQ in single-tenant; `scheduler` and `chunk_consumer` during startup | CRM when its base URL is set; adapter in single-tenant when its base URL is set; `tenant_consumers` in multi-tenant |
 | `dictProxy` | 4106 | `/dict-proxy/health` | `/dict-proxy/readyz` | `required_keys` | — |
 | `dictSystemplane` | 4107 | `/dict/health` | `/dict/readyz` | Postgres | — |
-| `cobHub` | 4108 | `/cob-hub/health` | `/cob-hub/readyz` | Postgres, `required_keys` | streaming when enabled |
+| `cobHub` | 4108 | `/cob-hub/health` | `/cob-hub/readyz` | `required_keys`; Postgres in single-tenant | notification outbox relay in multi-tenant with streaming on; streaming when enabled |
 | `cobProxy` | 4109 | `/cob-proxy/health` | `/cob-proxy/readyz` | `required_keys` | — |
 | `cobSystemplane` | 4110 | `/cob/health` | `/cob/readyz` | Postgres | — |
 | `adapterLerian` | 4113 | `/lerian/health` | `/lerian/readyz` | Postgres | — |
@@ -662,7 +657,8 @@ Reading the responses:
 - **200 on `health`** means the process is up. It does **not** mean the workload can serve traffic.
 - **200 on `readyz`** means the process is up and its checked dependencies are satisfied.
 - **503 on `readyz`** means a check failed. The two right-hand columns above say which checks a workload runs; a conditional probe exists only when that dependency or feature is configured. Note that the proxy workloads gate on configuration keys only, and `adapterProviderMock` probes its provider rather than a database, so "Postgres is checked everywhere" is not true. **Read the `readyz` body** — it names each check and its status, and is authoritative for your version and configuration.
-- Failure modes differ by check: `required_keys` means the configuration store has nothing for a key the workload needs; a Postgres, Valkey, or RabbitMQ check means the dependency is unreachable; a provider or `auth.url` check means an HTTP dependency did not answer.
+- Failure modes differ by check: `required_keys` means the configuration store has nothing for a key the workload needs; a Postgres, Valkey, or RabbitMQ check means the dependency is unreachable; an adapter, Midaz, CRM, provider, or `auth.url` check means an HTTP dependency did not answer; a notification outbox relay or streaming check means the event path is not healthy.
+- **Tenant mode changes the set, it does not just change the values.** A check that depends on a deployment-wide connection pool is registered only when that pool exists, which in single-tenant it does and in multi-tenant it does not — per-tenant pools are resolved per request instead. That is why `spi`, `dictHub`, `cobHub`, and `dictHubVsync` carry a Postgres check in single-tenant and none in multi-tenant, and why `dictHubVsync` additionally drops its RabbitMQ and adapter checks there while gaining `tenant_consumers`. The relay check runs the other way round: it exists only in multi-tenant, and only with streaming enabled. A workload reporting ready in multi-tenant is therefore making a narrower claim than the same workload in single-tenant, and a tenant whose own configuration is missing still fails at the request, not at `readyz`.
 - Readiness also gates on required configuration keys being present in the store. This is the usual reason a correctly configured pod stays 503 — the values were never seeded, or were never written for the tenant.
 - `health` and `readyz` are unauthenticated on every workload. See [Authentication](#authentication).
 
@@ -767,6 +763,7 @@ kubectl get events -n <namespace> --sort-by=.lastTimestamp | tail -30
 **Causes and fixes:**
 
 - **The Job is absent.** The DSN is empty and `useExistingSecret` is false, so the chart skipped it — the schema was never applied. Set `secrets.DATABASE_URL`.
+- **The migration Job cannot connect.** Migrations run as a `pre-install`/`pre-upgrade` hook, ahead of every normal resource, so the server in the DSN has to be reachable already. On a first install this points at either a database that was never provisioned, or a DSN aimed at the bundled `postgresql` subchart — which is a normal resource and is not running yet at that point. See [Migration Jobs](#migration-jobs) for the two-step flow that covers the subchart case.
 - **Authentication failure on a bootstrap Job.** Check the admin credentials. Empty inline values fail at render, so a runtime failure points at wrong values or missing privileges.
 - **`invalid command \getenv`.** The bootstrap image is older than psql 15. The chart pins `postgres:17`; a pull-through mirror or an override may be serving something older.
 - **A lock timeout.** A sibling Job held the advisory lock for more than 60 seconds. Re-run the upgrade once the contending Job has finished.
@@ -830,9 +827,17 @@ kubectl get jobs -n <namespace>            # inspect hooks before rolling back
 helm rollback <release-name> <revision> -n <namespace> --wait
 ```
 
-> **A chart rollback does not revert database schema or data.** Helm restores manifests. Migrations that already ran stay applied, and rows written under the newer schema stay written. If the target revision's application cannot read the current schema, rolling back the chart will not make it work — restore from backup instead.
+What a rollback does:
 
-Inspect hook Jobs before rolling back. A rollback triggers the `pre-upgrade` hooks of the target revision, so a migration Job runs again with the older image.
+- It **restores the manifests of the revision you select**. Nothing more.
+- It does **not re-run the migration Job.** Helm has its own `pre-rollback` and `post-rollback` hooks, and this chart declares neither, so no migration hook fires on a rollback. Do not read the `pre-upgrade` weights above as rollback behaviour.
+- It does **not revert database schema or data.** Migrations that already ran stay applied, and rows written under the newer schema stay written.
+
+The consequence is the one that decides whether a rollback is usable at all: **the image you roll back to has to be compatible with the schema that is already applied.** Where it is, the rollback is a clean way back. Where it is not, restoring the manifests will not make the older binary work, and recovering needs a database procedure of its own — a restore from the backup you took before upgrading, or a hand-applied down migration — planned with the schema change in front of you. That is why the pre-upgrade checklist above asks for a backup whenever the target carries schema changes.
+
+Adding a rollback hook is not a fix for this and the chart deliberately does not have one: it would run the target revision's migrations forward again, which is not what reverting a schema means.
+
+Inspect hook Jobs before rolling back, so you know which migration last ran. A failed migration Job is kept rather than cleaned up, precisely so its log is still there.
 
 Keep `SYSTEMPLANE_SECRET_MASTER_KEY` unchanged across upgrades and rollbacks — it is checked at every boot, so a revision that does not carry it will not start.
 

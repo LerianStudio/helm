@@ -2,6 +2,21 @@
 
 ## [0.4.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.3)
 
+- **Features:**
+  - Released version 0.4.3 of plugin-br-pix-jd.
+
+- **Improvements:**
+  - Added upgrade guide for plugin-br-pix-jd v0.4.2.
+  - Added upgrade guide for plugin-br-pix-jd v0.4.1.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.2...plugin-br-pix-jd-v0.4.3)
+
+---
+
+## [0.4.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.3)
+
 - **Improvements:**
   - Added upgrade guide for plugin-br-pix-jd v0.4.2.
   - Added upgrade guide for plugin-br-pix-jd v0.4.1.

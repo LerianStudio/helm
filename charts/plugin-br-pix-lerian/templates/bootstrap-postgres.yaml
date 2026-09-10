@@ -32,6 +32,34 @@ metadata:
   namespace: {{ include "global.namespace" $ }}
   labels:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" "bootstrap-postgres") | nindent 4 }}
+  {{- /*
+  Hook at weight -20: after the credential Secret at -30, before the migration
+  pair at -10 and -5. A migration cannot run against a database this Job has not
+  created yet, and that is the whole reason these Jobs are hooks rather than
+  plain resources - see the comment in bootstrap-secret.yaml.
+
+  RE-RUNNING ON EVERY UPGRADE is intended and safe. The script below is written
+  to be idempotent and concurrency-safe throughout: the role is created inside a
+  DO block that swallows only duplicate_object and unique_violation, the password
+  is re-derived unconditionally under an advisory lock so a Job that died between
+  the two steps is repaired by the next run, CREATE DATABASE is guarded by
+  \gexec behind NOT EXISTS, and every GRANT is idempotent. As a hook it is also
+  recreated rather than patched, which sidesteps the fixed-name plain-resource
+  shape it had before: a Job's pod template is immutable once created, so an
+  upgrade that changed this script had to patch an object that does not accept
+  the patch.
+
+  hook-succeeded lets a completed Job go once it has served its purpose, and
+  before-hook-creation clears a previous failed attempt so a retry is not
+  blocked by the immutability above.
+  */}}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-20"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1

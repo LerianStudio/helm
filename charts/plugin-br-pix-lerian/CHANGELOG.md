@@ -68,6 +68,19 @@
     client and are unchanged. `values.yaml` defaults are unchanged.
 
 - **Fixes**
+  - `extraEnvVars` no longer produces a duplicate `env` entry. All 14
+    deployments emit `HOST_IP` and `OTEL_EXPORTER_OTLP_ENDPOINT` from the
+    downward API when telemetry is on and `configmap.OTEL_EXPORTER_OTLP_ENDPOINT`
+    is empty, then iterate `extraEnvVars` -- and the guard only ever inspected
+    the configmap, so an `extraEnvVars` entry with either name rendered a second
+    entry of the same name. The guard now also checks the resolved
+    `extraEnvVars`, suppressing the chart's default for exactly the name the
+    operator claims. Precedence is unchanged: the operator's value still wins,
+    now as the only entry rather than as the last of two. The chart's
+    `OTEL_EXPORTER_OTLP_ENDPOINT` default is also dropped when the operator
+    claims `HOST_IP`, since its `$(HOST_IP)` would otherwise be a forward
+    reference that Kubernetes does not expand. A render with no colliding key is
+    unchanged.
   - An explicit `0` is no longer discarded on four Job/probe knobs. Go templates
     treat `0` as empty, so `default` silently substituted the chart default:
     `migrations.ttlSecondsAfterFinished: 0` rendered as `300`,

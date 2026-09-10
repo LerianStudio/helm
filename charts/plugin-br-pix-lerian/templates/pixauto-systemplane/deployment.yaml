@@ -79,13 +79,30 @@ spec:
           {{- $hasOtelEndpoint := ne (toString (default "" $cm.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
           {{- $extraEnvVars := default (dict) $values.extraEnvVars }}
           {{- $hasExtras := gt (len $extraEnvVars) 0 }}
-          {{- if or (and $telemetryOn (not $hasOtelEndpoint)) $hasExtras }}
+          {{- /*
+          The endpoint guard above only inspects the CONFIGMAP, so an
+          extraEnvVars entry named HOST_IP or OTEL_EXPORTER_OTLP_ENDPOINT used
+          to render a SECOND env entry with the same name. Suppress the chart's
+          downward-API default for exactly the name the operator claims:
+          extraEnvVars still wins, but as the only entry rather than as the last
+          of two.
+
+          The OTEL default is also dropped when the operator claims HOST_IP,
+          because its "$(HOST_IP):4317" would then reference a variable defined
+          LATER in the list, and Kubernetes only expands backward references --
+          it would ship the literal string.
+          */}}
+          {{- $emitHostIP := and $telemetryOn (not $hasOtelEndpoint) (not (hasKey $extraEnvVars "HOST_IP")) }}
+          {{- $emitOtelEndpoint := and $emitHostIP (not (hasKey $extraEnvVars "OTEL_EXPORTER_OTLP_ENDPOINT")) }}
+          {{- if or $emitHostIP $hasExtras }}
           env:
-            {{- if and $telemetryOn (not $hasOtelEndpoint) }}
+            {{- if $emitHostIP }}
             - name: HOST_IP
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
+            {{- end }}
+            {{- if $emitOtelEndpoint }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
             {{- end }}

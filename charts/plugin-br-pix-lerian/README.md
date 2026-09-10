@@ -65,9 +65,9 @@ yet taking traffic.
 
 For a full deployment:
 - **PostgreSQL**: 5 databases (`pix-spi`, `pix-dict`, `pix-cob`,
-  `pix-adapter-lerian`, `pix-pixauto`) and a role `pixswitch` with full
-  ownership of each (see [Bootstrap credentials](#bootstrap-credentials) for how
-  the Jobs are credentialed and why the role keeps that name)
+  `pix-adapter-lerian`, `pix-pixauto`) and a single role owning all of them
+  (see [Bootstrap credentials](#bootstrap-credentials) for how the Jobs are
+  credentialed)
 - **Valkey** (Redis-compatible): used by `spi`, `dict-hub`, `dict-hub-vsync`
   for caching and by `pixauto` for its idempotency replay gate (optional there —
   without it the gated routes fall through to their durable backstops)
@@ -77,6 +77,13 @@ For development, the chart's `postgresql`, `valkey`, and `rabbitmq`
 subcharts can be enabled (set their `enabled: true`). For production, point
 the in-cluster components at managed external services and leave the
 subcharts disabled (default).
+
+The Postgres role that owns the five databases defaults to `pixswitch`. On a
+new deployment, set
+`global.externalPostgresDefinitions.pixLerianCredentials.username` to use a
+different name. Renaming the role on a deployment that already exists is a
+database operation rather than a values change — pointing the chart at a new
+name would create a second role with no privileges over the existing objects.
 
 ## Bootstrap credentials
 
@@ -135,43 +142,6 @@ template cannot read.
 Each session that takes an advisory lock sets `lock_timeout = '60s'` first, so a
 Job contending with a sibling fails with a clear error instead of blocking until
 the release hook gives up.
-
-### Why the Postgres role is still named `pixswitch`
-
-The chart identity was renamed end to end, but `pixLerianCredentials.username`
-still defaults to `pixswitch`. That default is deliberate: the name is live
-data, not chart identity. It is the role that already owns the five databases in
-every deployed environment.
-
-An audit of `lerian-internal-gitops` at commit `65836367` found the value pinned
-in four of the six environments, in three keys each — `postgresql.auth.username`,
-the `initdb` script that creates the extra databases, and the RabbitMQ user —
-each of them backed by existing state. The `initdb` script only runs against an
-empty data directory, so it will not re-run to create a differently named role.
-The remaining two environments provision the role outside the chart's tree
-altogether and hold their DSNs in Vault.
-
-Changing the default would therefore create a second role with no privileges on
-the five existing databases, while the applications kept authenticating as the
-old one. Renaming the role is a data operation — `ALTER ROLE ... RENAME`, or a
-new role plus reassignment of ownership and GRANTs — and belongs in its own
-change, sequenced together with the GitOps values that pin it.
-
-## Enabling/disabling components
-
-Each component's top-level key has an `enabled: true|false` field. Set
-`enabled: false` to skip a component entirely (no resources rendered).
-Default `enabled` values:
-
-- `spi`, `spiSystemplane`, `dictHub`, `dictProxy`,
-  `dictSystemplane`, `cobHub`, `cobProxy`, `cobSystemplane`: `true`
-- `dictHubVsync`: `false` (RabbitMQ queue consumer — it does nothing without
-  `secrets.RABBITMQ_URI`, and enabling it without one fails the render)
-- `adapterProviderMock`: `false` (it's a mock — only enable in dev/staging)
-- `adapterLerian`, `adapterLerianSystemplane`: `false`
-  (Lerian provider adapter — enable per environment)
-- `pixauto`, `pixautoSystemplane`: `false` (Pix Automático payer side — enable
-  per environment once its `pix-pixauto` database and DSN secret exist)
 
 ## Configuration
 

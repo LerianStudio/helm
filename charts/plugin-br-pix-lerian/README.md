@@ -175,23 +175,72 @@ Default `enabled` values:
 
 ## Configuration
 
-Each component has its own `configmap` and `secrets` blocks in values.yaml.
-The chart accepts every env var the app reads at runtime; see
-`templates/<component>/configmap.yaml` for the rendered list per component.
+Each component has its own `configmap` and `secrets` blocks in `values.yaml`,
+rendered into that component's ConfigMap and Secret. Both are free maps: any
+key you add is passed through, so the chart accepts every env var the app
+reads. The rendered list per component is `templates/<component>/configmap.yaml`
+plus the component's block in `values.yaml` — that is the inventory, and it is
+not duplicated here.
 
-The app reads:
-- `DATABASE_URL` (full Postgres DSN, not `DB_HOST/DB_PORT/...`)
-- `VALKEY_URL` (full Redis URL)
-- `RABBITMQ_URI` (only `dict-hub-vsync`)
-- `LICENSE_KEY`, `ORGANIZATION_IDS` (every component). `ORGANIZATION_IDS` is
-  the live key (`pkg/config` `BaseConfig.LicenseOrganizationIDs`); the
-  `LICENSE_ORGANIZATION_IDS` entry some components still carry in values.yaml
-  is inert — no code reads that name.
-- `DEPLOYMENT_MODE` (saas/byoc/local)
-- Sibling URLs (`ADAPTER_BASE_URL`, `DICT_BASE_URL`, `COB_BASE_URL`,
-  `MIDAZ_BASE_URL`, `CRM_BASE_URL`)
-- Per-component-specific keys (`ISPB`, `ORGANIZATION_ID`, `KEY_CACHE_TTL_SEC`,
-  `VSYNC_*`, etc.)
+Coverage was checked mechanically: the 84 keys the chart declares were
+cross-referenced against the `env:"..."` struct tags in each component's
+`config.go` and the shared `pkg/config` `BaseConfig`. The exceptions that
+survey turned up are the tables below; everything not listed behaves the
+obvious way.
+
+Note the app takes full connection strings, not their parts — `DATABASE_URL`,
+`VALKEY_URL`, `RABBITMQ_URI` (the last only on `dict-hub-vsync`). There is no
+`DB_HOST` / `DB_PORT` surface.
+
+### Where a value actually comes from
+
+Two layers decide the effective value, and the second one surprises people.
+
+**In the container**, Kubernetes resolves `extraEnvVars` > `secrets` >
+`configmap`: explicit `env` entries beat `envFrom`, and among `envFrom` sources
+the last one wins. All fourteen Deployments list `configMapRef` first and
+`secretRef` second, so a key set in both places takes the Secret value.
+
+**After first boot, the systemplane store overrides the environment.** The boot
+snapshot passes the env-derived field in as a *fallback* and reassigns the
+result (`pkg/systemplane/snapshot/snapshot.go:56-77`), so a stored row wins and
+the env value only survives when that row is missing, empty or invalid. Env is
+the first-boot seed; the store is the running configuration. Two exceptions:
+multi-tenant skips the snapshot entirely and the environment stays
+authoritative, and an unreachable store overrides nothing.
+
+**Seeding the store only happens in the five `*Systemplane` components, and
+only in single-tenant.** The hubs, proxies, vsync and APIs never seed — they
+read. This has a practical consequence covered in the table below.
+
+### Exceptions and traps
+
+| Item | What to know |
+|---|---|
+| Seed keys belong to the `*Systemplane` component | `ORGANIZATION_ID`, `ISPB`, `ADAPTER_BASE_URL`, the `*_BASE_URL` and `*_CLIENT_*` families are seeded into the store only by `<domain>Systemplane`. This chart's `values.yaml` declares them on the hubs instead, where they work as the boot fallback but seed nothing. Set them on the `*Systemplane` component too if you want the store populated — the readiness gates read the store, not the pod's env. |
+| `pixauto.configmap.ORGANIZATION_ID` | Store-first: the tenant-config resolver reads `pixauto.organization_id` from the store and only then falls back to this env var. It is deliberately excluded from seeding, because the key is per-tenant and seeding writes the global slot. Must be empty in multi-tenant — the app refuses to boot otherwise. |
+| `SYSTEMPLANE_POSTGRES_DSN` | Falls back to `DATABASE_URL` on most components. On `adapter-lerian` it is the only DSN — that component has no `DATABASE_URL` at all. |
+| `OTEL_RESOURCE_SERVICE_VERSION` | Not a values key. The chart derives it from the component's image tag, falling back to `Chart.AppVersion`; set `<component>.configmap.OTEL_RESOURCE_SERVICE_VERSION` to override. |
+| `ORGANIZATION_IDS` vs `ORGANIZATION_ID` | Different things. The plural is the license allow-list (`"global"` for single-license mode); the singular is the business organization. Both are logged at boot precisely because they get confused. |
+| `LICENSE_ORGANIZATION_IDS` | Inert — the name does not exist anywhere in the application. Some components still carry it in `values.yaml`; it has no effect. Use `ORGANIZATION_IDS`. |
+| `SYSTEMPLANE_SECRET_MASTER_KEY` | Not accepted by the application: every `*Systemplane` `config.go` explicitly rejects the name. Some components still carry it in `values.yaml` and some environments still set it; it has no effect either way. |
+| `*_ROUTING_MODE` | `DICT_ROUTING_MODE` and `COB_ROUTING_MODE` are read by the app but not exposed by name in `values.yaml`. Set them through the component's free `configmap` map. They select only the discovery service name (`dict-hub` vs `dict-proxy`); the matching `*_BASE_URL` must be pointed at the same tier by hand, since nothing cross-checks the pair. |
+| Keys read but not declared | `SWAGGER_ENABLED` (8 components), the `SD_*` discovery family beyond `SD_ADVERTISE_*`, `MAX_TENANT_POOLS`, `TENANT_MAX_OPEN_CONNS`, and the `RABBITMQ_*` tuning knobs beyond `RABBITMQ_URI`. All work through the free map. |
+| Declared but dead | On `dict-proxy`, `ADAPTER_BASE_URL`, `ORGANIZATION_ID` and `ISPB` are loaded and then never read — that component's readiness gate reads the store directly. `REQUEST_TIMEOUT_SEC` is ignored by `adapter-lerian` (hardcoded) and by `dict-hub-vsync` (no HTTP surface). `MULTI_TENANT_CIRCUIT_BREAKER_*` is dead on both proxies and on `adapter-provider-mock`, which build no Tenant Manager client. |
+
+### Domain notes
+
+`dict-hub-vsync` is the only component with the `VSYNC_*` family (worker
+cadence, job attempts, gate TTL) and the only one reading `MULTI_TENANT_REDIS_*`
+— a Pub/Sub instance for tenant lifecycle events, separate from `VALKEY_URL`.
+
+`adapter-lerian` is the only component with `AWS_REGION`, `ISPB_SECRET_PREFIX`
+and the `ISPB_CACHE_*` pair, all required together when webhook ingress is on
+in multi-tenant.
+
+`adapter-provider-mock` carries `MOCK_TEST_ENDPOINTS_ENABLED`, which mounts
+routes that forge provider callbacks. Keep it false wherever the pod is
+reachable by untrusted callers.
 
 ## Image
 

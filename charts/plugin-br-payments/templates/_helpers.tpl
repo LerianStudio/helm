@@ -169,10 +169,9 @@ at its default true gets a "postgresql.enabled" helper that answers "false"
 (external) while Helm's own dependency condition still resolves true and
 renders the bundled StatefulSet/Service/Secret anyway. A gate built on the
 helper (templates/controlplane-migrations.yaml, templates/bootstrap-postgres.yaml)
-would then wrongly believe it is safe to also render against
-global.externalPostgresDefinitions.connection.host, producing the exact
-double-render/race this chart's exclusivity gates exist to prevent — with
-zero warning.
+would then wrongly believe it is safe to render external-database Jobs while
+the bundled database is also present, producing the exact double-render/race
+this chart's exclusivity gates exist to prevent — with zero warning.
 
 This check is keyed on the SAME literal .Values.postgresql.enabled Chart.yaml
 itself uses, not the helper, and it fails closed on EITHER of the two ways an

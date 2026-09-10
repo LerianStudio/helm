@@ -158,7 +158,7 @@ Off by default — zero cost when unset.
 | `app.configmap.SERVICE_TYPE` | `both` | Run API + worker in one process. |
 | `app.configmap.OUTBOX_ENABLED` | `"true"` | REQUIRED — the plugin won't register routes otherwise. |
 | `app.configmap.MULTI_TENANT_ENABLED` | `"false"` | Toggle multi-tenant mode. |
-| `app.controlplaneMigrations.enabled` | `false` | Enable the control-plane migrations `PreSync` Job. Renders only alongside `MULTI_TENANT_ENABLED=true` and a genuinely external Postgres — see `values.yaml`. |
+| `app.controlplaneMigrations.enabled` | `false` | Enable the control-plane migrations `PreSync` Job. Renders with `MULTI_TENANT_ENABLED=true` and the bundled PostgreSQL disabled; it does not require database bootstrap. |
 | `app.controlplaneMigrations.resources` | requests `50m`/`64Mi`, limits `250m`/`256Mi` | Resources for the control-plane migrations Job. |
 | `postgresql.enabled` | `true` | Deploy the in-cluster PostgreSQL subchart. |
 | `postgresql.architecture` | `replication` | Primary + read replica. |
@@ -213,6 +213,18 @@ In production, you typically:
        paymentsCredentials:
          password: <plugin_br_payments role password>
    ```
+
+4. **Enable control-plane migrations** for multi-tenant deployments after the
+   external database already exists:
+   ```yaml
+   app:
+     controlplaneMigrations:
+       enabled: true
+   ```
+   This runs `/controlplane-migrate` as a `PreSync`/pre-upgrade Job against
+   `app.configmap.POSTGRES_*`. It is independent of
+   `global.externalPostgresDefinitions.enabled`; keep the bootstrap flag off
+   when the database and role are already provisioned.
 
 ## Uninstall
 

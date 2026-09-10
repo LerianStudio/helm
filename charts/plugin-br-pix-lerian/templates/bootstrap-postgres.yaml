@@ -170,10 +170,13 @@ spec:
               # privilege beyond the CREATEROLE the admin already requires - no superuser,
               # no GRANT SET, no log_statement tampering.
               #
-              # IMAGE DEPENDENCY: \password is a psql meta-command. The container image
-              # below is postgres:17, which ships it. Anyone swapping that image for one
-              # without psql - or with a psql older than the \getenv used here (v11+) -
-              # breaks this script. Keep psql in the image.
+              # IMAGE DEPENDENCY: this script needs psql 15 or newer. \password is an
+              # old meta-command, but \getenv - used below to keep credentials out of
+              # argv - was added in psql 15. Verified against the official images:
+              # psql 14.24 rejects it with "invalid command \getenv", while 15.19,
+              # 16.15 and 17.11 accept it. The image below is postgres:17, so the
+              # execution in this chart is psql 17. Anyone swapping it for an image
+              # without psql, or with a psql older than 15, breaks this script.
               #
               # Step 1 is concurrency-safe: the five sibling Jobs share ONE role, so two can
               # both see it as absent and both create it. Two conditions are swallowed and

@@ -109,10 +109,32 @@ alias. `values.schema.json` rejects the retired key outright, so a stale
 override cannot quietly stop taking effect — it reports `'not' failed` at
 `/global/externalPostgresDefinitions`. Rename the key in your values.
 
-The Job sets the role password with psql's `\password` meta-command, which
-derives the SCRAM-SHA-256 verifier on the client and never sends the cleartext
-password to the server. The bootstrap image must therefore ship psql 10 or
-newer.
+The Job sets the role password with psql's `\password` meta-command. The session
+first pins `password_encryption = 'scram-sha-256'`, in the same file `psql -f`
+processes, and `\password` then reads that setting to derive the verifier on the
+client — so only the verifier reaches the server and the cleartext password never
+does. Pinning it matters: on a server started with `password_encryption=md5`,
+`\password` would otherwise derive an MD5 verifier. The parameter has context
+`user`, so the bootstrap role needs no superuser and no extra `GRANT` to set it.
+
+**The bootstrap image must ship psql 15 or newer.** `\password` is an old
+meta-command, but `\getenv` — used to keep credentials out of process arguments —
+was added in psql 15: psql 14 rejects it with `invalid command \getenv`. The
+chart pins `postgres:17`, so the execution here is psql 17.
+
+Before touching the cluster the Job validates its inputs, so a bad credential
+cannot leave the databases half-bootstrapped: it refuses an empty
+`DB_USER_ADMIN`, `DB_ADMIN_PASSWORD` or `DB_PASSWORD_PIX_LERIAN`, and refuses an
+application password containing LF or CR — `\password` reads its two
+confirmations as newline-delimited lines, so an embedded newline cannot be
+transported without corrupting the password. Every other character works,
+including spaces, quotes, backslashes and `$ @ /`. These checks run at runtime,
+which is the only place the value is visible when it comes from a Secret the
+template cannot read.
+
+Each session that takes an advisory lock sets `lock_timeout = '60s'` first, so a
+Job contending with a sibling fails with a clear error instead of blocking until
+the release hook gives up.
 
 ### Why the Postgres role is still named `pixswitch`
 

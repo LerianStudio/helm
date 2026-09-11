@@ -193,6 +193,18 @@ global:
   #   address: "consul:8500"
   #   namespace: "midaz"
 ledger:
+  # -- `wait-for-dependencies` init container tuning.
+  # The init container blocks pod startup until ALL ledger datastore/broker
+  # dependencies accept TCP — including MONGO_CRM_HOST and MONGO_FEES_HOST,
+  # regardless of crm.enabled (CRM/Fees are folded into the ledger binary).
+  initContainer:
+    # -- Per-dependency wait timeout in seconds before the init container gives
+    # up (exit 1 -> pod CrashLoop). NOTE: when running on managed/external Mongo
+    # (mongodb.enabled=false) you must set MONGO_CRM_HOST/MONGO_FEES_HOST (or
+    # global.datastores.mongoCrm.host / mongoFees.host); otherwise they default
+    # to the packaged "midaz-mongodb" Service and the pod CrashLoops after this
+    # timeout. See docs/UPGRADE-9.1.md section 6.
+    timeoutSeconds: 300
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
   # -- Liveness probe configuration. All fields override chart defaults.

@@ -1,0 +1,87 @@
+name: TEMP — Image Refs Smoke Test
+
+# THROWAWAY. Do not merge, do not copy into another branch.
+#
+# Exercises LerianStudio/github-actions-shared-workflows/src/validate/helm-image-refs
+# on the real runner, with the real registry credentials, before the gate is wired
+# into release.yml for keeps (see PR #2088).
+#
+# Every chart runs with dry-run: true, so the job reports each reference and its
+# verdict and never fails. Read the step summary, not the exit code.
+#
+# What we expect to see:
+#   plugin-br-bank-transfer  -> migrations:2.1.1 ABSENT (the incident), app tag present
+#   product-console          -> all present, and it has no render-values file, which
+#                               exercises the "render with chart defaults" path
+#   midaz, plugin-access-manager -> all present
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/zz-temp-image-refs-smoke.yml"
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  smoke:
+    name: image-refs (${{ matrix.chart }})
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - plugin-br-bank-transfer
+          - product-console
+          - midaz
+          - plugin-access-manager
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+
+      # docker manifest inspect reads the Docker CLI credential store; helm registry
+      # login writes somewhere else and would not satisfy it.
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: lerianstudio
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify referenced images exist
+        id: refs
+        uses: LerianStudio/github-actions-shared-workflows/src/validate/helm-image-refs@develop
+        with:
+          chart-path: charts/${{ matrix.chart }}
+          values-file: .github/configs/helm-render-values/${{ matrix.chart }}.yaml
+          dry-run: true
+
+      - name: Report outputs
+        if: always()
+        env:
+          CHART: ${{ matrix.chart }}
+          IMAGES: ${{ steps.refs.outputs.images }}
+          MISSING: ${{ steps.refs.outputs.missing }}
+          HAS_MISSING: ${{ steps.refs.outputs.has-missing }}
+        run: |
+          echo "chart:       $CHART"
+          echo "has-missing: $HAS_MISSING"
+          echo "images:      $IMAGES"
+          echo "missing:     $MISSING"
+          {
+            echo "### Outputs — \`$CHART\`"
+            echo ""
+            echo "- \`has-missing\`: \`$HAS_MISSING\`"
+            echo "- \`missing\`: \`$MISSING\`"
+          } >> "$GITHUB_STEP_SUMMARY"

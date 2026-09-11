@@ -3,18 +3,25 @@
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
 
 - **Features:**
-  - Introduced schema migration Jobs to streamline database updates.
+  - Introduced schema migration Jobs to streamline updates.
   - Implemented providersIngress for outbound-provider adapters.
-  - Added per-component image repository defaults to enhance deployment flexibility.
-  - Introduced auto-derive OTEL service version and node-IP OTLP endpoint for improved observability.
-  - Added bootstrap Jobs for PostgreSQL and MongoDB to facilitate initial setup.
+  - Added auto-derive OTEL service version and node-IP OTLP endpoint.
+  - Integrated MongoDB and RabbitMQ subchart dependencies.
+  - Introduced bootstrap Jobs for Postgres and MongoDB.
 
 - **Fixes:**
   - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
-  - Adjusted probe paths to align with per-component routePrefix for consistent health checks.
-  - Resolved namespace handling issues and ensured global image tag overrides function correctly.
-  - Fixed liveness probe path from `/live` to `/health` for better compatibility.
-  - Addressed bootstrap Job issues identified during live install tests.
+  - Adjusted probe paths to align with per-component routePrefix.
+  - Ensured Secret overrides ConfigMap by swapping `envFrom` order.
+  - Fixed liveness probe path from `/live` to `/health`.
+  - Addressed namespace handling and global image tag override issues.
+
+- **Improvements:**
+  - Standardized probe field set across charts.
+  - Parametrized probe path and timing using `/readyz`.
+  - Removed dead global.image block for cleaner configuration.
+  - Enhanced documentation with subchart credentials and external-secret pattern.
+  - Aligned upgrade guide format for consistency.
 
 Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
 

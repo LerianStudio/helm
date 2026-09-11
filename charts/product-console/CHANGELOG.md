@@ -3,11 +3,14 @@
 ## [4.0.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.3)
 
 - **Features**
-  - Clarified documentation on readiness/liveness/port framing and added a compatibility caveat for probe-port.
+  - Made the probe port configurable for enhanced flexibility.
 
 - **Fixes**
-  - Defaulted liveness probe to `/api/admin/health/alive`.
-  - Made probe port configurable and documented the readiness/Mongo requirement.
+  - Defaulted liveness endpoint to `/api/admin/health/alive` to ensure consistent health checks.
+  
+- **Improvements**
+  - Clarified documentation on readiness/liveness/port framing and provided compatibility caveats for probe-port.
+  - Documented the MongoDB requirement for readiness checks.
 
 Contributors: @guimoreirar, @lerian-studio,
 

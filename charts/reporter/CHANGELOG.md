@@ -14,7 +14,6 @@
 - **Improvements:**
   - Apply RabbitMQ topology per object at PreSync.
   - Pass topology labels through environment variables.
-  - Pin the seccomp profile on the bootstrap Job.
 
 Contributors: @brunobls, @guimoreirar, @lerian-studio
 

@@ -6,9 +6,9 @@
   - Fail fast when managed Mongo is missing CRM/Fees hosts.
 
 - **Improvements**
-  - Correct datastore precedence documentation (native > dedicated > shared).
+  - Correct datastore precedence (native > dedicated > shared).
 
-Contributors: @guimoreirar, @lerian-studio,
+Contributors: @guimoreirar, @lerian-studio
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.2...midaz-v9.2.0)
 

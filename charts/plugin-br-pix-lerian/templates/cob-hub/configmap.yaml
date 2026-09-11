@@ -3,21 +3,23 @@
 {{- $values := .Values.cobHub }}
 {{- $cm := $values.configmap | default dict }}
 {{- /*
-PRODUCTIZED (productize-chart-env pattern; see charts/streaming-hub,
-charts/reporter). AUTHORITY = the app component's config/.env.example on
-develop. Every non-secret key is a `$cm.<KEY> | default "<value>"` passthrough:
-the default lives HERE (curated k8s default where the chart shipped one, else the
-.env.example default), and `cobHub.configmap.<KEY>` overrides it.
+PRODUCTIZED to the STANDARD lerian-common contract (productize-chart-env).
+Dependency-connection families flow from the shared global.* contract via
+lerian-common masks; the chart emits STANDARD key names.
+  - auth (auth.env -> PLUGIN_AUTH_ENABLED + PLUGIN_AUTH_HOST; global.auth)
+  - observability (otel.env -> ENABLE_TELEMETRY + OTEL_EXPORTER_OTLP_ENDPOINT + OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT; global.observability)
+  - redis (datastore.value -> REDIS_HOST/PORT/USER/DB/TLS; global.datastores.redis)
+  - multiTenant (multiTenant.env -> MULTI_TENANT_URL + circuit breaker; global.multiTenant)
+  - streaming (streaming.env -> STREAMING_BROKERS/SASL/CLIENT_ID/...; global.streaming)
 
-No lerian-common mask is adopted: this app reads DB_* (not POSTGRES_*),
-TELEMETRY_ENABLED (not ENABLE_TELEMETRY), and BOTH PLUGIN_AUTH_URL and
-PLUGIN_AUTH_HOST -- none is a clean key-name match for datastore.value /
-otel.env / auth.env, so a correct plain default is used (a mask emitting the
-wrong key name would render config the app ignores).
+DROPPED deviating app keys (superseded by the standard names above):
+  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), PLUGIN_AUTH_URL (->PLUGIN_AUTH_HOST),
+  ORGANIZATION_ID (->ORGANIZATION_IDS), DB_SSL_MODE (->DB_SSLMODE).
+Composed URIs DATABASE_URL / VALKEY_URL remain ONLY in secrets.yaml as
+migration/wait-init tooling inputs (never app-runtime config here).
 
-Credentials NEVER render here -- they live in templates/cob-hub/secrets.yaml
-and the trailing escape hatch OMITS them (leaked-secret guard) so a mistaken
-`configmap.<SECRET>` can never surface in this plaintext ConfigMap.
+Credentials NEVER render here; the trailing escape hatch OMITS them
+(leaked-secret guard). A masked key still honours cobHub.configmap.<KEY>.
 */}}
 apiVersion: v1
 kind: ConfigMap
@@ -27,80 +29,78 @@ metadata:
   labels:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
 data:
+  # --- auth: global.auth contract (PLUGIN_AUTH_ENABLED + PLUGIN_AUTH_HOST) ---
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "http://plugin-auth:4000") | nindent 2 }}
+  # --- observability: global.observability contract (otel.env) ---
+  {{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "true" "endpointDefault" "" "deploymentEnvironmentDefault" "development") | nindent 2 }}
+  # --- redis: global.datastores.redis contract (standard REDIS_*) ---
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "localhost") | quote }}
+  REDIS_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | quote }}
+  REDIS_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") | quote }}
+  REDIS_DB: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "db" "nativeKey" "REDIS_DB" "default" "0") | quote }}
+  REDIS_TLS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
+  # --- multi-tenant: global.multiTenant contract (URL + circuit breaker, gated) ---
+  {{- $mtEnabled := eq (toString ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm "enabled" $mtEnabled) | nindent 2 }}
+  # --- streaming: global.streaming contract (standard subset, gated) ---
+  {{- $streamingEnabled := eq (toString ($cm.STREAMING_ENABLED | default "false")) "true" }}
+  STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.streaming.env" (dict "context" $ "enabled" $streamingEnabled "configmap" $cm "cloudeventsSource" "plugin-br-pix-lerian") | nindent 2 }}
+  # --- app config (plain passthrough; default = curated/.env.example value) ---
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-cob-hub" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4108" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
   ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
   REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
-  TELEMETRY_ENABLED: {{ $cm.TELEMETRY_ENABLED | default "true" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-cob-hub" | quote }}
   OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-lerian" | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ $cm.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
-  PLUGIN_AUTH_ENABLED: {{ $cm.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_URL: {{ $cm.PLUGIN_AUTH_URL | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
-  ORGANIZATION_ID: {{ $cm.ORGANIZATION_ID | default "" | quote }}
   # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
   # and MULTI_TENANT_API_KEY are seeds for the cob-systemplane store; the CB
   # tunables size the tenant-manager client circuit breaker (defaults from
   # pkg/config: threshold=5, timeoutSec=30).
-  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
-  MULTI_TENANT_URL: {{ $cm.MULTI_TENANT_URL | default "" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
-  # --- coverage: keys from cob-hub .env.example not previously in the chart ---
   ORGANIZATION_IDS: {{ $cm.ORGANIZATION_IDS | default "global" | quote }}
   IDP_DECLARATION_ENABLED: {{ $cm.IDP_DECLARATION_ENABLED | default "false" | quote }}
   IDP_HOST: {{ $cm.IDP_HOST | default "http://plugin-identity:4000" | quote }}
-  PLUGIN_AUTH_HOST: {{ $cm.PLUGIN_AUTH_HOST | default "http://plugin-auth:4000" | quote }}
   IDP_M2M_CLIENT_ID: {{ $cm.IDP_M2M_CLIENT_ID | default "" | quote }}
   DICT_BASE_URL: {{ $cm.DICT_BASE_URL | default "http://localhost:4003/dict-hub" | quote }}
   DICT_CLIENT_ID: {{ $cm.DICT_CLIENT_ID | default "your_dict_client_id_here" | quote }}
-  STREAMING_BROKERS: {{ $cm.STREAMING_BROKERS | default "" | quote }}
-  STREAMING_CLOUDEVENTS_SOURCE: {{ $cm.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-pix-lerian" | quote }}
-  STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
   STREAMING_DATASCHEMA_BASE_URL: {{ $cm.STREAMING_DATASCHEMA_BASE_URL | default "http://localhost:4005" | quote }}
-  STREAMING_CLIENT_ID: {{ $cm.STREAMING_CLIENT_ID | default "" | quote }}
   STREAMING_CB_FAILURE_RATIO: {{ $cm.STREAMING_CB_FAILURE_RATIO | default "" | quote }}
   STREAMING_CB_MIN_REQUESTS: {{ $cm.STREAMING_CB_MIN_REQUESTS | default "" | quote }}
   STREAMING_CB_TIMEOUT_S: {{ $cm.STREAMING_CB_TIMEOUT_S | default "" | quote }}
   STREAMING_CLOSE_TIMEOUT_S: {{ $cm.STREAMING_CLOSE_TIMEOUT_S | default "" | quote }}
   STREAMING_TENANT_ID: {{ $cm.STREAMING_TENANT_ID | default "default" | quote }}
-  STREAMING_TLS_ENABLED: {{ $cm.STREAMING_TLS_ENABLED | default "false" | quote }}
-  STREAMING_SASL_MECHANISM: {{ $cm.STREAMING_SASL_MECHANISM | default "" | quote }}
-  STREAMING_SASL_ALLOW_PLAINTEXT: {{ $cm.STREAMING_SASL_ALLOW_PLAINTEXT | default "false" | quote }}
-  {{- /*
-  OTEL_RESOURCE_SERVICE_VERSION: derive from the deployed image tag so it
-  tracks releases automatically. Resolution order:
-    component image.tag then Chart.AppVersion.
-  Operators can override via `cobHub.configmap.OTEL_RESOURCE_SERVICE_VERSION`.
-  */}}
+  {{- /* OTEL_RESOURCE_SERVICE_VERSION: from image tag (image.tag then
+     Chart.AppVersion); override via cobHub.configmap.OTEL_RESOURCE_SERVICE_VERSION. */}}
   {{- if not (hasKey $cm "OTEL_RESOURCE_SERVICE_VERSION") }}
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
   {{- end }}
-  {{- /*
-  Escape hatch: emit any un-enumerated configmap.<KEY> the operator injects.
-  Skips every key emitted above AND every credential key (leaked-secret guard)
-  so a mistaken configmap.<SECRET> can never surface in this plaintext ConfigMap.
-  */}}
+  {{- /* Escape hatch: un-enumerated configmap.<KEY>. Skips every emitted key
+     (plain/mask/inline), the superseded deviating names, and every credential
+     (leaked-secret guard) so a configmap.<SECRET> can never surface here. */}}
   {{- $enumerated := dict }}
   {{- range $k := (list
-      "APPLICATION_NAME" "DATABASE_URL" "DEPLOYMENT_MODE" "DICT_BASE_URL" "DICT_CLIENT_ID" 
-      "DICT_CLIENT_SECRET" "ENV_NAME" "IDP_DECLARATION_ENABLED" "IDP_HOST" "IDP_M2M_CLIENT_ID" 
-      "IDP_M2M_CLIENT_SECRET" "LICENSE_KEY" "LOG_LEVEL" "MULTI_TENANT_API_KEY" 
-      "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" 
-      "MULTI_TENANT_ENABLED" "MULTI_TENANT_URL" "ORGANIZATION_ID" "ORGANIZATION_IDS" 
-      "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" 
-      "OTEL_RESOURCE_SERVICE_NAME" "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED" 
-      "PLUGIN_AUTH_HOST" "PLUGIN_AUTH_URL" "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS" 
-      "STREAMING_BROKERS" "STREAMING_CB_FAILURE_RATIO" "STREAMING_CB_MIN_REQUESTS" 
-      "STREAMING_CB_TIMEOUT_S" "STREAMING_CLIENT_ID" "STREAMING_CLOSE_TIMEOUT_S" 
-      "STREAMING_CLOUDEVENTS_SOURCE" "STREAMING_DATASCHEMA_BASE_URL" "STREAMING_ENABLED" 
-      "STREAMING_SASL_ALLOW_PLAINTEXT" "STREAMING_SASL_MECHANISM" "STREAMING_SASL_PASSWORD" 
-      "STREAMING_SASL_USERNAME" "STREAMING_TENANT_ID" "STREAMING_TLS_CA_CERT" 
-      "STREAMING_TLS_ENABLED" "SYSTEMPLANE_POSTGRES_DSN" "TELEMETRY_ENABLED" "VALKEY_URL"
+      "APPLICATION_NAME" "DATABASE_URL" "DB_REPLICA_SSL_MODE" "DB_SSL_MODE" "DEPLOYMENT_MODE"
+      "DICT_BASE_URL" "DICT_CLIENT_ID" "DICT_CLIENT_SECRET" "ENABLE_TELEMETRY" "ENV_NAME"
+      "IDP_DECLARATION_ENABLED" "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET"
+      "LICENSE_KEY" "LOG_LEVEL" "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD"
+      "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" "MULTI_TENANT_ENABLED"
+      "MULTI_TENANT_SERVICE_API_KEY" "MULTI_TENANT_URL" "ORGANIZATION_ID" "ORGANIZATION_IDS"
+      "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
+      "OTEL_RESOURCE_SERVICE_NAME" "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED"
+      "PLUGIN_AUTH_HOST" "PLUGIN_AUTH_URL" "REDIS_DB" "REDIS_HOST" "REDIS_PASSWORD"
+      "REDIS_PORT" "REDIS_TLS" "REDIS_USER" "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS"
+      "STREAMING_BATCH_LINGER_MS" "STREAMING_BROKERS" "STREAMING_CB_FAILURE_RATIO"
+      "STREAMING_CB_MIN_REQUESTS" "STREAMING_CB_TIMEOUT_S" "STREAMING_CLIENT_ID"
+      "STREAMING_CLOSE_TIMEOUT_S" "STREAMING_CLOUDEVENTS_SOURCE" "STREAMING_COMPRESSION"
+      "STREAMING_DATASCHEMA_BASE_URL" "STREAMING_ENABLED" "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS"
+      "STREAMING_REQUIRED_ACKS" "STREAMING_SASL_ALLOW_PLAINTEXT" "STREAMING_SASL_MECHANISM"
+      "STREAMING_SASL_PASSWORD" "STREAMING_SASL_USERNAME" "STREAMING_TENANT_ID"
+      "STREAMING_TLS_CA_CERT" "STREAMING_TLS_ENABLED" "SYSTEMPLANE_POSTGRES_DSN"
+      "TELEMETRY_ENABLED" "VALKEY_URL"
     ) }}
   {{- $_ := set $enumerated $k 1 }}
   {{- end }}

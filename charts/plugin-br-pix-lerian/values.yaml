@@ -45,6 +45,36 @@ global:
   imagePullSecrets: []
 
   # ---------------------------------------------------------------------------
+  # Shared dependency-connection contracts (lerian-common masks read these).
+  # A component's own configmap.<KEY> wins; a per-component dedicated block
+  # (e.g. spi.datastores.postgres / spi.datastores.redis) overrides the shared
+  # value below. Leave empty to keep each component's in-template default.
+  # ---------------------------------------------------------------------------
+  # -- Datastores shared across components. postgres: consumed by spi/dict-hub
+  #    (DB_HOST/DB_USER/DB_NAME/DB_PORT/DB_SSLMODE + replica*). redis: consumed by
+  #    adapter-lerian/cob-hub/dict-hub/dict-hub-vsync/pixauto/spi (REDIS_HOST/PORT/
+  #    USER/DB/TLS). Example:
+  #    datastores:
+  #      postgres: { host: "postgres.internal", user: "pixswitch", ssl: "require" }
+  #      redis:    { host: "valkey.internal", port: "6379", tls: "true" }
+  datastores: {}
+  # -- Observability (OTel collector) shared by ALL components: enabled / otlpEndpoint
+  #    / deploymentEnvironment -> ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT /
+  #    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT. Example:
+  #    observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
+  observability: {}
+  # -- Auth (plugin-access-manager) shared by ALL components -> PLUGIN_AUTH_ENABLED +
+  #    PLUGIN_AUTH_HOST. Example: auth: { enabled: true, host: "http://plugin-access-manager-auth:4000" }
+  auth: {}
+  # -- Multi-tenant (tenant-manager). Emits MULTI_TENANT_URL + circuit breaker only
+  #    when MULTI_TENANT_ENABLED=true. Example: multiTenant: { url: "http://tenant-manager:8080" }
+  multiTenant: {}
+  # -- Streaming (lib-streaming / RedPanda), consumed by cob-hub/dict-hub/pixauto/spi.
+  #    Emits the STREAMING_* subset only when STREAMING_ENABLED=true. Example:
+  #    streaming: { brokers: "redpanda:9092", saslMechanism: "SCRAM-SHA-512", saslUsername: "pix" }
+  streaming: {}
+
+  # ---------------------------------------------------------------------------
   # External PostgreSQL bootstrap
   # ---------------------------------------------------------------------------
   # When enabled, a Job runs for each database in `databases`, creating the
@@ -190,28 +220,35 @@ spi:
     annotations: {}
     name: ""
 
+  # -- Dedicated datastore connections for this component (override
+  #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
+  #    redis: {host,port,user,db,tls}.
+  datastores: {}
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/spi/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
-    LICENSE_KEY: ""
-    DICT_CLIENT_SECRET: ""
     COB_CLIENT_SECRET: ""
     CRM_CLIENT_SECRET: ""
-    MIDAZ_CLIENT_SECRET: ""
-    MULTI_TENANT_API_KEY: ""
+    DATABASE_URL: ""
     DB_PASSWORD: ""
     DB_REPLICA_PASSWORD: ""
+    DICT_CLIENT_SECRET: ""
     IDP_M2M_CLIENT_SECRET: ""
+    LICENSE_KEY: ""
+    MIDAZ_CLIENT_SECRET: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    REDIS_PASSWORD: ""
     STREAMING_SASL_PASSWORD: ""
-    STREAMING_SASL_USERNAME: ""
     STREAMING_TLS_CA_CERT: ""
-
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -310,19 +347,20 @@ spiSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
-    LICENSE_KEY: ""
-    SYSTEMPLANE_SECRET_MASTER_KEY: ""
-    # -- Tenant Manager API key (consumed when MULTI_TENANT_ENABLED=true on
-    # spi-systemplane). Seeded into the systemplane store on first boot.
-    MULTI_TENANT_API_KEY: ""
     COB_CLIENT_SECRET: ""
     CRM_CLIENT_SECRET: ""
+    DATABASE_URL: ""
     DICT_CLIENT_SECRET: ""
+    LICENSE_KEY: ""
     MIDAZ_CLIENT_SECRET: ""
-
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -411,14 +449,14 @@ adapterProviderMock:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
     LICENSE_KEY: ""
-    # -- Sandbox credentials for the mock server above. Both are REQUIRED for
-    # this component to start, and both are obtained together with sandbox
-    # access. Deliberately empty here: no credential ships in this chart.
     PROVIDER_CLIENT_ID: ""
     PROVIDER_CLIENT_SECRET: ""
-
   useExistingSecret: false
   existingSecretName: ""
 
@@ -499,25 +537,32 @@ dictHub:
     annotations: {}
     name: ""
 
+  # -- Dedicated datastore connections for this component (override
+  #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
+  #    redis: {host,port,user,db,tls}.
+  datastores: {}
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/dict-hub/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
-    LICENSE_KEY: ""
     CRM_CLIENT_SECRET: ""
-    MULTI_TENANT_API_KEY: ""
+    DATABASE_URL: ""
     DB_PASSWORD: ""
     IDP_M2M_CLIENT_SECRET: ""
+    LICENSE_KEY: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    REDIS_PASSWORD: ""
     SPI_CLIENT_SECRET: ""
     STREAMING_SASL_PASSWORD: ""
-    STREAMING_SASL_USERNAME: ""
     STREAMING_TLS_CA_CERT: ""
-
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -617,22 +662,27 @@ dictHubVsync:
     annotations: {}
     name: ""
 
+  # -- Dedicated datastore connections for this component (override
+  #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
+  #    redis: {host,port,user,db,tls}.
+  datastores: {}
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/dict-hub-vsync/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
+    CRM_CLIENT_SECRET: ""
     DATABASE_URL: ""
+    LICENSE_KEY: ""
+    RABBITMQ_URI: ""
+    REDIS_PASSWORD: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
     VALKEY_URL: ""
-    # RabbitMQ — required (vsync is a queue consumer). Must be amqps:// (TLS) on
-    # 5671; lib-commons v5.7.0 validates the broker cert against the system trust
-    # store. Supplied per environment via secret/Vault. Never set ALLOW_INSECURE_TLS.
-    RABBITMQ_URI: ""
-    LICENSE_KEY: ""
-    CRM_CLIENT_SECRET: ""
-
   useExistingSecret: false
   existingSecretName: ""
 
@@ -718,9 +768,12 @@ dictProxy:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
     LICENSE_KEY: ""
-
   useExistingSecret: false
   existingSecretName: ""
 
@@ -806,16 +859,19 @@ dictSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
-    DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
-    LICENSE_KEY: ""
-    SYSTEMPLANE_SECRET_MASTER_KEY: ""
     CRM_CLIENT_SECRET: ""
-    MULTI_TENANT_API_KEY: ""
+    DATABASE_URL: ""
+    LICENSE_KEY: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
     OUTBOUND_HMAC_SECRET: ""
     SPI_CLIENT_SECRET: ""
-
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -896,23 +952,30 @@ cobHub:
     annotations: {}
     name: ""
 
+  # -- Dedicated datastore connections for this component (override
+  #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
+  #    redis: {host,port,user,db,tls}.
+  datastores: {}
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/cob-hub/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
     DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
-    LICENSE_KEY: ""
-    MULTI_TENANT_API_KEY: ""
     DICT_CLIENT_SECRET: ""
     IDP_M2M_CLIENT_SECRET: ""
+    LICENSE_KEY: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    REDIS_PASSWORD: ""
     STREAMING_SASL_PASSWORD: ""
-    STREAMING_SASL_USERNAME: ""
     STREAMING_TLS_CA_CERT: ""
-
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -1011,9 +1074,12 @@ cobProxy:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
     LICENSE_KEY: ""
-
   useExistingSecret: false
   existingSecretName: ""
 
@@ -1099,14 +1165,17 @@ cobSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
     DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
-    LICENSE_KEY: ""
-    SYSTEMPLANE_SECRET_MASTER_KEY: ""
     DICT_CLIENT_SECRET: ""
-    MULTI_TENANT_API_KEY: ""
-
+    LICENSE_KEY: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -1323,21 +1392,26 @@ adapterLerian:
     annotations: {}
     name: ""
 
+  # -- Dedicated datastore connections for this component (override
+  #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
+  #    redis: {host,port,user,db,tls}.
+  datastores: {}
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/adapter-lerian/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
-    # -- DATABASE_URL backs the golang-migrate Job that applies the component's
-    # SQL migrations. SYSTEMPLANE_POSTGRES_DSN is the api's sole routing source
-    # (read-only consumer DSN for adapter_lerian.* runtime config).
     DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
-    LICENSE_KEY: ""
-    MULTI_TENANT_API_KEY: ""
     IDP_M2M_CLIENT_SECRET: ""
-
+    LICENSE_KEY: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    REDIS_PASSWORD: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -1432,18 +1506,20 @@ adapterLerianSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
-    DATABASE_URL: ""
-    LICENSE_KEY: ""
-    # -- 32-byte AES-256-GCM key; required in non-local deployment modes.
-    SYSTEMPLANE_SECRET_MASTER_KEY: ""
-    MULTI_TENANT_API_KEY: ""
     BRSFN_CLIENT_SECRET: ""
     COB_CLIENT_SECRET: ""
+    DATABASE_URL: ""
     DICT_CLIENT_SECRET: ""
+    LICENSE_KEY: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
     SPI_CLIENT_SECRET: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
     WEBHOOK_INGRESS_SECRET: ""
-
   useExistingSecret: false
   existingSecretName: ""
 
@@ -1538,27 +1614,30 @@ pixauto:
     annotations: {}
     name: ""
 
+  # -- Dedicated datastore connections for this component (override
+  #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
+  #    redis: {host,port,user,db,tls}.
+  datastores: {}
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/pixauto/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
     DATABASE_URL: ""
-    SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
-    LICENSE_KEY: ""
-    MULTI_TENANT_API_KEY: ""
-    # -- This app's OWN M2M pair (never shared): the declaration BOLA guard
-    # checks the token's azp against the slug being declared.
     IDP_M2M_CLIENT_SECRET: ""
-    # -- Broker SASL credentials + CA bundle. Only consumed when
-    # STREAMING_ENABLED=true.
-    STREAMING_SASL_USERNAME: ""
+    LICENSE_KEY: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    REDIS_PASSWORD: ""
+    SPI_CLIENT_SECRET: ""
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
-    SPI_CLIENT_SECRET: ""
-
+    SYSTEMPLANE_POSTGRES_DSN: ""
+    VALKEY_URL: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -1662,19 +1741,16 @@ pixautoSystemplane:
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
+  # -- Credentials (never rendered in the ConfigMap). Provide via a
+  #    protected values source or useExistingSecret. DATABASE_URL and
+  #    VALKEY_URL are composed URIs consumed by the migration Job and the
+  #    wait-for-dependencies init container (NOT app-runtime config).
   secrets:
     DATABASE_URL: ""
-    # -- Alternative DSN for the systemplane store only; takes precedence over
-    # DATABASE_URL for the config store (config.SystemplaneDSN). Same key the
-    # spi/dict/cob systemplanes carry — in this chart's single-database layout
-    # it is set to the same DSN as DATABASE_URL.
-    SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    SYSTEMPLANE_POSTGRES_DSN: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
-    # -- Tenant Manager API key (consumed when MULTI_TENANT_ENABLED=true on
-    # pixauto-systemplane). Seeded into the systemplane store on first boot.
-    MULTI_TENANT_API_KEY: ""
-
   useExistingSecret: false
   existingSecretName: ""
 

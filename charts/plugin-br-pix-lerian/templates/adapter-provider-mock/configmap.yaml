@@ -1,6 +1,24 @@
 {{- if .Values.adapterProviderMock.enabled }}
 {{- $component := "adapter-provider-mock" }}
 {{- $values := .Values.adapterProviderMock }}
+{{- $cm := $values.configmap | default dict }}
+{{- /*
+PRODUCTIZED (productize-chart-env pattern; see charts/streaming-hub,
+charts/reporter). AUTHORITY = the app component's config/.env.example on
+develop. Every non-secret key is a `$cm.<KEY> | default "<value>"` passthrough:
+the default lives HERE (curated k8s default where the chart shipped one, else the
+.env.example default), and `adapterProviderMock.configmap.<KEY>` overrides it.
+
+No lerian-common mask is adopted: this app reads DB_* (not POSTGRES_*),
+TELEMETRY_ENABLED (not ENABLE_TELEMETRY), and BOTH PLUGIN_AUTH_URL and
+PLUGIN_AUTH_HOST -- none is a clean key-name match for datastore.value /
+otel.env / auth.env, so a correct plain default is used (a mask emitting the
+wrong key name would render config the app ignores).
+
+Credentials NEVER render here -- they live in templates/adapter-provider-mock/secrets.yaml
+and the trailing escape hatch OMITS them (leaked-secret guard) so a mistaken
+`configmap.<SECRET>` can never surface in this plaintext ConfigMap.
+*/}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,20 +27,70 @@ metadata:
   labels:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
 data:
-  {{- $cm := $values.configmap | default dict }}
-  {{- range $key, $value := $cm }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
+  PLUGIN_AUTH_ENABLED: {{ $cm.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_URL: {{ $cm.PLUGIN_AUTH_URL | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-adapter-provider-mock" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4103" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
+  REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
+  TELEMETRY_ENABLED: {{ $cm.TELEMETRY_ENABLED | default "false" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-adapter-provider-mock" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-lerian" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ $cm.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  # -- ISPB the mock presents as the provider, obtained together with
+  # sandbox access. Optional: the application falls back to a placeholder
+  # ISPB when this is empty, so set it to exercise your own.
+  ADAPTER_ISPB: {{ $cm.ADAPTER_ISPB | default "" | quote }}
+  POLLER_INTERVAL_SEC: {{ $cm.POLLER_INTERVAL_SEC | default "30" | quote }}
+  # -- Lerian sandbox mock server this component talks to. Safe as a
+  # default: adapterProviderMock ships disabled, so this reaches no
+  # installation that does not enable the component explicitly, and an
+  # operator who does enable it gets the right endpoint instead of having
+  # to ask for it. Point it elsewhere only to target your own mock server.
+  PROVIDER_BASE_URL: {{ $cm.PROVIDER_BASE_URL | default "https://mock-pix-lerian-server.sandbox.lerian.net" | quote }}
+  SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4101" | quote }}
+  DICT_BASE_URL: {{ $cm.DICT_BASE_URL | default "http://plugin-br-pix-lerian-dict-hub:4104" | quote }}
+  COB_BASE_URL: {{ $cm.COB_BASE_URL | default "http://plugin-br-pix-lerian-cob-hub:4108" | quote }}
+  # -- Pix Automático callback target. Empty by default because pixauto
+  # ships disabled (see pixauto.enabled); set it whenever the mock has to
+  # deliver inbound recurrence callbacks.
+  # Example: http://plugin-br-pix-lerian-pixauto:4116/pixauto
+  PIXAUTO_BASE_URL: {{ $cm.PIXAUTO_BASE_URL | default "" | quote }}
+  # --- coverage: keys from adapter-provider-mock .env.example not previously in the chart ---
+  MOCK_TEST_ENDPOINTS_ENABLED: {{ $cm.MOCK_TEST_ENDPOINTS_ENABLED | default "false" | quote }}
   {{- /*
   OTEL_RESOURCE_SERVICE_VERSION: derive from the deployed image tag so it
   tracks releases automatically. Resolution order:
-    component image.tag > Chart.AppVersion.
-  Operators can override by setting `<component>.configmap.OTEL_RESOURCE_SERVICE_VERSION`
-  explicitly (the range above wins because data keys are unique per YAML map,
-  but we only emit this when the key wasn't already provided).
+    component image.tag then Chart.AppVersion.
+  Operators can override via `adapterProviderMock.configmap.OTEL_RESOURCE_SERVICE_VERSION`.
   */}}
   {{- if not (hasKey $cm "OTEL_RESOURCE_SERVICE_VERSION") }}
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
+  {{- end }}
+  {{- /*
+  Escape hatch: emit any un-enumerated configmap.<KEY> the operator injects.
+  Skips every key emitted above AND every credential key (leaked-secret guard)
+  so a mistaken configmap.<SECRET> can never surface in this plaintext ConfigMap.
+  */}}
+  {{- $enumerated := dict }}
+  {{- range $k := (list
+      "ADAPTER_ISPB" "APPLICATION_NAME" "COB_BASE_URL" "DEPLOYMENT_MODE" "DICT_BASE_URL" 
+      "ENV_NAME" "LICENSE_KEY" "LOG_LEVEL" "MOCK_TEST_ENDPOINTS_ENABLED" 
+      "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" 
+      "OTEL_RESOURCE_SERVICE_NAME" "OTEL_RESOURCE_SERVICE_VERSION" "PIXAUTO_BASE_URL" 
+      "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_URL" "POLLER_INTERVAL_SEC" "PROVIDER_BASE_URL" 
+      "PROVIDER_CLIENT_ID" "PROVIDER_CLIENT_SECRET" "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS" 
+      "SPI_BASE_URL" "TELEMETRY_ENABLED"
+    ) }}
+  {{- $_ := set $enumerated $k 1 }}
+  {{- end }}
+  {{- range $key, $value := $cm }}
+  {{- if not (hasKey $enumerated $key) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
   {{- end }}
 {{- end }}

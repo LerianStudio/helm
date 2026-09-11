@@ -1,6 +1,24 @@
 {{- if .Values.dictHub.enabled }}
 {{- $component := "dict-hub" }}
 {{- $values := .Values.dictHub }}
+{{- $cm := $values.configmap | default dict }}
+{{- /*
+PRODUCTIZED (productize-chart-env pattern; see charts/streaming-hub,
+charts/reporter). AUTHORITY = the app component's config/.env.example on
+develop. Every non-secret key is a `$cm.<KEY> | default "<value>"` passthrough:
+the default lives HERE (curated k8s default where the chart shipped one, else the
+.env.example default), and `dictHub.configmap.<KEY>` overrides it.
+
+No lerian-common mask is adopted: this app reads DB_* (not POSTGRES_*),
+TELEMETRY_ENABLED (not ENABLE_TELEMETRY), and BOTH PLUGIN_AUTH_URL and
+PLUGIN_AUTH_HOST -- none is a clean key-name match for datastore.value /
+otel.env / auth.env, so a correct plain default is used (a mask emitting the
+wrong key name would render config the app ignores).
+
+Credentials NEVER render here -- they live in templates/dict-hub/secrets.yaml
+and the trailing escape hatch OMITS them (leaked-secret guard) so a mistaken
+`configmap.<SECRET>` can never surface in this plaintext ConfigMap.
+*/}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,20 +27,111 @@ metadata:
   labels:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
 data:
-  {{- $cm := $values.configmap | default dict }}
-  {{- range $key, $value := $cm }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-dict-hub" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4104" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
+  REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
+  TELEMETRY_ENABLED: {{ $cm.TELEMETRY_ENABLED | default "true" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-dict-hub" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-lerian" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ $cm.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ $cm.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_URL: {{ $cm.PLUGIN_AUTH_URL | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  ORGANIZATION_ID: {{ $cm.ORGANIZATION_ID | default "" | quote }}
+  ISPB: {{ $cm.ISPB | default "" | quote }}
+  # -- Deliberately empty: the only adapter this chart can render is
+  # adapter-provider-mock, which ships disabled (see
+  # adapterProviderMock.enabled), so any default here would point at a
+  # Service that does not exist -- and the previous default also omitted the
+  # /provider-mock prefix every real environment appends, so it could only
+  # ever be wrong, masking the absence of real configuration.
+  # Empty does NOT fail at boot: the app does not validate this variable at
+  # startup (no `required` tag), it only seeds the systemplane provider key.
+  # The effective value is resolved per request from TenantConfig, so a
+  # request with no adapter base URL is rejected then, not at rollout.
+  # Example: http://plugin-br-pix-lerian-adapter-provider-mock:4103/provider-mock
+  ADAPTER_BASE_URL: {{ $cm.ADAPTER_BASE_URL | default "" | quote }}
+  CRM_BASE_URL: {{ $cm.CRM_BASE_URL | default "" | quote }}
+  CRM_CLIENT_ID: {{ $cm.CRM_CLIENT_ID | default "" | quote }}
+  CRM_ORGANIZATION_ID: {{ $cm.CRM_ORGANIZATION_ID | default "" | quote }}
+  KEY_CACHE_TTL_SEC: {{ $cm.KEY_CACHE_TTL_SEC | default "60" | quote }}
+  # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
+  # and MULTI_TENANT_API_KEY are seeds for the dict-systemplane store; the CB
+  # tunables size the tenant-manager client circuit breaker (defaults from
+  # pkg/config: threshold=5, timeoutSec=30).
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  MULTI_TENANT_URL: {{ $cm.MULTI_TENANT_URL | default "" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  # --- coverage: keys from dict-hub .env.example not previously in the chart ---
+  ORGANIZATION_IDS: {{ $cm.ORGANIZATION_IDS | default "global" | quote }}
+  IDP_DECLARATION_ENABLED: {{ $cm.IDP_DECLARATION_ENABLED | default "false" | quote }}
+  IDP_HOST: {{ $cm.IDP_HOST | default "http://plugin-identity:4000" | quote }}
+  PLUGIN_AUTH_HOST: {{ $cm.PLUGIN_AUTH_HOST | default "http://plugin-auth:4000" | quote }}
+  IDP_M2M_CLIENT_ID: {{ $cm.IDP_M2M_CLIENT_ID | default "" | quote }}
+  DB_HOST: {{ $cm.DB_HOST | default "localhost" | quote }}
+  DB_USER: {{ $cm.DB_USER | default "plugin" | quote }}
+  DB_NAME: {{ $cm.DB_NAME | default "dict" | quote }}
+  DB_PORT: {{ $cm.DB_PORT | default "5432" | quote }}
+  DB_SSL_MODE: {{ $cm.DB_SSL_MODE | default "disable" | quote }}
+  SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://localhost:4001/spi" | quote }}
+  SPI_CLIENT_ID: {{ $cm.SPI_CLIENT_ID | default "your_spi_client_id_here" | quote }}
+  STREAMING_BROKERS: {{ $cm.STREAMING_BROKERS | default "" | quote }}
+  STREAMING_CLOUDEVENTS_SOURCE: {{ $cm.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-pix-lerian" | quote }}
+  STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+  STREAMING_DATASCHEMA_BASE_URL: {{ $cm.STREAMING_DATASCHEMA_BASE_URL | default "http://localhost:4003" | quote }}
+  STREAMING_CLIENT_ID: {{ $cm.STREAMING_CLIENT_ID | default "" | quote }}
+  STREAMING_CB_FAILURE_RATIO: {{ $cm.STREAMING_CB_FAILURE_RATIO | default "" | quote }}
+  STREAMING_CB_MIN_REQUESTS: {{ $cm.STREAMING_CB_MIN_REQUESTS | default "" | quote }}
+  STREAMING_CB_TIMEOUT_S: {{ $cm.STREAMING_CB_TIMEOUT_S | default "" | quote }}
+  STREAMING_CLOSE_TIMEOUT_S: {{ $cm.STREAMING_CLOSE_TIMEOUT_S | default "" | quote }}
+  STREAMING_TENANT_ID: {{ $cm.STREAMING_TENANT_ID | default "default" | quote }}
+  STREAMING_TLS_ENABLED: {{ $cm.STREAMING_TLS_ENABLED | default "false" | quote }}
+  STREAMING_SASL_MECHANISM: {{ $cm.STREAMING_SASL_MECHANISM | default "" | quote }}
+  STREAMING_SASL_ALLOW_PLAINTEXT: {{ $cm.STREAMING_SASL_ALLOW_PLAINTEXT | default "false" | quote }}
   {{- /*
   OTEL_RESOURCE_SERVICE_VERSION: derive from the deployed image tag so it
   tracks releases automatically. Resolution order:
-    component image.tag > Chart.AppVersion.
-  Operators can override by setting `<component>.configmap.OTEL_RESOURCE_SERVICE_VERSION`
-  explicitly (the range above wins because data keys are unique per YAML map,
-  but we only emit this when the key wasn't already provided).
+    component image.tag then Chart.AppVersion.
+  Operators can override via `dictHub.configmap.OTEL_RESOURCE_SERVICE_VERSION`.
   */}}
   {{- if not (hasKey $cm "OTEL_RESOURCE_SERVICE_VERSION") }}
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
+  {{- end }}
+  {{- /*
+  Escape hatch: emit any un-enumerated configmap.<KEY> the operator injects.
+  Skips every key emitted above AND every credential key (leaked-secret guard)
+  so a mistaken configmap.<SECRET> can never surface in this plaintext ConfigMap.
+  */}}
+  {{- $enumerated := dict }}
+  {{- range $k := (list
+      "ADAPTER_BASE_URL" "APPLICATION_NAME" "CRM_BASE_URL" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" 
+      "CRM_ORGANIZATION_ID" "DATABASE_URL" "DB_HOST" "DB_NAME" "DB_PASSWORD" "DB_PORT" 
+      "DB_SSL_MODE" "DB_USER" "DEPLOYMENT_MODE" "ENV_NAME" "IDP_DECLARATION_ENABLED" "IDP_HOST" 
+      "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET" "ISPB" "KEY_CACHE_TTL_SEC" "LICENSE_KEY" 
+      "LOG_LEVEL" "MULTI_TENANT_API_KEY" "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" 
+      "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" "MULTI_TENANT_ENABLED" "MULTI_TENANT_URL" 
+      "ORGANIZATION_ID" "ORGANIZATION_IDS" "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME" 
+      "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_RESOURCE_SERVICE_NAME" 
+      "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_HOST" 
+      "PLUGIN_AUTH_URL" "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS" "SPI_BASE_URL" "SPI_CLIENT_ID" 
+      "SPI_CLIENT_SECRET" "STREAMING_BROKERS" "STREAMING_CB_FAILURE_RATIO" 
+      "STREAMING_CB_MIN_REQUESTS" "STREAMING_CB_TIMEOUT_S" "STREAMING_CLIENT_ID" 
+      "STREAMING_CLOSE_TIMEOUT_S" "STREAMING_CLOUDEVENTS_SOURCE" 
+      "STREAMING_DATASCHEMA_BASE_URL" "STREAMING_ENABLED" "STREAMING_SASL_ALLOW_PLAINTEXT" 
+      "STREAMING_SASL_MECHANISM" "STREAMING_SASL_PASSWORD" "STREAMING_SASL_USERNAME" 
+      "STREAMING_TENANT_ID" "STREAMING_TLS_CA_CERT" "STREAMING_TLS_ENABLED" 
+      "SYSTEMPLANE_POSTGRES_DSN" "TELEMETRY_ENABLED" "VALKEY_URL"
+    ) }}
+  {{- $_ := set $enumerated $k 1 }}
+  {{- end }}
+  {{- range $key, $value := $cm }}
+  {{- if not (hasKey $enumerated $key) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
   {{- end }}
 {{- end }}

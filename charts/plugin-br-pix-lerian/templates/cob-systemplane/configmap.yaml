@@ -1,6 +1,24 @@
 {{- if .Values.cobSystemplane.enabled }}
 {{- $component := "cob-systemplane" }}
 {{- $values := .Values.cobSystemplane }}
+{{- $cm := $values.configmap | default dict }}
+{{- /*
+PRODUCTIZED (productize-chart-env pattern; see charts/streaming-hub,
+charts/reporter). AUTHORITY = the app component's config/.env.example on
+develop. Every non-secret key is a `$cm.<KEY> | default "<value>"` passthrough:
+the default lives HERE (curated k8s default where the chart shipped one, else the
+.env.example default), and `cobSystemplane.configmap.<KEY>` overrides it.
+
+No lerian-common mask is adopted: this app reads DB_* (not POSTGRES_*),
+TELEMETRY_ENABLED (not ENABLE_TELEMETRY), and BOTH PLUGIN_AUTH_URL and
+PLUGIN_AUTH_HOST -- none is a clean key-name match for datastore.value /
+otel.env / auth.env, so a correct plain default is used (a mask emitting the
+wrong key name would render config the app ignores).
+
+Credentials NEVER render here -- they live in templates/cob-systemplane/secrets.yaml
+and the trailing escape hatch OMITS them (leaked-secret guard) so a mistaken
+`configmap.<SECRET>` can never surface in this plaintext ConfigMap.
+*/}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,20 +27,62 @@ metadata:
   labels:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
 data:
-  {{- $cm := $values.configmap | default dict }}
-  {{- range $key, $value := $cm }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
+  PLUGIN_AUTH_ENABLED: {{ $cm.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  PLUGIN_AUTH_URL: {{ $cm.PLUGIN_AUTH_URL | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-cob-systemplane" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4110" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
+  REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
+  TELEMETRY_ENABLED: {{ $cm.TELEMETRY_ENABLED | default "true" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-cob-systemplane" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-lerian" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ $cm.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
+  # -- Multi-tenant flag. cob-systemplane reads only the boolean (URL +
+  # API key live on spi-systemplane). When enabled, the systemplane store
+  # is bootstrapped in MT mode.
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  # --- coverage: keys from cob-systemplane .env.example not previously in the chart ---
+  MULTI_TENANT_URL: {{ $cm.MULTI_TENANT_URL | default "" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  ORGANIZATION_ID: {{ $cm.ORGANIZATION_ID | default "" | quote }}
+  ISPB: {{ $cm.ISPB | default "" | quote }}
+  ADAPTER_BASE_URL: {{ $cm.ADAPTER_BASE_URL | default "" | quote }}
+  DICT_CLIENT_ID: {{ $cm.DICT_CLIENT_ID | default "" | quote }}
   {{- /*
   OTEL_RESOURCE_SERVICE_VERSION: derive from the deployed image tag so it
   tracks releases automatically. Resolution order:
-    component image.tag > Chart.AppVersion.
-  Operators can override by setting `<component>.configmap.OTEL_RESOURCE_SERVICE_VERSION`
-  explicitly (the range above wins because data keys are unique per YAML map,
-  but we only emit this when the key wasn't already provided).
+    component image.tag then Chart.AppVersion.
+  Operators can override via `cobSystemplane.configmap.OTEL_RESOURCE_SERVICE_VERSION`.
   */}}
   {{- if not (hasKey $cm "OTEL_RESOURCE_SERVICE_VERSION") }}
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
+  {{- end }}
+  {{- /*
+  Escape hatch: emit any un-enumerated configmap.<KEY> the operator injects.
+  Skips every key emitted above AND every credential key (leaked-secret guard)
+  so a mistaken configmap.<SECRET> can never surface in this plaintext ConfigMap.
+  */}}
+  {{- $enumerated := dict }}
+  {{- range $k := (list
+      "ADAPTER_BASE_URL" "APPLICATION_NAME" "DATABASE_URL" "DEPLOYMENT_MODE" "DICT_CLIENT_ID" 
+      "DICT_CLIENT_SECRET" "ENV_NAME" "ISPB" "LICENSE_KEY" "LOG_LEVEL" "MULTI_TENANT_API_KEY" 
+      "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" 
+      "MULTI_TENANT_ENABLED" "MULTI_TENANT_URL" "ORGANIZATION_ID" "OTEL_EXPORTER_OTLP_ENDPOINT" 
+      "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_RESOURCE_SERVICE_NAME" 
+      "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_URL" 
+      "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS" "SYSTEMPLANE_POSTGRES_DSN" 
+      "SYSTEMPLANE_SECRET_MASTER_KEY" "TELEMETRY_ENABLED"
+    ) }}
+  {{- $_ := set $enumerated $k 1 }}
+  {{- end }}
+  {{- range $key, $value := $cm }}
+  {{- if not (hasKey $enumerated $key) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
   {{- end }}
 {{- end }}

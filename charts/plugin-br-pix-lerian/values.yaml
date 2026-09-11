@@ -190,58 +190,11 @@ spi:
     annotations: {}
     name: ""
 
-  configmap:
-    APPLICATION_NAME: "pix-spi"
-    SERVER_ADDRESS: ":4101"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-spi"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    # Single-tenant identity
-    ORGANIZATION_ID: ""
-    ISPB: ""
-    # Sibling services
-    # -- Deliberately empty: the only adapter this chart can render is
-    # adapter-provider-mock, which ships disabled (see
-    # adapterProviderMock.enabled), so any default here would point at a
-    # Service that does not exist -- and the previous default also omitted the
-    # /provider-mock prefix every real environment appends, so it could only
-    # ever be wrong, masking the absence of real configuration.
-    # Empty does NOT fail at boot: the app does not validate this variable at
-    # startup (no `required` tag), it only seeds the systemplane provider key.
-    # The effective value is resolved per request from TenantConfig, so a
-    # request with no adapter base URL is rejected then, not at rollout.
-    # Example: http://plugin-br-pix-lerian-adapter-provider-mock:4103/provider-mock
-    ADAPTER_BASE_URL: ""
-    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
-    COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
-    # Upstream integrations
-    CRM_BASE_URL: ""
-    CRM_CLIENT_ID: ""
-    CRM_ORGANIZATION_ID: ""
-    DICT_CLIENT_ID: ""
-    COB_CLIENT_ID: ""
-    MIDAZ_BASE_URL: ""
-    MIDAZ_CLIENT_ID: ""
-    MIDAZ_LEDGER_ID: ""
-    MIDAZ_ORGANIZATION_ID: ""
-    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
-    # and MULTI_TENANT_API_KEY are seeds for the spi-systemplane store; once
-    # persisted there, env values become optional (a re-deploy without them is
-    # a supported rollback path). Circuit breaker defaults match the binary
-    # (pkg/config: DefaultMultiTenantCBThreshold=5, ...CBTimeoutSec=30).
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/spi/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
@@ -252,6 +205,12 @@ spi:
     CRM_CLIENT_SECRET: ""
     MIDAZ_CLIENT_SECRET: ""
     MULTI_TENANT_API_KEY: ""
+    DB_PASSWORD: ""
+    DB_REPLICA_PASSWORD: ""
+    IDP_M2M_CLIENT_SECRET: ""
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_SASL_USERNAME: ""
+    STREAMING_TLS_CA_CERT: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -346,27 +305,11 @@ spiSystemplane:
     annotations: {}
     name: ""
 
-  configmap:
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    APPLICATION_NAME: "pix-spi-systemplane"
-    SERVER_ADDRESS: ":4102"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-spi-systemplane"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    # -- Multi-tenant seeds. When MULTI_TENANT_ENABLED=true, MULTI_TENANT_URL
-    # and MULTI_TENANT_API_KEY (masked) are seeded into the systemplane store
-    # at tenant.manager_url / tenant.manager_api_key on first boot. After
-    # the systemplane row exists, env values can be removed.
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/spi-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
@@ -375,6 +318,10 @@ spiSystemplane:
     # -- Tenant Manager API key (consumed when MULTI_TENANT_ENABLED=true on
     # spi-systemplane). Seeded into the systemplane store on first boot.
     MULTI_TENANT_API_KEY: ""
+    COB_CLIENT_SECRET: ""
+    CRM_CLIENT_SECRET: ""
+    DICT_CLIENT_SECRET: ""
+    MIDAZ_CLIENT_SECRET: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -459,40 +406,11 @@ adapterProviderMock:
     annotations: {}
     name: ""
 
-  configmap:
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    APPLICATION_NAME: "pix-adapter-provider-mock"
-    SERVER_ADDRESS: ":4103"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "false"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-adapter-provider-mock"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    # -- ISPB the mock presents as the provider, obtained together with
-    # sandbox access. Optional: the application falls back to a placeholder
-    # ISPB when this is empty, so set it to exercise your own.
-    ADAPTER_ISPB: ""
-    POLLER_INTERVAL_SEC: "30"
-    # -- Lerian sandbox mock server this component talks to. Safe as a
-    # default: adapterProviderMock ships disabled, so this reaches no
-    # installation that does not enable the component explicitly, and an
-    # operator who does enable it gets the right endpoint instead of having
-    # to ask for it. Point it elsewhere only to target your own mock server.
-    PROVIDER_BASE_URL: "https://mock-pix-lerian-server.sandbox.lerian.net"
-    SPI_BASE_URL: "http://plugin-br-pix-lerian-spi:4101"
-    DICT_BASE_URL: "http://plugin-br-pix-lerian-dict-hub:4104"
-    COB_BASE_URL: "http://plugin-br-pix-lerian-cob-hub:4108"
-    # -- Pix Automático callback target. Empty by default because pixauto
-    # ships disabled (see pixauto.enabled); set it whenever the mock has to
-    # deliver inbound recurrence callbacks.
-    # Example: http://plugin-br-pix-lerian-pixauto:4116/pixauto
-    PIXAUTO_BASE_URL: ""
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/adapter-provider-mock/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     LICENSE_KEY: ""
     # -- Sandbox credentials for the mock server above. Both are REQUIRED for
@@ -581,47 +499,11 @@ dictHub:
     annotations: {}
     name: ""
 
-  configmap:
-    APPLICATION_NAME: "pix-dict-hub"
-    SERVER_ADDRESS: ":4104"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-dict-hub"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    ORGANIZATION_ID: ""
-    ISPB: ""
-    # -- Deliberately empty: the only adapter this chart can render is
-    # adapter-provider-mock, which ships disabled (see
-    # adapterProviderMock.enabled), so any default here would point at a
-    # Service that does not exist -- and the previous default also omitted the
-    # /provider-mock prefix every real environment appends, so it could only
-    # ever be wrong, masking the absence of real configuration.
-    # Empty does NOT fail at boot: the app does not validate this variable at
-    # startup (no `required` tag), it only seeds the systemplane provider key.
-    # The effective value is resolved per request from TenantConfig, so a
-    # request with no adapter base URL is rejected then, not at rollout.
-    # Example: http://plugin-br-pix-lerian-adapter-provider-mock:4103/provider-mock
-    ADAPTER_BASE_URL: ""
-    CRM_BASE_URL: ""
-    CRM_CLIENT_ID: ""
-    CRM_ORGANIZATION_ID: ""
-    KEY_CACHE_TTL_SEC: "60"
-    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
-    # and MULTI_TENANT_API_KEY are seeds for the dict-systemplane store; the CB
-    # tunables size the tenant-manager client circuit breaker (defaults from
-    # pkg/config: threshold=5, timeoutSec=30).
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/dict-hub/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
@@ -629,6 +511,12 @@ dictHub:
     LICENSE_KEY: ""
     CRM_CLIENT_SECRET: ""
     MULTI_TENANT_API_KEY: ""
+    DB_PASSWORD: ""
+    IDP_M2M_CLIENT_SECRET: ""
+    SPI_CLIENT_SECRET: ""
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_SASL_USERNAME: ""
+    STREAMING_TLS_CA_CERT: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -729,53 +617,11 @@ dictHubVsync:
     annotations: {}
     name: ""
 
-  configmap:
-    APPLICATION_NAME: "pix-dict-hub-vsync"
-    SERVER_ADDRESS: ":4105"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-dict-hub-vsync"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    ORGANIZATION_ID: ""
-    # -- Deliberately empty: the only adapter this chart can render is
-    # adapter-provider-mock, which ships disabled (see
-    # adapterProviderMock.enabled), so any default here would point at a
-    # Service that does not exist -- and the previous default also omitted the
-    # /provider-mock prefix every real environment appends, so it could only
-    # ever be wrong, masking the absence of real configuration.
-    # Empty does NOT fail at boot: the app does not validate this variable at
-    # startup (no `required` tag), it only seeds the systemplane provider key.
-    # The effective value is resolved per request from TenantConfig, so a
-    # request with no adapter base URL is rejected then, not at rollout.
-    # Example: http://plugin-br-pix-lerian-adapter-provider-mock:4103/provider-mock
-    ADAPTER_BASE_URL: ""
-    CRM_BASE_URL: ""
-    CRM_CLIENT_ID: ""
-    CRM_ORGANIZATION_ID: ""
-    # -- Multi-tenant (vsync uses the per-tenant DSN resolver only; no
-    # API key here, no CB tunables — the resolver shares the dict-hub
-    # tenant-manager client config).
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    # VSync tunables
-    VSYNC_ENABLED: "true"
-    VSYNC_CHUNK_PROCESSING_DEADLINE_MIN: "30"
-    VSYNC_EVENTSYNC_MAX_PAGES: "100"
-    VSYNC_FILE_RECON_ENABLED: "false"
-    VSYNC_GATE_TTL_SEC: "300"
-    VSYNC_MAX_JOB_ATTEMPTS: "5"
-    VSYNC_OK_CACHE_TTL_SEC: "60"
-    VSYNC_SCOPE_CONCURRENCY: "10"
-    VSYNC_START_TIME: ""
-    VSYNC_STUCK_JOB_SWEEP_TICK_SEC: "30"
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/dict-hub-vsync/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
@@ -867,21 +713,11 @@ dictProxy:
     annotations: {}
     name: ""
 
-  configmap:
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    APPLICATION_NAME: "pix-dict-proxy"
-    SERVER_ADDRESS: ":4106"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-dict-proxy"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/dict-proxy/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     LICENSE_KEY: ""
 
@@ -965,30 +801,20 @@ dictSystemplane:
     annotations: {}
     name: ""
 
-  configmap:
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    APPLICATION_NAME: "pix-dict-systemplane"
-    SERVER_ADDRESS: ":4107"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-dict-systemplane"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    # -- Multi-tenant flag. dict-systemplane reads only the boolean (URL +
-    # API key live on spi-systemplane). When enabled, the systemplane store
-    # is bootstrapped in MT mode.
-    MULTI_TENANT_ENABLED: "false"
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/dict-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
+    CRM_CLIENT_SECRET: ""
+    MULTI_TENANT_API_KEY: ""
+    OUTBOUND_HMAC_SECRET: ""
+    SPI_CLIENT_SECRET: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -1070,36 +896,22 @@ cobHub:
     annotations: {}
     name: ""
 
-  configmap:
-    APPLICATION_NAME: "pix-cob-hub"
-    SERVER_ADDRESS: ":4108"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-cob-hub"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    ORGANIZATION_ID: ""
-    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
-    # and MULTI_TENANT_API_KEY are seeds for the cob-systemplane store; the CB
-    # tunables size the tenant-manager client circuit breaker (defaults from
-    # pkg/config: threshold=5, timeoutSec=30).
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/cob-hub/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
     VALKEY_URL: ""
     LICENSE_KEY: ""
     MULTI_TENANT_API_KEY: ""
+    DICT_CLIENT_SECRET: ""
+    IDP_M2M_CLIENT_SECRET: ""
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_SASL_USERNAME: ""
+    STREAMING_TLS_CA_CERT: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -1194,21 +1006,11 @@ cobProxy:
     annotations: {}
     name: ""
 
-  configmap:
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    APPLICATION_NAME: "pix-cob-proxy"
-    SERVER_ADDRESS: ":4109"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-cob-proxy"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/cob-proxy/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     LICENSE_KEY: ""
 
@@ -1292,30 +1094,18 @@ cobSystemplane:
     annotations: {}
     name: ""
 
-  configmap:
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    APPLICATION_NAME: "pix-cob-systemplane"
-    SERVER_ADDRESS: ":4110"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-cob-systemplane"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    # -- Multi-tenant flag. cob-systemplane reads only the boolean (URL +
-    # API key live on spi-systemplane). When enabled, the systemplane store
-    # is bootstrapped in MT mode.
-    MULTI_TENANT_ENABLED: "false"
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/cob-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
+    DICT_CLIENT_SECRET: ""
+    MULTI_TENANT_API_KEY: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -1533,26 +1323,11 @@ adapterLerian:
     annotations: {}
     name: ""
 
-  configmap:
-    APPLICATION_NAME: "pix-adapter-lerian"
-    SERVER_ADDRESS: ":4113"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    TELEMETRY_ENABLED: "false"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-adapter-lerian-api"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    # License allow-list (use "global" for single-license mode).
-    ORGANIZATION_IDS: ""
-    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
-    # is the tenant-manager address; MULTI_TENANT_API_KEY lives under secrets.
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/adapter-lerian/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     # -- DATABASE_URL backs the golang-migrate Job that applies the component's
     # SQL migrations. SYSTEMPLANE_POSTGRES_DSN is the api's sole routing source
@@ -1561,6 +1336,7 @@ adapterLerian:
     SYSTEMPLANE_POSTGRES_DSN: ""
     LICENSE_KEY: ""
     MULTI_TENANT_API_KEY: ""
+    IDP_M2M_CLIENT_SECRET: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -1651,33 +1427,11 @@ adapterLerianSystemplane:
     annotations: {}
     name: ""
 
-  configmap:
-    APPLICATION_NAME: "pix-adapter-lerian-systemplane"
-    SERVER_ADDRESS: ":4115"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "false"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-adapter-lerian-systemplane"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    # -- Multi-tenant. MULTI_TENANT_URL + MULTI_TENANT_API_KEY (secret) are
-    # seeded into the store; the CB tunables size the tenant-manager client.
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-    # -- Address-book / instance routing seeds (first-boot only; operators
-    # manage them via the systemplane admin API afterwards).
-    SWITCH_BASE_URL: ""
-    INTEGRATION_MODE: ""
-    BRSFN_BASE_URL: ""
-    BRSFN_CLIENT_ID: ""
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/adapter-lerian-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     LICENSE_KEY: ""
@@ -1685,6 +1439,10 @@ adapterLerianSystemplane:
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
     MULTI_TENANT_API_KEY: ""
     BRSFN_CLIENT_SECRET: ""
+    COB_CLIENT_SECRET: ""
+    DICT_CLIENT_SECRET: ""
+    SPI_CLIENT_SECRET: ""
+    WEBHOOK_INGRESS_SECRET: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -1780,64 +1538,11 @@ pixauto:
     annotations: {}
     name: ""
 
-  configmap:
-    APPLICATION_NAME: "pix-pixauto"
-    SERVER_ADDRESS: ":4116"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-pixauto"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    ORGANIZATION_IDS: "global"
-    # -- Single-tenant organization fallback. The tenant-config resolver reads
-    # pixauto.organization_id from the systemplane store first and only falls
-    # back to this. With NEITHER set every request answers 403
-    # TENANT_CONFIG_NOT_FOUND, and it MUST stay empty when
-    # MULTI_TENANT_ENABLED=true (the app refuses to boot otherwise).
-    ORGANIZATION_ID: ""
-    # -- Permission declaration (lib-auth/v3 auth/declaration.WireFromEnv).
-    # KEEP false: plugin-br-pix-lerian-pixauto has no registered M2M
-    # application at plugin-auth yet, so a real publish under this slug answers
-    # 422. The manifest (apps/pixauto/components/api/declaration/permissions.yaml)
-    # is authored and gated, not published. Flipping this needs the M2M pair
-    # below AND PLUGIN_AUTH_ENABLED=true, or the token mints empty and the
-    # fail-open publisher skips publication silently.
-    # The IDP_ prefix is the canonical name as of lib-auth v3.4.0-beta.6
-    # (#4232). The pre-prefix names (DECLARATION_ENABLED, PLUGIN_IDENTITY_HOST,
-    # M2M_CLIENT_ID, M2M_CLIENT_SECRET) still resolve as deprecated aliases for
-    # one release and log a WARN on every boot; canonical wins when both are
-    # set. PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST are out of scope for the
-    # rename and keep their names.
-    IDP_DECLARATION_ENABLED: "false"
-    IDP_HOST: ""
-    PLUGIN_AUTH_HOST: ""
-    IDP_M2M_CLIENT_ID: ""
-    # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true).
-    # MULTI_TENANT_API_KEY lives under secrets.
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-    # -- Streaming (notification_outbox relay -> domain-fact CloudEvents).
-    # KEEP false: the br-sfn rail does not carry the recurrence message family
-    # yet (GAP-BRSFN-001), and the app refuses to boot with STREAMING_ENABLED=true
-    # and an empty STREAMING_BROKERS (it would drain claimed rows into a Noop
-    # emitter and lose the events) or with MULTI_TENANT_ENABLED=true. The command
-    # layer keeps writing facts to notification_outbox; they stay PENDING until
-    # this flips. Credentials + CA live under secrets.
-    STREAMING_ENABLED: "false"
-    STREAMING_BROKERS: ""
-    STREAMING_CLOUDEVENTS_SOURCE: ""
-    STREAMING_TLS_ENABLED: "false"
-    STREAMING_SASL_MECHANISM: ""
-    STREAMING_ALLOW_PLAINTEXT_SASL: "false"
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/pixauto/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
@@ -1852,6 +1557,7 @@ pixauto:
     STREAMING_SASL_USERNAME: ""
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
+    SPI_CLIENT_SECRET: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -1951,37 +1657,11 @@ pixautoSystemplane:
     annotations: {}
     name: ""
 
-  configmap:
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    APPLICATION_NAME: "pix-pixauto-systemplane"
-    SERVER_ADDRESS: ":4117"
-    LOG_LEVEL: "info"
-    ENV_NAME: "development"
-    DEPLOYMENT_MODE: "byoc"
-    REQUEST_TIMEOUT_SEC: "30"
-    TELEMETRY_ENABLED: "true"
-    OTEL_RESOURCE_SERVICE_NAME: "pix-pixauto-systemplane"
-    OTEL_LIBRARY_NAME: "github.com/LerianStudio/plugin-br-pix-lerian"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    # -- Multi-tenant seeds. When MULTI_TENANT_ENABLED=true, MULTI_TENANT_URL
-    # and MULTI_TENANT_API_KEY (masked) are seeded into the systemplane store
-    # on first boot. After the systemplane row exists, env values can be removed.
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
-    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
-    # -- First-boot seed of the per-app service-discovery advertise pair
-    # (pixauto.sd_advertise_address / pixauto.sd_advertise_port). These MUST live
-    # on the systemplane component: SeedFromEnv runs here, and pixauto/api reads
-    # the store first, so a present store value beats the pod's own env.
-    # Address carries NO port — the port lives in SD_ADVERTISE_PORT.
-    # Seeding applies only while the stored value still equals the registered
-    # default; once an operator sets a key via the admin API the seeder skips it.
-    SD_ADVERTISE_ADDRESS: ""
-    SD_ADVERTISE_PORT: ""
-
+  # -- App configuration. PRODUCTIZED: every default now lives in
+  #    templates/pixauto-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
+  #    Set a KEY here ONLY to override a default; un-enumerated keys pass
+  #    through too. Credentials are NOT configmap -- see `secrets` below.
+  configmap: {}
   secrets:
     DATABASE_URL: ""
     # -- Alternative DSN for the systemplane store only; takes precedence over

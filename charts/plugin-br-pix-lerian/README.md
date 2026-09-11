@@ -160,6 +160,7 @@ Critical contracts, each stated once here:
 - **`adapterLerian`, `adapterLerianSystemplane`, `adapterProviderMock` are `Development only`** here.
 - **Disabling a hub can remove the only migration Job for that domain's schema.** See [Effect of disabling a workload](#effect-of-disabling-a-workload).
 - **Keep `systemplaneIngress.enabled: false`.** The administrative API reads and writes runtime configuration — operator-only.
+- **This chart configures no external callback.** Pix Lerian publishes events to the broker through `lib-streaming`; the Streaming Hub resolves the subscriptions and performs the outbound HTTP callbacks. No callback URL or delivery secret belongs here.
 - **One release per namespace.**
 
 ### Workloads

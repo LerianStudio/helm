@@ -1,0 +1,160 @@
+name: Helm Install Test
+
+# Installs each changed chart into a throwaway kind cluster and exercises the
+# upgrade path. The value over the render-gate (which only runs `helm template`)
+# is that the real API server VALIDATES every manifest server-side — it rejects
+# invalid field values, bad API versions, and immutable-field changes on upgrade
+# that `helm template` renders happily.
+#
+# The cluster is given the runner's registry credentials, so hook Jobs
+# (migrations/bootstrap) run and `--wait` holds until every pod reports Ready.
+# That is what makes this a real install rather than a dry one: an image tag
+# nobody published fails on ImagePullBackOff, and a probe pointed at an endpoint
+# that answers 200 while its dependencies are down fails to go Ready. Both are
+# invisible to `helm template`, and both have shipped.
+#
+# A pull request from a fork gets no secrets. Rather than fail for the wrong
+# reason, the script drops to --no-hooks with no waiting and still validates
+# every manifest server-side.
+
+on:
+  pull_request:
+    paths:
+      - "charts/**"
+      - ".github/configs/helm-render-values/**"
+      - ".github/configs/helm-install-values/**"
+      - ".github/scripts/install-test.sh"
+      - ".github/workflows/helm-install-test.yml"
+  workflow_dispatch:
+    inputs:
+      charts:
+        description: "Space-separated chart names to test (default: every app chart)"
+        type: string
+        default: ""
+
+concurrency:
+  group: helm-install-test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read # pulling private GHCR images into the kind cluster
+
+jobs:
+  install-test:
+    name: Install + upgrade (kind)
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 60 # a full sweep installs every app chart sequentially, now waiting for Ready
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0 # full history so the script can `git archive origin/main` for the baseline upgrade
+
+      - name: Fetch base branch
+        run: git fetch --no-tags --depth=1 origin main
+
+      - name: Setup Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+
+      # Both logins write to the runner's docker config, which the script turns into
+      # a single image pull Secret per namespace. A pull request from a fork gets
+      # neither the org secrets nor a token that can read private packages, so the
+      # logins are skipped there and the script drops to shallow mode — a run that
+      # proves less, instead of one that fails on ImagePullBackOff and says nothing.
+      - name: Log in to Docker Hub
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Log in to GitHub Container Registry
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: lerianstudio
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create kind cluster
+        uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.10.0
+        with:
+          cluster_name: chart-install-test
+
+      - name: Determine chart scope
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+          REQUESTED: ${{ inputs.charts }}
+        run: |
+          set -euo pipefail
+          all_app_charts() {
+            for d in charts/*/; do
+              c="$(basename "$d")"
+              grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "charts/$c/Chart.yaml" 2>/dev/null && continue
+              printf '%s ' "$c"
+            done
+          }
+          # An explicit dispatch scope wins: this is how a single chart gets rerun
+          # without pushing a commit that touches it.
+          if [[ -n "${REQUESTED// }" ]]; then
+            for c in $REQUESTED; do
+              [[ -d "charts/$c" ]] || { echo "::error::No such chart: charts/$c"; exit 1; }
+            done
+            echo "charts=$REQUESTED" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "charts=$(all_app_charts)" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          # An infra change (script/workflow/shared library/fixtures) can affect every
+          # chart, so test them all; otherwise only the charts whose files changed.
+          if grep -Eq '^(\.github/scripts/install-test\.sh|\.github/workflows/helm-install-test\.yml|charts/lerian-common/)' <<< "$changed"; then
+            echo "charts=$(all_app_charts)" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          scope=""
+          for c in $(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed" | sort -u); do
+            [[ -d "charts/$c" ]] || continue                                  # skip deleted charts
+            grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "charts/$c/Chart.yaml" && continue
+            scope="${scope:+$scope }$c"
+          done
+          echo "charts=$scope" >> "$GITHUB_OUTPUT"
+
+      - name: Install + upgrade each chart
+        shell: bash
+        env:
+          CHARTS: ${{ steps.scope.outputs.charts }}
+          IT_PULL_SECRET: ${{ !github.event.pull_request.head.repo.fork && 'it-registry' || '' }}
+        run: |
+          set -uo pipefail
+          if [[ -z "${CHARTS// }" ]]; then
+            echo "No installable charts in scope — nothing to test."; exit 0
+          fi
+          # Charts with a KNOWN pre-existing install/upgrade defect (documented in the
+          # allow-failure file) are reported but don't fail the gate — same baseline
+          # pattern the chart-standard check uses. A PR that touches such a chart should
+          # remove it from the file once fixed. New/changed clean charts must still pass.
+          ALLOW="$(grep -vE '^\s*(#|$)' .github/configs/helm-install-test-allow-failure.txt 2>/dev/null | awk '{print $1}' || true)"
+          echo "Charts in scope: $CHARTS"
+          fails=""; allowed_fails=""
+          for c in $CHARTS; do
+            echo "::group::install-test $c"
+            if bash .github/scripts/install-test.sh "charts/$c"; then
+              echo "::endgroup::"
+            elif grep -qxF "$c" <<< "$ALLOW"; then
+              echo "::endgroup::"; echo "::warning::[$c] install test failed but is allow-listed (known pre-existing defect)"
+              allowed_fails="${allowed_fails:+$allowed_fails }$c"
+            else
+              echo "::endgroup::"; fails="${fails:+$fails }$c"
+            fi
+          done
+          [[ -n "$allowed_fails" ]] && echo "Allow-listed failures (not blocking):$allowed_fails"
+          if [[ -n "$fails" ]]; then
+            echo "::error::Install/upgrade test failed for:$fails"
+            exit 1
+          fi
+          echo "All charts in scope installed and upgraded cleanly (allow-listed excepted)."

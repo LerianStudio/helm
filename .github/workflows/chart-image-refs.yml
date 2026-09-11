@@ -37,7 +37,7 @@ jobs:
       has-charts: ${{ steps.scope.outputs.has-charts }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
@@ -53,8 +53,12 @@ jobs:
           for c in $(git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
                        | awk -F/ '/^charts\/[^/]+\// {print $2}' | sort -u); do
             [ -d "charts/$c" ] || continue                                  # deleted chart
-            # A library chart renders nothing and has no images of its own.
-            grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "charts/$c/Chart.yaml" && continue
+            # A library chart renders nothing and has no images of its own. Parsed as
+            # YAML rather than grepped: `type: "library"` is equally valid and a
+            # pattern anchored on the bare word would put it in the matrix.
+            # Same check release.yml uses to spot lifecycle-exempt charts.
+            kind=$(python3 -c 'import yaml,sys; c=yaml.safe_load(open(sys.argv[1])) or {}; print(str(c.get("type","")).lower())' "charts/$c/Chart.yaml")
+            [ "$kind" = "library" ] && continue
             scope="${scope:+$scope }$c"
           done
 
@@ -85,7 +89,7 @@ jobs:
         chart: ${{ fromJson(needs.scope.outputs.charts) }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Helm
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
@@ -97,14 +101,14 @@ jobs:
       # credential it was never going to have.
       - name: Log in to Docker Hub
         if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Log in to GitHub Container Registry
         if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: lerianstudio
@@ -144,7 +148,7 @@ jobs:
           cat "verdicts/${CHART}.json"
 
       - name: Upload the verdict
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: image-refs-${{ matrix.chart }}
           path: verdicts/
@@ -171,28 +175,48 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      # continue-on-error: a run where every matrix job died before uploading has no
+      # artifacts at all, and the reconciliation below is exactly what should report
+      # that — not a failed download step that skips the report entirely.
       - name: Download every verdict
-        uses: actions/download-artifact@v4
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: image-refs-*
           path: verdicts
           merge-multiple: true
 
       - name: Comment the matrix on the pull request
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          EXPECTED: ${{ needs.scope.outputs.charts }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         with:
           script: |
             const fs = require('fs');
             const dir = 'verdicts';
             const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.json')) : [];
-            if (files.length === 0) {
-              core.notice('No verdicts to report');
+
+            const found = new Map(
+              files
+                .map(f => JSON.parse(fs.readFileSync(`${dir}/${f}`, 'utf8')))
+                .map(v => [v.chart, v])
+            );
+
+            // A matrix job can die before it uploads anything — checkout, setup, login
+            // and the verdict step all come first. Reporting only what arrived would
+            // let a run where half the charts never ran announce that everything
+            // passed, so the expected list drives the table and anything missing is
+            // reported as unverified rather than omitted.
+            const expected = JSON.parse(process.env.EXPECTED || '[]');
+            const verdicts = expected.map(chart => found.get(chart) || {
+              chart, outcome: 'missing-artifact', images: [], missing: [], has_missing: 'unknown',
+            }).sort((a, b) => a.chart.localeCompare(b.chart));
+
+            if (verdicts.length === 0) {
+              core.notice('No charts in scope — nothing to report');
               return;
             }
-
-            const verdicts = files
-              .map(f => JSON.parse(fs.readFileSync(`${dir}/${f}`, 'utf8')))
-              .sort((a, b) => a.chart.localeCompare(b.chart));
 
             const failed = verdicts.filter(v => v.outcome !== 'success');
             const short = ref => ref.replace(/^docker\.io\/library\//, '').replace(/^docker\.io\//, '');
@@ -200,17 +224,20 @@ jobs:
             let body = '## Chart image references\n\n';
             body += failed.length === 0
               ? `Every image referenced by ${verdicts.length} chart(s) in this pull request exists in its registry.\n\n`
-              : `**${failed.length} of ${verdicts.length} chart(s) reference an image that does not exist.** `
-                + 'A chart published in this state installs into `ImagePullBackOff`.\n\n';
+              : `**${failed.length} of ${verdicts.length} chart(s) did not pass.** `
+                + 'A chart published while it points at an image that does not exist '
+                + 'installs into `ImagePullBackOff`.\n\n';
 
             body += '| chart | verified | verdict |\n|---|---|---|\n';
             for (const v of verdicts) {
               const n = Array.isArray(v.images) ? v.images.length : 0;
               const verdict = v.outcome === 'success'
                 ? 'all present'
-                : (Array.isArray(v.missing) && v.missing.length
-                    ? `**missing:** ${v.missing.map(r => '`' + short(r) + '`').join(', ')}`
-                    : '**could not verify** — see the run log');
+                : v.outcome === 'missing-artifact'
+                  ? '**did not report** — the job failed before recording a verdict'
+                  : (Array.isArray(v.missing) && v.missing.length
+                      ? `**missing:** ${v.missing.map(r => '`' + short(r) + '`').join(', ')}`
+                      : '**could not verify** — see the run log');
               body += `| \`${v.chart}\` | ${n} | ${verdict} |\n`;
             }
 
@@ -231,6 +258,19 @@ jobs:
 
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             body += `---\n<sub>🖼️ [View full logs](${runUrl})</sub>\n`;
+
+            // The table is always written to the run summary, so the result is
+            // readable even when it cannot be posted.
+            await core.summary.addRaw(body).write();
+
+            // A fork (and Dependabot) gets a read-only GITHUB_TOKEN regardless of the
+            // `permissions:` block, so createComment/updateComment would 403. Failing
+            // there would report a broken pipeline over a comment. The gate job is
+            // what blocks the merge, and it does not depend on this one.
+            if (process.env.IS_FORK === 'true') {
+              core.notice('Fork pull request: the token cannot comment — the table is in the run summary');
+              return;
+            }
 
             const marker = '<!-- chart-image-refs -->';
             body = marker + '\n' + body;

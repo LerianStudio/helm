@@ -46,10 +46,16 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 60 # a full sweep installs every app chart sequentially, now waiting for Ready
     steps:
+      # persist-credentials: false because the step that follows runs
+      # .github/scripts/install-test.sh — a file the pull request itself can rewrite.
+      # By default checkout leaves its token in .git/config, where pull-request-authored
+      # code can read it. This repository is public, so the baseline fetch needs no
+      # credential at all and nothing is lost by dropping it.
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0 # full history so the script can `git archive origin/main` for the baseline upgrade
+          persist-credentials: false
 
       - name: Fetch base branch
         run: git fetch --no-tags --depth=1 origin main
@@ -64,14 +70,14 @@ jobs:
       # proves less, instead of one that fails on ImagePullBackOff and says nothing.
       - name: Log in to Docker Hub
         if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Log in to GitHub Container Registry
         if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: lerianstudio
@@ -92,12 +98,24 @@ jobs:
           REQUESTED: ${{ inputs.charts }}
         run: |
           set -euo pipefail
+          # Parsed rather than grepped, and in one pass: `type: "library"` is valid
+          # YAML that an anchored pattern misses, which would put a library chart —
+          # not installable by definition — into the sweep.
           all_app_charts() {
-            for d in charts/*/; do
-              c="$(basename "$d")"
-              grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "charts/$c/Chart.yaml" 2>/dev/null && continue
-              printf '%s ' "$c"
-            done
+            python3 - <<'PY'
+          import glob, os, yaml
+          out = []
+          for d in sorted(glob.glob('charts/*/')):
+              name = os.path.basename(d.rstrip('/'))
+              try:
+                  chart = yaml.safe_load(open(os.path.join(d, 'Chart.yaml'))) or {}
+              except Exception:
+                  continue
+              if str(chart.get('type', '')).lower() == 'library':
+                  continue
+              out.append(name)
+          print(' '.join(out))
+          PY
           }
           # An explicit dispatch scope wins: this is how a single chart gets rerun
           # without pushing a commit that touches it.
@@ -116,10 +134,23 @@ jobs:
           if grep -Eq '^(\.github/scripts/install-test\.sh|\.github/workflows/helm-install-test\.yml|charts/lerian-common/)' <<< "$changed"; then
             echo "charts=$(all_app_charts)" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          # Two sources of "this chart changed": the chart directory itself, and the
+          # values files this workflow renders it with. The triggers already include
+          # both values directories, so without the second pattern a values-only
+          # change would start a run that then tests nothing at all.
+          candidates="$(
+            {
+              awk -F/ '/^charts\/[^\/]+\// {print $2}' <<< "$changed"
+              awk -F/ '/^\.github\/configs\/helm-(render|install)-values\/.+\.ya?ml$/ {
+                       sub(/\.ya?ml$/, "", $4); print $4 }' <<< "$changed"
+            } | sort -u
+          )"
           scope=""
-          for c in $(awk -F/ '/^charts\/[^/]+\// {print $2}' <<< "$changed" | sort -u); do
+          for c in $candidates; do
             [[ -d "charts/$c" ]] || continue                                  # skip deleted charts
-            grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "charts/$c/Chart.yaml" && continue
+            # Parsed, not grepped: `type: "library"` is valid YAML too.
+            kind=$(python3 -c 'import yaml,sys; c=yaml.safe_load(open(sys.argv[1])) or {}; print(str(c.get("type","")).lower())' "charts/$c/Chart.yaml")
+            [[ "$kind" == "library" ]] && continue
             scope="${scope:+$scope }$c"
           done
           echo "charts=$scope" >> "$GITHUB_OUTPUT"

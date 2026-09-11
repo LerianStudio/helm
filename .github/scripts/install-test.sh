@@ -88,10 +88,21 @@ fail() {
   cleanup
   exit 1
 }
+# Deletion is waited on, not fired and forgotten. do_install runs straight after
+# cleanup, and a namespace still Terminating rejects the create — an error this
+# script suppresses, so the install would then land in a dying namespace and fail
+# for a reason nobody could read from the log.
 cleanup() {
   helm uninstall "$REL" -n "$NS" >/dev/null 2>&1 || true
   helm uninstall "${REL}-base" -n "$NS" >/dev/null 2>&1 || true
-  for x in "$NS" $TARGETS; do kubectl delete ns "$x" --wait=false >/dev/null 2>&1 || true; done
+  for x in "$NS" $TARGETS; do
+    kubectl delete ns "$x" --wait=true --timeout=120s >/dev/null 2>&1 || true
+  done
+  for x in "$NS" $TARGETS; do
+    if kubectl get ns "$x" >/dev/null 2>&1; then
+      echo "::warning::[$CHART] namespace $x is still present after deletion — a stuck finalizer, most likely"
+    fi
+  done
 }
 # Create the pull secret in a namespace and make it the default for every pod
 # scheduled there, so no chart has to expose an imagePullSecrets value for this.
@@ -106,10 +117,25 @@ grant_pull() { # <namespace>
     -p "{\"imagePullSecrets\":[{\"name\":\"${PULL_SECRET}\"}]}" >/dev/null 2>&1 || true
 }
 # (Re)create the release namespace + every namespace the chart pins, then install.
-do_install() { # <release> <chart-dir>
-  for x in "$NS" $TARGETS; do kubectl create ns "$x" >/dev/null 2>&1 || true; grant_pull "$x"; done
-  helm install "$1" "$2" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} \
-    -n "$NS" --timeout "$TIMEOUT" 2>&1
+# <release> <chart-dir> [base] — `base` selects the baseline's own values instead
+# of the pull request's. Installing origin/main's chart with the PR's values is how
+# a new key meets the old schema: a chart with a closed schema rejects it, the
+# baseline install fails, and the upgrade test it exists for gets skipped with a
+# message blaming something unrelated.
+do_install() {
+  local rel="$1" dir="$2" kind="${3:-pr}"
+  for x in "$NS" $TARGETS; do
+    kubectl create ns "$x" >/dev/null 2>&1 || kubectl get ns "$x" >/dev/null 2>&1 || {
+      echo "::error::[$CHART] could not create namespace $x"; return 1; }
+    grant_pull "$x"
+  done
+  if [[ "$kind" == base ]]; then
+    helm install "$rel" "$dir" ${BASE_VARGS[@]+"${BASE_VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} \
+      -n "$NS" --timeout "$TIMEOUT" 2>&1
+  else
+    helm install "$rel" "$dir" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} \
+      -n "$NS" --timeout "$TIMEOUT" 2>&1
+  fi
 }
 deployed() { [[ "$(helm status "$1" -n "$NS" -o json 2>/dev/null | tr -d ' \n' | grep -o '"status":"[a-z]*"' | head -1)" == '"status":"deployed"' ]]; }
 
@@ -166,8 +192,24 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
   echo "===== [$CHART] upgrade (origin/main -> PR) ====="
   BASE_DIR="$(mktemp -d)/$CHART"; mkdir -p "$BASE_DIR"
   git archive "origin/main" "charts/${CHART}" | tar -x --strip-components=2 -C "$BASE_DIR" 2>/dev/null
+
+  # The baseline is installed with the values as they exist on origin/main, taken
+  # from git rather than the working tree so a values file the PR added or edited
+  # does not reach the old chart. No file there means no -f, which is right: that
+  # is how the chart was rendered on main.
+  BASE_VALUES_DIR="$(mktemp -d)"
+  BASE_VARGS=()
+  for cand in "helm-render-values" "helm-install-values"; do
+    src=".github/configs/${cand}/${CHART}.yaml"
+    if git cat-file -e "origin/main:${src}" 2>/dev/null; then
+      git show "origin/main:${src}" > "${BASE_VALUES_DIR}/${cand}.yaml"
+      BASE_VARGS+=(-f "${BASE_VALUES_DIR}/${cand}.yaml")
+    fi
+  done
+  [[ ${#BASE_VARGS[@]} -gt 0 ]] && echo "  baseline values: ${#BASE_VARGS[@]} file(s) from origin/main"
+
   helm dependency build "$BASE_DIR" >/dev/null 2>&1 || echo "  (base dep build failed — skipping baseline)"
-  if do_install "${REL}-base" "$BASE_DIR" >/dev/null 2>&1 && deployed "${REL}-base"; then
+  if do_install "${REL}-base" "$BASE_DIR" base >/dev/null 2>&1 && deployed "${REL}-base"; then
     helm upgrade "${REL}-base" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} -n "$NS" --timeout "$TIMEOUT" >/dev/null 2>&1 \
       && deployed "${REL}-base" || fail "upgrade from origin/main failed (immutable-field break?)"
     echo "  origin/main -> PR upgrade OK"

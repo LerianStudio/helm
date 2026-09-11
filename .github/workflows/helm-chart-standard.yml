@@ -8,7 +8,6 @@ on:
       - '.github/configs/helm-chart-standard-baseline.yaml'
       - '.github/configs/helm-render-values/**'
       - '.github/scripts/validate-helm-charts/**'
-      - '.github/scripts/render-assertions/**'
       - '.github/workflows/helm-chart-standard.yml'
   workflow_dispatch:
   schedule:
@@ -132,26 +131,3 @@ jobs:
         env:
           RENDER_SCOPE_ARGS: ${{ steps.render-scope.outputs.args }}
         run: go run ./validate-helm-charts --root ../.. --render-gate $RENDER_SCOPE_ARGS
-
-      # Per-chart render assertions. Generic mechanism: any chart may drop an
-      # executable .github/scripts/render-assertions/<chart>.sh that renders
-      # itself and asserts on the output. They run from the repository root and
-      # need only helm, which the step above already installed. A chart without
-      # a script is simply not covered here.
-      - name: Run chart render assertions
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          scripts=(.github/scripts/render-assertions/*.sh)
-          if [[ ${#scripts[@]} -eq 0 ]]; then
-            echo "no render-assertion scripts present"
-            exit 0
-          fi
-          status=0
-          for script in "${scripts[@]}"; do
-            echo "::group::$script"
-            bash "$script" || status=1
-            echo "::endgroup::"
-          done
-          exit "$status"

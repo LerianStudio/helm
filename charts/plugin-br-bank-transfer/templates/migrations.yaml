@@ -61,9 +61,11 @@
 {{- else }}
 {{- $migrationTag = get $migrationImage "tag" | default "" }}
 {{- $migrationDigest = get $migrationImage "digest" | default "" }}
-{{- /* The migration image tag is coupled to the app image tag. When neither an explicit
-     tag nor digest is set, fall back to the app tag (bankTransfer.image.tag, or the chart
-     appVersion). An explicit migration tag/digest still overrides this. */}}
+{{- /* The migrations image is versioned independently of the app image, so values.yaml
+     ships an explicit, maintained bankTransfer.migrations.image.tag. This block is only a
+     last-resort fallback for the case where that tag AND digest were both blanked out:
+     it borrows the app tag (bankTransfer.image.tag, or the chart appVersion), which may
+     not correspond to a published migrations image. An explicit tag/digest overrides it. */}}
 {{- if and (empty $migrationTag) (empty $migrationDigest) }}
 {{- $migrationTag = .Values.bankTransfer.image.tag | default .Chart.AppVersion }}
 {{- end }}

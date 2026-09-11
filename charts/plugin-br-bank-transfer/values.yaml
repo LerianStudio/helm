@@ -202,9 +202,14 @@ bankTransfer:
     image:
       # -- Repository for the migrations init container image
       repository: ghcr.io/lerianstudio/plugin-br-bank-transfer-migrations
-      # -- Tag for the migrations image. Defaults to the app image tag
-      # (bankTransfer.image.tag, or the chart appVersion) when left empty.
-      tag: ""
+      # -- Tag for the migrations image. The migrations image is versioned
+      # INDEPENDENTLY of the app image (bankTransfer.image.tag / chart appVersion):
+      # a new app release does NOT imply a new migrations image. Keep this pinned to
+      # the last published migrations tag and bump it explicitly only when a new
+      # migrations image is published. If left empty the template falls back to the
+      # app image tag (or chart appVersion) as a last resort, which may point at a
+      # migrations tag that was never published.
+      tag: "2.1.0"
       # -- Image pull policy
       pullPolicy: IfNotPresent
     # -- Maximum number of retries before the Job is considered failed

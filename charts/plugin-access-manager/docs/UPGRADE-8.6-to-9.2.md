@@ -55,6 +55,32 @@ Casdoor `3.1.0`) is **silently ignored**. Every other field (`name`,
 `replicaCount`, `service.port`, probe timeouts, and the *migrations* image)
 still falls back normally — see the [aliases table](#backward-compatibility-aliases).
 
+> ⚠️ **The migrations image falling back "normally" is a trap on this jump — read this before you skip it.**
+> Unlike the main image, the migrations image repository *does* inherit from
+> the legacy path (`auth.backend.migrations.image.repository`) — and that is
+> exactly the problem. If a prior version of your values pinned
+> `casdoor-migrations` there, that override **silently wins** over the correct
+> `caradhras-migrations` default and there is **no error at render or pull
+> time**. Whether you set the new key (`caradhras.migrations.image.repository`)
+> or the legacy alias, any non-empty migration-repo override beats the chart
+> default. **Operators who pinned `casdoor-migrations` in a prior version MUST
+> change it to `caradhras-migrations`** (see the [Migration Checklist](#migration-checklist)
+> and [Known Gotchas](#known-gotchas)). Two things make this fail quietly:
+>
+> - **The wrong repo has a coincidental `1.2.0` tag that pulls cleanly.**
+>   `casdoor-migrations` happens to carry a `1.2.0` tag (June 2025, from the
+>   previous product line) — so the image pulls without error and only fails
+>   *at runtime*. A wrong tag that exists is more confusing than one that
+>   doesn't: there is no `ImagePullBackOff` to tip you off, just a failed
+>   migration Job (see [Known Gotchas](#known-gotchas) for the exact signature).
+> - **caradhras `1.2.0` is a different product line, not an older casdoor.**
+>   caradhras-migrations `1.2.x` is **not** a downgrade or an earlier version of
+>   casdoor `3.1.0`; the two version numbers belong to unrelated release trains.
+>   Do not "stay on the higher number" (`casdoor-migrations:3.1.0`) thinking it
+>   is newer — on `v9.x` the correct migration image is `caradhras-migrations`
+>   on its own `1.2.x` train, because only it reads the `POSTGRES_*` env vars
+>   the `v9.x` migration Job injects.
+
 **If you need to stay on Casdoor for now:**
 
 ```yaml
@@ -213,8 +239,9 @@ once you're on `v9.2.0`. Full detail in [UPGRADE-9.0.md](./UPGRADE-9.0.md)/[UPGR
 3. Set `auth.initUser.enabled: false` (existing release) or provide `adminPassword`/`useExistingSecret` (fresh install).
 4. Review any explicit `AUTH_ADDRESS`/`DB_HOST`/`REDIS_HOST`/`AUTHORIZER_ADDRESS` overrides — keep only the ones pointing at genuinely external services.
 5. Decide on the Caradhras image: do nothing (adopt `1.2.0`), or pin `caradhras.image.*` to stay on Casdoor.
-6. Check your DB user's `CREATEDB` privilege; set `caradhras.createDatabase: true` only if you rely on auto-creation.
-7. *(Optional)* Migrate `auth.backend.*` overrides to `caradhras.*`, and/or adopt the `global.*` masks.
+6. **If you pinned the migration repo, change it to `caradhras-migrations` (the `1.2.x` train).** Grep your values for `casdoor-migrations` under **either** `caradhras.migrations.image.repository` **or** the legacy `auth.backend.migrations.image.repository` — a leftover pin silently overrides the correct default and pulls cleanly (wrong tag exists), then fails at runtime. Leave it empty to accept the chart default. Note: `caradhras-migrations:1.2.x` is a *different product line*, not a downgrade of `casdoor-migrations:3.1.0`.
+7. Check your DB user's `CREATEDB` privilege; set `caradhras.createDatabase: true` only if you rely on auto-creation.
+8. *(Optional)* Migrate `auth.backend.*` overrides to `caradhras.*`, and/or adopt the `global.*` masks.
 
 # Backward Compatibility Aliases
 
@@ -224,10 +251,18 @@ once you're on `v9.2.0`. Full detail in [UPGRADE-9.0.md](./UPGRADE-9.0.md)/[UPGR
 | `replicaCount` | ✅ | `1` |
 | `service.port` | ✅ | `8000` |
 | `readinessProbe.timeoutSeconds` / `livenessProbe.timeoutSeconds` | ✅ | `1` |
-| `migrations.image.*` | ✅ | `ghcr.io/lerianstudio/caradhras-migrations:1.2.0` |
+| `migrations.image.*` | ✅ **but see warning** | `ghcr.io/lerianstudio/caradhras-migrations:1.2.0` |
 | **`image.repository` / `.tag` / `.pullPolicy`** | ❌ **explicit default always wins** | `ghcr.io/lerianstudio/caradhras:1.2.0` |
 
 Use **either** `caradhras.*` **or** `auth.backend.*` consistently — mixing them works (new key wins per-field) but is easy to misread later.
+
+> ⚠️ **`migrations.image.*` falls back, and that is the trap.** A migration-repo
+> override on *either* path (`caradhras.migrations.image.repository` or the
+> legacy `auth.backend.migrations.image.repository`) silently wins over the
+> `caradhras-migrations` default. If you carried a `casdoor-migrations` pin
+> over from a prior version, it will keep applying the wrong image — with no
+> render- or pull-time error. See the [warning in item 2](#2-the-one-compat-exception-the-image-does-not-fall-back)
+> and [Known Gotchas](#known-gotchas).
 
 # Known Gotchas
 
@@ -236,6 +271,7 @@ Use **either** `caradhras.*` **or** `auth.backend.*` consistently — mixing the
   curl -s https://www.amazontrust.com/repository/AmazonRootCA1.pem | base64 -w0
   ```
 - **Dedicated (non-`CREATEDB`) Postgres role**: pre-create the database/role yourself and set `caradhras.createDatabase: false` (the v9.2.0 default already does this) rather than granting `CREATEDB` to a least-privilege role just to satisfy the old default.
+- **Migration Job fails with `Missing required environment variables: DB_USER, DB_PASS, DB_HOST, DB_NAME`** → your migration image is still the **old `casdoor-migrations`**, not `caradhras-migrations`. Root cause: the old image reads `DB_*` env vars, while the `v9.x` migration Job injects `POSTGRES_*` (the standard lib-commons names that `caradhras-migrations` reads) — so the old image sees none of the DB vars it expects and aborts. The image usually **pulls cleanly** first, because `casdoor-migrations` carries a coincidental `1.2.0` tag (June 2025, previous product line) that exists but is wrong — *a wrong tag that exists is more confusing than one that doesn't*, since there is no `ImagePullBackOff` to point at it. **Fix:** find the stale pin (`grep -rn casdoor-migrations` your values) under either `caradhras.migrations.image.repository` or the legacy `auth.backend.migrations.image.repository`, and either remove it (accept the `caradhras-migrations` default) or set it explicitly to `ghcr.io/lerianstudio/caradhras-migrations` on the `1.2.x` train. Reminder: `caradhras-migrations:1.2.x` is a *different product line*, **not** an older version of `casdoor-migrations:3.1.0` — do not "upgrade" to the higher number.
 
 # Preview & upgrade commands
 

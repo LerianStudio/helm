@@ -504,13 +504,16 @@ behavior unchanged).
        the host through verbatim — an untrimmed " mongo.example " reaches the
        ledger with the spaces intact and fails at runtime, so it must be rejected
        here even though its trimmed form looks valid. A real hostname never
-       contains whitespace; this also catches a padded " midaz-mongodb ". */ -}}
+       contains whitespace; this also catches a padded " midaz-mongodb ".
+       The pattern is [\s\p{Z}] so it rejects ASCII whitespace AND Unicode space
+       separators (e.g. a non-breaking U+00A0) — a bare "\s" is ASCII-only and
+       would let a Unicode-space host through to the ledger. */ -}}
 {{- $crmRaw := $crmHost | toString -}}
 {{- $feesRaw := $feesHost | toString -}}
 {{- $crmClean := $crmRaw | trim -}}
 {{- $feesClean := $feesRaw | trim -}}
-{{- if or (eq $crmClean "") (eq $crmClean "midaz-mongodb") (regexMatch "\\s" $crmRaw) -}}{{- $unset = append $unset "CRM" -}}{{- end -}}
-{{- if or (eq $feesClean "") (eq $feesClean "midaz-mongodb") (regexMatch "\\s" $feesRaw) -}}{{- $unset = append $unset "Fees" -}}{{- end -}}
+{{- if or (eq $crmClean "") (eq $crmClean "midaz-mongodb") (regexMatch "[\\s\\p{Z}]" $crmRaw) -}}{{- $unset = append $unset "CRM" -}}{{- end -}}
+{{- if or (eq $feesClean "") (eq $feesClean "midaz-mongodb") (regexMatch "[\\s\\p{Z}]" $feesRaw) -}}{{- $unset = append $unset "Fees" -}}{{- end -}}
 {{- if $unset -}}
 {{- fail (printf "\n\nmidaz: managed/external Mongo is selected (mongodb.enabled=false) but the %s Mongo host is empty, blank, or still the packaged \"midaz-mongodb\" default.\nThe ledger still needs a reachable Mongo for CRM and Fees (they are folded into the ledger binary), and the ledger init container hard-gates on MONGO_CRM_HOST and MONGO_FEES_HOST regardless of crm.enabled. With the packaged Mongo disabled and no host override, these default to the packaged Service \"midaz-mongodb\" (which is not deployed), so the ledger pod CrashLoops after ledger.initContainer.timeoutSeconds (default 300s).\n\nSet the host(s) explicitly, e.g.:\n  --set global.datastores.mongoCrm.host=<your-mongo-host> --set global.datastores.mongoFees.host=<your-mongo-host>\nor per-component:\n  ledger.datastores.mongoCrm.host / ledger.datastores.mongoFees.host\nor as a native override:\n  ledger.configmap.MONGO_CRM_HOST / ledger.configmap.MONGO_FEES_HOST\n\nSee charts/midaz/docs/UPGRADE-9.1.md section 6 (Ledger CRM and Fees module integration).\n" (join " and " $unset)) -}}
 {{- end -}}

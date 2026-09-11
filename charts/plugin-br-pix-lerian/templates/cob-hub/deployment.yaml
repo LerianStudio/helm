@@ -1,0 +1,167 @@
+{{- if .Values.cobHub.enabled }}
+{{- $component := "cob-hub" }}
+{{- $values := .Values.cobHub }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-br-pix-lerian.componentFullname" (dict "context" $ "component" $component) }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $values.revisionHistoryLimit }}
+  {{- if not $values.autoscaling.enabled }}
+  replicas: {{ $values.replicaCount }}
+  {{- end }}
+  strategy:
+    {{- toYaml $values.deploymentStrategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-pix-lerian.selectorLabels" (dict "context" $ "component" $component) | nindent 6 }}
+  template:
+    metadata:
+      {{- include "plugin-br-pix-lerian.podAnnotations" (dict
+          "context" $
+          "component" "cob-hub"
+          "componentKey" "cobHub"
+          "componentValues" $values) | nindent 6 }}
+      labels:
+        {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 8 }}
+    spec:
+      {{- with (include "plugin-br-pix-lerian.componentImagePullSecrets" (dict "context" $ "componentValues" $values)) }}
+      {{- if . }}
+      imagePullSecrets:
+        {{- . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      serviceAccountName: {{ include "plugin-br-pix-lerian.componentServiceAccountName" (dict "context" $ "component" $component "componentValues" $values) }}
+      securityContext:
+        {{- toYaml $values.podSecurityContext | nindent 8 }}
+      initContainers:
+        {{- include "plugin-br-pix-lerian.waitForDependencies" (dict "context" $ "component" $component "componentValues" $values) | nindent 8 }}
+      containers:
+        - name: {{ $component }}
+          securityContext:
+            {{- toYaml $values.securityContext | nindent 12 }}
+          image: {{ include "plugin-br-pix-lerian.componentImage" (dict "context" $ "componentValues" $values) }}
+          imagePullPolicy: {{ include "plugin-br-pix-lerian.componentPullPolicy" (dict "context" $ "componentValues" $values) }}
+          {{- with $values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $values.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $values.service.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "plugin-br-pix-lerian.componentFullname" (dict "context" $ "component" $component) }}
+            - secretRef:
+                name: {{ include "plugin-br-pix-lerian.componentSecretName" (dict "context" $ "component" $component "componentValues" $values) }}
+          {{- /*
+          Build the env: list when EITHER telemetry is enabled (HOST_IP +
+          OTEL_EXPORTER_OTLP_ENDPOINT injected via downward API so each
+          pod talks to its node-local OTel collector by default) OR the
+          operator has set extraEnvVars. In Kubernetes, explicit env
+          entries always win over envFrom, so the node-local default is
+          only emitted when the configmap does NOT set a non-empty
+          OTEL_EXPORTER_OTLP_ENDPOINT (values ship the key as "") —
+          otherwise it would silently clobber the operator's endpoint.
+          */}}
+          {{- /* default dict: `configmap: null` in values yields nil, and a field
+               access on nil panics rather than falling through to the default. */}}
+          {{- $cm := $values.configmap | default dict }}
+          {{- /*
+          TELEMETRY_ENABLED is parsed by the apps with strconv.ParseBool, which
+          also accepts "1", "t", "T", "TRUE" and "True". Comparing against the
+          literal "true" would leave telemetry ON in the process while the chart
+          silently skipped the node-local OTel wiring below. Route it through the
+          same helper the other boolean gates use so both agree.
+          */}}
+          {{- $telemetryOn := eq (include "plugin-br-pix-lerian.isTrue" (default "false" $cm.TELEMETRY_ENABLED)) "true" }}
+          {{- $hasOtelEndpoint := ne (toString (default "" $cm.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
+          {{- $extraEnvVars := default (dict) $values.extraEnvVars }}
+          {{- $hasExtras := gt (len $extraEnvVars) 0 }}
+          {{- /*
+          The endpoint guard above only inspects the CONFIGMAP, so an
+          extraEnvVars entry named HOST_IP or OTEL_EXPORTER_OTLP_ENDPOINT used
+          to render a SECOND env entry with the same name. Suppress the chart's
+          downward-API default for exactly the name the operator claims:
+          extraEnvVars still wins, but as the only entry rather than as the last
+          of two.
+
+          Each generated name is suppressed INDEPENDENTLY of the other.
+
+          Kubernetes expands only BACKWARD references, so "$(HOST_IP):4317"
+          emitted BEFORE the operator's own HOST_IP would ship as a literal.
+          That is an argument about WHERE the endpoint goes, not whether it goes
+          at all: when the operator supplies HOST_IP through extraEnvVars the
+          generated endpoint is emitted AFTER the extraEnvVars loop, so
+          $(HOST_IP) resolves against their value. Dropping it instead left
+          telemetry enabled with no endpoint configured at all.
+          */}}
+          {{- $operatorHostIP := hasKey $extraEnvVars "HOST_IP" }}
+          {{- $operatorOtelEndpoint := hasKey $extraEnvVars "OTEL_EXPORTER_OTLP_ENDPOINT" }}
+          {{- $wantsNodeLocalOtel := and $telemetryOn (not $hasOtelEndpoint) }}
+          {{- $emitHostIP := and $wantsNodeLocalOtel (not $operatorHostIP) }}
+          {{- $emitOtelEndpoint := and $wantsNodeLocalOtel (not $operatorOtelEndpoint) }}
+          {{- if or $emitHostIP $emitOtelEndpoint $hasExtras }}
+          env:
+            {{- if $emitHostIP }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            {{- end }}
+            {{- if and $emitOtelEndpoint (not $operatorHostIP) }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "$(HOST_IP):4317"
+            {{- end }}
+            {{- if $hasExtras }}
+            {{- range $k, $v := $extraEnvVars }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if and $emitOtelEndpoint $operatorHostIP }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "$(HOST_IP):4317"
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml $values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ $values.readinessProbe.path | default "/cob-hub/readyz" }}
+              port: http
+            initialDelaySeconds: {{ include "plugin-br-pix-lerian.probeInitialDelay" (dict "probe" $values.readinessProbe "default" 10) }}
+            periodSeconds: {{ $values.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ $values.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ $values.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $values.readinessProbe.failureThreshold | default 3 }}
+          livenessProbe:
+            httpGet:
+              path: {{ $values.livenessProbe.path | default "/cob-hub/health" }}
+              port: http
+            initialDelaySeconds: {{ include "plugin-br-pix-lerian.probeInitialDelay" (dict "probe" $values.livenessProbe "default" 5) }}
+            periodSeconds: {{ $values.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $values.livenessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ $values.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $values.livenessProbe.failureThreshold | default 3 }}
+      {{- with $values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

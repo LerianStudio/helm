@@ -1,0 +1,138 @@
+{{- if .Values.dictHub.enabled }}
+{{- $component := "dict-hub" }}
+{{- $values := .Values.dictHub }}
+{{- $cm := $values.configmap | default dict }}
+{{- /*
+PRODUCTIZED to the STANDARD lerian-common contract (productize-chart-env).
+Dependency-connection families flow from the shared global.* contract via
+lerian-common masks; the chart emits STANDARD key names.
+  - auth (auth.env -> PLUGIN_AUTH_ENABLED + PLUGIN_AUTH_HOST; global.auth)
+  - observability (otel.env -> ENABLE_TELEMETRY + OTEL_EXPORTER_OTLP_ENDPOINT + OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT; global.observability)
+  - postgres (datastore.value -> DB_* incl. DB_SSLMODE; global.datastores.postgres)
+  - redis (datastore.value -> REDIS_HOST/PORT/USER/DB/TLS; global.datastores.redis)
+  - multiTenant (multiTenant.env -> MULTI_TENANT_URL + circuit breaker; global.multiTenant)
+  - streaming (streaming.env -> STREAMING_BROKERS/SASL/CLIENT_ID/...; global.streaming)
+
+DROPPED deviating app keys (superseded by the standard names above):
+  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), PLUGIN_AUTH_URL (->PLUGIN_AUTH_HOST),
+  ORGANIZATION_ID (->ORGANIZATION_IDS), DB_SSL_MODE (->DB_SSLMODE).
+Composed URIs DATABASE_URL / VALKEY_URL remain ONLY in secrets.yaml as
+migration/wait-init tooling inputs (never app-runtime config here).
+
+Credentials NEVER render here; the trailing escape hatch OMITS them
+(leaked-secret guard). A masked key still honours dictHub.configmap.<KEY>.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-pix-lerian.componentFullname" (dict "context" $ "component" $component) }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
+data:
+  # --- auth: global.auth contract (PLUGIN_AUTH_ENABLED + PLUGIN_AUTH_HOST) ---
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "http://plugin-auth:4000") | nindent 2 }}
+  # --- observability: global.observability contract (otel.env) ---
+  {{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "true" "endpointDefault" "" "deploymentEnvironmentDefault" "development") | nindent 2 }}
+  # --- postgres: global.datastores.postgres contract (standard DB_*) ---
+  DB_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" "localhost") | quote }}
+  DB_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "plugin") | quote }}
+  DB_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "dict") | quote }}
+  DB_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
+  DB_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSLMODE" "default" "disable") | quote }}
+  # --- redis: global.datastores.redis contract (standard REDIS_*) ---
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "localhost") | quote }}
+  REDIS_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | quote }}
+  REDIS_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") | quote }}
+  REDIS_DB: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "db" "nativeKey" "REDIS_DB" "default" "0") | quote }}
+  REDIS_TLS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
+  # --- multi-tenant: global.multiTenant contract (URL + circuit breaker, gated) ---
+  {{- $mtEnabled := eq (toString ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm "enabled" $mtEnabled) | nindent 2 }}
+  # --- streaming: global.streaming contract (standard subset, gated) ---
+  {{- $streamingEnabled := eq (toString ($cm.STREAMING_ENABLED | default "false")) "true" }}
+  STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.streaming.env" (dict "context" $ "enabled" $streamingEnabled "configmap" $cm "cloudeventsSource" "plugin-br-pix-lerian") | nindent 2 }}
+  # --- app config (plain passthrough; default = curated/.env.example value) ---
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-dict-hub" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4104" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
+  REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-dict-hub" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-lerian" | quote }}
+  ISPB: {{ $cm.ISPB | default "" | quote }}
+  # -- Deliberately empty: the only adapter this chart can render is
+  # adapter-provider-mock, which ships disabled (see
+  # adapterProviderMock.enabled), so any default here would point at a
+  # Service that does not exist -- and the previous default also omitted the
+  # /provider-mock prefix every real environment appends, so it could only
+  # ever be wrong, masking the absence of real configuration.
+  # Empty does NOT fail at boot: the app does not validate this variable at
+  # startup (no `required` tag), it only seeds the systemplane provider key.
+  # The effective value is resolved per request from TenantConfig, so a
+  # request with no adapter base URL is rejected then, not at rollout.
+  # Example: http://plugin-br-pix-lerian-adapter-provider-mock:4103/provider-mock
+  ADAPTER_BASE_URL: {{ $cm.ADAPTER_BASE_URL | default "" | quote }}
+  CRM_BASE_URL: {{ $cm.CRM_BASE_URL | default "" | quote }}
+  CRM_CLIENT_ID: {{ $cm.CRM_CLIENT_ID | default "" | quote }}
+  CRM_ORGANIZATION_ID: {{ $cm.CRM_ORGANIZATION_ID | default "" | quote }}
+  KEY_CACHE_TTL_SEC: {{ $cm.KEY_CACHE_TTL_SEC | default "60" | quote }}
+  # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true). MULTI_TENANT_URL
+  # and MULTI_TENANT_API_KEY are seeds for the dict-systemplane store; the CB
+  # tunables size the tenant-manager client circuit breaker (defaults from
+  # pkg/config: threshold=5, timeoutSec=30).
+  ORGANIZATION_IDS: {{ $cm.ORGANIZATION_IDS | default "global" | quote }}
+  IDP_DECLARATION_ENABLED: {{ $cm.IDP_DECLARATION_ENABLED | default "false" | quote }}
+  IDP_HOST: {{ $cm.IDP_HOST | default "http://plugin-identity:4000" | quote }}
+  IDP_M2M_CLIENT_ID: {{ $cm.IDP_M2M_CLIENT_ID | default "" | quote }}
+  SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://localhost:4001/spi" | quote }}
+  SPI_CLIENT_ID: {{ $cm.SPI_CLIENT_ID | default "your_spi_client_id_here" | quote }}
+  STREAMING_DATASCHEMA_BASE_URL: {{ $cm.STREAMING_DATASCHEMA_BASE_URL | default "http://localhost:4003" | quote }}
+  STREAMING_CB_FAILURE_RATIO: {{ $cm.STREAMING_CB_FAILURE_RATIO | default "" | quote }}
+  STREAMING_CB_MIN_REQUESTS: {{ $cm.STREAMING_CB_MIN_REQUESTS | default "" | quote }}
+  STREAMING_CB_TIMEOUT_S: {{ $cm.STREAMING_CB_TIMEOUT_S | default "" | quote }}
+  STREAMING_CLOSE_TIMEOUT_S: {{ $cm.STREAMING_CLOSE_TIMEOUT_S | default "" | quote }}
+  STREAMING_TENANT_ID: {{ $cm.STREAMING_TENANT_ID | default "default" | quote }}
+  {{- /* OTEL_RESOURCE_SERVICE_VERSION: from image tag (image.tag then
+     Chart.AppVersion); override via dictHub.configmap.OTEL_RESOURCE_SERVICE_VERSION. */}}
+  {{- if not (hasKey $cm "OTEL_RESOURCE_SERVICE_VERSION") }}
+  {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
+  {{- end }}
+  {{- /* Escape hatch: un-enumerated configmap.<KEY>. Skips every emitted key
+     (plain/mask/inline), the superseded deviating names, and every credential
+     (leaked-secret guard) so a configmap.<SECRET> can never surface here. */}}
+  {{- $enumerated := dict }}
+  {{- range $k := (list
+      "ADAPTER_BASE_URL" "APPLICATION_NAME" "CRM_BASE_URL" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET"
+      "CRM_ORGANIZATION_ID" "DATABASE_URL" "DB_HOST" "DB_NAME" "DB_PASSWORD" "DB_PORT"
+      "DB_REPLICA_SSL_MODE" "DB_SSLMODE" "DB_SSL_MODE" "DB_USER" "DEPLOYMENT_MODE"
+      "ENABLE_TELEMETRY" "ENV_NAME" "IDP_DECLARATION_ENABLED" "IDP_HOST" "IDP_M2M_CLIENT_ID"
+      "IDP_M2M_CLIENT_SECRET" "ISPB" "KEY_CACHE_TTL_SEC" "LICENSE_KEY" "LOG_LEVEL"
+      "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
+      "MULTI_TENANT_ENABLED" "MULTI_TENANT_SERVICE_API_KEY" "MULTI_TENANT_URL"
+      "ORGANIZATION_ID" "ORGANIZATION_IDS" "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME"
+      "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_RESOURCE_SERVICE_NAME"
+      "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_HOST"
+      "PLUGIN_AUTH_URL" "REDIS_DB" "REDIS_HOST" "REDIS_PASSWORD" "REDIS_PORT" "REDIS_TLS"
+      "REDIS_USER" "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS" "SPI_BASE_URL" "SPI_CLIENT_ID"
+      "SPI_CLIENT_SECRET" "STREAMING_BATCH_LINGER_MS" "STREAMING_BROKERS"
+      "STREAMING_CB_FAILURE_RATIO" "STREAMING_CB_MIN_REQUESTS" "STREAMING_CB_TIMEOUT_S"
+      "STREAMING_CLIENT_ID" "STREAMING_CLOSE_TIMEOUT_S" "STREAMING_CLOUDEVENTS_SOURCE"
+      "STREAMING_COMPRESSION" "STREAMING_DATASCHEMA_BASE_URL" "STREAMING_ENABLED"
+      "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" "STREAMING_REQUIRED_ACKS"
+      "STREAMING_SASL_ALLOW_PLAINTEXT" "STREAMING_SASL_MECHANISM" "STREAMING_SASL_PASSWORD"
+      "STREAMING_SASL_USERNAME" "STREAMING_TENANT_ID" "STREAMING_TLS_CA_CERT"
+      "STREAMING_TLS_ENABLED" "SYSTEMPLANE_POSTGRES_DSN" "TELEMETRY_ENABLED" "VALKEY_URL"
+    ) }}
+  {{- $_ := set $enumerated $k 1 }}
+  {{- end }}
+  {{- range $key, $value := $cm }}
+  {{- if not (hasKey $enumerated $key) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

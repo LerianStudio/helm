@@ -1,0 +1,89 @@
+{{- if .Values.adapterProviderMock.enabled }}
+{{- $component := "adapter-provider-mock" }}
+{{- $values := .Values.adapterProviderMock }}
+{{- $cm := $values.configmap | default dict }}
+{{- /*
+PRODUCTIZED to the STANDARD lerian-common contract (productize-chart-env).
+Dependency-connection families flow from the shared global.* contract via
+lerian-common masks; the chart emits STANDARD key names.
+  - auth (auth.env -> PLUGIN_AUTH_ENABLED + PLUGIN_AUTH_HOST; global.auth)
+  - observability (otel.env -> ENABLE_TELEMETRY + OTEL_EXPORTER_OTLP_ENDPOINT + OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT; global.observability)
+
+DROPPED deviating app keys (superseded by the standard names above):
+  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), PLUGIN_AUTH_URL (->PLUGIN_AUTH_HOST),
+  ORGANIZATION_ID (->ORGANIZATION_IDS), DB_SSL_MODE (->DB_SSLMODE).
+Composed URIs DATABASE_URL / VALKEY_URL remain ONLY in secrets.yaml as
+migration/wait-init tooling inputs (never app-runtime config here).
+
+Credentials NEVER render here; the trailing escape hatch OMITS them
+(leaked-secret guard). A masked key still honours adapterProviderMock.configmap.<KEY>.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-pix-lerian.componentFullname" (dict "context" $ "component" $component) }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
+data:
+  # --- auth: global.auth contract (PLUGIN_AUTH_ENABLED + PLUGIN_AUTH_HOST) ---
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "http://plugin-auth:4000") | nindent 2 }}
+  # --- observability: global.observability contract (otel.env) ---
+  {{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "false" "endpointDefault" "" "deploymentEnvironmentDefault" "development") | nindent 2 }}
+  # --- app config (plain passthrough; default = curated/.env.example value) ---
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-adapter-provider-mock" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4103" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
+  REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-adapter-provider-mock" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-lerian" | quote }}
+  # -- ISPB the mock presents as the provider, obtained together with
+  # sandbox access. Optional: the application falls back to a placeholder
+  # ISPB when this is empty, so set it to exercise your own.
+  ADAPTER_ISPB: {{ $cm.ADAPTER_ISPB | default "" | quote }}
+  POLLER_INTERVAL_SEC: {{ $cm.POLLER_INTERVAL_SEC | default "30" | quote }}
+  # -- Lerian sandbox mock server this component talks to. Safe as a
+  # default: adapterProviderMock ships disabled, so this reaches no
+  # installation that does not enable the component explicitly, and an
+  # operator who does enable it gets the right endpoint instead of having
+  # to ask for it. Point it elsewhere only to target your own mock server.
+  PROVIDER_BASE_URL: {{ $cm.PROVIDER_BASE_URL | default "https://mock-pix-lerian-server.sandbox.lerian.net" | quote }}
+  SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4101" | quote }}
+  DICT_BASE_URL: {{ $cm.DICT_BASE_URL | default "http://plugin-br-pix-lerian-dict-hub:4104" | quote }}
+  COB_BASE_URL: {{ $cm.COB_BASE_URL | default "http://plugin-br-pix-lerian-cob-hub:4108" | quote }}
+  # -- Pix Automático callback target. Empty by default because pixauto
+  # ships disabled (see pixauto.enabled); set it whenever the mock has to
+  # deliver inbound recurrence callbacks.
+  # Example: http://plugin-br-pix-lerian-pixauto:4116/pixauto
+  PIXAUTO_BASE_URL: {{ $cm.PIXAUTO_BASE_URL | default "" | quote }}
+  MOCK_TEST_ENDPOINTS_ENABLED: {{ $cm.MOCK_TEST_ENDPOINTS_ENABLED | default "false" | quote }}
+  {{- /* OTEL_RESOURCE_SERVICE_VERSION: from image tag (image.tag then
+     Chart.AppVersion); override via adapterProviderMock.configmap.OTEL_RESOURCE_SERVICE_VERSION. */}}
+  {{- if not (hasKey $cm "OTEL_RESOURCE_SERVICE_VERSION") }}
+  {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
+  {{- end }}
+  {{- /* Escape hatch: un-enumerated configmap.<KEY>. Skips every emitted key
+     (plain/mask/inline), the superseded deviating names, and every credential
+     (leaked-secret guard) so a configmap.<SECRET> can never surface here. */}}
+  {{- $enumerated := dict }}
+  {{- range $k := (list
+      "ADAPTER_ISPB" "APPLICATION_NAME" "COB_BASE_URL" "DB_REPLICA_SSL_MODE" "DB_SSL_MODE"
+      "DEPLOYMENT_MODE" "DICT_BASE_URL" "ENABLE_TELEMETRY" "ENV_NAME" "LICENSE_KEY" "LOG_LEVEL"
+      "MOCK_TEST_ENDPOINTS_ENABLED" "ORGANIZATION_ID" "OTEL_EXPORTER_OTLP_ENDPOINT"
+      "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_RESOURCE_SERVICE_NAME"
+      "OTEL_RESOURCE_SERVICE_VERSION" "PIXAUTO_BASE_URL" "PLUGIN_AUTH_ENABLED"
+      "PLUGIN_AUTH_HOST" "PLUGIN_AUTH_URL" "POLLER_INTERVAL_SEC" "PROVIDER_BASE_URL"
+      "PROVIDER_CLIENT_ID" "PROVIDER_CLIENT_SECRET" "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS"
+      "SPI_BASE_URL" "TELEMETRY_ENABLED"
+    ) }}
+  {{- $_ := set $enumerated $k 1 }}
+  {{- end }}
+  {{- range $key, $value := $cm }}
+  {{- if not (hasKey $enumerated $key) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

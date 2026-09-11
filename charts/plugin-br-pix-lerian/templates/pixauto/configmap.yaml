@@ -1,0 +1,131 @@
+{{- if .Values.pixauto.enabled }}
+{{- $component := "pixauto" }}
+{{- $values := .Values.pixauto }}
+{{- $cm := $values.configmap | default dict }}
+{{- /*
+PRODUCTIZED to the STANDARD lerian-common contract (productize-chart-env).
+Dependency-connection families flow from the shared global.* contract via
+lerian-common masks; the chart emits STANDARD key names.
+  - auth (auth.env -> PLUGIN_AUTH_ENABLED + PLUGIN_AUTH_HOST; global.auth)
+  - observability (otel.env -> ENABLE_TELEMETRY + OTEL_EXPORTER_OTLP_ENDPOINT + OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT; global.observability)
+  - redis (datastore.value -> REDIS_HOST/PORT/USER/DB/TLS; global.datastores.redis)
+  - multiTenant (multiTenant.env -> MULTI_TENANT_URL + circuit breaker; global.multiTenant)
+  - streaming (streaming.env -> STREAMING_BROKERS/SASL/CLIENT_ID/...; global.streaming)
+
+DROPPED deviating app keys (superseded by the standard names above):
+  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), PLUGIN_AUTH_URL (->PLUGIN_AUTH_HOST),
+  ORGANIZATION_ID (->ORGANIZATION_IDS), DB_SSL_MODE (->DB_SSLMODE).
+Composed URIs DATABASE_URL / VALKEY_URL remain ONLY in secrets.yaml as
+migration/wait-init tooling inputs (never app-runtime config here).
+
+Credentials NEVER render here; the trailing escape hatch OMITS them
+(leaked-secret guard). A masked key still honours pixauto.configmap.<KEY>.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-pix-lerian.componentFullname" (dict "context" $ "component" $component) }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
+data:
+  # --- auth: global.auth contract (PLUGIN_AUTH_ENABLED + PLUGIN_AUTH_HOST) ---
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "") | nindent 2 }}
+  # --- observability: global.observability contract (otel.env) ---
+  {{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "true" "endpointDefault" "" "deploymentEnvironmentDefault" "development") | nindent 2 }}
+  # --- redis: global.datastores.redis contract (standard REDIS_*) ---
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "localhost") | quote }}
+  REDIS_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | quote }}
+  REDIS_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") | quote }}
+  REDIS_DB: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "db" "nativeKey" "REDIS_DB" "default" "0") | quote }}
+  REDIS_TLS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" ($values.datastores | default dict) "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
+  # --- multi-tenant: global.multiTenant contract (URL + circuit breaker, gated) ---
+  {{- $mtEnabled := eq (toString ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm "enabled" $mtEnabled) | nindent 2 }}
+  # --- streaming: global.streaming contract (standard subset, gated) ---
+  {{- $streamingEnabled := eq (toString ($cm.STREAMING_ENABLED | default "false")) "true" }}
+  STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.streaming.env" (dict "context" $ "enabled" $streamingEnabled "configmap" $cm "cloudeventsSource" "") | nindent 2 }}
+  # --- app config (plain passthrough; default = curated/.env.example value) ---
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-pixauto" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4116" | quote }}
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
+  REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-pixauto" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-pix-lerian" | quote }}
+  ORGANIZATION_IDS: {{ $cm.ORGANIZATION_IDS | default "global" | quote }}
+  # -- Single-tenant organization fallback. The tenant-config resolver reads
+  # pixauto.organization_id from the systemplane store first and only falls
+  # back to this. With NEITHER set every request answers 403
+  # TENANT_CONFIG_NOT_FOUND, and it MUST stay empty when
+  # MULTI_TENANT_ENABLED=true (the app refuses to boot otherwise).
+  # -- Permission declaration (lib-auth/v3 auth/declaration.WireFromEnv).
+  # KEEP false: plugin-br-pix-lerian-pixauto has no registered M2M
+  # application at plugin-auth yet, so a real publish under this slug answers
+  # 422. The manifest (apps/pixauto/components/api/declaration/permissions.yaml)
+  # is authored and gated, not published. Flipping this needs the M2M pair
+  # below AND PLUGIN_AUTH_ENABLED=true, or the token mints empty and the
+  # fail-open publisher skips publication silently.
+  # The IDP_ prefix is the canonical name as of lib-auth v3.4.0-beta.6
+  # (#4232). The pre-prefix names (DECLARATION_ENABLED, PLUGIN_IDENTITY_HOST,
+  # M2M_CLIENT_ID, M2M_CLIENT_SECRET) still resolve as deprecated aliases for
+  # one release and log a WARN on every boot; canonical wins when both are
+  # set. PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST are out of scope for the
+  # rename and keep their names.
+  IDP_DECLARATION_ENABLED: {{ $cm.IDP_DECLARATION_ENABLED | default "false" | quote }}
+  IDP_HOST: {{ $cm.IDP_HOST | default "" | quote }}
+  IDP_M2M_CLIENT_ID: {{ $cm.IDP_M2M_CLIENT_ID | default "" | quote }}
+  # -- Multi-tenant (consumed when MULTI_TENANT_ENABLED=true).
+  # MULTI_TENANT_API_KEY lives under secrets.
+  # -- Streaming (notification_outbox relay -> domain-fact CloudEvents).
+  # KEEP false: the br-sfn rail does not carry the recurrence message family
+  # yet (GAP-BRSFN-001), and the app refuses to boot with STREAMING_ENABLED=true
+  # and an empty STREAMING_BROKERS (it would drain claimed rows into a Noop
+  # emitter and lose the events) or with MULTI_TENANT_ENABLED=true. The command
+  # layer keeps writing facts to notification_outbox; they stay PENDING until
+  # this flips. Credentials + CA live under secrets.
+  STREAMING_ALLOW_PLAINTEXT_SASL: {{ $cm.STREAMING_ALLOW_PLAINTEXT_SASL | default "false" | quote }}
+  SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "true" | quote }}
+  SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4000/spi" | quote }}
+  SPI_CLIENT_ID: {{ $cm.SPI_CLIENT_ID | default "" | quote }}
+  STREAMING_DATASCHEMA_BASE_URL: {{ $cm.STREAMING_DATASCHEMA_BASE_URL | default "http://localhost:4007" | quote }}
+  {{- /* OTEL_RESOURCE_SERVICE_VERSION: from image tag (image.tag then
+     Chart.AppVersion); override via pixauto.configmap.OTEL_RESOURCE_SERVICE_VERSION. */}}
+  {{- if not (hasKey $cm "OTEL_RESOURCE_SERVICE_VERSION") }}
+  {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
+  {{- end }}
+  {{- /* Escape hatch: un-enumerated configmap.<KEY>. Skips every emitted key
+     (plain/mask/inline), the superseded deviating names, and every credential
+     (leaked-secret guard) so a configmap.<SECRET> can never surface here. */}}
+  {{- $enumerated := dict }}
+  {{- range $k := (list
+      "APPLICATION_NAME" "DATABASE_URL" "DB_REPLICA_SSL_MODE" "DB_SSL_MODE" "DEPLOYMENT_MODE"
+      "ENABLE_TELEMETRY" "ENV_NAME" "IDP_DECLARATION_ENABLED" "IDP_HOST" "IDP_M2M_CLIENT_ID"
+      "IDP_M2M_CLIENT_SECRET" "LICENSE_KEY" "LOG_LEVEL"
+      "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
+      "MULTI_TENANT_ENABLED" "MULTI_TENANT_SERVICE_API_KEY" "MULTI_TENANT_URL"
+      "ORGANIZATION_ID" "ORGANIZATION_IDS" "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME"
+      "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_RESOURCE_SERVICE_NAME"
+      "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_HOST"
+      "PLUGIN_AUTH_URL" "REDIS_DB" "REDIS_HOST" "REDIS_PASSWORD" "REDIS_PORT" "REDIS_TLS"
+      "REDIS_USER" "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS" "SPI_BASE_URL" "SPI_CLIENT_ID"
+      "SPI_CLIENT_SECRET" "STREAMING_ALLOW_PLAINTEXT_SASL" "STREAMING_BATCH_LINGER_MS"
+      "STREAMING_BROKERS" "STREAMING_CLIENT_ID" "STREAMING_CLOUDEVENTS_SOURCE"
+      "STREAMING_COMPRESSION" "STREAMING_DATASCHEMA_BASE_URL" "STREAMING_ENABLED"
+      "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" "STREAMING_REQUIRED_ACKS"
+      "STREAMING_SASL_ALLOW_PLAINTEXT" "STREAMING_SASL_MECHANISM" "STREAMING_SASL_PASSWORD"
+      "STREAMING_SASL_USERNAME" "STREAMING_TLS_CA_CERT" "STREAMING_TLS_ENABLED"
+      "SWAGGER_ENABLED" "SYSTEMPLANE_POSTGRES_DSN" "TELEMETRY_ENABLED" "VALKEY_URL"
+    ) }}
+  {{- $_ := set $enumerated $k 1 }}
+  {{- end }}
+  {{- range $key, $value := $cm }}
+  {{- if not (hasKey $enumerated $key) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

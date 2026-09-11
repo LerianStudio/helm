@@ -433,7 +433,7 @@ If you run against a **managed or external MongoDB** (i.e. you set `mongodb.enab
 
 When the host is omitted, `MONGO_CRM_HOST` / `MONGO_FEES_HOST` silently default to the packaged Service name `midaz-mongodb`, which does not exist when `mongodb.enabled: false`. Because the CRM and Fees databases are folded into the unified ledger binary, the ledger init container `wait-for-dependencies` **hard-gates on all 9 dependencies — including `MONGO_CRM_HOST` and `MONGO_FEES_HOST`, regardless of `crm.enabled`.** A missing host therefore blocks pod init: the init container retries until `ledger.initContainer.timeoutSeconds` (default **300s**) elapses, then exits 1 and the pod **CrashLoops**.
 
-To prevent this silent failure, the chart now **fails fast at render time** (`helm template` / `helm install`) whenever `mongodb.enabled: false` and either host would resolve to the packaged `midaz-mongodb` default. Set the hosts with any of these (highest precedence last-wins is native → dedicated → shared):
+To prevent this silent failure, the chart now **fails fast at render time** (`helm template` / `helm install`) whenever `mongodb.enabled: false` and either host would resolve to the packaged `midaz-mongodb` default. Set the hosts with any of these — precedence is **native > dedicated > shared** (highest first): native `ledger.configmap.MONGO_CRM_HOST`/`MONGO_FEES_HOST` wins, then dedicated `ledger.datastores.mongoCrm`/`mongoFees`, then shared `global.datastores.mongoCrm`/`mongoFees`. The shared mask is the recommended ergonomic place (env-wide), since a more specific level overrides it if ever needed:
 
 ```yaml
 # Preferred: env-wide shared datastore mask

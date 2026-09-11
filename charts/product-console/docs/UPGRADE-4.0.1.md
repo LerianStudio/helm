@@ -59,11 +59,13 @@ readinessProbe:
 
 ## Configuration Changes
 
-No configuration keys were added, removed, or renamed. The change only affects the built-in default value for `readinessProbe.path`.
+No configuration keys were added, removed, or renamed. The changes only affect built-in default values (`readinessProbe.path`, `livenessProbe.path`) and templating of the probe port.
 
-| Setting | v4.0.0 default | v4.0.1 default | Notes |
-|---------|----------------|----------------|-------|
+| Setting | Previous default | Current default | Notes |
+|---------|------------------|-----------------|-------|
 | `readinessProbe.path` | `/` | `/api/admin/health/readyz` | Only affects deployments that do not explicitly set this value |
+| `livenessProbe.path` | `/` | `/api/admin/health/alive` | Mongo-independent `200` endpoint (app source: `GET /admin/health/alive` → `{ status: 'ok' }`), present since app `1.10.0`. Only affects deployments that do not explicitly set this value |
+| `livenessProbe.port` / `readinessProbe.port` | ignored (hardcoded `http`) | honored, default `http` | The probe port was previously hardcoded; it is now templated |
 
 ## Migration Steps
 
@@ -123,13 +125,17 @@ a lazily-connecting image become Ready.
 - Operators must run an app image that either **connects to MongoDB eagerly at
   startup**, or that **exposes a readiness endpoint returning Ready before the
   Mongo connection is exercised**.
-- **Do not** repoint the liveness probe at a Mongo-dependent or unverified
-  health endpoint. Keep liveness on a path the image is known to answer with
-  `200` independently of MongoDB (the chart default is `/`). Pointing liveness
-  at a nonexistent endpoint would 404 and crash-loop the pod.
+- The liveness probe defaults to **`/api/admin/health/alive`**, which the app
+  returns `200` for **unconditionally** (no MongoDB dependency). Verified in the
+  application source (`GET /admin/health/alive` → `{ status: 'ok' }`) and present
+  since app image `1.10.0`. Keep liveness on a Mongo-**independent** endpoint —
+  do **not** repoint it at `readyz` or any Mongo-dependent path, or a
+  disconnected MongoDB would crash-loop the pod.
 
 If a fresh install hangs with the pod never becoming Ready, this is the app
-image's connection behavior — not the chart's probe configuration.
+image's connection behavior — not the chart's probe configuration. Liveness on
+`/alive` stays healthy throughout, so the container is not killed while
+readiness is still failing.
 
 ## Probe port is now configurable
 

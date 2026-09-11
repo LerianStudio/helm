@@ -95,7 +95,7 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: {{ .Values.livenessProbe.path | default "/" }}
+              path: {{ .Values.livenessProbe.path | default "/api/admin/health/alive" }}
               port: {{ .Values.livenessProbe.port | default "http" }}
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds | default 30 }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds | default 10 }}

@@ -7,7 +7,19 @@ metadata:
   # is already ~63, so the "-migrations" suffix overflows without the trunc.
   name: {{ printf "%s-migrations" (include "plugin-caradhras.fullname" .) | trunc 63 | trimSuffix "-" }}
   annotations:
-    helm.sh/hook: pre-upgrade, post-install
+    # post-install, post-upgrade (NOT pre-upgrade): this Job's env vars come
+    # from the auth ConfigMap/Secret, which are ordinary chart templates, not
+    # hooks themselves — they only exist once the main manifest has already
+    # been applied. Helm itself resolves "pre-upgrade, post-install" fine
+    # (post-install runs after templates on a first install), but ArgoCD
+    # doesn't distinguish install vs upgrade the way Helm does: it maps this
+    # combined annotation to PreSync unconditionally, so on a fresh ArgoCD
+    # sync the Job runs BEFORE the ConfigMap exists and fails outright
+    # (CreateContainerConfigError: configmap not found). Confirmed live
+    # against a real ArgoCD-driven install. Using post-install/post-upgrade
+    # only keeps the exact same "run whenever the release changes" intent
+    # while mapping unambiguously to PostSync under both delivery paths.
+    helm.sh/hook: post-install, post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation
 spec:
   template:

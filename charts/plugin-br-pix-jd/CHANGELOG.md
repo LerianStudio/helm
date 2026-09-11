@@ -3,6 +3,20 @@
 ## [0.4.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.4)
 
 - Fixes:
+  - Fit the QR payload path default and budget gate to JDPI's 77-character cap.
+
+- Improvements:
+  - Added an upgrade guide for plugin-br-pix-jd v0.4.3.
+
+Contributors: @guimoreirar, @jeffersonrodrigues92, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.3...plugin-br-pix-jd-v0.4.4)
+
+---
+
+## [0.4.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.4)
+
+- Fixes:
   - Adjusted the QR payload path default and budget gate to comply with JDPI's 77-character limit.
 
 Contributors: @guimoreirar, @jeffersonrodrigues92, @lerian-studio,

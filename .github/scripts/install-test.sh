@@ -104,6 +104,27 @@ cleanup() {
     fi
   done
 }
+# Bring a namespace to Active, or fail. Accepting any existing namespace — which is
+# what `create || get` did — lets one still in Terminating through, and helm cannot
+# create resources in a namespace that is going away; the install then fails with
+# something that reads like a chart defect.
+ensure_ns() { # <namespace>
+  local ns="$1" waited=0 phase
+  while :; do
+    phase=$(kubectl get ns "$ns" -o jsonpath='{.status.phase}' 2>/dev/null || true)
+    case "$phase" in
+      Active)      return 0 ;;
+      "")          kubectl create ns "$ns" >/dev/null 2>&1 && return 0 ;;  # else lost a race; re-read
+      Terminating) : ;;                                                     # wait it out
+    esac
+    if [ "$waited" -ge "${NS_WAIT:-120}" ]; then
+      echo "::error::[$CHART] namespace $ns stuck in '${phase:-absent}' after ${waited}s"
+      return 1
+    fi
+    sleep 5; waited=$((waited + 5))
+  done
+}
+
 # Create the pull secret in a namespace and make it the default for every pod
 # scheduled there, so no chart has to expose an imagePullSecrets value for this.
 # Built from the runner's own docker config, which already holds a login for every
@@ -125,8 +146,7 @@ grant_pull() { # <namespace>
 do_install() {
   local rel="$1" dir="$2" kind="${3:-pr}"
   for x in "$NS" $TARGETS; do
-    kubectl create ns "$x" >/dev/null 2>&1 || kubectl get ns "$x" >/dev/null 2>&1 || {
-      echo "::error::[$CHART] could not create namespace $x"; return 1; }
+    ensure_ns "$x" || return 1
     grant_pull "$x"
   done
   if [[ "$kind" == base ]]; then
@@ -160,8 +180,17 @@ db_out="$(helm dependency build "$CHART_DIR" 2>&1)" \
 # resources land there regardless of `-n` — and some charts even span MORE than one
 # (most in the release ns, a few in a fixed one). Create EVERY namespace the render
 # references instead of fighting it; the release itself lives in $NS.
-TARGETS="$(helm template "$REL" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} -n "$NS" 2>/dev/null \
-            | awk '/^  namespace:/{gsub(/"/,"",$2); print $2}' | awk 'NF' | sort -u | grep -vxF "$NS" | tr '\n' ' ')"
+render_targets() { # <chart-dir> [base]
+  local dir="$1" kind="${2:-pr}" out
+  if [ "$kind" = base ]; then
+    out=$(helm template "$REL" "$dir" ${BASE_VARGS[@]+"${BASE_VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} -n "$NS" 2>/dev/null)
+  else
+    out=$(helm template "$REL" "$dir" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} -n "$NS" 2>/dev/null)
+  fi
+  printf '%s' "$out" | awk '/^  namespace:/{gsub(/"/,"",$2); print $2}' | awk 'NF' | sort -u | grep -vxF "$NS"
+}
+
+TARGETS="$(render_targets "$CHART_DIR" | tr '\n' ' ')"
 echo "  namespaces: $NS${TARGETS:+ + $TARGETS}"
 
 cleanup  # idempotent: clear any stale release/namespace from a prior aborted run
@@ -209,6 +238,18 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
   [[ ${#BASE_VARGS[@]} -gt 0 ]] && echo "  baseline values: ${#BASE_VARGS[@]} file(s) from origin/main"
 
   helm dependency build "$BASE_DIR" >/dev/null 2>&1 || echo "  (base dep build failed — skipping baseline)"
+
+  # The baseline can pin a namespace the PR chart no longer renders, and TARGETS was
+  # derived from the PR chart alone. Its resources would then land in a namespace
+  # nobody created, the baseline install would fail, and the upgrade check would be
+  # skipped as "probably unrelated" — the same masking this phase keeps running into.
+  # Both installs share $TARGETS, so it holds the union and cleanup still sees them all.
+  BASE_TARGETS="$(render_targets "$BASE_DIR" base | tr '\n' ' ')"
+  for t in $BASE_TARGETS; do
+    case " $TARGETS " in *" $t "*) ;; *) TARGETS="${TARGETS:+$TARGETS }$t" ;; esac
+  done
+  [[ -n "$BASE_TARGETS" ]] && echo "  baseline namespaces: $BASE_TARGETS"
+
   if do_install "${REL}-base" "$BASE_DIR" base >/dev/null 2>&1 && deployed "${REL}-base"; then
     helm upgrade "${REL}-base" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} -n "$NS" --timeout "$TIMEOUT" >/dev/null 2>&1 \
       && deployed "${REL}-base" || fail "upgrade from origin/main failed (immutable-field break?)"

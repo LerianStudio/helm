@@ -14,7 +14,7 @@
 
 ## Overview
 
-This is a patch release that corrects the default readiness probe path in the deployment template. The application version is unchanged.
+This release corrects the default **readiness** probe path (`/` → `/api/admin/health/readyz`) and additionally sets a Mongo-independent **liveness** default (`/` → `/api/admin/health/alive`) and makes the probe **port** templatable. The application version is unchanged. The readiness-path table below shows the original correction; the liveness-path and probe-port changes are additive (see [Configuration Changes](#configuration-changes)).
 
 | Field | v4.0.0 | v4.0.1 |
 |-------|--------|--------|
@@ -141,14 +141,24 @@ readiness is still failing.
 
 The probe port previously rendered as the hardcoded `http` port name,
 silently ignoring `livenessProbe.port` / `readinessProbe.port`. Both probes
-now honor these values and **default to `http`**, so existing installs are
-unaffected.
+now honor these values and **default to `http`**, so installs that never set
+these keys are unaffected.
+
+> ⚠️ **Compatibility caveat — review any existing probe-port override before upgrading.**
+> Because the port was previously ignored, a `livenessProbe.port` /
+> `readinessProbe.port` value already sitting in your `values.yaml` had **no
+> effect**; after this upgrade it **takes effect**. If it points at a port the
+> app does not serve the probe endpoint on, the probe fails and the pod goes
+> unready (readiness) or crash-loops (liveness). The `http` port is the
+> container port `service.port` (commonly `8081`), **not** `8080` — only set an
+> explicit port if the app actually listens for that probe there. Remove stray
+> overrides to keep the safe `http` default.
 
 ```yaml
 readinessProbe:
-  port: 8080   # optional; defaults to the container's "http" port name
+  port: http   # default; the container "http" port (service.port). Override only if the app serves readyz elsewhere.
 livenessProbe:
-  port: 8080   # optional; defaults to the container's "http" port name
+  port: http   # default; the container "http" port (service.port).
 ```
 
 ## Preview changes before upgrading

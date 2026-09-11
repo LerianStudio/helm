@@ -70,15 +70,18 @@ still falls back normally — see the [aliases table](#backward-compatibility-al
 > This chart now **guards against the specific `casdoor-migrations` case**: if
 > the resolved migration repository contains `casdoor-migrations`, Helm
 > **rendering fails** (`helm template`/`upgrade`) with an error pointing here, so
-> you cannot deploy it by accident. The guard only denylists that one legacy
-> name — so understand why it exists, because any *other* wrong migration repo
-> still fails silently:
+> you cannot deploy it by accident. The guard only checks the repository *name*
+> — it does not validate that the tag exists or that the image expects
+> `POSTGRES_*` — so understand why it exists, because a wrong migration repo the
+> guard does not catch fails later, and how it fails depends on the repo/tag:
 >
-> - **The wrong repo has a coincidental `1.2.0` tag that pulls cleanly.**
->   `casdoor-migrations` happens to carry a `1.2.0` tag (June 2025, from the
->   previous product line). Absent the guard above (or for any other mis-pinned
->   repo the guard does not catch), the image pulls without error and only fails
->   *at runtime*. A wrong tag that exists is more confusing than one that
+> - **A wrong repo whose tag exists pulls cleanly and only fails at runtime.**
+>   This is the confusing case, and it is exactly what `casdoor-migrations`
+>   does: it carries a coincidental `1.2.0` tag (June 2025, from the previous
+>   product line) that pulls without error, then the migration Job fails (see
+>   [Known Gotchas](#known-gotchas)). (A mis-pinned repo whose tag does *not*
+>   exist fails earlier and more visibly, with `ImagePullBackOff`.) A wrong tag
+>   that exists is more confusing than one that
 >   doesn't: there is no `ImagePullBackOff` to tip you off, just a failed
 >   migration Job (see [Known Gotchas](#known-gotchas) for the exact signature).
 > - **caradhras `1.2.0` is a different product line, not an older casdoor.**

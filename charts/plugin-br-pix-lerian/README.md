@@ -709,7 +709,7 @@ kubectl logs -n <namespace> <pod> --previous | head -30
 
 | Message names | Fix |
 |---|---|
-| `LICENSE_KEY` | Set it, or use `DEPLOYMENT_MODE: "local"`. Required in every other mode. |
+| `LICENSE_KEY` | Set it on that workload. |
 | the license client failing to initialise | Set `ORGANIZATION_IDS` on that workload — `global` for a single-license deployment. |
 | `DATABASE_URL` / a Postgres DSN | Set `DATABASE_URL` or `SYSTEMPLANE_POSTGRES_DSN` per the [requirements table](#required-before-installation). |
 | `SYSTEMPLANE_SECRET_MASTER_KEY` | Set a non-empty value on that Systemplane workload. |

@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "bank_code:05856736 ispb:05856736 method:03 gateway:6"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

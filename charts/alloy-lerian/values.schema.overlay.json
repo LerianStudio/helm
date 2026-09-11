@@ -1,0 +1,66 @@
+{
+  "$comment": "Regras escritas a mao que a GERACAO NAO PODE APAGAR. O gerador reduz cada bloco a um objeto/tipo aberto, descartando description, pattern, enum e additionalProperties:false. Este arquivo e mesclado apos a geracao, com o overlay vencendo em conflito. A validacao de VALOR (origin.id, intervalos, perfil) vive nos helpers via fail(), que da mensagem acionavel; o schema aqui existe para o que fail() nao alcanca: tipo, chave desconhecida e documentacao inline.",
+  "properties": {
+    "profile": {
+      "type": "string",
+      "description": "own = our environment (collects node infra); client = client cluster (does not). Required, no default. Validation lives in the chart, NOT as a schema enum: the enum fires first and reports \"value must be one of 'own','client'\", hiding the guard that actually explains the difference and what each profile collects — and the common case is a first install with no profile at all."
+    },
+    "node-exporter": {
+      "type": "object",
+      "description": "Subchart do node-exporter. `enabled: false` por padrao — ligar so em ambiente nosso, e junto com collection.nodeInfrastructure. Segue o padrao do guarda-chuva da Grafana: o exportador e um componente, o agente so raspa.",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "spanMetrics": {
+      "type": "object",
+      "description": "RED metrics derived from spans (calls_total, duration_milliseconds_*). Replaces the connector that lived in the retiring otel-collector-client; disabling it stops those series from being produced at all.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Explicit histogram bucket boundaries. Changing them renames every _bucket series."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Metric name prefix. Empty yields bare calls_total / duration_milliseconds_*, which is what the existing dashboards and alert rules query."
+        },
+        "expiration": {
+          "type": "string",
+          "description": "Drop series with no new datapoint for this long."
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Span attributes promoted to labels. Every dimension multiplies cardinality; k8s.pod.name and k8s.container.name are deliberately absent."
+        },
+        "flushInterval": {
+          "type": "string",
+          "description": "How often derived RED metrics are emitted. 60s floor enforced by the chart: it is the write rate of these series, and cost is series x writes per minute."
+        },
+        "cardinalityLimit": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Ceiling on distinct dimension combinations. Beyond it, further combinations fold into one entry labelled otel.metric.overflow=\"true\" (visible, not silently dropped). 0 disables."
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "destination",
+    "origin",
+    "profile"
+  ]
+}

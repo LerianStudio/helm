@@ -1,0 +1,4 @@
+{
+  "body": "port=8080 count=7 http_latency_ms:3 http_status_code:200 k8s_pod_name:midaz-ledger-7cd476686-47fww accountingPeriod=202608 accountable=1 branchless=0 accountancy=12345 branching=99",
+  "descricao": "⚠️ A razao de exigir nome de campo E de os sufixos serem ENUMERADOS. Uma regra por FORMA mascararia `gateway:6`, `count=7`, `method:03`. E alargar o sufixo para `account[A-Za-z]*[=:]` mascararia `accountingPeriod` e `branchless` — ambos MEDIDOS."
+}

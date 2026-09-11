@@ -1,0 +1,174 @@
+# benedita — anel 1 do rollout, onde o chart foi VALIDADO em cluster real.
+#
+# ⚠️ ESTE ARQUIVO É REGISTRO DE VALIDAÇÃO, NÃO MODELO DE INSTALAÇÃO.
+#
+# A benedita é cluster interno de TESTE e reporta para um Grafana self-hosted
+# separado — ela não é destino deste chart em regime. O arquivo fica porque as
+# medições citadas aqui (DPM 3,41 → 1,00, escritor único, taxas por unidade) vêm
+# deste cluster e são a evidência de que o desenho funciona.
+#
+# Para instalar de verdade, use:
+#   examples/values-cliente.yaml          cluster de cliente (BYOC)
+#   examples/values-internal-lerian.yaml  nossos aws-production/staging/devops
+#
+# Uso:
+#   helm upgrade --install alloy-lerian \
+#     oci://ghcr.io/lerianstudio/alloy-lerian-helm --version <fixada> \
+#     -n monitoring --create-namespace \
+#     -f examples/values-benedita.yaml
+#
+# Três valores. O resto é derivado do perfil, e os defaults do agente são
+# mantidos deliberadamente.
+
+# Ambiente nosso: coleta todos os namespaces exceto a infra do orquestrador, e
+# a inspeção de dado em trânsito fica disponível (desligada por padrão).
+profile: own
+
+origin:
+  # Nome reservado de ambiente próprio, aceito sem sufixo de estágio.
+  #
+  # ⚠️ Trocar isto num ambiente em operação é MIGRAÇÃO DE DADO, não ajuste de
+  # config: a marca compõe a identidade da série no destino, então um valor novo
+  # cria séries novas e órfã todas as anteriores.
+  #
+  # ⚠️ `benedita` NÃO passa mais na validação, e está correto: o identificador de
+  # cluster de teste não segue o padrão de cliente, e nenhuma exceção foi criada
+  # para ele — uma exceção que nada usa é um caminho que alguém confunde com
+  # suportado depois.
+  #
+  # O valor abaixo existe só para o arquivo renderizar. A validação original foi
+  # feita com `benedita`, quando a lista de reservados ainda o incluía.
+  id: benedita-prd
+
+destination:
+  # Concentrador interno, via ingress do cluster. Inalterado nesta fase — o
+  # contrato de transporte é o mesmo antes e depois da migração, então o
+  # concentrador não percebe a troca.
+  endpoint: https://telemetry.benedita.lerian.net
+
+  # Sem bloco `credential`: a plataforma interna não valida a credencial, e o
+  # perfil `own` já deriva isso — o cabeçalho não é enviado.
+
+# A plataforma interna não valida a credencial de telemetria, então o cabeçalho
+# não é enviado e nenhum Secret precisa existir antes do install.
+#
+# MAS a entrada de ambiente vem `optional: false` no values do chart — correto
+# para o perfil `client`, onde 401 é descarte permanente. Aqui a variável nunca é
+# lida, e ainda assim sua ausência trava o pod.
+#
+# MEDIDO na benedita: sem o override abaixo, o install falha com
+#   Error: secret "alloy-lerian" not found   →   CreateContainerConfigError 4/4
+#
+# NÃO zerar `extraEnv` para resolver: apagaria também as variáveis do Fleet
+# Management. Sobrescrever a entrada, mantendo as demais.
+#
+# Se o destino passar a validar, definir `destination.credential.enabled: true` e
+# criar o Secret no namespace.
+node:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: true
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+singleton:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: true
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+# benedita JÁ RODA kube-state-metrics: o chart `prometheus` do próprio ambiente
+# o sobe (o11y/prometheus/values.yaml, `kube-state-metrics.enabled: true`).
+# Subir o nosso criaria DOIS produtores das mesmas métricas de objeto de cluster
+# — exatamente a duplicação que esta migração corrige.
+#
+# O papel singleton faz scrape do que já existe — ver collection.clusterObjectTarget.
+kube-state-metrics:
+  enabled: false
+
+collection:
+  # Aponta para o kube-state-metrics que o chart `prometheus` do ambiente já
+  # sobe. CONFIRMAR o nome do service antes do deploy:
+  #   kubectl -n monitoring get svc | grep kube-state-metrics
+  #
+  # Se estiver errado, o scrape falha em silêncio: o alvo simplesmente não
+  # responde, e as métricas de objeto de cluster não aparecem.
+  clusterObjectTarget: "prometheus-kube-state-metrics.monitoring.svc.cluster.local:8080"
+
+# ---------------------------------------------------------------------------
+# Deliberadamente AUSENTE deste arquivo
+# ---------------------------------------------------------------------------
+# collection.namespaces      derivado: exclui ^(kube-system|kube-public|kube-node-lease)$
+# collection.interval        60s, o piso — não há razão para subir no anel 1
+# collection.dropDebugLogs   true
+# collection.nodeInfrastructure  false. Métricas de NÓ (CPU/memória do host)
+#                            não são coletadas por nenhum perfil hoje; a fonte
+#                            é o kubelet e não está no chart. O perfil `own`
+#                            permite ligar quando existir; o `client` não.
+# roles.*                    ambos ativos
+# kube-state-metrics         ativo, uma réplica. Se benedita já tiver um,
+#                            desligar com `kube-state-metrics.enabled: false`
+#                            para não rodar dois.
+# inspection.enabled         false. Disponível neste perfil, mas ligar expõe
+#                            payload cru de pipeline numa interface sem
+#                            autenticação — só sob janela aprovada, e nunca
+#                            por Service ou Ingress.
+#
+# As regras de sanitização de dado regulado NÃO aparecem aqui porque não são
+# configuráveis. Não existe valor que as desabilite ou enfraqueça.
+
+# ---------------------------------------------------------------------------
+# Antes de subir: o portão de validação do anel 1
+# ---------------------------------------------------------------------------
+# Este ambiente é onde a migração é validada por inteiro antes de qualquer
+# outro receber a mudança. O que precisa estar fechado:
+#
+#   1. contrato de mudança declarado ANTES do deploy, conferindo depois
+#   2. escritas por série = 1, e invariante ao número de nós
+#      (taxa unitária num cluster de um nó não prova nada)
+#   3. redução de séries conforme o previsto
+#   4. consumo de recurso e privilégio não superiores aos anteriores
+#   5. reversão exercitada com sucesso
+#   6. métricas de descarte distintas: saturação de fila vs descarte permanente
+#      — causas diferentes, e a segunda não se resolve sozinha
+#   7. correspondência de vocabulário de métrica confirmada contra dado REAL
+#      (o mapa atual é hipótese documental: nenhum nome novo existe hoje no
+#      destino)
+#   8. arquétipos de alerta reescritos, com disparo verificado
+#   9. painéis exibindo dado; os que consultam informação descontinuada
+#      removidos, não deixados vazios
+#
+# Enquanto qualquer item estiver aberto, aws-staging não inicia.
+
+# Gestão remota desligada: este arquivo é registro da validação em cluster, e a
+# validação foi feita sem Fleet Management. O default do chart é `true`, então a
+# ausência precisa ser declarada.
+fleetManagement:
+  enabled: false

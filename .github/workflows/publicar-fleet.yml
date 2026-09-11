@@ -1,0 +1,92 @@
+# Publica a configuração de coleta no Fleet Management.
+#
+# ⚠️ NUNCA automático. Só `workflow_dispatch`, e por decisão: publicar altera a
+# telemetria de um cliente de produção em 1 minuto, e a janela de republicação
+# deixa o cliente SEM COLETA por ~75 segundos. Isso é operação, não entrega
+# contínua — alguém escolhe o momento.
+#
+# A PORTA DE ENTREGA RODA ANTES, no mesmo job. Se ela falhar, não se publica.
+# É a razão de o publicador existir: a console do Grafana é um caminho de edição
+# que não passa por gate nenhum.
+
+name: Publicar config no Fleet
+
+on:
+  workflow_dispatch:
+    inputs:
+      client_id:
+        description: 'client_id do destinatário (ex.: acme-prd). Entra no matcher.'
+        required: true
+        type: string
+      dry_run:
+        description: 'Só renderizar e conferir, sem publicar'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publicar:
+    name: Porta de entrega + publicação
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # ⚠️ Ambiente com revisão obrigatória. É o que impede alguém publicar em
+    # produção sozinho — o workflow é `workflow_dispatch`, então sem isso
+    # bastaria ter permissão de executar Actions.
+    environment: fleet-producao
+    steps:
+      - name: Obter o codigo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Obter a imagem do agente
+        # Mesmo digest que o chart implanta. Uma tag validaria as regras contra
+        # bits possivelmente diferentes dos que rodam em produção.
+        run: docker pull grafana/alloy@sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33
+
+      - name: Porta de entrega (bloqueante)
+        # ⚠️ ANTES de publicar, sempre. 54 casos contra o agente real. Em produção
+        # `error_mode` é "ignore": regra malformada não gera erro, só saída que
+        # aparenta estar mascarada — este é o único mecanismo que a pega.
+        run: ./charts/alloy-lerian/sanitizacao/porta-de-entrega.sh
+
+      - name: Publicar
+        env:
+          FLEET_URL: ${{ vars.FLEET_URL }}
+          FLEET_USER: ${{ vars.FLEET_USER }}
+          # ⚠️ Segredo de repositório, nunca em values nem no chart. O token dá
+          # acesso à STACK INTEIRA — o escopo mínimo de uma access policy do
+          # Fleet não é por cliente.
+          FLEET_TOKEN: ${{ secrets.FLEET_TOKEN }}
+          CLIENT_ID: ${{ inputs.client_id }}
+        run: |
+          if [ -z "${FLEET_URL}" ] || [ -z "${FLEET_USER}" ] || [ -z "${FLEET_TOKEN}" ]; then
+            echo "::error::FLEET_URL, FLEET_USER (vars) e FLEET_TOKEN (secret) precisam estar configurados no repositorio"
+            exit 1
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ./charts/alloy-lerian/sanitizacao/publicar-fleet.sh --dry-run
+          else
+            ./charts/alloy-lerian/sanitizacao/publicar-fleet.sh
+          fi
+
+      - name: Registrar o resultado
+        if: always()
+        run: |
+          {
+            echo "### Publicacao no Fleet"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| client_id | \`${{ inputs.client_id }}\` |"
+            echo "| modo | ${{ inputs.dry_run == true && 'dry-run (nada publicado)' || 'PUBLICADO' }} |"
+            echo "| resultado | ${{ job.status }} |"
+            echo ""
+            if [ "${{ inputs.dry_run }}" != "true" ] && [ "${{ job.status }}" = "success" ]; then
+              echo "⚠️ A configuracao chega aos coletores em ate 1 minuto (\`poll_frequency\`)."
+              echo "Confira que a coleta voltou antes de encerrar."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

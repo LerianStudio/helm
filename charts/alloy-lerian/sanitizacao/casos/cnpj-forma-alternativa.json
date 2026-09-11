@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "PIX-OUT de 48028905000104 de R$200.0"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

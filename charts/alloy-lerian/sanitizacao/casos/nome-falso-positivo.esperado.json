@@ -1,0 +1,5 @@
+{
+  "body": "clientName=Producao ambiente inicializado",
+  "descricao": "Campo que casa o prefixo da regra de nome, mas cujo valor e nome de ambiente com uma palavra seguida de outra maiuscula. A regra mascara TODO termo apos o primeiro.",
+  "categoria": "falsoPositivo"
+}

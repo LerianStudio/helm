@@ -1,0 +1,3 @@
+{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"caso-sanitizacao"}}]},
+"scopeLogs":[{"logRecords":[{"timeUnixNano":"1700000000000000000","severityNumber":9,"severityText":"INFO",
+"body":{"stringValue":"authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMiJ9.assinaturaqualquer requisicao aceita"}}]}]}]}

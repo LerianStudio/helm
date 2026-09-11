@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "pix_key:+5561996594517 pix_payment_type:0"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

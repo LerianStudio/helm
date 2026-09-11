@@ -2,6 +2,19 @@
 
 ## [9.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.3)
 
+- **Fixes:**
+  - Lowered `HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST` default to 10.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.2...plugin-access-manager-v9.2.3)
+
+---
+
+## [9.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.3)
+
 - **Fixes**
   - Lowered `HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST` default to 10.
 

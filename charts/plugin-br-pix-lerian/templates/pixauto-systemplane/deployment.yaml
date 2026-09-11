@@ -75,7 +75,14 @@ spec:
           {{- /* default dict: `configmap: null` in values yields nil, and a field
                access on nil panics rather than falling through to the default. */}}
           {{- $cm := $values.configmap | default dict }}
-          {{- $telemetryOn := eq (toString (default "false" $cm.TELEMETRY_ENABLED)) "true" }}
+          {{- /*
+          TELEMETRY_ENABLED is parsed by the apps with strconv.ParseBool, which
+          also accepts "1", "t", "T", "TRUE" and "True". Comparing against the
+          literal "true" would leave telemetry ON in the process while the chart
+          silently skipped the node-local OTel wiring below. Route it through the
+          same helper the other boolean gates use so both agree.
+          */}}
+          {{- $telemetryOn := eq (include "plugin-br-pix-lerian.isTrue" (default "false" $cm.TELEMETRY_ENABLED)) "true" }}
           {{- $hasOtelEndpoint := ne (toString (default "" $cm.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
           {{- $extraEnvVars := default (dict) $values.extraEnvVars }}
           {{- $hasExtras := gt (len $extraEnvVars) 0 }}

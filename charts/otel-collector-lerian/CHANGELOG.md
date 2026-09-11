@@ -19,6 +19,19 @@ Contributors: @guimoreirar, @lerian-studio
 - **Features**
   - Expose rollouts-pod-template-hash on spanmetrics.
 
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
 - **Improvements**
   - Added upgrade guide for otel-collector-lerian v4.2.0.
 

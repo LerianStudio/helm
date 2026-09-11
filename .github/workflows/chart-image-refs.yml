@@ -51,7 +51,7 @@ jobs:
 
           scope=""
           for c in $(git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
-                       | awk -F/ '/^charts\/[^/]+\// {print $2}' | sort -u); do
+                       | awk -F/ '/^charts\/[^\/]+\// {print $2}' | sort -u); do
             [ -d "charts/$c" ] || continue                                  # deleted chart
             # A library chart renders nothing and has no images of its own. Parsed as
             # YAML rather than grepped: `type: "library"` is equally valid and a
@@ -191,6 +191,7 @@ jobs:
         env:
           EXPECTED: ${{ needs.scope.outputs.charts }}
           IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+          IS_BOT: ${{ github.actor == 'dependabot[bot]' }}
         with:
           script: |
             const fs = require('fs');
@@ -250,7 +251,11 @@ jobs:
                     const gone = Array.isArray(v.missing) && v.missing.includes(r);
                     return `- ${gone ? '❌' : '✅'} \`${short(r)}\``;
                   }).join('\n') + '\n\n'
-                : '_no image references_\n\n';
+                // An empty list means two different things, and conflating them is
+                // how a job that never ran reads as a chart with nothing to check.
+                : v.outcome === 'missing-artifact'
+                  ? '_verification did not report_\n\n'
+                  : '_no image references_\n\n';
             }
             body += '</details>\n\n';
             body += 'Third-party subchart images are reported as skipped: they are not ours to publish, '
@@ -263,12 +268,14 @@ jobs:
             // readable even when it cannot be posted.
             await core.summary.addRaw(body).write();
 
-            // A fork (and Dependabot) gets a read-only GITHUB_TOKEN regardless of the
-            // `permissions:` block, so createComment/updateComment would 403. Failing
-            // there would report a broken pipeline over a comment. The gate job is
-            // what blocks the merge, and it does not depend on this one.
-            if (process.env.IS_FORK === 'true') {
-              core.notice('Fork pull request: the token cannot comment — the table is in the run summary');
+            // A read-only GITHUB_TOKEN cannot comment, regardless of the
+            // `permissions:` block, so createComment/updateComment would 403 and paint
+            // the run red over a comment. Two ways to get one: a fork, and Dependabot —
+            // whose pull requests live in this repository, so `head.repo.fork` is false
+            // and the fork check alone would miss them. The gate job is what blocks the
+            // merge, and it does not depend on this one.
+            if (process.env.IS_FORK === 'true' || process.env.IS_BOT === 'true') {
+              core.notice('Read-only token (fork or Dependabot): the table is in the run summary');
               return;
             }
 

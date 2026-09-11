@@ -1,6 +1,6 @@
 # Plugin-br-pix-lerian Changelog
 
-## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.1.0)
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
 
 - **Removals**
   - `LICENSE_ORGANIZATION_IDS` removed from `values.yaml` and
@@ -198,12 +198,14 @@
     `charts/streaming-hub/templates/bootstrap-postgres.yaml`.
 
 - **Notes**
-  - This chart releases as `2.1.0`. `2.1.0-beta.2` was published to
-    `oci://ghcr.io/lerianstudio/plugin-br-pix-lerian-helm` carrying
-    `appVersion: 1.0.0-beta.101`, and a published OCI artifact is immutable, so
-    that version is not reused here. `2.1.0` continues the line the chart it
-    replaces occupied (`plugin-br-pix-switch-helm` 2.0.0) and is not yet
-    published under either name.
+  - This chart releases as `1.0.0`, the first stable release of the chart under
+    this name on `main`. No `plugin-br-pix-lerian-v*` tag is an ancestor of
+    `main`, so semantic-release treats this as the initial publication and
+    computes `1.0.0`; declaring anything else here would put the source, the
+    changelog and the published artifact out of step. The `2.1.0-beta.*`
+    prereleases were published from `develop`, and `2.1.0-beta.2` in particular
+    carries `appVersion: 1.0.0-beta.101`; a published OCI artifact is immutable,
+    so none of them is reused or reinterpreted here.
   - The `pixswitch` Postgres role keeps its name. An audit of
     `lerian-internal-gitops` at commit `65836367` found the value pinned in four
     of the six environments, in three keys each, each backed by existing state;

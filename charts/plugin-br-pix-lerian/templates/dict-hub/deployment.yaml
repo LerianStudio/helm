@@ -94,14 +94,22 @@ spec:
           extraEnvVars still wins, but as the only entry rather than as the last
           of two.
 
-          The OTEL default is also dropped when the operator claims HOST_IP,
-          because its "$(HOST_IP):4317" would then reference a variable defined
-          LATER in the list, and Kubernetes only expands backward references --
-          it would ship the literal string.
+          Each generated name is suppressed INDEPENDENTLY of the other.
+
+          Kubernetes expands only BACKWARD references, so "$(HOST_IP):4317"
+          emitted BEFORE the operator's own HOST_IP would ship as a literal.
+          That is an argument about WHERE the endpoint goes, not whether it goes
+          at all: when the operator supplies HOST_IP through extraEnvVars the
+          generated endpoint is emitted AFTER the extraEnvVars loop, so
+          $(HOST_IP) resolves against their value. Dropping it instead left
+          telemetry enabled with no endpoint configured at all.
           */}}
-          {{- $emitHostIP := and $telemetryOn (not $hasOtelEndpoint) (not (hasKey $extraEnvVars "HOST_IP")) }}
-          {{- $emitOtelEndpoint := and $emitHostIP (not (hasKey $extraEnvVars "OTEL_EXPORTER_OTLP_ENDPOINT")) }}
-          {{- if or $emitHostIP $hasExtras }}
+          {{- $operatorHostIP := hasKey $extraEnvVars "HOST_IP" }}
+          {{- $operatorOtelEndpoint := hasKey $extraEnvVars "OTEL_EXPORTER_OTLP_ENDPOINT" }}
+          {{- $wantsNodeLocalOtel := and $telemetryOn (not $hasOtelEndpoint) }}
+          {{- $emitHostIP := and $wantsNodeLocalOtel (not $operatorHostIP) }}
+          {{- $emitOtelEndpoint := and $wantsNodeLocalOtel (not $operatorOtelEndpoint) }}
+          {{- if or $emitHostIP $emitOtelEndpoint $hasExtras }}
           env:
             {{- if $emitHostIP }}
             - name: HOST_IP
@@ -109,7 +117,7 @@ spec:
                 fieldRef:
                   fieldPath: status.hostIP
             {{- end }}
-            {{- if $emitOtelEndpoint }}
+            {{- if and $emitOtelEndpoint (not $operatorHostIP) }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
             {{- end }}
@@ -118,6 +126,10 @@ spec:
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
+            {{- end }}
+            {{- if and $emitOtelEndpoint $operatorHostIP }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "$(HOST_IP):4317"
             {{- end }}
           {{- end }}
           resources:

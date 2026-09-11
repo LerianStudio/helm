@@ -49,18 +49,50 @@ jobs:
         run: |
           set -euo pipefail
 
-          scope=""
-          for c in $(git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
-                       | awk -F/ '/^charts\/[^\/]+\// {print $2}' | sort -u); do
-            [ -d "charts/$c" ] || continue                                  # deleted chart
-            # A library chart renders nothing and has no images of its own. Parsed as
-            # YAML rather than grepped: `type: "library"` is equally valid and a
-            # pattern anchored on the bare word would put it in the matrix.
-            # Same check release.yml uses to spot lifecycle-exempt charts.
-            kind=$(python3 -c 'import yaml,sys; c=yaml.safe_load(open(sys.argv[1])) or {}; print(str(c.get("type","")).lower())' "charts/$c/Chart.yaml")
-            [ "$kind" = "library" ] && continue
-            scope="${scope:+$scope }$c"
-          done
+          # A library chart renders nothing and has no images of its own. Parsed as
+          # YAML rather than grepped: `type: "library"` is equally valid and a pattern
+          # anchored on the bare word would put such a chart in the matrix.
+          # Same check release.yml uses to spot lifecycle-exempt charts.
+          is_library() {
+            [ "$(python3 -c 'import yaml,sys; c=yaml.safe_load(open(sys.argv[1])) or {}; print(str(c.get("type","")).lower())' "$1")" = "library" ]
+          }
+          all_app_charts() {
+            for d in charts/*/; do
+              c="$(basename "$d")"
+              [ -f "charts/$c/Chart.yaml" ] || continue
+              is_library "charts/$c/Chart.yaml" && continue
+              printf '%s ' "$c"
+            done
+          }
+
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+
+          # A change to this workflow changes the verification itself, and a change to
+          # lerian-common changes what every dependent chart renders. Scoping either to
+          # "no chart changed" would let the gate report success having checked nothing
+          # — and since this is a required check, that green is the only evidence
+          # anyone looks at. This pull request is the case in point: it only adds this
+          # file, so under the previous logic the gate passed without verifying a
+          # single chart.
+          if grep -Eq '^(\.github/workflows/chart-image-refs\.yml|charts/lerian-common/)' <<< "$changed"; then
+            echo "::notice::Verification logic or the shared library changed — verifying every chart"
+            scope="$(all_app_charts)"
+          else
+            # Two sources of "this chart changed": its own directory, and the values
+            # file the gate renders it with.
+            scope=""
+            for c in $(
+              {
+                awk -F/ '/^charts\/[^\/]+\// {print $2}' <<< "$changed"
+                awk -F/ '/^\.github\/configs\/helm-render-values\/.+\.ya?ml$/ {
+                         sub(/\.ya?ml$/, "", $4); print $4 }' <<< "$changed"
+              } | sort -u
+            ); do
+              [ -d "charts/$c" ] || continue                                # deleted chart
+              is_library "charts/$c/Chart.yaml" && continue
+              scope="${scope:+$scope }$c"
+            done
+          fi
 
           if [ -z "$scope" ]; then
             echo "::notice::No installable chart changed — nothing to verify"

@@ -1,0 +1,24 @@
+{{- if and .Values.brCcs.enabled .Values.brCcs.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "br-ccs.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-ccs.labels" (dict "context" . "component" .Values.brCcs.name "name" .Values.brCcs.name ) | nindent 4 }}
+  {{- with .Values.brCcs.pdb.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- with .Values.brCcs.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.brCcs.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "br-ccs.selectorLabels" (dict "context" . "component" .Values.brCcs.name "name" .Values.brCcs.name ) | nindent 6 }}
+{{- end }}

@@ -61,7 +61,7 @@ jobs:
 
       - name: Verify referenced images exist
         id: refs
-        uses: LerianStudio/github-actions-shared-workflows/src/validate/helm-image-refs@develop
+        uses: LerianStudio/github-actions-shared-workflows/src/validate/helm-image-refs@fix/helm-image-refs-empty-json
         with:
           chart-path: charts/${{ matrix.chart }}
           values-file: .github/configs/helm-render-values/${{ matrix.chart }}.yaml

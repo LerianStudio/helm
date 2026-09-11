@@ -498,10 +498,16 @@ behavior unchanged).
 {{- $crmHost := include "lerian-common.datastore.value" (dict "context" $ctx "dedicated" $ded "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" "midaz-mongodb") -}}
 {{- $feesHost := include "lerian-common.datastore.value" (dict "context" $ctx "dedicated" $ded "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" "midaz-mongodb") -}}
 {{- $unset := list -}}
-{{- if eq $crmHost "midaz-mongodb" -}}{{- $unset = append $unset "CRM" -}}{{- end -}}
-{{- if eq $feesHost "midaz-mongodb" -}}{{- $unset = append $unset "Fees" -}}{{- end -}}
+{{- /* A host is unusable if, after trimming, it is empty, still the packaged
+       "midaz-mongodb" default, or contains whitespace (a real hostname never
+       does — this also catches a padded " midaz-mongodb " that would slip past
+       an equality check). */ -}}
+{{- $crmClean := $crmHost | toString | trim -}}
+{{- $feesClean := $feesHost | toString | trim -}}
+{{- if or (eq $crmClean "") (eq $crmClean "midaz-mongodb") (regexMatch "\\s" $crmClean) -}}{{- $unset = append $unset "CRM" -}}{{- end -}}
+{{- if or (eq $feesClean "") (eq $feesClean "midaz-mongodb") (regexMatch "\\s" $feesClean) -}}{{- $unset = append $unset "Fees" -}}{{- end -}}
 {{- if $unset -}}
-{{- fail (printf "\n\nmidaz: managed/external Mongo is selected (mongodb.enabled=false) but the %s Mongo host is not set.\nThe ledger still needs a reachable Mongo for CRM and Fees (they are folded into the ledger binary), and the ledger init container hard-gates on MONGO_CRM_HOST and MONGO_FEES_HOST regardless of crm.enabled. With the packaged Mongo disabled and no host override, these default to the packaged Service \"midaz-mongodb\" (which is not deployed), so the ledger pod CrashLoops after ledger.initContainer.timeoutSeconds (default 300s).\n\nSet the host(s) explicitly, e.g.:\n  --set global.datastores.mongoCrm.host=<your-mongo-host> --set global.datastores.mongoFees.host=<your-mongo-host>\nor per-component:\n  ledger.datastores.mongoCrm.host / ledger.datastores.mongoFees.host\nor as a native override:\n  ledger.configmap.MONGO_CRM_HOST / ledger.configmap.MONGO_FEES_HOST\n\nSee charts/midaz/docs/UPGRADE-9.1.md section 6 (Ledger CRM and Fees module integration).\n" (join " and " $unset)) -}}
+{{- fail (printf "\n\nmidaz: managed/external Mongo is selected (mongodb.enabled=false) but the %s Mongo host is empty, blank, or still the packaged \"midaz-mongodb\" default.\nThe ledger still needs a reachable Mongo for CRM and Fees (they are folded into the ledger binary), and the ledger init container hard-gates on MONGO_CRM_HOST and MONGO_FEES_HOST regardless of crm.enabled. With the packaged Mongo disabled and no host override, these default to the packaged Service \"midaz-mongodb\" (which is not deployed), so the ledger pod CrashLoops after ledger.initContainer.timeoutSeconds (default 300s).\n\nSet the host(s) explicitly, e.g.:\n  --set global.datastores.mongoCrm.host=<your-mongo-host> --set global.datastores.mongoFees.host=<your-mongo-host>\nor per-component:\n  ledger.datastores.mongoCrm.host / ledger.datastores.mongoFees.host\nor as a native override:\n  ledger.configmap.MONGO_CRM_HOST / ledger.configmap.MONGO_FEES_HOST\n\nSee charts/midaz/docs/UPGRADE-9.1.md section 6 (Ledger CRM and Fees module integration).\n" (join " and " $unset)) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

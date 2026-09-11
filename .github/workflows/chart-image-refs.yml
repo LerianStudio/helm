@@ -1,0 +1,280 @@
+name: Chart Image Refs
+
+# Blocks a pull request whose chart points at an image that does not exist.
+#
+# `helm lint` and the render gate prove a chart is well-formed; neither looks at
+# whether the images it renders were ever published. plugin-br-bank-transfer 2.0.1
+# shipped that way: the migrations tag is inherited from the app tag, so bumping the
+# app to 2.1.1 left the hook Job pointing at an image nobody built. The chart
+# rendered, linted and published clean, and failed on the first pull.
+#
+# The gate also runs in release.yml, immediately before the publish. This one exists
+# so the answer arrives on the bump PR instead of on the release that follows it.
+#
+# NO `paths:` FILTER, DELIBERATELY. This workflow is meant to be a required status
+# check, and a required check that does not run on every pull request leaves the
+# pull request pending forever — the merge box waits for a check that will never
+# report. So it runs on every pull request and decides the scope itself: when no
+# chart changed, `verify` is skipped and `Chart Image Refs` still reports success.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chart-image-refs-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # ----------------- Scope -----------------
+  scope:
+    name: Determine chart scope
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    outputs:
+      charts: ${{ steps.scope.outputs.charts }}
+      has-charts: ${{ steps.scope.outputs.has-charts }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine chart scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          scope=""
+          for c in $(git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
+                       | awk -F/ '/^charts\/[^/]+\// {print $2}' | sort -u); do
+            [ -d "charts/$c" ] || continue                                  # deleted chart
+            # A library chart renders nothing and has no images of its own.
+            grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "charts/$c/Chart.yaml" && continue
+            scope="${scope:+$scope }$c"
+          done
+
+          if [ -z "$scope" ]; then
+            echo "::notice::No installable chart changed — nothing to verify"
+            echo "charts=[]" >> "$GITHUB_OUTPUT"
+            echo "has-charts=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "::notice::Charts in scope: ${scope}"
+          printf 'charts=%s\n' "$(printf '%s\n' $scope | jq -Rsc 'split("\n") | map(select(length > 0))')" >> "$GITHUB_OUTPUT"
+          echo "has-charts=true" >> "$GITHUB_OUTPUT"
+
+  # ----------------- Verify -----------------
+  verify:
+    name: images (${{ matrix.chart }})
+    needs: scope
+    if: needs.scope.outputs.has-charts == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        chart: ${{ fromJson(needs.scope.outputs.charts) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+
+      # `docker manifest inspect` reads the Docker CLI credential store, which
+      # `helm registry login` does not write to. A pull request from a fork gets
+      # neither secret, so the logins are skipped there and unverifiable references
+      # are downgraded to a warning below — a fork must not be blocked by a
+      # credential it was never going to have.
+      - name: Log in to Docker Hub
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Log in to GitHub Container Registry
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: lerianstudio
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # continue-on-error so the report is written even when the gate trips: the
+      # explicit failure comes after, from the recorded verdict. Without this a
+      # missing image would fail the job here and the pull request comment would
+      # never say which chart or which image.
+      - name: Verify referenced images exist
+        id: refs
+        continue-on-error: true
+        uses: LerianStudio/github-actions-shared-workflows/src/validate/helm-image-refs@tier-2
+        with:
+          chart-path: charts/${{ matrix.chart }}
+          values-file: .github/configs/helm-render-values/${{ matrix.chart }}.yaml
+          on-unknown: ${{ github.event.pull_request.head.repo.fork && 'warn' || 'fail' }}
+
+      - name: Record the verdict
+        env:
+          CHART: ${{ matrix.chart }}
+          IMAGES: ${{ steps.refs.outputs.images }}
+          MISSING: ${{ steps.refs.outputs.missing }}
+          HAS_MISSING: ${{ steps.refs.outputs.has-missing }}
+          OUTCOME: ${{ steps.refs.outcome }}
+        run: |
+          set -euo pipefail
+          mkdir -p verdicts
+          jq -n \
+            --arg chart "$CHART" \
+            --arg outcome "$OUTCOME" \
+            --argjson images "${IMAGES:-[]}" \
+            --argjson missing "${MISSING:-[]}" \
+            --arg has_missing "${HAS_MISSING:-unknown}" \
+            '{chart: $chart, outcome: $outcome, images: $images, missing: $missing, has_missing: $has_missing}' \
+            > "verdicts/${CHART}.json"
+          cat "verdicts/${CHART}.json"
+
+      - name: Upload the verdict
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-refs-${{ matrix.chart }}
+          path: verdicts/
+          retention-days: 3
+
+      # The composite already annotated every absent reference. This turns the
+      # recorded verdict back into the job's own result, now that the report is safe.
+      - name: Fail when an image is missing
+        env:
+          CHART: ${{ matrix.chart }}
+          OUTCOME: ${{ steps.refs.outcome }}
+        run: |
+          [ "$OUTCOME" = "success" ] && exit 0
+          echo "::error::${CHART} references an image that does not exist — see the annotations above"
+          exit 1
+
+  # ----------------- Report -----------------
+  report:
+    name: Report to the pull request
+    needs: [scope, verify]
+    if: always() && needs.scope.outputs.has-charts == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Download every verdict
+        uses: actions/download-artifact@v4
+        with:
+          pattern: image-refs-*
+          path: verdicts
+          merge-multiple: true
+
+      - name: Comment the matrix on the pull request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const dir = 'verdicts';
+            const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.json')) : [];
+            if (files.length === 0) {
+              core.notice('No verdicts to report');
+              return;
+            }
+
+            const verdicts = files
+              .map(f => JSON.parse(fs.readFileSync(`${dir}/${f}`, 'utf8')))
+              .sort((a, b) => a.chart.localeCompare(b.chart));
+
+            const failed = verdicts.filter(v => v.outcome !== 'success');
+            const short = ref => ref.replace(/^docker\.io\/library\//, '').replace(/^docker\.io\//, '');
+
+            let body = '## Chart image references\n\n';
+            body += failed.length === 0
+              ? `Every image referenced by ${verdicts.length} chart(s) in this pull request exists in its registry.\n\n`
+              : `**${failed.length} of ${verdicts.length} chart(s) reference an image that does not exist.** `
+                + 'A chart published in this state installs into `ImagePullBackOff`.\n\n';
+
+            body += '| chart | verified | verdict |\n|---|---|---|\n';
+            for (const v of verdicts) {
+              const n = Array.isArray(v.images) ? v.images.length : 0;
+              const verdict = v.outcome === 'success'
+                ? 'all present'
+                : (Array.isArray(v.missing) && v.missing.length
+                    ? `**missing:** ${v.missing.map(r => '`' + short(r) + '`').join(', ')}`
+                    : '**could not verify** — see the run log');
+              body += `| \`${v.chart}\` | ${n} | ${verdict} |\n`;
+            }
+
+            body += '\n<details><summary>Every reference checked</summary>\n\n';
+            for (const v of verdicts) {
+              body += `**\`${v.chart}\`**\n\n`;
+              const imgs = Array.isArray(v.images) ? v.images : [];
+              body += imgs.length
+                ? imgs.map(r => {
+                    const gone = Array.isArray(v.missing) && v.missing.includes(r);
+                    return `- ${gone ? '❌' : '✅'} \`${short(r)}\``;
+                  }).join('\n') + '\n\n'
+                : '_no image references_\n\n';
+            }
+            body += '</details>\n\n';
+            body += 'Third-party subchart images are reported as skipped: they are not ours to publish, '
+                  + 'and checking them spends the anonymous registry rate limit.\n\n';
+
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            body += `---\n<sub>🖼️ [View full logs](${runUrl})</sub>\n`;
+
+            const marker = '<!-- chart-image-refs -->';
+            body = marker + '\n' + body;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find(c => c.body?.includes(marker));
+            const params = { owner: context.repo.owner, repo: context.repo.repo, body };
+
+            if (existing) {
+              await github.rest.issues.updateComment({ ...params, comment_id: existing.id });
+            } else {
+              await github.rest.issues.createComment({ ...params, issue_number: context.issue.number });
+            }
+
+  # ----------------- Gate -----------------
+  # The one stable check name for the ruleset. The matrix job's own names carry the
+  # chart in them and change from pull request to pull request, so they cannot be
+  # required. This job always runs and always reports: `skipped` upstream (no chart
+  # changed) counts as a pass, which is what keeps a docs-only pull request from
+  # waiting on a check that had nothing to do.
+  gate:
+    # This name is the required status check. Changing it silently detaches the
+    # ruleset, which then guards nothing.
+    name: Chart Image Refs
+    needs: [scope, verify]
+    if: always()
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      # Gated first, and separately: a scope job that died leaves `verify` skipped,
+      # and skipped counts as a pass. Without this the check would go green on a
+      # run that never looked at a single chart.
+      - name: Gate on the scope result
+        uses: LerianStudio/github-actions-shared-workflows/src/validate/result-gate@tier-2
+        with:
+          result: ${{ needs.scope.result }}
+          label: Chart scope detection
+
+      - name: Gate on the verification result
+        uses: LerianStudio/github-actions-shared-workflows/src/validate/result-gate@tier-2
+        with:
+          result: ${{ needs.verify.result }}
+          label: Chart image references

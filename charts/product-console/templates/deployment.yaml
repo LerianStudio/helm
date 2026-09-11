@@ -96,7 +96,7 @@ spec:
           livenessProbe:
             httpGet:
               path: {{ .Values.livenessProbe.path | default "/" }}
-              port: http
+              port: {{ .Values.livenessProbe.port | default "http" }}
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds | default 30 }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds | default 10 }}
             timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds | default 5 }}
@@ -105,7 +105,7 @@ spec:
           readinessProbe:
             httpGet:
               path: {{ .Values.readinessProbe.path | default "/api/admin/health/readyz" }}
-              port: http
+              port: {{ .Values.readinessProbe.port | default "http" }}
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds | default 5 }}
             timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds | default 3 }}

@@ -90,6 +90,27 @@ Secrets (sensitive):
 
 {{- end }}
 
+================================================================================
+  Readiness / MongoDB requirement (read before a fresh install)
+================================================================================
+
+  The readiness probe defaults to '/api/admin/health/readyz', which reports
+  Ready only after the application has connected to MongoDB. This requires an
+  application IMAGE that connects to MongoDB AT STARTUP.
+
+  Image builds that connect lazily (only on the first business request) will
+  DEADLOCK on a fresh install: the pod never receives traffic (not Ready), so
+  it never opens the connection, so it never becomes Ready.
+
+  - Use an app image that connects eagerly, OR one whose readiness endpoint
+    returns Ready before the Mongo connection is exercised.
+  - Do NOT repoint liveness at a Mongo-dependent or unverified endpoint. Keep
+    liveness on a path the image answers 200 independently of Mongo
+    (chart default: '/'). This is an application-image requirement, not a
+    chart setting.
+
+  See docs/UPGRADE-4.0.1.md for details.
+
 To customize configuration, override values in your values.yaml file.
 
 For more information, visit: https://docs.lerian.studio

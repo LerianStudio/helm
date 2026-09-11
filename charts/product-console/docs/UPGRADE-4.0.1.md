@@ -7,6 +7,8 @@
   - [1. Readiness probe path default corrected](#1-readiness-probe-path-default-corrected)
 - **[Configuration Changes](#configuration-changes)**
 - **[Migration Steps](#migration-steps)**
+- **[Operator note: readiness, MongoDB, and the application image](#operator-note-readiness-mongodb-and-the-application-image)**
+- **[Probe port is now configurable](#probe-port-is-now-configurable)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
@@ -105,6 +107,43 @@ readinessProbe:
 ```
 
 > **Warning:** Using `/` as the readiness path bypasses dependency health checks. This should only be used as a temporary workaround. Investigate and resolve the underlying health check failures instead.
+
+## Operator note: readiness, MongoDB, and the application image
+
+The readiness default `/api/admin/health/readyz` reports Ready only once the
+application has an established MongoDB connection. This is an
+**application-image requirement, not a chart setting** — the chart cannot make
+a lazily-connecting image become Ready.
+
+- The readiness endpoint requires the app image to **connect to MongoDB at
+  startup**. Image builds where the Mongo connection is opened lazily (only on
+  the first business request) will **deadlock on a fresh install**: the pod
+  never receives traffic because it is not Ready, so it never opens the
+  connection, so it never becomes Ready.
+- Operators must run an app image that either **connects to MongoDB eagerly at
+  startup**, or that **exposes a readiness endpoint returning Ready before the
+  Mongo connection is exercised**.
+- **Do not** repoint the liveness probe at a Mongo-dependent or unverified
+  health endpoint. Keep liveness on a path the image is known to answer with
+  `200` independently of MongoDB (the chart default is `/`). Pointing liveness
+  at a nonexistent endpoint would 404 and crash-loop the pod.
+
+If a fresh install hangs with the pod never becoming Ready, this is the app
+image's connection behavior — not the chart's probe configuration.
+
+## Probe port is now configurable
+
+The probe port previously rendered as the hardcoded `http` port name,
+silently ignoring `livenessProbe.port` / `readinessProbe.port`. Both probes
+now honor these values and **default to `http`**, so existing installs are
+unaffected.
+
+```yaml
+readinessProbe:
+  port: 8080   # optional; defaults to the container's "http" port name
+livenessProbe:
+  port: 8080   # optional; defaults to the container's "http" port name
+```
 
 ## Preview changes before upgrading
 

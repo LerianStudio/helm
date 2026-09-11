@@ -3,6 +3,20 @@
 ## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
 
 - **Features**
+  - Added upgrade guide for fetcher v3.1.0.
+
+- **Fixes**
+  - Updated fetcher-manager and fetcher-worker to version 3.1.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.0...fetcher-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
+
+- **Features**
   - Updated `fetcher-manager` and `fetcher-worker` to version 3.1.0.
 
 - **Fixes**

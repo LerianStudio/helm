@@ -92,9 +92,10 @@ enforces permissions only when the variable it reads is the word `true`:
 `PLUGIN_AUTH_ENABLED` on the server, `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` in the
 browser. Any other rendered value (`false`, empty, `1`, `TRUE`, `yes`) reads as
 OFF for that half: pages open without a permission check and upstream calls
-carry no bearer. `/api/**` also answers without a session unless `OAUTH_ENABLED`
-is the word `true`; that second switch keeps the session requirement but never
-enables permission checks or bearer forwarding.
+carry no bearer. `/api/**` requires a session when either `PLUGIN_AUTH_ENABLED`
+or `OAUTH_ENABLED` is the word `true`, and answers without one only when both
+are off; `OAUTH_ENABLED` alone keeps the session requirement but never enables
+permission checks or bearer forwarding.
 
 How this chart renders the two variables: the server value is
 `configmap.PLUGIN_AUTH_ENABLED` when set, else `global.auth.enabled`, else

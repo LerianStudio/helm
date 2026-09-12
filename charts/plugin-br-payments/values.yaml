@@ -283,6 +283,14 @@ app:
     BTG_CLIENT_ID: ""
     BTG_CLIENT_SECRET: ""
     BTG_WEBHOOK_SECRET: ""
+    # BTG webhook HMAC signing key (REQUIRED). Authenticates incoming BTG settlement
+    # webhooks: the plugin recomputes an HMAC-SHA256 over the raw request body under
+    # this key — there is no second factor. Must be at least 32 characters.
+    # NEVER reuse BTG_WEBHOOK_SECRET (the bearer token) as this value: the bearer
+    # travels in a request header on every delivery and survives in edge/WAF/APM
+    # logs, so reusing it here would let anyone who reads those logs forge
+    # indefinitely many signed settlement events.
+    BTG_WEBHOOK_HMAC_SECRET: ""
     # Internal cross-pod API (REQUIRED when SERVICE_TYPE includes worker, i.e. "both" or "worker").
     # Must be at least 32 characters. Generate with: openssl rand -hex 32
     INTERNAL_API_KEY: ""

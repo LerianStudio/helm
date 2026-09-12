@@ -3,6 +3,27 @@
 ## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
 
 - **Features:**
+  - Introduced the ability to declare the `reporter.events` exchange.
+  - Defaulted the Job to use the app broker credential.
+  
+- **Fixes:**
+  - Resolved an issue where a Vault reference was incorrectly validated as a hex key.
+  - Ensured that the service account token is not mounted.
+  - Passed topology labels through environment variables.
+
+- **Improvements:**
+  - Applied RabbitMQ topology per object at PreSync.
+  - Pinned the seccomp profile on the bootstrap Job.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features:**
   - Default the Job to the app broker credential.
   - Declare the `reporter.events` exchange.
 

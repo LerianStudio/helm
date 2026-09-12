@@ -87,6 +87,28 @@ always wins over the corresponding mask.
 | `global.observability.enabled` | `lerian-common.globalValue` | `configmap.ENABLE_TELEMETRY` |
 | `global.datastores.mongo.{uri,host,port,user,params}` | `lerian-common.datastore.value` | `configmap.MONGODB_URI` / `MONGO_HOST` / `MONGO_PORT` / `MONGODB_USER` / `MONGO_PARAMETERS` |
 
+**Authorization is OFF unless it is switched on explicitly.** The console
+enforces permissions only when the variable it reads is the word `true`:
+`PLUGIN_AUTH_ENABLED` on the server, `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` in the
+browser. Any other rendered value (`false`, empty, `1`, `TRUE`, `yes`) reads as
+OFF for that half: pages open without a permission check and upstream calls
+carry no bearer. `/api/**` requires a session when either `PLUGIN_AUTH_ENABLED`
+or `OAUTH_ENABLED` is the word `true`, and answers without one only when both
+are off; `OAUTH_ENABLED` alone keeps the session requirement but never enables
+permission checks or bearer forwarding.
+
+How this chart renders the two variables: the server value is
+`configmap.PLUGIN_AUTH_ENABLED` when set, else `global.auth.enabled`, else
+`false`. The browser value copies the server value while
+`configmap.NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` is unset or empty. A non-empty
+browser key is rendered as given and is never compared with the server value,
+so `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: "TRUE"` next to an enabled server yields
+server ON and browser OFF. Leave the browser key unset, or set both to the same
+word. A staging or production release MUST set `global.auth.enabled: true` (or
+the native key) on purpose; the console does not fail closed on a missing
+switch (product decision, 2026-09-12, recorded in the console repository's
+[`SECURITY.md`](https://github.com/LerianStudio/product-console/blob/develop/SECURITY.md)).
+
 `global.cloud: aws` also applies automatically (no chart change needed): it
 sets `MONGO_PARAMETERS` to the real DocumentDB connection-string shape
 (`tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&...`)

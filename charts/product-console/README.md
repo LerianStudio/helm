@@ -91,8 +91,10 @@ always wins over the corresponding mask.
 reads `PLUGIN_AUTH_ENABLED` (server) and `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED`
 (browser) and enforces permissions only when the value is the word `true`.
 Absent, empty, or any other spelling (`1`, `TRUE`, `yes`) reads as OFF on both
-sides: every page opens without a permission check, `/api/**` answers without
-a session, and upstream calls carry no bearer. This chart defaults the switch
+sides: every page opens without a permission check and upstream calls carry
+no bearer. `/api/**` also answers without a session unless `OAUTH_ENABLED` is
+the word `true`; that second switch keeps the session requirement but never
+enables permission checks or bearer forwarding. This chart defaults the switch
 to `false` when neither `global.auth.enabled` nor `configmap.PLUGIN_AUTH_ENABLED`
 is set. The browser twin follows the server value only while
 `configmap.NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` is unset or empty; a browser key

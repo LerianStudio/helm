@@ -87,6 +87,19 @@ always wins over the corresponding mask.
 | `global.observability.enabled` | `lerian-common.globalValue` | `configmap.ENABLE_TELEMETRY` |
 | `global.datastores.mongo.{uri,host,port,user,params}` | `lerian-common.datastore.value` | `configmap.MONGODB_URI` / `MONGO_HOST` / `MONGO_PORT` / `MONGODB_USER` / `MONGO_PARAMETERS` |
 
+**Authorization is OFF unless it is switched on explicitly.** The console
+reads `PLUGIN_AUTH_ENABLED` (server) and `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED`
+(browser) and enforces permissions only when the value is the word `true`.
+Absent, empty, or any other spelling (`1`, `TRUE`, `yes`) reads as OFF on both
+sides: every page opens without a permission check, `/api/**` answers without
+a session, and upstream calls carry no bearer. This chart defaults the switch
+to `false` when neither `global.auth.enabled` nor `configmap.PLUGIN_AUTH_ENABLED`
+is set, and renders the browser twin from the same value so the two halves
+cannot disagree. A staging or production release MUST set
+`global.auth.enabled: true` (or the native key) on purpose; the console does
+not fail closed on a missing switch (product decision, 2026-09-12, recorded in
+the console's `SECURITY.md`).
+
 `global.cloud: aws` also applies automatically (no chart change needed): it
 sets `MONGO_PARAMETERS` to the real DocumentDB connection-string shape
 (`tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&...`)

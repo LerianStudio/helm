@@ -94,11 +94,15 @@ Absent, empty, or any other spelling (`1`, `TRUE`, `yes`) reads as OFF on both
 sides: every page opens without a permission check, `/api/**` answers without
 a session, and upstream calls carry no bearer. This chart defaults the switch
 to `false` when neither `global.auth.enabled` nor `configmap.PLUGIN_AUTH_ENABLED`
-is set, and renders the browser twin from the same value so the two halves
-cannot disagree. A staging or production release MUST set
-`global.auth.enabled: true` (or the native key) on purpose; the console does
-not fail closed on a missing switch (product decision, 2026-09-12, recorded in
-the console's `SECURITY.md`).
+is set. The browser twin follows the server value only while
+`configmap.NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` is unset or empty; a browser key
+with its own string value wins on its own, so a release that sets it can put
+the two halves in opposite states. Leave the browser key unset, or set both to
+the same word.
+A staging or production release MUST set `global.auth.enabled: true` (or the
+native key) on purpose; the console does not fail closed on a missing switch
+(product decision, 2026-09-12, recorded in the console repository's
+[`SECURITY.md`](https://github.com/LerianStudio/product-console/blob/develop/SECURITY.md)).
 
 `global.cloud: aws` also applies automatically (no chart change needed): it
 sets `MONGO_PARAMETERS` to the real DocumentDB connection-string shape

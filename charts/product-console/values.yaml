@@ -41,9 +41,11 @@ global:
   # -- Env-wide Access Manager (plugin-auth) gate/host. Consumed by
   # lerian-common.globalValue (block "auth"). Fields: enabled, host.
   # (configmap.PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST override.)
-  # Unset means AUTHORIZATION OFF: the console only enforces permissions when
-  # the rendered value is the word "true". Set enabled: true explicitly on
-  # every staging/production release (see README, "Authorization is OFF").
+  # Precedence: configmap.PLUGIN_AUTH_ENABLED, then global.auth.enabled, then
+  # the chart default "false" (AUTHORIZATION OFF). The console only enforces
+  # permissions when the rendered value is the word "true". Set enabled: true
+  # explicitly on every staging/production release (see README, "Authorization
+  # is OFF").
   auth: {}
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
   # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)

@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-slc.fullname" . }}-signer
+  labels:
+    {{- include "br-slc.labels" . | nindent 4 }}
+data:
+  SIGNER_PKCS11_TOKEN_LABEL: {{ .Values.signer.pkcs11TokenLabel | quote }}
+  {{- /* SIGNER_SOFTKEY_PFX_PATH is DERIVED from the softkey mount, not an
+  independent knob. The signer registers the softkey adapter when — and only
+  when — this variable is non-empty, mirroring how the awskms, pkcs11 and vault
+  adapters each gate on their own config. So the path and the volume are two
+  faces of one fact: if no PFX is mounted, there is no path, and the adapter is
+  not registered.
+
+  Emitting a static path regardless of the mount is what made a KMS/Vault/HSM
+  custody tier register a softkey adapter pointed at a file nobody mounted — it
+  could never sign and, once /readyz reports per-adapter readiness, would report
+  down forever. Measured on sandbox and prd-st, which set no adapter at all and
+  still received /certs/signer.pfx.
+
+  An operator may still pin an explicit path in signer.configmap.data (a PFX
+  delivered by something other than softkeySecret — a CSI driver, an initContainer);
+  that wins. Pinning a path while softkeySecret is disabled AND nothing else
+  mounts it is the contradiction we cannot detect, so it is allowed and left to
+  the operator; pinning one with softkeySecret enabled is a conflict we CAN see,
+  and it fails the render rather than silently picking a winner. */}}
+  {{- $softkeyPath := .Values.signer.configmap.data.SIGNER_SOFTKEY_PFX_PATH | default "" }}
+  {{- if .Values.signer.softkeySecret.enabled }}
+  {{- $mounted := printf "%s/%s" (trimSuffix "/" .Values.signer.softkeySecret.mountPath) .Values.signer.softkeySecret.secretKey }}
+  {{- if and $softkeyPath (ne $softkeyPath $mounted) }}
+  {{- fail (printf "br-slc: signer.configmap.data.SIGNER_SOFTKEY_PFX_PATH is %q but signer.softkeySecret mounts the PFX at %q. They must agree, or leave the path empty and let the chart derive it from the mount." $softkeyPath $mounted) }}
+  {{- end }}
+  {{- $softkeyPath = $mounted }}
+  {{- end }}
+  SIGNER_SOFTKEY_PFX_PATH: {{ $softkeyPath | quote }}
+  {{- range $key, $value := .Values.signer.configmap.data }}
+  {{- if ne $key "SIGNER_SOFTKEY_PFX_PATH" }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}

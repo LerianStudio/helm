@@ -1,0 +1,102 @@
+# =============================================================================
+# br-slc — QUICKSTART values (the layperson layer)
+# -----------------------------------------------------------------------------
+# The full values.yaml is the power-user API. This file is the short list of
+# DEPENDENCY-CONNECTION knobs a non-expert fills to get br-slc running: where the
+# external Postgres/Redis/RabbitMQ live, the Access Manager URL, the image tag,
+# and the operator-provided secrets. Everything else has a working default in the
+# chart; reach it only via `configmap.data.<KEY>` (the escape hatch) when you must.
+#
+#   helm install br-slc charts/br-slc -f values-quickstart.yaml
+#
+# br-slc is a FLAT chart (app + signer + validator + optional mqbridge in ONE
+# pod), so the dependency knobs live at the TOP LEVEL — not under a component key.
+# Postgres/Redis/RabbitMQ are EXTERNAL/client-managed in BYOC (no bundled
+# subcharts): the host knobs below MUST point at your real endpoints.
+# Anything marked CHANGE_ME must be set.
+# =============================================================================
+
+# --- Dependency connections (typed masks / global.* — set what you use) ---
+global:
+  # -- External datastores. Postgres/Redis are REQUIRED (no bundled subcharts).
+  datastores:
+    postgres:
+      host: "CHANGE_ME"          # POSTGRES_HOST (e.g. pg.internal:5432 host part)
+      port: "5432"               # POSTGRES_PORT
+      user: "br-slc"             # POSTGRES_USER
+      name: "br-slc"             # POSTGRES_NAME (database)
+      ssl: "require"             # POSTGRES_SSLMODE
+    redis:
+      host: "CHANGE_ME"          # REDIS_HOST (host:port, e.g. redis.internal:6379)
+    # broker: only when you enable RabbitMQ (see configmap.data.RABBITMQ_ENABLED)
+    # broker:
+    #   host: "rabbitmq"         # RABBITMQ_HOST
+    #   port: "5672"             # RABBITMQ_PORT_AMQP
+    #   user: "guest"            # RABBITMQ_DEFAULT_USER
+  # -- Access Manager auth (fails closed at boot until host is set — enabled by default).
+  auth:
+    host: "CHANGE_ME"            # PLUGIN_AUTH_HOST (https in production)
+    # enabled: "true"            # PLUGIN_AUTH_ENABLED (default true)
+  # -- OTel collector (telemetry ON by default).
+  observability: {}
+    # otlpEndpoint: "otel-collector-lerian:4317"
+    # deploymentEnvironment: "production"
+  # -- Tenant-manager (only when multiTenant.enabled=true below).
+  multiTenant: {}
+    # url: "http://tenant-manager:8090"
+    # redisHost: "tenant-manager-redis"
+  # -- Streaming backend (only when streaming.enabled=true below).
+  streaming: {}
+    # brokers: "kafka-1:9092,kafka-2:9092"
+    # tlsEnabled: "true"
+    # saslMechanism: "SCRAM-SHA-512"
+    # saslUsername: "br-slc"
+
+# -- Enable env-wide features (each reads the matching global.* block above).
+multiTenant:
+  enabled: false                 # MULTI_TENANT_ENABLED (needs global.multiTenant + secret)
+streaming:
+  enabled: false                 # STREAMING_ENABLED (needs global.streaming.brokers)
+
+image:
+  tag: ""                        # -- pin the app/signer/validator/migrations image version
+
+# -- Ingress is OFF by default (BYOC reaches the app over cluster DNS).
+ingress:
+  enabled: false
+  # className: "nginx"
+  # hosts: [{ host: "br-slc.example.com", paths: [{ path: "/", pathType: Prefix }] }]
+
+# -- Common overrides go here by NATIVE env-var name (escape hatch).
+configmap:
+  data: {}
+    # CORS_ALLOWED_ORIGINS: "https://app.example.com"
+    # RABBITMQ_ENABLED: "true"     # then set global.datastores.broker + secrets.RABBITMQ_DEFAULT_PASS
+    # DEPLOYMENT_MODE: "saas"      # locks signing to awskms + hardens posture
+
+# -- Secrets. BYOC default references an existing Secret (create:false); set
+#    create:true to have the chart mint it from these values at install time.
+secrets:
+  create: true
+  data:
+    POSTGRES_PASSWORD: "CHANGE_ME"
+    REDIS_PASSWORD: ""             # set if your Redis requires auth
+    WEBHOOK_API_KEY: ""
+    WEBHOOK_HMAC_SECRET: ""
+    # License gateway (lib-license-go): REQUIRED in production (fail-closed at boot).
+    LICENSE_KEY: "CHANGE_ME"
+    ORGANIZATION_IDS: "CHANGE_ME"
+    # Only when the matching feature is enabled:
+    # RABBITMQ_DEFAULT_PASS: "CHANGE_ME"
+    # MULTI_TENANT_SERVICE_API_KEY: "CHANGE_ME"
+    # STREAMING_SASL_PASSWORD: "CHANGE_ME"
+
+# -- Signer needs key material before it can become Ready (softkey adapter default).
+signer:
+  softkeySecret:
+    enabled: false
+    # secretName: "br-slc-signer-softkey"   # holds signer.pfx
+  secrets:
+    create: true
+    data:
+      SIGNER_SOFTKEY_PFX_PASSPHRASE: "CHANGE_ME"

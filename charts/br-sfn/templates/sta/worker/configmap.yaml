@@ -1,0 +1,3 @@
+{{- if and $.Values.sta.enabled $.Values.sta.worker.enabled -}}
+{{ include "br-sfn.staWorkerConfigmap" (dict "root" $ "name" "sta-worker" "port" (($.Values.sta.worker.service | default dict).port | default 8081)) }}
+{{- end -}}

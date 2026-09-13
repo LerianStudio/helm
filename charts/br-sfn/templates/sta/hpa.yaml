@@ -1,0 +1,3 @@
+{{- if $.Values.sta.enabled -}}
+{{ include "br-sfn.componentHpa" (dict "root" $ "name" "sta" "comp" $.Values.sta) }}
+{{- end -}}

@@ -1,3 +1,6 @@
 {{- if $.Values.spb.enabled -}}
-{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "spb" "comp" $.Values.spb "flavor" "baked") }}
+{{- /* configDataOverride: resolve POSTGRES_* through the SAME datastore mask the app
+   ConfigMap uses, so an operator who sets spb.datastores.postgres migrates the SAME
+   host/db the app connects to (configured-path parity). */ -}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "spb" "comp" $.Values.spb "flavor" "baked" "configDataOverride" (include "br-sfn.spbConfigData" (dict "root" $ "comp" $.Values.spb "port" ($.Values.spb.service.port | default 3000)))) }}
 {{- end -}}

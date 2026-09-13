@@ -11,3 +11,4 @@ Chart.lock
 /.github/scripts/update-chart-version-readme-bin
 /.github/scripts/update-readme-matrix-bin
 docs/plans/
+charts/br-sfn/values-benedita.yaml

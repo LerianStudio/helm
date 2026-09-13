@@ -19,9 +19,60 @@ nameOverride: "br-sfn"
 fullnameOverride: ""
 namespaceOverride: ""
 
+# @section Global (shared across all components)
 global:
+  # -- Container image registry prefix shared by every component (umbrella-wide).
   imageRegistry: ""
+  # -- Image pull secrets shared by every component and migration Job (umbrella-wide).
   imagePullSecrets: []
+  # =============================================================================
+  # TIERED DEPENDENCY-CONNECTION SURFACE (env-wide masks / contracts).
+  # Set a connection ONCE here and every wired component emits its native env keys
+  # from it. Empty by default -> each component falls through to its own template
+  # default (render-identical to the un-productized chart). Per-component overrides
+  # live under `<component>.datastores`, and each component's `configmap.<KEY>`
+  # still wins over everything (the escape hatch). See values-quickstart.yaml.
+  #
+  # PILOT NOTE: `spi` and `spb` read these today (first lerian-common consumers).
+  # The remaining 6 rails are still bespoke escape-hatch and ignore global.* until
+  # migrated; the blocks are introduced now so those later passes just wire to them.
+  # =============================================================================
+  # -- Shared datastore masks. Keys per type: postgres / redis / broker (RabbitMQ).
+  # Each accepts host / port / user / name / ssl / replicaHost (spi uses postgres +
+  # redis; spb adds broker).
+  datastores: {}
+  # example (uncomment & fill; comments render nothing = default stays empty):
+  #   postgres: { host: "postgresql.internal", port: "5432", user: "brspi", name: "brspi", ssl: "require" }
+  #   redis:    { host: "valkey.internal:6379" }
+  #   broker:   { host: "rabbitmq.internal", port: "5672", user: "br_spb" }
+  # -- Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment.
+  observability: {}
+  #   enabled: "true"
+  #   otlpEndpoint: "otel-collector-lerian:4317"
+  #   deploymentEnvironment: "production"
+  # -- Env-wide auth (plugin-access-manager): enabled / host. Per-component override
+  # via `<component>.configmap.AUTH_ENABLED` / `PLUGIN_AUTH_ADDRESS`.
+  auth: {}
+  #   enabled: "true"
+  #   host: "https://plugin-access-manager:4000"
+  # -- Env-wide multi-tenant (tenant-manager). Read by scr (MULTI_TENANT_URL) via
+  # lerian-common.multiTenant.env; keys: url (+ redisHost/redisPort/redisTls for
+  # rails that emit the redis group). Per-component gate via configmap.MULTI_TENANT_ENABLED.
+  multiTenant: {}
+  #   url: "https://tenant-manager.internal"
+  # -- Env-wide service discovery (Consul). Reserved; no br-sfn component wires it yet.
+  serviceDiscovery: {}
+  # -- Env-wide streaming (lib-streaming / RedPanda). Reserved as a GAP: spi's settlement
+  # topics and scr's SCR_STREAMING_* are app-prefixed and do NOT match lib-streaming's
+  # canonical STREAMING_* env contract, so no component wires streaming.env yet.
+  streaming: {}
+  # -- Env-wide object storage (S3 / SeaweedFS), keyed by backend name. Read by
+  # correios (backend `default`) via lerian-common.objectStorage.value; fields:
+  # <name>.{endpoint,region,bucket,disableSSL,usePathStyle}. Credentials -> secrets.
+  objectStorage: {}
+  #   default: { endpoint: "https://s3.amazonaws.com", region: "us-east-1" }
+  # -- Env-wide KMS / Vault (envelope encryption). Reserved; spi custody is BACEN signer-kind, not this.
+  kms: {}
 
 # -- Default pull secret for every component and migration Job (single GHCR
 # credential). Override per component via <component>.imagePullSecrets.
@@ -62,6 +113,7 @@ migrateImage: migrate/migrate:v4.18.1
 # =============================================================================
 # spb — SPB/STR rail (TED). CGO + IBM MQ runtime (debian-based image).
 # =============================================================================
+# @section SPB (STR/TED rail over IBM MQ / RSFN)
 spb:
   enabled: false
   replicaCount: 1
@@ -80,10 +132,19 @@ spb:
     type: ClusterIP
     # Matches the Dockerfile EXPOSE 3000.
     port: 3000
-  # -- Emitted verbatim into the component ConfigMap.
+  # -- Dedicated datastore masks for SPB (Postgres + Redis + RabbitMQ). Overrides
+  # global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/name/
+  # ssl/replicaHost; redis: host/port; broker (RabbitMQ): host/port/user.
+  datastores: {}
+  #   postgres: { host: "spb-postgresql", port: "5432", user: "br_spb", name: "br_bank_transfer_jota", ssl: "verify-full" }
+  #   redis:    { host: "spb-valkey", port: "6379" }
+  #   broker:   { host: "spb-rabbitmq", port: "5672", user: "br_spb" }
+  # -- SPB ConfigMap escape hatch: set/override ANY native env KEY here (wins over
+  # the template default). Credentials NEVER go here — use secrets.
   configmap: {}
-  # -- Emitted verbatim into the component Secret (AVP <path:...> refs on
-  # gitops tiers). Use useExistingSecret/existingSecretName to bring your own.
+  # -- SPB Secret map (emit-when-set). Holds POSTGRES/REDIS/RABBITMQ/STR_MQ passwords,
+  # WEBHOOK_SECRET_KEY, STR_PAYLOAD_ENCRYPTION_KEY, SPB_KMIP_CRYPTO_USER_TOKEN, DEV_DEBUG_TOKEN.
+  # Use useExistingSecret/existingSecretName to bring your own.
   secrets: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -144,12 +205,25 @@ spb:
 # one image family, one Postgres, one Redis and RedPanda, plus a dedicated
 # migrator image (br-spi-migrations) that owns the module-ordered schema.
 # =============================================================================
+# @section SPI (Pix rail — 4 binaries: spi-api / spi-dict / spi-brcode / spi-core)
 spi:
+  # -- Deploy the SPI/Pix rail (all four sub-deployments).
   enabled: false
-  # Shared blocks for all four components; each component block below can
-  # override any of them.
+  # -- Dedicated datastore masks for the SPI family (one Postgres + one Redis shared
+  # by all four binaries). Overrides global.datastores; each configmap.<KEY> still wins.
+  # postgres accepts host/port/user/name/ssl/replicaHost; redis accepts host + port
+  # (composed into the combined REDIS_HOST as `<host>:<port>`, IPv6-bracketed).
+  datastores: {}
+  #   postgres: { host: "spi-postgresql", port: "5432", user: "brspi", name: "brspi", ssl: "require" }
+  #   redis:    { host: "spi-valkey", port: "6379" }
+  # -- SHARED ConfigMap escape hatch for all four binaries: set/override ANY native
+  # env KEY here (wins over the template default). Per-binary override via
+  # spi.<api|dict|brcode|core>.configmap.<KEY>. Credentials NEVER go here — use secrets.
   configmap: {}
+  # -- SHARED Secret map for all four binaries (emit-when-set; per-binary override via
+  # spi.<comp>.secrets). Holds POSTGRES_PASSWORD/REDIS_PASSWORD and the PII/crypto keys.
   secrets: {}
+  # -- Bring your own Secret instead of the chart-managed one (family-wide).
   useExistingSecret: false
   existingSecretName: ""
   api:
@@ -365,6 +439,7 @@ spi:
 # siloc — SILOC rail (card settlement files). CGO + IBM MQ runtime, with a
 # dedicated migrator image (br-siloc-migrations).
 # =============================================================================
+# @section SILOC (Núclea card settlement over IBM MQ)
 siloc:
   enabled: false
   replicaCount: 1
@@ -383,7 +458,18 @@ siloc:
     type: ClusterIP
     # Matches the Dockerfile EXPOSE 9820.
     port: 9820
+  # -- Dedicated datastore masks for SILOC (Postgres + Redis). Overrides
+  # global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/
+  # name/ssl/replicaHost (native DB_*); redis: host + port (native REDIS_ADDRESS,
+  # composed as `<host>:<port>`, IPv6-bracketed). The SAME postgres mask also feeds
+  # the migrator's POSTGRES_* (see migrations below).
+  datastores: {}
+  #   postgres: { host: "siloc-postgresql", port: "5432", user: "br_siloc", name: "br_siloc", ssl: "require" }
+  #   redis:    { host: "siloc-valkey:6379" }
+  # -- SILOC ConfigMap escape hatch: set/override ANY native env KEY (DB_*, MQ_*,
+  # SFN_*, ...); wins over the template default. Credentials NEVER go here — use secrets.
   configmap: {}
+  # -- SILOC Secret map (emit-when-set). Holds DB_PASSWORD, REDIS_PASSWORD.
   secrets: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -429,9 +515,12 @@ siloc:
       user: ""
       database: ""
       sslMode: ""
+    # The app's DB_PASSWORD secret is mapped into the migrator's POSTGRES_PASSWORD
+    # env: the mint reads this key from siloc.secrets and the Job binds it to
+    # POSTGRES_PASSWORD. Keep in sync with the app secret key (DB_PASSWORD).
     passwordSecret:
       name: ""
-      key: POSTGRES_PASSWORD
+      key: DB_PASSWORD
     imagePullSecrets: []
     backoffLimit: 3
     activeDeadlineSeconds: 600
@@ -442,6 +531,7 @@ siloc:
 # scr — SCR rail (credit information / wsscr2n). CGO-free alpine runtime;
 # migrations baked at /migrations with the schema_migrations_scr table.
 # =============================================================================
+# @section SCR (Sistema de Informações de Crédito — wsscr2n facade)
 scr:
   enabled: false
   replicaCount: 1
@@ -460,7 +550,19 @@ scr:
     type: ClusterIP
     # Matches the Dockerfile EXPOSE 3003 (config defaultServerPort).
     port: 3003
+  # -- Dedicated datastore masks for SCR (Postgres + Redis). Overrides
+  # global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/
+  # name/ssl (no replica); redis: host/port. The app and the baked migrator both
+  # read POSTGRES_*, so one mask feeds both.
+  datastores: {}
+  #   postgres: { host: "scr-postgresql", port: "5432", user: "scr", name: "scr", ssl: "require" }
+  #   redis:    { host: "scr-valkey", port: "6379" }
+  # -- SCR ConfigMap escape hatch: set/override ANY native env KEY (POSTGRES_*,
+  # SCR_STREAMING_*, SCR_WSSCR2N_*, SECRET_STORE_*, MULTI_TENANT_ENABLED/URL, ...);
+  # wins over the template default. Credentials NEVER go here — use secrets.
   configmap: {}
+  # -- SCR Secret map (emit-when-set). Holds POSTGRES_PASSWORD, REDIS_PASSWORD,
+  # MULTI_TENANT_SERVICE_API_KEY, SCR_WSSCR2N_BASIC_PASSWORD, and the SCR_ATREST_* PII keys.
   secrets: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -517,6 +619,7 @@ scr:
 # migrations baked at /migrations (default schema_migrations table — the desk
 # schema-readiness probe reads that exact name).
 # =============================================================================
+# @section DESK (cabine operator-state + four-eyes)
 desk:
   enabled: false
   replicaCount: 1
@@ -535,7 +638,18 @@ desk:
     type: ClusterIP
     # Matches the Dockerfile EXPOSE 3002 (config defaultServerPort).
     port: 3002
+  # -- Dedicated datastore mask for DESK (Postgres only; no Redis/replica).
+  # Overrides global.datastores; each configmap.<KEY> still wins. postgres:
+  # host/port/user/name/ssl (native DB_*). The app reads DB_*; the baked migrator
+  # reads POSTGRES_* — the same mask feeds both (see migrations passwordSecret).
+  datastores: {}
+  #   postgres: { host: "desk-postgresql", port: "5432", user: "desk", name: "desk", ssl: "require" }
+  # -- DESK ConfigMap escape hatch: set/override ANY native env KEY (DB_*, DESK_*,
+  # PLUGIN_ACCESS_MANAGER_URL/CLIENT_ID, ...); wins over the template default.
+  # Credentials NEVER go here — use secrets.
   configmap: {}
+  # -- DESK Secret map (emit-when-set). Holds DB_PASSWORD and the outbound M2M
+  # PLUGIN_ACCESS_MANAGER_CLIENT_SECRET.
   secrets: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -579,7 +693,8 @@ desk:
       sslMode: ""
     passwordSecret:
       name: ""
-      key: POSTGRES_PASSWORD
+      # desk app secret is DB_PASSWORD; mapped into the migrator's POSTGRES_PASSWORD env.
+      key: DB_PASSWORD
     imagePullSecrets: []
     backoffLimit: 3
     activeDeadlineSeconds: 600
@@ -600,6 +715,7 @@ desk:
 # reads POSTGRES_NAME (not POSTGRES_DB), which is why its Job passes
 # dbCfgKey=POSTGRES_NAME.
 # =============================================================================
+# @section CORREIOS (BC Correio regulatory mailbox)
 correios:
   enabled: false
   replicaCount: 1
@@ -618,7 +734,27 @@ correios:
     type: ClusterIP
     # Matches the Dockerfile EXPOSE 8080 (config.ServerPort default).
     port: 8080
+  # -- Dedicated datastore masks for CORREIOS. Overrides global.datastores; each
+  # configmap.<KEY> still wins. postgres: host/port/user/name/ssl (native db-name is
+  # POSTGRES_NAME; app + baked migrator both POSTGRES_*); redis: host + port (native
+  # CACHE_ADDR, composed as `<host>:<port>`, IPv6-bracketed). RabbitMQ is NOT masked —
+  # correios uses a full RABBITMQ_URL (a Secret).
+  datastores: {}
+  #   postgres: { host: "correios-postgresql", port: "5432", user: "plugin-bc-correios", name: "plugin-bc-correios", ssl: "require" }
+  #   redis:    { host: "correios-valkey", port: "6379" }
+  # -- Dedicated object-storage mask for CORREIOS (S3/SeaweedFS attachment store).
+  # Overrides global.objectStorage; backend name is `default`. Fields: endpoint/
+  # region/bucket/usePathStyle. Credentials (ACCESS_KEY/SECRET_KEY) -> secrets.
+  objectStorage: {}
+  #   default: { endpoint: "https://s3.amazonaws.com", region: "us-east-1", bucket: "bc-correios-attachments", usePathStyle: "false" }
+  # -- CORREIOS ConfigMap escape hatch: set/override ANY native env KEY (POSTGRES_*,
+  # CACHE_*, OBJECT_STORAGE_*, MULTI_TENANT_*, AI_*, BC_CORREIO_*, ...); wins over the
+  # template default. Credentials NEVER go here — use secrets.
   configmap: {}
+  # -- CORREIOS Secret map (emit-when-set). Holds POSTGRES_PASSWORD, CACHE_PASSWORD,
+  # RABBITMQ_URL (embeds creds) + RABBITMQ_PASS, OBJECT_STORAGE_ACCESS_KEY/SECRET_KEY,
+  # ENCRYPTION_KEY, LICENSE_KEY, PLUGIN_AUTH_CLIENT_SECRET,
+  # MULTI_TENANT_SERVICE_API_KEY, MULTI_TENANT_REDIS_PASSWORD.
   secrets: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -674,6 +810,7 @@ correios:
 # slcEdge — Cabine SLC authenticated passthrough edge (br-slc-edge). Stateless:
 # no datastore, no migrations. Renders as "slc-edge" resources.
 # =============================================================================
+# @section SLC-EDGE (Cabine SLC authenticated passthrough edge)
 slcEdge:
   enabled: false
   replicaCount: 1
@@ -692,7 +829,15 @@ slcEdge:
     type: ClusterIP
     # Matches the Dockerfile EXPOSE 3005 (config defaultServerPort).
     port: 3005
+  # -- STATELESS edge: no datastore/broker/auth of its own (it relays the inbound
+  # bearer to the br-slc core). No `datastores` block. SLC_UPSTREAM_URL is the
+  # br-slc core address — a plain inter-service passthrough URL (br-slc is NOT a
+  # component of this chart, so it cannot be derived); set it in configmap below.
+  # -- SLC-EDGE ConfigMap escape hatch: set/override ANY native env KEY
+  # (SLC_UPSTREAM_URL, SLC_*_TIMEOUT, SLC_EDGE_CORS_ALLOWED_ORIGINS, ...).
   configmap: {}
+  # -- SLC-EDGE has NO secrets (it forwards the caller's Authorization header
+  # verbatim; it holds no credential). Kept for the escape-hatch contract.
   secrets: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -726,11 +871,189 @@ slcEdge:
   tolerations: []
 
 # =============================================================================
-# cockpit — the br-sfn operations SPA (nginx-unprivileged serving the Vite
-# bundle). VITE_* URLs are BAKED at image build time; the published baseline
-# image carries honest-degrade defaults, so environments that need real URLs
-# build/pin an environment-specific image. No configmap/secrets by default.
+# sta — STA rail (Sistema de Transferência de Arquivos, br-sta). MANAGER (HTTP API)
+# + optional WORKER (background jobs: audit outbox pub/consumer, leader-gated
+# scheduler, credential-recovery, inbound poll). Migrated from the standalone
+# br-sta chart; the bundled Postgres/Valkey/RabbitMQ subcharts + bootstrap-postgres
+# were DROPPED (br-sfn is external-infra only). App + dedicated migrator both read
+# POSTGRES_* (db-name is POSTGRES_NAME). Manager + worker SHARE sta.configmap/secrets.
 # =============================================================================
+# @section STA (Sistema de Transferência de Arquivos — manager + worker)
+sta:
+  # -- Deploy the STA rail (manager; worker is opt-in via sta.worker.enabled).
+  enabled: false
+  # -- Dedicated datastore masks for STA (Postgres + Redis + RabbitMQ). Overrides
+  # global.datastores; each configmap.<KEY> still wins. postgres: host/port/user/
+  # name/ssl/replicaHost (db-name is POSTGRES_NAME); redis: host + port (combined
+  # REDIS_HOST, composed `<host>:<port>`); broker (RabbitMQ): host/port/user.
+  datastores: {}
+  #   postgres: { host: "sta-postgresql", port: "5432", user: "br_sta", name: "br_sta", ssl: "require" }
+  #   redis:    { host: "sta-valkey", port: "6379" }
+  #   broker:   { host: "sta-rabbitmq", port: "5672", user: "br_sta" }
+  # -- Multi-tenancy toggle (grouped API for MULTI_TENANT_ENABLED). URL + redis infra
+  # from global.multiTenant. Precedence: configmap.MULTI_TENANT_ENABLED > sta.multiTenant.enabled.
+  multiTenant:
+    enabled: false
+  # -- Service discovery toggle (SD_ENABLED). SD_TOKEN (ACL) is a Secret.
+  serviceDiscovery:
+    enabled: false
+  # -- Streaming toggle (STREAMING_ENABLED). STREAMING_SASL_PASSWORD is a Secret.
+  streaming:
+    enabled: false
+  # -- SHARED ConfigMap escape hatch (manager + worker): set/override ANY native env KEY
+  # (POSTGRES_*, RABBITMQ_*, TRUST_STORE_S3_*, OUTBOX_*, AUDIT_*, ...); wins over the
+  # template default. Credentials NEVER go here — use secrets.
+  configmap: {}
+  # -- SHARED Secret map (emit-when-set; manager + worker). Holds POSTGRES_PASSWORD,
+  # REDIS_PASSWORD, RABBITMQ_DEFAULT_PASS/RABBITMQ_URL, MULTI_TENANT_SERVICE_API_KEY,
+  # MULTI_TENANT_REDIS_PASSWORD, MASTER_KEYS, AWS_SECRET_ACCESS_KEY, SD_TOKEN,
+  # STREAMING_SASL_PASSWORD.
+  secrets: {}
+  useExistingSecret: false
+  existingSecretName: ""
+  replicaCount: 2
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sta
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  service:
+    type: ClusterIP
+    # Matches the app SERVER_ADDRESS default (0.0.0.0:8080).
+    port: 8080
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  # Both probes hit /health (br-sta serves readiness+liveness there).
+  livenessProbe: {}
+  readinessProbe: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  pdb:
+    enabled: false
+    minAvailable: 1
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  # PreSync migration Job — DEDICATED br-sta-migrations image (reads POSTGRES_NAME +
+  # MIGRATIONS_PATH). Its POSTGRES_* resolve through the SAME datastore mask the app uses.
+  migrations:
+    enabled: true
+    image:
+      repository: ghcr.io/lerianstudio/br-sta-migrations
+      tag: ""
+      pullPolicy: IfNotPresent
+    # Path the runner reads (image bundles SQL at /migrations).
+    path: /migrations
+    # Set true only for a non-TLS external Postgres (lib-commons migrator bypass).
+    allowInsecureTLS: false
+    postgres:
+      host: ""
+      port: ""
+      user: ""
+      database: ""
+      sslMode: ""
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+    imagePullSecrets: []
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 600
+    resources: {}
+  # -- WORKER sub-deployment (background jobs). Opt-in; REQUIRES a dedicated worker
+  # image (cmd/worker). Shares sta.configmap/secrets via envFrom + layers worker-only
+  # keys. Leader-gated with NO leader election yet — keep replicaCount 1, no HPA.
+  worker:
+    enabled: false
+    replicaCount: 1
+    revisionHistoryLimit: 10
+    image:
+      repository: ""
+      tag: ""
+      pullPolicy: IfNotPresent
+    imagePullSecrets: []
+    command:
+      - /service
+    terminationGracePeriodSeconds: 60
+    securityContext: {}
+    deploymentStrategy:
+      type: Recreate
+    service:
+      # Probe-server bind only (WorkerMode); no Service/Ingress created.
+      port: 8081
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    livenessProbe: {}
+    readinessProbe: {}
+    podAnnotations: {}
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+    # -- Worker-only env, layered on the manager ConfigMap (worker keys win).
+    configmap:
+      OTEL_RESOURCE_SERVICE_NAME: "br-sta-worker"
+      SCHEDULER_ENABLED: "true"
+      CREDENTIALS_RECOVERY_ON_BOOT: "true"
+      AUDIT_PUBLISHER_ENABLED: "true"
+      AUDIT_PUBLISHER_INTERVAL_SEC: "2"
+      AUDIT_PUBLISHER_BATCH_SIZE: "100"
+      AUDIT_PUBLISHER_MAX_ATTEMPTS: "10"
+      AUDIT_PUBLISHER_EXCHANGE: "sta.audit.events"
+      AUDIT_PUBLISHER_LOCK_CLASS_ID: "7700"
+      AUDIT_PUBLISHER_SERVICE_NAME: "br-sta-worker"
+      AUDIT_CONSUMER_ENABLED: "true"
+      AUDIT_CONSUMER_QUEUE: "br-sta.audit.consume"
+      AUDIT_CONSUMER_EXCHANGE: "sta.audit.events"
+      AUDIT_CONSUMER_DEDUP_TTL_SEC: "5"
+      AUDIT_CONSUMER_LOCK_CLASS_ID: "7701"
+      AUDIT_CONSUMER_MAX_RETRY_ATTEMPTS: "10"
+      AUDIT_CONSUMER_DLQ_EXCHANGE: "sta.audit.dlq"
+      AUDIT_CONSUMER_SERVICE_NAME: "br-sta-worker"
+    extraEnvVars: []
+
+# =============================================================================
+# cockpit — the br-sfn operations SPA (nginx-unprivileged serving the Vite
+# bundle). BUILD-ARG-ONLY: every VITE_* (auth/identity/rail URLs, FI ISPB,
+# floors) is inlined by `vite build` at IMAGE BUILD time (Dockerfile ARG->ENV);
+# the image ships NO runtime-config injection (no entrypoint envsubst, no
+# config.js) — confirmed in cockpit/.env.example + cockpit/deploy/nginx.conf.
+# So cockpit has NO runtime config surface to productize: there are zero typed
+# knobs, zero datastores, zero secrets, and zero runtime observability env. The
+# configmap/secrets maps below stay ONLY as the standard escape-hatch contract
+# (left OPEN — no propertyNames.enum — since there is no runtime env vocabulary
+# to allowlist; a future one-image runtime-config variant would add keys here).
+# Environments that need real URLs build/pin an environment-specific image via
+# `docker build` build-args (VITE_*=...) — out of chart scope.
+# =============================================================================
+# @section Cockpit (operations SPA — build-arg-only)
 cockpit:
   enabled: false
   replicaCount: 1
@@ -749,6 +1072,10 @@ cockpit:
     type: ClusterIP
     # Matches nginx-unprivileged EXPOSE 8080.
     port: 8080
+  # -- BUILD-ARG-ONLY rail: no runtime env. These stay as the OPEN escape-hatch
+  # contract (no schema enum) — the SPA reads no runtime env; VITE_* are image
+  # build args. Only set configmap here if a future runtime-config image variant
+  # introduces runtime keys.
   configmap: {}
   secrets: {}
   useExistingSecret: false

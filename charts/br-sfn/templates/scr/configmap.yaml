@@ -1,3 +1,3 @@
 {{- if $.Values.scr.enabled -}}
-{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "scr" "comp" $.Values.scr) }}
+{{ include "br-sfn.scrConfigmap" (dict "root" $ "name" "scr" "comp" $.Values.scr "port" ($.Values.scr.service.port | default 3003)) }}
 {{- end -}}

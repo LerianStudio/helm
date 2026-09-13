@@ -1,3 +1,8 @@
 {{- if $.Values.siloc.enabled -}}
-{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "siloc" "comp" $.Values.siloc "flavor" "dedicated") }}
+{{- /* The dedicated br-siloc-migrations image consumes POSTGRES_* (+ POSTGRES_PASSWORD);
+   the app consumes DB_* / DB_PASSWORD. silocMigrationConfig maps the SAME postgres
+   datastore mask (nativeKey DB_*) to POSTGRES_* so ONE operator mask feeds both, and
+   siloc.migrations.passwordSecret.key=DB_PASSWORD maps the app's DB_PASSWORD secret
+   into the migrator's POSTGRES_PASSWORD env. */ -}}
+{{ include "br-sfn.componentMigrationJob" (dict "root" $ "name" "siloc" "comp" $.Values.siloc "flavor" "dedicated" "configDataOverride" (include "br-sfn.silocMigrationConfig" (dict "root" $))) }}
 {{- end -}}

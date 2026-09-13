@@ -1,9 +1,12 @@
 {{- if $.Values.spi.enabled -}}
-{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spi-api" "comp" $.Values.spi.api "shared" $.Values.spi.configmap "sharedCfg" $.Values.spi "defaultPort" 9800 "livenessPath" "/health" "readyPath" "/readyz") }}
+{{- /* Each sub-deployment shares the productized SPI ConfigMap surface (defaults +
+   dependency masks). Pass the SAME rendered body as configDataOverride so envFrom
+   always wires the ConfigMap and checksum/config tracks the real rendered content. */ -}}
+{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spi-api" "comp" $.Values.spi.api "shared" $.Values.spi.configmap "sharedCfg" $.Values.spi "defaultPort" 9800 "livenessPath" "/health" "readyPath" "/readyz" "configDataOverride" (include "br-sfn.spiConfigData" (dict "root" $ "comp" $.Values.spi.api "port" ($.Values.spi.api.service.port | default 9800) "svcName" "pix-spi"))) }}
 ---
-{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spi-dict" "comp" $.Values.spi.dict "shared" $.Values.spi.configmap "sharedCfg" $.Values.spi "defaultPort" 9801 "livenessPath" "/health" "readyPath" "/readyz") }}
+{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spi-dict" "comp" $.Values.spi.dict "shared" $.Values.spi.configmap "sharedCfg" $.Values.spi "defaultPort" 9801 "livenessPath" "/health" "readyPath" "/readyz" "configDataOverride" (include "br-sfn.spiConfigData" (dict "root" $ "comp" $.Values.spi.dict "port" ($.Values.spi.dict.service.port | default 9801) "svcName" "pix-dict"))) }}
 ---
-{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spi-brcode" "comp" $.Values.spi.brcode "shared" $.Values.spi.configmap "sharedCfg" $.Values.spi "defaultPort" 9802 "livenessPath" "/health" "readyPath" "/readyz") }}
+{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spi-brcode" "comp" $.Values.spi.brcode "shared" $.Values.spi.configmap "sharedCfg" $.Values.spi "defaultPort" 9802 "livenessPath" "/health" "readyPath" "/readyz" "configDataOverride" (include "br-sfn.spiConfigData" (dict "root" $ "comp" $.Values.spi.brcode "port" ($.Values.spi.brcode.service.port | default 9802) "svcName" "pix-brcode"))) }}
 ---
-{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spi-core" "comp" $.Values.spi.core "shared" $.Values.spi.configmap "sharedCfg" $.Values.spi "defaultPort" 9803 "livenessPath" "/health" "readyPath" "/readyz") }}
+{{ include "br-sfn.componentDeployment" (dict "root" $ "name" "spi-core" "comp" $.Values.spi.core "shared" $.Values.spi.configmap "sharedCfg" $.Values.spi "defaultPort" 9803 "livenessPath" "/health" "readyPath" "/readyz" "configDataOverride" (include "br-sfn.spiConfigData" (dict "root" $ "comp" $.Values.spi.core "port" ($.Values.spi.core.service.port | default 9803) "svcName" "pix-core"))) }}
 {{- end -}}

@@ -1,0 +1,181 @@
+{{- if .Values.brCcs.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "br-ccs.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-ccs.labels" (dict "context" . "component" .Values.brCcs.name "name" .Values.brCcs.name ) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.brCcs.revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ .Values.brCcs.deploymentUpdate.type }}
+    {{- if eq .Values.brCcs.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.brCcs.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.brCcs.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not .Values.brCcs.autoscaling.enabled }}
+  replicas: {{ .Values.brCcs.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "br-ccs.selectorLabels" (dict "context" . "name" .Values.brCcs.name ) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.brCcs.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "br-ccs.labels" (dict "context" . "component" .Values.brCcs.name "name" .Values.brCcs.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.brCcs.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "br-ccs.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.brCcs.podSecurityContext | nindent 8 }}
+      # br-ccs connects to PostgreSQL (control-plane) and Redis/Valkey at boot in
+      # both single-tenant and hybrid multi-tenant modes, so the dependency wait
+      # gate always runs.
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.37
+          envFrom:
+          - configMapRef:
+              name: {{ include "br-ccs.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              MAX_ATTEMPTS=60
+              SLEEP_SECONDS=5
+              # Total timeout: 60 * 5 = 300 seconds (5 minutes)
+
+              wait_for_service() {
+                local HOST="$1"
+                local PORT="$2"
+                local ATTEMPTS=0
+                echo "Checking $HOST:$PORT..."
+                while ! nc -z "$HOST" "$PORT"; do
+                  ATTEMPTS=$((ATTEMPTS + 1))
+                  if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
+                    echo "Timeout waiting for $HOST:$PORT after $((MAX_ATTEMPTS * SLEEP_SECONDS)) seconds"
+                    exit 1
+                  fi
+                  echo "$HOST:$PORT is not ready yet, waiting... (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+                  sleep $SLEEP_SECONDS
+                done
+                echo "$HOST:$PORT is ready!"
+              }
+
+              # Wait for PostgreSQL
+              wait_for_service "$POSTGRES_HOST" "$POSTGRES_PORT"
+
+              # Wait for Redis/Valkey (REDIS_HOST is host:port)
+              REDIS_SVC=$(echo "$REDIS_HOST" | cut -d: -f1)
+              REDIS_PORT_NUM=$(echo "$REDIS_HOST" | cut -d: -f2)
+              wait_for_service "$REDIS_SVC" "$REDIS_PORT_NUM"
+
+              echo "All dependencies are ready!"
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        - name: {{ include "br-ccs.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.brCcs.securityContext | nindent 12 }}
+          image: "{{ .Values.brCcs.image.repository }}:{{ .Values.brCcs.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.brCcs.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ if .Values.brCcs.useExistingSecret }}{{ required "brCcs.existingSecretName is required when brCcs.useExistingSecret is true" .Values.brCcs.existingSecretName }}{{ else }}{{ include "br-ccs.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "br-ccs.fullname" . }}
+          env:
+          {{- $secretName := ternary .Values.brCcs.existingSecretName (include "br-ccs.fullname" .) .Values.brCcs.useExistingSecret }}
+          {{- $pg := .Values.postgresql | default dict }}
+          {{- $pgAuth := $pg.auth | default dict }}
+          {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+          {{- include "br-ccs.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
+          {{- else if .Values.brCcs.secrets.POSTGRES_PASSWORD }}
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $secretName }}
+                key: POSTGRES_PASSWORD
+          {{- end }}
+          {{- $vk := .Values.valkey | default dict }}
+          {{- $vkAuth := $vk.auth | default dict }}
+          {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+          {{- include "br-ccs.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 10 }}
+          {{- else if .Values.brCcs.secrets.REDIS_PASSWORD }}
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $secretName }}
+                key: REDIS_PASSWORD
+          {{- end }}
+          {{- if eq (toString .Values.brCcs.configmap.ENABLE_TELEMETRY) "true" }}
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "POD_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          - name: "OTEL_RESOURCE_ATTRIBUTES"
+            value: "k8s.pod.ip=$(POD_IP)"
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 4030
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.brCcs.livenessProbe.path | default "/health" }}
+              port: http
+            initialDelaySeconds: {{ .Values.brCcs.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.brCcs.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ .Values.brCcs.livenessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.brCcs.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.brCcs.livenessProbe.failureThreshold | default 3 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.brCcs.readinessProbe.path | default "/readyz" }}
+              port: http
+            initialDelaySeconds: {{ .Values.brCcs.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.brCcs.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.brCcs.readinessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.brCcs.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.brCcs.readinessProbe.failureThreshold | default 3 }}
+          resources:
+            {{- toYaml .Values.brCcs.resources | nindent 12 }}
+      {{- with .Values.brCcs.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.brCcs.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.brCcs.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.brCcs.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

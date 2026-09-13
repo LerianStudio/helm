@@ -20,7 +20,6 @@ fullnameOverride: ""
 namespaceOverride: ""
 
 global:
-  imageRegistry: ""
   imagePullSecrets: []
 
 # -- Default pull secret for every component and migration Job (single GHCR

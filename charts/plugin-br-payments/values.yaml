@@ -183,9 +183,21 @@ app:
     ACCESS_CONTROL_ALLOW_HEADERS: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
     ACCESS_CONTROL_EXPOSE_HEADERS: ""
     ACCESS_CONTROL_ALLOW_CREDENTIALS: "false"
-    # Multi-Tenancy (database-per-tenant via tenant-manager)
-    # When enabled, MULTI_TENANT_MANAGER_URL and MULTI_TENANT_SERVICE_API_KEY become required.
-    MULTI_TENANCY_ENABLED: "false"
+    # Multi-Tenancy (database-per-tenant via tenant-manager).
+    #
+    # ⛔ DELIBERATELY NOT SET, AND NOT AS TIDINESS. Set it in your overlay:
+    #   MULTI_TENANT_ENABLED: "true"
+    # When on, MULTI_TENANT_MANAGER_URL and MULTI_TENANT_SERVICE_API_KEY become
+    # required; off is the app's own default.
+    #
+    # This line used to read MULTI_TENANCY_ENABLED: "false" — the app's DEPRECATED
+    # spelling. Shipping a value for EITHER name here is unsafe. The app's
+    # reconciliation asks bare os.LookupEnv for the canonical MULTI_TENANT_ENABLED,
+    # and the ConfigMap template renders every key in app.configmap including empty
+    # strings, so a chart default makes the canonical name "set" — after which an
+    # overlay still saying MULTI_TENANCY_ENABLED=true is NOT adopted and the
+    # deployment silently runs SINGLE-TENANT. Declaring nothing is what keeps both
+    # spellings working in overlays.
     MULTI_TENANT_MANAGER_URL: ""
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
     MULTI_TENANT_POSTGRES_MODULE: ""
@@ -195,6 +207,14 @@ app:
     MULTI_TENANT_CB_THRESHOLD: "5"
     MULTI_TENANT_CB_TIMEOUT_SEC: "30"
     MULTI_TENANT_MAX_TENANT_POOLS: "100"
+    # Where per-tenant provider credentials are read from: "tenant_manager"
+    # (default) or "vault" (AWS Secrets Manager, read directly). The default is
+    # deliberately the Tenant-Manager route — the IAM policy the vault path needs
+    # lives in the deployment repository, so defaulting to "vault" would ship a
+    # service that resolves no tenant at all. A vault client that cannot be built
+    # falls back to the Tenant-Manager route with a WARN rather than failing the
+    # boot. Only consulted when multi-tenancy is enabled.
+    MULTI_TENANT_CREDENTIAL_SOURCE: "tenant_manager"
     # PostgreSQL Primary (host defaults to {Release.Name}-postgresql-primary)
     POSTGRES_HOST: ""  # Empty -> dynamic default in configmap template
     POSTGRES_PORT: "5432"
@@ -221,12 +241,23 @@ app:
     OUTBOX_TABLE_NAME: "outbox_events"
     OUTBOX_DISPATCH_INTERVAL_SEC: "2"
     OUTBOX_BATCH_SIZE: "50"
-    OUTBOX_PUBLISH_MAX_ATTEMPTS: "3"
     OUTBOX_PUBLISH_BACKOFF_MS: "200"
-    OUTBOX_RETRY_WINDOW_SEC: "300"
     OUTBOX_MAX_DISPATCH_ATTEMPTS: "10"
-    OUTBOX_PROCESSING_TIMEOUT_SEC: "600"
     OUTBOX_MAX_FAILED_PER_BATCH: "25"
+    # OUTBOX_PUBLISH_MAX_ATTEMPTS, OUTBOX_RETRY_WINDOW_SEC and
+    # OUTBOX_PROCESSING_TIMEOUT_SEC are deliberately NOT set here. Do not add
+    # them back with literal values.
+    #
+    # They are not independent knobs. The app derives a handler deadline from
+    # them and asserts at startup that handler + retry + dispatch interval stays
+    # strictly below the window in which the Midaz ledger still recognizes a
+    # replayed idempotency key — past it, a retried commit can stop being a
+    # replay and become a second financial effect, so the app refuses to boot.
+    # That arithmetic is owned by the application and pinned in a build-time
+    # test; restating it here is a second source of truth that rots silently.
+    # Omitted, the deployment inherits the validated defaults. Override per
+    # environment via app.extraEnvVars if needed — a bad override fails fast at
+    # startup with the offending budgets named.
     OUTBOX_INCLUDE_TENANT_METRICS: "false"
     OUTBOX_ALLOW_EMPTY_TENANT: "true"
     # Circuit Breaker
@@ -237,12 +268,32 @@ app:
     # BTG Provider Integration (REQUIRED - validated by helper)
     BTG_API_BASE_URL: ""
     BTG_AUTH_URL: ""
-    BTG_TOKEN_REFRESH_INTERVAL: "1h"
-    # Midaz Ledger URLs (REQUIRED for production - validated by helper)
-    MIDAZ_ONBOARDING_URL: ""
-    MIDAZ_TRANSACTION_URL: ""
+    # The /cm plane, used for provider-account discovery (GET /cm/account). NOT
+    # required and NOT validated: with it unset the app still connects, logs a WARN
+    # naming the variable, and answers account_verified:false on
+    # POST /v1/admin/providers/connect — a gap that announces itself in the response
+    # rather than refusing the boot. Declared here so it is discoverable; leave it
+    # empty to keep that behaviour.
+    BTG_COMMON_BASE_URL: ""
+    # ⚠️ WAS "1h", WHICH THE APP SILENTLY CLAMPED TO 4m. The provider access token
+    # has a 20-minute TTL and the worker renews at 80% of it, so
+    # providerclient.ClampTokenRefreshInterval caps this at MaxTokenRefreshInterval
+    # = 4m; an operator reading "1h" here was reading a value 15x larger than the
+    # one in force. 4m is that ceiling and therefore the value every deployment is
+    # already running — this line removes the lie without changing behaviour. The
+    # app's own default is 2m (MaxTokenRefreshInterval / 2), which leaves more margin
+    # before a 16-minute renewal point; moving to it is a separate call.
+    BTG_TOKEN_REFRESH_INTERVAL: "4m"
+    # Midaz Ledger URL (REQUIRED for production - validated by helper).
+    # Single Ledger plane URL; the deprecated MIDAZ_ONBOARDING_URL +
+    # MIDAZ_TRANSACTION_URL pair is still accepted as a fallback.
+    MIDAZ_LEDGER_URL: ""
     # Reconciliation worker (in-process)
-    RECONCILIATION_INTERVAL: "5m"
+    # RECONCILIATION_INTERVAL is deliberately NOT set here, same reason as the
+    # OUTBOX timing keys above: the app asserts interval x 2 stays below the
+    # convergence sweep's ledger replay ceiling, so the 5m that used to sit here is
+    # now exactly the value that refuses to boot. Omitted, the deployment inherits
+    # the validated default; override per environment via app.extraEnvVars.
     RECONCILIATION_LOOKBACK_HOURS: "24"
     # Rate Limiting
     RATE_LIMIT_ENABLED: "true"
@@ -279,9 +330,15 @@ app:
     # See docs/helm-chart-standard.md "Single-Source Infra Secrets".
     POSTGRES_PASSWORD: ""
     # POSTGRES_REPLICA_PASSWORD: ""
-    # BTG OAuth2 (REQUIRED)
-    BTG_CLIENT_ID: ""
-    BTG_CLIENT_SECRET: ""
+    # Provider OAuth2 (REQUIRED in SINGLE-TENANT only). Named for the role rather
+    # than the vendor: the app is provider-agnostic and BTG is its first adapter,
+    # so these two carry no BTG_ prefix while the URLs and webhook keys do. In
+    # multi-tenant the pair is resolved PER TENANT from the credential row, nothing
+    # reads these, and the app logs a WARN at boot naming each one left set — leave
+    # them empty there. Renamed from BTG_CLIENT_ID / BTG_CLIENT_SECRET; see
+    # docs/UPGRADE-1.0.md.
+    PROVIDER_CLIENT_ID: ""
+    PROVIDER_CLIENT_SECRET: ""
     BTG_WEBHOOK_SECRET: ""
     # Internal cross-pod API (REQUIRED when SERVICE_TYPE includes worker, i.e. "both" or "worker").
     # Must be at least 32 characters. Generate with: openssl rand -hex 32
@@ -295,7 +352,7 @@ app:
     # License (required in production)
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
-    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANCY_ENABLED=true)
+    # Multi-Tenant Manager API key (REQUIRED when MULTI_TENANT_ENABLED=true)
     MULTI_TENANT_SERVICE_API_KEY: ""
     # Midaz M2M (optional)
     # MIDAZ_CLIENT_ID: ""

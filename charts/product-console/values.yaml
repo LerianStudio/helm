@@ -242,6 +242,18 @@ configmap:
   MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: "false"
   MIDAZ_ACCOUNT_TYPE_VALIDATION: ""
 
+  # Client IP Trust Boundary
+  # -- Comma-separated CIDRs of the proxies in front of this console, normally
+  # the cluster ingress or service range. Each environment sets its own value in
+  # its gitops repo. Left empty, the console will not name the caller behind
+  # X-Forwarded-For: the address offered on the tenant IP allowlist screen reads
+  # "unknown", the allowlist cannot be built from it, and every outbound call is
+  # stamped "X-Client-Ip-Resolution: unresolved", so nothing upstream can
+  # restrict or meter by caller either. Entries must be CIDRs no broader than
+  # /8 (IPv4) or /48 (IPv6); broader or malformed entries are dropped, and a
+  # list whose entries all drop counts as empty.
+  TRUSTED_PROXIES: ""
+
   # NextJS Public Configuration
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: "jpeg,jpg,png,svg"
   NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: "midaz,plugin-fees,plugin-crm,plugin-smart-templates"

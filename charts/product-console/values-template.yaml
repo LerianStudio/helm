@@ -83,6 +83,13 @@ configmap:
   MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: "false"
   MIDAZ_ACCOUNT_TYPE_VALIDATION: ""
 
+  # Client IP Trust Boundary
+  # Comma-separated CIDRs of the proxies in front of this console, normally the
+  # cluster ingress or service range, for example "10.0.0.0/8". Leaving this
+  # empty means no caller is ever named and the tenant IP allowlist cannot be
+  # enforced. No broader than /8 (IPv4) or /48 (IPv6).
+  TRUSTED_PROXIES: ""
+
   # NextJS Public Configuration
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: "jpeg,jpg,png,svg"
   NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: "midaz,plugin-fees,plugin-crm,plugin-smart-templates"

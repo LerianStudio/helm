@@ -1,0 +1,117 @@
+# br-spi-mock-bacen — non-production BACEN simulator for the BR SFN SPI rail.
+#
+# This chart is deliberately minimal: no Ingress, no Secret, no dependencies.
+# The mock exposes unauthenticated /control/* endpoints and must never be
+# reachable from outside the cluster.
+
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+
+# environment — the single source of truth for the runtime environment.
+#
+# Accepted values: local, development, test, ci. Any other value fails the
+# render (see templates/_helpers.tpl "br-spi-mock-bacen.validateEnvironment").
+# It is rendered into the ConfigMap as ENV_NAME, which the binary itself also
+# fails closed on, so the chart and the app agree on one value.
+environment: development
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  commonLabels: {}
+  commonAnnotations: {}
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+  automountServiceAccountToken: false
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+app:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/lerianstudio/br-spi-mock-bacen
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+
+  updateStrategy:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+
+  revisionHistoryLimit: 3
+
+  # configmap — free-form non-secret configuration rendered into the ConfigMap.
+  #
+  # ENV_NAME is RESERVED: it always comes from the top-level `environment`
+  # value and is rejected here by values.schema.json. Never put credentials in
+  # this map; this chart renders no Secret.
+  configmap:
+    LOG_LEVEL: info
+    MOCK_BACEN_PORT: ":9900"
+    MOCK_PIX_SETTLEMENT_DELAY_MS: "500"
+
+  service:
+    type: ClusterIP
+    port: 9900
+    targetPort: http
+    annotations: {}
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  livenessProbe:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  readinessProbe:
+    enabled: true
+    path: /readyz
+    initialDelaySeconds: 2
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  startupProbe:
+    enabled: true
+    path: /readyz
+    periodSeconds: 2
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+  terminationGracePeriodSeconds: 10
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}

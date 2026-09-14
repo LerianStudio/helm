@@ -1,0 +1,9 @@
+# CI-only render fixture for br-spi-mock-bacen. Not a production example.
+# The chart refuses to render for production-like environments, so the render
+# gate pins a non-production environment and an explicit image tag.
+environment: development
+
+app:
+  image:
+    repository: ghcr.io/lerianstudio/br-spi-mock-bacen
+    tag: "1.0.0-beta.1"

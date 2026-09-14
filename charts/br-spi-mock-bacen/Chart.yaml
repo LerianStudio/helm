@@ -1,0 +1,23 @@
+apiVersion: v2
+name: br-spi-mock-bacen
+description: Non-production BACEN simulator for the BR SFN SPI rail
+type: application
+annotations:
+  lerian.studio/chart-type: single-service
+home: https://github.com/LerianStudio/helm
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/br-spi-mock-bacen
+  - https://github.com/LerianStudio/br-sfn/tree/develop/services/spi/mock-bacen
+maintainers:
+  - name: Lerian Studio
+    email: support@lerian.studio
+version: 0.1.0
+appVersion: "1.0.0-beta.1"
+keywords:
+  - br-sfn
+  - spi
+  - pix
+  - bacen
+  - mock
+  - simulator
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4

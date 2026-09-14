@@ -93,13 +93,21 @@ def main():
             if m:
                 scope.add(m.group(1))
 
+    # Anything in scope that is not an installable chart is asked what depends on
+    # it. That covers a library, and it covers a chart the pull request DELETED —
+    # the case where consumers pinning its `file://` path are most certainly broken,
+    # and where checking existence first would drop it silently instead.
     notices = []
     for name in sorted(scope):
-        if (CHARTS / name / "Chart.yaml").exists() and is_library(name):
+        chart_yaml = CHARTS / name / "Chart.yaml"
+        gone = not chart_yaml.exists()
+        if gone or is_library(name):
             deps = local_dependents(name)
+            if not deps:
+                continue
             notices.append(
-                f"{name} is a library chart: scoping to its {len(deps)} local "
-                f"dependent(s)" + (f" ({', '.join(sorted(deps))})" if deps else "")
+                f"{name} is {'deleted' if gone else 'a library chart'}: scoping to "
+                f"its {len(deps)} local dependent(s) ({', '.join(sorted(deps))})"
             )
             scope.update(deps)
 

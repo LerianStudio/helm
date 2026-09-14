@@ -117,8 +117,14 @@ jobs:
             for c in $REQUESTED; do
               [[ -d "charts/$c" ]] || { echo "::error::No such chart: charts/$c"; exit 1; }
             done
-            echo "charts=$REQUESTED" >> "$GITHUB_OUTPUT"
-            echo "has-charts=true" >> "$GITHUB_OUTPUT"
+            # Both shapes, and `charts` as JSON — same contract changed-charts.py
+            # emits. Writing only one of them is a silent pass: the install step
+            # reads charts-list, finds it empty, and reports nothing to test.
+            {
+              printf 'charts=%s\n' "$(printf '%s\n' $REQUESTED | jq -Rsc 'split("\n") | map(select(length > 0))')"
+              echo "charts-list=$REQUESTED"
+              echo "has-charts=true"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 

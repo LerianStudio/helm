@@ -76,13 +76,23 @@ spec:
                access on nil panics rather than falling through to the default. */}}
           {{- $cm := $values.configmap | default dict }}
           {{- /*
-          TELEMETRY_ENABLED is parsed by the apps with strconv.ParseBool, which
-          also accepts "1", "t", "T", "TRUE" and "True". Comparing against the
-          literal "true" would leave telemetry ON in the process while the chart
-          silently skipped the node-local OTel wiring below. Route it through the
-          same helper the other boolean gates use so both agree.
+          Resolve the gate EXACTLY the way this component's ConfigMap resolves
+          ENABLE_TELEMETRY (lerian-common.otel.env -> lerian-common.globalValue):
+          native configmap key > global.observability.enabled > enabledDefault.
+          Reading a bare configmap key instead would see ONLY the native key --
+          which values.yaml does not ship -- so the gate would stay false for
+          every operator who turns telemetry on through the global block or just
+          relies on the default, silently dropping the node-local OTel wiring
+          below while the process itself exports. The "default" below MUST stay
+          equal to the enabledDefault passed to otel.env in adapter-lerian/configmap.yaml;
+          a divergence reintroduces the same bug in one direction or the other.
+
+          The resolved value is parsed by the apps with strconv.ParseBool, which
+          also accepts "1", "t", "T", "TRUE" and "True", so route it through the
+          same helper the other boolean gates use rather than comparing against
+          the literal "true".
           */}}
-          {{- $telemetryOn := eq (include "plugin-br-pix-lerian.isTrue" (default "false" $cm.TELEMETRY_ENABLED)) "true" }}
+          {{- $telemetryOn := eq (include "plugin-br-pix-lerian.isTrue" (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" }}
           {{- $hasOtelEndpoint := ne (toString (default "" $cm.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
           {{- $extraEnvVars := default (dict) $values.extraEnvVars }}
           {{- $hasExtras := gt (len $extraEnvVars) 0 }}

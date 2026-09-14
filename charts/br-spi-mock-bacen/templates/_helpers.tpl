@@ -43,16 +43,35 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Common labels. global.commonLabels is merged last so an operator can tag the
-whole release without editing every template.
+br-spi-mock-bacen.reservedLabelKeys — the label keys this chart owns.
+
+app.kubernetes.io/name and app.kubernetes.io/instance are the Deployment
+selector: an operator value there would detach the Pods from their Deployment.
+The rest would render a duplicate YAML key. Operator labels that collide with
+any of them are dropped rather than merged.
+*/}}
+{{- define "br-spi-mock-bacen.reservedLabelKeys" -}}
+{{- list "helm.sh/chart" "app.kubernetes.io/name" "app.kubernetes.io/instance" "app.kubernetes.io/version" "app.kubernetes.io/managed-by" "app.kubernetes.io/part-of" | toJson -}}
+{{- end }}
+
+{{/*
+Common labels. global.commonLabels is appended so an operator can tag the whole
+release without editing every template, minus the chart-owned keys above.
 */}}
 {{- define "br-spi-mock-bacen.labels" -}}
+{{- $reserved := include "br-spi-mock-bacen.reservedLabelKeys" . | fromJsonArray -}}
+{{- $extra := dict -}}
+{{- range $key, $value := ((.Values.global | default dict).commonLabels | default dict) -}}
+{{- if not (has $key $reserved) -}}
+{{- $_ := set $extra $key $value -}}
+{{- end -}}
+{{- end -}}
 helm.sh/chart: {{ include "br-spi-mock-bacen.chart" . }}
 {{ include "br-spi-mock-bacen.selectorLabels" . }}
 app.kubernetes.io/version: {{ include "br-spi-mock-bacen.versionLabelValue" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/part-of: br-sfn
-{{- with (.Values.global | default dict).commonLabels }}
+{{- with $extra }}
 {{ toYaml . }}
 {{- end }}
 {{- end }}
@@ -160,10 +179,13 @@ instead of hardcoding 9900 twice and letting them drift.
 */}}
 {{- define "br-spi-mock-bacen.containerPort" -}}
 {{- $raw := toString ((.Values.app.configmap | default dict).MOCK_BACEN_PORT | default ":9900") -}}
-{{- $port := trimPrefix ":" $raw -}}
-{{- if not (regexMatch "^[0-9]+$" $port) -}}
+{{- /* Validate the RAW value, not the trimmed one: the binary reads
+   MOCK_BACEN_PORT verbatim and expects the ":<port>" form, so a bare "9900"
+   must be rejected here instead of silently yielding a valid containerPort. */ -}}
+{{- if not (regexMatch "^:[0-9]+$" $raw) -}}
 {{- fail (printf "\n\nERROR: app.configmap.MOCK_BACEN_PORT=%q is not a listener address.\n   Use the \":<port>\" form, e.g. \":9900\".\n" $raw) -}}
 {{- end -}}
+{{- $port := trimPrefix ":" $raw -}}
 {{- if or (lt (int $port) 1) (gt (int $port) 65535) -}}
 {{- fail (printf "\n\nERROR: app.configmap.MOCK_BACEN_PORT=%q is outside the valid port range 1-65535.\n" $raw) -}}
 {{- end -}}

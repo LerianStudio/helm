@@ -27,18 +27,33 @@ spec:
       {{- include "br-spi-mock-bacen.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- /* checksum/config is chart-owned: it rolls the Pods when the rendered
+         configuration changes. Merging the operator maps into one dict and
+         dropping that key keeps the annotation single-valued — emitting the
+         maps in sequence would allow a duplicate YAML key whose surviving
+         value is decoder-dependent, and a user value winning would suppress
+         the rollout. podAnnotations wins over global.commonAnnotations. */}}
+      {{- $podAnnotations := omit (merge (dict) (.Values.podAnnotations | default dict) ((.Values.global | default dict).commonAnnotations | default dict)) "checksum/config" }}
       annotations:
-        {{- /* Roll the Pods when the rendered configuration changes. */}}
         checksum/config: {{ include "br-spi-mock-bacen.configmapData" . | sha256sum }}
-        {{- with (.Values.global | default dict).commonAnnotations }}
+        {{- with $podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-        {{- with .Values.podAnnotations }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+      {{- /* Drop podLabels that collide with a chart-owned key (the selector
+         labels above all) or with global.commonLabels, which the labels helper
+         already emitted. Either would be a duplicate YAML key. Precedence on a
+         collision: chart-owned key > global.commonLabels > podLabels. */}}
+      {{- $reserved := include "br-spi-mock-bacen.reservedLabelKeys" . | fromJsonArray }}
+      {{- $commonLabels := (.Values.global | default dict).commonLabels | default dict }}
+      {{- $podLabels := dict }}
+      {{- range $key, $value := (.Values.podLabels | default dict) }}
+      {{- if and (not (has $key $reserved)) (not (hasKey $commonLabels $key)) }}
+      {{- $_ := set $podLabels $key $value }}
+      {{- end }}
+      {{- end }}
       labels:
         {{- include "br-spi-mock-bacen.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
+        {{- with $podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:

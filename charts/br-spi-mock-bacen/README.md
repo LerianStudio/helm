@@ -56,7 +56,7 @@ anywhere near production.
 | `environment` | `development` | `local`, `development`, `test`, `ci` only. Rendered as `ENV_NAME`. |
 | `app.image.repository` | `ghcr.io/lerianstudio/br-spi-mock-bacen` | |
 | `app.image.tag` | `""` | Falls back to `.Chart.AppVersion`. Pin it for reproducible deploys. |
-| `app.configmap.MOCK_BACEN_PORT` | `":9900"` | The listener address. The container port is derived from it. |
+| `app.configmap.MOCK_BACEN_PORT` | `":9900"` | The listener address, in the `":<port>"` form the binary expects. The container port is derived from it; a bare `"9900"` fails the render. |
 | `app.service.port` | `9900` | `ClusterIP` only. |
 
 `ENV_NAME` is **reserved**: it is always rendered from `environment`, is rejected inside
@@ -124,6 +124,28 @@ The Pod runs with:
 
 The image is distroless, so the container runs no shell and the chart overrides no
 `command` or `args`.
+
+`values.schema.json` enforces that baseline rather than merely defaulting to it:
+`serviceAccount.automountServiceAccountToken` must be `false`,
+`securityContext.runAsNonRoot` and `readOnlyRootFilesystem` must be `true`,
+`allowPrivilegeEscalation` must be `false`, `capabilities.drop` must contain
+`ALL`, and `podSecurityContext.seccompProfile.type` must be `RuntimeDefault`.
+An operator cannot weaken them through values.
+
+## Reserved keys
+
+Three keys are chart-owned and cannot be set through the operator maps:
+
+| Key | Where | Why |
+|-----|-------|-----|
+| `ENV_NAME` | `app.configmap` | Always rendered from `environment`; rejected by the schema and stripped in the template. |
+| `app.kubernetes.io/name`, `app.kubernetes.io/instance` | `global.commonLabels`, `app` `podLabels` | They are the Deployment selector; an operator value would detach the Pods. |
+| `checksum/config` | `global.commonAnnotations`, `podAnnotations` | It is the config-rollout trigger; an operator value would suppress the rollout. |
+
+Colliding entries are dropped, not merged, so no duplicate YAML key ever
+reaches the API server. Precedence on a label collision is
+chart-owned > `global.commonLabels` > `podLabels`; for annotations,
+`podAnnotations` wins over `global.commonAnnotations`.
 
 ## Disabled render
 

@@ -59,7 +59,11 @@
           "type": "object",
           "additionalProperties": { "type": "string" }
         },
-        "automountServiceAccountToken": { "type": "boolean" }
+        "automountServiceAccountToken": {
+          "description": "Must stay false: the mock never calls the Kubernetes API, so the Pod and the ServiceAccount carry no token.",
+          "type": "boolean",
+          "enum": [false]
+        }
       }
     },
     "podAnnotations": {
@@ -73,14 +77,15 @@
     "podSecurityContext": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["runAsNonRoot"],
+      "required": ["runAsNonRoot", "seccompProfile"],
       "properties": {
         "runAsNonRoot": { "type": "boolean", "enum": [true] },
         "seccompProfile": {
           "type": "object",
           "additionalProperties": true,
+          "required": ["type"],
           "properties": {
-            "type": { "type": "string" }
+            "type": { "type": "string", "enum": ["RuntimeDefault"] }
           }
         }
       }
@@ -91,7 +96,8 @@
       "required": [
         "runAsNonRoot",
         "allowPrivilegeEscalation",
-        "readOnlyRootFilesystem"
+        "readOnlyRootFilesystem",
+        "capabilities"
       ],
       "properties": {
         "runAsNonRoot": { "type": "boolean", "enum": [true] },
@@ -103,10 +109,13 @@
         "capabilities": {
           "type": "object",
           "additionalProperties": true,
+          "required": ["drop"],
           "properties": {
             "drop": {
+              "description": "Must include ALL: the mock needs no Linux capability.",
               "type": "array",
-              "items": { "type": "string" }
+              "items": { "type": "string" },
+              "contains": { "const": "ALL" }
             }
           }
         }

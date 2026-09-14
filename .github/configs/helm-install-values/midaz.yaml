@@ -1,0 +1,12 @@
+# Install-test (kind) delta — layered ON TOP of helm-render-values/midaz.yaml
+# (the render-gate is unaffected; this file only feeds the kind install-test).
+#
+# The chart defaults the env-wide name to "production". In production mode the
+# ledger's safety guard fatals when authentication is disabled
+# (`ENV_NAME=production requires PLUGIN_AUTH_ENABLED=true`) — correct behavior,
+# but the kind install-test runs the bundled stack without a real auth backend.
+# Run the install-test in "development" mode so the guard allows the
+# no-auth bundled stack to boot. Production installs keep the safe default.
+global:
+  env:
+    name: development

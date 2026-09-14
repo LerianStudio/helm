@@ -28,12 +28,17 @@ TARGETS=""                # every distinct namespace the chart's manifests refer
 # top rather than replacing them, so neither file has to repeat the other.
 VARGS=()
 if [[ -n "${2:-}" ]]; then
-  VARGS=(-f "$2"); echo "  values: $2"
+  VARGS=(-f "$2"); echo "  values (explicit): $2"
 else
   for candidate in ".github/configs/helm-render-values/${CHART}.yaml" \
                    ".github/configs/helm-install-values/${CHART}.yaml"; do
-    [[ -f "$candidate" ]] && { VARGS+=(-f "$candidate"); echo "  values: $candidate"; }
+    if [[ -f "$candidate" ]]; then
+      VARGS+=(-f "$candidate"); echo "  values: $candidate"
+    else
+      echo "  values: $candidate (absent)"
+    fi
   done
+  [[ ${#VARGS[@]} -eq 0 ]] && echo "  values: none — installing with chart defaults"
 fi
 
 # IT_PULL_SECRET names the image pull Secret to create in every namespace this run
@@ -235,7 +240,14 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
       BASE_VARGS+=(-f "${BASE_VALUES_DIR}/${cand}.yaml")
     fi
   done
-  [[ ${#BASE_VARGS[@]} -gt 0 ]] && echo "  baseline values: ${#BASE_VARGS[@]} file(s) from origin/main"
+  # ${#BASE_VARGS[@]} counts array elements, and each file contributes two of them
+  # (-f and the path), so it reads double. Name them instead of counting.
+  if [[ ${#BASE_VARGS[@]} -eq 0 ]]; then
+    echo "  baseline values: none on origin/main — installing the baseline with chart defaults"
+  else
+    echo "  baseline values (from origin/main):"
+    printf '    %s\n' "${BASE_VARGS[@]}" | grep -v '^    -f$'
+  fi
 
   helm dependency build "$BASE_DIR" >/dev/null 2>&1 || echo "  (base dep build failed — skipping baseline)"
 

@@ -100,8 +100,11 @@ In-cluster clients use the Kubernetes DNS name:
 http://br-spi-mock-bacen.br-sfn-mock-bacen-dev-st.svc.cluster.local:9900
 ```
 
-With `fullnameOverride` or `namespaceOverride` set, substitute the rendered name and
-namespace — `helm template` prints the exact host in `NOTES.txt`.
+Object names are release-aware: the rendered name is `<release>-br-spi-mock-bacen`,
+collapsing to `br-spi-mock-bacen` when the release name already contains the chart name
+(as in the install command above). `fullnameOverride` replaces it outright. With any
+override set, substitute the rendered name and namespace — `helm template` prints the
+exact host in `NOTES.txt`.
 
 ## Expected use by the SPI rail
 

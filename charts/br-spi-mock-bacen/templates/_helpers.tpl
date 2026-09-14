@@ -7,9 +7,24 @@ Expand the name of the chart.
 
 {{/*
 Fully qualified app name, truncated at 63 chars for the DNS label limit.
+
+Release-aware: two releases in the same namespace would otherwise render
+identically named objects and the second install would fail on resources owned
+by the first. The name collapses to the bare chart name when the release name
+already contains it, so the canonical release (`helm install br-spi-mock-bacen`)
+still renders `br-spi-mock-bacen` and the documented service name is unchanged.
 */}}
 {{- define "br-spi-mock-bacen.fullname" -}}
-{{- default (include "br-spi-mock-bacen.name" .) .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- if .Values.fullnameOverride }}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- $name := include "br-spi-mock-bacen.name" . }}
+{{- if contains $name .Release.Name }}
+{{- .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
 {{- end }}
 
 {{/*

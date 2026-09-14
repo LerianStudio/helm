@@ -26,9 +26,17 @@ on:
   workflow_dispatch:
     inputs:
       charts:
-        description: "Space-separated chart names to test (default: every app chart)"
+        description: "Space-separated chart names to test"
         type: string
         default: ""
+      runner:
+        description: "Runner to install on — raise it for a chart that does not fit"
+        type: choice
+        options:
+          - blacksmith-8vcpu-ubuntu-2404
+          - blacksmith-4vcpu-ubuntu-2404
+          - blacksmith-16vcpu-ubuntu-2404
+        default: blacksmith-8vcpu-ubuntu-2404
 
 concurrency:
   group: helm-install-test-${{ github.ref }}
@@ -42,7 +50,15 @@ permissions:
 jobs:
   install-test:
     name: Install + upgrade (kind)
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # 8 vCPU, not the org-standard 4. midaz alone requests ~5.6 CPU across ledger
+    # (1500m), a replicated Postgres (2x1000m), Valkey, Mongo and RabbitMQ, so on a
+    # 4 vCPU node its Postgres never gets scheduled and everything downstream sits in
+    # Init or CrashLoopBackOff — a resource ceiling reported as a chart defect.
+    #
+    # Raising the node rather than trimming requests in a fixture: this gate exists
+    # to install the chart as written, and shrinking resources to fit would test
+    # something nobody deploys.
+    runs-on: ${{ inputs.runner || 'blacksmith-8vcpu-ubuntu-2404' }}
     timeout-minutes: 60 # a full sweep installs every app chart sequentially, now waiting for Ready
     steps:
       # persist-credentials: false because the step that follows runs

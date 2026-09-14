@@ -358,9 +358,9 @@ and `T` all enable a feature at runtime. Comparing against the literal string
 process happily enables auth. Matching is exact (no trimming), like ParseBool:
 " true" is false at runtime, so it must be false here too.
 
-Modelled on midaz.isTrue (charts/midaz/templates/_helpers.tpl). It is duplicated
-rather than shared because this chart does not declare the lerian-common-helm
-dependency, and lerian-common ships no boolean helper anyway.
+Modelled on midaz.isTrue (charts/midaz/templates/_helpers.tpl). The chart now
+declares the lerian-common-helm dependency (for the workload fragments), but
+lerian-common ships no boolean helper, so this stays local.
 */}}
 {{- define "plugin-br-pix-lerian.isTrue" -}}
 {{- if has (. | toString) (list "1" "t" "T" "TRUE" "true" "True") -}}true{{- end -}}

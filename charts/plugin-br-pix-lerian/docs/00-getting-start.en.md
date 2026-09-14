@@ -185,12 +185,3 @@ curl <spi-url>/readyz
 | Render fails naming `RABBITMQ_URI` | `dictHubVsync` enabled without `RABBITMQ_URI` in `secrets` | Set `RABBITMQ_URI` before enabling `dictHubVsync` |
 | `CrashLoopBackOff` on `adapterLerian` outside a local environment | `DEPLOYMENT_MODE` other than `local` with the component enabled | Keep disabled outside dev, or use `DEPLOYMENT_MODE=local` only for that component |
 | Change via the Systemplane admin API "didn't take" | The key is boot-captured | Restart the affected workload's pod |
-
----
-
-## Final checklist before publishing this runbook
-
-- [x] Every section has real content.
-- [x] "Last review" date matches the current chart version (1.0.0).
-- [x] Reviewed to describe operational behavior without a critical tone toward the
-      chart — every item here is an operating instruction, not a defect callout.

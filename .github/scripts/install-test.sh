@@ -80,8 +80,19 @@ diagnose() {
       [[ -z "$pod" ]] && continue
       echo "--- describe $x/$pod ---"
       kubectl describe pod "$pod" -n "$x" 2>/dev/null | sed -n '/Events:/,$p' | head -20
-      echo "--- logs $x/$pod ---"
-      kubectl logs "$pod" -n "$x" --all-containers --tail=30 2>&1 | head -30
+      # --previous first: a CrashLoopBackOff pod is between restarts as often as
+      # not, and the live container's log is then empty or a fresh boot — the run
+      # that actually failed is the previous one.
+      #
+      # Read from the head in both cases, and never with --tail: a runtime that
+      # panics prints the cause first and unwinds for pages after, so the last N
+      # lines are the middle of a stack trace. --tail truncates server-side, before
+      # head ever sees the output, so pairing the two just discards the beginning
+      # twice over. A RabbitMQ boot failure is what proved it.
+      echo "--- logs (previous) $x/$pod ---"
+      kubectl logs "$pod" -n "$x" --all-containers --previous 2>&1 | head -80
+      echo "--- logs (current) $x/$pod ---"
+      kubectl logs "$pod" -n "$x" --all-containers 2>&1 | head -60
     done < <(kubectl get pods -n "$x" --no-headers 2>/dev/null \
                | awk '$3 != "Running" && $3 != "Completed" {print $1}')
   done

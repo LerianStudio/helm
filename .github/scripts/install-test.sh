@@ -90,6 +90,18 @@ fail() {
   echo "::error::[$CHART] $1"
   kubectl get events -n "$NS" --sort-by=.lastTimestamp 2>/dev/null | tail -15
   [[ "$MODE" == deep ]] && diagnose
+  # These fixtures are written as charts break, not up front — nobody can guess
+  # what a service needs at boot. So the failure has to say where the answer goes,
+  # or the next person re-derives the whole thing from a pod log.
+  cat <<HINT
+::notice::[$CHART] If this is missing configuration rather than a chart defect:
+  create .github/configs/helm-install-values/${CHART}.yaml with the values the
+  workload needs to start. It is layered ON TOP of
+  .github/configs/helm-render-values/${CHART}.yaml, so only the delta belongs
+  there. The describe/logs output above is what it should be derived from.
+  If the chart is genuinely broken, add it to
+  .github/configs/helm-install-test-allow-failure.txt with a one-line reason.
+HINT
   cleanup
   exit 1
 }

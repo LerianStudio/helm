@@ -48,6 +48,23 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- /*
+      Run the schema migration inside the pod, before the app container. The v4
+      tracer fatals at boot querying the `rules` table, so under plain
+      `helm install --wait` it can never become Ready while the migration is only
+      a post-install hook (hooks run AFTER the wait). This initContainer guarantees
+      the schema exists regardless of Helm-hook / --wait / ArgoCD-sync-wave timing.
+      The migration Job (migrations-job.yaml) is kept as the ArgoCD PreSync path;
+      golang-migrate is idempotent, so running both is safe. Same container specs
+      as the Job via the shared helpers → byte-identical DB target.
+      */}}
+      {{- if .Values.tracer.migrations.enabled }}
+      initContainers:
+        {{- if .Values.tracer.migrations.waitForPostgres.enabled }}
+        {{- include "midaz-tracer.migrationsWaitForPostgresContainer" . | nindent 8 }}
+        {{- end }}
+        {{- include "midaz-tracer.migrationsRunnerContainer" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ include "midaz-tracer.fullname" . }}
           image: {{ .Values.tracer.image.repository }}:{{ .Values.tracer.image.tag | default .Chart.AppVersion }}

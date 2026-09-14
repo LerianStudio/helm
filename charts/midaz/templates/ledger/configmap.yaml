@@ -2,6 +2,11 @@
 {{- $cm := .Values.ledger.configmap | default dict }}
 {{- $dv := "lerian-common.datastore.value" }}
 {{- $ded := .Values.ledger.datastores | default dict }}
+{{- /* Fail-fast: managed/external Mongo (mongodb.enabled=false) with no CRM/Fees
+   host set would silently default to the packaged "midaz-mongodb" and CrashLoop
+   the ledger init container. See midaz.validateManagedMongo in _helpers.tpl and
+   docs/UPGRADE-9.1.md section 6. No-op on the packaged path (mongodb.enabled=true). */ -}}
+{{- include "midaz.validateManagedMongo" (dict "context" $) }}
 {{- /* Single-sourced env name so ENV_NAME/OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
    can't drift from one another; resolved once via global.env, consumed below
    both directly (ENV_NAME) and as the default for the observability block's

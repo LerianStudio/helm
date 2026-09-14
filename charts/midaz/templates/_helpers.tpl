@@ -456,3 +456,52 @@ supplied through values; an existing Secret is opaque to the chart.
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+midaz.validateManagedMongo — fail-fast when the operator runs on an EXTERNAL /
+MANAGED Mongo (mongodb.enabled=false, so the packaged mongodb subchart is NOT
+deployed) but has NOT told the ledger where the CRM and/or Fees Mongo lives.
+
+Why this is needed: the ledger configmap resolves MONGO_CRM_HOST /
+MONGO_FEES_HOST through lerian-common.datastore.value with a hardcoded default
+of "midaz-mongodb" (the packaged service name — see
+templates/ledger/configmap.yaml MONGO_CRM_HOST / MONGO_FEES_HOST). When the
+packaged Mongo is disabled and no host override is provided, those keys
+SILENTLY point at a Service that does not exist. The ledger init container
+`wait-for-dependencies` (templates/ledger/deployment.yaml) hard-gates on ALL 9
+dependencies — including MONGO_CRM_HOST and MONGO_FEES_HOST, regardless of
+crm.enabled — so the pod never starts: it CrashLoops after the init timeout
+(ledger.initContainer.timeoutSeconds, default 300s).
+
+We resolve the EFFECTIVE host through the SAME datastore.value include (same
+value-precedence expression the configmap uses), so the guard and the rendered
+value can never disagree. If either resolves to the packaged default
+"midaz-mongodb" while packaged Mongo is disabled, we `fail` with an actionable
+message naming the exact keys.
+
+Reachability is NOT (and cannot be) checked — helm template is offline. This is
+a values-level conditional-required constraint only. `global.cloud` presets set
+Mongo TOPOLOGY (tls/params/scheme), never the host, so they do not satisfy it.
+
+Call early from templates/ledger/configmap.yaml with (dict "context" $).
+Only active when .Values.mongodb.enabled is false (default true = packaged Mongo,
+behavior unchanged).
+*/}}
+{{- define "midaz.validateManagedMongo" -}}
+{{- $ctx := .context -}}
+{{- $mongo := $ctx.Values.mongodb | default dict -}}
+{{- $packagedEnabled := true -}}
+{{- if hasKey $mongo "enabled" -}}{{- $packagedEnabled = $mongo.enabled -}}{{- end -}}
+{{- if not $packagedEnabled -}}
+{{- $cm := $ctx.Values.ledger.configmap | default dict -}}
+{{- $ded := $ctx.Values.ledger.datastores | default dict -}}
+{{- $crmHost := include "lerian-common.datastore.value" (dict "context" $ctx "dedicated" $ded "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" "midaz-mongodb") -}}
+{{- $feesHost := include "lerian-common.datastore.value" (dict "context" $ctx "dedicated" $ded "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" "midaz-mongodb") -}}
+{{- $unset := list -}}
+{{- if eq $crmHost "midaz-mongodb" -}}{{- $unset = append $unset "CRM" -}}{{- end -}}
+{{- if eq $feesHost "midaz-mongodb" -}}{{- $unset = append $unset "Fees" -}}{{- end -}}
+{{- if $unset -}}
+{{- fail (printf "\n\nmidaz: managed/external Mongo is selected (mongodb.enabled=false) but the %s Mongo host is not set.\nThe ledger still needs a reachable Mongo for CRM and Fees (they are folded into the ledger binary), and the ledger init container hard-gates on MONGO_CRM_HOST and MONGO_FEES_HOST regardless of crm.enabled. With the packaged Mongo disabled and no host override, these default to the packaged Service \"midaz-mongodb\" (which is not deployed), so the ledger pod CrashLoops after ledger.initContainer.timeoutSeconds (default 300s).\n\nSet the host(s) explicitly, e.g.:\n  --set global.datastores.mongoCrm.host=<your-mongo-host> --set global.datastores.mongoFees.host=<your-mongo-host>\nor per-component:\n  ledger.datastores.mongoCrm.host / ledger.datastores.mongoFees.host\nor as a native override:\n  ledger.configmap.MONGO_CRM_HOST / ledger.configmap.MONGO_FEES_HOST\n\nSee charts/midaz/docs/UPGRADE-9.1.md section 6 (Ledger CRM and Fees module integration).\n" (join " and " $unset)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

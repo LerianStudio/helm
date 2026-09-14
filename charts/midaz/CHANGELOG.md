@@ -1,5 +1,47 @@
 # Midaz Changelog
 
+## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.0)
+
+- **Features**
+  - Fail fast when managed Mongo is missing CRM/Fees hosts.
+
+- **Improvements**
+  - Corrected datastore precedence documentation (native > dedicated > shared).
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.2...midaz-v9.2.0)
+
+---
+
+## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.0)
+
+- **Features**
+  - Fail fast when managed Mongo is missing CRM/Fees hosts.
+
+- **Improvements**
+  - Correct datastore precedence (native > dedicated > shared).
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.2...midaz-v9.2.0)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+- Improvements:
+  - Added an upgrade guide for Midaz v9.1.1.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
 ## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
 
 - Fixes:

@@ -233,7 +233,11 @@ risk the 1.2.0-beta.x vs 3.2.0-beta.x GHCR-train warning above is about,
 just triggered by a missing fallback instead of a tag typo.
 */}}
 {{- define "caradhras.migrationsImageRepository" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.repository "oldVal" (dig "backend" "migrations" "image" "repository" "" .Values.auth) "default" "ghcr.io/lerianstudio/caradhras-migrations") -}}
+{{- $repo := include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.repository "oldVal" (dig "backend" "migrations" "image" "repository" "" .Values.auth) "default" "ghcr.io/lerianstudio/caradhras-migrations") -}}
+{{- if contains "casdoor-migrations" $repo -}}
+{{- fail (printf "\n\nplugin-access-manager: the migration image repository resolves to %q, which points at the OLD casdoor-migrations image.\nOn v9.x the migration Job injects POSTGRES_* env vars, but casdoor-migrations reads DB_* and will fail at runtime with:\n  Missing required environment variables: DB_USER, DB_PASS, DB_HOST, DB_NAME\nIt is NOT a downgrade of casdoor:3.1.0 — caradhras-migrations 1.2.x is a different product line.\nSet caradhras.migrations.image.repository to ghcr.io/lerianstudio/caradhras-migrations (or leave it empty to accept the default),\nand clear any legacy auth.backend.migrations.image.repository override.\nSee docs/UPGRADE-8.6-to-9.2.md (Known Gotchas)." $repo) -}}
+{{- end -}}
+{{- $repo -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImageTag" -}}

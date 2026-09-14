@@ -427,6 +427,36 @@ ledger:
 
 > **Important:** These passwords are rendered into the ledger Secret, never the ConfigMap. They follow the same single-source rule as `MONGO_ONBOARDING_PASSWORD` and `MONGO_TRANSACTION_PASSWORD`.
 
+#### ⚠️ Managed / external Mongo: you MUST also set the CRM and Fees HOSTS (not just the passwords)
+
+If you run against a **managed or external MongoDB** (i.e. you set `mongodb.enabled: false` so the packaged `midaz-mongodb` subchart is **not** deployed), you must set the CRM **and** Fees Mongo **hosts** explicitly — the passwords above are not enough.
+
+When the host is omitted, `MONGO_CRM_HOST` / `MONGO_FEES_HOST` silently default to the packaged Service name `midaz-mongodb`, which does not exist when `mongodb.enabled: false`. Because the CRM and Fees databases are folded into the unified ledger binary, the ledger init container `wait-for-dependencies` **hard-gates on all 9 dependencies — including `MONGO_CRM_HOST` and `MONGO_FEES_HOST`, regardless of `crm.enabled`.** A missing host therefore blocks pod init: the init container retries until `ledger.initContainer.timeoutSeconds` (default **300s**) elapses, then exits 1 and the pod **CrashLoops**.
+
+To prevent this silent failure, the chart now **fails fast at render time** (`helm template` / `helm install`) whenever `mongodb.enabled: false` and either host would resolve to the packaged `midaz-mongodb` default. Set the hosts with any of these — precedence is **native > dedicated > shared** (highest first): native `ledger.configmap.MONGO_CRM_HOST`/`MONGO_FEES_HOST` wins, then dedicated `ledger.datastores.mongoCrm`/`mongoFees`, then shared `global.datastores.mongoCrm`/`mongoFees`. The shared mask is the recommended ergonomic place (env-wide), since a more specific level overrides it if ever needed:
+
+```yaml
+# Preferred: env-wide shared datastore mask
+global:
+  datastores:
+    mongoCrm:  { host: "your-mongo-host" }
+    mongoFees: { host: "your-mongo-host" }
+
+# Or per-component dedicated mask:
+# ledger:
+#   datastores:
+#     mongoCrm:  { host: "your-mongo-host" }
+#     mongoFees: { host: "your-mongo-host" }
+
+# Or as native ConfigMap overrides:
+# ledger:
+#   configmap:
+#     MONGO_CRM_HOST: "your-mongo-host"
+#     MONGO_FEES_HOST: "your-mongo-host"
+```
+
+> **Note:** A `global.cloud` preset only sets Mongo **topology** (TLS/params/scheme), never the host — it does **not** satisfy this requirement. The packaged path (`mongodb.enabled: true`, the default) is unaffected: the hosts keep defaulting to `midaz-mongodb` as before, so existing installs are unchanged.
+
 #### New Fees role in bootstrap job
 
 The MongoDB bootstrap job now creates a `readWrite` role for the `fees` database:

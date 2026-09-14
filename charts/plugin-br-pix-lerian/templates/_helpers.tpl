@@ -239,9 +239,18 @@ emitted as a broken manifest:
 
 {{/*
 Wait-for-dependencies init container.
-Parses DATABASE_URL / VALKEY_URL / RABBITMQ_URI from the
-component's ConfigMap and Secret and waits for each to be reachable via nc -z.
+Parses DATABASE_URL / RABBITMQ_URI from the component's ConfigMap and Secret
+and waits for each to be reachable via nc -z. The cache is waited on through
+the discrete REDIS_HOST / REDIS_PORT keys the app itself reads.
 Skips any URL that is empty / unset.
+
+Cache leg: REDIS_HOST always renders (the ConfigMap defaults it to "localhost"),
+so "empty" is not available as the "not configured" signal. No component runs a
+cache sidecar -- the valkey subchart is a separate Service -- so a loopback
+REDIS_HOST can only ever be that unset default, never a reachable cache. The
+leg therefore treats loopback as unconfigured and skips, which keeps
+an unconfigured lane a silent degrade instead of a hard rollout failure five
+minutes into every Pod start.
 
 Usage:
   initContainers:
@@ -330,9 +339,14 @@ Usage:
       set -- $(parse_url "${DATABASE_URL:-}")
       wait_for_service "postgres" "${1:-}" "${2:-5432}"
 
-      # Valkey/Redis (VALKEY_URL)
-      set -- $(parse_url "${VALKEY_URL:-}")
-      wait_for_service "valkey" "${1:-}" "${2:-6379}"
+      # Valkey/Redis (REDIS_HOST / REDIS_PORT) — the discrete keys the app reads.
+      # A loopback host is the ConfigMap's unset default, never a real cache
+      # (no component runs a cache sidecar), so it means "not configured".
+      REDIS_WAIT_HOST="${REDIS_HOST:-}"
+      case "$REDIS_WAIT_HOST" in
+        localhost|127.0.0.1|::1) REDIS_WAIT_HOST="" ;;
+      esac
+      wait_for_service "valkey" "$REDIS_WAIT_HOST" "${REDIS_PORT:-6379}"
 
       # RabbitMQ (RABBITMQ_URI) — TLS-only: default to the amqps port (5671).
       # All documented URIs carry an explicit :5671; this fallback only applies

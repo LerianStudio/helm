@@ -72,6 +72,13 @@ spi:
     MIDAZ_ORGANIZATION_ID: ""
     CRM_BASE_URL: ""
     CRM_ORGANIZATION_ID: ""
+    # Cache. The app reads the discrete REDIS_* keys.
+    # Non-secret fields belong here, the password in `secrets` below.
+    # Leaving REDIS_HOST at the chart default ("localhost") means "no cache":
+    # the wait-for-dependencies init container then skips the Valkey probe.
+    REDIS_HOST: "valkey-host"
+    REDIS_PORT: "6379"
+    REDIS_USER: "default"
   secrets:
     MIDAZ_CLIENT_ID: ""
     DICT_CLIENT_ID: ""
@@ -79,7 +86,7 @@ spi:
     CRM_CLIENT_ID: ""
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-spi?sslmode=require"
-    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    REDIS_PASSWORD: ""
     LICENSE_KEY: ""                   # use Vault / external-secret reference
     DICT_CLIENT_SECRET: ""
     COB_CLIENT_SECRET: ""
@@ -162,10 +169,14 @@ dictHub:
     # TenantConfig, so a missing value surfaces as a rejected request.
     ADAPTER_BASE_URL: ""
     KEY_CACHE_TTL_SEC: "60"
+    # Cache — discrete REDIS_* keys (REDIS_PASSWORD lives in `secrets`).
+    REDIS_HOST: "valkey-host"
+    REDIS_PORT: "6379"
+    REDIS_USER: "default"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
-    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    REDIS_PASSWORD: ""
     LICENSE_KEY: ""
     CRM_CLIENT_ID: "<crm-client-id>"
     CRM_CLIENT_SECRET: ""
@@ -184,9 +195,14 @@ dictHubVsync:
     # worker builds a license client for shutdown coupling even though it
     # mounts no HTTP license middleware, so the key is needed here too.
     ORGANIZATION_IDS: "global"
+    # Cache — REQUIRED for this worker: it refuses to boot without a
+    # reachable cache. REDIS_PASSWORD lives in `secrets` below.
+    REDIS_HOST: "valkey-host"
+    REDIS_PORT: "6379"
+    REDIS_USER: "default"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-dict?sslmode=require"
-    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    REDIS_PASSWORD: ""
     # TLS-only: amqps:// on 5671. lib-commons v5.7.0 validates the broker cert
     # against the system trust store (a private CA needs an app-code change).
     RABBITMQ_URI: "amqps://pixswitch:<password>@rabbitmq-host:5671/"
@@ -266,10 +282,14 @@ cobHub:
     # License allow-list, required alongside LICENSE_KEY. See spi above.
     ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
+    # Cache — discrete REDIS_* keys (REDIS_PASSWORD lives in `secrets`).
+    REDIS_HOST: "valkey-host"
+    REDIS_PORT: "6379"
+    REDIS_USER: "default"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
-    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    REDIS_PASSWORD: ""
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------
@@ -386,7 +406,7 @@ adapterLerianSystemplane:
 # pixauto/api — Pix Automático payer side
 # IDP_DECLARATION_ENABLED stays "false" until an M2M application is registered
 # for the plugin-br-pix-lerian-pixauto slug; STREAMING_ENABLED stays "false" until
-# the br-sfn rail carries the recurrence message family (GAP-BRSFN-001).
+# the br-sfn rail carries the recurrence message family.
 # ------------------------------------------------------------
 pixauto:
   enabled: false
@@ -404,10 +424,14 @@ pixauto:
     ORGANIZATION_ID: "<your-org-id>"
     IDP_DECLARATION_ENABLED: "false"
     STREAMING_ENABLED: "false"
+    # Cache — discrete REDIS_* keys (REDIS_PASSWORD lives in `secrets`).
+    REDIS_HOST: "valkey-host"
+    REDIS_PORT: "6379"
+    REDIS_USER: "default"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"
-    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    REDIS_PASSWORD: ""
     LICENSE_KEY: ""
 
 # ------------------------------------------------------------

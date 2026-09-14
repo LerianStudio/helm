@@ -20,7 +20,7 @@ This chart manages 14 independently deployable Pix Lerian workloads. Each gets i
 
 | Chart version | App image tag |
 |---|---|
-| 1.0.0 | 1.0.0-beta.337 |
+| 1.0.0 | 1.0.0-beta.379 |
 
 The row above covers this chart only. There is no in-place upgrade path from any earlier chart — moving to this chart is a fresh install (cutover), not a `helm upgrade`, and a cutover does not migrate or copy data. See [Upgrade and rollback](#upgrade-and-rollback).
 
@@ -67,7 +67,8 @@ dictProxy: { enabled: false }
 | `ORGANIZATION_IDS` | `configmap` | with `LICENSE_KEY`, on the eight license-client workloads |
 | `ORGANIZATION_ID`, `ISPB` | `configmap` | the domain application **and** its `*Systemplane` workload |
 | `SYSTEMPLANE_SECRET_MASTER_KEY` | `secrets` | `spiSystemplane`, `dictSystemplane`, `cobSystemplane`, `pixautoSystemplane` |
-| `RABBITMQ_URI`, `VALKEY_URL` | `secrets` | `dictHubVsync` — both hard requirements |
+| `RABBITMQ_URI` | `secrets` | `dictHubVsync` — hard requirement; the render fails without it |
+| `REDIS_HOST` | `configmap` | `dictHubVsync` — hard requirement; plus `REDIS_PASSWORD` in `secrets` when the instance is authenticated |
 | `ADAPTER_BASE_URL` and the `*_BASE_URL` family | `configmap` | the domain application **and** its `*Systemplane` workload |
 
 Supply every secret from a Secret your own secret manager populates, created **before** `helm install` because migration hooks run first. See [Production secret management](#production-secret-management).
@@ -258,12 +259,12 @@ Notes on the entries above:
 
 | Entry | Behaviour |
 |---|---|
-| `cobHub` + Valkey | Optional. Without `VALKEY_URL` the cache is off and no route fails; a retried request may re-execute |
+| `cobHub` + Valkey | Optional. Without `REDIS_HOST` the cache is off and no route fails; a retried request may re-execute |
 | `dictHubVsync` + Valkey/RabbitMQ | Both hard requirements. The chart **fails the render** without `RABBITMQ_URI`. In multi-tenant the shared connection is not opened and `RABBITMQ_URI` is not consulted — queues live in per-tenant vhosts |
 | `dictHub` + RabbitMQ | Publish-only and **off unless you set it**; the chart does not ship the key. It only accelerates reconciliation dispatch. An unavailable broker warns and continues on the backstop |
 | `adapterLerian` + Valkey | Required once its DLQ admin surface is active, gated by Kafka broker configuration. Moot — the workload is `Development only` |
 | Streaming | `spi`, `dictHub`, `cobHub`, `pixauto` can emit CloudEvents, **off by default**; only `pixauto` ships the `STREAMING_*` keys. Leave `STREAMING_CLOUDEVENTS_SOURCE` empty — a non-empty value that does not match the application's own source refuses the boot **whether or not streaming is enabled**. Streaming enabled without brokers also refuses the boot |
-| `MULTI_TENANT_REDIS_*` on `dictHubVsync` | A **separate** Redis from `VALKEY_URL`, where the Tenant Manager publishes tenant lifecycle events. Pointing both at one instance makes tenant changes invisible to the worker. Optional — discovery then falls back to the periodic sweep. The CA certificate, when used, is base64-encoded PEM |
+| `MULTI_TENANT_REDIS_*` on `dictHubVsync` | A **separate** Redis from the cache the `REDIS_*` keys point at, where the Tenant Manager publishes tenant lifecycle events. Pointing both at one instance makes tenant changes invisible to the worker. Optional — discovery then falls back to the periodic sweep. The CA certificate, when used, is base64-encoded PEM |
 
 ## Required before installation
 
@@ -294,7 +295,8 @@ Set these before `helm install`. **"Required" does not mean the same thing on ev
 | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_URL` | `configmap` | Application boot / Security posture | Defaults to `false` / an in-cluster placeholder. When enabled, `PLUGIN_AUTH_URL` **must be non-empty** or the workload refuses to start. **Required to be `true`** on `pixauto` whenever `ENV_NAME` is not `local` or `development`. |
 | `RABBITMQ_URI` | `secrets` | Render | **Required when `dictHubVsync` is enabled.** The render fails without it. |
 | `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET` | `secrets` | Application boot | **Required when `adapterProviderMock` is enabled** — it does not start without both. Issued with your sandbox access; see [Development-only components](#development-only-components). |
-| `VALKEY_URL` | `secrets` | Application boot / Optional degradation | **Required** on `dictHubVsync`, which does not start without it. Optional on `spi`, `dictHub`, `cobHub`, `pixauto`, where its absence degrades the cache rather than failing the workload. |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_USER`, `REDIS_DB`, `REDIS_TLS` | `configmap` | Application boot / Optional degradation | The discrete keys the application actually reads for its cache, emitted by the `redis` datastore mask on `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`, `adapterLerian`. `REDIS_HOST` is what marks the cache configured: **required** on `dictHubVsync`, which does not start without it; optional on `spi`, `dictHub`, `cobHub`, `pixauto`, where its absence degrades the cache rather than failing the workload. Set them per component, or once for the whole release under `global.datastores.redis`. `REDIS_HOST` is also what the `wait-for-dependencies` init container probes with `nc -z` before the app container starts; a loopback host (the unset default `localhost`) is read as "no cache" and the probe is skipped, so an unconfigured lane rolls out normally. A `REDIS_HOST` pointing at an unreachable host is the one way this bites: the init container retries for five minutes and then fails, so the Pod never starts. |
+| `REDIS_PASSWORD` | `secrets` | Application boot | The cache credential, paired with `REDIS_HOST` above. Required wherever that host authenticates; it never renders into the ConfigMap. |
 | `ADAPTER_BASE_URL` | `configmap` | First request | Not validated at startup, so a missing value surfaces as rejected requests at runtime rather than a failed rollout. Include the provider's route prefix. |
 
 Setting a key a workload does not read has no effect. `configmap`, `secrets`, and `extraEnvVars` are open maps: the chart passes any key straight to the container, but **that is not proof the binary reads or validates it**. Unknown keys are ignored silently. Use only keys documented for that workload and this version.

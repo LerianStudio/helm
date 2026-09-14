@@ -14,9 +14,11 @@ lerian-common masks; the chart emits STANDARD key names.
 
 DROPPED deviating app keys (superseded by the standard names above):
   TELEMETRY_ENABLED (->ENABLE_TELEMETRY), PLUGIN_AUTH_URL (->PLUGIN_AUTH_HOST),
-  ORGANIZATION_ID (->ORGANIZATION_IDS), DB_SSL_MODE (->DB_SSLMODE).
-Composed URIs DATABASE_URL / VALKEY_URL remain ONLY in secrets.yaml as
-migration/wait-init tooling inputs (never app-runtime config here).
+  ORGANIZATION_ID (->ORGANIZATION_IDS), DB_SSL_MODE (->DB_SSLMODE),
+  STREAMING_ALLOW_PLAINTEXT_SASL (->STREAMING_SASL_ALLOW_PLAINTEXT).
+The composed URI DATABASE_URL remains ONLY in secrets.yaml as the migration
+Job's input (never app-runtime config here). The cache is configured
+through the discrete REDIS_* keys above.
 
 Credentials NEVER render here; the trailing escape hatch OMITS them
 (leaked-secret guard). A masked key still honours pixauto.configmap.<KEY>.
@@ -82,12 +84,19 @@ data:
   # MULTI_TENANT_API_KEY lives under secrets.
   # -- Streaming (notification_outbox relay -> domain-fact CloudEvents).
   # KEEP false: the br-sfn rail does not carry the recurrence message family
-  # yet (GAP-BRSFN-001), and the app refuses to boot with STREAMING_ENABLED=true
+  # yet, and the app refuses to boot with STREAMING_ENABLED=true
   # and an empty STREAMING_BROKERS (it would drain claimed rows into a Noop
   # emitter and lose the events) or with MULTI_TENANT_ENABLED=true. The command
   # layer keeps writing facts to notification_outbox; they stay PENDING until
   # this flips. Credentials + CA live under secrets.
-  STREAMING_ALLOW_PLAINTEXT_SASL: {{ $cm.STREAMING_ALLOW_PLAINTEXT_SASL | default "false" | quote }}
+  #
+  # The transport knobs (brokers, SASL, TLS) come from lerian-common.streaming.env
+  # above, which emits the CANONICAL STREAMING_SASL_ALLOW_PLAINTEXT. The app's
+  # legacy STREAMING_ALLOW_PLAINTEXT_SASL spelling is NOT emitted here: pkgstreaming
+  # .LoadConfig still accepts it but returns a non-fatal deprecation warning logged
+  # at WARN on every boot, and hand-emitting it shipped BOTH spellings at once. It
+  # stays listed in the $enumerated suppression list below so the escape hatch
+  # cannot leak it back either -- same treatment as the other superseded names.
   SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "true" | quote }}
   SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4000/spi" | quote }}
   SPI_CLIENT_ID: {{ $cm.SPI_CLIENT_ID | default "" | quote }}

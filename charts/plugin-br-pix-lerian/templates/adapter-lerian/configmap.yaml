@@ -14,8 +14,9 @@ lerian-common masks; the chart emits STANDARD key names.
 DROPPED deviating app keys (superseded by the standard names above):
   TELEMETRY_ENABLED (->ENABLE_TELEMETRY), PLUGIN_AUTH_URL (->PLUGIN_AUTH_HOST),
   ORGANIZATION_ID (->ORGANIZATION_IDS), DB_SSL_MODE (->DB_SSLMODE).
-Composed URIs DATABASE_URL / VALKEY_URL remain ONLY in secrets.yaml as
-migration/wait-init tooling inputs (never app-runtime config here).
+The composed URI DATABASE_URL remains ONLY in secrets.yaml as the migration
+Job's input (never app-runtime config here). The cache is configured
+through the discrete REDIS_* keys above.
 
 Credentials NEVER render here; the trailing escape hatch OMITS them
 (leaked-secret guard). A masked key still honours adapterLerian.configmap.<KEY>.
@@ -78,6 +79,7 @@ data:
       "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_HOST"
       "PLUGIN_AUTH_URL" "REDIS_DB" "REDIS_HOST" "REDIS_PASSWORD" "REDIS_PORT" "REDIS_TLS"
       "REDIS_USER" "SERVER_ADDRESS" "SYSTEMPLANE_POSTGRES_DSN" "TELEMETRY_ENABLED"
+      "VALKEY_URL"
     ) }}
   {{- $_ := set $enumerated $k 1 }}
   {{- end }}

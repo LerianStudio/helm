@@ -230,9 +230,10 @@ spi:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     COB_CLIENT_SECRET: ""
     CRM_CLIENT_SECRET: ""
@@ -248,7 +249,6 @@ spi:
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -256,8 +256,8 @@ spi:
 
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
-  # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
-  # the chart renders a Job with command [/migrate] overriding the default
+  # The migrate binary ships in the same image; the chart renders a Job
+  # with command [/migrate] overriding the default
   # ENTRYPOINT (/app). Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
@@ -348,9 +348,10 @@ spiSystemplane:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     COB_CLIENT_SECRET: ""
     CRM_CLIENT_SECRET: ""
@@ -450,9 +451,10 @@ adapterProviderMock:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     LICENSE_KEY: ""
     PROVIDER_CLIENT_ID: ""
@@ -547,9 +549,10 @@ dictHub:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     CRM_CLIENT_SECRET: ""
     DATABASE_URL: ""
@@ -562,7 +565,6 @@ dictHub:
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -570,8 +572,8 @@ dictHub:
 
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
-  # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
-  # the chart renders a Job with command [/migrate] overriding the default
+  # The migrate binary ships in the same image; the chart renders a Job
+  # with command [/migrate] overriding the default
   # ENTRYPOINT (/app). Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
@@ -672,9 +674,10 @@ dictHubVsync:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     CRM_CLIENT_SECRET: ""
     DATABASE_URL: ""
@@ -682,7 +685,6 @@ dictHubVsync:
     RABBITMQ_URI: ""
     REDIS_PASSWORD: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -769,9 +771,10 @@ dictProxy:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     LICENSE_KEY: ""
   useExistingSecret: false
@@ -860,9 +863,10 @@ dictSystemplane:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     CRM_CLIENT_SECRET: ""
     DATABASE_URL: ""
@@ -961,9 +965,10 @@ cobHub:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     DATABASE_URL: ""
     DICT_CLIENT_SECRET: ""
@@ -974,7 +979,6 @@ cobHub:
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -982,8 +986,8 @@ cobHub:
 
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
-  # The migrate binary ships in the same image (plugin-br-pix-lerian#143);
-  # the chart renders a Job with command [/migrate] overriding the default
+  # The migrate binary ships in the same image; the chart renders a Job
+  # with command [/migrate] overriding the default
   # ENTRYPOINT (/app). Runs as a Helm hook on pre-install + pre-upgrade.
   migrations:
     enabled: true
@@ -1074,9 +1078,10 @@ cobProxy:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     LICENSE_KEY: ""
   useExistingSecret: false
@@ -1165,9 +1170,10 @@ cobSystemplane:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     DATABASE_URL: ""
     DICT_CLIENT_SECRET: ""
@@ -1210,7 +1216,11 @@ cobSystemplane:
 #          existingSecretName: "pix-lerian-spi-credentials"
 #          secrets:
 #            DATABASE_URL: "postgres://<user>:<password>@managed.example.com:5432/pix-spi?sslmode=require"
-#            VALKEY_URL: "redis://default:<password>@managed.example.com:6379/0"
+#            REDIS_PASSWORD: "<password>"
+#          configmap:
+#            REDIS_HOST: "managed.example.com"
+#            REDIS_PORT: "6379"
+#            REDIS_USER: "default"
 #
 #   3. Override `global.externalPostgresDefinitions.pixLerianCredentials.useExistingSecret.name`
 #      when running the bootstrap Job against external infra — never put real
@@ -1401,9 +1411,10 @@ adapterLerian:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     DATABASE_URL: ""
     IDP_M2M_CLIENT_SECRET: ""
@@ -1506,9 +1517,10 @@ adapterLerianSystemplane:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     BRSFN_CLIENT_SECRET: ""
     COB_CLIENT_SECRET: ""
@@ -1623,9 +1635,10 @@ pixauto:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     DATABASE_URL: ""
     IDP_M2M_CLIENT_SECRET: ""
@@ -1636,7 +1649,6 @@ pixauto:
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
     SYSTEMPLANE_POSTGRES_DSN: ""
-    VALKEY_URL: ""
   useExistingSecret: false
   existingSecretName: ""
 
@@ -1741,9 +1753,10 @@ pixautoSystemplane:
   #    through too. Credentials are NOT configmap -- see `secrets` below.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
-  #    protected values source or useExistingSecret. DATABASE_URL and
-  #    VALKEY_URL are composed URIs consumed by the migration Job and the
-  #    wait-for-dependencies init container (NOT app-runtime config).
+  #    protected values source or useExistingSecret. DATABASE_URL is a
+  #    composed URI consumed by the migration Job (and parsed by the
+  #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    The cache is configured through the discrete REDIS_* keys.
   secrets:
     DATABASE_URL: ""
     LICENSE_KEY: ""
@@ -1841,7 +1854,9 @@ postgresql:
     database: "postgres"
 
 # Valkey (Bitnami chart, OCI registry)
-# Used by spi, dict-hub, dict-hub-vsync for VALKEY_URL (optional — caching).
+# Used by spi, dict-hub, dict-hub-vsync, cob-hub, pixauto and adapter-lerian
+# through the discrete REDIS_* keys (optional — caching; required by
+# dict-hub-vsync).
 valkey:
   enabled: false
   global:
@@ -1851,8 +1866,9 @@ valkey:
     repository: bitnamisecure/valkey
     tag: "latest"
   # Bitnami subchart credentials. Operator MUST override when enabled.
-  # For external Valkey/ElastiCache set `enabled: false` and configure
-  # VALKEY_URL per component via an existing Kubernetes Secret (see header).
+  # For external Valkey/ElastiCache set `enabled: false` and point each
+  # component at it via REDIS_HOST/REDIS_PORT/REDIS_USER in `configmap` and
+  # REDIS_PASSWORD in `secrets` (or an existing Secret — see header).
   auth:
     enabled: true
     password: ""

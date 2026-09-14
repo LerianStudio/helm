@@ -90,8 +90,7 @@ Shared partial that renders a Postgres migration Job for one component.
 
 The per-component image (built from apps/<app>/components/<comp>/Dockerfile)
 ships two relevant files at the image root:
-  /migrate     -- statically-linked golang-migrate binary (added in
-                  plugin-br-pix-lerian#143)
+  /migrate     -- statically-linked golang-migrate binary
   /migrations  -- the app's SQL migration files
 
 The pod's ENTRYPOINT is /app, but the Job overrides `command:` to

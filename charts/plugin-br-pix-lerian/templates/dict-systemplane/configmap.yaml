@@ -13,8 +13,9 @@ lerian-common masks; the chart emits STANDARD key names.
 DROPPED deviating app keys (superseded by the standard names above):
   TELEMETRY_ENABLED (->ENABLE_TELEMETRY), PLUGIN_AUTH_URL (->PLUGIN_AUTH_HOST),
   ORGANIZATION_ID (->ORGANIZATION_IDS), DB_SSL_MODE (->DB_SSLMODE).
-Composed URIs DATABASE_URL / VALKEY_URL remain ONLY in secrets.yaml as
-migration/wait-init tooling inputs (never app-runtime config here).
+The composed URI DATABASE_URL remains ONLY in secrets.yaml as the migration
+Job's input (never app-runtime config here), and this component uses no
+cache.
 
 Credentials NEVER render here; the trailing escape hatch OMITS them
 (leaked-secret guard). A masked key still honours dictSystemplane.configmap.<KEY>.

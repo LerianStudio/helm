@@ -48,17 +48,28 @@ def is_library(name):
 
 
 def local_dependents(library_dir):
-    """Charts consuming `library_dir` from the working tree, not from a registry."""
-    library_name = load(CHARTS / library_dir / "Chart.yaml").get("name")
-    if not library_name:
-        return set()
+    """Charts consuming `library_dir` from the working tree, not from a registry.
+
+    Matched on the resolved `file://` path, not on the declared dependency name.
+    The name is exactly what a rename changes: consumers would still carry the old
+    one, the library would look like nobody depends on it, and the charts the
+    rename breaks would go unverified. The path is what decides which directory
+    helm actually reads.
+    """
+    target = (CHARTS / library_dir).resolve()
     out = set()
     for chart_yaml in sorted(CHARTS.glob("*/Chart.yaml")):
+        consumer = chart_yaml.parent
         for dep in load(chart_yaml).get("dependencies") or []:
-            if dep.get("name") != library_name:
+            repo = str(dep.get("repository", ""))
+            if not repo.startswith("file://"):
                 continue
-            if str(dep.get("repository", "")).startswith("file://"):
-                out.add(chart_yaml.parent.name)
+            try:
+                resolved = (consumer / repo[len("file://") :]).resolve()
+            except (OSError, ValueError):
+                continue
+            if resolved == target:
+                out.add(consumer.name)
     return out
 
 

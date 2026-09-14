@@ -80,8 +80,17 @@ diagnose() {
       [[ -z "$pod" ]] && continue
       echo "--- describe $x/$pod ---"
       kubectl describe pod "$pod" -n "$x" 2>/dev/null | sed -n '/Events:/,$p' | head -20
-      echo "--- logs $x/$pod ---"
-      kubectl logs "$pod" -n "$x" --all-containers --tail=30 2>&1 | head -30
+      # --previous first: a CrashLoopBackOff pod is between restarts as often as
+      # not, and the live container's log is then empty or a fresh boot — the run
+      # that actually failed is the previous one.
+      echo "--- logs (previous) $x/$pod ---"
+      kubectl logs "$pod" -n "$x" --all-containers --previous --tail=80 2>&1 | head -80
+      echo "--- logs (current) $x/$pod ---"
+      # head, not tail: a runtime that panics dumps a long stack, and the cause is
+      # the first line of it. Tailing a crash dump returns the middle of a stack
+      # trace — which is exactly what a RabbitMQ boot failure produced here, costing
+      # a rerun to find out nothing useful had been captured.
+      kubectl logs "$pod" -n "$x" --all-containers 2>&1 | head -60
     done < <(kubectl get pods -n "$x" --no-headers 2>/dev/null \
                | awk '$3 != "Running" && $3 != "Completed" {print $1}')
   done

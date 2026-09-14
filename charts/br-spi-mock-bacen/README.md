@@ -100,11 +100,27 @@ In-cluster clients use the Kubernetes DNS name:
 http://br-spi-mock-bacen.br-sfn-mock-bacen-dev-st.svc.cluster.local:9900
 ```
 
-Object names are release-aware: the rendered name is `<release>-br-spi-mock-bacen`,
-collapsing to `br-spi-mock-bacen` when the release name already contains the chart name
-(as in the install command above). `fullnameOverride` replaces it outright. With any
-override set, substitute the rendered name and namespace — `helm template` prints the
-exact host in `NOTES.txt`.
+### Object names
+
+Both examples above assume the release named `br-spi-mock-bacen` from the install
+command. Object names are release-aware:
+
+| Release | Rendered name |
+|---------|---------------|
+| `br-spi-mock-bacen` | `br-spi-mock-bacen` (collapsed — the release name already contains the chart name) |
+| `mock` | `mock-br-spi-mock-bacen` |
+| any, with `fullnameOverride=custom-mock` | `custom-mock` |
+
+For any release name that does not contain `br-spi-mock-bacen`, substitute the rendered
+name in the port-forward command and the DNS host. To read the rendered name and the
+ready-made access commands back from a release:
+
+```sh
+helm get notes <release> -n <namespace>
+```
+
+`helm install` and `helm upgrade` print the same notes. `helm template` does not render
+`NOTES.txt`; use `kubectl get svc -n <namespace>` if the release is not installed yet.
 
 ## Expected use by the SPI rail
 

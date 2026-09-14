@@ -107,8 +107,9 @@
         "readOnlyRootFilesystem": { "type": "boolean", "enum": [true] },
         "privileged": { "type": "boolean", "enum": [false] },
         "capabilities": {
+          "description": "drop only: `add` is rejected outright. Kubernetes applies additions independently of drops, so `add: [NET_RAW]` alongside `drop: [ALL]` would still grant the capability.",
           "type": "object",
-          "additionalProperties": true,
+          "additionalProperties": false,
           "required": ["drop"],
           "properties": {
             "drop": {

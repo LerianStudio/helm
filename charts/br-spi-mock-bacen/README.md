@@ -140,7 +140,7 @@ Three keys are chart-owned and cannot be set through the operator maps:
 |-----|-------|-----|
 | `ENV_NAME` | `app.configmap` | Always rendered from `environment`; rejected by the schema and stripped in the template. |
 | `app.kubernetes.io/name`, `app.kubernetes.io/instance` | `global.commonLabels`, `app` `podLabels` | They are the Deployment selector; an operator value would detach the Pods. |
-| `checksum/config` | `global.commonAnnotations`, `podAnnotations` | It is the config-rollout trigger; an operator value would suppress the rollout. |
+| `checksum/config` | Pod-template annotations only (`podAnnotations` and `global.commonAnnotations` as they reach the Pod template) | It is the config-rollout trigger; an operator value there would suppress the rollout. The key is not filtered from object metadata (Deployment, ConfigMap, Service, ServiceAccount), where it is inert. |
 
 Colliding entries are dropped, not merged, so no duplicate YAML key ever
 reaches the API server. Precedence on a label collision is

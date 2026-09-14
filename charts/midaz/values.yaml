@@ -975,8 +975,13 @@ rabbitmq:
       value: "midaz"
     password:
       value: ""
+    # -- Erlang distribution cookie for the bundled RabbitMQ (node clustering /
+    # CLI auth). It is internal to RabbitMQ and unrelated to the app-facing
+    # RABBITMQ_DEFAULT_PASS. An empty value makes RabbitMQ refuse to start
+    # ("Too short cookie string"), so ship a non-empty dev default.
+    # ⚠️ Override with a unique secret before deploying to production.
     erlangCookie:
-      value: ""
+      value: "midaz-dev-erlang-cookie-change-me"
   extraSecrets:
     - name: "midaz-rabbitmq-load-definition"
       mountPath: /etc/rabbitmq/definitions

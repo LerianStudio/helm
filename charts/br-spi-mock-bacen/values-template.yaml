@@ -1,0 +1,61 @@
+# Template values for br-spi-mock-bacen.
+#
+# Copy this file, set the image tag, and install into a NON-PRODUCTION
+# namespace. The chart renders no Secret, so there is nothing to fill in
+# from a vault.
+#
+# WARNING: this deploys a BACEN simulator whose /control/* endpoints have no
+# authentication. Never install it in a production or production-adjacent
+# cluster, and never put an Ingress in front of it.
+
+# Accepted values: local, development, test, ci. Anything else fails the render.
+environment: development
+
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  commonLabels: {}
+  commonAnnotations: {}
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automountServiceAccountToken: false
+
+app:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/lerianstudio/br-spi-mock-bacen
+    pullPolicy: IfNotPresent
+    tag: ""  # REQUIRED for a pinned deploy; empty falls back to .Chart.AppVersion
+
+  imagePullSecrets: []
+
+  # ENV_NAME is reserved and comes from the top-level `environment` value.
+  configmap:
+    LOG_LEVEL: info
+    MOCK_BACEN_PORT: ":9900"
+    MOCK_PIX_SETTLEMENT_DELAY_MS: "500"
+
+  service:
+    type: ClusterIP  # ClusterIP only — the mock must stay in-cluster
+    port: 9900
+    targetPort: http
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}

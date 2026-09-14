@@ -1,0 +1,35 @@
+{{- $fullname := include "br-spi-mock-bacen.fullname" . -}}
+{{- $namespace := include "global.namespace" . -}}
+{{- $port := int .Values.app.service.port -}}
+br-spi-mock-bacen {{ .Chart.Version }} (app {{ default .Chart.AppVersion .Values.app.image.tag }}) — release {{ .Release.Name }}
+
+{{ if not .Values.app.enabled -}}
+The mock is DISABLED (app.enabled=false). No Deployment, Service or ConfigMap was rendered.
+{{- else -}}
+Environment: {{ .Values.environment }}
+
+THIS IS A SIMULATOR. IT IS NOT BACEN.
+
+  * The Service is INTERNAL ONLY: ClusterIP {{ $fullname }}.{{ $namespace }}.svc.cluster.local:{{ $port }}
+  * The /control/* endpoints have NO AUTHENTICATION. Anything that can reach the
+    Service can drive the simulated BACEN behaviour.
+  * This chart renders NO Ingress. Never put one in front of it, and never
+    deploy it to a production or production-adjacent cluster.
+
+Health endpoints:
+
+  GET /health   liveness
+  GET /readyz   readiness
+
+Manual access is via port-forward only:
+
+  kubectl port-forward -n {{ $namespace }} svc/{{ $fullname }} {{ $port }}:{{ $port }}
+
+Then point Postman or curl at:
+
+  http://127.0.0.1:{{ $port }}
+
+In-cluster clients (the SPI services) should use:
+
+  http://{{ $fullname }}.{{ $namespace }}.svc.cluster.local:{{ $port }}
+{{- end }}

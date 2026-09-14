@@ -1,0 +1,149 @@
+# br-spi-mock-bacen Helm Chart
+
+## Chart Contract
+
+- Chart type: `single-service`
+- Required secrets: None for default render. The chart renders no Secret and reads no credential; every value it needs is non-sensitive configuration in the ConfigMap.
+- Dependency notes: Not used. The chart has no subcharts, no `Chart.lock`, and no external service requirement — the mock runs standalone.
+- Production overrides: None. This chart must not run in production. `environment` accepts only `local`, `development`, `test`, and `ci`; any other value fails the render. For a non-production deploy, override `app.image.tag` and, if you mirror images, `global.imageRegistry`.
+- Source/license: Source is in `github.com/LerianStudio/helm`; the simulated service lives in `github.com/LerianStudio/br-sfn` (`services/spi/mock-bacen`). License is Apache-2.0.
+
+## Purpose
+
+`br-spi-mock-bacen` deploys the BACEN simulator used by the BR SFN **SPI (Pix)** rail
+during development. It stands in for the Central Bank counterparty so SPI services can
+exercise message flows, settlement timing, and error paths without a real connection.
+
+It simulates responses only. It proves nothing about BACEN homologation, RSFN
+connectivity, ICP-Brasil certificates, or regulatory conformance.
+
+## Not for production
+
+The mock is unauthenticated by design and fails closed outside development-like
+environments. Three layers enforce that:
+
+1. The binary refuses to start unless `ENV_NAME` is `local`, `development`, `test`, or `ci`.
+2. `values.schema.json` restricts `environment` to the same four values.
+3. `templates/_helpers.tpl` calls `fail` on any other value, so the render stops before
+   a manifest exists.
+
+```sh
+# both of these fail, by design
+helm template mock charts/br-spi-mock-bacen --set environment=production
+helm template mock charts/br-spi-mock-bacen --set environment=prd
+```
+
+`app.service.type` is restricted to `ClusterIP` for the same reason, and the chart ships
+**no Ingress template at all** — there is nothing to enable.
+
+## Endpoints
+
+| Endpoint | Purpose | Auth |
+|----------|---------|------|
+| `GET /health` | Liveness probe | none |
+| `GET /readyz` | Readiness and startup probe | none |
+| `/control/*` | Drives the simulated BACEN behaviour (inject failures, settlement outcomes, timings) | **none — deliberately** |
+
+`/control/*` has no authentication because the mock is a test fixture, not a service.
+Anything that can reach the Service can change how the simulator responds. That is
+acceptable only because the Service is cluster-internal and the chart refuses to run
+anywhere near production.
+
+## Minimum configuration
+
+| Value | Default | Notes |
+|-------|---------|-------|
+| `environment` | `development` | `local`, `development`, `test`, `ci` only. Rendered as `ENV_NAME`. |
+| `app.image.repository` | `ghcr.io/lerianstudio/br-spi-mock-bacen` | |
+| `app.image.tag` | `""` | Falls back to `.Chart.AppVersion`. Pin it for reproducible deploys. |
+| `app.configmap.MOCK_BACEN_PORT` | `":9900"` | The listener address. The container port is derived from it. |
+| `app.service.port` | `9900` | `ClusterIP` only. |
+
+`ENV_NAME` is **reserved**: it is always rendered from `environment`, is rejected inside
+`app.configmap` by the schema, and is stripped in the template. There is no way for the
+public value and the container env to drift.
+
+## Install
+
+```sh
+helm upgrade --install br-spi-mock-bacen ./charts/br-spi-mock-bacen \
+  --namespace br-sfn-mock-bacen-dev-st --create-namespace \
+  --set environment=development \
+  --set app.image.tag=1.0.0-beta.1
+```
+
+No `helm dependency build` is needed — the chart has no dependencies.
+
+## Access
+
+There is no Ingress. Manual access is via port-forward:
+
+```sh
+kubectl port-forward -n br-sfn-mock-bacen-dev-st \
+  svc/br-spi-mock-bacen 9900:9900
+```
+
+Then point Postman or curl at:
+
+```text
+http://127.0.0.1:9900
+```
+
+```sh
+curl -s http://127.0.0.1:9900/health
+curl -s http://127.0.0.1:9900/readyz
+```
+
+In-cluster clients use the Kubernetes DNS name:
+
+```text
+http://br-spi-mock-bacen.br-sfn-mock-bacen-dev-st.svc.cluster.local:9900
+```
+
+With `fullnameOverride` or `namespaceOverride` set, substitute the rendered name and
+namespace — `helm template` prints the exact host in `NOTES.txt`.
+
+## Expected use by the SPI rail
+
+In a development environment, the SPI services point their BACEN endpoint at the mock's
+in-cluster DNS name instead of the RSFN counterparty. The mock accepts the rail's
+messages, applies the configured settlement delay
+(`app.configmap.MOCK_PIX_SETTLEMENT_DELAY_MS`), and returns simulated responses. Test
+scenarios drive edge cases through `/control/*`.
+
+## Runtime security
+
+The Pod runs with:
+
+- `runAsNonRoot: true`, UID/GID `65532` (matching the distroless `nonroot` user);
+- `readOnlyRootFilesystem: true` and no writable volume;
+- `allowPrivilegeEscalation: false` and `capabilities.drop: [ALL]`;
+- `seccompProfile.type: RuntimeDefault`;
+- `automountServiceAccountToken: false` on both the Pod and the ServiceAccount — the mock
+  never calls the Kubernetes API.
+
+The image is distroless, so the container runs no shell and the chart overrides no
+`command` or `args`.
+
+## Disabled render
+
+With `app.enabled=false` the chart renders **nothing**: no Deployment, no Service, no
+ConfigMap, and no ServiceAccount. The ServiceAccount is gated on `app.enabled` as well as
+`serviceAccount.create` so a disabled release leaves no orphan resource behind.
+
+## Deliberate omissions
+
+| Not present | Why |
+|-------------|-----|
+| Ingress | The mock must never be publicly reachable. No template exists, so none can be enabled. |
+| Secret | The mock holds no credential. |
+| HPA / PDB | A single replica test fixture does not need availability guarantees. |
+| Dependencies | The mock is standalone; no database, broker, or cache. |
+
+## Schema maintenance
+
+`values.schema.json` is hand-maintained for this chart rather than produced by
+`.github/scripts/generate-values-schemas`. The generator leaves component blocks open
+(`additionalProperties: true`), which cannot express this chart's security invariants:
+the `environment` enum, the `ClusterIP`-only `app.service.type`, and the `ENV_NAME`
+prohibition inside `app.configmap`. Update it by hand when the values contract changes.

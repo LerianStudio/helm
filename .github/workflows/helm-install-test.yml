@@ -17,14 +17,12 @@ name: Helm Install Test
 # reason, the script drops to --no-hooks with no waiting and still validates
 # every manifest server-side.
 
+# NO `paths:` FILTER, DELIBERATELY. This is a required status check, and a required
+# check that does not run on every pull request leaves the merge box waiting on a
+# report that never arrives. It runs everywhere and resolves the scope itself; the
+# expensive half — cluster included — is skipped when no chart changed.
 on:
   pull_request:
-    paths:
-      - "charts/**"
-      - ".github/configs/helm-render-values/**"
-      - ".github/configs/helm-install-values/**"
-      - ".github/scripts/install-test.sh"
-      - ".github/workflows/helm-install-test.yml"
   workflow_dispatch:
     inputs:
       charts:
@@ -60,34 +58,6 @@ jobs:
 
       - name: Fetch base branch
         run: git fetch --no-tags --depth=1 origin main
-
-      - name: Setup Helm
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
-
-      # Both logins write to the runner's docker config, which the script turns into
-      # a single image pull Secret per namespace. A pull request from a fork gets
-      # neither the org secrets nor a token that can read private packages, so the
-      # logins are skipped there and the script drops to shallow mode — a run that
-      # proves less, instead of one that fails on ImagePullBackOff and says nothing.
-      - name: Log in to Docker Hub
-        if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Log in to GitHub Container Registry
-        if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
-        with:
-          registry: ghcr.io
-          username: lerianstudio
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create kind cluster
-        uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.10.0
-        with:
-          cluster_name: chart-install-test
 
       # The changed-file list comes from the API rather than a local diff.
       # `pull_request.base.sha` is the base branch's current head, not the merge base,
@@ -137,7 +107,38 @@ jobs:
           echo "Files changed by this pull request:"; sed 's/^/  /' /tmp/changed.txt
           python3 .github/scripts/changed-charts.py
 
+      - name: Setup Helm
+        if: steps.scope.outputs.has-charts == 'true'
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+
+      # Both logins write to the runner's docker config, which the script turns into
+      # a single image pull Secret per namespace. A pull request from a fork gets
+      # neither the org secrets nor a token that can read private packages, so the
+      # logins are skipped there and the script drops to shallow mode — a run that
+      # proves less, instead of one that fails on ImagePullBackOff and says nothing.
+      - name: Log in to Docker Hub
+        if: steps.scope.outputs.has-charts == 'true' && !github.event.pull_request.head.repo.fork
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Log in to GitHub Container Registry
+        if: steps.scope.outputs.has-charts == 'true' && !github.event.pull_request.head.repo.fork
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: lerianstudio
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create kind cluster
+        if: steps.scope.outputs.has-charts == 'true'
+        uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.10.0
+        with:
+          cluster_name: chart-install-test
+
       - name: Install + upgrade each chart
+        if: steps.scope.outputs.has-charts == 'true'
         shell: bash
         env:
           CHARTS: ${{ steps.scope.outputs.charts-list }}

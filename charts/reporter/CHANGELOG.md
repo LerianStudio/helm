@@ -3,6 +3,23 @@
 ## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
 
 - **Features:**
+  - Default the Job to the app broker credential.
+  - Declare the `reporter.events` exchange.
+
+- **Fixes:**
+  - Do not validate a Vault reference as a hex key.
+  - Carry the Job credential in a PreSync Secret.
+  - Do not mount the service account token.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features:**
   - Introduced the ability to declare the `reporter.events` exchange.
   - Defaulted the Job to use the app broker credential.
   

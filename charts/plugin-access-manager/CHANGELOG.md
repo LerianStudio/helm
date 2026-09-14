@@ -4,6 +4,20 @@
 
 - **Improvements:**
   - Scoped the silent-failure claim to existing-tag mis-pins in documentation.
+  - Reflected render-time guard in `casdoor-migrations` warnings in documentation.
+  - Added warnings about `casdoor-migrations` override and guard in documentation.
+  - Added an upgrade guide for version 9.2.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.3...plugin-access-manager-v9.2.4)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
+
+- **Improvements:**
+  - Scoped the silent-failure claim to existing-tag mis-pins in documentation.
   - Updated documentation to reflect render-time guard in casdoor-migrations warnings.
   - Added warnings in documentation about casdoor-migrations override and guard.
 

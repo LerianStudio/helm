@@ -242,6 +242,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.1.0` | `1.0.0-beta.1` |
 -----------------
 
+### BR SPI Mock Bacen
+
+Non-production BACEN simulator for the BR SFN SPI rail. Exposes unauthenticated `/control/*` endpoints — restricted to `local`, `development`, `test` and `ci` environments.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-spi-mock-bacen).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `0.1.0` | `1.0.0-beta.1` |
+-----------------
+
 ### BR Consignado GW
 
 API gateway and same-origin operator console for the Dataprev consignado rail.

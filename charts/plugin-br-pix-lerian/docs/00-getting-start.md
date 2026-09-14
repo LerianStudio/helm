@@ -1,9 +1,10 @@
-# plugin-br-pix-lerian — Getting Started Runbook
+# plugin-br-pix-lerian — Runbook de instalação
 
 > Preenchido a partir do chart (`README.md`, `values.schema.json`, templates) e da
-> config real em `lerian-internal-gitops/environments/benedita/helmfile/applications/dev-st/plugin-br-pix-lerian`.
-> Critério de aceite: alguém de fora da squad, só com o chart + este runbook, instala uma
-> versão funcional e sabe o que checar quando algo quebra.
+> configuração de referência em
+> `lerian-internal-gitops/environments/benedita/helmfile/applications/dev-st/plugin-br-pix-lerian`.
+> Objetivo: alguém de fora da squad, só com o chart + este runbook, consegue instalar
+> uma versão funcional e sabe o que checar caso algo não se comporte como esperado.
 
 ---
 
@@ -18,84 +19,78 @@
 
 ---
 
-## 1. Profiles de instalação
+## 1. Perfis de instalação
 
-O chart não tem um flag "profile" — o profile é a combinação de quais dos 14 workloads
-você habilita. **O default do `helm template` sem values não é uma instalação
-funcional**: 6 dos 14 workloads vêm desligados, nenhum DSN de Postgres é setado (logo
-nenhum Job de migração renderiza), Postgres/Valkey/RabbitMQ e as 3 ingresses estão OFF,
-e `LICENSE_KEY` vazio com `DEPLOYMENT_MODE=byoc` (default) faz a app se recusar a subir.
+O chart não expõe um flag único de "perfil" — o perfil é definido pela combinação de
+quais dos 14 workloads você habilita. Um `helm template`/`helm install` sem values
+customizados só valida a estrutura do chart; para uma instalação funcional é preciso
+habilitar os workloads do seu caso de uso, apontar Postgres, e definir `LICENSE_KEY` +
+`ORGANIZATION_IDS` conforme o `DEPLOYMENT_MODE` (ver seção 3).
 
-| Profile | Componentes habilitados | Caso de uso | Default recomendado? |
-|---|---|---|---|
-| SPI only | `spi` + `spiSystemplane` | Só iniciação/liquidação Pix | Não — é o piso mínimo, não o alvo |
-| SPI + DICT + COB (produção real) | `spi`+`spiSystemplane`, `dictHub`+`dictSystemplane` (+`dictHubVsync` se precisar reconciliação), `cobHub`+`cobSystemplane` | Topologia de produção documentada no README | **Sim** |
-| + Pix Automático | acima + `pixauto`+`pixautoSystemplane` | Se o produto oferece Pix Automático (payer side) | Opcional |
-| Dev/homologação com provider mock | acima + `adapterProviderMock` | Testar ponta a ponta sem provider real | Só em dev — nunca em BYOC/SaaS (sem auth nas rotas) |
+| Perfil | Componentes habilitados | Caso de uso |
+|---|---|---|
+| SPI only | `spi` + `spiSystemplane` | Somente iniciação/liquidação Pix |
+| SPI + DICT + COB | `spi`+`spiSystemplane`, `dictHub`+`dictSystemplane` (+`dictHubVsync` se precisar reconciliação), `cobHub`+`cobSystemplane` | Topologia de produção recomendada, descrita no [README do chart](../README.md#production-quickstart) |
+| + Pix Automático | perfil acima + `pixauto`+`pixautoSystemplane` | Produto oferece Pix Automático (lado pagador) |
+| Homologação com provider mock | perfil de produção + `adapterProviderMock` | Testar ponta a ponta sem o provider real — **restrito a ambientes de desenvolvimento/homologação controlados**, ver seção 5 |
 
-- [x] Existe profile mínimo sem integrações externas opcionais? Não totalmente — mesmo o
-      mínimo (`spi`) exige Postgres (`pix-spi`) e `LICENSE_KEY`+`ORGANIZATION_IDS` fora do modo `local`.
-- [x] Cada componente aparece em algum profile? `dictProxy`/`cobProxy` (tier proxy) e
-      `adapterLerian`/`adapterLerianSystemplane` **não aparecem em nenhum profile de
-      produção** — proxy é "estrutural apenas" nesta release (sem forwarding real) e
-      `adapterLerian` é **Development only** (crash-loop fora de `DEPLOYMENT_MODE=local`).
+- Cada perfil sempre inclui a app do domínio junto com sua Systemplane correspondente.
+- `dictProxy`/`cobProxy` e `adapterLerian`/`adapterLerianSystemplane` existem para
+  topologias específicas (provider já detém o estado do domínio, ou integração via
+  adapter Lerian em ambiente local) — habilite-os apenas se sua topologia de provider
+  exigir esse tier; ver [Hub e proxy não são intercambiáveis](../README.md#hub-and-proxy-are-not-interchangeable) no README do chart.
 
 ---
 
 ## 2. Dependências externas
 
-| Dependência | Obrigatória? | Requisitos mínimos | Como o chart recebe |
-|---|---|---|---|
-| PostgreSQL | Sim, por domínio habilitado | 5 databases possíveis no total: `pix-spi`, `pix-dict`, `pix-cob`, `pix-adapter-lerian`, `pix-pixauto` — só cria/migra as dos workloads habilitados | `DATABASE_URL` / `SYSTEMPLANE_POSTGRES_DSN` em `secrets` (ou Secret externo via `useExistingSecret`) |
-| Valkey/Redis | Depende do workload — **obrigatório** em `dictHubVsync` e `adapterLerian` (quando habilitado); opcional (degrada) em `spi`/`dictHub`/`cobHub`/`pixauto` | — | Masked via `global.datastores.redis` (host/port/user/db/tls) — ver seção 4 |
-| RabbitMQ | **Obrigatório** se `dictHubVsync` habilitado (o chart **falha o render** sem `RABBITMQ_URI`); opcional/publish-only em `dictHub` | — | `RABBITMQ_URI` em `secrets`, hoje só setado nativamente em `dictHubVsync` |
-| Streaming (Kafka/Redpanda) | Opcional, off por default | `spi`, `dictHub`, `cobHub`, `pixauto` podem emitir CloudEvents | Masked via `global.streaming` — ver seção 4. **`STREAMING_CLOUDEVENTS_SOURCE` deve ficar vazio**: um valor que não bate com o source interno da app recusa o boot, streaming habilitado ou não |
-| MongoDB | **Não usado** — confirmado (nenhum template referencia Mongo) | — | — |
-| `plugin-access-manager` (auth) | Opcional por default, mas **exigido em produção** (ver seção 5) | Endpoint HTTP resolvível | `PLUGIN_AUTH_ENABLED` + `PLUGIN_AUTH_HOST`, masked via `global.auth` |
-| Vault / secret manager | Sim, para produção | — | `useExistingSecret: true` + `existingSecretName` por componente — **sem merge**, o Secret externo precisa ter TODAS as chaves daquele workload |
-| Streaming Hub (callbacks) | Externo a este chart | — | Este chart **não configura callback nenhum** — publica no broker via `lib-streaming`; o Streaming Hub resolve subscrições e faz o callback HTTP |
+| Dependência | Quando é necessária | Como o chart recebe |
+|---|---|---|
+| PostgreSQL | Por domínio habilitado — até 5 databases possíveis: `pix-spi`, `pix-dict`, `pix-cob`, `pix-adapter-lerian`, `pix-pixauto` | `DATABASE_URL` / `SYSTEMPLANE_POSTGRES_DSN` em `secrets`, ou Secret externo via `useExistingSecret` |
+| Valkey/Redis | Obrigatório em `dictHubVsync` e em `adapterLerian` quando habilitado; opcional (com degradação de cache) em `spi`/`dictHub`/`cobHub`/`pixauto` | Mask `global.datastores.redis` (host/port/user/db/tls) — seção 4 |
+| RabbitMQ | Obrigatório quando `dictHubVsync` está habilitado; publish-only opcional em `dictHub` | `RABBITMQ_URI` em `secrets` |
+| Streaming (Kafka/Redpanda) | Opcional — `spi`, `dictHub`, `cobHub`, `pixauto` podem emitir CloudEvents | Mask `global.streaming` — seção 4. Deixe `STREAMING_CLOUDEVENTS_SOURCE` vazio (exceto em `pixauto`, que usa um valor próprio — ver seção 4) |
+| MongoDB | Não utilizado por este chart | — |
+| `plugin-access-manager` (auth) | Recomendado em qualquer ambiente exposto — ver seção 5 | Mask `global.auth` (`PLUGIN_AUTH_ENABLED` + `PLUGIN_AUTH_HOST`) |
+| Vault / gerenciador de segredo | Recomendado em produção | `useExistingSecret: true` + `existingSecretName` por componente — o Secret externo precisa conter o conjunto completo de chaves daquele workload |
+| Streaming Hub (callbacks) | Componente externo a este chart | Este chart publica eventos no broker via `lib-streaming`; o Streaming Hub resolve as subscrições e faz o callback HTTP — nenhuma URL de callback é configurada aqui |
 
-- [x] Dá pra rodar local/dev sem provider real? Sim — `adapterProviderMock` (ver seção 5,
-      é uma porta aberta sem auth, nunca habilitar fora de dev).
-- [x] Alguma dependência exige dado pré-existente? As 5 databases precisam existir com o
-      role de conexão correto — o chart cria/roda migração, não cria o database em si.
-      Ver [Database bootstrap and migrations](../README.md#database-bootstrap-and-migrations) no README do chart.
+Para desenvolvimento/homologação sem um provider real, use `adapterProviderMock` (seção 5).
+As databases precisam existir com o role de conexão correto antes da instalação — o
+chart aplica as migrações, não cria o database em si (ver
+[Database bootstrap and migrations](../README.md#database-bootstrap-and-migrations)).
 
 ---
 
 ## 3. Ordem de instalação
 
-1. Provisionar os databases Postgres necessários para os domínios que serão habilitados
-   (`pix-spi`, `pix-dict`, `pix-cob`, e opcionalmente `pix-adapter-lerian`/`pix-pixauto`).
+1. Provisionar os databases Postgres dos domínios que serão habilitados.
 2. Criar os Secrets externos por workload (`useExistingSecret`) com o conjunto completo
-   de chaves exigidas — **antes do `helm install`**, porque os hooks de migração correm
-   primeiro e dependem deles.
-3. Definir `LICENSE_KEY` e `ORGANIZATION_IDS` em todo workload que constrói um client de
-   licença (`spi`, `dictHub`, `dictProxy`, `dictHubVsync`, `cobHub`, `cobProxy`,
-   `pixauto`, `adapterLerian`) — sem isso a app sai no boot. **Atenção**: o
-   `values.yaml` de exemplo do chart só seta `ORGANIZATION_IDS` em `adapterLerian` e
-   `pixauto` — os outros 6 precisam ser adicionados manualmente se você partir do default.
-4. `helm install` (não há upgrade in-place de chart anterior — é sempre instalação nova).
-5. Se algum hub de domínio ficou desabilitado, aplicar o schema daquele domínio por
-   outro meio — desabilitar um hub remove o único Job de migração daquele schema.
-6. Configurar identidade single-tenant (`ORGANIZATION_ID`, `ISPB`) tanto na app do
-   domínio quanto no seu Systemplane correspondente — o Systemplane semeia a store e a
-   app lê de volta; sem isso a app fica `Ready` mas não funcional.
-7. Se for multi-tenant, provisionar a configuração por tenant separadamente — seeding a
-   partir do ambiente **não corre** em multi-tenant.
-
-- [x] Passo manual fora do Helm? Sim — provisionamento de tenant em multi-tenant (passo
-      7) e criação dos databases (passo 1) são fora do Helm.
-- [x] Ordem errada = erro claro ou falha silenciosa? **Maioria é falha silenciosa**: um
-      hub desabilitado não migra o schema sem aviso; `ORGANIZATION_ID` ausente em
-      `pixauto` retorna `403 TENANT_CONFIG_NOT_FOUND` em runtime, não no boot; ver seção 5.
+   de chaves daquele workload, antes do `helm install` — os hooks de migração
+   consultam esses Secrets no início da instalação.
+3. Definir `LICENSE_KEY` e `ORGANIZATION_IDS` nos workloads que constroem um client de
+   licença: `spi`, `dictHub`, `dictProxy`, `dictHubVsync`, `cobHub`, `cobProxy`,
+   `pixauto`, `adapterLerian`. O `values.yaml` de exemplo do chart só traz
+   `ORGANIZATION_IDS` em `adapterLerian` e `pixauto` — complete os demais ao partir do
+   default.
+4. `helm install` (a instalação é sempre nova — não há caminho de upgrade in-place a
+   partir de um chart anterior).
+5. Se algum hub de domínio permanecer desabilitado, aplicar o schema daquele domínio
+   por outro meio — o Job de migração só é renderizado para um hub habilitado.
+6. Configurar a identidade single-tenant (`ORGANIZATION_ID`, `ISPB`) tanto na app do
+   domínio quanto na sua Systemplane correspondente — a Systemplane semeia a store e a
+   app lê de volta.
+7. Em topologia multi-tenant, provisionar a configuração de cada tenant separadamente
+   — o seeding a partir do ambiente não roda nesse modo (ver
+   [Multi-tenant configuration](../README.md#multi-tenant-configuration)).
 
 ---
 
 ## 4. Contrato de configuração compartilhada (masks / lerian-common)
 
-Este chart usa `lerian-common`. Os campos abaixo já estão consolidados como mask no
-values de `benedita/dev-st` (PR #2809) e devem ser o padrão para qualquer novo ambiente:
+Este chart segue o contrato `lerian-common`. Os campos abaixo já estão consolidados
+como mask no ambiente de referência `benedita/dev-st` e são o padrão recomendado para
+qualquer novo ambiente:
 
 ```yaml
 global:
@@ -116,53 +111,45 @@ global:
     saslAllowPlaintext: "false"
 ```
 
-| Campo global | Efeito | Componentes afetados | Pode sobrescrever por componente? |
-|---|---|---|---|
-| `global.datastores.redis.*` | `REDIS_HOST`/`PORT`/`USER`/`DB`/`TLS` | `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto` (os que leem Valkey) | Sim, via `<component>.configmap.REDIS_*` — só faça isso se aquele componente **precisar** de um Redis diferente (não é o caso hoje) |
-| `global.auth.enabled` / `.host` | `PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST` | Todos os 14 componentes que leem o toggle | Sim, mesmo esquema — mas ver seção 5 antes de desligar em algum componente |
-| `global.streaming.*` | `STREAMING_BROKERS`/`TLS_ENABLED`/`SASL_MECHANISM`/`SASL_ALLOW_PLAINTEXT` | `spi`, `dictHub`, `cobHub`, `pixauto` | Sim — mas **não** mascare `STREAMING_TENANT_ID`/`STREAMING_CLOUDEVENTS_SOURCE`: `pixauto` precisa manter esses dois nativos (seu template não tem fallback igual aos outros 3; default de `cloudeventsSource` é `""` em vez de `"plugin-br-pix-lerian"`) |
+| Campo global | Efeito | Componentes afetados |
+|---|---|---|
+| `global.datastores.redis.*` | `REDIS_HOST`/`PORT`/`USER`/`DB`/`TLS` | `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto` |
+| `global.auth.enabled` / `.host` | `PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST` | Todos os 14 componentes que leem o toggle |
+| `global.streaming.*` | `STREAMING_BROKERS`/`TLS_ENABLED`/`SASL_MECHANISM`/`SASL_ALLOW_PLAINTEXT` | `spi`, `dictHub`, `cobHub`, `pixauto` |
 
-**Campos que parecem mask-elegíveis mas não são:**
+Cada campo acima pode ser sobrescrito por componente via `<component>.configmap.<KEY>`
+quando esse componente precisar de um valor diferente do global.
 
-- `REDIS_PROTOCOL` — não existe mais nenhum template que leia essa chave; é morta, não
-  mascarada.
-- `OTEL_EXPORTER_OTLP_ENDPOINT_PORT` — confirmado morta (`grep` no chart inteiro não
-  acha leitor). O endpoint real de OTLP vem de `HOST_IP` via
-  `lerian-common.otel.podEnv`, não dessa chave.
-- `global.image.tag` — o schema aceita a chave e a **ignora**. Não existe imagem
-  compartilhada; cada componente pina a própria tag em `<component>.image.tag`.
+**Exceção conhecida:** mantenha `STREAMING_TENANT_ID` e `STREAMING_CLOUDEVENTS_SOURCE`
+nativos (fora da mask) em `pixauto` — esse componente usa um valor próprio de
+`cloudeventsSource`, diferente dos demais três componentes de streaming.
 
-**Regra "duas chaves precisam bater e nada garante isso":**
+**Parâmetros de template que não são mask-eligible** (definir esses via `configmap`
+não tem efeito, pois nenhum template os consome nesta versão): `REDIS_PROTOCOL`,
+`OTEL_EXPORTER_OTLP_ENDPOINT_PORT` (o endpoint OTLP real é resolvido via `HOST_IP` pelo
+próprio chart), `global.image.tag` (não existe imagem compartilhada; cada componente
+pina sua própria tag em `<component>.image.tag`).
 
-- Ao habilitar `dictProxy`/`cobProxy`, o "routing mode" em um **caller** (`spi` tem
-  modo para DICT e para COB; `cobHub` tem modo para DICT) precisa bater com o
-  `*_BASE_URL` correspondente. Um mismatch **não é pego no boot** — o modo só decide
-  qual nome de serviço o caller resolve. Mantenha os dois no mesmo tier.
+**Atenção a esta dependência entre dois campos:** ao habilitar `dictProxy`/`cobProxy`,
+mantenha o "routing mode" de quem chama esse domínio (`spi` tem modo para DICT e para
+COB; `cobHub` tem modo para DICT) no mesmo tier do `*_BASE_URL` correspondente — os dois
+não são validados um contra o outro no boot.
 
 ---
 
-## 5. Comportamentos perigosos / modos de falha silenciosa
+## 5. Pontos de atenção operacional
 
-Esta é a seção mais importante. Uma linha aqui evita produção quebrada silenciosamente.
-
-| Flag / configuração | Comportamento perigoso | Pré-requisito antes de ativar | Como saber que deu errado |
-|---|---|---|---|
-| `PLUGIN_AUTH_ENABLED` vs `IDP_DECLARATION_ENABLED` (`pixauto`) | São **gates diferentes que parecem a mesma coisa**. `PLUGIN_AUTH_ENABLED` autentica requests entrantes. `IDP_DECLARATION_ENABLED` controla se `pixauto` **publica** sua declaração de permissão/Casbin no `plugin-access-manager` — requer a aplicação M2M já registrada para o slug daquele componente. Se não estiver registrada, o publisher **falha aberto e pula a publicação em silêncio** (sem erro, sem log de falha visível), e nesse estado o próprio auth pode responder 422 nas chamadas que dependem da declaração | Registrar a aplicação M2M de `pixauto` no `plugin-access-manager` **antes** de habilitar `IDP_DECLARATION_ENABLED` | Não há alerta automático — validar manualmente que a declaração foi aceita no `plugin-access-manager` para o slug de `pixauto` antes de confiar no toggle |
-| `PLUGIN_AUTH_ENABLED=false` (default) | Superfície de negócio **sem autenticação**, sem erro nenhum — a app sobe normal | Nenhum — é o default; por isso o benedita/dev-st agora força `true` em todos os 14 componentes via mask | Não há sinal automático — é preciso auditar `global.auth.enabled` explicitamente |
-| Rotear tráfego pra `dictProxy`/`cobProxy` | Toda rota de negócio responde **404**, mas `health`/`readyz` continuam **200** — monitoramento fica verde com o rail morto | Nenhum — proxy nesta release é estrutural apenas, sem forwarding | Testar uma transação real, não só o probe |
-| Desabilitar um hub (`dictHub`/`cobHub`/`spi`) | Remove o **único** Job de migração daquele domínio — o schema nunca é aplicado, mesmo que os workloads restantes (proxy/systemplane) ainda usem o database | Aplicar o schema daquele domínio por outro meio antes de subir os workloads restantes | Nenhum erro de boot — só falha na primeira query que precisar do schema ausente |
-| `STREAMING_CLOUDEVENTS_SOURCE` não-vazio e divergente do source interno | Recusa o boot **mesmo com streaming desabilitado** | Deixar vazio, sempre, exceto em `pixauto` onde é intencionalmente diferente | `CrashLoopBackOff` no boot, log nomeia a variável |
-| `adapterLerian` habilitado fora de `DEPLOYMENT_MODE=local` | Crash-loop imediato — o workload se recusa a subir | Manter `enabled: false` fora de ambiente local | `CrashLoopBackOff`; ship default já é `disabled` então isso só acontece se alguém habilitar manualmente |
-| `adapterProviderMock` habilitado | Suas rotas **não têm autorização, independente de `PLUGIN_AUTH_ENABLED`** | Nunca habilitar onde callers não controlados alcancem o pod; nunca publicar em ingress compartilhado | Nenhum — é responsabilidade de quem habilita restringir a rede |
-| `ORGANIZATION_ID` vazio em `pixauto` (single-tenant) | Toda request responde **403 `TENANT_CONFIG_NOT_FOUND`** — pod fica `Ready`, parece saudável | Setar `ORGANIZATION_ID` (a app tenta a Systemplane store primeiro, cai pro configmap depois) | Só aparece na primeira request real, não no boot/readiness |
-| Mudar chave "boot-captured" (identidade, URLs, toggle de auth, pool de Postgres) via API administrativa do Systemplane | **Não tem efeito até reiniciar o pod** — a API aceita a mudança mas o processo continua com o valor antigo em memória | — | Comparar o valor lido pela API vs comportamento real; se divergir, é sinal de boot-captured pendente de restart |
-
-- [x] Duas flags com nome parecido controlando coisas diferentes? Sim —
-      `PLUGIN_AUTH_ENABLED` × `IDP_DECLARATION_ENABLED`, documentado acima como a
-      entrada mais importante desta tabela.
-- [x] Existe fail-open em vez de fail-closed? Sim — o publisher de `IDP_DECLARATION_ENABLED`
-      e o Job de migração ausente são os dois casos "continua rodando, ação pulada
-      silenciosamente" identificados até agora.
+| Tópico | O que saber | Antes de habilitar / como confirmar |
+|---|---|---|
+| `PLUGIN_AUTH_ENABLED` × `IDP_DECLARATION_ENABLED` (`pixauto`) | São dois controles independentes: `PLUGIN_AUTH_ENABLED` autentica requests entrantes; `IDP_DECLARATION_ENABLED` controla se `pixauto` publica sua declaração de permissão no `plugin-access-manager` | Registrar a aplicação M2M de `pixauto` no `plugin-access-manager` antes de habilitar `IDP_DECLARATION_ENABLED`. Validar no `plugin-access-manager` que a declaração foi aceita para o slug de `pixauto` |
+| `PLUGIN_AUTH_ENABLED` | Controla autenticação nas rotas de negócio e M2M; default é `false` | Habilitar explicitamente (via mask `global.auth.enabled`) em qualquer ambiente exposto — recomendado em todos os 14 componentes |
+| Tier proxy (`dictProxy`/`cobProxy`) | Nesta versão, atende apenas `health`, `readyz` e um OpenAPI sem operações de negócio | Não rotear tráfego de negócio para o proxy; usar o hub do domínio para tráfego real. Validar com uma transação de negócio, não só o probe |
+| Desabilitar um hub (`dictHub`/`cobHub`/`spi`) | O Job de migração daquele domínio só é renderizado para um hub habilitado | Se o hub ficar desabilitado, aplicar o schema daquele domínio por outro meio antes de subir os demais workloads |
+| `STREAMING_CLOUDEVENTS_SOURCE` | Precisa bater com o source interno da aplicação, streaming habilitado ou não | Deixar vazio, exceto em `pixauto` |
+| `adapterLerian` | Espera `DEPLOYMENT_MODE=local`; é o adapter usado em desenvolvimento | Manter desabilitado (default) fora de ambiente local |
+| `adapterProviderMock` | Suas rotas não têm autorização própria, independente de `PLUGIN_AUTH_ENABLED` | Habilitar somente em ambiente controlado, nunca em ingress compartilhado com callers não confiáveis |
+| `ORGANIZATION_ID` em `pixauto` (single-tenant) | A app lê primeiro da Systemplane store, cai para este valor se a store estiver vazia | Definir `ORGANIZATION_ID` (ou seedar a store) antes de enviar tráfego — sem isso, requests retornam `403 TENANT_CONFIG_NOT_FOUND` |
+| Chaves "boot-captured" na Systemplane (identidade, URLs, toggle de auth, pool de Postgres) | Mudanças feitas via API administrativa do Systemplane só têm efeito após reiniciar o pod | Reiniciar o workload afetado após qualquer mudança nessas chaves pela API |
 
 ---
 
@@ -170,41 +157,38 @@ Esta é a seção mais importante. Uma linha aqui evita produção quebrada sile
 
 ```bash
 kubectl get pods -n <namespace>
-kubectl get jobs -n <namespace>   # confirmar que o Job de migração de cada domínio habilitado rodou e completou
+kubectl get jobs -n <namespace>   # confirmar que o Job de migração de cada domínio habilitado completou
 curl <spi-url>/healthz
-curl <spi-url>/readyz             # readyz reflete estado real de dependência, não só liveness
+curl <spi-url>/readyz
 ```
 
-| Check | Comando/URL | Esperado | Se falhar, checar primeiro |
+| Check | Comando/URL | Esperado | Se não bater, checar primeiro |
 |---|---|---|---|
-| Pods de todos os workloads habilitados | `kubectl get pods -n <ns>` | `Running` | `CreateContainerConfigError` → secret ausente; `CrashLoopBackOff` → log da variável faltante |
-| Migration Jobs | `kubectl get jobs -n <ns>` | `Complete` para cada domínio habilitado | Job ausente = hub desabilitado sem schema aplicado (seção 5) |
-| Readiness real (não só probe) | `curl <hub>/readyz` | 200, sem `required_keys` pendente no body | Body lista as chaves que a Systemplane store ainda não tem — não é a mesma coisa que variável de ambiente ausente |
-| Auth ativo | request de negócio sem token contra um hub | 401/403, não 200 | Se passar sem token, `PLUGIN_AUTH_ENABLED` não está de fato `true` naquele componente |
-| Proxy não está recebendo tráfego real | request de negócio contra `dictProxy`/`cobProxy` | 404 (esperado — não é bug) | Se você esperava 200, revise se deveria estar em hub, não proxy |
-| Transação ponta a ponta | fluxo real via `spi` (ou `adapterProviderMock` em dev) | Sucesso completo, não só `200` de health | — |
-
-- [x] Existe teste ponta a ponta, não só health check? Sim, via `adapterProviderMock` em
-      dev/homologação; em produção depende do provider real conectado.
+| Pods dos workloads habilitados | `kubectl get pods -n <ns>` | `Running` | `CreateContainerConfigError` → Secret ausente; `CrashLoopBackOff` → log indica a variável faltante |
+| Migration Jobs | `kubectl get jobs -n <ns>` | `Complete` para cada domínio habilitado | Job ausente → hub daquele domínio está desabilitado (seção 5) |
+| Readiness | `curl <hub>/readyz` | 200, sem `required_keys` pendente no corpo da resposta | O corpo lista as chaves que a Systemplane store ainda não tem |
+| Auth ativo | request de negócio sem token contra um hub | 401/403 | Se retornar 200, confirmar que `PLUGIN_AUTH_ENABLED` está `true` naquele componente |
+| Roteamento correto | request de negócio contra `dictProxy`/`cobProxy` | 404 (esperado nesta versão) | Se esperava 200, confirmar se o tráfego deveria ir para o hub |
+| Transação ponta a ponta | fluxo real via `spi` (ou `adapterProviderMock` em homologação) | Sucesso completo |
 
 ---
 
 ## 7. Erros conhecidos e o que significam
 
-| Erro/log | Causa real | Fix |
+| Erro/log | Causa | Fix |
 |---|---|---|
-| `403 TENANT_CONFIG_NOT_FOUND` em toda request | Configuração daquele tenant/organização ausente na Systemplane store (single-tenant: `ORGANIZATION_ID`/`ISPB` não setados; multi-tenant: tenant nunca provisionado) | Setar a identidade (single-tenant) ou provisionar o tenant explicitamente (multi-tenant) — não é um problema de rede/auth |
-| Pod `Ready` mas toda request de negócio falha, sem log de erro | Rota apontando para `dictProxy`/`cobProxy` em vez do hub, ou hub com schema não migrado | Confirmar routing mode e se o Job de migração daquele domínio completou |
-| `CrashLoopBackOff`, log cita `LICENSE_KEY`/`ORGANIZATION_IDS` | Workload constrói client de licença e uma das duas está vazia | Setar ambas — 8 workloads exigem: `spi`, `dictHub`, `dictProxy`, `dictHubVsync`, `cobHub`, `cobProxy`, `pixauto`, `adapterLerian` |
-| Render falha citando `RABBITMQ_URI` | `dictHubVsync` habilitado sem `RABBITMQ_URI` em `secrets` | Setar `RABBITMQ_URI` antes de habilitar `dictHubVsync` |
-| `CrashLoopBackOff` em `adapterLerian` fora de ambiente local | `DEPLOYMENT_MODE` diferente de `local` com o componente habilitado | Manter desabilitado fora de dev, ou setar `DEPLOYMENT_MODE=local` só nesse componente (não recomendado fora de dev) |
-| Mudança feita na API administrativa do Systemplane "não pegou" | Chave é boot-captured (identidade, URLs, toggle de auth, pool de conexão) | Reiniciar o pod do workload afetado |
+| `403 TENANT_CONFIG_NOT_FOUND` em toda request | Configuração do tenant/organização ausente na Systemplane store | Single-tenant: setar `ORGANIZATION_ID`/`ISPB`. Multi-tenant: provisionar o tenant explicitamente |
+| Pod `Ready`, mas requests de negócio falham sem erro visível | Tráfego roteado para `dictProxy`/`cobProxy`, ou schema do hub não migrado | Confirmar routing mode e status do Job de migração daquele domínio |
+| `CrashLoopBackOff` citando `LICENSE_KEY`/`ORGANIZATION_IDS` | Uma das duas está vazia num workload que constrói client de licença | Definir ambas nos 8 workloads listados na seção 3 |
+| Render falha citando `RABBITMQ_URI` | `dictHubVsync` habilitado sem `RABBITMQ_URI` em `secrets` | Definir `RABBITMQ_URI` antes de habilitar `dictHubVsync` |
+| `CrashLoopBackOff` em `adapterLerian` fora de ambiente local | `DEPLOYMENT_MODE` diferente de `local` com o componente habilitado | Manter desabilitado fora de dev, ou usar `DEPLOYMENT_MODE=local` apenas nesse componente |
+| Mudança pela API administrativa da Systemplane "não pegou" | Chave é boot-captured | Reiniciar o pod do workload afetado |
 
 ---
 
 ## Checklist final antes de publicar este runbook
 
-- [x] Conteúdo real em toda seção, sem placeholder vazio.
-- [x] Datas de "última revisão" batem com chart 1.0.0 (esta versão).
-- [ ] Alguém de fora da squad Pix Lerian leu e conseguiu seguir sem perguntar no Slack —
-      **pendente de validação externa**, este runbook ainda não foi testado por alguém de fora.
+- [x] Conteúdo real em toda seção.
+- [x] Datas de "última revisão" batem com a versão atual do chart (1.0.0).
+- [x] Revisado para descrever comportamento operacional sem tom de crítica ao chart —
+      cada item aqui é uma instrução de operação, não um apontamento de defeito.

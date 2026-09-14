@@ -48,7 +48,12 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/changed.txt
+          # Three dots, not two. `pull_request.base.sha` is the current head of the
+          # base branch, not the merge base, so a two-dot diff also reports every
+          # change that landed on main after this branch was cut — as if this branch
+          # had made them. That is how a pull request touching two workflow files
+          # ended up verifying nine charts it never went near.
+          git diff --name-only "${BASE_SHA}...${HEAD_SHA}" > /tmp/changed.txt
           python3 .github/scripts/chart-image-refs-scope.py
 
   # ----------------- Verify -----------------

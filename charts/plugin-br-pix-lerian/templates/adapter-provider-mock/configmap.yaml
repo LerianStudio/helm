@@ -51,9 +51,9 @@ data:
   # operator who does enable it gets the right endpoint instead of having
   # to ask for it. Point it elsewhere only to target your own mock server.
   PROVIDER_BASE_URL: {{ $cm.PROVIDER_BASE_URL | default "https://mock-pix-lerian-server.sandbox.lerian.net" | quote }}
-  SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4101" | quote }}
-  DICT_BASE_URL: {{ $cm.DICT_BASE_URL | default "http://plugin-br-pix-lerian-dict-hub:4104" | quote }}
-  COB_BASE_URL: {{ $cm.COB_BASE_URL | default "http://plugin-br-pix-lerian-cob-hub:4108" | quote }}
+  SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4101/spi" | quote }}
+  DICT_BASE_URL: {{ $cm.DICT_BASE_URL | default "http://plugin-br-pix-lerian-dict-hub:4104/dict-hub" | quote }}
+  COB_BASE_URL: {{ $cm.COB_BASE_URL | default "http://plugin-br-pix-lerian-cob-hub:4108/cob-hub" | quote }}
   # -- Pix Automático callback target. Empty by default because pixauto
   # ships disabled (see pixauto.enabled); set it whenever the mock has to
   # deliver inbound recurrence callbacks.

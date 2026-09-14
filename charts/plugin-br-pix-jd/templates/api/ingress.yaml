@@ -1,0 +1,13 @@
+{{- if and .Values.api.enabled .Values.api.ingress.enabled }}
+{{- /* `subdomain` lets an umbrella declare global.ingress.domain once and every
+   product derive "<subdomain>.<domain>"; an explicit api.ingress.hosts still wins. */ -}}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" (fromYaml (include "plugin-br-pix-jd.withCommonAnnotations" (dict "root" $ "block" .Values.api.ingress)))
+      "global" (.Values.global).ingress
+      "subdomain" "pix-jd"
+      "name" (include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api"))
+      "namespace" (include "plugin-br-pix-jd.namespace" $)
+      "labels" (include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "api"))
+      "svcPort" .Values.api.service.port) }}
+{{- end }}

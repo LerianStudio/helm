@@ -1,11 +1,37 @@
 {{- if .Values.global.externalMongoDefinitions.enabled }}
 {{- $creds := .Values.global.externalMongoDefinitions.midazCredentials -}}
 {{- $rolesJSON := toJson $creds.roles -}}
+{{- /* TLS is opt-in (default off, matching the un-productized chart's plaintext
+   bundled MongoDB) but REQUIRED for managed TLS-only Mongo-API services like
+   AWS DocumentDB — mongosh has no TLS flags below without this, so bootstrap
+   would fail outright against them. --tlsAllowInvalidHostnames +
+   --tlsAllowInvalidCertificates (not --tlsInsecure, which the mongo:8 image's
+   mongosh has REMOVED — it errors "unrecognized option") together skip
+   hostname/CA verification (DocumentDB doesn't ship its CA in every client
+   trust store by default) — this is the modern mongosh equivalent of the
+   deprecated --tlsInsecure shorthand. */ -}}
+{{- $mongoTLS := .Values.global.externalMongoDefinitions.tls | default dict -}}
+{{- $mongoshTLSArgs := "" -}}
+{{- if $mongoTLS.enabled }}
+  {{- $mongoshTLSArgs = "--tls" -}}
+  {{- if ne (toString $mongoTLS.insecure) "false" }}
+    {{- $mongoshTLSArgs = printf "%s --tlsAllowInvalidHostnames --tlsAllowInvalidCertificates" $mongoshTLSArgs -}}
+  {{- end }}
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "midaz.name" . }}-bootstrap-mongodb
   namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- /* Fixed name — a Job's spec.template is immutable, so ANY chart bump
+       (e.g. the helm.sh/chart label) makes a plain `helm upgrade` fail
+       outright without this. Hook annotations for BOTH delivery paths: each
+       controller reads only its own, safe to coexist. */}}
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1
@@ -85,6 +111,8 @@ spec:
           {{- end }}
         - name: ROLES_JSON
           value: {{ $rolesJSON | quote }}
+        - name: MONGOSH_TLS_ARGS
+          value: {{ $mongoshTLSArgs | quote }}
         command:
         - /bin/bash
         - -c
@@ -98,16 +126,16 @@ spec:
           echo "Checking existing MongoDB objects..."
           USER_EXISTS=0
 
-          if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'if (db.getSiblingDB("admin").getUser(process.env.MONGO_APP_USER) !== null) { print("EXISTS"); }' | grep -q "EXISTS"; then
+          if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin $MONGOSH_TLS_ARGS --quiet --eval 'if (db.getSiblingDB("admin").getUser(process.env.MONGO_APP_USER) !== null) { print("EXISTS"); }' | grep -q "EXISTS"; then
             USER_EXISTS=1
           fi
 
           if [ "$USER_EXISTS" = "1" ]; then
             echo "User '$MONGO_APP_USER' already exists. Updating password and replacing roles..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").updateUser(process.env.MONGO_APP_USER, {pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin $MONGOSH_TLS_ARGS --quiet --eval 'db.getSiblingDB("admin").updateUser(process.env.MONGO_APP_USER, {pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
           else
             echo "Creating user '$MONGO_APP_USER'..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").createUser({user: process.env.MONGO_APP_USER, pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
+            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin $MONGOSH_TLS_ARGS --quiet --eval 'db.getSiblingDB("admin").createUser({user: process.env.MONGO_APP_USER, pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
           fi
 
           echo ""

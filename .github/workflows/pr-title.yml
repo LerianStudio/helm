@@ -36,7 +36,7 @@ jobs:
             plugin-crm
             reporter
             plugin-fees
-            plugin-br-pix-direct-jd
+            plugin-br-pix-jd
             plugin-br-pix-indirect-btg
             plugin-br-pix-switch
             plugin-br-bank-transfer
@@ -57,6 +57,7 @@ jobs:
             br-ccs
             br-slc
             br-sfn
+            streaming-hub
             new
             charts
             common

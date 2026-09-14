@@ -1,0 +1,176 @@
+# Helm Upgrade from v4.0.0 to v4.0.1
+
+## Topics
+
+- **[Overview](#overview)**
+- **[Fixes](#fixes)**
+  - [1. Readiness probe path default corrected](#1-readiness-probe-path-default-corrected)
+- **[Configuration Changes](#configuration-changes)**
+- **[Migration Steps](#migration-steps)**
+- **[Operator note: readiness, MongoDB, and the application image](#operator-note-readiness-mongodb-and-the-application-image)**
+- **[Probe port is now configurable](#probe-port-is-now-configurable)**
+- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
+- **[Command to upgrade](#command-to-upgrade)**
+
+## Overview
+
+This release corrects the default **readiness** probe path (`/` → `/api/admin/health/readyz`) and additionally sets a Mongo-independent **liveness** default (`/` → `/api/admin/health/alive`) and makes the probe **port** templatable. The application version is unchanged. The readiness-path table below shows the original correction; the liveness-path and probe-port changes are additive (see [Configuration Changes](#configuration-changes)).
+
+| Field | v4.0.0 | v4.0.1 |
+|-------|--------|--------|
+| Chart version | `4.0.0` | `4.0.1` |
+| App version | `1.10.0` | `1.10.0` |
+
+## Fixes
+
+### 1. Readiness probe path default corrected
+
+The readiness probe default path has been updated to match the application's actual health check endpoint. This fix ensures that the readiness probe correctly checks MongoDB and other dependency health before marking pods as Ready.
+
+| Setting | v4.0.0 | v4.0.1 |
+|---------|--------|--------|
+| `readinessProbe.path` (default) | `/` | `/api/admin/health/readyz` |
+
+**Before (v4.0.0):**
+
+```yaml
+readinessProbe:
+  httpGet:
+    path: {{ .Values.readinessProbe.path | default "/" }}
+    port: http
+```
+
+**After (v4.0.1):**
+
+```yaml
+readinessProbe:
+  httpGet:
+    path: {{ .Values.readinessProbe.path | default "/api/admin/health/readyz" }}
+    port: http
+```
+
+**Impact:**
+
+- Pods will now use `/api/admin/health/readyz` for readiness checks by default, which properly validates MongoDB connectivity and other dependencies
+- The previous default path `/` bypassed dependency health checks, potentially allowing traffic to pods that were not fully ready
+- If you have explicitly set `readinessProbe.path` in your `values.yaml`, your custom value will continue to be used
+
+> **Important:** This change improves the reliability of readiness checks. Pods will only become Ready when all dependencies are healthy, preventing premature traffic routing during startup or database connectivity issues.
+
+## Configuration Changes
+
+No configuration keys were added, removed, or renamed. The changes only affect built-in default values (`readinessProbe.path`, `livenessProbe.path`) and templating of the probe port.
+
+| Setting | Previous default | Current default | Notes |
+|---------|------------------|-----------------|-------|
+| `readinessProbe.path` | `/` | `/api/admin/health/readyz` | Only affects deployments that do not explicitly set this value |
+| `livenessProbe.path` | `/` | `/api/admin/health/alive` | Mongo-independent `200` endpoint (app source: `GET /admin/health/alive` → `{ status: 'ok' }`), present since app `1.10.0`. Only affects deployments that do not explicitly set this value |
+| `livenessProbe.port` / `readinessProbe.port` | ignored (hardcoded `http`) | honored, default `http` | The probe port was previously hardcoded; it is now templated |
+
+## Migration Steps
+
+This upgrade requires no mandatory values changes. The Helm upgrade will roll the deployment and update the readiness probe path to the corrected default.
+
+**Recommended upgrade process:**
+
+1. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
+
+2. Verify that your application image (version `1.10.0`) exposes the `/api/admin/health/readyz` endpoint. This endpoint has been available since earlier versions.
+
+3. Run the upgrade command during a maintenance window.
+
+4. Monitor the pod rollout to ensure pods become Ready:
+
+```bash
+kubectl get pods -n product-console -w
+```
+
+5. Verify readiness probe status after the upgrade:
+
+```bash
+kubectl describe pod -n product-console -l app.kubernetes.io/name=product-console | grep -A5 "Readiness"
+```
+
+6. Check application logs for any health check failures:
+
+```bash
+kubectl logs -n product-console -l app.kubernetes.io/name=product-console --tail=50 | grep -i health
+```
+
+> **Note:** The upgrade triggers a rolling restart of the `product-console` deployment. Pods will only become Ready when the `/api/admin/health/readyz` endpoint returns a successful response, which includes MongoDB connectivity validation.
+
+### If you need to temporarily revert to the old behavior
+
+If you encounter issues and need to temporarily use the previous readiness path, you can override it:
+
+```yaml
+readinessProbe:
+  path: /
+```
+
+> **Warning:** Using `/` as the readiness path bypasses dependency health checks. This should only be used as a temporary workaround. Investigate and resolve the underlying health check failures instead.
+
+## Operator note: readiness, MongoDB, and the application image
+
+The readiness default `/api/admin/health/readyz` reports Ready only once the
+application has an established MongoDB connection. This is an
+**application-image requirement, not a chart setting** — the chart cannot make
+a lazily-connecting image become Ready.
+
+- The readiness endpoint requires the app image to **connect to MongoDB at
+  startup**. Image builds where the Mongo connection is opened lazily (only on
+  the first business request) will **deadlock on a fresh install**: the pod
+  never receives traffic because it is not Ready, so it never opens the
+  connection, so it never becomes Ready.
+- Operators must run an app image that either **connects to MongoDB eagerly at
+  startup**, or that **exposes a readiness endpoint returning Ready before the
+  Mongo connection is exercised**.
+- The liveness probe defaults to **`/api/admin/health/alive`**, which the app
+  returns `200` for **unconditionally** (no MongoDB dependency). Verified in the
+  application source (`GET /admin/health/alive` → `{ status: 'ok' }`) and present
+  since app image `1.10.0`. Keep liveness on a Mongo-**independent** endpoint —
+  do **not** repoint it at `readyz` or any Mongo-dependent path, or a
+  disconnected MongoDB would crash-loop the pod.
+
+If a fresh install hangs with the pod never becoming Ready, this is the app
+image's connection behavior — not the chart's probe configuration. Liveness on
+`/alive` stays healthy throughout, so the container is not killed while
+readiness is still failing.
+
+## Probe port is now configurable
+
+The probe port previously rendered as the hardcoded `http` port name,
+silently ignoring `livenessProbe.port` / `readinessProbe.port`. Both probes
+now honor these values and **default to `http`**, so installs that never set
+these keys are unaffected.
+
+> ⚠️ **Compatibility caveat — review any existing probe-port override before upgrading.**
+> Because the port was previously ignored, a `livenessProbe.port` /
+> `readinessProbe.port` value already sitting in your `values.yaml` had **no
+> effect**; after this upgrade it **takes effect**. If it points at a port the
+> app does not serve the probe endpoint on, the probe fails and the pod goes
+> unready (readiness) or crash-loops (liveness). The `http` port is the
+> container port `service.port` (commonly `8081`), **not** `8080` — only set an
+> explicit port if the app actually listens for that probe there. Remove stray
+> overrides to keep the safe `http` default.
+
+```yaml
+readinessProbe:
+  port: http   # default; the container "http" port (service.port). Override only if the app serves readyz elsewhere.
+livenessProbe:
+  port: http   # default; the container "http" port (service.port).
+```
+
+## Preview changes before upgrading
+
+```bash
+helm diff upgrade product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version 4.0.1 -n product-console
+```
+
+> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+
+## Command to upgrade
+
+```bash
+helm upgrade product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version 4.0.1 -n product-console
+```

@@ -1,0 +1,6 @@
+dependencies:
+- name: lerian-common-helm
+  repository: file://../lerian-common
+  version: 2.1.0
+digest: sha256:1f63ffbbd24af9fed0483cf380ef293c794eb93ca6b3c3974f36e28f03b58506
+generated: "2026-08-31T14:37:03.689651-03:00"

@@ -35,8 +35,14 @@ $ helm list -n midaz-plugins
 To upgrade the chart to a new version:
 
 ```console
-$ helm upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-helm --version <new-version> -n midaz-plugins
+$ helm upgrade plugin-br-bank-transfer oci://ghcr.io/lerianstudio/plugin-br-bank-transfer-helm --version <new-version> -n midaz-plugins
 ```
+
+- Latest stable v1: chart `1.5.0`, application `1.2.1` — see
+  [UPGRADE-1.5.md](docs/UPGRADE-1.5.md).
+- Latest stable v2: chart/application `2.0.0` — see the mandatory
+  [v1-to-v2 deployment how-to](docs/UPGRADE-2.0.md). This major upgrade forbids
+  rolling old and new binaries together.
 
 ---
 
@@ -47,6 +53,51 @@ To uninstall the chart:
 ```console
 $ helm uninstall plugin-br-bank-transfer -n midaz-plugins
 ```
+
+---
+
+## Managed Cloud (`global.cloud`)
+
+Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster Postgres/Redis/MongoDB/RabbitMQ with one knob:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    postgres: { host: "my-rds.example.com", user: "bank_transfer" }
+    redis: { host: "my-elasticache.example.com:6379", user: "default" }
+  env:
+    name: "production"
+  auth:
+    host: "http://plugin-access-manager-auth:4000"
+
+# Disable the bundled subcharts — the masks above point at your managed
+# infra instead, so the in-cluster Postgres/Redis/MongoDB would otherwise
+# still deploy unused alongside it.
+postgresql:
+  enabled: false
+  external: true
+valkey:
+  enabled: false
+  external: true
+mongodb:
+  enabled: false
+  external: true
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, SSL mode) for the masks
+above; only the ENDPOINTS (host/port/user) still come from
+`global.datastores` — a cloud preset can't know your RDS host. A native
+`bankTransfer.configmap.<KEY>` always overrides any mask. `redis.host` is
+`host:port` (no separate `redis.port` field); set `redis.user` only for
+ACL-authenticated Redis/Valkey deployments.
+
+Copy `values-template.yaml` as your starting point — it documents every
+`global.*` mask with a working example, including the required
+`enabled: false` / `external: true` pair for each bundled subchart on a
+managed-cloud install. `values.yaml` is the full power-user reference;
+`values.schema.json` validates it.
 
 ---
 
@@ -86,7 +137,7 @@ bankTransfer:
 | `bankTransfer.replicaCount` | Number of replicas for the deployment | `2` |
 | `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer` |
 | `bankTransfer.image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `bankTransfer.image.tag` | Image tag used for deployment | `2.4.0` |
+| `bankTransfer.image.tag` | Image tag used for deployment | `2.0.0` |
 | `bankTransfer.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `bankTransfer.revisionHistoryLimit` | Old ReplicaSets to retain | `10` |
 | `bankTransfer.nameOverride` | Overrides the default generated name by Helm | `""` |

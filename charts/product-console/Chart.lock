@@ -1,6 +1,9 @@
 dependencies:
+- name: lerian-common-helm
+  repository: oci://ghcr.io/lerianstudio
+  version: 2.0.0
 - name: mongodb
   repository: https://charts.bitnami.com/bitnami
   version: 16.4.0
-digest: sha256:9ba722b7a43665565e6d93958986982b93d8714781b099c10e7bad5fde723b72
-generated: "2026-06-06T17:03:24.056459-03:00"
+digest: sha256:976ca105a7200d20ce2292efa723d900fe78bdffa754141b849ba4f1919ec431
+generated: "2026-08-21T12:58:49.670267-03:00"

@@ -35,7 +35,6 @@ global:
       roles:
         - role: "readWrite"
           db: "plugin-br-pix-indirect-btg-db"
-
 # -- Outbound (client) mTLS to the BTG API, shared by the components that call
 # BTG directly (pix and reconciliation). Independent of the inbound webhook
 # `MTLS_ENABLED` toggle. The Secret (created by the chart from `tls.crt`/`tls.key`
@@ -86,7 +85,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.1"
+    tag: "1.10.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -273,7 +272,7 @@ inbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.0"
+    tag: "1.10.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -415,7 +414,7 @@ outbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.0"
+    tag: "1.10.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -573,7 +572,7 @@ reconciliation:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.0"
+    tag: "1.10.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -726,7 +725,7 @@ schedule:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.0"
+    tag: "1.10.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

@@ -1,0 +1,12 @@
+{{- if and .Values.api.enabled .Values.api.pdb.enabled }}
+{{- /* specStyle "explicit": minAvailable and maxUnavailable are mutually exclusive
+   in policy/v1, and the explicit style fails fast when both are set rather than
+   silently preferring one. */ -}}
+{{- include "lerian-common.pdb" (dict
+      "pdb" (fromYaml (include "plugin-br-pix-jd.withCommonAnnotations" (dict "root" $ "block" .Values.api.pdb)))
+      "specStyle" "explicit"
+      "name" (include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api"))
+      "namespace" (include "plugin-br-pix-jd.namespace" $)
+      "labels" (include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "api"))
+      "selector" (include "plugin-br-pix-jd.componentSelectorLabels" (dict "root" $ "name" "api"))) }}
+{{- end }}

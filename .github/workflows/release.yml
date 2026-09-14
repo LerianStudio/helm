@@ -40,11 +40,14 @@ jobs:
 
       - name: Get changed paths
         id: changed-paths
-        uses: LerianStudio/github-actions-changed-paths@main
+        uses: LerianStudio/github-actions-shared-workflows/src/config/changed-paths@tier-2
         with:
-          filter_paths: charts/
-          get_app_name: true
-          path_level: 2
+          # No trailing slash. This composite matches "<filter>" or "<filter>/*",
+          # where the archived action did a plain prefix match, so "charts/"
+          # would match nothing here and empty the matrix without saying so.
+          filter-paths: charts
+          get-app-name: true
+          path-level: 2
 
       - name: Restrict matrix on chart line branches
         id: restrict
@@ -127,6 +130,7 @@ jobs:
         run: git pull origin ${{ github.ref_name }}
 
       - name: Set up Helm
+        id: setup-helm
         continue-on-error: true
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
@@ -181,6 +185,29 @@ jobs:
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u lerianstudio --password-stdin
 
+      # `helm registry login` writes to Helm's own registry config, which the Docker
+      # CLI never reads. The image gate below inspects manifests through the Docker
+      # CLI, so GHCR needs a login there as well.
+      - name: Log in to GitHub Container Registry (Docker CLI)
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: lerianstudio
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Last gate before the release runs. `helm lint` and the render gate above prove
+      # the chart is well-formed; neither one looks at whether the images it points to
+      # were ever published. A migration image whose tag is inherited from the app tag
+      # is the recurring case: the chart renders perfectly and the install fails on
+      # ImagePullBackOff. Failing here leaves the chart unpublished, because the tag,
+      # the changelog and the `helm push` all happen inside the semantic-release step
+      # further down.
+      - name: Verify referenced images exist
+        uses: LerianStudio/github-actions-shared-workflows/src/validate/helm-image-refs@develop
+        with:
+          chart-path: ${{ matrix.chart.working_dir }}
+          values-file: .github/configs/helm-render-values/${{ matrix.chart.name }}.yaml
+
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@v6
         id: import_gpg
@@ -206,23 +233,29 @@ jobs:
           CHART_NAME="${{ matrix.chart.name }}"
           CHART_PATH="${{ matrix.chart.working_dir }}"
 
-          if [ "$CHART_NAME" == "plugin-access-manager" ] || [ "$CHART_NAME" == "otel-collector-lerian" ]; then
-            PUSH_FILE="$CHART_NAME-\${nextRelease.version}.tgz"
-          else
-            PUSH_FILE="$CHART_NAME-helm-\${nextRelease.version}.tgz"
-          fi
-
+          # cwd for Semantic Release is the chart dir (working_directory below),
+          # so exec/helm3/git plugin paths must be relative to it, not repo root.
+          #
+          # semantic-release-monorepo rewrites ${nextRelease.version} to the full
+          # git tag (not the plain semver) for the exec plugin's "success"/"fail"
+          # steps specifically — it still resolves to plain semver in "prepare"
+          # and "publish".
+          # Keep the README update in prepareCmd so @semantic-release/git can
+          # commit it. Package and push in publishCmd, after the release commit/tag
+          # succeeds and before the success notification. A fresh temporary
+          # directory lets Helm determine the exact package filename from
+          # Chart.yaml, so publishCmd does not depend on nextRelease.version.
           jq \
-            --arg chartPath "$CHART_PATH" \
             --arg tagFormat "$CHART_NAME-v\${version}" \
-            --arg successCmd "helm package $CHART_PATH && helm push $PUSH_FILE oci://ghcr.io/lerianstudio" \
-            --arg prepareCmd "./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
-            '.plugins[2][1].chartPath = $chartPath |
-              .plugins[4][1].assets = [($chartPath + "/Chart.yaml"), "README.md"] |
+            --arg publishCmd "PACKAGE_DIR=\$(mktemp -d) && helm package . --destination \"\$PACKAGE_DIR\" && set -- \"\$PACKAGE_DIR\"/*.tgz && [ \"\$#\" -eq 1 ] && helm push \"\$1\" oci://ghcr.io/lerianstudio" \
+            --arg prepareCmd "cd ../.. && ./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
+            '.plugins[2][1].chartPath = "." |
+              .plugins[4][1].assets = ["Chart.yaml", "../../README.md"] |
               .tagFormat = $tagFormat |
-              .plugins[3][1].successCmd = $successCmd |
+              del(.plugins[3][1].successCmd) |
+              .plugins[3][1].publishCmd = $publishCmd |
               .plugins[3][1].prepareCmd = $prepareCmd' \
-            .github/configs/.releaserc.json > .releaserc
+            .github/configs/.releaserc.json > "$CHART_PATH/.releaserc"
 
           # On a chart line branch, register it as a semantic-release maintenance
           # branch so the next version stays inside its range (e.g. 5.7.x -> 5.7.1)
@@ -231,19 +264,25 @@ jobs:
               --arg name "${BRANCH_NAME}" \
               --arg range "${CHART_LINE_RANGE}" \
               '.branches += [{name: $name, range: $range, channel: $range}]' \
-              .releaserc > .releaserc.tmp && mv .releaserc.tmp .releaserc
+              "$CHART_PATH/.releaserc" > "$CHART_PATH/.releaserc.tmp" && mv "$CHART_PATH/.releaserc.tmp" "$CHART_PATH/.releaserc"
           fi
 
-          jq . .releaserc
+          jq . "$CHART_PATH/.releaserc"
+
+      - name: Init ephemeral package.json
+        working-directory: ${{ matrix.chart.working_dir }}
+        run: '[ -f package.json ] || npm init -y >/dev/null'
 
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@16ca923e6ccbb50770c415a0ccd43709a8c5f7a4 # v4.2.2
         id: semantic_changelog
         with:
+          working_directory: ${{ matrix.chart.working_dir }}
           ci: false
           semantic_version: 23.0.8
           extra_plugins: |
             conventional-changelog-conventionalcommits@v7.0.2
+            semantic-release-monorepo@8.0.2
             semantic-release-helm3
             @semantic-release/exec@6.0.3
             @semantic-release/git
@@ -253,6 +292,47 @@ jobs:
           GIT_AUTHOR_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
+
+      # What this leg published, recorded by the leg itself. A matrix cannot
+      # report a value per leg — every leg writes the same job output and the
+      # last one wins — so each leg leaves its result as an artifact instead.
+      - name: Record what this leg published
+        if: steps.semantic_changelog.outputs.new_release_published == 'true'
+        env:
+          CHART: ${{ matrix.chart.name }}
+          WORKING_DIR: ${{ matrix.chart.working_dir }}
+          VERSION: ${{ steps.semantic_changelog.outputs.new_release_version }}
+        run: |
+          set -euo pipefail
+
+          # The published artifact is the Chart.yaml `name`, which carries a
+          # -helm suffix the directory does not: charts/midaz publishes as
+          # midaz-helm. The deployment matrix in the GitOps repository, on the
+          # other hand, is keyed by the directory.
+          artifact=$(awk '
+            /^name:/ {
+              sub(/^name:[ \t]*/, ""); sub(/[ \t]*#.*$/, "")
+              gsub(/^["'"'"']|["'"'"']$/, ""); sub(/[ \t]+$/, "")
+              print; exit
+            }' "${WORKING_DIR}/Chart.yaml")
+
+          if [ -z "$artifact" ]; then
+            echo "::error::Could not read the chart name from ${WORKING_DIR}/Chart.yaml"
+            exit 1
+          fi
+
+          mkdir -p published
+          jq -n --arg name "$CHART" --arg artifact "$artifact" --arg version "$VERSION" \
+            '{name: $name, artifact: $artifact, version: $version}' \
+            | tee "published/${CHART}.json"
+
+      - name: Upload what this leg published
+        if: steps.semantic_changelog.outputs.new_release_published == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: published-${{ matrix.chart.name }}
+          path: published/${{ matrix.chart.name }}.json
+          retention-days: 1
 
 
 
@@ -278,12 +358,12 @@ jobs:
 
       - name: Publish Release in Plugin Lifecycle Management
         if: github.ref == 'refs/heads/main' && steps.chart-kind.outputs.skip_lifecycle != 'true'
-        uses: LerianStudio/github-actions-lifecycle-management@main
+        uses: LerianStudio/github-actions-shared-workflows/src/deploy/lifecycle-management-publish@v1.57.0
         with:
-          chart_name: "${{ matrix.chart.name }}"
-          application_ids: ${{ vars.APPLICATION_IDS }}
-          lifecycle_api_token: ${{ secrets.LIFECYCLE_API_TOKEN }}
-          working_directory: ${{ matrix.chart.working_dir }}
+          chart-name: "${{ matrix.chart.name }}"
+          application-ids: ${{ vars.APPLICATION_IDS }}
+          lifecycle-api-token: ${{ secrets.LIFECYCLE_API_TOKEN }}
+          working-directory: ${{ matrix.chart.working_dir }}
 
   notify-release:
     needs:
@@ -304,3 +384,79 @@ jobs:
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
       SLACK_CHANNEL_OPS: ${{ secrets.SLACK_CHANNEL_OPS }}
       SLACK_GROUP_TECH_SUPPORT: ${{ secrets.SLACK_GROUP_TECH_SUPPORT }}
+
+  # ---------------------------------------------------------------------------
+  # Pin the freshly published charts into the GitOps repository.
+  #
+  # Only from the default branch. develop and the maintenance/*.x lines also
+  # release, but their versions are not what the internal tier should track: a
+  # maintenance release of an older line would pin the environments *backwards*.
+  # ---------------------------------------------------------------------------
+  collect-published-charts:
+    name: Collect Published Charts
+    needs: [get-changed-paths, release-helm-chart]
+    if: >-
+      needs.get-changed-paths.outputs.matrix != '[]' &&
+      github.ref_name == github.event.repository.default_branch
+    runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
+    outputs:
+      matrix: ${{ steps.collect.outputs.matrix }}
+    steps:
+      # No checkout: every version comes from the leg that published it, so
+      # there is no working tree to read and no token to persist.
+      - name: Download what each leg published
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: published-*
+          path: published
+          merge-multiple: true
+
+      - name: Collect them into one matrix
+        id: collect
+        run: |
+          set -euo pipefail
+
+          # download-artifact does not create the directory when its pattern
+          # matches nothing, which is a legitimate outcome rather than an error.
+          mkdir -p published
+
+          # Empty when no chart in this run produced a release — semantic-release
+          # finds nothing releasable on a docs-only or chore-only change.
+          MATRIX=$(find published -name '*.json' -type f -print0 2>/dev/null \
+            | sort -z \
+            | xargs -0 --no-run-if-empty jq -s -c '.' \
+            || echo '[]')
+          MATRIX=${MATRIX:-[]}
+
+          echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
+          printf '%s' "$MATRIX" | jq .
+
+  update-gitops:
+    name: Update GitOps
+    needs: collect-published-charts
+    if: needs.collect-published-charts.outputs.matrix != '[]'
+    strategy:
+      # Serial: every leg commits to the same GitOps repository, and racing
+      # pushes would spend the composite's single rebase retry on each other.
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        chart: ${{ fromJson(needs.collect-published-charts.outputs.matrix) }}
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/gitops-chart-update.yml@tier-2
+    with:
+      chart_name: ${{ matrix.chart.name }}
+      chart_version: ${{ matrix.chart.version }}
+      # Environments pinned to a different OCI repository — the alpha/ and
+      # alpha-internal/ channels — are left alone: the composite only edits
+      # releases whose chart matches this reference exactly.
+      chart_ref: oci://ghcr.io/lerianstudio/${{ matrix.chart.artifact }}
+    # Named rather than inherited: this job hands credentials to another
+    # repository's workflow, and `inherit` would pass everything this release
+    # holds — the Slack tokens, the App key — not the six it needs.
+    secrets:
+      MANAGE_TOKEN: ${{ secrets.MANAGE_TOKEN }}
+      ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+      LERIAN_CI_CD_USER_GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
+      LERIAN_CI_CD_USER_GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
+      LERIAN_CI_CD_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
+      LERIAN_CI_CD_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}

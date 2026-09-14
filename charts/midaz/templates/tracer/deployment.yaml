@@ -1,0 +1,143 @@
+{{- if .Values.tracer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "midaz-tracer.fullname" . }}
+  labels:
+    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+{{- /*
+Migration gate — see the ledger Deployment for the reasoning. The migration Job
+stays in the default sync wave with the bundled PostgreSQL and its Secret, this
+Deployment moves one wave later, and Argo CD applies it only once the Job is
+Complete. `tracer.migrations.deploymentSyncWave: ""` opts out.
+*/}}
+{{- $migrationSyncWave := dig "deploymentSyncWave" "1" (.Values.tracer.migrations | default dict) | toString }}
+{{- if and .Values.tracer.migrations.enabled $migrationSyncWave }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $migrationSyncWave | quote }}
+{{- end }}
+spec:
+  revisionHistoryLimit: {{ .Values.tracer.revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ .Values.tracer.deploymentUpdate.type }}
+    {{- if eq .Values.tracer.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.tracer.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.tracer.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not .Values.tracer.autoscaling.enabled }}
+  replicas: {{ .Values.tracer.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 8 }}
+      {{- with .Values.tracer.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+    {{- with .Values.tracer.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      {{- with .Values.tracer.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ include "midaz-tracer.fullname" . }}
+          image: {{ .Values.tracer.image.repository }}:{{ .Values.tracer.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.tracer.image.pullPolicy }}
+          {{- with .Values.tracer.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.tracer.service.port }}
+              protocol: TCP
+            {{- if .Values.tracer.configmap.TRACER_GRPC_PORT }}
+            {{/* TRACER_GRPC_PORT is a listen address (":4021"); the container port is
+                 its numeric half, kept in sync with the Service via service.grpcPort. */}}
+            - name: grpc
+              containerPort: {{ include "midaz-tracer.grpcPort" . }}
+              protocol: TCP
+            {{- end }}
+          envFrom:
+          {{- if not .Values.tracer.useExistingSecret }}
+          - secretRef:
+              name: {{ include "midaz-tracer.fullname" . }}
+          {{- else }}
+          - secretRef:
+              name: {{ required "tracer.existingSecretName is required when tracer.useExistingSecret=true" .Values.tracer.existingSecretName }}
+          {{- end }}
+          - configMapRef:
+              name: {{ include "midaz-tracer.fullname" . }}
+          env:
+            {{/* existingSecretName presence is enforced by midaz-tracer.validate; ternary
+                 cannot carry `required` because Go templates evaluate both arms. */}}
+            {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
+            {{/* PostgreSQL: DB_PASSWORD is single-sourced from the Bitnami postgresql subchart Secret when internal. */}}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- $pgAuth := $pg.auth | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_PASSWORD") | nindent 12 }}
+            {{- else if .Values.tracer.secrets.DB_PASSWORD }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_PASSWORD
+            {{- end }}
+            {{- $otel := index .Values "otel-collector-lerian" }}
+            {{- if $otel.enabled }}
+            - name: "POD_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+            - name: "OTEL_RESOURCE_ATTRIBUTES"
+              value: "k8s.pod.ip=$(POD_IP)"
+            {{- end }}
+          resources:
+            {{- toYaml .Values.tracer.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.tracer.readinessProbe.path | default "/readyz" }}
+              port: {{ .Values.tracer.service.port }}
+            initialDelaySeconds: {{ .Values.tracer.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.tracer.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.tracer.readinessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.tracer.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.tracer.readinessProbe.failureThreshold | default 3 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.tracer.livenessProbe.path | default "/health" }}
+              port: {{ .Values.tracer.service.port }}
+            initialDelaySeconds: {{ .Values.tracer.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.tracer.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ .Values.tracer.livenessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.tracer.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.tracer.livenessProbe.failureThreshold | default 3 }}
+      {{- with .Values.tracer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tracer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

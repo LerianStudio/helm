@@ -1,0 +1,20 @@
+# CI-ONLY render fixture for charts/streaming-hub.
+#
+# NOT a production example and NOT a credential store. Every value here exists so
+# the repository render gate can satisfy the chart's fail-loud gates; the strings
+# are deliberately self-describing placeholders, never real secrets.
+#
+# Gate this file satisfies:
+#   streamingHub.secrets.STREAMING_HUB_POSTGRES_DSN — required whenever
+#     streamingHub.useExistingSecret=false (the default): the app cannot start
+#     without PostgreSQL, and the same key gates the migration-only Secret hook
+#     (templates/migrations.yaml via templates/_helpers.tpl migrationDSN).
+#
+# The DSN below is deliberately PASSWORD-FREE. A `user:password@host` URI — even
+# with an obviously fake password — matches Checkov's basic-auth credential
+# pattern (CKV_SECRET_4) and trips the repository secret scan. libpq accepts a
+# userinfo section with no password, so the render gate is satisfied without a
+# credential-shaped string ever being committed.
+streamingHub:
+  secrets:
+    STREAMING_HUB_POSTGRES_DSN: "postgres://ci-only@postgresql:5432/streaming_hub?sslmode=disable"

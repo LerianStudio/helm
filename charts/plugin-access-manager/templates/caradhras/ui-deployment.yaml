@@ -1,0 +1,125 @@
+{{- if .Values.caradhras.ui.enabled }}
+{{- $ui := .Values.caradhras.ui -}}
+{{- $uiAS := $ui.autoscaling | default dict -}}
+{{- $uiSvc := $ui.service | default dict -}}
+{{- $uiRP := $ui.readinessProbe | default dict -}}
+{{- $uiLP := $ui.livenessProbe | default dict -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-caradhras-ui.fullname" . }}
+  labels:
+    {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" $ui.name ) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $ui.revisionHistoryLimit | default 10 }}
+  {{- if not $uiAS.enabled }}
+  replicas: {{ $ui.replicaCount | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-caradhras-ui.selectorLabels" (dict "context" . "name" $ui.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" $ui.name ) | nindent 8 }}
+    spec:
+      {{- with $ui.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        # -- gid 0 (root group), NOT 1000: verified against the real image
+        # (ghcr.io/lerianstudio/caradhras-ui) that /etc/nginx/conf.d and
+        # friends are owned `nginx:root` with group-write (arbitrary-uid
+        # nginx image convention) — uid 1000/gid 1000 gets EACCES from the
+        # docker-entrypoint.d envsubst scripts; uid 1000/gid 0 can write.
+        runAsGroup: 0
+      containers:
+        - name: {{ include "plugin-caradhras-ui.fullname" . }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            # The bundled nginx (SPA + same-origin reverse proxy to the caradhras
+            # backend) writes its default cache/pid paths at runtime, so the root
+            # filesystem is left writable for this container only — same rationale
+            # as the caradhras backend container.
+            readOnlyRootFilesystem: false
+          {{- $img := $ui.image | default dict -}}
+          {{- if kindIs "string" $img }}
+          image: {{ $img | quote }}
+          imagePullPolicy: Always
+          {{- else }}
+          image: "{{ $img.repository | default "ghcr.io/lerianstudio/caradhras-ui" }}:{{ $img.tag | default "1.2.0" }}"
+          imagePullPolicy: {{ $img.pullPolicy | default "Always" }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $uiSvc.port | default 8080 }}
+              protocol: TCP
+          env:
+            # Verified against the real image's /etc/nginx/templates/default.conf.template
+            # (ghcr.io/lerianstudio/caradhras-ui:1.2.0-rc.2): the entrypoint's
+            # envsubst reads these two exact names.
+            #
+            # CARADHRAS_BACKEND_ADDR: "host:port" (NO scheme) — it's substituted
+            # into `set $caradhras_backend "${CARADHRAS_BACKEND_ADDR}";` then used
+            # as `proxy_pass http://$caradhras_backend;`. A value with "http://"
+            # already in it (the old CARADHRAS_BACKEND_URL name/shape) breaks the
+            # proxy_pass URL.
+            #
+            # MUST be the fully-qualified in-cluster name (<svc>.<ns>.svc.cluster.local),
+            # not the short Service name: since proxy_pass's target is a variable,
+            # nginx re-resolves it at request time via its OWN resolver module
+            # (the `resolver` directive above) instead of glibc/musl getaddrinfo —
+            # and nginx's resolver does NOT consult /etc/resolv.conf's `search`
+            # list the way normal DNS clients do. A short name here fails with
+            # "could not be resolved (3: Host not found)" even though the same
+            # short name resolves fine for any other client in the pod.
+            - name: CARADHRAS_BACKEND_ADDR
+              value: {{ printf "%s.%s.svc.cluster.local:%s" (include "plugin-caradhras.fullname" .) .Release.Namespace (include "caradhras.servicePort" .) | quote }}
+            # NGINX_RESOLVER_ADDR: the config's `resolver` directive is templated
+            # too (proxy_pass uses a variable, so nginx re-resolves the upstream
+            # at request time — Docker's embedded 127.0.0.11 default doesn't exist
+            # in a k8s pod). kube-dns is the conventional in-cluster DNS Service
+            # name across kubeadm/EKS/GKE/AKS even when CoreDNS-backed.
+            - name: NGINX_RESOLVER_ADDR
+              value: {{ $ui.resolverAddr | default "kube-dns.kube-system.svc.cluster.local" | quote }}
+          {{- with $ui.extraEnvVars }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml ($ui.resources | default (dict "limits" (dict "cpu" "200m" "memory" "256Mi") "requests" (dict "cpu" "100m" "memory" "128Mi"))) | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              # /healthz: the image's dedicated cheap-200 endpoint (no filesystem
+              # hit), verified against the real default.conf.template.
+              path: {{ $uiRP.path | default "/healthz" }}
+              port: {{ $uiSvc.port | default 8080 }}
+            initialDelaySeconds: {{ $uiRP.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ $uiRP.periodSeconds | default 5 }}
+          livenessProbe:
+            httpGet:
+              path: {{ $uiLP.path | default "/healthz" }}
+              port: {{ $uiSvc.port | default 8080 }}
+            initialDelaySeconds: {{ $uiLP.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ $uiLP.periodSeconds | default 20 }}
+      {{- with $ui.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $ui.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $ui.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

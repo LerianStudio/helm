@@ -1,0 +1,7 @@
+{{- if .Values.caradhras.autoscaling.enabled }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" .Values.caradhras.autoscaling
+      "name" (include "plugin-caradhras.fullname" .)
+      "labels" (printf "%s " (include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name)))
+    ) }}
+{{- end }}

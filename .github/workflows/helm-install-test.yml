@@ -128,7 +128,11 @@ jobs:
           if [[ "$EVENT_NAME" != "pull_request" ]]; then
             echo "charts=$(all_app_charts)" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          # Three dots, not two. `pull_request.base.sha` is the current head of the
+          # base branch, not the merge base, so a two-dot diff also reports whatever
+          # landed on main after this branch was cut — charts this pull request never
+          # touched, installed into kind for no reason.
+          changed="$(git diff --name-only "${BASE_SHA}...${HEAD_SHA}")"
           # An infra change (script/workflow/shared library/fixtures) can affect every
           # chart, so test them all; otherwise only the charts whose files changed.
           if grep -Eq '^(\.github/scripts/install-test\.sh|\.github/workflows/helm-install-test\.yml|charts/lerian-common/)' <<< "$changed"; then

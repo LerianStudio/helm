@@ -58,6 +58,7 @@ anywhere near production.
 | `app.image.tag` | `""` | Falls back to `.Chart.AppVersion`. Pin it for reproducible deploys. |
 | `app.configmap.MOCK_BACEN_PORT` | `":9900"` | The listener address, in the `":<port>"` form the binary expects. The container port is derived from it; a bare `"9900"` fails the render. |
 | `app.service.port` | `9900` | `ClusterIP` only. |
+| `app.service.targetPort` | `http` | Pinned to the named container port. A numeric value is rejected: it could diverge from the Deployment's `containerPort` and leave the Service forwarding nowhere. |
 
 `ENV_NAME` is **reserved**: it is always rendered from `environment`, is rejected inside
 `app.configmap` by the schema, and is stripped in the template. There is no way for the
@@ -144,12 +145,38 @@ The Pod runs with:
 The image is distroless, so the container runs no shell and the chart overrides no
 `command` or `args`.
 
-`values.schema.json` enforces that baseline rather than merely defaulting to it:
-`serviceAccount.automountServiceAccountToken` must be `false`,
-`securityContext.runAsNonRoot` and `readOnlyRootFilesystem` must be `true`,
-`allowPrivilegeEscalation` must be `false`, `capabilities.drop` must contain
-`ALL`, and `podSecurityContext.seccompProfile.type` must be `RuntimeDefault`.
-An operator cannot weaken them through values.
+### Schema-enforced, not merely defaulted
+
+The Deployment renders `podSecurityContext` and `securityContext` verbatim, so both are
+**closed objects** in `values.schema.json`: a field the chart does not declare is
+rejected at render time rather than passed through to the Pod.
+
+`podSecurityContext` accepts exactly two fields:
+
+| Field | Accepted value |
+|-------|----------------|
+| `runAsNonRoot` | `true` |
+| `seccompProfile.type` | `RuntimeDefault` (`seccompProfile` is itself a closed object) |
+
+`securityContext` accepts exactly these:
+
+| Field | Accepted value |
+|-------|----------------|
+| `runAsNonRoot` | `true` |
+| `runAsUser` | `65532` |
+| `runAsGroup` | `65532` |
+| `allowPrivilegeEscalation` | `false` |
+| `readOnlyRootFilesystem` | `true` |
+| `privileged` | `false` |
+| `capabilities.drop` | an array containing `ALL` (`capabilities` is closed to `drop`) |
+
+UID and GID are pinned to `65532` — the `nonroot` user of the published distroless image
+— rather than left as a range. Everything else is rejected, including `procMount`, a
+container-level `seccompProfile`, `capabilities.add`, `supplementalGroups`, `sysctls`,
+and `fsGroup`. `serviceAccount.automountServiceAccountToken` must likewise be `false`.
+
+An operator cannot weaken the baseline through values. Widening it means editing the
+schema in a reviewed change, not passing a flag.
 
 ## Reserved keys
 

@@ -75,14 +75,15 @@
       "additionalProperties": { "type": "string" }
     },
     "podSecurityContext": {
+      "description": "Closed contract: only runAsNonRoot and seccompProfile.type are accepted. The Deployment renders this map verbatim, so any undeclared field (runAsUser: 0, supplementalGroups, sysctls, ...) would reach the Pod and weaken the documented baseline.",
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "required": ["runAsNonRoot", "seccompProfile"],
       "properties": {
         "runAsNonRoot": { "type": "boolean", "enum": [true] },
         "seccompProfile": {
           "type": "object",
-          "additionalProperties": true,
+          "additionalProperties": false,
           "required": ["type"],
           "properties": {
             "type": { "type": "string", "enum": ["RuntimeDefault"] }
@@ -91,18 +92,21 @@
       }
     },
     "securityContext": {
+      "description": "Closed contract: only the fields below are accepted. The Deployment renders this map verbatim, so an undeclared field (procMount, a container-level seccompProfile, capabilities.add, ...) would reach the container. UID/GID are pinned to 65532, the distroless nonroot user in the published image.",
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "required": [
         "runAsNonRoot",
+        "runAsUser",
+        "runAsGroup",
         "allowPrivilegeEscalation",
         "readOnlyRootFilesystem",
         "capabilities"
       ],
       "properties": {
         "runAsNonRoot": { "type": "boolean", "enum": [true] },
-        "runAsUser": { "type": "integer", "minimum": 1 },
-        "runAsGroup": { "type": "integer", "minimum": 1 },
+        "runAsUser": { "type": "integer", "const": 65532 },
+        "runAsGroup": { "type": "integer", "const": 65532 },
         "allowPrivilegeEscalation": { "type": "boolean", "enum": [false] },
         "readOnlyRootFilesystem": { "type": "boolean", "enum": [true] },
         "privileged": { "type": "boolean", "enum": [false] },
@@ -176,7 +180,11 @@
               "enum": ["ClusterIP"]
             },
             "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "targetPort": { "type": ["integer", "string"] },
+            "targetPort": {
+              "description": "The named container port only. A numeric value could diverge from the Deployment's containerPort and leave the Service forwarding nowhere.",
+              "type": "string",
+              "enum": ["http"]
+            },
             "annotations": {
               "type": "object",
               "additionalProperties": { "type": "string" }

@@ -1,12 +1,21 @@
 # Install-test (kind) delta — layered ON TOP of helm-render-values/midaz.yaml
 # (the render-gate is unaffected; this file only feeds the kind install-test).
-#
-# The chart defaults the env-wide name to "production". In production mode the
-# ledger's safety guard fatals when authentication is disabled
-# (`ENV_NAME=production requires PLUGIN_AUTH_ENABLED=true`) — correct behavior,
-# but the kind install-test runs the bundled stack without a real auth backend.
-# Run the install-test in "development" mode so the guard allows the
-# no-auth bundled stack to boot. Production installs keep the safe default.
+
+# 1) The chart defaults the env-wide name to "production", where the ledger's
+#    safety guard fatals when authentication is disabled
+#    (`ENV_NAME=production requires PLUGIN_AUTH_ENABLED=true`) — correct behavior,
+#    but the kind stack runs without a real auth backend. Run in development mode.
 global:
   env:
     name: development
+
+# 2) The bundled RabbitMQ ships a static load_definitions.json whose
+#    transaction/consumer users carry a fixed password_hash for the documented
+#    default password "lerian" (RabbitMQ passwords are a known not-yet-single-
+#    sourced gap — see docs/UPGRADE-8.3.md). The app must therefore connect with
+#    "lerian"; the shared fixture's placeholder "sample" yields a 403
+#    ("username or password not allowed"). Match the bundled broker here.
+ledger:
+  secrets:
+    RABBITMQ_DEFAULT_PASS: "lerian"
+    RABBITMQ_CONSUMER_PASS: "lerian"

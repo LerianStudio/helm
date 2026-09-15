@@ -47,7 +47,7 @@ qual preset de nuvem gerenciada se aplica.
 | MongoDB | Sempre — o console guarda o próprio estado (cache de UI de organizações, settings) aqui | Subchart embutido (`mongodb.enabled: true`) **ou** externo via `MONGO_HOST`/`MONGODB_URI`/`MONGODB_USER` em `configmap` + `MONGODB_PASS` em `secrets`, ou a mask `global.datastores.mongo` — seção 4 |
 | `lerian-common` (library chart) | Sempre | Dependência do chart; fornece os templates HPA/PDB/Service/Ingress e as masks `global.*`. Nada a configurar. |
 | Midaz ledger | Sempre (o console é UI dele) | `MIDAZ_API_HOST` / `MIDAZ_BASE_PATH` / `MIDAZ_TRANSACTION_BASE_*` em `configmap` — default `midaz-ledger.midaz.svc.cluster.local:3002` |
-| plugin-access-manager (auth + identity) | Obrigatório quando a autorização está ligada (recomendado em todo ambiente exposto) | `PLUGIN_AUTH_*` / `PLUGIN_IDENTITY_*` em `configmap`, client id/secret em `secrets` — seção 5 |
+| plugin-access-manager (auth + identity) | Obrigatório quando a autorização está ligada (recomendado em todo ambiente exposto) | `PLUGIN_AUTH_*` / `PLUGIN_IDENTITY_*` em `configmap`, client id/secret em `secrets` — seção 3 (ordem de instalação) |
 | Plugins irmãos (CRM, Reporter, Fees, Tracer, Fetcher, Matcher, Flowker, Bank Transfer, Payments) | Só as features que você habilita na UI | Um `*_BASE_PATH` por serviço em `configmap`; cada um default pro FQDN in-cluster do irmão. Uma feature com base path errado só quebra aquela feature, não o startup. |
 | OTEL collector | Opcional (telemetria) | `otel.external: true` injeta `OTEL_URL_*`/`HOST_IP` pra um collector DaemonSet node-local; ou `ENABLE_TELEMETRY`/`global.observability` |
 | Vault / gerenciador de segredo | Recomendado em produção | `useExistingSecret: true` + `existingSecretName`, ou refs Vault no bloco `secrets:` (o env de referência usa refs AVP `<path:...>`) |
@@ -77,6 +77,10 @@ só quando os nomes de serviço/namespace diferirem.
    o allowlist de IP do tenant nunca é aplicado (seção 5).
 6. Configurar `ingress` (class, host, TLS) e setar `NEXTAUTH_URL` pra URL pública que o
    browser usa nos callbacks OAuth (default: primeiro host do ingress como `https://…`).
+   Setar `configmap.ALLOWED_ORIGINS` explicitamente sempre que a URL voltada ao browser
+   diferir desse primeiro host do ingress (domínio custom, CDN, ou origens extras): ele
+   default pra origem do primeiro host do ingress — **não** pro `NEXTAUTH_URL` — então um
+   descompasso faz as requests do browser falharem no CORS.
 7. `helm install … -n <ns> --create-namespace`. Deixar `namespaceOverride` vazio a menos
    que saiba que precisa — com o MongoDB embutido ele separa recursos entre namespaces
    (seção 5).
@@ -138,6 +142,7 @@ ConfigMap nas versões do chart que carregam a chave allowlistada (LerianStudio/
 | **MongoDB embutido não sobrevive a `namespaceOverride`** | O Service do subchart é `<release>-mongodb` no namespace de **release**; não herda `namespaceOverride`. Com `namespaceOverride` setado e `MONGO_HOST: "mongodb"`, o console aponta pra um host que não existe em lugar nenhum e nunca fica Ready. | Pra qualquer coisa além de demo no mesmo namespace, usar Mongo **externo**. Se manter o embutido, deixar `namespaceOverride` vazio e setar `MONGO_HOST` no `<release>-mongodb` real. |
 | **Namespace da ServiceAccount** | Em charts antes do fix (LerianStudio/helm #2120), `templates/serviceaccount.yaml` não pinava namespace, então com `namespaceOverride` a SA caía no namespace de release enquanto os pods a pediam no namespace do override → pods nunca criados (`Replicas: 0/1`). | Usar versão do chart que pina o namespace da SA, ou deixar `namespaceOverride` vazio. |
 | **Preset de nuvem gerenciada** | `global.cloud: aws` auto-seta o formato `MONGO_PARAMETERS` do DocumentDB quando nada mais específico sobrescreve. `gcp`/`azure` não têm preset de Mongo hoje. | No DocumentDB, não escreva `MONGO_PARAMETERS` na mão — deixe o preset aplicar. |
+| **⚠️ O preset AWS pula a verificação do cert do Mongo** | O preset `global.cloud: aws` inclui `tlsInsecure=true` — TLS ligado mas o certificado do servidor DocumentDB **não é verificado** (aberto a MITM). É um default de conveniência, **não seguro por si só pra produção**. | Numa produção security-strict, sobrescreva `configmap.MONGO_PARAMETERS` com uma string CA-verificada (ex.: `tls=true&tlsCAFile=/path/rds-combined-ca-bundle.pem&retryWrites=false`) e monte o CA bundle. |
 | **OTEL é externo por default no env de referência** | `otel.external: true` injeta `HOST_IP`/`OTEL_URL_*` pra um collector DaemonSet node-local; não instala collector. | Apontar pra um collector real, ou setar `ENABLE_TELEMETRY: "false"` se não houver. |
 
 ---

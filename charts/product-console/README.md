@@ -187,12 +187,12 @@ refusal prints the host to use, plus the `replicaSet=` parameter to add to
 `configmap.MONGO_PARAMETERS` for a replica set. Refusing is deliberate: the
 alternative is a console that comes up Ready pointing at a name that resolves
 in no namespace.
-That wiring applies only while the subchart's namespace equals the console's,
-which is what `-n product-console` gives you as long as `global.namespaceOverride`
-is unset. Your own value still wins when you set one, either as
-`secrets.MONGODB_PASS` or in your own Secret, which is switched on with
-`useExistingSecret: true` and named with `existingSecretName` (the switch is a
-boolean; the name lives in the other key).
+**The password wiring** above applies only while the subchart's namespace equals
+the console's, which is what `-n product-console` gives you as long as
+`global.namespaceOverride` is unset. Your own value still wins when you set one,
+either as `secrets.MONGODB_PASS` or in your own Secret, which is switched on
+with `useExistingSecret: true` and named with `existingSecretName` (the switch
+is a boolean; the name lives in the other key).
 
 **The one case that needs you: a namespace split.** The subchart does not
 inherit `namespaceOverride`; it lands in `global.namespaceOverride` when set and

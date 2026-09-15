@@ -255,7 +255,9 @@ secrets:
   NEXTAUTH_SECRET: ""
   # -- MongoDB password. Leave it empty with the bundled MongoDB: the console
   # reads the subchart's own generated password. Setting it here takes over, so
-  # it then has to match mongodb.auth.rootPassword.
+  # it then has to match the password the subchart actually runs with: that is
+  # mongodb.auth.rootPassword, or the password inside the Secret named by
+  # mongodb.auth.existingSecret whenever you set that instead.
   MONGODB_PASS: ""
 
 # -- Use existing secret instead of creating one
@@ -270,8 +272,8 @@ existingSecretName: ""
 # The bundled MongoDB does not inherit this chart's namespaceOverride: it lands
 # in global.namespaceOverride when that is set and in the RELEASE namespace
 # otherwise. configmap.MONGO_HOST defaults to the Service the subchart really
-# creates, including its nameOverride, its fullnameOverride and the release-name
-# collapse, so the console finds it unconfigured.
+# creates, following mongodb.nameOverride, mongodb.fullnameOverride and the
+# release-name collapse, so the console finds it unconfigured.
 # That default covers the topology shipped here, a STANDALONE subchart under its
 # own Service name. Set mongodb.architecture to anything else, or rename the
 # Service with mongodb.service.nameOverride, and there is no single right

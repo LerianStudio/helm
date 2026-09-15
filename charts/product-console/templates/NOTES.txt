@@ -116,9 +116,9 @@ Secrets (sensitive):
 
       Moving the subchart re-creates the database: it comes up in
       '{{ $consoleNs }}' with an EMPTY volume, and helm deletes the volume in
-      '{{ $mongoNs }}', which carries no keep policy. Nothing the console wrote
-      is in there, because it cannot authenticate while this split lasts, so
-      back up first only if you loaded that database yourself; or
+      '{{ $mongoNs }}', which carries no keep policy. Back up whatever that
+      database holds before you run this, and restore it afterwards; nothing
+      carries the data across for you; or
 
     - set BOTH of these to the same value:
 

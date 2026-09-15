@@ -327,8 +327,13 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 	// shipped values: the subchart renders a standalone Deployment plus a PVC
 	// named after it, carrying no helm.sh/resource-policy, so the upgrade
 	// creates an empty volume in the console's namespace and deletes the one it
-	// left behind. The notes have to say so before the operator runs it.
+	// left behind. The notes have to say so, and to say it plainly: a split
+	// console usually holds no password for that database, but it can be
+	// authenticated through a connection string in configmap.MONGODB_URI, which
+	// renders with the bundled subchart on and still prints this arm, so the
+	// warning cannot promise the volume is empty of the console's own data.
 	const emptiesTheVolume = "with an EMPTY volume"
+	const backUpFirst = "Back up whatever that database holds"
 	// The subchart follows global.namespaceOverride when it is set and -n
 	// otherwise, so the two split shapes need different explanations. Printing
 	// the override sentence for an -n split tells the operator that the repair
@@ -360,6 +365,7 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 			carriesValues,
 			repeatsFlags,
 			emptiesTheVolume,
+			backUpFirst,
 			"helm deletes the volume in '" + c.wantMongoNs + "'",
 			c.wantSaid,
 		} {

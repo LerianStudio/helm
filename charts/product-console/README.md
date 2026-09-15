@@ -223,9 +223,10 @@ Moving the subchart re-creates the database. With the shipped values it is a
 standalone Deployment plus a PersistentVolumeClaim named after it, and that
 claim carries no `helm.sh/resource-policy`, so the upgrade brings the database
 up in the console's namespace with an empty volume and deletes the volume it
-left behind. Nothing the console wrote is in that volume, because a split
-console cannot authenticate against the database at all; back it up first only
-if you loaded it yourself.
+left behind. Back up whatever that database holds before you run it and restore
+it afterwards: nothing carries the data across. A split console usually has no
+password for it, but it can be authenticated through a connection string in
+`configmap.MONGODB_URI`, so do not assume the volume is empty.
 
 **Compatibility of the `MONGO_HOST` default.** `configmap.MONGO_HOST` and
 `global.datastores.mongo.host` still win, so an operator who names their host

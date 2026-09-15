@@ -27,6 +27,15 @@ var (
 func preparedProductConsoleChart(t *testing.T) string {
 	t.Helper()
 	if _, err := exec.LookPath("helm"); err != nil {
+		// Gated exactly like the dependency-build failure below, and for the
+		// same reason: in CI a missing helm means none of these pins ran, and
+		// `go test` without -v reports that as `ok`, with only the duration to
+		// tell it apart from a real pass. A Setup Helm step that is reordered,
+		// removed or fails soft would leave the refusals unguarded with nobody
+		// told. On a developer machine a missing helm is just a missing tool.
+		if os.Getenv("CI") != "" {
+			t.Fatalf("helm is not on PATH, so the charts/product-console render pins did not run: %v", err)
+		}
 		t.Skip("helm not on PATH")
 	}
 	preparedChartOnce.Do(func() {

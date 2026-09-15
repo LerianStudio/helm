@@ -2,6 +2,35 @@
 
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
 
+- **Features**
+  - Introduced schema migration Jobs.
+  - Added support for providersIngress for outbound-provider adapters.
+  - Implemented shared multi-path ingresses.
+  - Added bootstrap Jobs for PostgreSQL and MongoDB.
+  - Introduced per-component command/args for single-image multi-binary support.
+
+- **Fixes**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Resolved probe paths to follow per-component routePrefix.
+  - Addressed bootstrap Job issues identified during live install testing.
+  - Fixed namespace handling and global image tag override.
+  - Ensured Secret overrides ConfigMap by swapping envFrom order.
+
+- **Improvements**
+  - Standardized charts to adhere to the Lerian chart contract.
+  - Updated documentation to align with the chart standard revamp.
+  - Enhanced probe template fallbacks to match per-component routePrefix.
+  - Automated wiring of URLs to in-cluster subcharts.
+  - Added wait-for-dependencies init container.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
 - **Features:**
   - Introduced schema migration Jobs to streamline database updates.
   - Implemented providersIngress for outbound-provider adapters.

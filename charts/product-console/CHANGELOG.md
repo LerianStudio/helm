@@ -1,5 +1,32 @@
 # Product-console Changelog
 
+## [4.0.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.5)
+
+- **Fixes:**
+  - Refuse a MongoDB host the chart cannot name.
+  - Print the remedy that works for this split.
+  - Let a null clear the trusted proxy value.
+  - Read the bundled MongoDB password from its secret.
+  - Resolve the MongoDB host through lerian-common.
+
+- **Improvements:**
+  - Refuse a non-string trusted proxy value by name.
+  - Come up on the chart's own shipped defaults.
+  - Put the service account in the chart namespace.
+
+- **Documentation:**
+  - Specify which password the console's own must match.
+  - Indicate which subchart template reads the override.
+  - Name the key that carries the secret name.
+  - Clarify when the MongoDB password is wired.
+  - Correct the client IP and MongoDB notes.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.4...product-console-v4.0.5)
+
+---
+
 ## [4.0.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.4)
 
 - Improvements:

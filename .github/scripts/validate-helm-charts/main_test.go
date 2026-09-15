@@ -267,6 +267,100 @@ func TestProductConsoleRefusesAnUnnameableMongoHost(t *testing.T) {
 	}
 }
 
+// Three different installs land the console and its bundled MongoDB in
+// different namespaces, and a Secret cannot be read across namespaces, so the
+// chart leaves MONGODB_PASS unwired and NOTES.txt tells the operator how to
+// repair it. A remedy that works in only some of those installs is worse than
+// none: the operator follows it, the split survives, and every MongoDB-backed
+// page still fails on an auth error, with nothing on screen saying why. Each
+// shape is rendered here, and the remedy the notes print is then applied and
+// asserted to actually wire the password.
+func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
+	chart := preparedProductConsoleChart(t)
+	// values.yaml pins namespaceOverride, so the console always lands here.
+	const consoleNs = "product-console"
+	const remedy = "--set global.namespaceOverride=" + consoleNs
+	cases := []struct {
+		name        string
+		namespace   string
+		values      []string
+		wantMongoNs string
+	}{
+		{"release namespace differs from the console's", "other-ns", nil, "other-ns"},
+		{"global.namespaceOverride set", consoleNs, []string{"--set", "global.namespaceOverride=data"}, "data"},
+		{"both at once", "other-ns", []string{"--set", "global.namespaceOverride=data"}, "data"},
+	}
+	for _, c := range cases {
+		notes := normalizeSpace(renderNotes(t, chart, c.namespace, c.values...))
+		if !strings.Contains(notes, "ACTION REQUIRED") {
+			t.Errorf("%s: install notes must flag the split, got: %s", c.name, notes)
+			continue
+		}
+		for _, want := range []string{
+			"in namespace '" + c.wantMongoNs + "'",
+			"while these pods run in '" + consoleNs + "'",
+			remedy,
+		} {
+			if !strings.Contains(notes, want) {
+				t.Errorf("%s: install notes must say %q, got: %s", c.name, want, notes)
+			}
+		}
+
+		repaired, err := renderChart(chart, c.namespace,
+			append(append([]string{}, c.values...), "--set", "global.namespaceOverride="+consoleNs)...)
+		if err != nil {
+			t.Errorf("%s: render with the remedy applied failed: %s", c.name, oneLine(repaired))
+			continue
+		}
+		// The whole point of the remedy: the console reads the subchart's
+		// generated password instead of the empty one in its own Secret.
+		if !strings.Contains(normalizeSpace(repaired), "- name: MONGODB_PASS valueFrom: secretKeyRef:") {
+			t.Errorf("%s: the remedy the notes print leaves MONGODB_PASS unwired", c.name)
+		}
+	}
+}
+
+func renderChart(chart, namespace string, values ...string) (string, error) {
+	args := append([]string{"template", "product-console", chart, "-n", namespace}, values...)
+	out, err := exec.Command("helm", args...).CombinedOutput()
+	return string(out), err
+}
+
+// renderNotes returns a render of the chart that includes NOTES.txt, which
+// `helm template` otherwise never emits. helm renders every file under
+// templates/ except NOTES.txt and _*.tpl, so a copy of the chart turns the notes
+// into a named template and has a ConfigMap carry their output.
+func renderNotes(t *testing.T, chart, namespace string, values ...string) string {
+	t.Helper()
+	probe := filepath.Join(t.TempDir(), "product-console")
+	if err := copyDir(chart, probe); err != nil {
+		t.Fatalf("copying the chart: %v", err)
+	}
+	notes, err := os.ReadFile(filepath.Join(probe, "templates", "NOTES.txt"))
+	if err != nil {
+		t.Fatalf("reading NOTES.txt: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(probe, "templates", "_notes-probe.tpl"),
+		[]byte("{{- define \"notes.probe\" -}}\n"+string(notes)+"{{- end -}}\n"), 0o600); err != nil {
+		t.Fatalf("writing the notes template: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(probe, "templates", "notes-probe.yaml"),
+		[]byte("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: notes-probe\ndata:\n  notes: |\n{{ include \"notes.probe\" . | indent 4 }}\n"), 0o600); err != nil {
+		t.Fatalf("writing the notes probe: %v", err)
+	}
+	out, err := renderChart(probe, namespace, values...)
+	if err != nil {
+		t.Fatalf("rendering the install notes: %s", oneLine(out))
+	}
+	return out
+}
+
+// normalizeSpace collapses every run of whitespace to one space, so an assertion
+// on a phrase does not depend on where the notes wrap it.
+func normalizeSpace(s string) string {
+	return strings.Join(strings.Fields(s), " ")
+}
+
 // renderedNames returns the metadata.name of every object of one kind in a
 // rendered manifest stream.
 func renderedNames(rendered, kind string) []string {

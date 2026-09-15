@@ -3,16 +3,20 @@
 # Copy this file and customize for your environment
 
 global:
-  # -- Env-wide MongoDB connection mask (global.datastores.mongo). Set the fields
-  # you need to point at an external instance; a native configmap.<KEY> pin
-  # would override these, so don't duplicate them there.
-  datastores:
-    mongo:
-      uri: ""
-      host: ""
-      port: "27017"
-      user: ""
-      params: ""
+  # -- Env-wide MongoDB connection mask (global.datastores.mongo). Uncomment and
+  # fill only the fields you need to point at an external instance; a native
+  # configmap.<KEY> pin would override these, so don't duplicate them there.
+  # Leave a field COMMENTED OUT rather than empty: an empty string here counts
+  # as a value and wins over the chart's own default, so `host: ""` would erase
+  # the bundled MongoDB's address and `uri: ""` the "mongodb" connection scheme.
+  datastores: {}
+  # datastores:
+  #   mongo:
+  #     uri: "mongodb"                       # the SCHEME, not a URI
+  #     host: "my-mongo.db.svc.cluster.local"
+  #     port: "27017"
+  #     user: "midaz"
+  #     params: "tls=true&authSource=admin"
   # -- Env-wide Access Manager gate/host (global.auth). Do NOT also pin
   # configmap.PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_HOST — a native key wins over
   # this mask and defeats it.

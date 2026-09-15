@@ -131,11 +131,14 @@ spec:
              200 and the pod is never Ready. Measured on lerianstudio/product-
              console:1.12.0: readyz answers 503 (readyState=0) for as long as the
              pod is left alone, and 200 within three seconds of the first request
-             to a Mongo-backed route. NOTES.txt and the chart's UPGRADE-4.0.3
-             guide have described this deadlock since 4.0.3; this is the arm they
-             prescribe. Point readinessProbe.path back at
-             "/api/admin/health/readyz" once the image connects eagerly, to have
-             readiness gate on the database again. */}}
+             to a Mongo-backed route. 4.0.1 is the release that made readyz the
+             readiness default; 4.0.3 is the release that first described the
+             deadlock, written into docs/UPGRADE-4.0.1.md and NOTES.txt by one
+             commit, and both prescribe this arm. 4.0.1 and 4.0.2 shipped the
+             default with nothing written down anywhere in the chart. Point
+             readinessProbe.path back at "/api/admin/health/readyz" once the
+             image connects eagerly, to have readiness gate on the database
+             again. */}}
           readinessProbe:
             httpGet:
               path: {{ .Values.readinessProbe.path | default "/api/admin/health/alive" }}

@@ -1,0 +1,5 @@
+{
+  "body": "acc_metadata_cache_hit=true saldo consultado",
+  "descricao": "Nome de CAMPO que comeca com 'acc_' seguido de 4+ alfanumericos — casa o padrao da regra de id opaco sem ser id. MEDIDO: vira 'acc_meta******_cache_hit=true'. O caso anterior (account_created) NAO casava e dava falso OK.",
+  "categoria": "falsoPositivo"
+}

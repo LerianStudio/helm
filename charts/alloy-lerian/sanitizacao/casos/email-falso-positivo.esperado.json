@@ -1,0 +1,5 @@
+{
+  "body": "expressao a@b.c avaliada pelo parser sem erro",
+  "descricao": "Endereco com 1 caractere antes do arroba: a regra preserva 1-2 caracteres, entao a saida seria identica de qualquer forma. Caso limite proposital.",
+  "categoria": "falsoPositivo"
+}

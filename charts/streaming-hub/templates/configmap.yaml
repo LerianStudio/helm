@@ -7,8 +7,9 @@ absent here; the per-role pool sizes are shipped here as shared DEFAULTS and
 overridden per role the same way.
 
 PRODUCTIZED (productize-chart-env). AUTHORITY = streaming-hub's
-config/.env.reference (56 keys — the COMPLETE app config surface; .env.example
-lags it). Dependency-connection keys resolve through lerian-common
+config/.env.reference (the COMPLETE app config surface; .env.example lags it).
+The rate-limiting block below is the ONE deliberate exception — see the note at
+the end of this comment. Dependency-connection keys resolve through lerian-common
 masks/helpers so an operator configures a typed surface (global.datastores,
 global.auth, global.observability, global.multiTenant); every other app key is a
 `$cm.<KEY> | default "<value>"` passthrough carrying develop's shipped default

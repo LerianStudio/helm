@@ -20,8 +20,20 @@ A Helm chart for deploying Product Console - Lerian Studio's web interface for m
 To install the chart with the release name `product-console`:
 
 ```bash
-helm install product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version <version> -n midaz --create-namespace
+helm install product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version <version> -n product-console --create-namespace
 ```
+
+**This chart pins its own namespace.** `namespaceOverride` ships as
+`product-console`, and every template writes that into `metadata.namespace`, so
+resources land there whatever `-n` says. `--create-namespace` only creates the
+release namespace, so installing with `-n <anything else>` fails on a fresh
+cluster with `namespaces "product-console" not found`. Either install into
+`product-console` as printed above, or set `namespaceOverride` to the namespace
+you passed to `-n`. The bundled MongoDB does not inherit `namespaceOverride`: it
+lands in `global.namespaceOverride` when that is set, and in the namespace you
+passed to `-n` otherwise. Keeping the two the same is what lets the console read
+the bundled database's password by itself, since a Secret cannot be read across
+namespaces (see [MongoDB and readiness](#mongodb-and-readiness)).
 
 ## Configuration
 
@@ -34,7 +46,7 @@ Copy `values-template.yaml` and customize it for your deployment:
 ```bash
 cp values-template.yaml my-values.yaml
 # Edit my-values.yaml with your configuration
-helm install product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version <version> -f my-values.yaml -n midaz --create-namespace
+helm install product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version <version> -f my-values.yaml -n product-console --create-namespace
 ```
 
 ### Key Configuration Options
@@ -53,7 +65,10 @@ empty — set a key there only to override its shipped default).
 | `configmap.MIDAZ_CONSOLE_PORT` | Console port | `8081` |
 | `configmap.MIDAZ_BASE_PATH` | Midaz API base path | `http://midaz-ledger.midaz.svc.cluster.local:3002/v1` |
 | `configmap.NEXTAUTH_URL` | Public URL NextAuth uses for OAuth callbacks | `ingress.hosts[0].host` (as `https://<host>`) when ingress is enabled with a host, else `http://localhost:8081` |
+| `extraEnvVars.TRUSTED_PROXIES` | Comma list of CIDRs the console trusts as its own hops, see [Client IP resolution](#client-ip-resolution) | unset (no client IP is resolved) |
+| `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
+| `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the subchart's own generated password, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
 | `secrets.PLUGIN_AUTH_CLIENT_ID` | Alternative to `configmap.PLUGIN_AUTH_CLIENT_ID` when the client_id shouldn't sit in a ConfigMap; when set, the ConfigMap key is omitted | `""` |
 
 ### Inter-service defaults (cross-namespace)
@@ -73,6 +88,160 @@ service/namespace names.
 | plugin-access-manager (identity) | `PLUGIN_IDENTITY_HOST` (+ `PLUGIN_IDENTITY_PORT`/`PLUGIN_IDENTITY_BASE_PATH`) | `plugin-access-manager-identity.plugin-access-manager.svc.cluster.local` |
 | CRM plugin | `CRM_BASE_PATH` | `http://midaz-crm.midaz.svc.cluster.local:4003/v1/` |
 | Reporter | `REPORTER_BASE_PATH` | `http://reporter-manager.reporter.svc.cluster.local:4005/v1` |
+
+### Client IP resolution
+
+`TRUSTED_PROXIES` is the comma list of CIDRs the console treats as its own
+infrastructure hops while reading `X-Forwarded-For`, so it can tell which
+address in that chain is the real caller. The container image ships it empty on
+purpose, so each environment must name its own hops.
+
+**Set it through `extraEnvVars`, not `configmap`:**
+
+```yaml
+extraEnvVars:
+  TRUSTED_PROXIES: "198.51.100.0/24" # example: the /24 your edge egresses from
+```
+
+`configmap` is an explicit allowlist of the keys `templates/configmap.yaml`
+declares, and `TRUSTED_PROXIES` is not one of them. A value put there is
+accepted by `helm lint`, `helm template` and `helm upgrade` and then dropped,
+with nothing in the deploy path to say so. `extraEnvVars` is the passthrough:
+every key is written into the same ConfigMap the pod loads through `envFrom`,
+and changing it changes `checksum/config`, so the pods roll. That has always
+been the working path; what was missing was this paragraph.
+
+**Name the addresses that are actually in front of this service**, meaning the
+ingress and load-balancer addresses as they appear as `X-Forwarded-For` hops.
+Every proxy APPENDS the address it observed and rewrites nothing, so the hop an
+ingress controller contributes is its own peer, typically the load balancer in
+front of it, not the ingress pod. Two ranges that look plausible and are always
+wrong:
+
+- **The Service (cluster IP) CIDR.** A cluster IP is a virtual destination and
+  is never the source of a packet, so it can never appear as a hop. Trusting it
+  matches nothing.
+- **The pod CIDR.** It covers every pod in the cluster, so it tells the console
+  to discard any in-cluster address. A workload already inside the cluster can
+  then send `X-Forwarded-For: <an address on your allowlist>` through the
+  ingress: its own pod IP is discarded as infrastructure, the walk continues
+  left, and the console hands the Access Manager the address the caller chose.
+  With nothing configured the console would have refused to name any caller,
+  so this setting is worse than leaving it empty.
+
+**Empty means no caller is ever named.** The console resolves no client IP and
+stamps `X-Client-Ip-Resolution: unresolved; reason=trusted-proxies-not-configured`
+on its calls to Lerian backends. That header is always `unresolved; reason=<cause>`
+and never the bare word `unresolved`, so a detection rule written as an exact
+match on `unresolved` never fires. At app image `1.12.0`, the version this chart
+deploys, there are SEVEN causes. Five report the trust boundary itself:
+`trusted-proxies-not-configured`, `forwarded-for-absent`,
+`forwarded-for-malformed`, `all-hops-trusted` and `unresolved-upstream`. Two
+more report that the resolver never got to run: `request-headers-unavailable`
+and `client-ip-extraction-failed`. A rule enumerating only the first five misses
+exactly the two cases that mean the console is broken rather than
+under-configured.
+
+**The header does not reach every backend, on purpose.** At app image `1.12.0`,
+12 of the console's 14 outbound services stamp it. The two that do not are the
+Slack webhook and the Pix indirect rail, and both omissions are a deliberate
+privacy boundary the console holds under test: at that tag,
+`forward-client-ip-exclusions.test.ts` asserts that neither service sends the
+header "even when a real client IP IS resolvable", because the client IP is
+personal data and the Pix indirect rail terminates at BTG, an external bank. Do
+not read those two as missing hops to be closed: traffic on them is out of scope
+for client-IP attribution, not unattributed, and any tooling keyed on the
+header's presence should treat them that way.
+
+**Entries can be refused.** An entry that is not a CIDR is refused, and so is
+one wider than `/8` (IPv4) or `/48` (IPv6). A refused entry is named in the
+console's own log ONLY when the whole list is refused, which also puts the
+deployment back in the empty case above. A list that keeps at least one usable
+range drops its bad entries silently, so `198.51.100.0/24,0.0.0.0/0` trusts the
+first range, discards the second, and logs nothing naming the discarded entry.
+The console still logs whenever a request ends up with no caller named, so the
+warnings are there; the entry that caused them is not.
+
+**Do not widen the range to be safe.** Trusting a range means discarding its
+hops and continuing to look left, so a range that covers real callers (a
+corporate VPN, a peered VPC, an in-cluster client) makes those callers
+invisible and lets the walk reach a hop the caller wrote. Narrow is correct.
+
+### MongoDB and readiness
+
+**With the bundled MongoDB, land both in one namespace and there is nothing to
+configure.** `configmap.MONGO_HOST` defaults to the Service the subchart really
+creates for the topology shipped here, and `MONGODB_PASS` is read straight from
+the Secret the subchart generates (key `mongodb-root-password`), so the console
+reaches its database and authenticates to it without an operator copying a
+generated password by hand.
+
+**Two bundled configurations have no default and the chart says so.** The
+default host follows the subchart's own name, which is what its Service is
+called for a standalone MongoDB and nothing else. Set
+`mongodb.architecture: replicaset` and the subchart publishes a headless
+Service plus one DNS name per replica; set `mongodb.service.nameOverride` and it
+renames the Service outright. In both cases the chart refuses to render until
+you set `configmap.MONGO_HOST` (or `global.datastores.mongo.host`), and the
+refusal prints the host to use, plus the `replicaSet=` parameter to add to
+`configmap.MONGO_PARAMETERS` for a replica set. Refusing is deliberate: the
+alternative is a console that comes up Ready pointing at a name that resolves
+in no namespace.
+**The password wiring** above applies only while the subchart's namespace equals
+the console's, which is what `-n product-console` gives you as long as
+`global.namespaceOverride` is unset. Your own value still wins when you set one,
+either as `secrets.MONGODB_PASS` or in your own Secret, which is switched on
+with `useExistingSecret: true` and named with `existingSecretName` (the switch
+is a boolean; the name lives in the other key).
+
+**The one case that needs you: a namespace split.** The subchart does not
+inherit `namespaceOverride`; it lands in `global.namespaceOverride` when set and
+in the `-n` namespace otherwise, while the console always lives in
+`namespaceOverride`. So setting `global.namespaceOverride` splits them even when
+`-n` matches. When those two namespaces differ a Secret cannot be read across
+them, so the chart leaves `MONGODB_PASS` alone and the install notes say so.
+Either land both in one namespace, or set both of these to the same value, or
+every MongoDB-backed page (product enablement, guided tour) fails on an auth
+error:
+
+```yaml
+mongodb:
+  auth:
+    rootPassword: "<your password>"
+secrets:
+  MONGODB_PASS: "<the same password>"
+```
+
+**Compatibility of the `MONGO_HOST` default.** `configmap.MONGO_HOST` and
+`global.datastores.mongo.host` still win, so an operator who names their host
+keeps it. One configuration's WORKING value moves: a deployment that runs its
+own MongoDB as a Service literally named `mongodb` in the console's namespace,
+left `mongodb.enabled: true`, and never set `MONGO_HOST` was resolving the old
+bare `mongodb` through the pod's DNS search path. That deployment now points at
+the bundled subchart. The remedy is one line, `configmap.MONGO_HOST: mongodb`,
+or `mongodb.enabled: false` if the bundled database was never wanted.
+
+**Readiness does not gate on MongoDB by default.** `readinessProbe.path`
+defaults to `/api/admin/health/alive`. The MongoDB-aware endpoint,
+`/api/admin/health/readyz`, returns 200 only once the app has connected, and
+app image `1.12.0` connects on the first request that needs the database rather
+than at startup. Readiness on `readyz` therefore deadlocks a fresh pod: not
+Ready, so no traffic, so no connection, so never Ready. Measured on image
+`1.12.0`: `readyz` stays 503 (`readyState=0`) for as long as the pod is left
+alone, and turns 200 within three seconds of the first request to a
+MongoDB-backed route.
+
+**What that default costs you, plainly.** Readiness no longer detects the
+database. A MongoDB outage does not withdraw a pod from the Service: every
+replica stays Ready and keeps taking traffic for MongoDB-backed routes, which
+answer 500 rather than being routed away, and an install whose database is
+unusable still reports `STATUS: deployed`. Scrape `/api/admin/health/readyz` and
+alert on it, because it remains the honest report of whether a pod can serve a
+MongoDB-backed page; it is only no longer wired to anything that acts on it. Set
+`readinessProbe.path: /api/admin/health/readyz` to get that detection back, and
+only on an app image whose `readyz` opens the connection it reports on: on image
+`1.12.0` it never does, and the pod deadlocks as above. Keep liveness on a
+MongoDB-independent path, or a database outage becomes a crash-loop.
 
 ### Managed Cloud (`global.cloud`)
 

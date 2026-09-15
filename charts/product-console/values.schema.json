@@ -136,6 +136,11 @@
     },
     "extraEnvVars": {
       "type": "object",
+      "properties": {
+        "TRUSTED_PROXIES": {
+          "type": ["string", "null"]
+        }
+      },
       "additionalProperties": true
     },
     "secrets": {

@@ -1184,16 +1184,31 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 
+		// A chart that pins its own namespace renders into two at once here: the
+		// pinned one and whatever helm was given. This assertion catches a
+		// workload that landed in one while its ServiceAccount landed in the
+		// other, which no `helm template` exit code reports and which stops the
+		// pod being created at all. The renders above pass no -n, so "default"
+		// is the namespace an unset metadata.namespace resolves to.
+		if msg := serviceAccountNamespaceMessage(normalOut, "default"); msg != "" {
+			row.Status = "fail"
+			row.Class = "service-account-namespace"
+			row.Detail = appendDetail(row.Detail, "release "+chartName+": "+msg)
+			rows = append(rows, row)
+			_ = os.RemoveAll(tmpRoot)
+			continue
+		}
+
 		// H1: Bitnami release-name collapse. When the release name equals a
 		// bundled Bitnami subchart name (or alias), common.names.dependency.fullname
 		// collapses <release>-<subchart> to just <subchart>; any app helper that
 		// hardcodes <release>-<subchart> instead would then reference a Secret that
 		// no longer exists. Render once per Bitnami dependency under that release
 		// name and re-run the dangling-ref assertion to catch that whole bug class.
-		collapseDetail, collapseFailed := runCollapseRenders(tmpRoot, tmpChart, helmEnv, chartName, bitnamiReleaseNames(chartName, deps), templateArgs)
+		collapseDetail, collapseClass, collapseFailed := runCollapseRenders(tmpRoot, tmpChart, helmEnv, chartName, bitnamiReleaseNames(chartName, deps), templateArgs)
 		if collapseFailed {
 			row.Status = "fail"
-			row.Class = "dangling-secret-ref"
+			row.Class = collapseClass
 			row.Detail = appendDetail(row.Detail, collapseDetail)
 			rows = append(rows, row)
 			_ = os.RemoveAll(tmpRoot)
@@ -1250,24 +1265,29 @@ func bitnamiReleaseNames(chartName string, deps []chartDependency) []string {
 }
 
 // runCollapseRenders renders the chart once per collapse release name and runs
-// the dangling-ref assertion on each. It returns a one-line detail describing
-// the renders performed (or the first failure) and whether any render exposed a
-// dangling secret reference.
-func runCollapseRenders(tmpRoot, tmpChart string, env []string, chartName string, releaseNames []string, baseArgs []string) (string, bool) {
+// the dangling-ref assertions on each. It returns a one-line detail describing
+// the renders performed (or the first failure), the failure class for that
+// failure, and whether any render failed. A host that resolves nowhere is not a
+// dangling Secret, so the two carry different classes: reading "secret" in the
+// summary column sends whoever triages it looking for the wrong thing.
+func runCollapseRenders(tmpRoot, tmpChart string, env []string, chartName string, releaseNames []string, baseArgs []string) (string, string, bool) {
 	if len(releaseNames) == 0 {
-		return "", false
+		return "", "", false
 	}
 	for _, release := range releaseNames {
 		args := append([]string{"template", release, tmpChart}, baseArgs[3:]...)
 		out, err := runHelmWithEnv(tmpRoot, env, args...)
 		if err != nil {
-			return fmt.Sprintf("collapse render (release %q) failed: %s", release, oneLine(out)), true
+			return fmt.Sprintf("collapse render (release %q) failed: %s", release, oneLine(out)), classifyTemplateFailure(out), true
 		}
 		if msg := danglingSecretRefMessage(out); msg != "" {
-			return fmt.Sprintf("collapse render (release %q): %s", release, msg), true
+			return fmt.Sprintf("collapse render (release %q): %s", release, msg), "dangling-secret-ref", true
+		}
+		if msg := danglingCollapseHostMessage(out, release, chartName); msg != "" {
+			return fmt.Sprintf("collapse render (release %q): %s", release, msg), "dangling-host-ref", true
 		}
 	}
-	return fmt.Sprintf("collapse renders passed for release name(s) %s", strings.Join(releaseNames, ", ")), false
+	return fmt.Sprintf("collapse renders passed for release name(s) %s", strings.Join(releaseNames, ", ")), "", false
 }
 
 // chartDependencies reads the dependency list from a chart's Chart.yaml.
@@ -1345,6 +1365,276 @@ func danglingSecretRefMessage(rendered string) string {
 	}
 	sort.Strings(missing)
 	return "secret reference(s) point at non-rendered Secret(s): " + strings.Join(missing, ", ")
+}
+
+// serviceAccountNamespaceMessage returns a non-empty message when a rendered
+// workload names a ServiceAccount that the same release renders into a
+// different namespace from the workload itself.
+//
+// A ServiceAccount is namespaced, so the kubelet resolves it in the workload's
+// own namespace and nowhere else. A chart that pins its workloads to a fixed
+// namespace and leaves its ServiceAccount on the release namespace therefore
+// renders, installs, reports STATUS: deployed, and then never creates a pod:
+// the ReplicaSet fails admission with "serviceaccount not found", where nobody
+// looks. product-console shipped exactly that. A missing namespace on both
+// sides is fine, since both then take the release namespace.
+//
+// A ServiceAccount this release does not render is left alone: it is either
+// "default" or provisioned out of band, and this gate has nothing to say about
+// either.
+//
+// releaseNamespace is what an unset metadata.namespace resolves to, and it has
+// to be supplied rather than assumed: a chart that writes .Release.Namespace on
+// one side and nothing on the other agrees with itself in every install, and
+// reading that as a mismatch is a false positive, which is exactly what the
+// reporter chart produced.
+func serviceAccountNamespaceMessage(rendered, releaseNamespace string) string {
+	rendered = stripNonManifest(rendered)
+	saNamespaces := map[string]map[string]bool{}
+	type workload struct{ kind, name, namespace, account string }
+	var workloads []workload
+
+	dec := yaml.NewDecoder(strings.NewReader(rendered))
+	for {
+		var doc yaml.Node
+		if err := dec.Decode(&doc); err != nil {
+			break
+		}
+		var m map[string]interface{}
+		if err := doc.Decode(&m); err != nil || m == nil {
+			continue
+		}
+		kind, _ := m["kind"].(string)
+		name := nestedString(m, "metadata", "name")
+		namespace := nestedString(m, "metadata", "namespace")
+		if namespace == "" {
+			namespace = releaseNamespace
+		}
+		if kind == "ServiceAccount" {
+			if name != "" {
+				if saNamespaces[name] == nil {
+					saNamespaces[name] = map[string]bool{}
+				}
+				saNamespaces[name][namespace] = true
+			}
+			continue
+		}
+		// Read the account off any pod template, however deeply nested (a
+		// CronJob carries two levels), rather than naming every workload kind.
+		if account := findServiceAccountName(m); account != "" {
+			workloads = append(workloads, workload{kind, name, namespace, account})
+		}
+	}
+
+	seen := map[string]bool{}
+	var missing []string
+	for _, w := range workloads {
+		rendered, ok := saNamespaces[w.account]
+		if !ok || rendered[w.namespace] {
+			continue
+		}
+		var namespaces []string
+		for ns := range rendered {
+			namespaces = append(namespaces, ns)
+		}
+		sort.Strings(namespaces)
+		entry := fmt.Sprintf("%s/%s in %s uses ServiceAccount %q, rendered in %s",
+			w.kind, w.name, w.namespace, w.account, strings.Join(namespaces, ", "))
+		if seen[entry] {
+			continue
+		}
+		seen[entry] = true
+		missing = append(missing, entry)
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	sort.Strings(missing)
+	return "ServiceAccount(s) rendered outside the namespace of the workload using them: " + strings.Join(missing, "; ")
+}
+
+// findServiceAccountName returns the first serviceAccountName found anywhere in
+// a decoded manifest, which is the pod spec's in every workload kind.
+func findServiceAccountName(node interface{}) string {
+	switch v := node.(type) {
+	case map[string]interface{}:
+		if account, ok := v["serviceAccountName"].(string); ok && account != "" {
+			return account
+		}
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			if account := findServiceAccountName(v[key]); account != "" {
+				return account
+			}
+		}
+	case []interface{}:
+		for _, child := range v {
+			if account := findServiceAccountName(child); account != "" {
+				return account
+			}
+		}
+	}
+	return ""
+}
+
+// collapseHostPattern matches an in-cluster Service FQDN
+// (<name>.<namespace>.svc.cluster.local) anywhere inside a rendered value, so a
+// host written bare and a host written inside a URL are read the same way.
+// Group 1 is the Service name, group 2 its namespace.
+var collapseHostPattern = regexp.MustCompile(`([a-z0-9][a-z0-9.-]*?)\.([a-z0-9][a-z0-9-]*)\.svc\.cluster\.local`)
+
+// knownCollapseHostDrift lists "<chart>:<KEY>" pairs that still build their host
+// by hand and are known to miss the collapse, where KEY is the ConfigMap data
+// key or the container env name carrying the host. Each entry MUST carry a
+// justification, and it is a queue of work rather than an exemption: fix the
+// chart and delete the line. The waiver is per key, so any OTHER host in the same
+// chart is still asserted.
+var knownCollapseHostDrift = map[string]bool{
+	// plugin-br-bank-transfer builds both of these with
+	// printf "%s-<subchart>-primary" .Release.Name (templates/configmap.yaml,
+	// templates/migrations.yaml), so a release named after the datastore renders
+	// postgresql-postgresql-primary / valkey-valkey-primary while the subchart
+	// creates postgresql-primary / valkey-primary. Real defects, the same class
+	// as the one this assertion was added for, but they belong to that chart's
+	// own change: both are fixed by resolving the name through
+	// lerian-common.dependency.fullname.
+	"plugin-br-bank-transfer:POSTGRES_HOST": true,
+	"plugin-br-bank-transfer:REDIS_HOST":    true,
+}
+
+// danglingCollapseHostMessage is the second half of the H1 assertion, for hosts
+// rather than Secret references. It returns a non-empty message when a rendered
+// value names an in-cluster Service FQDN built from the release name that the
+// same render does not create.
+//
+// Both places a chart writes a host are read: ConfigMap data, and container env
+// entries with a literal value. The second is not hypothetical -- the waived
+// plugin-br-bank-transfer entries below build the same wrong host in a Job's env
+// as in its ConfigMap, and a ConfigMap-only scan would call that fixed once half
+// of it was.
+//
+// Only the collapse renders call it, which is what keeps it narrow: there the
+// release name IS a bundled subchart name, so a host starting with it is the
+// chart addressing its own bundled datastore, and the only question is whether
+// the helper honoured the collapse or rebuilt "<release>-<subchart>" by hand. An
+// ordinary cross-release FQDN (a sibling product in its own namespace) does not
+// start with the release name and is left alone.
+func danglingCollapseHostMessage(rendered, release, chartName string) string {
+	rendered = stripNonManifest(rendered)
+	// Keyed "<name>.<namespace>": a Service of the right name in the wrong
+	// namespace is still a host that resolves nowhere, and that half of the bug
+	// is what a name-only set would hide. A Service rendered without an explicit
+	// namespace takes whichever one helm is given, which the caller does not pass
+	// here, so it is recorded under every namespace instead of guessed at.
+	serviceKeys := map[string]bool{}
+	serviceNamesAnyNamespace := map[string]bool{}
+	type configValue struct{ key, value string }
+	var configValues []configValue
+
+	dec := yaml.NewDecoder(strings.NewReader(rendered))
+	for {
+		var doc yaml.Node
+		if err := dec.Decode(&doc); err != nil {
+			// EOF or a decode error: stop scanning rather than crash the gate,
+			// matching danglingSecretRefMessage.
+			break
+		}
+		var m map[string]interface{}
+		if err := doc.Decode(&m); err != nil || m == nil {
+			continue
+		}
+		switch kind, _ := m["kind"].(string); kind {
+		case "Service":
+			if name := nestedString(m, "metadata", "name"); name != "" {
+				if ns := nestedString(m, "metadata", "namespace"); ns != "" {
+					serviceKeys[name+"."+ns] = true
+				} else {
+					serviceNamesAnyNamespace[name] = true
+				}
+			}
+		case "ConfigMap":
+			data, _ := m["data"].(map[string]interface{})
+			for key, value := range data {
+				if s, ok := value.(string); ok {
+					configValues = append(configValues, configValue{key, s})
+				}
+			}
+		default:
+			for _, e := range collectLiteralEnv(m) {
+				configValues = append(configValues, configValue{e[0], e[1]})
+			}
+		}
+	}
+
+	seen := map[string]bool{}
+	var missing []string
+	for _, cv := range configValues {
+		for _, match := range collapseHostPattern.FindAllStringSubmatch(cv.value, -1) {
+			name, namespace := match[1], match[2]
+			if !strings.HasPrefix(name, release) {
+				continue
+			}
+			if serviceKeys[name+"."+namespace] || serviceNamesAnyNamespace[name] {
+				continue
+			}
+			if knownCollapseHostDrift[chartName+":"+cv.key] {
+				continue
+			}
+			entry := cv.key + "=" + match[0]
+			if seen[entry] {
+				continue
+			}
+			seen[entry] = true
+			missing = append(missing, entry)
+		}
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	sort.Strings(missing)
+	return "rendered host(s) point at non-rendered Service(s): " + strings.Join(missing, ", ")
+}
+
+// collectLiteralEnv walks a decoded manifest and returns every container env
+// entry written as a literal value, as {name, value} pairs. An entry sourcing a
+// Secret, a ConfigMap or a field carries no value and is skipped; the dangling
+// Secret assertion covers those. Every `env:` list is read wherever it sits, so
+// an init container, a Job's pod template and a CronJob's doubly nested one are
+// all included without this having to name each shape.
+func collectLiteralEnv(node interface{}) [][2]string {
+	var out [][2]string
+	var walk func(interface{})
+	walk = func(n interface{}) {
+		switch v := n.(type) {
+		case map[string]interface{}:
+			if entries, ok := v["env"].([]interface{}); ok {
+				for _, entry := range entries {
+					m, ok := entry.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					name, _ := m["name"].(string)
+					value, _ := m["value"].(string)
+					if name != "" && value != "" {
+						out = append(out, [2]string{name, value})
+					}
+				}
+			}
+			for _, child := range v {
+				walk(child)
+			}
+		case []interface{}:
+			for _, child := range v {
+				walk(child)
+			}
+		}
+	}
+	walk(node)
+	return out
 }
 
 // stripNonManifest drops leading non-YAML banner lines (helm warnings, NOTES)

@@ -25,10 +25,10 @@ otel-collector-lerian:
   enabled: false
 manager:
   image:
-    tag: "3.0.0"
+    tag: "3.0.1"
 worker:
   image:
-    tag: "3.0.0"
+    tag: "3.0.1"
 secrets:
   RABBITMQ_DEFAULT_PASS: "test-only"
   DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
@@ -93,6 +93,14 @@ def main() -> int:
     if "DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID" not in incomplete.stderr:
         raise AssertionError(f"CRM guard returned an unexpected error:\n{incomplete.stderr}")
 
+    missing_inline_secret = render(BASE_VALUES + CRM_CONFIG)
+    if missing_inline_secret.returncode == 0:
+        raise AssertionError("CRM without chart-managed secrets rendered successfully")
+    if "DATASOURCE_CRM_PASSWORD" not in missing_inline_secret.stderr:
+        raise AssertionError(
+            f"CRM secret guard returned an unexpected error:\n{missing_inline_secret.stderr}"
+        )
+
     misplaced = render(BASE_VALUES + """
 common:
   configmap:
@@ -138,7 +146,7 @@ worker:
     if "manager-crm-secret" not in external.stdout or "worker-crm-secret" not in external.stdout:
         raise AssertionError("external CRM Secret references were not preserved")
 
-    print("CRM regression matrix passed: absent, incomplete, misplaced secret, inline secrets, external secrets")
+    print("CRM regression matrix passed: absent, incomplete, missing inline secret, misplaced secret, inline secrets, external secrets")
     return 0
 
 

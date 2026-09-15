@@ -93,7 +93,11 @@ spec:
             {{- toYaml .Values.crm.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.crm.readinessProbe.path | default "/readyz" }}
+              {{/* The CRM image (midaz-crm) exposes /health only — it has no /readyz
+                   route (unlike ledger/tracer). Probing /readyz keeps the pod 0/1
+                   forever. Match the endpoint the app actually serves (same as
+                   livenessProbe below). */}}
+              path: {{ .Values.crm.readinessProbe.path | default "/health" }}
               port: {{ .Values.crm.service.port }}
             initialDelaySeconds: {{ .Values.crm.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.crm.readinessProbe.periodSeconds | default 5 }}

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -268,7 +270,7 @@ func TestProductConsoleRefusesAnUnnameableMongoHost(t *testing.T) {
 			continue
 		}
 		svc := c.wantHost[:strings.Index(c.wantHost, ".")]
-		services := renderedNames(repaired, "Service")
+		services := renderedNames(t, repaired, "Service")
 		if !contains(services, svc) {
 			t.Errorf("%s: refusal names host %s, but the repaired render creates no Service %q (it creates %v)",
 				c.name, c.wantHost, svc, services)
@@ -383,7 +385,7 @@ func TestProductConsoleRefusesAnExistingSecretWithNoName(t *testing.T) {
 	if !strings.Contains(normalizeSpace(named), "- secretRef: name: my-own-secret") {
 		t.Errorf("the Secret the operator named must reach the container, got: %s", oneLine(named))
 	}
-	if contains(renderedNames(named, "Secret"), "product-console") {
+	if contains(renderedNames(t, named, "Secret"), "product-console") {
 		t.Error("with useExistingSecret set, the chart must not also create its own Secret")
 	}
 }
@@ -429,20 +431,57 @@ func normalizeSpace(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
-// renderedNames returns the metadata.name of every object of one kind in a
-// rendered manifest stream.
-func renderedNames(rendered, kind string) []string {
-	var names []string
+// decodeManifests returns every object in a rendered manifest stream. A document
+// the decoder rejects is reported rather than read as the end of the stream:
+// swallowing it truncated the list, and the assertions built on that list then
+// passed while asserting nothing.
+func decodeManifests(rendered string) ([]map[string]interface{}, error) {
+	var docs []map[string]interface{}
 	dec := yaml.NewDecoder(strings.NewReader(stripNonManifest(rendered)))
 	for {
 		var doc yaml.Node
-		if err := dec.Decode(&doc); err != nil {
-			break
+		err := dec.Decode(&doc)
+		if errors.Is(err, io.EOF) {
+			return docs, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("document %d: %w", len(docs)+1, err)
 		}
 		var m map[string]interface{}
 		if err := doc.Decode(&m); err != nil || m == nil {
 			continue
 		}
+		docs = append(docs, m)
+	}
+}
+
+// A rejected document used to end the walk, so renderedNames came back short
+// with no signal at all. The one negative assertion built on it, "with
+// useExistingSecret set the chart must not also create its own Secret", then
+// passed on a release that did create one.
+func TestDecodeManifestsReportsARejectedDocument(t *testing.T) {
+	const good = "---\nkind: Secret\nmetadata:\n  name: first\n---\nkind: Secret\nmetadata:\n  name: last\n"
+	if got := renderedNames(t, good, "Secret"); len(got) != 2 {
+		t.Fatalf("every object in a readable stream must be returned, got %v", got)
+	}
+	// A leading tab is a YAML syntax error, so the decoder rejects the second
+	// document and the third is never reached.
+	const truncating = "---\nkind: Secret\nmetadata:\n  name: first\n---\n\tkind: Secret\n---\nkind: Secret\nmetadata:\n  name: last\n"
+	if _, err := decodeManifests(truncating); err == nil {
+		t.Fatal("a document the decoder rejects must be reported, not read as the end of the stream")
+	}
+}
+
+// renderedNames returns the metadata.name of every object of one kind in a
+// rendered manifest stream.
+func renderedNames(t *testing.T, rendered, kind string) []string {
+	t.Helper()
+	docs, err := decodeManifests(rendered)
+	if err != nil {
+		t.Fatalf("decoding the rendered manifest: %v", err)
+	}
+	var names []string
+	for _, m := range docs {
 		if k, _ := m["kind"].(string); k != kind {
 			continue
 		}

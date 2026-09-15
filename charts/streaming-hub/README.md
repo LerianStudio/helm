@@ -194,39 +194,62 @@ This chart provisions **none** of the following — they live outside it:
 
 ## Rate limiting
 
-The control plane limits API traffic **per tenant** through `lib-commons`
-ratelimit — a fixed window kept in **Redis/Valkey**, which this chart does not
-provision. Ingest and delivery do not read these keys; the ConfigMap is shared by
-every role, so they ship to all pods regardless.
+> **Ships ahead of the app.** No released streaming-hub image reads
+> `STREAMING_HUB_REDIS_ADDRESS` yet — on `appVersion 1.7.0` these keys are inert.
+> The chart carries them so the connection is configurable the day the app lands.
+> Until then, nothing here changes runtime behavior.
 
-| Key | Where | Default | What it does |
-|-----|-------|---------|--------------|
-| `STREAMING_HUB_REDIS_ADDRESS` | `configmap` | `""` | `host:port` of the Redis/Valkey the limiter counts in. **Required for enforcement.** |
-| `STREAMING_HUB_REDIS_PASSWORD` | `secrets` | `""` | AUTH password. Emit-when-set — leave empty for an instance that takes none. |
-| `STREAMING_HUB_REDIS_TLS` | `configmap` | `"true"` | TLS to Redis. Set `"false"` only on a trusted network. |
-| `STREAMING_HUB_REDIS_CA_CERT` | `configmap` | `""` | Base64 PEM CA bundle for that TLS chain. Empty trusts the container's system roots. |
-| `RATE_LIMIT_ENABLED` | `configmap` | `"true"` | The `lib-commons`-owned (unprefixed) master switch. |
-| `ALLOW_RATELIMIT_FAIL_OPEN` | `configmap` | `"true"` | The hub's posture: an unreachable limiter **allows** the request instead of refusing it. |
+The control plane rate-limits its HTTP API through the `lib-commons` three-tier
+contract, backed by **Redis/Valkey**, which this chart does not provision. The
+whole contract is rendered by `lerian-common.rateLimit.env`, so streaming-hub
+exposes the same keys, defaults and productized knobs as every other Lerian
+product. The ConfigMap is shared by all roles, so the keys reach every pod.
 
-> **The empty default is a silent no-op.** With the shipped defaults
-> (`RATE_LIMIT_ENABLED=true`, `ALLOW_RATELIMIT_FAIL_OPEN=true`) and no
-> `STREAMING_HUB_REDIS_ADDRESS`, the control plane serves every request
-> unlimited and nothing fails. Set the address on any environment that must
-> actually enforce a limit; the fail-open posture is there so a Redis **outage**
-> degrades enforcement rather than taking the control plane down, not so an
-> install can skip configuring it.
+**The connection** (`streamingHub.datastores.redis`, or `global.datastores.redis`
+for the shared tier; `configmap.<KEY>` overrides either):
+
+| Key | Mask field | Default | What it does |
+|-----|-----------|---------|--------------|
+| `STREAMING_HUB_REDIS_ADDRESS` | `host` | `""` | Full `host:port`. **Required for enforcement.** |
+| `STREAMING_HUB_REDIS_TLS` | `tls` | `"true"` | TLS to Redis. |
+| `STREAMING_HUB_REDIS_CA_CERT` | `caCert` | `""` | Base64 PEM CA bundle. Empty trusts the container's system roots. |
+| `STREAMING_HUB_REDIS_PASSWORD` | — (`secrets`) | `""` | AUTH password. Emit-when-set — leave empty for an instance that takes none. |
+
+**The limits** (`streamingHub.rateLimit.<field>`; `configmap.<KEY>` overrides):
+
+| Key | Field | Default |
+|-----|-------|---------|
+| `RATE_LIMIT_ENABLED` | `enabled` | `"true"` |
+| `ALLOW_RATELIMIT_DISABLED` | `allowDisabled` | `""` |
+| `ALLOW_RATELIMIT_FAIL_OPEN` | `allowFailOpen` | `"true"` (chart sets it — see below) |
+| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_SEC` | `max` / `windowSec` | `500` / `60` |
+| `AGGRESSIVE_RATE_LIMIT_MAX` / `..._WINDOW_SEC` | `aggressiveMax` / `aggressiveWindowSec` | `100` / `60` |
+| `RELAXED_RATE_LIMIT_MAX` / `..._WINDOW_SEC` | `relaxedMax` / `relaxedWindowSec` | `1000` / `60` |
+| `RATE_LIMIT_REDIS_TIMEOUT_MS` | `redisTimeoutMs` | `500` |
+
+> **`ALLOW_RATELIMIT_FAIL_OPEN` is a security bypass, and `lib-commons` says so.**
+> The library forbids fail-open by default and, when permitted, logs
+> `security bypass active` for the life of the process. This chart sets
+> `streamingHub.rateLimit.allowFailOpen: "true"` because the hub's intended
+> posture is that a Redis **outage** degrades enforcement rather than taking the
+> control plane down. Unset it for fail-closed, where an unreachable limiter
+> refuses the request.
+
+> **Three reasonable defaults compose into silent allow-all.** An empty
+> `STREAMING_HUB_REDIS_ADDRESS` makes `lib-commons` build a pass-through limiter;
+> so does `TLS="true"` against a private-CA Redis with no `CA_CERT`, because the
+> handshake fails and fail-open then allows everything. Neither fails the render
+> nor crashes the pod. If an environment must actually enforce a limit, set the
+> address, and set the CA when the chain is private.
 
 This Redis is **not** the multi-tenant registry. The hub's tenancy model reads
 tenant credentials from AWS Secrets Manager, so `MULTI_TENANT_REDIS_*` stays
 unset — the two connections are independent, and enabling rate limiting does not
 turn on a tenant-lifecycle bus.
 
-**Removed:** `STREAMING_HUB_PULL_BURST`. It was the burst allowance of a
-token-bucket pacer; the fixed-window limiter has no equivalent, so the key is
-gone from the ConfigMap and from the schema allowlist. An install still setting
-`configmap.STREAMING_HUB_PULL_BURST` now fails schema validation at render time
-rather than shipping a key nothing reads — drop it from your values.
-`STREAMING_HUB_PULL_RATE` is unaffected.
+`STREAMING_HUB_PULL_RATE` / `STREAMING_HUB_PULL_BURST` are **unrelated** and
+unchanged: they are the app's own inbound pull gate on `GET /v1/events`, not part
+of this contract. Keep tuning them as a pair.
 
 ---
 
@@ -248,9 +271,8 @@ rather than shipping a key nothing reads — drop it from your values.
 | `streamingHub.useExistingSecret` | `false` | `true` = Vault/gitops path. |
 | `streamingHub.existingSecretName` | `""` | Required when `useExistingSecret`. |
 | `streamingHub.configmap` | `{}` | Non-sensitive env override hatch (defaults live in `templates/configmap.yaml`). `configmap.<KEY>` overrides an enumerated (allowlisted) key — the schema `propertyNames.enum` rejects a key outside the allowlist; use `extraEnvVars` to inject one that is not enumerated. See `README.params.md`. |
-| `streamingHub.datastores` | `{}` | Dedicated PostgreSQL mask (host/port/user/name/ssl); `global.datastores.postgres` is the shared tier. |
-| `streamingHub.configmap.STREAMING_HUB_REDIS_ADDRESS` | `""` | `host:port` of the rate-limiter Redis/Valkey. Empty = the control plane enforces nothing (see [Rate limiting](#rate-limiting)). |
-| `streamingHub.configmap.RATE_LIMIT_ENABLED` | `"true"` | Per-tenant rate limiting on the control plane. `ALLOW_RATELIMIT_FAIL_OPEN` (also `"true"`) makes an unreachable limiter allow the request. |
+| `streamingHub.datastores` | `{}` | Dedicated datastore masks: `postgres` (host/port/user/name/ssl) and `redis` (host carries `host:port`, tls, caCert). `global.datastores.<type>` is the shared tier. |
+| `streamingHub.rateLimit` | `{allowFailOpen: "true"}` | `lib-commons` rate-limit contract (10 keys) via `lerian-common.rateLimit.env`. See [Rate limiting](#rate-limiting). |
 | `streamingHub.extraEnvVars` | `{}` | Per-Deployment env hatch (key → value map). Never credentials. |
 | `streamingHub.secrets` | (all `""`) | Shared sensitive env. DSN always emitted; other empty values skipped. |
 | `streamingHub.secrets.STREAMING_HUB_REDIS_PASSWORD` | `""` | Rate-limiter Redis AUTH password. Emit-when-set; may stay empty. |

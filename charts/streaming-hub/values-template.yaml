@@ -32,11 +32,10 @@ streamingHub:
     AWS_REGION: ""                          # e.g. us-east-2 (where the tenant credentials live)
     STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""  # SASL/SCRAM username (NOT a credential — the password is a secret)
     STREAMING_HUB_KEK_REF: ""               # KEK reference / pointer (KMS key id / ARN / env-var name — not key material)
-    # Control-plane rate limiting (lib-commons ratelimit, fixed window over an
-    # EXTERNAL Redis/Valkey). Leave ADDRESS empty and nothing is limited: the
-    # fail-open posture serves every request. Fill it in for a real control plane.
-    RATE_LIMIT_ENABLED: "true"
-    ALLOW_RATELIMIT_FAIL_OPEN: "true"       # unreachable limiter ALLOWS rather than refuses
+    # Control-plane rate limiting — the EXTERNAL Redis/Valkey the lib-commons
+    # limiter counts in. Leave the address empty and nothing is limited (silently).
+    # Inert until the app release that reads these keys. The limits themselves
+    # (RATE_LIMIT_MAX & co.) live under streamingHub.rateLimit below.
     STREAMING_HUB_REDIS_ADDRESS: ""         # e.g. valkey.dev-st.lerian.net:6379
     STREAMING_HUB_REDIS_TLS: "true"         # "false" only on a trusted network
     STREAMING_HUB_REDIS_CA_CERT: ""         # base64 PEM CA bundle (empty = system roots)
@@ -49,6 +48,14 @@ streamingHub:
     # Multi-tenant needs no extra secrets: the hub reads the tenant credentials
     # straight from AWS Secrets Manager with its own IAM identity. Set
     # MULTI_TENANT_ENABLED, ENV_NAME and AWS_REGION in the configmap instead.
+
+  # lib-commons rate limits. Empty = the helper defaults (500 req / 60s, etc.).
+  # allowFailOpen is a SECURITY BYPASS lib-commons logs as one: an unreachable
+  # limiter allows the request. Drop it for fail-closed.
+  rateLimit:
+    allowFailOpen: "true"
+    # max: "500"
+    # windowSec: "60"
 
   useExistingSecret: false
   existingSecretName: ""

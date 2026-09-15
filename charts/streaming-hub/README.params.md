@@ -65,6 +65,8 @@
 | `streamingHub.extraEnvVars` | object | `{}` | Extra non-sensitive env vars injected on every Deployment (key -> value map). The un-enumerated escape hatch; NEVER put credentials here (use secrets). |
 | `streamingHub.telemetry.enabled` | bool | `false` | Inject the per-pod OTLP endpoint override (HOST_IP downward API). |
 | `streamingHub.configmap` | object | `{}` | Operator ConfigMap overrides (key -> value). Ships empty; the built-in defaults live in templates/configmap.yaml. |
+| `streamingHub.rateLimit` | object | `{}` | lib-commons rate-limit knobs (see the block comment above). |
+| `streamingHub.rateLimit.allowFailOpen` | string | `"true"` | Permit fail-open. lib-commons classifies this as a security bypass and logs it as one; unset means fail-CLOSED (requests are refused when the limiter is unreachable). |
 | `streamingHub.secrets.STREAMING_HUB_POSTGRES_DSN` | string | `""` | Single hub-owned Postgres DSN (password embedded → whole DSN is a secret). ALWAYS emitted; required for a working install (provide via a protected source). |
 | `streamingHub.secrets.STREAMING_HUB_KAFKA_CA_CERT` | string | `""` | Broker TLS CA cert PEM (ALWAYS emitted; used when KAFKA_TLS_ENABLED=true). |
 | `streamingHub.secrets.STREAMING_HUB_DEV_KEK` | string | `""` | DEV-ONLY KEK material holder, named by STREAMING_HUB_KEK_REF (local BYOC). ALWAYS emitted; leave empty in real deploys (use a KMS-backed KEK_SOURCE). |

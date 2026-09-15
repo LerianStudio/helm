@@ -6,10 +6,12 @@ templates/_deployment.tpl (env WINS over this envFrom layer) and is DELIBERATELY
 absent here; the per-role pool sizes are shipped here as shared DEFAULTS and
 overridden per role the same way.
 
-PRODUCTIZED (productize-chart-env). AUTHORITY = streaming-hub's
-config/.env.reference (the COMPLETE app config surface; .env.example lags it).
-The rate-limiting block below is the ONE deliberate exception — see the note at
-the end of this comment. Dependency-connection keys resolve through lerian-common
+PRODUCTIZED (productize-chart-env). AUTHORITY = streaming-hub's `.env.reference`
+at the REPO ROOT (77 keys as of app v1.7.0; .env.example lags it). The chart does
+not productize all of them — STREAMING_HUB_DASHBOARD_RATE/BURST and
+STREAMING_HUB_READ_RATE/BURST are app keys with no ConfigMap line here, reachable
+only through extraEnvVars. Do not read this header as a coverage claim.
+Dependency-connection keys resolve through lerian-common
 masks/helpers so an operator configures a typed surface (global.datastores,
 global.auth, global.observability, global.multiTenant); every other app key is a
 `$cm.<KEY> | default "<value>"` passthrough carrying develop's shipped default
@@ -23,10 +25,11 @@ STREAMING_HUB_KAFKA_SCRAM_PASSWORD, STREAMING_HUB_KAFKA_CA_CERT,
 STREAMING_HUB_REDIS_PASSWORD and STREAMING_HUB_DEV_KEK live in
 templates/secrets.yaml (and are omit-guarded below).
 
-The rate-limiting block (STREAMING_HUB_REDIS_* + the lib-commons-owned
-RATE_LIMIT_ENABLED / ALLOW_RATELIMIT_FAIL_OPEN) lands ahead of the app release
-that reads it, and replaces STREAMING_HUB_PULL_BURST — the token-bucket burst
-knob the fixed-window limiter has no equivalent for.
+The rate-limiting block (STREAMING_HUB_REDIS_* + the lib-commons RATE_LIMIT_*
+contract) lands AHEAD of the app release that reads it: no streaming-hub branch
+reads STREAMING_HUB_REDIS_ADDRESS today, so on v1.7.0 these keys are inert. It
+REPLACES NOTHING — in particular not STREAMING_HUB_PULL_RATE/_BURST, which are
+the app's own inbound pull gate and stay exactly as they were.
 */}}
 {{- $ := . -}}
 {{- $cm := .Values.streamingHub.configmap | default dict -}}
@@ -78,25 +81,27 @@ data:
   STREAMING_HUB_KAFKA_TLS_ENABLED: {{ $cm.STREAMING_HUB_KAFKA_TLS_ENABLED | default "false" | quote }}
   # Plaintext Kafka opt-in — MUST stay "false" for staging/production (rejected at boot).
   STREAMING_HUB_ALLOW_INSECURE_KAFKA: {{ $cm.STREAMING_HUB_ALLOW_INSECURE_KAFKA | default "false" | quote }}
-  # --- redis / valkey (external; per-tenant rate limiting on the CONTROL PLANE) ---
-  # lib-commons ratelimit, fixed window over Redis. The control-plane roles need a
-  # reachable Redis/Valkey; ingest and delivery do not read these. The ConfigMap is
-  # role-INVARIANT (one per release), so the keys ship to every pod either way.
-  # ADDRESS is host:port and has NO default — with RATE_LIMIT_ENABLED="true" and an
-  # empty address the hub cannot reach a limiter, and the fail-open posture below
-  # means requests are ALLOWED rather than refused. Set it for any control plane
-  # that must actually enforce a limit. The password is a Secret
-  # (secrets.STREAMING_HUB_REDIS_PASSWORD), never this ConfigMap.
-  STREAMING_HUB_REDIS_ADDRESS: {{ $cm.STREAMING_HUB_REDIS_ADDRESS | default "" | quote }}
-  STREAMING_HUB_REDIS_TLS: {{ $cm.STREAMING_HUB_REDIS_TLS | default "true" | quote }}
+  # --- redis / valkey (external; the store behind control-plane rate limiting) ---
+  # Masked via lerian-common.datastore.value (type "redis"), so global.datastores.redis
+  # or streamingHub.datastores.redis reaches this chart like it reaches every other
+  # Lerian product; configmap.<KEY> still wins. ADDRESS carries host:port in the mask's
+  # `host` field — the same shape reporter uses (reporter/templates/_helpers.tpl).
+  # The password is a Secret (secrets.STREAMING_HUB_REDIS_PASSWORD), never this ConfigMap.
+  STREAMING_HUB_REDIS_ADDRESS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $dds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "STREAMING_HUB_REDIS_ADDRESS" "default" "") | quote }}
+  STREAMING_HUB_REDIS_TLS: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $dds "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "STREAMING_HUB_REDIS_TLS" "default" "true") | quote }}
   # Base64-encoded PEM CA bundle for the Redis/Valkey TLS chain. Optional — leave
   # empty to trust the container's system roots. Not a credential (a public CA cert).
-  STREAMING_HUB_REDIS_CA_CERT: {{ $cm.STREAMING_HUB_REDIS_CA_CERT | default "" | quote }}
-  # lib-commons-owned (UNPREFIXED) rate-limit knobs. FAIL_OPEN is the hub's posture:
-  # when the limiter is unreachable the request is served instead of refused, so a
-  # Redis outage degrades enforcement rather than taking the control plane down.
-  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
-  ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "true" | quote }}
+  STREAMING_HUB_REDIS_CA_CERT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $dds "configmap" $cm "type" "redis" "field" "caCert" "nativeKey" "STREAMING_HUB_REDIS_CA_CERT" "default" "") | quote }}
+  # --- rate limiting (lib-commons three-tier contract, Redis-backed) ---
+  # The WHOLE contract via lerian-common.rateLimit.env — all ten keys, not just the
+  # switch. Emitting a subset would leave RATE_LIMIT_MAX & friends unreachable
+  # (the schema allowlist rejects any key this chart does not enumerate), so an
+  # operator could turn limiting on without being able to say what the limit IS.
+  # Productized knobs live at streamingHub.rateLimit.*; configmap.<KEY> overrides.
+  # NOTE ON FAIL-OPEN: lib-commons forbids fail-open by DEFAULT and logs it as a
+  # "security bypass" when permitted (commons/net/http/ratelimit/middleware.go).
+  # streamingHub.rateLimit.allowFailOpen is what turns it on — see values.yaml.
+  {{- include "lerian-common.rateLimit.env" (dict "configmap" $cm "params" (.Values.streamingHub.rateLimit | default dict)) | nindent 2 }}
   # --- sinks / DB TLS opt-ins — MUST stay "false" for production ---
   STREAMING_HUB_ALLOW_PRIVATE_SINKS: {{ $cm.STREAMING_HUB_ALLOW_PRIVATE_SINKS | default "false" | quote }}
   STREAMING_HUB_ALLOW_INSECURE_DB_TLS: {{ $cm.STREAMING_HUB_ALLOW_INSECURE_DB_TLS | default "false" | quote }}
@@ -120,6 +125,10 @@ data:
   # --- delivery pacing / poison handling ---
   STREAMING_HUB_POISON_THRESHOLD: {{ $cm.STREAMING_HUB_POISON_THRESHOLD | default "5" | quote }}
   STREAMING_HUB_PULL_RATE: {{ $cm.STREAMING_HUB_PULL_RATE | default "100" | quote }}
+  # The burst HALF of the app's inbound pull gate on GET /v1/events — it pairs with
+  # PULL_RATE above and is unrelated to the lib-commons limiter. Keep both: tuning
+  # the rate without the burst configures a different gate than the operator means.
+  STREAMING_HUB_PULL_BURST: {{ $cm.STREAMING_HUB_PULL_BURST | default "200" | quote }}
   STREAMING_HUB_HEALTH_WINDOW: {{ $cm.STREAMING_HUB_HEALTH_WINDOW | default "720h" | quote }}
   # --- reconciler (topic-drift detection; dark-ship, defaults on) ---
   STREAMING_HUB_RECONCILER_ENABLED: {{ $cm.STREAMING_HUB_RECONCILER_ENABLED | default "true" | quote }}
@@ -163,14 +172,18 @@ data:
       "STREAMING_HUB_ALLOW_INSECURE_DB_TLS" 1
       "STREAMING_HUB_REDIS_ADDRESS" 1 "STREAMING_HUB_REDIS_TLS" 1
       "STREAMING_HUB_REDIS_CA_CERT" 1
-      "RATE_LIMIT_ENABLED" 1 "ALLOW_RATELIMIT_FAIL_OPEN" 1
+      "RATE_LIMIT_ENABLED" 1 "ALLOW_RATELIMIT_DISABLED" 1 "ALLOW_RATELIMIT_FAIL_OPEN" 1
+      "RATE_LIMIT_MAX" 1 "RATE_LIMIT_WINDOW_SEC" 1
+      "AGGRESSIVE_RATE_LIMIT_MAX" 1 "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC" 1
+      "RELAXED_RATE_LIMIT_MAX" 1 "RELAXED_RATE_LIMIT_WINDOW_SEC" 1
+      "RATE_LIMIT_REDIS_TIMEOUT_MS" 1
       "STREAMING_HUB_KEK_SOURCE" 1 "STREAMING_HUB_KEK_REF" 1
       "STREAMING_HUB_TENANT_ID" 1
       "STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS" 1 "STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS" 1
       "STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME" 1
       "STREAMING_HUB_DISPATCH_WORKERS" 1 "STREAMING_HUB_DISPATCH_CLAIM_BATCH" 1
       "STREAMING_HUB_DISPATCH_IDLE_INTERVAL_MS" 1
-      "STREAMING_HUB_POISON_THRESHOLD" 1 "STREAMING_HUB_PULL_RATE" 1
+      "STREAMING_HUB_POISON_THRESHOLD" 1 "STREAMING_HUB_PULL_RATE" 1 "STREAMING_HUB_PULL_BURST" 1
       "STREAMING_HUB_HEALTH_WINDOW" 1
       "STREAMING_HUB_RECONCILER_ENABLED" 1 "STREAMING_HUB_RECONCILER_INTERVAL" 1
       "STREAMING_HUB_PARTITION_CRON_INTERVAL" 1 "STREAMING_HUB_PARTITION_FUTURE_BUFFER_WEEKS" 1

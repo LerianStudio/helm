@@ -224,12 +224,17 @@ streamingHub:
   useExistingSecret: false
   existingSecretName: ""
   # ===========================================================================
-  # Dedicated PostgreSQL datastore mask (lerian-common.datastore.value). Empty by
-  # default → the template ships the defaults (host localhost / port 5432 / user
-  # + name streaming_hub / ssl disable, from the app .env). Set a field here to
-  # override THIS component only; global.datastores.postgres is the shared tier.
-  # These feed the POSTGRES_* migration-toolchain keys — the APP connects via the
-  # STREAMING_HUB_POSTGRES_DSN Secret.
+  # Dedicated datastore masks (lerian-common.datastore.value). Empty by default →
+  # the template ships the defaults. Set a field here to override THIS component
+  # only; global.datastores.<type> is the shared tier.
+  #
+  #   postgres: host / port / user / name / ssl — feeds the POSTGRES_* migration-
+  #     toolchain keys (defaults: localhost / 5432 / streaming_hub / streaming_hub
+  #     / disable). The APP connects via the STREAMING_HUB_POSTGRES_DSN Secret.
+  #   redis:    host / tls / caCert — the rate-limiter store. `host` carries the
+  #     FULL host:port (the shape reporter uses), and maps to
+  #     STREAMING_HUB_REDIS_ADDRESS. Empty by default → nothing is limited.
+  #     Example: redis: { host: valkey.internal:6379, tls: "true" }
   # ===========================================================================
   datastores: {}
   # ===========================================================================
@@ -241,20 +246,39 @@ streamingHub:
   # unconstrained per-Deployment env hatch). NEVER put a credential here — those
   # go to `secrets` (routed to a Secret, never the ConfigMap).
   #
-  # RATE LIMITING — the one key with no usable default. The control plane limits
-  # per tenant through lib-commons ratelimit (fixed window over Redis/Valkey), and
-  # the connection is EXTERNAL to this chart:
-  #   STREAMING_HUB_REDIS_ADDRESS   host:port — REQUIRED for enforcement, empty default
-  #   STREAMING_HUB_REDIS_TLS       "true" (default); "false" only for a trusted LAN
-  #   STREAMING_HUB_REDIS_CA_CERT   base64 PEM CA bundle; empty = system roots
-  #   RATE_LIMIT_ENABLED            "true" (default)
-  #   ALLOW_RATELIMIT_FAIL_OPEN     "true" (default) — an unreachable limiter ALLOWS
-  # Leaving ADDRESS empty with the defaults above is a SILENT no-op: every request
-  # is served unlimited. The password goes to secrets.STREAMING_HUB_REDIS_PASSWORD.
+  # RATE LIMITING lives in its own typed block below (streamingHub.rateLimit) and
+  # its Redis connection in streamingHub.datastores.redis — configmap.<KEY> still
+  # overrides either. Leaving the Redis address empty is a SILENT no-op: every
+  # request is served unlimited. The password goes to
+  # secrets.STREAMING_HUB_REDIS_PASSWORD.
   # ===========================================================================
   # -- Operator ConfigMap overrides (key -> value). Ships empty; the built-in
   #    defaults live in templates/configmap.yaml.
   configmap: {}
+  # ===========================================================================
+  # rateLimit — the lib-commons three-tier rate-limit contract, rendered by
+  # lerian-common.rateLimit.env. Ships EMPTY so the helper's own defaults apply
+  # (enabled "true", max 500 / window 60s, aggressive 100/60, relaxed 1000/60,
+  # Redis timeout 500ms). Fields: enabled, allowDisabled, allowFailOpen, max,
+  # windowSec, aggressiveMax, aggressiveWindowSec, relaxedMax, relaxedWindowSec,
+  # redisTimeoutMs. Any configmap.<NATIVE_KEY> still overrides a field here.
+  #
+  # The store is streamingHub.datastores.redis (or global.datastores.redis) —
+  # EXTERNAL to this chart. With no address configured, lib-commons builds a
+  # pass-through limiter and nothing is limited, silently.
+  #
+  # allowFailOpen: lib-commons FORBIDS fail-open by default and, when permitted,
+  # logs "security bypass active". Setting it here makes an unreachable limiter
+  # ALLOW the request instead of refusing it: a Redis outage degrades enforcement
+  # rather than taking the control plane down. That is the hub's intended posture,
+  # and it is a deliberate security trade — leave it unset for fail-closed.
+  # ===========================================================================
+  # -- lib-commons rate-limit knobs (see the block comment above).
+  rateLimit:
+    # -- Permit fail-open. lib-commons classifies this as a security bypass and
+    #    logs it as one; unset means fail-CLOSED (requests are refused when the
+    #    limiter is unreachable).
+    allowFailOpen: "true"
   # ===========================================================================
   # secrets — role-INVARIANT, SENSITIVE env (one shared Secret). Never rendered to
   # the ConfigMap. STREAMING_HUB_POSTGRES_DSN is ALWAYS emitted (even empty) so a

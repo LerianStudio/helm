@@ -78,9 +78,13 @@ Service called "mongodb", not "mongodb-mongodb". Hardcoding printf
 Namespace the bundled MongoDB subchart's resources are created in.
 
 A subchart does not inherit this chart's namespaceOverride. The Bitnami chart
-resolves its own namespace from global.namespaceOverride and falls back to the
-release namespace; its LOCAL namespaceOverride is declared in its values and
-never read by its templates. Mirror that exactly.
+reads global.namespaceOverride in its own "mongodb.namespace" helper
+(mongodb-16.4.0, templates/_helpers.tpl), falling back to the release
+namespace, and that helper is what its Service, Secret and StatefulSet carry,
+which is what this one has to track. Its LOCAL namespaceOverride is read by
+four of its templates (networkpolicy, and the three update-password ones)
+through common.names.namespace, so those four alone can land elsewhere.
+Mirror the rule the Service and the Secret follow.
 */}}
 {{- define "product-console.mongodb.namespace" -}}
 {{- if and .Values.global .Values.global.namespaceOverride -}}

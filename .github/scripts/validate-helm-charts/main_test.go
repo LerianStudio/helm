@@ -396,10 +396,13 @@ func renderChart(chart, namespace string, values ...string) (string, error) {
 	return string(out), err
 }
 
-// renderNotes returns a render of the chart that includes NOTES.txt, which
-// `helm template` otherwise never emits. helm renders every file under
-// templates/ except NOTES.txt and _*.tpl, so a copy of the chart turns the notes
-// into a named template and has a ConfigMap carry their output.
+// renderNotes returns the install notes alone, not the release they came with.
+// `helm template` never emits NOTES.txt, so a copy of the chart turns the notes
+// into a named template and has a probe ConfigMap carry their output; that one
+// value is what comes back. Returning the whole stream scoped every assertion to
+// the release instead of to the notes: a phrase that moved out of NOTES.txt into
+// any other rendered object still matched, and one failed assertion printed
+// 170 KB of MongoDB manifests around its one-line diagnosis.
 func renderNotes(t *testing.T, chart, namespace string, values ...string) string {
 	t.Helper()
 	probe := filepath.Join(t.TempDir(), "product-console")
@@ -422,7 +425,21 @@ func renderNotes(t *testing.T, chart, namespace string, values ...string) string
 	if err != nil {
 		t.Fatalf("rendering the install notes: %s", oneLine(out))
 	}
-	return out
+	docs, err := decodeManifests(out)
+	if err != nil {
+		t.Fatalf("decoding the rendered manifest: %v", err)
+	}
+	for _, m := range docs {
+		if k, _ := m["kind"].(string); k != "ConfigMap" {
+			continue
+		}
+		if nestedString(m, "metadata", "name") != "notes-probe" {
+			continue
+		}
+		return nestedString(m, "data", "notes")
+	}
+	t.Fatalf("the notes probe is not in the rendered release: %s", oneLine(out))
+	return ""
 }
 
 // normalizeSpace collapses every run of whitespace to one space, so an assertion

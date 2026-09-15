@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Every product-console render below runs against a COPY of the chart with its
@@ -191,50 +193,111 @@ spec:
 // it renders with the very host the refusal prints.
 func TestProductConsoleRefusesAnUnnameableMongoHost(t *testing.T) {
 	chart := preparedProductConsoleChart(t)
-	const headless = "product-console-mongodb-headless.product-console.svc.cluster.local"
+	render := func(values ...string) (string, error) {
+		args := append([]string{"template", "product-console", chart, "-n", "product-console"}, values...)
+		out, err := exec.Command("helm", args...).CombinedOutput()
+		return string(out), err
+	}
+
+	if out, err := render(); err != nil {
+		t.Fatalf("shipped defaults: render failed, want success: %s", oneLine(out))
+	}
+
 	cases := []struct {
-		name     string
-		values   []string
-		wantFail string // substring the refusal must name; empty means it must render
+		name      string
+		values    []string
+		wantNamed []string // every reason and hint the refusal has to carry
+		wantHost  string   // the FQDN it prints, which must name a Service the repaired render creates
 	}{
-		{"shipped defaults", nil, ""},
 		{
-			"replicaset with no host named",
-			[]string{"--set", "mongodb.architecture=replicaset"},
-			"mongodb.architecture is replicaset",
+			name:      "replicaset",
+			values:    []string{"--set", "mongodb.architecture=replicaset"},
+			wantNamed: []string{"mongodb.architecture is replicaset", "replicaSet=rs0"},
+			wantHost:  "product-console-mongodb-headless.product-console.svc.cluster.local",
 		},
 		{
-			"replicaset with the host the refusal names",
-			[]string{"--set", "mongodb.architecture=replicaset", "--set", "configmap.MONGO_HOST=" + headless},
-			"",
+			name:      "renamed Service",
+			values:    []string{"--set", "mongodb.service.nameOverride=svcx"},
+			wantNamed: []string{"mongodb.service.nameOverride is svcx"},
+			wantHost:  "svcx.product-console.svc.cluster.local",
 		},
 		{
-			"renamed Service with no host named",
-			[]string{"--set", "mongodb.service.nameOverride=svcx"},
-			"mongodb.service.nameOverride is svcx",
-		},
-		{
-			"renamed Service with the host the refusal names",
-			[]string{"--set", "mongodb.service.nameOverride=svcx", "--set", "configmap.MONGO_HOST=svcx.product-console.svc.cluster.local"},
-			"",
+			// Bitnami resolves the Service name through one helper for BOTH
+			// architectures (mongodb-16.4.0 templates/_helpers.tpl
+			// "mongodb.service.nameOverride"): the override wins when set, and
+			// only without one does a replica set fall back to
+			// "<fullname>-headless". Naming the headless Service here would send
+			// an operator to a host this release never creates.
+			name:      "replicaset and a renamed Service together",
+			values:    []string{"--set", "mongodb.architecture=replicaset", "--set", "mongodb.service.nameOverride=svcx"},
+			wantNamed: []string{"mongodb.architecture is replicaset", "mongodb.service.nameOverride is svcx", "replicaSet=rs0"},
+			wantHost:  "svcx.product-console.svc.cluster.local",
 		},
 	}
 	for _, c := range cases {
-		args := append([]string{"template", "product-console", chart, "-n", "product-console"}, c.values...)
-		out, err := exec.Command("helm", args...).CombinedOutput()
-		switch {
-		case c.wantFail == "" && err != nil:
-			t.Errorf("%s: render failed, want success: %s", c.name, oneLine(string(out)))
-		case c.wantFail != "" && err == nil:
-			t.Errorf("%s: render succeeded, want a refusal naming %q", c.name, c.wantFail)
-		case c.wantFail != "" && !strings.Contains(string(out), c.wantFail):
-			t.Errorf("%s: refusal must name %q, got: %s", c.name, c.wantFail, oneLine(string(out)))
+		out, err := render(c.values...)
+		if err == nil {
+			t.Errorf("%s: render succeeded, want a refusal", c.name)
+			continue
+		}
+		for _, want := range c.wantNamed {
+			if !strings.Contains(out, want) {
+				t.Errorf("%s: refusal must name %q, got: %s", c.name, want, oneLine(out))
+			}
 		}
 		// A refusal that does not say what to set is a dead end for the operator.
-		if c.wantFail != "" && !strings.Contains(string(out), "Set configmap.MONGO_HOST to ") {
-			t.Errorf("%s: refusal must name the value to set, got: %s", c.name, oneLine(string(out)))
+		// One that names a host the release does not create is worse: it reads as
+		// an answer and lands in the very defect it exists to prevent, with the
+		// console Ready and every MongoDB-backed page failing.
+		if !strings.Contains(out, "Set configmap.MONGO_HOST to "+c.wantHost) {
+			t.Errorf("%s: refusal must name %q as the host to set, got: %s", c.name, c.wantHost, oneLine(out))
+			continue
+		}
+		repaired, err := render(append(append([]string{}, c.values...), "--set", "configmap.MONGO_HOST="+c.wantHost)...)
+		if err != nil {
+			t.Errorf("%s: render with the host the refusal names failed: %s", c.name, oneLine(repaired))
+			continue
+		}
+		svc := c.wantHost[:strings.Index(c.wantHost, ".")]
+		services := renderedNames(repaired, "Service")
+		if !contains(services, svc) {
+			t.Errorf("%s: refusal names host %s, but the repaired render creates no Service %q (it creates %v)",
+				c.name, c.wantHost, svc, services)
 		}
 	}
+}
+
+// renderedNames returns the metadata.name of every object of one kind in a
+// rendered manifest stream.
+func renderedNames(rendered, kind string) []string {
+	var names []string
+	dec := yaml.NewDecoder(strings.NewReader(stripNonManifest(rendered)))
+	for {
+		var doc yaml.Node
+		if err := dec.Decode(&doc); err != nil {
+			break
+		}
+		var m map[string]interface{}
+		if err := doc.Decode(&m); err != nil || m == nil {
+			continue
+		}
+		if k, _ := m["kind"].(string); k != kind {
+			continue
+		}
+		if name := nestedString(m, "metadata", "name"); name != "" {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+func contains(values []string, want string) bool {
+	for _, v := range values {
+		if v == want {
+			return true
+		}
+	}
+	return false
 }
 
 // A ServiceAccount is namespaced, so a Deployment pinned to one namespace with

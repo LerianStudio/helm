@@ -120,8 +120,9 @@ names that Service through mongodb.service.nameOverride when it is set, and in
 replicaset architecture publishes "<fullname>-headless" plus one DNS name per
 replica instead (mongodb-16.4.0, templates/_helpers.tpl "mongodb.service.
 nameOverride"), so neither configuration has a single correct default. The chart
-refuses to render for those two rather than write a host that resolves nowhere,
-and the refusal names the value to set.
+refuses to render for those two, and for both at once, rather than write a host
+that resolves nowhere, and the refusal names the Service Bitnami really creates
+for that combination plus the value to set.
 
 With the subchart disabled the bare "mongodb" is kept, so an external MongoDB
 published under that name keeps working untouched. Either way an operator's own
@@ -138,12 +139,28 @@ the fallback, and naming one is also what lifts the two refusals.
 {{- $ns := include "product-console.mongodb.namespace" . -}}
 {{- $arch := .Values.mongodb.architecture | default "standalone" -}}
 {{- $svcName := (.Values.mongodb.service | default dict).nameOverride | default "" -}}
-{{- if and (not $named) (ne $arch "standalone") -}}
-{{- $headless := printf "%s-headless.%s.svc.cluster.local" (include "product-console.mongodb.fullname" .) $ns -}}
-{{- fail (printf "product-console: mongodb.architecture is %s, so the bundled MongoDB publishes the headless Service %s and one DNS name per replica rather than a single Service, and configmap.MONGO_HOST has no correct default. Set configmap.MONGO_HOST to %s, and add replicaSet=%s to configmap.MONGO_PARAMETERS so the driver reads the whole replica set." $arch $headless $headless (.Values.mongodb.replicaSetName | default "rs0")) -}}
+{{- $replicaSet := ne $arch "standalone" -}}
+{{- if and (not $named) (or $replicaSet $svcName) -}}
+{{- /* ONE Bitnami helper answers for BOTH architectures (mongodb-16.4.0,
+   templates/_helpers.tpl "mongodb.service.nameOverride"): the override wins
+   whenever it is set, and only without one does a replica set fall back to
+   "<fullname>-headless". Resolve the name the same way, or the refusal sends an
+   operator to a Service the release never creates, which is the defect it
+   exists to prevent. Both settings at once is a reachable combination, and it
+   is the rename that wins there. */ -}}
+{{- $svc := $svcName | default (ternary (printf "%s-headless" (include "product-console.mongodb.fullname" .)) (include "product-console.mongodb.fullname" .) $replicaSet) -}}
+{{- $why := list -}}
+{{- if $replicaSet -}}
+{{- $why = append $why (printf "mongodb.architecture is %s" $arch) -}}
 {{- end -}}
-{{- if and (not $named) $svcName -}}
-{{- fail (printf "product-console: mongodb.service.nameOverride is %s, so the bundled MongoDB's Service is named %s and the configmap.MONGO_HOST default would name a Service the release does not create. Set configmap.MONGO_HOST to %s.%s.svc.cluster.local." $svcName $svcName $svcName $ns) -}}
+{{- if $svcName -}}
+{{- $why = append $why (printf "mongodb.service.nameOverride is %s" $svcName) -}}
+{{- end -}}
+{{- $msg := printf "product-console: %s, so the bundled MongoDB's Service is named %s and configmap.MONGO_HOST has no correct default. Set configmap.MONGO_HOST to %s.%s.svc.cluster.local." (join " and " $why) $svc $svc $ns -}}
+{{- if $replicaSet -}}
+{{- $msg = printf "%s Architecture %s also publishes one DNS name per replica, so add replicaSet=%s to configmap.MONGO_PARAMETERS for the driver to read the whole set." $msg $arch (.Values.mongodb.replicaSetName | default "rs0") -}}
+{{- end -}}
+{{- fail $msg -}}
 {{- end -}}
 {{- include "lerian-common.internalHost" (dict "name" (include "product-console.mongodb.fullname" .) "namespace" $ns) -}}
 {{- else -}}

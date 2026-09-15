@@ -1184,6 +1184,21 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 
+		// A chart that pins its own namespace renders into two at once here: the
+		// pinned one and whatever helm was given. This assertion catches a
+		// workload that landed in one while its ServiceAccount landed in the
+		// other, which no `helm template` exit code reports and which stops the
+		// pod being created at all. The renders above pass no -n, so "default"
+		// is the namespace an unset metadata.namespace resolves to.
+		if msg := serviceAccountNamespaceMessage(normalOut, "default"); msg != "" {
+			row.Status = "fail"
+			row.Class = "service-account-namespace"
+			row.Detail = appendDetail(row.Detail, "release "+chartName+": "+msg)
+			rows = append(rows, row)
+			_ = os.RemoveAll(tmpRoot)
+			continue
+		}
+
 		// H1: Bitnami release-name collapse. When the release name equals a
 		// bundled Bitnami subchart name (or alias), common.names.dependency.fullname
 		// collapses <release>-<subchart> to just <subchart>; any app helper that
@@ -1350,6 +1365,120 @@ func danglingSecretRefMessage(rendered string) string {
 	}
 	sort.Strings(missing)
 	return "secret reference(s) point at non-rendered Secret(s): " + strings.Join(missing, ", ")
+}
+
+// serviceAccountNamespaceMessage returns a non-empty message when a rendered
+// workload names a ServiceAccount that the same release renders into a
+// different namespace from the workload itself.
+//
+// A ServiceAccount is namespaced, so the kubelet resolves it in the workload's
+// own namespace and nowhere else. A chart that pins its workloads to a fixed
+// namespace and leaves its ServiceAccount on the release namespace therefore
+// renders, installs, reports STATUS: deployed, and then never creates a pod:
+// the ReplicaSet fails admission with "serviceaccount not found", where nobody
+// looks. product-console shipped exactly that. A missing namespace on both
+// sides is fine, since both then take the release namespace.
+//
+// A ServiceAccount this release does not render is left alone: it is either
+// "default" or provisioned out of band, and this gate has nothing to say about
+// either.
+//
+// releaseNamespace is what an unset metadata.namespace resolves to, and it has
+// to be supplied rather than assumed: a chart that writes .Release.Namespace on
+// one side and nothing on the other agrees with itself in every install, and
+// reading that as a mismatch is a false positive, which is exactly what the
+// reporter chart produced.
+func serviceAccountNamespaceMessage(rendered, releaseNamespace string) string {
+	rendered = stripNonManifest(rendered)
+	saNamespaces := map[string]map[string]bool{}
+	type workload struct{ kind, name, namespace, account string }
+	var workloads []workload
+
+	dec := yaml.NewDecoder(strings.NewReader(rendered))
+	for {
+		var doc yaml.Node
+		if err := dec.Decode(&doc); err != nil {
+			break
+		}
+		var m map[string]interface{}
+		if err := doc.Decode(&m); err != nil || m == nil {
+			continue
+		}
+		kind, _ := m["kind"].(string)
+		name := nestedString(m, "metadata", "name")
+		namespace := nestedString(m, "metadata", "namespace")
+		if namespace == "" {
+			namespace = releaseNamespace
+		}
+		if kind == "ServiceAccount" {
+			if name != "" {
+				if saNamespaces[name] == nil {
+					saNamespaces[name] = map[string]bool{}
+				}
+				saNamespaces[name][namespace] = true
+			}
+			continue
+		}
+		// Read the account off any pod template, however deeply nested (a
+		// CronJob carries two levels), rather than naming every workload kind.
+		if account := findServiceAccountName(m); account != "" {
+			workloads = append(workloads, workload{kind, name, namespace, account})
+		}
+	}
+
+	seen := map[string]bool{}
+	var missing []string
+	for _, w := range workloads {
+		rendered, ok := saNamespaces[w.account]
+		if !ok || rendered[w.namespace] {
+			continue
+		}
+		var namespaces []string
+		for ns := range rendered {
+			namespaces = append(namespaces, ns)
+		}
+		sort.Strings(namespaces)
+		entry := fmt.Sprintf("%s/%s in %s uses ServiceAccount %q, rendered in %s",
+			w.kind, w.name, w.namespace, w.account, strings.Join(namespaces, ", "))
+		if seen[entry] {
+			continue
+		}
+		seen[entry] = true
+		missing = append(missing, entry)
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	sort.Strings(missing)
+	return "ServiceAccount(s) rendered outside the namespace of the workload using them: " + strings.Join(missing, "; ")
+}
+
+// findServiceAccountName returns the first serviceAccountName found anywhere in
+// a decoded manifest, which is the pod spec's in every workload kind.
+func findServiceAccountName(node interface{}) string {
+	switch v := node.(type) {
+	case map[string]interface{}:
+		if account, ok := v["serviceAccountName"].(string); ok && account != "" {
+			return account
+		}
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			if account := findServiceAccountName(v[key]); account != "" {
+				return account
+			}
+		}
+	case []interface{}:
+		for _, child := range v {
+			if account := findServiceAccountName(child); account != "" {
+				return account
+			}
+		}
+	}
+	return ""
 }
 
 // collapseHostPattern matches an in-cluster Service FQDN

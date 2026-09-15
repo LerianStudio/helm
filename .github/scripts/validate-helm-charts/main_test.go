@@ -178,6 +178,72 @@ func TestProductConsoleRefusesAnUnnameableMongoHost(t *testing.T) {
 	}
 }
 
+// A ServiceAccount is namespaced, so a Deployment pinned to one namespace with
+// its ServiceAccount rendered into another installs cleanly, reports STATUS:
+// deployed, and never creates a pod. product-console shipped that: every
+// resource carried the chart's pinned namespace except the ServiceAccount,
+// which took the release namespace instead.
+func TestServiceAccountNamespaceMessage(t *testing.T) {
+	const rendered = `---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: %s
+%s
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: pinned
+spec:
+  template:
+    spec:
+      serviceAccountName: app
+`
+	cases := []struct {
+		name, saName, saNamespace string
+		wantHit                   bool
+	}{
+		{"account left on the release namespace", "app", "", true},
+		{"account in another namespace", "app", "  namespace: elsewhere", true},
+		{"account alongside its workload", "app", "  namespace: pinned", false},
+		{"account this release does not render", "other", "  namespace: pinned", false},
+	}
+	for _, c := range cases {
+		got := serviceAccountNamespaceMessage(fmt.Sprintf(rendered, c.saName, c.saNamespace), "release-ns")
+		if (got != "") != c.wantHit {
+			t.Errorf("%s: serviceAccountNamespaceMessage = %q, want hit=%v", c.name, got, c.wantHit)
+		}
+		if c.wantHit && !strings.Contains(got, `ServiceAccount "app"`) {
+			t.Errorf("%s: message must name the account, got %q", c.name, got)
+		}
+	}
+
+	// The reporter chart's shape, and the false positive that made this take a
+	// release namespace: the ServiceAccount writes .Release.Namespace while the
+	// workload writes nothing, so the two agree in every real install.
+	const oneSideExplicit = `---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app
+  namespace: release-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  template:
+    spec:
+      serviceAccountName: app
+`
+	if got := serviceAccountNamespaceMessage(oneSideExplicit, "release-ns"); got != "" {
+		t.Errorf("an account pinned to the release namespace must pass, got %q", got)
+	}
+}
+
 func TestWithinDir(t *testing.T) {
 	cases := []struct {
 		name         string

@@ -464,6 +464,30 @@ common:
   # dependency CONNECTIONS resolve through lerian-common typed masks/helpers, everything
   # else is an escape-hatch passthrough. Set common.configmap.<KEY> here to override any
   # shared key; add any other key and it flows through as-is.
+  #
+  # Registering an operator-defined datasource (e.g. a product's CRM/onboarding database
+  # that templates reference by name, such as `plugin_crm`) is NOT chart-typed — it flows
+  # through here as plain passthrough keys, one full set per datasource:
+  #   DATASOURCE_<NAME>_CONFIG_NAME  — id referenced by templates (e.g. "plugin_crm")
+  #   DATASOURCE_<NAME>_TYPE         — "postgresql" or "mongodb"
+  #   DATASOURCE_<NAME>_HOST / _PORT / _DATABASE / _USER
+  #   DATASOURCE_<NAME>_OPTIONS      — e.g. "authSource=admin" for MongoDB
+  #   DATASOURCE_<NAME>_MIDAZ_ORGANIZATION_ID — Midaz org UUID this datasource is scoped to;
+  #     without it, templates referencing DATASOURCE_<NAME>_CONFIG_NAME fail with RPT-0075
+  #     ("data source's organization scope could not be resolved") even though the
+  #     connection itself is reachable.
+  # The matching DATASOURCE_<NAME>_PASSWORD is a SECRET, not a configmap key — see
+  # secrets.DATASOURCE_ONBOARDING_PASSWORD below for the pattern (same applies to any
+  # other operator-defined DATASOURCE_<NAME>).
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   DATASOURCE_CRM_CONFIG_NAME: "plugin_crm"
+  #   DATASOURCE_CRM_TYPE: "mongodb"
+  #   DATASOURCE_CRM_HOST: "<crm-mongo-host>"
+  #   DATASOURCE_CRM_PORT: "27017"
+  #   DATASOURCE_CRM_DATABASE: "<crm-database-name>"
+  #   DATASOURCE_CRM_USER: "<crm-mongo-user>"
+  #   DATASOURCE_CRM_OPTIONS: "authSource=admin"
+  #   DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<midaz-organization-uuid>"
   configmap: {}
 # -- Dedicated datastore masks for THIS release (override global.datastores). Both the
 # manager and worker surfaces share these connections. Sub-keys (each host/port/user/ssl):
@@ -485,6 +509,10 @@ secrets:
   #   - RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS  (broker credentials)
   #   - RABBITMQ_ERLANG_COOKIE                          (bundled broker only; stable value)
   #   - DATASOURCE_ONBOARDING_PASSWORD                  (only when a direct datasource is configured)
+  #   - DATASOURCE_<NAME>_PASSWORD                      (one per operator-defined datasource
+  #                                                       registered via common.configmap, e.g.
+  #                                                       DATASOURCE_CRM_PASSWORD for a `plugin_crm`
+  #                                                       datasource — see common.configmap above)
   #   - OBJECT_STORAGE_ACCESS_KEY_ID / OBJECT_STORAGE_SECRET_KEY (external S3 only)
   #   - MONGO_PASSWORD                                  (external MongoDB only; bundled is single-sourced)
   #   - APP_ENC_KEY                                     (fetcher integration; base64 32-byte key)

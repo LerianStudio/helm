@@ -60,14 +60,55 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- end }}
 
 {{/*
+Name of the bundled MongoDB subchart's own resources (Service, Secret,
+StatefulSet), resolved the way the subchart resolves them rather than hardcoded.
+
+lerian-common.dependency.fullname is the vendored copy of the Bitnami rule the
+subchart itself uses: fullnameOverride wins, else nameOverride, else
+<release>-mongodb -- except that the name COLLAPSES to the bare release name
+when the release name already contains it, so `helm install mongodb` creates a
+Service called "mongodb", not "mongodb-mongodb". Hardcoding printf
+"%s-mongodb" .Release.Name misses that collapse and points at nothing.
+*/}}
+{{- define "product-console.mongodb.fullname" -}}
+{{- include "lerian-common.dependency.fullname" (dict "chartName" "mongodb" "chartValues" .Values.mongodb "context" .) -}}
+{{- end }}
+
+{{/*
+Namespace the bundled MongoDB subchart's resources are created in.
+
+A subchart does not inherit this chart's namespaceOverride. The Bitnami chart
+resolves its own namespace from global.namespaceOverride and falls back to the
+release namespace; its LOCAL namespaceOverride is declared in its values and
+never read by its templates. Mirror that exactly.
+*/}}
+{{- define "product-console.mongodb.namespace" -}}
+{{- if and .Values.global .Values.global.namespaceOverride -}}
+{{- .Values.global.namespaceOverride -}}
+{{- else -}}
+{{- .Release.Namespace -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Secret the bundled MongoDB subchart's root password lives in: the one the
+operator supplied through mongodb.auth.existingSecret, else the one the subchart
+generates under its own name. Same resolution as the subchart's mongodb.secretName.
+*/}}
+{{- define "product-console.mongodb.secretName" -}}
+{{- if .Values.mongodb.auth.existingSecret -}}
+{{- .Values.mongodb.auth.existingSecret -}}
+{{- else -}}
+{{- include "product-console.mongodb.fullname" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Host the console should use for MongoDB when nobody names one.
 
-The bundled Bitnami subchart does not inherit this chart's namespaceOverride, so
-its Service is created as <release>-mongodb in the subchart's own namespace while
-the console sits in namespaceOverride. The historical default, the bare name
-"mongodb", matches no Service in either namespace, so a default install pointed
-the console at a host that does not exist. Resolved here as the subchart's own
-FQDN instead.
+The historical default, the bare name "mongodb", matches no Service the release
+creates, so a default install pointed the console at a host that does not exist.
+Resolved here as the bundled subchart's own Service FQDN instead.
 
 With the subchart disabled the bare "mongodb" is kept, so an external MongoDB
 published under that name keeps working untouched. Either way an operator's own
@@ -76,16 +117,7 @@ the fallback.
 */}}
 {{- define "product-console.mongodb.host" -}}
 {{- if .Values.mongodb.enabled -}}
-{{- $name := default (printf "%s-mongodb" .Release.Name) .Values.mongodb.fullnameOverride -}}
-{{- if and (not .Values.mongodb.fullnameOverride) .Values.mongodb.nameOverride -}}
-{{- $name = printf "%s-%s" .Release.Name .Values.mongodb.nameOverride -}}
-{{- end -}}
-{{- /* The subchart resolves its own namespace from global.namespaceOverride and
-   falls back to the release namespace; its LOCAL namespaceOverride is declared
-   in its values but never read by its Service. Mirror that, so this host tracks
-   where the Service is really created. */ -}}
-{{- $ns := default .Release.Namespace .Values.global.namespaceOverride -}}
-{{- printf "%s.%s.svc.cluster.local" $name $ns -}}
+{{- include "lerian-common.internalHost" (dict "name" (include "product-console.mongodb.fullname" .) "namespace" (include "product-console.mongodb.namespace" .)) -}}
 {{- else -}}
 mongodb
 {{- end -}}

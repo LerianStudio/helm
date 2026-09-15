@@ -36,6 +36,53 @@ jobs:
           go-version: '1.21'
           cache-dependency-path: .github/scripts/go.sum
 
+      # The validator's own unit tests, including the renders that pin
+      # product-console's refusal to write a MONGO_HOST that names no Service.
+      # Without this step those pins run nowhere: the render gate below only
+      # renders each chart with its default values, so a refusal that only fires
+      # under a non-default subchart topology is invisible to it.
+      #
+      # Those renders build the chart's dependencies themselves, fetching
+      # lerian-common-helm from ghcr.io and mongodb from registry-1.docker.io.
+      # This workflow triggers on charts/**, so running them unconditionally
+      # would make a Docker Hub rate limit red a PR that touches only another
+      # chart: the same coupling the render scope below deliberately refuses.
+      # Scope them to the chart they render and to the validator they live in;
+      # every other event (schedule, workflow_dispatch) runs them. Inside the
+      # step both a missing helm and a failed dependency build are hard failures
+      # (the runner sets CI=true), never skips, so a green step means the pins
+      # actually ran.
+      - name: Determine script-test scope
+        id: script-tests
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Captured first, then matched: piping git straight into `grep -q`
+          # under `set -o pipefail` gives the pipeline git's SIGPIPE status on a
+          # match, which would read as "no match" and skip the step.
+          changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+
+          if grep -Eq '^(charts/product-console/|\.github/scripts/validate-helm-charts/)' <<< "$changed_files"; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test chart scripts
+        if: steps.script-tests.outputs.run == 'true'
+        working-directory: .github/scripts
+        run: go test ./...
+
       - name: Validate chart standard
         working-directory: .github/scripts
         run: go run ./validate-helm-charts --root ../.. --strict

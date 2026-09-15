@@ -186,7 +186,9 @@ you set `configmap.MONGO_HOST` (or `global.datastores.mongo.host`), and the
 refusal prints the host to use, plus the `replicaSet=` parameter to add to
 `configmap.MONGO_PARAMETERS` for a replica set. Refusing is deliberate: the
 alternative is a console that comes up Ready pointing at a name that resolves
-in no namespace.
+in no namespace. Set both, and the rename wins: the refusal names the Service
+Bitnami really creates for that combination, which is the renamed one.
+
 **The password wiring** above applies only while the subchart's namespace equals
 the console's, which is what `-n product-console` gives you as long as
 `global.namespaceOverride` is unset. Your own value still wins when you set one,
@@ -200,9 +202,14 @@ in the `-n` namespace otherwise, while the console always lives in
 `namespaceOverride`. So setting `global.namespaceOverride` splits them even when
 `-n` matches. When those two namespaces differ a Secret cannot be read across
 them, so the chart leaves `MONGODB_PASS` alone and the install notes say so.
-Either land both in one namespace, or set both of these to the same value, or
-every MongoDB-backed page (product enablement, guided tour) fails on an auth
-error:
+Either move the subchart next to the console by naming the console's namespace
+in `global.namespaceOverride`, which the install notes print as a command to
+complete with your own values file and flags (with `global.namespaceOverride`
+set the subchart reads it instead of `-n`, so changing `-n` alone no longer
+moves it; with it unset the subchart follows `-n`, which is why a fresh install
+with `-n product-console` lands it beside the console), or set both of these to
+the same value, or every MongoDB-backed page (product enablement, guided tour)
+fails on an auth error:
 
 ```yaml
 mongodb:

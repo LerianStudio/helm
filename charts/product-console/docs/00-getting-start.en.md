@@ -48,7 +48,7 @@ and which managed-cloud preset applies.
 | MongoDB | Always — the console stores its own state (organizations UI cache, settings) here | Bundled subchart (`mongodb.enabled: true`) **or** external via `MONGO_HOST`/`MONGODB_URI`/`MONGODB_USER` in `configmap` + `MONGODB_PASS` in `secrets`, or the `global.datastores.mongo` mask — section 4 |
 | `lerian-common` (library chart) | Always | Chart dependency; provides HPA/PDB/Service/Ingress templates and the `global.*` masks. Nothing to configure. |
 | Midaz ledger | Always (the console is a UI for it) | `MIDAZ_API_HOST` / `MIDAZ_BASE_PATH` / `MIDAZ_TRANSACTION_BASE_*` in `configmap` — defaults to `midaz-ledger.midaz.svc.cluster.local:3002` |
-| plugin-access-manager (auth + identity) | Required when authorization is on (recommended everywhere exposed) | `PLUGIN_AUTH_*` / `PLUGIN_IDENTITY_*` in `configmap`, client id/secret in `secrets` — section 5 |
+| plugin-access-manager (auth + identity) | Required when authorization is on (recommended everywhere exposed) | `PLUGIN_AUTH_*` / `PLUGIN_IDENTITY_*` in `configmap`, client id/secret in `secrets` — section 3 (install order) |
 | Sibling plugins (CRM, Reporter, Fees, Tracer, Fetcher, Matcher, Flowker, Bank Transfer, Payments) | Only the features you enable in the UI | One `*_BASE_PATH` per service in `configmap`; each defaults to the sibling's in-cluster FQDN. A feature whose base path is wrong just fails that feature, not startup. |
 | OTEL collector | Optional (telemetry) | `otel.external: true` injects `OTEL_URL_*`/`HOST_IP` for a node-local DaemonSet collector; or `ENABLE_TELEMETRY`/`global.observability` |
 | Vault / secret manager | Recommended in production | `useExistingSecret: true` + `existingSecretName`, or Vault refs in the values `secrets:` block (the reference env uses `<path:...>` AVP refs) |
@@ -78,6 +78,10 @@ out of the box, so it works across namespaces with no mesh/DNS wiring — overri
    and the tenant IP allowlist is never enforced (section 5).
 6. Configure `ingress` (class, host, TLS) and set `NEXTAUTH_URL` to the public URL the
    browser uses for OAuth callbacks (defaults to the first ingress host as `https://…`).
+   Set `configmap.ALLOWED_ORIGINS` explicitly whenever the browser-facing URL differs from
+   that first ingress host (custom domain, CDN, or extra origins): it defaults to the first
+   ingress host's origin — **not** to `NEXTAUTH_URL` — so a mismatch makes the browser's
+   requests fail CORS.
 7. `helm install … -n <ns> --create-namespace`. Leave `namespaceOverride` empty unless
    you know you need it — with the bundled MongoDB it splits resources across namespaces
    (section 5).
@@ -140,6 +144,7 @@ discarded** — set it and confirm it lands (section 6).
 | **Bundled MongoDB does not survive `namespaceOverride`** | The subchart Service is `<release>-mongodb` in the **release** namespace; it does not inherit `namespaceOverride`. With `namespaceOverride` set and `MONGO_HOST: "mongodb"`, the console points at a host that exists nowhere and never becomes Ready. | For anything beyond a same-namespace demo, use **external** Mongo. If you keep the bundled one, leave `namespaceOverride` empty and set `MONGO_HOST` to the real `<release>-mongodb`. |
 | **ServiceAccount namespace** | On charts before the fix (LerianStudio/helm #2120), `templates/serviceaccount.yaml` pinned no namespace, so with `namespaceOverride` the SA landed in the release namespace while pods asked for it in the override namespace → pods never created (`Replicas: 0/1`). | Use a chart version that pins the SA namespace, or leave `namespaceOverride` empty. |
 | **Managed cloud preset** | `global.cloud: aws` auto-sets the DocumentDB `MONGO_PARAMETERS` shape when nothing more specific overrides it. `gcp`/`azure` have no Mongo preset today. | On DocumentDB, don't hand-write `MONGO_PARAMETERS` — let the preset apply. |
+| **⚠️ The AWS preset skips Mongo cert verification** | The `global.cloud: aws` preset includes `tlsInsecure=true` — TLS is on but the DocumentDB server certificate is **not verified** (open to MITM). It is a convenience default, **not production-safe by itself**. | For a security-strict production, override `configmap.MONGO_PARAMETERS` with a CA-verified string (e.g. `tls=true&tlsCAFile=/path/rds-combined-ca-bundle.pem&retryWrites=false`) and mount the CA bundle. |
 | **OTEL is external by default in the reference env** | `otel.external: true` injects `HOST_IP`/`OTEL_URL_*` for a node-local DaemonSet collector; it does not install a collector. | Point at a real collector, or set `ENABLE_TELEMETRY: "false"` if none exists. |
 
 ---

@@ -154,8 +154,9 @@ kubectl get pods -n <namespace>
 kubectl get deploy,svc,cm -n <namespace> -l app.kubernetes.io/name=product-console
 # endpoints de health (servidos pelo BFF na porta do service, 8081):
 kubectl -n <namespace> port-forward svc/product-console 8081:8081 &
-# aguarde o forward ficar pronto antes do curl (evita um connection-refused transitório):
-until curl -fsS http://localhost:8081/api/admin/health/alive >/dev/null 2>&1; do sleep 1; done
+# aguarde (limitado, ~30s) o forward antes do curl — evita um connection-refused
+# transitório sem travar pra sempre se o pod nunca subir:
+for i in $(seq 1 30); do curl -fsS --max-time 2 http://localhost:8081/api/admin/health/alive >/dev/null 2>&1 && break; sleep 1; done
 curl -fsS http://localhost:8081/api/admin/health/alive   # liveness
 curl -fsS http://localhost:8081/api/admin/health/readyz  # readiness
 ```

@@ -6,8 +6,9 @@
 # into a role via STREAMING_HUB_ROLE. This chart exposes that via a single
 # `mode` switch (see streamingHub.mode below).
 #
-# External infra (provisioned OUTSIDE this chart): Kafka/Redpanda and PostgreSQL.
-# There are NO database/broker/OTEL subcharts (deliberate — see Chart.yaml).
+# External infra (provisioned OUTSIDE this chart): Kafka/Redpanda, PostgreSQL and
+# — for the control plane's per-tenant rate limiting — Redis/Valkey.
+# There are NO database/broker/cache/OTEL subcharts (deliberate — see Chart.yaml).
 
 # -- Override the chart name component of resource names.
 nameOverride: ""
@@ -38,7 +39,10 @@ global:
   # -- Shared multi-tenant contract (lib-commons/multitenancy). `enabled` drives the
   #    UNPREFIXED MULTI_TENANT_ENABLED knob; override per component via
   #    streamingHub.configmap.MULTI_TENANT_ENABLED. streaming-hub's MT model reads
-  #    tenant credentials from AWS Secrets Manager (no tenant-manager URL / Redis).
+  #    tenant credentials from AWS Secrets Manager, so it needs no tenant-manager URL
+  #    and no tenant-registry Redis (MULTI_TENANT_REDIS_* stays unset). The hub's OWN
+  #    Redis/Valkey — STREAMING_HUB_REDIS_* — is a SEPARATE connection used only for
+  #    control-plane rate limiting; it is not part of this tenancy contract.
   multiTenant: {}
   # -- Bootstrap Job for an external/shared PostgreSQL: creates the hub's ONE
   #    database + role and grants privileges. The hub owns a SINGLE database with
@@ -236,6 +240,17 @@ streamingHub:
   # inject a key that is NOT in the allowlist, use `extraEnvVars` instead (the
   # unconstrained per-Deployment env hatch). NEVER put a credential here — those
   # go to `secrets` (routed to a Secret, never the ConfigMap).
+  #
+  # RATE LIMITING — the one key with no usable default. The control plane limits
+  # per tenant through lib-commons ratelimit (fixed window over Redis/Valkey), and
+  # the connection is EXTERNAL to this chart:
+  #   STREAMING_HUB_REDIS_ADDRESS   host:port — REQUIRED for enforcement, empty default
+  #   STREAMING_HUB_REDIS_TLS       "true" (default); "false" only for a trusted LAN
+  #   STREAMING_HUB_REDIS_CA_CERT   base64 PEM CA bundle; empty = system roots
+  #   RATE_LIMIT_ENABLED            "true" (default)
+  #   ALLOW_RATELIMIT_FAIL_OPEN     "true" (default) — an unreachable limiter ALLOWS
+  # Leaving ADDRESS empty with the defaults above is a SILENT no-op: every request
+  # is served unlimited. The password goes to secrets.STREAMING_HUB_REDIS_PASSWORD.
   # ===========================================================================
   # -- Operator ConfigMap overrides (key -> value). Ships empty; the built-in
   #    defaults live in templates/configmap.yaml.
@@ -262,6 +277,11 @@ streamingHub:
     # -- Migration-toolchain Postgres password (emit-when-set; no in-cluster
     #    consumer — the migration Job uses the DSN — shipped for .env parity).
     POSTGRES_PASSWORD: ""
+    # -- Rate-limiting Redis/Valkey password (emit-when-set; MAY stay empty when the
+    #    instance takes no AUTH). The host, port, TLS flag and CA cert are NOT
+    #    credentials and live in the ConfigMap as STREAMING_HUB_REDIS_ADDRESS /
+    #    _TLS / _CA_CERT.
+    STREAMING_HUB_REDIS_PASSWORD: ""
   # ===========================================================================
   # migrations — OUT-OF-BAND schema migration Job (Helm + ArgoCD PreSync hook).
   #

@@ -32,10 +32,19 @@ streamingHub:
     AWS_REGION: ""                          # e.g. us-east-2 (where the tenant credentials live)
     STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""  # SASL/SCRAM username (NOT a credential — the password is a secret)
     STREAMING_HUB_KEK_REF: ""               # KEK reference / pointer (KMS key id / ARN / env-var name — not key material)
+    # Control-plane rate limiting (lib-commons ratelimit, fixed window over an
+    # EXTERNAL Redis/Valkey). Leave ADDRESS empty and nothing is limited: the
+    # fail-open posture serves every request. Fill it in for a real control plane.
+    RATE_LIMIT_ENABLED: "true"
+    ALLOW_RATELIMIT_FAIL_OPEN: "true"       # unreachable limiter ALLOWS rather than refuses
+    STREAMING_HUB_REDIS_ADDRESS: ""         # e.g. valkey.dev-st.lerian.net:6379
+    STREAMING_HUB_REDIS_TLS: "true"         # "false" only on a trusted network
+    STREAMING_HUB_REDIS_CA_CERT: ""         # base64 PEM CA bundle (empty = system roots)
 
   secrets:
     STREAMING_HUB_POSTGRES_DSN: ""            # full Postgres DSN, credentials embedded
     STREAMING_HUB_KAFKA_SCRAM_PASSWORD: ""
+    # STREAMING_HUB_REDIS_PASSWORD: ""        # rate-limiter Redis AUTH (omit when it takes none)
     # STREAMING_HUB_DEV_KEK: ""               # dev only
     # Multi-tenant needs no extra secrets: the hub reads the tenant credentials
     # straight from AWS Secrets Manager with its own IAM identity. Set

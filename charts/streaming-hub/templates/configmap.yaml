@@ -18,8 +18,14 @@ enumerated key (top precedence) or injects an un-enumerated one (the trailing
 range), and streamingHub.extraEnvVars injects per-Deployment env.
 
 Credentials NEVER render here — STREAMING_HUB_POSTGRES_DSN, POSTGRES_PASSWORD,
-STREAMING_HUB_KAFKA_SCRAM_PASSWORD, STREAMING_HUB_KAFKA_CA_CERT and
-STREAMING_HUB_DEV_KEK live in templates/secrets.yaml (and are omit-guarded below).
+STREAMING_HUB_KAFKA_SCRAM_PASSWORD, STREAMING_HUB_KAFKA_CA_CERT,
+STREAMING_HUB_REDIS_PASSWORD and STREAMING_HUB_DEV_KEK live in
+templates/secrets.yaml (and are omit-guarded below).
+
+The rate-limiting block (STREAMING_HUB_REDIS_* + the lib-commons-owned
+RATE_LIMIT_ENABLED / ALLOW_RATELIMIT_FAIL_OPEN) lands ahead of the app release
+that reads it, and replaces STREAMING_HUB_PULL_BURST — the token-bucket burst
+knob the fixed-window limiter has no equivalent for.
 */}}
 {{- $ := . -}}
 {{- $cm := .Values.streamingHub.configmap | default dict -}}
@@ -71,6 +77,25 @@ data:
   STREAMING_HUB_KAFKA_TLS_ENABLED: {{ $cm.STREAMING_HUB_KAFKA_TLS_ENABLED | default "false" | quote }}
   # Plaintext Kafka opt-in — MUST stay "false" for staging/production (rejected at boot).
   STREAMING_HUB_ALLOW_INSECURE_KAFKA: {{ $cm.STREAMING_HUB_ALLOW_INSECURE_KAFKA | default "false" | quote }}
+  # --- redis / valkey (external; per-tenant rate limiting on the CONTROL PLANE) ---
+  # lib-commons ratelimit, fixed window over Redis. The control-plane roles need a
+  # reachable Redis/Valkey; ingest and delivery do not read these. The ConfigMap is
+  # role-INVARIANT (one per release), so the keys ship to every pod either way.
+  # ADDRESS is host:port and has NO default — with RATE_LIMIT_ENABLED="true" and an
+  # empty address the hub cannot reach a limiter, and the fail-open posture below
+  # means requests are ALLOWED rather than refused. Set it for any control plane
+  # that must actually enforce a limit. The password is a Secret
+  # (secrets.STREAMING_HUB_REDIS_PASSWORD), never this ConfigMap.
+  STREAMING_HUB_REDIS_ADDRESS: {{ $cm.STREAMING_HUB_REDIS_ADDRESS | default "" | quote }}
+  STREAMING_HUB_REDIS_TLS: {{ $cm.STREAMING_HUB_REDIS_TLS | default "true" | quote }}
+  # Base64-encoded PEM CA bundle for the Redis/Valkey TLS chain. Optional — leave
+  # empty to trust the container's system roots. Not a credential (a public CA cert).
+  STREAMING_HUB_REDIS_CA_CERT: {{ $cm.STREAMING_HUB_REDIS_CA_CERT | default "" | quote }}
+  # lib-commons-owned (UNPREFIXED) rate-limit knobs. FAIL_OPEN is the hub's posture:
+  # when the limiter is unreachable the request is served instead of refused, so a
+  # Redis outage degrades enforcement rather than taking the control plane down.
+  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ $cm.ALLOW_RATELIMIT_FAIL_OPEN | default "true" | quote }}
   # --- sinks / DB TLS opt-ins — MUST stay "false" for production ---
   STREAMING_HUB_ALLOW_PRIVATE_SINKS: {{ $cm.STREAMING_HUB_ALLOW_PRIVATE_SINKS | default "false" | quote }}
   STREAMING_HUB_ALLOW_INSECURE_DB_TLS: {{ $cm.STREAMING_HUB_ALLOW_INSECURE_DB_TLS | default "false" | quote }}
@@ -94,7 +119,6 @@ data:
   # --- delivery pacing / poison handling ---
   STREAMING_HUB_POISON_THRESHOLD: {{ $cm.STREAMING_HUB_POISON_THRESHOLD | default "5" | quote }}
   STREAMING_HUB_PULL_RATE: {{ $cm.STREAMING_HUB_PULL_RATE | default "100" | quote }}
-  STREAMING_HUB_PULL_BURST: {{ $cm.STREAMING_HUB_PULL_BURST | default "200" | quote }}
   STREAMING_HUB_HEALTH_WINDOW: {{ $cm.STREAMING_HUB_HEALTH_WINDOW | default "720h" | quote }}
   # --- reconciler (topic-drift detection; dark-ship, defaults on) ---
   STREAMING_HUB_RECONCILER_ENABLED: {{ $cm.STREAMING_HUB_RECONCILER_ENABLED | default "true" | quote }}
@@ -136,13 +160,16 @@ data:
       "STREAMING_HUB_KAFKA_SCRAM_USERNAME" 1 "STREAMING_HUB_KAFKA_TLS_ENABLED" 1
       "STREAMING_HUB_ALLOW_INSECURE_KAFKA" 1 "STREAMING_HUB_ALLOW_PRIVATE_SINKS" 1
       "STREAMING_HUB_ALLOW_INSECURE_DB_TLS" 1
+      "STREAMING_HUB_REDIS_ADDRESS" 1 "STREAMING_HUB_REDIS_TLS" 1
+      "STREAMING_HUB_REDIS_CA_CERT" 1
+      "RATE_LIMIT_ENABLED" 1 "ALLOW_RATELIMIT_FAIL_OPEN" 1
       "STREAMING_HUB_KEK_SOURCE" 1 "STREAMING_HUB_KEK_REF" 1
       "STREAMING_HUB_TENANT_ID" 1
       "STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS" 1 "STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS" 1
       "STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME" 1
       "STREAMING_HUB_DISPATCH_WORKERS" 1 "STREAMING_HUB_DISPATCH_CLAIM_BATCH" 1
       "STREAMING_HUB_DISPATCH_IDLE_INTERVAL_MS" 1
-      "STREAMING_HUB_POISON_THRESHOLD" 1 "STREAMING_HUB_PULL_RATE" 1 "STREAMING_HUB_PULL_BURST" 1
+      "STREAMING_HUB_POISON_THRESHOLD" 1 "STREAMING_HUB_PULL_RATE" 1
       "STREAMING_HUB_HEALTH_WINDOW" 1
       "STREAMING_HUB_RECONCILER_ENABLED" 1 "STREAMING_HUB_RECONCILER_INTERVAL" 1
       "STREAMING_HUB_PARTITION_CRON_INTERVAL" 1 "STREAMING_HUB_PARTITION_FUTURE_BUFFER_WEEKS" 1
@@ -154,7 +181,8 @@ data:
       "STREAMING_HUB_MANIFEST_REFRESH_INTERVAL" 1
       "STREAMING_HUB_AWS_HUB_PRINCIPAL_ARN" 1 "STREAMING_HUB_AWS_SETUP_TEMPLATE_URL" 1
       "STREAMING_HUB_POSTGRES_DSN" 1 "STREAMING_HUB_KAFKA_SCRAM_PASSWORD" 1
-      "STREAMING_HUB_KAFKA_CA_CERT" 1 "STREAMING_HUB_DEV_KEK" 1 "POSTGRES_PASSWORD" 1 -}}
+      "STREAMING_HUB_KAFKA_CA_CERT" 1 "STREAMING_HUB_DEV_KEK" 1 "POSTGRES_PASSWORD" 1
+      "STREAMING_HUB_REDIS_PASSWORD" 1 -}}
   {{- range $key, $value := $cm }}
   {{- if and (not (hasKey $enumerated $key)) (not (hasPrefix "MULTI_TENANT_" $key)) }}
   {{ $key }}: {{ $value | quote }}

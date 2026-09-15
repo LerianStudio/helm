@@ -280,15 +280,30 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 	// values.yaml pins namespaceOverride, so the console always lands here.
 	const consoleNs = "product-console"
 	const remedy = "--set global.namespaceOverride=" + consoleNs
+	// helm upgrade re-renders the release from the arguments it is handed, so a
+	// remedy printed as a complete command that carries no values file resets
+	// every value the operator installed with: the password gets wired and the
+	// authorization gate, the ingress and every secret revert to chart defaults.
+	// The printed command has to carry the operator's own file back in.
+	const carriesValues = "-f <your-values.yaml>"
+	const repeatsFlags = "repeat every other flag from that install"
+	// The subchart follows global.namespaceOverride when it is set and -n
+	// otherwise, so the two split shapes need different explanations. Printing
+	// the override sentence for an -n split tells the operator that the repair
+	// their install actually needs cannot work.
+	const overrideWins = "reads that value INSTEAD of -n, so changing -n alone does not move it"
+	const nFollows = "so a fresh install with -n '" + consoleNs + "' lands it beside the console"
 	cases := []struct {
 		name        string
 		namespace   string
 		values      []string
 		wantMongoNs string
+		wantSaid    string // the sentence this split's shape earns
+		wantUnsaid  string // the other shape's sentence, which is false here
 	}{
-		{"release namespace differs from the console's", "other-ns", nil, "other-ns"},
-		{"global.namespaceOverride set", consoleNs, []string{"--set", "global.namespaceOverride=data"}, "data"},
-		{"both at once", "other-ns", []string{"--set", "global.namespaceOverride=data"}, "data"},
+		{"release namespace differs from the console's", "other-ns", nil, "other-ns", nFollows, overrideWins},
+		{"global.namespaceOverride set", consoleNs, []string{"--set", "global.namespaceOverride=data"}, "data", overrideWins, nFollows},
+		{"both at once", "other-ns", []string{"--set", "global.namespaceOverride=data"}, "data", overrideWins, nFollows},
 	}
 	for _, c := range cases {
 		notes := normalizeSpace(renderNotes(t, chart, c.namespace, c.values...))
@@ -300,10 +315,16 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 			"in namespace '" + c.wantMongoNs + "'",
 			"while these pods run in '" + consoleNs + "'",
 			remedy,
+			carriesValues,
+			repeatsFlags,
+			c.wantSaid,
 		} {
 			if !strings.Contains(notes, want) {
 				t.Errorf("%s: install notes must say %q, got: %s", c.name, want, notes)
 			}
+		}
+		if strings.Contains(notes, c.wantUnsaid) {
+			t.Errorf("%s: install notes must not say %q, which is false for this split: %s", c.name, c.wantUnsaid, notes)
 		}
 
 		repaired, err := renderChart(chart, c.namespace,

@@ -203,10 +203,13 @@ in the `-n` namespace otherwise, while the console always lives in
 `-n` matches. When those two namespaces differ a Secret cannot be read across
 them, so the chart leaves `MONGODB_PASS` alone and the install notes say so.
 Either move the subchart next to the console by naming the console's namespace
-in `global.namespaceOverride`, which the install notes print as a ready command
-(the subchart reads that value instead of `-n`, so changing `-n` alone does not
-move it), or set both of these to the same value, or every MongoDB-backed page
-(product enablement, guided tour) fails on an auth error:
+in `global.namespaceOverride`, which the install notes print as a command to
+complete with your own values file and flags (with `global.namespaceOverride`
+set the subchart reads it instead of `-n`, so changing `-n` alone no longer
+moves it; with it unset the subchart follows `-n`, which is why a fresh install
+with `-n product-console` lands it beside the console), or set both of these to
+the same value, or every MongoDB-backed page (product enablement, guided tour)
+fails on an auth error:
 
 ```yaml
 mongodb:

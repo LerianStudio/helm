@@ -82,16 +82,25 @@ Secrets (sensitive):
   There is nothing to copy by hand. Set secrets.MONGODB_PASS only to pin your
   own password instead.
   {{- else }}
+  {{- $consoleNs := include "product-console.namespace" . }}
+  {{- $mongoNs := include "product-console.mongodb.namespace" . }}
   ACTION REQUIRED, or every Mongo-backed page (product enablement, guided tour)
   fails on an auth error. The subchart's password lives in Secret
-  '{{ include "product-console.mongodb.secretName" . }}' in namespace
-  '{{ include "product-console.mongodb.namespace" . }}', while these pods run in
-  '{{ include "product-console.namespace" . }}'. A Secret cannot be read across
-  namespaces, so the console cannot pick it up by itself. Either:
+  '{{ include "product-console.mongodb.secretName" . }}', in namespace
+  '{{ $mongoNs }}', while these pods run in '{{ $consoleNs }}'. A Secret cannot
+  be read across namespaces, so the console cannot pick it up by itself. Either:
+  {{- if and .Values.global .Values.global.namespaceOverride }}
 
-    - install into the console's own namespace
-      (helm install ... -n {{ include "product-console.namespace" . }}), which
-      puts the subchart there too and wires the password automatically; or
+    - clear global.namespaceOverride, or set it to '{{ $consoleNs }}'. That
+      value is what put the subchart in '{{ $mongoNs }}', and the subchart
+      reads it INSTEAD of -n, so re-installing with a different -n changes
+      nothing; or
+  {{- else }}
+
+    - install into the console's own namespace, with
+      'helm install ... -n {{ $consoleNs }}', which puts the subchart there
+      too and wires the password automatically; or
+  {{- end }}
     - set BOTH of these to the same value:
 
         mongodb.auth.rootPassword: "<your password>"

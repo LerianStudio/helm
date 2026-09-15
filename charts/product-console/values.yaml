@@ -9,8 +9,18 @@ replicaCount: 1
 revisionHistoryLimit: 10
 
 # -- Readiness probe configuration. All fields override chart defaults.
+# Defaults to '/api/admin/health/alive', which does NOT gate on MongoDB. The
+# image this chart pins opens its database connection on the first request that
+# needs one, so readiness on '/api/admin/health/readyz' deadlocks a fresh pod:
+# not Ready, no traffic, no connection, never Ready. Set
+#   readinessProbe:
+#     path: /api/admin/health/readyz
+# once you run an image that connects at startup, to gate readiness on the
+# database again.
 readinessProbe: {}
 # -- Liveness probe configuration. All fields override chart defaults.
+# Keep this on a MongoDB-independent path. Pointing it at readyz turns a
+# database outage into a crash-loop.
 livenessProbe: {}
 
 image:
@@ -241,6 +251,13 @@ existingSecretName: ""
 # Optional Dependencies
 # =============================================================================
 
+# The bundled MongoDB lands in the RELEASE namespace (a subchart does not
+# inherit namespaceOverride) as Service '<release>-mongodb', which is what
+# configmap.MONGO_HOST now defaults to, so the console finds it unconfigured.
+# Its PASSWORD is not wired for you: left empty below, the subchart generates a
+# random root password into its own Secret, which the console cannot read
+# across namespaces. Set mongodb.auth.rootPassword and secrets.MONGODB_PASS to
+# the same value, or every Mongo-backed page fails on an auth error.
 mongodb:
   enabled: true
 

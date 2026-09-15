@@ -58,17 +58,23 @@ Secrets (sensitive):
 
   Bundled MongoDB is ENABLED (Bitnami subchart).
   The internal service will be available at:
-    {{- $mongoName := default (printf "%s-mongodb" .Release.Name) .Values.mongodb.fullnameOverride }}
-    {{- if and (not .Values.mongodb.fullnameOverride) .Values.mongodb.nameOverride }}
-    {{- $mongoName = printf "%s-%s" .Release.Name .Values.mongodb.nameOverride }}
-    {{- end }}
-    {{ $mongoName }}.{{ .Release.Namespace }}.svc.cluster.local:27017
+    {{ include "product-console.mongodb.host" . }}:27017
+
+  That is also what configmap.MONGO_HOST defaults to, so the console reaches
+  the bundled database without naming it. Note the subchart does NOT inherit
+  this chart's namespaceOverride, so it lives in the release namespace while
+  the console lives in '{{ include "product-console.namespace" . }}'.
 
   {{- if .Values.mongodb.auth.existingSecret }}
   Credentials are loaded from existing secret: {{ .Values.mongodb.auth.existingSecret }}
   {{- else }}
-  Default credentials are set in values.yaml under 'mongodb.auth'.
-  ⚠️  Change the default password before deploying to production.
+  CREDENTIALS ARE NOT WIRED FOR YOU. The subchart generates a random root
+  password into Secret '{{ .Release.Name }}-mongodb', in its own namespace,
+  which the console cannot read. Set BOTH of these to the same value or every
+  Mongo-backed page (product enablement, guided tour) fails on an auth error:
+
+    mongodb.auth.rootPassword: "<your password>"
+    secrets.MONGODB_PASS:      "<the same password>"
   {{- end }}
 
 {{- else }}
@@ -94,23 +100,24 @@ Secrets (sensitive):
   Readiness / MongoDB requirement (read before a fresh install)
 ================================================================================
 
-  Probe defaults:
-  - liveness  '/api/admin/health/alive'  (returns 200 unconditionally, no Mongo
-              dependency; available since app image 1.10.0).
-  - readiness '/api/admin/health/readyz' (returns 200 only once the app has
-              connected to MongoDB; 503 otherwise).
+  Probe defaults, BOTH on '/api/admin/health/alive' (returns 200 as soon as the
+  server answers, no MongoDB dependency; available since app image 1.10.0).
 
-  The readiness endpoint requires an application IMAGE that connects to MongoDB
-  AT STARTUP. Image builds that connect lazily (only on the first business
-  request) will DEADLOCK on a fresh install: the pod never receives traffic
-  (not Ready), so it never opens the connection, so it never becomes Ready.
-  This is an application-image behavior, not a chart setting.
+  Readiness does NOT gate on MongoDB, deliberately. '/api/admin/health/readyz'
+  returns 200 only once the app has connected to MongoDB, and the image this
+  chart pins connects on the first request that needs the database rather than
+  at startup. Readiness on readyz therefore DEADLOCKS a fresh pod: not Ready,
+  so no traffic, so no connection, so never Ready. Measured on image 1.12.0:
+  readyz stays 503 for as long as the pod is left alone, and turns 200 within
+  three seconds of the first request to a Mongo-backed route.
 
-  - Use an app image that connects eagerly, OR one whose readiness endpoint
-    returns Ready before the Mongo connection is exercised.
-  - Keep liveness on a Mongo-INDEPENDENT endpoint (the default
-    '/api/admin/health/alive' qualifies). Do NOT repoint liveness at readyz or
-    any Mongo-dependent path, or a disconnected Mongo would crash-loop the pod.
+  - Running an image that connects EAGERLY at startup? Set
+    'readinessProbe.path: /api/admin/health/readyz' to have readiness gate on
+    the database again. Scrape readyz either way: it is the honest report of
+    whether this pod can serve a Mongo-backed page.
+  - Keep liveness on a Mongo-INDEPENDENT endpoint. Do NOT repoint liveness at
+    readyz or any Mongo-dependent path, or a disconnected Mongo would
+    crash-loop the pod instead of letting it wait for the database.
 
   See docs/UPGRADE-4.0.1.md for details.
 

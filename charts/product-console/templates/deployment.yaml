@@ -102,9 +102,22 @@ spec:
             timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds | default 5 }}
             successThreshold: {{ .Values.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.livenessProbe.failureThreshold | default 3 }}
+          {{- /* Readiness defaults to the Mongo-INDEPENDENT endpoint because the
+             image this chart pins connects to MongoDB on the first request that
+             needs it, not at startup. With readiness on /api/admin/health/readyz
+             a fresh pod deadlocks: it is not Ready, so the Service sends it no
+             traffic, so it never opens the connection, so readyz never returns
+             200 and the pod is never Ready. Measured on lerianstudio/product-
+             console:1.12.0: readyz answers 503 (readyState=0) for as long as the
+             pod is left alone, and 200 within three seconds of the first request
+             to a Mongo-backed route. NOTES.txt and the chart's UPGRADE-4.0.3
+             guide have described this deadlock since 4.0.3; this is the arm they
+             prescribe. Point readinessProbe.path back at
+             "/api/admin/health/readyz" once the image connects eagerly, to have
+             readiness gate on the database again. */}}
           readinessProbe:
             httpGet:
-              path: {{ .Values.readinessProbe.path | default "/api/admin/health/readyz" }}
+              path: {{ .Values.readinessProbe.path | default "/api/admin/health/alive" }}
               port: {{ .Values.readinessProbe.port | default "http" }}
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds | default 5 }}

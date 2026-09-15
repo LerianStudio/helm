@@ -464,6 +464,18 @@ common:
   # dependency CONNECTIONS resolve through lerian-common typed masks/helpers, everything
   # else is an escape-hatch passthrough. Set common.configmap.<KEY> here to override any
   # shared key; add any other key and it flows through as-is.
+  #
+  # Optional Reporter CRM datasource (not enabled by default):
+  #   configmap:
+  #     DATASOURCE_CRM_CONFIG_NAME: "plugin_crm" # reserved name
+  #     DATASOURCE_CRM_TYPE: "mongodb"
+  #     DATASOURCE_CRM_HOST: "crm.example.invalid"
+  #     DATASOURCE_CRM_PORT: "27017"
+  #     DATASOURCE_CRM_DATABASE: "crm"
+  #     DATASOURCE_CRM_USER: "reporter"
+  #     DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
+  # CRM is all-or-nothing once any DATASOURCE_CRM_* key is set. Put its password
+  # and crypto keys under secrets: (or in each component's external Secret), never here.
   configmap: {}
 # -- Dedicated datastore masks for THIS release (override global.datastores). Both the
 # manager and worker surfaces share these connections. Sub-keys (each host/port/user/ssl):
@@ -529,6 +541,12 @@ secrets:
   # NO ROTATION in this release: changing the value makes every already-registered data
   # source undecryptable (they must be re-registered).
   DATASOURCE_CRED_ENC_KEY: ""
+  # Optional Reporter CRM secrets (only when common.configmap.DATASOURCE_CRM_* is set):
+  # DATASOURCE_CRM_PASSWORD: ""
+  # CRYPTO_HASH_SECRET_KEY_CRM: ""
+  # CRYPTO_ENCRYPT_SECRET_KEY_CRM: ""
+  # With manager/worker.useExistingSecret=true, put these keys in each external Secret
+  # instead of setting them here. Keep DATASOURCE_CRED_ENC_KEY unchanged.
 seaweedfs:
   enabled: true
   # -- Subchart-wide settings. createClusterRole is disabled by default: the bundled

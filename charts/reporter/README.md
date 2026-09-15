@@ -319,6 +319,53 @@ analytics_db:reports.monthly_summary
 
 When `useExistingSecret` is enabled for manager/worker, datasource passwords must be included in the external secret alongside all other required keys. The chart does not create any Secret resources in this mode.
 
+### Reserved CRM Datasource (Opt-in)
+
+CRM is disabled unless at least one `DATASOURCE_CRM_*` key is supplied. When it
+is declared, Reporter requires the complete non-secret block below in
+`common.configmap`; the chart does not invent an organization ID or a connection
+default:
+
+```yaml
+common:
+  configmap:
+    DATASOURCE_CRM_CONFIG_NAME: "plugin_crm" # reserved name
+    DATASOURCE_CRM_TYPE: "mongodb"
+    DATASOURCE_CRM_HOST: "crm.example.invalid"
+    DATASOURCE_CRM_PORT: "27017"
+    DATASOURCE_CRM_DATABASE: "crm"
+    DATASOURCE_CRM_USER: "reporter"
+    DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
+```
+
+`DATASOURCE_CRM_CONFIG_NAME` must remain `plugin_crm`; it is a reserved
+datasource rather than a general-purpose alias. The organization ID must be the
+organization entitled to that CRM data. The chart fails its render if CRM is
+partially configured, has a different config name or type, or omits this scope.
+Non-CRM installations are unaffected.
+
+Keep these values in `secrets:` when the chart manages its Secrets, never in a
+ConfigMap:
+
+```yaml
+secrets:
+  DATASOURCE_CRM_PASSWORD: "<crm-password>"
+  CRYPTO_HASH_SECRET_KEY_CRM: "<crm-hash-key>"
+  CRYPTO_ENCRYPT_SECRET_KEY_CRM: "<crm-encryption-key>"
+```
+
+Do not replace or rotate `DATASOURCE_CRED_ENC_KEY` as part of this setup. With
+`manager.useExistingSecret` or `worker.useExistingSecret`, Helm cannot inspect
+the external Secret; provide the same CRM keys in each selected external Secret.
+The non-secret CRM guard still applies.
+
+In single-tenant mode the Manager owns CRM bootstrap/reconciliation. It may
+backfill a missing organization ID but does not overwrite a non-empty persisted
+value. In multi-tenant mode that seed is skipped. Do not create, rotate, or edit
+`plugin_crm` through the ordinary datasource API or by manually changing the
+registry; investigate an existing scope mismatch through the supported runtime
+path.
+
 ## External RabbitMQ Bootstrap
 
 When using an external RabbitMQ instance (not deployed by this chart), you can enable the bootstrap job to apply the messaging **topology** the service needs: exchanges, queues and bindings, inside the default vhost `/`.

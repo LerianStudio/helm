@@ -62,11 +62,19 @@ Secrets (sensitive):
 
   That is also what configmap.MONGO_HOST defaults to, so the console reaches
   the bundled database without naming it. Note the subchart does NOT inherit
-  this chart's namespaceOverride, so it lives in the release namespace while
-  the console lives in '{{ include "product-console.namespace" . }}'.
+  this chart's namespaceOverride: it follows global.namespaceOverride when that
+  is set and the release namespace otherwise, while the console always lives in
+  '{{ include "product-console.namespace" . }}'.
 
   {{- if .Values.mongodb.auth.existingSecret }}
-  Credentials are loaded from existing secret: {{ .Values.mongodb.auth.existingSecret }}
+  The SUBCHART's credentials come from existing secret:
+  {{ .Values.mongodb.auth.existingSecret }}
+
+  That Secret configures MongoDB only. The console never reads it: it takes
+  MONGODB_PASS from its own Secret, or from existingSecretName when
+  useExistingSecret is true. Set secrets.MONGODB_PASS to the same password, or
+  point useExistingSecret/existingSecretName at a Secret that carries the key
+  MONGODB_PASS, or every Mongo-backed page fails on an auth error.
   {{- else }}
   CREDENTIALS ARE NOT WIRED FOR YOU. The subchart generates a random root
   password into Secret '{{ .Release.Name }}-mongodb', in its own namespace,

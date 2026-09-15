@@ -264,9 +264,10 @@ existingSecretName: ""
 # Optional Dependencies
 # =============================================================================
 
-# The bundled MongoDB lands in the RELEASE namespace (a subchart does not
-# inherit namespaceOverride) as Service '<release>-mongodb', which is what
-# configmap.MONGO_HOST now defaults to, so the console finds it unconfigured.
+# The bundled MongoDB does not inherit this chart's namespaceOverride: it lands
+# in global.namespaceOverride when that is set and in the RELEASE namespace
+# otherwise, as Service '<release>-mongodb', which is what configmap.MONGO_HOST
+# now defaults to, so the console finds it unconfigured.
 # Its PASSWORD is not wired for you: left empty below, the subchart generates a
 # random root password into its own Secret, which the console cannot read
 # across namespaces. Set mongodb.auth.rootPassword and secrets.MONGODB_PASS to

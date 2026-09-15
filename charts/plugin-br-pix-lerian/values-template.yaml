@@ -47,7 +47,7 @@ spi:
     # repeats it.
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     # ORGANIZATION_IDS is the LICENSE allow-list and is required on every
     # workload that receives a LICENSE_KEY: the license client refuses to
     # initialise with a key and no allow-list, and the workload exits at boot.
@@ -155,7 +155,7 @@ dictHub:
     # production deployment, and the chart default is "development".
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
     ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
@@ -278,7 +278,7 @@ cobHub:
     # production deployment, and the chart default is "development".
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
     ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
@@ -360,7 +360,7 @@ adapterLerian:
   configmap:
     DEPLOYMENT_MODE: "local"
     PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
@@ -413,7 +413,7 @@ pixauto:
   configmap:
     DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
     # Single-tenant business identity, and a DIFFERENT key from
     # ORGANIZATION_IDS above (that one is the license allow-list). The

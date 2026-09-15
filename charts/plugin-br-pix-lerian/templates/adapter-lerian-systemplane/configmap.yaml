@@ -11,8 +11,8 @@ lerian-common masks; the chart emits STANDARD key names.
   - multiTenant (multiTenant.env -> MULTI_TENANT_URL + circuit breaker; global.multiTenant)
 
 DROPPED deviating app keys (superseded by the standard names above):
-  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), PLUGIN_AUTH_URL (->PLUGIN_AUTH_HOST),
-  ORGANIZATION_ID (->ORGANIZATION_IDS), DB_SSL_MODE (->DB_SSLMODE).
+  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), ORGANIZATION_ID (->ORGANIZATION_IDS),
+  DB_SSL_MODE (->DB_SSLMODE).
 The composed URI DATABASE_URL remains ONLY in secrets.yaml as the migration
 Job's input (never app-runtime config here), and this component uses no
 cache.
@@ -29,7 +29,7 @@ metadata:
     {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 4 }}
 data:
   # --- auth: global.auth contract (PLUGIN_AUTH_ENABLED + PLUGIN_AUTH_HOST) ---
-  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "http://plugin-auth:4000") | nindent 2 }}
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
   # --- observability: global.observability contract (otel.env) ---
   {{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "false" "endpointDefault" "" "deploymentEnvironmentDefault" "development") | nindent 2 }}
   # --- multi-tenant: global.multiTenant contract (URL + circuit breaker, gated) ---

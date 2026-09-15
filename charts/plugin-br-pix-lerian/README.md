@@ -5,7 +5,7 @@
 - Chart type: `multi-component`
 - Required secrets: None for the default render, which is **not** a working installation. A working installation requires per-component Postgres DSNs, `LICENSE_KEY` outside `local` mode, and `SYSTEMPLANE_SECRET_MASTER_KEY` on the Systemplane components in the modes listed under [Required before installation](#required-before-installation). Credential-bearing DSNs, URLs, tokens, and passwords belong in a component's `secrets` block or an existing Secret — never in `configmap`.
 - Dependency notes: PostgreSQL, Valkey, and RabbitMQ ship as local subcharts that are **disabled by default**. Production points the components at externally managed services.
-- Production overrides: Per-component `secrets` (or `useExistingSecret` + `existingSecretName`), `global.externalPostgresDefinitions`, `PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_URL`, and the ingress blocks. An existing Secret **replaces** the chart-rendered Secret for that component; it is not merged.
+- Production overrides: Per-component `secrets` (or `useExistingSecret` + `existingSecretName`), `global.externalPostgresDefinitions`, `PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, and the ingress blocks. An existing Secret **replaces** the chart-rendered Secret for that component; it is not merged.
 - Source/license: Source is in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm); chart license is Apache-2.0.
 
 ## Overview
@@ -135,7 +135,7 @@ The single list; later sections link here instead of restating it.
 | **A license key**, and `ORGANIZATION_IDS` alongside it | Any `DEPLOYMENT_MODE` other than `local` |
 | **Valkey (Redis-compatible)** | **Required** by `dictHubVsync`; optional caches on `spi`, `dictHub`, `cobHub`, `pixauto` |
 | **RabbitMQ** | **Required** by `dictHubVsync` in single-tenant — the render fails without the URI |
-| **An Access Manager** reachable at `PLUGIN_AUTH_URL` | `PLUGIN_AUTH_ENABLED=true`, which you should set for any exposed deployment |
+| **An Access Manager** reachable at `PLUGIN_AUTH_HOST` | `PLUGIN_AUTH_ENABLED=true`, which you should set for any exposed deployment |
 | **Existing Secrets created before `helm install`** | Whenever a workload uses `useExistingSecret` — migration hooks read them first |
 | **DNS, TLS certificates, and an ingress controller** | Only if you enable an ingress. The chart defaults to `className: nginx` |
 | **Storage classes / PVCs** | Only with the local subcharts, which are [development only](#development-only-local-dependencies) |
@@ -292,7 +292,7 @@ Set these before `helm install`. **"Required" does not mean the same thing on ev
 | `SYSTEMPLANE_SECRET_MASTER_KEY` | `secrets` | Application boot | **Required, and must be non-empty**, on `spiSystemplane`, `dictSystemplane`, `cobSystemplane`, `pixautoSystemplane` whenever `ENV_NAME` is not `local` or `development`; and on `adapterLerianSystemplane` whenever `DEPLOYMENT_MODE` is not `local`. Note the two gates differ. See [the note below](#about-systemplane_secret_master_key). |
 | `MULTI_TENANT_ENABLED` | `configmap` | Application boot | Defaults to `false`. See [Multi-tenant configuration](#multi-tenant-configuration). |
 | `MULTI_TENANT_URL`, `MULTI_TENANT_API_KEY` | `configmap` / `secrets` | Application boot | **Required when `MULTI_TENANT_ENABLED=true`** on the five Systemplane workloads, `cobHub`, `dictHubVsync`, `pixauto`, `adapterLerian`. `dictSystemplane` and `cobSystemplane` do **not** ship these keys — add them through the open maps. |
-| `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_URL` | `configmap` | Application boot / Security posture | Defaults to `false` / an in-cluster placeholder. When enabled, `PLUGIN_AUTH_URL` **must be non-empty** or the workload refuses to start. **Required to be `true`** on `pixauto` whenever `ENV_NAME` is not `local` or `development`. |
+| `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | `configmap` | Application boot / Security posture | Defaults to `false` / an in-cluster placeholder. When enabled, `PLUGIN_AUTH_HOST` **must be non-empty** or the workload refuses to start. **Required to be `true`** on `pixauto` whenever `ENV_NAME` is not `local` or `development`. |
 | `RABBITMQ_URI` | `secrets` | Render | **Required when `dictHubVsync` is enabled.** The render fails without it. |
 | `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET` | `secrets` | Application boot | **Required when `adapterProviderMock` is enabled** — it does not start without both. Issued with your sandbox access; see [Development-only components](#development-only-components). |
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_USER`, `REDIS_DB`, `REDIS_TLS` | `configmap` | Application boot / Optional degradation | The discrete keys the application actually reads for its cache, emitted by the `redis` datastore mask on `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`, `adapterLerian`. `REDIS_HOST` is what marks the cache configured: **required** on `dictHubVsync`, which does not start without it; optional on `spi`, `dictHub`, `cobHub`, `pixauto`, where its absence degrades the cache rather than failing the workload. Set them per component, or once for the whole release under `global.datastores.redis`. `REDIS_HOST` is also what the `wait-for-dependencies` init container probes with `nc -z` before the app container starts; a loopback host (the unset default `localhost`) is read as "no cache" and the probe is skipped, so an unconfigured lane rolls out normally. A `REDIS_HOST` pointing at an unreachable host is the one way this bites: the init container retries for five minutes and then fails, so the Pod never starts. |
@@ -508,12 +508,12 @@ The chart reserves the pod annotation carrying the ConfigMap/Secret checksum, wh
 
 ## Authentication
 
-`PLUGIN_AUTH_ENABLED=true` with a resolvable `PLUGIN_AUTH_URL` mounts per-route authorization on the business and machine-to-machine routes of the workloads that carry it. It does not cover probes, OpenAPI routes, the `*Systemplane` administrative APIs, or the provider mock — those need network-level controls from your platform.
+`PLUGIN_AUTH_ENABLED=true` with a resolvable `PLUGIN_AUTH_HOST` mounts per-route authorization on the business and machine-to-machine routes of the workloads that carry it. It does not cover probes, OpenAPI routes, the `*Systemplane` administrative APIs, or the provider mock — those need network-level controls from your platform.
 
 - **The default is `false`.** Configure nothing and you get an unauthenticated surface. Set it explicitly before exposing any route.
 - **Keep `systemplaneIngress.enabled: false`,** the default. Restrict the administrative API with NetworkPolicies or equivalent.
 - **`ENV_NAME` is matched exactly.** OpenAPI and docs routes stay mounted unless it is the literal string `production`; `prod`, `Production`, or a trailing space all leave them served. Set `SWAGGER_ENABLED` explicitly to turn them off.
-- **An unreachable `PLUGIN_AUTH_URL` denies requests rather than allowing them.** The URL format is not validated, so the symptom is a permissions failure at request time, not a boot failure.
+- **An unreachable `PLUGIN_AUTH_HOST` denies requests rather than allowing them.** The URL format is not validated, so the symptom is a permissions failure at request time, not a boot failure.
 
 ## Ingress and service URLs
 
@@ -563,7 +563,7 @@ appsIngress:
 spi:
   configmap:
     PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_URL: "<access-manager-url>"
+    PLUGIN_AUTH_HOST: "<access-manager-url>"
 ```
 
 A proxy workload your topology requires is configuration only — it gains no business routes. Give it a DSN and a license key, keep callers' routing modes at `hub`, and do not point client traffic at it. See [Hub and proxy are not interchangeable](#hub-and-proxy-are-not-interchangeable).
@@ -608,7 +608,7 @@ Every entry below uses the commands in [step 5 of the quickstart](#verify); only
 | `CreateContainerConfigError`, or a workload failing on a variable you believe you set | Your Secret does not exist yet or lacks the key. **An existing Secret replaces the chart's Secret entirely; there is no merge**, so anything left in `<component>.secrets` is not applied | Put that workload's complete set of secret keys into your Secret and create it **before** `helm install`. Inspect it with `kubectl get secret -n <namespace> <name> -o jsonpath='{.data}'` |
 | Business requests return 404 through the ingress | A wrong path prefix, or traffic reaching a proxy, which serves no business routes in this release | Check the [health and readiness table](#health-and-readiness-reference) for the prefix — a Systemplane workload's is its **domain** prefix — and confirm the route's backend is the hub |
 | Requests return 403 `TENANT_CONFIG_NOT_FOUND` | The calling tenant has no configuration, is missing required keys, or the request carried no resolvable tenant. **There is no global fallback**; the path fails closed by design | Provision that tenant's configuration before sending traffic. The log line names the cause and the missing keys |
-| An ingress is published while `PLUGIN_AUTH_ENABLED` is false, and the render succeeded anyway | The render check covers one workload only, and is blind when `useExistingSecret: true` | Set `PLUGIN_AUTH_ENABLED: "true"` and a resolvable `PLUGIN_AUTH_URL` on every published workload, keep `systemplaneIngress.enabled: false`, and restrict the admin surface at the network layer. See [Ingress and service URLs](#ingress-and-service-urls) |
+| An ingress is published while `PLUGIN_AUTH_ENABLED` is false, and the render succeeded anyway | The render check covers one workload only, and is blind when `useExistingSecret: true` | Set `PLUGIN_AUTH_ENABLED: "true"` and a resolvable `PLUGIN_AUTH_HOST` on every published workload, keep `systemplaneIngress.enabled: false`, and restrict the admin surface at the network layer. See [Ingress and service URLs](#ingress-and-service-urls) |
 
 ### Workload refuses to start, log names a variable
 

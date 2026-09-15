@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -62,6 +63,67 @@ data:
 		}
 		if c.wantHit && !strings.Contains(got, "MONGO_HOST") {
 			t.Errorf("%s: message must name the ConfigMap key, got %q", c.name, got)
+		}
+	}
+}
+
+// The render gate renders every chart with its default values, so a default
+// that is only wrong under a non-default subchart topology is invisible to it.
+// product-console resolves configmap.MONGO_HOST from the bundled subchart's
+// fullname, which is the Service name for a STANDALONE MongoDB and for nothing
+// else: Bitnami renames that Service through mongodb.service.nameOverride, and
+// in replicaset architecture publishes "<fullname>-headless" plus one DNS name
+// per replica. The chart refuses to render for those two unless the operator
+// names a host, and this pins both halves of that: it refuses without one, and
+// it renders with the very host the refusal prints. The chart vendors its
+// dependencies as .tgz, so no dependency build or network access is needed.
+func TestProductConsoleRefusesAnUnnameableMongoHost(t *testing.T) {
+	if _, err := exec.LookPath("helm"); err != nil {
+		t.Skip("helm not on PATH")
+	}
+	const chart = "../../../charts/product-console"
+	const headless = "product-console-mongodb-headless.product-console.svc.cluster.local"
+	cases := []struct {
+		name     string
+		values   []string
+		wantFail string // substring the refusal must name; empty means it must render
+	}{
+		{"shipped defaults", nil, ""},
+		{
+			"replicaset with no host named",
+			[]string{"--set", "mongodb.architecture=replicaset"},
+			"mongodb.architecture is replicaset",
+		},
+		{
+			"replicaset with the host the refusal names",
+			[]string{"--set", "mongodb.architecture=replicaset", "--set", "configmap.MONGO_HOST=" + headless},
+			"",
+		},
+		{
+			"renamed Service with no host named",
+			[]string{"--set", "mongodb.service.nameOverride=svcx"},
+			"mongodb.service.nameOverride is svcx",
+		},
+		{
+			"renamed Service with the host the refusal names",
+			[]string{"--set", "mongodb.service.nameOverride=svcx", "--set", "configmap.MONGO_HOST=svcx.product-console.svc.cluster.local"},
+			"",
+		},
+	}
+	for _, c := range cases {
+		args := append([]string{"template", "product-console", chart, "-n", "product-console"}, c.values...)
+		out, err := exec.Command("helm", args...).CombinedOutput()
+		switch {
+		case c.wantFail == "" && err != nil:
+			t.Errorf("%s: render failed, want success: %s", c.name, oneLine(string(out)))
+		case c.wantFail != "" && err == nil:
+			t.Errorf("%s: render succeeded, want a refusal naming %q", c.name, c.wantFail)
+		case c.wantFail != "" && !strings.Contains(string(out), c.wantFail):
+			t.Errorf("%s: refusal must name %q, got: %s", c.name, c.wantFail, oneLine(string(out)))
+		}
+		// A refusal that does not say what to set is a dead end for the operator.
+		if c.wantFail != "" && !strings.Contains(string(out), "Set configmap.MONGO_HOST to ") {
+			t.Errorf("%s: refusal must name the value to set, got: %s", c.name, oneLine(string(out)))
 		}
 	}
 }

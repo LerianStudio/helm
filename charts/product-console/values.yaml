@@ -272,6 +272,11 @@ existingSecretName: ""
 # otherwise. configmap.MONGO_HOST defaults to the Service the subchart really
 # creates, including its nameOverride, its fullnameOverride and the release-name
 # collapse, so the console finds it unconfigured.
+# That default covers the topology shipped here, a STANDALONE subchart under its
+# own Service name. Set mongodb.architecture to anything else, or rename the
+# Service with mongodb.service.nameOverride, and there is no single right
+# default: the chart then REFUSES TO RENDER until you set configmap.MONGO_HOST
+# yourself, and the refusal prints the value to set.
 # Its PASSWORD is read for you, straight from the Secret the subchart generates
 # (key mongodb-root-password), whenever that Secret lands in the same namespace
 # as the console pods: install with '-n product-console', the namespace this

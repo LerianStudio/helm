@@ -110,14 +110,38 @@ The historical default, the bare name "mongodb", matches no Service the release
 creates, so a default install pointed the console at a host that does not exist.
 Resolved here as the bundled subchart's own Service FQDN instead.
 
+That resolution serves the topology this chart ships, and only that one: a
+STANDALONE subchart whose Service carries the subchart's own fullname. Bitnami
+names that Service through mongodb.service.nameOverride when it is set, and in
+replicaset architecture publishes "<fullname>-headless" plus one DNS name per
+replica instead (mongodb-16.4.0, templates/_helpers.tpl "mongodb.service.
+nameOverride"), so neither configuration has a single correct default. The chart
+refuses to render for those two rather than write a host that resolves nowhere,
+and the refusal names the value to set.
+
 With the subchart disabled the bare "mongodb" is kept, so an external MongoDB
 published under that name keeps working untouched. Either way an operator's own
 configmap.MONGO_HOST or global.datastores.mongo.host still wins: this is only
-the fallback.
+the fallback, and naming one is also what lifts the two refusals.
 */}}
 {{- define "product-console.mongodb.host" -}}
 {{- if .Values.mongodb.enabled -}}
-{{- include "lerian-common.internalHost" (dict "name" (include "product-console.mongodb.fullname" .) "namespace" (include "product-console.mongodb.namespace" .)) -}}
+{{- /* Resolved through the same mask the ConfigMap uses, minus the default, so
+   "did anybody name a host" is answered by lerian-common's own precedence
+   (native configmap key, then the dedicated mask, then the shared one) rather
+   than by a second copy of it here. */ -}}
+{{- $named := include "lerian-common.datastore.value" (dict "context" . "configmap" (.Values.configmap | default dict) "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST") -}}
+{{- $ns := include "product-console.mongodb.namespace" . -}}
+{{- $arch := .Values.mongodb.architecture | default "standalone" -}}
+{{- $svcName := (.Values.mongodb.service | default dict).nameOverride | default "" -}}
+{{- if and (not $named) (ne $arch "standalone") -}}
+{{- $headless := printf "%s-headless.%s.svc.cluster.local" (include "product-console.mongodb.fullname" .) $ns -}}
+{{- fail (printf "product-console: mongodb.architecture is %s, so the bundled MongoDB publishes the headless Service %s and one DNS name per replica rather than a single Service, and configmap.MONGO_HOST has no correct default. Set configmap.MONGO_HOST to %s, and add replicaSet=%s to configmap.MONGO_PARAMETERS so the driver reads the whole replica set." $arch $headless $headless (.Values.mongodb.replicaSetName | default "rs0")) -}}
+{{- end -}}
+{{- if and (not $named) $svcName -}}
+{{- fail (printf "product-console: mongodb.service.nameOverride is %s, so the bundled MongoDB's Service is named %s and the configmap.MONGO_HOST default would name a Service the release does not create. Set configmap.MONGO_HOST to %s.%s.svc.cluster.local." $svcName $svcName $svcName $ns) -}}
+{{- end -}}
+{{- include "lerian-common.internalHost" (dict "name" (include "product-console.mongodb.fullname" .) "namespace" $ns) -}}
 {{- else -}}
 mongodb
 {{- end -}}

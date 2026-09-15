@@ -171,9 +171,22 @@ invisible and lets the walk reach a hop the caller wrote. Narrow is correct.
 
 **With the bundled MongoDB, land both in one namespace and there is nothing to
 configure.** `configmap.MONGO_HOST` defaults to the Service the subchart really
-creates, and `MONGODB_PASS` is read straight from the Secret the subchart
-generates (key `mongodb-root-password`), so the console reaches its database and
-authenticates to it without an operator copying a generated password by hand.
+creates for the topology shipped here, and `MONGODB_PASS` is read straight from
+the Secret the subchart generates (key `mongodb-root-password`), so the console
+reaches its database and authenticates to it without an operator copying a
+generated password by hand.
+
+**Two bundled configurations have no default and the chart says so.** The
+default host follows the subchart's own name, which is what its Service is
+called for a standalone MongoDB and nothing else. Set
+`mongodb.architecture: replicaset` and the subchart publishes a headless
+Service plus one DNS name per replica; set `mongodb.service.nameOverride` and it
+renames the Service outright. In both cases the chart refuses to render until
+you set `configmap.MONGO_HOST` (or `global.datastores.mongo.host`), and the
+refusal prints the host to use, plus the `replicaSet=` parameter to add to
+`configmap.MONGO_PARAMETERS` for a replica set. Refusing is deliberate: the
+alternative is a console that comes up Ready pointing at a name that resolves
+in no namespace.
 That wiring applies only while the subchart's namespace equals the console's,
 which is what `-n product-console` gives you as long as `global.namespaceOverride`
 is unset. Your own `secrets.MONGODB_PASS`, or a Secret named by

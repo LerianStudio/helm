@@ -481,7 +481,8 @@ func normalizeSpace(s string) string {
 // decodeManifests returns every object in a rendered manifest stream. A document
 // the decoder rejects is reported rather than read as the end of the stream:
 // swallowing it truncated the list, and the assertions built on that list then
-// passed while asserting nothing.
+// passed while asserting nothing. A document that parses into something other
+// than an object is reported for the same reason.
 func decodeManifests(rendered string) ([]map[string]interface{}, error) {
 	var docs []map[string]interface{}
 	dec := yaml.NewDecoder(strings.NewReader(stripNonManifest(rendered)))
@@ -494,8 +495,16 @@ func decodeManifests(rendered string) ([]map[string]interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("document %d: %w", len(docs)+1, err)
 		}
+		// Measured against gopkg.in/yaml.v3: an empty document, one holding
+		// only comments, and an explicit null all decode WITHOUT an error into
+		// a nil map, and a manifest stream is full of them. Only a sequence or
+		// a non-null scalar reaches the error, and neither is a Kubernetes
+		// object, so reporting it costs no real document.
 		var m map[string]interface{}
-		if err := doc.Decode(&m); err != nil || m == nil {
+		if err := doc.Decode(&m); err != nil {
+			return nil, fmt.Errorf("document %d is not an object: %w", len(docs)+1, err)
+		}
+		if m == nil {
 			continue
 		}
 		docs = append(docs, m)
@@ -516,6 +525,25 @@ func TestDecodeManifestsReportsARejectedDocument(t *testing.T) {
 	const truncating = "---\nkind: Secret\nmetadata:\n  name: first\n---\n\tkind: Secret\n---\nkind: Secret\nmetadata:\n  name: last\n"
 	if _, err := decodeManifests(truncating); err == nil {
 		t.Fatal("a document the decoder rejects must be reported, not read as the end of the stream")
+	}
+	// A document that parses but is not an object reaches the walk instead of
+	// the stream decoder. Dropping it silently is the same hole one layer in:
+	// the list comes back short and the negative assertions built on it pass
+	// while asserting nothing.
+	for _, notAnObject := range []string{
+		"---\nkind: Secret\nmetadata:\n  name: first\n---\n- a\n- b\n",
+		"---\nkind: Secret\nmetadata:\n  name: first\n---\njust-a-scalar\n",
+	} {
+		if _, err := decodeManifests(notAnObject); err == nil {
+			t.Errorf("a document that is not an object must be reported, not dropped: %q", notAnObject)
+		}
+	}
+	// An empty document and one holding only comments are what a manifest
+	// stream is full of, and both decode without an error into a nil map, so
+	// neither is affected by the rule above.
+	const separators = "---\nkind: Secret\nmetadata:\n  name: first\n---\n---\n# nothing here\n---\nkind: Secret\nmetadata:\n  name: last\n"
+	if got := renderedNames(t, separators, "Secret"); len(got) != 2 {
+		t.Errorf("empty documents must be skipped, not reported, got %v", got)
 	}
 }
 

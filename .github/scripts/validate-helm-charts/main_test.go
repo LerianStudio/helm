@@ -49,6 +49,7 @@ data:
 	}{
 		{"hand-rolled release prefix", "mongodb-mongodb.data.svc.cluster.local", "some-chart", true},
 		{"collapse honored", "mongodb.data.svc.cluster.local", "some-chart", false},
+		{"right name, wrong namespace", "mongodb.other.svc.cluster.local", "some-chart", true},
 		{"unrelated sibling release", "reporter-manager.reporter.svc.cluster.local", "some-chart", false},
 		{"waived chart and key", "mongodb-mongodb.data.svc.cluster.local", "waived-chart", false},
 	}

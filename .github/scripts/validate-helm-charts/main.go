@@ -1353,8 +1353,8 @@ func danglingSecretRefMessage(rendered string) string {
 // collapseHostPattern matches an in-cluster Service FQDN
 // (<name>.<namespace>.svc.cluster.local) anywhere inside a ConfigMap value, so a
 // host written bare and a host written inside a URL are read the same way.
-// Group 1 is the Service name.
-var collapseHostPattern = regexp.MustCompile(`([a-z0-9][a-z0-9.-]*?)\.[a-z0-9][a-z0-9-]*\.svc\.cluster\.local`)
+// Group 1 is the Service name, group 2 its namespace.
+var collapseHostPattern = regexp.MustCompile(`([a-z0-9][a-z0-9.-]*?)\.([a-z0-9][a-z0-9-]*)\.svc\.cluster\.local`)
 
 // knownCollapseHostDrift lists "<chart>:<CONFIGMAP KEY>" pairs that still build
 // their host by hand and are known to miss the collapse. Each entry MUST carry a
@@ -1387,7 +1387,13 @@ var knownCollapseHostDrift = map[string]bool{
 // start with the release name and is left alone.
 func danglingCollapseHostMessage(rendered, release, chartName string) string {
 	rendered = stripNonManifest(rendered)
-	serviceNames := map[string]bool{}
+	// Keyed "<name>.<namespace>": a Service of the right name in the wrong
+	// namespace is still a host that resolves nowhere, and that half of the bug
+	// is what a name-only set would hide. A Service rendered without an explicit
+	// namespace takes whichever one helm is given, which the caller does not pass
+	// here, so it is recorded under every namespace instead of guessed at.
+	serviceKeys := map[string]bool{}
+	serviceNamesAnyNamespace := map[string]bool{}
 	type configValue struct{ key, value string }
 	var configValues []configValue
 
@@ -1406,7 +1412,11 @@ func danglingCollapseHostMessage(rendered, release, chartName string) string {
 		switch kind, _ := m["kind"].(string); kind {
 		case "Service":
 			if name := nestedString(m, "metadata", "name"); name != "" {
-				serviceNames[name] = true
+				if ns := nestedString(m, "metadata", "namespace"); ns != "" {
+					serviceKeys[name+"."+ns] = true
+				} else {
+					serviceNamesAnyNamespace[name] = true
+				}
 			}
 		case "ConfigMap":
 			data, _ := m["data"].(map[string]interface{})
@@ -1422,8 +1432,11 @@ func danglingCollapseHostMessage(rendered, release, chartName string) string {
 	var missing []string
 	for _, cv := range configValues {
 		for _, match := range collapseHostPattern.FindAllStringSubmatch(cv.value, -1) {
-			name := match[1]
-			if !strings.HasPrefix(name, release) || serviceNames[name] {
+			name, namespace := match[1], match[2]
+			if !strings.HasPrefix(name, release) {
+				continue
+			}
+			if serviceKeys[name+"."+namespace] || serviceNamesAnyNamespace[name] {
 				continue
 			}
 			if knownCollapseHostDrift[chartName+":"+cv.key] {

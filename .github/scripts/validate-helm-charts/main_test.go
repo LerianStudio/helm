@@ -34,10 +34,16 @@ var (
 // after the package has finished. CI runners are ephemeral; a developer box and
 // a self-hosted runner are not, and 16 runs of this file left 426 MB in /tmp
 // with nothing reporting it.
+// A removal that fails and says nothing is the same silence this cleanup exists
+// to end, so it is reported. It does not change the exit code: the tests either
+// passed or they did not, and a directory left in TMPDIR is not a verdict on the
+// chart.
 func TestMain(m *testing.M) {
 	code := m.Run()
 	if preparedChartRoot != "" {
-		os.RemoveAll(preparedChartRoot)
+		if err := os.RemoveAll(preparedChartRoot); err != nil {
+			fmt.Fprintf(os.Stderr, "the prepared chart is still at %s: %v\n", preparedChartRoot, err)
+		}
 	}
 	os.Exit(code)
 }

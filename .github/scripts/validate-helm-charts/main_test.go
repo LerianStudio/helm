@@ -361,19 +361,30 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 func TestProductConsoleRefusesAnExistingSecretWithNoName(t *testing.T) {
 	chart := preparedProductConsoleChart(t)
 
-	// The empty string and a name that is only whitespace reach the API server
-	// the same way: a secretRef with nothing usable in it.
-	for _, name := range []string{"", "   "} {
+	// The values.yaml default, a name that is only whitespace, and an explicit
+	// null all reach the API server the same way: a secretRef with nothing
+	// usable in it. The null takes the helper's nil branch, which `required`
+	// alone does not survive, so it needs its own row: dropping the `default ""`
+	// that feeds it leaves the other two refusing and answers an explicit null
+	// with a raw Go template error naming neither key.
+	// Reported per case, not fataled: a regression that breaks two of the three
+	// otherwise reads as one and gets half fixed.
+	for _, c := range []struct{ name, set string }{
+		{"the values.yaml default", ""},
+		{"a name of only spaces", "existingSecretName=   "},
+		{"an explicit null", "existingSecretName=null"},
+	} {
 		values := []string{"--set", "useExistingSecret=true"}
-		if name != "" {
-			values = append(values, "--set", "existingSecretName="+name)
+		if c.set != "" {
+			values = append(values, "--set", c.set)
 		}
 		out, err := renderChart(chart, "product-console", values...)
 		if err == nil {
-			t.Fatalf("render succeeded with useExistingSecret set and name %q, want a refusal: %s", name, oneLine(out))
+			t.Errorf("render succeeded with useExistingSecret set and %s, want a refusal: %s", c.name, oneLine(out))
+			continue
 		}
 		if !strings.Contains(out, "existingSecretName") {
-			t.Errorf("the refusal for name %q must name existingSecretName, got: %s", name, oneLine(out))
+			t.Errorf("the refusal for %s must name existingSecretName, got: %s", c.name, oneLine(out))
 		}
 	}
 

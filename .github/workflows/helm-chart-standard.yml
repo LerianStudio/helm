@@ -47,11 +47,12 @@ jobs:
       # This workflow triggers on charts/**, so running them unconditionally
       # would make a Docker Hub rate limit red a PR that touches only another
       # chart: the same coupling the render scope below deliberately refuses.
-      # Scope them to the chart they render and to the validator they live in;
-      # every other event (schedule, workflow_dispatch) runs them. Inside the
-      # step both a missing helm and a failed dependency build are hard failures
-      # (the runner sets CI=true), never skips, so a green step means the pins
-      # actually ran.
+      # Scope them to the chart they render, to the validator they live in, and
+      # to this file, which decides whether they run at all and installs the
+      # helm they need; every other event (schedule, workflow_dispatch) runs
+      # them. Inside the step both a missing helm and a failed dependency build
+      # are hard failures (the runner sets CI=true), never skips, so a green
+      # step means the pins actually ran.
       - name: Determine script-test scope
         id: script-tests
         shell: bash
@@ -72,7 +73,7 @@ jobs:
           # match, which would read as "no match" and skip the step.
           changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
 
-          if grep -Eq '^(charts/product-console/|\.github/scripts/validate-helm-charts/)' <<< "$changed_files"; then
+          if grep -Eq '^(charts/product-console/|\.github/scripts/validate-helm-charts/|\.github/workflows/helm-chart-standard\.yml$)' <<< "$changed_files"; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"

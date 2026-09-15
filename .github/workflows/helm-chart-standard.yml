@@ -36,6 +36,17 @@ jobs:
           go-version: '1.21'
           cache-dependency-path: .github/scripts/go.sum
 
+      # The validator's own unit tests, including the renders that pin
+      # product-console's refusal to write a MONGO_HOST that names no Service.
+      # Without this step those pins run nowhere: the render gate below only
+      # renders each chart with its default values, so a refusal that only fires
+      # under a non-default subchart topology is invisible to it. The renders
+      # build the chart's dependencies themselves and are hard failures here
+      # (the runner sets CI=true), never skips.
+      - name: Test chart scripts
+        working-directory: .github/scripts
+        run: go test ./...
+
       - name: Validate chart standard
         working-directory: .github/scripts
         run: go run ./validate-helm-charts --root ../.. --strict

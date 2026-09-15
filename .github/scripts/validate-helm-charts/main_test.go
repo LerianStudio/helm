@@ -2,10 +2,73 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 )
+
+// Every product-console render below runs against a COPY of the chart with its
+// dependencies built, never against the working tree. .gitignore excludes
+// `**/*.tgz` and `**/charts/*/charts`, so a clean checkout carries no
+// lerian-common-helm or mongodb archive and every render would fail on a missing
+// dependency rather than on the chart under test. Built once per run, through
+// the same steps the render gate itself uses.
+var (
+	preparedChartOnce sync.Once
+	preparedChartDir  string
+	preparedChartErr  error
+)
+
+func preparedProductConsoleChart(t *testing.T) string {
+	t.Helper()
+	if _, err := exec.LookPath("helm"); err != nil {
+		t.Skip("helm not on PATH")
+	}
+	preparedChartOnce.Do(func() {
+		preparedChartDir, preparedChartErr = buildProductConsoleChart()
+	})
+	if preparedChartErr != nil {
+		// The build fetches lerian-common-helm from ghcr.io and mongodb from
+		// charts.bitnami.com. In CI that is a real failure and has to be red; on
+		// a developer machine with no network it is not the chart, so name the
+		// archives that are missing and skip instead of reporting a red that has
+		// nothing to do with the code under test.
+		if os.Getenv("CI") != "" {
+			t.Fatalf("building charts/product-console dependencies (lerian-common-helm, mongodb): %v", preparedChartErr)
+		}
+		t.Skipf("charts/product-console dependencies (lerian-common-helm, mongodb) could not be built: %v", preparedChartErr)
+	}
+	return preparedChartDir
+}
+
+func buildProductConsoleChart() (string, error) {
+	tmpRoot, err := os.MkdirTemp("", "product-console-render-*")
+	if err != nil {
+		return "", err
+	}
+	chartDir := filepath.Join(tmpRoot, "product-console")
+	if err := copyDir(filepath.Join("..", "..", "..", "charts", "product-console"), chartDir); err != nil {
+		return "", err
+	}
+	env, err := isolatedHelmEnv(tmpRoot)
+	if err != nil {
+		return "", err
+	}
+	if out, err := retryHelm(func() (string, error) {
+		return addDependencyRepositories(chartDir, tmpRoot, env)
+	}); err != nil {
+		return "", fmt.Errorf("helm repo add: %s", oneLine(out))
+	}
+	if out, err := retryHelm(func() (string, error) {
+		return runHelmWithEnv(tmpRoot, env, "dependency", "build", chartDir)
+	}); err != nil {
+		return "", fmt.Errorf("helm dependency build: %s", oneLine(out))
+	}
+	return chartDir, nil
+}
 
 // A file:///tmp/lib dependency yields an absolute relPath ("/tmp/lib"). Helm
 // resolves it verbatim at render time (outside the repo), so it must be rejected
@@ -125,13 +188,9 @@ spec:
 // in replicaset architecture publishes "<fullname>-headless" plus one DNS name
 // per replica. The chart refuses to render for those two unless the operator
 // names a host, and this pins both halves of that: it refuses without one, and
-// it renders with the very host the refusal prints. The chart vendors its
-// dependencies as .tgz, so no dependency build or network access is needed.
+// it renders with the very host the refusal prints.
 func TestProductConsoleRefusesAnUnnameableMongoHost(t *testing.T) {
-	if _, err := exec.LookPath("helm"); err != nil {
-		t.Skip("helm not on PATH")
-	}
-	const chart = "../../../charts/product-console"
+	chart := preparedProductConsoleChart(t)
 	const headless = "product-console-mongodb-headless.product-console.svc.cluster.local"
 	cases := []struct {
 		name     string

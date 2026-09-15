@@ -23,9 +23,11 @@ NS="it-${CHART}"          # release namespace (helm -n); also created
 TARGETS=""                # every distinct namespace the chart's manifests reference (created too)
 
 # Values: an explicit argument replaces everything. Otherwise the render gate's
-# vetted sample values go on first, and the install-specific file — present only
-# for charts that need to be trimmed to fit a single-node cluster — is layered on
-# top rather than replacing them, so neither file has to repeat the other.
+# vetted sample values go on first, and the install-specific file is layered on
+# top rather than replacing them, so neither file has to repeat the other. That
+# file trims a chart to fit a single-node cluster, or picks which supported
+# topology the gate installs; .github/configs/helm-install-values/README.md has
+# the contract.
 VARGS=()
 if [[ -n "${2:-}" ]]; then
   VARGS=(-f "$2"); echo "  values (explicit): $2"

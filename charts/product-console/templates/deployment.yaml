@@ -134,11 +134,12 @@ spec:
              to a Mongo-backed route. 4.0.1 is the release that made readyz the
              readiness default; 4.0.3 is the release that first described the
              deadlock, written into docs/UPGRADE-4.0.1.md and NOTES.txt by one
-             commit, and both prescribe this arm. 4.0.1 and 4.0.2 shipped the
-             default with nothing written down anywhere in the chart. Point
-             readinessProbe.path back at "/api/admin/health/readyz" once the
-             image connects eagerly, to have readiness gate on the database
-             again. */}}
+             commit, and both prescribe this arm. 4.0.1 shipped that default
+             with nothing written down; 4.0.2 documented it at length in
+             docs/UPGRADE-4.0.1.md, as an improvement, and mentions the deadlock
+             nowhere. Point readinessProbe.path back at
+             "/api/admin/health/readyz" once the image connects eagerly, to have
+             readiness gate on the database again. */}}
           readinessProbe:
             httpGet:
               path: {{ .Values.readinessProbe.path | default "/api/admin/health/alive" }}

@@ -1266,6 +1266,9 @@ func runCollapseRenders(tmpRoot, tmpChart string, env []string, chartName string
 		if msg := danglingSecretRefMessage(out); msg != "" {
 			return fmt.Sprintf("collapse render (release %q): %s", release, msg), true
 		}
+		if msg := danglingCollapseHostMessage(out, release, chartName); msg != "" {
+			return fmt.Sprintf("collapse render (release %q): %s", release, msg), true
+		}
 	}
 	return fmt.Sprintf("collapse renders passed for release name(s) %s", strings.Join(releaseNames, ", ")), false
 }
@@ -1345,6 +1348,100 @@ func danglingSecretRefMessage(rendered string) string {
 	}
 	sort.Strings(missing)
 	return "secret reference(s) point at non-rendered Secret(s): " + strings.Join(missing, ", ")
+}
+
+// collapseHostPattern matches an in-cluster Service FQDN
+// (<name>.<namespace>.svc.cluster.local) anywhere inside a ConfigMap value, so a
+// host written bare and a host written inside a URL are read the same way.
+// Group 1 is the Service name.
+var collapseHostPattern = regexp.MustCompile(`([a-z0-9][a-z0-9.-]*?)\.[a-z0-9][a-z0-9-]*\.svc\.cluster\.local`)
+
+// knownCollapseHostDrift lists "<chart>:<CONFIGMAP KEY>" pairs that still build
+// their host by hand and are known to miss the collapse. Each entry MUST carry a
+// justification, and it is a queue of work rather than an exemption: fix the
+// chart and delete the line. The waiver is per key, so any OTHER host in the same
+// chart is still asserted.
+var knownCollapseHostDrift = map[string]bool{
+	// plugin-br-bank-transfer builds both of these with
+	// printf "%s-<subchart>-primary" .Release.Name (templates/configmap.yaml,
+	// templates/migrations.yaml), so a release named after the datastore renders
+	// postgresql-postgresql-primary / valkey-valkey-primary while the subchart
+	// creates postgresql-primary / valkey-primary. Real defects, the same class
+	// as the one this assertion was added for, but they belong to that chart's
+	// own change: both are fixed by resolving the name through
+	// lerian-common.dependency.fullname.
+	"plugin-br-bank-transfer:POSTGRES_HOST": true,
+	"plugin-br-bank-transfer:REDIS_HOST":    true,
+}
+
+// danglingCollapseHostMessage is the second half of the H1 assertion, for hosts
+// rather than Secret references. It returns a non-empty message when a ConfigMap
+// value names an in-cluster Service FQDN built from the release name that the
+// same render does not create.
+//
+// Only the collapse renders call it, which is what keeps it narrow: there the
+// release name IS a bundled subchart name, so a host starting with it is the
+// chart addressing its own bundled datastore, and the only question is whether
+// the helper honoured the collapse or rebuilt "<release>-<subchart>" by hand. An
+// ordinary cross-release FQDN (a sibling product in its own namespace) does not
+// start with the release name and is left alone.
+func danglingCollapseHostMessage(rendered, release, chartName string) string {
+	rendered = stripNonManifest(rendered)
+	serviceNames := map[string]bool{}
+	type configValue struct{ key, value string }
+	var configValues []configValue
+
+	dec := yaml.NewDecoder(strings.NewReader(rendered))
+	for {
+		var doc yaml.Node
+		if err := dec.Decode(&doc); err != nil {
+			// EOF or a decode error: stop scanning rather than crash the gate,
+			// matching danglingSecretRefMessage.
+			break
+		}
+		var m map[string]interface{}
+		if err := doc.Decode(&m); err != nil || m == nil {
+			continue
+		}
+		switch kind, _ := m["kind"].(string); kind {
+		case "Service":
+			if name := nestedString(m, "metadata", "name"); name != "" {
+				serviceNames[name] = true
+			}
+		case "ConfigMap":
+			data, _ := m["data"].(map[string]interface{})
+			for key, value := range data {
+				if s, ok := value.(string); ok {
+					configValues = append(configValues, configValue{key, s})
+				}
+			}
+		}
+	}
+
+	seen := map[string]bool{}
+	var missing []string
+	for _, cv := range configValues {
+		for _, match := range collapseHostPattern.FindAllStringSubmatch(cv.value, -1) {
+			name := match[1]
+			if !strings.HasPrefix(name, release) || serviceNames[name] {
+				continue
+			}
+			if knownCollapseHostDrift[chartName+":"+cv.key] {
+				continue
+			}
+			entry := cv.key + "=" + match[0]
+			if seen[entry] {
+				continue
+			}
+			seen[entry] = true
+			missing = append(missing, entry)
+		}
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	sort.Strings(missing)
+	return "ConfigMap host(s) point at non-rendered Service(s): " + strings.Join(missing, ", ")
 }
 
 // stripNonManifest drops leading non-YAML banner lines (helm warnings, NOTES)

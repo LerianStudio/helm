@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -17,6 +18,50 @@ func TestMaterializeLocalDependencies_RejectsAbsolutePath(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "absolute path") {
 		t.Fatalf("expected absolute-path error, got: %v", err)
+	}
+}
+
+// H1 has two halves. The Secret half was already asserted; this is the host
+// half: under a collapse release name, an app helper that rebuilds
+// "<release>-<subchart>" by hand writes a ConfigMap host that resolves in no
+// namespace, and the install still reports success because the workload only
+// fails when it first opens the connection.
+func TestDanglingCollapseHostMessage(t *testing.T) {
+	const rendered = `---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: data
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app
+  namespace: app
+data:
+  MONGO_HOST: "%s"
+  MIDAZ_BASE_PATH: "http://midaz-ledger.midaz.svc.cluster.local:3002/v1"
+`
+	cases := []struct {
+		name, host, chart string
+		wantHit           bool
+	}{
+		{"hand-rolled release prefix", "mongodb-mongodb.data.svc.cluster.local", "some-chart", true},
+		{"collapse honored", "mongodb.data.svc.cluster.local", "some-chart", false},
+		{"unrelated sibling release", "reporter-manager.reporter.svc.cluster.local", "some-chart", false},
+		{"waived chart and key", "mongodb-mongodb.data.svc.cluster.local", "waived-chart", false},
+	}
+	knownCollapseHostDrift["waived-chart:MONGO_HOST"] = true
+	defer delete(knownCollapseHostDrift, "waived-chart:MONGO_HOST")
+	for _, c := range cases {
+		got := danglingCollapseHostMessage(fmt.Sprintf(rendered, c.host), "mongodb", c.chart)
+		if (got != "") != c.wantHit {
+			t.Errorf("%s: danglingCollapseHostMessage(%q) = %q, want hit=%v", c.name, c.host, got, c.wantHit)
+		}
+		if c.wantHit && !strings.Contains(got, "MONGO_HOST") {
+			t.Errorf("%s: message must name the ConfigMap key, got %q", c.name, got)
+		}
 	}
 }
 

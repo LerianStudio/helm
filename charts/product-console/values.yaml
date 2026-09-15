@@ -273,9 +273,10 @@ existingSecretName: ""
 # creates, including its nameOverride, its fullnameOverride and the release-name
 # collapse, so the console finds it unconfigured.
 # Its PASSWORD is read for you, straight from the Secret the subchart generates
-# (key mongodb-root-password), whenever that Secret is in the same namespace as
-# the console pods: install with '-n product-console', the namespace this chart
-# pins, and it is. Install into a different namespace and a Secret cannot be
+# (key mongodb-root-password), whenever that Secret lands in the same namespace
+# as the console pods: install with '-n product-console', the namespace this
+# chart pins, and leave global.namespaceOverride unset, and it does. Split them,
+# with a different -n or with global.namespaceOverride, and a Secret cannot be
 # read across the split, so set mongodb.auth.rootPassword and
 # secrets.MONGODB_PASS to the same value or every Mongo-backed page fails on an
 # auth error. The install notes say which of the two cases you are in.

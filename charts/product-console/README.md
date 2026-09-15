@@ -169,22 +169,25 @@ invisible and lets the walk reach a hop the caller wrote. Narrow is correct.
 
 ### MongoDB and readiness
 
-**With the bundled MongoDB, install into the namespace this chart pins and there
-is nothing to configure.** `configmap.MONGO_HOST` defaults to the Service the
-subchart really creates, and `MONGODB_PASS` is read straight from the Secret the
-subchart generates (key `mongodb-root-password`), so the console reaches its
-database and authenticates to it without an operator copying a generated
-password by hand. Your own `secrets.MONGODB_PASS`, or a Secret named by
+**With the bundled MongoDB, land both in one namespace and there is nothing to
+configure.** `configmap.MONGO_HOST` defaults to the Service the subchart really
+creates, and `MONGODB_PASS` is read straight from the Secret the subchart
+generates (key `mongodb-root-password`), so the console reaches its database and
+authenticates to it without an operator copying a generated password by hand.
+That wiring applies only while the subchart's namespace equals the console's,
+which is what `-n product-console` gives you as long as `global.namespaceOverride`
+is unset. Your own `secrets.MONGODB_PASS`, or a Secret named by
 `useExistingSecret`, still wins when you set one.
 
 **The one case that needs you: a namespace split.** The subchart does not
 inherit `namespaceOverride`; it lands in `global.namespaceOverride` when set and
 in the `-n` namespace otherwise, while the console always lives in
-`namespaceOverride`. When those two differ, a Secret cannot be read across them,
-so the chart leaves `MONGODB_PASS` alone and the install notes say so. Either
-install with `-n` matching `namespaceOverride`, or set both of these to the same
-value, or every MongoDB-backed page (product enablement, guided tour) fails on
-an auth error:
+`namespaceOverride`. So setting `global.namespaceOverride` splits them even when
+`-n` matches. When those two namespaces differ a Secret cannot be read across
+them, so the chart leaves `MONGODB_PASS` alone and the install notes say so.
+Either land both in one namespace, or set both of these to the same value, or
+every MongoDB-backed page (product enablement, guided tour) fails on an auth
+error:
 
 ```yaml
 mongodb:

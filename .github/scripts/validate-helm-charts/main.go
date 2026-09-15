@@ -1190,10 +1190,10 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 		// hardcodes <release>-<subchart> instead would then reference a Secret that
 		// no longer exists. Render once per Bitnami dependency under that release
 		// name and re-run the dangling-ref assertion to catch that whole bug class.
-		collapseDetail, collapseFailed := runCollapseRenders(tmpRoot, tmpChart, helmEnv, chartName, bitnamiReleaseNames(chartName, deps), templateArgs)
+		collapseDetail, collapseClass, collapseFailed := runCollapseRenders(tmpRoot, tmpChart, helmEnv, chartName, bitnamiReleaseNames(chartName, deps), templateArgs)
 		if collapseFailed {
 			row.Status = "fail"
-			row.Class = "dangling-secret-ref"
+			row.Class = collapseClass
 			row.Detail = appendDetail(row.Detail, collapseDetail)
 			rows = append(rows, row)
 			_ = os.RemoveAll(tmpRoot)
@@ -1250,27 +1250,29 @@ func bitnamiReleaseNames(chartName string, deps []chartDependency) []string {
 }
 
 // runCollapseRenders renders the chart once per collapse release name and runs
-// the dangling-ref assertion on each. It returns a one-line detail describing
-// the renders performed (or the first failure) and whether any render exposed a
-// dangling secret reference.
-func runCollapseRenders(tmpRoot, tmpChart string, env []string, chartName string, releaseNames []string, baseArgs []string) (string, bool) {
+// the dangling-ref assertions on each. It returns a one-line detail describing
+// the renders performed (or the first failure), the failure class for that
+// failure, and whether any render failed. A host that resolves nowhere is not a
+// dangling Secret, so the two carry different classes: reading "secret" in the
+// summary column sends whoever triages it looking for the wrong thing.
+func runCollapseRenders(tmpRoot, tmpChart string, env []string, chartName string, releaseNames []string, baseArgs []string) (string, string, bool) {
 	if len(releaseNames) == 0 {
-		return "", false
+		return "", "", false
 	}
 	for _, release := range releaseNames {
 		args := append([]string{"template", release, tmpChart}, baseArgs[3:]...)
 		out, err := runHelmWithEnv(tmpRoot, env, args...)
 		if err != nil {
-			return fmt.Sprintf("collapse render (release %q) failed: %s", release, oneLine(out)), true
+			return fmt.Sprintf("collapse render (release %q) failed: %s", release, oneLine(out)), classifyTemplateFailure(out), true
 		}
 		if msg := danglingSecretRefMessage(out); msg != "" {
-			return fmt.Sprintf("collapse render (release %q): %s", release, msg), true
+			return fmt.Sprintf("collapse render (release %q): %s", release, msg), "dangling-secret-ref", true
 		}
 		if msg := danglingCollapseHostMessage(out, release, chartName); msg != "" {
-			return fmt.Sprintf("collapse render (release %q): %s", release, msg), true
+			return fmt.Sprintf("collapse render (release %q): %s", release, msg), "dangling-host-ref", true
 		}
 	}
-	return fmt.Sprintf("collapse renders passed for release name(s) %s", strings.Join(releaseNames, ", ")), false
+	return fmt.Sprintf("collapse renders passed for release name(s) %s", strings.Join(releaseNames, ", ")), "", false
 }
 
 // chartDependencies reads the dependency list from a chart's Chart.yaml.
@@ -1351,13 +1353,14 @@ func danglingSecretRefMessage(rendered string) string {
 }
 
 // collapseHostPattern matches an in-cluster Service FQDN
-// (<name>.<namespace>.svc.cluster.local) anywhere inside a ConfigMap value, so a
+// (<name>.<namespace>.svc.cluster.local) anywhere inside a rendered value, so a
 // host written bare and a host written inside a URL are read the same way.
 // Group 1 is the Service name, group 2 its namespace.
 var collapseHostPattern = regexp.MustCompile(`([a-z0-9][a-z0-9.-]*?)\.([a-z0-9][a-z0-9-]*)\.svc\.cluster\.local`)
 
-// knownCollapseHostDrift lists "<chart>:<CONFIGMAP KEY>" pairs that still build
-// their host by hand and are known to miss the collapse. Each entry MUST carry a
+// knownCollapseHostDrift lists "<chart>:<KEY>" pairs that still build their host
+// by hand and are known to miss the collapse, where KEY is the ConfigMap data
+// key or the container env name carrying the host. Each entry MUST carry a
 // justification, and it is a queue of work rather than an exemption: fix the
 // chart and delete the line. The waiver is per key, so any OTHER host in the same
 // chart is still asserted.
@@ -1375,9 +1378,15 @@ var knownCollapseHostDrift = map[string]bool{
 }
 
 // danglingCollapseHostMessage is the second half of the H1 assertion, for hosts
-// rather than Secret references. It returns a non-empty message when a ConfigMap
+// rather than Secret references. It returns a non-empty message when a rendered
 // value names an in-cluster Service FQDN built from the release name that the
 // same render does not create.
+//
+// Both places a chart writes a host are read: ConfigMap data, and container env
+// entries with a literal value. The second is not hypothetical -- the waived
+// plugin-br-bank-transfer entries below build the same wrong host in a Job's env
+// as in its ConfigMap, and a ConfigMap-only scan would call that fixed once half
+// of it was.
 //
 // Only the collapse renders call it, which is what keeps it narrow: there the
 // release name IS a bundled subchart name, so a host starting with it is the
@@ -1425,6 +1434,10 @@ func danglingCollapseHostMessage(rendered, release, chartName string) string {
 					configValues = append(configValues, configValue{key, s})
 				}
 			}
+		default:
+			for _, e := range collectLiteralEnv(m) {
+				configValues = append(configValues, configValue{e[0], e[1]})
+			}
 		}
 	}
 
@@ -1454,7 +1467,45 @@ func danglingCollapseHostMessage(rendered, release, chartName string) string {
 		return ""
 	}
 	sort.Strings(missing)
-	return "ConfigMap host(s) point at non-rendered Service(s): " + strings.Join(missing, ", ")
+	return "rendered host(s) point at non-rendered Service(s): " + strings.Join(missing, ", ")
+}
+
+// collectLiteralEnv walks a decoded manifest and returns every container env
+// entry written as a literal value, as {name, value} pairs. An entry sourcing a
+// Secret, a ConfigMap or a field carries no value and is skipped; the dangling
+// Secret assertion covers those. Every `env:` list is read wherever it sits, so
+// an init container, a Job's pod template and a CronJob's doubly nested one are
+// all included without this having to name each shape.
+func collectLiteralEnv(node interface{}) [][2]string {
+	var out [][2]string
+	var walk func(interface{})
+	walk = func(n interface{}) {
+		switch v := n.(type) {
+		case map[string]interface{}:
+			if entries, ok := v["env"].([]interface{}); ok {
+				for _, entry := range entries {
+					m, ok := entry.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					name, _ := m["name"].(string)
+					value, _ := m["value"].(string)
+					if name != "" && value != "" {
+						out = append(out, [2]string{name, value})
+					}
+				}
+			}
+			for _, child := range v {
+				walk(child)
+			}
+		case []interface{}:
+			for _, child := range v {
+				walk(child)
+			}
+		}
+	}
+	walk(node)
+	return out
 }
 
 // stripNonManifest drops leading non-YAML banner lines (helm warnings, NOTES)

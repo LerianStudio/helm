@@ -67,6 +67,56 @@ data:
 	}
 }
 
+// A chart writes a host into a ConfigMap or straight into a container env, and
+// the waived plugin-br-bank-transfer entries do both: templates/configmap.yaml
+// and the migration Job in templates/migrations.yaml build the same hand-rolled
+// "<release>-postgresql-primary". A scan that read only ConfigMap data would
+// report the class closed the moment the ConfigMap half was fixed, while the
+// Job still blocked forever on a host that resolves in no namespace.
+func TestDanglingCollapseHostMessageReadsContainerEnv(t *testing.T) {
+	const rendered = `---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-primary
+  namespace: data
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrations
+  namespace: data
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: wait-for-db
+          env:
+            - name: POSTGRES_HOST
+              value: "%s.data.svc.cluster.local"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: password
+`
+	bad := fmt.Sprintf(rendered, "postgresql-postgresql-primary")
+	got := danglingCollapseHostMessage(bad, "postgresql", "some-chart")
+	if !strings.Contains(got, "POSTGRES_HOST") {
+		t.Errorf("a Job env host that misses the collapse must be named, got %q", got)
+	}
+	good := fmt.Sprintf(rendered, "postgresql-primary")
+	if got := danglingCollapseHostMessage(good, "postgresql", "some-chart"); got != "" {
+		t.Errorf("a Job env host that honours the collapse must pass, got %q", got)
+	}
+	// The waiver keys on the env name exactly as it keys on a ConfigMap key.
+	knownCollapseHostDrift["some-chart:POSTGRES_HOST"] = true
+	defer delete(knownCollapseHostDrift, "some-chart:POSTGRES_HOST")
+	if got := danglingCollapseHostMessage(bad, "postgresql", "some-chart"); got != "" {
+		t.Errorf("waived chart and env name must pass, got %q", got)
+	}
+}
+
 // The render gate renders every chart with its default values, so a default
 // that is only wrong under a non-default subchart topology is invisible to it.
 // product-console resolves configmap.MONGO_HOST from the bundled subchart's

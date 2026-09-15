@@ -31,7 +31,7 @@ and writes it to object storage (SeaweedFS/S3). Manager state lives in MongoDB.
 |---|---|---|
 | All-bundled (dev) | Bundled MongoDB + RabbitMQ + SeaweedFS + Valkey + KEDA (all `enabled: true`, default) | Local / kick-the-tyres. `ALLOW_INSECURE_TLS` defaults `true` because the bundled infra runs without TLS (section 5). |
 | External infra | `mongodb`/`rabbitmq`/`seaweedfs`/`valkey.enabled: false`, endpoints via `global.datastores`/`global.objectStorage`, KEDA bundled or external | The `benedita/dev-st` reference topology (managed Postgres/Mongo/Valkey/RabbitMQ + external S3) |
-| Managed cloud | `global.cloud: aws\|gcp\|azure` sets the connection topology (TLS, AMQP scheme, S3 path-style); endpoints still from `global.*`; `ALLOW_INSECURE_TLS: "false"` | Client-facing |
+| Managed cloud | `global.cloud: aws\|gcp\|azure` sets the connection topology (TLS, S3 path-style, and AMQP scheme/port **for AWS only** — see §5); endpoints still from `global.*`; `ALLOW_INSECURE_TLS: "false"` | Client-facing |
 
 - Both components always deploy together — the manager without a worker enqueues jobs
   nothing drains; the worker without the manager has nothing to consume.
@@ -83,9 +83,13 @@ plugin DBs, external DBs) is registered by the operator — see section 4.
    this for you).
 6. ClusterRole: the manager creates a ClusterRole+Binding (CRD/deployment access). If it
    already exists from a prior install, set `manager.clusterRole.create: false`.
-7. `helm install reporter … -n reporter --create-namespace`. The infra hosts and the
-   `<release>-mongodb` / `reporter-manager` Secret refs assume the release is named
-   **`reporter`** — if you rename it, re-point `rabbitmq.authentication.existingSecret`.
+7. `helm install reporter … -n reporter --create-namespace`. The chart's **hardcoded
+   infra hosts** (e.g. the default `MONGO_HOST`/`RABBITMQ_HOST`) assume the release is
+   named **`reporter`**; if you rename the release, override those hosts (section 5). The
+   `<release>-mongodb` Secret ref **auto-follows** the release name (via
+   `reporter.infraSecretRef`), so it needs no manual change; RabbitMQ's
+   `rabbitmq.authentication.existingSecret` only needs re-pointing if you change
+   `manager.name` / `manager.existingSecretName`.
 
 ---
 
@@ -241,7 +245,8 @@ analytics_db:reports.monthly_summary
 | **SeaweedFS ServiceAccount was renamed** | `seaweedfs.global.serviceAccountName` is now `reporter-seaweedfs` (was `seaweedfs`) to avoid cross-release collisions. On upgrade this triggers a one-time SeaweedFS pod restart; IRSA/RoleBinding pinned to the old name must be updated. | Only relevant if `seaweedfs.enabled: true`. Update IAM/IRSA annotations to the new SA name before upgrading. |
 | **Manager ClusterRole is cluster-scoped** | The manager gets a ClusterRole+Binding for CRD/deployment access; a fixed name collides if two releases create it. | Set `manager.clusterRole.create: false` when it already exists. |
 | **External RabbitMQ bootstrap is topology-only** | `externalRabbitmqDefinitions` declares exchanges/queues/bindings on vhost `/`; it does **not** create the app user, its permissions, or the vhost. | Provision the app user + permissions on the broker first; then enable the bootstrap job. |
-| **Release name is load-bearing** | Hardcoded infra hosts + `<release>-mongodb`/`reporter-manager` Secret refs assume release `reporter`. | Install as `reporter`, or re-point `rabbitmq.authentication.existingSecret` and the Mongo refs. |
+| **Release name affects hardcoded hosts only** | The default infra hosts (`MONGO_HOST`, `RABBITMQ_HOST`, …) assume release `reporter`. The `<release>-mongodb` Secret ref auto-follows the release (`reporter.infraSecretRef`); `reporter-manager` derives from `manager.name`, not the release name. | Install as `reporter`, or override the infra hosts. Re-point `rabbitmq.authentication.existingSecret` **only** if you change `manager.name`/`manager.existingSecretName`. |
+| **Broker topology preset is AWS-only** | `global.cloud` supplies `broker` (AMQP scheme/port) **only** for `aws`. `gcp`/`azure` omit it, so `scheme`/`amqpPort` fall back to `amqp`/`5672` — an external TLS or non-default broker then fails for both the app and the KEDA trigger (they share the resolver). | On GCP/Azure or any external TLS/non-default broker, set `global.datastores.broker.scheme`/`amqpPort` (or `common.configmap.RABBITMQ_URI`/`RABBITMQ_PORT_AMQP`) explicitly. |
 
 ---
 
@@ -251,6 +256,8 @@ analytics_db:reports.monthly_summary
 kubectl get pods -n reporter               # manager Running; worker pods only under load
 kubectl get scaledobject,scaledjob,triggerauthentication -n reporter
 kubectl -n reporter port-forward svc/reporter-manager 4005:4005 &
+# wait for the forward to be ready before curling (avoids a transient connection-refused):
+until curl -fsS http://localhost:4005/health >/dev/null 2>&1; do sleep 1; done
 curl -fsS http://localhost:4005/health     # liveness
 curl -fsS http://localhost:4005/readyz     # readiness
 # API docs: http://localhost:4005/swagger/index.html

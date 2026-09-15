@@ -226,9 +226,22 @@ otel:
 # ENABLE_TELEMETRY/PLUGIN_AUTH_*/MONGODB_*/MONGO_*) — none are declared here.
 # Add a key below only when you need to override its shipped default, e.g.:
 #   NODE_ENV: "development"
+# A key the chart does NOT declare is accepted here and silently dropped: this
+# map is an explicit allowlist, not a passthrough. Use extraEnvVars below for
+# anything else the console reads.
 configmap: {}
 
 # -- Extra environment variables from ConfigMap (merged with configmap values)
+# The passthrough for every console variable the chart does not declare above.
+# Each key is written into the same ConfigMap the pod loads, so it reaches the
+# container. TRUSTED_PROXIES belongs here, and most deployments need it:
+#   extraEnvVars:
+#     TRUSTED_PROXIES: "198.51.100.0/24"
+# It is the comma list of CIDRs the console trusts as its own hops while
+# reading X-Forwarded-For. Set it to the ingress / load-balancer addresses
+# actually in front of this service, never the pod or service CIDR. Empty means
+# the console names no caller at all, so a tenant IP allowlist has nothing to
+# judge. Read the README section "Client IP resolution" first.
 extraEnvVars: {}
 
 # -- Secrets for storing sensitive data

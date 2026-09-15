@@ -107,7 +107,19 @@ configmap:
   NEXT_PUBLIC_MIDAZ_VERSION: ""
 
 # -- Extra environment variables
-extraEnvVars: {}
+# This is the passthrough for any console variable the chart does not declare
+# under 'configmap' above: every key here is added to the same ConfigMap the
+# pod loads, so a key set here reaches the container. A key set under
+# 'configmap' that the chart does not declare is accepted and silently dropped.
+extraEnvVars:
+  # Comma list of CIDRs the console trusts as its own hops while reading
+  # X-Forwarded-For, so it can tell which address is the real caller. Set it to
+  # the ingress / load-balancer addresses actually in front of this service,
+  # never the pod or service CIDR. Left empty, the console names no caller at
+  # all. Read the README section "Client IP resolution" before choosing a
+  # range: an entry wider than /8 (IPv4) or /48 (IPv6) is refused, and a range
+  # that covers real callers hides them.
+  TRUSTED_PROXIES: ""
 
 # -- Secrets for storing sensitive data
 secrets:

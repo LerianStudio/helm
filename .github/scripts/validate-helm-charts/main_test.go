@@ -22,9 +22,25 @@ import (
 // the same steps the render gate itself uses.
 var (
 	preparedChartOnce sync.Once
+	preparedChartRoot string
 	preparedChartDir  string
 	preparedChartErr  error
 )
+
+// The prepared chart holds a copy of charts/product-console plus the two
+// dependency archives it builds, around 27 MB, and the sync.Once shares it
+// across every render test, so no single test can clean it up: a t.Cleanup on
+// the first caller would delete it under the others. Removed here instead, once,
+// after the package has finished. CI runners are ephemeral; a developer box and
+// a self-hosted runner are not, and 16 runs of this file left 426 MB in /tmp
+// with nothing reporting it.
+func TestMain(m *testing.M) {
+	code := m.Run()
+	if preparedChartRoot != "" {
+		os.RemoveAll(preparedChartRoot)
+	}
+	os.Exit(code)
+}
 
 func preparedProductConsoleChart(t *testing.T) string {
 	t.Helper()
@@ -62,6 +78,9 @@ func buildProductConsoleChart() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// Recorded before anything else can fail, so TestMain still removes the
+	// directory when the dependency build gives up halfway through it.
+	preparedChartRoot = tmpRoot
 	chartDir := filepath.Join(tmpRoot, "product-console")
 	if err := copyDir(filepath.Join("..", "..", "..", "charts", "product-console"), chartDir); err != nil {
 		return "", err

@@ -272,7 +272,12 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
     printf '    %s\n' "${BASE_VARGS[@]}" | grep -v '^    -f$'
   fi
 
-  helm dependency build "$BASE_DIR" >/dev/null 2>&1 || echo "  (base dep build failed — skipping baseline)"
+  # Same retry the PR chart's build gets above: a dependency fetch is network
+  # flaky, and the baseline half has no more business failing the run for that
+  # than the PR half does.
+  helm dependency build "$BASE_DIR" >/dev/null 2>&1 \
+    || helm dependency update "$BASE_DIR" >/dev/null 2>&1 \
+    || fail "baseline dependency build from origin/main failed, so the upgrade path went untested"
 
   # The baseline can pin a namespace the PR chart no longer renders, and TARGETS was
   # derived from the PR chart alone. Its resources would then land in a namespace
@@ -285,12 +290,20 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
   done
   [[ -n "$BASE_TARGETS" ]] && echo "  baseline namespaces: $BASE_TARGETS"
 
-  if do_install "${REL}-base" "$BASE_DIR" base >/dev/null 2>&1 && deployed "${REL}-base"; then
+  # A baseline that cannot install is never "unrelated": it is this chart at
+  # origin/main, and the leg that would have caught an immutable-field or
+  # namespace break does not run without it. Swallowing that reported OK while
+  # proving only the install arm, and burned the whole --wait timeout doing it.
+  # A chart genuinely broken on main belongs in
+  # .github/configs/helm-install-test-allow-failure.txt, which the HINT below
+  # names, not in a message nobody reads.
+  if base_out="$(do_install "${REL}-base" "$BASE_DIR" base 2>&1)" && deployed "${REL}-base"; then
     helm upgrade "${REL}-base" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} -n "$NS" --timeout "$TIMEOUT" >/dev/null 2>&1 \
       && deployed "${REL}-base" || fail "upgrade from origin/main failed (immutable-field break?)"
     echo "  origin/main -> PR upgrade OK"
   else
-    echo "  (baseline install failed — likely unrelated to this PR; skipping)"
+    printf '%s\n' "$base_out" | tail -20 | sed 's/^/    /'
+    fail "baseline install from origin/main failed, so the upgrade path went untested"
   fi
 else
   echo "  (new chart — not on origin/main; skipping baseline upgrade)"

@@ -329,12 +329,20 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 func TestProductConsoleRefusesAnExistingSecretWithNoName(t *testing.T) {
 	chart := preparedProductConsoleChart(t)
 
-	out, err := renderChart(chart, "product-console", "--set", "useExistingSecret=true")
-	if err == nil {
-		t.Fatalf("render succeeded with useExistingSecret set and no name, want a refusal: %s", oneLine(out))
-	}
-	if !strings.Contains(out, "existingSecretName") {
-		t.Errorf("the refusal must name existingSecretName, got: %s", oneLine(out))
+	// The empty string and a name that is only whitespace reach the API server
+	// the same way: a secretRef with nothing usable in it.
+	for _, name := range []string{"", "   "} {
+		values := []string{"--set", "useExistingSecret=true"}
+		if name != "" {
+			values = append(values, "--set", "existingSecretName="+name)
+		}
+		out, err := renderChart(chart, "product-console", values...)
+		if err == nil {
+			t.Fatalf("render succeeded with useExistingSecret set and name %q, want a refusal: %s", name, oneLine(out))
+		}
+		if !strings.Contains(out, "existingSecretName") {
+			t.Errorf("the refusal for name %q must name existingSecretName, got: %s", name, oneLine(out))
+		}
 	}
 
 	named, err := renderChart(chart, "product-console",

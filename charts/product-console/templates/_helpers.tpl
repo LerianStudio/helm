@@ -66,11 +66,13 @@ useExistingSecret switches from the Secret this chart creates to one the
 operator brings, and existingSecretName is the key that names it. The half-set
 state is refused here: an empty name renders a secretRef with no name at all,
 which helm lint, helm template and the render gate all accept, and which the API
-server then rejects at apply time with an error naming neither key.
+server then rejects at apply time with an error naming neither key. Trimmed
+first, because `required` only rejects the empty string and a name of spaces
+reaches the API server as the same nothing.
 */}}
 {{- define "product-console.secretName" -}}
 {{- if .Values.useExistingSecret -}}
-{{- required "product-console: useExistingSecret is true, so existingSecretName must name the Secret holding the console's environment. Set existingSecretName, or set useExistingSecret to false to use the Secret this chart creates." .Values.existingSecretName -}}
+{{- required "product-console: useExistingSecret is true, so existingSecretName must name the Secret holding the console's environment. Set existingSecretName, or set useExistingSecret to false to use the Secret this chart creates." (.Values.existingSecretName | default "" | trim) -}}
 {{- else -}}
 {{- include "product-console.fullname" . -}}
 {{- end -}}

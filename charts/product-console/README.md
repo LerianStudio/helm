@@ -219,6 +219,14 @@ secrets:
   MONGODB_PASS: "<the same password>"
 ```
 
+Moving the subchart re-creates the database. With the shipped values it is a
+standalone Deployment plus a PersistentVolumeClaim named after it, and that
+claim carries no `helm.sh/resource-policy`, so the upgrade brings the database
+up in the console's namespace with an empty volume and deletes the volume it
+left behind. Nothing the console wrote is in that volume, because a split
+console cannot authenticate against the database at all; back it up first only
+if you loaded it yourself.
+
 **Compatibility of the `MONGO_HOST` default.** `configmap.MONGO_HOST` and
 `global.datastores.mongo.host` still win, so an operator who names their host
 keeps it. One configuration's WORKING value moves: a deployment that runs its

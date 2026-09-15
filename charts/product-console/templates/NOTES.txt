@@ -112,7 +112,13 @@ Secrets (sensitive):
       Replace <your-values.yaml> with the values file you installed with, and
       repeat every other flag from that install: helm upgrade re-renders the
       release from the arguments you hand it and drops every override you leave
-      out. The password is then wired for you; or
+      out. The password is then wired for you.
+
+      Moving the subchart re-creates the database: it comes up in
+      '{{ $consoleNs }}' with an EMPTY volume, and helm deletes the volume in
+      '{{ $mongoNs }}', which carries no keep policy. Nothing the console wrote
+      is in there, because it cannot authenticate while this split lasts, so
+      back up first only if you loaded that database yourself; or
 
     - set BOTH of these to the same value:
 

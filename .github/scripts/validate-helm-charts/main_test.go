@@ -323,6 +323,12 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 	// The printed command has to carry the operator's own file back in.
 	const carriesValues = "-f <your-values.yaml>"
 	const repeatsFlags = "repeat every other flag from that install"
+	// The remedy moves a namespaced PersistentVolumeClaim. Measured with the
+	// shipped values: the subchart renders a standalone Deployment plus a PVC
+	// named after it, carrying no helm.sh/resource-policy, so the upgrade
+	// creates an empty volume in the console's namespace and deletes the one it
+	// left behind. The notes have to say so before the operator runs it.
+	const emptiesTheVolume = "with an EMPTY volume"
 	// The subchart follows global.namespaceOverride when it is set and -n
 	// otherwise, so the two split shapes need different explanations. Printing
 	// the override sentence for an -n split tells the operator that the repair
@@ -353,6 +359,8 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 			remedy,
 			carriesValues,
 			repeatsFlags,
+			emptiesTheVolume,
+			"helm deletes the volume in '" + c.wantMongoNs + "'",
 			c.wantSaid,
 		} {
 			if !strings.Contains(notes, want) {

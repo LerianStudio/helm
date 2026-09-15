@@ -320,6 +320,36 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 	}
 }
 
+// useExistingSecret switches the console's environment Secret from the one this
+// chart creates to one the operator brings, and existingSecretName is the key
+// that names it. Setting the switch and leaving the name empty rendered a
+// secretRef with no name at all: helm lint, the render gate and every render
+// assertion pass, and the API server rejects the Deployment at apply time with
+// an error that names neither key, on an upgrade rather than at render.
+func TestProductConsoleRefusesAnExistingSecretWithNoName(t *testing.T) {
+	chart := preparedProductConsoleChart(t)
+
+	out, err := renderChart(chart, "product-console", "--set", "useExistingSecret=true")
+	if err == nil {
+		t.Fatalf("render succeeded with useExistingSecret set and no name, want a refusal: %s", oneLine(out))
+	}
+	if !strings.Contains(out, "existingSecretName") {
+		t.Errorf("the refusal must name existingSecretName, got: %s", oneLine(out))
+	}
+
+	named, err := renderChart(chart, "product-console",
+		"--set", "useExistingSecret=true", "--set", "existingSecretName=my-own-secret")
+	if err != nil {
+		t.Fatalf("render with existingSecretName set failed: %s", oneLine(named))
+	}
+	if !strings.Contains(normalizeSpace(named), "- secretRef: name: my-own-secret") {
+		t.Errorf("the Secret the operator named must reach the container, got: %s", oneLine(named))
+	}
+	if contains(renderedNames(named, "Secret"), "product-console") {
+		t.Error("with useExistingSecret set, the chart must not also create its own Secret")
+	}
+}
+
 func renderChart(chart, namespace string, values ...string) (string, error) {
 	args := append([]string{"template", "product-console", chart, "-n", namespace}, values...)
 	out, err := exec.Command("helm", args...).CombinedOutput()

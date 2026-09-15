@@ -109,7 +109,7 @@ spec:
             - configMapRef:
                 name: {{ include "product-console.fullname" . }}
             - secretRef:
-                name: {{ if .Values.useExistingSecret }}{{ .Values.existingSecretName }}{{ else }}{{ include "product-console.fullname" . }}{{ end }}
+                name: {{ include "product-console.secretName" . }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

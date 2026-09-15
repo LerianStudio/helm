@@ -60,6 +60,23 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- end }}
 
 {{/*
+Secret carrying the console's own environment.
+
+useExistingSecret switches from the Secret this chart creates to one the
+operator brings, and existingSecretName is the key that names it. The half-set
+state is refused here: an empty name renders a secretRef with no name at all,
+which helm lint, helm template and the render gate all accept, and which the API
+server then rejects at apply time with an error naming neither key.
+*/}}
+{{- define "product-console.secretName" -}}
+{{- if .Values.useExistingSecret -}}
+{{- required "product-console: useExistingSecret is true, so existingSecretName must name the Secret holding the console's environment. Set existingSecretName, or set useExistingSecret to false to use the Secret this chart creates." .Values.existingSecretName -}}
+{{- else -}}
+{{- include "product-console.fullname" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Name of the bundled MongoDB subchart's own resources (Service, Secret,
 StatefulSet), resolved the way the subchart resolves them rather than hardcoded.
 

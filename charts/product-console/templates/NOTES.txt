@@ -66,23 +66,36 @@ Secrets (sensitive):
   is set and the release namespace otherwise, while the console always lives in
   '{{ include "product-console.namespace" . }}'.
 
-  {{- if .Values.mongodb.auth.existingSecret }}
-  The SUBCHART's credentials come from existing secret:
-  {{ .Values.mongodb.auth.existingSecret }}
+  {{- if or .Values.secrets.MONGODB_PASS .Values.useExistingSecret }}
+  The console uses the MONGODB_PASS you supplied. It must be the password the
+  subchart actually runs with (mongodb.auth.rootPassword, or the password in
+  the Secret named by mongodb.auth.existingSecret), or every Mongo-backed page
+  (product enablement, guided tour) fails on an auth error.
+  {{- else if not .Values.mongodb.auth.enabled }}
+  The subchart runs with authentication DISABLED, so no password is needed.
+  {{- else if eq (include "product-console.namespace" .) (include "product-console.mongodb.namespace" .) }}
+  The credential is wired for you. The console reads MONGODB_PASS from key
+  'mongodb-root-password' of the Secret the subchart runs with:
 
-  That Secret configures MongoDB only. The console never reads it: it takes
-  MONGODB_PASS from its own Secret, or from existingSecretName when
-  useExistingSecret is true. Set secrets.MONGODB_PASS to the same password, or
-  point useExistingSecret/existingSecretName at a Secret that carries the key
-  MONGODB_PASS, or every Mongo-backed page fails on an auth error.
+    {{ include "product-console.mongodb.secretName" . }}
+
+  There is nothing to copy by hand. Set secrets.MONGODB_PASS only to pin your
+  own password instead.
   {{- else }}
-  CREDENTIALS ARE NOT WIRED FOR YOU. The subchart generates a random root
-  password into Secret '{{ .Release.Name }}-mongodb', in its own namespace,
-  which the console cannot read. Set BOTH of these to the same value or every
-  Mongo-backed page (product enablement, guided tour) fails on an auth error:
+  ACTION REQUIRED, or every Mongo-backed page (product enablement, guided tour)
+  fails on an auth error. The subchart's password lives in Secret
+  '{{ include "product-console.mongodb.secretName" . }}' in namespace
+  '{{ include "product-console.mongodb.namespace" . }}', while these pods run in
+  '{{ include "product-console.namespace" . }}'. A Secret cannot be read across
+  namespaces, so the console cannot pick it up by itself. Either:
 
-    mongodb.auth.rootPassword: "<your password>"
-    secrets.MONGODB_PASS:      "<the same password>"
+    - install into the console's own namespace
+      (helm install ... -n {{ include "product-console.namespace" . }}), which
+      puts the subchart there too and wires the password automatically; or
+    - set BOTH of these to the same value:
+
+        mongodb.auth.rootPassword: "<your password>"
+        secrets.MONGODB_PASS:      "<the same password>"
   {{- end }}
 
 {{- else }}

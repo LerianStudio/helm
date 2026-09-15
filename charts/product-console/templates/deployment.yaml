@@ -58,8 +58,28 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if or .Values.otel.enabled .Values.otel.external }}
+          {{- /* The bundled MongoDB generates a random root password into its own
+             Secret, while the console's own Secret carries MONGODB_PASS "" until
+             somebody fills it in, so a default install used to bring up a console
+             that could reach its database and not authenticate to it. Read the
+             password from the subchart's Secret instead: an explicit env entry
+             overrides the same name coming from envFrom, so this fills the blank
+             without an operator copying a generated password by hand.
+             Skipped, deliberately, when:
+               - the operator set secrets.MONGODB_PASS or useExistingSecret, so
+                 their own value is the one that must reach the container;
+               - mongodb.auth.enabled is false, so no Secret exists to read;
+               - the subchart lands in a different namespace from these pods
+                 (global.namespaceOverride, or an install whose -n differs from
+                 namespaceOverride), because a secretKeyRef never crosses
+                 namespaces. NOTES.txt says what to do in that case. */}}
+          {{- $mongoSecretReadable := and .Values.mongodb.enabled .Values.mongodb.auth.enabled (not .Values.secrets.MONGODB_PASS) (not .Values.useExistingSecret) (eq (include "product-console.namespace" .) (include "product-console.mongodb.namespace" .)) }}
+          {{- if or .Values.otel.enabled .Values.otel.external $mongoSecretReadable }}
           env:
+            {{- if $mongoSecretReadable }}
+            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGODB_PASS") | nindent 12 }}
+            {{- end }}
+            {{- if or .Values.otel.enabled .Values.otel.external }}
             {{- if .Values.otel.host }}
             - name: OTEL_HOST
               value: {{ .Values.otel.host | quote }}
@@ -82,6 +102,7 @@ spec:
               value: "http://$(HOST_IP):{{ .Values.otel.port }}/v1/traces"
             - name: OTEL_URL_LOGS
               value: "http://$(HOST_IP):{{ .Values.otel.port }}/v1/logs"
+            {{- end }}
             {{- end }}
           {{- end }}
           envFrom:

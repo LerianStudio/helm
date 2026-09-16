@@ -183,7 +183,8 @@ identity:
     # Environment name is resolved via the global mask (global.env.name) — same
     # rule as the datastore masks: do NOT pin ENV_NAME here, it WINS over the
     # mask and defeats it. The default ("development") lives in
-    # templates/identity/configmap.yaml.
+    # templates/identity/configmap.yaml. OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
+    # derives from the same resolved value unless explicitly overridden here.
     # AUTH_ENABLED/AUTH_PORT are NOT pinned here — the chart already defaults
     # them ("true"/"4000") in templates/identity/configmap.yaml; no mask reads
     # them, so duplicating the value here was pure noise.
@@ -341,6 +342,8 @@ auth:
     # ENV_NAME is resolved via the global mask (global.env.name) — same rule:
     # do NOT pin it here, it WINS over the mask and defeats it. The default
     # ("development") lives in templates/auth/configmap.yaml.
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT derives from the same resolved value
+    # unless explicitly overridden here.
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data

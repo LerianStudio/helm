@@ -114,9 +114,10 @@ Secrets (sensitive):
       release from the arguments you hand it and drops every override you leave
       out. The password is then wired for you.
 
-      Moving the subchart re-creates the database: it comes up in
-      '{{ $consoleNs }}' with an EMPTY volume, and helm deletes the volume in
-      '{{ $mongoNs }}', which carries no keep policy. Back up whatever that
+      Moving the subchart re-creates the database. With the shipped values
+      (a standalone MongoDB Deployment over one volume claim with no keep
+      policy) it comes up in '{{ $consoleNs }}' with an EMPTY volume, and
+      helm deletes the volume in '{{ $mongoNs }}'. Back up whatever that
       database holds before you run this, and restore it afterwards; nothing
       carries the data across for you; or
 

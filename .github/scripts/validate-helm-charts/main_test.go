@@ -27,8 +27,10 @@ var (
 	preparedChartErr  error
 )
 
-// The prepared chart holds a copy of charts/product-console plus the two
-// dependency archives it builds, around 27 MB, and the sync.Once shares it
+// The prepared chart directory holds a copy of charts/product-console, the two
+// dependency archives it builds (under 500 KB together) and the Bitnami
+// repository index isolatedHelmEnv writes next to them (about 27 MB), and the
+// sync.Once shares it
 // across every render test, so no single test can clean it up: a t.Cleanup on
 // the first caller would delete it under the others. Removed here instead, once,
 // after the package has finished. CI runners are ephemeral; a developer box and
@@ -452,7 +454,7 @@ func renderChart(chart, namespace string, values ...string) (string, error) {
 // value is what comes back. Returning the whole stream scoped every assertion to
 // the release instead of to the notes: a phrase that moved out of NOTES.txt into
 // any other rendered object still matched, and one failed assertion printed
-// 170 KB of MongoDB manifests around its one-line diagnosis.
+// about 20 KB of MongoDB manifests around its one-line diagnosis.
 func renderNotes(t *testing.T, chart, namespace string, values ...string) string {
 	t.Helper()
 	probe := filepath.Join(t.TempDir(), "product-console")

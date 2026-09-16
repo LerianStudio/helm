@@ -23,9 +23,11 @@ NS="it-${CHART}"          # release namespace (helm -n); also created
 TARGETS=""                # every distinct namespace the chart's manifests reference (created too)
 
 # Values: an explicit argument replaces everything. Otherwise the render gate's
-# vetted sample values go on first, and the install-specific file — present only
-# for charts that need to be trimmed to fit a single-node cluster — is layered on
-# top rather than replacing them, so neither file has to repeat the other.
+# vetted sample values go on first, and the install-specific file is layered on
+# top rather than replacing them, so neither file has to repeat the other. That
+# file trims a chart to fit a single-node cluster, or picks which supported
+# topology the gate installs; .github/configs/helm-install-values/README.md has
+# the contract.
 VARGS=()
 if [[ -n "${2:-}" ]]; then
   VARGS=(-f "$2"); echo "  values (explicit): $2"
@@ -272,7 +274,12 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
     printf '    %s\n' "${BASE_VARGS[@]}" | grep -v '^    -f$'
   fi
 
-  helm dependency build "$BASE_DIR" >/dev/null 2>&1 || echo "  (base dep build failed — skipping baseline)"
+  # Same retry the PR chart's build gets above: a dependency fetch is network
+  # flaky, and the baseline half has no more business failing the run for that
+  # than the PR half does.
+  helm dependency build "$BASE_DIR" >/dev/null 2>&1 \
+    || helm dependency update "$BASE_DIR" >/dev/null 2>&1 \
+    || fail "baseline dependency build from origin/main failed, so the upgrade path went untested"
 
   # The baseline can pin a namespace the PR chart no longer renders, and TARGETS was
   # derived from the PR chart alone. Its resources would then land in a namespace
@@ -285,13 +292,30 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
   done
   [[ -n "$BASE_TARGETS" ]] && echo "  baseline namespaces: $BASE_TARGETS"
 
-  if do_install "${REL}-base" "$BASE_DIR" base >/dev/null 2>&1 && deployed "${REL}-base"; then
-    helm upgrade "${REL}-base" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} -n "$NS" --timeout "$TIMEOUT" >/dev/null 2>&1 \
-      && deployed "${REL}-base" || fail "upgrade from origin/main failed (immutable-field break?)"
-    echo "  origin/main -> PR upgrade OK"
-  else
-    echo "  (baseline install failed — likely unrelated to this PR; skipping)"
+  # A baseline that cannot install is never "unrelated": it is this chart at
+  # origin/main, and the leg that would have caught an immutable-field or
+  # namespace break does not run without it. Swallowing it reported OK while
+  # proving only the install arm, after burning the whole --wait timeout on the
+  # install it swallowed. A chart genuinely broken on main belongs in
+  # .github/configs/helm-install-test-allow-failure.txt, which the HINT below
+  # names, not in a message nobody reads.
+  #
+  # The two ways the baseline can fail are reported apart. `helm install` exiting
+  # non-zero and a release that installed but never reached `deployed` (a hook
+  # still running, a --wait race) need different output: printing helm's own
+  # SUCCESS text under "the install failed" sends the next reader to the wrong
+  # place.
+  if ! base_out="$(do_install "${REL}-base" "$BASE_DIR" base 2>&1)"; then
+    printf '%s\n' "$base_out" | tail -20 | sed 's/^/    /'
+    fail "baseline install from origin/main failed, so the upgrade path went untested"
   fi
+  if ! deployed "${REL}-base"; then
+    helm status "${REL}-base" -n "$NS" 2>&1 | tail -20 | sed 's/^/    /'
+    fail "baseline install from origin/main reported success but the release never reached deployed, so the upgrade path went untested"
+  fi
+  helm upgrade "${REL}-base" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} -n "$NS" --timeout "$TIMEOUT" >/dev/null 2>&1 \
+    && deployed "${REL}-base" || fail "upgrade from origin/main failed (immutable-field break?)"
+  echo "  origin/main -> PR upgrade OK"
 else
   echo "  (new chart — not on origin/main; skipping baseline upgrade)"
 fi

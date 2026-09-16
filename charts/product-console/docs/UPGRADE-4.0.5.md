@@ -113,7 +113,7 @@ The readiness probe default path has been changed from `/api/admin/health/readyz
 | Probe | v4.0.4 | v4.0.5 |
 |-------|--------|--------|
 | `readinessProbe.path` (default) | `/api/admin/health/readyz` | `/api/admin/health/alive` |
-| `livenessProbe.path` (default) | `/` | `/` (unchanged) |
+| `livenessProbe.path` (default) | `/api/admin/health/alive` | `/api/admin/health/alive` (unchanged) |
 
 **Why this matters:**
 

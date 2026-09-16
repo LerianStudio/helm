@@ -89,18 +89,38 @@ Secrets (sensitive):
   '{{ include "product-console.mongodb.secretName" . }}', in namespace
   '{{ $mongoNs }}', while these pods run in '{{ $consoleNs }}'. A Secret cannot
   be read across namespaces, so the console cannot pick it up by itself. Either:
-  {{- if and .Values.global .Values.global.namespaceOverride }}
 
-    - clear global.namespaceOverride, or set it to '{{ $consoleNs }}'. That
-      value is what put the subchart in '{{ $mongoNs }}', and the subchart
-      reads it INSTEAD of -n, so re-installing with a different -n changes
-      nothing; or
-  {{- else }}
+    - move the subchart to '{{ $consoleNs }}', beside the console, by naming
+      that namespace in global.namespaceOverride. The subchart lands in
+      {{- if and .Values.global .Values.global.namespaceOverride }}
+      global.namespaceOverride whenever that is set, and it is set here. It
+      reads that value INSTEAD of -n, so changing -n alone does not move it:
+      {{- else }}
+      the -n namespace while global.namespaceOverride is unset, so a fresh
+      install with -n '{{ $consoleNs }}' lands it beside the console. This
+      release is already installed in '{{ .Release.Namespace }}' and an upgrade
+      cannot move a release to another namespace, so name the namespace here
+      instead:
+      {{- end }}
 
-    - install into the console's own namespace, with
-      'helm install ... -n {{ $consoleNs }}', which puts the subchart there
-      too and wires the password automatically; or
-  {{- end }}
+        helm upgrade --install {{ .Release.Name }} \
+          oci://registry-1.docker.io/lerianstudio/product-console-helm \
+          --version {{ .Chart.Version }} -n {{ .Release.Namespace }} \
+          -f <your-values.yaml> \
+          --set global.namespaceOverride={{ $consoleNs }}
+
+      Replace <your-values.yaml> with the values file you installed with, and
+      repeat every other flag from that install: helm upgrade re-renders the
+      release from the arguments you hand it and drops every override you leave
+      out. The password is then wired for you.
+
+      Moving the subchart re-creates the database. With the shipped values
+      (a standalone MongoDB Deployment over one volume claim with no keep
+      policy) it comes up in '{{ $consoleNs }}' with an EMPTY volume, and
+      helm deletes the volume in '{{ $mongoNs }}'. Back up whatever that
+      database holds before you run this, and restore it afterwards; nothing
+      carries the data across for you; or
+
     - set BOTH of these to the same value:
 
         mongodb.auth.rootPassword: "<your password>"

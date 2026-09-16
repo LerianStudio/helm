@@ -86,8 +86,14 @@ data:
   PLUGIN_IDENTITY_BASE_PATH: {{ $cm.PLUGIN_IDENTITY_BASE_PATH | default "http://plugin-access-manager-identity.plugin-access-manager.svc.cluster.local:4001/v1" | quote }}
 
   # MongoDB Configuration
+  {{- /* MONGODB_URI is the SCHEME, not a URI: the app builds its connection
+     string as "<MONGODB_URI>://<user>:<pass>@<MONGO_HOST>:<MONGO_PORT>?<params>",
+     so "mongodb" is the correct value here and "mongodb+srv" the other one.
+     Putting a host or a full connection string in it produces a URI the driver
+     cannot parse. MONGO_HOST is the host, and its default resolves the bundled
+     subchart's own Service (see product-console.mongodb.host). */}}
   MONGODB_URI: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "uri" "nativeKey" "MONGODB_URI" "default" "mongodb") | quote }}
-  MONGO_HOST: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "mongodb") | quote }}
+  MONGO_HOST: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" (include "product-console.mongodb.host" .)) | quote }}
   MONGO_PORT: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
   MONGODB_DB_NAME: {{ $cm.MONGODB_DB_NAME | default "midaz-console" | quote }}
   MONGODB_USER: {{ include $dv (dict "context" $ "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGODB_USER" "default" "midaz") | quote }}

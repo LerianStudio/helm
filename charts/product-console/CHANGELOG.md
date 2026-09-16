@@ -1,5 +1,83 @@
 # Product-console Changelog
 
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added getting-start installation runbook in both English and Portuguese (pt-br).
+  - Added documentation for port-forward readiness before curl to ensure CodeRabbit parity.
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart empties its volume.
+  - Ensured values are retained when repairing the split.
+  - Implemented refusal for secret names that are only spaces.
+  - Provided a remedy for namespace issues that always works.
+  - Corrected service naming to reflect what Bitnami really creates.
+  - Implemented refusal for existing secrets without a name.
+
+- **Improvements**
+  - Clarified the purpose of volume warnings in documentation.
+  - Addressed CodeRabbit-related documentation improvements, including auth-cred cross-references, ALLOWED_ORIGINS/CORS, and DocumentDB tlsInsecure caveats.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.5)
+
+- **Fixes:**
+  - Refuse a MongoDB host the chart cannot name.
+  - Print the remedy that works for this split.
+  - Let a null clear the trusted proxy value.
+  - Read the bundled MongoDB password from its secret.
+  - Resolve the MongoDB host through lerian-common.
+
+- **Improvements:**
+  - Put the service account in the chart namespace.
+  - Come up on the chart's own shipped defaults.
+
+- **Documentation:**
+  - Specify which password the console's own must match.
+  - Indicate which subchart template reads the override.
+  - Name the key that carries the secret name.
+  - Specify when the MongoDB password is wired.
+  - Correct the client IP and MongoDB notes.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.4...product-console-v4.0.5)
+
+---
+
+## [4.0.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.5)
+
+- **Fixes:**
+  - Refuse a MongoDB host the chart cannot name.
+  - Print the remedy that works for this split.
+  - Let a null clear the trusted proxy value.
+  - Read the bundled MongoDB password from its secret.
+  - Resolve the MongoDB host through lerian-common.
+
+- **Improvements:**
+  - Refuse a non-string trusted proxy value by name.
+  - Come up on the chart's own shipped defaults.
+  - Put the service account in the chart namespace.
+
+- **Documentation:**
+  - Specify which password the console's own must match.
+  - Indicate which subchart template reads the override.
+  - Name the key that carries the secret name.
+  - Clarify when the MongoDB password is wired.
+  - Correct the client IP and MongoDB notes.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.4...product-console-v4.0.5)
+
+---
+
 ## [4.0.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.4)
 
 - Improvements:

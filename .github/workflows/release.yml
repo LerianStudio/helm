@@ -185,6 +185,29 @@ jobs:
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u lerianstudio --password-stdin
 
+      # `helm registry login` writes to Helm's own registry config, which the Docker
+      # CLI never reads. The image gate below inspects manifests through the Docker
+      # CLI, so GHCR needs a login there as well.
+      - name: Log in to GitHub Container Registry (Docker CLI)
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: lerianstudio
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Last gate before the release runs. `helm lint` and the render gate above prove
+      # the chart is well-formed; neither one looks at whether the images it points to
+      # were ever published. A migration image whose tag is inherited from the app tag
+      # is the recurring case: the chart renders perfectly and the install fails on
+      # ImagePullBackOff. Failing here leaves the chart unpublished, because the tag,
+      # the changelog and the `helm push` all happen inside the semantic-release step
+      # further down.
+      - name: Verify referenced images exist
+        uses: LerianStudio/github-actions-shared-workflows/src/validate/helm-image-refs@develop
+        with:
+          chart-path: ${{ matrix.chart.working_dir }}
+          values-file: .github/configs/helm-render-values/${{ matrix.chart.name }}.yaml
+
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@v6
         id: import_gpg

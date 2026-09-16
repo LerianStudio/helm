@@ -3,6 +3,48 @@
 ## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
 
 - **Improvements:**
+  - Scoped the silent-failure claim to existing-tag mis-pins in the documentation.
+  - Reflected render-time guard in casdoor-migrations warnings in the documentation.
+  - Added warnings about casdoor-migrations override and guard in the documentation.
+  - Added an upgrade guide for plugin-access-manager v9.2.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.3...plugin-access-manager-v9.2.4)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
+
+- **Improvements:**
+  - Scoped the silent-failure claim to existing-tag mis-pins in documentation.
+  - Reflected render-time guard in Casdoor migrations warnings in documentation.
+  - Added warnings about Casdoor migrations override and guard in documentation.
+  - Added an upgrade guide for version 9.2.3.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.3...plugin-access-manager-v9.2.4)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
+
+- **Improvements:**
+  - Scoped the silent-failure claim to existing-tag mis-pins in the documentation.
+  - Reflected render-time guard in Casdoor migrations warnings in the documentation.
+  - Added warnings about Casdoor migrations override and guard in the documentation.
+  - Added an upgrade guide for plugin-access-manager v9.2.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.3...plugin-access-manager-v9.2.4)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
+
+- **Improvements:**
   - Scoped the silent-failure claim to existing-tag mis-pins in documentation.
   - Reflected render-time guard in `casdoor-migrations` warnings in documentation.
   - Added warnings about `casdoor-migrations` override and guard in documentation.

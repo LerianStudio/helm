@@ -20,7 +20,7 @@ This chart manages 14 independently deployable Pix Lerian workloads. Each gets i
 
 | Chart version | App image tag |
 |---|---|
-| 1.0.0 | 1.0.0-beta.379 |
+| 1.0.0 | 1.0.0 |
 
 The row above covers this chart only. There is no in-place upgrade path from any earlier chart — moving to this chart is a fresh install (cutover), not a `helm upgrade`, and a cutover does not migrate or copy data. See [Upgrade and rollback](#upgrade-and-rollback).
 

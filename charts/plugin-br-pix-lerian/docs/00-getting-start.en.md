@@ -70,11 +70,13 @@ installation — the chart applies migrations, it does not create the database i
 2. Create the external Secrets per workload (`useExistingSecret`) with the complete
    key set for that workload, before `helm install` — migration hooks read these
    Secrets at the start of the installation.
-3. Set `LICENSE_KEY` and `ORGANIZATION_IDS` on the workloads that build a license
-   client: `spi`, `dictHub`, `dictProxy`, `dictHubVsync`, `cobHub`, `cobProxy`,
-   `pixauto`, `adapterLerian`. The chart's example `values.yaml` only sets
-   `ORGANIZATION_IDS` on `adapterLerian` and `pixauto` — add it to the others if
-   starting from the defaults.
+3. Set `LICENSE_KEY` and `ORGANIZATION_IDS` on the workloads that actually construct a
+   license client: `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`. Other workloads
+   (the `*Systemplane` components, `dictProxy`/`cobProxy`, `adapterLerian`) may carry a
+   `LICENSE_KEY` slot, but it is inert — they never build the client, so the key is not
+   required there. The chart's example `values.yaml` only sets `ORGANIZATION_IDS` on
+   `adapterLerian` and `pixauto` — add it to the five workloads above if starting from
+   the defaults.
 4. `helm install` (installation is always fresh — there is no in-place upgrade path
    from an earlier chart).
 5. If a domain's hub stays disabled, apply that domain's schema through another
@@ -160,8 +162,10 @@ the two are not cross-validated at boot.
 ```bash
 kubectl get pods -n <namespace>
 kubectl get jobs -n <namespace>   # confirm each enabled domain's migration Job completed
-curl <spi-url>/healthz
-curl <spi-url>/readyz
+# health/readiness are served under each component's own path prefix, e.g. spi:
+curl <spi-url>/spi/health
+curl <spi-url>/spi/readyz
+# dict-hub -> /dict-hub/{health,readyz}, cob-hub -> /cob-hub/{health,readyz}, etc.
 ```
 
 | Check | Command/URL | Expected | If it doesn't match, check first |
@@ -181,7 +185,7 @@ curl <spi-url>/readyz
 |---|---|---|
 | `403 TENANT_CONFIG_NOT_FOUND` on every request | Tenant/organization configuration missing from the Systemplane store | Single-tenant: set `ORGANIZATION_ID`/`ISPB`. Multi-tenant: provision the tenant explicitly |
 | Pod `Ready`, but business requests fail with no visible error | Traffic routed to `dictProxy`/`cobProxy`, or the hub's schema was never migrated | Confirm routing mode and that domain's migration Job status |
-| `CrashLoopBackOff` naming `LICENSE_KEY`/`ORGANIZATION_IDS` | One of the two is empty on a workload that builds a license client | Set both on the 8 workloads listed in section 3 |
+| `CrashLoopBackOff` naming `LICENSE_KEY`/`ORGANIZATION_IDS` | One of the two is empty on a license-constructing workload | Set both on the 5 workloads listed in section 3 (`spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`) |
 | Render fails naming `RABBITMQ_URI` | `dictHubVsync` enabled without `RABBITMQ_URI` in `secrets` | Set `RABBITMQ_URI` before enabling `dictHubVsync` |
 | `CrashLoopBackOff` on `adapterLerian` outside a local environment | `DEPLOYMENT_MODE` other than `local` with the component enabled | Keep disabled outside dev, or use `DEPLOYMENT_MODE=local` only for that component |
 | Change via the Systemplane admin API "didn't take" | The key is boot-captured | Restart the affected workload's pod |

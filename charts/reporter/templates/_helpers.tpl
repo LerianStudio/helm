@@ -243,6 +243,80 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- end }}
 
 {{/*
+reporter.crmDeclared — true when an operator has supplied any CRM datasource
+configuration. CRM remains optional: installations that do not set a
+DATASOURCE_CRM_* key receive no validation or defaults.
+*/}}
+{{- define "reporter.crmDeclared" -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $declared := false -}}
+{{- range $key, $_ := $cm -}}
+{{- if or (hasPrefix "DATASOURCE_CRM_" $key) (eq $key "CRYPTO_HASH_SECRET_KEY_CRM") (eq $key "CRYPTO_ENCRYPT_SECRET_KEY_CRM") -}}{{- $declared = true -}}{{- end -}}
+{{- end -}}
+{{- if $declared -}}true{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmConfigRequired — validate Reporter CRM's non-secret datasource
+contract when, and only when, CRM is declared. These fields are deliberately in
+the shared ConfigMap because both workloads need them. The chart never guesses
+an organization ID or supplies a CRM connection default.
+*/}}
+{{- define "reporter.crmConfigRequired" -}}
+{{- if eq (include "reporter.crmDeclared" .) "true" -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $sensitive := list "DATASOURCE_CRM_PASSWORD" "CRYPTO_HASH_SECRET_KEY_CRM" "CRYPTO_ENCRYPT_SECRET_KEY_CRM" -}}
+{{- $misplaced := list -}}
+{{- range $key := $sensitive -}}
+{{- if hasKey $cm $key -}}{{- $misplaced = append $misplaced $key -}}{{- end -}}
+{{- end -}}
+{{- if gt (len $misplaced) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM secret keys must not be set in common.configmap: %s.\n   Put them under secrets: or in the matching external Secret.\n" (join ", " $misplaced)) -}}
+{{- end -}}
+{{- $required := list "DATASOURCE_CRM_CONFIG_NAME" "DATASOURCE_CRM_TYPE" "DATASOURCE_CRM_HOST" "DATASOURCE_CRM_PORT" "DATASOURCE_CRM_DATABASE" "DATASOURCE_CRM_USER" "DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID" -}}
+{{- $missing := list -}}
+{{- range $key := $required -}}
+{{- $value := index $cm $key -}}
+{{- if or (not (hasKey $cm $key)) (kindIs "invalid" $value) (eq (trim (toString $value)) "") -}}
+{{- $missing = append $missing $key -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $missing) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM is declared but its required non-secret configuration is incomplete: %s.\n   Set DATASOURCE_CRM_CONFIG_NAME=plugin_crm, DATASOURCE_CRM_TYPE=mongodb, HOST, PORT, DATABASE, USER and the correct DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID under common.configmap.\n   CRM is optional; remove all DATASOURCE_CRM_* keys to disable it.\n" (join ", " $missing)) -}}
+{{- end -}}
+{{- if ne (trim (toString (index $cm "DATASOURCE_CRM_CONFIG_NAME"))) "plugin_crm" -}}
+{{- fail "\n\nERROR: DATASOURCE_CRM_CONFIG_NAME must be \"plugin_crm\" when configuring Reporter CRM.\n   The plugin_crm datasource is reserved; do not substitute another name.\n" -}}
+{{- end -}}
+{{- if ne (trim (toString (index $cm "DATASOURCE_CRM_TYPE"))) "mongodb" -}}
+{{- fail "\n\nERROR: DATASOURCE_CRM_TYPE must be \"mongodb\" when configuring Reporter CRM.\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmSecretsRequired — when CRM uses a chart-managed Secret, require its
+sensitive keys. This helper is intentionally called only from the manager/worker
+Secret templates; useExistingSecret remains opaque to Helm and valid external
+secret-manager inputs must not be blocked at render time.
+*/}}
+{{- define "reporter.crmSecretsRequired" -}}
+{{- if eq (include "reporter.crmDeclared" .context) "true" -}}
+{{- $secrets := .context.Values.secrets | default dict -}}
+{{- $required := list "DATASOURCE_CRM_PASSWORD" "CRYPTO_HASH_SECRET_KEY_CRM" "CRYPTO_ENCRYPT_SECRET_KEY_CRM" -}}
+{{- $missing := list -}}
+{{- range $key := $required -}}
+{{- $value := index $secrets $key -}}
+{{- if or (not (hasKey $secrets $key)) (kindIs "invalid" $value) (eq (trim (toString $value)) "") -}}
+{{- $missing = append $missing $key -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $missing) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM is declared and %s uses a chart-managed Secret, but these CRM secret keys are missing: %s.\n   Set them under secrets:, never common.configmap. When %s.useExistingSecret=true, provide the same keys in its external Secret instead.\n" .component (join ", " $missing) .component) -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 reporter.datasourceCredEncKeyRequired — gate secrets.DATASOURCE_CRED_ENC_KEY.
 
 The reporter app >= 3.0.0 stores registered data-source credentials ENCRYPTED at rest and
@@ -306,6 +380,7 @@ Input: the root context ($).
 {{- define "reporter.commonConfigmapData" -}}
 {{- $ := . -}}
 {{- $cm := .Values.common.configmap | default dict -}}
+{{- include "reporter.crmConfigRequired" . -}}
 {{- $ded := .Values.datastores | default dict -}}
 {{- $dv := "lerian-common.datastore.value" -}}
 {{- $osv := "lerian-common.objectStorage.value" -}}

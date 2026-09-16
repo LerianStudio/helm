@@ -33,13 +33,20 @@ spec:
       annotations:
         # Force pod restart on ConfigMap/Secret change: envFrom is resolved at
         # container start, so a changed ConfigMap alone never rolls the pod.
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- /*
+        The generated checksums are MERGED over podAnnotations rather than emitted
+        beside them: a user key named checksum/config would otherwise be rendered a
+        second time and win, silently disabling the very roll this exists to force
+        (and a duplicated key is rejected outright by strict YAML parsers). merge
+        gives precedence to its first argument, so the generated values win, and
+        deepCopy keeps .Values untouched. A Helm comment, not a YAML one, so it does
+        not ship inside the rendered manifest.
+        */}}
+        {{- $checksums := dict "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum) }}
         {{- if not .Values.brSisbajud.useExistingSecret }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- $_ := set $checksums "checksum/secret" (include (print $.Template.BasePath "/secrets.yaml") . | sha256sum) }}
         {{- end }}
-        {{- with .Values.brSisbajud.podAnnotations }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+        {{- toYaml (merge $checksums (deepCopy (default dict .Values.brSisbajud.podAnnotations))) | nindent 8 }}
       labels:
         {{- include "br-sisbajud.selectorLabels" . | nindent 8 }}
     spec:

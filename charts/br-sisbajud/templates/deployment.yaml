@@ -38,9 +38,12 @@ spec:
         beside them: a user key named checksum/config would otherwise be rendered a
         second time and win, silently disabling the very roll this exists to force
         (and a duplicated key is rejected outright by strict YAML parsers). merge
-        gives precedence to its first argument, so the generated values win, and
-        deepCopy keeps .Values untouched. A Helm comment, not a YAML one, so it does
-        not ship inside the rendered manifest.
+        gives precedence to its FIRST argument, and that direction — not the
+        deepCopy — is what makes the generated values win: measured, removing the
+        deepCopy leaves this render identical. The deepCopy is defensive, because
+        merge mutates the map it is given, so an inverted direction would write
+        into .Values. Do not flip the arguments. A Helm comment, not a YAML one,
+        so it does not ship inside the rendered manifest.
         */}}
         {{- $checksums := dict "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum) }}
         {{- if not .Values.brSisbajud.useExistingSecret }}

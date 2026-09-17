@@ -33,11 +33,13 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+              "caCert": {},
               "host": {},
               "name": {},
               "port": {},
               "replicaHost": {},
               "ssl": {},
+              "tls": {},
               "uri": {},
               "user": {}
             }
@@ -336,6 +338,10 @@
           "description": "Operator ConfigMap overrides (key -> value). See templates/configmap.yaml.",
           "propertyNames": {
             "enum": [
+              "AGGRESSIVE_RATE_LIMIT_MAX",
+              "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+              "ALLOW_RATELIMIT_DISABLED",
+              "ALLOW_RATELIMIT_FAIL_OPEN",
               "AWS_REGION",
               "ENV",
               "ENV_NAME",
@@ -349,6 +355,12 @@
               "POSTGRES_PORT",
               "POSTGRES_SSLMODE",
               "POSTGRES_USER",
+              "RATE_LIMIT_ENABLED",
+              "RATE_LIMIT_MAX",
+              "RATE_LIMIT_REDIS_TIMEOUT_MS",
+              "RATE_LIMIT_WINDOW_SEC",
+              "RELAXED_RATE_LIMIT_MAX",
+              "RELAXED_RATE_LIMIT_WINDOW_SEC",
               "STREAMING_HUB_ALLOW_INSECURE_DB_TLS",
               "STREAMING_HUB_ALLOW_INSECURE_KAFKA",
               "STREAMING_HUB_ALLOW_PRIVATE_SINKS",
@@ -390,6 +402,9 @@
               "STREAMING_HUB_PULL_RATE",
               "STREAMING_HUB_RECONCILER_ENABLED",
               "STREAMING_HUB_RECONCILER_INTERVAL",
+              "STREAMING_HUB_REDIS_ADDRESS",
+              "STREAMING_HUB_REDIS_CA_CERT",
+              "STREAMING_HUB_REDIS_TLS",
               "STREAMING_HUB_ROLE",
               "STREAMING_HUB_SHUTDOWN_TIMEOUT",
               "STREAMING_HUB_SWAGGER_ENABLED",

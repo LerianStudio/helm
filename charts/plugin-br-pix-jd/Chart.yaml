@@ -20,15 +20,11 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 0.4.4
+version: 0.4.5
 
-# First release published under the new name: the plugin tagged v1.12.0-beta.8 on
-# 2026-08-05 (the merge of integration/jdpi-compliance-run into develop, PR #52) and
-# ghcr.io/lerianstudio/plugin-br-pix-jd carries the tag `1.12.0-beta.8` — note the
-# registry tag has NO leading `v`, unlike the git tag. This is the tag of the release
-# train the chart was cut against; production values still pin `api.image.tag`
-# explicitly rather than inheriting it.
-appVersion: "1.13.0-beta.4"
+# Registry tags have no leading `v`. Pin api.image.tag explicitly in production.
+# Migrations are independently versioned; see migrations.image.tag in values.yaml.
+appVersion: "2.0.1"
 
 keywords:
   - midaz

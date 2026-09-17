@@ -370,13 +370,12 @@ worker:
 #               minimal migration-only hook Secret at weight -5, since the chart's normal
 #               Secret does not exist yet.
 #
-# There is no separate `<app>-migrations` image for this plugin, so the Job extracts the
-# migrations tree out of the app image into an emptyDir and runs generic golang-migrate
-# over it — schema and app therefore come from the same tag by construction.
+# The Job runs the dedicated migrations.image.repository image, with golang-migrate
+# and this application's SQL baked in. Its tag is independent of the API image.
 #
-# MULTI-TENANT: incompatible, and the chart FAILS on the combination. The Tenant Manager
-# owns per-tenant database migrations; this Job targets the single-tenant database that
-# MT never uses, so leaving it on would look like success while no tenant schema moved.
+# MULTI-TENANT: the chart SKIPS this Job when MULTI_TENANT_ENABLED=true and reports
+# the skip in NOTES.txt. Tenant Manager owns per-tenant database migrations; this
+# Job targets only the single-tenant database.
 migrations:
   # -- Render the migration Job
   enabled: true

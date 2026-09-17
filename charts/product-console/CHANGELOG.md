@@ -3,6 +3,31 @@
 ## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
 
 - **Features**
+  - Added a getting-started installation runbook in both English and Portuguese (pt-br).
+  - Added documentation for waiting for port-forward readiness before executing curl commands for CodeRabbit parity.
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Updated messaging to indicate that moving the subchart will empty its volume.
+  - Ensured that values are retained when repairing a split.
+  - Implemented a refusal for secret names that consist only of spaces.
+  - Added a remedy for namespace issues that is consistently effective.
+  - Corrected the service name to reflect what Bitnami actually creates.
+  - Implemented a refusal for existing secrets that have no name.
+
+- **Improvements**
+  - Clarified documentation regarding the volume warning and its implications.
+  - Enhanced documentation to cover authentication credentials cross-references, ALLOWED_ORIGINS/CORS, and DocumentDB tlsInsecure caveats.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
   - Added getting-start installation runbook in both English and Portuguese (pt-br).
 
 - **Fixes**

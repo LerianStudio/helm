@@ -2,6 +2,28 @@
 
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
 
+- **Features:**
+  - Introduced schema migration Jobs to facilitate smoother updates.
+  - Implemented providersIngress for outbound-provider adapters.
+  - Added per-component image repository defaults for better customization.
+  - Introduced auto-derivation of OTEL service version and node-IP OTLP endpoint.
+  - Added MongoDB and RabbitMQ subchart dependencies for enhanced functionality.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Resolved probe paths to align with per-component routePrefix.
+  - Ensured Secret overrides ConfigMap by swapping `envFrom` order.
+  - Fixed liveness probe path from `/live` to `/health`.
+  - Addressed namespace handling and global image tag override issues.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
 - **Features**
   - Introduced schema migration Jobs.
   - Implemented providersIngress for outbound-provider adapters.

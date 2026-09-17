@@ -19,6 +19,33 @@
         "imagePullSecrets": {
           "type": "array"
         },
+        "serviceDiscovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Shared lib-service-discovery (Consul, advertise model) knobs, set once per environment and consumed by the systemplanes + adapter-provider-mock via the chart-local plugin-br-pix-lerian.serviceDiscovery.env helper. The per-app advertise pair (SD_ADVERTISE_ADDRESS/PORT) is derived from each component's identity, not from here.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "SD_ENABLED — turn service discovery on for the components that emit the shared knobs."
+            },
+            "address": {
+              "type": "string",
+              "description": "SD_ADDRESS — Consul HTTP API host:port (no scheme)."
+            },
+            "tls": {
+              "type": "boolean",
+              "description": "SD_TLS — use TLS to reach Consul."
+            },
+            "tlsSkipVerify": {
+              "type": "boolean",
+              "description": "SD_TLS_SKIP_VERIFY — skip Consul TLS certificate verification."
+            },
+            "workload": {
+              "type": "string",
+              "description": "SD_WORKLOAD — per-env workload tag scoping Consul service names."
+            }
+          }
+        },
         "externalPostgresDefinitions": {
           "type": "object",
           "additionalProperties": true,

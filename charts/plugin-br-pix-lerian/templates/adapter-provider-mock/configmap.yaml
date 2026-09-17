@@ -66,6 +66,11 @@ data:
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
   {{- end }}
+  # --- service discovery: full set (no systemplane store — reads env only via
+  #     libsd.ConfigFromEnv). Shared knobs from global.serviceDiscovery; advertise
+  #     pair derived from this component's identity. Emitted alphabetically to
+  #     match the prior env-passthrough order. ---
+  {{- include "plugin-br-pix-lerian.serviceDiscovery.env" (dict "context" $ "configmap" $cm "keys" (list "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_ENABLED" "SD_TLS" "SD_TLS_SKIP_VERIFY" "SD_WORKLOAD") "name" (include "plugin-br-pix-lerian.componentFullname" (dict "context" $ "component" $component)) "port" $values.service.port "namespace" (include "global.namespace" $)) | nindent 2 }}
   {{- /* Escape hatch: un-enumerated configmap.<KEY>. Skips every emitted key
      (plain/mask/inline), the superseded deviating names, and every credential
      (leaked-secret guard) so a configmap.<SECRET> can never surface here. */}}
@@ -77,7 +82,9 @@ data:
       "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_RESOURCE_SERVICE_NAME"
       "OTEL_RESOURCE_SERVICE_VERSION" "PIXAUTO_BASE_URL" "PLUGIN_AUTH_ENABLED"
       "PLUGIN_AUTH_HOST" "PLUGIN_AUTH_URL" "POLLER_INTERVAL_SEC" "PROVIDER_BASE_URL"
-      "PROVIDER_CLIENT_ID" "PROVIDER_CLIENT_SECRET" "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS"
+      "PROVIDER_CLIENT_ID" "PROVIDER_CLIENT_SECRET" "REQUEST_TIMEOUT_SEC"
+      "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_ENABLED" "SD_TLS"
+      "SD_TLS_SKIP_VERIFY" "SD_WORKLOAD" "SERVER_ADDRESS"
       "SPI_BASE_URL" "TELEMETRY_ENABLED"
     ) }}
   {{- $_ := set $enumerated $k 1 }}

@@ -73,6 +73,16 @@ global:
   #    Emits the STREAMING_* subset only when STREAMING_ENABLED=true. Example:
   #    streaming: { brokers: "redpanda:9092", saslMechanism: "SCRAM-SHA-512", saslUsername: "pix" }
   streaming: {}
+  # -- Service discovery (Consul, via lib-service-discovery / advertise model).
+  #    Shared knobs set ONCE per env and consumed by the systemplanes + adapter-
+  #    provider-mock (chart-local plugin-br-pix-lerian.serviceDiscovery.env helper):
+  #    enabled -> SD_ENABLED, address -> SD_ADDRESS, tls -> SD_TLS,
+  #    tlsSkipVerify -> SD_TLS_SKIP_VERIFY, workload -> SD_WORKLOAD. The per-app
+  #    advertise pair (SD_ADVERTISE_ADDRESS/PORT) is DERIVED from each component's
+  #    identity, not from here. A component's configmap.SD_* still wins. Example:
+  #    serviceDiscovery: { enabled: true, address: "consul-server.consul:8500",
+  #      tls: false, tlsSkipVerify: false, workload: "my-env" }
+  serviceDiscovery: {}
 
   # ---------------------------------------------------------------------------
   # External PostgreSQL bootstrap

@@ -101,8 +101,13 @@ spec:
             {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_ONBOARDING_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 12 }}
-            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "DB_ONBOARDING_REPLICA_PASSWORD") | nindent 12 }}
-            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "DB_TRANSACTION_REPLICA_PASSWORD") | nindent 12 }}
+            {{/* The read replica is queried as the app user (DB_*_REPLICA_USER defaults to
+                 "midaz"), whose credentials replicate from the primary — so it authenticates
+                 with the SAME user password ("password"), not the standby's streaming
+                 "replication-password" (that key belongs to the `replicator` role and only
+                 authorizes the standby->primary WAL stream, not client connections). */}}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_ONBOARDING_REPLICA_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_REPLICA_PASSWORD") | nindent 12 }}
             {{- else }}
             {{- if .Values.ledger.secrets.DB_ONBOARDING_PASSWORD }}
             - name: DB_ONBOARDING_PASSWORD

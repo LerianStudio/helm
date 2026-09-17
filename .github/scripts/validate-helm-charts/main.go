@@ -62,6 +62,13 @@ var allowlistedCredentialDefaults = map[string]bool{
 	// plugin-access-manager ships a default initUser.adminPassword so existing releases keep
 	// their admin login across upgrades; operators are expected to override it in production.
 	"plugin-access-manager:auth.initUser.adminPassword": true,
+	// fetcher's bundled dev-mode RabbitMQ (rabbitmq.enabled=true) auto-loads
+	// files/rabbitmq/load_definitions.json, which bakes in a fixed
+	// rabbit_password_hashing_sha256 hash for the "plugin" user. This default
+	// must stay in sync with that hash for the bundled path to work
+	// out-of-the-box; operators using external RabbitMQ are expected to
+	// override it (see README's "RABBITMQ_DEFAULT_PASS" note).
+	"fetcher:secrets.RABBITMQ_DEFAULT_PASS": true,
 }
 
 type chartYAML struct {

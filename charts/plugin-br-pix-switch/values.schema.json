@@ -100,6 +100,42 @@
       },
       "additionalProperties": true
     },
+    "adapterLerian": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "adapterLerianConsumer": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "adapterLerianSystemplane": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
     "cobHub": {
       "type": "object",
       "properties": {

@@ -1,8 +1,9 @@
 # Production values template for plugin-br-pix-switch (chart 2.0.0-beta.1+)
 #
 # Override only the fields you need to change from values.yaml defaults.
-# All 10 components are enabled by default except adapter-btg-mock; disable
-# any component by setting its `enabled: false`.
+# All 13 components are enabled by default except adapter-btg-mock and the
+# adapter-lerian trio (adapterLerian / adapterLerianConsumer /
+# adapterLerianSystemplane); disable any component by setting `enabled: false`.
 
 # Global image override (applies to every component unless overridden per-component)
 global:
@@ -161,6 +162,46 @@ cobSystemplane:
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
     SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-cob?sslmode=require"
+    LICENSE_KEY: ""
+    SYSTEMPLANE_SECRET_MASTER_KEY: ""
+
+# ------------------------------------------------------------
+# adapter-lerian (api) — Lerian provider adapter HTTP entry
+# ------------------------------------------------------------
+adapterLerian:
+  enabled: false
+  configmap:
+    DEPLOYMENT_MODE: "saas"
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_URL: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    ORGANIZATION_IDS: "global"
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# adapter-lerian (consumer) — br-sfn Kafka consumer
+# ------------------------------------------------------------
+adapterLerianConsumer:
+  enabled: false
+  configmap:
+    ISPB: "<8-digit-ispb>"
+    KAFKA_BROKERS: "<broker-1:9092,broker-2:9092>"
+    KAFKA_GROUP_ID: "pix-adapter-lerian-cashin"
+  secrets:
+    SYSTEMPLANE_POSTGRES_DSN: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
+    VALKEY_URL: "redis://default:<password>@valkey-host:6379/0"
+    LICENSE_KEY: ""
+
+# ------------------------------------------------------------
+# adapter-lerian (systemplane) — runtime config plane
+# ------------------------------------------------------------
+adapterLerianSystemplane:
+  enabled: false
+  configmap: {}
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
     LICENSE_KEY: ""
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
 

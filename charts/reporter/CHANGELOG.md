@@ -3,6 +3,22 @@
 ## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.1)
 
 - **Fixes**
+  - Guard opt-in CRM configuration to prevent potential issues.
+  - Pin stable 3.0.1 release for improved stability.
+
+- **Improvements**
+  - Added a getting-started installation runbook in both English and Portuguese.
+  - Addressed CodeRabbit feedback regarding release-name rules, AWS-only broker preset, and port-forward readiness.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.0...reporter-v4.3.1)
+
+---
+
+## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.1)
+
+- **Fixes**
   - Guard opt-in CRM configuration to enhance stability and prevent potential issues.
   - Pin stable 3.0.1 release to ensure consistent performance and reliability.
 

@@ -5,6 +5,7 @@
 {{- $dv := "lerian-common.datastore.value" -}}
 {{- $ded := .Values.datastores | default dict -}}
 {{- $cm := .Values.identity.configmap -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -17,7 +18,7 @@ data:
   {{- /* Environment name via the global mask (same shape as observability):
      a managed profile / the operator sets global.env.name ONCE for every
      component instead of the native ENV_NAME key on each. */}}
-  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") | quote }}
+  ENV_NAME: {{ $envName | quote }}
 
   # APP 
   APPLICATION_NAME: {{ .Values.identity.configmap.APPLICATION_NAME | default "plugin-identity" | quote }}
@@ -65,7 +66,7 @@ data:
           "OTEL_RESOURCE_SERVICE_NAME" "plugin-identity"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/identity"
           "OTEL_RESOURCE_SERVICE_VERSION" .Values.identity.image.tag
-          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "dev")) | nindent 2 }}
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $envName)) | nindent 2 }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }} 
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
   # REDIS

@@ -104,8 +104,13 @@ diagnose() {
 # never became Ready (helm says "not ready" / "context deadline exceeded" / "timed
 # out waiting"). A render, admission, hook or immutable-field error exits 1, so a
 # chart that only lacks a datastore in kind cannot hide a broken template behind
-# that fact.
-readiness_rc() { grep -qE 'not ready|context deadline exceeded|timed out waiting' <<<"$1" && echo 2 || echo 1; }
+# that fact. A hook Job that never completes ALSO says "timed out waiting", but
+# helm names the hook in the same message ("failed pre-install: ...",
+# "pre-upgrade hooks failed: ..."), and that is a hook defect, not readiness.
+readiness_rc() {
+  grep -qE 'failed (pre|post)-(install|upgrade|rollback|delete)|hooks? failed' <<<"$1" && { echo 1; return; }
+  grep -qE 'not ready|context deadline exceeded|timed out waiting' <<<"$1" && echo 2 || echo 1
+}
 
 fail() { # <message> [exit-code]
   echo "::error::[$CHART] $1"

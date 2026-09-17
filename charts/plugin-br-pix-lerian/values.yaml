@@ -70,8 +70,10 @@ global:
   #    when MULTI_TENANT_ENABLED=true. Example: multiTenant: { url: "http://tenant-manager:8080" }
   multiTenant: {}
   # -- Streaming (lib-streaming / RedPanda), consumed by cob-hub/dict-hub/pixauto/spi.
-  #    Emits the STREAMING_* subset only when STREAMING_ENABLED=true. Example:
-  #    streaming: { brokers: "redpanda:9092", saslMechanism: "SCRAM-SHA-512", saslUsername: "pix" }
+  #    `enabled` drives STREAMING_ENABLED for those 4 components ONCE per env (a
+  #    component's own configmap.STREAMING_ENABLED still wins). The STREAMING_*
+  #    transport subset is emitted only when streaming is enabled. Example:
+  #    streaming: { enabled: true, brokers: "redpanda:9092", saslMechanism: "SCRAM-SHA-512", saslUsername: "pix" }
   streaming: {}
   # -- Service discovery (Consul, via lib-service-discovery / advertise model).
   #    Shared knobs set ONCE per env and consumed by the systemplanes + adapter-

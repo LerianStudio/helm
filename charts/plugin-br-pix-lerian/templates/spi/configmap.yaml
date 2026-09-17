@@ -57,8 +57,12 @@ data:
   MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
   {{- include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm "enabled" $mtEnabled) | nindent 2 }}
   # --- streaming: global.streaming contract (standard subset, gated) ---
-  {{- $streamingEnabled := eq (toString ($cm.STREAMING_ENABLED | default "false")) "true" }}
-  STREAMING_ENABLED: {{ $cm.STREAMING_ENABLED | default "false" | quote }}
+  {{- /* STREAMING_ENABLED (app knob): configmap.STREAMING_ENABLED > global.streaming.enabled
+     > "false". Lets an env flip streaming on once via global.streaming.enabled; a native
+     configmap.STREAMING_ENABLED still wins (presence-based, via lerian-common.globalValue). */}}
+  {{- $streamingEnabledStr := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") }}
+  {{- $streamingEnabled := eq (include "plugin-br-pix-lerian.isTrue" $streamingEnabledStr) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabledStr | quote }}
   {{- include "lerian-common.streaming.env" (dict "context" $ "enabled" $streamingEnabled "configmap" $cm "cloudeventsSource" "plugin-br-pix-lerian") | nindent 2 }}
   # --- app config (plain passthrough; default = curated/.env.example value) ---
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-spi" | quote }}

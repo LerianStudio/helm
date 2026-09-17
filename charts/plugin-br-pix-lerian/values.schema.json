@@ -46,6 +46,28 @@
             }
           }
         },
+        "streaming": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Shared lib-streaming (RedPanda) contract. enabled drives STREAMING_ENABLED for the streaming components (spi/dict-hub/cob-hub/pixauto) once per environment; a component's own configmap.STREAMING_ENABLED still wins. Transport fields (brokers, sasl*, tls*) feed lerian-common.streaming.env.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "STREAMING_ENABLED — turn streaming on for spi/dict-hub/cob-hub/pixauto."
+            }
+          }
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Shared observability (OTel) contract. enabled drives ENABLE_TELEMETRY (via lerian-common.otel.env) AND the deployment's node-local HOST_IP + OTEL_EXPORTER_OTLP_ENDPOINT downward-API wiring (via lerian-common.globalValue, default true). A component's own configmap.ENABLE_TELEMETRY still wins.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "ENABLE_TELEMETRY — turn telemetry on/off for all components."
+            }
+          }
+        },
         "externalPostgresDefinitions": {
           "type": "object",
           "additionalProperties": true,

@@ -44,13 +44,33 @@ A new PreSync Job (`br-sisbajud-topics`) has been added that runs before the mai
 
 **Topics created:**
 
-The Job provisions the following topics (all with corresponding `.dlq` siblings):
+The Job provisions **one** topic:
 
-1. `br-sisbajud.ledger.balance.changed` + `.dlq`
-2. `br-sisbajud.block_account.created` + `.dlq`
-3. `br-sisbajud.kek.rotated` + `.dlq`
+1. `lerian.streaming.br-sisbajud.commands` — the application's own commands
+   queue, carrying the judicial balance trigger. ⚠️ **No `.dlq` sibling.**
+   Quarantine for it goes to the application's single shared DLQ,
+   `lerian.streaming.br-sisbajud.dlq`, which the application's own lib-streaming
+   `Builder.Build` creates. A `.commands.dlq` does not exist; provisioning one
+   would create a topic nothing reads.
 
-> **Note:** The `midaz.balance.changed` topic is **not** provisioned by this Job. Midaz owns and creates that topic; br-sisbajud only consumes it.
+**Removed from this list in the current chart line** — the three legacy
+per-event names and their `.dlq` siblings:
+`br-sisbajud.ledger.balance.changed`, `br-sisbajud.block_account.created`,
+`br-sisbajud.kek.rotated`. Nothing writes them (the per-event model was replaced
+by the application topic `lerian.streaming.br-sisbajud`, where both remaining
+business facts now publish) and nothing in the service consumes them.
+
+> ✅ **Dropping them here deletes nothing.** The Job runs `rpk topic list` then
+> `rpk topic create` and never a delete (`scripts/topics-entrypoint.sh:42,47` in
+> br-sisbajud), so an existing tier keeps those topics and their retained records.
+> A **fresh** install simply does not create them, which is the intended end
+> state. Deleting them from a live broker stays a separate, deliberate act — and
+> one to take only after confirming no lagging consumer is still reading them.
+
+> **Note:** The **ledger's** application topic — `lerian.streaming.ledger`, which
+> br-sisbajud only consumes — is **not** provisioned by this Job. Midaz owns it and
+> its own `Builder.Build` creates it. (Earlier revisions of this guide named it
+> `midaz.balance.changed`; that name is retired.)
 
 **Job behavior:**
 

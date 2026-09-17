@@ -176,8 +176,6 @@ topics:
   replicationFactor: 1        # per-env; 3 on multi-broker prod
   retentionMs: ""             # optional; empty = broker default
   list:
-    - br-sisbajud.ledger.balance.changed
-    - br-sisbajud.ledger.balance.changed.dlq
     - br-sisbajud.block_account.created
     - br-sisbajud.block_account.created.dlq
     - br-sisbajud.kek.rotated

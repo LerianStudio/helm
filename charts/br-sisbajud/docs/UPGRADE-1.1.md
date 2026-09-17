@@ -44,13 +44,36 @@ A new PreSync Job (`br-sisbajud-topics`) has been added that runs before the mai
 
 **Topics created:**
 
-The Job provisions the following topics (all with corresponding `.dlq` siblings):
+The Job provisions the following topics. ⚠️ **They do not all have a `.dlq`
+sibling** — read the list literally:
 
-1. `br-sisbajud.ledger.balance.changed` + `.dlq`
-2. `br-sisbajud.block_account.created` + `.dlq`
-3. `br-sisbajud.kek.rotated` + `.dlq`
+1. `br-sisbajud.block_account.created` + `.dlq`  — legacy per-event pair
+2. `br-sisbajud.kek.rotated` + `.dlq`  — legacy per-event pair
+3. `lerian.streaming.br-sisbajud.commands`  — **no `.dlq` sibling.** Quarantine
+   for this queue goes to the application's single shared DLQ,
+   `lerian.streaming.br-sisbajud.dlq`, which the application's own lib-streaming
+   `Builder.Build` creates. A `.commands.dlq` does not exist; provisioning one
+   would create a topic nothing reads.
 
-> **Note:** The `midaz.balance.changed` topic is **not** provisioned by this Job. Midaz owns and creates that topic; br-sisbajud only consumes it.
+**Removed in this chart line:** `br-sisbajud.ledger.balance.changed` + `.dlq`.
+Nothing writes the legacy balance-trigger leg any more (br-sisbajud Epic 4.3);
+the trigger travels on the commands queue above. The two remaining per-event
+pairs are also no longer written and stay only until every consumer is confirmed
+on the application topic and their retention has expired — deleting them earlier
+destroys records a lagging consumer has not read.
+
+> **Note:** The **ledger's** application topic — `lerian.streaming.ledger`, which
+> br-sisbajud only consumes — is **not** provisioned by this Job. Midaz owns it and
+> its own `Builder.Build` creates it. (Earlier revisions of this guide named it
+> `midaz.balance.changed`; that name is retired.)
+
+> 🔴 **Why the commands queue is in this list at all**, since the library
+> self-provisions the application's own topics: it is the create-only safety net
+> for an ordering hazard. The translator can emit a command before the balance
+> consumer's `Build` has run, and the managed Redpanda brokers run with
+> broker-side auto-creation **off** — so producing fails while consuming would
+> fail in **silence** behind a green readiness probe, and the judicial balance
+> trigger simply never flows.
 
 **Job behavior:**
 

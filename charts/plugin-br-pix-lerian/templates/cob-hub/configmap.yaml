@@ -79,10 +79,12 @@ data:
   STREAMING_TENANT_ID: {{ $cm.STREAMING_TENANT_ID | default "default" | quote }}
   {{- /* OTEL_RESOURCE_SERVICE_VERSION: from image tag (image.tag then
      Chart.AppVersion); override via cobHub.configmap.OTEL_RESOURCE_SERVICE_VERSION. */}}
-  {{- if not (hasKey $cm "OTEL_RESOURCE_SERVICE_VERSION") }}
+  {{- /* OTEL_RESOURCE_SERVICE_VERSION: always emitted (like OTEL_RESOURCE_SERVICE_NAME/
+     OTEL_LIBRARY_NAME) so the value lives in the ConfigMap and does NOT require a
+     redundant extraEnvVars entry. configmap.<KEY> wins; else derive from image.tag
+     then Chart.AppVersion. */}}
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
-  {{- end }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default $compTag | quote }}
   # --- service discovery: advertise pair derived from component identity;
   #     shared knobs come from this component's systemplane store, not here.
   #     global.serviceDiscovery lets the env set the shared knobs once. ---

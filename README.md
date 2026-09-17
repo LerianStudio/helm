@@ -220,17 +220,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0-beta.4` | 0.1.0 |
 -----------------
 
-### BR SFN
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sfn).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `1.1.0` | `1.0.0-beta.1` |
------------------
-
 ### BR Consignado GW
 
 API gateway and same-origin operator console for the Dataprev consignado rail.

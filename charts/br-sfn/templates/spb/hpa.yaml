@@ -1,3 +1,0 @@
-{{- if $.Values.spb.enabled -}}
-{{ include "br-sfn.componentHpa" (dict "root" $ "name" "spb" "comp" $.Values.spb) }}
-{{- end -}}

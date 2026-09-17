@@ -511,6 +511,17 @@ common:
   #      In this YAML use a plain double-quoted scalar — do NOT use a block scalar (| / >),
   #      which reintroduces newlines.
   #
+  # Fetch the regional AWS RDS/DocumentDB CA and produce the value (pick your cluster's region):
+  #   REGION=sa-east-1   # e.g. the region in the DATASOURCE_CRM_HOST endpoint
+  #   curl -fsSLO "https://truststore.pki.rds.amazonaws.com/${REGION}/${REGION}-bundle.pem"
+  #   base64 -w0 "${REGION}-bundle.pem"                 # Linux — paste the output as the value
+  #   base64 "${REGION}-bundle.pem" | tr -d '\n'        # macOS equivalent
+  # (Global bundle, DO NOT use as an env var — see requirement 1:
+  #   https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem)
+  # Sanity-check it validates before deploying (needs mongosh + network to the cluster):
+  #   mongosh "mongodb://<user>:<pass>@<DATASOURCE_CRM_HOST>:27017/?tls=true&tlsCAFile=${REGION}-bundle.pem&retryWrites=false" --quiet --eval 'db.runCommand({ping:1})'
+  # Custom / non-AWS PKI: base64 -w0 the issuing chain PEM the same way.
+  #
   # Mutually exclusive with the legacy file path: set EITHER DATASOURCE_CRM_SSLCA_BASE64 (inline)
   # OR DATASOURCE_CRM_SSLROOTCERT (a mounted file), never both. Same pattern applies to any other
   # DATASOURCE_<NAME>_SSLCA_BASE64.

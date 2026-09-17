@@ -8,9 +8,8 @@
 
 api:
   image:
-    # REQUIRED in practice. The chart's appVersion is a placeholder
-    # (0.0.0-unreleased) because no image has been published under the name
-    # plugin-br-pix-jd yet. Pin a real tag.
+    # Pin the published app tag explicitly in production (2.0.1 for this chart).
+    # Empty inherits Chart.appVersion; registry tags have no leading v.
     tag: ""
 
   configmap:

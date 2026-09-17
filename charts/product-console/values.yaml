@@ -9,8 +9,18 @@ replicaCount: 1
 revisionHistoryLimit: 10
 
 # -- Readiness probe configuration. All fields override chart defaults.
+# Defaults to '/api/admin/health/alive', which does NOT gate on MongoDB. The
+# image this chart pins opens its database connection on the first request that
+# needs one, so readiness on '/api/admin/health/readyz' deadlocks a fresh pod:
+# not Ready, no traffic, no connection, never Ready. Set
+#   readinessProbe:
+#     path: /api/admin/health/readyz
+# once you run an image that connects at startup, to gate readiness on the
+# database again.
 readinessProbe: {}
 # -- Liveness probe configuration. All fields override chart defaults.
+# Keep this on a MongoDB-independent path. Pointing it at readyz turns a
+# database outage into a crash-loop.
 livenessProbe: {}
 
 image:
@@ -216,9 +226,22 @@ otel:
 # ENABLE_TELEMETRY/PLUGIN_AUTH_*/MONGODB_*/MONGO_*) — none are declared here.
 # Add a key below only when you need to override its shipped default, e.g.:
 #   NODE_ENV: "development"
+# A key the chart does NOT declare is accepted here and silently dropped: this
+# map is an explicit allowlist, not a passthrough. Use extraEnvVars below for
+# anything else the console reads.
 configmap: {}
 
 # -- Extra environment variables from ConfigMap (merged with configmap values)
+# The passthrough for every console variable the chart does not declare above.
+# Each key is written into the same ConfigMap the pod loads, so it reaches the
+# container. TRUSTED_PROXIES belongs here, and most deployments need it:
+#   extraEnvVars:
+#     TRUSTED_PROXIES: "198.51.100.0/24"
+# It is the comma list of CIDRs the console trusts as its own hops while
+# reading X-Forwarded-For. Set it to the ingress / load-balancer addresses
+# actually in front of this service, never the pod or service CIDR. Empty means
+# the console names no caller at all, so a tenant IP allowlist has nothing to
+# judge. Read the README section "Client IP resolution" first.
 extraEnvVars: {}
 
 # -- Secrets for storing sensitive data
@@ -230,6 +253,11 @@ secrets:
   PLUGIN_AUTH_CLIENT_ID: ""
   PLUGIN_AUTH_CLIENT_SECRET: ""
   NEXTAUTH_SECRET: ""
+  # -- MongoDB password. Leave it empty with the bundled MongoDB: the console
+  # reads the subchart's own generated password. Setting it here takes over, so
+  # it then has to match the password the subchart actually runs with: that is
+  # mongodb.auth.rootPassword, or the password inside the Secret named by
+  # mongodb.auth.existingSecret whenever you set that instead.
   MONGODB_PASS: ""
 
 # -- Use existing secret instead of creating one
@@ -241,6 +269,24 @@ existingSecretName: ""
 # Optional Dependencies
 # =============================================================================
 
+# The bundled MongoDB does not inherit this chart's namespaceOverride: it lands
+# in global.namespaceOverride when that is set and in the RELEASE namespace
+# otherwise. configmap.MONGO_HOST defaults to the Service the subchart really
+# creates, following mongodb.nameOverride, mongodb.fullnameOverride and the
+# release-name collapse, so the console finds it unconfigured.
+# That default covers the topology shipped here, a STANDALONE subchart under its
+# own Service name. Set mongodb.architecture to anything else, or rename the
+# Service with mongodb.service.nameOverride, and there is no single right
+# default: the chart then REFUSES TO RENDER until you set configmap.MONGO_HOST
+# yourself, and the refusal prints the value to set.
+# Its PASSWORD is read for you, straight from the Secret the subchart generates
+# (key mongodb-root-password), whenever that Secret lands in the same namespace
+# as the console pods: install with '-n product-console', the namespace this
+# chart pins, and leave global.namespaceOverride unset, and it does. Split them,
+# with a different -n or with global.namespaceOverride, and a Secret cannot be
+# read across the split, so set mongodb.auth.rootPassword and
+# secrets.MONGODB_PASS to the same value or every Mongo-backed page fails on an
+# auth error. The install notes say which of the two cases you are in.
 mongodb:
   enabled: true
 

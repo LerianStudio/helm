@@ -23,6 +23,15 @@ Do **not** pre-populate this directory by guessing. A file that looks plausible 
 is wrong costs more than no file, because the next failure gets read as "the fixture
 is already there, so it must be a chart defect".
 
+One file here did not come from a failing run: `product-console.yaml`, which points
+the chart's pinned `namespaceOverride` at the gate's own release namespace. A green
+run was the problem. The chart deliberately leaves the MongoDB password unwired when
+the console and the bundled database land in different namespaces, which is what
+`-n it-<chart>` produced, so the gate installed an arm no default install takes and a
+renamed Secret key would have reached an operator with every check green. Choosing
+which SUPPORTED topology the gate installs is allowed, and belongs here with the
+reason written in the file.
+
 ## What belongs here
 
 - env the workload reads at boot but the template does not require
@@ -30,6 +39,8 @@ is already there, so it must be a chart defect".
 - `resources.requests` trimmed to fit a single-node cluster
 - `replicaCount: 1`
 - optional components switched off — nothing that has no business starting in CI
+- the supported topology an operator installs, when the gate's `-n it-<chart>` would
+  otherwise install a different one and the difference skips a code path
 
 ## What does not
 

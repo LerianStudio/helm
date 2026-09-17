@@ -519,7 +519,9 @@ common:
   # (Global bundle, DO NOT use as an env var — see requirement 1:
   #   https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem)
   # Sanity-check it validates before deploying (needs mongosh + network to the cluster):
-  #   mongosh "mongodb://<user>:<pass>@<DATASOURCE_CRM_HOST>:27017/?tls=true&tlsCAFile=${REGION}-bundle.pem&retryWrites=false" --quiet --eval 'db.runCommand({ping:1})'
+  #   # credentials as separate flags so URI-reserved chars (@ : / ? # [ ]) need no percent-encoding
+  #   mongosh "mongodb://<DATASOURCE_CRM_HOST>:27017/?tls=true&tlsCAFile=${REGION}-bundle.pem&retryWrites=false" \
+  #     --username '<user>' --password '<pass>' --authenticationDatabase admin --quiet --eval 'db.runCommand({ping:1})'
   # Custom / non-AWS PKI: base64 -w0 the issuing chain PEM the same way.
   #
   # Mutually exclusive with the legacy file path: set EITHER DATASOURCE_CRM_SSLCA_BASE64 (inline)
@@ -568,10 +570,13 @@ secrets:
   # hash) what the broker seeds the user from. When rabbitmq.enabled, the broker imports
   # load_definitions at boot, which makes RabbitMQ skip seeding the default user — so the
   # reporter user is declared in the definitions with rabbitmq.loadDefinition.passwordHash,
-  # which MUST be the hash of THIS value (the two are coupled; see that key). Ships a working
-  # dev default so a from-scratch `helm install` reaches 1/1; override BOTH for a real
-  # password. EXTERNAL broker (rabbitmq.enabled=false): set your real broker password here
-  # (or via a component existingSecret) and provision the user per tier.
+  # which is the hash of THIS value (the two are coupled). The bundled broker is DEV/LOCAL-ONLY
+  # and ships a FIXED dev credential so a from-scratch `helm install` reaches 1/1 — do NOT
+  # override it: Helm cannot verify a custom password matches a custom hash, so a mismatched pair
+  # would only surface as a runtime 403 (a render-time guard refuses any change). For a real /
+  # custom broker credential use the EXTERNAL broker (rabbitmq.enabled=false +
+  # externalRabbitmqDefinitions.enabled=true) — set your real password here (or via a component
+  # existingSecret) and provision the user per tier.
   RABBITMQ_DEFAULT_PASS: "reporter123"
   # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
   # it from this Secret). Must be a STABLE value — changing it across upgrades breaks the
@@ -866,11 +871,11 @@ rabbitmq:
     # import makes RabbitMQ stop seeding the default user from RABBITMQ_DEFAULT_USER/PASS, the
     # user is declared in the definitions instead — and RabbitMQ definitions accept only a
     # pre-computed hash, never a plaintext password. Helm cannot derive this hash from the
-    # plaintext, so it is supplied here and MUST correspond to secrets.RABBITMQ_DEFAULT_PASS
-    # (a render-time guard fails the install if you change the password but not this hash).
-    # Default matches the shipped dev RABBITMQ_DEFAULT_PASS ("reporter123") so a from-scratch
-    # install works out of the box. To set a real password, override BOTH:
-    #   rabbitmqctl hash_password '<your-password>'   # emits the base64 hash for this field
+    # plaintext, so it cannot verify a custom password/hash pair actually matches — an unmatched
+    # pair would render fine but fail at runtime with a 403. The bundled broker is DEV/LOCAL-ONLY,
+    # so it ships a FIXED dev credential (this hash matches the shipped RABBITMQ_DEFAULT_PASS
+    # "reporter123") and a render-time guard REFUSES any override. For a real / custom credential
+    # use the EXTERNAL broker (rabbitmq.enabled=false + externalRabbitmqDefinitions.enabled=true).
     passwordHash: "MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G"
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.

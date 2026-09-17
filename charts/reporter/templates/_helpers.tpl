@@ -272,13 +272,13 @@ pair for the BUNDLED broker. Only active when the rabbitmq subchart is enabled (
 external-broker path never imports load_definitions and is untouched).
 
 Footguns refused at render time:
-  1. rabbitmq.loadDefinition.passwordHash empty — there is nothing to seed the user with,
-     so the broker would boot userless again (the very bug this fixes).
-  2. secrets.RABBITMQ_DEFAULT_PASS overridden away from the shipped dev default while
-     passwordHash is STILL the shipped dev default — the plaintext the workloads use no
-     longer matches the hash the broker seeds, so every login is rejected 403. This is the
-     silent-mismatch trap; catching it at render beats a CrashLoopBackOff.
-  3. manager/worker.useExistingSecret WITH the bundled broker — a component external Secret can
+  1. Any custom bundled credential — secrets.RABBITMQ_DEFAULT_PASS or rabbitmq.loadDefinition.
+     passwordHash changed from the shipped dev defaults. A load_definitions import seeds the user
+     from a salted hash Helm cannot derive from the plaintext, so the chart cannot verify a custom
+     password and a custom hash are a matching pair; an unmatched pair passes render but is rejected
+     at runtime (403), which the TCP startup probe misses. The bundled broker is dev/local-only, so
+     it stays on the fixed dev credential; use the EXTERNAL broker for a real/custom credential.
+  2. manager/worker.useExistingSecret WITH the bundled broker — a component external Secret can
      carry a RABBITMQ_DEFAULT_USER/PASS the bundled definitions never seed (the worker path is
      invisible to the manager-name guard), so that workload authenticates with a rejected credential.
 */}}
@@ -291,11 +291,8 @@ Footguns refused at render time:
 {{- $pass := .Values.secrets.RABBITMQ_DEFAULT_PASS | default "" | toString -}}
 {{- $devPass := include "reporter.rabbitmqBundledDevPass" . -}}
 {{- $devHash := include "reporter.rabbitmqBundledDevHash" . -}}
-{{- if not $hash -}}
-{{- fail "\n\nERROR: rabbitmq.loadDefinition.passwordHash is REQUIRED when the bundled rabbitmq subchart is enabled.\n   The broker imports files/rabbitmq/load_definitions.json at boot, which stops RabbitMQ from\n   seeding the default user — so the reporter user must be declared in the definitions with a\n   salted password_hash that MATCHES secrets.RABBITMQ_DEFAULT_PASS.\n   Compute it from your password: rabbitmqctl hash_password '<RABBITMQ_DEFAULT_PASS>'\n   (or: SALT=$(openssl rand -hex 4); DIGEST=$({ printf '%s' \"$SALT\" | xxd -r -p; printf '%s' '<pass>'; } | sha256sum | cut -d' ' -f1); printf '%s%s' \"$SALT\" \"$DIGEST\" | xxd -r -p | base64)\n" -}}
-{{- end -}}
-{{- if and (ne $pass $devPass) (eq $hash $devHash) -}}
-{{- fail "\n\nERROR: secrets.RABBITMQ_DEFAULT_PASS was changed from the shipped bundled-dev default but\n   rabbitmq.loadDefinition.passwordHash is STILL the shipped dev hash — the plaintext the\n   workloads authenticate with no longer matches the hash the broker seeds, so every broker\n   login would be rejected (403 \"username or password not allowed\").\n   Set rabbitmq.loadDefinition.passwordHash to the hash of your RABBITMQ_DEFAULT_PASS:\n     rabbitmqctl hash_password '<RABBITMQ_DEFAULT_PASS>'\n   (This also applies when manager/worker.useExistingSecret carries a non-default broker password.)\n" -}}
+{{- if or (ne $pass $devPass) (ne $hash $devHash) -}}
+{{- fail "\n\nERROR: the BUNDLED rabbitmq broker (rabbitmq.enabled=true) uses a FIXED dev-only credential —\n   secrets.RABBITMQ_DEFAULT_PASS and rabbitmq.loadDefinition.passwordHash must stay at their shipped\n   defaults. A configured load_definitions import makes RabbitMQ seed the user from a salted\n   password_hash, and Helm CANNOT compute that hash from a plaintext password — so the chart cannot\n   verify that a custom password and a custom hash are a matching pair. An unmatched pair renders\n   fine but is rejected at runtime (403 \"username or password not allowed\"), which the TCP startup\n   probe does not catch. Rather than ship that footgun, a custom bundled credential is refused.\n   For a real / custom broker credential use the EXTERNAL broker instead:\n     rabbitmq.enabled=false  +  externalRabbitmqDefinitions.enabled=true   (provision the user per tier)\n" -}}
 {{- end -}}
 {{- $mgrExt := (default dict .Values.manager).useExistingSecret -}}
 {{- $wkrExt := (default dict .Values.worker).useExistingSecret -}}

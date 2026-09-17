@@ -8,7 +8,7 @@ type: application
 # version is a PLACEHOLDER. semantic-release in the `helm` repo owns the real
 # chart version on merge — do NOT hand-pick a final number here.
 
-version: 1.1.0
+version: 1.1.1
 appVersion: "1.7.0"
 annotations:
   lerian.studio/chart-type: multi-component

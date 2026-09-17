@@ -243,6 +243,61 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- end }}
 
 {{/*
+reporter.rabbitmqBundledDevPass / reporter.rabbitmqBundledDevHash — the SHIPPED
+dev credential pair for the BUNDLED groundhog2k rabbitmq subchart.
+
+The bundled broker imports files/rabbitmq/load_definitions.json at boot
+(rabbitmq.customConfig → management.load_definitions). Once a definitions file is
+configured, RabbitMQ STOPS seeding the default user from RABBITMQ_DEFAULT_USER/PASS —
+so the user MUST be declared inside the definitions, which requires a salted
+password_hash. Helm cannot compute RabbitMQ's rabbit_password_hashing_sha256 hash
+(raw-byte salt||sha256 concat then base64; sprig only gives hex sha256), so the hash
+is a VALUE, not derived from the plaintext password. The two are therefore coupled:
+change one, change the other.
+
+These two helpers are the single source of that shipped pair. values.yaml holds the
+SAME literals (secrets.RABBITMQ_DEFAULT_PASS and rabbitmq.loadDefinition.passwordHash);
+this helper backs the render-time consistency guard so the guard and the values default
+can never silently drift. Hash computed as base64(salt || sha256(salt||"reporter123"))
+with salt 0x31415926.
+DEV ONLY: production points at an EXTERNAL broker (rabbitmq.enabled=false) with real
+credentials, provisioned per tier.
+*/}}
+{{- define "reporter.rabbitmqBundledDevPass" -}}reporter123{{- end }}
+{{- define "reporter.rabbitmqBundledDevHash" -}}MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G{{- end }}
+
+{{/*
+reporter.rabbitmqLoadDefinitionConsistent — guard the coupled (password, password_hash)
+pair for the BUNDLED broker. Only active when the rabbitmq subchart is enabled (the
+external-broker path never imports load_definitions and is untouched).
+
+Two footguns are refused at render time, both with the hashing recipe:
+  1. rabbitmq.loadDefinition.passwordHash empty — there is nothing to seed the user with,
+     so the broker would boot userless again (the very bug this fixes).
+  2. secrets.RABBITMQ_DEFAULT_PASS overridden away from the shipped dev default while
+     passwordHash is STILL the shipped dev default — the plaintext the workloads use no
+     longer matches the hash the broker seeds, so every login is rejected 403. This is the
+     silent-mismatch trap; catching it at render beats a CrashLoopBackOff.
+*/}}
+{{- define "reporter.rabbitmqLoadDefinitionConsistent" -}}
+{{- $rmq := default dict .Values.rabbitmq -}}
+{{- $rmqEnabled := true -}}
+{{- if hasKey $rmq "enabled" -}}{{- $rmqEnabled = $rmq.enabled -}}{{- end -}}
+{{- if $rmqEnabled -}}
+{{- $hash := (default dict $rmq.loadDefinition).passwordHash | default "" | toString -}}
+{{- $pass := .Values.secrets.RABBITMQ_DEFAULT_PASS | default "" | toString -}}
+{{- $devPass := include "reporter.rabbitmqBundledDevPass" . -}}
+{{- $devHash := include "reporter.rabbitmqBundledDevHash" . -}}
+{{- if not $hash -}}
+{{- fail "\n\nERROR: rabbitmq.loadDefinition.passwordHash is REQUIRED when the bundled rabbitmq subchart is enabled.\n   The broker imports files/rabbitmq/load_definitions.json at boot, which stops RabbitMQ from\n   seeding the default user — so the reporter user must be declared in the definitions with a\n   salted password_hash that MATCHES secrets.RABBITMQ_DEFAULT_PASS.\n   Compute it from your password: rabbitmqctl hash_password '<RABBITMQ_DEFAULT_PASS>'\n   (or: SALT=$(openssl rand -hex 4); printf '%s' \"${SALT}$(printf '%s' \"$SALT<pass>\" | xxd -r -p | sha256sum | cut -d' ' -f1)\" | xxd -r -p | base64)\n" -}}
+{{- end -}}
+{{- if and (ne $pass $devPass) (eq $hash $devHash) -}}
+{{- fail "\n\nERROR: secrets.RABBITMQ_DEFAULT_PASS was changed from the shipped bundled-dev default but\n   rabbitmq.loadDefinition.passwordHash is STILL the shipped dev hash — the plaintext the\n   workloads authenticate with no longer matches the hash the broker seeds, so every broker\n   login would be rejected (403 \"username or password not allowed\").\n   Set rabbitmq.loadDefinition.passwordHash to the hash of your RABBITMQ_DEFAULT_PASS:\n     rabbitmqctl hash_password '<RABBITMQ_DEFAULT_PASS>'\n   (This also applies when manager/worker.useExistingSecret carries a non-default broker password.)\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 reporter.crmDeclared — true when an operator has supplied any CRM datasource
 configuration. CRM remains optional: installations that do not set a
 DATASOURCE_CRM_* key receive no validation or defaults.

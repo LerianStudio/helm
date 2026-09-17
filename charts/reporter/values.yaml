@@ -515,7 +515,15 @@ secrets:
   # RabbitMQ is single-sourced here (Pattern B): the broker is pointed at this Secret via
   # rabbitmq.authentication.existingSecret, so these are the only copies of the broker creds.
   RABBITMQ_DEFAULT_USER: reporter
-  RABBITMQ_DEFAULT_PASS: ""
+  # BUNDLED broker: this plaintext is BOTH what the workloads authenticate with AND (via its
+  # hash) what the broker seeds the user from. When rabbitmq.enabled, the broker imports
+  # load_definitions at boot, which makes RabbitMQ skip seeding the default user — so the
+  # reporter user is declared in the definitions with rabbitmq.loadDefinition.passwordHash,
+  # which MUST be the hash of THIS value (the two are coupled; see that key). Ships a working
+  # dev default so a from-scratch `helm install` reaches 1/1; override BOTH for a real
+  # password. EXTERNAL broker (rabbitmq.enabled=false): set your real broker password here
+  # (or via a component existingSecret) and provision the user per tier.
+  RABBITMQ_DEFAULT_PASS: "reporter123"
   # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
   # it from this Secret). Must be a STABLE value — changing it across upgrades breaks the
   # cluster. Generate once with: openssl rand -hex 32
@@ -558,8 +566,17 @@ seaweedfs:
   global:
     createClusterRole: false
     serviceAccountName: "reporter-seaweedfs"
+  # -- The seaweedfs subchart hard-pins `nodeSelector: kubernetes.io/arch: amd64` on every
+  # component, so the pods stay Pending forever on arm64 nodes (e.g. Apple-Silicon minikube)
+  # and object-storage readiness never comes up. Unpinned here (empty string ⇒ the subchart's
+  # `{{ if .nodeSelector }}` drops the block) so the bundled storage schedules on any arch;
+  # amd64 is unaffected (no selector still matches amd64 nodes). Set a real selector per
+  # component to re-pin. The subchart expects a multi-line STRING, e.g.:
+  #   nodeSelector: |
+  #     kubernetes.io/arch: amd64
   master:
     enabled: true
+    nodeSelector: ""
     replicas: 1
     extraArgs:
       - "master"
@@ -577,6 +594,7 @@ seaweedfs:
       storageClass: null # Use cluster default or set a specific StorageClass
   volume:
     enabled: true
+    nodeSelector: ""
     replicas: 1
     extraArgs:
       - "volume"
@@ -597,6 +615,7 @@ seaweedfs:
         maxVolumes: 0 # 0 = let SeaweedFS decide, or set a limit
   filer:
     enabled: true
+    nodeSelector: ""
     extraArgs:
       - "filer"
       - "-port=8888"
@@ -612,6 +631,7 @@ seaweedfs:
       storageClass: null
   s3:
     enabled: true
+    nodeSelector: ""
     port: 8333
     grpcPort: 18333
     # Allow empty access key for development (disable auth)
@@ -790,6 +810,19 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
+  # -- Bundled-broker boot definitions (templates/manager/secrets_rabbitmq_definitions.yaml).
+  loadDefinition:
+    # -- RabbitMQ salted password_hash for the reporter user seeded into the bundled broker
+    # via load_definitions. REQUIRED when rabbitmq.enabled. Because a configured definitions
+    # import makes RabbitMQ stop seeding the default user from RABBITMQ_DEFAULT_USER/PASS, the
+    # user is declared in the definitions instead — and RabbitMQ definitions accept only a
+    # pre-computed hash, never a plaintext password. Helm cannot derive this hash from the
+    # plaintext, so it is supplied here and MUST correspond to secrets.RABBITMQ_DEFAULT_PASS
+    # (a render-time guard fails the install if you change the password but not this hash).
+    # Default matches the shipped dev RABBITMQ_DEFAULT_PASS ("reporter123") so a from-scratch
+    # install works out of the box. To set a real password, override BOTH:
+    #   rabbitmqctl hash_password '<your-password>'   # emits the base64 hash for this field
+    passwordHash: "MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G"
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store

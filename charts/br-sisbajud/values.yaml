@@ -176,10 +176,27 @@ topics:
   replicationFactor: 1        # per-env; 3 on multi-broker prod
   retentionMs: ""             # optional; empty = broker default
   list:
+    # Legacy per-event names. Nothing writes them any more, and they stay only
+    # until every consumer is confirmed on the app topic and their retention has
+    # expired — deleting them earlier destroys records a lagging consumer has not
+    # read (br-sisbajud docs/streaming/lib-streaming-v3-rollout.md, step 6).
     - br-sisbajud.block_account.created
     - br-sisbajud.block_account.created.dlq
     - br-sisbajud.kek.rotated
     - br-sisbajud.kek.rotated.dlq
+    # The application's own COMMANDS queue, carrying the judicial balance
+    # trigger since Epic 4.2. This Job is the only mechanism that creates it in a
+    # tier: the app's lib-streaming Builder self-provisions the app topic and its
+    # DLQ, midaz's Builder provisions the ledger's, and the managed Redpanda
+    # brokers run with broker-side auto-creation OFF — so a name nobody
+    # provisions is a name that does not exist (br-sisbajud
+    # docs/infra/topic-provisioning.md, "Who creates what").
+    #
+    # It is listed here as the create-only safety net for an ordering hazard: the
+    # translator can emit a command before the balance consumer's Build has run,
+    # and then PRODUCING fails while CONSUMING would fail in silence behind a
+    # green readiness probe — the judicial trigger simply never flows.
+    - lerian.streaming.br-sisbajud.commands
   backoffLimit: 3
   activeDeadlineSeconds: 600
   ttlSecondsAfterFinished: 600

@@ -322,11 +322,13 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+              "caCert": {},
               "host": {},
               "name": {},
               "port": {},
               "replicaHost": {},
               "ssl": {},
+              "tls": {},
               "uri": {},
               "user": {}
             }

@@ -271,13 +271,16 @@ reporter.rabbitmqLoadDefinitionConsistent — guard the coupled (password, passw
 pair for the BUNDLED broker. Only active when the rabbitmq subchart is enabled (the
 external-broker path never imports load_definitions and is untouched).
 
-Two footguns are refused at render time, both with the hashing recipe:
+Footguns refused at render time:
   1. rabbitmq.loadDefinition.passwordHash empty — there is nothing to seed the user with,
      so the broker would boot userless again (the very bug this fixes).
   2. secrets.RABBITMQ_DEFAULT_PASS overridden away from the shipped dev default while
      passwordHash is STILL the shipped dev default — the plaintext the workloads use no
      longer matches the hash the broker seeds, so every login is rejected 403. This is the
      silent-mismatch trap; catching it at render beats a CrashLoopBackOff.
+  3. manager/worker.useExistingSecret WITH the bundled broker — a component external Secret can
+     carry a RABBITMQ_DEFAULT_USER/PASS the bundled definitions never seed (the worker path is
+     invisible to the manager-name guard), so that workload authenticates with a rejected credential.
 */}}
 {{- define "reporter.rabbitmqLoadDefinitionConsistent" -}}
 {{- $rmq := default dict .Values.rabbitmq -}}
@@ -289,10 +292,15 @@ Two footguns are refused at render time, both with the hashing recipe:
 {{- $devPass := include "reporter.rabbitmqBundledDevPass" . -}}
 {{- $devHash := include "reporter.rabbitmqBundledDevHash" . -}}
 {{- if not $hash -}}
-{{- fail "\n\nERROR: rabbitmq.loadDefinition.passwordHash is REQUIRED when the bundled rabbitmq subchart is enabled.\n   The broker imports files/rabbitmq/load_definitions.json at boot, which stops RabbitMQ from\n   seeding the default user — so the reporter user must be declared in the definitions with a\n   salted password_hash that MATCHES secrets.RABBITMQ_DEFAULT_PASS.\n   Compute it from your password: rabbitmqctl hash_password '<RABBITMQ_DEFAULT_PASS>'\n   (or: SALT=$(openssl rand -hex 4); printf '%s' \"${SALT}$(printf '%s' \"$SALT<pass>\" | xxd -r -p | sha256sum | cut -d' ' -f1)\" | xxd -r -p | base64)\n" -}}
+{{- fail "\n\nERROR: rabbitmq.loadDefinition.passwordHash is REQUIRED when the bundled rabbitmq subchart is enabled.\n   The broker imports files/rabbitmq/load_definitions.json at boot, which stops RabbitMQ from\n   seeding the default user — so the reporter user must be declared in the definitions with a\n   salted password_hash that MATCHES secrets.RABBITMQ_DEFAULT_PASS.\n   Compute it from your password: rabbitmqctl hash_password '<RABBITMQ_DEFAULT_PASS>'\n   (or: SALT=$(openssl rand -hex 4); DIGEST=$({ printf '%s' \"$SALT\" | xxd -r -p; printf '%s' '<pass>'; } | sha256sum | cut -d' ' -f1); printf '%s%s' \"$SALT\" \"$DIGEST\" | xxd -r -p | base64)\n" -}}
 {{- end -}}
 {{- if and (ne $pass $devPass) (eq $hash $devHash) -}}
 {{- fail "\n\nERROR: secrets.RABBITMQ_DEFAULT_PASS was changed from the shipped bundled-dev default but\n   rabbitmq.loadDefinition.passwordHash is STILL the shipped dev hash — the plaintext the\n   workloads authenticate with no longer matches the hash the broker seeds, so every broker\n   login would be rejected (403 \"username or password not allowed\").\n   Set rabbitmq.loadDefinition.passwordHash to the hash of your RABBITMQ_DEFAULT_PASS:\n     rabbitmqctl hash_password '<RABBITMQ_DEFAULT_PASS>'\n   (This also applies when manager/worker.useExistingSecret carries a non-default broker password.)\n" -}}
+{{- end -}}
+{{- $mgrExt := (default dict .Values.manager).useExistingSecret -}}
+{{- $wkrExt := (default dict .Values.worker).useExistingSecret -}}
+{{- if or $mgrExt $wkrExt -}}
+{{- fail "\n\nERROR: manager.useExistingSecret / worker.useExistingSecret is incompatible with the BUNDLED\n   rabbitmq subchart (rabbitmq.enabled=true). The bundled broker seeds its ONLY user from\n   secrets.RABBITMQ_DEFAULT_USER + rabbitmq.loadDefinition.passwordHash, but a component external\n   Secret carries its OWN RABBITMQ_DEFAULT_USER/PASS that the broker never learns — the workload\n   then authenticates with a credential the broker rejects (403), and the chart cannot compare\n   external-Secret contents at render time to catch it (worker path is invisible to the manager guard).\n   Use an EXTERNAL broker (rabbitmq.enabled=false + externalRabbitmqDefinitions.enabled=true) with\n   useExistingSecret, OR drop useExistingSecret so the chart single-sources the bundled broker credential.\n" -}}
 {{- end -}}
 {{- end -}}
 {{- end }}

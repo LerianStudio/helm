@@ -476,6 +476,44 @@ common:
   #     DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
   # CRM is all-or-nothing once any DATASOURCE_CRM_* key is set. Put its password
   # and crypto keys under secrets: (or in each component's external Secret), never here.
+  #
+  # -- CRM over TLS with an INLINE CA bundle (e.g. AWS DocumentDB / any managed MongoDB) --
+  # The CRM datasource is a MongoDB source, so it takes the same TLS knobs as any datasource:
+  # point DATASOURCE_CRM_HOST at the TLS endpoint and hand the app the trust anchor INLINE
+  # (Base64 of a PEM CA bundle) instead of a file path — no volume/mount, works with any
+  # secret manager. Requires reporter app >= the inline-CA release (3.0.2+).
+  #
+  #   configmap:
+  #     DATASOURCE_CRM_CONFIG_NAME: "plugin_crm"
+  #     DATASOURCE_CRM_TYPE: "mongodb"
+  #     # the real TLS endpoint — its hostname must match the server certificate (verify-full)
+  #     DATASOURCE_CRM_HOST: "shared-docdb.cluster-xxxx.<region>.docdb.amazonaws.com"
+  #     DATASOURCE_CRM_PORT: "27017"
+  #     DATASOURCE_CRM_DATABASE: "crm"
+  #     DATASOURCE_CRM_USER: "reporter"
+  #     DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
+  #     # SSLMODE any value other than "disable" enables TLS for a mongo datasource. It may be
+  #     # OMITTED when SSLCA_BASE64 is set — the app then infers "require" from the configured CA.
+  #     DATASOURCE_CRM_SSLMODE: "require"
+  #     # Base64 of a PEM CA bundle. NOT a secret (a CA cert is public) — it lives here in the
+  #     # configmap, NOT under secrets:. The connection password stays in secrets.DATASOURCE_CRM_PASSWORD.
+  #     DATASOURCE_CRM_SSLCA_BASE64: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t..."   # one line, no newlines
+  #
+  # Two hard requirements for DATASOURCE_CRM_SSLCA_BASE64 (both learned the hard way):
+  #   1. SCOPE THE BUNDLE. Use the per-region / per-cluster CA, NOT the full AWS global bundle.
+  #      The global rds-combined/global-bundle.pem is ~108 certs (~220 KB Base64); as a single
+  #      env var it EXCEEDS the Linux per-arg env limit (MAX_ARG_STRLEN, 128 KB) and the container
+  #      fails to exec ("argument list too long") — the pod never starts. The regional bundle
+  #      (e.g. https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem, a few KB)
+  #      still validates and is what you want. Custom PKI: ship only the issuing chain.
+  #   2. SINGLE LINE, NO NEWLINES. The app decodes with strict Base64 and rejects embedded
+  #      newlines. Produce it with:  base64 -w0 ca.pem   (macOS:  base64 ca.pem | tr -d '\n').
+  #      In this YAML use a plain double-quoted scalar — do NOT use a block scalar (| / >),
+  #      which reintroduces newlines.
+  #
+  # Mutually exclusive with the legacy file path: set EITHER DATASOURCE_CRM_SSLCA_BASE64 (inline)
+  # OR DATASOURCE_CRM_SSLROOTCERT (a mounted file), never both. Same pattern applies to any other
+  # DATASOURCE_<NAME>_SSLCA_BASE64.
   configmap: {}
 # -- Dedicated datastore masks for THIS release (override global.datastores). Both the
 # manager and worker surfaces share these connections. Sub-keys (each host/port/user/ssl):

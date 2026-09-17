@@ -44,36 +44,33 @@ A new PreSync Job (`br-sisbajud-topics`) has been added that runs before the mai
 
 **Topics created:**
 
-The Job provisions the following topics. ⚠️ **They do not all have a `.dlq`
-sibling** — read the list literally:
+The Job provisions **one** topic:
 
-1. `br-sisbajud.block_account.created` + `.dlq`  — legacy per-event pair
-2. `br-sisbajud.kek.rotated` + `.dlq`  — legacy per-event pair
-3. `lerian.streaming.br-sisbajud.commands`  — **no `.dlq` sibling.** Quarantine
-   for this queue goes to the application's single shared DLQ,
+1. `lerian.streaming.br-sisbajud.commands` — the application's own commands
+   queue, carrying the judicial balance trigger. ⚠️ **No `.dlq` sibling.**
+   Quarantine for it goes to the application's single shared DLQ,
    `lerian.streaming.br-sisbajud.dlq`, which the application's own lib-streaming
    `Builder.Build` creates. A `.commands.dlq` does not exist; provisioning one
    would create a topic nothing reads.
 
-**Removed in this chart line:** `br-sisbajud.ledger.balance.changed` + `.dlq`.
-Nothing writes the legacy balance-trigger leg any more (br-sisbajud Epic 4.3);
-the trigger travels on the commands queue above. The two remaining per-event
-pairs are also no longer written and stay only until every consumer is confirmed
-on the application topic and their retention has expired — deleting them earlier
-destroys records a lagging consumer has not read.
+**Removed from this list in the current chart line** — the three legacy
+per-event names and their `.dlq` siblings:
+`br-sisbajud.ledger.balance.changed`, `br-sisbajud.block_account.created`,
+`br-sisbajud.kek.rotated`. Nothing writes them (the per-event model was replaced
+by the application topic `lerian.streaming.br-sisbajud`, where both remaining
+business facts now publish) and nothing in the service consumes them.
+
+> ✅ **Dropping them here deletes nothing.** The Job runs `rpk topic list` then
+> `rpk topic create` and never a delete (`scripts/topics-entrypoint.sh:42,47` in
+> br-sisbajud), so an existing tier keeps those topics and their retained records.
+> A **fresh** install simply does not create them, which is the intended end
+> state. Deleting them from a live broker stays a separate, deliberate act — and
+> one to take only after confirming no lagging consumer is still reading them.
 
 > **Note:** The **ledger's** application topic — `lerian.streaming.ledger`, which
 > br-sisbajud only consumes — is **not** provisioned by this Job. Midaz owns it and
 > its own `Builder.Build` creates it. (Earlier revisions of this guide named it
 > `midaz.balance.changed`; that name is retired.)
-
-> 🔴 **Why the commands queue is in this list at all**, since the library
-> self-provisions the application's own topics: it is the create-only safety net
-> for an ordering hazard. The translator can emit a command before the balance
-> consumer's `Build` has run, and the managed Redpanda brokers run with
-> broker-side auto-creation **off** — so producing fails while consuming would
-> fail in **silence** behind a green readiness probe, and the judicial balance
-> trigger simply never flows.
 
 **Job behavior:**
 

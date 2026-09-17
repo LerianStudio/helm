@@ -176,26 +176,29 @@ topics:
   replicationFactor: 1        # per-env; 3 on multi-broker prod
   retentionMs: ""             # optional; empty = broker default
   list:
-    # Legacy per-event names. Nothing writes them any more, and they stay only
-    # until every consumer is confirmed on the app topic and their retention has
-    # expired — deleting them earlier destroys records a lagging consumer has not
-    # read (br-sisbajud docs/streaming/lib-streaming-v3-rollout.md, step 6).
-    - br-sisbajud.block_account.created
-    - br-sisbajud.block_account.created.dlq
-    - br-sisbajud.kek.rotated
-    - br-sisbajud.kek.rotated.dlq
     # The application's own COMMANDS queue, carrying the judicial balance
-    # trigger since Epic 4.2. This Job is the only mechanism that creates it in a
-    # tier: the app's lib-streaming Builder self-provisions the app topic and its
-    # DLQ, midaz's Builder provisions the ledger's, and the managed Redpanda
-    # brokers run with broker-side auto-creation OFF — so a name nobody
-    # provisions is a name that does not exist (br-sisbajud
-    # docs/infra/topic-provisioning.md, "Who creates what").
+    # trigger since Epic 4.2 — and the ONLY name this Job still provisions.
     #
-    # It is listed here as the create-only safety net for an ordering hazard: the
+    # Why this Job at all, when the library self-provisions the application's
+    # own topics: it is the create-only safety net for an ordering hazard. The
     # translator can emit a command before the balance consumer's Build has run,
-    # and then PRODUCING fails while CONSUMING would fail in silence behind a
-    # green readiness probe — the judicial trigger simply never flows.
+    # and the managed Redpanda brokers run with broker-side auto-creation OFF —
+    # so producing fails while consuming would fail in SILENCE behind a green
+    # readiness probe, and the judicial trigger simply never flows.
+    #
+    # It has NO `.dlq` sibling: quarantine goes to the application's single
+    # shared DLQ, `lerian.streaming.br-sisbajud.dlq`, which the app's own
+    # lib-streaming Builder.Build creates. A `.commands.dlq` does not exist.
+    #
+    # Removed in this chart line: the four legacy per-event names
+    # (`br-sisbajud.block_account.created`, `br-sisbajud.kek.rotated`, each with
+    # a `.dlq`) and `br-sisbajud.ledger.balance.changed` + `.dlq`. Nothing writes
+    # any of them, and nothing in the service consumes them either. Dropping them
+    # here stops the Job CREATING them on a fresh install; it deletes nothing —
+    # the Job only runs `rpk topic list` then `rpk topic create`, never a delete
+    # (br-sisbajud `scripts/topics-entrypoint.sh:42,47`), so existing tiers keep
+    # those topics and their retained records until someone removes them
+    # deliberately.
     - lerian.streaming.br-sisbajud.commands
   backoffLimit: 3
   activeDeadlineSeconds: 600

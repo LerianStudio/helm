@@ -14,7 +14,7 @@ Helm chart for [`plugin-br-pix-jd`](https://github.com/LerianStudio/plugin-br-pi
 
 ## Before you install
 
-**Pin `api.image.tag` in production.** The chart's `appVersion` (`1.12.0-beta.8`) is the tag of the release train it was cut against, published to `ghcr.io/lerianstudio/plugin-br-pix-jd` — note the registry tag has no leading `v`. Riding `appVersion` means a chart bump silently changes the app version.
+**Pin `api.image.tag` in production.** The chart's `appVersion` is `2.0.1`, published to `ghcr.io/lerianstudio/plugin-br-pix-jd` — registry tags have no leading `v`. Riding `appVersion` means a chart bump changes the app version. Migrations default independently to `2.0.0`: no migrations image was published for `2.0.1`, and the migration sources did not change between those releases. Do not override `migrations.image.tag` with an empty string, which restores the appVersion fallback. See [the 0.4.5 upgrade notes](docs/UPGRADE-0.4.5.md).
 
 **The `worker` component ships disabled.** The production Dockerfile builds only `./cmd/app`, so the image carries no `/worker` binary. Until the app ships a build with both entry points (the pattern already present in its `Dockerfile.smoke`), enabling `worker` yields a CrashLoopBackOff — and transaction reconciliation, the MED pollers and the indirect-delivery drainer do not run.
 

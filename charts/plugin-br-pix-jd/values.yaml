@@ -136,7 +136,7 @@ api:
   image:
     # -- Repository for the container image
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd
-    # -- Image tag. Empty falls back to .Chart.AppVersion (1.12.0-beta.8). Pin this
+    # -- Image tag. Empty falls back to .Chart.AppVersion. Pin this
     # explicitly in production rather than riding the chart's release train.
     tag: ""
     # -- Image pull policy
@@ -398,13 +398,11 @@ migrations:
   # extract-from-the-app-image approach could never run (see the Job template).
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-migrations
-    # -- PIN THIS. The fallback to .Chart.AppVersion is a convention-compliant default,
-    # not a correct one: the release pipeline builds only the components a commit
-    # touched, so api, worker and migrations tags legitimately DIVERGE and no single tag
-    # names all three. Measured 2026-08-27 — api and migrations exist at 1.13.0-beta.4,
-    # worker stops at 1.13.0-beta.3. An unpinned tag surfaces as ImagePullBackOff on a
-    # PreSync hook, which blocks the whole sync.
-    tag: ""
+    # -- Pinned independently: the 2.0.1 release did not change migration sources
+    # or build a migrations image. The published 2.0.0 image carries the same SQL.
+    # Keep this pin when using appVersion 2.0.1; explicitly setting an empty tag
+    # falls back to appVersion and would request the nonexistent migrations:2.0.1.
+    tag: "2.0.0"
     pullPolicy: IfNotPresent
   # -- Optional x-migrations-table override, passed to the image as
   # POSTGRES_MIGRATIONS_TABLE; empty uses golang-migrate's default (schema_migrations)

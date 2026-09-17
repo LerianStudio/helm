@@ -19,6 +19,55 @@
         "imagePullSecrets": {
           "type": "array"
         },
+        "serviceDiscovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Shared lib-service-discovery (Consul, advertise model) knobs, set once per environment and consumed by the systemplanes + adapter-provider-mock via the chart-local plugin-br-pix-lerian.serviceDiscovery.env helper. The per-app advertise pair (SD_ADVERTISE_ADDRESS/PORT) is derived from each component's identity, not from here.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "SD_ENABLED — turn service discovery on for the components that emit the shared knobs."
+            },
+            "address": {
+              "type": "string",
+              "description": "SD_ADDRESS — Consul HTTP API host:port (no scheme)."
+            },
+            "tls": {
+              "type": "boolean",
+              "description": "SD_TLS — use TLS to reach Consul."
+            },
+            "tlsSkipVerify": {
+              "type": "boolean",
+              "description": "SD_TLS_SKIP_VERIFY — skip Consul TLS certificate verification."
+            },
+            "workload": {
+              "type": "string",
+              "description": "SD_WORKLOAD — per-env workload tag scoping Consul service names."
+            }
+          }
+        },
+        "streaming": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Shared lib-streaming (RedPanda) contract. enabled drives STREAMING_ENABLED for the streaming components (spi/dict-hub/cob-hub/pixauto) once per environment; a component's own configmap.STREAMING_ENABLED still wins. Transport fields (brokers, sasl*, tls*) feed lerian-common.streaming.env.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "STREAMING_ENABLED — turn streaming on for spi/dict-hub/cob-hub/pixauto."
+            }
+          }
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Shared observability (OTel) contract. enabled drives ENABLE_TELEMETRY (via lerian-common.otel.env) AND the deployment's node-local HOST_IP + OTEL_EXPORTER_OTLP_ENDPOINT downward-API wiring (via lerian-common.globalValue, default true). A component's own configmap.ENABLE_TELEMETRY still wins.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "ENABLE_TELEMETRY — turn telemetry on/off for all components."
+            }
+          }
+        },
         "externalPostgresDefinitions": {
           "type": "object",
           "additionalProperties": true,

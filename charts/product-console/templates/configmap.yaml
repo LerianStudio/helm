@@ -18,12 +18,6 @@ data:
   # Application Configuration
   NODE_ENV: {{ $cm.NODE_ENV | default "production" | quote }}
   MIDAZ_CONSOLE_PORT: {{ $cm.MIDAZ_CONSOLE_PORT | default "8081" | quote }}
-  {{- with (include $opt (dict "cm" $cm "key" "MIDAZ_CONSOLE_SERVICE_HOST")) }}
-  {{ . }}
-  {{- end }}
-  {{- with (include $opt (dict "cm" $cm "key" "MIDAZ_CONSOLE_BASE_PATH")) }}
-  {{ . }}
-  {{- end }}
 
   # OpenTelemetry Configuration
   # Note: When otel.enabled=true or otel.external=true, OTEL_HOST and OTEL_URL_* are injected dynamically
@@ -129,14 +123,11 @@ data:
 
   # Reporter Configuration
   REPORTER_BASE_PATH: {{ $cm.REPORTER_BASE_PATH | default "http://reporter-manager.reporter.svc.cluster.local:4005/v1" | quote }}
-  {{- /* Optional sibling services: Fees, Flowker, Tracer.
+  {{- /* Optional sibling services: Flowker, Tracer.
      No shipped default on purpose: unlike the ledger and the Access
-     Manager, these three are optional deployments. A default address would make
+     Manager, these two are optional deployments. A default address would make
      the console call a service that may not exist, turning "feature not
      installed" into a connection error on the page. */}}
-  {{- with (include $opt (dict "cm" $cm "key" "PLUGIN_FEES_BASE_PATH")) }}
-  {{ . }}
-  {{- end }}
   {{- with (include $opt (dict "cm" $cm "key" "FLOWKER_BASE_PATH")) }}
   {{ . }}
   {{- end }}

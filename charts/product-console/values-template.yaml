@@ -104,7 +104,6 @@ configmap:
   # Optional sibling services. Set only the ones you deployed; an unset key is
   # written nowhere, which is what keeps "not installed" from reading as a
   # connection error on the page. TRACER_BASE_PATH is a bare origin, no /v1.
-  # PLUGIN_FEES_BASE_PATH: "http://plugin-fees.plugin-fees.svc.cluster.local:4002/v1"
   # FLOWKER_BASE_PATH: "http://flowker.flowker.svc.cluster.local:4021/v1"
   # TRACER_BASE_PATH: "http://midaz-tracer.midaz.svc.cluster.local:4020"
 
@@ -117,11 +116,6 @@ configmap:
   # range: an entry wider than /8 (IPv4) or /48 (IPv6) is refused, and a range
   # that covers real callers hides them.
   # TRUSTED_PROXIES: "198.51.100.0/24"
-
-  # The console's own addresses: public origin as the browser sees it, and
-  # in-cluster host name it uses to address itself.
-  # MIDAZ_CONSOLE_BASE_PATH: "https://console.example.com"
-  # MIDAZ_CONSOLE_SERVICE_HOST: "product-console"
 
   # Browser-facing address of the Access Manager, used for the SSO redirect —
   # PLUGIN_AUTH_BASE_PATH above is the cluster-internal one and the browser
@@ -150,8 +144,8 @@ configmap:
 # 'configmap' that the chart does not declare is accepted and silently dropped.
 # A key the chart DOES declare must be set in one place only: supplying it here
 # and under 'configmap' is refused at render time.
-# Platform configuration, not customer surface, has no named key and is set here:
-#   MULTI_TENANT_ENABLED: "true"    # this console instance serves several tenants
+# Internal presentation configuration, not customer surface, has no named key
+# and is set here:
 #   NEXT_PUBLIC_DEMO_MODE: "false"  # demo presentation mode; off where data is real
 extraEnvVars: {}
 

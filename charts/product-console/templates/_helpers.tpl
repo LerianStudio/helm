@@ -198,10 +198,7 @@ application's own built-in default stays in force.
 {{- list
   "FLOWKER_BASE_PATH"
   "MFA_ENABLED"
-  "MIDAZ_CONSOLE_BASE_PATH"
-  "MIDAZ_CONSOLE_SERVICE_HOST"
   "PLUGIN_AUTH_PUBLIC_BASE_PATH"
-  "PLUGIN_FEES_BASE_PATH"
   "TRACER_BASE_PATH"
   "TRUSTED_PROXIES"
   | join " " -}}

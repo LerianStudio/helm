@@ -248,15 +248,6 @@ otel:
 #     and can let a caller choose the address it is judged by. Read the README
 #     section "Client IP resolution" before choosing a range.
 #
-#   MIDAZ_CONSOLE_BASE_PATH: "https://console.example.com"
-#     The console's own public origin, as the browser sees it. Same host as
-#     NEXTAUTH_URL in virtually every deployment. Wrong here means links the
-#     console builds for itself point somewhere the user cannot reach.
-#
-#   MIDAZ_CONSOLE_SERVICE_HOST: "product-console"
-#     The console's own in-cluster host name, used to address itself from
-#     inside the cluster. Match the Service this release creates.
-#
 #   PLUGIN_AUTH_PUBLIC_BASE_PATH: "https://auth.example.com/v1"
 #     The BROWSER-facing address of the Access Manager, as opposed to
 #     PLUGIN_AUTH_BASE_PATH, which is the cluster-internal one the console
@@ -275,15 +266,14 @@ otel:
 #     Set it wherever MFA is on: without it the console does not recognise the
 #     challenge, and a user who has MFA enabled cannot sign in at all.
 #
-#   PLUGIN_FEES_BASE_PATH: "http://plugin-fees.plugin-fees.svc.cluster.local:4002/v1"
-#   FLOWKER_BASE_PATH:     "http://flowker.flowker.svc.cluster.local:4021/v1"
-#   TRACER_BASE_PATH:      "http://midaz-tracer.midaz.svc.cluster.local:4020"
-#     Addresses of three OPTIONAL sibling services. Unlike the ledger and the
+#   FLOWKER_BASE_PATH: "http://flowker.flowker.svc.cluster.local:4021/v1"
+#   TRACER_BASE_PATH:  "http://midaz-tracer.midaz.svc.cluster.local:4020"
+#     Addresses of two OPTIONAL sibling services. Unlike the ledger and the
 #     Access Manager, these may simply not be installed, which is why the chart
 #     invents no address for them: a default would turn "this feature is not
 #     installed" into a connection error on the page. Set the one you deployed,
 #     to its own release name and namespace. TRACER_BASE_PATH is a bare origin
-#     with no /v1 — the console adds that itself; the other two end in /v1.
+#     with no /v1 — the console adds that itself; FLOWKER_BASE_PATH ends in /v1.
 configmap: {}
 
 # -- Extra environment variables from ConfigMap (merged with configmap values)

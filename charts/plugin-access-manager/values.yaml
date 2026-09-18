@@ -66,12 +66,21 @@ common:
     # redirect_uri. The chart refuses to render when the two resolve differently.
     # Not derivable from PLUGIN_AUTH_ADDRESS — that is the in-cluster address.
     baseUrl: ""
-    # -- Literal full callback URL, for a console on a custom route or behind a
-    # proxy that rewrites the path. Replaces the composition above — set this OR
-    # baseUrl, never both. Must be an absolute http(s) URL with a path; the chart
-    # refuses to render otherwise.
+    # -- Literal full callback URL, replacing the composition above — set this OR
+    # baseUrl, never both. Must be an absolute http(s) URL AND must still end in
+    # "/signin/sso/callback": the host is yours, the path is ours. The chart
+    # refuses to render otherwise, because a near-miss (/sso/callback,
+    # /signin/callback) deploys cleanly and is then rejected by Caradhras at the
+    # first login as an unlisted redirect_uri, without saying what was wrong.
     # Per-component override: {identity,auth}.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL.
     callbackUrl: ""
+    # -- Lift the path check above. ONLY for a deployment that genuinely answers
+    # SSO on another path — a console mounted on a custom route, or a proxy that
+    # rewrites it. You are leaving the supported contract: the path must then
+    # match whatever actually serves the console SSO callback, and getting it
+    # wrong surfaces only as a failed login. The absolute-http(s)-with-a-path
+    # requirement still applies; it is the binary's, not the chart's.
+    allowCustomCallbackPath: false
 identity:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}

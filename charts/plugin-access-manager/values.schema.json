@@ -17,7 +17,11 @@
             },
             "callbackUrl": {
               "type": "string",
-              "description": "Literal full callback URL, replacing composition from baseUrl. Absolute http(s) URL with a path. Mutually exclusive with baseUrl."
+              "description": "Literal full callback URL, replacing composition from baseUrl. Absolute http(s) URL ending in the console SSO callback route. Mutually exclusive with baseUrl."
+            },
+            "allowCustomCallbackPath": {
+              "type": "boolean",
+              "description": "Lift the console-route path check on callbackUrl. Only for a deployment that answers SSO on another path."
             }
           }
         }

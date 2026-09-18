@@ -636,6 +636,14 @@ rendered).
    host and its subdomains instead of authorising one endpoint. Failing here
    names the values field; failing there is a provider that saves and never
    completes a login.
+3b. The resolved URL must END in the console route. The host is the operator's
+   and the chart never questions it; the path is this platform's contract, and
+   a value that merely looks plausible — /sso/callback, /signin/callback — is
+   rejected by Caradhras at the first login as an unlisted redirect_uri, with
+   no indication of which part was wrong. baseUrl cannot trip this (the chart
+   appends the route itself); a literal can. Lifted, deliberately and by name,
+   by common.sso.allowCustomCallbackPath for a console on a custom route or
+   behind a path-rewriting proxy.
 4. auth and identity must resolve to the SAME value. identity writes the URL
    into the Caradhras provider's redirect allow-list; auth then sends it as the
    redirect_uri of the code relay, and Caradhras rejects any redirect_uri the
@@ -655,6 +663,7 @@ rendered).
 {{- $base := $sso.baseUrl | default "" | toString -}}
 {{- $literal := $sso.callbackUrl | default "" | toString -}}
 {{- $path := include "plugin-access-manager.ssoCallbackPath" . -}}
+{{- $custom := eq (toString ($sso.allowCustomCallbackPath | default false)) "true" -}}
 {{- if and $base $literal -}}
 {{- fail (printf "common.sso.baseUrl (%q) and common.sso.callbackUrl (%q) are both set. They are alternatives, not layers: baseUrl asks the chart to append the console route %s, callbackUrl supplies the whole URL literally. Keep baseUrl — it is the normal case, and it makes the path impossible to mistype — and drop callbackUrl unless the console really answers SSO on some other route." $base $literal $path) -}}
 {{- end -}}
@@ -665,6 +674,9 @@ rendered).
 {{- $url := include "plugin-access-manager.ssoCallbackUrl" (dict "context" $ "component" $component) -}}
 {{- if and $url (not (regexMatch `^https?://[^/?#]+/[^?#]+` $url)) -}}
 {{- fail (printf "%s resolves the SSO callback URL to %q, which is not an absolute http(s) URL with a path. plugin-identity refuses to configure any SSO provider with such a value, so the provider would look saved while no login through it could ever complete; a host with no path is refused as well, because Casdoor would then treat the allow-list entry as a wildcard over every path on that host and its subdomains. Give scheme, host and — when the console sits under one — its path prefix, for example \"https://console.example.com\"." (include "plugin-access-manager.ssoCallbackSource" (dict "context" $ "component" $component)) $url) -}}
+{{- end -}}
+{{- if and $url (not $custom) (not (hasSuffix $path $url)) -}}
+{{- fail (printf "%s resolves the SSO callback URL to %q, whose path is not %s.\n  expected path: %s\n  received:      %s\nThe HOST is yours — any domain you serve the console on is fine, and the chart never questions it. The PATH is this platform's contract: it is the console route the identity provider returns the browser to, and Caradhras rejects a redirect_uri that is not on its allow-list without saying which part was wrong, so a near-miss like /sso/callback deploys cleanly and breaks the first login. Set common.sso.baseUrl to just the scheme and host (plus a path prefix when the console sits under one) and let the chart append the route. If this deployment really answers SSO on another path — a custom console route, or a proxy that rewrites it — set common.sso.allowCustomCallbackPath=true to take that on deliberately." (include "plugin-access-manager.ssoCallbackSource" (dict "context" $ "component" $component)) $url $path $path $url) -}}
 {{- end -}}
 {{- end -}}
 {{- $authUrl := include "plugin-access-manager.ssoCallbackUrl" (dict "context" . "component" "auth") -}}

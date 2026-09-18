@@ -265,14 +265,34 @@ Setting this is **required to configure an SSO provider at all**. Without it,
 identity refuses to save the provider and answers the request with an error; the
 provider would otherwise look saved while no login through it could ever complete.
 
-**The escape hatch.** A console on a custom route, or behind a proxy that rewrites
-the path, sets the whole URL literally instead:
+**Passing the whole URL literally.** `common.sso.callbackUrl` takes the finished
+URL instead of composing one — but the host is the only part it may change: the
+chart refuses a value whose path is not `/signin/sso/callback`, naming the
+expected path and the one received. A near-miss (`/sso/callback`,
+`/signin/callback`, `/signin/sso/calback`) otherwise renders clean and surfaces
+only at the first login.
+
+```yaml
+common:
+  sso:
+    callbackUrl: "https://console.example.com/signin/sso/callback"
+```
+
+**The escape hatch, and it says so.** A deployment that genuinely answers SSO on
+another path — a console mounted on a custom route, or a proxy that rewrites it —
+lifts that check explicitly:
 
 ```yaml
 common:
   sso:
     callbackUrl: "https://console.example.com/custom/sso/return"
+    allowCustomCallbackPath: true   # leaving the supported path, on purpose
 ```
+
+Off this path the chart can no longer tell you whether the URL is right; it must
+match whatever actually serves the console callback, and a mismatch shows up only
+as a failed login. The absolute-`http(s)`-with-a-path requirement still applies —
+that one is the binary's, not the chart's.
 
 `baseUrl` and `callbackUrl` are alternatives, not layers — one asks the chart to
 append the route, the other supplies the finished URL — and the chart refuses to
@@ -285,8 +305,10 @@ absolute `http(s)` URL carrying a concrete path — the same rule the binary app
 (`isAbsoluteCallbackURL`). A host with no path is refused on purpose: Casdoor
 treats an allow-list entry without a path as a wildcard over every path on that
 host *and its subdomains*, so a half-formed value would widen the allow-list
-instead of authorising one endpoint. Failing at `helm template` names the values
-field; failing at runtime is a provider that saves and never completes a login.
+instead of authorising one endpoint. On top of that the chart checks the path is
+the console route, unless `allowCustomCallbackPath` says otherwise. Failing at
+`helm template` names the values field; failing at runtime is a provider that
+saves and never completes a login.
 
 **One value, both components, and the chart enforces it.** identity writes the URL
 into the Caradhras provider's redirect allow-list; auth then sends the same URL as

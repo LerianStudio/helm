@@ -412,3 +412,83 @@ leftover `replicaCount` is inert and must not be read as intent.
 {{- $floor := and $as.enabled (gt (int ($as.minReplicas | default 1)) 1) -}}
 {{- if or $pinned $floor -}}true{{- end -}}
 {{- end }}
+
+{{/*
+plugin-caradhras.sessionSecretName — name of the Secret holding the caradhras
+`redisEndpoint` connection string. Same convention as auth/identity:
+`caradhras.useExistingSecret` hands the Secret over to the operator,
+`caradhras.existingSecretName` names it; otherwise the chart owns
+<release>-caradhras (templates/caradhras/secrets.yaml).
+*/}}
+{{- define "plugin-caradhras.sessionSecretName" -}}
+{{- if .Values.caradhras.useExistingSecret -}}
+{{- required "\n\nERROR: caradhras.useExistingSecret is true but caradhras.existingSecretName is empty.\n   Set caradhras.existingSecretName to the name of the Secret holding the redisEndpoint key.\n" .Values.caradhras.existingSecretName -}}
+{{- else -}}
+{{- include "plugin-caradhras.fullname" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.sessionFromSecret — "true" when the session endpoint is
+delivered by Secret: either inline in `caradhras.secrets.redisEndpoint` (the
+chart writes the Secret) or in an operator-managed Secret
+(`caradhras.useExistingSecret` + `existingSecretName`, key `redisEndpoint`).
+*/}}
+{{- define "plugin-caradhras.sessionFromSecret" -}}
+{{- $secrets := .Values.caradhras.secrets | default dict -}}
+{{- $inline := $secrets.redisEndpoint | default "" | toString -}}
+{{- $existing := and .Values.caradhras.useExistingSecret (.Values.caradhras.existingSecretName | default "") -}}
+{{- if or $inline $existing -}}true{{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.sessionFromConfigMap — "true" when the session endpoint is
+delivered in the clear by `caradhras.configmap.redisEndpoint`. That path is for
+a Redis WITHOUT AUTH only; the password variant goes through the Secret.
+*/}}
+{{- define "plugin-caradhras.sessionFromConfigMap" -}}
+{{- $ccm := .Values.caradhras.configmap | default dict -}}
+{{- if $ccm.redisEndpoint | default "" | toString -}}true{{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.sessionStoreConfigured — "true" when a shared session store is
+configured by EITHER path. This is what the multi-replica guard and NOTES.txt
+test: which channel carried the endpoint is irrelevant to whether sessions are
+shared.
+*/}}
+{{- define "plugin-caradhras.sessionStoreConfigured" -}}
+{{- if or (include "plugin-caradhras.sessionFromConfigMap" .) (include "plugin-caradhras.sessionFromSecret" .) -}}true{{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.validateSessionStore — the render-time guards for the session
+store. Included once, from templates/caradhras/configmap.yaml (always rendered).
+
+1. The two delivery channels are mutually exclusive. Caradhras reads ONE env
+   named `redisEndpoint`; the ConfigMap arrives by envFrom and the Secret by
+   env, and a key defined twice is exactly the undefined behavior this chart
+   already warns about for STREAMING_CLOUDEVENTS_SOURCE.
+2. The ConfigMap channel must not carry a password. Beego's endpoint is
+   positional — host:port,poolsize,password,dbnum — so a third field IS the
+   password, and a ConfigMap is readable by any principal with get on it.
+3. Caradhras pinned above one replica needs a session store, either channel.
+*/}}
+{{- define "plugin-caradhras.validateSessionStore" -}}
+{{- if and .Values.caradhras.useExistingSecret (not (.Values.caradhras.existingSecretName | default "")) -}}
+{{- fail "caradhras.useExistingSecret is true but caradhras.existingSecretName is empty. Without a name the chart creates no Secret and wires no endpoint, so caradhras would silently fall back to per-pod file sessions. Name the Secret holding the redisEndpoint key, or set caradhras.useExistingSecret=false." -}}
+{{- end -}}
+{{- $ccm := .Values.caradhras.configmap | default dict -}}
+{{- $plain := $ccm.redisEndpoint | default "" | toString -}}
+{{- $fromSecret := include "plugin-caradhras.sessionFromSecret" . -}}
+{{- if and $plain $fromSecret -}}
+{{- fail "caradhras.configmap.redisEndpoint and the caradhras session Secret both define redisEndpoint. Caradhras reads a single env named redisEndpoint, and defining it in both the ConfigMap (envFrom) and the Secret (env) is undefined behavior. Keep the password-free endpoint in caradhras.configmap.redisEndpoint, OR the endpoint with its password in caradhras.secrets.redisEndpoint (or an operator-managed Secret via caradhras.useExistingSecret) — not both." -}}
+{{- end -}}
+{{- $fields := splitList "," $plain -}}
+{{- if and (ge (len $fields) 3) (index $fields 2) -}}
+{{- fail "caradhras.configmap.redisEndpoint carries a password. Beego's endpoint is positional — host:port,poolsize,password,dbnum — so the third field is the Redis password, and this value is rendered into a ConfigMap, which gives no Secret-equivalent protection: anyone who can read the ConfigMap recovers the password. Move the whole connection string to caradhras.secrets.redisEndpoint (the chart writes it to the caradhras Secret and injects it with secretKeyRef), or point caradhras.useExistingSecret/caradhras.existingSecretName at a Secret you manage, and leave caradhras.configmap.redisEndpoint empty." -}}
+{{- end -}}
+{{- if and (include "plugin-caradhras.multiReplica" .) (not (include "plugin-caradhras.sessionStoreConfigured" .)) -}}
+{{- fail (printf "caradhras is pinned to more than one replica but has no shared session store. Beego keeps login sessions on the pod's own filesystem when redisEndpoint is unset, so a login that starts on one pod and finishes on another fails with \"unknown authentication type\". Set caradhras.configmap.redisEndpoint to the host:port of a Redis/Valkey both pods reach when it needs no AUTH; when it does need AUTH, set the full connection string in caradhras.secrets.redisEndpoint instead (it is delivered by Secret, never by ConfigMap). Or scale caradhras back to a single replica.%s" (ternary (printf " The Valkey bundled with this release is %s:6379." (include "plugin-access-manager.valkeyHost" .)) "" (ne (toString .Values.valkey.enabled) "false"))) -}}
+{{- end -}}
+{{- end }}

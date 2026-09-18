@@ -1,8 +1,6 @@
+{{- include "plugin-caradhras.validateSessionStore" . -}}
 {{- $ccm := .Values.caradhras.configmap | default dict -}}
 {{- $redisEndpoint := $ccm.redisEndpoint | default "" | toString -}}
-{{- if and (include "plugin-caradhras.multiReplica" .) (not $redisEndpoint) -}}
-{{- fail (printf "caradhras is pinned to more than one replica but has no shared session store: caradhras.configmap.redisEndpoint is empty. Beego keeps login sessions on the pod's own filesystem when redisEndpoint is unset, so a login that starts on one pod and finishes on another fails with \"unknown authentication type\". Set caradhras.configmap.redisEndpoint to the host:port of a Redis/Valkey both pods reach (append ,<poolsize>,<password> when it requires AUTH), or scale caradhras back to a single replica.%s" (ternary (printf " The Valkey bundled with this release is %s:6379." (include "plugin-access-manager.valkeyHost" .)) "" (ne (toString .Values.valkey.enabled) "false"))) -}}
-{{- end -}}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -39,8 +37,14 @@ data:
   # STREAMING_CLOUDEVENTS_SOURCE via caradhras.extraEnvVars below — a second
   # ConfigMap key with the same name is undefined behavior.
   STREAMING_CLOUDEVENTS_SOURCE: "caradhras"
+  {{- /* The endpoint only rides in the ConfigMap when it carries no password;
+     with AUTH it arrives as env `redisEndpoint` from the caradhras Secret
+     (templates/caradhras/deployment.yaml). redisTls is not sensitive and is
+     emitted for both channels. */}}
   {{- if $redisEndpoint }}
   redisEndpoint: {{ $redisEndpoint | quote }}
+  {{- end }}
+  {{- if include "plugin-caradhras.sessionStoreConfigured" . }}
   redisTls: {{ include "plugin-caradhras.sessionRedisTls" . | quote }}
   {{- end }}
   # Extra Env Vars

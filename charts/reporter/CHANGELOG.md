@@ -4,6 +4,26 @@
 
 - **Fixes:**
   - Locked bundled RabbitMQ to its fixed development credential and fixed the mongosh recipe.
+  - Corrected the bundled-RabbitMQ hash recipe and rejected the use of existing secrets.
+  - Provisioned the app user on the bundled RabbitMQ broker.
+
+- **Improvements:**
+  - Pinned the app image to version 3.0.2, which includes the inline-CA release.
+
+- **Documentation:**
+  - Added a recipe to fetch the regional AWS CA for CRM inline TLS.
+  - Documented CRM datasource over TLS with an inline CA bundle.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.1...reporter-v4.3.2)
+
+---
+
+## [4.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.2)
+
+- **Fixes:**
+  - Locked bundled RabbitMQ to its fixed development credential and fixed the mongosh recipe.
   - Corrected bundled-RabbitMQ hash recipe and rejected the use of existing secrets.
   - Provisioned the app user on the bundled RabbitMQ broker.
 

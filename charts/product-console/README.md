@@ -70,7 +70,6 @@ empty — set a key there only to override its shipped default).
 | `configmap.MFA_ENABLED` | Tells the console the Access Manager may answer a password with an MFA challenge, see [Keys with no default](#keys-with-no-default) | unset (the image's own default) |
 | `configmap.MIDAZ_CONSOLE_BASE_PATH` / `configmap.MIDAZ_CONSOLE_SERVICE_HOST` | The console's own public origin and in-cluster host name | unset |
 | `configmap.FETCHER_BASE_PATH` / `PLUGIN_FEES_BASE_PATH` / `FLOWKER_BASE_PATH` / `TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
-| `configmap.NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS` / `configmap.NEXT_PUBLIC_DEMO_MODE` | Frontend navigation list and demo presentation mode | unset |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
 | `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the subchart's own generated password, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
@@ -97,7 +96,7 @@ service/namespace names.
 ### Keys with no default
 
 Most `configmap.<KEY>` entries ship a default that is right for a standard
-in-cluster install. Eleven do not, because no default is safe to invent for
+in-cluster install. Nine do not, because no default is safe to invent for
 them: an address that depends on where you deployed a sibling release, an
 assertion about the deployment, or a flag the browser reads. The chart writes
 nothing for an unset one, so the console keeps whatever its own image does.
@@ -113,8 +112,6 @@ nothing for an unset one, so the console keeps whatever its own image does.
 | `PLUGIN_FEES_BASE_PATH` | Fees, `/v1` | idem |
 | `FLOWKER_BASE_PATH` | Flowker, `/v1` | idem |
 | `TRACER_BASE_PATH` | Tracer, **bare origin, no `/v1`** — the console adds it | idem; with a `/v1` suffix every call goes to `/v1/v1/...` |
-| `NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS` | Comma list of product areas the navigation offers | Missing: the image's own list |
-| `NEXT_PUBLIC_DEMO_MODE` | Demo presentation mode | Set on an environment holding real data |
 
 The four sibling services are optional deployments, which is why the chart
 invents no address for them: a default would turn "this feature is not
@@ -126,6 +123,10 @@ before they were declared here, and still work from there, so no existing
 install has to change. Supplying one through both `configmap` and
 `extraEnvVars` is refused at render time: both write into the same ConfigMap
 `data` map, and the surviving value would be whatever the YAML parser kept.
+
+`MULTI_TENANT_ENABLED` and `NEXT_PUBLIC_DEMO_MODE` are platform configuration
+rather than customer surface, so the chart declares no key for them: an install
+that needs either one sets it through `extraEnvVars`.
 
 ### Client IP resolution
 

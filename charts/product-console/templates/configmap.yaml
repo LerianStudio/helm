@@ -155,12 +155,6 @@ data:
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ $cm.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
   NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: {{ $cm.NEXT_PUBLIC_PLUGIN_AUTH_ENABLED | default $pluginAuthEnabled | quote }}
   NEXT_PUBLIC_MIDAZ_VERSION: {{ $cm.NEXT_PUBLIC_MIDAZ_VERSION | default "" | quote }}
-  {{- with (include $opt (dict "cm" $cm "key" "NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS")) }}
-  {{ . }}
-  {{- end }}
-  {{- with (include $opt (dict "cm" $cm "key" "NEXT_PUBLIC_DEMO_MODE")) }}
-  {{ . }}
-  {{- end }}
 
   VERSION: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
   {{- with .Values.extraEnvVars }}

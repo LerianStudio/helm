@@ -285,13 +285,6 @@ otel:
 #     installed" into a connection error on the page. Set the one you deployed,
 #     to its own release name and namespace. TRACER_BASE_PATH is a bare origin
 #     with no /v1 — the console adds that itself; the other three end in /v1.
-#
-#   NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: "midaz,plugin-crm"
-#   NEXT_PUBLIC_DEMO_MODE: "false"
-#     Frontend flags, read in the browser. The first is the comma list of
-#     product areas the navigation offers; leave it unset to keep the image's
-#     own list. The second puts the console in demo presentation mode — leave
-#     it unset, or "false", on anything that holds real data.
 configmap: {}
 
 # -- Extra environment variables from ConfigMap (merged with configmap values)

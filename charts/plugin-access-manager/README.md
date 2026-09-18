@@ -256,6 +256,9 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.secrets.redisEndpoint` | Shared session store for a Redis **with AUTH**: the full beego connection string `host:port,poolsize,password[,dbnum]`. Delivered by Secret, never by ConfigMap | `""` |
 | `caradhras.useExistingSecret` | Manage the caradhras Secret yourself; the chart creates none | `false` |
 | `caradhras.existingSecretName` | Name of that Secret. Must carry the key `redisEndpoint` | `""` |
+| `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
+| `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
+| `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
 | `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
 
 #### Session store (required above one replica)
@@ -281,11 +284,28 @@ is one, is part of the same string the chart has to deliver:
 |---|---|---|
 | needs no AUTH | `caradhras.configmap.redisEndpoint: "valkey:6379"` | ConfigMap key, via `envFrom` |
 | requires AUTH | `caradhras.secrets.redisEndpoint: "valkey:6379,100,<password>"` | Secret key, via `secretKeyRef` |
+| requires AUTH, password already in a Secret | `caradhras.configmap.redisEndpoint: "valkey:6379"` plus `caradhras.redisPassword.enabled: true` | endpoint in the ConfigMap, password as env `redisPassword`, via `secretKeyRef` |
 
 The ConfigMap channel **refuses a value with a third field**: a ConfigMap gives
 no Secret-equivalent protection, so any principal that can read it would recover
 the Redis password. Setting both channels is also refused — caradhras reads a
 single env named `redisEndpoint`, and defining it twice is undefined behavior.
+
+**The third row is the one to prefer when the password already lives in a
+Secret.** Caradhras reads `redisPassword` as its own config key and resolves the
+session store and the rate limiter from that one reading, so the credential never
+has to be spliced into a connection string — and the endpoint, carrying no
+password, can ride the ConfigMap. The password defaults to the auth Secret's
+`REDIS_PASSWORD` key, which is where the caradhras `DB_PASSWORD` already reads
+from; point `caradhras.redisPassword.secretName`/`.secretKey` elsewhere for a
+different topology.
+
+That channel requires the endpoint to be a **bare `host:port`**, and the chart
+refuses to render otherwise. Caradhras compares the endpoint's own password field
+with `redisPassword` and refuses to boot when they differ — and an endpoint that
+carries fields with an *empty* password field differs from any password, so
+`valkey:6379,100` plus `redisPassword` crashloops even though neither value looks
+wrong on its own. Set one or the other, never a mix.
 
 To keep the password out of your values file entirely, set
 `caradhras.useExistingSecret=true` and point `caradhras.existingSecretName` at a

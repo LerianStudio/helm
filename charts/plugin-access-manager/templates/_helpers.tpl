@@ -488,7 +488,66 @@ store. Included once, from templates/caradhras/configmap.yaml (always rendered).
 {{- if and (ge (len $fields) 3) (index $fields 2) -}}
 {{- fail "caradhras.configmap.redisEndpoint carries a password. Beego's endpoint is positional — host:port,poolsize,password,dbnum — so the third field is the Redis password, and this value is rendered into a ConfigMap, which gives no Secret-equivalent protection: anyone who can read the ConfigMap recovers the password. Move the whole connection string to caradhras.secrets.redisEndpoint (the chart writes it to the caradhras Secret and injects it with secretKeyRef), or point caradhras.useExistingSecret/caradhras.existingSecretName at a Secret you manage, and leave caradhras.configmap.redisEndpoint empty." -}}
 {{- end -}}
+{{- if include "plugin-caradhras.redisPasswordEnabled" . -}}
+{{- $inline := ($ccm.redisEndpoint | default "" | toString) -}}
+{{- $fromSecrets := ((.Values.caradhras.secrets | default dict).redisEndpoint | default "" | toString) -}}
+{{- range $candidate := (list $inline $fromSecrets) -}}
+{{- if and $candidate (contains "," $candidate) -}}
+{{- fail (printf "caradhras.redisPassword.enabled is true and the session endpoint %q carries beego savePath fields. Caradhras compares the endpoint's own password field with redisPassword and refuses to boot when they differ — and an endpoint with fields but an EMPTY password field differs from any password, so this pair crashloops even though neither value looks wrong. With redisPassword the endpoint must be a bare host:port and nothing else: caradhras composes the savePath itself. Drop the extra fields, or set caradhras.redisPassword.enabled=false and keep the whole connection string in caradhras.secrets.redisEndpoint." $candidate) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- if and (include "plugin-caradhras.multiReplica" .) (not (include "plugin-caradhras.sessionStoreConfigured" .)) -}}
 {{- fail (printf "caradhras is pinned to more than one replica but has no shared session store. Beego keeps login sessions on the pod's own filesystem when redisEndpoint is unset, so a login that starts on one pod and finishes on another fails with \"unknown authentication type\". Set caradhras.configmap.redisEndpoint to the host:port of a Redis/Valkey both pods reach when it needs no AUTH; when it does need AUTH, set the full connection string in caradhras.secrets.redisEndpoint instead (it is delivered by Secret, never by ConfigMap). Or scale caradhras back to a single replica.%s" (ternary (printf " The Valkey bundled with this release is %s:6379." (include "plugin-access-manager.valkeyHost" .)) "" (ne (toString .Values.valkey.enabled) "false"))) -}}
 {{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.redisPasswordEnabled — "true" when the operator opted in to
+injecting the Redis AUTH password as the separate `redisPassword` config key.
+Off by default: a Redis without AUTH must not start needing anything.
+*/}}
+{{- define "plugin-caradhras.redisPasswordEnabled" -}}
+{{- $rp := .Values.caradhras.redisPassword | default dict -}}
+{{- if $rp.enabled -}}true{{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.redisPasswordSecretName — Secret holding the Redis AUTH
+password. `caradhras.redisPassword.secretName` names it explicitly; empty falls
+back to the auth Secret, which is where the caradhras DB_PASSWORD already reads
+from (plugin-auth.dbPasswordEnv) and which already carries a REDIS_PASSWORD key
+(templates/auth/secrets.yaml). Honors auth.useExistingSecret so the fallback
+still resolves when the auth Secret is operator-managed.
+*/}}
+{{- define "plugin-caradhras.redisPasswordSecretName" -}}
+{{- $rp := .Values.caradhras.redisPassword | default dict -}}
+{{- if $rp.secretName -}}
+{{- $rp.secretName -}}
+{{- else if .Values.auth.useExistingSecret -}}
+{{- required "\n\nERROR: caradhras.redisPassword.enabled is true and auth.useExistingSecret is true, but auth.existingSecretName is empty.\n   The password defaults to the auth Secret, which the chart does not create in this mode.\n   Set auth.existingSecretName, or name the Secret directly in caradhras.redisPassword.secretName.\n" .Values.auth.existingSecretName -}}
+{{- else -}}
+{{- include "plugin-auth.fullname" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.redisPasswordEnv — the `redisPassword` container env, by
+secretKeyRef, exactly as DB_PASSWORD is delivered on the same workload. Renders
+nothing when the opt-in is off, so a Redis without AUTH keeps its current
+rendering byte for byte.
+
+Caradhras reads `redisPassword` as its own config key and gives it to BOTH redis
+consumers from one resolution: the beego session store (composed into its
+positional savePath) and the lib-commons rate-limit/idempotency client
+(StaticPasswordAuth). So the endpoint stays a bare `host:port` and the credential
+never has to be spliced into a connection string.
+*/}}
+{{- define "plugin-caradhras.redisPasswordEnv" -}}
+{{- $rp := .Values.caradhras.redisPassword | default dict -}}
+- name: redisPassword
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "plugin-caradhras.redisPasswordSecretName" . }}
+      key: {{ $rp.secretKey | default "REDIS_PASSWORD" }}
 {{- end }}

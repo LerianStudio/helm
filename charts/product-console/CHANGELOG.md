@@ -3,6 +3,32 @@
 ## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
 
 - **Features**
+  - Added getting-started installation runbook in both English and Portuguese.
+  - Introduced documentation on volume warnings and their implications.
+  
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart will empty its volume.
+  - Ensured values are retained when repairing splits.
+  - Implemented refusal for secret names that consist only of spaces.
+  - Provided a reliable namespace remedy.
+  - Corrected the service name created by Bitnami.
+  - Refused existing secrets with no name.
+
+- **Improvements**
+  - Enhanced documentation with a Helm upgrade guide for version 4.0.5.
+  - Updated documentation to address authentication credentials, CORS settings, and DocumentDB TLS caveats.
+  - Improved port-forward readiness checks before executing curl commands.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
   - Added a getting-started installation runbook in both English and Portuguese (pt-br).
   - Added documentation on what the volume warning holds for.
 

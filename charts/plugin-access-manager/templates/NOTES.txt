@@ -1,0 +1,13 @@
+{{- $ccm := .Values.caradhras.configmap | default dict -}}
+{{- $redisEndpoint := $ccm.redisEndpoint | default "" | toString -}}
+{{- $as := .Values.caradhras.autoscaling | default dict -}}
+{{- if and (not $redisEndpoint) $as.enabled (gt (int ($as.maxReplicas | default 1)) 1) }}
+WARNING: caradhras has no shared session store (caradhras.configmap.redisEndpoint
+is empty) while its HPA may scale it to {{ $as.maxReplicas }} pods. Login sessions live on
+each pod's own filesystem, so the moment the HPA adds a second pod, a login that
+starts on one and finishes on another fails with "unknown authentication type".
+
+Set caradhras.configmap.redisEndpoint to the host:port of a Redis/Valkey every
+pod can reach{{ if ne (toString .Values.valkey.enabled) "false" }} (the Valkey bundled with this release is
+{{ include "plugin-access-manager.valkeyHost" . }}:6379){{ end }}, or set caradhras.autoscaling.maxReplicas=1.
+{{- end }}

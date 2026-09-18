@@ -405,6 +405,22 @@ caradhras:
   # privilege, and the target database/schema is typically provisioned ahead
   # of time (see benedita sandbox permission-denied incident, 2026-08-25).
   createDatabase: false
+  # -- Caradhras (beego) config keys. Names are the beego literals, camelCase:
+  # caradhras reads them with conf.GetConfigString, which looks up the exact
+  # key in the environment. The auth/identity REDIS_* names are NOT read here.
+  configmap:
+    # -- Shared session store, `host:port` with no space. Empty (the default)
+    # keeps login sessions in a file on each pod's own filesystem, which only
+    # works with a single pod: above one replica a login started on one pod and
+    # finished on another fails with "unknown authentication type". REQUIRED
+    # whenever caradhras runs more than one replica — the chart refuses to
+    # render when replicas are pinned above 1 without it. Append
+    # `,<poolsize>,<password>` when the Redis requires AUTH.
+    redisEndpoint: ""
+    # -- Whether to reach redisEndpoint over TLS ("true"/"false"). Only emitted
+    # when redisEndpoint is set. Also resolvable once for every component via
+    # the datastore mask (global.datastores.redis.tls).
+    redisTls: ""
   service:
     # -- Kubernetes service type for the caradhras component
     type: ClusterIP

@@ -252,6 +252,35 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.ui.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
 | `caradhras.ui.service.port` | Service port | `80` |
 | `caradhras.ui.ingress.enabled` | Enable ingress for the UI | `false` |
+| `caradhras.configmap.redisEndpoint` | Shared session store for caradhras logins, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Append `,<poolsize>,<password>` when the Redis requires AUTH | `""` |
+| `caradhras.configmap.redisTls` | Reach `redisEndpoint` over TLS (`"true"`/`"false"`). Only emitted when `redisEndpoint` is set; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
+
+#### Session store (required above one replica)
+
+Caradhras is beego, and beego writes a login session to a file under the pod's
+own working directory unless `redisEndpoint` names a Redis. With one pod that
+works. With two, a login that starts on one pod and finishes on another does not
+find its session and fails with `unknown authentication type`. The failure is
+intermittent by nature: it depends on which pod the load balancer picks.
+
+`caradhras.configmap.redisEndpoint` is therefore mandatory whenever caradhras is
+pinned above one replica (`replicaCount > 1` with autoscaling off, or
+`autoscaling.minReplicas > 1`). The chart **refuses to render** in that state
+rather than deploying a login that fails intermittently. When autoscaling can
+merely reach more than one pod (`autoscaling.maxReplicas > 1`, the chart
+default), the install notes carry a warning instead — failing there would break
+every default install.
+
+The keys are the beego literals in camelCase on purpose: caradhras resolves them
+with `conf.GetConfigString`, which looks the exact key up in the environment.
+`REDIS_HOST` / `REDIS_TLS` are the `auth`/`identity` names, read by lib-commons,
+and are silently ignored by caradhras.
+
+`redisEndpoint` is never derived from `global.datastores.redis.*`. It is a
+connection string that may carry a password, and the mask knows only host and
+port — a derived value would be silently unauthenticated against any Redis that
+requires AUTH. Set it explicitly. `redisTls` does come from the mask, so a
+managed-cloud profile that sets `redis.tls` once covers auth and caradhras both.
 
 ### Auth Database (PostgreSQL)
 

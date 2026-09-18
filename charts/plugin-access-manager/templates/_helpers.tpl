@@ -365,3 +365,50 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+plugin-caradhras.sessionRedisTls — value for the caradhras `redisTls` config key.
+
+Resolved through the SAME lerian-common datastore mask the auth component uses
+for REDIS_TLS (templates/auth/configmap.yaml), so a managed-cloud profile that
+sets `redis.tls` once covers both components instead of two knobs that can skew.
+Precedence: native `caradhras.configmap.redisTls` > `caradhras.datastores.redis.tls`
+> `global.datastores.redis.tls` > cloud preset > "false".
+
+Deliberately NOT applied to `redisEndpoint`: that value is a connection string
+that may carry a password (beego's redis session provider takes
+`host:port,poolsize,password,dbnum`), and the mask only knows host and port. A
+derived endpoint would be silently wrong — and unauthenticated — against every
+Redis that requires AUTH, so the endpoint stays explicit.
+*/}}
+{{- define "plugin-caradhras.sessionRedisTls" -}}
+{{- $cm := .Values.caradhras.configmap | default dict -}}
+{{- /* values.yaml ships redisTls: "" so the key is discoverable. The mask reads
+   the native tier with hasKey, so an empty native value would win over the mask
+   and pin every install to "". Drop it when unset. */ -}}
+{{- if eq (toString ($cm.redisTls | default "")) "" -}}
+{{- $cm = omit $cm "redisTls" -}}
+{{- end -}}
+{{- include "lerian-common.datastore.value" (dict
+      "context" .
+      "dedicated" (.Values.datastores | default dict)
+      "configmap" $cm
+      "type" "redis"
+      "field" "tls"
+      "nativeKey" "redisTls"
+      "default" "false") -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.multiReplica — true when the operator has PINNED caradhras to
+more than one pod: either replicas are fixed above 1 (autoscaling off), or the
+HPA floor is above 1. Not merely "could scale": with autoscaling on, the
+Deployment omits `replicas` entirely (templates/caradhras/deployment.yaml), so a
+leftover `replicaCount` is inert and must not be read as intent.
+*/}}
+{{- define "plugin-caradhras.multiReplica" -}}
+{{- $as := .Values.caradhras.autoscaling | default dict -}}
+{{- $pinned := and (not $as.enabled) (gt (int (include "caradhras.replicaCount" .)) 1) -}}
+{{- $floor := and $as.enabled (gt (int ($as.minReplicas | default 1)) 1) -}}
+{{- if or $pinned $floor -}}true{{- end -}}
+{{- end }}

@@ -1,5 +1,19 @@
 # Plugin-access-manager Changelog
 
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.3.0)
+
+- **Features:**
+  - Added named Caradhras session store keys.
+
+- **Fixes:**
+  - Delivered Caradhras session password by Secret.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.4...plugin-access-manager-v9.3.0)
+
+---
+
 ## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
 
 - **Improvements**

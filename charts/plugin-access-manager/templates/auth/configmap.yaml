@@ -3,6 +3,8 @@
 {{- if ne $idCidrs $authCidrs -}}
 {{- fail "PLATFORM_INTERNAL_CIDRS must be identical on identity.configmap and auth.configmap: a skew leaks the platform ranges into the enforcement entry set, which on proxy-fronted environments allows everyone" -}}
 {{- end -}}
+{{- include "plugin-access-manager.validateSsoCallbackUrl" . -}}
+{{- include "plugin-access-manager.validateMfaEnabled" . -}}
 {{- /* Datastore masks (lerian-common): connection identity + TOPOLOGY resolved via
    global.datastores.<type> (shared, env-wide) with native auth.configmap.<KEY> and
    dedicated .Values.datastores overrides taking precedence. Defaults keep the
@@ -133,10 +135,19 @@ data:
   HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC: {{ .Values.auth.configmap.HTTP_CLIENT_IDLE_CONN_TIMEOUT_SEC | default "90" | quote }}
 
   # MFA
+  {{- if and (not (kindIs "invalid" $cm.MFA_ENABLED)) (ne ($cm.MFA_ENABLED | toString) "") }}
+  MFA_ENABLED: {{ $cm.MFA_ENABLED | toString | quote }}
+  {{- end }}
   MFA_SESSION_TTL_SEC: {{ .Values.auth.configmap.MFA_SESSION_TTL_SEC | default "300" | quote }}
   MFA_REMEMBER_TTL_SEC: {{ .Values.auth.configmap.MFA_REMEMBER_TTL_SEC | default "2592000" | quote }}
   MFA_MAX_ATTEMPTS: {{ .Values.auth.configmap.MFA_MAX_ATTEMPTS | default "5" | quote }}
   MFA_MAX_RESEND_ATTEMPTS: {{ .Values.auth.configmap.MFA_MAX_RESEND_ATTEMPTS | default "3" | quote }}
+
+  {{- with (include "plugin-access-manager.ssoCallbackUrl" (dict "context" $ "component" "auth")) }}
+
+  # SSO
+  PLUGIN_AUTH_SSO_CALLBACK_URL: {{ . | quote }}
+  {{- end }}
 
   # RUNTIME
   DEPLOYMENT_MODE: {{ .Values.auth.configmap.DEPLOYMENT_MODE | default "local" | quote }}

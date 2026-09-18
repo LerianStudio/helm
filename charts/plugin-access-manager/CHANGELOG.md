@@ -2,6 +2,19 @@
 
 ## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.0)
 
+- Features:
+  - Guard the console SSO callback path to enhance security.
+  - Compose the SSO callback URL from a client base for improved flexibility.
+  - Add named MFA and SSO callback chart keys for better configuration management.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.4.0...plugin-access-manager-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.0)
+
 Changelog for plugin-access-manager:
 
 - **Features:**

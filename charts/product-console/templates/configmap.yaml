@@ -66,6 +66,14 @@ data:
   MIDAZ_TRANSACTION_BASE_HOST: {{ $cm.MIDAZ_TRANSACTION_BASE_HOST | default "midaz-ledger.midaz.svc.cluster.local" | quote }}
   MIDAZ_TRANSACTION_BASE_PORT: {{ $cm.MIDAZ_TRANSACTION_BASE_PORT | default "3002" | quote }}
   MIDAZ_TRANSACTION_BASE_PATH: {{ $cm.MIDAZ_TRANSACTION_BASE_PATH | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1" | quote }}
+  {{- /* Fees live inside the midaz v4 ledger, on its /v2 contract only. No
+     shipped default: the v1 addresses above are guesses that happen to be
+     right for a standard install, and a wrong /v2 address would turn "fees
+     not reachable" into pages that fail mid-use. Canonical form ends in a
+     slash. */}}
+  {{- with (include $opt (dict "cm" $cm "key" "MIDAZ_V2_BASE_PATH")) }}
+  {{ . }}
+  {{- end }}
 
   # Plugin Auth Configuration
   {{- /* PLUGIN_AUTH_ENABLED/HOST via the dedicated lerian-common.auth.env helper

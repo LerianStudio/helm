@@ -67,6 +67,7 @@ empty — set a key there only to override its shipped default).
 | `configmap.NEXTAUTH_URL` | Public URL NextAuth uses for OAuth callbacks | `ingress.hosts[0].host` (as `https://<host>`) when ingress is enabled with a host, else `http://localhost:8081` |
 | `configmap.TRUSTED_PROXIES` | Comma list of CIDRs the console trusts as its own hops, see [Client IP resolution](#client-ip-resolution) | unset (no client IP is resolved) |
 | `configmap.PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address used for the SSO redirect, see [Keys with no default](#keys-with-no-default) | unset (falls back to the cluster-internal `PLUGIN_AUTH_BASE_PATH`) |
+| `configmap.MIDAZ_V2_BASE_PATH` | Address of the midaz ledger's `/v2` contract, where fees live, see [Keys with no default](#keys-with-no-default) | unset (the fees screens have no address) |
 | `configmap.MFA_ENABLED` | Tells the console the Access Manager may answer a password with an MFA challenge, see [Keys with no default](#keys-with-no-default) | unset (the image's own default) |
 | `configmap.FLOWKER_BASE_PATH` / `configmap.TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
@@ -95,7 +96,7 @@ service/namespace names.
 ### Keys with no default
 
 Most `configmap.<KEY>` entries ship a default that is right for a standard
-in-cluster install. Five do not, because no default is safe to invent for
+in-cluster install. Six do not, because no default is safe to invent for
 them: an address that depends on where you deployed a sibling release, or an
 assertion about the deployment. The chart writes nothing for an unset one, so
 the console keeps whatever its own image does.
@@ -104,6 +105,7 @@ the console keeps whatever its own image does.
 |---|---|---|
 | `TRUSTED_PROXIES` | CIDRs the console trusts as its own hops | Missing: no caller is ever named, so a tenant IP allowlist has nothing to judge. Wrong: see [Client IP resolution](#client-ip-resolution) |
 | `PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address (absolute, https, ends in `/v1`) | Missing: SSO redirects the browser to the cluster-internal name, which it cannot resolve. Only local dev, where both are `localhost`, can leave it out |
+| `MIDAZ_V2_BASE_PATH` | The midaz ledger's `/v2` contract, where fees live — same host and port as `MIDAZ_BASE_PATH`, `/v1` swapped for `/v2`, **ending in a slash**. See [Fees and the ledger's /v2 contract](#fees-and-the-ledgers-v2-contract) | Missing: every fees screen fails and the health check reports `MIDAZ_V2_BASE_PATH is not set` |
 | `MFA_ENABLED` | Assertion that the Access Manager in front of this console may answer a correct password with an MFA challenge. It enables MFA for nobody — that is per user, in the Access Manager | Missing where MFA is on: the console does not recognise the challenge, and a user with MFA enabled cannot sign in at all |
 | `FLOWKER_BASE_PATH` | Flowker's address, ends in `/v1` | Missing: the console has nowhere to send Flowker calls |
 | `TRACER_BASE_PATH` | Tracer's address, **bare origin, no `/v1`** — the console adds it | Missing: the console has nowhere to send Tracer calls; with a `/v1` suffix every call goes to `/v1/v1/...` |
@@ -111,6 +113,31 @@ the console keeps whatever its own image does.
 Those two sibling services are optional deployments, which is why the chart
 invents no address for them: a default would turn "this feature is not
 installed" into a connection error on the page.
+
+### Fees and the ledger's /v2 contract
+
+Fees — fee packages, billing packages, billing runs and the fees statement —
+used to be a separate plugin. They are not any more: they live inside the
+midaz ledger, served on its second API contract, `/v2`. Everything else the
+console asks the ledger still goes to `/v1`, so the two addresses coexist and
+`MIDAZ_V2_BASE_PATH` is the one the fees screens use.
+
+Set it to the same host and port as `MIDAZ_BASE_PATH`, with `/v1` swapped for
+`/v2`:
+
+```yaml
+configmap:
+  MIDAZ_BASE_PATH: "http://midaz-ledger.midaz.svc.cluster.local:3002/v1"
+  MIDAZ_V2_BASE_PATH: "http://midaz-ledger.midaz.svc.cluster.local:3002/v2/"
+```
+
+**Write the trailing slash.** The console builds each fees call by resolving a
+relative path against this address, and that resolution keeps the `/v2`
+segment only when the address ends in a slash. Without it, `/v2` is dropped:
+the call goes to the bare origin, reaches a contract that serves no fees, and
+nothing in the response says why. The console normalises the value by adding
+the missing slash, so both forms work today — the form above is the one to
+write, and the one that survives if that normalisation ever moves.
 
 **Set each key in one place only.** `TRUSTED_PROXIES`, `MFA_ENABLED` and
 `PLUGIN_AUTH_PUBLIC_BASE_PATH` were reachable only through `extraEnvVars`

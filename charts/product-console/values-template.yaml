@@ -101,6 +101,12 @@ configmap:
   # Reporter Configuration
   REPORTER_BASE_PATH: ""
 
+  # Address of the midaz ledger's /v2 contract, where fees live (packages,
+  # billing packages, billing runs, statement). Same host and port as
+  # MIDAZ_BASE_PATH above, with /v1 swapped for /v2. Canonical form ends in a
+  # slash. Unset, every fees screen fails.
+  # MIDAZ_V2_BASE_PATH: "http://midaz-ledger.midaz.svc.cluster.local:3002/v2/"
+
   # Optional sibling services. Set only the ones you deployed; an unset key is
   # written nowhere, which is what keeps "not installed" from reading as a
   # connection error on the page. TRACER_BASE_PATH is a bare origin, no /v1.

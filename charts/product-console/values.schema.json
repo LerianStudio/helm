@@ -132,6 +132,20 @@
     },
     "configmap": {
       "type": "object",
+      "properties": {
+        "FETCHER_BASE_PATH": { "type": ["string", "null"] },
+        "FLOWKER_BASE_PATH": { "type": ["string", "null"] },
+        "MFA_ENABLED": { "type": ["string", "boolean", "null"] },
+        "MIDAZ_CONSOLE_BASE_PATH": { "type": ["string", "null"] },
+        "MIDAZ_CONSOLE_SERVICE_HOST": { "type": ["string", "null"] },
+        "MULTI_TENANT_ENABLED": { "type": ["string", "boolean", "null"] },
+        "NEXT_PUBLIC_DEMO_MODE": { "type": ["string", "boolean", "null"] },
+        "NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS": { "type": ["string", "null"] },
+        "PLUGIN_AUTH_PUBLIC_BASE_PATH": { "type": ["string", "null"] },
+        "PLUGIN_FEES_BASE_PATH": { "type": ["string", "null"] },
+        "TRACER_BASE_PATH": { "type": ["string", "null"] },
+        "TRUSTED_PROXIES": { "type": ["string", "null"] }
+      },
       "additionalProperties": true
     },
     "extraEnvVars": {

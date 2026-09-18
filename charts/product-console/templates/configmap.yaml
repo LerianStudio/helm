@@ -3,8 +3,10 @@
    still taking precedence. Defaults keep the bundled-mongodb topology ->
    render-equivalent for existing users. MONGODB_DB_NAME stays native (per-app
    database name, not a masked field, per the dependency-contract). */ -}}
+{{- include "product-console.validateOptionalConfigKeys" . -}}
 {{- $dv := "lerian-common.datastore.value" -}}
 {{- $cm := .Values.configmap | default dict -}}
+{{- $opt := "product-console.optionalConfigKey" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -16,6 +18,15 @@ data:
   # Application Configuration
   NODE_ENV: {{ $cm.NODE_ENV | default "production" | quote }}
   MIDAZ_CONSOLE_PORT: {{ $cm.MIDAZ_CONSOLE_PORT | default "8081" | quote }}
+  {{- with (include $opt (dict "cm" $cm "key" "MULTI_TENANT_ENABLED")) }}
+  {{ . }}
+  {{- end }}
+  {{- with (include $opt (dict "cm" $cm "key" "MIDAZ_CONSOLE_SERVICE_HOST")) }}
+  {{ . }}
+  {{- end }}
+  {{- with (include $opt (dict "cm" $cm "key" "MIDAZ_CONSOLE_BASE_PATH")) }}
+  {{ . }}
+  {{- end }}
 
   # OpenTelemetry Configuration
   # Note: When otel.enabled=true or otel.external=true, OTEL_HOST and OTEL_URL_* are injected dynamically
@@ -47,6 +58,12 @@ data:
      lerian-common mask; defaults to the same origin as NEXTAUTH_URL since
      that's virtually always what operators want (the app calling itself). */}}
   ALLOWED_ORIGINS: {{ $cm.ALLOWED_ORIGINS | default $ingressOrigin | quote }}
+  {{- /* Client IP resolution. TRUSTED_PROXIES used to be reachable only
+     through extraEnvVars, and still is from there, so existing installs are
+     untouched. */}}
+  {{- with (include $opt (dict "cm" $cm "key" "TRUSTED_PROXIES")) }}
+  {{ . }}
+  {{- end }}
 
   # Midaz API Configuration
   # Defaults assume the standard in-cluster FQDN for the sibling midaz release
@@ -79,6 +96,16 @@ data:
   {{- end }}
   PLUGIN_AUTH_PORT: {{ $cm.PLUGIN_AUTH_PORT | default "4000" | quote }}
   PLUGIN_AUTH_BASE_PATH: {{ $cm.PLUGIN_AUTH_BASE_PATH | default "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000/v1" | quote }}
+  {{- /* PLUGIN_AUTH_PUBLIC_BASE_PATH is the BROWSER-facing twin of
+     PLUGIN_AUTH_BASE_PATH; unset, the app falls back to the cluster-local one,
+     which the browser cannot resolve. MFA_ENABLED is the deployment's assertion
+     that the Access Manager in front of it runs with MFA on. */}}
+  {{- with (include $opt (dict "cm" $cm "key" "PLUGIN_AUTH_PUBLIC_BASE_PATH")) }}
+  {{ . }}
+  {{- end }}
+  {{- with (include $opt (dict "cm" $cm "key" "MFA_ENABLED")) }}
+  {{ . }}
+  {{- end }}
 
   # Plugin Identity Configuration
   PLUGIN_IDENTITY_HOST: {{ $cm.PLUGIN_IDENTITY_HOST | default "plugin-access-manager-identity.plugin-access-manager.svc.cluster.local" | quote }}
@@ -105,6 +132,23 @@ data:
 
   # Reporter Configuration
   REPORTER_BASE_PATH: {{ $cm.REPORTER_BASE_PATH | default "http://reporter-manager.reporter.svc.cluster.local:4005/v1" | quote }}
+  {{- /* Optional sibling services: Fetcher, Fees, Flowker, Tracer.
+     No shipped default on purpose: unlike the ledger and the Access
+     Manager, these four are optional deployments. A default address would make
+     the console call a service that may not exist, turning "feature not
+     installed" into a connection error on the page. */}}
+  {{- with (include $opt (dict "cm" $cm "key" "FETCHER_BASE_PATH")) }}
+  {{ . }}
+  {{- end }}
+  {{- with (include $opt (dict "cm" $cm "key" "PLUGIN_FEES_BASE_PATH")) }}
+  {{ . }}
+  {{- end }}
+  {{- with (include $opt (dict "cm" $cm "key" "FLOWKER_BASE_PATH")) }}
+  {{ . }}
+  {{- end }}
+  {{- with (include $opt (dict "cm" $cm "key" "TRACER_BASE_PATH")) }}
+  {{ . }}
+  {{- end }}
 
   # Account Type Validation
   MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: {{ $cm.MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED | default "false" | quote }}
@@ -114,6 +158,12 @@ data:
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: {{ $cm.NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT | default "jpeg,jpg,png,svg" | quote }}
   NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: {{ $cm.NEXT_PUBLIC_PLUGIN_AUTH_ENABLED | default $pluginAuthEnabled | quote }}
   NEXT_PUBLIC_MIDAZ_VERSION: {{ $cm.NEXT_PUBLIC_MIDAZ_VERSION | default "" | quote }}
+  {{- with (include $opt (dict "cm" $cm "key" "NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS")) }}
+  {{ . }}
+  {{- end }}
+  {{- with (include $opt (dict "cm" $cm "key" "NEXT_PUBLIC_DEMO_MODE")) }}
+  {{ . }}
+  {{- end }}
 
   VERSION: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
   {{- with .Values.extraEnvVars }}

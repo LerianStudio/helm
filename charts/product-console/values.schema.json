@@ -132,6 +132,13 @@
     },
     "configmap": {
       "type": "object",
+      "properties": {
+        "FLOWKER_BASE_PATH": { "type": ["string", "null"] },
+        "MFA_ENABLED": { "type": ["string", "boolean", "null"] },
+        "PLUGIN_AUTH_PUBLIC_BASE_PATH": { "type": ["string", "null"] },
+        "TRACER_BASE_PATH": { "type": ["string", "null"] },
+        "TRUSTED_PROXIES": { "type": ["string", "null"] }
+      },
       "additionalProperties": true
     },
     "extraEnvVars": {

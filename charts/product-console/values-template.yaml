@@ -101,6 +101,33 @@ configmap:
   # Reporter Configuration
   REPORTER_BASE_PATH: ""
 
+  # Optional sibling services. Set only the ones you deployed; an unset key is
+  # written nowhere, which is what keeps "not installed" from reading as a
+  # connection error on the page. TRACER_BASE_PATH is a bare origin, no /v1.
+  # FLOWKER_BASE_PATH: "http://flowker.flowker.svc.cluster.local:4021/v1"
+  # TRACER_BASE_PATH: "http://midaz-tracer.midaz.svc.cluster.local:4020"
+
+  # Client IP resolution. Comma list of CIDRs the console trusts as its own
+  # hops while reading X-Forwarded-For, so it can tell which address is the
+  # real caller. Set it to the ingress / load-balancer addresses actually in
+  # front of this service, never the pod or service CIDR. Left unset, the
+  # console names no caller at all and a tenant IP allowlist has nothing to
+  # judge. Read the README section "Client IP resolution" before choosing a
+  # range: an entry wider than /8 (IPv4) or /48 (IPv6) is refused, and a range
+  # that covers real callers hides them.
+  # TRUSTED_PROXIES: "198.51.100.0/24"
+
+  # Browser-facing address of the Access Manager, used for the SSO redirect —
+  # PLUGIN_AUTH_BASE_PATH above is the cluster-internal one and the browser
+  # cannot resolve it. Absolute, https, ending in /v1.
+  # PLUGIN_AUTH_PUBLIC_BASE_PATH: "https://auth.example.com/v1"
+
+  # Deployment-level assertion that the Access Manager in front of this console
+  # may answer a correct password with an MFA challenge. It does not enable MFA
+  # for any user — that is per user, in the Access Manager. Unset where MFA is
+  # off; set where it is on, or a user with MFA cannot sign in at all.
+  # MFA_ENABLED: "true"
+
   # Account Type Validation
   MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: "false"
   MIDAZ_ACCOUNT_TYPE_VALIDATION: ""
@@ -115,15 +142,12 @@ configmap:
 # under 'configmap' above: every key here is added to the same ConfigMap the
 # pod loads, so a key set here reaches the container. A key set under
 # 'configmap' that the chart does not declare is accepted and silently dropped.
-extraEnvVars:
-  # Comma list of CIDRs the console trusts as its own hops while reading
-  # X-Forwarded-For, so it can tell which address is the real caller. Set it to
-  # the ingress / load-balancer addresses actually in front of this service,
-  # never the pod or service CIDR. Left empty, the console names no caller at
-  # all. Read the README section "Client IP resolution" before choosing a
-  # range: an entry wider than /8 (IPv4) or /48 (IPv6) is refused, and a range
-  # that covers real callers hides them.
-  TRUSTED_PROXIES: ""
+# A key the chart DOES declare must be set in one place only: supplying it here
+# and under 'configmap' is refused at render time.
+# Internal presentation configuration, not customer surface, has no named key
+# and is set here:
+#   NEXT_PUBLIC_DEMO_MODE: "false"  # demo presentation mode; off where data is real
+extraEnvVars: {}
 
 # -- Secrets for storing sensitive data
 secrets:

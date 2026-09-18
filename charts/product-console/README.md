@@ -65,7 +65,10 @@ empty — set a key there only to override its shipped default).
 | `configmap.MIDAZ_CONSOLE_PORT` | Console port | `8081` |
 | `configmap.MIDAZ_BASE_PATH` | Midaz API base path | `http://midaz-ledger.midaz.svc.cluster.local:3002/v1` |
 | `configmap.NEXTAUTH_URL` | Public URL NextAuth uses for OAuth callbacks | `ingress.hosts[0].host` (as `https://<host>`) when ingress is enabled with a host, else `http://localhost:8081` |
-| `extraEnvVars.TRUSTED_PROXIES` | Comma list of CIDRs the console trusts as its own hops, see [Client IP resolution](#client-ip-resolution) | unset (no client IP is resolved) |
+| `configmap.TRUSTED_PROXIES` | Comma list of CIDRs the console trusts as its own hops, see [Client IP resolution](#client-ip-resolution) | unset (no client IP is resolved) |
+| `configmap.PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address used for the SSO redirect, see [Keys with no default](#keys-with-no-default) | unset (falls back to the cluster-internal `PLUGIN_AUTH_BASE_PATH`) |
+| `configmap.MFA_ENABLED` | Tells the console the Access Manager may answer a password with an MFA challenge, see [Keys with no default](#keys-with-no-default) | unset (the image's own default) |
+| `configmap.FLOWKER_BASE_PATH` / `configmap.TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
 | `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the subchart's own generated password, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
@@ -89,6 +92,37 @@ service/namespace names.
 | CRM plugin | `CRM_BASE_PATH` | `http://midaz-crm.midaz.svc.cluster.local:4003/v1/` |
 | Reporter | `REPORTER_BASE_PATH` | `http://reporter-manager.reporter.svc.cluster.local:4005/v1` |
 
+### Keys with no default
+
+Most `configmap.<KEY>` entries ship a default that is right for a standard
+in-cluster install. Five do not, because no default is safe to invent for
+them: an address that depends on where you deployed a sibling release, or an
+assertion about the deployment. The chart writes nothing for an unset one, so
+the console keeps whatever its own image does.
+
+| Key | What it is | If it is wrong or missing |
+|---|---|---|
+| `TRUSTED_PROXIES` | CIDRs the console trusts as its own hops | Missing: no caller is ever named, so a tenant IP allowlist has nothing to judge. Wrong: see [Client IP resolution](#client-ip-resolution) |
+| `PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address (absolute, https, ends in `/v1`) | Missing: SSO redirects the browser to the cluster-internal name, which it cannot resolve. Only local dev, where both are `localhost`, can leave it out |
+| `MFA_ENABLED` | Assertion that the Access Manager in front of this console may answer a correct password with an MFA challenge. It enables MFA for nobody — that is per user, in the Access Manager | Missing where MFA is on: the console does not recognise the challenge, and a user with MFA enabled cannot sign in at all |
+| `FLOWKER_BASE_PATH` | Flowker's address, ends in `/v1` | Missing: the console has nowhere to send Flowker calls |
+| `TRACER_BASE_PATH` | Tracer's address, **bare origin, no `/v1`** — the console adds it | Missing: the console has nowhere to send Tracer calls; with a `/v1` suffix every call goes to `/v1/v1/...` |
+
+Those two sibling services are optional deployments, which is why the chart
+invents no address for them: a default would turn "this feature is not
+installed" into a connection error on the page.
+
+**Set each key in one place only.** `TRUSTED_PROXIES`, `MFA_ENABLED` and
+`PLUGIN_AUTH_PUBLIC_BASE_PATH` were reachable only through `extraEnvVars`
+before they were declared here, and still work from there, so no existing
+install has to change. Supplying one through both `configmap` and
+`extraEnvVars` is refused at render time: both write into the same ConfigMap
+`data` map, and the surviving value would be whatever the YAML parser kept.
+
+`NEXT_PUBLIC_DEMO_MODE` is internal presentation configuration rather than
+customer surface, so the chart declares no key for it: an install that needs it
+sets it through `extraEnvVars`.
+
 ### Client IP resolution
 
 `TRUSTED_PROXIES` is the comma list of CIDRs the console treats as its own
@@ -96,20 +130,20 @@ infrastructure hops while reading `X-Forwarded-For`, so it can tell which
 address in that chain is the real caller. The container image ships it empty on
 purpose, so each environment must name its own hops.
 
-**Set it through `extraEnvVars`, not `configmap`:**
+**Set it through `configmap`:**
 
 ```yaml
-extraEnvVars:
+configmap:
   TRUSTED_PROXIES: "198.51.100.0/24" # example: the /24 your edge egresses from
 ```
 
 `configmap` is an explicit allowlist of the keys `templates/configmap.yaml`
-declares, and `TRUSTED_PROXIES` is not one of them. A value put there is
-accepted by `helm lint`, `helm template` and `helm upgrade` and then dropped,
-with nothing in the deploy path to say so. `extraEnvVars` is the passthrough:
-every key is written into the same ConfigMap the pod loads through `envFrom`,
-and changing it changes `checksum/config`, so the pods roll. That has always
-been the working path; what was missing was this paragraph.
+declares. `TRUSTED_PROXIES` was not one of them before, so a value put there
+was accepted by `helm lint`, `helm template` and `helm upgrade` and then
+dropped, with nothing in the deploy path to say so; `extraEnvVars` was the only
+working channel. It is declared now, and `extraEnvVars` still works, so an
+install already delivering it from there needs no change — but set it in one
+place only, or the render is refused.
 
 **Name the addresses that are actually in front of this service**, meaning the
 ingress and load-balancer addresses as they appear as `X-Forwarded-For` hops.

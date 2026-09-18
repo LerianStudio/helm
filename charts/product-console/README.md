@@ -68,7 +68,6 @@ empty — set a key there only to override its shipped default).
 | `configmap.TRUSTED_PROXIES` | Comma list of CIDRs the console trusts as its own hops, see [Client IP resolution](#client-ip-resolution) | unset (no client IP is resolved) |
 | `configmap.PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address used for the SSO redirect, see [Keys with no default](#keys-with-no-default) | unset (falls back to the cluster-internal `PLUGIN_AUTH_BASE_PATH`) |
 | `configmap.MFA_ENABLED` | Tells the console the Access Manager may answer a password with an MFA challenge, see [Keys with no default](#keys-with-no-default) | unset (the image's own default) |
-| `configmap.MULTI_TENANT_ENABLED` | Multi-tenant install | unset |
 | `configmap.MIDAZ_CONSOLE_BASE_PATH` / `configmap.MIDAZ_CONSOLE_SERVICE_HOST` | The console's own public origin and in-cluster host name | unset |
 | `configmap.FETCHER_BASE_PATH` / `PLUGIN_FEES_BASE_PATH` / `FLOWKER_BASE_PATH` / `TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
 | `configmap.NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS` / `configmap.NEXT_PUBLIC_DEMO_MODE` | Frontend navigation list and demo presentation mode | unset |
@@ -98,7 +97,7 @@ service/namespace names.
 ### Keys with no default
 
 Most `configmap.<KEY>` entries ship a default that is right for a standard
-in-cluster install. Twelve do not, because no default is safe to invent for
+in-cluster install. Eleven do not, because no default is safe to invent for
 them: an address that depends on where you deployed a sibling release, an
 assertion about the deployment, or a flag the browser reads. The chart writes
 nothing for an unset one, so the console keeps whatever its own image does.
@@ -108,7 +107,6 @@ nothing for an unset one, so the console keeps whatever its own image does.
 | `TRUSTED_PROXIES` | CIDRs the console trusts as its own hops | Missing: no caller is ever named, so a tenant IP allowlist has nothing to judge. Wrong: see [Client IP resolution](#client-ip-resolution) |
 | `PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address (absolute, https, ends in `/v1`) | Missing: SSO redirects the browser to the cluster-internal name, which it cannot resolve. Only local dev, where both are `localhost`, can leave it out |
 | `MFA_ENABLED` | Assertion that the Access Manager in front of this console may answer a correct password with an MFA challenge. It enables MFA for nobody — that is per user, in the Access Manager | Missing where MFA is on: the console does not recognise the challenge, and a user with MFA enabled cannot sign in at all |
-| `MULTI_TENANT_ENABLED` | This instance serves several tenants | Set on a single-tenant install: the console expects a tenant context the Access Manager never sends |
 | `MIDAZ_CONSOLE_BASE_PATH` | The console's own public origin, as the browser sees it | Links the console builds for itself point where the user cannot reach |
 | `MIDAZ_CONSOLE_SERVICE_HOST` | The console's own in-cluster host name | The console cannot address itself from inside the cluster |
 | `FETCHER_BASE_PATH` | Fetcher, `/v1` | Feature pages have no address to call |

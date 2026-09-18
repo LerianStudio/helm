@@ -18,9 +18,6 @@ data:
   # Application Configuration
   NODE_ENV: {{ $cm.NODE_ENV | default "production" | quote }}
   MIDAZ_CONSOLE_PORT: {{ $cm.MIDAZ_CONSOLE_PORT | default "8081" | quote }}
-  {{- with (include $opt (dict "cm" $cm "key" "MULTI_TENANT_ENABLED")) }}
-  {{ . }}
-  {{- end }}
   {{- with (include $opt (dict "cm" $cm "key" "MIDAZ_CONSOLE_SERVICE_HOST")) }}
   {{ . }}
   {{- end }}

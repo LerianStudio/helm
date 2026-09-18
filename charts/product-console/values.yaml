@@ -248,11 +248,6 @@ otel:
 #     and can let a caller choose the address it is judged by. Read the README
 #     section "Client IP resolution" before choosing a range.
 #
-#   MULTI_TENANT_ENABLED: "true"
-#     Whether this console instance serves several tenants. Only set it where
-#     the Access Manager in front of the console is itself multi-tenant; a
-#     single-tenant install leaves it unset.
-#
 #   MIDAZ_CONSOLE_BASE_PATH: "https://console.example.com"
 #     The console's own public origin, as the browser sees it. Same host as
 #     NEXTAUTH_URL in virtually every deployment. Wrong here means links the

@@ -135,10 +135,6 @@ configmap:
   # off; set where it is on, or a user with MFA cannot sign in at all.
   # MFA_ENABLED: "true"
 
-  # Set only on a multi-tenant install, where the Access Manager is itself
-  # multi-tenant.
-  # MULTI_TENANT_ENABLED: "true"
-
   # Account Type Validation
   MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: "false"
   MIDAZ_ACCOUNT_TYPE_VALIDATION: ""

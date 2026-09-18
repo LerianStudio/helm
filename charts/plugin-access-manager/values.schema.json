@@ -11,9 +11,13 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "baseUrl": {
+              "type": "string",
+              "description": "Scheme + host (plus path prefix) the console is served from. The chart appends the console SSO callback route. Empty omits the key."
+            },
             "callbackUrl": {
               "type": "string",
-              "description": "Browser-facing SSO callback URL, shared by identity and auth. Absolute http(s) URL with a path; empty omits the key."
+              "description": "Literal full callback URL, replacing composition from baseUrl. Absolute http(s) URL with a path. Mutually exclusive with baseUrl."
             }
           }
         }

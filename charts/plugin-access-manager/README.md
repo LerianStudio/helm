@@ -187,7 +187,7 @@ ingress:
 | `tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `affinity` | Affinity rules for pod scheduling | `{}` |
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
-| `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Per-component override of `common.sso.callbackUrl`. Must match the auth component — see [Single sign-on](#single-sign-on-commonssocallbackurl) | unset |
+| `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Literal callback URL for this component, overriding `common.sso.*`. Must match the auth component — see [Single sign-on](#single-sign-on-commonssobaseurl) | unset |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
 
@@ -228,34 +228,72 @@ ingress:
 | `affinity` | Affinity rules for pod scheduling | `{}` |
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
 | `configmap.MFA_ENABLED` | Multi-factor authentication gate. Unset omits the key and leaves the application default in force | unset |
-| `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Per-component override of `common.sso.callbackUrl`. Must match the identity component — see [Single sign-on](#single-sign-on-commonssocallbackurl) | unset |
+| `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Literal callback URL for this component, overriding `common.sso.*`. Must match the identity component — see [Single sign-on](#single-sign-on-commonssobaseurl) | unset |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
 
-#### Single sign-on (`common.sso.callbackUrl`)
+#### Single sign-on (`common.sso.baseUrl`)
 
 An SSO login leaves the platform for the identity provider and has to come back.
-`common.sso.callbackUrl` is the address it comes back to — the URL in the user's
-browser, which is the console's sign-in callback page, not any address inside
-the cluster.
+The address it comes back to has two halves, and they belong to different people:
 
-It is **required to configure an SSO provider at all**. Without it, identity
-refuses to save the provider and answers the request with an error; the provider
-would otherwise look saved while no login through it could ever complete. It must
-be an absolute `http(s)` URL with a path.
+| half | example | whose |
+| --- | --- | --- |
+| scheme + host (+ path prefix) | `https://console.example.com` | **yours** — you map the console on your own domain; the chart cannot know or derive it |
+| callback path | `/signin/sso/callback` | **ours** — the console route the browser lands on; do not change it |
+
+So you give the chart the first half and it composes the second:
 
 ```yaml
 common:
   sso:
-    callbackUrl: "https://console.example.com/signin/sso/callback"
+    baseUrl: "https://console.example.com"
+    # -> https://console.example.com/signin/sso/callback
 ```
+
+Serving the console under a path prefix works the same way —
+`baseUrl: "https://apps.example.com/console"` yields
+`https://apps.example.com/console/signin/sso/callback`.
+
+**Why the chart composes it instead of taking the whole URL.** A mistyped path is
+the most likely mistake here and by far the hardest to diagnose: Caradhras rejects
+a `redirect_uri` that is not on its allow-list without saying which part was wrong,
+so `/signin/sso/calback` produces a login that fails with an error naming nothing.
+Composing takes that mistake off the table.
+
+Setting this is **required to configure an SSO provider at all**. Without it,
+identity refuses to save the provider and answers the request with an error; the
+provider would otherwise look saved while no login through it could ever complete.
+
+**The escape hatch.** A console on a custom route, or behind a proxy that rewrites
+the path, sets the whole URL literally instead:
+
+```yaml
+common:
+  sso:
+    callbackUrl: "https://console.example.com/custom/sso/return"
+```
+
+`baseUrl` and `callbackUrl` are alternatives, not layers — one asks the chart to
+append the route, the other supplies the finished URL — and the chart refuses to
+render when both are set. It also refuses a `baseUrl` that already ends in
+`/signin/sso/callback`, which is what a full URL pasted into the wrong field looks
+like and would otherwise double the path.
+
+**What the chart validates before you deploy.** The resolved URL must be an
+absolute `http(s)` URL carrying a concrete path — the same rule the binary applies
+(`isAbsoluteCallbackURL`). A host with no path is refused on purpose: Casdoor
+treats an allow-list entry without a path as a wildcard over every path on that
+host *and its subdomains*, so a half-formed value would widen the allow-list
+instead of authorising one endpoint. Failing at `helm template` names the values
+field; failing at runtime is a provider that saves and never completes a login.
 
 **One value, both components, and the chart enforces it.** identity writes the URL
 into the Caradhras provider's redirect allow-list; auth then sends the same URL as
 the `redirect_uri` of the code relay, and Caradhras rejects any `redirect_uri` the
 allow-list does not carry. Two different values therefore deploy cleanly and break
-at the first login, with an error that names neither component. Setting
-`common.sso.callbackUrl` is enough; the per-component
+at the first login, with an error that names neither component. The shared
+`common.sso.*` fields give that for free; the per-component
 `{identity,auth}.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` overrides exist for
 migration, and the chart **refuses to render** whenever the two resolve differently.
 
@@ -280,6 +318,25 @@ map, so the key would be emitted twice and the surviving value is whatever the
 YAML parser keeps — the chart refuses rather than shipping an install whose
 effective configuration nobody can read off the values file. When migrating,
 delete the `extraEnvVars` entry in the same change that adds the named key.
+
+```yaml
+# before
+auth:
+  extraEnvVars:
+    PLUGIN_AUTH_SSO_CALLBACK_URL: "https://console.example.com/signin/sso/callback"
+    MFA_ENABLED: "true"
+identity:
+  extraEnvVars:
+    PLUGIN_AUTH_SSO_CALLBACK_URL: "https://console.example.com/signin/sso/callback"
+
+# after
+common:
+  sso:
+    baseUrl: "https://console.example.com"
+auth:
+  configmap:
+    MFA_ENABLED: "true"
+```
 
 ### Caradhras Service (auth backend)
 

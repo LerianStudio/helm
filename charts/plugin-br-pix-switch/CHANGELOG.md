@@ -4,6 +4,35 @@
 
 - **Features:**
   - Introduced schema migration Jobs.
+  - Added support for shared multi-path ingresses.
+  - Implemented per-component image repository defaults.
+  - Auto-wired URLs to in-cluster subcharts.
+  - Added MongoDB and RabbitMQ subchart dependencies.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Matched probe template fallbacks to per-component routePrefix.
+  - Adjusted probe paths to follow per-component routePrefix.
+  - Swapped `envFrom` order to ensure Secret overrides ConfigMap.
+  - Set default `PLUGIN_AUTH_URL` on auth-using components.
+
+- **Improvements:**
+  - Removed dead `global.image` block.
+  - Documented subchart credentials and external-secret pattern.
+  - Added wait-for-dependencies init container.
+  - Refactored chart to multi-component structure.
+  - Standardized probe field set across all charts.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
+- **Features:**
+  - Introduced schema migration Jobs.
   - Added default `DEPLOYMENT_MODE` set to `byoc`.
   - Implemented shared multi-path ingresses.
   - Auto-derive OTEL service version and node-IP OTLP endpoint.

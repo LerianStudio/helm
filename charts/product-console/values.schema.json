@@ -133,7 +133,6 @@
     "configmap": {
       "type": "object",
       "properties": {
-        "FETCHER_BASE_PATH": { "type": ["string", "null"] },
         "FLOWKER_BASE_PATH": { "type": ["string", "null"] },
         "MFA_ENABLED": { "type": ["string", "boolean", "null"] },
         "MIDAZ_CONSOLE_BASE_PATH": { "type": ["string", "null"] },

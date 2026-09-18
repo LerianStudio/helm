@@ -69,7 +69,7 @@ empty — set a key there only to override its shipped default).
 | `configmap.PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address used for the SSO redirect, see [Keys with no default](#keys-with-no-default) | unset (falls back to the cluster-internal `PLUGIN_AUTH_BASE_PATH`) |
 | `configmap.MFA_ENABLED` | Tells the console the Access Manager may answer a password with an MFA challenge, see [Keys with no default](#keys-with-no-default) | unset (the image's own default) |
 | `configmap.MIDAZ_CONSOLE_BASE_PATH` / `configmap.MIDAZ_CONSOLE_SERVICE_HOST` | The console's own public origin and in-cluster host name | unset |
-| `configmap.FETCHER_BASE_PATH` / `PLUGIN_FEES_BASE_PATH` / `FLOWKER_BASE_PATH` / `TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
+| `configmap.PLUGIN_FEES_BASE_PATH` / `FLOWKER_BASE_PATH` / `TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
 | `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the subchart's own generated password, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
@@ -96,7 +96,7 @@ service/namespace names.
 ### Keys with no default
 
 Most `configmap.<KEY>` entries ship a default that is right for a standard
-in-cluster install. Nine do not, because no default is safe to invent for
+in-cluster install. Eight do not, because no default is safe to invent for
 them: an address that depends on where you deployed a sibling release, an
 assertion about the deployment, or a flag the browser reads. The chart writes
 nothing for an unset one, so the console keeps whatever its own image does.
@@ -108,7 +108,6 @@ nothing for an unset one, so the console keeps whatever its own image does.
 | `MFA_ENABLED` | Assertion that the Access Manager in front of this console may answer a correct password with an MFA challenge. It enables MFA for nobody — that is per user, in the Access Manager | Missing where MFA is on: the console does not recognise the challenge, and a user with MFA enabled cannot sign in at all |
 | `MIDAZ_CONSOLE_BASE_PATH` | The console's own public origin, as the browser sees it | Links the console builds for itself point where the user cannot reach |
 | `MIDAZ_CONSOLE_SERVICE_HOST` | The console's own in-cluster host name | The console cannot address itself from inside the cluster |
-| `FETCHER_BASE_PATH` | Fetcher, `/v1` | Feature pages have no address to call |
 | `PLUGIN_FEES_BASE_PATH` | Fees, `/v1` | idem |
 | `FLOWKER_BASE_PATH` | Flowker, `/v1` | idem |
 | `TRACER_BASE_PATH` | Tracer, **bare origin, no `/v1`** — the console adds it | idem; with a `/v1` suffix every call goes to `/v1/v1/...` |

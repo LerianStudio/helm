@@ -196,7 +196,6 @@ application's own built-in default stays in force.
 */}}
 {{- define "product-console.optionalConfigKeys" -}}
 {{- list
-  "FETCHER_BASE_PATH"
   "FLOWKER_BASE_PATH"
   "MFA_ENABLED"
   "MIDAZ_CONSOLE_BASE_PATH"

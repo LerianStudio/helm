@@ -275,16 +275,15 @@ otel:
 #     Set it wherever MFA is on: without it the console does not recognise the
 #     challenge, and a user who has MFA enabled cannot sign in at all.
 #
-#   FETCHER_BASE_PATH:     "http://fetcher-manager.fetcher.svc.cluster.local:4006/v1"
 #   PLUGIN_FEES_BASE_PATH: "http://plugin-fees.plugin-fees.svc.cluster.local:4002/v1"
 #   FLOWKER_BASE_PATH:     "http://flowker.flowker.svc.cluster.local:4021/v1"
 #   TRACER_BASE_PATH:      "http://midaz-tracer.midaz.svc.cluster.local:4020"
-#     Addresses of four OPTIONAL sibling services. Unlike the ledger and the
+#     Addresses of three OPTIONAL sibling services. Unlike the ledger and the
 #     Access Manager, these may simply not be installed, which is why the chart
 #     invents no address for them: a default would turn "this feature is not
 #     installed" into a connection error on the page. Set the one you deployed,
 #     to its own release name and namespace. TRACER_BASE_PATH is a bare origin
-#     with no /v1 — the console adds that itself; the other three end in /v1.
+#     with no /v1 — the console adds that itself; the other two end in /v1.
 configmap: {}
 
 # -- Extra environment variables from ConfigMap (merged with configmap values)

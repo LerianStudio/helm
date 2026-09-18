@@ -104,7 +104,6 @@ configmap:
   # Optional sibling services. Set only the ones you deployed; an unset key is
   # written nowhere, which is what keeps "not installed" from reading as a
   # connection error on the page. TRACER_BASE_PATH is a bare origin, no /v1.
-  # FETCHER_BASE_PATH: "http://fetcher-manager.fetcher.svc.cluster.local:4006/v1"
   # PLUGIN_FEES_BASE_PATH: "http://plugin-fees.plugin-fees.svc.cluster.local:4002/v1"
   # FLOWKER_BASE_PATH: "http://flowker.flowker.svc.cluster.local:4021/v1"
   # TRACER_BASE_PATH: "http://midaz-tracer.midaz.svc.cluster.local:4020"

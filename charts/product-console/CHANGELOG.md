@@ -1,5 +1,20 @@
 # Product-console Changelog
 
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.1.0)
+
+- **Features:**
+  - Declare only the keys the console reads.
+  - Drop `FETCHER_BASE_PATH`, a key nothing reads.
+  - Keep platform flags out of the declared keys.
+  - Drop `MULTI_TENANT_ENABLED` from the declared keys.
+  - Declare the twelve configmap keys the chart dropped.
+
+Contributors: @guimoreirar, @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.6...product-console-v4.1.0)
+
+---
+
 ## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
 
 - **Features**

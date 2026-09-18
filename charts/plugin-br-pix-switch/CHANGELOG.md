@@ -2,6 +2,28 @@
 
 ## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
 
+- **Features:**
+  - Added schema migration Jobs.
+  - Implemented providersIngress for outbound-provider adapters.
+  - Introduced shared multi-path ingresses.
+  - Auto-derive OTEL service version and node-IP OTLP endpoint.
+  - Added bootstrap Jobs for Postgres and MongoDB.
+
+- **Fixes:**
+  - Corrected providers ingress default path from `/mock-btg` to `/btg-mock`.
+  - Matched probe template fallbacks to per-component routePrefix.
+  - Ensured probe paths follow per-component routePrefix.
+  - Swapped `envFrom` order so Secret overrides ConfigMap.
+  - Addressed bootstrap Job issues surfaced by live install test.
+
+Contributors: @digocelos, @ferr3ira-gabriel, @fredcamaral, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-switch-v1.0.0...plugin-br-pix-switch-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-switch-v2.0.0)
+
 - **Features**
   - Introduced schema migration Jobs.
   - Implemented providersIngress for outbound-provider adapters.

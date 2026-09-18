@@ -4,6 +4,108 @@
 
 - **Features**
   - Added a getting-started installation runbook in both English and Portuguese (pt-br).
+  - Added documentation on what the volume warning holds for.
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart empties its volume.
+  - Ensured values are retained when repairing splits.
+  - Implemented refusal for secret names that are only spaces.
+  - Addressed issue with existing secrets having no name.
+  - Provided a reliable namespace remedy.
+  - Corrected the service name created by Bitnami.
+
+- **Improvements**
+  - Enhanced documentation with a Helm upgrade guide for version 4.0.5.
+  - Updated documentation to address authentication credentials, CORS settings, and DocumentDB TLS insecurity caveats.
+  - Improved port-forward readiness checks before executing curl commands.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added a getting-started installation runbook in both English and Portuguese (pt-br).
+  - Added documentation for waiting for port-forward readiness before executing curl commands for CodeRabbit parity.
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Updated messaging to indicate that moving the subchart will empty its volume.
+  - Ensured that values are retained when repairing a split.
+  - Implemented a refusal for secret names that consist only of spaces.
+  - Added a remedy for namespace issues that is consistently effective.
+  - Corrected the service name to reflect what Bitnami actually creates.
+  - Implemented a refusal for existing secrets that have no name.
+
+- **Improvements**
+  - Clarified documentation regarding the volume warning and its implications.
+  - Enhanced documentation to cover authentication credentials cross-references, ALLOWED_ORIGINS/CORS, and DocumentDB tlsInsecure caveats.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added getting-start installation runbook in both English and Portuguese (pt-br).
+
+- **Fixes**
+  - Instructed the operator to back up the database.
+  - Specified that moving the subchart empties its volume.
+  - Ensured values are retained when repairing the split.
+  - Refused secret names that consist only of spaces.
+  - Provided a remedy for namespace issues that consistently works.
+
+- **Improvements**
+  - Clarified what the volume warning pertains to.
+  - Updated documentation to address authentication credentials, ALLOWED_ORIGINS/CORS, and DocumentDB tlsInsecure caveat.
+  - Added a Helm upgrade guide for product-console v4.0.5.
+  - Improved documentation to wait for port-forward readiness before executing curl commands for better reliability.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added getting-started installation runbook in both English and Portuguese (pt-br).
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart empties its volume.
+  - Ensured values are retained when repairing the split.
+  - Implemented refusal for secret names that consist only of spaces.
+  - Addressed issue with existing secrets having no name.
+  - Provided a reliable namespace remedy.
+  - Correctly named the service created by Bitnami.
+
+- **Improvements**
+  - Clarified the purpose of the volume warning.
+  - Documented what version 4.0.2 included and omitted.
+  - Enhanced documentation with references to authentication credentials, CORS settings, and DocumentDB TLS settings.
+  - Added a Helm upgrade guide for version 4.0.5.
+  - Improved port-forward readiness documentation for better parity with CodeRabbit.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added a getting-started installation runbook in both English and Portuguese (pt-br).
 
 - **Fixes**
   - Instructed operators to back up the database.

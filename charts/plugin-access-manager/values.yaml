@@ -405,6 +405,54 @@ caradhras:
   # privilege, and the target database/schema is typically provisioned ahead
   # of time (see benedita sandbox permission-denied incident, 2026-08-25).
   createDatabase: false
+  # -- Caradhras (beego) config keys. Names are the beego literals, camelCase:
+  # caradhras reads them with conf.GetConfigString, which looks up the exact
+  # key in the environment. The auth/identity REDIS_* names are NOT read here.
+  configmap:
+    # -- Shared session store for a Redis that needs NO AUTH, `host:port` with
+    # no space. Empty (the default) keeps login sessions in a file on each pod's
+    # own filesystem, which only works with a single pod: above one replica a
+    # login started on one pod and finished on another fails with "unknown
+    # authentication type". REQUIRED whenever caradhras runs more than one
+    # replica — the chart refuses to render when replicas are pinned above 1
+    # without a session store on either channel.
+    # This value is rendered into a ConfigMap, so it must NOT carry a password:
+    # beego's endpoint is positional (host:port,poolsize,password,dbnum) and the
+    # chart refuses to render a third field here. For a Redis with AUTH use
+    # caradhras.secrets.redisEndpoint below.
+    redisEndpoint: ""
+    # -- Whether to reach the session store over TLS ("true"/"false"). Only
+    # emitted when an endpoint is configured on either channel. Also resolvable
+    # once for every component via the datastore mask
+    # (global.datastores.redis.tls).
+    redisTls: ""
+  # -- Sensitive caradhras configuration.
+  # @default -- templates/caradhras/secrets.yaml
+  secrets:
+    # -- Session store connection string for a Redis that requires AUTH, in
+    # beego's positional form `host:port,poolsize,password[,dbnum]`. Written to
+    # the caradhras Secret and injected with secretKeyRef, so the password never
+    # reaches a ConfigMap. Mutually exclusive with
+    # caradhras.configmap.redisEndpoint.
+    redisEndpoint: ""
+  # -- Set true to manage the caradhras Secret yourself: the chart creates none
+  # and reads key `redisEndpoint` from existingSecretName instead.
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Redis/Valkey AUTH password, injected as the beego config key
+  # `redisPassword` by secretKeyRef — the same delivery DB_PASSWORD already uses
+  # on this workload. Caradhras hands it to both redis consumers (the session
+  # store and the rate limiter), so the endpoint above stays a bare `host:port`
+  # and the password never has to be spliced into a connection string.
+  redisPassword:
+    # -- Opt-in. Off by default: a Redis without AUTH needs nothing here.
+    enabled: false
+    # -- Secret holding the password. Empty uses the auth Secret, which already
+    # carries REDIS_PASSWORD (auth.secrets.REDIS_PASSWORD) and is where the
+    # caradhras DB_PASSWORD already reads from.
+    secretName: ""
+    # -- Key inside that Secret.
+    secretKey: REDIS_PASSWORD
   service:
     # -- Kubernetes service type for the caradhras component
     type: ClusterIP

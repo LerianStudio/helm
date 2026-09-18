@@ -1,5 +1,63 @@
 # Plugin-access-manager Changelog
 
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.3.0)
+
+- **Features:**
+  - Added named Caradhras session store keys.
+
+- **Fixes:**
+  - Delivered Caradhras session password by Secret.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.4...plugin-access-manager-v9.3.0)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
+
+- **Improvements**
+  - Scoped the silent-failure claim to existing-tag mis-pins.
+  - Reflected render-time guard in casdoor-migrations warnings.
+  - Added warnings about casdoor-migrations override and guard.
+
+- **Documentation**
+  - Added an upgrade guide for plugin-access-manager v9.2.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.3...plugin-access-manager-v9.2.4)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
+
+- **Improvements:**
+  - Scoped the silent-failure claim to existing-tag mis-pins in documentation.
+  - Reflected render-time guard in `casdoor-migrations` warnings within documentation.
+  - Added warnings about `casdoor-migrations` override and guard in documentation.
+  - Added an upgrade guide for plugin-access-manager v9.2.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.3...plugin-access-manager-v9.2.4)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
+
+- **Improvements:**
+  - Scoped the silent-failure claim to existing-tag mis-pins in documentation.
+  - Reflected render-time guard in Casdoor migrations warnings.
+  - Added warnings about Casdoor migrations override and guard in documentation.
+  - Added an upgrade guide for version 9.2.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.2.3...plugin-access-manager-v9.2.4)
+
+---
+
 ## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.2.4)
 
 - **Improvements:**

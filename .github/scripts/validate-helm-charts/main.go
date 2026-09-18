@@ -62,6 +62,15 @@ var allowlistedCredentialDefaults = map[string]bool{
 	// plugin-access-manager ships a default initUser.adminPassword so existing releases keep
 	// their admin login across upgrades; operators are expected to override it in production.
 	"plugin-access-manager:auth.initUser.adminPassword": true,
+	// reporter's BUNDLED groundhog2k RabbitMQ (rabbitmq.enabled=true) is dev/local-only —
+	// production points at an EXTERNAL broker with real, per-tier credentials. A configured
+	// load_definitions import makes RabbitMQ skip seeding the default user, so the reporter
+	// user must be declared in the definitions with a salted password_hash Helm cannot derive
+	// from the plaintext; both are shipped as a matching dev pair so a from-scratch one-command
+	// `helm install` reaches 1/1. A render-time guard forces operators who change one to change
+	// the other. Not a production credential.
+	"reporter:secrets.RABBITMQ_DEFAULT_PASS":        true,
+	"reporter:rabbitmq.loadDefinition.passwordHash": true,
 }
 
 type chartYAML struct {
@@ -433,7 +442,7 @@ var configMapKindPattern = regexp.MustCompile(`(?m)^\s*kind:\s*ConfigMap\s*$`)
 // configMapDataKeyPattern captures a data-block key/value in a ConfigMap
 // template, e.g.
 //
-//	  SOME_PASSWORD: {{ .Values.x }}
+//	SOME_PASSWORD: {{ .Values.x }}
 //
 // Group 1 is the key name, group 2 the (template) value text. Pure-template
 // lines ({{- if ... }}, comments) do not match because they lack the `KEY:`

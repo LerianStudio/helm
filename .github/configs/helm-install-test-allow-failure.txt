@@ -9,7 +9,13 @@
 # are triaged, one line and one reason at a time. It is a queue of work, not a
 # permanent exemption.
 #
-# Format: <chart>   # reason
+# Format: <chart> [class]   # reason
+#   class `any` (default when omitted): every failure is absorbed — for a chart with
+#   a real, triaged defect.
+#   class `readiness`: only the install script's exit 2 is absorbed — every manifest
+#   was accepted and applied, the workload never became Ready. A render, admission,
+#   hook or upgrade error in that chart still fails the gate. For a chart that is
+#   sound but needs a datastore kind does not run.
 #
 tracer                # PodDisruptionBudget sets BOTH minAvailable and maxUnavailable — the API server rejects it ("cannot be both set"). Real chart bug: the PDB template/values must emit only one.
 reporter              # References external KEDA custom resources (keda.sh/v1alpha1: ScaledObject / ScaledJob / TriggerAuthentication) whose CRDs are not present in a bare kind cluster. Needs the KEDA CRDs pre-installed (a future enhancement) or the chart guarded behind a toggle.

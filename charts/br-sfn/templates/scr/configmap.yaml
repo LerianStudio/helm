@@ -1,3 +1,0 @@
-{{- if $.Values.scr.enabled -}}
-{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "scr" "comp" $.Values.scr) }}
-{{- end -}}

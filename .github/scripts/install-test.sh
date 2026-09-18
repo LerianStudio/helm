@@ -99,7 +99,20 @@ diagnose() {
                | awk '$3 != "Running" && $3 != "Completed" {print $1}')
   done
 }
-fail() {
+# Exit 2 marks the ONE failure class an allow-list entry tagged `readiness` may
+# absorb: helm applied every manifest and `--wait` then gave up on a workload that
+# never became Ready (helm says "not ready" / "context deadline exceeded" / "timed
+# out waiting"). A render, admission, hook or immutable-field error exits 1, so a
+# chart that only lacks a datastore in kind cannot hide a broken template behind
+# that fact. A hook Job that never completes ALSO says "timed out waiting", but
+# helm names the hook in the same message ("failed pre-install: ...",
+# "pre-upgrade hooks failed: ..."), and that is a hook defect, not readiness.
+readiness_rc() {
+  grep -qE 'failed (pre|post)-(install|upgrade|rollback|delete)|hooks? failed' <<<"$1" && { echo 1; return; }
+  grep -qE 'not ready|context deadline exceeded|timed out waiting' <<<"$1" && echo 2 || echo 1
+}
+
+fail() { # <message> [exit-code]
   echo "::error::[$CHART] $1"
   kubectl get events -n "$NS" --sort-by=.lastTimestamp 2>/dev/null | tail -15
   [[ "$MODE" == deep ]] && diagnose
@@ -116,7 +129,7 @@ fail() {
   .github/configs/helm-install-test-allow-failure.txt with a one-line reason.
 HINT
   cleanup
-  exit 1
+  exit "${2:-1}"
 }
 # Deletion is waited on, not fired and forgotten. do_install runs straight after
 # cleanup, and a namespace still Terminating rejects the create — an error this
@@ -227,7 +240,9 @@ cleanup  # idempotent: clear any stale release/namespace from a prior aborted ru
 
 # ---- 1. Fresh install of the PR chart (server-side manifest validation) ----
 echo "===== [$CHART] install (PR) ====="
-do_install "$REL" "$CHART_DIR" || fail "helm install failed (invalid manifest / admission / hook)"
+out="$(do_install "$REL" "$CHART_DIR")" \
+  || { printf '%s\n' "$out"; fail "helm install failed (invalid manifest / admission / hook / never Ready)" "$(readiness_rc "$out")"; }
+printf '%s\n' "$out"
 deployed "$REL" || fail "release not in deployed state"
 n=0; for x in "$NS" $TARGETS; do n=$((n + $(kubectl get all -n "$x" --no-headers 2>/dev/null | wc -l))); done
 echo "  created $n objects"
@@ -238,8 +253,8 @@ echo "  created $n objects"
 # (new revision, STATUS deployed). Forcing a value change is unsafe — a strict
 # root-closed schema (e.g. br-sfn) rejects an injected podAnnotations key.
 echo "===== [$CHART] upgrade (PR -> PR) ====="
-helm upgrade "$REL" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} -n "$NS" --timeout "$TIMEOUT" >/dev/null 2>&1 \
-  && deployed "$REL" || fail "in-place upgrade failed"
+out="$(helm upgrade "$REL" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} -n "$NS" --timeout "$TIMEOUT" 2>&1)" \
+  && deployed "$REL" || { printf '%s\n' "$out"; fail "in-place upgrade failed" "$(readiness_rc "$out")"; }
 
 # Free the PR release before the baseline so only ONE release is ever installed at
 # a time — two full installs of a subchart-heavy chart exhaust a single-node kind
@@ -307,14 +322,14 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
   # place.
   if ! base_out="$(do_install "${REL}-base" "$BASE_DIR" base 2>&1)"; then
     printf '%s\n' "$base_out" | tail -20 | sed 's/^/    /'
-    fail "baseline install from origin/main failed, so the upgrade path went untested"
+    fail "baseline install from origin/main failed, so the upgrade path went untested" "$(readiness_rc "$base_out")"
   fi
   if ! deployed "${REL}-base"; then
     helm status "${REL}-base" -n "$NS" 2>&1 | tail -20 | sed 's/^/    /'
     fail "baseline install from origin/main reported success but the release never reached deployed, so the upgrade path went untested"
   fi
-  helm upgrade "${REL}-base" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} -n "$NS" --timeout "$TIMEOUT" >/dev/null 2>&1 \
-    && deployed "${REL}-base" || fail "upgrade from origin/main failed (immutable-field break?)"
+  out="$(helm upgrade "${REL}-base" "$CHART_DIR" ${VARGS[@]+"${VARGS[@]}"} ${HOOKS[@]+"${HOOKS[@]}"} ${WAIT[@]+"${WAIT[@]}"} -n "$NS" --timeout "$TIMEOUT" 2>&1)" \
+    && deployed "${REL}-base" || { printf '%s\n' "$out"; fail "upgrade from origin/main failed (immutable-field break?)" "$(readiness_rc "$out")"; }
   echo "  origin/main -> PR upgrade OK"
 else
   echo "  (new chart — not on origin/main; skipping baseline upgrade)"

@@ -1,5 +1,79 @@
 # Reporter Changelog
 
+## [4.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.2)
+
+- **Fixes:**
+  - Locked bundled RabbitMQ to its fixed development credential and fixed the mongosh recipe.
+  - Corrected bundled-RabbitMQ hash recipe and rejected the use of existing secrets.
+  - Provisioned the app user on the bundled RabbitMQ broker.
+
+- **Improvements:**
+  - Pinned app image to version 3.0.2, which includes the inline-CA release.
+
+- **Documentation:**
+  - Added a recipe to fetch the regional AWS CA for CRM inline TLS.
+  - Documented CRM datasource over TLS with an inline CA bundle.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.1...reporter-v4.3.2)
+
+---
+
+## [4.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.2)
+
+- **Fixes:**
+  - Locked bundled RabbitMQ to its fixed development credential and fixed the mongosh recipe.
+  - Corrected the bundled-RabbitMQ hash recipe and rejected the use of `useExistingSecret`.
+  - Provisioned the app user on the bundled RabbitMQ broker.
+
+- **Improvements:**
+  - Pinned app image to version 3.0.2, which includes the inline-CA release.
+
+- **Documentation:**
+  - Added a recipe to fetch the regional AWS CA for CRM inline TLS.
+  - Documented CRM datasource over TLS with an inline CA bundle.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.1...reporter-v4.3.2)
+
+---
+
+## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.1)
+
+- **Fixes**
+  - Guard opt-in CRM configuration to prevent potential errors.
+  - Pin stable 3.0.1 release to ensure consistent performance.
+
+- **Improvements**
+  - Added a getting-started installation runbook available in both English and Portuguese.
+  - Addressed CodeRabbit guidelines regarding release-name rules, AWS-only broker preset, and port-forward readiness.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.0...reporter-v4.3.1)
+
+---
+
+## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.1)
+
+- **Features**
+  - Added a getting-started installation runbook available in English and Portuguese (pt-br).
+
+- **Fixes**
+  - Implemented a guard for opt-in CRM configuration to enhance stability.
+  - Pinned stable release to version 3.0.1 to ensure reliability.
+
+- **Improvements**
+  - Addressed CodeRabbit guidelines, including release-name rules, AWS-only broker preset, and port-forward readiness.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.0...reporter-v4.3.1)
+
+---
+
 ## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.1)
 
 - **Fixes**

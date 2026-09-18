@@ -5,7 +5,19 @@
   "properties": {
     "common": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "sso": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "callbackUrl": {
+              "type": "string",
+              "description": "Browser-facing SSO callback URL, shared by identity and auth. Absolute http(s) URL with a path; empty omits the key."
+            }
+          }
+        }
+      }
     },
     "identity": {
       "type": "object",

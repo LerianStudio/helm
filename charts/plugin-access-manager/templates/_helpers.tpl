@@ -551,3 +551,70 @@ never has to be spliced into a connection string.
       name: {{ include "plugin-caradhras.redisPasswordSecretName" . }}
       key: {{ $rp.secretKey | default "REDIS_PASSWORD" }}
 {{- end }}
+
+{{/*
+plugin-access-manager.ssoCallbackUrl — the browser-facing URL Caradhras sends the
+user back to after an SSO login, resolved for ONE component.
+
+Arguments: context (the root $), component ("auth" or "identity").
+
+Resolution: the component's own native key wins, then the shared
+common.sso.callbackUrl, then empty. Empty means the key is not emitted at all,
+so an install that does not use SSO renders exactly as it did before this key
+existed.
+
+The value is NOT derived from PLUGIN_AUTH_ADDRESS: that is the in-cluster
+address the components use to reach each other, while this one has to be
+reachable by the end user's browser.
+*/}}
+{{- define "plugin-access-manager.ssoCallbackUrl" -}}
+{{- $ctx := .context -}}
+{{- $cm := (index $ctx.Values .component).configmap | default dict -}}
+{{- $shared := (($ctx.Values.common | default dict).sso | default dict).callbackUrl | default "" -}}
+{{- $cm.PLUGIN_AUTH_SSO_CALLBACK_URL | default $shared | toString -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.validateSsoCallbackUrl — render-time guards for the SSO
+callback URL. Included once, from templates/auth/configmap.yaml (always
+rendered).
+
+1. auth and identity must resolve to the SAME value. identity writes the URL
+   into the Caradhras provider's redirect allow-list; auth sends it as the
+   redirect_uri of the code relay, and Caradhras rejects any redirect_uri the
+   allow-list does not carry. A skew therefore does not fail at deploy time —
+   it fails at the first login, as a rejected redirect_uri that names neither
+   component. common.sso.callbackUrl alone always satisfies this; the guard
+   exists for the per-component native override.
+2. The named key and <component>.extraEnvVars must not both carry it. Both land
+   in the same ConfigMap `data` map, so the key would be emitted twice and
+   which one survives is the YAML parser's business, not the chart's — the same
+   undefined behavior this chart already refuses for the caradhras session
+   endpoint. Scoped to this key: an install that only uses extraEnvVars (no
+   named key) is untouched.
+*/}}
+{{- define "plugin-access-manager.validateSsoCallbackUrl" -}}
+{{- $authUrl := include "plugin-access-manager.ssoCallbackUrl" (dict "context" . "component" "auth") -}}
+{{- $idUrl := include "plugin-access-manager.ssoCallbackUrl" (dict "context" . "component" "identity") -}}
+{{- if ne $authUrl $idUrl -}}
+{{- fail (printf "PLUGIN_AUTH_SSO_CALLBACK_URL resolves to %q on auth and %q on identity. The two MUST be identical: identity registers this URL in the Caradhras provider's redirect allow-list, and auth sends it as the redirect_uri of the code relay, which Caradhras rejects when it is not on that list — so a skew deploys cleanly and then breaks every SSO login with a rejected redirect_uri. Set it ONCE in common.sso.callbackUrl instead of per component." $authUrl $idUrl) -}}
+{{- end -}}
+{{- range $component := (list "auth" "identity") -}}
+{{- $extra := (index $.Values $component).extraEnvVars | default dict -}}
+{{- if and (include "plugin-access-manager.ssoCallbackUrl" (dict "context" $ "component" $component)) (hasKey $extra "PLUGIN_AUTH_SSO_CALLBACK_URL") -}}
+{{- fail (printf "PLUGIN_AUTH_SSO_CALLBACK_URL is set as a named chart key AND in %s.extraEnvVars. Both render into the same ConfigMap data map, so the key would be emitted twice and the effective value is whatever the YAML parser keeps — undefined behavior. Keep it in common.sso.callbackUrl (or %s.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL) and remove it from %s.extraEnvVars." $component $component $component) -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.validateMfaEnabled — same collision guard for MFA_ENABLED,
+which the auth component alone reads.
+*/}}
+{{- define "plugin-access-manager.validateMfaEnabled" -}}
+{{- $cm := .Values.auth.configmap | default dict -}}
+{{- $extra := .Values.auth.extraEnvVars | default dict -}}
+{{- if and (not (kindIs "invalid" $cm.MFA_ENABLED)) (ne ($cm.MFA_ENABLED | toString) "") (hasKey $extra "MFA_ENABLED") -}}
+{{- fail "MFA_ENABLED is set both in auth.configmap and in auth.extraEnvVars. Both render into the same ConfigMap data map, so the key would be emitted twice and the effective value is whatever the YAML parser keeps — undefined behavior. Keep it in auth.configmap.MFA_ENABLED and remove it from auth.extraEnvVars." -}}
+{{- end -}}
+{{- end }}

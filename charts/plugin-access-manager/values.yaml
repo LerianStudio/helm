@@ -47,6 +47,18 @@ common:
     # templated by Helm, so components must never self-reference this with `{{ }}`.
     # Per-component override: {identity,auth}.configmap.AUTHORIZER_CLIENT_ID.
     clientId: "ac56c81d4d6d95c0ac12"
+  sso:
+    # -- Browser-facing URL the user is sent back to after an SSO login, shared by
+    # the identity and auth components. Must be an absolute http(s) URL with a path.
+    # Required to configure any SSO provider: identity refuses to save a provider
+    # without it, so the provider looks configurable but no login can ever complete.
+    # Empty (the default) omits PLUGIN_AUTH_SSO_CALLBACK_URL from both ConfigMaps.
+    # Set it HERE, not per component: identity registers the URL in the provider's
+    # redirect allow-list and auth sends it as the redirect_uri, and the chart
+    # refuses to render when the two resolve differently.
+    # Per-component override: {identity,auth}.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL.
+    # Not derivable from PLUGIN_AUTH_ADDRESS — that is the in-cluster address.
+    callbackUrl: ""
 identity:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -341,6 +353,9 @@ auth:
     # ENV_NAME is resolved via the global mask (global.env.name) — same rule:
     # do NOT pin it here, it WINS over the mask and defeats it. The default
     # ("development") lives in templates/auth/configmap.yaml.
+    # -- Multi-factor authentication gate. Unset (the default) omits MFA_ENABLED
+    # from the ConfigMap, leaving the application's own default in force.
+    # MFA_ENABLED: "false"
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data

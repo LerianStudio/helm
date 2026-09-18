@@ -187,6 +187,7 @@ ingress:
 | `tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `affinity` | Affinity rules for pod scheduling | `{}` |
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
+| `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Per-component override of `common.sso.callbackUrl`. Must match the auth component — see [Single sign-on](#single-sign-on-commonssocallbackurl) | unset |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
 
@@ -226,8 +227,59 @@ ingress:
 | `tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `affinity` | Affinity rules for pod scheduling | `{}` |
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
+| `configmap.MFA_ENABLED` | Multi-factor authentication gate. Unset omits the key and leaves the application default in force | unset |
+| `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Per-component override of `common.sso.callbackUrl`. Must match the identity component — see [Single sign-on](#single-sign-on-commonssocallbackurl) | unset |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
+
+#### Single sign-on (`common.sso.callbackUrl`)
+
+An SSO login leaves the platform for the identity provider and has to come back.
+`common.sso.callbackUrl` is the address it comes back to — the URL in the user's
+browser, which is the console's sign-in callback page, not any address inside
+the cluster.
+
+It is **required to configure an SSO provider at all**. Without it, identity
+refuses to save the provider and answers the request with an error; the provider
+would otherwise look saved while no login through it could ever complete. It must
+be an absolute `http(s)` URL with a path.
+
+```yaml
+common:
+  sso:
+    callbackUrl: "https://console.example.com/signin/sso/callback"
+```
+
+**One value, both components, and the chart enforces it.** identity writes the URL
+into the Caradhras provider's redirect allow-list; auth then sends the same URL as
+the `redirect_uri` of the code relay, and Caradhras rejects any `redirect_uri` the
+allow-list does not carry. Two different values therefore deploy cleanly and break
+at the first login, with an error that names neither component. Setting
+`common.sso.callbackUrl` is enough; the per-component
+`{identity,auth}.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` overrides exist for
+migration, and the chart **refuses to render** whenever the two resolve differently.
+
+The value is never derived from `PLUGIN_AUTH_ADDRESS`. That address is how the
+components reach each other inside the cluster; this one has to be reachable by
+the end user's browser, and they are not the same host.
+
+#### Multi-factor authentication (`auth.configmap.MFA_ENABLED`)
+
+`MFA_ENABLED` gates multi-factor authentication on the auth component. It is unset
+by default: the key is then absent from the ConfigMap and the application's own
+default stays in force. Set `auth.configmap.MFA_ENABLED: "true"` to turn it on.
+The `MFA_SESSION_TTL_SEC` / `MFA_REMEMBER_TTL_SEC` / `MFA_MAX_ATTEMPTS` /
+`MFA_MAX_RESEND_ATTEMPTS` keys tune it and already have chart defaults.
+
+#### Moving these keys off `extraEnvVars`
+
+Both keys were previously deliverable only through `extraEnvVars`. That still
+works and nothing breaks on upgrade. But setting a key through **both** channels
+is refused: the named key and `extraEnvVars` render into the same ConfigMap `data`
+map, so the key would be emitted twice and the surviving value is whatever the
+YAML parser keeps — the chart refuses rather than shipping an install whose
+effective configuration nobody can read off the values file. When migrating,
+delete the `extraEnvVars` entry in the same change that adds the named key.
 
 ### Caradhras Service (auth backend)
 

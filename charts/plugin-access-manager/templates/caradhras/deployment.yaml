@@ -97,6 +97,15 @@ spec:
                 name: {{ include "plugin-auth.fullname" . }}
                 key: DB_SSLMODE
           {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
+          {{- if include "plugin-caradhras.sessionFromSecret" . }}
+          # Beego session store. Delivered by Secret, never by ConfigMap: the
+          # connection string's third field is the Redis password.
+          - name: redisEndpoint
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "plugin-caradhras.sessionSecretName" . }}
+                key: redisEndpoint
+          {{- end }}
           {{ if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:

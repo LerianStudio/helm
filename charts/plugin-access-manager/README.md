@@ -252,6 +252,56 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.ui.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
 | `caradhras.ui.service.port` | Service port | `80` |
 | `caradhras.ui.ingress.enabled` | Enable ingress for the UI | `false` |
+| `caradhras.configmap.redisEndpoint` | Shared session store for a Redis **without AUTH**, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Refused when it carries a password | `""` |
+| `caradhras.secrets.redisEndpoint` | Shared session store for a Redis **with AUTH**: the full beego connection string `host:port,poolsize,password[,dbnum]`. Delivered by Secret, never by ConfigMap | `""` |
+| `caradhras.useExistingSecret` | Manage the caradhras Secret yourself; the chart creates none | `false` |
+| `caradhras.existingSecretName` | Name of that Secret. Must carry the key `redisEndpoint` | `""` |
+| `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
+
+#### Session store (required above one replica)
+
+Caradhras is beego, and beego writes a login session to a file under the pod's
+own working directory unless `redisEndpoint` names a Redis. With one pod that
+works. With two, a login that starts on one pod and finishes on another does not
+find its session and fails with `unknown authentication type`. The failure is
+intermittent by nature: it depends on which pod the load balancer picks.
+
+A session store is therefore mandatory whenever caradhras is pinned above one
+replica (`replicaCount > 1` with autoscaling off, or `autoscaling.minReplicas >
+1`). The chart **refuses to render** in that state rather than deploying a login
+that fails intermittently. When autoscaling can merely reach more than one pod
+(`autoscaling.maxReplicas > 1`, the chart default), the install notes carry a
+warning instead — failing there would break every default install.
+
+**Two channels, and they are mutually exclusive.** Beego's endpoint is
+positional — `host:port,poolsize,password,dbnum` — so the password, when there
+is one, is part of the same string the chart has to deliver:
+
+| The Redis | Set | Delivered as |
+|---|---|---|
+| needs no AUTH | `caradhras.configmap.redisEndpoint: "valkey:6379"` | ConfigMap key, via `envFrom` |
+| requires AUTH | `caradhras.secrets.redisEndpoint: "valkey:6379,100,<password>"` | Secret key, via `secretKeyRef` |
+
+The ConfigMap channel **refuses a value with a third field**: a ConfigMap gives
+no Secret-equivalent protection, so any principal that can read it would recover
+the Redis password. Setting both channels is also refused — caradhras reads a
+single env named `redisEndpoint`, and defining it twice is undefined behavior.
+
+To keep the password out of your values file entirely, set
+`caradhras.useExistingSecret=true` and point `caradhras.existingSecretName` at a
+Secret you manage (external-secrets, sealed-secrets, or `kubectl create secret`)
+carrying the key `redisEndpoint`. The chart then creates no Secret of its own.
+
+The config keys are the beego literals in camelCase on purpose: caradhras
+resolves them with `conf.GetConfigString`, which looks the exact key up in the
+environment. `REDIS_HOST` / `REDIS_TLS` are the `auth`/`identity` names, read by
+lib-commons, and are silently ignored by caradhras.
+
+The endpoint is never derived from `global.datastores.redis.*`: the mask knows
+only host and port, so a derived value would be silently unauthenticated against
+any Redis that requires AUTH. Set it explicitly. `redisTls` does come from the
+mask, so a managed-cloud profile that sets `redis.tls` once covers auth and
+caradhras both.
 
 ### Auth Database (PostgreSQL)
 

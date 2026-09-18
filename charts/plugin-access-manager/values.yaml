@@ -439,6 +439,20 @@ caradhras:
   # and reads key `redisEndpoint` from existingSecretName instead.
   useExistingSecret: false
   existingSecretName: ""
+  # -- Redis/Valkey AUTH password, injected as the beego config key
+  # `redisPassword` by secretKeyRef — the same delivery DB_PASSWORD already uses
+  # on this workload. Caradhras hands it to both redis consumers (the session
+  # store and the rate limiter), so the endpoint above stays a bare `host:port`
+  # and the password never has to be spliced into a connection string.
+  redisPassword:
+    # -- Opt-in. Off by default: a Redis without AUTH needs nothing here.
+    enabled: false
+    # -- Secret holding the password. Empty uses the auth Secret, which already
+    # carries REDIS_PASSWORD (auth.secrets.REDIS_PASSWORD) and is where the
+    # caradhras DB_PASSWORD already reads from.
+    secretName: ""
+    # -- Key inside that Secret.
+    secretKey: REDIS_PASSWORD
   service:
     # -- Kubernetes service type for the caradhras component
     type: ClusterIP

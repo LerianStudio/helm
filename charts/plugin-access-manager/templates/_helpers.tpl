@@ -197,16 +197,16 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{/*
 caradhras.imageRepository / .imageTag / .imagePullPolicy / .servicePort /
 .replicaCount — the five fields with explicit backward-compat fallback to the
-legacy `auth.backend.*` path (see caradhras.value above). values.yaml ships
-these EMPTY on the `caradhras` block on purpose so the hardcoded defaults
-here are the single source of truth.
+legacy `auth.backend.*` path (see caradhras.value above). Server image values
+are explicit in values.yaml and take precedence; empty fields fall back to
+legacy overrides and then the defaults below.
 */}}
 {{- define "caradhras.imageRepository" -}}
 {{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.repository "oldVal" (dig "backend" "image" "repository" "" .Values.auth) "default" "ghcr.io/lerianstudio/caradhras") -}}
 {{- end }}
 
 {{- define "caradhras.imageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.2.0") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.3.2") -}}
 {{- end }}
 
 {{- define "caradhras.imagePullPolicy" -}}
@@ -228,9 +228,8 @@ precedence as caradhras.imageRepository/etc above, but for the migrations
 Job image. Without this, an install that only overrode the legacy
 auth.backend.migrations.image.* path would silently start running the NEW
 caradhras-migrations image against a database still on the OLD (Casdoor)
-schema the moment it upgraded — the exact kind of wrong-migration-chain
-risk the 1.2.0-beta.x vs 3.2.0-beta.x GHCR-train warning above is about,
-just triggered by a missing fallback instead of a tag typo.
+schema the moment it upgraded. Keep these fields empty in values.yaml so
+legacy overrides remain visible, including to the repository guard below.
 */}}
 {{- define "caradhras.migrationsImageRepository" -}}
 {{- $repo := include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.repository "oldVal" (dig "backend" "migrations" "image" "repository" "" .Values.auth) "default" "ghcr.io/lerianstudio/caradhras-migrations") -}}
@@ -241,7 +240,7 @@ just triggered by a missing fallback instead of a tag typo.
 {{- end }}
 
 {{- define "caradhras.migrationsImageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.2.0") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.3.2") -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImagePullPolicy" -}}

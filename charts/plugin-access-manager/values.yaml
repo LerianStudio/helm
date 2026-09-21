@@ -416,11 +416,9 @@ auth:
 # product replaces Casdoor; the image family is renamed accordingly
 # (casdoor -> caradhras, casdoor-migrations -> caradhras-migrations).
 #
-# Backward-compat: `image.repository`, `image.tag`, `image.pullPolicy`,
-# `service.port`, and `replicaCount` below ship EMPTY on purpose. They are
-# resolved through _helpers.tpl helpers (caradhras.imageRepository/.imageTag/
-# .imagePullPolicy/.servicePort/.replicaCount) using "new key wins, old key
-# is a fallback alias" precedence:
+# Backward-compat: helpers resolve image fields, service.port and replicaCount
+# using the precedence below. Server image defaults are explicit; migrations
+# image fields stay empty to preserve legacy overrides.
 #   1. caradhras.<field>       (this block, if set)
 #   2. auth.backend.<field>    (legacy path — only relevant for installs that
 #                               still set it in THEIR OWN values overrides;
@@ -523,7 +521,7 @@ caradhras:
     # -- to override.
     repository: ghcr.io/lerianstudio/caradhras
     pullPolicy: Always
-    tag: "1.2.0"
+    tag: "1.3.2"
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -545,18 +543,15 @@ caradhras:
     targetMemoryUtilizationPercentage: 80
   migrations:
     image:
-      # -- See "Backward-compat" note above — resolved via
-      # -- caradhras.migrationsImageRepository. NOTE: the GHCR repo
-      # -- `caradhras-migrations` carries TWO unrelated version trains —
-      # -- 1.2.0-beta.x (caradhras's own migrations, correct) and 3.2.0-beta.x
-      # -- (a different, legacy plugin-access-manager applier). The chart
-      # -- default (see templates/_helpers.tpl) always pins the 1.2.0-beta.x
-      # -- train — if you override this, keep it on that train.
+      # -- Empty preserves auth.backend.migrations.image.repository overrides;
+      # -- otherwise defaults to ghcr.io/lerianstudio/caradhras-migrations.
+      # -- Use the Caradhras release line, not the legacy PAM/Casdoor applier.
       repository: ""
       # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
       pullPolicy: ""
-      # -- See "Backward-compat" note above — resolved via caradhras.migrationsImageTag.
-      # -- Must stay on the 1.2.0-beta.x train if overridden.
+      # -- Empty preserves auth.backend.migrations.image.tag overrides;
+      # -- otherwise defaults to 1.3.2 in templates/_helpers.tpl.
+      # -- Independent of caradhras.image.tag: override both when changing versions.
       tag: ""
   # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
   # -- same-origin to the caradhras backend Service. Disabled by default.

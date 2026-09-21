@@ -2,6 +2,27 @@
 
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
 
+- **Features**
+  - Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+  - Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+- **Fixes**
+  - Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+  - Point at the real access-manager service.
+  - Prefix provider-mock callback URLs.
+
+- **Improvements**
+  - Adopt lerian-common masks and emit the STANDARD contract.
+  - Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
 - **Removals**
   - `LICENSE_ORGANIZATION_IDS` removed from `values.yaml` and
     `values-template.yaml`. Use `ORGANIZATION_IDS` for the license organization
@@ -227,3 +248,4 @@
     default, so this single chart serves both of the `plugin-br-pix-switch`
     deployment lines it replaces (`plugin-br-pix-switch-v2.1.0-beta.7` and
     `plugin-br-pix-switch-v2.1.0-beta.12`).
+

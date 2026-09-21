@@ -2,6 +2,17 @@
 
 ## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.0)
 
+- Features:
+  - Declare MIDAZ_V2_BASE_PATH as a named key in product-console.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.1.0...product-console-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.0)
+
 - **Features**
   - Declare `MIDAZ_V2_BASE_PATH` as a named key in product-console.
 
